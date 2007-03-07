@@ -1804,6 +1804,19 @@ public:
 	  "gfx write nodes");
 					}
 
+				void sceneeditor(wxCommandEvent& event)
+				{
+	  history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
+	  number = history_list->GetCount();
+		if (number == 0)
+	    history_list->InsertItems(1, &blank,number);
+    number = history_list->GetCount();
+    SelectedCommand = "gfx edit scene";
+	  history_list->InsertItems(1,&SelectedCommand, number-1);
+	  Execute_command_execute_string(command_window->execute_command,
+	  "gfx edit scene");
+				}
+
         void Exit(wxCommandEvent& event)
         {
 	  Execute_command_execute_string(command_window->execute_command, "QUIT");
@@ -1830,6 +1843,7 @@ BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	EVT_MENU(XRCID("WriteData"),wxCommandWindow::writedata)
 	EVT_MENU(XRCID("WriteElements"),wxCommandWindow::writeelements)
 	EVT_MENU(XRCID("WriteNode"),wxCommandWindow::writenodes)
+  EVT_MENU(XRCID("GraphicsSceneeditor"),wxCommandWindow::sceneeditor)
 	EVT_MENU(XRCID("MenuExit"),wxCommandWindow::Exit)
 END_EVENT_TABLE()
 

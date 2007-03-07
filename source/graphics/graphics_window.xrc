@@ -4,7 +4,6 @@
 
   <object class="wxFrame" subclass="wxGraphicsWindow" name="CmguiGraphicsWindow" title="Cmgui Graphics Window">
 		<title>Cmgui Graphics Window</title>
-
     <object class = "wxBoxSizer">
       <object class ="sizeritem">
 	 			<flag>wxEXPAND</flag>
@@ -14,7 +13,7 @@
 				  <orientation>vertical</orientation>
 					<minsize>1</minsize>
 				
-				  <object class ="wxPanel">
+				  <object class ="wxPanel" name="LeftPanel">
 			 	    <object class = "wxBoxSizer">	
 							<object class="sizeritem">
 	 							<flag>wxEXPAND</flag>

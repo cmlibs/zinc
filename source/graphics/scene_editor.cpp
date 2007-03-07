@@ -69,6 +69,7 @@ extern "C" {
 #include "graphics/volume_texture.h"
 #include "transformation/transformation_editor.h"
 #include "user_interface/message.h"
+}
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
 #include <wx/tglbtn.h>
@@ -76,7 +77,7 @@ extern "C" {
 #include "graphics/scene_editor.xrch"
 #include "graphics/graphics_window.xrch"
 #endif /* defined (WX_USER_INTERFACE)*/
-}
+
 /*
 Module types
 ------------

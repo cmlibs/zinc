@@ -524,7 +524,7 @@ endif # $(USER_INTERFACE) == WIN32_USER_INTERFACE
 
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 
-WX_COMPILER =  wxrc
+WX_COMPILER =  $(WX_DIR)wxrc
 
 %.xrch : %.xrc
 	@if [ ! -d $(XRCH_PATH)/$(*D) ]; then \

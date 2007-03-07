@@ -177,10 +177,10 @@ Contains information for a graphics window.
         wxPanel *panel4;
         wxComboBox *up_view_options;
         wxButton *front_view_options;
-	      wxWindow *graphicsname; 
-	      wxPanel *ToolPanel;
+	     wxWindow *graphicsname; 
+	     wxPanel *ToolPanel;
         wxPanel *interactive_toolbar_panel;
-				wxFrame *GraphicsWindowTitle;
+		 wxFrame *GraphicsWindowTitle;
 #endif /* defined (GTK_USER_INTERFACE) */
 	/* scene_viewers and their parameters: */
 	enum Graphics_window_layout_mode layout_mode;
@@ -3745,6 +3745,7 @@ it.
 	
 			window->GraphicsWindowTitle = XRCCTRL(*window->wx_graphics_window, "CmguiGraphicsWindow", wxFrame);
 			window->GraphicsWindowTitle->SetTitle(window_title);
+			window->GraphicsWindowTitle->SetMinSize(wxSize(0,0));
 			window->panel = XRCCTRL(*window->wx_graphics_window, "Panel", wxPanel);
 			window->panel2 = XRCCTRL(*window->wx_graphics_window, "Panel2", wxPanel);
 			window->panel3 = XRCCTRL(*window->wx_graphics_window, "Panel3", wxPanel);

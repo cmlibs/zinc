@@ -145,9 +145,11 @@ Functions for executing cmiss commands.
 #include "graphics/rendervrml.h"
 #include "graphics/renderwavefront.h"
 #include "graphics/scene.h"
-#if defined (MOTIF)
+#if defined (MOTIF) 
 #include "graphics/scene_editor.h"
-#endif /* defined (MOTIF) */
+#elif defined (WX_USER_INTERFACE)
+#include "graphics/scene_editor_wx.h"
+#endif /* switch(USER_INTERFACE)*/
 #include "graphics/spectrum.h"
 #if defined (MOTIF)
 #include "graphics/spectrum_editor.h"
@@ -333,10 +335,12 @@ DESCRIPTION :
 	struct Element_point_viewer *element_point_viewer;
 	struct Element_creator *element_creator;
 	struct Material_editor_dialog *material_editor_dialog;
-	struct Scene_editor *scene_editor;
 	struct Spectrum_editor_dialog *spectrum_editor_dialog;
 	struct Time_editor_dialog *time_editor_dialog;
 #endif /* defined (MOTIF) */
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
+	struct Scene_editor *scene_editor;
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	HINSTANCE hInstance;
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -10269,13 +10273,14 @@ Executes a GFX EDIT GRAPHICS_OBJECT command.
 	return (return_code);
 } /* gfx_edit_graphics_object */
 
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 static int gfx_edit_scene(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
 LAST MODIFIED : 20 November 2000
 
 DESCRIPTION :
+
 Executes a GFX EDIT_SCENE command.  Brings up the Scene_editor.
 ==============================================================================*/
 {
@@ -10284,7 +10289,7 @@ Executes a GFX EDIT_SCENE command.  Brings up the Scene_editor.
 	struct Cmiss_command_data *command_data;
 	struct Option_table *option_table;
 	struct Scene *scene;
-
+	struct Scene_object *scene_object;
 	ENTER(gfx_edit_scene);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
@@ -10333,6 +10338,7 @@ Executes a GFX EDIT_SCENE command.  Brings up the Scene_editor.
 			}
 			else
 			{
+#if defined (MOTIF)
 				if ((!command_data->user_interface) ||
 					(!CREATE(Scene_editor)(
 						&(command_data->scene_editor),
@@ -10349,6 +10355,23 @@ Executes a GFX EDIT_SCENE command.  Brings up the Scene_editor.
 						command_data->default_spectrum,
 						command_data->volume_texture_manager,
 						command_data->user_interface)))
+#elif defined (WX_USER_INTERFACE)
+				if ((!command_data->user_interface) ||
+					(!CREATE(Scene_editor)(	&(command_data->scene_editor),
+						command_data->scene_manager,
+						scene,
+						scene_object,
+						command_data->computed_field_package,
+						command_data->root_region,
+						Material_package_get_material_manager(command_data->material_package),
+						Material_package_get_default_material(command_data->material_package),
+						command_data->default_font,
+						command_data->glyph_list,
+						command_data->spectrum_manager,
+						command_data->default_spectrum,
+						command_data->volume_texture_manager,
+						command_data->user_interface)))
+#endif /* defined (SWITCH_USER_INTERFACE) */
 				{
 					display_message(ERROR_MESSAGE, "gfx_edit_scene.  "
 						"Could not create scene editor");
@@ -10371,7 +10394,7 @@ Executes a GFX EDIT_SCENE command.  Brings up the Scene_editor.
 
 	return (return_code);
 } /* gfx_edit_scene */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 
 #if defined (MOTIF)
 static int gfx_edit_spectrum(struct Parse_state *state,
@@ -10450,9 +10473,11 @@ Executes a GFX EDIT command.
 			option_table = CREATE(Option_table)();
 			Option_table_add_entry(option_table, "graphics_object", NULL,
 				command_data_void, gfx_edit_graphics_object);
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 			Option_table_add_entry(option_table, "scene", NULL,
 				command_data_void, gfx_edit_scene);
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
+#if defined (MOTIF)
 			Option_table_add_entry(option_table, "spectrum", NULL,
 				command_data_void, gfx_edit_spectrum);
 #endif /* defined (MOTIF) */
@@ -22855,12 +22880,14 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->prompt_window=(struct Prompt_window *)NULL;
 		command_data->projection_window=(struct Projection_window *)NULL;
 		command_data->material_editor_dialog = (struct Material_editor_dialog *)NULL;
-		command_data->scene_editor = (struct Scene_editor *)NULL;
 		/*???RC.  Temporary - should allow more than one */
 		command_data->spectrum_editor_dialog = (struct Spectrum_editor_dialog *)NULL;
 		command_data->time_editor_dialog = (struct Time_editor_dialog *)NULL;
 		/*???RC.  Temporary - should allow more than one */
 #endif /* defined (MOTIF) */
+#if defined (MOTIF) || (WX_USER_INTEFACE)
+		command_data->scene_editor = (struct Scene_editor *)NULL;
+#endif /* defined (MOTIF) || defined (WX_USER_INTEFACE) */
 		command_data->command_console = (struct Console *)NULL;
 #if defined (UNEMAP)
 		command_data->unemap_command_data=(struct Unemap_command_data *)NULL;
@@ -23975,15 +24002,17 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		{
 			DESTROY(Spectrum_editor_dialog)(&(command_data->spectrum_editor_dialog));
 		}
-		if (command_data->scene_editor)
-		{
-			DESTROY(Scene_editor)(&(command_data->scene_editor));
-		}
 		if (command_data->material_editor_dialog)
 		{
 			DESTROY(Material_editor_dialog)(&(command_data->material_editor_dialog));
 		}
 #endif /* defined (MOTIF) */
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
+		if (command_data->scene_editor)
+		{
+			DESTROY(Scene_editor)(&(command_data->scene_editor));
+		}
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		DESTROY(MANAGER(Graphics_window))(

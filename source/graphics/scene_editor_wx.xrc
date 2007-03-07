@@ -2,15 +2,827 @@
 <resource>
 
   <object class="wxFrame" subclass="wxSceneEditor" name="CmguiSceneEditor" title="Scene Editor">
-		<title>Scene Editor</title>
-		<object class = "wxBoxSizer">
+	  <title>Scene Editor</title>
+	  <object class = "wxBoxSizer">
+			<orient>wxVERTICAL</orient>
 			<object class ="sizeritem">
-				<object class="wxButton" name="Button1">
-	        <size>120,27</size>
-	        <label>Click</label>
-		    </object>
-	    </object>
-	  </object>		
-  </object>
+				<flag>wxEXPAND</flag>
+				<option>0</option>
+				<object class = "wxBoxSizer">
+					<orient>wxHORIZONTAL</orient>
+					<object class ="sizeritem">
+						<flag>wxALIGN_CENTER</flag>
+						<object class = "wxStaticText" name="scene-text">
+	   						<label>Scene:</label>
+						</object>
+					</object>
+					<object class ="sizeritem">
+						<option>1</option>
+						<object class="wxPanel" name="SceneObjectChooserPanel">
+							<size>-1,30</size>
+							<minsize>100,-1</minsize>
+		   	    		</object>
+	    	  		</object>
+	     		</object>		
+  			</object>
 
+			<object class ="sizeritem">
+				<flag>wxEXPAND</flag>
+				<option>1</option>
+    	  		<object class ="wxSplitterWindow" name="TopSplitter">
+					<style>wxSP_3D</style>
+			 	 	<orientation>horizontal</orientation>
+					<minsize>100</minsize>
+
+					<object class ="wxPanel">
+				   		<object class = "wxBoxSizer">	
+				  			<object class="sizeritem">
+	 				  			<flag>wxEXPAND</flag>
+								<option>1</option>
+								<object class="wxStaticBoxSizer">
+									<style>wxSUNKEN_BORDER</style>
+							   		<object class="sizeritem">
+ 				  			    	 	<flag>wxEXPAND</flag>
+						  			  	<option>1</option>
+								  		<object class="wxScrolledWindow" name="SceneCheckBox">
+											<style>wxVSCROLL</style>
+							      		</object>
+								   	</object>
+								 </object>
+							 </object>
+						 </object>
+					 </object>
+
+					 <object class ="wxPanel" name="LowerPanel">
+					    <object class = "wxBoxSizer">	
+				   	       <orient>wxVERTICAL</orient>
+			   			   <object class="sizeritem">
+								<flag>wxEXPAND|wxALL</flag>
+								<option>0</option>
+                            <object class = "wxCollapsiblePane" name="CollapsiblePane">
+								    <label>General Settings</label>
+ 				       		</object>
+							</object>
+					
+
+							<object class ="sizeritem">
+								<flag>wxEXPAND</flag>
+								<option>1</option>
+    	  						<object class ="wxSplitterWindow" name="LowerSplitter">
+									<style>wxSP_3D</style>
+			 	 					<orientation>horizontal</orientation>
+
+									<object class ="wxPanel" name="LowestPanel">
+				   						<object class = "wxBoxSizer">	
+											<orient>wxVERTICAL</orient>
+											<object class="sizeritem">
+												<flag>wxEXPAND</flag>
+												<option>0</option>
+												<object class ="wxStaticBoxSizer">
+													<orient>wxHORIZONTAL</orient>
+													<label>TypeFormChooser</label>
+													<object class ="sizeritem">
+														<object class = "wxPanel" name="TypeFormChooser">
+														</object>
+													</object>
+													<object class ="sizeritem">
+														<object class = "wxButton" name="AddButton">
+															<label>Add</label>
+														</object>
+													</object>
+													<object class ="sizeritem">
+														<object class = "wxButton" name="DelButton">
+															<label>Del</label>
+														</object>
+													</object>
+													<object class ="sizeritem">
+														<object class = "wxButton" name="UpButton">
+															<label>Up</label>
+														</object>
+													</object>
+													<object class ="sizeritem">
+														<object class = "wxButton" name="DownButton">
+															<label>Down</label>														
+														</object>
+													</object>
+												</object>
+											</object>
+											<object class ="sizeritem">
+												<flag>wxEXPAND</flag>
+												<option>1</option>
+												<object class ="wxStaticBoxSizer">
+													<object class ="sizeritem">
+														<flag>wxEXPAND</flag>
+														<option>1</option>
+														<object class="wxScrolledWindow" name="TypeChooserPanel">
+															<style>wxHSCROLL|wxVSCROLL</style>
+															<object class="wxBoxSizer">
+																<object class ="sizeritem">
+																	<flag>wxEXPAND</flag>
+																	<option>1</option>
+																	<flag>wxALIGN_CENTRE</flag>
+																	<object class = "wxStaticText">
+	 																	<label>This is the type chooser panel</label>
+																	</object>
+																</object>
+															</object>
+														</object>																					
+													</object>
+												</object>
+											</object>
+										</object>
+									</object>
+
+									<object class ="wxScrolledWindow" name="SceneEditing">
+					   						<object class = "wxBoxSizer">	
+											<orient>wxVERTICAL</orient>
+											<object class="sizeritem">
+												<flag>wxEXPAND</flag>
+												<option>1</option>
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText">
+															<label>Name:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxTextCtrl" name="NameChooser">
+	 													</object>
+													</object>
+												</object>
+											</object>
+				
+											<object class="sizeritem">			
+												<object class="wxStaticLine">
+													<size>300,-1</size>
+													<style>wxLI_HORIZONTAL</style>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxCheckBox" name="CoordinateFieldCheckBox"> 
+															<label>Coordinate field:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="CoordinateFieldChooserPanel">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText"> 
+															<label>Use Element Type:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="UseElementTypeChooserPanel">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxCheckBox" name="ExteriorCheckBox"> 
+															<label>Exterior</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxCheckBox" name="FaceCheckBox"> 
+															<label>Face:</label>	
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxChoice" name="FaceChoice"> 
+															<selection>0</selection>
+                 											<content>
+                   											<item>xi1=0</item>
+              					     						<item>xi1=1</item>
+                   											<item>xi2=0</item>
+ 					            	  	    					<item>xi2=1</item>
+          						  	       					<item>xi3=0</item>
+                   											<item>xi3=1</item>
+                    											</content>
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText"> 
+															<label>Iso-scaler:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="IsoScalerChooserPanel">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText"> 
+															<label>  =Iso-value:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxTextCtrl" name="IsoScalerTextCtrl">
+														<value>0</value>
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText"> 
+															<label>Streamline type:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="StreamLineTypeChooserPanel">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText"> 
+															<label>Length:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxTextCtrl" name="LengthTextCtrl">
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText"> 
+															<label> Width:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxTextCtrl" name="WidthTextCtrl">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText"> 
+															<label>Stream vector:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="StreamVectorChooserPanel">
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxCheckBox" name="ReverseCheckBox">
+															<label>Reverse</label>
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxCheckBox" name="SeedElementCheckBox"> 
+															<label>Seed element:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxTextCtrl" name="SeedElementTextCtrl">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText"> 
+															<label>Xi discretization mode:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="XiDiscretizationModeChooserPanel">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText"> 
+															<label>Discretization:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxTextCtrl" name="DiscretizationTextCtrl">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxCheckBox" name="NativeDiscretisationFieldCheckBox"> 
+															<label>Native discretization field:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="NativeDiscretisationFieldChooserPanel">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText"> 
+															<label>Density field:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="DensityFieldChooserPanel">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText"> 
+															<label>xi:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxTextCtrl" name="xiTextCtrl">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxStaticBoxSizer">	
+													<orient>wxVERTICAL</orient>
+													<object class="sizeritem">
+														<object class = "wxBoxSizer">	
+															<orient>wxHORIZONTAL</orient>
+															<object class="sizeritem">
+																<flag>wxALIGN_CENTRE_VERTICAL</flag>
+																<object class	="wxStaticText" >
+																	<label>Glyph:</label> 
+																</object>
+															</object>	
+															<object class="sizeritem">
+																<object class	="wxPanel"  name="GlyphChooserPanel">
+																</object>
+															</object>	
+															<object class="sizeritem">
+																<flag>wxALIGN_CENTRE_VERTICAL</flag>
+																<object class	="wxStaticText" >
+																	<label>   Centre:</label> 
+																</object>
+															</object>	
+															<object class="sizeritem">
+																<object class	="wxTextCtrl" name="CentreTextCtrl">
+																</object>
+															</object>														
+														</object>
+													</object>	
+
+													<object class="sizeritem">			
+														<object class="wxStaticLine">
+															<size>300,-1</size>
+															<style>wxLI_HORIZONTAL</style>
+														</object>
+													</object>
+
+													<object class="sizeritem">
+														<object class = "wxBoxSizer">	
+															<orient>wxHORIZONTAL</orient>
+															<object class="sizeritem">
+																<flag>wxALIGN_CENTRE_VERTICAL</flag>
+																<object class	="wxStaticText" >
+																	<label>Base glyph size:</label> 
+																</object>
+															</object>	
+															<object class="sizeritem">
+																<object class	="wxTextCtrl"  name="BaseGlyphSizeTextCtrl">
+																</object>
+															</object>	
+														</object>
+													</object>
+
+													<object class="sizeritem">
+														<object class = "wxBoxSizer">	
+															<orient>wxHORIZONTAL</orient>
+															<object class="sizeritem">
+																<object class	="wxCheckBox" name="Orientation/ScaleCheckBox">
+																	<label>Orientation/Scale:</label> 
+																</object>
+															</object>	
+															<object class="sizeritem">
+																<object class	="wxPanel"  name="Orientation/ScaleChooserPanel">
+																</object>
+															</object>	
+														</object>
+													</object>
+
+													<object class="sizeritem">
+														<object class = "wxBoxSizer">	
+															<orient>wxHORIZONTAL</orient>
+															<object class="sizeritem">
+																<flag>wxALIGN_CENTRE_VERTICAL</flag>
+																<object class	="wxStaticText">
+																	<label>Constant radius:</label> 
+																</object>
+															</object>	
+															<object class="sizeritem">
+																<object class	="wxTextCtrl"  name="ConstantRadiusTextCtrl">
+																	<value>0</value>
+																</object>
+															</object>	
+														</object>
+													</object>
+
+													<object class="sizeritem">
+														<object class = "wxBoxSizer">	
+															<orient>wxHORIZONTAL</orient>
+															<object class="sizeritem">
+																<object class	="wxCheckBox" name="ScalarRadiusCheckBox">
+																	<label>Scalar radius:</label> 
+																</object>
+															</object>	
+															<object class="sizeritem">
+																<object class	="wxPanel"  name="ScalarRadiusChooserPanel">
+																</object>
+															</object>	
+														</object>
+													</object>
+
+													<object class="sizeritem">
+														<object class = "wxBoxSizer">	
+															<orient>wxHORIZONTAL</orient>
+															<object class="sizeritem">
+																<flag>wxALIGN_CENTRE_VERTICAL</flag>
+																<object class	="wxStaticText">
+																	<label>  Scale factors:</label> 
+																</object>
+															</object>	
+															<object class="sizeritem">
+																<object class	="wxTextCtrl"  name="ScaleFactorsTextCtrl">
+																</object>
+															</object>	
+														</object>
+													</object>
+
+													<object class="sizeritem">
+														<object class = "wxBoxSizer">	
+															<orient>wxHORIZONTAL</orient>
+															<object class="sizeritem">
+																<flag>wxALIGN_CENTRE_VERTICAL</flag>
+																<object class	="wxCheckBox" name="VariableScaleCheckBox">
+																	<label>Variable Scale:</label> 
+																</object>
+															</object>	
+															<object class="sizeritem">
+																<object class	="wxPanel"  name="VariableScaleChooserPanel">
+																</object>
+															</object>	
+														</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+												<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<flag>wxALIGN_CENTRE_VERTICAL</flag>
+													<object class="sizeritem">
+														<object class	="wxCheckBox" name="LabelCheckBox"> 
+															<label>Label:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="LabelChooserPanel">
+ 														</object>
+													</object>
+ 												</object>
+											</object>
+							
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText"> 
+															<label>Select mode:</label>				  			
+
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="SeleteModeChooserPanel">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">			
+												<object class="wxStaticLine">
+													<size>300,-1</size>
+													<style>wxLI_HORIZONTAL</style>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText"> 
+															<label>Material:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="MaterialChooserPanel">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText"> 
+															<label>Streamline data type:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="StreamlineDataTypeChooserPanel">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText"> 
+															<label>Width:</label>				  			
+
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxTextCtrl" name="WidthTextCtrl">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText"> 
+															<label>Render type:</label>				  			
+
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="RendertypeChooserPanel">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxCheckBox"  name="TextureCoordinatesCheckBox"> 
+															<label>Texture coordinates:</label>				  			
+
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="TextrueCoordinatesChooserPanel">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxCheckBox" name="DataCheckBox"> 
+															<label>Data:</label>				  			
+
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="DataChooserPanel">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText"> 
+															<label>  Spectrum:</label>				  			
+
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="SpectrumChooserPanel">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText"> 
+															<label>Selected material:</label>				  			
+
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="SelectedMaterialChooserPanel">
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+
+										</object>
+									</object>
+
+								</object>
+							</object>
+
+						</object>
+					</object>
+				</object>
+			</object>
+
+     	</object>
+	</object>
+
+
+	
+  <object class="wxPanel" name="CmguiSceneEditorGeneralSettings">
+
+	  <object class = "wxBoxSizer">
+			<orient>wxVERTICAL</orient>
+           <object class="sizeritem">
+				<object class = "wxBoxSizer">
+	  			   <orient>wxHORIZONTAL</orient>
+					<object class="sizeritem">
+						<object class = "wxStaticText">
+
+   							<label>Default coordinate field:</label>
+						</object>	
+					</object>	
+
+					<object class="sizeritem">
+						<object class = "wxPanel" name="DefaultCoordinateFieldChooser">
+							<option>1</option>
+						</object>
+					</object>	
+				</object>													
+			</object>	
+			<object class="sizeritem">
+			  <object class = "wxBoxSizer">	
+			     <orient>wxHORIZONTAL</orient>
+				  <object class="sizeritem">
+					  <object class = "wxStaticText">
+
+ 						  <label>Element discretisation:</label>
+					  </object>	
+				  </object>	
+				  <object class="sizeritem">
+		 			  <object class = "wxTextCtrl" name="ElementDiscretisationPanel">
+						  <option>1</option>
+					  </object>
+				  </object>	
+			   </object>													
+			</object>	
+
+			<object class="sizeritem">	
+				<flag>wxEXPAND</flag>
+				<object class = "wxBoxSizer">
+					<orient>wxHORIZONTAL</orient>
+					<object class="sizeritem">
+			   		   <flag>wxEXPAND|wxALIGN_CENTER</flag>
+						<object class = "wxStaticText">
+   							<label>Circle discretisation:</label>
+						</object>	
+					</object>	
+					<object class="sizeritem">
+						<flag>wxEXPAND|wxALIGN_CENTER</flag>
+						<object class = "wxTextCtrl" name="CircleDiscretisationPanel">
+							<option>1</option>
+						</object>
+					</object>
+				</object>													
+			</object>	
+	
+			<object class="sizeritem">
+				<flag>wxEXPAND</flag>
+		       <option>1</option>
+				<object class = "wxBoxSizer">	
+					<orient>wxHORIZONTAL</orient>
+					<object class="sizeritem">
+						<flag>wxEXPAND|wxALIGN_CENTER</flag>
+						<option>1</option>
+						<object class = "wxCheckBox" name="NativeDiscretisationFieldCheckBox">
+
+   							<label>Native discretisation field:</label>
+						</object>	
+					</object>	
+					<object class="sizeritem">
+						<flag>wxEXPAND|wxALIGN_CENTER</flag>
+	                     <option>1</option>
+							<object class = "wxPanel" name="NativeDiscretisationFieldChooser">
+								<option>1</option>
+							</object>
+						</object>	
+					</object>													
+				</object>	
+			</object>	
+		</object>	
+ 	   		
 </resource>

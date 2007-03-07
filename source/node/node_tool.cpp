@@ -2553,12 +2553,26 @@ Set the selected option in the Coordinate Field chooser.
 	{    
 		button_define = XRCCTRL(*this, "ButtonDefine", wxCheckBox);
 		Node_tool_set_define_enabled(node_tool,button_define->IsChecked());
+		if (!button_define->IsChecked())
+		{
+			button_create = XRCCTRL(*this, "ButtonCreate", wxCheckBox);
+			button_create->SetValue(0);
+			Node_tool_set_create_enabled(node_tool,button_create->IsChecked());
+		} 
 	}
 
 	void OnButtonCreatepressed(wxCommandEvent& event)
 	{    	 
 		button_create = XRCCTRL(*this, "ButtonCreate", wxCheckBox);
 		Node_tool_set_create_enabled(node_tool,button_create->IsChecked());
+
+    if (button_create->IsChecked())
+		{
+	  	button_define = XRCCTRL(*this, "ButtonDefine", wxCheckBox);	
+			button_define->SetValue(1);
+		  Node_tool_set_define_enabled(node_tool,button_define->IsChecked());
+		}
+		
 	}
 
 	void OnButtonStreamingpressed(wxCommandEvent& event)

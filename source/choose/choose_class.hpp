@@ -101,7 +101,7 @@ public:
 
 	int set_item(Object *new_item)
 	{
-		int i, return_code;
+		unsigned int i, return_code;
 		return_code = 0;
 		for (i = 0 ; !return_code && (i < GetCount()) ; i++)
 		{

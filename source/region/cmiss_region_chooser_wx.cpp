@@ -125,7 +125,7 @@ DESCRIPTION :
 Sets <path> of chosen region in the <chooser>.
 ==============================================================================*/
 {
-	int found = 0, i;
+	unsigned int found = 0, i;
 
 	for (i = 0 ; !found && (i < GetCount()) ; i++)
 	{
