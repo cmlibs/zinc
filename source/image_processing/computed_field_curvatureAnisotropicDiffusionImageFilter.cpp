@@ -62,7 +62,7 @@ using namespace CMISS;
 
 namespace {
 
-char computed_field_curvature_anisotropic_diffusion_image_filter_type_string[] = "curvature_anisotropic_diffusion_image_filter";
+char computed_field_curvature_anisotropic_diffusion_image_filter_type_string[] = "curvature_anisotropic_diffusion_filter";
 
 class Computed_field_curvature_anisotropic_diffusion_image_filter : public Computed_field_ImageFilter
 {
