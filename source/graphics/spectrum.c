@@ -1847,6 +1847,13 @@ Uses the <spectrum> to calculate RGBA components to represent the
 	ENTER(spectrum_value_to_rgb);
 	if (spectrum)
 	{
+		if (spectrum->clear_colour_before_settings)
+		{
+			rgba[0] = 0.0;
+			rgba[1] = 0.0;
+			rgba[2] = 0.0;
+			rgba[3] = 1.0;
+		}
 		render_data.rgba = rgba;
 		render_data.data = data;
 		render_data.number_of_data_components = number_of_data_components;
