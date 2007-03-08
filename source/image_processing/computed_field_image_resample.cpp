@@ -356,6 +356,7 @@ would allow a windowing, and could also be overridden here.
 			&source_texture_coordinate_field) && 
 			(dimension == source_field_dimension))
 		{
+			DEALLOCATE(source_sizes);
 			return_code=1;
 			/* 1. make dynamic allocations for any new type-specific data */
 			number_of_source_fields=1;
