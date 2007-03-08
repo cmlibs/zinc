@@ -43,52 +43,17 @@ This provides a Cmgui interface to the font contexts of many types.
  * ***** END LICENSE BLOCK ***** */
 
 extern "C" {
-#if defined (OPENGL_API)
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glu.h>
-#if defined (WIN32_SYSTEM)
-#include <GL/glext.h>
-/* SAB On Win32 I think you have to load all OpenGL 1.2, 1.3 etc functions
-	as extensions and keep pointer references to them.  I haven't done this
-	yet so we will undefine the version symbols */
-#undef GL_NV_vertex_program
-#undef GL_NV_register_combiners2
-#endif /* defined (WIN32_SYSTEM) */
-#endif
-#if defined (MOTIF)
-#if defined (SGI)
-/* Not compiling in as not being actively used and only available on O2's and
-   cannot compile against Mesa without function pointer tables. */
-/* #include <dmedia/dm_buffer.h> */
-#endif /* defined (SGI) */
-#define GLX_GLXEXT_PROTOTYPES
-#include <GL/glx.h>
-#include <X11/Xlib.h>
-#include <X11/Intrinsic.h>
-#include "three_d_drawing/ThreeDDraw.h"
-#endif /* defined (MOTIF) */
-#if defined (GTK_USER_INTERFACE)
-#include <gtk/gtk.h>
-#if ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)
-#define GTK_USE_GTKGLAREA
-#endif /* ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)*/
-#if defined (GTK_USE_GTKGLAREA)
-#include <gtkgl/gtkglarea.h>
-#else /* defined (GTK_USE_GTKGLAREA) */
-#include <gtk/gtkgl.h>
-#endif /* defined (GTK_USE_GTKGLAREA) */
-#endif /* defined (GTK_USER_INTERFACE) */
-#if defined (WIN32_USER_INTERFACE)
-#include <windows.h>
-#endif /* defined (WIN32_USER_INTERFACE) */
 #include "general/debug.h"
 #include "general/object.h"
 #include "general/mystring.h"
 #include "graphics/font.h"
+#include "graphics/graphics_library.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/message.h"
 }
+#if defined (WIN32_USER_INTERFACE)
+#include <windows.h>
+#endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 #include <wx/bitmap.h>
 #include <wx/image.h>
