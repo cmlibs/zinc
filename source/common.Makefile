@@ -407,7 +407,7 @@ ifeq ($(SYSNAME),Darwin)
       COMPILE_DEFINES = -DOPTIMISED
       COMPILE_FLAGS = -fPIC
       STRICT_FLAGS = -Wno-long-double -Werror
-      CPP_STRICT_FLAGS = -Werror
+      CPP_STRICT_FLAGS = -Wno-long-double -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
    else  # DEBUG != true
