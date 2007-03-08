@@ -1041,10 +1041,10 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
 		graphics/spectrum_editor_dialog.c \
 		graphics/spectrum_editor_settings.c
 endif
-IMAGE_PROCESSING_SRCS =
+IMAGE_PROCESSING_SRCS = \
+   image_processing/computed_field_image_resample.cpp
 ifeq ($(USE_ITK),true)
    IMAGE_PROCESSING_SRCS += \
-	   image_processing/computed_field_image_resample.cpp \
 	   image_processing/computed_field_thresholdFilter.cpp \
 	   image_processing/computed_field_binaryThresholdFilter.cpp \
 	   image_processing/computed_field_cannyEdgeDetectionFilter.cpp \
