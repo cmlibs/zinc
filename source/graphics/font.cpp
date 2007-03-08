@@ -50,10 +50,17 @@ extern "C" {
 #include "graphics/graphics_library.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/message.h"
-}
+#if defined (MOTIF)
+#define GLX_GLXEXT_PROTOTYPES
+#include <GL/glx.h>
+#endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+#include <gtk/gtk.h>
+#endif /* defined (GTK_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
+}
 #if defined (WX_USER_INTERFACE)
 #include <wx/bitmap.h>
 #include <wx/image.h>
