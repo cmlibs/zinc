@@ -48,6 +48,7 @@ Utilities for handling images.
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "command/parser.h"
 #include "general/debug.h"
 #include "general/enumerator_private.h"
 #include "general/image_utilities.h"
@@ -56,7 +57,6 @@ Utilities for handling images.
 #include "general/myio.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
-#include "user_interface/user_interface.h"
 #if defined (IMAGEMAGICK)
 /* image magick interfaces */
 #include "magick/api.h"

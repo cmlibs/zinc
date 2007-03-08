@@ -240,8 +240,9 @@ and generate the outputImage.
 		filter->SetVariance( discrete_gaussian_image_filter->variance );
 		filter->SetMaximumKernelWidth( discrete_gaussian_image_filter->maxKernelWidth);
 		
-		return_code = discrete_gaussian_image_filter->update_output_image< ImageType, FilterType >
-			(location, filter, this->outputImage);
+		return_code = discrete_gaussian_image_filter->update_output_image
+			(location, filter, this->outputImage,
+			static_cast<ImageType*>(NULL), static_cast<FilterType*>(NULL));
 		
 		return (return_code);
 	} /* set_filter */

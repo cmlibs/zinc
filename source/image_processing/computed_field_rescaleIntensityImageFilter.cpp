@@ -240,8 +240,9 @@ and generate the outputImage.
 		filter->SetOutputMinimum( rescale_intensity_image_filter->outputMin );
 		filter->SetOutputMaximum( rescale_intensity_image_filter->outputMax );
 		
-		return_code = rescale_intensity_image_filter->update_output_image< ImageType, FilterType >
-			(location, filter, this->outputImage);
+		return_code = rescale_intensity_image_filter->update_output_image
+			(location, filter, this->outputImage,
+			static_cast<ImageType*>(NULL), static_cast<FilterType*>(NULL));
 		
 		return (return_code);
 	} /* set_filter */

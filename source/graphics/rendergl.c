@@ -42,12 +42,8 @@ GL rendering calls - API specific.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-/*???DB.  For debug */
 #include <stdio.h>
 #include <math.h>
-#if defined (OPENGL_API)
-#include <GL/glu.h>
-#endif /* defined (OPENGL_API) */
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/font.h"

@@ -253,8 +253,9 @@ and generate the outputImage.
 		filter->SetAlpha( sigmoid_image_filter->alpha );
 		filter->SetBeta( sigmoid_image_filter->beta );
 		
-		return_code = sigmoid_image_filter->update_output_image< ImageType, FilterType >
-			(location, filter, this->outputImage);
+		return_code = sigmoid_image_filter->update_output_image
+			(location, filter, this->outputImage,
+			static_cast<ImageType*>(NULL), static_cast<FilterType*>(NULL));
 		
 		return (return_code);
 	} /* set_filter */

@@ -45,8 +45,8 @@ format specified in general/matrix_vector.h.
  *
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
-#include <GL/glu.h>
 #include "general/debug.h"
+#include "graphics/graphics_library.h"
 #include "general/matrix_vector.h"
 #include "general/photogrammetry.h"
 #include "user_interface/message.h"

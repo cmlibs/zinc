@@ -777,6 +777,13 @@ Destroys the object associated with the file descriptor.
 	{
 		return_code=1;
 
+#if defined (CARBON_USER_INTERFACE)
+		if ((*idle_callback_address)->carbon_timer_ref)
+		{
+			RemoveEventLoopTimer((*idle_callback_address)->carbon_timer_ref);
+		}
+#endif /* defined (CARBON_USER_INTERFACE) */
+
 		DEALLOCATE(*idle_callback_address);
 		*idle_callback_address = (struct Event_dispatcher_idle_callback *)NULL;
 	}

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_buffer.c
 
-LAST MODIFIED : 6 May 2005
+LAST MODIFIED : 19 February 2007
 
 DESCRIPTION :
 This provides a Cmgui interface to the OpenGL contexts of many types.
@@ -76,6 +76,7 @@ extern "C" {
 #if defined (CARBON_USER_INTERFACE)
 #include <OpenGL/glu.h>
 #include <OpenGL/glext.h>
+#include <AGL/agl.h>
 #endif /* defined (CARBON_USER_INTERFACE) */
 }
 #if defined (WX_USER_INTERFACE)
@@ -249,10 +250,19 @@ DESCRIPTION :
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (CARBON_USER_INTERFACE)
 	CGrafPtr port;
-	int32    portx;
-	int32    porty;
-	AGLPixelFormat aglPixFmt;
+	/* These parameters are provided by the hosting application and should be
+		respected by this graphics_buffer */
+	int width;
+	int height;
+	int portx;
+	int porty;
+	int clip_width;
+	int clip_height;
+	AGLPixelFormat aglPixelFormat;
 	AGLContext aglContext;
+	EventHandlerRef expose_handler_ref;
+	EventHandlerRef mouse_handler_ref;
+	EventHandlerRef resize_handler_ref;
 #endif /* defined (CARBON_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 	wxPanel *parent;
@@ -361,6 +371,21 @@ contained in the this module only.
 	    buffer->gldrawable = (GdkGLDrawable *)NULL;
 #   endif /* ! defined (GTK_USER_GLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
+
+#if defined (CARBON_USER_INTERFACE)
+		 buffer->port = 0;
+		 buffer->width = 0;
+		 buffer->height = 0;
+		 buffer->portx = 0;
+		 buffer->porty = 0;
+		 buffer->clip_width = 0;
+		 buffer->clip_height = 0;
+		 buffer->aglPixelFormat = (AGLPixelFormat)NULL;
+		 buffer->aglContext = (AGLContext)NULL;
+		 buffer->expose_handler_ref = (EventHandlerRef)NULL;
+		 buffer->mouse_handler_ref = (EventHandlerRef)NULL;
+		 buffer->resize_handler_ref = (EventHandlerRef)NULL;
+#endif /* defined (CARBON_USER_INTERFACE) */
 	}
 	else
 	{
@@ -3556,11 +3581,214 @@ DESCRIPTION :
 #endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (CARBON_USER_INTERFACE)
+static OSStatus Graphics_buffer_mouse_Carbon_callback(
+	EventHandlerCallRef handler, EventRef event,
+	void* buffer_void)
+/*******************************************************************************
+LAST MODIFIED : 23 November 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int input_modifier, return_code;
+	EventMouseButton button_number;
+	HIPoint location;
+	struct Graphics_buffer *buffer;
+	struct Graphics_buffer_input input;
+	UInt32 modifier_keys, event_type;
+	Rect global_bounds;
+
+	ENTER(Graphics_buffer_mouse_Carbon_callback);
+	USE_PARAMETER(handler);
+	if ((buffer=(struct Graphics_buffer *)buffer_void)
+		&& event)
+	{
+		// Figure out if the event is ours by looking at the location
+		GetEventParameter (event, kEventParamMouseLocation,
+			typeHIPoint, NULL, sizeof(HIPoint), NULL, &location);
+
+#if defined (DEBUG)
+		printf("  Graphics_buffer_mouse_Carbon_callback %lf %lf\n",
+			location.x, location.y);
+#endif // defined (DEBUG)
+
+ 		// Convert from global screen coordinates to window coordinates
+		GetWindowBounds(GetWindowFromPort(buffer->port),
+			kWindowGlobalPortRgn, &global_bounds);
+
+#if defined (DEBUG)
+		printf("    global bounds %d %d\n", global_bounds.top, global_bounds.left);
+#endif // defined (DEBUG)
+
+		location.x -= global_bounds.left;
+		location.y -= global_bounds.top;
+
+#if defined (DEBUG)
+		printf("    local coordinates %lf %lf\n", location.x, location.y);
+#endif // defined (DEBUG)
+
+		location.x -= -buffer->portx;
+		location.y -= -buffer->porty;
+
+#if defined (DEBUG)
+		printf("    graphics buffer coordinates %lf %lf\n", location.x, location.y);
+#endif // defined (DEBUG)
+
+		if ((location.x < 0) ||
+			(location.x > buffer->clip_width) ||
+			(location.y < 0) ||
+			(location.y > buffer->clip_height))
+		{
+			// If the event isn't ours, pass it on.
+			OSStatus result = CallNextEventHandler(handler, event);	
+			return(result);
+		}
+		return_code = 1;
+		input.type = GRAPHICS_BUFFER_INVALID_INPUT;
+		event_type = GetEventKind(event);
+		switch (event_type)
+		{
+			case kEventMouseDown:
+			{
+				input.type = GRAPHICS_BUFFER_BUTTON_PRESS;
+			} break;
+			case kEventMouseUp:
+			{
+				input.type = GRAPHICS_BUFFER_BUTTON_RELEASE;
+			} break;
+			case kEventMouseDragged:
+			{
+				input.type = GRAPHICS_BUFFER_MOTION_NOTIFY;
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Graphics_buffer_gtkglarea_button_callback.  Unknown button event");
+				return_code=0;
+				/* This event type is not being passed on */
+			} break;
+		}
+		input.key_code = 0;
+
+		GetEventParameter (event, kEventParamMouseButton,
+			typeMouseButton, NULL, sizeof(EventMouseButton), NULL, &button_number);
+		input.button_number = button_number;
+
+		input.position_x = (int)location.x;
+		input.position_y = (int)location.y;
+		input_modifier = 0;
+
+		GetEventParameter (event, kEventParamKeyModifiers,
+                   typeUInt32, NULL,
+                   sizeof(modifier_keys), NULL,
+                   &modifier_keys);
+
+		if (modifier_keys & shiftKey)
+		{
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+		}
+		if (modifier_keys & controlKey)
+		{
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+		}
+		if (modifier_keys & optionKey)
+		{
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+		}
+		if (button_number == kEventMouseButtonPrimary)
+		{
+			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
+		}
+		if (return_code)
+		{
+			input.input_modifier = static_cast<enum Graphics_buffer_input_modifier>
+				(input_modifier);
+			CMISS_CALLBACK_LIST_CALL(Graphics_buffer_input_callback)(
+				buffer->input_callback_list, buffer, &input);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_buffer_gtkglarea_button_callback.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (TRUE);
+} /* Graphics_buffer_mouse_Carbon_callback */
+#endif /* defined (CARBON_USER_INTERFACE) */
+
+#if defined (CARBON_USER_INTERFACE)
+static OSStatus Graphics_buffer_expose_Carbon_callback(
+	EventHandlerCallRef handler, EventRef event,
+	void* buffer_void)
+/*******************************************************************************
+LAST MODIFIED : 23 November 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Graphics_buffer *graphics_buffer;
+
+	USE_PARAMETER(handler);
+	USE_PARAMETER(event);
+
+	OSStatus result = eventNotHandledErr;
+	
+	if (graphics_buffer = (struct Graphics_buffer *)buffer_void)
+	{
+		CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+			graphics_buffer->expose_callback_list, graphics_buffer, NULL);
+
+		result = noErr;
+
+	}
+	LEAVE;
+
+	return (result);
+} /* Graphics_buffer_expose_Carbon_callback */
+#endif /* defined (CARBON_USER_INTERFACE) */
+
+#if defined (CARBON_USER_INTERFACE)
+static OSStatus Graphics_buffer_resize_Carbon_callback(
+	EventHandlerCallRef handler, EventRef event,
+	void* buffer_void)
+/*******************************************************************************
+LAST MODIFIED : 23 November 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Graphics_buffer *graphics_buffer;
+
+	USE_PARAMETER(handler);
+	USE_PARAMETER(event);
+
+	OSStatus result = eventNotHandledErr;
+	
+	if (graphics_buffer = (struct Graphics_buffer *)buffer_void)
+	{
+		aglSetDrawable(graphics_buffer->aglContext, graphics_buffer->port);
+		CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+			graphics_buffer->resize_callback_list, graphics_buffer, NULL);
+		CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+			graphics_buffer->expose_callback_list, graphics_buffer, NULL);
+
+		result = noErr;
+
+	}
+	LEAVE;
+
+	return (result);
+} /* Graphics_buffer_expose_Carbon_callback */
+#endif /* defined (CARBON_USER_INTERFACE) */
+
+#if defined (CARBON_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_Carbon(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	CGrafPtr port,
-	int32    portx,
-	int32    porty,
+	int    portx,
+	int    porty,
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
@@ -3576,12 +3804,14 @@ DESCRIPTION :
 								 AGL_DEPTH_SIZE, 16,
 								 AGL_NONE};
 	/* int accumulation_colour_size; */
-	int format;
 	struct Graphics_buffer *buffer;
 
 	ENTER(create_Graphics_buffer_Carbon);
 	USE_PARAMETER(buffering_mode);
 	USE_PARAMETER(stereo_mode);
+	USE_PARAMETER(minimum_colour_buffer_depth);
+	USE_PARAMETER(minimum_depth_buffer_depth);
+	USE_PARAMETER(minimum_accumulation_buffer_depth);
 	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
 	{
 		buffer->type = GRAPHICS_BUFFER_CARBON_TYPE;
@@ -3589,16 +3819,59 @@ DESCRIPTION :
 		buffer->port = port;
 		buffer->portx = portx;
 		buffer->porty = porty;
+		buffer->width = 0;
+		buffer->height = 0;
+		buffer->clip_width = 0;
+		buffer->clip_height = 0;
 
 		if (buffer->aglPixelFormat = aglChoosePixelFormat(NULL, 0, attributes))
 		{
-			if (buffer->aglContext = aglCreateContext(buffer->aglPixFmt, NULL))
+			if (buffer->aglContext = aglCreateContext(buffer->aglPixelFormat, NULL))
 			{
 
 				if(aglSetDrawable(buffer->aglContext, port))
 				{
 					
-					if (!aglSetCurrentContext(buffer->aglContext))
+					if (aglSetCurrentContext(buffer->aglContext))
+					{
+						EventHandlerUPP mouse_handler_UPP,
+							expose_handler_UPP, resize_handler_UPP;
+
+						EventTypeSpec expose_event_list[] = {
+                    {kEventClassWindow, kEventWindowDrawContent}};
+						EventTypeSpec resize_event_list[] = {
+                    {kEventClassWindow, kEventWindowBoundsChanged}};
+						EventTypeSpec mouse_event_list[] = {
+							{kEventClassMouse, kEventMouseDragged},
+							{kEventClassMouse, kEventMouseUp},
+							{kEventClassMouse, kEventMouseDown}};
+
+						aglEnable(buffer->aglContext, AGL_BUFFER_RECT);
+						//aglEnable(buffer->aglContext, AGL_SWAP_RECT);
+
+						expose_handler_UPP = 
+							NewEventHandlerUPP (Graphics_buffer_expose_Carbon_callback);
+
+						InstallWindowEventHandler(GetWindowFromPort(port),
+							expose_handler_UPP, GetEventTypeCount(expose_event_list),
+							expose_event_list, buffer, &buffer->expose_handler_ref);
+
+						resize_handler_UPP = 
+							NewEventHandlerUPP (Graphics_buffer_resize_Carbon_callback);
+
+						InstallWindowEventHandler(GetWindowFromPort(port),
+							resize_handler_UPP, GetEventTypeCount(resize_event_list),
+							resize_event_list, buffer, &buffer->resize_handler_ref);
+
+						mouse_handler_UPP = 
+							NewEventHandlerUPP (Graphics_buffer_mouse_Carbon_callback);
+
+						InstallWindowEventHandler(GetWindowFromPort(port),
+							mouse_handler_UPP, GetEventTypeCount(mouse_event_list),
+							mouse_event_list, buffer, &buffer->mouse_handler_ref);
+
+					}
+					else
 					{
 						display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
 							"Unable enable the render context.");
@@ -3640,6 +3913,41 @@ DESCRIPTION :
 
 	return (buffer);
 } /* create_Graphics_buffer_Carbon */
+#endif /* defined (CARBON_USER_INTERFACE) */
+
+#if defined (CARBON_USER_INTERFACE)
+int Graphics_buffer_carbon_set_window_size(struct Graphics_buffer *buffer,
+	int width, int height, int portx, int porty, int clip_width, int clip_height)
+/*******************************************************************************
+LAST MODIFIED : 16 February 2007
+
+DESCRIPTION :
+Sets the coordinates within the graphics port which the graphics_buffer should
+respect.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_graphics_buffer_get_near_and_far_plane);
+	if (buffer)
+	{
+		buffer->width = width;
+		buffer->height = height;
+		buffer->portx = portx;
+		buffer->porty = porty;
+		buffer->clip_width = clip_width;
+		buffer->clip_height = clip_height;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Cmiss_graphics_buffer_carbon_set_window_size.  "
+			"Missing graphics_buffer parameter.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_graphics_buffer_carbon_set_window_size */
 #endif /* defined (CARBON_USER_INTERFACE) */
 
 #if defined (WX_USER_INTERFACE)
@@ -3919,7 +4227,23 @@ DESCRIPTION :
 #if defined (CARBON_USER_INTERFACE)
 			case GRAPHICS_BUFFER_CARBON_TYPE:
 			{
+				GLint parms[4] ;
+				Rect bounds, port_bounds;
+				GetWindowPortBounds(GetWindowFromPort(buffer->port), &bounds);
+
+				GetPortBounds(buffer->port, &port_bounds);
+
 				aglSetCurrentContext(buffer->aglContext);
+				
+				parms[0] = -buffer->portx;
+				parms[1] = bounds.bottom - bounds.top + buffer->porty - buffer->clip_height;
+				parms[2] = buffer->clip_width;
+				parms[3] = buffer->clip_height;
+				aglSetInteger(buffer->aglContext, AGL_BUFFER_RECT, parms) ;
+				//aglSetInteger(buffer->aglContext, AGL_SWAP_RECT, parms) ;
+
+				aglUpdateContext(buffer->aglContext);
+
 				return_code = 1;
 			} break;
 #endif /* defined (CARBON_USER_INTERFACE) */
@@ -4305,7 +4629,30 @@ Returns the buffering mode used by the graphics buffer.
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (CARBON_USER_INTERFACE)
-			USE_PARAMETER(buffering_mode);
+			case GRAPHICS_BUFFER_CARBON_TYPE:
+			{
+				GLint value;
+
+				if (aglDescribePixelFormat (buffer->aglPixelFormat,
+						AGL_DOUBLEBUFFER, &value))
+				{
+					if (value)
+					{
+						*buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
+					}
+					else
+					{
+						*buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
+					}
+					return_code = 1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"Graphics_buffer_get_buffering_mode.  "
+						"Invalid Pixel Format Query.");				
+					return_code = 0;
+				}
+			} break;
 #endif /* defined (CARBON_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 			case GRAPHICS_BUFFER_WX_TYPE:
@@ -4400,7 +4747,30 @@ Returns the stereo mode used by the graphics buffer.
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (CARBON_USER_INTERFACE)
-			USE_PARAMETER(stereo_mode);
+			case GRAPHICS_BUFFER_CARBON_TYPE:
+			{
+				GLint value;
+
+				if (aglDescribePixelFormat (buffer->aglPixelFormat,
+						AGL_STEREO, &value))
+				{
+					if (value)
+					{
+						*stereo_mode = GRAPHICS_BUFFER_STEREO;
+					}
+					else
+					{
+						*stereo_mode = GRAPHICS_BUFFER_MONO;
+					}
+					return_code = 1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"Graphics_buffer_get_buffering_mode.  "
+						"Invalid Pixel Format Query.");				
+					return_code = 0;
+				}
+			} break;
 #endif /* defined (CARBON_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 			case GRAPHICS_BUFFER_WX_TYPE:
@@ -4492,6 +4862,13 @@ DESCRIPTION :
 				return_code = 1;
 			} break;
 #endif /* defined (WX_USER_INTERFACE) */
+#if defined (CARBON_USER_INTERFACE)
+			case GRAPHICS_BUFFER_CARBON_TYPE:
+			{
+				aglSwapBuffers(buffer->aglContext);
+				return_code = 1;
+			} break;
+#endif /* defined (CARBON_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_swap_buffers.  "
@@ -4619,6 +4996,13 @@ Returns the width of buffer represented by <buffer>.
 				buffer->canvas->GetClientSize(&width, &height);
 			} break;
 #endif /* defined (WX_USER_INTERFACE) */
+#if defined (CARBON_USER_INTERFACE)
+			case GRAPHICS_BUFFER_CARBON_TYPE:
+			{
+				// Respect the values we have been given
+				width = buffer->width;
+			} break;
+#endif /* defined (CARBON_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_width.  "
@@ -4758,6 +5142,13 @@ Returns the height of buffer represented by <buffer>.
 				buffer->canvas->GetClientSize(&width, &height);
 			} break;
 #endif /* defined (WX_USER_INTERFACE) */
+#if defined (CARBON_USER_INTERFACE)
+			case GRAPHICS_BUFFER_CARBON_TYPE:
+			{
+				// Respect the values we have been given
+				height = buffer->height;
+			} break;
+#endif /* defined (CARBON_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_height.  "
@@ -4834,6 +5225,84 @@ Sets the height of buffer represented by <buffer>.
 
 	return (return_code);
 } /* Graphics_buffer_set_height */
+
+int Graphics_buffer_get_origin_x(struct Graphics_buffer *buffer)
+/*******************************************************************************
+LAST MODIFIED : 16 February 2007
+
+DESCRIPTION :
+Returns the x origin of buffer represented by <buffer>.
+==============================================================================*/
+{
+	int origin_x;
+
+	ENTER(Graphics_buffer_get_origin_x);
+	if (buffer)
+	{
+		switch (buffer->type)
+		{
+#if defined (CARBON_USER_INTERFACE)
+			case GRAPHICS_BUFFER_CARBON_TYPE:
+			{
+				// Respect the values we have been given
+				origin_x = buffer->clip_width - buffer->width;
+			} break;
+#endif /* defined (CARBON_USER_INTERFACE) */
+			default:
+			{
+				origin_x = 0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_buffer_get_origin_x.  Invalid buffer");
+		origin_x = 0;
+	}
+	LEAVE;
+
+	return (origin_x);
+} /* Graphics_buffer_get_origin_x */
+
+int Graphics_buffer_get_origin_y(struct Graphics_buffer *buffer)
+/*******************************************************************************
+LAST MODIFIED : 16 February 2007
+
+DESCRIPTION :
+Returns the y origin of buffer represented by <buffer>.
+==============================================================================*/
+{
+	int origin_y;
+
+	ENTER(Graphics_buffer_get_origin_y);
+	if (buffer)
+	{
+		switch (buffer->type)
+		{
+#if defined (CARBON_USER_INTERFACE)
+			case GRAPHICS_BUFFER_CARBON_TYPE:
+			{
+				// Respect the values we have been given
+				origin_y = buffer->clip_height - buffer->height;
+			} break;
+#endif /* defined (CARBON_USER_INTERFACE) */
+			default:
+			{
+				origin_y = 0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_buffer_get_origin_y.  Invalid buffer");
+	   origin_y = 0;
+	}
+	LEAVE;
+
+	return (origin_y);
+} /* Graphics_buffer_get_origin_y */
 
 int Graphics_buffer_get_border_width(struct Graphics_buffer *buffer)
 /*******************************************************************************
@@ -4984,6 +5453,12 @@ into unmanaged or invisible widgets.
 				return_code = 1;
 			} break;
 #endif /* defined (WX_USER_INTERFACE) */
+#if defined (CARBON_USER_INTERFACE)
+			case GRAPHICS_BUFFER_CARBON_TYPE:
+			{
+				return_code = 1;
+			} break;
+#endif /* defined (CARBON_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_is_visible.  "
@@ -5051,6 +5526,12 @@ Activates the graphics <buffer>.
 				return_code = 1;
 			} break;
 #endif /* defined (WX_USER_INTERFACE) */
+#if defined (CARBON_USER_INTERFACE)
+			case GRAPHICS_BUFFER_CARBON_TYPE:
+			{
+				return_code = 1;
+			} break;
+#endif /* defined (CARBON_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_awaken.  "
@@ -5353,6 +5834,21 @@ x==============================================================================*
 		wglDeleteContext(buffer->hRC);
 		ReleaseDC(buffer->hWnd, buffer->hDC);
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (CARBON_USER_INTERFACE)
+		aglDisable(buffer->aglContext, AGL_BUFFER_RECT);
+		if (buffer->expose_handler_ref)
+		{
+			RemoveEventHandler(buffer->expose_handler_ref);
+		}
+		if (buffer->mouse_handler_ref)
+		{
+			RemoveEventHandler(buffer->mouse_handler_ref);
+		}
+		if (buffer->resize_handler_ref)
+		{
+			RemoveEventHandler(buffer->resize_handler_ref);
+		}
+#endif /* defined (CARBON_USER_INTERFACE) */
 
 		DEALLOCATE(*buffer_ptr);
 		*buffer_ptr = (struct Graphics_buffer *)NULL;

@@ -480,8 +480,17 @@ GL_EXT_texture_object extension.
 			case 3:
 			{
 #if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-				if (Graphics_library_check_extension(GL_VERSION_1_2) ||
-					Graphics_library_check_extension(GL_EXT_texture3D))
+				if (
+#  if defined (GL_VERSION_1_2)
+					Graphics_library_check_extension(GL_VERSION_1_2)
+#    if defined (GL_EXT_texture3D)
+					||
+#    endif /* defined (GL_EXT_texture3D) */
+#  endif /* defined (GL_VERSION_1_2) */
+#  if defined (GL_EXT_texture3D)
+					Graphics_library_check_extension(GL_EXT_texture3D)
+#  endif /* defined (GL_EXT_texture3D) */
+					)
 				{
 					/* Note that while to strictly satisfy the GL_EXT_texture3D 
 						all these uses should have the EXT delimiter the SGI
@@ -588,8 +597,17 @@ The reduction factor applies equally in all texture dimensions.
 			case 3:
 			{
 #if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-				if (Graphics_library_check_extension(GL_VERSION_1_2) ||
-					Graphics_library_check_extension(GL_EXT_texture3D))
+				if (
+#  if defined (GL_VERSION_1_2)
+					Graphics_library_check_extension(GL_VERSION_1_2)
+#    if defined (GL_EXT_texture3D)
+					||
+#    endif /* defined (GL_EXT_texture3D) */
+#  endif /* defined (GL_VERSION_1_2) */
+#  if defined (GL_EXT_texture3D)
+					Graphics_library_check_extension(GL_EXT_texture3D)
+#  endif /* defined (GL_EXT_texture3D) */
+					)
 				{
 					do
 					{
@@ -1045,8 +1063,17 @@ Directly outputs the commands setting up the <texture>.
 			case 3:
 			{
 #if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-				if (Graphics_library_check_extension(GL_VERSION_1_2) ||
-					Graphics_library_check_extension(GL_EXT_texture3D))
+				if (
+#  if defined (GL_VERSION_1_2)
+					Graphics_library_check_extension(GL_VERSION_1_2)
+#    if defined (GL_EXT_texture3D)
+					||
+#    endif /* defined (GL_EXT_texture3D) */
+#  endif /* defined (GL_VERSION_1_2) */
+#  if defined (GL_EXT_texture3D)
+					Graphics_library_check_extension(GL_EXT_texture3D)
+#  endif /* defined (GL_EXT_texture3D) */
+					)
 				{
 					texture_target = GL_TEXTURE_3D;
 				}
@@ -1264,8 +1291,17 @@ Directly outputs the commands setting up the <texture>.
 							case 3:
 							{
 #if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-								if (Graphics_library_check_extension(GL_VERSION_1_2) ||
-									Graphics_library_check_extension(GL_EXT_texture3D))
+								if (
+#  if defined (GL_VERSION_1_2)
+									Graphics_library_check_extension(GL_VERSION_1_2)
+#    if defined (GL_EXT_texture3D)
+									||
+#    endif /* defined (GL_EXT_texture3D) */
+#  endif /* defined (GL_VERSION_1_2) */
+#  if defined (GL_EXT_texture3D)
+									Graphics_library_check_extension(GL_EXT_texture3D)
+#  endif /* defined (GL_EXT_texture3D) */
+									)
 								{
 									if (reduced_image)
 									{
@@ -4714,8 +4750,17 @@ Writes the properties of the <texture> to the command window.
 				case 3:
 				{
 #if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-					if (Graphics_library_check_extension(GL_VERSION_1_2) ||
-						Graphics_library_check_extension(GL_EXT_texture3D))
+					if (
+#  if defined (GL_VERSION_1_2)
+						Graphics_library_check_extension(GL_VERSION_1_2)
+#    if defined (GL_EXT_texture3D)
+						||
+#    endif /* defined (GL_EXT_texture3D) */
+#  endif /* defined (GL_VERSION_1_2) */
+#  if defined (GL_EXT_texture3D)
+						Graphics_library_check_extension(GL_EXT_texture3D)
+#  endif /* defined (GL_EXT_texture3D) */
+						)
 					{
 						texture_target = GL_TEXTURE_3D;
 					}
@@ -4867,7 +4912,7 @@ execute_Texture should just call direct_render_Texture.
 #if defined (OPENGL_API)
 	GLboolean resident;
 	GLenum texture_target;
-	unsigned int old_texture_id;
+	GLuint old_texture_id;
 #endif /* defined (OPENGL_API) */
 
 	ENTER(compile_Texture);
@@ -4898,8 +4943,17 @@ execute_Texture should just call direct_render_Texture.
 				case 3:
 				{
 #if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-					if (Graphics_library_check_extension(GL_VERSION_1_2) ||
-						Graphics_library_check_extension(GL_EXT_texture3D))
+					if (
+#  if defined (GL_VERSION_1_2)
+						Graphics_library_check_extension(GL_VERSION_1_2)
+#    if defined (GL_EXT_texture3D)
+						||
+#    endif /* defined (GL_EXT_texture3D) */
+#  endif /* defined (GL_VERSION_1_2) */
+#  if defined (GL_EXT_texture3D)
+						Graphics_library_check_extension(GL_EXT_texture3D)
+#  endif /* defined (GL_EXT_texture3D) */
+						)
 					{
 						texture_target = GL_TEXTURE_3D;
 					}
@@ -5161,8 +5215,17 @@ direct_render_Texture.
 		glDisable(GL_TEXTURE_1D);
 		glDisable(GL_TEXTURE_2D);
 #if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-		if (Graphics_library_check_extension(GL_VERSION_1_2) ||
-			Graphics_library_check_extension(GL_EXT_texture3D))
+		if (
+#  if defined (GL_VERSION_1_2)
+			Graphics_library_check_extension(GL_VERSION_1_2)
+#    if defined (GL_EXT_texture3D)
+			||
+#    endif /* defined (GL_EXT_texture3D) */
+#  endif /* defined (GL_VERSION_1_2) */
+#  if defined (GL_EXT_texture3D)
+			Graphics_library_check_extension(GL_EXT_texture3D)
+#  endif /* defined (GL_EXT_texture3D) */
+			)
 		{
 			glDisable(GL_TEXTURE_3D);
 		}

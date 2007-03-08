@@ -60,6 +60,9 @@ Function definitions for the user interface.
 #if defined (GTK_USER_INTERFACE)
 #include <gtk/gtk.h>
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (CARBON_USER_INTERFACE)
+#include <carbon/carbon.h>
+#endif /* defined (CARBON_USER_INTERFACE) */
 #include "general/machine.h"
 
 /*

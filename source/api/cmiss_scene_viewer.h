@@ -48,6 +48,9 @@ scenes.
 #if defined (GTK_USER_INTERFACE)
 #include <gtk/gtk.h>
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (CARBON_USER_INTERFACE)
+#include <carbon/carbon.h>
+#endif /* defined (CARBON_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -210,6 +213,28 @@ chosen.
 ==============================================================================*/
 #endif /* defined (GTK_USER_INTERFACE) */
 
+#if defined (CARBON_USER_INTERFACE)
+Cmiss_scene_viewer_id create_Cmiss_scene_viewer_Carbon(
+	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
+	CGrafPtr port, int port_x, int port_y,
+	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
+	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
+	int minimum_accumulation_buffer_depth);
+/*******************************************************************************
+LAST MODIFIED : 27 November 2006
+
+DESCRIPTION :
+Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified 
+<port> window handle.
+If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or 
+<minimum_accumulation_buffer_depth> are not zero then they are used to filter
+out the possible visuals selected for graphics_buffers.  If they are zero then 
+the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
+chosen.
+==============================================================================*/
+#endif /* defined (CARBON_USER_INTERFACE) */
+
 #if defined (WIN32_USER_INTERFACE)
 Cmiss_scene_viewer_id create_Cmiss_scene_viewer_win32(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
@@ -261,6 +286,19 @@ LAST MODIFIED : 10 September 2002
 DESCRIPTION :
 Closes the scene_viewer.
 ==============================================================================*/
+
+#if defined (CARBON_USER_INTERFACE)
+int Cmiss_scene_viewer_carbon_set_window_size(Cmiss_scene_viewer_id scene_viewer,
+	int width, int height, int portx, int porty, int clip_width, int clip_height);
+/*******************************************************************************
+LAST MODIFIED : 16 February 2007
+
+DESCRIPTION :
+Sets the coordinates within the graphics port which the scene_viewer should
+respect.
+==============================================================================*/
+
+#endif /* defined (CARBON_USER_INTERFACE) */
 
 int Cmiss_scene_viewer_get_interact_mode(Cmiss_scene_viewer_id scene_viewer,
  enum Cmiss_scene_viewer_interact_mode *interact_mode);

@@ -46,15 +46,13 @@ Spectrum functions and support code.
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#if defined (OPENGL_API)
-#include <GL/glu.h>
-#endif /* defined (OPENGL_API) */
 #include "command/parser.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/manager_private.h"
 #include "general/object.h"
 #include "general/mystring.h"
+#include "graphics/graphics_library.h"
 #include "graphics/material.h"
 #include "graphics/spectrum_settings.h"
 #include "graphics/spectrum.h"

@@ -90,8 +90,12 @@ variable.
 ==============================================================================*/
 {
 	struct Scene_viewer *scene_viewer;
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 	struct Graphics_window *window;
 	struct MANAGER(Graphics_window) *graphics_window_manager;
+#else
+	USE_PARAMETER(pane_number);
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 
 	ENTER(Cmiss_command_data_get_graphics_window_pane_by_name);
 	if (command_data && name)

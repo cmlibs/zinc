@@ -97,8 +97,8 @@ DESCRIPTION :
 The private user data for this order independent transparency rendering pass.
 ==============================================================================*/
 {
-	unsigned int ztex_texture_id;
-	unsigned int *rgba_layer_texture_id;
+	GLuint ztex_texture_id;
+	GLuint *rgba_layer_texture_id;
 
 	int viewport_width;
 	int viewport_height;
@@ -494,7 +494,7 @@ Returns true if the current display is capable of order independent transparency
 ==============================================================================*/
 {
 #if defined (ORDER_INDEPENDENT_CAPABLE)
-	int alpha_bits, depth_bits;
+	GLint alpha_bits, depth_bits;
 #endif /* defined (ORDER_INDEPENDENT_CAPABLE) */
 	int return_code;
 	unsigned int i;
@@ -557,7 +557,8 @@ Initialises the order independent transparency extension.
 ==============================================================================*/
 {
 #if defined (ORDER_INDEPENDENT_CAPABLE)
-	int alpha_bits, depth_bits, return_code;
+	GLint alpha_bits, depth_bits;
+	int return_code;
 #endif /* defined (ORDER_INDEPENDENT_CAPABLE) */
 	struct Scene_viewer_order_independent_transparency_data *data;
 
@@ -570,7 +571,7 @@ Initialises the order independent transparency extension.
 		return_code = 1;
 
 		data->ztex_texture_id = 0;
-		data->rgba_layer_texture_id = (unsigned int *)NULL;
+		data->rgba_layer_texture_id = (GLuint *)NULL;
 
 		data->viewport_width = 0;
 		data->viewport_height = 0;
@@ -691,7 +692,7 @@ Initialises per rendering parts of this extension.
 			(layers > data->maximum_number_of_layers)))
 		{
 			if (REALLOCATE(data->rgba_layer_texture_id, data->rgba_layer_texture_id,
-				unsigned int, layers))
+				GLuint, layers))
 			{
 				for (i = data->maximum_number_of_layers ; i < layers ; i++)
 				{

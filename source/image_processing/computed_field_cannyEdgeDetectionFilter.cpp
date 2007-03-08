@@ -139,8 +139,8 @@ and generate the outputImage.
 		typename FilterType::Pointer filter = FilterType::New();
 		
 		return_code = canny_edge_detection_image_filter->update_output_image
-			< ImageType, FilterType >
-			(location, filter, this->outputImage);
+			(location, filter, this->outputImage,
+			static_cast<ImageType*>(NULL), static_cast<FilterType*>(NULL));
 		
 		return (return_code);
 	} /* set_filter */

@@ -415,7 +415,7 @@ ifeq ($(SYSNAME),Darwin)
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
       COMPILE_FLAGS = -fPIC
       STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-long-double -Werror
-      CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
+      CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Wno-long-double -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
    endif # DEBUG != true

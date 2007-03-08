@@ -97,6 +97,9 @@ extern "C" {
 #include <wx/wx.h>
 #include <wx/xrc/xmlres.h>
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (CARBON_USER_INTERFACE)
+#include <carbon/carbon.h>
+#endif /* defined (CARBON_USER_INTERFACE) */
 extern "C" {
 #include "user_interface/event_dispatcher.h"
 #include "user_interface/message.h"
@@ -1010,6 +1013,16 @@ devices, and then resets the timeout.
 } /* process_cmiss_link */
 #endif /* defined (MOTIF) */
 #endif /* defined (LINK_CMISS) */
+
+#if defined (CARBON_USER_INTERFACE)
+static OSStatus User_interface_carbon_application_event_handler(
+	EventHandlerCallRef handler, EventRef event, void* userData)
+{
+    OSStatus result = eventNotHandledErr;
+
+    return result;
+}
+#endif /* defined (CARBON_USER_INTERFACE) */
 
 /*
 Global functions
@@ -1968,7 +1981,24 @@ Open the <user_interface>.
 #endif /* ! defined (USE_GTK_MAIN_STEP) */
 #endif /* defined (GTK_USER_INTERFACE) */
 
+#if defined (CARBON_USER_INTERFACE)
+        EventTypeSpec event_type;
+        OSStatus error = noErr;
+        EventHandlerUPP appCommandProcess;
 
+        if(appCommandProcess = NewEventHandlerUPP(
+				  User_interface_carbon_application_event_handler))
+		  {
+            event_type.eventClass = kEventClassCommand;
+            event_type.eventKind = kEventCommandProcess;
+            InstallApplicationEventHandler(appCommandProcess, 1, 
+					&event_type, NULL, NULL);
+        }
+		  else
+		  {
+            error = memFullErr;
+		  }
+#endif /* defined (CARBON_USER_INTERFACE) */
 	}
 	else
 	{

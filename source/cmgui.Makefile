@@ -50,7 +50,7 @@ LINK_CMISS = false
 PERL_INTERPRETER = true
 IMAGEMAGICK = true
 USE_XML2 = true
-ifneq ($(filter linux aix win32 irix,$(OPERATING_SYSTEM)),)
+ifneq ($(filter linux aix win32 irix darwin,$(OPERATING_SYSTEM)),)
   ifneq ($(GRAPHICS_API),NO3D_GRAPHICS)
     USE_ITK = true
   else
@@ -208,7 +208,6 @@ ifeq ($(SYSNAME),Darwin)
    PLATFORM_DEFINES =  -DCMGUI 
    OPERATING_SYSTEM_DEFINES = -DUNIX -DDARWIN
 endif # SYSNAME == Darwin
-
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    USER_INTERFACE_DEFINES = -DMOTIF
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE

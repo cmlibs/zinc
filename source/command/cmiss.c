@@ -10655,7 +10655,7 @@ Executes a GFX ELEMENT_CREATOR command.
 } /* execute_command_gfx_element_creator */
 #endif /* defined (MOTIF) */
 
-#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
 static int execute_command_gfx_element_point_tool(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -10743,9 +10743,9 @@ Executes a GFX ELEMENT_POINT_TOOL command.
 
 	return (return_code);
 } /* execute_command_gfx_element_point_tool */
-#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
 
-#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
 static int execute_command_gfx_element_tool(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -10855,7 +10855,7 @@ Executes a GFX ELEMENT_TOOL command.
 
 	return (return_code);
 } /* execute_command_gfx_element_tool */
-#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */ 
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */ 
 
 static int execute_command_gfx_erase(struct Parse_state *state,
 	void *dummy_to_be_modified, void *command_data_void)
@@ -15535,7 +15535,7 @@ movie is being created.
 #endif /* defined (MOTIF) */
 #endif /* defined (SGI_MOVIE_FILE) */
 
-#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
 static int execute_command_gfx_node_tool(struct Parse_state *state,
 	void *data_tool_flag, void *command_data_void)
 /*******************************************************************************
@@ -15710,7 +15710,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 
 	return (return_code);
 } /* execute_command_gfx_node_tool */
-#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)*/
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
 
 #if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 static int execute_command_gfx_print(struct Parse_state *state,
@@ -19334,12 +19334,12 @@ Executes a GFX command.
 			Option_table_add_entry(option_table, "element_creator", NULL,
 				command_data_void, execute_command_gfx_element_creator);
 #endif /* defined (MOTIF) */
-#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
 			Option_table_add_entry(option_table, "element_point_tool", NULL,
 				command_data_void, execute_command_gfx_element_point_tool);
 			Option_table_add_entry(option_table, "element_tool", NULL,
 				command_data_void, execute_command_gfx_element_tool);
-#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
 			Option_table_add_entry(option_table, "erase", NULL,
 				command_data_void, execute_command_gfx_erase);
 			Option_table_add_entry(option_table, "evaluate", NULL,
@@ -19358,10 +19358,10 @@ Executes a GFX command.
 			Option_table_add_entry(option_table, "movie", NULL,
 				command_data_void, gfx_movie);
 #endif /* defined (SGI_MOVIE_FILE) */
-#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
 			Option_table_add_entry(option_table, "node_tool", /*data_tool*/(void *)0,
 				command_data_void, execute_command_gfx_node_tool);
-#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
 #if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 			Option_table_add_entry(option_table, "print", NULL,
 				command_data_void, execute_command_gfx_print);
@@ -24558,6 +24558,8 @@ Returns the graphics_window manager from the <command_data>.
 	{
 		graphics_window_manager = command_data->graphics_window_manager;
 	}
+#else /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
+	USE_PARAMETER(command_data);
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 	LEAVE;
 

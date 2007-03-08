@@ -57,6 +57,7 @@ Functions and structures for interfacing with the graphics library.
 #if defined (OPENGL_API)
 #define GL_GLEXT_PROTOTYPES
 #define GLX_GLXEXT_PROTOTYPES
+#if ! defined (CARBON_USER_INTERFACE)
 #include <GL/gl.h>
 #include <GL/glu.h>
 #if defined (WIN32_SYSTEM)
@@ -64,7 +65,13 @@ Functions and structures for interfacing with the graphics library.
 #undef GL_NV_vertex_program
 #undef GL_NV_register_combiners2
 #endif /* defined (WIN32_SYSTEM) */
-#endif
+#else /* ! defined (CARBON_USER_INTERFACE) */
+#include <OpenGL/gl.h>
+#include <AGL/agl.h>
+#include <OpenGL/glu.h>
+#include <OpenGL/glext.h>
+#endif /* ! defined (CARBON_USER_INTERFACE) */
+#endif /* defined (OPENGL_API) */
 #include "graphics/texture.h"
 #if defined (GTK_USER_INTERFACE)
 #if defined (UNIX)

@@ -104,7 +104,7 @@ Stores one group of settings for a single part of a spectrum rendition.
 
 #if defined (OPENGL_API)
 	/* Texture number for banded and step spectrums */
-	unsigned int texture_id;
+	GLuint texture_id;
 #endif /* defined (OPENGL_API) */
 	 
 	/* For accessing objects */

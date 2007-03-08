@@ -248,8 +248,9 @@ and generate the outputImage.
 		filter->SetConductanceParameter( curvature_anisotropic_diffusion_image_filter->conductance );
 		filter->SetNumberOfIterations( curvature_anisotropic_diffusion_image_filter->numIterations);
 		
-		return_code = curvature_anisotropic_diffusion_image_filter->update_output_image< ImageType, FilterType >
-			(location, filter, this->outputImage);
+		return_code = curvature_anisotropic_diffusion_image_filter->update_output_image
+			(location, filter, this->outputImage,
+			static_cast<ImageType*>(NULL), static_cast<FilterType*>(NULL));
 		
 		return (return_code);
 	} /* set_filter */

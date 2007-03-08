@@ -268,7 +268,7 @@ struct Graphics_buffer *create_Graphics_buffer_Carbon(
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
-	int min imum_accumulation_buffer_depth);
+	int minimum_accumulation_buffer_depth);
 /*******************************************************************************
 LAST MODIFIED : 21 November 2006
 
@@ -380,6 +380,22 @@ LAST MODIFIED : 1 July 2002
 
 DESCRIPTION :
 Sets the height of buffer represented by <buffer>.
+==============================================================================*/
+
+int Graphics_buffer_get_origin_x(struct Graphics_buffer *buffer);
+/*******************************************************************************
+LAST MODIFIED : 16 February 2007
+
+DESCRIPTION :
+Returns the x origin of buffer represented by <buffer>.
+==============================================================================*/
+
+int Graphics_buffer_get_origin_y(struct Graphics_buffer *buffer);
+/*******************************************************************************
+LAST MODIFIED : 16 February 2007
+
+DESCRIPTION :
+Gets the y origin of buffer represented by <buffer>.
 ==============================================================================*/
 
 int Graphics_buffer_get_border_width(struct Graphics_buffer *buffer);
@@ -516,3 +532,15 @@ a Graphics_buffer.
 ==============================================================================*/
 #endif /* defined (MOTIF) */
 #endif /* !defined (GRAPHICS_BUFFER_H) */
+
+#if defined (CARBON_USER_INTERFACE)
+int Graphics_buffer_carbon_set_window_size(struct Graphics_buffer *graphics_buffer,
+	int width, int height, int portx, int porty, int clip_width, int clip_height);
+/*******************************************************************************
+LAST MODIFIED : 16 February 2007
+
+DESCRIPTION :
+Sets the coordinates within the graphics port which the graphics_buffer should
+respect.
+==============================================================================*/
+#endif /* defined (CARBON_USER_INTERFACE) */

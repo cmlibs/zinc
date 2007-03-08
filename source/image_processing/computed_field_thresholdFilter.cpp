@@ -252,8 +252,9 @@ and generate the outputImage.
 			}
 		
 			return_code = threshold_image_filter->update_output_image
-				< ImageType, FilterType >
-				(location, filter, this->outputImage);
+				(location, filter, this->outputImage,
+				 static_cast<ImageType*>(NULL),
+				 static_cast<FilterType*>(NULL));
 		
 			return (return_code);
 		} /* set_filter */

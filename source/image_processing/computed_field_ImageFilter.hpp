@@ -152,11 +152,12 @@ public:
 	template <class ImageType, class FilterType >
 	int update_output_image(Field_location* location, 
 		typename FilterType::Pointer filter,
-		typename ImageType::Pointer &outputImage);
+		typename ImageType::Pointer &outputImage,
+		ImageType *dummytemplarg1, FilterType *dummytemplarg2);
 
 	template <class ImageType >
 	int evaluate_output_image(Field_location* location,
-		typename ImageType::Pointer &outputImage);
+		typename ImageType::Pointer &outputImage, ImageType *dummytemplarg);
 
 };
 
@@ -771,7 +772,8 @@ Evaluate the fields cache at the location \
 
 template <class ImageType, class FilterType >
 int Computed_field_ImageFilter::update_output_image(Field_location* location, 
-	typename FilterType::Pointer filter, typename ImageType::Pointer &outputImage)
+	typename FilterType::Pointer filter, typename ImageType::Pointer &outputImage,
+	ImageType *dummytemplarg1, FilterType *dummytemplarg2)
 /*******************************************************************************
 LAST MODIFIED : 4 September 2006
 
@@ -913,7 +915,7 @@ inline void Computed_field_ImageFilter::assign_field_values( itk::Vector< float,
 
 template <class ImageType >
 int Computed_field_ImageFilter::evaluate_output_image(Field_location* location,
-	typename ImageType::Pointer &outputImage)
+	typename ImageType::Pointer &outputImage, ImageType *dummytemplarg)
 /*******************************************************************************
 LAST MODIFIED : 4 September 2006
 
@@ -997,14 +999,16 @@ location.
 		{
 			if (return_code = set_filter(location))
 			{
-				return_code = image_filter->evaluate_output_image< ImageType >
-					(location, outputImage);
+				return_code = image_filter->evaluate_output_image
+					(location, outputImage,
+					 static_cast<ImageType*>(NULL));
 			}
 		}
 		else
 		{
-			return_code = image_filter->evaluate_output_image< ImageType >
-				(location, outputImage);
+			return_code = image_filter->evaluate_output_image
+				(location, outputImage,
+				 static_cast<ImageType*>(NULL));
 		}
 		return(return_code);
 	}

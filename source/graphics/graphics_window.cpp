@@ -3858,6 +3858,128 @@ it.
 				DESTROY(Graphics_window)(&window);
 				window = (struct Graphics_window *)NULL;
 			}
+#elif defined (CARBON_USER_INTERFACE) /* switch (USER_INTERFACE) */
+			USE_PARAMETER(graphics_buffer);
+			USE_PARAMETER(pane_no);
+			USE_PARAMETER(minimum_colour_buffer_depth);
+			USE_PARAMETER(minimum_depth_buffer_depth);
+ 			USE_PARAMETER(minimum_accumulation_buffer_depth);
+ 			USE_PARAMETER(Graphics_window_Scene_viewer_view_changed);
+
+			WindowRef carbon_window;
+			WindowAttributes  window_attributes;
+			Rect content_rectangle;
+			CFStringRef title_key;
+			CFStringRef carbon_window_title;
+			OSStatus result; 
+
+			window_attributes = kWindowResizableAttribute
+				| kWindowLiveResizeAttribute
+				| kWindowCloseBoxAttribute
+				| kWindowLiveResizeAttribute
+				| kWindowStandardHandlerAttribute
+				| kWindowStandardDocumentAttributes
+				| kWindowFullZoomAttribute;
+
+			content_rectangle.left = 10;
+			content_rectangle.top = 10;
+			content_rectangle.right = 500;
+			content_rectangle.bottom = 500;
+
+			CreateNewWindow (kDocumentWindowClass, window_attributes,
+				&content_rectangle, &carbon_window);
+
+			title_key = CFStringCreateWithCString (
+				kCFAllocatorDefault, window_title,
+				kCFStringEncodingMacRoman);
+			
+			carbon_window_title = CFCopyLocalizedString(title_key, NULL);
+
+			result = SetWindowTitleWithCFString (carbon_window, carbon_window_title);
+
+			CFRelease (title_key);
+			
+			CFRelease (carbon_window_title);
+
+			Rect portRect;
+
+			GetPortBounds(GetWindowPort(carbon_window), &portRect);
+
+
+			if (graphics_buffer = create_Graphics_buffer_Carbon(
+					 graphics_buffer_package,
+					 GetWindowPort(carbon_window), portRect.left, portRect.bottom,
+					 graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
+					 minimum_colour_buffer_depth, minimum_depth_buffer_depth,
+					 minimum_accumulation_buffer_depth))
+			{
+						/* create one Scene_viewers */
+						window->number_of_scene_viewers = 1;
+						if (ALLOCATE(window->scene_viewer_array,
+							struct Scene_viewer *,
+							window->number_of_scene_viewers))
+						{
+							pane_no = 0;
+							if (window->scene_viewer_array[pane_no] = 
+								 CREATE(Scene_viewer)(graphics_buffer,
+								 background_colour, light_manager,default_light,
+								 light_model_manager,default_light_model,
+								 scene_manager, window->scene,
+								 texture_manager, user_interface))
+							{
+								Scene_viewer_set_interactive_tool(
+									window->scene_viewer_array[pane_no],
+									window->interactive_tool);
+								/* get scene_viewer transform callbacks to allow
+									synchronising of views in multiple panes */
+								Scene_viewer_add_sync_callback(
+									window->scene_viewer_array[pane_no],
+									Graphics_window_Scene_viewer_view_changed,
+									window);
+								Scene_viewer_set_translation_rate(
+									window->scene_viewer_array[pane_no], 2.0);
+								Scene_viewer_set_tumble_rate(
+									window->scene_viewer_array[pane_no], 1.5);
+								Scene_viewer_set_zoom_rate(
+									window->scene_viewer_array[pane_no], 2.0);
+
+								/* set the initial layout */
+								Graphics_window_set_layout_mode(window,
+									GRAPHICS_WINDOW_LAYOUT_SIMPLE);
+								/* give the window its default size */
+								Graphics_window_set_viewing_area_size(window,
+									window->default_viewing_width,
+									window->default_viewing_height);
+								/* initial view is of all of the current scene */
+								Graphics_window_view_all(window);
+
+								return_code = 1;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"CREATE(Graphics_window).  "
+									"Could not create scene_viewer.");
+								DESTROY(Graphics_window)(&window);
+								window = (struct Graphics_window *)NULL;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"CREATE(Graphics_window).  "
+								"Could not allocate memory for scene viewer array.");
+							DESTROY(Graphics_window)(&window);
+							window = (struct Graphics_window *)NULL;
+						}
+			}
+			
+			
+			
+			RepositionWindow (carbon_window, NULL, kWindowCascadeOnMainScreen); 
+
+			ShowWindow (carbon_window); 
+
 #endif /* switch (USER_INTERFACE) */
 		}
 		else

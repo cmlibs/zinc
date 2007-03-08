@@ -188,8 +188,8 @@ and generate the outputImage.
 		filter->SetSeed(seedIndex);
 		
 		return_code = connected_threshold_image_filter->update_output_image
-			< ImageType, FilterType >
-			(location, filter, this->outputImage);
+			(location, filter, this->outputImage,
+			static_cast<ImageType*>(NULL), static_cast<FilterType*>(NULL));
 		
 		return (return_code);
 	} /* set_filter */

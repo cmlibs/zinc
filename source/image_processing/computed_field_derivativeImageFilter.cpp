@@ -240,8 +240,9 @@ and generate the outputImage.
 		filter->SetOrder( derivative_image_filter->order );
 		filter->SetDirection( derivative_image_filter->direction );
 		
-		return_code = derivative_image_filter->update_output_image< ImageType, FilterType >
-			(location, filter, this->outputImage);
+		return_code = derivative_image_filter->update_output_image
+			(location, filter, this->outputImage,
+			static_cast<ImageType*>(NULL), static_cast<FilterType*>(NULL));
 		
 		return (return_code);
 	} /* set_filter */

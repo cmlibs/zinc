@@ -132,6 +132,7 @@ and the functions given their public names.
 #define Scene_viewer_set_overlay_scene_by_name Cmiss_scene_viewer_set_overlay_scene_by_name
 #define Scene_viewer_set_background_texture_by_name Cmiss_scene_viewer_set_background_texture_by_name
 #define Scene_viewer_set_interactive_tool_by_name Cmiss_scene_viewer_set_interactive_tool_by_name
+#define Scene_viewer_carbon_set_window_size Cmiss_scene_viewer_carbon_set_window_size
 
 /*
 Global types
@@ -1537,4 +1538,16 @@ LAST MODIFIED : 12 May 2004
 DESCRIPTION :
 Gets the <graphics_buffer> used for 3D graphics in the scene_viewer.
 ==============================================================================*/
+
+#if defined (CARBON_USER_INTERFACE)
+int Scene_viewer_carbon_set_window_size(struct Scene_viewer *scene_viewer,
+	int width, int height, int portx, int porty, int clip_width, int clip_height);
+/*******************************************************************************
+LAST MODIFIED : 16 February 2007
+
+DESCRIPTION :
+Sets the coordinates within the graphics port which the scene_viewer should
+respect.
+==============================================================================*/
+#endif /* defined (CARBON_USER_INTERFACE) */
 #endif /* !defined (SCENE_VIEWER_H) */

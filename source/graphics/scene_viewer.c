@@ -315,7 +315,7 @@ rendering functions.
 		the scene is being rendered offscreen */
 	int rendering_double_buffered;
 	/* Stencil buffer depth */
-	int stencil_depth;
+	GLint stencil_depth;
 }; /* struct Scene_viewer_rendering_data */
 
 struct Scene_viewer_render_object;
@@ -2402,8 +2402,8 @@ access this function.
 		return_code=1;
 		if ((!left) && (!bottom) && (!right) && (!top))
 		{
-			rendering_data.viewport_left = 0;
-			rendering_data.viewport_bottom = 0;
+			rendering_data.viewport_left = Graphics_buffer_get_origin_x(scene_viewer->graphics_buffer);
+			rendering_data.viewport_bottom = Graphics_buffer_get_origin_y(scene_viewer->graphics_buffer);
 			rendering_data.viewport_width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
 			rendering_data.viewport_height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
 		}
@@ -2414,6 +2414,13 @@ access this function.
 			rendering_data.viewport_width = right - left;
 			rendering_data.viewport_height = top - bottom;
 		}
+
+#if defined (DEBUG)
+		printf ("Viewport data %d,%d %d,%d\n",
+			rendering_data.viewport_left, rendering_data.viewport_bottom,
+			rendering_data.viewport_width, rendering_data.viewport_height);
+#endif /* defined (DEBUG) */
+
 
 		rendering_data.scene_viewer = scene_viewer;
 		rendering_data.render_callstack = 
@@ -8986,3 +8993,34 @@ Gets the <graphics_buffer> used for 3D graphics in the scene_viewer.
 
 	return (graphics_buffer);
 } /* Scene_viewer_get_graphics_buffer */
+
+#if defined (CARBON_USER_INTERFACE)
+int Scene_viewer_carbon_set_window_size(struct Scene_viewer *scene_viewer,
+	int width, int height, int portx, int porty, int clip_width, int clip_height)
+/*******************************************************************************
+LAST MODIFIED : 16 February 2007
+
+DESCRIPTION :
+Sets the coordinates within the graphics port which the scene_viewer should
+respect.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_scene_viewer_get_near_and_far_plane);
+	if (scene_viewer)
+	{
+		return_code = Graphics_buffer_carbon_set_window_size(scene_viewer->graphics_buffer,
+			width, height, portx, porty, clip_width, clip_height);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_carbon_set_window_size.  "
+			"Missing scene_viewer parameter.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_scene_viewer_carbon_set_window_size */
+#endif /* defined (CARBON_USER_INTERFACE) */
