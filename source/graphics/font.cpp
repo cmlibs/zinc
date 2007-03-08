@@ -56,6 +56,14 @@ extern "C" {
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
 #include <gtk/gtk.h>
+#if ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)
+#define GTK_USE_GTKGLAREA
+#endif /* ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)*/
+#if defined (GTK_USE_GTKGLAREA)
+#include <gtkgl/gtkglarea.h>
+#else /* defined (GTK_USE_GTKGLAREA) */
+#include <gtk/gtkgl.h>
+#endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
