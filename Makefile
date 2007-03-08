@@ -193,7 +193,11 @@ ifeq ($(SYSNAME),CYGWIN%=)
 all :
 endif # SYSNAME == CYGWIN%=
 ifeq ($(SYSNAME),Darwin)
-all : cmgui cmgui-debug cmgui-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib
+   ifeq ($(MACHNAME),i386)
+      all :
+   else # MACHNAME == i386
+      all : cmgui cmgui-debug cmgui-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib
+   endif # MACHNAME == i386
 endif # SYSNAME == Darwin
 
 #Update whereever possible first (svn not available on our IRIX,
