@@ -1044,6 +1044,7 @@ endif
 IMAGE_PROCESSING_SRCS =
 ifeq ($(USE_ITK),true)
    IMAGE_PROCESSING_SRCS += \
+	   image_processing/computed_field_image_resample.cpp \
 	   image_processing/computed_field_thresholdFilter.cpp \
 	   image_processing/computed_field_binaryThresholdFilter.cpp \
 	   image_processing/computed_field_cannyEdgeDetectionFilter.cpp \

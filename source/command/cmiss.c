@@ -164,6 +164,7 @@ Functions for executing cmiss commands.
 #include "gtk/gtk_cmiss_scene_viewer.h"
 #endif /* defined (GTK_USER_INTERFACE) */
 #include "help/help_interface.h"
+#include "image_processing/computed_field_image_resample.h"
 #if defined (USE_ITK)
 #include "image_processing/computed_field_thresholdFilter.h"
 #include "image_processing/computed_field_binaryThresholdFilter.h"
@@ -5996,22 +5997,85 @@ value searches just elements of that dimension.
 		texture_width;
 	int bytes_per_pixel, i, image_width_bytes, j, k,
 		number_of_bytes_per_component, number_of_components,
-		number_of_data_components, return_code, tex_number_of_components;
+		number_of_data_components, return_code, source_dimension,
+		*source_sizes, tex_number_of_components;
 	unsigned long field_evaluate_error_count, find_element_xi_error_count,
 		spectrum_render_error_count, total_number_of_pixels;
 	struct Colour fail_colour;
+	struct Computed_field *source_texture_coordinate_field;
 	struct Computed_field_find_element_xi_cache *cache;
 	struct FE_element *element;
 
 	ENTER(set_Texture_image_from_field);
-	if (texture && field && texture_coordinate_field && spectrum && region &&
+	if (texture && field && spectrum && region &&
 		(4 >= (number_of_components =
-			Texture_storage_type_get_number_of_components(storage))) &&
-		(3 >= (tex_number_of_components =
-			Computed_field_get_number_of_components(texture_coordinate_field))) &&
-		(0 < image_width) && (0 < image_height) && (0 < image_depth))
+			Texture_storage_type_get_number_of_components(storage))))
 	{
-		return_code = 1;
+		/* Setup sizes */
+		if (Computed_field_get_native_resolution(
+				 field, &source_dimension, &source_sizes, &source_texture_coordinate_field))
+		{
+			if (!texture_coordinate_field)
+			{
+				texture_coordinate_field = 
+					source_texture_coordinate_field;
+			}
+			if (image_width == 0)
+			{
+				if (source_dimension > 0)
+				{
+					image_width = source_sizes[0];
+				}
+				else
+				{
+					image_width = 1;
+				}
+			}
+			if (image_height == 0)
+			{
+				if (source_dimension > 1)
+				{
+					image_height = source_sizes[1];
+				}
+				else
+				{
+					image_height = 1;
+				}
+			}
+			if (image_depth == 0)
+			{
+				if (source_dimension > 2)
+				{
+					image_depth = source_sizes[2];
+				}
+				else
+				{
+					image_depth = 1;
+				}
+			}
+			DEALLOCATE(source_sizes);
+		}
+		if (texture_coordinate_field &&
+			(3 >= (tex_number_of_components =
+			Computed_field_get_number_of_components(texture_coordinate_field))))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"set_Texture_image_from_field.  Invalid texture_coordinate field.");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_Texture_image_from_field.  Invalid argument(s)");
+		return_code = 0;
+	}
+	if (return_code)
+	{
 		number_of_bytes_per_component = 1;
 		/* allocate the texture image */
 		field_name = (char *)NULL;
@@ -6242,12 +6306,6 @@ value searches just elements of that dimension.
 			return_code = 0;
 		}
 		DEALLOCATE(field_name);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_Texture_image_from_field.  Invalid argument(s)");
-		return_code = 0;
 	}
 	LEAVE;
 
@@ -7093,18 +7151,6 @@ Modifies the properties of a texture.
 							evaluate_data.field && evaluate_data.spectrum && 
 							evaluate_data.texture_coordinates_field)
 						{
-							if (0 == specify_width)
-							{
-								specify_width = 1;
-							}
-							if (0 == specify_height)
-							{
-								specify_height = 1;
-							}
-							if (0 == specify_depth)
-							{
-								specify_depth = 1;
-							}
 							set_Texture_image_from_field(texture, 
 								evaluate_data.field,
 								evaluate_data.texture_coordinates_field,
@@ -23480,6 +23526,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			Computed_field_register_types_string_constant(
 				command_data->computed_field_package);
 
+			Computed_field_register_types_image_resample(
+				command_data->computed_field_package);
 #if defined (USE_ITK)
 			Computed_field_register_types_threshold_image_filter(
 				command_data->computed_field_package);
