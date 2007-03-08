@@ -194,9 +194,9 @@ all :
 endif # SYSNAME == CYGWIN%=
 ifeq ($(SYSNAME),Darwin)
    ifeq ($(MACHNAME),i386)
-      all :
+      all : cmgui-carbon cmgui-carbon-debug cmgui-carbon-debug-static-lib
    else # MACHNAME == i386
-      all : cmgui cmgui-debug cmgui-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib
+      all : cmgui cmgui-debug cmgui-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui-carbon cmgui-carbon-debug cmgui-carbon-debug-static-lib
    endif # MACHNAME == i386
 endif # SYSNAME == Darwin
 
