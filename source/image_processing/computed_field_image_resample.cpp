@@ -522,7 +522,7 @@ already) and allows its contents to be modified.
 		if (return_code)
 		{
 			return_code = Computed_field_get_native_resolution(
-				field->source_fields[0], &dimension, &sizes, &texture_coordinate_field);
+				source_field, &dimension, &sizes, &texture_coordinate_field);
 			if (original_sizes && (original_dimension == dimension))
 			{
 				DEALLOCATE(sizes);
@@ -559,6 +559,7 @@ already) and allows its contents to be modified.
 				DEACCESS(Computed_field)(&source_field);
 			}
 			DESTROY(Option_table)(&option_table);
+			DEALLOCATE(sizes);
 		}
 	}
 	else
