@@ -3562,11 +3562,11 @@ Now prints current contents of the vector with help.
 			return_code=0;
 		}
 	}
-		else
-		{
-			display_message(ERROR_MESSAGE,"set_int_vector.  Invalid argument(s)");
-			return_code=0;
-		}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_int_vector.  Invalid argument(s)");
+		return_code=0;
+	}
 	LEAVE;
 
 	return (return_code);
@@ -4482,17 +4482,17 @@ Now prints current contents of the vector with help.
 	int comp_no,number_of_components,return_code;
 
 	ENTER(set_double_vector);
-	if (state)
-	{
-		if ((values_address=(double *)values_address_void)&&
-			number_of_components_address_void&&(0<(number_of_components=
-			*((int *)number_of_components_address_void))))
+	if (state && number_of_components_address_void)
+	{		
+		values_address=(double *)values_address_void;
+		number_of_components=	*((int *)number_of_components_address_void);
+		if (current_token=state->current_token)
 		{
-			if (current_token=state->current_token)
-			{
-				return_code=1;
-				if (strcmp(PARSER_HELP_STRING,current_token)&&
+			return_code=1;
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (values_address && (0 < number_of_components))
 				{
 					for (comp_no=0;return_code&&(comp_no<number_of_components);comp_no++)
 					{
@@ -4514,15 +4514,18 @@ Now prints current contents of the vector with help.
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"Missing double vector component(s)");
+							  "Missing double vector component(s)");
 							display_parse_state_location(state);
 							return_code=0;
 						}
 					}
 				}
-				else
+			}
+			else
+			{
+				/* write help text */
+				if (values_address && (0 < number_of_components))
 				{
-					/* write help text */
 					for (comp_no=0;comp_no<number_of_components;comp_no++)
 					{
 						display_message(INFORMATION_MESSAGE," #");
@@ -4534,24 +4537,23 @@ Now prints current contents of the vector with help.
 					}
 					display_message(INFORMATION_MESSAGE,"]");
 				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Missing %d component double vector",number_of_components);
-				display_parse_state_location(state);
-				return_code=0;
+				else
+				{
+					display_message(INFORMATION_MESSAGE," VALUES");
+				}		
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"set_double_vector.  Invalid argument(s)");
+			display_message(ERROR_MESSAGE,
+				"Missing %d component double vector",number_of_components);
+			display_parse_state_location(state);
 			return_code=0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_double_vector.  Missing state");
+		display_message(ERROR_MESSAGE,"set_double_vector.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -5406,7 +5408,7 @@ the token following is assigned to <value>.
 {
 	int return_code;
 
-	ENTER(Option_table_add_double_vector_entry);
+	ENTER(Option_table_add_double_entry);
 	if (option_table && token && value)
 	{
 		return_code = Option_table_add_entry(option_table, token, value,
@@ -5415,13 +5417,13 @@ the token following is assigned to <value>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Option_table_add_double_vector_entry.  Invalid argument(s)");
+			"Option_table_add_double_entry.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Option_table_add_double_vector_entry */
+} /* Option_table_add_double_entry */
 
 int Option_table_add_double_vector_entry(struct Option_table *option_table,
 	char *token, double *vector, int *number_of_components)
@@ -5436,8 +5438,7 @@ Adds the given <token> to the <option_table>.  The <vector> is filled in with th
 	int return_code;
 
 	ENTER(Option_table_add_double_vector_entry);
-	if (option_table && token && vector && number_of_components &&
-		(*number_of_components > 0))
+	if (option_table && token && number_of_components)
 	{
 		return_code = Option_table_add_entry(option_table, token, vector,
 			(void *)number_of_components, set_double_vector);
