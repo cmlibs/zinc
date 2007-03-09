@@ -613,16 +613,23 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
    #in the other dependent wx-libs)
    USER_INTERFACE_LIB += $(shell $(WX_DIR)wx-config --linkdeps xrc,gl,xml,adv,html,core,base)
    USER_INTERFACE_LIB += $(GRAPHICS_LIB)
-   ifneq ($(SYSNAME),win32)
+   ifeq ($(OPERATING_SYSTEM),linux)
       ifneq ($(STATIC_LINK),true)
          USER_INTERFACE_LIB += $(shell pkg-config gtk+-2.0 gthread-2.0 --libs) -lXmu
       else # $(STATIC_LINK) != true
          USER_INTERFACE_LIB += -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0
       endif # $(STATIC_LINK) != true
-   else # $(SYSNAME) != win32
+   else # $(OPERATING_SYSTEM) == linux
+      ifeq ($(OPERATING_SYSTEM),win32)
          USER_INTERFACE_LIB += -lwxexpat-2.6-i386-mingw32msvc -lcomctl32 -lctl3d32
-   endif # $(SYSNAME) != win32
-   #USER_INTERFACE_LIB += $(shell $(WX_DIR)wx-config --libs xrc,gl,xml,adv,html,core,base)
+      else # $(OPERATING_SYSTEM) == win32
+         ifeq ($(OPERATING_SYSTEM),darwin)
+            USER_INTERFACE_LIB += -L$(shell $(WX_DIR)wx-config --prefix)/lib -framework QuickTime -framework IOKit -framework Carbon -framework Cocoa -framework System -framework WebKit -lwxexpat-2.8
+         else # $(OPERATING_SYSTEM) == darwin
+            USER_INTERFACE_LIB += $(shell $(WX_DIR)wx-config --libs xrc,gl,xml,adv,html,core,base)
+         endif # $(OPERATING_SYSTEM) == darwin
+      endif # $(OPERATING_SYSTEM) == win32
+   endif # $(OPERATING_SYSTEM) == linux
 endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 ifeq ($(USER_INTERFACE),CARBON_USER_INTERFACE)
    USER_INTERFACE_INC += 
