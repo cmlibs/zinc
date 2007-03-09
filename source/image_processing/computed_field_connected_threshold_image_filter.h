@@ -43,6 +43,14 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER_H)
 #define COMPUTED_FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER_H
 
+#include "api/cmiss_computed_field.h"
+
+/* API functions are prefixed with Cmiss */
+#define Computed_field_set_type_connected_threshold_image_filter \
+	Cmiss_computed_field_set_type_connected_threshold_image_filter
+#define Computed_field_get_type_connected_threshold_image_filter \
+	Cmiss_computed_field_get_type_connected_threshold_image_filter
+
 int Computed_field_register_types_connected_threshold_image_filter(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
@@ -53,8 +61,8 @@ DESCRIPTION :
 
 int Computed_field_set_type_connected_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field *source_field,
-  float lower_threshold, float upper_threshold, float replace_value,
-  int x_seed, int y_seed);
+  double lower_threshold, double upper_threshold, double replace_value,
+	int num_seed_points, int dimension, double *seed_values);
 /*******************************************************************************
 LAST MODIFIED : 22 February 2007
 
@@ -71,8 +79,8 @@ in response to changes in the connected_threshold_image_filter from the control 
 
 int Computed_field_get_type_connected_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field,
-  float *lower_threshold, float *upper_threshold, float *replace_value,
-  int *x_seed, int *y_seed);
+  double *lower_threshold, double *upper_threshold, double *replace_value,
+	int *num_seed_points, int *dimension, double **seed_values);
 /*******************************************************************************
 LAST MODIFIED : 22 February 2007
 

@@ -268,6 +268,30 @@ If the field is of type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER, the source_fiel
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
+int Cmiss_computed_field_set_type_connected_threshold_image_filter(struct Computed_field *field,
+	struct Computed_field *source_field,
+  double lower_threshold, double upper_threshold, double replace_value, 
+  int num_seed_points, int dimension, double *seed_values);
+/*******************************************************************************
+LAST MODIFIED : 9 March 2007
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER, returning the value of
+<connected_threshold_image_filter> at the time/parameter value given by scalar <source_field>.
+==============================================================================*/
+
+int Cmiss_computed_field_get_type_connected_threshold_image_filter(struct Computed_field *field,
+	struct Computed_field **source_field,
+  double *lower_threshold, double *upper_threshold, double *replace_value,
+  int *num_seed_points, int *dimension, double **seed_values);
+/*******************************************************************************
+LAST MODIFIED : 9 March 2007
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER, the source_field and connected_threshold_image_filter
+used by it are returned - otherwise an error is reported.
+==============================================================================*/
+
 int Cmiss_computed_field_set_type_curvature_anisotropic_diffusion_image_filter(struct Computed_field *field,
 	struct Computed_field *source_field, double timeStep, double conductance, int numIterations);
 /*******************************************************************************
