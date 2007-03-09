@@ -273,18 +273,16 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
       GRAPHICS_INC += -I$(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)
    endif
    GRAPHICS_LIB += $(patsubst %,-L%,$(firstword $(wildcard $(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) $(X_LIB))))
-   ifneq ($(USER_INTERFACE), GTK_USER_INTERFACE)
-	   #For GTK_USER_INTERFACE the OpenGL comes from the GTK_LIBRARIES
-      #we want to use mesa if it is availiable
-	   ifeq ($(OPERATING_SYSTEM),darwin)
-			GRAPHICS_LIB += -framework Carbon -framework AGL -L/System/Library/Frameworks/OpenGL.framework/Libraries/
-		endif # $(OPERATING_SYSTEM) == darwin
-      ifeq ($(OPERATING_SYSTEM),win32)
-         GRAPHICS_LIB += -lopengl32 -lglu32
-      else # $(OPERATING_SYSTEM) == win32
-         GRAPHICS_LIB += -lGL -lGLU
-      endif # $(OPERATING_SYSTEM) == win32 
-   endif # $(USER_INTERFACE) != GTK_USER_INTERFACE
+   ifeq ($(OPERATING_SYSTEM),darwin)
+      ifneq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
+          GRAPHICS_LIB += -framework Carbon -framework AGL -L/System/Library/Frameworks/OpenGL.framework/Libraries/
+      endif # $(USER_INTERFACE) != MOTIF_USER_INTERFACE
+    endif # $(OPERATING_SYSTEM) == darwin
+    ifeq ($(OPERATING_SYSTEM),win32)
+      GRAPHICS_LIB += -lopengl32 -lglu32
+    else # $(OPERATING_SYSTEM) == win32
+      GRAPHICS_LIB += -lGL -lGLU
+    endif # $(OPERATING_SYSTEM) == win32 
 endif
 
 ifeq ($(LINK_CMISS),false)
@@ -533,7 +531,7 @@ USER_INTERFACE_LIB =
 ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
    ifeq ($(SYSNAME),Linux)
       USER_INTERFACE_INC += $(X_INC)
-      USER_INTERFACE_LIB += -L$(X_LIB) 
+      USER_INTERFACE_LIB += $(GRAPHICS_LIB) -L$(X_LIB) 
 
       ifneq ($(STATIC_LINK),true)
          #I am statically linking Motif so that it does not have to be installed at runtime.
@@ -553,6 +551,7 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
          USER_INTERFACE_LIB += -lMrm -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
       endif # STATIC_LINK != true
    else # SYSNAME == Linux
+      USER_INTERFACE_LIB += $(GRAPHICS_LIB) 
       ifeq ($(SYSNAME),Darwin)
          #OPENMOTIF_DIR set in common.Makefile
          USER_INTERFACE_INC += -I$(OPENMOTIF_DIR)/include
@@ -588,7 +587,7 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
          ifneq ($(STATIC_LINK),true)
             USER_INTERFACE_LIB += -Wl,-Bstatic -lgtkglext-x11-1.0 -lgdkglext-x11-1.0 -lGLU -Wl,-Bdynamic -lGL $(shell pkg-config gtk+-2.0 --libs) -lXmu
          else # $(STATIC_LINK) != true
-            USER_INTERFACE_LIB += -L/home/blackett/lib -lgtkglext-x11-1.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 -L$(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) -lGLU -lGL
+            USER_INTERFACE_LIB += -L/home/blackett/lib -lgtkglext-x11-1.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 $(GRAPHICS_LIB)
          endif # $(STATIC_LINK) != true
       else # $(USE_GTK2) == true
          USER_INTERFACE_INC +=  -I/usr/include/gtk-1.2 -I/usr/include/glib-1.2 -I/usr/lib/glib/include/
@@ -601,7 +600,7 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
       # win32_lib
       USER_INTERFACE_PATH = $(CMISS_ROOT)/win32lib/gtk2
       USER_INTERFACE_INC += -I$(USER_INTERFACE_PATH)/include/gtk-2.0 -I$(USER_INTERFACE_PATH)/include/pango-1.0 -I$(USER_INTERFACE_PATH)/include/glib-2.0/ -I$(USER_INTERFACE_PATH)/include/atk-1.0 -I$(USER_INTERFACE_PATH)/include/gtkgl-2.0/ -I$(USER_INTERFACE_PATH)/lib/glib-2.0/include -I$(USER_INTERFACE_PATH)/lib/gtk-2.0/include
-      USER_INTERFACE_LIB += -L$(USER_INTERFACE_PATH)/lib -lgtkgl-2.0 -lgtk-win32-2.0.dll -lgdk-win32-2.0.dll -latk-1.0.dll -lgdk_pixbuf-2.0.dll -lpangowin32-1.0.dll -lpango-1.0.dll -lgobject-2.0.dll -lgmodule-2.0.dll -lglib-2.0.dll -lopengl32 -lglu32
+      USER_INTERFACE_LIB += -L$(USER_INTERFACE_PATH)/lib -lgtkgl-2.0 -lgtk-win32-2.0.dll -lgdk-win32-2.0.dll -latk-1.0.dll -lgdk_pixbuf-2.0.dll -lpangowin32-1.0.dll -lpango-1.0.dll -lgobject-2.0.dll -lgmodule-2.0.dll -lglib-2.0.dll $(GRAPHICS_LIB)
       # USER_INTERFACE_INC = -L"c:\perl\5.6.1\lib\MSWin32-x86\CORE" -L"c:\dev\gcc\lib" -Ic:/dev/gtk2/include/gtk-2.0 -Ic:/dev/gtk2/include/pango-1.0 -Ic:/dev/gtk2/include/glib-2.0/ -Ic:/dev/gtk2/include/atk-1.0 -Ic:/dev/gtk2/include/gtkgl-2.0/ -Ic:/dev/gtk2/lib/glib-2.0/include -Ic:/dev/gtk2/lib/gtk-2.0/include
       # USER_INTERFACE_LIB += -L"c:\dev\gtk2\lib" -lgtkgl-2.0 -lgtk-win32-2.0 -lgdk-win32-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangowin32-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -lglib-2.0 */
    endif # $(SYSNAME) != win32
@@ -610,14 +609,33 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 	WX_DIR = 
    USER_INTERFACE_INC += $(shell $(WX_DIR)wx-config --cxxflags)
    #Default list does not include gl, so we list them here.
-   #Using xrc means that we require most things (and static builds don't automatically pull
-   #in the dependencies)
-   USER_INTERFACE_LIB += $(shell $(WX_DIR)wx-config --libs xrc,gl,xml,adv,html,core,base)
+   #Using xrc means that we require most things (and static wx libs don't automatically pull
+   #in the other dependent wx-libs)
+   USER_INTERFACE_LIB += $(shell $(WX_DIR)wx-config --linkdeps xrc,gl,xml,adv,html,core,base)
+   USER_INTERFACE_LIB += $(GRAPHICS_LIB)
+   ifneq ($(SYSNAME),win32)
+      ifneq ($(STATIC_LINK),true)
+         USER_INTERFACE_LIB += $(shell pkg-config gtk+-2.0 gthread-2.0 --libs) -lXmu
+      else # $(STATIC_LINK) != true
+         USER_INTERFACE_LIB += -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0
+      endif # $(STATIC_LINK) != true
+   else # $(SYSNAME) != win32
+         USER_INTERFACE_LIB += -lwxexpat-2.6-i386-mingw32msvc -lcomctl32 -lctl3d32
+   endif # $(SYSNAME) != win32
+   #USER_INTERFACE_LIB += $(shell $(WX_DIR)wx-config --libs xrc,gl,xml,adv,html,core,base)
 endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 ifeq ($(USER_INTERFACE),CARBON_USER_INTERFACE)
    USER_INTERFACE_INC += 
-	USER_INTERFACE_LIB += 
+	USER_INTERFACE_LIB += $(GRAPHICS_LIB)
 endif # $(USER_INTERFACE) == CARBON_USER_INTERFACE
+ifeq ($(USER_INTERFACE),CONSOLE_USER_INTERFACE)
+   USER_INTERFACE_INC +=
+   USER_INTERFACE_LIB += $(GRAPHICS_LIB)
+endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE
+ifeq ($(USER_INTERFACE),WIN32_USER_INTERFACE)
+   USER_INTERFACE_INC +=
+   USER_INTERFACE_LIB += $(GRAPHICS_LIB)
+endif # $(USER_INTERFACE) == WIN32_USER_INTERFACE
 
 MATRIX_LIB =
 ifeq ($(USE_COMPUTED_VARIABLES),true)
@@ -716,7 +734,7 @@ ALL_INCLUDES = $(SOURCE_DIRECTORY_INC) $(HAPTIC_INC) $(WORMHOLE_INC) \
 ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 	$(ALL_DEFINES) $(ALL_INCLUDES)
 
-ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
+ALL_LIB = $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(WORMHOLE_LIB) $(INTERPRETER_LIB) $(IMAGEMAGICK_LIB) \
 	$(EXTERNAL_INPUT_LIB) $(HELP_LIB) $(ITK_LIB) \
 	$(MOVIE_FILE_LIB) $(XML_LIB) $(XML2_LIB) $(MEMORYCHECK_LIB) $(MATRIX_LIB) \
