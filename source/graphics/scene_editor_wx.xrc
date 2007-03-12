@@ -35,7 +35,8 @@
 					<minsize>100</minsize>
 
 					<object class ="wxPanel">
-				   		<object class = "wxBoxSizer">	
+				   		<object class = "wxBoxSizer">
+							<orient>wxVERTICAL</orient>
 				  			<object class="sizeritem">
 	 				  			<flag>wxEXPAND</flag>
 								<option>1</option>
@@ -44,12 +45,33 @@
 							   		<object class="sizeritem">
  				  			    	 	<flag>wxEXPAND</flag>
 						  			  	<option>1</option>
-								  		<object class="wxScrolledWindow" name="SceneCheckBox">
-											<style>wxVSCROLL</style>
+										<object class = "wxCheckListBox" name="SceneCheckList">
 							      		</object>
 								   	</object>
 								 </object>
 							 </object>
+
+				  			 <object class="sizeritem">
+								<option>0</option>
+								<object class = "wxBoxSizer">			 	
+									<orient>wxHORIZONTAL</orient>
+							  		<object class="sizeritem">
+										<object class ="wxCheckBox">
+											<label>Auto</label>
+										</object>
+									</object>
+						  			<object class="sizeritem">
+										<object class ="wxButton">
+											<label>Apply</label>
+										</object>
+									</object>
+						  			<object class="sizeritem">
+										<object class ="wxButton">
+											<label>Revert</label>
+										</object>
+									</object>
+								</object>
+						    </object>
 						 </object>
 					 </object>
 
@@ -70,8 +92,9 @@
 								<option>1</option>
     	  						<object class ="wxSplitterWindow" name="LowerSplitter">
 									<style>wxSP_3D</style>
+									<minsize>100</minsize>
 			 	 					<orientation>horizontal</orientation>
-
+									
 									<object class ="wxPanel" name="LowestPanel">
 				   						<object class = "wxBoxSizer">	
 											<orient>wxVERTICAL</orient>
@@ -114,18 +137,7 @@
 													<object class ="sizeritem">
 														<flag>wxEXPAND</flag>
 														<option>1</option>
-														<object class="wxScrolledWindow" name="TypeChooserPanel">
-															<style>wxHSCROLL|wxVSCROLL</style>
-															<object class="wxBoxSizer">
-																<object class ="sizeritem">
-																	<flag>wxEXPAND</flag>
-																	<option>1</option>
-																	<flag>wxALIGN_CENTRE</flag>
-																	<object class = "wxStaticText">
-	 																	<label>This is the type chooser panel</label>
-																	</object>
-																</object>
-															</object>
+														<object class="wxCheckListBox" name="GraphicalItemsListBox">
 														</object>																					
 													</object>
 												</object>
