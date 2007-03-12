@@ -167,6 +167,44 @@ with a true return_code. Otherwise a false return_code is returned, without
 an error message, for the calling function to handle.
 ==============================================================================*/
 
+#define ENUMERATOR_TYPE_CLASS(enumerator_type) enumerator_class_ ## enumerator_type
+/***************************************************************************** \
+LAST MODIFIED : 8 March 2007 \
+\
+DESCRIPTION : \
+Wraps the existing Enumerator functionality and types into a class. \
+==============================================================================*/
+#define DEFINE_ENUMERATOR_TYPE_CLASS(enumerator_type) \
+class ENUMERATOR_TYPE_CLASS(enumerator_type) \
+{\
+public: \
+	typedef enum enumerator_type Enumerator_type; \
+	typedef ENUMERATOR_CONDITIONAL_FUNCTION(enumerator_type) Conditional_function; \
+\
+   ENUMERATOR_TYPE_CLASS(enumerator_type)() \
+	{ \
+	} \
+\
+	inline char* value_to_string(enum enumerator_type enumerator_value) \
+	{ \
+		return ENUMERATOR_STRING(enumerator_type)(enumerator_value); \
+	} \
+\
+   inline char **get_valid_strings(int *number_of_valid_strings, \
+		ENUMERATOR_CONDITIONAL_FUNCTION(enumerator_type) conditional_function, \
+		void *user_data) \
+	{ \
+		return ENUMERATOR_GET_VALID_STRINGS(enumerator_type)(number_of_valid_strings, \
+			conditional_function, user_data); \
+	} \
+\
+	inline int string_to_value(char *string, enum enumerator_type *enumerator_value) \
+	{ \
+		return STRING_TO_ENUMERATOR(enumerator_type)(string, enumerator_value);	\
+	} \
+\
+}; /* ENUMERATOR_TYPE_CLASS(enumerator_type) */
+
 #define PROTOTYPE_ENUMERATOR_FUNCTIONS( enumerator_type ) \
 DECLARE_ENUMERATOR_CONDITIONAL_FUNCTION_TYPE(enumerator_type); \
 PROTOTYPE_ENUMERATOR_GET_VALID_STRINGS_FUNCTION(enumerator_type); \

@@ -12,7 +12,8 @@ extern "C" {
 #include "wx/wx.h"
 #include <wx/tglbtn.h>
 #include "wx/xrc/xmlres.h"
-#include "choose/choose_class.hpp"
+#include "choose/choose_manager_class.hpp"
+#include "choose/choose_enumerator_class.hpp"
 #include <wx/collpane.h>
 #include <wx/splitter.h>
 extern "C" {
@@ -87,6 +88,7 @@ DESCRIPTION :
 	struct MANAGER(Scene) *scene_manager;
 	struct User_interface *user_interface;
 	struct Computed_field_package *computed_field_package;
+	enum GT_element_settings_type current_settings_type;
 #if defined (WX_USER_INTERFACE)
 	wxSceneEditor *wx_scene_editor;
 	wxPanel *lower_panel;
@@ -334,6 +336,10 @@ class wxSceneEditor : public wxFrame
 	Managed_object_chooser<Scene,MANAGER_CLASS(Scene)>
 		*scene_chooser;
 
+	DEFINE_ENUMERATOR_TYPE_CLASS(GT_element_settings_type);
+	Enumerator_chooser<ENUMERATOR_TYPE_CLASS(GT_element_settings_type)>
+		*settings_type_chooser;
+
 public:
 
   wxSceneEditor(Scene_editor *scene_editor): 
@@ -353,8 +359,8 @@ public:
 		new Managed_object_chooser<Scene,MANAGER_CLASS(Scene)>
 	  (scene_object_chooser_panel, scene_editor->scene, scene_editor->scene_manager,
 	  (MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL, (void *)NULL, scene_editor->user_interface);
-	  Callback_base<Scene> *scene_object_callback = 
-		  new Callback_member_callback< Scene, 
+	  Callback_base< Scene* > *scene_object_callback = 
+		  new Callback_member_callback< Scene*, 
 		  wxSceneEditor, int (wxSceneEditor::*)(Scene *) >
 		  (this, &wxSceneEditor::scene_object_callback);
       scene_chooser->set_callback(scene_object_callback);
@@ -373,6 +379,23 @@ public:
 	wxPanel *lowestpanel = 
 		XRCCTRL(*this, "CmguiSceneEditor", wxPanel);
 	lowestpanel->Fit();
+
+			// Graphical element settings type chooser
+			wxPanel *settings_type_chooser_panel = 
+				XRCCTRL(*this, "TypeFormChooser", wxPanel);
+			settings_type_chooser = 
+				new Enumerator_chooser<ENUMERATOR_TYPE_CLASS(GT_element_settings_type)>
+				(settings_type_chooser_panel, 
+				scene_editor->current_settings_type,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(GT_element_settings_type) *)NULL,
+				(void *)NULL, scene_editor->user_interface);
+			settings_type_chooser_panel->Fit();
+			Callback_base< enum GT_element_settings_type > *settings_type_callback = 
+				new Callback_member_callback< enum GT_element_settings_type, 
+				wxSceneEditor, int (wxSceneEditor::*)(enum GT_element_settings_type) >
+				(this, &wxSceneEditor::settings_type_callback);
+			settings_type_chooser->set_callback(settings_type_callback);
+
 	wxFrame *frame=XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
 	frame->Fit();
 
@@ -405,6 +428,17 @@ Callback from wxChooser<Scene> when choice is made.
 		return 1;
 	}
 
+	int settings_type_callback(enum GT_element_settings_type new_value)
+/*******************************************************************************
+LAST MODIFIED : 12 March 2007
+
+DESCRIPTION :
+Callback from wxChooser<Scene> when choice is made.
+==============================================================================*/
+	{
+		scene_editor->current_settings_type = new_value;
+		return 1;
+	}
 
 	int setSceneObject(Scene *scene)
 /*******************************************************************************
@@ -690,7 +724,7 @@ DESCRIPTION :
 			scene_editor->scene_manager = scene_manager;
 			scene_editor->user_interface=user_interface;
 			scene_editor->computed_field_package=(struct Computed_field_package *)NULL;
-		
+			scene_editor->current_settings_type=GT_ELEMENT_SETTINGS_LINES;		
 #if defined (WX_USER_INTERFACE)
 	scene_editor->wx_scene_editor = (wxSceneEditor *)NULL;
 	scene_editor->wx_scene_editor = new 

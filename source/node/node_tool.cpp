@@ -83,7 +83,7 @@ static char node_tool_uidh[] =
 #include "wx/wx.h"
 #include <wx/tglbtn.h>
 #include "wx/xrc/xmlres.h"
-#include "choose/choose_class.hpp"
+#include "choose/choose_manager_class.hpp"
 #include "graphics/graphics_window_private.hpp"
 #include "node/node_tool.xrch"
 #include "region/cmiss_region_chooser_wx.hpp"
@@ -2461,8 +2461,8 @@ public:
 			  Computed_field_has_up_to_3_numerical_components,
 			  (void *)NULL, node_tool->user_interface);
 
-	  Callback_base<Computed_field> *coordinate_field_callback = 
-		  new Callback_member_callback< Computed_field, 
+	  Callback_base<Computed_field* > *coordinate_field_callback = 
+		  new Callback_member_callback< Computed_field*, 
 		  wxNodeTool, int (wxNodeTool::*)(Computed_field *) >
 		  (this, &wxNodeTool::coordinate_field_callback);
 
@@ -2477,8 +2477,8 @@ public:
 		  node_tool->root_region, initial_path); 
 	  DEALLOCATE(initial_path);
 
-	  Callback_base<Cmiss_region> *region_callback = 
-		  new Callback_member_callback< Cmiss_region, 
+	  Callback_base<Cmiss_region* > *region_callback = 
+		  new Callback_member_callback< Cmiss_region*, 
 		  wxNodeTool, int (wxNodeTool::*)(Cmiss_region *) >
 		  (this, &wxNodeTool::region_callback);
 

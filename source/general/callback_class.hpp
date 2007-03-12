@@ -52,11 +52,11 @@ DESCRIPTION :
 ============================================================================*/
 {
 public:
-	void operator()(Object *object) const
+	void operator()(Object object) const
 	{
 		callback_function(object);
 	}
-	virtual int callback_function(Object *) = 0;
+	virtual int callback_function(Object object) = 0;
 
 protected:
 
@@ -83,7 +83,7 @@ public:
 	{
 	}
 
-	virtual int callback_function(Object *object)
+	virtual int callback_function(Object object)
 	{
 		return (callee->*member_function)(object);
 	}

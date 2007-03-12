@@ -52,7 +52,7 @@ class wxRegionChooser : public wxChoice
 {
 private:
 	Cmiss_region *root_region;
-	Callback_base<Cmiss_region> *callback;
+	Callback_base<Cmiss_region*> *callback;
 
 public:
 	wxRegionChooser(wxWindow *parent, 
@@ -70,7 +70,7 @@ LAST MODIFIED : 9 January 2003
 DESCRIPTION :
 ==============================================================================*/
 
-	int set_callback(Callback_base<Cmiss_region> *callback_object)
+	int set_callback(Callback_base<Cmiss_region*> *callback_object)
 	{
 		callback = callback_object;
 		return (1);
