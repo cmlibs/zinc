@@ -51,7 +51,6 @@ DESCRIPTION :
 	int expanded;
 	/* list of child objects to put in expand_form if expanded scene list */
 	struct LIST(Scene_editor_object) *scene_editor_objects;
-
 	int in_use;
 	int access_count;
 }; /* struct Scene_editor_object */
@@ -79,6 +78,7 @@ DESCRIPTION :
 
 	/* access gt_element_group for current_object if applicable */
 	struct GT_element_group *gt_element_group;
+	struct GT_element_group *edit_gt_element_group;
 	Scene *scene;
 	Scene_object *scene_object;
 	/* keep address of pointer to editor so can self-destroy */
@@ -89,11 +89,13 @@ DESCRIPTION :
 	struct Computed_field_package *computed_field_package;
 #if defined (WX_USER_INTERFACE)
 	wxSceneEditor *wx_scene_editor;
-	wxScrolledWindow *scene_check_box;
-	wxPanel *graphical_element_panel;
 	wxPanel *lower_panel;
 	wxScrolledWindow *sceneediting;
 	wxFrame *frame;
+	wxCheckListBox *checklistbox;
+	wxCheckListBox *graphicalitemslistbox;
+	wxSplitterWindow *lowersplitter;
+	wxSplitterWindow *topsplitter;
 #endif /*defined (WX_USER_INTERFACE)*/
 }; /*struct Scene_editor*/
 
@@ -115,6 +117,9 @@ LAST MODIFIED : 2 Match 2007
 DESCRIPTION :
 Prototype.
 ==============================================================================*/
+
+static int Scene_editor_add_element_settings_item(
+																					 struct GT_element_settings *settings, void *scene_editor_void);
 /*
 Module functions
 ----------------
@@ -315,14 +320,16 @@ that of the first one in the scene.
 #if defined (WX_USER_INTERFACE)
 
 class wxSceneEditor : public wxFrame
-{																								
+{				
 	Scene_editor *scene_editor;
 	wxScrolledWindow *sceneediting;
 	wxFrame *frame;
 	wxSplitterWindow *lowersplitter;
 	wxSplitterWindow *topsplitter;
-
-
+	wxCheckListBox *scenechecklist;
+	wxListBox *scenelistbox;
+	wxCheckListBox *graphicalitemschecklist;
+	wxListBox *graphicalitemslistbox;
 	DEFINE_MANAGER_CLASS(Scene);
 	Managed_object_chooser<Scene,MANAGER_CLASS(Scene)>
 		*scene_chooser;
@@ -330,7 +337,7 @@ class wxSceneEditor : public wxFrame
 public:
 
   wxSceneEditor(Scene_editor *scene_editor): 
-    scene_editor(scene_editor)
+		scene_editor(scene_editor)
   {
 	{	
 		wxXmlInit_scene_editor_wx();
@@ -356,18 +363,18 @@ public:
   wxCollapsiblePane *collpane = XRCCTRL(*this, "CollapsiblePane", wxCollapsiblePane);
   wxPanel *GeneralSettingPanel = new wxPanel;
   wxWindow *win = collpane->GetPane();
-	wxXmlResource::Get()->LoadPanel(GeneralSettingPanel,
-			win, _T("CmguiSceneEditorGeneralSettings"));
-   wxSizer *paneSz = new wxBoxSizer(wxVERTICAL);
+  wxXmlResource::Get()->LoadPanel(GeneralSettingPanel,
+	 win, _T("CmguiSceneEditorGeneralSettings"));
+  wxSizer *paneSz = new wxBoxSizer(wxVERTICAL);
 	paneSz->Add(GeneralSettingPanel, 1, wxEXPAND|wxALL, 2);
-    win->SetSizer(paneSz);
-    paneSz->SetSizeHints(win);
-	 collpane->Collapse(1);
-	 wxPanel *lowestpanel = 
-		 XRCCTRL(*this, "CmguiSceneEditor", wxPanel);
-	 lowestpanel->Fit();
+  win->SetSizer(paneSz);
+	paneSz->SetSizeHints(win);
+	collpane->Collapse(1);
+	wxPanel *lowestpanel = 
+		XRCCTRL(*this, "CmguiSceneEditor", wxPanel);
+	lowestpanel->Fit();
 	wxFrame *frame=XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
-			frame->Fit();
+	frame->Fit();
 
  Show();
 };
@@ -391,10 +398,10 @@ Callback from wxChooser<Scene> when choice is made.
 	{
 		Scene_editor_set_scene(scene_editor, scene);
 		scene_editor->lower_panel->Hide();
-		wxPanel *panel = scene_editor-> scene_check_box;
-		panel->DestroyChildren();
-		for_each_Scene_object_in_Scene(scene,
-																	 add_scene_object_to_scene_check_box, (void *)scene_editor);
+		wxCheckListBox *checklist = scene_editor->checklistbox;
+ 		checklist->Clear();
+ 		for_each_Scene_object_in_Scene(scene,
+ 																	 add_scene_object_to_scene_check_box, (void *)scene_editor);
 		return 1;
 	}
 
@@ -414,13 +421,13 @@ Set the selected option in the Scene Object chooser.
       void ResetScrolledWindow(wxCollapsiblePaneEvent& event)
   	{
 			lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
-			  lowersplitter->Fit();
-				lowersplitter->Layout();	
+			lowersplitter->Layout();	
+			topsplitter=XRCCTRL(*this,"TopSplitter",wxSplitterWindow);
+			topsplitter->Layout();	
 			frame = 
-					XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
-			frame->Fit();	
+			  XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
 			frame->Layout();
-			frame->SetMinSize(wxSize(50,500));
+			frame->SetMinSize(wxSize(50,100));
 			frame->SetMaxSize(wxSize(2000,2000));
 	}
 
@@ -428,18 +435,127 @@ Set the selected option in the Scene Object chooser.
   	{
 			sceneediting = 
 					XRCCTRL(*this, "SceneEditing", wxScrolledWindow);
-			sceneediting->Fit();	
 			sceneediting->Layout();
 			sceneediting->SetScrollbars(10,10,40,40);
 			lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
-			  lowersplitter->Fit();
-				lowersplitter->Layout();	
+			lowersplitter->Layout();	
+			topsplitter=XRCCTRL(*this,"TopSplitter",wxSplitterWindow);
+			topsplitter->Layout();	
 			frame = 
 					XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
-			frame->Fit();	
 			frame->Layout();
-			frame->SetMinSize(wxSize(50,100));
+				frame->SetMinSize(wxSize(50,100));
 		}
+
+	void SetGraphicalElementGroup(GT_element_group *gt_element_group)
+	{
+		GT_element_group *edit_gt_element_group;
+
+		REACCESS(GT_element_group)(&scene_editor->gt_element_group, gt_element_group);
+
+		if (gt_element_group)
+			{
+				edit_gt_element_group =
+					create_editor_copy_GT_element_group(gt_element_group);
+				if (!edit_gt_element_group)
+					{
+						display_message(ERROR_MESSAGE,
+														"graphical_element_editor_set_gt_element_group.  "
+														"Could not copy graphical element");
+			 		}
+			}
+		else
+			{
+				edit_gt_element_group = (struct GT_element_group *)NULL;
+			}
+		REACCESS(GT_element_group)(&(scene_editor->edit_gt_element_group),
+						edit_gt_element_group);
+		scene_editor->graphicalitemslistbox = XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
+		scene_editor->graphicalitemslistbox->Clear();
+		if (edit_gt_element_group)
+			{
+				for_each_settings_in_GT_element_group(edit_gt_element_group,
+				 Scene_editor_add_element_settings_item, (void *)scene_editor);
+				scene_editor->lower_panel->Show();
+			}
+	}
+
+	void UpdateSceneObjectList(Scene_object *scene_object)
+	{
+		GT_element_group *gt_element_group;
+		REACCESS(Scene_object)(&scene_editor->scene_object, scene_object);
+
+ 		scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
+		int selection=scenechecklist->GetSelection();
+
+		if(scenechecklist->IsChecked(selection))
+  			{
+  				Scene_object_set_visibility(scene_object, g_VISIBLE);
+  			}
+  		else
+ 			{
+ 				Scene_object_set_visibility(scene_object, g_INVISIBLE);
+ 			}
+
+		switch (Scene_object_get_type(scene_object))
+			{
+			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
+				{
+					gt_element_group = Scene_object_get_graphical_element_group(
+						scene_object);
+
+					SetGraphicalElementGroup(gt_element_group);
+			} break;
+			case SCENE_OBJECT_GRAPHICS_OBJECT:
+			case SCENE_OBJECT_SCENE:
+				{
+					scene_editor->graphicalitemslistbox = XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
+					scene_editor->graphicalitemslistbox->Clear();
+					scene_editor->lower_panel->Hide();
+					/* nothing to do */
+				} break;
+			}
+	}
+
+ 	void 	UpdateGraphicalElementList(GT_element_settings *settings)
+ 	{
+ 		graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
+		int selection= graphicalitemschecklist->GetSelection();
+		if (graphicalitemschecklist->IsChecked(selection))
+  			{
+					GT_element_settings_set_visibility(settings, 1);
+  			}
+  		else
+ 			{
+ 				GT_element_settings_set_visibility(settings, 0);
+ 			}
+
+		// If Auto apply
+		if (!GT_element_group_modify(scene_editor->gt_element_group,
+			 scene_editor->edit_gt_element_group))
+			{
+				display_message(ERROR_MESSAGE, "wxSceneEditor::UpdateGraphicalElementList.  "
+												"Could not modify graphical element");
+			}
+ 	}
+
+	void SceneCheckListClicked(wxCommandEvent &event)
+	{
+ 		scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
+		int selection=scenechecklist->GetSelection();
+ 	 	UpdateSceneObjectList(static_cast<Scene_object*>(scenechecklist->GetClientData(selection)));
+ 	}
+
+	void GraphicalItemsListBoxClicked(wxCommandEvent &event)
+	{
+ 		graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
+		int selection= graphicalitemschecklist->GetSelection();
+		if (-1 != selection)
+			{
+ 			UpdateGraphicalElementList(static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(selection)));
+			}
+ 	}
+
 
   DECLARE_DYNAMIC_CLASS(wxSceneEditor);
   DECLARE_EVENT_TABLE();
@@ -450,39 +566,11 @@ IMPLEMENT_DYNAMIC_CLASS(wxSceneEditor, wxFrame)
 BEGIN_EVENT_TABLE(wxSceneEditor, wxFrame)
 	EVT_SPLITTER_SASH_POS_CHANGED(XRCID("LowerSplitter"),wxSceneEditor::ResetWindow)
 	EVT_COLLAPSIBLEPANE_CHANGED(XRCID("CollapsiblePane"), wxSceneEditor::ResetScrolledWindow)
+	EVT_CHECKLISTBOX(XRCID("SceneCheckList"), wxSceneEditor::SceneCheckListClicked)
+	EVT_LISTBOX(XRCID("SceneCheckList"), wxSceneEditor::SceneCheckListClicked)
+  	EVT_CHECKLISTBOX(XRCID("GraphicalItemsListBox"), wxSceneEditor::GraphicalItemsListBoxClicked)
+  	EVT_LISTBOX(XRCID("GraphicalItemsListBox"), wxSceneEditor::GraphicalItemsListBoxClicked)
 END_EVENT_TABLE()
-
-class wxInteractiveCheckBox : public wxCheckBox
-{
-   Scene_object *object;
-  	Scene_editor *scene_editor;
-  
-  
-public:
-
-  wxInteractiveCheckBox(Scene_object *object, Scene_editor *scene_editor) :
-    object(object), scene_editor(scene_editor)
-  {
-  }
-
-  ~wxInteractiveCheckBox()
-  {
-  }
-
-
-  void OnInteractiveCheckBoxPressed(wxCommandEvent& Event)
- {
-	 if (this->GetValue())
-			{
-				Scene_object_set_visibility(object, g_VISIBLE);
-			}
-		else
-			{
-				Scene_object_set_visibility(object, g_INVISIBLE);
-			}
-  }
-
-};
 
 
 static int add_scene_object_to_scene_check_box(struct Scene_object *scene_object,
@@ -495,26 +583,62 @@ Add scene_object as checklistbox item into the box
 ==============================================================================*/
 {
 	Scene_editor *scene_editor = static_cast<Scene_editor*>(scene_editor_void);
-	wxPanel *panel = scene_editor-> scene_check_box;
-	wxSizer *sizer = panel->GetSizer();
+	wxCheckListBox *checklist = scene_editor->checklistbox;
 	char *name;
 	int visible;
-	wxInteractiveCheckBox *checkbox = new wxInteractiveCheckBox(scene_object,scene_editor);
 
+	ENTER(add_scene_object_to_scene_check_box);
 	GET_NAME(Scene_object)(scene_object, &name);
-	checkbox->Create(panel,/*id*/-1,name); 
-	checkbox->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,wxCommandEventHandler(wxInteractiveCheckBox::OnInteractiveCheckBoxPressed));
-	sizer->Add(checkbox,wxSizerFlags(0).Align(0).Expand().Border(wxALL,2));
-	panel->Layout();
-  	DEALLOCATE(name);
-		visible =(g_VISIBLE == Scene_object_get_visibility(scene_object));
-		if ( visible ==1)
-			{
-				checkbox->SetValue(1);
-			}
-		scene_editor->lower_panel->Show();
+	checklist->Append(name, scene_object);
+	visible =(g_VISIBLE == Scene_object_get_visibility(scene_object));
+	if ( visible ==1)
+		{
+			checklist->Check((checklist->GetCount()-1),1);
+		}
+
+	DEALLOCATE(name);
+	LEAVE;
 return(1);
  };
+
+static int Scene_editor_add_element_settings_item(
+   struct GT_element_settings *settings, void *scene_editor_void)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2001
+
+DESCRIPTION :
+Iterator function for Graphical_element_editor_update_Settings_item.
+==============================================================================*/
+{
+	char *settings_string;
+	int return_code;
+	struct Scene_editor *scene_editor;
+
+	ENTER(Scene_editor_add_element_settings_item);
+	if (settings && (scene_editor = static_cast<Scene_editor*>(scene_editor_void)))
+	{
+		settings_string = GT_element_settings_string(settings,
+			SETTINGS_STRING_COMPLETE_PLUS);
+		wxCheckListBox *checklist =  XRCCTRL(*scene_editor->wx_scene_editor, "GraphicalItemsListBox",wxCheckListBox);
+		checklist->Append(settings_string, settings);
+		if (  GT_element_settings_get_visibility(settings) ==1)
+		{
+			checklist->Check((checklist->GetCount()-1),1);
+		}
+      DEALLOCATE(settings_string);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_editor_add_element_settings_item.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_editor_add_element_settings_item */
+
 #endif /* defined (WX_USER_INTERFACE) */
 
 /*
@@ -542,7 +666,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	struct Scene_editor *scene_editor;
-
+ 
 	ENTER(CREATE(Scene_editor));
 	scene_editor = (struct Scene_editor *)NULL;
 	if (scene_manager && scene && computed_field_package && root_region &&
@@ -558,6 +682,7 @@ DESCRIPTION :
 			scene_editor->transformation_edited=1;
 			scene_editor->transformation_expanded=1;		
 			scene_editor->gt_element_group = (struct GT_element_group *)NULL;
+			scene_editor->edit_gt_element_group = (struct GT_element_group *)NULL;
 			scene_editor->scene = scene;
 			scene_editor->scene_object = (struct Scene_object *)NULL;
 			scene_editor->scene_editor_address = (struct Scene_editor **)NULL;
@@ -567,36 +692,28 @@ DESCRIPTION :
 			scene_editor->computed_field_package=(struct Computed_field_package *)NULL;
 		
 #if defined (WX_USER_INTERFACE)
-		
 	scene_editor->wx_scene_editor = (wxSceneEditor *)NULL;
 	scene_editor->wx_scene_editor = new 
-	wxSceneEditor(scene_editor);
-	
- 	scene_editor->scene_check_box = 
- 	  XRCCTRL(*scene_editor->wx_scene_editor, "SceneCheckBox", wxScrolledWindow);
- 	wxBoxSizer *scene_check_box_sizer = new wxBoxSizer( wxVERTICAL );
-	scene_editor->graphical_element_panel=
-		XRCCTRL(*scene_editor->wx_scene_editor, "GraphicalElementPanel", wxPanel);
+		wxSceneEditor(scene_editor);
 	scene_editor->lower_panel=
 		XRCCTRL(*scene_editor->wx_scene_editor, "LowerPanel", wxPanel);
-	scene_editor->scene_check_box->SetSizer(scene_check_box_sizer);
 	scene_editor->lower_panel->Hide();
-	scene_editor->scene_check_box->SetScrollbars(10,10,100,100);
+	scene_editor->checklistbox = XRCCTRL(*scene_editor->wx_scene_editor, "SceneCheckList", wxCheckListBox);
+	scene_editor->checklistbox->Clear();
 	for_each_Scene_object_in_Scene(scene,
 		add_scene_object_to_scene_check_box, (void *)scene_editor);
-
-
-
  	scene_editor->frame = 
  	  XRCCTRL(*scene_editor->wx_scene_editor, "CmguiSceneEditor", wxFrame);
-	scene_editor->frame->Fit();
 	scene_editor->frame->Layout();
-	scene_editor->frame->SetMinSize(wxSize(50,-1));
+	scene_editor->frame->SetMinSize(wxSize(50,100));
  	scene_editor->sceneediting = 
  	  XRCCTRL(*scene_editor->wx_scene_editor, "SceneEditing", wxScrolledWindow);
-	scene_editor->sceneediting->Fit();
 	scene_editor->sceneediting->Layout();
 	scene_editor->sceneediting->SetScrollbars(10,10,40,40);
+	scene_editor->lowersplitter=XRCCTRL(*scene_editor->wx_scene_editor,"LowerSplitter",wxSplitterWindow);
+	scene_editor->lowersplitter->Layout();	
+	scene_editor->topsplitter=XRCCTRL(*scene_editor->wx_scene_editor,"TopSplitter",wxSplitterWindow);
+	scene_editor->topsplitter->Layout();	
 #endif /*  (WX_USER_INTERFACE) */
 
 		}
