@@ -2218,41 +2218,38 @@ Evaluate the fields cache at the location
 			Computed_field_evaluate_source_fields_cache_at_location(field, location))
 		{
 			/* 2. Calculate the field */
+			if (field->source_fields[0]->derivatives_valid)
+			{
+				temp=field->derivatives;
+				temp2=field->source_fields[0]->derivatives;
+				field->derivatives_valid = 1;
+				element_dimension=get_FE_element_dimension(field->source_fields[0]->element);
+			}
 			for (i=0;i<field->number_of_components;i++)
 			{
-				if (field->source_fields[0]->derivatives_valid)
+				if (field->source_fields[0]->values[i] < field->source_values[i])
 				{
-					temp=field->derivatives;
-					temp2=field->source_fields[0]->derivatives;
-					field->derivatives_valid = 1;
-					element_dimension=get_FE_element_dimension(field->source_fields[0]->element);
-				}
-				for (i=0;i<field->number_of_components;i++)
-				{
-					if (field->source_fields[0]->values[i] < field->source_values[i])
+					field->values[i]=field->source_fields[0]->values[i];
+					if (field->source_fields[0]->derivatives_valid)
 					{
-						field->values[i]=field->source_fields[0]->values[i];
-						if (field->source_fields[0]->derivatives_valid)
+						for (j=0;j<element_dimension;j++)
 						{
-							for (j=0;j<element_dimension;j++)
-							{
-								(*temp)=(*temp2);
-								temp++;
-								temp2++;
-							}
+							(*temp)=(*temp2);
+							temp++;
+							temp2++;
 						}
 					}
-					else
+				}
+				else
+				{
+					field->values[i]=field->source_values[i];
+					if (field->source_fields[0]->derivatives_valid)
 					{
-						field->values[i]=field->source_values[i];
-						if (field->source_fields[0]->derivatives_valid)
+						for (j=0;j<element_dimension;j++)
 						{
-							for (j=0;j<element_dimension;j++)
-							{
-								(*temp)=0.0;
-								temp++;
-								temp2++; /* To ensure that the following components match */
-							}
+							(*temp)=0.0;
+							temp++;
+							temp2++; /* To ensure that the following components match */
 						}
 					}
 				}
@@ -2721,41 +2718,38 @@ Evaluate the fields cache at the location
 			Computed_field_evaluate_source_fields_cache_at_location(field, location))
 		{
 			/* 2. Calculate the field */
+			if (field->source_fields[0]->derivatives_valid)
+			{
+				temp=field->derivatives;
+				temp2=field->source_fields[0]->derivatives;
+				field->derivatives_valid = 1;
+				element_dimension=get_FE_element_dimension(field->source_fields[0]->element);
+			}
 			for (i=0;i<field->number_of_components;i++)
 			{
-				if (field->source_fields[0]->derivatives_valid)
+				if (field->source_fields[0]->values[i] > field->source_values[i])
 				{
-					temp=field->derivatives;
-					temp2=field->source_fields[0]->derivatives;
-					field->derivatives_valid = 1;
-					element_dimension=get_FE_element_dimension(field->source_fields[0]->element);
-				}
-				for (i=0;i<field->number_of_components;i++)
-				{
-					if (field->source_fields[0]->values[i] > field->source_values[i])
+					field->values[i]=field->source_fields[0]->values[i];
+					if (field->source_fields[0]->derivatives_valid)
 					{
-						field->values[i]=field->source_fields[0]->values[i];
-						if (field->source_fields[0]->derivatives_valid)
+						for (j=0;j<element_dimension;j++)
 						{
-							for (j=0;j<element_dimension;j++)
-							{
-								(*temp)=(*temp2);
-								temp++;
-								temp2++;
-							}
+							(*temp)=(*temp2);
+							temp++;
+							temp2++;
 						}
 					}
-					else
+				}
+				else
+				{
+					field->values[i]=field->source_values[i];
+					if (field->source_fields[0]->derivatives_valid)
 					{
-						field->values[i]=field->source_values[i];
-						if (field->source_fields[0]->derivatives_valid)
+						for (j=0;j<element_dimension;j++)
 						{
-							for (j=0;j<element_dimension;j++)
-							{
-								(*temp)=0.0;
-								temp++;
-								temp2++; /* To ensure that the following components match */
-							}
+							(*temp)=0.0;
+							temp++;
+							temp2++; /* To ensure that the following components match */
 						}
 					}
 				}
