@@ -17,10 +17,36 @@
 						</object>
 					</object>
 					<object class ="sizeritem">
+						<flag>wxALIGN_CENTRE</flag>
 						<option>1</option>
 						<object class="wxPanel" name="SceneObjectChooserPanel">
 							<size>-1,30</size>
 							<minsize>100,-1</minsize>
+		   	    		</object>
+	    	  		</object>
+					<object class ="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTRE</flag>
+						<object class = "wxStaticText">
+							<label>                 Current Object:</label>
+						</object>
+					</object>
+					<object class ="sizeritem">
+						<flag>wxALIGN_CENTRE</flag>
+						<option>0</option>
+						<object class = "wxStaticText" name="CurrentSceneObjectText">
+						</object>
+					</object>
+					<object class ="sizeritem">
+						<option>0</option>
+						<object class="wxButton" name="SceneObjectUpButton">
+							<label>Up</label>
+		   	    		</object>
+	    	  		</object>
+					<object class ="sizeritem">
+						<option>0</option>
+						<object class="wxButton" name="SceneObjectDownButton" >
+							<label>Down</label>
 		   	    		</object>
 	    	  		</object>
 	     		</object>		
@@ -33,7 +59,6 @@
 					<style>wxSP_3D</style>
 			 	 	<orientation>horizontal</orientation>
 					<minsize>100</minsize>
-
 					<object class ="wxPanel">
 				   		<object class = "wxBoxSizer">
 							<orient>wxVERTICAL</orient>
@@ -56,6 +81,7 @@
 								<object class = "wxBoxSizer">			 	
 									<orient>wxHORIZONTAL</orient>
 							  		<object class="sizeritem">
+										<flag>wxALIGN_CENTRE</flag>
 										<object class ="wxCheckBox">
 											<label>Auto</label>
 										</object>
@@ -105,7 +131,10 @@
 													<orient>wxHORIZONTAL</orient>
 													<label>TypeFormChooser</label>
 													<object class ="sizeritem">
+														<flag>wxALIGN_CENTRE</flag>
+														<option>1</option>
 														<object class = "wxPanel" name="TypeFormChooser">
+															<size>-1,30</size>
 														</object>
 													</object>
 													<object class ="sizeritem">
@@ -587,7 +616,6 @@
 														<flag>wxALIGN_CENTRE_VERTICAL</flag>
 														<object class	="wxStaticText"> 
 															<label>Select mode:</label>				  			
-
 	 													</object>
 													</object>
 													<object class="sizeritem">
