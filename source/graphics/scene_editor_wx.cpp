@@ -448,8 +448,53 @@ DESCRIPTION :
 Callback from wxChooser<Scene> when choice is made.
 ==============================================================================*/
 	{
-		scene_editor->current_settings_type = new_value;
-		return 1;
+		GT_element_settings *settings;
+		GT_element_settings *newsettings;
+		int return_code;
+
+		if (scene_editor)
+			{
+				scene_editor->current_settings_type = new_value;
+				settings = first_settings_in_GT_element_group_that(
+					scene_editor->edit_gt_element_group,
+					GT_element_settings_type_matches,
+					(void*)scene_editor->current_settings_type);
+				graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
+				int number= graphicalitemschecklist->GetCount();
+				for (int i=0;number>i;i++) 
+					{
+						newsettings = static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(i));
+						if (settings == newsettings)
+							{
+								graphicalitemschecklist->SetSelection(i);
+								break;
+							}
+						graphicalitemschecklist->SetSelection(wxNOT_FOUND);
+					}
+				if (settings != scene_editor->current_settings)
+					{
+						if (scene_editor->current_settings)
+							REACCESS(GT_element_settings)(&(scene_editor->current_settings),
+																						settings);
+						if (settings)
+							{
+								/* if settings_type changed, select it in settings_type option menu */
+								GT_element_settings_type settings_type = GT_element_settings_get_settings_type(settings);
+								if (settings_type != scene_editor->current_settings_type)
+									{
+										scene_editor->current_settings_type = settings_type;
+									}
+							}
+						return_code = 1;
+					}
+			}
+		else
+			{
+				display_message(ERROR_MESSAGE,
+				 "setting type callback.  Invalid argument(s)");
+				return_code =  0;
+			}
+		return (return_code);	
 	}
 
 	int setSceneObject(Scene *scene)
@@ -575,7 +620,6 @@ Set the selected option in the Scene Object chooser.
  			}
 		REACCESS(GT_element_settings)(&scene_editor->current_settings,
 			 settings);
-
 		// If Auto apply
 		if (!GT_element_group_modify(scene_editor->gt_element_group,
 			 scene_editor->edit_gt_element_group))
@@ -607,8 +651,7 @@ Set the selected option in the Scene Object chooser.
 	void  SceneObjectUpClicked(wxCommandEvent &event)
 	{
  		scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
-		
-		int selection = scenechecklist->GetSelection();
+ 		int selection = scenechecklist->GetSelection();
 		if (selection>=1)
 			{
 				SetSceneObjectPosition(static_cast<Scene_object*>(scenechecklist->GetClientData(selection)), scene_editor->scene, selection);
@@ -617,8 +660,7 @@ Set the selected option in the Scene Object chooser.
  				  add_scene_object_to_scene_check_box, (void *)scene_editor);
 				scenechecklist->SetSelection(selection-1);
 			}
-			
-	}
+ 	}
 
 	void  SceneObjectDownClicked(wxCommandEvent &event)
 	{
@@ -892,6 +934,7 @@ Add scene_object as checklistbox item into the box
 		{
 			checklist->Check((checklist->GetCount()-1),1);
 		}
+ 
 
 	DEALLOCATE(name);
 	LEAVE;
@@ -916,12 +959,16 @@ Iterator function for Graphical_element_editor_update_Settings_item.
 	{
 		settings_string = GT_element_settings_string(settings,
 			SETTINGS_STRING_COMPLETE_PLUS);
-		wxCheckListBox *checklist =  XRCCTRL(*scene_editor->wx_scene_editor, "GraphicalItemsListBox",wxCheckListBox);
-		checklist->Append(settings_string, settings);
+		wxCheckListBox *graphicalitemchecklist =  XRCCTRL(*scene_editor->wx_scene_editor, "GraphicalItemsListBox",wxCheckListBox);
+		graphicalitemchecklist->Append(settings_string, settings);
 		if (  GT_element_settings_get_visibility(settings) ==1)
 		{
-			checklist->Check((checklist->GetCount()-1),1);
+			graphicalitemchecklist->Check((graphicalitemchecklist->GetCount()-1),1);
 		}
+		if (graphicalitemchecklist->GetCount() == 1)
+		 {
+		 	graphicalitemchecklist->SetSelection(0);
+		 }
       DEALLOCATE(settings_string);
 		return_code = 1;
 	}
