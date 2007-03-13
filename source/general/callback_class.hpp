@@ -88,8 +88,6 @@ public:
 		return (callee->*member_function)(object);
 	}
 		
-private:
-
 	virtual ~Callback_member_callback()
 	{
 	}
