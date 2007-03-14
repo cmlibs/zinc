@@ -1,3 +1,48 @@
+/*******************************************************************************
+FILE : scene_editor_wx.cpp
+
+LAST MODIFIED : 26 February 2007
+
+DESCRIPTION :
+codes used to build scene editor with wxWidgets.
+==============================================================================*/
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is cmgui.
+ *
+ * The Initial Developer of the Original Code is
+ * Auckland Uniservices Ltd, Auckland, New Zealand.
+ * Portions created by the Initial Developer are Copyright (C) 2005
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+
 extern "C" {
 #include <stdio.h>
 #include "general/debug.h"
@@ -407,7 +452,7 @@ public:
 				wxSceneEditor, int (wxSceneEditor::*)(enum GT_element_settings_type) >
 				(this, &wxSceneEditor::settings_type_callback);
 			settings_type_chooser->set_callback(settings_type_callback);
-
+			settings_type_chooser->set_value(scene_editor->current_settings_type);
 	wxFrame *frame=XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
 	frame->Fit();
 
@@ -610,6 +655,8 @@ Set the selected option in the Scene Object chooser.
  	{
  		graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
 		int selection= graphicalitemschecklist->GetSelection();
+		scene_editor->current_settings_type = GT_element_settings_get_settings_type(settings);
+		settings_type_chooser->set_value(scene_editor->current_settings_type);
 		if (graphicalitemschecklist->IsChecked(selection))
   			{
 					GT_element_settings_set_visibility(settings, 1);
@@ -642,8 +689,7 @@ Set the selected option in the Scene Object chooser.
 
 	void SetSceneObjectPosition(Scene_object *scene_object, Scene *scene, int selection)
 	{
-		
-		REACCESS(Scene_object)(&scene_editor->scene_object, scene_object);
+ 		REACCESS(Scene_object)(&scene_editor->scene_object, scene_object);
 		Scene_set_scene_object_position(scene,scene_object,selection);
 	}
 
@@ -862,6 +908,8 @@ Set the selected option in the Scene Object chooser.
 					{
 						
 						Scene_editor_add_element_settings_item(settings,(void *)scene_editor);
+						wxCheckListBox *graphicalitemchecklist =  XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
+						graphicalitemchecklist->SetSelection((graphicalitemchecklist->GetCount()-1));
 						GT_element_settings_set_visibility(settings, 1);
 						if (!GT_element_group_modify(scene_editor->gt_element_group,
 																				 scene_editor->edit_gt_element_group))
@@ -887,10 +935,46 @@ Set the selected option in the Scene Object chooser.
 
 	void RemoveFromSettingList(wxCommandEvent &event)
 	{
+	int position;
+	GT_element_settings *settings;
+	//	GT_element *edit_gt_element_grou
+	if 	(scene_editor->edit_gt_element_group)
+		{
+		 position = GT_element_group_get_settings_position(
+			 scene_editor->edit_gt_element_group, scene_editor->current_settings);
+		GT_element_group_remove_settings(
+			scene_editor->edit_gt_element_group, scene_editor->current_settings);
+		/* inform the client of the changes */
+		settings = get_settings_at_position_in_GT_element_group(
+		   scene_editor->edit_gt_element_group, position);	
+		wxCheckListBox *graphicalitemchecklist =  XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
+		graphicalitemchecklist->Clear();
+		for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
+		 Scene_editor_add_element_settings_item, (void *)scene_editor);
+		scene_editor->lower_panel->Show();
+		if (position>=1)
+			{
+				graphicalitemchecklist->SetSelection(position-1);
+				settings = get_settings_at_position_in_GT_element_group(
+		          scene_editor->edit_gt_element_group, position);	
+				scene_editor->current_settings_type = GT_element_settings_get_settings_type(static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(position-1)));
+				settings_type_chooser->set_value(scene_editor->current_settings_type);
+			}
+		}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"graphical_element_editor_delete_button_CB.  Invalid argument(s)");
+	}
+	/* if auto apply */
+	if (!GT_element_group_modify(scene_editor->gt_element_group,
+			scene_editor->edit_gt_element_group))
+			{
+				display_message(ERROR_MESSAGE, "wxSceneEditor::UpdateGraphicalElementList.  "
+												"Could not modify graphical element");
+			}
 
  	}
-
-
 
   DECLARE_DYNAMIC_CLASS(wxSceneEditor);
   DECLARE_EVENT_TABLE();
@@ -934,7 +1018,10 @@ Add scene_object as checklistbox item into the box
 		{
 			checklist->Check((checklist->GetCount()-1),1);
 		}
- 
+	if (checklist->GetCount() == 1)
+		{
+		 	checklist->SetSelection(0);
+		}
 
 	DEALLOCATE(name);
 	LEAVE;
@@ -968,6 +1055,8 @@ Iterator function for Graphical_element_editor_update_Settings_item.
 		if (graphicalitemchecklist->GetCount() == 1)
 		 {
 		 	graphicalitemchecklist->SetSelection(0);
+			scene_editor->current_settings_type = GT_element_settings_get_settings_type(settings);
+
 		 }
       DEALLOCATE(settings_string);
 		return_code = 1;
