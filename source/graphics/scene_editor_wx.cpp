@@ -372,7 +372,6 @@ that of the first one in the scene.
 	return (scene_editor_object);
 } /* Scene_editor_get_first_object */
 
-
 #if defined (WX_USER_INTERFACE)
 
 class wxSceneEditor : public wxFrame
@@ -657,6 +656,7 @@ Set the selected option in the Scene Object chooser.
 		int selection= graphicalitemschecklist->GetSelection();
 		scene_editor->current_settings_type = GT_element_settings_get_settings_type(settings);
 		settings_type_chooser->set_value(scene_editor->current_settings_type);
+		
 		if (graphicalitemschecklist->IsChecked(selection))
   			{
 					GT_element_settings_set_visibility(settings, 1);
@@ -911,6 +911,8 @@ Set the selected option in the Scene Object chooser.
 						wxCheckListBox *graphicalitemchecklist =  XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
 						graphicalitemchecklist->SetSelection((graphicalitemchecklist->GetCount()-1));
 						GT_element_settings_set_visibility(settings, 1);
+						REACCESS(GT_element_settings)(&scene_editor->current_settings,
+																					settings);
 						if (!GT_element_group_modify(scene_editor->gt_element_group,
 																				 scene_editor->edit_gt_element_group))
 							{
@@ -936,28 +938,25 @@ Set the selected option in the Scene Object chooser.
 	void RemoveFromSettingList(wxCommandEvent &event)
 	{
 	int position;
-	GT_element_settings *settings;
 	//	GT_element *edit_gt_element_grou
 	if 	(scene_editor->edit_gt_element_group)
 		{
-		 position = GT_element_group_get_settings_position(
-			 scene_editor->edit_gt_element_group, scene_editor->current_settings);
+ 		graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
+		position = GT_element_group_get_settings_position(
+			scene_editor->edit_gt_element_group, scene_editor->current_settings);
+		//		GT_element_settings_set_visibility(static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(position-1)), 0);
 		GT_element_group_remove_settings(
 			scene_editor->edit_gt_element_group, scene_editor->current_settings);
 		/* inform the client of the changes */
-		settings = get_settings_at_position_in_GT_element_group(
-		   scene_editor->edit_gt_element_group, position);	
-		wxCheckListBox *graphicalitemchecklist =  XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
-		graphicalitemchecklist->Clear();
+		graphicalitemschecklist->Clear();
 		for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
 		 Scene_editor_add_element_settings_item, (void *)scene_editor);
-		scene_editor->lower_panel->Show();
 		if (position>=1)
 			{
-				graphicalitemchecklist->SetSelection(position-1);
-				settings = get_settings_at_position_in_GT_element_group(
+				graphicalitemschecklist->SetSelection(position-1);
+				GT_element_settings *settings = get_settings_at_position_in_GT_element_group(
 		          scene_editor->edit_gt_element_group, position);	
-				scene_editor->current_settings_type = GT_element_settings_get_settings_type(static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(position-1)));
+				scene_editor->current_settings_type = GT_element_settings_get_settings_type(static_cast<GT_element_settings*>(settings));
 				settings_type_chooser->set_value(scene_editor->current_settings_type);
 			}
 		}
@@ -1021,6 +1020,49 @@ Add scene_object as checklistbox item into the box
 	if (checklist->GetCount() == 1)
 		{
 		 	checklist->SetSelection(0);
+
+		switch (Scene_object_get_type(scene_object))
+			{
+			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
+				{
+					GT_element_group *gt_element_group = Scene_object_get_graphical_element_group(
+						scene_object);
+
+					GT_element_group *edit_gt_element_group;
+					REACCESS(GT_element_group)(&scene_editor->gt_element_group, gt_element_group);
+					if (gt_element_group)
+						{
+							edit_gt_element_group =
+								create_editor_copy_GT_element_group(gt_element_group);
+							if (!edit_gt_element_group)
+								{
+									display_message(ERROR_MESSAGE,
+																	"graphical_element_editor_set_gt_element_group.  "
+																	"Could not copy graphical element");
+								}
+						}
+					else
+						{
+							edit_gt_element_group = (struct GT_element_group *)NULL;
+						}
+					REACCESS(GT_element_group)(&(scene_editor->edit_gt_element_group),
+																		 edit_gt_element_group);
+					scene_editor->graphicalitemslistbox = XRCCTRL(*scene_editor->wx_scene_editor, "GraphicalItemsListBox",wxCheckListBox);
+					scene_editor->graphicalitemslistbox->Clear();
+					if (edit_gt_element_group)
+						{
+							for_each_settings_in_GT_element_group(edit_gt_element_group,
+						    Scene_editor_add_element_settings_item, (void *)scene_editor);
+							 scene_editor->lower_panel->Show();
+						}
+
+			} break;
+			case SCENE_OBJECT_GRAPHICS_OBJECT:
+			case SCENE_OBJECT_SCENE:
+				{
+					/* nothing to do */
+				} break;
+			}
 		}
 
 	DEALLOCATE(name);
@@ -1040,7 +1082,6 @@ Iterator function for Graphical_element_editor_update_Settings_item.
 	char *settings_string;
 	int return_code;
 	struct Scene_editor *scene_editor;
-
 	ENTER(Scene_editor_add_element_settings_item);
 	if (settings && (scene_editor = static_cast<Scene_editor*>(scene_editor_void)))
 	{
@@ -1055,8 +1096,8 @@ Iterator function for Graphical_element_editor_update_Settings_item.
 		if (graphicalitemchecklist->GetCount() == 1)
 		 {
 		 	graphicalitemchecklist->SetSelection(0);
-			scene_editor->current_settings_type = GT_element_settings_get_settings_type(settings);
-
+			REACCESS(GT_element_settings)(&scene_editor->current_settings,
+																		settings);
 		 }
       DEALLOCATE(settings_string);
 		return_code = 1;
