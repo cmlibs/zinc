@@ -12,6 +12,7 @@
 					<style>wxSP_3D|wxSP_LIVE_UPDATE</style>
 				  <orientation>vertical</orientation>
 					<minsize>1</minsize>
+					<sashpos>200</sashpos>
 				
 				  <object class ="wxPanel" name="LeftPanel">
 			 	    <object class = "wxBoxSizer">	

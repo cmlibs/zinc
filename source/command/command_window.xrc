@@ -124,16 +124,17 @@
 				<object class ="wxSplitterWindow">
 					<style>wxSP_3D|wxSP_LIVE_UPDATE</style>
 				  <orientation>horizontal</orientation>
+					<sashpos>150</sashpos>
 					<minsize>1</minsize>
-
 					<object class ="wxPanel">
 			 	    <object class = "wxBoxSizer">	
       				<orient>wxVERTICAL</orient>
-
+						
 							<object class="sizeritem">
 	 							<flag>wxEXPAND</flag>
 								<option>1</option>
         				<object class="wxListBox" name="CommandHistory">
+						<size>400,-1</size>
           				<style>wxSUNKEN_BORDER</style>
         				</object>  
         				<border>10</border>
@@ -157,6 +158,7 @@
 								<flag>wxEXPAND</flag>
 								<option>1</option>
 			  				<object class="wxTextCtrl" name="OutputWindow">
+						<size>400,400</size>
           				<style>wxTE_MULTILINE|wxTE_READONLY</style>
        					</object>
         				<flag>wxEXPAND|wxALL</flag>

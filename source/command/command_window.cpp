@@ -193,6 +193,7 @@ DESCRIPTION :
 		file */
 #if defined (WX_USER_INTERFACE)
 	       wxCommandWindow *wx_command_window;
+	wxFrame *frame;
 #endif
 	FILE *out_file;
 	enum Command_window_outfile_mode out_file_mode;
@@ -2350,6 +2351,10 @@ Create the structures and retrieve the command window from the uil file.
 			wxXmlResource::Get()->LoadFrame(command_window->wx_command_window,
 			   (wxWindow *)NULL, _T("CmguiCommandWindow"));
 			command_window->wx_command_window->Show();
+			command_window->frame = 
+			  XRCCTRL(*command_window->wx_command_window, "CmguiCommandWindow", wxFrame);
+			command_window->frame->Layout();
+			command_window->frame->SetMinSize(wxSize(1,1));	
 #endif /* switch (USER_INTERFACE) */
 		}
 		else

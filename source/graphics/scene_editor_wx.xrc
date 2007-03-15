@@ -12,6 +12,7 @@
 					<orient>wxHORIZONTAL</orient>
 					<object class ="sizeritem">
 						<flag>wxALIGN_CENTER</flag>
+						<option>0</option>
 						<object class = "wxStaticText" name="scene-text">
 	   						<label>Scene:</label>
 						</object>
@@ -20,15 +21,14 @@
 						<flag>wxALIGN_CENTRE</flag>
 						<option>1</option>
 						<object class="wxPanel" name="SceneObjectChooserPanel">
-							<size>-1,30</size>
-							<minsize>100,-1</minsize>
+							<size>100,30</size>
 		   	    		</object>
 	    	  		</object>
 					<object class ="sizeritem">
+						<flag>wxALIGN_CENTRE|wxALIGN_LEFT</flag>
 						<option>0</option>
-						<flag>wxALIGN_CENTRE</flag>
 						<object class = "wxStaticText">
-							<label>                 Current Object:</label>
+							<label>   Current Object:</label>
 						</object>
 					</object>
 					<object class ="sizeritem">

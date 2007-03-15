@@ -175,7 +175,7 @@ Prototype.
 ==============================================================================*/
 
 static int Scene_editor_add_element_settings_item(
-																					 struct GT_element_settings *settings, void *scene_editor_void);
+																									struct GT_element_settings *settings, void *scene_editor_void);
 /*
 Module functions
 ----------------
@@ -617,18 +617,16 @@ Set the selected option in the Scene Object chooser.
 	{
 		GT_element_group *gt_element_group;
 		REACCESS(Scene_object)(&scene_editor->scene_object, scene_object);
-
  		scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
-		int selection=scenechecklist->GetSelection();
-
-		if(scenechecklist->IsChecked(selection))
-  			{
-  				Scene_object_set_visibility(scene_object, g_VISIBLE);
-  			}
-  		else
- 			{
- 				Scene_object_set_visibility(scene_object, g_INVISIBLE);
- 			}
+		int selection =	scenechecklist->GetSelection();
+				if(scenechecklist->IsChecked(selection))
+					{
+						Scene_object_set_visibility(scene_object, g_VISIBLE);
+					}
+				else
+					{
+						Scene_object_set_visibility(scene_object, g_INVISIBLE);
+					}
 
 		switch (Scene_object_get_type(scene_object))
 			{
@@ -652,21 +650,23 @@ Set the selected option in the Scene Object chooser.
 
  	void 	UpdateGraphicalElementList(GT_element_settings *settings)
  	{
+		
  		graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
-		int selection= graphicalitemschecklist->GetSelection();
+		int selection =	graphicalitemschecklist->GetSelection();
+		REACCESS(GT_element_settings)(&scene_editor->current_settings, settings);
 		scene_editor->current_settings_type = GT_element_settings_get_settings_type(settings);
 		settings_type_chooser->set_value(scene_editor->current_settings_type);
 		
-		if (graphicalitemschecklist->IsChecked(selection))
-  			{
-					GT_element_settings_set_visibility(settings, 1);
-  			}
-  		else
- 			{
- 				GT_element_settings_set_visibility(settings, 0);
- 			}
-		REACCESS(GT_element_settings)(&scene_editor->current_settings,
-			 settings);
+				if (graphicalitemschecklist->IsChecked(selection))
+					{
+						GT_element_settings_set_visibility(settings, 1);
+					}
+				else
+					{
+						GT_element_settings_set_visibility(settings, 0);
+					}
+// 		REACCESS(GT_element_settings)(&scene_editor->current_settings,
+// 			 settings);
 		// If Auto apply
 		if (!GT_element_group_modify(scene_editor->gt_element_group,
 			 scene_editor->edit_gt_element_group))
@@ -716,10 +716,10 @@ Set the selected option in the Scene Object chooser.
 		if (number>=(selection+2))
 			{
 				SetSceneObjectPosition(static_cast<Scene_object*>(scenechecklist->GetClientData(selection)), scene_editor->scene,(selection+2));
- 		scenechecklist->Clear();
- 		for_each_Scene_object_in_Scene(scene_editor->scene,
- 																	 add_scene_object_to_scene_check_box, (void *)scene_editor);
-		scenechecklist->SetSelection(selection+1);
+				scenechecklist->Clear();
+				for_each_Scene_object_in_Scene(scene_editor->scene,
+																			 add_scene_object_to_scene_check_box, (void *)scene_editor);
+				scenechecklist->SetSelection(selection+1);
 			}
 	}
 
@@ -752,8 +752,7 @@ Set the selected option in the Scene Object chooser.
 					}
 				else
 					{
-						//#if defined (NEW_CODE)
-						/* set materials for all settings */
+					 	/* set materials for all settings */
 						GT_element_settings_set_material(settings,
 																						 scene_editor->default_material);
 						GT_element_settings_set_label_field(settings,
@@ -901,39 +900,25 @@ Set the selected option in the Scene Object chooser.
 							{
 								GT_element_settings_set_use_element_type(settings,USE_ELEMENTS);
 							}
-						//#endif // defined (NEW_CODE)
 					}
 				if (return_code && GT_element_group_add_settings(
 																												 scene_editor->edit_gt_element_group, settings, 0))
 					{
 						
-						Scene_editor_add_element_settings_item(settings,(void *)scene_editor);
-						wxCheckListBox *graphicalitemchecklist =  XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
-						graphicalitemchecklist->SetSelection((graphicalitemchecklist->GetCount()-1));
-						GT_element_settings_set_visibility(settings, 1);
-						REACCESS(GT_element_settings)(&scene_editor->current_settings,
-																					settings);
-						if (!GT_element_group_modify(scene_editor->gt_element_group,
-																				 scene_editor->edit_gt_element_group))
-							{
-								display_message(ERROR_MESSAGE, "wxSceneEditor::UpdateGraphicalElementList.  "
-																"Could not modify graphical element");
-							}
 					 	//Update the list of settings
-						//Graphical_element_editor_update_settings_list(scene_editor);
-
-						//Set current settings to the one we just made
-						//Graphical_element_editor_set_current_settings(scene_editor, settings);
-
-						//If auto copy edit_gt_element_group to gt_element_group
+						wxCheckListBox *graphicalitemchecklist =  XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
+						graphicalitemschecklist->Clear();
+						for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
+						  Scene_editor_add_element_settings_item, (void *)scene_editor);
+						graphicalitemchecklist->SetSelection((graphicalitemchecklist->GetCount()-1));
+						UpdateGraphicalElementList(static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(graphicalitemchecklist->GetCount()-1)));
 					}
 				if (!return_code)
 					{
 						DESTROY(GT_element_settings)(&settings);
 					}
 			}
-
- 	}
+	}
 
 	void RemoveFromSettingList(wxCommandEvent &event)
 	{
@@ -954,10 +939,7 @@ Set the selected option in the Scene Object chooser.
 		if (position>=1)
 			{
 				graphicalitemschecklist->SetSelection(position-1);
-				GT_element_settings *settings = get_settings_at_position_in_GT_element_group(
-		          scene_editor->edit_gt_element_group, position);	
-				scene_editor->current_settings_type = GT_element_settings_get_settings_type(static_cast<GT_element_settings*>(settings));
-				settings_type_chooser->set_value(scene_editor->current_settings_type);
+						UpdateGraphicalElementList(static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(position-1)));
 			}
 		}
 	else
@@ -972,8 +954,80 @@ Set the selected option in the Scene Object chooser.
 				display_message(ERROR_MESSAGE, "wxSceneEditor::UpdateGraphicalElementList.  "
 												"Could not modify graphical element");
 			}
-
  	}
+
+	void MoveUpInSettingList(wxCommandEvent &event)
+	{
+	int position;
+	GT_element_settings *settings;
+	if (scene_editor->edit_gt_element_group)
+	{
+		if (1 < (position = GT_element_group_get_settings_position(
+			scene_editor->edit_gt_element_group, scene_editor->current_settings)))
+		{
+			settings = scene_editor->current_settings;
+			ACCESS(GT_element_settings)(settings);
+			GT_element_group_remove_settings(scene_editor->edit_gt_element_group,
+				scene_editor->current_settings);
+			GT_element_group_add_settings(scene_editor->edit_gt_element_group,
+				scene_editor->current_settings, position - 1);
+			DEACCESS(GT_element_settings)(&settings);
+						graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
+						graphicalitemschecklist->Clear();
+						for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
+						  Scene_editor_add_element_settings_item, (void *)scene_editor);
+						graphicalitemschecklist->SetSelection(position-2);
+						UpdateGraphicalElementList(static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(position-2)));
+			/* By default the settings name is the position, so it needs to be updated
+			 even though the settings hasn't actually changed */
+			/* inform the client of the change */
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"graphical_element_editor_up_button_CB.  Invalid argument(s)");
+	}
+
+	}
+
+	void MoveDownInSettingList(wxCommandEvent &event)
+	{
+		int position;
+		GT_element_settings *settings;
+
+		if 	(scene_editor->edit_gt_element_group)
+			{
+				if (GT_element_group_get_number_of_settings(
+					   scene_editor->edit_gt_element_group) >
+						(position = GT_element_group_get_settings_position(
+							scene_editor->edit_gt_element_group, scene_editor->current_settings)))
+					{
+						settings = scene_editor->current_settings;
+						ACCESS(GT_element_settings)(settings);
+						GT_element_group_remove_settings(scene_editor->edit_gt_element_group,
+						   scene_editor->current_settings);
+						GT_element_group_add_settings(scene_editor->edit_gt_element_group,
+							 scene_editor->current_settings, position + 1);
+						DEACCESS(GT_element_settings)(&settings);
+						//		Graphical_element_editor_update_settings_list(scene_editor);
+						graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
+						graphicalitemschecklist->Clear();
+						for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
+						  Scene_editor_add_element_settings_item, (void *)scene_editor);
+						graphicalitemschecklist->SetSelection(position);
+						UpdateGraphicalElementList(static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(position)));
+			/* By default the settings name is the position, so it needs to be updated
+			 even though the settings hasn't actually changed */
+			/* inform the client of the change */
+					}
+			}
+		else
+			{
+				display_message(ERROR_MESSAGE,
+												"graphical_element_editor_down_button_CB.  Invalid argument(s)");
+			}
+	}
 
   DECLARE_DYNAMIC_CLASS(wxSceneEditor);
   DECLARE_EVENT_TABLE();
@@ -992,6 +1046,8 @@ BEGIN_EVENT_TABLE(wxSceneEditor, wxFrame)
   	EVT_LISTBOX(XRCID("GraphicalItemsListBox"), wxSceneEditor::GraphicalItemsListBoxClicked)
 	EVT_BUTTON(XRCID("AddButton"),wxSceneEditor::AddToSettingList)
 	EVT_BUTTON(XRCID("DelButton"),wxSceneEditor::RemoveFromSettingList)
+	EVT_BUTTON(XRCID("UpButton"),wxSceneEditor::MoveUpInSettingList)
+	EVT_BUTTON(XRCID("DownButton"),wxSceneEditor::MoveDownInSettingList)
 END_EVENT_TABLE()
 
 
@@ -1052,7 +1108,7 @@ Add scene_object as checklistbox item into the box
 					if (edit_gt_element_group)
 						{
 							for_each_settings_in_GT_element_group(edit_gt_element_group,
-						    Scene_editor_add_element_settings_item, (void *)scene_editor);
+																										Scene_editor_add_element_settings_item, (void *)scene_editor);
 							 scene_editor->lower_panel->Show();
 						}
 
@@ -1071,7 +1127,7 @@ return(1);
  };
 
 static int Scene_editor_add_element_settings_item(
-   struct GT_element_settings *settings, void *scene_editor_void)
+																									struct GT_element_settings *settings, void *scene_editor_void)
 /*******************************************************************************
 LAST MODIFIED : 19 November 2001
 
@@ -1087,15 +1143,15 @@ Iterator function for Graphical_element_editor_update_Settings_item.
 	{
 		settings_string = GT_element_settings_string(settings,
 			SETTINGS_STRING_COMPLETE_PLUS);
-		wxCheckListBox *graphicalitemchecklist =  XRCCTRL(*scene_editor->wx_scene_editor, "GraphicalItemsListBox",wxCheckListBox);
-		graphicalitemchecklist->Append(settings_string, settings);
+		wxCheckListBox *graphicalitemschecklist =  XRCCTRL(*scene_editor->wx_scene_editor, "GraphicalItemsListBox",wxCheckListBox);
+		graphicalitemschecklist->Append(settings_string, settings);
 		if (  GT_element_settings_get_visibility(settings) ==1)
 		{
-			graphicalitemchecklist->Check((graphicalitemchecklist->GetCount()-1),1);
+			graphicalitemschecklist->Check((graphicalitemschecklist->GetCount()-1),1);
 		}
-		if (graphicalitemchecklist->GetCount() == 1)
+		if (graphicalitemschecklist->GetCount() == 1)
 		 {
-		 	graphicalitemchecklist->SetSelection(0);
+		 	graphicalitemschecklist->SetSelection(0);
 			REACCESS(GT_element_settings)(&scene_editor->current_settings,
 																		settings);
 		 }
