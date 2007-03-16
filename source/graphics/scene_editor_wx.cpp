@@ -61,6 +61,7 @@ extern "C" {
 #include "choose/choose_enumerator_class.hpp"
 #include <wx/collpane.h>
 #include <wx/splitter.h>
+#include "computed_field/computed_field_finite_element.h"
 extern "C" {
 #include "graphics/scene_editor_wx.h"
 }
@@ -138,11 +139,11 @@ DESCRIPTION :
 	struct Computed_field_package *computed_field_package;
 	enum GT_element_settings_type current_settings_type;
 	struct GT_element_settings *current_settings;
+	struct Computed_field *default_coordinate_field;
 	struct LIST(GT_object) *glyph_list;
 	struct MANAGER(VT_volume_texture) *volume_texture_manager;
-	
-
-
+	struct MANAGER(Computed_field) *computed_field_manager;
+	struct FE_field *native_discretization_field;
 #if defined (WX_USER_INTERFACE)
 	wxSceneEditor *wx_scene_editor;
 	wxPanel *lower_panel;
@@ -152,6 +153,9 @@ DESCRIPTION :
 	wxCheckListBox *graphicalitemslistbox;
 	wxSplitterWindow *lowersplitter;
 	wxSplitterWindow *topsplitter;
+	wxCheckBox *autocheckbox;
+	wxButton *applybutton;
+	wxButton *revertbutton;
 #endif /*defined (WX_USER_INTERFACE)*/
 }; /*struct Scene_editor*/
 
@@ -164,6 +168,7 @@ LAST MODIFIED : 31 October 2001
 DESCRIPTION :
 Prototype.
 ==============================================================================*/
+static int set_general_settings(void *scene_editor_void);
 
 static int add_scene_object_to_scene_check_box(struct Scene_object *scene_object,
 																							 void *scene_editor_void);
@@ -356,9 +361,6 @@ that of the first one in the scene.
 			/* get the first scene_editor_object in scene -- can't get first in
 				 scene_editor_objects list since ordered by name */
 			GET_NAME(Scene_object)(scene_object, &name);
-//			scene_editor_object =
-//				FIND_BY_IDENTIFIER_IN_LIST(Scene_editor_object, name)(name,
-//					scene_editor->scene_editor_objects);
   		DEALLOCATE(name);
 		}
 	}
@@ -388,9 +390,20 @@ class wxSceneEditor : public wxFrame
 	wxStaticText *currentsceneobjecttext;
 	wxButton *sceneupbutton;
 	wxButton *scenedownbutton;
+	wxCheckBox *nativediscretizationcheckbox;
+	wxCheckBox *autocheckbox;
+	wxButton *applybutton;
+	wxButton *revertbutton;
 	DEFINE_MANAGER_CLASS(Scene);
 	Managed_object_chooser<Scene,MANAGER_CLASS(Scene)>
 		*scene_chooser;
+	wxString TempText;
+	DEFINE_MANAGER_CLASS(Computed_field);
+	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+		*computed_field_chooser;
+	//	DEFINE_MANAGER_CLASS(Computed_field);
+	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+	  *FE_field_chooser;	
 
 	DEFINE_ENUMERATOR_TYPE_CLASS(GT_element_settings_type);
 	Enumerator_chooser<ENUMERATOR_TYPE_CLASS(GT_element_settings_type)>
@@ -412,7 +425,7 @@ public:
   wxPanel *scene_object_chooser_panel = 
 		XRCCTRL(*this, "SceneObjectChooserPanel", wxPanel);
 	scene_chooser = 
-		new Managed_object_chooser<Scene,MANAGER_CLASS(Scene)>
+  new Managed_object_chooser<Scene,MANAGER_CLASS(Scene)>
 	  (scene_object_chooser_panel, scene_editor->scene, scene_editor->scene_manager,
 	  (MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL, (void *)NULL, scene_editor->user_interface);
 	  Callback_base< Scene* > *scene_object_callback = 
@@ -436,6 +449,35 @@ public:
 	 XRCCTRL(*this, "CmguiSceneEditor", wxPanel);
   lowestpanel->Fit();
 
+
+	/* Set the default_coordinate_field_chooser_panel*/
+		scene_editor->default_coordinate_field=
+			GT_element_group_get_default_coordinate_field(scene_editor->edit_gt_element_group);
+	wxPanel *default_coordinate_field_chooser_panel =
+		XRCCTRL(*this, "DefaultCoordinateFieldChooser",wxPanel);
+	computed_field_chooser = 
+		new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+	  (default_coordinate_field_chooser_panel, scene_editor->default_coordinate_field, scene_editor->computed_field_manager,
+		 (MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL, (void *)NULL, scene_editor->user_interface);
+	  Callback_base< Computed_field* > *default_coordinate_field_callback = 
+		  new Callback_member_callback< Computed_field*, 
+		  wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
+		  (this, &wxSceneEditor::default_coordinate_field_callback);
+      computed_field_chooser->set_callback(default_coordinate_field_callback);
+	/* Set the native_discretisation_chooser_panel*/
+ 			scene_editor->native_discretization_field = GT_element_group_get_native_discretization_field(scene_editor->edit_gt_element_group);
+ 			wxPanel *native_discretization_field_chooser =
+ 				XRCCTRL(*this, "NativeDiscretisationFieldChooser",wxPanel);			
+ 			FE_field_chooser =
+ 				new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+ 				(native_discretization_field_chooser, /*scene_editor->native_discretization_field*/(Computed_field*)NULL, scene_editor->computed_field_manager,
+				 Computed_field_is_type_finite_element_iterator, (void *)NULL, scene_editor->user_interface);
+ 			Callback_base< Computed_field* > *native_discretization_field_callback = 
+ 				new Callback_member_callback< Computed_field*, 
+ 		  wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
+ 				(this, &wxSceneEditor::native_discretization_field_callback);
+       FE_field_chooser->set_callback(native_discretization_field_callback);
+
 			// Graphical element settings type chooser
 			wxPanel *settings_type_chooser_panel = 
 				XRCCTRL(*this, "TypeFormChooser", wxPanel);
@@ -452,7 +494,7 @@ public:
 				(this, &wxSceneEditor::settings_type_callback);
 			settings_type_chooser->set_callback(settings_type_callback);
 			settings_type_chooser->set_value(scene_editor->current_settings_type);
-	wxFrame *frame=XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
+			wxFrame *frame=XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
 	frame->Fit();
 
  Show();
@@ -465,6 +507,7 @@ public:
   ~wxSceneEditor()
   {
 	  delete scene_chooser;
+	  delete computed_field_chooser;
   }
 
 	int scene_object_callback(Scene *scene)
@@ -482,6 +525,66 @@ Callback from wxChooser<Scene> when choice is made.
  		for_each_Scene_object_in_Scene(scene,
  																	 add_scene_object_to_scene_check_box, (void *)scene_editor);
 		return 1;
+	}
+
+	int default_coordinate_field_callback(Computed_field *default_coordinate_field)
+/*******************************************************************************
+LAST MODIFIED : 9 February 2007
+
+DESCRIPTION :
+Callback from wxChooser<Scene> when choice is made.
+==============================================================================*/
+ {
+	if (default_coordinate_field&&
+		scene_editor)
+	{
+		GT_element_group_set_default_coordinate_field(
+			scene_editor->edit_gt_element_group,
+			(struct Computed_field *)default_coordinate_field);
+		/* inform the client of the change */
+		 set_general_settings((void *)scene_editor);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"graphical_element_editor_update_default_coordinate_field.  "
+			"Invalid argument(s)");
+	}
+		return 1;
+} /* graphical_element_editor_update_default_coordinate_field */
+	
+
+	int native_discretization_field_callback(Computed_field *native_discretization_field)
+/*******************************************************************************
+LAST MODIFIED : 9 February 2007
+
+DESCRIPTION :
+Callback from wxChooser<Scene> when choice is made.
+==============================================================================*/
+	{
+		int return_code;
+
+		return_code = Computed_field_get_type_finite_element(native_discretization_field,
+			&scene_editor->native_discretization_field);
+
+		
+		if (GT_element_group_get_native_discretization_field(
+			scene_editor->edit_gt_element_group))
+		{
+			GT_element_group_set_native_discretization_field(
+				scene_editor->edit_gt_element_group,
+				scene_editor->native_discretization_field);
+			/* inform the client of the change */
+			set_general_settings((void *)scene_editor);
+		}
+		else
+			{
+				display_message(ERROR_MESSAGE,
+												"graphical_element_editor_update_native_discretization_field.  "
+												"Invalid argument(s)");
+			}	
+
+		return (return_code);
 	}
 
 	int settings_type_callback(enum GT_element_settings_type new_value)
@@ -566,6 +669,20 @@ Set the selected option in the Scene Object chooser.
 			frame->SetMaxSize(wxSize(2000,2000));
 	}
 
+	void AutoApplyorNot(struct GT_element_group  *gt_element_group, GT_element_group *edit_gt_element_group)
+	{
+		autocheckbox = XRCCTRL(*this, "AutoCheckBox", wxCheckBox);
+		if(autocheckbox->IsChecked())
+			{
+				if (!GT_element_group_modify(gt_element_group,
+																	edit_gt_element_group))
+					{
+						display_message(ERROR_MESSAGE, "wxSceneEditor::UpdateGraphicalElementList.  "
+														"Could not modify graphical element");
+					}
+		  }
+	}
+
       void ResetWindow(wxSplitterEvent& event)
   	{
 			sceneediting = 
@@ -581,6 +698,124 @@ Set the selected option in the Scene Object chooser.
 			frame->Layout();
 			frame->SetMinSize(wxSize(50,100));
 		}
+
+	void ElementDiscretisationUpdate(wxCommandEvent &event)
+	{
+		struct Parse_state *temp_state;
+		struct Element_discretization element_discretization,
+			old_element_discretization;
+		wxTextCtrl *elementdiscretisationpanel=XRCCTRL(*this, "ElementDiscretisationPanel",wxTextCtrl);
+		TempText = elementdiscretisationpanel->GetValue();
+
+		if (TempText)
+		{
+			if (temp_state=create_Parse_state(const_cast<char *>(TempText.c_str())))
+			{
+				if (GT_element_group_get_element_discretization(
+					scene_editor->edit_gt_element_group, &old_element_discretization) &&
+					set_Element_discretization(temp_state,
+						(void *)&element_discretization,
+						(void *)scene_editor->user_interface) &&
+					((element_discretization.number_in_xi1 !=
+						old_element_discretization.number_in_xi1) ||
+						(element_discretization.number_in_xi2 !=
+							old_element_discretization.number_in_xi2) ||
+						(element_discretization.number_in_xi3 !=
+							old_element_discretization.number_in_xi3)) &&
+					GT_element_group_set_element_discretization(
+						scene_editor->edit_gt_element_group,
+						&element_discretization))
+				{
+					/* inform the client of the changes */
+				}
+				destroy_Parse_state(&temp_state);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"graphical_element_editor_element_disc_text_CB.  "
+					"Could not create parse state");
+			}
+			set_general_settings((void *)scene_editor);
+		}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"graphical_element_editor_element_disc_text_CB.  Invalid argument(s)");
+	}
+	AutoApplyorNot(scene_editor->gt_element_group,
+								 scene_editor->edit_gt_element_group);
+	}
+
+	void NativeDiscretisationFieldChecked(wxCommandEvent &event)
+	{
+		nativediscretizationcheckbox = XRCCTRL(*this, "NativeDiscretisationFieldCheckBox",wxCheckBox);
+		wxPanel *native_discretization_field_chooser_panel = XRCCTRL(*this, "NativeDiscretisationFieldChooser",wxPanel);
+		if (nativediscretizationcheckbox->IsChecked())
+			{
+			native_discretization_field_chooser_panel->Enable();
+			}
+		else
+			{
+			native_discretization_field_chooser_panel->Disable();
+			}			
+	}
+
+	void AutoChecked(wxCommandEvent &event)
+	{
+		autocheckbox = XRCCTRL(*this, "AutoCheckBox", wxCheckBox);
+		applybutton = XRCCTRL(*this, "ApplyButton", wxButton);
+		revertbutton = XRCCTRL(*this,"RevertButton", wxButton);
+		if(autocheckbox->IsChecked())
+			{
+				applybutton->Disable();
+		       revertbutton->Disable();
+	AutoApplyorNot(scene_editor->gt_element_group,
+								 scene_editor->edit_gt_element_group);
+			}
+		else
+			{
+				applybutton->Enable();
+		       revertbutton->Enable();
+			}
+	}
+
+	void ApplyClicked(wxCommandEvent &event)
+	{
+ 				if (!GT_element_group_modify(scene_editor->gt_element_group,
+																	scene_editor->edit_gt_element_group))
+					{
+						display_message(ERROR_MESSAGE, "wxSceneEditor::UpdateGraphicalElementList.  "
+														"Could not modify graphical element");
+					}
+	}
+
+	void CircleDiscretisationUpdate(wxCommandEvent &event)
+	{
+		int circle_discretization;
+		wxTextCtrl *circlediscretisationpanel =	 XRCCTRL(*this, "CircleDiscretisationPanel",wxTextCtrl);
+		TempText = circlediscretisationpanel->GetValue();
+		if (TempText)
+		{
+			circle_discretization = atoi(const_cast<char *>(TempText.c_str()));
+			if ((circle_discretization != GT_element_group_get_circle_discretization(
+				scene_editor->edit_gt_element_group)) &&
+				GT_element_group_set_circle_discretization(
+					scene_editor->edit_gt_element_group, circle_discretization))
+				{
+				}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"graphical_element_editor_circle_disc_text_CB.  Missing text");
+		}
+		/* always redisplay discretization to show assumed values */
+		set_general_settings((void *)scene_editor);
+
+	AutoApplyorNot(scene_editor->gt_element_group,
+								 scene_editor->edit_gt_element_group);
+	 }
 
 	void SetGraphicalElementGroup(GT_element_group *gt_element_group)
 	{
@@ -610,6 +845,7 @@ Set the selected option in the Scene Object chooser.
 				for_each_settings_in_GT_element_group(edit_gt_element_group,
 				 Scene_editor_add_element_settings_item, (void *)scene_editor);
 				scene_editor->lower_panel->Show();
+				set_general_settings((void *)scene_editor);
 			}
 	}
 
@@ -634,7 +870,7 @@ Set the selected option in the Scene Object chooser.
 				{
 					gt_element_group = Scene_object_get_graphical_element_group(
 						scene_object);
-
+					computed_field_chooser->set_object(GT_element_group_get_default_coordinate_field(scene_editor->gt_element_group));
 					SetGraphicalElementGroup(gt_element_group);
 			} break;
 			case SCENE_OBJECT_GRAPHICS_OBJECT:
@@ -650,7 +886,6 @@ Set the selected option in the Scene Object chooser.
 
  	void 	UpdateGraphicalElementList(GT_element_settings *settings)
  	{
-		
  		graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
 		int selection =	graphicalitemschecklist->GetSelection();
 		REACCESS(GT_element_settings)(&scene_editor->current_settings, settings);
@@ -665,15 +900,10 @@ Set the selected option in the Scene Object chooser.
 					{
 						GT_element_settings_set_visibility(settings, 0);
 					}
-// 		REACCESS(GT_element_settings)(&scene_editor->current_settings,
-// 			 settings);
-		// If Auto apply
-		if (!GT_element_group_modify(scene_editor->gt_element_group,
-			 scene_editor->edit_gt_element_group))
-			{
-				display_message(ERROR_MESSAGE, "wxSceneEditor::UpdateGraphicalElementList.  "
-												"Could not modify graphical element");
-			}
+				
+				AutoApplyorNot(scene_editor->gt_element_group,
+											 scene_editor->edit_gt_element_group);
+
  	}
 
 	void SceneCheckListClicked(wxCommandEvent &event)
@@ -904,8 +1134,7 @@ Set the selected option in the Scene Object chooser.
 				if (return_code && GT_element_group_add_settings(
 																												 scene_editor->edit_gt_element_group, settings, 0))
 					{
-						
-					 	//Update the list of settings
+						//Update the list of settings
 						wxCheckListBox *graphicalitemchecklist =  XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
 						graphicalitemschecklist->Clear();
 						for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
@@ -929,7 +1158,6 @@ Set the selected option in the Scene Object chooser.
  		graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
 		position = GT_element_group_get_settings_position(
 			scene_editor->edit_gt_element_group, scene_editor->current_settings);
-		//		GT_element_settings_set_visibility(static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(position-1)), 0);
 		GT_element_group_remove_settings(
 			scene_editor->edit_gt_element_group, scene_editor->current_settings);
 		/* inform the client of the changes */
@@ -939,7 +1167,7 @@ Set the selected option in the Scene Object chooser.
 		if (position>=1)
 			{
 				graphicalitemschecklist->SetSelection(position-1);
-						UpdateGraphicalElementList(static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(position-1)));
+				UpdateGraphicalElementList(static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(position-1)));
 			}
 		}
 	else
@@ -948,13 +1176,9 @@ Set the selected option in the Scene Object chooser.
 			"graphical_element_editor_delete_button_CB.  Invalid argument(s)");
 	}
 	/* if auto apply */
-	if (!GT_element_group_modify(scene_editor->gt_element_group,
-			scene_editor->edit_gt_element_group))
-			{
-				display_message(ERROR_MESSAGE, "wxSceneEditor::UpdateGraphicalElementList.  "
-												"Could not modify graphical element");
-			}
- 	}
+	AutoApplyorNot(scene_editor->gt_element_group,
+								 scene_editor->edit_gt_element_group);
+		}
 
 	void MoveUpInSettingList(wxCommandEvent &event)
 	{
@@ -1029,6 +1253,23 @@ Set the selected option in the Scene Object chooser.
 			}
 	}
 
+	void RenewGeneralSettingChooser(GT_element_group *edit_gt_element_group)
+	{
+		computed_field_chooser->set_object(GT_element_group_get_default_coordinate_field(edit_gt_element_group));
+		nativediscretizationcheckbox = XRCCTRL(*this, "NativeDiscretisationFieldCheckBox",wxCheckBox);
+		wxPanel *native_discretization_field_chooser_panel = XRCCTRL(*this, "NativeDiscretisationFieldChooser",wxPanel);
+		if (nativediscretizationcheckbox->IsChecked())
+			{
+			native_discretization_field_chooser_panel->Enable();
+			}
+		else
+			{
+			native_discretization_field_chooser_panel->Disable();
+			}			
+		//		FE_field_chooser->set_object();
+	}
+
+	
   DECLARE_DYNAMIC_CLASS(wxSceneEditor);
   DECLARE_EVENT_TABLE();
 };
@@ -1038,6 +1279,11 @@ IMPLEMENT_DYNAMIC_CLASS(wxSceneEditor, wxFrame)
 BEGIN_EVENT_TABLE(wxSceneEditor, wxFrame)
 	EVT_SPLITTER_SASH_POS_CHANGED(XRCID("LowerSplitter"),wxSceneEditor::ResetWindow)
 	EVT_COLLAPSIBLEPANE_CHANGED(XRCID("CollapsiblePane"), wxSceneEditor::ResetScrolledWindow)
+	EVT_TEXT_ENTER(XRCID("CircleDiscretisationPanel"), wxSceneEditor::CircleDiscretisationUpdate)
+	EVT_TEXT_ENTER(XRCID("ElementDiscretisationPanel"), wxSceneEditor::ElementDiscretisationUpdate)
+	EVT_CHECKBOX(XRCID("NativeDiscretisationFieldCheckBox"),wxSceneEditor::NativeDiscretisationFieldChecked)
+	EVT_CHECKBOX(XRCID("AutoCheckBox"),wxSceneEditor::AutoChecked)
+	EVT_BUTTON(XRCID("ApplyButton"),wxSceneEditor::ApplyClicked)
 	EVT_CHECKLISTBOX(XRCID("SceneCheckList"), wxSceneEditor::SceneCheckListClicked)
 	EVT_LISTBOX(XRCID("SceneCheckList"), wxSceneEditor::SceneCheckListClicked)
 	EVT_BUTTON(XRCID("SceneObjectUpButton"),wxSceneEditor::SceneObjectUpClicked)
@@ -1050,6 +1296,26 @@ BEGIN_EVENT_TABLE(wxSceneEditor, wxFrame)
 	EVT_BUTTON(XRCID("DownButton"),wxSceneEditor::MoveDownInSettingList)
 END_EVENT_TABLE()
 
+static int set_general_settings(void *scene_editor_void)
+{
+	Scene_editor *scene_editor = static_cast<Scene_editor*>(scene_editor_void);
+	struct Element_discretization element_discretization;
+	wxTextCtrl *circlediscretisationpanel =	 XRCCTRL(*scene_editor->wx_scene_editor, "CircleDiscretisationPanel",wxTextCtrl);
+	wxTextCtrl *elementdiscretisationpanel =	 XRCCTRL(*scene_editor->wx_scene_editor, "ElementDiscretisationPanel",wxTextCtrl);
+	char temp_string[80];
+	scene_editor->wx_scene_editor->RenewGeneralSettingChooser(scene_editor->edit_gt_element_group);
+	int temp = GT_element_group_get_circle_discretization(scene_editor->edit_gt_element_group);
+	wxString circle_discretisation = wxString::Format(wxT("%d"), (int)temp);
+	circlediscretisationpanel->SetValue(circle_discretisation);
+	GT_element_group_get_element_discretization(
+	  scene_editor->edit_gt_element_group,&element_discretization);
+	sprintf(temp_string,"%d*%d*%d",
+		element_discretization.number_in_xi1,
+		element_discretization.number_in_xi2,
+		element_discretization.number_in_xi3);
+	 elementdiscretisationpanel->SetValue(temp_string);
+	return 1;
+}
 
 static int add_scene_object_to_scene_check_box(struct Scene_object *scene_object,
 					      void *scene_editor_void)
@@ -1076,7 +1342,6 @@ Add scene_object as checklistbox item into the box
 	if (checklist->GetCount() == 1)
 		{
 		 	checklist->SetSelection(0);
-
 		switch (Scene_object_get_type(scene_object))
 			{
 			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
@@ -1110,8 +1375,8 @@ Add scene_object as checklistbox item into the box
 							for_each_settings_in_GT_element_group(edit_gt_element_group,
 																										Scene_editor_add_element_settings_item, (void *)scene_editor);
 							 scene_editor->lower_panel->Show();
+							 set_general_settings((void *)scene_editor);
 						}
-
 			} break;
 			case SCENE_OBJECT_GRAPHICS_OBJECT:
 			case SCENE_OBJECT_SCENE:
@@ -1226,7 +1491,10 @@ DESCRIPTION :
 			scene_editor->computed_field_package=computed_field_package ;
 			scene_editor->current_settings_type=GT_ELEMENT_SETTINGS_LINES;		
 			scene_editor->current_settings=(GT_element_settings*)NULL;
+			scene_editor->default_coordinate_field=(Computed_field *)NULL;
 			scene_editor->volume_texture_manager=volume_texture_manager;
+			scene_editor->computed_field_manager=Computed_field_package_get_computed_field_manager(computed_field_package);
+			scene_editor->native_discretization_field=(FE_field*)NULL ;
 #if defined (WX_USER_INTERFACE)
 	scene_editor->wx_scene_editor = (wxSceneEditor *)NULL;
 	scene_editor->wx_scene_editor = new 
@@ -1238,8 +1506,17 @@ DESCRIPTION :
 	scene_editor->checklistbox->Clear();
 	for_each_Scene_object_in_Scene(scene,
 		add_scene_object_to_scene_check_box, (void *)scene_editor);
- 	scene_editor->frame = 
- 	  XRCCTRL(*scene_editor->wx_scene_editor, "CmguiSceneEditor", wxFrame);
+ 	scene_editor->autocheckbox = 
+ 	  XRCCTRL(*scene_editor->wx_scene_editor, "AutoCheckBox", wxCheckBox);
+	scene_editor->autocheckbox->SetValue(true);
+ 	scene_editor->applybutton = 
+ 	  XRCCTRL(*scene_editor->wx_scene_editor, "ApplyButton", wxButton);
+	scene_editor->applybutton->Disable();
+ 	scene_editor->revertbutton = 
+ 	  XRCCTRL(*scene_editor->wx_scene_editor, "RevertButton", wxButton);
+	scene_editor->revertbutton->Disable();
+	scene_editor->frame=
+		XRCCTRL(*scene_editor->wx_scene_editor, "CmguiSceneEditor", wxFrame);
 	scene_editor->frame->Layout();
 	scene_editor->frame->SetMinSize(wxSize(50,100));
  	scene_editor->sceneediting = 
@@ -1251,7 +1528,6 @@ DESCRIPTION :
 	scene_editor->topsplitter=XRCCTRL(*scene_editor->wx_scene_editor,"TopSplitter",wxSplitterWindow);
 	scene_editor->topsplitter->Layout();	
 #endif /*  (WX_USER_INTERFACE) */
-
 		}
 	}
 

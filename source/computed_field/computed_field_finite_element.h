@@ -101,6 +101,16 @@ LAST MODIFIED : 18 July 2000
 DESCRIPTION :
 ==============================================================================*/
 
+int Computed_field_is_type_finite_element_iterator(
+	struct Computed_field *field, void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 16 March 2007
+
+DESCRIPTION :
+Iterator/conditional function returning true if <field> is read only and a
+wrapper for an FE_field.
+==============================================================================*/
+
 int Computed_field_finite_element_set_string_at_node(
 	struct Computed_field *field, int component_number, struct FE_node *node, 
 	FE_value time, const char *string);

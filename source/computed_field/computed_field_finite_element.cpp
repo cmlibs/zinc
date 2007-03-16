@@ -4449,6 +4449,34 @@ the <number_of_fields> fields in <field_array>.
 	return (fe_field_list);
 } /* Computed_field_array_get_defining_FE_field_list */
 
+int Computed_field_is_type_finite_element_iterator(
+	struct Computed_field *field, void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 16 March 2007
+
+DESCRIPTION :
+Iterator/conditional function returning true if <field> is read only and a
+wrapper for an FE_field.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_finite_element_iterator);
+	if (field)
+	{
+		return_code = Computed_field_is_type_finite_element(field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_finite_element_iterator.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_type_finite_element_iterator */
+
 int Computed_field_is_read_only_with_fe_field(
 	struct Computed_field *field,void *fe_field_void)
 /*******************************************************************************

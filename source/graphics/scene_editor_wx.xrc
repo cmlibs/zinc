@@ -38,12 +38,14 @@
 						</object>
 					</object>
 					<object class ="sizeritem">
+						<flag>wxALIGN_CENTRE</flag>
 						<option>0</option>
 						<object class="wxButton" name="SceneObjectUpButton">
 							<label>Up</label>
 		   	    		</object>
 	    	  		</object>
 					<object class ="sizeritem">
+						<flag>wxALIGN_CENTRE</flag>
 						<option>0</option>
 						<object class="wxButton" name="SceneObjectDownButton" >
 							<label>Down</label>
@@ -82,17 +84,17 @@
 									<orient>wxHORIZONTAL</orient>
 							  		<object class="sizeritem">
 										<flag>wxALIGN_CENTRE</flag>
-										<object class ="wxCheckBox">
+										<object class ="wxCheckBox" name = "AutoCheckBox">
 											<label>Auto</label>
 										</object>
 									</object>
 						  			<object class="sizeritem">
-										<object class ="wxButton">
+										<object class ="wxButton" name = "ApplyButton">
 											<label>Apply</label>
 										</object>
 									</object>
 						  			<object class="sizeritem">
-										<object class ="wxButton">
+										<object class ="wxButton" name = "RevertButton">
 											<label>Revert</label>
 										</object>
 									</object>
@@ -134,7 +136,7 @@
 														<flag>wxALIGN_CENTRE</flag>
 														<option>1</option>
 														<object class = "wxPanel" name="TypeFormChooser">
-															<size>-1,30</size>
+															<size>100,30</size>
 														</object>
 													</object>
 													<object class ="sizeritem">
@@ -791,15 +793,17 @@
 				<object class = "wxBoxSizer">
 	  			   <orient>wxHORIZONTAL</orient>
 					<object class="sizeritem">
+						<flag>wxALIGN_CENTRE</flag>
 						<object class = "wxStaticText">
-
    							<label>Default coordinate field:</label>
 						</object>	
 					</object>	
 
 					<object class="sizeritem">
+						<flag>wxEXPAND|wxALIGN_CENTRE</flag>					
+						<option>1</option>
 						<object class = "wxPanel" name="DefaultCoordinateFieldChooser">
-							<option>1</option>
+							<size>200,30</size>
 						</object>
 					</object>	
 				</object>													
@@ -808,13 +812,15 @@
 			  <object class = "wxBoxSizer">	
 			     <orient>wxHORIZONTAL</orient>
 				  <object class="sizeritem">
+				  <flag>wxALIGN_CENTRE</flag>
 					  <object class = "wxStaticText">
-
  						  <label>Element discretisation:</label>
 					  </object>	
 				  </object>	
 				  <object class="sizeritem">
+					  <flag>wxALIGN_CENTRE</flag>
 		 			  <object class = "wxTextCtrl" name="ElementDiscretisationPanel">
+          				  <style>wxTE_PROCESS_ENTER</style>
 						  <option>1</option>
 					  </object>
 				  </object>	
@@ -826,14 +832,16 @@
 				<object class = "wxBoxSizer">
 					<orient>wxHORIZONTAL</orient>
 					<object class="sizeritem">
-			   		   <flag>wxEXPAND|wxALIGN_CENTER</flag>
+			   		   <flag>wxALIGN_CENTER</flag>
 						<object class = "wxStaticText">
-   							<label>Circle discretisation:</label>
+		   							<label>Circle discretisation:</label>
 						</object>	
 					</object>	
 					<object class="sizeritem">
-						<flag>wxEXPAND|wxALIGN_CENTER</flag>
+						<flag>wxALIGN_CENTER</flag>
 						<object class = "wxTextCtrl" name="CircleDiscretisationPanel">
+          					<style>wxTE_PROCESS_ENTER</style>
+							<size>200,30</size>
 							<option>1</option>
 						</object>
 					</object>
@@ -841,15 +849,14 @@
 			</object>	
 	
 			<object class="sizeritem">
-				<flag>wxEXPAND</flag>
+				<flag>wxEXPAND|wxALIGN_CENTRE</flag>
 		       <option>1</option>
 				<object class = "wxBoxSizer">	
 					<orient>wxHORIZONTAL</orient>
 					<object class="sizeritem">
-						<flag>wxEXPAND|wxALIGN_CENTER</flag>
-						<option>1</option>
+						<flag>wxALIGN_CENTER</flag>
+						<option>0</option>
 						<object class = "wxCheckBox" name="NativeDiscretisationFieldCheckBox">
-
    							<label>Native discretisation field:</label>
 						</object>	
 					</object>	
@@ -857,6 +864,7 @@
 						<flag>wxEXPAND|wxALIGN_CENTER</flag>
 	                     <option>1</option>
 							<object class = "wxPanel" name="NativeDiscretisationFieldChooser">
+								<size>200,30</size>
 								<option>1</option>
 							</object>
 						</object>	
