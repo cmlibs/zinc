@@ -191,7 +191,8 @@
 	 													</object>
 													</object>
 													<object class="sizeritem">
-														<object class	="wxTextCtrl" name="NameChooser">
+														<object class	="wxTextCtrl" name="NameTextField">
+															<style>wxTE_PROCESS_ENTER</style>
 	 													</object>
 													</object>
 												</object>
@@ -215,6 +216,7 @@
 													</object>
 													<object class="sizeritem">
 														<object class	="wxPanel" name="CoordinateFieldChooserPanel">
+															<size>200,30</size>
 	 													</object>
 													</object>
 												</object>
@@ -621,7 +623,8 @@
 	 													</object>
 													</object>
 													<object class="sizeritem">
-														<object class	="wxPanel" name="SeleteModeChooserPanel">
+														<object class	="wxPanel" name="SelectModeChooserPanel">
+															<size>200,30</size>
 	 													</object>
 													</object>
 												</object>
@@ -644,7 +647,8 @@
 	 													</object>
 													</object>
 													<object class="sizeritem">
-														<object class	="wxPanel" name="MaterialChooserPanel">
+														<object class	="wxPanel" name="GraphicalMaterialChooserPanel">
+															<size>200,30</size>
 	 													</object>
 													</object>
 												</object>
