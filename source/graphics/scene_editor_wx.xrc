@@ -536,28 +536,13 @@
 															<orient>wxHORIZONTAL</orient>
 															<object class="sizeritem">
 																<flag>wxALIGN_CENTRE_VERTICAL</flag>
-																<object class	="wxStaticText">
+																<object class	="wxStaticText" name="ConstantRadiusText">
 																	<label>Constant radius:</label> 
 																</object>
 															</object>	
 															<object class="sizeritem">
 																<object class	="wxTextCtrl"  name="ConstantRadiusTextCtrl">
-																	<value>0</value>
-																</object>
-															</object>	
-														</object>
-													</object>
-
-													<object class="sizeritem">
-														<object class = "wxBoxSizer">	
-															<orient>wxHORIZONTAL</orient>
-															<object class="sizeritem">
-																<object class	="wxCheckBox" name="ScalarRadiusCheckBox">
-																	<label>Scalar radius:</label> 
-																</object>
-															</object>	
-															<object class="sizeritem">
-																<object class	="wxPanel"  name="ScalarRadiusChooserPanel">
+																 	<style>wxTE_PROCESS_ENTER</style>	
 																</object>
 															</object>	
 														</object>
@@ -568,12 +553,30 @@
 															<orient>wxHORIZONTAL</orient>
 															<object class="sizeritem">
 																<flag>wxALIGN_CENTRE_VERTICAL</flag>
-																<object class	="wxStaticText">
+																<object class	="wxCheckBox" name="RadiusScalarCheckBox">
+																	<label>Scalar radius:</label> 
+																</object>
+															</object>	
+															<object class="sizeritem">
+																<object class	="wxPanel"  name="RadiusScalarChooserPanel">
+																	<size>200,30</size>
+																</object>
+															</object>	
+														</object>
+													</object>
+
+													<object class="sizeritem">
+														<object class = "wxBoxSizer">	
+															<orient>wxHORIZONTAL</orient>
+															<object class="sizeritem">
+																<flag>wxALIGN_CENTRE_VERTICAL</flag>
+																<object class	="wxStaticText" name="ScaleFactorLabel">
 																	<label>  Scale factors:</label> 
 																</object>
 															</object>	
 															<object class="sizeritem">
 																<object class	="wxTextCtrl"  name="ScaleFactorsTextCtrl">
+	          				  										<style>wxTE_PROCESS_ENTER</style>
 																</object>
 															</object>	
 														</object>
@@ -762,11 +765,11 @@
 														<flag>wxALIGN_CENTRE_VERTICAL</flag>
 														<object class	="wxStaticText"> 
 															<label>Selected material:</label>				  			
-
 	 													</object>
 													</object>
 													<object class="sizeritem">
 														<object class	="wxPanel" name="SelectedMaterialChooserPanel">
+															<size>200,30</size>
 	 													</object>
 													</object>
 												</object>

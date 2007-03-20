@@ -133,6 +133,7 @@ DESCRIPTION :
 	void *scene_manager_callback_id;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct Graphical_material *default_material;
+	struct Graphical_material *selected_material;
 	struct Graphics_font *default_font;
 	struct MANAGER(Scene) *scene_manager;
 	struct User_interface *user_interface;
@@ -145,7 +146,9 @@ DESCRIPTION :
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct FE_field *native_discretization_field;
 	struct Computed_field *coordinate_field;
+	struct Computed_field *radius_scalar_field;
 	enum Graphics_select_mode select_mode;
+	float constant_radius,radius_scale_factor;
 #if defined (WX_USER_INTERFACE)
 	wxSceneEditor *wx_scene_editor;
 	wxPanel *lower_panel;
@@ -416,15 +419,21 @@ class wxSceneEditor : public wxFrame
 	wxPanel *native_discretization_field_chooser_panel;
 	wxCheckBox	*coordinatefieldcheckbox;
 	wxPanel	*coordinate_field_chooser_panel;
+	wxTextCtrl *constantradiustextctrl;
+	wxCheckBox *radiusscalarcheckbox;
+	wxTextCtrl *scalefactorstextctrl;
+	wxPanel *radius_scalar_chooser_panel;
+	wxStaticText *constantradius;
+	wxStaticText *scalefactor;
 	DEFINE_MANAGER_CLASS(Scene);
 	Managed_object_chooser<Scene,MANAGER_CLASS(Scene)>
 		*scene_chooser;
 	wxString TempText;
 	DEFINE_MANAGER_CLASS(Computed_field);
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-		*computed_field_chooser;
+	 *computed_field_chooser;
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-	  *FE_field_chooser;	
+	 *FE_field_chooser;	
 	DEFINE_ENUMERATOR_TYPE_CLASS(GT_element_settings_type);
 	Enumerator_chooser<ENUMERATOR_TYPE_CLASS(GT_element_settings_type)>
 		*settings_type_chooser;
@@ -433,10 +442,13 @@ class wxSceneEditor : public wxFrame
 	DEFINE_MANAGER_CLASS(Graphical_material);
 	Managed_object_chooser<Graphical_material,MANAGER_CLASS(Graphical_material)>
 		*graphical_material_chooser;
+	Managed_object_chooser<Graphical_material,MANAGER_CLASS(Graphical_material)>
+		*selected_material_chooser;
 	DEFINE_ENUMERATOR_TYPE_CLASS(Graphics_select_mode);
 	Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Graphics_select_mode)>
 		*select_mode_chooser;
-
+	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+	 *radius_scalar_chooser;	
 
 public:
 
@@ -536,6 +548,18 @@ public:
  				(this, &wxSceneEditor::graphical_material_callback);
       graphical_material_chooser->set_callback(graphical_material_callback);
 
+			/* Set the selected_material_chooser_panel*/
+			wxPanel *selected_material_chooser_panel =
+			XRCCTRL(*this, "SelectedMaterialChooserPanel",wxPanel);
+	selected_material_chooser = 
+		new Managed_object_chooser<Graphical_material,MANAGER_CLASS(Graphical_material)>
+	  (selected_material_chooser_panel, scene_editor->selected_material, scene_editor->graphical_material_manager,
+		 (MANAGER_CONDITIONAL_FUNCTION(Graphical_material) *)NULL, (void *)NULL, scene_editor->user_interface);
+ 			Callback_base< Graphical_material* > *selected_material_callback = 
+ 				new Callback_member_callback< Graphical_material*, 
+ 		  wxSceneEditor, int (wxSceneEditor::*)(Graphical_material *) >
+ 				(this, &wxSceneEditor::selected_material_callback);
+      selected_material_chooser->set_callback(selected_material_callback);
 
 			/* Graphical element settings type chooser */
 			wxPanel *settings_type_chooser_panel = 
@@ -554,7 +578,7 @@ public:
 			settings_type_chooser->set_callback(settings_type_callback);
 			settings_type_chooser->set_value(scene_editor->current_settings_type);
 
-			/* Set the graphical_material_chooser_panel*/
+			/* Set the select_mode_chooser_panel*/
 			wxPanel *select_mode_chooser_panel = 
 				XRCCTRL(*this, "SelectModeChooserPanel", wxPanel);
 			select_mode_chooser = 
@@ -571,7 +595,6 @@ public:
 			select_mode_chooser->set_callback(select_mode_callback);
 			select_mode_chooser->set_value(GT_element_settings_get_select_mode(
 			   scene_editor->current_settings));
-
 
 			wxFrame *frame=XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
 			frame->Fit();
@@ -682,6 +705,8 @@ Callback from wxChooser<Coordinate Field> when choice is made.
 		return(1);
 	}
 
+
+
 int graphical_material_callback(Graphical_material *default_material)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2007
@@ -692,6 +717,21 @@ Callback from wxChooser<Graphical Material> when choice is made.
 	{
 		GT_element_settings_set_material(scene_editor->current_settings,
 			default_material);
+		AutoApplyorNot(scene_editor->gt_element_group,
+								 scene_editor->edit_gt_element_group);
+		return(1);
+	}
+
+int selected_material_callback(Graphical_material *selected_material)
+/*******************************************************************************
+LAST MODIFIED : 20 March 2007
+
+DESCRIPTION :
+Callback from wxChooser<Selected Material> when choice is made.
+==============================================================================*/
+	{
+		GT_element_settings_set_selected_material(scene_editor->current_settings,
+			selected_material);
 		AutoApplyorNot(scene_editor->gt_element_group,
 								 scene_editor->edit_gt_element_group);
 		return(1);
@@ -779,6 +819,28 @@ Set the selected option in the Scene Object chooser.
 ==============================================================================*/
 	{
 		scene_chooser->set_object(scene);
+		return 1;
+	}
+int radius_scalar_callback(Computed_field *radius_scalar_field)
+/*******************************************************************************
+LAST MODIFIED : 20 March 2007
+
+DESCRIPTION :
+Callback from wxChooser<Radius Scalar> when choice is made.
+==============================================================================*/
+	{
+		float constant_radius,scale_factor; 
+		double temp;
+		constantradiustextctrl=XRCCTRL(*this, "ConstantRadiusTextCtrl",wxTextCtrl);
+		(constantradiustextctrl->GetValue()).ToDouble(&temp);
+		constant_radius=(float)temp;
+		scalefactorstextctrl=XRCCTRL(*this,"ScaleFactorsTextCtrl",wxTextCtrl);
+		(scalefactorstextctrl->GetValue()).ToDouble(&temp);
+		scale_factor=(float)temp;	
+		GT_element_settings_set_radius_parameters(scene_editor->current_settings,constant_radius,
+																							scale_factor,radius_scalar_field);
+		AutoApplyorNot(scene_editor->gt_element_group,
+			scene_editor->edit_gt_element_group);
 		return 1;
 	}
 
@@ -1452,26 +1514,64 @@ Set the selected option in the Scene Object chooser.
 
 	void CoordinateFieldChecked(wxCommandEvent &event)
 	{
-		Computed_field *coordinate_field=coordinate_field_chooser->get_object();
+		Computed_field *coordinate_field;
 		coordinatefieldcheckbox = XRCCTRL(*this, "CoordinateFieldCheckBox",wxCheckBox);
 		coordinate_field_chooser_panel = XRCCTRL(*this, "CoordinateFieldChooserPanel",wxPanel);
 		if (coordinatefieldcheckbox->IsChecked())
 			{
+				coordinate_field=coordinate_field_chooser->get_object();
 				coordinate_field_chooser_panel->Enable();
+			}
+		else
+			{
+				coordinate_field=(Computed_field *)NULL;
+				coordinate_field_chooser_panel->Disable();
+			}
 				GT_element_settings_set_coordinate_field(
 					scene_editor->current_settings, coordinate_field);
 				AutoApplyorNot(scene_editor->gt_element_group,
 					scene_editor->edit_gt_element_group);
-			}
-		else
-			{
-				coordinate_field_chooser_panel->Disable();
-			}			
 	}
 
-	void SetMaterialChooser(GT_element_settings *settings)
+	void EnterRadius(wxCommandEvent &event)
+ 	{
+		float constant_radius, scale_factor;
+		double temp;
+		struct Computed_field *radius_scalar_field;
+		constantradiustextctrl=XRCCTRL(*this, "ConstantRadiusTextCtrl",wxTextCtrl);
+		(constantradiustextctrl->GetValue()).ToDouble(&temp);
+		constant_radius=(float)temp;
+		scalefactorstextctrl=XRCCTRL(*this,"ScaleFactorsTextCtrl",wxTextCtrl);
+		(scalefactorstextctrl->GetValue()).ToDouble(&temp);
+		scale_factor=(float)temp;	
+		radiusscalarcheckbox=XRCCTRL(*this, "RadiusScalarCheckBox",wxCheckBox);
+		radius_scalar_chooser_panel=XRCCTRL(*this, "RadiusScalarChooserPanel",wxPanel);
+		scalefactor = XRCCTRL(*this,"ScaleFactorLabel", wxStaticText);
+		if (radiusscalarcheckbox->IsChecked())
+			{
+				scalefactorstextctrl->Enable();
+				radius_scalar_chooser_panel->Enable();
+				scalefactor ->Enable();
+		  	   radius_scalar_field=radius_scalar_chooser->get_object();
+			}
+		else	
+			{
+				radius_scalar_field=(Computed_field *)NULL;
+				radius_scalar_chooser_panel->Disable();
+				scalefactorstextctrl->Disable();	
+				scalefactor ->Disable();
+			}
+		GT_element_settings_set_radius_parameters(scene_editor->current_settings,constant_radius,
+																							scale_factor,radius_scalar_field);
+				AutoApplyorNot(scene_editor->gt_element_group,
+					scene_editor->edit_gt_element_group);
+ 	}
+
+	void SetBothMaterialChooser(GT_element_settings *settings)
 	{
 		graphical_material_chooser->set_object(GT_element_settings_get_material
+		 (settings));
+		selected_material_chooser->set_object(GT_element_settings_get_selected_material
 		 (settings));
 	}
 
@@ -1500,6 +1600,70 @@ Set the selected option in the Scene Object chooser.
 			   settings));
 	}
 
+	void SetSettings(GT_element_settings *settings)
+	{
+// 		struct Computed_field *coordinate_field, *data_field, *iso_scalar_field,
+// 		*label_field, *radius_scalar_field, *stream_vector_field,
+// 		*texture_coord_field, *xi_point_density_field;
+		char temp_string[50];
+		struct Computed_field *radius_scalar_field;
+		float constant_radius,scale_factor;
+		constantradiustextctrl=XRCCTRL(*this, "ConstantRadiusTextCtrl",wxTextCtrl);
+		radiusscalarcheckbox=XRCCTRL(*this, "RadiusScalarCheckBox",wxCheckBox);
+		scalefactorstextctrl=XRCCTRL(*this,"ScaleFactorsTextCtrl",wxTextCtrl);
+		 radius_scalar_chooser_panel=XRCCTRL(*this, "RadiusScalarChooserPanel",wxPanel);
+		 constantradius = XRCCTRL(*this,"ConstantRadiusText",wxStaticText);
+		 scalefactor = XRCCTRL(*this,"ScaleFactorLabel", wxStaticText);
+		if (GT_ELEMENT_SETTINGS_CYLINDERS==scene_editor->current_settings_type)
+			{
+				GT_element_settings_get_radius_parameters(settings,
+				  &constant_radius,&scale_factor,&radius_scalar_field);
+				constantradiustextctrl->Show();
+				radiusscalarcheckbox->Show();
+				scalefactorstextctrl->Show();
+				constantradius->Show();
+				radius_scalar_chooser_panel->Show();
+				scalefactor->Show();
+				sprintf(temp_string,"%g",constant_radius);
+				constantradiustextctrl->SetValue(temp_string);
+				sprintf(temp_string,"%g",scale_factor);
+				scalefactorstextctrl->SetValue(temp_string);
+
+				radius_scalar_chooser = 
+					new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+					(radius_scalar_chooser_panel, scene_editor->radius_scalar_field, scene_editor->computed_field_manager,
+					 Computed_field_is_scalar, (void *)NULL, scene_editor->user_interface);
+				Callback_base< Computed_field* > *radius_scalar_callback = 
+					new Callback_member_callback< Computed_field*, 
+					wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
+					(this, &wxSceneEditor::radius_scalar_callback);
+				radius_scalar_chooser->set_callback(radius_scalar_callback);
+				if ((struct Computed_field *)NULL!=radius_scalar_field)
+			    {
+				  radius_scalar_chooser->set_object(radius_scalar_field);
+				  scalefactorstextctrl->Enable();
+				  radiusscalarcheckbox->SetValue(1);
+				  radius_scalar_chooser_panel->Enable();
+				  scalefactor->Enable();
+			     }
+				else
+					{
+						scalefactorstextctrl->Disable();
+						radiusscalarcheckbox->SetValue(0);
+						radius_scalar_chooser_panel->Disable();
+						scalefactor->Disable();
+					}
+			}
+		else
+			{
+				constantradiustextctrl->Hide();
+				radiusscalarcheckbox->Hide();
+				scalefactorstextctrl->Hide();
+				radius_scalar_chooser_panel->Hide();
+				scalefactor->Hide();
+				constantradius->Hide();
+			}
+  	}
 
   DECLARE_DYNAMIC_CLASS(wxSceneEditor);
   DECLARE_EVENT_TABLE();
@@ -1527,6 +1691,9 @@ BEGIN_EVENT_TABLE(wxSceneEditor, wxFrame)
 	EVT_BUTTON(XRCID("DownButton"),wxSceneEditor::MoveDownInSettingList)
 	EVT_TEXT_ENTER(XRCID("NameTextField"),wxSceneEditor::SettingEditorNameText)
 	EVT_CHECKBOX(XRCID("CoordinateFieldCheckBox"),wxSceneEditor::CoordinateFieldChecked)
+	EVT_TEXT_ENTER(XRCID("ConstantRadiusTextCtrl"), wxSceneEditor::EnterRadius)
+	EVT_TEXT_ENTER(XRCID("ScaleFactorsTextCtrl"), wxSceneEditor::EnterRadius)
+	EVT_CHECKBOX(XRCID("RadiusScalarCheckBox"), wxSceneEditor::EnterRadius)
 END_EVENT_TABLE()
 
 static int set_general_settings(void *scene_editor_void)
@@ -1576,11 +1743,13 @@ Get and set the display of  the graphical element settings
 
 	/*for the coordinate field*/
 	scene_editor->wx_scene_editor->SetCoordinateFieldChooser(scene_editor->current_settings);
-
-	/*for the material chooser*/
-	scene_editor->wx_scene_editor->SetMaterialChooser(scene_editor->current_settings);
+	/*for the selected and material chooser*/
+	scene_editor->wx_scene_editor->SetBothMaterialChooser(scene_editor->current_settings);
 	/*for the select mode chooser*/
 	scene_editor->wx_scene_editor->SetSelectMode(scene_editor->current_settings);
+	scene_editor->wx_scene_editor->SetSettings(scene_editor->current_settings);
+	wxFrame *frame=XRCCTRL(*scene_editor->wx_scene_editor, "CmguiSceneEditor", wxFrame);
+	frame->Layout();
 	return 1;
 }
 
@@ -1753,6 +1922,7 @@ DESCRIPTION :
 			scene_editor->scene_editor_address = (struct Scene_editor **)NULL;
 			scene_editor->scene_manager_callback_id = (void *)NULL;
 			scene_editor->default_material=default_material;
+			scene_editor->selected_material=default_material;
 			scene_editor->default_font=default_font;
 			scene_editor->glyph_list=glyph_list;
 			scene_editor->scene_manager = scene_manager;
@@ -1766,6 +1936,10 @@ DESCRIPTION :
 			scene_editor->native_discretization_field=(FE_field*)NULL ;
 			scene_editor->coordinate_field=(Computed_field *)NULL;	
 			scene_editor->select_mode=(Graphics_select_mode)NULL;
+			scene_editor->constant_radius=1.0;
+			scene_editor->radius_scale_factor=1.0;
+			scene_editor->radius_scalar_field = (Computed_field *)NULL;
+
 #if defined (WX_USER_INTERFACE)
 	scene_editor->wx_scene_editor = (wxSceneEditor *)NULL;
 	scene_editor->wx_scene_editor = new 
