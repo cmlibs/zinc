@@ -415,7 +415,7 @@ If the field is of type COMPUTED_FIELD_IMAGE_RESAMPLE, the function returns the 
 		{
 			for (i = 0 ; i < core->dimension ; i++)
 			{
-				*sizes[i] = core->sizes[i];
+				(*sizes)[i] = core->sizes[i];
 			}
 			*dimension = core->dimension;
 			*source_field = field->source_fields[0];
