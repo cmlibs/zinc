@@ -1507,7 +1507,6 @@ $(SO_LIB_GENERAL_TARGET) : $(LIB_GENERAL_OBJS) cmgui.Makefile
 	$(call BuildSharedLibraryTarget,$(SO_LIB_GENERAL_TARGET),$(BIN_PATH),$(LIB_GENERAL_OBJS),$(ALL_SO_LINK_FLAGS) $(SO_LIB_GENERAL_EXTRA_ARGS) $(SOLIB_LIB),$(SO_LIB_GENERAL_SONAME))
 
 LIB_FINITE_ELEMENT_SRCS = \
-	api/cmiss_finite_element.c \
 	api/cmiss_region.c \
 	api/cmiss_time_sequence.c \
 	finite_element/export_finite_element.c \
