@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : io_stream.c
 
-LAST MODIFIED : 18 September 2004
+LAST MODIFIED : 23 March 2007
 
 DESCRIPTION :
 A class to provide a consistent IO interface to files, memory, gzip and bzip
@@ -86,7 +86,9 @@ DESCRIPTION :
 	IO_STREAM_FILE_TYPE,
 	IO_STREAM_GZIP_FILE_TYPE,
 	IO_STREAM_BZ2_FILE_TYPE,
-	IO_STREAM_MEMORY_TYPE
+	IO_STREAM_MEMORY_TYPE,
+	IO_STREAM_GZIP_MEMORY_TYPE,
+	IO_STREAM_BZ2_MEMORY_TYPE
 }; /*  enum IO_stream_type */
 
 struct IO_memory_block
@@ -118,7 +120,7 @@ DESCRIPTION :
 
 struct IO_stream
 /*******************************************************************************
-LAST MODIFIED : 23 August 2004
+LAST MODIFIED : 23 March 2007
 
 DESCRIPTION :
 ==============================================================================*/
@@ -153,6 +155,10 @@ DESCRIPTION :
 	/* IO_STREAM_MEMORY_TYPE */
 	struct IO_memory_block *memory_block;
 	int memory_block_index;
+
+	/* IO_STREAM_BZ2_FILE_TYPE */
+	bz_stream *bz2_memory_stream;
+	int last_bz2_return;
 
 }; /* struct IO_stream */
 
@@ -412,7 +418,7 @@ along to imagemagick.
 
 struct IO_stream *CREATE(IO_stream)(struct IO_stream_package *stream_class)
 /*******************************************************************************
-LAST MODIFIED : 23 August 2004
+LAST MODIFIED : 23 March 2007
 
 DESCRIPTION :
 ==============================================================================*/
@@ -454,6 +460,10 @@ DESCRIPTION :
 			/* IO_STREAM_MEMORY_TYPE */
 			io_stream->memory_block = (struct IO_memory_block *)NULL;
 			io_stream->memory_block_index = 0;
+
+			/* IO_STREAM_BZ2_MEMORY_TYPE */
+			io_stream->bz2_memory_stream = (bz_stream *)NULL;
+			io_stream->last_bz2_return = BZ_OK;
 		}
 		else
 		{
@@ -476,7 +486,7 @@ DESCRIPTION :
 
 int IO_stream_open_for_read(struct IO_stream *stream, char *stream_uri)
 /*******************************************************************************
-LAST MODIFIED : 23 August 2004
+LAST MODIFIED : 23 March 2007
 
 DESCRIPTION :
 ==============================================================================*/
@@ -494,8 +504,40 @@ DESCRIPTION :
 			if (stream->memory_block = FIND_BY_IDENTIFIER_IN_LIST(IO_memory_block,name)(stream_uri + 7,
 					stream->class->memory_block_list))
 			{
+				return_code = 1;
 				ACCESS(IO_memory_block)(stream->memory_block);
-				stream->type = IO_STREAM_MEMORY_TYPE;
+				if (!strncmp(".gz", stream_uri + strlen(stream_uri) - 3, 3))
+				{
+					stream->type = IO_STREAM_GZIP_MEMORY_TYPE;
+				}
+				else if (!strncmp(".bz2", stream_uri + strlen(stream_uri) - 4, 4))
+				{
+					stream->type = IO_STREAM_BZ2_MEMORY_TYPE;
+					ALLOCATE(stream->bz2_memory_stream, bz_stream, 1);
+					stream->bz2_memory_stream->next_in = (char *)NULL;
+					stream->bz2_memory_stream->avail_in = 0;
+					stream->bz2_memory_stream->total_in_lo32 = 0;
+					stream->bz2_memory_stream->total_in_hi32 = 0;
+					stream->bz2_memory_stream->next_out = (char *)NULL;
+					stream->bz2_memory_stream->avail_out = 0;
+					stream->bz2_memory_stream->total_out_lo32 = 0;
+					stream->bz2_memory_stream->total_out_hi32 = 0;
+					stream->bz2_memory_stream->state = NULL;
+					stream->bz2_memory_stream->bzalloc = NULL;
+					stream->bz2_memory_stream->bzfree = NULL;
+					stream->bz2_memory_stream->opaque = NULL;
+					if (BZ_OK != BZ2_bzDecompressInit(stream->bz2_memory_stream,
+							/*debug*/0, /*small_memory*/0))
+					{
+						display_message(ERROR_MESSAGE,
+							"IO_stream_open. Error initialiseing bz2 memory stream.");
+						return_code = 0;
+					}
+				}
+				else
+				{
+					stream->type = IO_STREAM_MEMORY_TYPE;
+				}
 #if defined IO_STREAM_SPEED_UP_SSCANF
 				/* If we are going to modify the buffer for the workaround then
 					we will need to copy in buffer chunks */
@@ -503,7 +545,6 @@ DESCRIPTION :
 				stream->buffer_chunks = 10;
 				stream->buffer_lookahead = 100;
 #endif /* defined IO_STREAM_SPEED_UP_SSCANF */
-				return_code = 1;
 			}
 			else
 			{
@@ -591,7 +632,7 @@ DESCRIPTION :
 
 static int IO_stream_read_to_internal_buffer(struct IO_stream *stream)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2004
+LAST MODIFIED : 23 March 2007
 
 DESCRIPTION :
 ==============================================================================*/
@@ -611,6 +652,7 @@ DESCRIPTION :
 			/* Unfortunately if we are going to modify the buffer then we need to
 				copy it */
 #endif /* defined (IO_STREAM_SPEED_UP_SSCANF) */
+		case IO_STREAM_BZ2_MEMORY_TYPE:
 		{
 			if (!stream->buffer)
 			{
@@ -681,6 +723,38 @@ DESCRIPTION :
 						stream->memory_block_index += read_characters;
 					} break;
 #endif /* defined (IO_STREAM_SPEED_UP_SSCANF) */
+					case IO_STREAM_BZ2_MEMORY_TYPE:
+					{
+						if (stream->last_bz2_return == BZ_STREAM_END)
+						{
+							read_characters = 0;
+						}
+						else
+						{
+							stream->bz2_memory_stream->next_in = 
+								((char *)stream->memory_block->memory_ptr) + stream->memory_block_index;
+							stream->bz2_memory_stream->avail_in = stream->memory_block->data_length
+								- stream->memory_block_index;
+							stream->bz2_memory_stream->next_out = 
+								stream->buffer + stream->buffer_valid_index;
+							stream->bz2_memory_stream->avail_out = stream->buffer_chunk_size;
+
+							stream->last_bz2_return = BZ2_bzDecompress(stream->bz2_memory_stream);
+
+							read_characters = stream->buffer_chunk_size -
+								stream->bz2_memory_stream->avail_out;
+							stream->memory_block_index = stream->memory_block->data_length;
+							if ((stream->last_bz2_return != BZ_STREAM_END) &&
+								(stream->last_bz2_return != BZ_OK))
+							{
+								display_message(ERROR_MESSAGE,
+									"IO_stream_read_to_internal_buffer.  "
+									"Error uncompressing bzip2 memory buffer.");
+								return_code = 0;
+								read_characters = 0;
+							}
+						}
+					} break;
 					default:
 					{
 						display_message(ERROR_MESSAGE,
@@ -716,7 +790,7 @@ DESCRIPTION :
 
 int IO_stream_end_of_stream(struct IO_stream *stream)
 /*******************************************************************************
-LAST MODIFIED : 23 August 2004
+LAST MODIFIED : 23 March 2007
 
 DESCRIPTION :
 ==============================================================================*/
@@ -740,6 +814,7 @@ DESCRIPTION :
 				return_code = 0;
 			} break;
 			case IO_STREAM_MEMORY_TYPE:
+			case IO_STREAM_BZ2_MEMORY_TYPE:
 			{
 				IO_stream_read_to_internal_buffer(stream);
 				return_code = (stream->buffer_index >= stream->buffer_valid_index);
@@ -747,7 +822,7 @@ DESCRIPTION :
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"IO_stream_scan. IO stream invalid or type not implemented.");
+					"IO_stream_end_of_stream. IO stream invalid or type not implemented.");
 				return_code = 0;
 			} break;
 		}
@@ -755,7 +830,7 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"IO_stream_scan. Invalid arguments.");
+			"IO_stream_end_of_stream. Invalid arguments.");
 		return_code = 0;
 	}
 
@@ -796,6 +871,7 @@ Equivalent to a standard C fscanf or sscanf on the stream.
 			case IO_STREAM_GZIP_FILE_TYPE:
 			case IO_STREAM_BZ2_FILE_TYPE:
 			case IO_STREAM_MEMORY_TYPE:
+			case IO_STREAM_BZ2_MEMORY_TYPE:
 			{
 				IO_stream_read_to_internal_buffer(stream);
 				/* Start at 0 and increment for each sucessful value read to be
@@ -1072,6 +1148,7 @@ string.  It uses fscanf:
 			case IO_STREAM_GZIP_FILE_TYPE:
 			case IO_STREAM_BZ2_FILE_TYPE:
 			case IO_STREAM_MEMORY_TYPE:
+			case IO_STREAM_BZ2_MEMORY_TYPE:
 			{
 				format_len=strlen(format);
 				if (!strcmp(format,"s"))
@@ -1236,7 +1313,7 @@ suitable for use in diagnostic messages.
 int IO_stream_read_to_memory(struct IO_stream *stream, void **stream_data,
 	int *stream_data_length)
 /*******************************************************************************
-LAST MODIFIED : 13 September 2004
+LAST MODIFIED : 23 March 2007
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1262,7 +1339,8 @@ DESCRIPTION :
 		{
 			case IO_STREAM_FILE_TYPE:
 			case IO_STREAM_GZIP_FILE_TYPE:
-			case IO_STREAM_BZ2_FILE_TYPE:
+ 			case IO_STREAM_BZ2_FILE_TYPE:
+ 			case IO_STREAM_BZ2_MEMORY_TYPE:
 			{
 				total_read = 0;
 				while (return_code && !IO_stream_end_of_stream(stream))
@@ -1299,6 +1377,24 @@ DESCRIPTION :
 							{
 								bytes_read = BZ2_bzread(stream->bz2_file_handle, stream->data + total_read,
 									read_to_memory_chunk);
+							} break;
+							case IO_STREAM_BZ2_MEMORY_TYPE:
+							{
+								stream->bz2_memory_stream->next_in = 
+									((char *)stream->memory_block->memory_ptr) + stream->memory_block_index;
+								stream->bz2_memory_stream->avail_in = stream->memory_block->data_length
+									- stream->memory_block_index;
+
+								stream->bz2_memory_stream->next_out = 
+									stream->data + total_read;
+								stream->bz2_memory_stream->avail_out = read_to_memory_chunk;
+
+								BZ2_bzDecompress(stream->bz2_memory_stream);
+
+								bytes_read = read_to_memory_chunk -
+									stream->bz2_memory_stream->avail_out;
+								stream->memory_block_index += stream->memory_block->data_length - 
+									stream->bz2_memory_stream->avail_in;
 							} break;
 						}
 						total_read += bytes_read;
@@ -1359,6 +1455,7 @@ DESCRIPTION :
 			case IO_STREAM_FILE_TYPE:
 			case IO_STREAM_GZIP_FILE_TYPE:
 			case IO_STREAM_BZ2_FILE_TYPE:
+			case IO_STREAM_BZ2_MEMORY_TYPE:
 			{
 				if (stream->data)
 				{
@@ -1374,7 +1471,7 @@ DESCRIPTION :
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"IO_stream_read_to_memory. IO stream invalid or type not implemented.");
+					"IO_stream_deallocate_read_to_memory. IO stream invalid or type not implemented.");
 				return_code = 0;
 			} break;
 		}
@@ -1382,14 +1479,14 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"IO_stream_read_to_memory. Invalid arguments.");
+			"IO_stream_deallocate_read_to_memory. Invalid arguments.");
 		return_code = 0;
 	}
 
 	LEAVE;
 
 	return (return_code);
-} /* IO_stream_read_to_memory */
+} /* IO_stream_deallocate_read_to_memory */
 
 int IO_stream_seek(struct IO_stream *stream, long offset, int whence)
 /*******************************************************************************
@@ -1520,6 +1617,19 @@ DESCRIPTION :
 				if (stream->memory_block)
 				{
 					DEACCESS(IO_memory_block)(&stream->memory_block);
+				}
+				stream->type = IO_STREAM_UNKNOWN_TYPE;
+			} break;
+			case IO_STREAM_BZ2_MEMORY_TYPE:
+			{
+				if (stream->memory_block)
+				{
+					DEACCESS(IO_memory_block)(&stream->memory_block);
+				}
+				if (stream->bz2_memory_stream)
+				{
+					BZ2_bzDecompressEnd(stream->bz2_memory_stream);
+					DEALLOCATE(stream->bz2_memory_stream);
 				}
 				stream->type = IO_STREAM_UNKNOWN_TYPE;
 			} break;
