@@ -59,6 +59,7 @@ extern "C" {
 #include "wx/xrc/xmlres.h"
 #include "choose/choose_manager_class.hpp"
 #include "choose/choose_enumerator_class.hpp"
+#include "choose/choose_list_class.hpp"
 #include <wx/collpane.h>
 #include <wx/splitter.h>
 #include "computed_field/computed_field_finite_element.h"
@@ -148,6 +149,9 @@ DESCRIPTION :
 	struct Computed_field *coordinate_field;
 	struct Computed_field *radius_scalar_field;
 	enum Graphics_select_mode select_mode;
+	enum Use_element_type use_element_type;
+	enum Xi_discretization_mode xi_discretization_mode;
+	enum Streamline_type streamline_type;
 	float constant_radius,radius_scale_factor;
 #if defined (WX_USER_INTERFACE)
 	wxSceneEditor *wx_scene_editor;
@@ -400,31 +404,29 @@ class wxSceneEditor : public wxFrame
 	Scene_editor *scene_editor;
 	wxScrolledWindow *sceneediting;
 	wxFrame *frame;
-	wxSplitterWindow *lowersplitter;
-	wxSplitterWindow *topsplitter;
-	wxCheckListBox *scenechecklist;
-	wxListBox *scenelistbox;
-	wxCheckListBox *graphicalitemschecklist;
-	wxListBox *graphicalitemslistbox;
-	wxStaticText *currentsceneobjecttext;
-	wxButton *sceneupbutton;
-	wxButton *scenedownbutton;
-	wxCheckBox *nativediscretizationcheckbox;
-	wxCheckBox *autocheckbox;
-	wxButton *applybutton;
-	wxButton *revertbutton;
-	wxTextCtrl *elementdiscretisationpanel;
-	wxTextCtrl *circlediscretisationpanel;
-	wxTextCtrl *nametextfield;
-	wxPanel *native_discretization_field_chooser_panel;
-	wxCheckBox	*coordinatefieldcheckbox;
-	wxPanel	*coordinate_field_chooser_panel;
-	wxTextCtrl *constantradiustextctrl;
-	wxCheckBox *radiusscalarcheckbox;
-	wxTextCtrl *scalefactorstextctrl;
-	wxPanel *radius_scalar_chooser_panel;
-	wxStaticText *constantradius;
-	wxStaticText *scalefactor;
+	wxSplitterWindow *lowersplitter,*topsplitter;
+	wxCheckListBox *scenechecklist,*graphicalitemschecklist;
+	wxListBox *scenelistbox,*graphicalitemslistbox;
+	wxStaticText *currentsceneobjecttext,*constantradius,*scalefactor,
+		*isoscalartext, *isovaluetext, *glyphtext, *centretext, *baseglyphsizetext,
+		*glyphscalefactorstext, *useelementtypetext, *xidiscretizationmodetext,
+		*discretizationtext, *densityfieldtext,*xitext, *streamtypetext, *streamlengthtext,
+		*streamwidthtext, *streamvectortext, *linewidthtext;
+	wxButton *sceneupbutton, scenedownbutton, *applybutton, *revertbutton;
+	wxCheckBox *nativediscretizationcheckbox,*autocheckbox,	*coordinatefieldcheckbox,
+		*radiusscalarcheckbox, *orientationscalecheckbox,*variablescalecheckbox,
+		*labelcheckbox,*nativediscretizationfieldcheckbox,*reversecheckbox;	
+	wxTextCtrl *elementdiscretisationpanel, *nametextfield, *circlediscretisationpanel,
+		*constantradiustextctrl, *scalefactorstextctrl, *isoscalartextctrl, *centretextctrl,
+		*baseglyphsizetextctrl,*glyphscalefactorstextctrl,*discretizationtextctrl,*xitextctrl,
+		*lengthtextctrl,*widthtextctrl,*linewidthtextctrl;
+	wxPanel *FE_chooser_panel,	*coordinate_field_chooser_panel,
+		*radius_scalar_chooser_panel, *iso_scalar_chooser_panel, *glyph_chooser_panel,
+		*orientation_scale_field_chooser_panel, *variable_scale_field_chooser_panel,
+		*label_chooser_panel, *use_element_type_chooser_panel, *xi_discretization_mode_chooser_panel,
+		*native_discretization_field_chooser_panel,*density_field_chooser_panel,*streamline_type_chooser_panel,
+		*stream_vector_chooser_panel;
+	wxWindow *glyphbox,*glyphline;
 	DEFINE_MANAGER_CLASS(Scene);
 	Managed_object_chooser<Scene,MANAGER_CLASS(Scene)>
 		*scene_chooser;
@@ -449,7 +451,32 @@ class wxSceneEditor : public wxFrame
 		*select_mode_chooser;
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 	 *radius_scalar_chooser;	
-
+	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+	 *iso_scalar_chooser;	
+	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+	*orientation_scale_field_chooser;		
+	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+	*variable_scale_field_chooser;
+	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+	*label_field_chooser;
+	DEFINE_ENUMERATOR_TYPE_CLASS(Use_element_type);
+	Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Use_element_type)>
+		*use_element_type_chooser;
+	DEFINE_ENUMERATOR_TYPE_CLASS(Xi_discretization_mode);
+	Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Xi_discretization_mode)>
+		*xi_discretization_mode_chooser;
+	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+	 *native_discretization_field_chooser;
+	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+	 *xi_point_density_field_chooser;	
+	DEFINE_ENUMERATOR_TYPE_CLASS(Streamline_type);
+	Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Streamline_type)>
+	*streamline_type_chooser;	
+	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+	*stream_vector_chooser;
+	DEFINE_LIST_CLASS(GT_object);
+	List_chooser<GT_object,LIST_CLASS(GT_object)>
+	 *glyph_chooser;
 public:
 
   wxSceneEditor(Scene_editor *scene_editor): 
@@ -508,11 +535,11 @@ public:
 
 			/* Set the native_discretisation_chooser_panel*/
  			scene_editor->native_discretization_field = GT_element_group_get_native_discretization_field(scene_editor->edit_gt_element_group);
- 			wxPanel *native_discretization_field_chooser =
+ 			wxPanel *FE_chooser_panel =
  				XRCCTRL(*this, "NativeDiscretisationFieldChooser",wxPanel);			
  			FE_field_chooser =
  				new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
- 				(native_discretization_field_chooser, /*scene_editor->native_discretization_field*/(Computed_field*)NULL, scene_editor->computed_field_manager,
+ 				(FE_chooser_panel,(Computed_field*)NULL, scene_editor->computed_field_manager,
 				 Computed_field_is_type_finite_element_iterator, (void *)NULL, scene_editor->user_interface);
  			Callback_base< Computed_field* > *native_discretization_field_callback = 
  				new Callback_member_callback< Computed_field*, 
@@ -642,9 +669,10 @@ Callback from wxChooser<Scene> when choice is made.
 	{
 		GT_element_group_set_default_coordinate_field(
 			scene_editor->edit_gt_element_group,
-			(struct Computed_field *)default_coordinate_field);
+			default_coordinate_field);
 		/* inform the client of the change */
-		 set_general_settings((void *)scene_editor);
+		AutoApplyorNot(scene_editor->gt_element_group,
+			scene_editor->edit_gt_element_group);
 	}
 	else
 	{
@@ -665,19 +693,15 @@ Callback from wxChooser<Scene> when choice is made.
 ==============================================================================*/
 	{
 		int return_code;
-
-		return_code = Computed_field_get_type_finite_element(native_discretization_field,
-			&scene_editor->native_discretization_field);
-
-		
-		if (GT_element_group_get_native_discretization_field(
-			scene_editor->edit_gt_element_group))
+		if (return_code = Computed_field_get_type_finite_element(native_discretization_field,
+			&scene_editor->native_discretization_field))
 		{
 			GT_element_group_set_native_discretization_field(
 				scene_editor->edit_gt_element_group,
 				scene_editor->native_discretization_field);
 			/* inform the client of the change */
-			set_general_settings((void *)scene_editor);
+			AutoApplyorNot(scene_editor->gt_element_group,
+				scene_editor->edit_gt_element_group);
 		}
 		else
 			{
@@ -844,6 +868,364 @@ Callback from wxChooser<Radius Scalar> when choice is made.
 		return 1;
 	}
 
+
+int iso_scalar_callback(Computed_field *iso_scalar_field)
+/*******************************************************************************
+LAST MODIFIED : 21 March 2007
+
+DESCRIPTION :
+Callback from wxChooser<Iso Scalar> when choice is made.
+==============================================================================*/
+	{
+		double decimation_threshold, *iso_values;
+		int number_of_iso_values;
+		struct Computed_field *scalar_field;
+
+		GT_element_settings_get_iso_surface_parameters(
+			scene_editor->current_settings,&scalar_field,&number_of_iso_values,
+			&iso_values,&decimation_threshold);
+		GT_element_settings_set_iso_surface_parameters(
+			scene_editor->current_settings,iso_scalar_field,number_of_iso_values,
+			iso_values,decimation_threshold);
+		AutoApplyorNot(scene_editor->gt_element_group,
+			scene_editor->edit_gt_element_group);
+		return 1;
+	}
+
+int glyph_callback(GT_object *glyph)
+/*******************************************************************************
+LAST MODIFIED : 21 March 2007
+
+DESCRIPTION :
+Callback from wxChooser<Glyph> when choice is made.
+==============================================================================*/
+{
+	enum Glyph_scaling_mode glyph_scaling_mode;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
+	struct GT_object *old_glyph;
+	Triple glyph_centre,glyph_scale_factors,glyph_size;
+
+	if (GT_element_settings_get_glyph_parameters(
+		  scene_editor->current_settings, &old_glyph, &glyph_scaling_mode,
+		  glyph_centre, glyph_size, &orientation_scale_field, glyph_scale_factors,
+		  &variable_scale_field)&&
+		GT_element_settings_set_glyph_parameters(
+			scene_editor->current_settings, glyph, glyph_scaling_mode,
+			glyph_centre, glyph_size,	orientation_scale_field, glyph_scale_factors,
+			variable_scale_field))
+		{
+			/* inform the client of the change */
+			AutoApplyorNot(scene_editor->gt_element_group,
+			  scene_editor->edit_gt_element_group);			
+		}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"settings_editor_update_glyph.  Invalid argument(s)");
+	}
+
+		return 1;
+}
+
+int orientation_scale_callback(Computed_field *orientation_scale_field)
+/*******************************************************************************
+LAST MODIFIED : 21 March 2007
+DESCRIPTION :
+Callback from wxChooser<Orientation Scale> when choice is made.
+==============================================================================*/
+{
+	enum Glyph_scaling_mode glyph_scaling_mode;
+	struct Computed_field *temp_orientation_scale_field, *variable_scale_field;
+	struct GT_object *glyph;
+	Triple glyph_centre,glyph_scale_factors,glyph_size;
+
+		GT_element_settings_get_glyph_parameters(
+			scene_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
+			glyph_size, &temp_orientation_scale_field, glyph_scale_factors,
+			&variable_scale_field);
+		GT_element_settings_set_glyph_parameters(
+			scene_editor->current_settings,glyph, glyph_scaling_mode, glyph_centre,
+			glyph_size, orientation_scale_field, glyph_scale_factors,
+			variable_scale_field);		
+		AutoApplyorNot(scene_editor->gt_element_group,
+			scene_editor->edit_gt_element_group);
+		return 1;
+}
+
+int variable_scale_callback(Computed_field *variable_scale_field)
+/*******************************************************************************
+LAST MODIFIED : 21 March 2007
+
+DESCRIPTION :
+Callback from wxChooser<Variable Scale> when choice is made.
+==============================================================================*/
+{
+	enum Glyph_scaling_mode glyph_scaling_mode;
+	struct Computed_field *orientation_scale_field, *temp_variable_scale_field;
+	struct GT_object *glyph;
+	Triple glyph_centre,glyph_scale_factors,glyph_size;
+
+		GT_element_settings_get_glyph_parameters(
+			scene_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
+			glyph_size, &orientation_scale_field, glyph_scale_factors,
+			&temp_variable_scale_field);
+		GT_element_settings_set_glyph_parameters(
+			scene_editor->current_settings,glyph, glyph_scaling_mode, glyph_centre,
+			glyph_size, orientation_scale_field, glyph_scale_factors,
+			variable_scale_field);		
+		AutoApplyorNot(scene_editor->gt_element_group,
+			scene_editor->edit_gt_element_group);
+		return 1;
+}
+
+
+int label_callback(Computed_field *label_field)
+/*******************************************************************************
+LAST MODIFIED : 22 March 2007
+
+DESCRIPTION :
+Callback from wxChooser<label> when choice is made.
+==============================================================================*/
+{
+	struct Computed_field *temp_label_field;
+	struct Graphics_font *font;
+	GT_element_settings_get_label_field(scene_editor->current_settings, 
+		&temp_label_field, &font);
+	GT_element_settings_set_label_field(scene_editor->current_settings, 
+		 label_field, font);
+	AutoApplyorNot(scene_editor->gt_element_group,
+	    scene_editor->edit_gt_element_group);
+	return 1;
+}
+
+int use_element_type_callback(enum Use_element_type use_element_type)
+/*******************************************************************************
+LAST MODIFIED : 22 March 2007
+
+DESCRIPTION :
+Callback from wxChooser<Use Element Type> when choice is made.
+==============================================================================*/
+ {
+	 GT_element_settings_set_use_element_type(
+		 scene_editor->current_settings,use_element_type);
+	 AutoApplyorNot(scene_editor->gt_element_group,
+ 		 scene_editor->edit_gt_element_group);
+	 return 1;
+ }
+
+	int xi_discretization_mode_callback(enum Xi_discretization_mode xi_discretization_mode)
+/*******************************************************************************
+LAST MODIFIED : 22 March 2007
+
+DESCRIPTION :
+Callback from wxChooser<xi Discretization Mode> when choice is made.
+==============================================================================*/
+{
+	enum Xi_discretization_mode old_xi_discretization_mode;
+	struct Computed_field *old_xi_point_density_field, *xi_point_density_field;
+
+	discretizationtext=XRCCTRL(*this,"DiscretizationText",wxStaticText);
+	discretizationtextctrl=XRCCTRL(*this,"DiscretizationTextCtrl",wxTextCtrl);
+	nativediscretizationfieldcheckbox=XRCCTRL(*this,"NativeDiscretizationFieldCheckBox",wxCheckBox);
+	native_discretization_field_chooser_panel=XRCCTRL(*this, "NativeDiscretizationFieldChooserPanel",wxPanel);
+	densityfieldtext=XRCCTRL(*this, "DensityFieldText",wxStaticText);
+	density_field_chooser_panel=XRCCTRL(*this,"DensityFieldChooserPanel",wxPanel);
+	xitext=XRCCTRL(*this,"XiText",wxStaticText);
+	xitextctrl=XRCCTRL(*this,"XiTextCtrl",wxTextCtrl);
+	if (GT_element_settings_get_xi_discretization(
+			scene_editor->current_settings, &old_xi_discretization_mode,
+			&old_xi_point_density_field))
+		{
+			xi_point_density_field = old_xi_point_density_field;
+			if ((XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode) ||
+				(XI_DISCRETIZATION_CELL_POISSON == xi_discretization_mode))
+			{
+				if (!xi_point_density_field)
+				{
+					/* get xi_point_density_field from widget */
+					xi_point_density_field=xi_point_density_field_chooser->get_object();	
+				}
+			}
+			else
+			{
+				xi_point_density_field = (struct Computed_field *)NULL;
+			}
+			if (GT_element_settings_set_xi_discretization(
+				scene_editor->current_settings, xi_discretization_mode,
+				xi_point_density_field))
+			{
+				/* inform the client of the change */
+				AutoApplyorNot(scene_editor->gt_element_group,
+				scene_editor->edit_gt_element_group);		
+			}
+			else
+			{
+				xi_discretization_mode = old_xi_discretization_mode;
+				xi_point_density_field = old_xi_point_density_field;
+				xi_discretization_mode_chooser->set_value(xi_discretization_mode);
+			}
+			if (XI_DISCRETIZATION_EXACT_XI != xi_discretization_mode)
+			{
+				FE_field *native_discretization_field=
+				GT_element_settings_get_native_discretization_field(scene_editor->current_settings);
+				discretizationtextctrl->Enable();	
+				discretizationtext->Enable();
+				nativediscretizationfieldcheckbox->Enable();
+				native_discretization_field_chooser_panel->Enable();
+				xitext->Disable();
+				xitextctrl->Disable();
+				if 	((struct FE_field *)NULL != native_discretization_field)
+				{
+				 native_discretization_field_chooser_panel->Enable();
+				}
+				else
+				{
+				 native_discretization_field_chooser_panel->Disable();
+				}
+			}			
+			else
+			{	
+				discretizationtextctrl->Disable();	
+				discretizationtext->Disable();
+				nativediscretizationfieldcheckbox->Disable();
+				native_discretization_field_chooser_panel->Disable();
+				xitext->Enable();
+				xitextctrl->Enable();
+			}
+			if ((XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode)||
+			    (XI_DISCRETIZATION_CELL_POISSON == xi_discretization_mode))
+			{
+				densityfieldtext->Enable();
+				density_field_chooser_panel->Enable();
+			}
+			else
+			{
+				densityfieldtext->Disable();
+				density_field_chooser_panel->Disable();
+			}
+		}
+
+
+	return 1;
+}
+
+	int native_discretization_callback(Computed_field *native_discretization_field)
+/*******************************************************************************
+LAST MODIFIED : 22 March 2007
+
+DESCRIPTION :
+Callback from wxChooser<Native discretization> when choice is made.
+==============================================================================*/
+{
+	FE_field *temp_native_discretization_field;
+
+	if (Computed_field_get_type_finite_element(native_discretization_field,
+			&temp_native_discretization_field))
+			{
+				GT_element_settings_set_native_discretization_field(
+				 scene_editor->current_settings,
+				temp_native_discretization_field);
+				AutoApplyorNot(scene_editor->gt_element_group,
+				   scene_editor->edit_gt_element_group);
+			}
+	else
+	{
+		display_message(ERROR_MESSAGE, "wxSceneEditor::native_discretization_callback.  "
+		 "Could not modify native discretization field");
+	}
+	return 1;
+}
+
+	int xi_point_density_callback(Computed_field *xi_point_density_field)
+/*******************************************************************************
+LAST MODIFIED : 22 March 2007
+
+DESCRIPTION :
+Callback from wxChooser<xi Point Denstiy Field> when choice is made.
+==============================================================================*/
+{
+	enum Xi_discretization_mode xi_discretization_mode;
+	struct Computed_field *temp_xi_point_density_field;
+
+	GT_element_settings_get_xi_discretization(
+		 scene_editor->current_settings, &xi_discretization_mode,
+		 &temp_xi_point_density_field);
+	GT_element_settings_set_xi_discretization(
+		 scene_editor->current_settings, xi_discretization_mode,
+		 xi_point_density_field);
+	AutoApplyorNot(scene_editor->gt_element_group,
+		scene_editor->edit_gt_element_group);
+	return 1;
+}
+
+	int volume_texture_callback(VT_volume_texture *volume_texture)
+/*******************************************************************************
+LAST MODIFIED : 23 March 2007
+
+DESCRIPTION :
+Callback from wxChooser<Volume texture> when choice is made.
+==============================================================================*/
+{
+	return 1;
+}
+
+	int streamline_type_callback(enum Streamline_type streamline_type)
+/*******************************************************************************
+LAST MODIFIED : 23 March 2007
+
+DESCRIPTION :
+Callback from wxChooser<Streamline Type> when choice is made.
+==============================================================================*/
+{
+	enum Streamline_type temp_streamline_type;
+	float streamline_length,streamline_width;
+	int reverse_track;
+	struct Computed_field *stream_vector_field;
+
+	if (GT_element_settings_get_streamline_parameters(
+		 scene_editor->current_settings, &temp_streamline_type, &stream_vector_field,
+		 &reverse_track, &streamline_length, &streamline_width) &&
+		 GT_element_settings_set_streamline_parameters(
+		  scene_editor->current_settings, streamline_type, stream_vector_field,
+		  reverse_track, streamline_length, streamline_width))
+	 {
+	 	AutoApplyorNot(scene_editor->gt_element_group,
+	 	  scene_editor->edit_gt_element_group);
+	 }
+
+	return 1;
+}
+
+	int stream_vector_callback(Computed_field *stream_vector_field)
+/*******************************************************************************
+LAST MODIFIED : 23 March 2007
+
+DESCRIPTION :
+Callback from wxChooser<Stream Vector> when choice is made.
+==============================================================================*/
+{
+	enum Streamline_type streamline_type;
+	float streamline_length,streamline_width;
+	int reverse_track;
+	struct Computed_field *temp_stream_vector_field;
+
+	if (GT_element_settings_get_streamline_parameters(
+		    scene_editor->current_settings,&streamline_type,
+			 &temp_stream_vector_field,&reverse_track,
+			 &streamline_length,&streamline_width)&&
+		 GT_element_settings_set_streamline_parameters(
+			 scene_editor->current_settings,streamline_type,
+			 stream_vector_field,reverse_track,
+		    streamline_length,streamline_width))
+	{
+ 		/* inform the client of the change */
+ 	 	AutoApplyorNot(scene_editor->gt_element_group,
+ 			 scene_editor->edit_gt_element_group);	 
+	}
+
+	return 1;
+}
+
       void ResetScrolledWindow(wxCollapsiblePaneEvent& event)
   	{
 			lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
@@ -937,16 +1319,27 @@ Callback from wxChooser<Radius Scalar> when choice is made.
 
 	void NativeDiscretisationFieldChecked(wxCommandEvent &event)
 	{
+		Computed_field *temp_native_discretization_field;
+		FE_field *native_discretization_field;
 		nativediscretizationcheckbox = XRCCTRL(*this, "NativeDiscretisationFieldCheckBox",wxCheckBox);
-		native_discretization_field_chooser_panel = XRCCTRL(*this, "NativeDiscretisationFieldChooser",wxPanel);
+		FE_chooser_panel = XRCCTRL(*this, "NativeDiscretisationFieldChooser",wxPanel);
 		if (nativediscretizationcheckbox->IsChecked())
-			{
-			native_discretization_field_chooser_panel->Enable();
-			}
+		{
+			temp_native_discretization_field=FE_field_chooser->get_object();
+			Computed_field_get_type_finite_element(temp_native_discretization_field,
+				 &native_discretization_field);
+			FE_chooser_panel->Enable();
+		}
 		else
-			{
-			native_discretization_field_chooser_panel->Disable();
-			}			
+		{
+			FE_chooser_panel->Disable();
+			native_discretization_field=(FE_field *)NULL;
+		}		
+		 GT_element_group_set_native_discretization_field(
+				scene_editor->edit_gt_element_group,
+				native_discretization_field);
+		 AutoApplyorNot(scene_editor->gt_element_group,
+			 scene_editor->edit_gt_element_group);
 	}
 
 	void AutoChecked(wxCommandEvent &event)
@@ -1406,7 +1799,6 @@ Callback from wxChooser<Radius Scalar> when choice is made.
 		display_message(ERROR_MESSAGE,
 			"graphical_element_editor_up_button_CB.  Invalid argument(s)");
 	}
-
 	}
 
 	void MoveDownInSettingList(wxCommandEvent &event)
@@ -1449,16 +1841,22 @@ Callback from wxChooser<Radius Scalar> when choice is made.
 
 	void RenewGeneralSettingChooser(GT_element_group *edit_gt_element_group)
 	{
+		Computed_field *native_discretization_field;
 		computed_field_chooser->set_object(GT_element_group_get_default_coordinate_field(edit_gt_element_group));
+		native_discretization_field=FE_field_chooser->get_object();
+		FE_field_chooser->set_object(
+		  FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+		  Computed_field_is_read_only_with_fe_field, native_discretization_field,
+		 scene_editor->computed_field_manager));
 		nativediscretizationcheckbox = XRCCTRL(*this, "NativeDiscretisationFieldCheckBox",wxCheckBox);
-		native_discretization_field_chooser_panel = XRCCTRL(*this, "NativeDiscretisationFieldChooser",wxPanel);
+		FE_chooser_panel = XRCCTRL(*this, "NativeDiscretisationFieldChooser",wxPanel);
 		if (nativediscretizationcheckbox->IsChecked())
 			{
-			native_discretization_field_chooser_panel->Enable();
+			FE_chooser_panel->Enable();
 			}
 		else
 			{
-			native_discretization_field_chooser_panel->Disable();
+			FE_chooser_panel->Disable();
 			}			
 	}
 
@@ -1567,13 +1965,503 @@ Callback from wxChooser<Radius Scalar> when choice is made.
 					scene_editor->edit_gt_element_group);
  	}
 
-	void SetBothMaterialChooser(GT_element_settings *settings)
+	void EnterIsoScalar(wxCommandEvent &event)
 	{
-		graphical_material_chooser->set_object(GT_element_settings_get_material
-		 (settings));
-		selected_material_chooser->set_object(GT_element_settings_get_selected_material
-		 (settings));
+		double decimation_threshold, *iso_values, temp;
+		int number_of_iso_values;
+		struct Computed_field *scalar_field;
+		int i;
+
+		GT_element_settings_get_iso_surface_parameters(
+			scene_editor->current_settings,&scalar_field,&number_of_iso_values,
+			&iso_values,&decimation_threshold);
+		isoscalartextctrl=XRCCTRL(*this,"IsoScalarTextCtrl",wxTextCtrl);
+		(isoscalartextctrl->GetValue()).ToDouble(&temp);
+		for (i = 0 ; i < number_of_iso_values ; i++)
+			{
+				(iso_values)[i] = temp;
+			}
+		GT_element_settings_set_iso_surface_parameters(
+			scene_editor->current_settings,scalar_field,number_of_iso_values,
+			iso_values,decimation_threshold);
+		AutoApplyorNot(scene_editor->gt_element_group,
+			scene_editor->edit_gt_element_group);
 	}
+
+	void EnterGlyphCentre(wxCommandEvent &event)
+	{
+		char *text_entry, temp_string[50];
+	enum Glyph_scaling_mode glyph_scaling_mode;
+	static int number_of_components=3;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
+	struct GT_object *glyph;
+	struct Parse_state *temp_state;
+	Triple glyph_centre, glyph_scale_factors, glyph_size;
+	centretextctrl=XRCCTRL(*this,"CentreTextCtrl",wxTextCtrl);
+	
+		if (scene_editor->current_settings)
+		{
+			if (GT_element_settings_get_glyph_parameters(
+				scene_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
+				glyph_size, &orientation_scale_field, glyph_scale_factors,
+				&variable_scale_field))
+			{
+				/* Get the text string */
+				text_entry =  const_cast<char *>(centretextctrl->GetValue().c_str());
+	 			if (text_entry)
+				{
+					/* clean up spaces? */
+					if (temp_state=create_Parse_state(text_entry))
+					{
+						set_float_vector(temp_state,glyph_centre,
+							(void *)&number_of_components);
+						GT_element_settings_set_glyph_parameters(
+							scene_editor->current_settings, glyph, glyph_scaling_mode,
+							glyph_centre, glyph_size, orientation_scale_field,
+							glyph_scale_factors, variable_scale_field);
+						AutoApplyorNot(scene_editor->gt_element_group,
+							scene_editor->edit_gt_element_group);
+						destroy_Parse_state(&temp_state);
+						GT_element_settings_get_glyph_parameters(
+							scene_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
+						   glyph_size, &orientation_scale_field, glyph_scale_factors,
+							&variable_scale_field);
+						 sprintf(temp_string,"%g,%g,%g",
+							 glyph_centre[0],glyph_centre[1],glyph_centre[2]);
+						 centretextctrl->SetValue(temp_string);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"settings_editor_glyph_centre_text_CB.  Missing text");
+				}
+			}
+		}
+	}
+
+	void EnterGlyphSize(wxCommandEvent &event)
+	{
+	char *text_entry, temp_string[50];
+	enum Glyph_scaling_mode glyph_scaling_mode;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
+	struct GT_object *glyph;
+	struct Parse_state *temp_state;
+	Triple glyph_centre,glyph_scale_factors,glyph_size;
+	baseglyphsizetextctrl=XRCCTRL(*this,"BaseGlyphSizeTextCtrl",wxTextCtrl);
+
+	if (scene_editor->current_settings)
+		{
+			if (GT_element_settings_get_glyph_parameters(
+				scene_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
+				glyph_size, &orientation_scale_field, glyph_scale_factors,
+				&variable_scale_field))
+				{
+					/* Get the text string */
+					text_entry =  const_cast<char *>(baseglyphsizetextctrl->GetValue().c_str());
+					if (text_entry)
+						{
+							/* clean up spaces? */
+							if (temp_state=create_Parse_state(text_entry))
+								{
+									set_special_float3(temp_state,glyph_size,const_cast<char *>("*"));
+									GT_element_settings_set_glyph_parameters(
+										scene_editor->current_settings, glyph, glyph_scaling_mode,
+									    glyph_centre, glyph_size, orientation_scale_field,
+							           glyph_scale_factors, variable_scale_field);
+									/* inform the client of the change */
+									AutoApplyorNot(scene_editor->gt_element_group,
+							           scene_editor->edit_gt_element_group);
+									destroy_Parse_state(&temp_state);
+									GT_element_settings_get_glyph_parameters(
+						          	   scene_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
+						              glyph_size, &orientation_scale_field, glyph_scale_factors,
+							          &variable_scale_field);
+									sprintf(temp_string,"%g*%g*%g",
+										glyph_size[0],glyph_size[1],glyph_size[2]);
+									baseglyphsizetextctrl->SetValue(temp_string);
+								}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"settings_editor_glyph_size_text_CB.  Missing text");
+				}
+			}
+		}
+	}
+
+	void	EnterGlyphScale(wxCommandEvent &event)
+	{
+	char *text_entry,temp_string[50];
+	enum Glyph_scaling_mode glyph_scaling_mode;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
+	struct GT_object *glyph;
+	struct Parse_state *temp_state;
+	Triple glyph_centre,glyph_scale_factors,glyph_size;
+
+	glyphscalefactorstextctrl=XRCCTRL(*this,"GlyphScaleFactorsTextCtrl",wxTextCtrl);
+	orientation_scale_field_chooser_panel=XRCCTRL(*this,	"OrientationScaleChooserPanel",wxPanel);
+	glyphscalefactorstext	=XRCCTRL(*this,"GlyphScaleFactorsText",wxStaticText);
+	glyphscalefactorstextctrl=XRCCTRL(*this,"GlyphScaleFactorsTextCtrl",wxTextCtrl);
+	orientationscalecheckbox=XRCCTRL(*this,"OrientationScaleCheckBox",wxCheckBox);
+
+		if (scene_editor->current_settings)
+		{
+			if (GT_element_settings_get_glyph_parameters(
+				scene_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
+				glyph_size, &orientation_scale_field, glyph_scale_factors,
+				&variable_scale_field))
+			{
+				/* Get the text string */
+				text_entry =  const_cast<char *>(glyphscalefactorstextctrl->GetValue().c_str());
+				if (text_entry)
+				{
+					/* clean up spaces? */
+					if (temp_state=create_Parse_state(text_entry))
+					{
+						set_special_float3(temp_state,glyph_scale_factors,const_cast<char *>("*"));
+						if (orientationscalecheckbox->IsChecked())
+							{
+								orientation_scale_field_chooser_panel->Enable();
+								glyphscalefactorstext->Enable();
+								glyphscalefactorstextctrl->Enable();					
+								orientation_scale_field=orientation_scale_field_chooser->get_object();
+							}
+						else
+							{
+								orientation_scale_field_chooser_panel->Disable();
+								glyphscalefactorstext->Disable();
+								glyphscalefactorstextctrl->Disable();					
+								orientation_scale_field=(Computed_field *)NULL;
+							}
+						GT_element_settings_set_glyph_parameters(
+							scene_editor->current_settings, glyph, glyph_scaling_mode,
+							glyph_centre, glyph_size, orientation_scale_field,
+							glyph_scale_factors, variable_scale_field);
+						AutoApplyorNot(scene_editor->gt_element_group,
+							scene_editor->edit_gt_element_group);
+						destroy_Parse_state(&temp_state);
+						GT_element_settings_get_glyph_parameters(
+						    scene_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
+						    glyph_size, &orientation_scale_field, glyph_scale_factors,
+							&variable_scale_field);
+							sprintf(temp_string,"%g*%g*%g",
+										glyph_scale_factors[0],glyph_scale_factors[1],glyph_scale_factors[2]);
+						glyphscalefactorstextctrl->SetValue(temp_string);						
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"settings_editor_glyph_scale_factors_text_CB.  Missing text");
+				}
+			}
+		}
+	}
+
+   void VariableScaleChecked(wxCommandEvent &event)
+{
+	enum Glyph_scaling_mode glyph_scaling_mode;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
+	struct GT_object *glyph;
+	Triple glyph_centre,glyph_scale_factors,glyph_size;
+
+	GT_element_settings_get_glyph_parameters(
+		 scene_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
+		 glyph_size, &orientation_scale_field, glyph_scale_factors,
+		 &variable_scale_field);
+	variable_scale_field_chooser_panel=XRCCTRL(*this,"VariableScaleChooserPanel",wxPanel);
+	variablescalecheckbox=XRCCTRL(*this,"VariableScaleCheckBox",wxCheckBox);
+	if (variablescalecheckbox->IsChecked())
+	{
+		variable_scale_field_chooser_panel->Enable();				
+		variable_scale_field=variable_scale_field_chooser->get_object();
+	}
+	else
+	{
+		variable_scale_field_chooser_panel->Disable();		
+		variable_scale_field=(Computed_field *)NULL;
+	}
+	GT_element_settings_set_glyph_parameters(
+		scene_editor->current_settings, glyph, glyph_scaling_mode,
+		glyph_centre, glyph_size, orientation_scale_field,
+		glyph_scale_factors, variable_scale_field);
+	AutoApplyorNot(scene_editor->gt_element_group,
+		scene_editor->edit_gt_element_group);
+}
+
+
+   void LabelChecked(wxCommandEvent &event)
+{
+	struct Computed_field *label_field;
+	struct Graphics_font *font;
+
+	labelcheckbox=XRCCTRL(*this,"LabelCheckBox",wxCheckBox);
+	label_chooser_panel = XRCCTRL(*this,"LabelChooserPanel",wxPanel);
+	GT_element_settings_get_label_field(scene_editor->current_settings, 
+		&label_field, &font);
+	 if (labelcheckbox->IsChecked())
+	 {
+		 label_chooser_panel->Enable();				
+		 label_field=label_field_chooser->get_object();
+	 }
+	 else
+	 {
+		 label_chooser_panel->Disable();		
+		 label_field=(Computed_field *)NULL;
+	 }
+	GT_element_settings_set_label_field(scene_editor->current_settings, 
+		label_field, font);
+	AutoApplyorNot(scene_editor->gt_element_group,
+		scene_editor->edit_gt_element_group);
+}
+
+void EnterElementDiscretization(wxCommandEvent &event)
+{
+	char *text_entry,temp_string[50];
+	struct Element_discretization discretization;
+	struct Parse_state *temp_state;
+
+	discretizationtextctrl=XRCCTRL(*this,"DiscretizationTextCtrl",wxTextCtrl);
+
+		if (scene_editor->current_settings)
+		{
+			/* Get the text string */
+			discretizationtextctrl=XRCCTRL(*this,"DiscretizationTextCtrl",wxTextCtrl);	
+			text_entry=const_cast<char *>(discretizationtextctrl->GetValue().c_str());
+			if (text_entry)
+			{
+				if (temp_state=create_Parse_state(text_entry))
+				{
+					if (set_Element_discretization(temp_state,(void *)&discretization,
+						(void *)scene_editor->user_interface)&&
+						GT_element_settings_set_discretization(
+							scene_editor->current_settings,&discretization,
+							scene_editor->user_interface))
+					{
+						/* inform the client of the change */
+						AutoApplyorNot(scene_editor->gt_element_group,
+							scene_editor->edit_gt_element_group);
+					}
+					destroy_Parse_state(&temp_state);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"settings_editor_discretization_text_CB.  "
+						"Could not create parse state");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"settings_editor_discretization_text_CB.  Missing text");
+			}
+			if (GT_element_settings_get_discretization(
+				scene_editor->current_settings,&discretization))
+			{
+				/* always restore constant_radius to actual value in use */
+				sprintf(temp_string,"%d*%d*%d",discretization.number_in_xi1,
+					discretization.number_in_xi2,discretization.number_in_xi3);
+				discretizationtextctrl->SetValue(temp_string);
+			}
+		}
+}
+
+void NativeDiscretizationChecked(wxCommandEvent &event)
+{
+	nativediscretizationfieldcheckbox=XRCCTRL(*this,"NativeDiscretizationFieldCheckBox",wxCheckBox);
+	native_discretization_field_chooser_panel=XRCCTRL(*this, "NativeDiscretizationFieldChooserPanel",wxPanel);
+	FE_field *temp_native_discretization_field;
+
+	if (nativediscretizationfieldcheckbox->IsChecked())
+	{	
+		native_discretization_field_chooser_panel->Enable();
+		Computed_field_get_type_finite_element(native_discretization_field_chooser->get_object(),
+																						 &temp_native_discretization_field);
+	}
+	else
+	{
+		native_discretization_field_chooser_panel->Disable();
+		temp_native_discretization_field=(FE_field *)NULL;
+	}
+	GT_element_settings_set_native_discretization_field(
+		 scene_editor->current_settings,
+		 temp_native_discretization_field);
+	AutoApplyorNot(scene_editor->gt_element_group,
+		 scene_editor->edit_gt_element_group);
+}
+
+void EnterSeedXi(wxCommandEvent &event)
+{
+	char *text_entry,temp_string[50];
+	static int number_of_components=3;
+	struct Parse_state *temp_state;
+	Triple seed_xi;
+
+	xitext=XRCCTRL(*this,"XiText",wxStaticText);
+	xitextctrl=XRCCTRL(*this,"XiTextCtrl",wxTextCtrl);
+	if (GT_element_settings_get_seed_xi(
+		   scene_editor->current_settings,seed_xi))
+	{
+		/* Get the text string */
+		text_entry=const_cast<char *>(xitextctrl->GetValue().c_str());
+		if (text_entry)
+		{
+			/* clean up spaces? */
+			if (temp_state=create_Parse_state(text_entry))
+			{
+				set_float_vector(temp_state,seed_xi,
+					(void *)&number_of_components);
+				GT_element_settings_set_seed_xi(
+					scene_editor->current_settings,seed_xi);
+				/* inform the client of the change */
+				AutoApplyorNot(scene_editor->gt_element_group,
+					scene_editor->edit_gt_element_group);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+			   "settings_editor_seed_xi_text_CB.  Missing text");
+		}
+		/* always re-display the values actually set */
+		sprintf(temp_string,"%g,%g,%g",seed_xi[0],seed_xi[1],seed_xi[2]);
+		xitextctrl->SetValue(temp_string);
+	}
+}
+
+void EnterLength(wxCommandEvent &event)
+{
+	char *text_entry,temp_string[50];
+	enum Streamline_type streamline_type;
+	float streamline_length,streamline_width;
+	int reverse_track;
+	struct Computed_field *stream_vector_field;
+	
+	lengthtextctrl=XRCCTRL(*this,"LengthTextCtrl",wxTextCtrl);
+	GT_element_settings_get_streamline_parameters(
+		scene_editor->current_settings,&streamline_type,
+		&stream_vector_field,&reverse_track,&streamline_length,
+		&streamline_width);
+	text_entry=const_cast<char *>(lengthtextctrl->GetValue().c_str());
+	if (text_entry)
+	{
+		sscanf(text_entry,"%g",&streamline_length);
+		GT_element_settings_set_streamline_parameters(
+			scene_editor->current_settings,streamline_type,
+			stream_vector_field,reverse_track,streamline_length,
+			streamline_width);
+		/* inform the client of the change */
+		AutoApplyorNot(scene_editor->gt_element_group,
+			scene_editor->edit_gt_element_group);	
+	}
+	else
+	 {
+		 display_message(ERROR_MESSAGE,
+			"settings_editor_streamline_length_text_CB.  Missing text");
+	 }
+	sprintf(temp_string,"%g",streamline_length);
+	lengthtextctrl->SetValue(temp_string);		
+}
+
+void EnterWidth(wxCommandEvent &event)
+{
+	char *text_entry,temp_string[50];
+	enum Streamline_type streamline_type;
+	float streamline_length,streamline_width;
+	int reverse_track;
+	struct Computed_field *stream_vector_field;
+
+	widthtextctrl=XRCCTRL(*this,"WidthTextCtrl",wxTextCtrl);
+	GT_element_settings_get_streamline_parameters(
+		scene_editor->current_settings,&streamline_type,
+		&stream_vector_field,&reverse_track,&streamline_length,
+		&streamline_width);
+	/* Get the text string */
+	text_entry=const_cast<char *>(widthtextctrl->GetValue().c_str());
+	if (text_entry)
+	{
+		sscanf(text_entry,"%g",&streamline_width);
+		GT_element_settings_set_streamline_parameters(
+			scene_editor->current_settings,streamline_type,
+			stream_vector_field,reverse_track,streamline_length,streamline_width);
+		/* inform the client of the change */
+		AutoApplyorNot(scene_editor->gt_element_group,
+			scene_editor->edit_gt_element_group);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+		   "settings_editor_streamline_width_text_CB.  Missing text");
+	}
+	/* always restore streamline_width to actual value in use */
+	sprintf(temp_string,"%g",streamline_width);
+	widthtextctrl->SetValue(temp_string);			 
+}
+
+void ReverseChecked(wxCommandEvent &event)
+{
+	enum Streamline_type streamline_type;
+	float streamline_length,streamline_width;
+	int reverse_track;
+	struct Computed_field *stream_vector_field;
+	reversecheckbox=XRCCTRL(*this,"ReverseCheckBox",wxCheckBox);
+	GT_element_settings_get_streamline_parameters(
+		scene_editor->current_settings,&streamline_type,
+		&stream_vector_field,&reverse_track,&streamline_length,
+		&streamline_width);
+	reverse_track = !reverse_track;
+	GT_element_settings_set_streamline_parameters(
+		scene_editor->current_settings,streamline_type,
+		stream_vector_field,reverse_track,streamline_length,
+		streamline_width);
+	/* inform the client of the change */
+	AutoApplyorNot(scene_editor->gt_element_group,
+		scene_editor->edit_gt_element_group);
+	reversecheckbox->SetValue(reverse_track);
+}
+
+void EnterLineWidth(wxCommandEvent &event)
+{
+	char *text_entry,temp_string[50];
+	int line_width, new_line_width;
+
+	linewidthtextctrl=XRCCTRL(*this,"LineWidthTextCtrl",wxTextCtrl);
+	line_width = GT_element_settings_get_line_width(scene_editor->current_settings);
+	new_line_width = line_width;
+	/* Get the text string */
+	text_entry=const_cast<char *>(linewidthtextctrl->GetValue().c_str());
+	if (text_entry)
+	{
+		sscanf(text_entry,"%d",&new_line_width);
+		if (new_line_width != line_width)
+		{
+			GT_element_settings_set_line_width(
+				scene_editor->current_settings, new_line_width);
+			/* inform the client of the change */
+			AutoApplyorNot(scene_editor->gt_element_group,
+		       scene_editor->edit_gt_element_group);	 
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+		  "settings_editor_line_width_text_CB.  Missing text");
+	}
+	/* always restore streamline_width to actual value in use */
+	sprintf(temp_string,"%d",new_line_width);
+	linewidthtextctrl->SetValue(temp_string);
+}
+
+	void SetBothMaterialChooser(GT_element_settings *settings)
+{
+	graphical_material_chooser->set_object(GT_element_settings_get_material
+	   (settings));
+	selected_material_chooser->set_object(GT_element_settings_get_selected_material
+	   (settings));
+}
 
 	void SetCoordinateFieldChooser(GT_element_settings *settings)
 	{
@@ -1602,22 +2490,31 @@ Callback from wxChooser<Radius Scalar> when choice is made.
 
 	void SetSettings(GT_element_settings *settings)
 	{
-// 		struct Computed_field *coordinate_field, *data_field, *iso_scalar_field,
-// 		*label_field, *radius_scalar_field, *stream_vector_field,
-// 		*texture_coord_field, *xi_point_density_field;
-		char temp_string[50];
-		struct Computed_field *radius_scalar_field;
-		float constant_radius,scale_factor;
+		int error,number_of_iso_values, i,reverse_track,line_width;
+		double decimation_threshold, *iso_values;
+		char temp_string[50], *vector_temp_string;;
+		struct Computed_field *radius_scalar_field, *iso_scalar_field, *orientation_scale_field, *variable_scale_field,
+			*label_field, *xi_point_density_field, *stream_vector_field;
+		float constant_radius,scale_factor,streamline_length,streamline_width;
+		struct GT_object *glyph;
+		enum Glyph_scaling_mode glyph_scaling_mode;
+		enum Xi_discretization_mode xi_discretization_mode;
+		Triple glyph_centre, glyph_size, glyph_scale_factors, seed_xi;
+		struct Graphics_font *font;
+		struct Element_discretization discretization;
+		struct FE_field *native_discretization_field;
+		enum Streamline_type streamline_type;
+
 		constantradiustextctrl=XRCCTRL(*this, "ConstantRadiusTextCtrl",wxTextCtrl);
 		radiusscalarcheckbox=XRCCTRL(*this, "RadiusScalarCheckBox",wxCheckBox);
 		scalefactorstextctrl=XRCCTRL(*this,"ScaleFactorsTextCtrl",wxTextCtrl);
 		 radius_scalar_chooser_panel=XRCCTRL(*this, "RadiusScalarChooserPanel",wxPanel);
 		 constantradius = XRCCTRL(*this,"ConstantRadiusText",wxStaticText);
 		 scalefactor = XRCCTRL(*this,"ScaleFactorLabel", wxStaticText);
-		if (GT_ELEMENT_SETTINGS_CYLINDERS==scene_editor->current_settings_type)
+		 if ((GT_ELEMENT_SETTINGS_CYLINDERS==scene_editor->current_settings_type)&& 
+				 GT_element_settings_get_radius_parameters(settings,
+				 &constant_radius,&scale_factor,&radius_scalar_field))
 			{
-				GT_element_settings_get_radius_parameters(settings,
-				  &constant_radius,&scale_factor,&radius_scalar_field);
 				constantradiustextctrl->Show();
 				radiusscalarcheckbox->Show();
 				scalefactorstextctrl->Show();
@@ -1663,8 +2560,519 @@ Callback from wxChooser<Radius Scalar> when choice is made.
 				scalefactor->Hide();
 				constantradius->Hide();
 			}
-  	}
 
+		 //iso-surface
+		 iso_scalar_chooser_panel=XRCCTRL(*this, "IsoScalarChooserPanel",wxPanel);
+		 isoscalartextctrl = XRCCTRL(*this, "IsoScalarTextCtrl",wxTextCtrl);
+		 isoscalartext=XRCCTRL(*this,"IsoScalarText",wxStaticText);
+		 isovaluetext=XRCCTRL(*this,"IsoValueText",wxStaticText);
+		if ((GT_ELEMENT_SETTINGS_ISO_SURFACES==scene_editor->current_settings_type)&&
+				GT_element_settings_get_iso_surface_parameters(settings,
+					 &iso_scalar_field,&number_of_iso_values,&iso_values,
+					 &decimation_threshold)&&iso_scalar_field)
+			{
+				iso_scalar_chooser_panel->Show();
+				isoscalartextctrl->Show();
+				isoscalartext->Show();
+				isovaluetext->Show();
+				iso_scalar_chooser = 
+					new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+					(iso_scalar_chooser_panel, iso_scalar_field, scene_editor->computed_field_manager,
+					 Computed_field_is_scalar, (void *)NULL, scene_editor->user_interface);
+				Callback_base< Computed_field* > *iso_scalar_callback = 
+					new Callback_member_callback< Computed_field*, 
+					wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
+					(this, &wxSceneEditor::iso_scalar_callback);
+				iso_scalar_chooser->set_callback(iso_scalar_callback);
+				vector_temp_string = (char *)NULL;
+				error = 0;
+				for (i = 0 ; !error && (i < number_of_iso_values) ; i++)
+					{
+						sprintf(temp_string,"%g ",iso_values[i]);
+						append_string(&vector_temp_string, temp_string, &error);
+					}
+				if (vector_temp_string)
+					{
+						isoscalartextctrl ->SetValue(vector_temp_string);
+						DEALLOCATE(vector_temp_string);
+					}
+			}
+		else
+			{			
+				iso_scalar_chooser_panel->Hide();
+				isoscalartextctrl->Hide();
+				isoscalartext->Hide();
+				isovaluetext->Hide();
+			}
+
+		/* node_points, data_points, element_points */
+		/* glyphs */
+		glyph_chooser_panel=XRCCTRL(*this,"GlyphChooserPanel",wxPanel);
+		orientation_scale_field_chooser_panel=XRCCTRL(*this,	"OrientationScaleChooserPanel",wxPanel);
+		variable_scale_field_chooser_panel=XRCCTRL(*this,"VariableScaleChooserPanel",wxPanel);
+		glyphtext=XRCCTRL(*this,"GlyphText",wxStaticText);
+		centretext=XRCCTRL(*this,"CentreText",wxStaticText);
+		centretextctrl=XRCCTRL(*this,"CentreTextCtrl",wxTextCtrl);
+		baseglyphsizetext=XRCCTRL(*this,"BaseGlyphSizeText",wxStaticText);
+		baseglyphsizetextctrl=XRCCTRL(*this,"BaseGlyphSizeTextCtrl",wxTextCtrl);
+		orientationscalecheckbox=XRCCTRL(*this,"OrientationScaleCheckBox",wxCheckBox);
+		glyphscalefactorstext	=XRCCTRL(*this,"GlyphScaleFactorsText",wxStaticText);
+		glyphscalefactorstextctrl=XRCCTRL(*this,"GlyphScaleFactorsTextCtrl",wxTextCtrl);
+		variablescalecheckbox=XRCCTRL(*this,"VariableScaleCheckBox",wxCheckBox);
+		glyphbox=XRCCTRL(*this,"GlyphBox",wxWindow);
+		glyphline=XRCCTRL(*this,"GlyphLine",wxWindow);
+		if (((GT_ELEMENT_SETTINGS_NODE_POINTS == scene_editor->current_settings_type) ||
+			 (GT_ELEMENT_SETTINGS_DATA_POINTS == scene_editor->current_settings_type) ||
+			 (GT_ELEMENT_SETTINGS_ELEMENT_POINTS == scene_editor->current_settings_type)) &&
+			 GT_element_settings_get_glyph_parameters(settings,
+				  &glyph, &glyph_scaling_mode,glyph_centre, glyph_size,
+				  &orientation_scale_field, glyph_scale_factors,&variable_scale_field))
+			{
+				/* turn on callbacks */
+				glyph_chooser_panel->Show();
+				orientation_scale_field_chooser_panel->Show();
+				variable_scale_field_chooser_panel->Show();
+				glyphtext->Show();
+				centretext->Show();
+				centretextctrl->Show();
+				baseglyphsizetext->Show();
+				baseglyphsizetextctrl->Show();
+				orientationscalecheckbox->Show();
+				glyphscalefactorstext->Show();
+				glyphscalefactorstextctrl->Show();
+				variablescalecheckbox->Show();
+				glyphbox->Show();
+				glyphline->Show();
+
+ 				glyph_chooser = 
+ 					new List_chooser<GT_object, LIST_CLASS(GT_object)>
+ 					(glyph_chooser_panel, glyph, scene_editor->glyph_list,
+ 					(LIST_CONDITIONAL_FUNCTION(GT_object) *)NULL, (void *)NULL, 
+ 					 scene_editor->user_interface);
+ 				Callback_base< GT_object* > *glyph_callback = 
+ 					new Callback_member_callback< GT_object*, 
+ 					wxSceneEditor, int (wxSceneEditor::*)(GT_object *) >
+ 					(this, &wxSceneEditor::glyph_callback);
+ 				glyph_chooser->set_callback(glyph_callback);	
+
+				orientation_scale_field_chooser=
+					new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+					(orientation_scale_field_chooser_panel, orientation_scale_field, scene_editor->computed_field_manager,
+					 Computed_field_is_orientation_scale_capable, NULL,
+					 scene_editor->user_interface);
+				Callback_base< Computed_field* > *orientation_scale_callback = 
+					new Callback_member_callback< Computed_field*, 
+					wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
+					(this, &wxSceneEditor::orientation_scale_callback);
+					 orientation_scale_field_chooser->set_callback(orientation_scale_callback);
+
+				variable_scale_field_chooser=
+					new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+					(variable_scale_field_chooser_panel, variable_scale_field, scene_editor->computed_field_manager,
+					 Computed_field_has_up_to_3_numerical_components, (void *)NULL, 
+					 scene_editor->user_interface);
+				Callback_base< Computed_field* > *variable_scale_callback = 
+					new Callback_member_callback< Computed_field*, 
+					wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
+					(this, &wxSceneEditor::variable_scale_callback);
+					 variable_scale_field_chooser->set_callback(variable_scale_callback);
+
+				sprintf(temp_string,"%g,%g,%g",
+					glyph_centre[0],glyph_centre[1],glyph_centre[2]);
+				centretextctrl->SetValue(temp_string);
+				sprintf(temp_string,"%g*%g*%g",
+					glyph_size[0],glyph_size[1],glyph_size[2]);
+				baseglyphsizetextctrl->SetValue(temp_string);
+				sprintf(temp_string,"%g*%g*%g",glyph_scale_factors[0],
+					glyph_scale_factors[1],glyph_scale_factors[2]);
+				glyphscalefactorstextctrl->SetValue(temp_string);
+			
+				if ((struct Computed_field *)NULL!=orientation_scale_field)
+			    {
+				  orientation_scale_field_chooser->set_object(orientation_scale_field);
+				  glyphscalefactorstextctrl->Enable();
+				  orientationscalecheckbox->SetValue(1);
+				  orientation_scale_field_chooser_panel->Enable();
+				  glyphscalefactorstext->Enable();
+				 }
+				else
+				 {
+				  glyphscalefactorstextctrl->Disable();
+				  orientationscalecheckbox->SetValue(0);
+				  orientation_scale_field_chooser_panel->Disable();
+				  glyphscalefactorstext->Disable();
+				 }
+				if ((struct Computed_field *)NULL!=variable_scale_field)
+			    {
+				  variable_scale_field_chooser->set_object(variable_scale_field);
+				  variablescalecheckbox->SetValue(1);
+				  variable_scale_field_chooser_panel->Enable();
+				 }
+				else
+				 {
+				  variablescalecheckbox->SetValue(0);
+				  variable_scale_field_chooser_panel->Disable();
+				 }
+			}
+		else
+			{
+				glyph_chooser_panel->Hide();
+				orientation_scale_field_chooser_panel->Hide();
+				variable_scale_field_chooser_panel->Hide();
+				glyphtext->Hide();
+				centretext->Hide();
+				centretextctrl->Hide();
+				baseglyphsizetext->Hide();
+				baseglyphsizetextctrl->Hide();
+				orientationscalecheckbox->Hide();
+				glyphscalefactorstext->Hide();
+				glyphscalefactorstextctrl->Hide();
+				variablescalecheckbox->Hide();
+				glyphbox->Hide();
+				glyphline->Hide();
+			}
+
+		/* label field */
+		labelcheckbox=XRCCTRL(*this,"LabelCheckBox",wxCheckBox);
+		label_chooser_panel = XRCCTRL(*this,"LabelChooserPanel",wxPanel);
+
+		if (((GT_ELEMENT_SETTINGS_NODE_POINTS==scene_editor->current_settings_type)||
+			(GT_ELEMENT_SETTINGS_DATA_POINTS==scene_editor->current_settings_type)||
+			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==scene_editor->current_settings_type)) &&
+				GT_element_settings_get_label_field(settings,&label_field, &font))
+			{
+				label_field_chooser=
+					new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+					(label_chooser_panel, label_field, scene_editor->computed_field_manager,
+					(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL , (void *)NULL, 
+					 scene_editor->user_interface);
+				Callback_base< Computed_field* > *label_callback = 
+					new Callback_member_callback< Computed_field*, 
+					wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
+					(this, &wxSceneEditor::label_callback);
+					 label_field_chooser->set_callback(label_callback);
+				labelcheckbox->Show();
+				label_chooser_panel->Show();
+
+				if ((struct Computed_field *)NULL!=label_field)
+			    {
+				  label_field_chooser->set_object(label_field);
+				  labelcheckbox->SetValue(1);
+				  label_chooser_panel->Enable();
+				 }
+				else
+				 {
+				  variablescalecheckbox->SetValue(0);
+				  label_chooser_panel->Disable();
+				 }
+			}
+		else
+			{
+				labelcheckbox->Hide();
+				label_chooser_panel->Hide();
+			}
+
+		/* element_points and iso_surfaces */
+		/*use_element_type*/
+			use_element_type_chooser_panel = 
+				XRCCTRL(*this, "UseElementTypeChooserPanel", wxPanel);
+			useelementtypetext=XRCCTRL(*this,"UseElementTypeText",wxStaticText);
+			if ((GT_ELEMENT_SETTINGS_ELEMENT_POINTS==scene_editor->current_settings_type)||
+			     (GT_ELEMENT_SETTINGS_ISO_SURFACES==scene_editor->current_settings_type)) 
+			{
+			use_element_type_chooser = 
+				new Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Use_element_type)>
+				(use_element_type_chooser_panel, 
+				scene_editor->use_element_type,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Use_element_type) *)NULL,
+				(void *)NULL, scene_editor->user_interface);
+			use_element_type_chooser_panel->Fit();
+			Callback_base< enum Use_element_type > *use_element_type_callback = 
+				new Callback_member_callback< enum Use_element_type, 
+				wxSceneEditor, int (wxSceneEditor::*)(enum Use_element_type) >
+				(this, &wxSceneEditor::use_element_type_callback);
+			use_element_type_chooser->set_callback(use_element_type_callback);
+			use_element_type_chooser_panel->Show();
+			useelementtypetext->Show();
+			use_element_type_chooser->set_value(GT_element_settings_get_use_element_type(settings));
+			}
+		else
+			{
+				use_element_type_chooser_panel->Hide();
+				useelementtypetext->Hide();	 
+			}
+
+		/* element_points */
+		xidiscretizationmodetext = XRCCTRL(*this,"XiDiscretizationModeText",wxStaticText);
+		xi_discretization_mode_chooser_panel= XRCCTRL(*this,"XiDiscretizationModeChooserPanel",wxPanel);
+		discretizationtext=XRCCTRL(*this,"DiscretizationText",wxStaticText);
+		discretizationtextctrl=XRCCTRL(*this,"DiscretizationTextCtrl",wxTextCtrl);
+		nativediscretizationfieldcheckbox=XRCCTRL(*this,"NativeDiscretizationFieldCheckBox",wxCheckBox);
+		native_discretization_field_chooser_panel=XRCCTRL(*this, "NativeDiscretizationFieldChooserPanel",wxPanel);
+		densityfieldtext=XRCCTRL(*this, "DensityFieldText",wxStaticText);
+		density_field_chooser_panel=XRCCTRL(*this,"DensityFieldChooserPanel",wxPanel);
+
+		if ((GT_ELEMENT_SETTINGS_ELEMENT_POINTS==scene_editor->current_settings_type)&&
+				GT_element_settings_get_xi_discretization(settings,&xi_discretization_mode, &xi_point_density_field))	
+		{
+			xi_discretization_mode_chooser = 
+				new Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Xi_discretization_mode)>
+				(xi_discretization_mode_chooser_panel, xi_discretization_mode,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Xi_discretization_mode) *)NULL,
+				(void *)NULL, scene_editor->user_interface);
+			xi_discretization_mode_chooser_panel->Fit();
+			Callback_base< enum Xi_discretization_mode > *xi_discretization_mode_callback = 
+				new Callback_member_callback< enum Xi_discretization_mode, 
+				wxSceneEditor, int (wxSceneEditor::*)(enum Xi_discretization_mode) >
+				(this, &wxSceneEditor::xi_discretization_mode_callback);
+			xi_discretization_mode_chooser->set_callback(xi_discretization_mode_callback);
+			xi_discretization_mode_chooser_panel->Show();
+			xidiscretizationmodetext->Show();
+			xi_discretization_mode_chooser->set_value(xi_discretization_mode);
+ 			GT_element_settings_get_discretization(settings,
+			  &discretization);
+			sprintf(temp_string,"%d*%d*%d",discretization.number_in_xi1,
+			   discretization.number_in_xi2,discretization.number_in_xi3);
+			discretizationtextctrl->SetValue(temp_string);
+			discretizationtextctrl->Show();	
+			discretizationtext->Show();
+		
+			native_discretization_field=
+			   GT_element_settings_get_native_discretization_field(settings);
+			native_discretization_field_chooser =
+ 				new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+ 				(native_discretization_field_chooser_panel,(Computed_field*)NULL, 
+				 scene_editor->computed_field_manager,
+				 Computed_field_is_type_finite_element_iterator, (void *)NULL, scene_editor->user_interface);
+ 			Callback_base< Computed_field* > *native_discretization_callback = 
+ 				new Callback_member_callback< Computed_field*, 
+ 		       wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
+ 				(this, &wxSceneEditor::native_discretization_callback);
+			native_discretization_field_chooser->set_callback(native_discretization_callback);
+			native_discretization_field_chooser->set_object(
+								FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+								Computed_field_is_read_only_with_fe_field, native_discretization_field,
+								scene_editor->computed_field_manager));
+			nativediscretizationfieldcheckbox->Show();
+			native_discretization_field_chooser_panel->Show();
+			if ((struct FE_field *)NULL != native_discretization_field)
+			{
+				nativediscretizationfieldcheckbox->SetValue(1);
+				native_discretization_field_chooser_panel->Enable();
+			}
+			else
+			{
+				nativediscretizationfieldcheckbox->SetValue(0);
+				native_discretization_field_chooser_panel->Disable();
+			}
+
+			xi_point_density_field_chooser =
+				new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+					(density_field_chooser_panel, xi_point_density_field, scene_editor->computed_field_manager,
+					(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL , (void *)NULL, 
+					 scene_editor->user_interface);
+ 			Callback_base< Computed_field* > *xi_point_density_callback = 
+ 				new Callback_member_callback< Computed_field*, 
+ 		       wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
+ 				(this, &wxSceneEditor::xi_point_density_callback);
+			xi_point_density_field_chooser->set_callback(xi_point_density_callback);
+			densityfieldtext->Show();
+			density_field_chooser_panel->Show();
+			xi_point_density_field_chooser->set_object(xi_point_density_field);
+
+			if (XI_DISCRETIZATION_EXACT_XI != xi_discretization_mode)
+			{
+				discretizationtextctrl->Enable();	
+				discretizationtext->Enable();
+				nativediscretizationfieldcheckbox->Enable();
+				if ((struct FE_field *)NULL != native_discretization_field)
+				{
+					native_discretization_field_chooser_panel->Enable();
+				}
+				else
+				{
+					native_discretization_field_chooser_panel->Disable();
+				}
+			}			
+			else
+			{	
+				discretizationtextctrl->Disable();	
+				discretizationtext->Disable();
+				nativediscretizationfieldcheckbox->Disable();
+				native_discretization_field_chooser_panel->Disable();
+			}
+			if ((XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode)||
+			    (XI_DISCRETIZATION_CELL_POISSON == xi_discretization_mode))
+			{
+				densityfieldtext->Enable();
+				density_field_chooser_panel->Enable();
+			}
+			else
+			{
+				densityfieldtext->Disable();
+				density_field_chooser_panel->Disable();
+			}
+		}
+		else
+		{	
+			xidiscretizationmodetext->Hide();
+			xi_discretization_mode_chooser_panel->Hide();
+			discretizationtextctrl->Hide();	
+			discretizationtext->Hide();
+			nativediscretizationfieldcheckbox->Hide();
+			native_discretization_field_chooser_panel->Hide();
+			densityfieldtext->Hide();	
+			density_field_chooser_panel->Hide();
+		}
+
+		/* seed element */
+// 		if (GT_ELEMENT_SETTINGS_STREAMLINES==settings_type)
+// 		{
+// 			if (seed_element=
+// 				GT_element_settings_get_seed_element(new_settings))
+// 			{
+// 									TEXT_CHOOSE_FROM_FE_REGION_SET_OBJECT(FE_element)(
+// 										settings_editor->seed_element_widget,seed_element);
+// 			}
+// 								XtVaSetValues(settings_editor->seed_element_button,
+// 									XmNset,(NULL != seed_element),NULL);
+// 								XtSetSensitive(settings_editor->seed_element_widget,
+// 									NULL != seed_element);
+// 								XtManageChild(settings_editor->seed_element_entry);
+// 								/* turn on callbacks */
+// 								callback.data=(void *)settings_editor;
+// 								callback.procedure=settings_editor_update_seed_element;
+// 								TEXT_CHOOSE_FROM_FE_REGION_SET_CALLBACK(FE_element)(
+// 									settings_editor->seed_element_widget,&callback);
+// 		}
+// 		else
+// 			{
+// 				XtUnmanageChild(settings_editor->seed_element_entry);
+// 				/* turn off callbacks */
+// 				callback.procedure=(Callback_procedure *)NULL;
+// 				callback.data=(void *)NULL;
+// 				TEXT_CHOOSE_FROM_FE_REGION_SET_CALLBACK(FE_element)(
+// 																														settings_editor->seed_element_widget,&callback);
+// 			}
+		
+		/* seed xi */
+		xitext=XRCCTRL(*this,"XiText",wxStaticText);
+		xitextctrl=XRCCTRL(*this,"XiTextCtrl",wxTextCtrl);
+		if ((GT_ELEMENT_SETTINGS_ELEMENT_POINTS==scene_editor->current_settings_type)||
+			(GT_ELEMENT_SETTINGS_STREAMLINES==scene_editor->current_settings_type))
+		{
+			xitext->Show();
+			xitextctrl->Show();
+			GT_element_settings_get_seed_xi(scene_editor->current_settings,seed_xi);
+			sprintf(temp_string,"%g,%g,%g",seed_xi[0],seed_xi[1],seed_xi[2]);
+			xitextctrl->SetValue(temp_string);
+			if (GT_ELEMENT_SETTINGS_ELEMENT_POINTS==scene_editor->current_settings_type)
+			{
+				if (XI_DISCRETIZATION_EXACT_XI == xi_discretization_mode)
+				{
+					xitext->Enable();
+					xitextctrl->Enable();
+				}
+				else
+				{
+					xitext->Disable();
+					xitextctrl->Disable();
+				}
+			}
+			else
+			{
+				xitext->Enable();
+				xitextctrl->Enable();
+			}
+		}
+		else
+			{
+				xitext->Hide();
+				xitextctrl->Hide();
+			}
+
+		/*StreamLine */
+		streamtypetext=XRCCTRL(*this, "StreamTypeText",wxStaticText);
+		streamline_type_chooser_panel=XRCCTRL(*this, "StreamlineTypeChooserPanel",wxPanel);
+		streamlengthtext=XRCCTRL(*this, "StreamLengthText",wxStaticText);
+		lengthtextctrl=XRCCTRL(*this,"LengthTextCtrl",wxTextCtrl);
+		streamwidthtext=XRCCTRL(*this, "StreamWidthText",wxStaticText);
+		widthtextctrl=XRCCTRL(*this,"WidthTextCtrl",wxTextCtrl);
+		streamvectortext=XRCCTRL(*this, "StreamVectorText",wxStaticText);
+		stream_vector_chooser_panel=XRCCTRL(*this, "StreamVectorChooserPanel",wxPanel);
+		reversecheckbox=XRCCTRL(*this,"ReverseCheckBox",wxCheckBox);
+
+		if (GT_ELEMENT_SETTINGS_STREAMLINES==scene_editor->current_settings_type)
+			{
+				streamtypetext->Show();
+				streamline_type_chooser_panel->Show();
+				streamlengthtext->Show();
+				lengthtextctrl->Show();
+				streamwidthtext->Show();
+				widthtextctrl->Show();
+				streamvectortext->Show();
+				stream_vector_chooser_panel->Show();
+				reversecheckbox->Show();
+				GT_element_settings_get_streamline_parameters(scene_editor->current_settings,
+					&streamline_type,&stream_vector_field,&reverse_track,
+					&streamline_length,&streamline_width);
+				streamline_type_chooser = 
+					new Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Streamline_type)>
+					(streamline_type_chooser_panel, streamline_type,
+					 (ENUMERATOR_CONDITIONAL_FUNCTION(Streamline_type) *)NULL,
+					 (void *)NULL, scene_editor->user_interface);
+				streamline_type_chooser_panel->Fit();
+				Callback_base< enum Streamline_type > *streamline_type_callback = 
+					new Callback_member_callback< enum Streamline_type, 
+					wxSceneEditor, int (wxSceneEditor::*)(enum Streamline_type) >
+					(this, &wxSceneEditor::streamline_type_callback);
+				streamline_type_chooser->set_callback(streamline_type_callback);
+				streamline_type_chooser->set_value(streamline_type);
+				sprintf(temp_string,"%g",streamline_length);
+				lengthtextctrl->SetValue(temp_string);
+				sprintf(temp_string,"%g",streamline_width);
+				widthtextctrl->SetValue(temp_string);
+				stream_vector_chooser =
+					new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+					(stream_vector_chooser_panel, stream_vector_field, scene_editor->computed_field_manager,
+					 Computed_field_is_stream_vector_capable, (void *)NULL, 
+					 scene_editor->user_interface);
+				Callback_base< Computed_field* > *stream_vector_callback = 
+					new Callback_member_callback< Computed_field*, 
+					wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
+					(this, &wxSceneEditor::stream_vector_callback);
+				stream_vector_chooser->set_callback(stream_vector_callback);
+				reversecheckbox->SetValue(reverse_track);
+			}
+			else
+			{
+				streamtypetext->Hide();
+				streamline_type_chooser_panel->Hide();
+				streamlengthtext->Hide();
+				lengthtextctrl->Hide();
+				streamwidthtext->Hide();
+				widthtextctrl->Hide();
+				streamvectortext->Hide();
+				stream_vector_chooser_panel->Hide();
+				reversecheckbox->Hide();
+           }
+		/* line_width */
+		linewidthtext=XRCCTRL(*this,"LineWidthText",wxStaticText);
+		linewidthtextctrl=XRCCTRL(*this,"LineWidthTextCtrl",wxTextCtrl);
+		if (GT_ELEMENT_SETTINGS_LINES==scene_editor->current_settings_type)
+		{
+			linewidthtext->Show();
+			linewidthtextctrl->Show();
+			line_width = GT_element_settings_get_line_width(scene_editor->current_settings);
+			sprintf(temp_string,"%d",line_width);
+			linewidthtextctrl->SetValue(temp_string);
+		}
+		else
+		{
+			linewidthtext->Hide();
+			linewidthtextctrl->Hide();
+		}
+	}
   DECLARE_DYNAMIC_CLASS(wxSceneEditor);
   DECLARE_EVENT_TABLE();
 };
@@ -1694,6 +3102,20 @@ BEGIN_EVENT_TABLE(wxSceneEditor, wxFrame)
 	EVT_TEXT_ENTER(XRCID("ConstantRadiusTextCtrl"), wxSceneEditor::EnterRadius)
 	EVT_TEXT_ENTER(XRCID("ScaleFactorsTextCtrl"), wxSceneEditor::EnterRadius)
 	EVT_CHECKBOX(XRCID("RadiusScalarCheckBox"), wxSceneEditor::EnterRadius)
+	EVT_TEXT_ENTER(XRCID("IsoScalarTextCtrl"),wxSceneEditor::EnterIsoScalar)
+	EVT_TEXT_ENTER(XRCID("CentreTextCtrl"),wxSceneEditor::EnterGlyphCentre)
+	EVT_TEXT_ENTER(XRCID("BaseGlyphSizeTextCtrl"),wxSceneEditor::EnterGlyphSize)
+	EVT_TEXT_ENTER(XRCID("GlyphScaleFactorsTextCtrl"),wxSceneEditor::EnterGlyphScale)
+	EVT_CHECKBOX(XRCID("OrientationScaleCheckBox"),wxSceneEditor::EnterGlyphScale)
+	EVT_CHECKBOX(XRCID("VariableScaleCheckBox"),wxSceneEditor::VariableScaleChecked)
+	EVT_CHECKBOX(XRCID("LabelCheckBox"),wxSceneEditor::LabelChecked)
+	EVT_TEXT_ENTER(XRCID("DiscretizationTextCtrl"),wxSceneEditor::EnterElementDiscretization)
+	EVT_CHECKBOX(XRCID("NativeDiscretizationFieldCheckBox"),wxSceneEditor::NativeDiscretizationChecked)
+	EVT_TEXT_ENTER(XRCID("XiTextCtrl"),wxSceneEditor::EnterSeedXi)
+	EVT_TEXT_ENTER(XRCID("LengthTextCtrl"),wxSceneEditor::EnterLength)
+	EVT_TEXT_ENTER(XRCID("WidthTextCtrl"),wxSceneEditor::EnterWidth)
+	EVT_CHECKBOX(XRCID("ReverseCheckBox"),wxSceneEditor::ReverseChecked)
+	EVT_TEXT_ENTER(XRCID("LineWidthTextCtrl"),wxSceneEditor::EnterLineWidth)
 END_EVENT_TABLE()
 
 static int set_general_settings(void *scene_editor_void)
@@ -1857,6 +3279,7 @@ Iterator function for Graphical_element_editor_update_Settings_item.
 		 	graphicalitemschecklist->SetSelection(0);
 			REACCESS(GT_element_settings)(&scene_editor->current_settings,
 																		settings);
+		scene_editor->current_settings_type = GT_element_settings_get_settings_type(scene_editor->current_settings);
 		 }
       DEALLOCATE(settings_string);
 		return_code = 1;
@@ -1939,7 +3362,9 @@ DESCRIPTION :
 			scene_editor->constant_radius=1.0;
 			scene_editor->radius_scale_factor=1.0;
 			scene_editor->radius_scalar_field = (Computed_field *)NULL;
-
+			scene_editor->use_element_type= (Use_element_type)NULL;
+			scene_editor->xi_discretization_mode= (Xi_discretization_mode)NULL;
+			scene_editor->streamline_type=(Streamline_type)NULL;
 #if defined (WX_USER_INTERFACE)
 	scene_editor->wx_scene_editor = (wxSceneEditor *)NULL;
 	scene_editor->wx_scene_editor = new 

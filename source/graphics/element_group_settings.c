@@ -495,14 +495,16 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(GT_element_settings_type)
 		{
 			enumerator_string = "element_points";
 		} break;
-		case GT_ELEMENT_SETTINGS_VOLUMES:
-		{
-			enumerator_string = "volumes";
-		} break;
 		case GT_ELEMENT_SETTINGS_STREAMLINES:
 		{
 			enumerator_string = "streamlines";
 		} break;
+#if ! defined (WX_USER_INTERFACE)
+		case GT_ELEMENT_SETTINGS_VOLUMES:
+		{
+			enumerator_string = "volumes";
+		} break;
+#endif /* ! defined (WX_USER_INTERFACE) */
 		default:
 		{
 			enumerator_string = (char *)NULL;
@@ -682,7 +684,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->exterior=0;
 			settings->face=-1; /* any face */
 			/* for cylinders only */
-			settings->constant_radius=0.0;
+			settings->constant_radius=1.0;
 			settings->radius_scale_factor=1.0;
 			settings->radius_scalar_field=(struct Computed_field *)NULL;
 			/* for iso_surfaces only */

@@ -305,6 +305,53 @@ DESCRIPTION : \
 Calls <iterator> for each object in the <list>. \
 ==============================================================================*/
 
+#define LIST_CLASS(object_type) list_class_ ## object_type
+/***************************************************************************** \
+LAST MODIFIED : 9 February 2007 \
+\
+DESCRIPTION : \
+Wraps the existing Manager functionality and types into a class. \
+==============================================================================*/
+#define DEFINE_LIST_CLASS(object_type) \
+class LIST_CLASS(object_type) \
+{\
+public: \
+	typedef LIST(object_type) List_type; \
+	typedef LIST_CONDITIONAL_FUNCTION(object_type) List_conditional_function; \
+\
+	LIST(object_type) *list; \
+\
+   LIST_CLASS(object_type)(LIST(object_type) *list) : list(list) \
+	{ \
+	} \
+\
+	inline int number_in_list() \
+	{ \
+		return NUMBER_IN_LIST(object_type)(list); \
+	} \
+\
+	inline int for_each_object_in_list(	\
+		LIST_ITERATOR_FUNCTION(object_type) *iterator, void *user_data) \
+	{ \
+		return FOR_EACH_OBJECT_IN_LIST(object_type)( \
+			iterator, user_data, list); \
+	} \
+\
+	inline object_type *first_object_in_list_that(	\
+	  LIST_CONDITIONAL_FUNCTION(object_type) *conditional, void *user_data, \
+	  struct LIST(object_type) *list) \
+	{ \
+		return FIRST_OBJECT_IN_LIST_THAT(object_type)( \
+			conditional, user_data, list); \
+	} \
+\
+	inline int get_object_name(object_type *object, char **name) \
+	{ \
+		return GET_NAME(object_type)(object, name);		\
+	} \
+\
+}; /* LIST_CLASS(object_type) */
+
 #define DECLARE_LIST_TYPES( object_type ) \
 DECLARE_LIST_TYPE(object_type); \
 DECLARE_LIST_CONDITIONAL_FUNCTION(object_type); \

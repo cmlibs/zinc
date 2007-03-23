@@ -83,8 +83,10 @@ Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 	GT_ELEMENT_SETTINGS_SURFACES,
 	GT_ELEMENT_SETTINGS_ISO_SURFACES,
 	GT_ELEMENT_SETTINGS_ELEMENT_POINTS,
-	GT_ELEMENT_SETTINGS_VOLUMES,
-	GT_ELEMENT_SETTINGS_STREAMLINES
+	GT_ELEMENT_SETTINGS_STREAMLINES,
+	GT_ELEMENT_SETTINGS_VOLUMES /* Must be last as disabled in
+		 WX_USER_INTERFACE, see 
+		 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(GT_element_settings_type) */
 }; /* enum GT_element_settings_type */
 
 enum Glyph_scaling_mode
