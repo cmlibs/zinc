@@ -684,7 +684,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->exterior=0;
 			settings->face=-1; /* any face */
 			/* for cylinders only */
-			settings->constant_radius=1.0;
+			settings->constant_radius=0.0;
 			settings->radius_scale_factor=1.0;
 			settings->radius_scalar_field=(struct Computed_field *)NULL;
 			/* for iso_surfaces only */
