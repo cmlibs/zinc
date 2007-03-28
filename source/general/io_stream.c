@@ -1024,6 +1024,13 @@ Equivalent to a standard C fscanf or sscanf on the stream.
 							}
 							else
 							{
+								/* consume white space */
+								if (0 <= sscanf(stream->buffer + stream->buffer_index, 
+										" %n", &count))
+								{
+									stream->buffer_index += count;
+									local_counter += count;								
+								}
 								keep_scanning = 0;
 							}
 #if defined IO_STREAM_SPEED_UP_SSCANF
@@ -1095,7 +1102,8 @@ Equivalent to a standard C fgetc on the stream.
 			} break;
 			case IO_STREAM_MEMORY_TYPE:
 			case IO_STREAM_GZIP_FILE_TYPE:
-			case IO_STREAM_BZ2_FILE_TYPE:
+ 			case IO_STREAM_BZ2_FILE_TYPE:
+ 			case IO_STREAM_BZ2_MEMORY_TYPE:
 			{
 				IO_stream_read_to_internal_buffer(stream);
 				return_code = stream->buffer[stream->buffer_index];
@@ -1120,6 +1128,84 @@ Equivalent to a standard C fgetc on the stream.
 
 	return (return_code);
 } /* IO_stream_getc */
+
+int IO_stream_fread(struct IO_stream *stream, void *ptr, size_t size, size_t nmemb)
+/*******************************************************************************
+LAST MODIFIED : 28 March 2007
+
+DESCRIPTION :
+Equivalent to a standard C fread on the stream (although I have reordered the
+parameters so the stream is first).
+==============================================================================*/
+{
+	int bytes_this_copy, eof, items_to_read, items_this_copy, return_code;
+
+	ENTER(IO_stream_fread);
+
+	if (stream)
+	{
+		switch (stream->type)
+		{
+			case IO_STREAM_FILE_TYPE:
+			{
+				return_code = fread(ptr, size, nmemb, stream->file_handle);
+			} break;
+			case IO_STREAM_MEMORY_TYPE:
+			case IO_STREAM_GZIP_FILE_TYPE:
+			case IO_STREAM_BZ2_FILE_TYPE:
+ 			case IO_STREAM_BZ2_MEMORY_TYPE:
+			{
+				eof = 0;
+				items_to_read = nmemb;
+				while (items_to_read && !eof)
+				{
+					IO_stream_read_to_internal_buffer(stream);
+					if (stream->buffer_valid_index > stream->buffer_index)
+					{
+					
+						if ((unsigned)(stream->buffer_valid_index - stream->buffer_index) >=
+							(size * items_to_read))
+						{
+							items_this_copy = items_to_read;
+						}
+						else
+						{
+							items_this_copy = 
+								(stream->buffer_valid_index - stream->buffer_index) / size;
+						}
+						bytes_this_copy = items_this_copy * size;
+						memcpy(ptr, stream->buffer + stream->buffer_index,
+							bytes_this_copy);
+						stream->buffer_index += bytes_this_copy;
+						ptr += bytes_this_copy;
+						items_to_read -= items_this_copy;
+					}
+					else
+					{
+						eof = 1;
+					}
+				}
+				return_code = nmemb - items_to_read;
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"IO_stream_fread. IO stream invalid or type not implemented.");
+				return_code = 0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"IO_stream_fread. Invalid arguments.");
+		return_code = 0;
+	}
+
+	LEAVE;
+
+	return (return_code);
+} /* IO_stream_fread */
 
 int IO_stream_read_string(struct IO_stream *stream,char *format,char **string_read)
 /******************************************************************************

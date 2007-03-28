@@ -91,8 +91,11 @@ Write out a basis data file.
 ==============================================================================*/
 void EM_write_basis(char *filename,struct EM_Object *em_object);
 
+struct EM_Object *EM_read_basis(char *filename,
+	struct IO_stream_package *io_stream_package, struct EM_Object **em_object,
+	int *node_index_list, int number_in_node_list);
 /*******************************************************************************
-LAST MODIFIED : 6 March 2000
+LAST MODIFIED : 28 March 2007
 
 DESCRIPTION :
 Read in a file containing a basis function. Creates a EM_Object and returns
@@ -101,8 +104,6 @@ The <node_index_list> and <number_in_node_list> are required when the basis_file
 is a version two file as these basis files do not include information about
 the corresponding nodes.
 ==============================================================================*/
-struct EM_Object *EM_read_basis(char *filename,struct EM_Object **em_object,
-	int *node_index_list, int number_in_node_list);
 
 /*******************************************************************************
 LAST MODIFIED : 26 Febuary 1998

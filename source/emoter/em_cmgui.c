@@ -45,6 +45,7 @@ EM stuff for DB and cmgui.
 #include <stdio.h>
 #include <string.h>
 #include "general/debug.h"
+#include "general/io_stream.h"
 #include "user_interface/message.h"
 #include "emoter/em_cmgui.h"
 
@@ -68,9 +69,9 @@ struct EM_Object *create_EM_Object(int n_modes,int n_nodes)
 		em_object->n_modes = n_modes;
 		em_object->n_nodes = n_nodes;
 		em_object->m = n_nodes*3;
-	em_object->mode_one_std = 0;
-	em_object->minimum_nodes = (int *)NULL;
-	em_object->number_of_minimum_nodes = 0;
+		em_object->mode_one_std = 0;
+		em_object->minimum_nodes = (int *)NULL;
+		em_object->number_of_minimum_nodes = 0;
 		if (ALLOCATE(em_object->u,double,(em_object->m)*(em_object->n_modes)))
 		{
 			if (ALLOCATE(em_object->w,double,(em_object->n_modes)))
@@ -214,10 +215,11 @@ reference offset.
 	return( em_object->mode_one_std );
 }
 
-struct EM_Object *EM_read_basis(char *filename,struct EM_Object **em_object,
+struct EM_Object *EM_read_basis(char *filename,
+	struct IO_stream_package *io_stream_package, struct EM_Object **em_object,
 	int *node_index_list, int number_in_node_list)
 /*******************************************************************************
-LAST MODIFIED : 6 March 2000
+LAST MODIFIED : 28 March 2007
 
 DESCRIPTION :
 Read in a file containing a basis function. Creates a EM_Object and returns
@@ -230,7 +232,7 @@ the corresponding nodes.
 #define MAGICSIZE (13)
 	char buff[MAGICSIZE + 1];
 	char magic2[] = "em basis 2.0\n";
-	FILE *file;
+	struct IO_stream *stream;
 	int i,j,n_modes,n_nodes;
 	struct EM_Object *ptr;
 
@@ -239,22 +241,23 @@ the corresponding nodes.
 	/* check arguments */
 	if (filename&&em_object)
 	{
-		if (file=fopen(filename,"r"))
+		if ((stream = CREATE(IO_stream)(io_stream_package))
+			&& IO_stream_open_for_read(stream, filename))
 		{
-			fread(buff,MAGICSIZE,1,file);
+			IO_stream_fread(stream, buff,MAGICSIZE,1);
 			buff[MAGICSIZE] = 0;
 			if (0==strncmp(buff,magic,MAGICSIZE))
 			{
-				fread(buff,1,1,file); /* The string NULL termination */
-				fread(&n_nodes,sizeof(int),1,file);
-				fread(&n_modes,sizeof(int),1,file);
+				IO_stream_fread(stream, buff,1,1); /* The string NULL termination */
+				IO_stream_fread(stream, &n_nodes,sizeof(int),1);
+				IO_stream_fread(stream, &n_modes,sizeof(int),1);
 				n_nodes=n_nodes/3;
 				if (ptr=create_EM_Object(n_modes,n_nodes))
 				{
-					fread(ptr->index,sizeof(int),   n_nodes,          file);
-					fread(ptr->u,    sizeof(double),n_nodes*3*n_modes,file);
-					fread(ptr->w,    sizeof(double),n_modes,          file);
-					fread(ptr->v,    sizeof(double),n_modes*n_modes,  file);
+					IO_stream_fread(stream, ptr->index,sizeof(int),   n_nodes);
+					IO_stream_fread(stream, ptr->u,    sizeof(double),n_nodes*3*n_modes);
+					IO_stream_fread(stream, ptr->w,    sizeof(double),n_modes);
+					IO_stream_fread(stream, ptr->v,    sizeof(double),n_modes*n_modes);
 					destroy_EM_Object(em_object);
 					*em_object=ptr;
 					ptr->minimum_nodes=(int *)NULL;
@@ -271,13 +274,13 @@ the corresponding nodes.
 				/* SAB Read one more character if the previous one was a \r to support windows files */
 				if (buff[MAGICSIZE-1] == '\r')
 				{
-					fread(buff,1,1,file);					
+					IO_stream_fread(stream, buff,1,1);					
 				}
 
 				/* Comment/title line */
-				fscanf(file, "%*[^\n]%*[\n]");
+				IO_stream_scan(stream, "%*[^\n]%*[\n]");
 				 
-				fscanf(file, "%d%d", &n_nodes, &n_modes);
+				IO_stream_scan(stream, "%d%d", &n_nodes, &n_modes);
 				n_nodes=n_nodes/3;
 				if (ptr=create_EM_Object(n_modes,n_nodes))
 				{
@@ -285,7 +288,7 @@ the corresponding nodes.
 					{
 						for (j=0;j<n_nodes * 3;j++)
 						{
-							fscanf(file, "%lf", ptr->u + i * n_nodes * 3 + j);
+							IO_stream_scan(stream, "%lf", ptr->u + i * n_nodes * 3 + j);
 						}
 						ptr->w[i] = 1.0;
 						ptr->v[i * n_modes] = 1.0;
@@ -324,6 +327,8 @@ the corresponding nodes.
 				display_message(ERROR_MESSAGE,
 					"EM_read_basis.  \"%s\" isn't a basis file",filename);
 			}
+			IO_stream_close(stream);
+			DESTROY(IO_stream)(&stream);
 		}
 		else
 		{

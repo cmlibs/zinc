@@ -61,6 +61,7 @@ group of nodes
 #include "general/debug.h"
 #include "general/geometry.h"
 #include "general/manager.h"
+#include "general/mystring.h"
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_window.h"
 #include "graphics/movie_graphics.h"
@@ -1142,7 +1143,9 @@ slider
 		DEALLOCATE( emoter_slider->combine_sliders );
 		DEALLOCATE( emoter_slider->emoter_markers );
 		DEALLOCATE( emoter_slider->timebase_curves );
+#if defined (MOTIF)
 		DESTROY(Scene_viewer)(&emoter_slider->scene_viewer);
+#endif /* defined (MOTIF) */
 
 		if ( emoter_slider->sequence_filename )
 		{
@@ -1896,7 +1899,7 @@ LAST MODIFIED : 7 April 1998
 DESCRIPTION :
 ==============================================================================*/
 {
-	FILE *file;
+	struct IO_stream *stream;
 	char current_token[300];
 };
 
@@ -1911,14 +1914,14 @@ DESCRIPTION :
 
 	ENTER(read_file_float);
 
-	fscanf(file_data->file, "%s", file_data->current_token );
+	IO_stream_scan(file_data->stream, "%s", file_data->current_token );
 	while ('#' == file_data->current_token[0])
 	{
-		while (!feof(file_data->file)
-			&& 10 != fgetc( file_data->file ))
+		while (!IO_stream_end_of_stream(file_data->stream)
+			&& 10 != IO_stream_getc(file_data->stream))
 		{
 		}
-		fscanf(file_data->file, "%s", file_data->current_token );
+		IO_stream_scan(file_data->stream, "%s", file_data->current_token );
 	}
 
 	return_code = 1;
@@ -1995,7 +1998,7 @@ DESCRIPTION :
 } /* read_file_string */
 
 static struct read_file_data *read_file_open (
-	char *filename )
+	char *filename, struct IO_stream_package *io_stream_package)
 /*******************************************************************************
 LAST MODIFIED : 7 April 1998
 
@@ -2008,7 +2011,8 @@ DESCRIPTION :
 
 	if ( ALLOCATE(data, struct read_file_data, 1))
 	{
-		if ((data->file = fopen (filename, "r")))
+		if ((data->stream = CREATE(IO_stream)(io_stream_package))
+			&& IO_stream_open_for_read(data->stream, filename))
 		{
 			read_file_next_token(data);
 		}
@@ -2043,7 +2047,8 @@ DESCRIPTION :
 
 	ENTER(read_file_open);
 
-	fclose(file_data->file);
+	IO_stream_close(file_data->stream);
+	DESTROY(IO_stream)(&file_data->stream);
 	DEALLOCATE(file_data);
 
 	return_code = 1;
@@ -2064,7 +2069,7 @@ DESCRIPTION :
 
 	ENTER(read_file_eof);
 
-	return_code = feof( file_data->file );
+	return_code = IO_stream_end_of_stream(file_data->stream);
 
 	LEAVE;
 
@@ -2082,7 +2087,7 @@ DESCRIPTION :
 
 	ENTER(read_file_eof_marker);
 
-	if ( feof( file_data->file ))
+	if (IO_stream_end_of_stream(file_data->stream))
 	{
 		return_code = 1;
 	}
@@ -2640,7 +2645,8 @@ DESCRIPTION :
 Reads stuff from a file.
 ==============================================================================*/
 {
-	char warning[300], *name, *temp_filename, temp_string[300], *char_data;
+	char *basename, warning[300], *name, *temp_filename, temp_string[300],
+		*char_data;
 	float *shape_vector,total_time;
 	int face_index, face_values, header, i, index, j, n_modes, return_code,
 		solid_body_index, values;
@@ -2657,15 +2663,18 @@ Reads stuff from a file.
 	if ( slider && filename )
 	{
 		shared = slider->shared;
-		if ( file_data = read_file_open( filename ))
+		if (file_data = read_file_open(filename, shared->io_stream_package))
 		{
 			if ( name = strrchr( filename, '/'))
 			{
 				name++;
+				basename = duplicate_string(filename);
+				basename[name - filename] = 0;
 			}
 			else
 			{
 				name = filename;
+				basename = duplicate_string("");
 			}
 			return_code = 1;
 			while ( return_code && !read_file_eof(file_data))
@@ -2706,22 +2715,31 @@ Reads stuff from a file.
 						{
 							if ( temp_filename = strrchr( temp_string, '/'))
 							{
-								temp_filename++;
+								temp_filename = duplicate_string(temp_filename + 1);
 							}
 							else
 							{
-								temp_filename = temp_string;
+								int error = 0;
+								temp_filename = duplicate_string(basename);
+								append_string(&temp_filename, temp_string, &error);
 							}
-							slider_to_combine = create_emoter_slider(temp_string,
-								temp_filename,
+							if (slider_to_combine = create_emoter_slider(temp_filename,
+								temp_string,
 #if defined (MOTIF)
 								emoter_dialog->slider_form,
 #endif /* defined (MOTIF) */
 								1, shared,
 								shared->number_of_sliders,
 								(struct Curve *)NULL,
-								emoter_dialog, no_confirm );
-							return_code = 1;
+									emoter_dialog, no_confirm ))
+							{
+								return_code = 1;
+							}
+							else
+							{
+								return_code = 0;
+							}
+							DEALLOCATE(temp_filename);
 						}
 					}
 
@@ -2813,7 +2831,7 @@ Reads stuff from a file.
 				{
 					/* Don't want to tokenise the next bit so just normal read */
 					sscanf( file_data->current_token, "%d", icon_width );
-					fscanf( file_data->file, "%d", icon_height );
+					IO_stream_scan(file_data->stream, "%d", icon_height );
 					if ( ALLOCATE( *icon_data, char, 3 * *icon_width * *icon_height ))
 					{
 						char_data = *icon_data;
@@ -2821,7 +2839,7 @@ Reads stuff from a file.
 						{
 							for ( i = 0 ; i < *icon_width ; i++ )
 							{
-								fscanf(file_data->file, "%6x", &integer_data);
+								IO_stream_scan(file_data->stream, "%6x", &integer_data);
 								*char_data = ( integer_data >> 16 ) & 0xff;
 								char_data++;
 								*char_data = ( integer_data >> 8 ) & 0xff;
@@ -2829,7 +2847,7 @@ Reads stuff from a file.
 								*char_data = integer_data & 0xff;
 								char_data++;
 							}
-							fscanf(file_data->file, "\n");
+							IO_stream_scan(file_data->stream, "\n");
 						}
 					}
 					else
@@ -2858,12 +2876,12 @@ Reads stuff from a file.
 							!strcmp(file_data->current_token, "2.0"))
 						{
 							/* Read \n off previous line */
-							fscanf(file_data->file, "%*[^\n]");
-							fscanf(file_data->file, "%*[\n]");
+							IO_stream_scan(file_data->stream, "%*[^\n]");
+							IO_stream_scan(file_data->stream, "%*[\n]");
 							
 							/* Comment/title line */
-							fscanf(file_data->file, "%*[^\n]");
-							fscanf(file_data->file, "%*[\n]");
+							IO_stream_scan(file_data->stream, "%*[^\n]");
+							IO_stream_scan(file_data->stream, "%*[\n]");
 							
 							read_file_next_token(file_data);
 							header = 1;
@@ -2952,7 +2970,7 @@ Reads stuff from a file.
 					}
 					if ( return_code )
 					{
-						if ( ALLOCATE( temp_filename, char, strlen(name)+1))
+						if (name && ALLOCATE( temp_filename, char, strlen(name)+1))
 						{
 							strcpy(temp_filename, name);
 							name = temp_filename;
@@ -3102,6 +3120,7 @@ Reads stuff from a file.
 				}
 			}
 			read_file_close( file_data );
+			DEALLOCATE(basename);
 		}
 		else
 		{
@@ -3305,6 +3324,8 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 									icon_width, icon_height, icon_data );
 								Scene_viewer_redraw(emoter_slider->scene_viewer);
 							}
+#else /* defined (MOTIF) */
+							emoter_slider->scene_viewer = (struct Scene_viewer *)NULL;
 #endif /* defined (MOTIF) */
 							emoter_slider->number_of_emoter_markers = marker_count + 1;
 							emoter_slider->emoter_markers[0] = create_emoter_marker (
@@ -3889,7 +3910,7 @@ Sets the <emoter_dialog> to autoplay if <play> is true or to stop if <play> is f
 	  	emoter_dialog->autoplay_timeout = 
 			Event_dispatcher_add_timeout_callback(
 				User_interface_get_event_dispatcher(
-					emoter_dialog->shared->user_interface), 0, 1000,
+					emoter_dialog->shared->user_interface), 0, /*ns*/50000000,
 				emoter_autoplay_timeout, emoter_dialog);
 		return_code = 1;
 	}
@@ -6135,8 +6156,8 @@ in existence, then bring it to the front, otherwise create new one.
 			}
 			if (return_code)
 			{
-				if (EM_read_basis(basis_file_name,&em_object,index_nodes,
-					number_of_index_nodes))
+				if (EM_read_basis(basis_file_name,create_emoter_slider_data->io_stream_package,
+					&em_object,index_nodes,number_of_index_nodes))
 				{
 					number_of_nodes=EM_number_of_nodes(em_object);
 					number_of_modes=EM_number_of_modes(em_object);

@@ -1883,16 +1883,17 @@ DESCRIPTION :
 
 	if (event_dispatcher && event_dispatcher->timeout_list && callback_id)
 	{
-#if defined (USE_XTAPP_CONTEXT)
-		XtRemoveTimeOut(callback_id->xt_timeout_id);
-#endif /* defined (USE_XTAPP_CONTEXT) */
-#if defined (WIN32_USER_INTERFACE)
+#if defined (USE_GTK_MAIN_STEP)
+		gtk_timeout_remove(callback_id->gtk_timeout_id);
+#elif defined (WIN32_USER_INTERFACE)
 		return_code = 1;
 		KillTimer(event_dispatcher->networkWindowHandle, (ULONG)callback_id);
-#else /* defined(WIN32_USER_INTERFACE) */
+#elif defined (USE_GENERIC_EVENT_DISPATCHER)
 		return_code = REMOVE_OBJECT_FROM_LIST(Event_dispatcher_timeout_callback)
 			(callback_id, event_dispatcher->timeout_list);
-#endif /* defined(WIN32_USER_INTERFACE) else */
+#else /* switch (USER_INTERFACE) */
+#error remove timeout callbacks not defined on this platform
+#endif /* switch (USER_INTERFACE) */
 	}
 	else
 	{

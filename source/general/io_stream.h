@@ -131,6 +131,15 @@ DESCRIPTION :
 Equivalent to a standard C fscanf or sscanf on the stream.
 ==============================================================================*/
 
+int IO_stream_fread(struct IO_stream *stream, void *ptr, size_t size, size_t nmemb);
+/*******************************************************************************
+LAST MODIFIED : 28 March 2007
+
+DESCRIPTION :
+Equivalent to a standard C fread on the stream (although I have reordered the
+parameters so the stream is first).
+==============================================================================*/
+
 int IO_stream_getc(struct IO_stream *stream);
 /*******************************************************************************
 LAST MODIFIED : 23 August 2004
