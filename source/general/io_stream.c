@@ -1138,6 +1138,7 @@ Equivalent to a standard C fread on the stream (although I have reordered the
 parameters so the stream is first).
 ==============================================================================*/
 {
+	char *memptr;
 	int bytes_this_copy, eof, items_to_read, items_this_copy, return_code;
 
 	ENTER(IO_stream_fread);
@@ -1157,6 +1158,7 @@ parameters so the stream is first).
 			{
 				eof = 0;
 				items_to_read = nmemb;
+				memptr = (char *)ptr;
 				while (items_to_read && !eof)
 				{
 					IO_stream_read_to_internal_buffer(stream);
@@ -1174,10 +1176,10 @@ parameters so the stream is first).
 								(stream->buffer_valid_index - stream->buffer_index) / size;
 						}
 						bytes_this_copy = items_this_copy * size;
-						memcpy(ptr, stream->buffer + stream->buffer_index,
+						memcpy(memptr, stream->buffer + stream->buffer_index,
 							bytes_this_copy);
 						stream->buffer_index += bytes_this_copy;
-						ptr += bytes_this_copy;
+						memptr += bytes_this_copy;
 						items_to_read -= items_this_copy;
 					}
 					else
