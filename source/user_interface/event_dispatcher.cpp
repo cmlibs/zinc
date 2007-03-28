@@ -119,7 +119,7 @@ DESCRIPTION :
 Contains all information necessary for a file descriptor callback.
 ==============================================================================*/
 {
-	struct Event_dispatcher_timeout_callback *self;	
+	struct Event_dispatcher_timeout_callback *self;
 	int access_count;
 	unsigned long timeout_s;
 	unsigned long timeout_ns;
@@ -1885,6 +1885,10 @@ DESCRIPTION :
 	{
 #if defined (USE_GTK_MAIN_STEP)
 		gtk_timeout_remove(callback_id->gtk_timeout_id);
+#elif defined (CARBON_USER_INTERFACE)
+		RemoveEventLoopTimer(callback_id->carbon_timer_ref);
+		callback_id->carbon_timer_ref = (EventLoopTimerRef)NULL;
+#elif defined (WX_USER_INTERFACE)
 #elif defined (WIN32_USER_INTERFACE)
 		return_code = 1;
 		KillTimer(event_dispatcher->networkWindowHandle, (ULONG)callback_id);
