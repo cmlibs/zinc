@@ -2681,6 +2681,44 @@ Global functions
 ----------------
 */
 
+static int Node_tool_copy_function(void *destination_tool_void, void *source_tool_void) 
+/*******************************************************************************
+LAST MODIFIED : 29 March 2007
+
+DESCRIPTION :
+Copies the state of one node tool to another.
+==============================================================================*/
+{
+	int return_code;
+	struct Node_tool *destination_node_tool, *source_node_tool;
+
+	ENTER(Node_tool_copy_function);
+	if ((destination_node_tool=(struct Node_tool *)destination_tool_void) &&
+			(source_node_tool=(struct Node_tool *)source_tool_void))
+	{
+		destination_node_tool->coordinate_field = source_node_tool->coordinate_field;
+		destination_node_tool->create_enabled = source_node_tool->create_enabled;
+		destination_node_tool->define_enabled = source_node_tool->define_enabled;
+		destination_node_tool->edit_enabled= source_node_tool->edit_enabled;
+		destination_node_tool->motion_update_enabled= source_node_tool->motion_update_enabled;
+		destination_node_tool->select_enabled = source_node_tool->select_enabled;
+		destination_node_tool->streaming_create_enabled = source_node_tool->streaming_create_enabled;
+		destination_node_tool->constrain_to_surface= source_node_tool->constrain_to_surface;
+		destination_node_tool->command_field = source_node_tool->command_field;
+		destination_node_tool->current_region_path= source_node_tool->current_region_path;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_copy_function.  Invalid argument(s)");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Node_tool_copy_function */
+
+
 struct Node_tool *CREATE(Node_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct Cmiss_region *root_region, int use_data,
@@ -2820,6 +2858,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				Node_tool_get_icon,
 				Node_tool_bring_up_interactive_tool_dialog,
 				(Interactive_tool_destroy_tool_data_function *)NULL,
+				Node_tool_copy_function,		
 				(void *)node_tool);
 			ADD_OBJECT_TO_MANAGER(Interactive_tool)(
 				node_tool->interactive_tool,

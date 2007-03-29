@@ -72,6 +72,7 @@ typedef struct Cmgui_image *Interactive_tool_get_icon_function(
 	struct Colour *foreground, struct Colour *background, void *user_data);
 typedef int Interactive_tool_destroy_tool_data_function(
    void **interactive_tool_data_address);
+typedef int Interactive_tool_copy_function(void *destination_tool, void *source_tool);
 
 struct Interactive_tool;
 /*******************************************************************************
@@ -97,6 +98,7 @@ struct Interactive_tool *CREATE(Interactive_tool)(char *name,char *display_name,
 	Interactive_tool_get_icon_function *get_icon_function,
 	Interactive_tool_bring_up_dialog_function *bring_up_dialog_function,
    Interactive_tool_destroy_tool_data_function *destroy_tool_data_function,
+   Interactive_tool_copy_function *copy_tool_function,
 	void *tool_data);
 /*******************************************************************************
 LAST MODIFIED : 11 May 2000
@@ -167,6 +169,16 @@ LAST MODIFIED : 5 July 2002
 
 DESCRIPTION :
 Returns the icon which a user_interface can use to represent the tool.
+==============================================================================*/
+
+int Interactive_tool_copy(struct Interactive_tool *destination_interactive_tool,
+   struct Interactive_tool *source_interactive_tool);
+/*******************************************************************************
+LAST MODIFIED : 29 March 2007
+
+DESCRIPTION :
+If the bring_up_dialog function is defined for <interactive_tool> calls it to
+bring up the dialog for changing its settings.
 ==============================================================================*/
 
 int Interactive_tool_bring_up_dialog(struct Interactive_tool *interactive_tool, struct Graphics_window *graphics_window);

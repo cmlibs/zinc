@@ -615,7 +615,6 @@ public:
   {
   };
 
-
   DECLARE_DYNAMIC_CLASS(wxElementPointTool);
   DECLARE_EVENT_TABLE();
 };
@@ -632,6 +631,32 @@ END_EVENT_TABLE()
 Global functions
 ----------------
 */
+
+	static int Element_point_tool_copy_function(void *destination_tool_void, void *source_tool_void) 
+/*******************************************************************************
+LAST MODIFIED : 29 March 2007
+
+DESCRIPTION :
+Copies the state of one element_point tool to another.
+==============================================================================*/
+{
+	int return_code;
+	struct Element_point_tool *destination_element_point_tool, *source_element_point_tool;
+	ENTER(Element_point_tool_copy_function);
+	if ((destination_element_point_tool=(struct Element_point_tool *)destination_tool_void) &&
+			(source_element_point_tool=(struct Element_point_tool *)source_tool_void))
+	{
+		destination_element_point_tool->command_field = source_element_point_tool->command_field;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_tool_copy_function.  Invalid argument(s)");
+		return_code=0;
+	}
+	return (return_code);
+}
 
 struct Element_point_tool *CREATE(Element_point_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
@@ -702,6 +727,7 @@ Creates an Element_point_tool with Interactive_tool in
 				Element_point_tool_get_icon,
 				Element_point_tool_bring_up_interactive_tool_dialog,
 				(Interactive_tool_destroy_tool_data_function *)NULL,
+				Element_point_tool_copy_function,
 				(void *)element_point_tool)                                           ;
 			ADD_OBJECT_TO_MANAGER(Interactive_tool)(
 				element_point_tool->interactive_tool,
@@ -711,7 +737,6 @@ Creates an Element_point_tool with Interactive_tool in
 			element_point_tool->last_interaction_volume=
 				(struct Interaction_volume *)NULL;
 			element_point_tool->rubber_band=(struct GT_object *)NULL;
-
 #if defined (MOTIF)
 			element_point_tool->display = User_interface_get_display
 				(user_interface);
@@ -726,7 +751,6 @@ Creates an Element_point_tool with Interactive_tool in
 			if (MrmOpenHierarchy_binary_string(element_point_tool_uidh,sizeof(element_point_tool_uidh),
 					&element_point_tool_hierarchy,&element_point_tool_hierarchy_open))
 			{
-
 				/* make the dialog shell */
 				if (element_point_tool->window_shell=
 					XtVaCreatePopupShell("Element point tool",
@@ -1056,3 +1080,30 @@ Sets the command_field to be executed when the element is clicked on in the
 
 	return (return_code);
 } /* Element_point_tool_set_command_field */
+
+struct Interactive_tool *Element_point_tool_get_interactive_tool(
+	struct Element_point_tool *element_point_tool)
+/*******************************************************************************
+LAST MODIFIED : 29 March 2007
+
+DESCRIPTION :
+Returns the generic interactive_tool the represents the <element_point_tool>.
+==============================================================================*/
+{
+	struct Interactive_tool *interactive_tool;
+
+	ENTER(Element_point_tool_get_interactive_tool);
+	if (element_point_tool)
+	{
+		interactive_tool=element_point_tool->interactive_tool;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_tool_get_interactive_tool.  Invalid argument(s)");
+		interactive_tool=(struct Interactive_tool *)NULL;
+	}
+	LEAVE;
+
+	return (interactive_tool);
+} /* Element_tool_get_interactive_tool */

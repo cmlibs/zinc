@@ -843,6 +843,35 @@ END_EVENT_TABLE()
 Global functions
 ----------------
 */
+static int Element_tool_copy_function(void *destination_tool_void, void *source_tool_void) 
+/*******************************************************************************
+LAST MODIFIED : 29 March 2007
+
+DESCRIPTION :
+Copies the state of one element tool to another.
+==============================================================================*/
+{
+	int return_code;
+	struct Element_tool *destination_element_tool, *source_element_tool;
+	ENTER(Element_tool_copy_function);
+	if ((destination_element_tool=(struct Element_tool *)destination_tool_void) &&
+			(source_element_tool=(struct Element_tool *)source_tool_void))
+	{
+		destination_element_tool-> select_elements_enabled = source_element_tool->select_elements_enabled;
+		destination_element_tool->select_faces_enabled = source_element_tool->select_faces_enabled;
+		destination_element_tool->select_lines_enabled = source_element_tool->select_lines_enabled;
+		destination_element_tool->command_field = source_element_tool->command_field;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_tool_copy_function.  Invalid argument(s)");
+		return_code=0;
+	}
+	return (return_code);
+}
+
 
 struct Element_tool *CREATE(Element_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
@@ -936,6 +965,7 @@ Selects elements in <element_selection> in response to interactive_events.
 				Element_tool_get_icon,
 				Element_tool_bring_up_interactive_tool_dialog,
 				(Interactive_tool_destroy_tool_data_function *)NULL,
+				Element_tool_copy_function,
 				(void *)element_tool);
 #else /* defined (OPENGL_API) */
 			element_tool->interactive_tool=CREATE(Interactive_tool)(
@@ -1544,3 +1574,30 @@ on in the <element_tool>.
 
 	return (return_code);
 } /* Element_tool_set_command_field */
+
+struct Interactive_tool *Element_tool_get_interactive_tool(
+	struct Element_tool *element_tool)
+/*******************************************************************************
+LAST MODIFIED : 29 March 2007
+
+DESCRIPTION :
+Returns the generic interactive_tool the represents the <element_tool>.
+==============================================================================*/
+{
+	struct Interactive_tool *interactive_tool;
+
+	ENTER(Element_tool_get_interactive_tool);
+	if (element_tool)
+	{
+		interactive_tool=element_tool->interactive_tool;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_tool_get_interactive_tool.  Invalid argument(s)");
+		interactive_tool=(struct Interactive_tool *)NULL;
+	}
+	LEAVE;
+
+	return (interactive_tool);
+} /* Element_tool_get_interactive_tool */

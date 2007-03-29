@@ -481,6 +481,35 @@ Module functions
 ----------------
 */
 
+static int command_data_get_Interactive_tool(struct Graphics_window *graphics_window,
+	void *interactive_tool_void)
+/*******************************************************************************
+LAST MODIFIED : 27 March 2007
+
+DESCRIPTION :
+WX_USER_INTERFACE_ONLY, get the interactive_tool_manager and pass it
+to change the interactive tool settings.
+==============================================================================*/
+{
+	char *tool_name;
+	struct MANAGER(Interactive_tool) *interactive_tool_manager;
+	struct Interactive_tool *global_interactive_tool;
+	struct Interactive_tool *wx_interactive_tool;
+	global_interactive_tool = (struct Interactive_tool *)interactive_tool_void;
+	GET_NAME(Interactive_tool)(global_interactive_tool,&tool_name);
+	interactive_tool_manager = Graphics_window_get_interactive_tool_manager(graphics_window);
+	if (wx_interactive_tool=
+		FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
+		(char *)tool_name,interactive_tool_manager))
+	{
+		Interactive_tool_copy(wx_interactive_tool,
+		  global_interactive_tool);
+	}
+    DEALLOCATE(tool_name);
+	return 1;
+}
+//#endif /*(WX_USER_INTERFACE)*/
+
 static int set_command_prompt(char *prompt, struct Cmiss_command_data *command_data)
 /*******************************************************************************
 LAST MODIFIED : 26 June 2002
@@ -7611,6 +7640,78 @@ Executes a GFX CREATE WINDOW command.
 				{
 				   if (command_data->user_interface)
 					{
+#if defined (WX_USER_INTERFACE)
+						struct MANAGER(Interactive_tool) *interactive_tool_manager;
+						struct Interactive_tool *transform_tool;
+						interactive_tool_manager = CREATE(MANAGER(Interactive_tool))();
+					    transform_tool=create_Interactive_tool_transform(
+				             command_data->user_interface);
+						ADD_OBJECT_TO_MANAGER(Interactive_tool)(transform_tool,
+				              interactive_tool_manager);
+						CREATE(Node_tool)(
+								interactive_tool_manager,
+								command_data->root_region, /*use_data*/0,
+								command_data->node_selection,
+								command_data->computed_field_package,
+								Material_package_get_default_material(command_data->material_package),
+								command_data->user_interface,
+								command_data->default_time_keeper,
+								command_data->execute_command);
+							CREATE(Node_tool)(
+								interactive_tool_manager,
+								command_data->data_root_region, /*use_data*/1,
+								command_data->data_selection,
+								command_data->computed_field_package,
+								Material_package_get_default_material(command_data->material_package),
+								command_data->user_interface,
+								command_data->default_time_keeper,
+								command_data->execute_command);
+							CREATE(Element_tool)(
+								interactive_tool_manager,
+								command_data->root_region,
+								command_data->element_selection,
+								command_data->element_point_ranges_selection,
+								command_data->computed_field_package,
+								Material_package_get_default_material(command_data->material_package),
+								command_data->user_interface,
+								command_data->default_time_keeper,
+								command_data->execute_command);
+							CREATE(Element_point_tool)(
+								interactive_tool_manager,
+								command_data->element_point_ranges_selection,
+								command_data->computed_field_package,
+								Material_package_get_default_material(command_data->material_package),
+								command_data->user_interface,
+								command_data->default_time_keeper,
+								command_data->execute_command);
+
+						if (window=CREATE(Graphics_window)(name,buffer_mode,stereo_mode,
+							minimum_colour_buffer_depth, minimum_depth_buffer_depth,
+							minimum_accumulation_buffer_depth,
+							command_data->graphics_buffer_package,
+							&(command_data->background_colour),
+							command_data->light_manager,command_data->default_light,
+							command_data->light_model_manager,command_data->default_light_model,
+							command_data->scene_manager,command_data->default_scene,
+							command_data->texture_manager,
+							interactive_tool_manager,
+							command_data->user_interface))
+						{
+							if (!ADD_OBJECT_TO_MANAGER(Graphics_window)(window,
+							   command_data->graphics_window_manager))
+							{
+							   DESTROY(Graphics_window)(&window);
+								 DESTROY(MANAGER(Interactive_tool))(&interactive_tool_manager);
+ 							   return_code=0;
+							}
+						}
+						else
+					   {
+						  display_message(ERROR_MESSAGE,
+							 "gfx_create_window.  Could not create graphics window");
+						  return_code=0;
+						}
+#else
 					   if (window=CREATE(Graphics_window)(name,buffer_mode,stereo_mode,
 							minimum_colour_buffer_depth, minimum_depth_buffer_depth,
 							minimum_accumulation_buffer_depth,
@@ -7636,6 +7737,7 @@ Executes a GFX CREATE WINDOW command.
 							 "gfx_create_window.  Could not create graphics window");
 						  return_code=0;
 						}
+#endif /*(WX_USER_INTERFACE)*/
 					}
 					else
 					{
@@ -10655,7 +10757,7 @@ Executes a GFX ELEMENT_CREATOR command.
 } /* execute_command_gfx_element_creator */
 #endif /* defined (MOTIF) */
 
-#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
+#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 static int execute_command_gfx_element_point_tool(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -10718,6 +10820,12 @@ Executes a GFX ELEMENT_POINT_TOOL command.
 				{
 					Element_point_tool_pop_up_dialog(element_point_tool, (struct Graphics_window *)NULL);
 				}
+#if defined (WX_USER_INTERFACE)
+			FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
+				 command_data_get_Interactive_tool,
+				 (void *)Element_point_tool_get_interactive_tool(element_point_tool),
+				 command_data->graphics_window_manager);
+#endif
 			}
 			else
 			{
@@ -10745,7 +10853,7 @@ Executes a GFX ELEMENT_POINT_TOOL command.
 } /* execute_command_gfx_element_point_tool */
 #endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
 
-#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
+#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 static int execute_command_gfx_element_tool(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -10831,6 +10939,12 @@ Executes a GFX ELEMENT_TOOL command.
 				{
 					Element_tool_pop_up_dialog(element_tool, (struct Graphics_window *)NULL);
 				}
+#if defined (WX_USER_INTERFACE)
+			FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
+				 command_data_get_Interactive_tool,
+				 (void *)Element_tool_get_interactive_tool(element_tool),
+				 command_data->graphics_window_manager);
+#endif /*(WX_USER_INTERFACE)*/
 			}
 			else
 			{
@@ -10855,7 +10969,7 @@ Executes a GFX ELEMENT_TOOL command.
 
 	return (return_code);
 } /* execute_command_gfx_element_tool */
-#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */ 
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE) */ 
 
 static int execute_command_gfx_erase(struct Parse_state *state,
 	void *dummy_to_be_modified, void *command_data_void)
@@ -15535,7 +15649,7 @@ movie is being created.
 #endif /* defined (MOTIF) */
 #endif /* defined (SGI_MOVIE_FILE) */
 
-#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
+#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 static int execute_command_gfx_node_tool(struct Parse_state *state,
 	void *data_tool_flag, void *command_data_void)
 /*******************************************************************************
@@ -15678,6 +15792,12 @@ Which tool that is being modified is passed in <node_tool_void>.
 				{
 					Node_tool_pop_up_dialog(node_tool, (struct Graphics_window *)NULL);
 				}
+#if defined (WX_USER_INTERFACE)
+				FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
+					 command_data_get_Interactive_tool,
+					 (void *)Node_tool_get_interactive_tool(node_tool),
+					 command_data->graphics_window_manager);
+#endif /*(WX_USER_INTERFACE)*/
 			}
 			else
 			{
@@ -15710,7 +15830,8 @@ Which tool that is being modified is passed in <node_tool_void>.
 
 	return (return_code);
 } /* execute_command_gfx_node_tool */
-#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined
+			  (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined(WX_USER_INTERFACE */
 
 #if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 static int execute_command_gfx_print(struct Parse_state *state,
@@ -18543,6 +18664,7 @@ DESCRIPTION :
 	return (return_code);
 } /* gfx_timekeeper */
 
+
 static int gfx_transform_tool(struct Parse_state *state,
 	void *dummy_user_data,void *command_data_void)
 /*******************************************************************************
@@ -18553,8 +18675,8 @@ Executes a GFX TRANSFORM_TOOL command.
 ==============================================================================*/
 {
 	int free_spin_flag, return_code;
-	struct Cmiss_command_data *command_data;
 	struct Option_table *option_table;
+	struct Cmiss_command_data *command_data;
 	struct Interactive_tool *transform_tool;
 
 	ENTER(execute_command_gfx_transform_tool);
@@ -18564,13 +18686,17 @@ Executes a GFX TRANSFORM_TOOL command.
 	{
 		/* initialize defaults */
 		free_spin_flag = Interactive_tool_transform_get_free_spin(transform_tool);
-
 		option_table=CREATE(Option_table)();
 		/* free_spin/no_free_spin */
 		Option_table_add_switch(option_table,"free_spin","no_free_spin",&free_spin_flag);
 		if (return_code=Option_table_multi_parse(option_table,state))
 		{
 			Interactive_tool_transform_set_free_spin(transform_tool, free_spin_flag);
+#if defined (WX_USER_INTERFACE)
+			FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
+						command_data_get_Interactive_tool,(void *)transform_tool,
+						command_data->graphics_window_manager);
+#endif /*(WX_USER_INTERFACE)*/
 		} /* parse error,help */
 		DESTROY(Option_table)(&option_table);
 	}
@@ -19318,10 +19444,10 @@ Executes a GFX command.
 				command_data_void, gfx_convert);
 			Option_table_add_entry(option_table, "create", NULL,
 				command_data_void, execute_command_gfx_create);
-#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 			Option_table_add_entry(option_table, "data_tool", /*data_tool*/(void *)1,
-				command_data_void, execute_command_gfx_node_tool);
-#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
+			   command_data_void, execute_command_gfx_node_tool);
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE)*/
 			Option_table_add_entry(option_table, "define", NULL,
 				command_data_void, execute_command_gfx_define);
 			Option_table_add_entry(option_table, "destroy", NULL,
@@ -19334,12 +19460,15 @@ Executes a GFX command.
 			Option_table_add_entry(option_table, "element_creator", NULL,
 				command_data_void, execute_command_gfx_element_creator);
 #endif /* defined (MOTIF) */
-#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
+#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)  || defined (WX_USER_INTERFACE)
 			Option_table_add_entry(option_table, "element_point_tool", NULL,
 				command_data_void, execute_command_gfx_element_point_tool);
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined
+					(WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)  || defined (WX_USER_INTERFACE)*/
+#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 			Option_table_add_entry(option_table, "element_tool", NULL,
 				command_data_void, execute_command_gfx_element_tool);
-#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 			Option_table_add_entry(option_table, "erase", NULL,
 				command_data_void, execute_command_gfx_erase);
 			Option_table_add_entry(option_table, "evaluate", NULL,
@@ -19358,10 +19487,11 @@ Executes a GFX command.
 			Option_table_add_entry(option_table, "movie", NULL,
 				command_data_void, gfx_movie);
 #endif /* defined (SGI_MOVIE_FILE) */
-#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
+#if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 			Option_table_add_entry(option_table, "node_tool", /*data_tool*/(void *)0,
 				command_data_void, execute_command_gfx_node_tool);
-#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined
+					(WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 #if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 			Option_table_add_entry(option_table, "print", NULL,
 				command_data_void, execute_command_gfx_print);
@@ -22705,11 +22835,11 @@ Parses command line options from <state>.
 		/* -console */
 		Option_table_add_entry(option_table, "-console",
 			&(command_line_options->console_mode_flag), NULL, set_char_flag);
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 		/* -display, handled by X11 */
 		Option_table_add_entry(option_table, "-display", NULL,
 			(void *)" X11_DISPLAY_NUMBER", ignore_entry_and_next_token);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 		/* -epath */
 		Option_table_add_entry(option_table, "-epath",
 			&(command_line_options->epath_directory_name),

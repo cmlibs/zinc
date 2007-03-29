@@ -132,4 +132,13 @@ Sets the command_field to be executed when the element is clicked on in the
 <element_point_tool>.
 ==============================================================================*/
 
+struct Interactive_tool *Element_point_tool_get_interactive_tool(
+  struct Element_point_tool *element_point_tool);
+/*******************************************************************************
+LAST MODIFIED : 29 March 2007
+
+DESCRIPTION :
+Returns the generic interactive_tool the represents the <element_point_tool>.
+==============================================================================*/
+
 #endif /* !defined (ELEMENT_POINT_TOOL_H) */

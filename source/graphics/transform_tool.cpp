@@ -363,6 +363,34 @@ Destroys the tool_data associated with a transform tool.
 	return (return_code);
 } /* destroy_Interactive_tool_transform_tool_data */
 
+static int Transform_tool_copy_function(void *destination_tool_void, void *source_tool_void) 
+/*******************************************************************************
+LAST MODIFIED : 29 March 2007
+
+DESCRIPTION :
+Copies the state of one transform tool to another.
+==============================================================================*/
+{
+	int return_code;
+	struct Transform_tool *destination_transform_tool, *source_transform_tool;
+
+	ENTER(Transform_tool_copy_function);
+	if ((destination_transform_tool=(struct Transform_tool *)destination_tool_void) &&
+			(source_transform_tool=(struct Transform_tool *)source_tool_void))
+	{
+		destination_transform_tool->free_spin_flag = source_transform_tool->free_spin_flag;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Transform_tool_copy_function.  Invalid argument(s)");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Transform_tool_copy_function */
+
 
 
 /*
@@ -516,26 +544,7 @@ scene_viewers.
 #elif defined (WX_USER_INTERFACE) /* (WX_USER_INTERFACE) */
 
   transform_tool->wx_transform_tool = (wxTransformTool *)NULL; 
-		
 
-
-// 		wxXmlResource::Get()->LoadPanel
-// 			(transform_tool->wx_transform_tool,XRCCTRL(*window->wx_graphics_window,"ToolPanel",wxFrame),_T("CmguiTransformTool"));	
-
-// 				wxXmlResource::Get()->LoadPanel
-// 		  			(transform_tool->wx_transform_tool,XRCCTRL(graphics_window->wx_graphics_window,"ToolPanel",wxFrame),_T("CmguiTransformTool"));	
-
-
-// 		transform_tool->button_free_spin = XRCCTRL(*transform_tool->wx_transform_tool, "ButtonFreeSpin", wxCheckBox);
-
-// 		if (transform_tool->button_free_spin->IsChecked())
-// 			{
-// 				transform_tool->free_spin_flag = 1;
-// 			}
-// 			else
-// 			{
-// 				transform_tool->free_spin_flag = 0;
-// 			}
 #else /* switch (USER_INTERFACE) */
 			transform_tool->free_spin_flag = 0;
 #endif /* switch (USER_INTERFACE) */
@@ -547,6 +556,7 @@ scene_viewers.
 				//(Interactive_tool_bring_up_dialog_function *)NULL,
 				Transform_tool_bring_up_interactive_tool_dialog,
 				destroy_Interactive_tool_transform_tool_data,
+				Transform_tool_copy_function,
 				(void *)transform_tool);
 			transform_tool->interactive_tool = interactive_tool;
 		}       //Transform_tool_bring_up_interactive_tool_dialog,

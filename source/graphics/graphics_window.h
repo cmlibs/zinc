@@ -323,6 +323,14 @@ DESCRIPTION :
 Returns the projection mode used by pane <pane_no> of <window>.
 ==============================================================================*/
 
+struct MANAGER(Interactive_tool) *Graphics_window_get_interactive_tool_manager(struct Graphics_window *window);
+/*******************************************************************************
+LAST MODIFIED : 27 March 2007
+
+DESCRIPTION :
+Prototype.
+==============================================================================*/
+
 int Graphics_window_set_projection_mode(struct Graphics_window *window,
 	int pane_no,enum Scene_viewer_projection_mode projection_mode);
 /*******************************************************************************

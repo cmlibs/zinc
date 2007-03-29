@@ -128,6 +128,8 @@ Module constants
 ----------------
 */
 
+
+
 #define TIME_STEP 0.1
 static char *axis_name[7]={"??","x","y","z","-x","-y","-z"};
 
@@ -306,7 +308,17 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
         Graphics_window,interactive_toolbar_form)
 #endif /* defined (MOTIF) */
 
-static int axis_name_to_axis_number(char *axis_name)
+	struct MANAGER(Interactive_tool) *Graphics_window_get_interactive_tool_manager(struct Graphics_window *window);
+/*******************************************************************************
+LAST MODIFIED : 27 March 2007
+
+DESCRIPTION :
+Prototype.
+==============================================================================*/
+
+
+
+	static int axis_name_to_axis_number(char *axis_name)
 /*******************************************************************************
 LAST MODIFIED : 16 December 1997
 
@@ -2801,8 +2813,6 @@ public:
 	{
 	printf("wrong\n");
 	}
-                
-      Redrawwindow->Layout();
         }
 
     void OnUpViewOptionspressed(wxCommandEvent& event)
@@ -5092,6 +5102,20 @@ Returns the projection mode used by pane <pane_no> of <window>.
 
 	return (projection_mode);
 } /* Graphics_window_get_projection_mode */
+
+struct MANAGER(Interactive_tool) *Graphics_window_get_interactive_tool_manager(struct Graphics_window *window)
+/*******************************************************************************
+LAST MODIFIED : 27 March 2007
+
+DESCRIPTION :
+Returns the interactive_tool_manager.
+==============================================================================*/
+{
+	ENTER(Graphics_window_get_interactive_tool_manager);
+	return (window->interactive_tool_manager);
+	LEAVE;
+}
+
 
 int Graphics_window_set_projection_mode(struct Graphics_window *window,
 	int pane_no,enum Scene_viewer_projection_mode projection_mode)

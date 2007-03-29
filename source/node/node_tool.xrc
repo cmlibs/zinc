@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <resource>
-
   <object class="wxPanel" subclass="wxNodeTool" name="CmguiNodeTool">
 		<flag>wxEXPAND</flag>
     <object class = "wxStaticBoxSizer" name="NodeSizer">
@@ -79,7 +78,7 @@
  	        	<flag>wxALIGN_CENTER</flag>
 				<option>1</option>
 				<object class = "wxPanel" name="CoordinateFieldChooserPanel">
-				  <size>-1,30</size>
+				  <size>150,30</size>
 				</object>
 			</object>
 		 </object>
