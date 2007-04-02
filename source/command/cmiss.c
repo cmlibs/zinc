@@ -481,6 +481,7 @@ Module functions
 ----------------
 */
 
+#if defined (WX_USER_INTERFACE)
 static int command_data_get_Interactive_tool(struct Graphics_window *graphics_window,
 	void *interactive_tool_void)
 /*******************************************************************************
@@ -508,7 +509,7 @@ to change the interactive tool settings.
     DEALLOCATE(tool_name);
 	return 1;
 }
-//#endif /*(WX_USER_INTERFACE)*/
+#endif /*(WX_USER_INTERFACE)*/
 
 static int set_command_prompt(char *prompt, struct Cmiss_command_data *command_data)
 /*******************************************************************************
