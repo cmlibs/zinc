@@ -379,6 +379,7 @@ Creates an Select_tool with Interactive_tool in
 				Select_tool_get_icon,
 				(Interactive_tool_bring_up_dialog_function *)NULL,
 				(Interactive_tool_destroy_tool_data_function *)NULL,
+				(Interactive_tool_copy_function *)NULL,
 				(void *)select_tool);
 			ADD_OBJECT_TO_MANAGER(Interactive_tool)(
 				select_tool->interactive_tool,
