@@ -2705,8 +2705,10 @@ Copies the state of one node tool to another.
 		destination_node_tool->streaming_create_enabled = source_node_tool->streaming_create_enabled;
 		destination_node_tool->constrain_to_surface= source_node_tool->constrain_to_surface;
 		destination_node_tool->command_field = source_node_tool->command_field;
-		destination_node_tool->current_region_path= source_node_tool->current_region_path;
-		return_code=1;
+#if ! defined (MOTIF)
+		destination_node_tool->current_region_path= source_node_tool->current_region_path;	
+#endif /* ! defined (MOTIF) */
+	return_code=1;
 	}
 	else
 	{
