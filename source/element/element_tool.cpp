@@ -975,6 +975,7 @@ Selects elements in <element_selection> in response to interactive_events.
 				Element_tool_get_icon,
 				(Interactive_tool_bring_up_dialog_function*)NULL,
 				(Interactive_tool_destroy_tool_data_function *)NULL,
+				Element_tool_copy_function,
 				(void *)element_tool);
 #endif /* defined (OPENGL_API) */
 			ADD_OBJECT_TO_MANAGER(Interactive_tool)(
