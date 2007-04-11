@@ -402,22 +402,18 @@ as the user interface dependent font string.
 ==============================================================================*/
 {
 	Graphics_font *font;
-	int return_code;
 
 	ENTER(Graphics_font_package_get_font);
 
+	font = (Graphics_font *)NULL;
 	if (font_package && font_name)
 	{
-		if (font = FIND_BY_IDENTIFIER_IN_MANAGER(Graphics_font, name)(font_name,
-				font_package->font_manager))
-		{
-			return_code = 1;
-		}
-		else
+		if (!(font = FIND_BY_IDENTIFIER_IN_MANAGER(Graphics_font, name)(font_name,
+			font_package->font_manager)))
 		{
 			if (font = CREATE(Graphics_font)(font_name, font_name))
 			{
-				return_code = ADD_OBJECT_TO_MANAGER(Graphics_font)(font, 
+				ADD_OBJECT_TO_MANAGER(Graphics_font)(font, 
 					font_package->font_manager);				
 			}
 		}
@@ -427,7 +423,6 @@ as the user interface dependent font string.
  		display_message(ERROR_MESSAGE,
 			"Graphics_font_package_define_font_alias.  "
 			"Invalid arguments");
-		return_code = 0;
 	}
 
 	LEAVE;
