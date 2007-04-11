@@ -54,6 +54,8 @@ Global types
 ------------
 */
 
+struct Graphics_font_package;
+
 struct Graphics_font;
 
 struct Graphics_buffer;
@@ -63,16 +65,45 @@ Global functions
 ----------------
 */
 
-PROTOTYPE_OBJECT_FUNCTIONS(Graphics_font);
-
-PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Graphics_font);
-
-struct Graphics_font *CREATE(Graphics_font)(char *font_name);
+struct Graphics_font_package *CREATE(Graphics_font_package)();
 /*******************************************************************************
-LAST MODIFIED : 17 November 2005
+LAST MODIFIED : 11 April 2007
 
 DESCRIPTION :
 ==============================================================================*/
+
+int DESTROY(Graphics_font_package)(struct Graphics_font_package **package_address);
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+==============================================================================*/
+
+int Graphics_font_package_define_font(
+	struct Graphics_font_package *font_package,
+	char *font_name, char *font_string);
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+Defines font named <font_name> in the <font_package> using the 
+user interface dependent <font_string>.
+==============================================================================*/
+
+struct Graphics_font *Graphics_font_package_get_font(
+	struct Graphics_font_package *font_package, char *font_name);
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+Finds a Graphics_font with name <font_name> in the <font_package>.
+If it doesn't exist then a font is created using the <font_name>
+as the user interface dependent font string. 
+==============================================================================*/
+
+PROTOTYPE_OBJECT_FUNCTIONS(Graphics_font);
+
+PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Graphics_font);
 
 int DESTROY(Graphics_font)(struct Graphics_font **font_address);
 /*******************************************************************************

@@ -46,6 +46,8 @@ extern "C" {
 #include "general/debug.h"
 #include "general/object.h"
 #include "general/mystring.h"
+#include "general/list_private.h"
+#include "general/manager_private.h"
 #include "graphics/font.h"
 #include "graphics/graphics_library.h"
 #include "three_d_drawing/graphics_buffer.h"
@@ -80,6 +82,29 @@ Module types
 ------------
 */
 
+DECLARE_LIST_TYPES(Graphics_font);
+
+DECLARE_MANAGER_TYPES(Graphics_font);
+
+PROTOTYPE_OBJECT_FUNCTIONS(Graphics_font);
+
+PROTOTYPE_LIST_FUNCTIONS(Graphics_font);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Graphics_font,name,char *);
+
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(Graphics_font,name,char *);
+PROTOTYPE_MANAGER_FUNCTIONS(Graphics_font);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_font,name,char *);
+
+struct Graphics_font_package
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	MANAGER(Graphics_font) *font_manager;
+};
+
 struct Graphics_font
 /*******************************************************************************
 LAST MODIFIED : 17 November 2005
@@ -88,6 +113,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	char *name;
+	char *font_string;
 
 	int first_bitmap;
 	int number_of_bitmaps;
@@ -99,28 +125,334 @@ DESCRIPTION :
 	int access_count;
 };
 
+FULL_DECLARE_LIST_TYPE(Graphics_font);
+
+FULL_DECLARE_MANAGER_TYPE(Graphics_font);
+
 /*
 Module functions
 ----------------
 */
 
-DECLARE_OBJECT_FUNCTIONS(Graphics_font)
-DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Graphics_font)
+DECLARE_LOCAL_MANAGER_FUNCTIONS(Graphics_font)
 
-struct Graphics_font *CREATE(Graphics_font)(char *name)
+DECLARE_LIST_FUNCTIONS(Graphics_font)
+DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Graphics_font,name,char *,strcmp)
+DECLARE_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Graphics_font,name)
+
+PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Graphics_font,name)
+{
+	char *name;
+	int return_code;
+
+	ENTER(MANAGER_COPY_WITH_IDENTIFIER(Graphics_font,name));
+	/* check arguments */
+	if (source&&destination)
+	{
+		if (source->name)
+		{
+			if (ALLOCATE(name,char,strlen(source->name)+1))
+			{
+				strcpy(name,source->name);
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+"MANAGER_COPY_WITH_IDENTIFIER(Graphics_font,name).  Insufficient memory");
+				return_code=0;
+			}
+		}
+		else
+		{
+			name=(char *)NULL;
+			return_code=1;
+		}
+		if (return_code)
+		{
+			if (return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Graphics_font,name)(
+				destination,source))
+			{
+				/* copy values */
+				DEALLOCATE(destination->name);
+				destination->name=name;
+			}
+			else
+			{
+				DEALLOCATE(name);
+				display_message(ERROR_MESSAGE,
+"MANAGER_COPY_WITH_IDENTIFIER(Graphics_font,name).  Could not copy without identifier");
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+"MANAGER_COPY_WITH_IDENTIFIER(Graphics_font,name).  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* MANAGER_COPY_WITH_IDENTIFIER(Graphics_font,name) */
+
+PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphics_font,name)
+{
+	int return_code;
+
+	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Graphics_font,name));
+	if (source && destination)
+	{
+		destination->first_bitmap = 0;
+		destination->number_of_bitmaps = 0;
+		destination->display_list_offset = 0;
+
+		destination->offset_x = 0;
+		destination->offset_y = 0;
+
+		if (destination->font_string)
+		{
+			DEALLOCATE(destination->font_string);
+		}
+		destination->font_string = duplicate_string
+			(source->font_string);
+
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"MANAGER_COPY_WITHOUT_IDENTIFIER(Graphics_font,name).  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* MANAGER_COPY_WITHOUT_IDENTIFIER(Graphics_font,name) */
+
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Graphics_font,name,char *)
+{
+	char *destination_name;
+	int return_code;
+
+	ENTER(MANAGER_COPY_IDENTIFIER(Graphics_font,name));
+	if (name&&destination)
+	{
+		if (ALLOCATE(destination_name,char,strlen(name)+1))
+		{
+			strcpy(destination_name,name);
+			if (destination->name)
+			{
+				DEALLOCATE(destination->name);
+			}
+			destination->name=destination_name;
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"MANAGER_COPY_IDENTIFIER(Graphics_font,name).  Insufficient memory");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"MANAGER_COPY_IDENTIFIER(Graphics_font,name).  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* MANAGER_COPY_IDENTIFIER(Graphics_font,name) */
+
+DECLARE_MANAGER_FUNCTIONS(Graphics_font)
+
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphics_font)
+
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_font,name,char *)
+
+struct Graphics_font *CREATE(Graphics_font)(char *name, char *font_string);
 /*******************************************************************************
-LAST MODIFIED : 17 November 2005
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+Creates a font called <name> with the user interface dependent <font_string>.
+==============================================================================*/
+
+struct Graphics_font_package *CREATE(Graphics_font_package)()
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	struct Graphics_font *font;
+	struct Graphics_font_package *font_package;
+
+	ENTER(CREATE(Graphics_font_package));
+
+	if (ALLOCATE(font_package, struct Graphics_font_package, 1))
+	{
+		font_package->font_manager = CREATE(MANAGER(Graphics_font))();
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"CREATE(Graphics_font_package). Unable to allocate font_package structure");
+		font_package = (struct Graphics_font_package *)NULL;
+	}
+
+	LEAVE;
+	return (font_package);
+} /* CREATE(Graphics_font_package) */
+
+int DESTROY(Graphics_font_package)(struct Graphics_font_package **font_package_address)
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Graphics_font_package *font_package;
+
+	ENTER(DESTROY(Graphics_font_package));
+	if (font_package_address && (font_package = *font_package_address))
+	{
+		DESTROY(MANAGER(Graphics_font))(&font_package->font_manager);
+
+		DEALLOCATE(*font_package_address);
+		*font_package_address = (struct Graphics_font_package *)NULL;
+
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Graphics_font_package).  Missing package");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Graphics_font_package) */
+
+int Graphics_font_package_define_font(
+	struct Graphics_font_package *font_package,
+	char *font_name, char *font_string)
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+Defines an <alias_name> in the <font_package> which refers to the font 
+<font_name>.
+==============================================================================*/
+{
+	Graphics_font *existing_font, *font;
+	int return_code;
+
+	ENTER(Graphics_font_package_define_font);
+
+	if (font_package && font_name && font_string)
+	{
+		existing_font = FIND_BY_IDENTIFIER_IN_MANAGER(Graphics_font,name)(font_name,
+			font_package->font_manager);
+		if (font = CREATE(Graphics_font)(font_name, font_string))
+		{
+			if (existing_font)
+			{
+				return_code = MANAGER_MODIFY_NOT_IDENTIFIER(Graphics_font,name)(existing_font,
+					font, font_package->font_manager);
+				DESTROY(Graphics_font)(&font);
+			}
+			else
+			{
+				return_code = ADD_OBJECT_TO_MANAGER(Graphics_font)(font, 
+					font_package->font_manager);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Graphics_font_package_define_font.  "
+				"Could not create font.");
+			return_code = 0;
+		}
+	}
+	else
+	{
+ 		display_message(ERROR_MESSAGE,
+			"Graphics_font_package_define_font.  "
+			"Invalid arguments");
+		return_code = 0;
+	}
+
+	LEAVE;
+	return (return_code);
+} /* Graphics_font_package_define_font */
+
+struct Graphics_font *Graphics_font_package_get_font(
+	struct Graphics_font_package *font_package, char *font_name)
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+Finds a Graphics_font with name <font_name> in the <font_package>.
+If it doesn't exist then a font is created using the <font_name>
+as the user interface dependent font string. 
+==============================================================================*/
+{
+	Graphics_font *font;
+	int return_code;
+
+	ENTER(Graphics_font_package_get_font);
+
+	if (font_package && font_name)
+	{
+		if (font = FIND_BY_IDENTIFIER_IN_MANAGER(Graphics_font, name)(font_name,
+				font_package->font_manager))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			if (font = CREATE(Graphics_font)(font_name, font_name))
+			{
+				return_code = ADD_OBJECT_TO_MANAGER(Graphics_font)(font, 
+					font_package->font_manager);				
+			}
+		}
+	}
+	else
+	{
+ 		display_message(ERROR_MESSAGE,
+			"Graphics_font_package_define_font_alias.  "
+			"Invalid arguments");
+		return_code = 0;
+	}
+
+	LEAVE;
+	return (font);
+} /* Graphics_font_package_define_font_alias */
+
+DECLARE_OBJECT_FUNCTIONS(Graphics_font)
+DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Graphics_font)
+
+struct Graphics_font *CREATE(Graphics_font)(char *name, char *font_string)
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	Graphics_font *font;
 
 	ENTER(CREATE(Graphics_font));
 
 	if (ALLOCATE(font, struct Graphics_font, 1))
 	{
 		font->name = duplicate_string(name);
+		font->font_string = duplicate_string(font_string);
+
 		font->first_bitmap = 0;
 		font->number_of_bitmaps = 0;
 
@@ -158,6 +490,10 @@ DESCRIPTION :
 		if (font->name)
 		{
 			DEALLOCATE(font->name);
+		}
+		if (font->font_string)
+		{
+			DEALLOCATE(font->font_string);
 		}
 		if (font->display_list_offset)
 		{
@@ -232,7 +568,7 @@ Compiles the specified <font> so it can be used by the graphics.  The
 #  endif /* defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer) */
 				case GRAPHICS_BUFFER_GLX_PIXMAP_TYPE:
 				{
-					if (!strcmp(font->name,"default"))
+					if (!strcmp(font->font_string,"default"))
 					{
 						x_font = XLoadQueryFont(Graphics_buffer_X11_get_display(buffer), 
 							"-adobe-helvetica-medium-r-normal-*-12-*-*-*-*-*-*-*");
@@ -240,11 +576,11 @@ Compiles the specified <font> so it can be used by the graphics.  The
 					else
 					{
 						if (!(x_font = XLoadQueryFont(Graphics_buffer_X11_get_display(buffer),
-							font->name)))
+							font->font_string)))
 						{
 							display_message(WARNING_MESSAGE,
 								"Unable to get specified font \"%s\", falling back to system font.",
-								font->name);
+								font->font_string);
 							x_font = XLoadQueryFont(Graphics_buffer_X11_get_display(buffer), 
 								"-adobe-helvetica-medium-r-normal-*-12-*-*-*-*-*-*-*");
 						}
@@ -275,13 +611,13 @@ Compiles the specified <font> so it can be used by the graphics.  The
 #  else /* ! defined GTK_USE_GTKGLAREA */
 				case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
 				{
-					if (!strcmp(font->name,"default"))
+					if (!strcmp(font->font_string,"default"))
 					{
 						font_desc = pango_font_description_from_string ("courier 12");
 					}
 					else
 					{
-						font_desc = pango_font_description_from_string (font->name);
+						font_desc = pango_font_description_from_string (font->font_string);
 					}
 
 					pango_font = gdk_gl_font_use_pango_font (font_desc, font->first_bitmap, 
@@ -306,7 +642,7 @@ Compiles the specified <font> so it can be used by the graphics.  The
 #if defined (WIN32_USER_INTERFACE)
 				case GRAPHICS_BUFFER_WIN32_TYPE:
 				{
-					if (!strcmp(font->name,"default"))
+					if (!strcmp(font->font_string,"default"))
 					{
 						win32_font = static_cast<HFONT__*>(GetStockObject(DEFAULT_GUI_FONT));
 					}
@@ -326,12 +662,12 @@ Compiles the specified <font> so it can be used by the graphics.  The
 									CLIP_DEFAULT_PRECIS,  /* clipping precision */
 									DEFAULT_QUALITY,  /* output quality */
 									DEFAULT_PITCH | FF_DONTCARE, /* pitch and family */
-									font->name   /* typeface name */
+									font->font_string   /* typeface name */
 									)))
 						{
 							display_message(WARNING_MESSAGE,
 								"Unable to get specified font \"%s\", falling back to system font.",
-								font->name);
+								font->font_string);
 							win32_font = static_cast<HFONT__*>(GetStockObject(DEFAULT_GUI_FONT));
 						}
 					}
@@ -410,8 +746,7 @@ Compiles the specified <font> so it can be used by the graphics.  The
 							}
 							dc.SelectObject(wxNullBitmap);
 							delete bitmap;
-							wxBitmap *bitmap = new wxBitmap(bitmap_size, bitmap_size, 
-								/*depth*/-1);
+							bitmap = new wxBitmap(bitmap_size, bitmap_size, /*depth*/-1);
 							if (!bitmap->Ok())
 							{
 								display_message(WARNING_MESSAGE,
