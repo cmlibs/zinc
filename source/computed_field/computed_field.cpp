@@ -1793,8 +1793,25 @@ Upon successful return the node values of the <field> are stored in its cache.
 	if (field && location)
 	{
 		return_code=1;
-		Field_element_xi_location *element_xi_location;
-		Field_node_location *node_location;
+		Field_coordinate_location *coordinate_location = NULL;
+		Field_element_xi_location *element_xi_location = NULL;
+		Field_node_location *node_location = NULL;
+
+		/* make sure we have allocated values AND derivatives, or nothing */
+		if (!field->values)
+		{
+			/* get enough space for derivatives in highest dimension element */
+			if (!(ALLOCATE(field->values,FE_value,field->number_of_components)&&
+					ALLOCATE(field->derivatives,FE_value,
+						MAXIMUM_ELEMENT_XI_DIMENSIONS*field->number_of_components)))
+			{
+				if (field->values)
+				{
+					DEALLOCATE(field->values);
+				}
+				return_code=0;
+			}
+		}
 		
 		cache_is_valid = 0;
 		if (element_xi_location = 
@@ -1841,24 +1858,39 @@ Upon successful return the node values of the <field> are stored in its cache.
 				cache_is_valid = 1;
 			}
 		}
+		else if (coordinate_location = 
+			dynamic_cast<Field_coordinate_location*>(location))
+		{
+		   Computed_field *reference_field = 
+				coordinate_location->get_reference_field();
+
+			/* clear the cache if values already cached for an element or node */
+			if (field->element || field->node)
+			{
+				Computed_field_clear_cache(field);
+			}
+			if (reference_field == field)
+			{
+				/* Then we just use the values directly */
+				int number_of_values = coordinate_location->get_number_of_values();
+				FE_value *values = coordinate_location->get_values();
+				for (int i = 0 ; i < field->number_of_components ; i++)
+				{
+					if (i < number_of_values)
+					{
+						field->values[i] = values[i];
+					}
+					else
+					{
+						field->values[i] = 0.0;
+					}
+				}
+				cache_is_valid = 1;
+			}
+		}
 
 		if (!cache_is_valid)
 		{
-			/* make sure we have allocated values AND derivatives, or nothing */
-			if (!field->values)
-			{
-				/* get enough space for derivatives in highest dimension element */
-				if (!(ALLOCATE(field->values,FE_value,field->number_of_components)&&
-						ALLOCATE(field->derivatives,FE_value,
-							MAXIMUM_ELEMENT_XI_DIMENSIONS*field->number_of_components)))
-				{
-					if (field->values)
-					{
-						DEALLOCATE(field->values);
-					}
-					return_code=0;
-				}
-			}
 			field->derivatives_valid=0;
 			if (field->string_cache)
 			{
@@ -2583,6 +2615,47 @@ is reached for which its calculation is not reversible, or is not supported yet.
 
 	return (return_code);
 } /* Computed_field_set_values_at_node */
+
+int Computed_field_evaluate_at_field_coordinates(struct Computed_field *field,
+	struct Computed_field *reference_field, int number_of_input_values,
+	FE_value *input_values, FE_value time, FE_value *values)
+/*******************************************************************************
+LAST MODIFIED : 3 April 2007
+
+DESCRIPTION :
+Returns the <values> of <field> at the location of <input_values>
+with respect to the <reference_field> if it is defined there.
+
+The <values> array must be large enough to store as many FE_values as there are
+number_of_components.
+==============================================================================*/
+{
+	int i,return_code;
+
+	ENTER(Computed_field_evaluate_at_field_coordinates);
+	if (field&&reference_field&&number_of_input_values&&input_values&&values)
+	{
+		Field_coordinate_location location(reference_field,
+			number_of_input_values, input_values, time);
+		if (return_code=Computed_field_evaluate_cache_at_location(field, &location))
+		{
+			/* copy values from cache to <values> */
+			for (i=0;i<field->number_of_components;i++)
+			{
+				values[i]=field->values[i];
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_evaluate_at_field_coordinates.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_evaluate_at_field_coordinates */
 
 int Computed_field_get_values_in_element(struct Computed_field *field,
 	struct FE_element *element, int *number_in_xi, FE_value time,

@@ -440,6 +440,20 @@ is reached for which its calculation is not reversible, or is not supported yet.
 ???RC Note that some functions are not reversible in this way.
 ==============================================================================*/
 
+int Computed_field_evaluate_at_field_coordinates(struct Computed_field *field,
+	struct Computed_field *reference_field, int number_of_input_values,
+	FE_value *input_values, FE_value time, FE_value *values);
+/*******************************************************************************
+LAST MODIFIED : 3 April 2007
+
+DESCRIPTION :
+Returns the <values> of <field> at the location of <input_values>
+with respect to the <reference_field> if it is defined there.
+
+The <values> array must be large enough to store as many FE_values as there are
+number_of_components.
+==============================================================================*/
+
 int Computed_field_get_values_in_element(struct Computed_field *field,
 	struct FE_element *element, int *number_in_xi, FE_value time,
 	FE_value **values);
