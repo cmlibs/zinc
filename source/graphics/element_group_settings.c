@@ -7220,7 +7220,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								g_element_command_data->default_spectrum);
 						}
 						settings->visibility = visibility;
-						if (font_name && (new_font = CREATE(Graphics_font)(font_name)))
+						if (font_name && (new_font = Graphics_font_package_get_font
+								(g_element_command_data->graphics_font_package, font_name)))
 						{
 							REACCESS(Graphics_font)(&settings->font, new_font);
 						}
@@ -7513,7 +7514,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								g_element_command_data->default_spectrum);
 						}
 						settings->visibility = visibility;
-						if (font_name && (new_font = CREATE(Graphics_font)(font_name)))
+						if (font_name && (new_font = Graphics_font_package_get_font
+								(g_element_command_data->graphics_font_package, font_name)))
 						{
 							REACCESS(Graphics_font)(&settings->font, new_font);
 						}
@@ -8701,7 +8703,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					&use_element_type);
 				GT_element_settings_set_use_element_type(settings,
 					use_element_type);
-				if (font_name && (new_font = CREATE(Graphics_font)(font_name)))
+				if (font_name && (new_font = Graphics_font_package_get_font
+						(g_element_command_data->graphics_font_package, font_name)))
 				{
 					REACCESS(Graphics_font)(&settings->font, new_font);
 				}
