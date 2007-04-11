@@ -50,17 +50,19 @@ Global Functions
 */
 
 int create_Spectrum_colour_bar(struct GT_object **graphics_object_address,
-	char *name,struct Spectrum *spectrum,Triple bar_centre,Triple bar_axis,
+	char *name,struct Spectrum *spectrum, int component_number, 
+	Triple bar_centre,Triple bar_axis,
 	Triple side_axis,float bar_length,float bar_radius,float extend_length,
 	int tick_divisions,float tick_length,char *number_format,
 	struct Graphical_material *bar_material,
 	struct Graphical_material *tick_label_material,
 	struct Graphics_font *font);
 /*******************************************************************************
-LAST MODIFIED : 18 November 2005
+LAST MODIFIED : 27 September 2006
 
 DESCRIPTION :
-Creates a coloured bar with annotation for displaying the scale of <spectrum>.
+Creates a coloured bar with annotation for displaying the specified 
+<component_number> of <spectrum>.
 First makes a graphics object named <name> consisting of a cylinder of size
 <bar_length>, <bar_radius> centred at <bar_centre> and aligned with the
 <bar_axis>, combining the <bar_material> with the <spectrum>. The bar is

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : defined_graphics_object.c
 
-LAST MODIFIED : 20 June 2002
+LAST MODIFIED : 29 September 2006
 
 DESCRIPTION :
 Routines which construct graphics objects. (but do not depend on finite elements)
@@ -57,14 +57,15 @@ Global functions
 */
 
 int create_Spectrum_colour_bar(struct GT_object **graphics_object_address,
-	char *name,struct Spectrum *spectrum,Triple bar_centre,Triple bar_axis,
+	char *name,struct Spectrum *spectrum,int component_number,
+	Triple bar_centre,Triple bar_axis,
 	Triple side_axis,float bar_length,float bar_radius,float extend_length,
 	int tick_divisions,float tick_length,char *number_format,
 	struct Graphical_material *bar_material,
 	struct Graphical_material *tick_label_material,
 	struct Graphics_font *font)
 /*******************************************************************************
-LAST MODIFIED : 18 November 2005
+LAST MODIFIED : 29 September 2006
 
 DESCRIPTION :
 Creates a coloured bar with annotation for displaying the scale of <spectrum>.
@@ -228,7 +229,8 @@ graphics_objects that don't come from finite_elements?
 			points_around_bar = 25;
 			if (ALLOCATE(points,Triple,points_along_bar*points_around_bar)&&
 				ALLOCATE(normalpoints,Triple,points_along_bar*points_around_bar)&&
-				ALLOCATE(data,GTDATA,points_along_bar*points_around_bar))
+				ALLOCATE(data,GTDATA,(component_number + 1)
+					*points_along_bar*points_around_bar))
 			{
 				extend_fraction=extend_length/bar_length;
 				half_final_length=0.5*bar_length+extend_length;
@@ -237,7 +239,7 @@ graphics_objects that don't come from finite_elements?
 				scaled_axis[2]=half_final_length*bar_axis[2];
 				point=points;
 				normal=normalpoints;
-				datum=data;
+				datum=data + component_number;
 				for (i=0;i<points_along_bar;i++)
 				{
 #if defined (OLD_CODE)
@@ -282,14 +284,15 @@ graphics_objects that don't come from finite_elements?
 						normal++;
 						/* set data */
 						*datum=spectrum_value;
-						datum++;
+						datum+=(component_number + 1);
 					}
 				}
 				return_code=(
 					(surface=CREATE(GT_surface)(g_SHADED,g_QUADRILATERAL,
 						points_around_bar,points_along_bar,points,normalpoints,
 						/*tangentpoints*/(Triple *)NULL,
-						/*texturepoints*/(Triple *)NULL,/*n_data_components*/1,data)) &&
+						/*texturepoints*/(Triple *)NULL,
+						/*n_data_components*/(component_number + 1),data)) &&
 					set_GT_object_default_material(bar_graphics_object,bar_material) &&
 					set_GT_object_Spectrum(bar_graphics_object,spectrum)&&
 					GT_OBJECT_ADD(GT_surface)(bar_graphics_object,time,surface));
