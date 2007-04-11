@@ -132,4 +132,48 @@ public:
 
 };
 
+class Field_coordinate_location : public Field_location
+{
+private:
+	Computed_field *reference_field;
+	int number_of_values;
+	FE_value *values;
+
+public:
+	Field_coordinate_location(Computed_field *reference_field,
+		int number_of_values_in, FE_value* values_in, FE_value time = 0,
+		int number_of_derivatives = 0):
+		Field_location(time, number_of_derivatives),
+		reference_field(reference_field)
+	{
+		number_of_values = number_of_values_in;
+		values = new FE_value[number_of_values];
+		for (int i = 0 ; i < number_of_values ; i++)
+		{
+			values[i] = values_in[i];
+		}
+	}
+	
+   ~Field_coordinate_location()
+	{
+		delete values;
+	}
+
+	Computed_field *get_reference_field()
+	{
+		return reference_field;
+	}
+
+	int get_number_of_values()
+	{
+		return number_of_values;
+	}
+
+	FE_value *get_values()
+	{
+		return values;
+	}
+
+};
+
 #endif /* !defined (__FIELD_LOCATION_HPP__) */
