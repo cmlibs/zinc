@@ -132,7 +132,7 @@ Evaluate the fields cache at the location.
 			if (field->source_fields[0]->derivatives_valid
 				&& field->source_fields[1]->derivatives_valid)
 			{
-				number_of_xi = get_FE_element_dimension(field->source_fields[0]->element);
+				number_of_xi = location->get_number_of_derivatives();
 				derivative = field->derivatives;
 				for (i = 0 ; i < field->number_of_components ; i++)
 				{
@@ -510,7 +510,7 @@ Evaluate the fields cache at the location.
 			if (field->source_fields[0]->derivatives_valid
 				&& field->source_fields[1]->derivatives_valid)
 			{
-				number_of_xi = get_FE_element_dimension(field->source_fields[0]->element);
+				number_of_xi = location->get_number_of_derivatives();
 				derivative = field->derivatives;
 				for (i = 0 ; i < field->number_of_components ; i++)
 				{
@@ -882,7 +882,7 @@ Evaluate the fields cache at the location
 			if (field->source_fields[0]->derivatives_valid
 				&& field->source_fields[1]->derivatives_valid)
 			{
-				number_of_xi = get_FE_element_dimension(field->source_fields[0]->element);
+				number_of_xi = location->get_number_of_derivatives();
 				derivative = field->derivatives;
 				for (i = 0 ; i < field->number_of_components ; i++)
 				{
@@ -1256,7 +1256,7 @@ Evaluate the fields cache at the location
 			if (field->source_fields[0]->derivatives_valid && 
 				 field->source_fields[1]->derivatives_valid)
 			{
-				element_dimension=get_FE_element_dimension(field->source_fields[0]->element);
+				element_dimension=location->get_number_of_derivatives();
 				temp=field->derivatives;
 				temp1=field->source_fields[0]->derivatives;
 				temp2=field->source_fields[1]->derivatives;
@@ -1656,7 +1656,7 @@ Evaluate the fields cache at the location
 			}
 			if (field->source_fields[0]->derivatives_valid)
 			{
-				element_dimension=get_FE_element_dimension(field->source_fields[0]->element);
+				element_dimension=location->get_number_of_derivatives();
 				temp=field->derivatives;
 				temp2=field->source_fields[0]->derivatives;
 				for (i=0;i<field->number_of_components;i++)
@@ -2223,7 +2223,7 @@ Evaluate the fields cache at the location
 				temp=field->derivatives;
 				temp2=field->source_fields[0]->derivatives;
 				field->derivatives_valid = 1;
-				element_dimension=get_FE_element_dimension(field->source_fields[0]->element);
+				element_dimension = location->get_number_of_derivatives();
 			}
 			for (i=0;i<field->number_of_components;i++)
 			{
@@ -2723,7 +2723,7 @@ Evaluate the fields cache at the location
 				temp=field->derivatives;
 				temp2=field->source_fields[0]->derivatives;
 				field->derivatives_valid = 1;
-				element_dimension=get_FE_element_dimension(field->source_fields[0]->element);
+				element_dimension=location->get_number_of_derivatives();
 			}
 			for (i=0;i<field->number_of_components;i++)
 			{
@@ -3229,7 +3229,7 @@ Evaluate the fields cache at the location
 			}
 			if (field->source_fields[0]->derivatives_valid)
 			{
-				element_dimension=get_FE_element_dimension(field->source_fields[0]->element);
+				element_dimension=location->get_number_of_derivatives();
 				temp=field->derivatives;
 				temp2=field->source_fields[0]->derivatives;
 				for (i=0;i<field->number_of_components;i++)
@@ -3776,7 +3776,7 @@ Evaluate the fields cache at the location
 			field->values[0] = sum;
 			if (field->source_fields[0]->derivatives_valid)
 			{
-				element_dimension = get_FE_element_dimension(field->source_fields[0]->element);
+				element_dimension = location->get_number_of_derivatives();
 				for (j = 0; j < element_dimension; j++)
 				{
 					temp = field->source_fields[0]->derivatives + j;
@@ -4214,7 +4214,7 @@ Evaluate the fields cache at the location
 			}
 			if (field->source_fields[0]->derivatives_valid)
 			{
-				element_dimension = get_FE_element_dimension(field->source_fields[0]->element);
+				element_dimension = location->get_number_of_derivatives();
 				temp = field->derivatives;
 				temp2 = field->source_fields[0]->derivatives;
 				for (i = 0; i < field->number_of_components; i++)
