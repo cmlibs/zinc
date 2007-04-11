@@ -6039,10 +6039,10 @@ value searches just elements of that dimension.
 	float hint_resolution[3];
 	float	rgba[4], fail_alpha, texture_depth, texture_height,
 		texture_width;
-	int bytes_per_pixel, i, image_width_bytes, j, k,
+	int bytes_per_pixel, dimension, i, image_width_bytes, j, k,
 		number_of_bytes_per_component, number_of_components,
 		number_of_data_components, return_code, source_dimension,
-		*source_sizes, tex_number_of_components;
+		*source_sizes, tex_number_of_components, use_pixel_location;
 	unsigned long field_evaluate_error_count, find_element_xi_error_count,
 		spectrum_render_error_count, total_number_of_pixels;
 	struct Colour fail_colour;
@@ -6099,6 +6099,21 @@ value searches just elements of that dimension.
 			}
 			DEALLOCATE(source_sizes);
 		}
+		if (image_depth > 1)
+		{
+			dimension = 3;
+		}
+		else
+		{
+			if (image_height > 1)
+			{
+				dimension = 2;
+			}
+			else
+			{
+				dimension = 1;
+			}
+		}
 		if (texture_coordinate_field &&
 			(3 >= (tex_number_of_components =
 			Computed_field_get_number_of_components(texture_coordinate_field))))
@@ -6123,6 +6138,7 @@ value searches just elements of that dimension.
 		number_of_bytes_per_component = 1;
 		/* allocate the texture image */
 		field_name = (char *)NULL;
+		use_pixel_location = 1;
 		GET_NAME(Computed_field)(field, &field_name);
 		if (Texture_allocate_image(texture, image_width, image_height,
 			image_depth, storage, number_of_bytes_per_component, field_name))
@@ -6174,32 +6190,14 @@ value searches just elements of that dimension.
 								printf("  field pos = %10g %10g %10g\n", values[0], values[1], values[2]);
 							}
 #endif /* defined (DEBUG) */
-							/* Computed_field_find_element_xi_special returns true if it has
-								 performed a valid calculation even if the element isn't found
-								 to stop the slow Computed_field_find_element_xi being called */
-							if (Computed_field_find_element_xi_special(
-								texture_coordinate_field, &cache, values,
-								tex_number_of_components, &element, xi,
-								region, element_dimension,
-								graphics_buffer_package,
-								hint_minimums, hint_maximums, hint_resolution) ||
-								Computed_field_find_element_xi(texture_coordinate_field,
-									values, tex_number_of_components, &element, xi,
-									element_dimension, region, propagate_field,
-									/*find_nearest_location*/0))
+							if (use_pixel_location)
 							{
-								if (element)
+								/* Try to use a pixel coordinate first */
+								if (source_texture_coordinate_field == texture_coordinate_field)
 								{
-#if defined (DEBUG)
-									/*???debug*/
-									if ((1 < image_depth) && ((0 == j) || (image_height - 1 == j)) && ((0 == k) || (image_width - 1 == k)))
-									{
-										printf("  xi = %10g %10g %10g\n", xi[0], xi[1], xi[2]);
-									}
-#endif /* defined (DEBUG) */
-									if (Computed_field_evaluate_in_element(field,
-										element, xi,/*time*/0,(struct FE_element *)NULL,
-										data_values, (FE_value *)NULL))
+									if (Computed_field_evaluate_at_field_coordinates(field,
+											texture_coordinate_field, dimension, values, 
+											/*time*/0.0, data_values))
 									{
 										if (!Spectrum_value_to_rgba(spectrum,
 												number_of_data_components, data_values,
@@ -6214,11 +6212,71 @@ value searches just elements of that dimension.
 									}
 									else
 									{
+										use_pixel_location = 0;
+									}
+								}
+								else
+								{
+									use_pixel_location = 0;
+								}
+							}
+							if (!use_pixel_location)
+							{
+								/* Otherwise find a valid element xi location */
+								/* Computed_field_find_element_xi_special returns true if it has
+									performed a valid calculation even if the element isn't found
+									to stop the slow Computed_field_find_element_xi being called */
+								if (Computed_field_find_element_xi_special(
+										 texture_coordinate_field, &cache, values,
+										 tex_number_of_components, &element, xi,
+										 region, element_dimension,
+										 graphics_buffer_package,
+										 hint_minimums, hint_maximums, hint_resolution) ||
+									Computed_field_find_element_xi(texture_coordinate_field,
+										values, tex_number_of_components, &element, xi,
+										element_dimension, region, propagate_field,
+										/*find_nearest_location*/0))
+								{
+									if (element)
+									{
+#if defined (DEBUG)
+										/*???debug*/
+										if ((1 < image_depth) && ((0 == j) || (image_height - 1 == j)) && ((0 == k) || (image_width - 1 == k)))
+										{
+											printf("  xi = %10g %10g %10g\n", xi[0], xi[1], xi[2]);
+										}
+#endif /* defined (DEBUG) */
+										if (Computed_field_evaluate_in_element(field,
+												element, xi,/*time*/0,(struct FE_element *)NULL,
+												data_values, (FE_value *)NULL))
+										{
+											if (!Spectrum_value_to_rgba(spectrum,
+													number_of_data_components, data_values,
+													rgba))
+											{
+												rgba[0] = fail_colour.red;
+												rgba[1] = fail_colour.green;
+												rgba[2] = fail_colour.blue;
+												rgba[3] = fail_alpha;
+												spectrum_render_error_count++;
+											}
+										}
+										else
+										{
+											rgba[0] = fail_colour.red;
+											rgba[1] = fail_colour.green;
+											rgba[2] = fail_colour.blue;
+											rgba[3] = fail_alpha;
+											field_evaluate_error_count++;
+										}
+									}
+									else
+									{
 										rgba[0] = fail_colour.red;
 										rgba[1] = fail_colour.green;
 										rgba[2] = fail_colour.blue;
+										/* not in any element; set alpha to zero so invisible */
 										rgba[3] = fail_alpha;
-										field_evaluate_error_count++;
 									}
 								}
 								else
@@ -6226,18 +6284,10 @@ value searches just elements of that dimension.
 									rgba[0] = fail_colour.red;
 									rgba[1] = fail_colour.green;
 									rgba[2] = fail_colour.blue;
-									/* not in any element; set alpha to zero so invisible */
+									/* error finding element:xi; set alpha to zero so invisible */
 									rgba[3] = fail_alpha;
+									find_element_xi_error_count++;
 								}
-							}
-							else
-							{
-								rgba[0] = fail_colour.red;
-								rgba[1] = fail_colour.green;
-								rgba[2] = fail_colour.blue;
-								/* error finding element:xi; set alpha to zero so invisible */
-								rgba[3] = fail_alpha;
-								find_element_xi_error_count++;
 							}
 #if defined (DEBUG)
 							/*???debug*/
