@@ -288,6 +288,7 @@ DESCRIPTION :
 		not be available on this implementation */
 	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Cmiss_scene_viewer_package *scene_viewer_package;
+	struct Graphics_font_package *graphics_font_package;
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 	struct MANAGER(Graphics_window) *graphics_window_manager;
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
@@ -825,7 +826,8 @@ a single point in 3-D space with a text string drawn beside it.
 							(*pointlist)[0]=position[0];
 							(*pointlist)[1]=position[1];
 							(*pointlist)[2]=position[2];
-							if (!(font_name && (font = ACCESS(Graphics_font)(CREATE(Graphics_font)(font_name)))))
+							if (!(font_name && (font = ACCESS(Graphics_font)
+								(Graphics_font_package_get_font(command_data->graphics_font_package, font_name)))))
 							{
 								font = ACCESS(Graphics_font)(command_data->default_font);
 							}
@@ -1099,11 +1101,12 @@ Executes a GFX CREATE COLOUR_BAR command. Creates a colour bar graphics object
 with tick marks and labels for showing the scale of a spectrum.
 ==============================================================================*/
 {
-	char *graphics_object_name,*number_format;
+	char *font_name, *graphics_object_name,*number_format;
 	float bar_length,bar_radius,extend_length,tick_length;
 	int number_of_components,return_code,tick_divisions;
 	struct Cmiss_command_data *command_data;
 	struct Graphical_material *label_material,*material;
+	struct Graphics_font *font;
 	struct GT_object *graphics_object;
 	struct Option_table *option_table;
 	struct Spectrum *spectrum;
@@ -1139,6 +1142,7 @@ with tick marks and labels for showing the scale of a spectrum.
 			bar_radius=0.06;
 			tick_length=0.04;
 			tick_divisions=10;
+			font_name = (char *)NULL;
 
 			option_table=CREATE(Option_table)();
 			/* as */
@@ -1156,6 +1160,9 @@ with tick marks and labels for showing the scale of a spectrum.
 			/* extend_length */
 			Option_table_add_entry(option_table,"extend_length",&extend_length,
 				NULL,set_float_non_negative);
+			/* font */
+			Option_table_add_name_entry(option_table, "font",
+				&font_name);
 			/* label_material */
 			Option_table_add_set_Material_entry(option_table, "label_material", &label_material,
 				command_data->material_package);
@@ -1187,13 +1194,19 @@ with tick marks and labels for showing the scale of a spectrum.
 					display_message(WARNING_MESSAGE,"Limited to 100 tick_divisions");
 					tick_divisions=100;
 				}
+				if (!(font_name && (font = ACCESS(Graphics_font)
+					(Graphics_font_package_get_font(command_data->graphics_font_package, font_name)))))
+				{
+					font = ACCESS(Graphics_font)(command_data->default_font);
+				}
 				/* try to find existing colour_bar for updating */
 				graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 					graphics_object_name,command_data->graphics_object_list);
 				if (create_Spectrum_colour_bar(&graphics_object,
-					graphics_object_name,spectrum,bar_centre,bar_axis,side_axis,
-					bar_length,bar_radius,extend_length,tick_divisions,tick_length,
-					number_format,material,label_material,command_data->default_font))
+						graphics_object_name,spectrum,/*component_number*/0,
+						bar_centre,bar_axis,side_axis,
+						bar_length,bar_radius,extend_length,tick_divisions,tick_length,
+						number_format,material,label_material, font))
 				{
 					ACCESS(GT_object)(graphics_object);
 					if (IS_OBJECT_IN_LIST(GT_object)(graphics_object,
@@ -1217,6 +1230,7 @@ with tick marks and labels for showing the scale of a spectrum.
 						"gfx_create_colour_bar.  Could not create colour bar");
 					return_code=0;
 				}
+				DEACCESS(Graphics_font)(&font);
 			} /* parse error, help */
 			DESTROY(Option_table)(&option_table);
 			DEACCESS(Graphical_material)(&label_material);
@@ -8836,6 +8850,67 @@ Executes a GFX DEFINE FACES command.
 	return (return_code);
 } /* gfx_define_faces */
 
+static int gfx_define_font(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+Executes a GFX DEFINE FONT command.
+==============================================================================*/
+{
+	char *current_token, *font_name;
+	int return_code;
+	struct Cmiss_command_data *command_data;
+
+	ENTER(gfx_define_font);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				font_name = current_token;
+				if (shift_Parse_state(state,1)&&
+					(current_token=state->current_token))
+				{
+					return_code = Graphics_font_package_define_font(
+						command_data->graphics_font_package,
+						font_name, current_token);
+				}
+				else
+				{
+					display_message(WARNING_MESSAGE,"Missing font string.");
+					display_parse_state_location(state);
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE,
+					" FONT_NAME FONT_STRING");
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing font name");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "gfx_define_faces.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_define_faces */
+
 static int execute_command_gfx_define(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -8872,6 +8947,9 @@ Executes a GFX DEFINE command.
 				/* field */
 				Option_table_add_entry(option_table, "field", NULL,
 					command_data->computed_field_package, define_Computed_field);
+				/* font */
+				Option_table_add_entry(option_table, "font", NULL,
+					command_data_void, gfx_define_font);
 				return_code = Option_table_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 			}
@@ -12202,6 +12280,8 @@ Executes a GFX LIST ELEMENT.
 									"gfx_list_FE_element.  Could not get element ranges");
 								return_code = 0;
 							}
+							display_message(INFORMATION_MESSAGE,"Total number = %d\n",
+								NUMBER_IN_LIST(FE_element)(element_list));
 						}
 					}
 					else
@@ -12355,6 +12435,8 @@ use node_manager and node_selection.
 									"gfx_list_FE_node.  Could not get node ranges");
 								return_code=0;
 							}
+							display_message(INFORMATION_MESSAGE,"Total number = %d\n",
+								NUMBER_IN_LIST(FE_node)(node_list));
 						}
 					}
 					else
@@ -14038,6 +14120,8 @@ Parameter <help_mode> should be NULL when calling this function.
 
 				g_element_command_data.default_material =
 					Material_package_get_default_material(command_data->material_package);
+				g_element_command_data.graphics_font_package = 
+					command_data->graphics_font_package;
 				g_element_command_data.default_font = command_data->default_font;
 				g_element_command_data.glyph_list = command_data->glyph_list;
 				g_element_command_data.computed_field_manager =
@@ -23454,7 +23538,10 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				Graphical_material_set_alpha(material, 1.0);
 			}
 		}
-		command_data->default_font = ACCESS(Graphics_font)(CREATE(Graphics_font)("default"));
+
+		command_data->graphics_font_package = CREATE(Graphics_font_package)();
+		command_data->default_font = ACCESS(Graphics_font)(
+			Graphics_font_package_get_font(command_data->graphics_font_package, "default"));
 		number_of_startup_materials = sizeof(startup_materials) /
 			sizeof(struct Startup_material_definition);
 		for (i = 0; i < number_of_startup_materials; i++)
@@ -24279,6 +24366,7 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		DESTROY(MANAGER(Spectrum))(&command_data->spectrum_manager);
 		DEACCESS(Material_package)(&command_data->material_package);
 		DEACCESS(Graphics_font)(&command_data->default_font);
+		DESTROY(Graphics_font_package)(&command_data->graphics_font_package);
 		DESTROY(MANAGER(VT_volume_texture))(&command_data->volume_texture_manager);
 		DESTROY(MANAGER(Texture))(&command_data->texture_manager);
 		DESTROY(MANAGER(Environment_map))(&command_data->environment_map_manager);				
