@@ -65,7 +65,7 @@ Global functions
 ----------------
 */
 
-struct Graphics_font_package *CREATE(Graphics_font_package)();
+struct Graphics_font_package *CREATE(Graphics_font_package)(void);
 /*******************************************************************************
 LAST MODIFIED : 11 April 2007
 
