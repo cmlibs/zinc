@@ -54,7 +54,6 @@ extern "C" {
 #include "general/callback_class.hpp"
 extern "C" {
 #include "general/debug.h"
-#include "choose/text_choose_from_fe_region.h"
 #include "finite_element/finite_element_region.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"

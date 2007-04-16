@@ -1526,11 +1526,13 @@ Executes a GFX CREATE ELEMENT_CREATOR command.
 ==============================================================================*/
 {
 	int return_code;
-	USE_PARAMETER(dummy_to_be_modified);
-	ENTER(gfx_create_element_creator);
 #if defined (MOTIF)
 	char *current_token, *initial_region_path;
 	struct Cmiss_command_data *command_data;
+#endif /* defined (MOTIF) */
+	USE_PARAMETER(dummy_to_be_modified);
+	ENTER(gfx_create_element_creator);
+#if defined (MOTIF)
 
 	if (state)
 	{
