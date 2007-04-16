@@ -79,6 +79,7 @@ static char element_point_tool_uidh[] =
 #include "wx/xrc/xmlres.h"
 #include "element/element_point_tool.xrch"
 #include "graphics/graphics_window_private.hpp"
+#include "choose/choose_manager_class.hpp"
 #endif /* defined (WX_USER_INTERFACE)*/
 
 
@@ -137,7 +138,8 @@ Object storing all the parameters for interactively selecting element points.
 #endif /* defined (MOTIF) */
 
 #if defined (WX_USER_INTERFACE)
-  wxElementPointTool *wx_element_point_tool;
+	 struct Computed_field_package *computed_field_package;
+	 wxElementPointTool *wx_element_point_tool;
 #endif /* defined (WX_USER_INTERFACE) */
 
 }; /* struct Element_point_tool */
@@ -599,7 +601,13 @@ Fetches an icon for the Element_point tool.
 class wxElementPointTool : public wxPanel
 {
 	Element_point_tool *element_point_tool;
-
+	wxCheckBox *elementpointcommandfieldcheckbox;
+	 wxPanel *element_point_command_field_chooser_panel;
+	struct MANAGER(Computed_field) *computed_field_manager;
+	struct Computed_field *command_field;
+	DEFINE_MANAGER_CLASS(Computed_field);
+	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+	 *element_point_command_field_chooser;
 public:
 
   wxElementPointTool(Element_point_tool *element_point_tool,wxPanel *parent ): 
@@ -607,14 +615,94 @@ public:
   {	
 		{ 
 			wxXmlInit_element_point_tool();
+			wxXmlResource::Get()->LoadPanel(this,parent,_T("CmguiElementPointTool"));
+			elementpointcommandfieldcheckbox = XRCCTRL(*this, "ElementPointCommandFieldCheckBox",wxCheckBox);
+			element_point_command_field_chooser_panel = XRCCTRL(*this, "ElementPointCommandFieldChooserPanel", wxPanel);
+			computed_field_manager=
+				 Computed_field_package_get_computed_field_manager(element_point_tool->computed_field_package);
+			element_point_command_field_chooser =
+				 new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+				 (element_point_command_field_chooser_panel, element_point_tool->command_field, computed_field_manager,
+						Computed_field_has_string_value_type, (void *)NULL, element_point_tool->user_interface);
+			Callback_base< Computed_field* > *element_point_command_field_callback = 
+				 new Callback_member_callback< Computed_field*, 
+					wxElementPointTool, int (wxElementPointTool::*)(Computed_field *) >
+				 (this, &wxElementPointTool::element_point_command_field_callback);
+			element_point_command_field_chooser->set_callback(element_point_command_field_callback);
+			if (element_point_tool != NULL)
+			{
+				 command_field = Element_point_tool_get_command_field(element_point_tool);
+				 element_point_command_field_chooser->set_object(command_field);
+				 if (command_field == NULL)
+				 {
+						elementpointcommandfieldcheckbox->SetValue(0);
+						element_point_command_field_chooser_panel->Disable();
+				 }
+				 else
+				 {
+						elementpointcommandfieldcheckbox->SetValue(1);
+						element_point_command_field_chooser_panel->Enable();
+				 }
+			}
 		}
-		wxXmlResource::Get()->LoadPanel(this,parent,_T("CmguiElementPointTool"));
   };
 
   wxElementPointTool()
   {
   };
 
+ ~ wxElementPointTool()
+  {
+		 //		 delete element_point_command_field_chooser;
+  };
+	 int element_point_command_field_callback(Computed_field *command_field)
+	 {
+			Element_point_tool_set_command_field(element_point_tool, command_field);
+			return 1;
+	 }
+
+	 void ElementPointCommandFieldChecked(wxCommandEvent &event)
+	 {
+			struct Computed_field *command_field;
+			elementpointcommandfieldcheckbox = XRCCTRL(*this, "ElementPointCommandFieldCheckBox",wxCheckBox);
+			element_point_command_field_chooser_panel = XRCCTRL(*this, "ElementPointCommandFieldChooserPanel", wxPanel);
+			if (elementpointcommandfieldcheckbox->IsChecked())
+			{
+				 if (element_point_tool)
+				 {
+						if (Element_point_tool_get_command_field(element_point_tool))
+						{
+							 Element_point_tool_set_command_field(element_point_tool, (struct Computed_field *)NULL);
+							 element_point_command_field_chooser_panel->Enable();
+						}
+						else
+						{
+							 /* get label field from widget */
+							 command_field = element_point_command_field_chooser->get_object();
+							 if (command_field)
+							 {
+									Element_point_tool_set_command_field(element_point_tool, command_field);
+							 }
+							 else
+							 {
+									elementpointcommandfieldcheckbox->SetValue(0);
+									element_point_command_field_chooser_panel->Disable();
+							 }
+						}
+				 }
+				 else
+				 {
+						display_message(ERROR_MESSAGE,
+							 "Element_point_tool_command_field_button_CB.  Invalid argument(s)");
+				 }
+			}
+			else
+			{
+				 Element_point_tool_set_command_field(element_point_tool, (struct Computed_field *)NULL);
+				 elementpointcommandfieldcheckbox->SetValue(0);
+				 element_point_command_field_chooser_panel->Disable();
+			}
+	 }
   DECLARE_DYNAMIC_CLASS(wxElementPointTool);
   DECLARE_EVENT_TABLE();
 };
@@ -622,6 +710,7 @@ public:
 IMPLEMENT_DYNAMIC_CLASS(wxElementPointTool, wxPanel)
 
 BEGIN_EVENT_TABLE(wxElementPointTool, wxPanel)
+	 EVT_CHECKBOX(XRCID("ElementPointCommandFieldCheckBox"),wxElementPointTool::ElementPointCommandFieldChecked)
 END_EVENT_TABLE()
 
 #endif /* defined (WX_USER_INTERFACE) */
@@ -854,8 +943,7 @@ Creates an Element_point_tool with Interactive_tool in
 			}
 
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */ 
-
-
+			element_point_tool->computed_field_package=computed_field_package;
 			element_point_tool->wx_element_point_tool = (wxElementPointTool *)NULL;
 #endif /* switch (USER_INTERFACE) */
 		}

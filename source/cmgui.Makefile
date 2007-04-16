@@ -606,7 +606,7 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
    endif # $(SYSNAME) != win32
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
-	WX_DIR = 
+   WX_DIR = 
    USER_INTERFACE_INC += $(shell $(WX_DIR)wx-config --cxxflags)
    #Default list does not include gl, so we list them here.
    #Using xrc means that we require most things (and static wx libs don't automatically pull
@@ -835,8 +835,14 @@ COLOUR_INTERFACE_SRCS = \
 	colour/edit_var.c 
 COMFILE_SRCS = \
 	comfile/comfile.c 
+ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
+COMFILE_SRCS += \
+    comfile/comfile_window_wx.cpp
+endif #$(USER_INTERFACE) == WX_USER_INTERFACE
+ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 COMFILE_INTERFACE_SRCS = \
 	comfile/comfile_window.c 
+endif #$(USER_INTERFACE) == MOTIF_USER_INTERFACE
 COMMAND_SRCS = \
 	command/command.c \
 	command/console.c \

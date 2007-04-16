@@ -172,18 +172,8 @@ public:
 			wxXmlInit_transform_tool();
 		}
  		wxXmlResource::Get()->LoadPanel(this,parent,_T("CmguiTransformTool"));	
-
 		button_free_spin = XRCCTRL(*this, "ButtonFreeSpin", wxCheckBox);
-
-		if (button_free_spin->IsChecked())
-			{
-				transform_tool->free_spin_flag = 1;
-			}
-			else
-			{
-				transform_tool->free_spin_flag = 0;
-			}
-
+		Transform_tool_transform_set_free_spin(transform_tool,button_free_spin->IsChecked());
   };
 
   wxTransformTool()
@@ -195,6 +185,13 @@ public:
 		button_free_spin = XRCCTRL(*this, "ButtonFreeSpin", wxCheckBox);
     Transform_tool_transform_set_free_spin(transform_tool,button_free_spin->IsChecked());
  	}
+
+	void TransformToolInterafaceRenew(Transform_tool *destination_transform_tool)
+	{
+		button_free_spin = XRCCTRL(*this, "ButtonFreeSpin", wxCheckBox);
+		button_free_spin->SetValue(destination_transform_tool->free_spin_flag);
+	}
+
 
   DECLARE_DYNAMIC_CLASS(wxTransformTool);
   DECLARE_EVENT_TABLE();
@@ -379,6 +376,12 @@ Copies the state of one transform tool to another.
 			(source_transform_tool=(struct Transform_tool *)source_tool_void))
 	{
 		destination_transform_tool->free_spin_flag = source_transform_tool->free_spin_flag;
+#if defined (WX_USER_INTERFACE)
+		if (destination_transform_tool->wx_transform_tool != (wxTransformTool *) NULL)
+		{	
+			destination_transform_tool->wx_transform_tool->TransformToolInterafaceRenew(destination_transform_tool);
+		}
+#endif /*defined (WX_USER_INTERFACE)*/
 		return_code=1;
 	}
 	else
@@ -391,15 +394,10 @@ Copies the state of one transform tool to another.
 	return (return_code);
 } /* Transform_tool_copy_function */
 
-
-
 /*
 Global functions
 ----------------
 */
-
-
-
 
 int Interactive_tool_is_Transform_tool(struct Interactive_tool *interactive_tool)
 /*******************************************************************************

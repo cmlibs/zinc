@@ -54,9 +54,8 @@ Management routines for the comfile window.
 #if defined (MOTIF)
 static char comfile_window_uidh[] =
 #include "comfile/comfile_window.uidh"
-	;
+;
 #endif /* defined (MOTIF) */
-#include "command/command.h"
 #include "general/indexed_list_private.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"

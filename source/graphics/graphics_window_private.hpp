@@ -45,8 +45,8 @@ Private interface for internal methods
 #define GRAPHICS_WINDOW_PRIVATE_HPP
 
 #if defined (WX_USER_INTERFACE)
-class wxPanel;
-wxPanel *Graphics_window_get_interactive_tool_panel(struct Graphics_window *graphics_window);
+class wxScrolledWindow;
+wxScrolledWindow *Graphics_window_get_interactive_tool_panel(struct Graphics_window *graphics_window);
 /*******************************************************************************
 LAST MODIFIED : 9 February 2007
 

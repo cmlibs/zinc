@@ -13,8 +13,8 @@
 				  <orientation>vertical</orientation>
 					<minsize>1</minsize>
 					<sashpos>200</sashpos>
-				
-				  <object class ="wxPanel" name="LeftPanel">
+				  <object class ="wxScrolledWindow" name="LeftPanel">
+					 <style>wxVSCROLL</style>	
 			 	    <object class = "wxBoxSizer">	
 							<object class="sizeritem">
 	 							<flag>wxEXPAND</flag>
@@ -166,7 +166,7 @@
 					  	  <object class = "sizeritem" >
           				<flag>wxEXPAND</flag>
          					<option>1</option>
-				  				<object class= "wxPanel" name="ToolPanel"/>
+				  				<object class= "wxScrolledWindow" name="ToolPanel"/>
 						  	</object>
 	
 						  </object>

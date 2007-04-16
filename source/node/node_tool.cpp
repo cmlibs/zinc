@@ -67,6 +67,7 @@ extern "C" {
 #include "interaction/interactive_event.h"
 #include "node/node_operations.h"
 #include "node/node_tool.h"
+#include "finite_element/finite_element.h"
 #if defined (MOTIF)
 static char node_tool_uidh[] =
 #include "node/node_tool.uidh"
@@ -166,7 +167,18 @@ changes in node position and derivatives etc.
 	struct GT_element_settings *gt_element_settings;
 	struct Interaction_volume *last_interaction_volume;
 	struct GT_object *rubber_band;
-
+	struct FE_field *FE_coordinate_field;
+	/* maintain a template node for creating new nodes */
+	/* the dimension of the elements being created - user settable */
+	int element_dimension;
+	/* maintain template element for creating new elements */
+	struct FE_element *template_element;
+	/* indicates whether elements are created in response to node selections */
+	int element_create_enabled;
+	/* the element being created */
+	struct FE_element *element;
+	/* number of nodes that have been set in the element being created */
+	int number_of_clicked_nodes;
 #if defined (MOTIF)
 	Display *display;
 	struct Cmiss_region_chooser *cmiss_region_chooser;
@@ -184,6 +196,7 @@ changes in node position and derivatives etc.
 
 #if defined (WX_USER_INTERFACE)
 	wxNodeTool *wx_node_tool;
+	struct MANAGER(Computed_field) *computed_field_manager;
 #endif /* defined (WX_USER_INTERFACE) */
 }; /* struct Node_tool */
 
@@ -257,6 +270,26 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,streaming_create_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,command_field_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,command_field_form)
 #endif /* defined (MOTIF) */
+
+/* Prototype */
+#if defined (WX_USER_INTERFACE)
+static int Node_tool_end_element_creation(
+	 struct Node_tool *node_tool);
+#endif /*defined (WX_USER_INTERFACE)*/
+#if defined (WX_USER_INTERFACE)
+int Node_tool_set_element_create_enabled(struct Node_tool  *node_tool,
+	 int create_enabled);
+#endif /*defined (WX_USER_INTERFACE)*/
+#if defined (WX_USER_INTERFACE)
+int Node_tool_set_element_dimension(
+	 struct Node_tool *node_tool,int element_dimension);
+#endif /*defined (WX_USER_INTERFACE)*/
+#if defined (WX_USER_INTERFACE)
+static int Node_tool_refresh_element_dimension_text(
+	 struct Node_tool *node_tool);
+#endif /*defined (WX_USER_INTERFACE)*/
+
+
 
 static int Node_tool_define_field_at_node(struct Node_tool *node_tool,
 	struct FE_node *node)
@@ -2406,23 +2439,36 @@ Fetches the appropriate icon for the interactive tool.
 #if defined (WX_USER_INTERFACE)
 class wxNodeTool : public wxPanel
 {
-  Node_tool *node_tool;
-  FE_region *master_fe_region;
-  FE_field *fe_field;
-	wxCheckBox *button_select;
-	wxCheckBox *button_edit;
-  wxCheckBox *button_motion_update;
-  wxCheckBox *button_define;
-	wxCheckBox *button_create;
-	wxCheckBox *button_streaming;
-	wxCheckBox *button_constrain;
-	wxButton *button_destroy;
-	wxButton *button_undefine;
-	wxWindow *Title;
-
-	DEFINE_MANAGER_CLASS(Computed_field);
-	Managed_object_chooser<Computed_field, MANAGER_CLASS(Computed_field)>
-	   *computed_field_chooser;
+	 Node_tool *node_tool;
+	 FE_region *master_fe_region;
+	 FE_field *fe_field;
+	 wxCheckBox *button_select;
+	 wxCheckBox *button_edit;
+	 wxCheckBox *button_motion_update;
+	 wxCheckBox *button_define;
+	 wxCheckBox *button_create;
+	 wxCheckBox *button_streaming;
+	 wxCheckBox *button_constrain;
+	 wxButton *button_destroy;
+	 wxButton *button_undefine;
+	 wxWindow *Title;
+	 wxRegionChooser *region_chooser;
+	 wxCheckBox *nodecommandfieldcheckbox;
+	 wxPanel *node_command_field_chooser_panel;
+	 wxPanel *cmgui_node_tool;
+	 wxButton *clear_button;
+	 wxCheckBox *create_elements_checkbox;
+	 wxTextCtrl *dimension_textctrl;
+	 wxListBox *new_element_nodes_listbox;
+	 wxStaticText *new_element_statictext, *dimension_statictext;
+	 wxWindow *first_element_staticbox,*second_element_staticbox;
+	 char temp_string[20];
+	struct Computed_field *command_field;
+	 DEFINE_MANAGER_CLASS(Computed_field);
+	 Managed_object_chooser<Computed_field, MANAGER_CLASS(Computed_field)>
+	 *computed_field_chooser;
+	 Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+	 *node_command_field_chooser;
 
 public:
 
@@ -2435,20 +2481,56 @@ public:
 	  } // ~wxLogNull called, old log restored
 
 	  wxXmlResource::Get()->LoadPanel(this, parent, _T("CmguiNodeTool"));
-		Title = XRCCTRL(*this,"NodeSizer",wxWindow);
-		button_select=XRCCTRL(*this, "ButtonSelect", wxCheckBox);
+		button_select = XRCCTRL(*this, "ButtonSelect", wxCheckBox);
+		button_edit = XRCCTRL(*this, "ButtonEdit", wxCheckBox);
 		button_motion_update=XRCCTRL(*this, "ButtonMotionUpdate", wxCheckBox);
-		
-		button_select->SetValue(true);
-		button_motion_update->SetValue(true);
-		
+		button_define = XRCCTRL(*this, "ButtonDefine", wxCheckBox);
+		button_create = XRCCTRL(*this, "ButtonCreate", wxCheckBox);
+		button_streaming = XRCCTRL(*this, "ButtonStreaming", wxCheckBox);  
+		button_constrain = XRCCTRL(*this, "ButtonConstrain", wxCheckBox );
+		button_select->SetValue(node_tool->select_enabled);
+		button_edit->SetValue(node_tool->edit_enabled);
+		button_motion_update->SetValue(node_tool->motion_update_enabled);
+		button_define->SetValue(node_tool->define_enabled);
+		button_create->SetValue(node_tool->create_enabled);
+		button_streaming->SetValue(node_tool->streaming_create_enabled);
+		button_constrain ->SetValue(node_tool->constrain_to_surface);
+		create_elements_checkbox = XRCCTRL(*this, "CreateElementsCheckBox", wxCheckBox );
+		dimension_textctrl = XRCCTRL(*this, "DimensionTextCtrl", wxTextCtrl);
+		clear_button = XRCCTRL(*this, "ClearButton", wxButton);
+		new_element_nodes_listbox = XRCCTRL(*this, "NewElementNodesListBox", wxListBox);
+		new_element_statictext = XRCCTRL(*this, "NewElementStaticText",wxStaticText);
+		dimension_statictext = XRCCTRL(*this, "DimensionStaticText",wxStaticText);
+		first_element_staticbox = XRCCTRL(*this, "FirstElementStaticBox",wxWindow);
+		second_element_staticbox = XRCCTRL(*this, "SecondElementStaticBox",wxWindow);
+
+		Title = XRCCTRL(*this,"NodeSizer",wxWindow); 
 		if (node_tool->use_data)
 		{
-			Title->SetLabel("Data Tool");
+			 Title->SetLabel("Data Tool");
+			 create_elements_checkbox->Hide();
+			 dimension_textctrl->Hide();
+			 clear_button->Hide();
+			 new_element_nodes_listbox->Hide();
+			 new_element_statictext->Hide();
+			 dimension_statictext->Hide();
+			 first_element_staticbox->Hide();
+			 second_element_staticbox->Hide();
 		}
 		else
 		{
-			Title->SetLabel("Node Tool");
+			 Title->SetLabel("Node Tool");
+			 create_elements_checkbox->Show();
+			 dimension_textctrl->Show();
+			 clear_button->Show();
+			 new_element_nodes_listbox->Show();
+			 new_element_statictext->Show();
+			 dimension_statictext->Show();
+			 create_elements_checkbox->SetValue(node_tool->element_create_enabled);
+			 sprintf(temp_string,"%d",node_tool->element_dimension);
+			 dimension_textctrl->SetValue(temp_string);
+			 first_element_staticbox->Show();
+			 second_element_staticbox->Show();
 		}
 
 	 wxPanel *coordinate_field_chooser_panel = 
@@ -2456,34 +2538,60 @@ public:
 	  computed_field_chooser = 
 		  new Managed_object_chooser<Computed_field, MANAGER_CLASS(Computed_field)>
 		  (coordinate_field_chooser_panel, node_tool->coordinate_field,
-			  Computed_field_package_get_computed_field_manager(
-			  node_tool->computed_field_package), 
+			  node_tool->computed_field_manager, 
 			  Computed_field_has_up_to_3_numerical_components,
 			  (void *)NULL, node_tool->user_interface);
-
 	  Callback_base<Computed_field* > *coordinate_field_callback = 
 		  new Callback_member_callback< Computed_field*, 
 		  wxNodeTool, int (wxNodeTool::*)(Computed_field *) >
 		  (this, &wxNodeTool::coordinate_field_callback);
-
 	  computed_field_chooser->set_callback(coordinate_field_callback);
-
+		computed_field_chooser->set_object(node_tool->coordinate_field);
 	  wxPanel *region_chooser_panel = 
 		 XRCCTRL(*this, "RegionChooserPanel", wxPanel);
-
 	  char *initial_path;
 	  Cmiss_region_get_root_region_path(&initial_path);
-	  wxRegionChooser *region_chooser = new wxRegionChooser(region_chooser_panel,
+	  region_chooser = new wxRegionChooser(region_chooser_panel,
 		  node_tool->root_region, initial_path); 
 	  DEALLOCATE(initial_path);
-
 	  Callback_base<Cmiss_region* > *region_callback = 
 		  new Callback_member_callback< Cmiss_region*, 
 		  wxNodeTool, int (wxNodeTool::*)(Cmiss_region *) >
 		  (this, &wxNodeTool::region_callback);
-
 	  region_chooser->set_callback(region_callback);
-
+	  if (node_tool->current_region_path != NULL)
+	  {
+			region_chooser->set_path(node_tool->current_region_path);
+	  }
+		nodecommandfieldcheckbox = XRCCTRL(*this, "NodeCommandFieldCheckBox",wxCheckBox);
+		node_command_field_chooser_panel = XRCCTRL(*this, "NodeCommandFieldChooserPanel", wxPanel);
+		node_command_field_chooser =
+			 new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+			 (node_command_field_chooser_panel, node_tool->command_field, node_tool->computed_field_manager,
+					Computed_field_has_string_value_type, (void *)NULL, node_tool->user_interface);
+		Callback_base< Computed_field* > *node_command_field_callback = 
+			 new Callback_member_callback< Computed_field*, 
+				wxNodeTool, int (wxNodeTool::*)(Computed_field *) >
+			 (this, &wxNodeTool::node_command_field_callback);
+		node_command_field_chooser->set_callback(node_command_field_callback);
+		if (node_tool != NULL)
+		{
+			 command_field = Node_tool_get_command_field(node_tool);
+			 node_command_field_chooser->set_object(command_field);
+			 if (command_field == NULL)
+			 {
+					nodecommandfieldcheckbox->SetValue(0);
+					node_command_field_chooser_panel->Disable();
+			 }
+			 else
+			 {
+					nodecommandfieldcheckbox->SetValue(1);
+					node_command_field_chooser_panel->Enable();
+			 }
+		}
+		cmgui_node_tool = XRCCTRL(*this, "CmguiNodeTool", wxPanel);
+		cmgui_node_tool->SetScrollbar(wxVERTICAL,0,-1,-1);
+		cmgui_node_tool -> Layout();
 	}
 
   wxNodeTool()  /* Void constructor required for IMPLEMENT_DYNAMIC_CLASS */
@@ -2492,7 +2600,9 @@ public:
 
   ~wxNodeTool()
   {
-	  delete computed_field_chooser;
+		 //		 delete computed_field_chooser;
+		 // delete region_chooser;
+		 // delete node_command_field_chooser;
   }
 
 	int coordinate_field_callback(Computed_field *field)
@@ -2530,6 +2640,12 @@ Set the selected option in the Coordinate Field chooser.
 		computed_field_chooser->set_object(field);
 		return 1;
 	}
+
+	 int node_command_field_callback(Computed_field *command_field)
+	 {
+			Node_tool_set_command_field(node_tool, command_field);
+			return 1;
+	 }
 
 	void OnButtonSelectpressed(wxCommandEvent& event)
 	{    
@@ -2572,7 +2688,6 @@ Set the selected option in the Coordinate Field chooser.
 			button_define->SetValue(1);
 		  Node_tool_set_define_enabled(node_tool,button_define->IsChecked());
 		}
-		
 	}
 
 	void OnButtonStreamingpressed(wxCommandEvent& event)
@@ -2652,8 +2767,164 @@ Set the selected option in the Coordinate Field chooser.
 	      }
 	    DESTROY(LIST(FE_field))(&fe_field_list);
 	  }
-       }
+	}
 
+void OnClearButtonpressed(wxCommandEvent &event)
+{
+	 if (node_tool)
+	 {
+			Node_tool_end_element_creation(node_tool);
+	 }
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_creator_abort_creation_CB.  Invalid argument(s)");
+	}
+}
+
+void OnCreateElementsPressed(wxCommandEvent &event)
+ {
+		create_elements_checkbox = XRCCTRL(*this, "CreateElementsCheckBox", wxCheckBox );
+		if (node_tool)
+		{
+			 Node_tool_set_element_create_enabled(node_tool,
+					create_elements_checkbox->IsChecked());
+		}
+		else
+		{
+		display_message(ERROR_MESSAGE,
+			 "Element_creator_create_button_CB.  Invalid argument(s)");
+		}
+ }
+
+void OnDimensionEntered(wxCommandEvent &event)
+ {
+		char *value_string;
+		int element_dimension;
+		
+		dimension_textctrl = XRCCTRL(*this, "DimensionTextCtrl", wxTextCtrl);
+		if (node_tool)
+		{
+			 if (value_string=const_cast<char *>((dimension_textctrl->GetValue()).c_str()));
+			 {
+					if (1==sscanf(value_string,"%d",&element_dimension))
+					{
+						 Node_tool_set_element_dimension(node_tool,
+								element_dimension);
+					}
+			 }
+			 /* always restore element_dimension_text to actual value stored */
+			 Node_tool_refresh_element_dimension_text(node_tool);
+		}
+		else
+		{
+			 display_message(ERROR_MESSAGE,
+					"Element_creator_element_dimension_text_CB.  Invalid argument(s)");
+		}
+ }
+
+void NodeToolInterfaceRenew(Node_tool *destination_node_tool)
+{
+	button_select = XRCCTRL(*this, "ButtonSelect", wxCheckBox);
+	button_edit = XRCCTRL(*this, "ButtonEdit", wxCheckBox);
+	button_motion_update=XRCCTRL(*this, "ButtonMotionUpdate", wxCheckBox);
+	button_define = XRCCTRL(*this, "ButtonDefine", wxCheckBox);
+	button_create = XRCCTRL(*this, "ButtonCreate", wxCheckBox);
+	button_streaming = XRCCTRL(*this, "ButtonStreaming", wxCheckBox);  
+	button_constrain = XRCCTRL(*this, "ButtonConstrain", wxCheckBox );
+	create_elements_checkbox = XRCCTRL(*this, "CreateElementsCheckBox", wxCheckBox );
+	dimension_textctrl = XRCCTRL(*this, "DimensionTextCtrl", wxTextCtrl);
+	button_select->SetValue(destination_node_tool->select_enabled);
+	button_edit->SetValue(destination_node_tool->edit_enabled);
+	button_motion_update->SetValue(destination_node_tool->motion_update_enabled);
+	button_define->SetValue(destination_node_tool->define_enabled);
+	button_create->SetValue(destination_node_tool->create_enabled);
+	button_streaming->SetValue(destination_node_tool->streaming_create_enabled);
+	button_constrain ->SetValue(destination_node_tool->constrain_to_surface);
+	computed_field_chooser->set_object(destination_node_tool->coordinate_field);
+	if (destination_node_tool->current_region_path != NULL)
+	{
+		region_chooser->set_path(destination_node_tool->current_region_path);
+	}
+	Node_tool_set_element_dimension(destination_node_tool,destination_node_tool->element_dimension);
+	create_elements_checkbox->SetValue(destination_node_tool->element_create_enabled);
+}
+
+void NodeCommandFieldChecked(wxCommandEvent &event)
+{
+	 struct Computed_field *command_field;
+	 nodecommandfieldcheckbox = XRCCTRL(*this, "NodeCommandFieldCheckBox",wxCheckBox);
+	 node_command_field_chooser_panel = XRCCTRL(*this, "NodeCommandFieldChooserPanel", wxPanel);
+	 if (nodecommandfieldcheckbox->IsChecked())
+	 {
+			if (node_tool)
+			{
+				 if (Node_tool_get_command_field(node_tool))
+				 {
+						Node_tool_set_command_field(node_tool, (struct Computed_field *)NULL);
+						node_command_field_chooser_panel->Enable();
+				 }
+				 else
+				 {
+						/* get label field from widget */
+						command_field = node_command_field_chooser->get_object();
+						if (command_field)
+						{
+							 Node_tool_set_command_field(node_tool, command_field);
+						}
+						else
+						{
+							 nodecommandfieldcheckbox->SetValue(0);
+							 node_command_field_chooser_panel->Disable();
+						}
+				 }
+			}
+			else
+			{
+				 display_message(ERROR_MESSAGE,
+						"Node_tool_command_field_button_CB.  Invalid argument(s)");
+			}
+	 }
+	 else
+	 {
+		  Node_tool_set_command_field(node_tool, (struct Computed_field *)NULL);
+			nodecommandfieldcheckbox->SetValue(0);
+			node_command_field_chooser_panel->Disable();
+	 }
+}
+
+int wx_Node_tool_get_region_path(char **path_address)
+{
+	 if (region_chooser == NULL )
+	 {
+			*path_address = region_chooser->get_path();
+	 }
+	 else
+	 {
+			Cmiss_region_get_root_region_path(path_address);
+	 }
+	 return 1;
+}
+
+void wx_Node_tool_set_region_path(char *path)
+{
+	 if (region_chooser == NULL)
+	 {
+			region_chooser->set_path(path);
+	 }
+}
+
+struct  Cmiss_region *wx_Node_tool_get_region()
+{
+	 if (region_chooser == NULL)
+	 {
+			return (region_chooser->get_region());
+	 }
+	 else
+	 {
+			return (node_tool->root_region);
+	 }
+}
   DECLARE_DYNAMIC_CLASS(wxNodeTool);
   DECLARE_EVENT_TABLE();
 };
@@ -2661,16 +2932,19 @@ Set the selected option in the Coordinate Field chooser.
 IMPLEMENT_DYNAMIC_CLASS(wxNodeTool, wxPanel)
 
 BEGIN_EVENT_TABLE(wxNodeTool, wxPanel)
-      EVT_CHECKBOX(XRCID("ButtonSelect"),wxNodeTool::OnButtonSelectpressed)
-      EVT_CHECKBOX(XRCID("ButtonEdit"),wxNodeTool::OnButtonEditpressed)
-      EVT_CHECKBOX(XRCID("ButtonMotionUpdate"),wxNodeTool::OnButtonMotionUpdatepressed)
-      EVT_CHECKBOX(XRCID("ButtonDefine"),wxNodeTool::OnButtonDefinepressed)
-      EVT_CHECKBOX(XRCID("ButtonCreate"),wxNodeTool::OnButtonCreatepressed)
-      EVT_CHECKBOX(XRCID("ButtonStreaming"),wxNodeTool::OnButtonStreamingpressed)
-      EVT_CHECKBOX(XRCID("ButtonConstrain"),wxNodeTool::OnButtonConstrainpressed)
-      EVT_BUTTON(XRCID("ButtonDestroy"),wxNodeTool::OnButtonDestroypressed)
-      EVT_BUTTON(XRCID("ButtonUndefine"),wxNodeTool::OnButtonUndefinepressed)
- 
+	 EVT_CHECKBOX(XRCID("ButtonSelect"),wxNodeTool::OnButtonSelectpressed)
+	 EVT_CHECKBOX(XRCID("ButtonEdit"),wxNodeTool::OnButtonEditpressed)
+	 EVT_CHECKBOX(XRCID("ButtonMotionUpdate"),wxNodeTool::OnButtonMotionUpdatepressed)
+	 EVT_CHECKBOX(XRCID("ButtonDefine"),wxNodeTool::OnButtonDefinepressed)
+	 EVT_CHECKBOX(XRCID("ButtonCreate"),wxNodeTool::OnButtonCreatepressed)
+	 EVT_CHECKBOX(XRCID("ButtonStreaming"),wxNodeTool::OnButtonStreamingpressed)
+	 EVT_CHECKBOX(XRCID("ButtonConstrain"),wxNodeTool::OnButtonConstrainpressed)
+	 EVT_CHECKBOX(XRCID("NodeCommandFieldCheckBox"),wxNodeTool::NodeCommandFieldChecked)
+	 EVT_BUTTON(XRCID("ButtonDestroy"),wxNodeTool::OnButtonDestroypressed)
+	 EVT_BUTTON(XRCID("ButtonUndefine"),wxNodeTool::OnButtonUndefinepressed)
+	 EVT_BUTTON(XRCID("ClearButton"),wxNodeTool::OnClearButtonpressed)
+	 EVT_CHECKBOX(XRCID("CreateElementsCheckBox"),wxNodeTool::OnCreateElementsPressed)
+	 EVT_TEXT_ENTER(XRCID("DimensionTextCtrl"),wxNodeTool::OnDimensionEntered)
 END_EVENT_TABLE()
 
 
@@ -2680,6 +2954,25 @@ END_EVENT_TABLE()
 Global functions
 ----------------
 */
+#if defined (WX_USER_INTERFACE)
+void Node_tool_set_wx_interface(void *node_tool_void)
+/*******************************************************************************
+LAST MODIFIED : 13 April 2007
+
+DESCRIPTION :
+Set the wx_interface for new settings.
+==============================================================================*/	 
+{
+	 struct Node_tool *node_tool;
+	 if (node_tool=(struct Node_tool *)node_tool_void) 
+	 {
+			if (node_tool->wx_node_tool != (wxNodeTool *) NULL)
+			{	
+				 node_tool->wx_node_tool->NodeToolInterfaceRenew(node_tool);	
+			}
+	 }
+}
+#endif /*(WX_USER_INTERFACE)*/
 
 static int Node_tool_copy_function(void *destination_tool_void, void *source_tool_void) 
 /*******************************************************************************
@@ -2705,10 +2998,16 @@ Copies the state of one node tool to another.
 		destination_node_tool->streaming_create_enabled = source_node_tool->streaming_create_enabled;
 		destination_node_tool->constrain_to_surface= source_node_tool->constrain_to_surface;
 		destination_node_tool->command_field = source_node_tool->command_field;
-#if ! defined (MOTIF)
-		destination_node_tool->current_region_path= source_node_tool->current_region_path;	
-#endif /* ! defined (MOTIF) */
-	return_code=1;
+		destination_node_tool->element_create_enabled = source_node_tool->element_create_enabled;
+		destination_node_tool->element_dimension = source_node_tool->element_dimension;
+#if defined (WX_USER_INTERFACE)
+		destination_node_tool->current_region_path= source_node_tool->current_region_path;
+		if (destination_node_tool->wx_node_tool != (wxNodeTool *) NULL)
+		{	
+			destination_node_tool->wx_node_tool->NodeToolInterfaceRenew(destination_node_tool);
+		}
+		return_code=1;
+#endif /*(WX_USER_INTERFACE)*/
 	}
 	else
 	{
@@ -2716,10 +3015,8 @@ Copies the state of one node tool to another.
 			"Node_tool_copy_function.  Invalid argument(s)");
 		return_code=0;
 	}
-
 	return (return_code);
 } /* Node_tool_copy_function */
-
 
 struct Node_tool *CREATE(Node_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
@@ -2823,6 +3120,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				ACCESS(Graphical_material)(rubber_band_material);
 			node_tool->user_interface=user_interface;
 			node_tool->time_keeper = (struct Time_keeper *)NULL;
+
 			if (time_keeper)
 			{
 				node_tool->time_keeper = ACCESS(Time_keeper)(time_keeper);
@@ -2835,6 +3133,14 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->create_enabled=0;
  			node_tool->streaming_create_enabled=0;
  			node_tool->constrain_to_surface=0;
+			/* settings of the element creator */
+			node_tool->FE_coordinate_field = (struct FE_field *)NULL;
+			node_tool->element_dimension = 2;
+			node_tool->template_element = (struct FE_element *)NULL;
+			node_tool->element_create_enabled = 0;
+			node_tool->element = (struct FE_element *)NULL;
+			node_tool->number_of_clicked_nodes = 0;
+
 			node_tool->edit_mode=NODE_TOOL_EDIT_AUTOMATIC;
 			node_tool->coordinate_field =
 				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
@@ -3049,11 +3355,12 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 
 
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */ 
+			node_tool->computed_field_manager=Computed_field_package_get_computed_field_manager(computed_field_package);
 			node_tool->wx_node_tool = (wxNodeTool *)NULL;
-
 			/* Set defaults until we have some sort of region chooser */
 			Node_tool_set_Cmiss_region(node_tool, node_tool->root_region);
 			node_tool->current_region_path = (char *)NULL;
+			Node_tool_get_region_path(node_tool, &node_tool->current_region_path);
 
 #else /* defined (MOTIF) */
 			node_tool->current_region_path = (char *)NULL;
@@ -3132,6 +3439,10 @@ structure itself.
 			DEALLOCATE(node_tool->current_region_path);
 		}
 #endif /* defined (MOTIF) */
+#if defined (WX_USER_INTERFACE)
+		if (node_tool->wx_node_tool)
+			 node_tool->wx_node_tool->Destroy();
+#endif /*(WX_USER_INTERFACE)*/
 		DEALLOCATE(*node_tool_address);
 		return_code=1;
 	}
@@ -3725,6 +4036,17 @@ Up to the calling function to DEALLOCATE the returned path.
 #if defined (MOTIF)
 		return_code = Cmiss_region_chooser_get_path(node_tool->cmiss_region_chooser,
 			path_address);
+#elif defined (WX_USER_INTERFACE)
+		if (node_tool->current_region_path)
+		{
+			*path_address = duplicate_string(node_tool->current_region_path);
+			return_code = 1;
+		}
+		else
+		{
+			 Cmiss_region_get_root_region_path(path_address);
+			 return_code = 0;
+		}
 #else /* defined (MOTIF) */
 		if (node_tool->current_region_path)
 		{
@@ -3770,16 +4092,29 @@ Sets the <path> to the region/FE_region where nodes created by
 		region = (struct Cmiss_region *)NULL;
 		Cmiss_region_chooser_get_region(node_tool->cmiss_region_chooser, &region);
 		return_code = Node_tool_set_Cmiss_region(node_tool, region);
+#elif defined (WX_USER_INTERFACE)
+		node_tool->current_region_path = duplicate_string(path);
+		region = (struct Cmiss_region *)NULL;
+		if (node_tool->wx_node_tool)
+		{
+			 node_tool->wx_node_tool->wx_Node_tool_set_region_path(path);
+			 region = node_tool->wx_node_tool->wx_Node_tool_get_region();
+		}
+		else
+		{
+			 region=node_tool->root_region;
+		}
+		return_code = Node_tool_set_Cmiss_region(node_tool, region);
 #else /* defined (MOTIF) */
 		if (return_code = Cmiss_region_get_region_from_path(node_tool->root_region,
-			path, &region))
+					path, &region))
 		{
-			if (node_tool->current_region_path)
-			{
-				DEALLOCATE(node_tool->current_region_path);
-			}
-			node_tool->current_region_path = duplicate_string(path);
-			return_code = Node_tool_set_Cmiss_region(node_tool, region);
+			 if (node_tool->current_region_path)
+			 {
+					DEALLOCATE(node_tool->current_region_path);
+			 }
+			 node_tool->current_region_path = duplicate_string(path);
+			 return_code = Node_tool_set_Cmiss_region(node_tool, region);
 		}
 #endif /* defined (MOTIF) */
 	}
@@ -4117,7 +4452,7 @@ Sets the command_field to be executed when the node is clicked on in the <node_t
 struct Interactive_tool *Node_tool_get_interactive_tool(
 	struct Node_tool *node_tool)
 /*******************************************************************************
-LAST MODIFIED : 7 April 2005
+LAST MODIFIED : 7 April 2007
 
 DESCRIPTION :
 Returns the generic interactive_tool the represents the <node_tool>.
@@ -4141,3 +4476,524 @@ Returns the generic interactive_tool the represents the <node_tool>.
 	return (interactive_tool);
 } /* Node_tool_get_interactive_tool */
 
+#if defined (WX_USER_INTERFACE)
+static int Node_tool_make_template_node(
+	 struct Node_tool *node_tool)
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+Ensures there is a template node defined with the coordinate_field in the
+<element_creator> for creating new nodes as copies of.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_node_field_creator *node_field_creator;
+	struct FE_field *fe_field;
+	struct LIST(FE_field) *fe_field_list;
+
+	fe_field_list=Computed_field_get_defining_FE_field_list(node_tool->coordinate_field);
+
+	ENTER(Node_tool_make_template_node);
+	if (node_tool)
+	{
+		if (node_tool->coordinate_field)
+		{
+			if (node_tool->fe_region)
+			{
+				return_code = 1;
+				if (!node_tool->template_node)
+				{
+					if ((node_field_creator = CREATE(FE_node_field_creator)(
+						/*number_of_components*/3))&&
+						(node_tool->template_node = CREATE(FE_node)(/*node_number*/0,
+							node_tool->fe_region, (struct FE_node *)NULL)))
+					{
+						/* template_node is accessed by node_tool but not managed */
+						ACCESS(FE_node)(node_tool->template_node);
+						if ((1==NUMBER_IN_LIST(FE_field)(fe_field_list))&&
+							 (fe_field=FIRST_OBJECT_IN_LIST_THAT(FE_field)(
+									 (LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL,
+									 fe_field_list)) && (3 >= get_FE_field_number_of_components(
+																					fe_field)) && (FE_VALUE_VALUE == get_FE_field_value_type(fe_field)))
+						{
+
+							 if (!define_FE_field_at_node(node_tool->template_node,
+										 fe_field,
+										 (struct FE_time_sequence *)NULL, node_field_creator))
+							 {
+									display_message(ERROR_MESSAGE,
+										 "node_tool_make_template_node.  "
+									"Could not define coordinate field in template_node");
+									DEACCESS(FE_node)(&(node_tool->template_node));
+									return_code=0;
+							 }
+						}
+						DESTROY(FE_node_field_creator)(&(node_field_creator));
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"node_tool_make_template_node.  "
+							"Could not create template node");
+						return_code=0;
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"node_tool_make_template_node.  "
+					"Must specify a region first");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"node_tool_make_template_node.  No coordinate_field specified");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"node_tool_make_template_node.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* node_tool_make_template_node */
+#endif /* defined (WX_USER_INTERFACE)*/
+
+
+#if defined (WX_USER_INTERFACE)
+static int Node_tool_end_element_creation(
+	struct Node_tool *node_tool)
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+DEACCESSes the element being created, if any, and if it is unmanaged, warns that
+the creation was aborted. Also clears the node list.
+Call this function whether element is successfully created or not.
+==============================================================================*/
+{
+	int return_code;
+	wxListBox *new_element_nodes_list_box;
+
+	ENTER(node_tool_end_element_creation);
+	if (node_tool)
+	{
+		if (node_tool->element)
+		{
+			if (!FE_region_contains_FE_element(node_tool->fe_region,
+				node_tool->element))
+			{
+				display_message(WARNING_MESSAGE,
+					"node_tool: destroying incomplete element");
+			}
+			DEACCESS(FE_element)(&(node_tool->element));
+			if (node_tool->wx_node_tool != NULL)
+			{
+				 new_element_nodes_list_box = XRCCTRL(*node_tool->wx_node_tool, "NewElementNodesListBox", wxListBox);
+				 new_element_nodes_list_box->Clear();
+			}
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"node_tool_end_element_creation.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_creator_end_element_creation */
+#endif /* defined (WX_USER_INTERFACE)*/
+
+#if defined (WX_USER_INTERFACE)
+static int Node_tool_add_element(struct Node_tool *node_tool)
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+Adds the just created element to the fe_region, adding faces as necessary.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(node_tool_add_element);
+	if (node_tool && node_tool->fe_region && node_tool->element)
+	{
+		FE_region_begin_change(node_tool->fe_region);
+		FE_region_begin_define_faces(node_tool->fe_region);
+		return_code = FE_region_merge_FE_element_and_faces_and_nodes(
+			node_tool->fe_region, node_tool->element);
+		FE_region_end_define_faces(node_tool->fe_region);
+		FE_region_end_change(node_tool->fe_region);
+		Node_tool_end_element_creation(node_tool);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"node_tool_add_element.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* node_tool_add_element */
+#endif /* defined (WX_USER_INTERFACE)*/
+
+#if defined (WX_USER_INTERFACE)
+static void Node_tool_node_selection_change(
+	struct FE_node_selection *node_selection,
+	struct FE_node_selection_changes *changes,void *node_tool_void)
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+Callback for change in the global node selection.
+==============================================================================*/
+{
+	char temp_string[50];
+	int number_of_nodes, number;
+	struct CM_element_information element_identifier;
+	struct Node_tool *node_tool;
+	struct FE_node *node;
+	wxString blank;
+	wxListBox *new_element_nodes_list_box;
+	struct FE_field *fe_field;
+	struct LIST(FE_field) *fe_field_list;
+
+	ENTER(node_tool_node_selection_change);
+	if (node_selection&&changes&&(node_tool=
+		(struct Node_tool *)node_tool_void))
+	{
+		/* if exactly 1 node selected, add it to element */
+		if (1==NUMBER_IN_LIST(FE_node)(changes->newly_selected_node_list))
+		{
+			/* get the last selected node and check it is in the FE_region */
+			node = FIRST_OBJECT_IN_LIST_THAT(FE_node)(
+				(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
+				changes->newly_selected_node_list);
+			if (FE_region_contains_FE_node(node_tool->fe_region, node))
+			{
+				if (!node_tool->element)
+				{
+					/* get next unused element identifier from fe_region */
+					element_identifier.type = CM_ELEMENT;
+					element_identifier.number = FE_region_get_next_FE_element_identifier(
+						node_tool->fe_region, CM_ELEMENT, 1);
+					if (node_tool->template_node ||
+						Node_tool_make_template_node(node_tool))
+					{
+						 if (node_tool->coordinate_field && (fe_field_list=
+									 Computed_field_get_defining_FE_field_list(node_tool->coordinate_field)))
+						 {
+								if ((1==NUMBER_IN_LIST(FE_field)(fe_field_list))&&
+									 (fe_field=FIRST_OBJECT_IN_LIST_THAT(FE_field)(
+											 (LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL,
+											 fe_field_list)) && (3 >= get_FE_field_number_of_components(
+																							fe_field)) && (FE_VALUE_VALUE == get_FE_field_value_type(fe_field)))
+								{ 
+									 if (node_tool->template_element ||
+											(((node_tool->template_element = create_FE_element_with_line_shape(
+														/*identifier*/1,node_tool->fe_region, node_tool->element_dimension)) &&
+												 FE_element_define_tensor_product_basis(node_tool->template_element,
+														node_tool->element_dimension,/*basis_type*/LINEAR_LAGRANGE,
+														fe_field))
+												 && ACCESS(FE_element)(node_tool->template_element)))
+									 {
+											if (node_tool->element = CREATE(FE_element)(&element_identifier,
+														(struct FE_element_shape *)NULL, (struct FE_region *)NULL,
+														node_tool->template_element))
+											{
+												 ACCESS(FE_element)(node_tool->element);
+												 node_tool->number_of_clicked_nodes=0;
+											}
+											else
+											{
+ 												 display_message(ERROR_MESSAGE,
+ 														"node_tool_node_selection_change.  Could not create element");
+											}
+									 }
+								}
+						 }
+						 else
+						 {
+								display_message(ERROR_MESSAGE,
+								"node_tool_node_selection_change.  Could not create template element");
+						 }
+					}
+					else
+					{
+						 display_message(ERROR_MESSAGE,"node_tool_node_selection_change.  "
+								"Could not make template node");
+					}
+				}
+				if (node_tool->element)
+				{
+					 /* When we make more than linear elements we will need
+							to check that the derivatives exist and are the correct ones */
+					 if (set_FE_element_node(node_tool->element,
+						node_tool->number_of_clicked_nodes,node))
+					 {
+							if (node_tool->wx_node_tool != NULL)
+							{
+								 sprintf(temp_string,"%d. Node %d",
+										node_tool->number_of_clicked_nodes+1,
+										get_FE_node_identifier(node));
+								 wxString string(temp_string, wxConvUTF8);
+								 new_element_nodes_list_box = XRCCTRL(*node_tool->wx_node_tool, "NewElementNodesListBox", wxListBox);
+								 number = new_element_nodes_list_box->GetCount();
+								 if (number == 0)
+								 {
+										new_element_nodes_list_box->InsertItems(1, &blank ,number);
+								 }
+								 number = new_element_nodes_list_box->GetCount();
+								 new_element_nodes_list_box->InsertItems(1,&string, number-1);
+							}
+							node_tool->number_of_clicked_nodes++;
+							if (get_FE_element_number_of_nodes(node_tool->element,
+										&number_of_nodes) &&
+								 (node_tool->number_of_clicked_nodes == number_of_nodes))
+							{
+								 Node_tool_add_element(node_tool);
+							}
+					 }
+					 else
+					 {
+							display_message(ERROR_MESSAGE,
+							"node_tool_node_selection_change.  Could not set node");
+					 }
+				}
+				else
+				{
+					 display_message(ERROR_MESSAGE,
+							"node_tool_node_selection_change.  Could not create element");
+				}
+			}
+			else
+			{
+				 display_message(ERROR_MESSAGE,
+						"Element creator: Selected node not from current region");
+			}
+		}
+	}
+	else
+	{
+		 display_message(ERROR_MESSAGE,
+				"node_tool_node_selection_change.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* node_tool_node_selection_change */
+#endif /* defined (WX_USER_INTERFACE)*/
+
+#if defined (WX_USER_INTERFACE)
+int Node_tool_set_element_create_enabled(struct Node_tool  *node_tool ,
+	 int element_create_enabled)
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+Sets flag controlling whether elements are created in response to
+node selection.
+==============================================================================*/
+{
+	int return_code;
+	ENTER(node_tool_set_create_enabled);
+	if (node_tool )
+	{
+		/* make sure value of flag is 1 */
+		if (element_create_enabled)
+		{
+			element_create_enabled=1;
+		}
+		if (element_create_enabled != node_tool ->element_create_enabled)
+		{
+			node_tool ->element_create_enabled=element_create_enabled;
+			if (element_create_enabled)
+			{
+				/* request callbacks from the global node_selection */
+				FE_node_selection_add_callback(node_tool ->node_selection,
+					Node_tool_node_selection_change,
+					(void *)node_tool);
+			}
+			else
+			{
+				Node_tool_end_element_creation(node_tool);
+				/* end callbacks from the global node_selection */
+				FE_node_selection_remove_callback(node_tool->node_selection,
+					Node_tool_node_selection_change,
+					(void *)node_tool);
+			}
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"node_tool _set_create_enabled.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* node_tool _set_create_enabled */
+#endif /* defined (WX_USER_INTERFACE)*/
+
+#if defined (WX_USER_INTERFACE)
+int Node_tool_set_element_dimension(
+	struct Node_tool *node_tool,int element_dimension)
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+Sets the <element_dimension> of elements to be created by <node_tool>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Node_tool_set_element_dimension);
+	if (node_tool)
+	{
+		if ((0<element_dimension)&&(element_dimension<=3))
+		{
+			return_code=1;
+			if (node_tool->element_dimension != element_dimension)
+			{
+				node_tool->element_dimension=element_dimension;
+				Node_tool_end_element_creation(node_tool);
+				/* lose the current template element and node, if any */
+				REACCESS(FE_element)(&(node_tool->template_element),
+					(struct FE_element *)NULL);
+				REACCESS(FE_node)(&(node_tool->template_node),
+					(struct FE_node *)NULL);
+			}
+			if (node_tool->wx_node_tool != NULL)
+			{
+				 Node_tool_refresh_element_dimension_text(node_tool);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Dimension must be from 1 to 3");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_set_element_dimension.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* node_tool_set_element_dimension */
+#endif /* defined (WX_USER_INTERFACE)*/
+
+# if defined (WX_USER_INTERFACE)
+static int Node_tool_refresh_element_dimension_text(
+	struct Node_tool *node_tool)
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+Updates what is shown on the dimension text field.
+==============================================================================*/
+{
+	 char temp_string[20],*value_string;
+	 int return_code;
+ 	 wxTextCtrl *dimension_textctrl;
+	 dimension_textctrl = XRCCTRL(*node_tool->wx_node_tool, "DimensionTextCtrl", wxTextCtrl);
+
+	ENTER(Node_tool_refresh_element_dimension_text);
+	if (node_tool)
+	{
+		return_code=1;
+		if (value_string=const_cast<char *>((dimension_textctrl->GetValue()).c_str()))
+		{
+			 sprintf(temp_string,"%d",node_tool->element_dimension);
+			 /* only set string if different from that shown */
+			 if (strcmp(temp_string,value_string))
+			 {
+					wxString string(temp_string, wxConvUTF8);
+					dimension_textctrl->SetValue(string);
+			 }
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_refresh_element_dimension_text.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* node_tool_refresh_element_dimension_text */
+#endif /* defined (WX_USER_INTERFACE)*/
+
+#if defined (WX_USER_INTERFACE)
+int Node_tool_get_element_create_enabled(struct Node_tool *node_tool)
+/*******************************************************************************
+LAST MODIFIED : 12 April 2007
+
+DESCRIPTION :
+Returns flag controlling whether node edits are updated during motion_notify
+events, not just at the end of a mouse gesture.
+==============================================================================*/
+{
+	int element_create_enabled;
+
+	ENTER(Node_tool_get_element_create_enabled);
+	if (node_tool)
+	{
+		element_create_enabled=node_tool->element_create_enabled;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_get_element_create_enabled.  Invalid argument(s)");
+		element_create_enabled=0;
+	}
+	LEAVE;
+
+	return (element_create_enabled);
+} /* node_tool_get_create_enabled */
+#endif /* defined (WX_USER_INTERFACE)*/
+
+#if defined (WX_USER_INTERFACE)
+int Node_tool_get_element_dimension(
+	struct Node_tool *node_tool)
+/*******************************************************************************
+LAST MODIFIED : 12 April 2007
+
+DESCRIPTION :
+Returns the dimension of elements to be created by the <node_tool>.
+==============================================================================*/
+{
+	int element_dimension;
+
+	ENTER(Node_tool_get_element_dimension);
+	if (node_tool)
+	{
+		element_dimension=node_tool->element_dimension;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_get_element_dimension.  Invalid argument(s)");
+		element_dimension=0;
+	}
+	LEAVE;
+
+	return (element_dimension);
+} /* node_tool_get_element_dimension */
+#endif /* defined (WX_USER_INTERFACE)*/

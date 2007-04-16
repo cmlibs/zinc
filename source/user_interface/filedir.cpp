@@ -897,7 +897,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 #if defined (WX_USER_INTERFACE)
 //	char *temp_str;
 //	int length,retry;
-	char *shell_title,*temp_string;
+	 char *shell_title,*temp_string, *extension;
 	int retry;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF)
@@ -1162,6 +1162,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 				temp_string=(char *)NULL;
+				extension = (char *)NULL;
 				switch (file_open_data->type)
 				{
 					case REGULAR:
@@ -1176,7 +1177,39 @@ name the <file_operation> is performed on the file with the <arguments>.
 								strcat(temp_string,file_open_data->filter_extension);
 								strcat(temp_string," file");
 								shell_title=temp_string;
+								if (strcmp(file_open_data->filter_extension, ".com") == 0)
+								{
+									 extension = "*.com";
+								}
+								else if (strcmp(file_open_data->filter_extension, ".exdata") == 0)
+								{
+									 extension = "*.exdata";
+								}
+								else if (strcmp(file_open_data->filter_extension, ".curve.com") == 0)
+								{
+									 extension = "*.curve.com";
+								}
+								else if (strcmp(file_open_data->filter_extension, ".exnode") == 0)
+								{
+									 extension = "*.exnode";
+								}
+								else if (strcmp(file_open_data->filter_extension, ".exelem") == 0)
+								{
+									 extension = "*.exelem";
+								}
+								
+// 								strcpy(temp_string,"Specify a ");
+// 								strcat(temp_string,file_open_data->filter_extension);
+// 								strcat(temp_string," file");
+// 								shell_title=temp_string;
+// 								DEALLOCATE(temp_string);
 							}
+// 							if (ALLOCATE(temp_extension,char,7))
+// 							{
+// 								temp_extension = "*";
+// 								strcat(temp_extension,file_open_data->filter_extension);
+// 								extension=temp_extension;	
+// 							}			
 						}
 					} break;
 					case DIRECTORY:
@@ -1189,27 +1222,27 @@ name the <file_operation> is performed on the file with the <arguments>.
 					} break;
 	 			}
 wxFileDialog *ReadData = new wxFileDialog ((wxWindow *)NULL,shell_title,"","",
- "*.*",wxOPEN|wxFILE_MUST_EXIST,wxDefaultPosition);
+ extension,wxOPEN|wxFILE_MUST_EXIST,wxDefaultPosition);
  if (ReadData->ShowModal() == wxID_OK)
 	{
     wxString file_name=ReadData->GetPath();
 		file_open_data->file_name=(char*)file_name.mb_str();
 
-			if (file_open_data->operation)
-				{
-					if ((file_open_data->operation)((file_open_data->file_name)
-						,file_open_data->arguments))
-					{
-						retry=0;
-					}
-					else
-					{
-						retry=1;
-					}
-				}
+		if (file_open_data->operation)
+		{
+			 if ((file_open_data->operation)((file_open_data->file_name)
+						 ,file_open_data->arguments))
+			 {
+					retry=0;
+			 }
+			 else
+			 {
+					retry=1;
+			 }
+		}
 	}
 #endif /* defined (WX_USER_INTERFACE) */
-	LEAVE;
+ LEAVE;
 } /* open_file_and_read */
 
 void open_file_and_write(

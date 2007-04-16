@@ -145,6 +145,7 @@ DESCRIPTION :
 Structure to pass to modify_Graphics_window.
 ==============================================================================*/
 {
+	struct Computed_field_package *computed_field_package;
 	struct MANAGER(Graphics_window) *graphics_window_manager;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct MANAGER(Light) *light_manager;

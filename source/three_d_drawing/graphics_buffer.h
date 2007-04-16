@@ -276,6 +276,23 @@ DESCRIPTION :
 ==============================================================================*/
 #endif /* defined (CARBON_USER_INTERFACE) */
 
+#if defined (WX_USER_INTERFACE) && defined (__cplusplus)
+class wxPanel;
+
+struct Graphics_buffer *create_Graphics_buffer_wx(
+	struct Graphics_buffer_package *graphics_buffer_package,
+	wxPanel *parent,
+	enum Graphics_buffer_buffering_mode buffering_mode,
+	enum Graphics_buffer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
+	int minimum_accumulation_buffer_depth);
+/*******************************************************************************
+LAST MODIFIED : 7 December 2006
+
+DESCRIPTION :
+==============================================================================*/
+#endif /* defined (WX_USER_INTERFACE) && defined (__cplusplus) */
+
 int Graphics_buffer_make_current(struct Graphics_buffer *buffer);
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002

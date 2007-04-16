@@ -46,6 +46,8 @@ Commands and functions for comfiles.
 
 #if defined (MOTIF)
 #include "comfile/comfile_window.h"
+#elif defined (WX_USER_INTERFACE)
+#include "comfile/comfile_window_wx.h"
 #endif /* defined (MOTIF) */
 #include "command/parser.h"
 #include "general/io_stream.h"
@@ -68,9 +70,9 @@ DESCRIPTION :
 	int execute_count;
 	struct Execute_command *execute_command,*set_command;
 	struct IO_stream_package *io_stream_package;
-#if defined (MOTIF)
+#if defined (MOTIF) || (WX_USER_INTERFACE)
 	struct MANAGER(Comfile_window) *comfile_window_manager;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || (WX_USER_INTERFACE) */
 	struct User_interface *user_interface;
 }; /* struct Open_comfile_data */
 
@@ -84,7 +86,7 @@ int open_comfile(struct Parse_state *state,void *dummy_to_be_modified,
 /*******************************************************************************
 LAST MODIFIED : 29 June 2002
 
-DESCRIPTION :
+DESCRIPTION 
 Opens a comfile, and a window if it is to be executed.  If a comfile is not
 specified on the command line, a file selection box is presented to the user.
 ==============================================================================*/

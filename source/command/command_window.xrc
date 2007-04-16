@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <resource>
   <object class="wxFrame" subclass="wxCommandWindow" name="CmguiCommandWindow" title="Cmgui Command Window">
-	<title>Cmgui Command Window</title>
+  <title>Cmgui Command Window</title>
   <object class="wxMenuBar" name="commandmenubar">
     <size>-1,8</size>	
     <object class ="wxMenu" name="MenuFile">
@@ -10,6 +10,12 @@
         <label>Open...</label>
         <object class = "wxMenuItem" name="FileComFile">
           <label>Com File</label>
+				</object>
+        <object class = "wxMenu" name="ExampleComFile">
+          <label>Example</label>
+        <object class = "wxMenuItem" name="ExampleOne">
+          <label>ExampleOne</label>
+				</object>
 				</object>
       </object>
       <object class ="wxMenu" name="MenuRead">
@@ -57,9 +63,6 @@
       </object>
       <object class = "wxMenuItem" name="ModelDataViewer">
         <label>Data viewer</label>
-      </object>
-      <object class = "wxMenuItem" name="ModelElementCreator">
-        <label>Element creator</label>
       </object>
       <object class = "wxMenuItem" name="ModelElementpointviewer">
         <label>Element point viewer</label>
@@ -125,12 +128,11 @@
 					<style>wxSP_3D|wxSP_LIVE_UPDATE</style>
 				  <orientation>horizontal</orientation>
 					<sashpos>150</sashpos>
-					<minsize>1</minsize>
 					<object class ="wxPanel">
 			 	    <object class = "wxBoxSizer">	
       				<orient>wxVERTICAL</orient>
 						
-							<object class="sizeritem">
+					<object class="sizeritem">
 	 							<flag>wxEXPAND</flag>
 								<option>1</option>
         				<object class="wxListBox" name="CommandHistory">
@@ -151,14 +153,15 @@
       			</object>
       		</object>
 
-					<object class ="wxPanel">
-			 	    <object class = "wxBoxSizer">	
+					<object class ="wxPanel" name = "LowerPanel">
+			 	    <object class = "wxBoxSizer">
+
       			  <orient>wxVERTICAL</orient>
      				  <object class="sizeritem"> 
 								<flag>wxEXPAND</flag>
 								<option>1</option>
 			  				<object class="wxTextCtrl" name="OutputWindow">
-						<size>400,400</size>
+						<size>-1,400</size>
           				<style>wxTE_MULTILINE|wxTE_READONLY</style>
        					</object>
         				<flag>wxEXPAND|wxALL</flag>

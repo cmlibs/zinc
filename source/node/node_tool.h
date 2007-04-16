@@ -324,10 +324,47 @@ Returns the command_field to be executed when the node is clicked on in the <nod
 int Node_tool_set_command_field(struct Node_tool *node_tool,
 	struct Computed_field *command_field);
 /*******************************************************************************
-LAST MODIFIED : 30 September 2003
+LAST MODIFIED : 12 April 2007
 
 DESCRIPTION :
 Sets the command_field to be executed when the node is clicked on in the <node_tool>.
+==============================================================================*/
+
+int Node_tool_get_element_create_enabled(struct Node_tool *node_tool);
+/*******************************************************************************
+LAST MODIFIED : 12 April 2007
+
+DESCRIPTION :
+Returns flag controlling whether node edits are updated during motion_notify
+events, not just at the end of a mouse gesture.
+==============================================================================*/
+
+int Node_tool_get_element_dimension(
+	 struct Node_tool *node_tool);
+/*******************************************************************************
+LAST MODIFIED : 12 April 2007
+
+DESCRIPTION :
+Returns the dimension of elements to be created by the <node_tool>.
+==============================================================================*/
+
+int Node_tool_set_element_dimension(
+	 struct Node_tool *node_tool,int element_dimension);
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+Sets the <element_dimension> of elements to be created by <node_tool>.
+==============================================================================*/
+
+int Node_tool_set_element_create_enabled(struct Node_tool  *node_tool ,
+	 int element_create_enabled);
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+Sets flag controlling whether elements are created in response to
+node selection.
 ==============================================================================*/
 
 struct Interactive_tool *Node_tool_get_interactive_tool(
@@ -339,4 +376,11 @@ DESCRIPTION :
 Returns the generic interactive_tool the represents the <node_tool>.
 ==============================================================================*/
 
+void Node_tool_set_wx_interface(void *node_tool_void);
+/*******************************************************************************
+LAST MODIFIED : 13 April 2007
+
+DESCRIPTION :
+Set the wx_interface for new settings.
+==============================================================================*/	 
 #endif /* !defined (NODE_TOOL_H) */

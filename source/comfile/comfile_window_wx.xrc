@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<resource>
+  <object class="wxFrame" subclass="wxComfileWindow" name="CmguiComfileWindow" title="Comfile Window">
+	  <title>Comfile Window</title>
+	  <object class = "wxBoxSizer">
+		  <orient>wxVERTICAL</orient>
+
+		  <object class ="sizeritem">
+			  <flag>wxEXPAND</flag>
+			  <option>1</option>
+			  <object class = "wxListBox" name = "ComfileListBox">
+				  <size>800,600</size>
+            	  <style>wxLB_EXTENDED|wxSUNKEN_BORDER</style>
+			  </object>
+		  </object>
+
+		  <object class = "sizeritem">
+		  	  <object class = "wxBoxSizer">
+				  <orient>wxHORIZONTAL</orient>
+
+				  <object class = "sizeritem">
+					  <object class = "wxButton" name = "AllButton">
+						  <label>All</label>
+					  </object>
+				 </object>
+
+				  <object class = "sizeritem">
+				  	  <object class = "wxButton" name = "SelectedButton">
+					     <label>Selected</label>
+					  </object>
+				  </object>	
+
+				  <object class = "sizeritem">
+				      <object class = "wxButton" name = "CloseButton">
+					      <label>Close</label>
+				  	  </object>
+			  	  </object>	
+
+		      </object>
+		   </object>
+	   </object>
+   </object>
+</resource>

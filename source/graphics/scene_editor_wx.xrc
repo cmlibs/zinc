@@ -436,7 +436,8 @@
 	 													</object>
 													</object>
 													<object class="sizeritem">
-														<object class	="wxTextCtrl" name="SeedElementTextCtrl">
+														<object class	="wxPanel" name="SeedElementPanel">
+															<size>30,30</size>
 	 													</object>
 													</object>
 												</object>
@@ -699,23 +700,6 @@
 													<orient>wxHORIZONTAL</orient>
 													<object class="sizeritem">
 														<flag>wxALIGN_CENTRE_VERTICAL</flag>
-														<object class	="wxStaticText"> 
-															<label>Streamline data type:</label>				  			
-	 													</object>
-													</object>
-													<object class="sizeritem">
-														<object class	="wxPanel" name="StreamlineDataTypeChooserPanel">
-															<size>200,30</size>
-	 													</object>
-													</object>
-												</object>
-											</object>
-
-											<object class="sizeritem">
-				   								<object class = "wxBoxSizer">	
-													<orient>wxHORIZONTAL</orient>
-													<object class="sizeritem">
-														<flag>wxALIGN_CENTRE_VERTICAL</flag>
 														<object class	="wxStaticText" name="LineWidthText"> 
 															<label>Width:</label>				  			
 	 													</object>
@@ -733,12 +717,12 @@
 													<orient>wxHORIZONTAL</orient>
 													<object class="sizeritem">
 														<flag>wxALIGN_CENTRE_VERTICAL</flag>
-														<object class	="wxStaticText"> 
+														<object class	="wxStaticText" name="RenderTypeText"> 
 															<label>Render type:</label>				  			
 	 													</object>
 													</object>
 													<object class="sizeritem">
-														<object class	="wxPanel" name="RendertypeChooserPanel">
+														<object class	="wxPanel" name="RenderTypeChooserPanel">
 															<size>200,30</size>
 	 													</object>
 													</object>
@@ -768,6 +752,23 @@
 													<orient>wxHORIZONTAL</orient>
 													<object class="sizeritem">
 														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText" name="StreamlineDataTypeText"> 
+															<label>Streamline data type:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="StreamlineDataTypeChooserPanel">
+															<size>200,30</size>
+	 													</object>
+													</object>
+												</object>
+											</object>
+
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
 														<object class	="wxCheckBox" name="DataCheckBox"> 
 															<label>Data:</label>				  			
 
@@ -786,7 +787,7 @@
 													<orient>wxHORIZONTAL</orient>
 													<object class="sizeritem">
 														<flag>wxALIGN_CENTRE_VERTICAL</flag>
-														<object class	="wxStaticText"> 
+														<object class	="wxStaticText" name="SpectrumText"> 
 															<label>  Spectrum:</label>				  			
 	 													</object>
 													</object>

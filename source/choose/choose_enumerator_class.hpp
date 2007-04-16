@@ -191,8 +191,6 @@ LAST MODIFIED : 8 February 2007
 DESCRIPTION :
 ============================================================================*/
 	{
-		int i;
-	
 		if (chooser)
 		{
 			delete chooser;
@@ -200,10 +198,8 @@ DESCRIPTION :
 		delete enumerator;
 		if (item_names)
 		{
-			for (i=0;i<number_of_items;i++)
-			{
-				DEALLOCATE(item_names[i]);
-			}
+			 // We only free the array, not the strings themselves for
+			 // strings from an enumerator
 			DEALLOCATE(item_names);
 		}
 	} /* Enumerator_chooser::~Enumerator_chooser() */
@@ -337,14 +333,12 @@ DESCRIPTION :
 Updates the arrays of all the choosable objects and their names.
 ============================================================================*/
 	{
-		int i,return_code;
+		int return_code;
 
 		if (item_names)
 		{
-			for (i=0;i<number_of_items;i++)
-			{
-				DEALLOCATE(item_names[i]);
-			}
+			 // We only free the array, not the strings themselves for
+			 // strings from an enumerator
 			DEALLOCATE(item_names);
 		}
 

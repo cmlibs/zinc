@@ -43,11 +43,16 @@ Commands for comfiles.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include "general/debug.h"
 #include "comfile/comfile.h"
 #if defined (MOTIF)
 #include "comfile/comfile_window.h"
-#endif /* defined (MOTIF) */
+#elif defined (WX_USER_INTERFACE)
+#include "comfile/comfile_window_wx.h"
+#include "command/cmiss.h"
+#endif /* WX_USER_INTERFACE */
 #include "command/command.h"
 #include "general/mystring.h"
 #include "general/object.h"
@@ -65,17 +70,19 @@ Opens a comfile, and a window if it is to be executed.  If a comfile is not
 specified on the command line, a file selection box is presented to the user.
 ==============================================================================*/
 {
-	char *command_string, *filename;
-#if defined (MOTIF)
+	 char *command_string, *filename, *last, *pathname, *temp_string, *old_directory, *old_directory_name;
+#if defined (MOTIF) || (WX_USER_INTERFACE)
 	char *name;
 #endif /* defined (MOTIF) */
 	int i,length,return_code;
-#if defined (MOTIF)
+#if defined (MOTIF) || (WX_USER_INTERFACE)
 	struct Comfile_window *comfile_window;
 #endif /* defined (MOTIF) */
 	struct Open_comfile_data *open_comfile_data;
 	struct Option_table *option_table;
 
+	old_directory = NULL;
+	old_directory_name = NULL;
 	ENTER(open_comfile);
 	USE_PARAMETER(dummy_to_be_modified);
 	/* check arguments */
@@ -146,83 +153,146 @@ specified on the command line, a file selection box is presented to the user.
 							"open_comfile.  Insufficient memory");
 					}
 				}
+				else
+				{
+					 /* Save the current working directory */
+					 old_directory = (char *)malloc(PATH_MAX);
+					 getcwd(old_directory, PATH_MAX);
+					 length = strlen(old_directory);
+					 if ((ALLOCATE(old_directory_name,char,length+1)) && old_directory !=NULL)
+					 {
+							strcpy(old_directory_name, old_directory);
+							strcat(old_directory_name,"/");
+					 }
+			 
+					 /* Set the current directory to that of filename */
+					 last = strrchr(filename, '/');
+					 if (last != NULL)
+					 {
+							length = last-filename+1;
+							pathname = NULL;
+							temp_string = NULL;
+							if (ALLOCATE(pathname,char,length))
+							{
+								 strncpy(pathname,filename,length);
+								 pathname[length]='\0';
+								 if (strcmp (old_directory_name,pathname) != 0)
+								 {
+										make_valid_token(&pathname);
+										length = strlen(pathname);
+										if (ALLOCATE(temp_string,char,length+8))
+										{
+											 strcpy(temp_string, "set dir ");
+											 strcat(temp_string, pathname);
+											 temp_string[length+8]='\0';
+											 Execute_command_execute_string(open_comfile_data->execute_command,temp_string);
+											 //change_dir(state, pathname,open_comfile_data);
+										}
+								 }
+							}
+					 }
+				}
 				/* open the file */
 				if (return_code = check_suffix(&filename,
-					open_comfile_data->file_extension))
+							open_comfile_data->file_extension))
 				{
-					if (0 < open_comfile_data->execute_count)
-					{
+					 if (0 < open_comfile_data->execute_count)
+					 {
 						for (i=open_comfile_data->execute_count;i>0;i--)
 						{
-							execute_comfile(filename, open_comfile_data->io_stream_package,
-								open_comfile_data->execute_command);
+							 execute_comfile(filename, open_comfile_data->io_stream_package,
+									open_comfile_data->execute_command);
 						}
-					}
-					else
-					{
-#if defined (MOTIF)
-						if (name = Comfile_window_manager_make_unique_name(
-							open_comfile_data->comfile_window_manager,
-							filename))
+						/* Change back to original dir */
+						if ((old_directory_name != NULL) && (strcmp (old_directory_name,pathname) != 0))
 						{
-							if (comfile_window = CREATE(Comfile_window)(name,
-								filename, open_comfile_data->io_stream_package,
-								open_comfile_data->execute_command,
-								open_comfile_data->set_command,
-								open_comfile_data->user_interface))
+							 make_valid_token(&old_directory_name);
+							 length = strlen(old_directory_name);
+							 temp_string = NULL;
+							 if (ALLOCATE(temp_string,char,length+8))
+							 {
+									strcpy(temp_string, "set dir ");
+									strcat(temp_string, old_directory_name);
+									temp_string[length+8]='\0';
+									Execute_command_execute_string(open_comfile_data->execute_command,temp_string);
+									//change_dir(state, pathname,open_comfile_data);
+							 }
+						}
+					 }
+					 else
+					 {
+#if defined (MOTIF) || (WX_USER_INTERFACE)
+							if (name = Comfile_window_manager_make_unique_name(
+										 open_comfile_data->comfile_window_manager,
+										 filename))
 							{
-								if (ADD_OBJECT_TO_MANAGER(Comfile_window)(comfile_window,
-										 open_comfile_data->comfile_window_manager))
+								 if (comfile_window = CREATE(Comfile_window)(name,
+											 filename, open_comfile_data->io_stream_package,
+											 open_comfile_data->execute_command,
+								open_comfile_data->set_command,
+											 open_comfile_data->user_interface))
+								 {
+										if (ADD_OBJECT_TO_MANAGER(Comfile_window)(comfile_window,
+													open_comfile_data->comfile_window_manager))
 								{
-									return_code = 1;
+									 return_code = 1;
 								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"open_comfile.  Could not manage comfile window");
-									DESTROY(Comfile_window)(&comfile_window);
-									return_code = 0;
-								}
+										else
+										{
+											 display_message(ERROR_MESSAGE,
+													"open_comfile.  Could not manage comfile window");
+											 DESTROY(Comfile_window)(&comfile_window);
+											 return_code = 0;
+										}
+								 }
+								 else
+								 {
+										display_message(ERROR_MESSAGE,
+											 "open_comfile.  Could not create comfile window");
+										return_code=0;
+								 }
+								 DEALLOCATE(name);
 							}
 							else
 							{
-								display_message(ERROR_MESSAGE,
-									"open_comfile.  Could not create comfile window");
-								return_code=0;
-							}
-							DEALLOCATE(name);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
+								 display_message(ERROR_MESSAGE,
 								"open_comfile.  Could not allocate window name");
-							return_code=0;
-						}
+								 return_code=0;
+							}
 #else /* defined (MOTIF) */
-						display_message(ERROR_MESSAGE,
-							"open_comfile.  Cannot create a comfile dialog, use execute.");
+							display_message(ERROR_MESSAGE,
+								 "open_comfile.  Cannot create a comfile dialog, use execute.");
 						return_code=0;
 #endif /* defined (MOTIF) */
-					}
+					 }
+					 if (old_directory_name)
+					 {
+							 DEALLOCATE(old_directory_name);
+					 }
+					 if (old_directory)
+					 {
+							 DEALLOCATE(old_directory);
+					 }
 				}
 			}
 			if (filename)
 			{
-				DEALLOCATE(filename);
+				 DEALLOCATE(filename);
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"open_comfile.  Missing state");
-			return_code=0;
+			 display_message(ERROR_MESSAGE,"open_comfile.  Missing state");
+			 return_code=0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"open_comfile.  Missing open_comfile_data");
-		return_code=0;
+		 display_message(ERROR_MESSAGE,"open_comfile.  Missing open_comfile_data");
+		 return_code=0;
 	}
-	LEAVE;
 
+	LEAVE;
+	
 	return (return_code);
 } /* open_comfile */

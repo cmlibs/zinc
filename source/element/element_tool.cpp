@@ -81,6 +81,7 @@ static char element_tool_uidh[] =
 #include "wx/xrc/xmlres.h"
 #include "element/element_tool.xrch"
 #include "graphics/graphics_window_private.hpp"
+#include "choose/choose_manager_class.hpp"
 #endif /* defined (WX_USER_INTERFACE)*/
 
 
@@ -143,7 +144,7 @@ Object storing all the parameters for interactively selecting elements.
 #endif /* defined (MOTIF) */
 
 #if defined (WX_USER_INTERFACE)
-  wxElementTool *wx_element_tool;
+	 wxElementTool *wx_element_tool;
 #endif /* defined (WX_USER_INTERFACE) */
 }; /* struct Element_tool */
 
@@ -736,92 +737,182 @@ and as a child of <parent>.
 #if defined (WX_USER_INTERFACE)
 class wxElementTool : public wxPanel
 {
-  Element_tool *element_tool;
-	wxCheckBox *button_element;
-	wxCheckBox *button_face;
-	wxCheckBox *button_line;
-  wxButton *button_destroy;
-	struct FE_region *fe_region;
+	 Element_tool *element_tool;
+	 wxCheckBox *button_element;
+	 wxCheckBox *button_face;
+	 wxCheckBox *button_line;	
+	 wxCheckBox *elementcommandfieldcheckbox;
+	 wxPanel *element_command_field_chooser_panel;
+
+	 wxButton *button_destroy;
+	 struct MANAGER(Computed_field) *computed_field_manager;
+	 struct FE_region *fe_region;
+	 struct Computed_field *command_field;
+	 DEFINE_MANAGER_CLASS(Computed_field);
+	 Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+	 *element_command_field_chooser;
 
 public:
 
   wxElementTool(Element_tool *element_tool, wxPanel *parent): 
     element_tool(element_tool)
   {	 
-		{
 			wxXmlInit_element_tool();
-		}	
-			element_tool->wx_element_tool=(wxElementTool *)NULL;
-
 			wxXmlResource::Get()->LoadPanel(this,parent,_T("CmguiElementTool"));
-
+			elementcommandfieldcheckbox = XRCCTRL(*this, "ElementCommandFieldCheckBox",wxCheckBox);
+			element_command_field_chooser_panel = XRCCTRL(*this, "ElementCommandFieldChooserPanel", wxPanel);
+			computed_field_manager=
+				 Computed_field_package_get_computed_field_manager(element_tool->computed_field_package);
+			element_command_field_chooser =
+				 new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+				 (element_command_field_chooser_panel, element_tool->command_field, computed_field_manager,
+						Computed_field_has_string_value_type, (void *)NULL, element_tool->user_interface);
+			Callback_base< Computed_field* > *element_command_field_callback = 
+				 new Callback_member_callback< Computed_field*, 
+					wxElementTool, int (wxElementTool::*)(Computed_field *) >
+				 (this, &wxElementTool::element_command_field_callback);
+			element_command_field_chooser->set_callback(element_command_field_callback);
+			if (element_tool != NULL)
+			{
+				 command_field = Element_tool_get_command_field(element_tool);
+				 element_command_field_chooser->set_object(command_field);
+				 if (command_field == NULL)
+				 {
+						elementcommandfieldcheckbox->SetValue(0);
+						element_command_field_chooser_panel->Disable();
+				 }
+				 else
+				 {
+						elementcommandfieldcheckbox->SetValue(1);
+						element_command_field_chooser_panel->Enable();
+				 }
+			}
 			button_face = XRCCTRL(*this, "ButtonFace", wxCheckBox);
 			button_element = XRCCTRL(*this, "ButtonElement", wxCheckBox);
 			button_line = XRCCTRL(*this, "ButtonLine", wxCheckBox);
-		  button_face->SetValue(true);
-			button_element->SetValue(true);
-			button_line->SetValue(true);
+			button_element->SetValue(element_tool->select_elements_enabled);
+			button_face->SetValue(element_tool->select_faces_enabled);
+			button_line->SetValue(element_tool->select_lines_enabled);
   };
 
   wxElementTool()
   {
   };
 
+ ~ wxElementTool()
+  {
+		 //		 delete element_command_field_chooser;
+  };
+	 int element_command_field_callback(Computed_field *command_field)
+	 {
+			Element_tool_set_command_field(element_tool, command_field);
+			return 1;
+	 }
+
 	void OnButtonElementpressed(wxCommandEvent& event)
 	{    
-	button_element = XRCCTRL(*this, "ButtonElement", wxCheckBox);
-	Element_tool_set_select_elements_enabled(element_tool,
-		button_element->IsChecked());
+		 button_element = XRCCTRL(*this, "ButtonElement", wxCheckBox);
+		 Element_tool_set_select_elements_enabled(element_tool,
+				button_element->IsChecked());
 	}
 
 	void OnButtonFacepressed(wxCommandEvent& event)
 	{ 
-		button_face = XRCCTRL(*this, "ButtonFace", wxCheckBox);
-		Element_tool_set_select_faces_enabled(element_tool,
-		  button_face->IsChecked());
+		 button_face = XRCCTRL(*this, "ButtonFace", wxCheckBox);
+		 Element_tool_set_select_faces_enabled(element_tool,
+				button_face->IsChecked());
 	}
 
 	void OnButtonLinepressed(wxCommandEvent& event)
 	{ 
-		button_line = XRCCTRL(*this, "ButtonLine", wxCheckBox);
-		Element_tool_set_select_lines_enabled(element_tool,
-		  button_line->IsChecked());
+		 button_line = XRCCTRL(*this, "ButtonLine", wxCheckBox);
+		 Element_tool_set_select_lines_enabled(element_tool,
+				button_line->IsChecked());
 	}
 
 
-	void OnButtonDestroypressed(wxCommandEvent& event)
-	{ 
+ void OnButtonDestroypressed(wxCommandEvent& event)
+ { 
 	int number_not_destroyed;
 	struct LIST(FE_element) *destroy_element_list;
 
 	if (destroy_element_list = CREATE(LIST(FE_element))())
+	{
+		COPY_LIST(FE_element)(destroy_element_list,
+			 FE_element_selection_get_element_list(
+			   element_tool->element_selection));
+		fe_region = Cmiss_region_get_FE_region(element_tool->region);
+		FE_region_begin_change(fe_region);
+		FE_region_remove_FE_element_list(fe_region, destroy_element_list);
+		if (0 < (number_not_destroyed =
+		   NUMBER_IN_LIST(FE_element)(destroy_element_list)))
 		{
-			COPY_LIST(FE_element)(destroy_element_list,
-				FE_element_selection_get_element_list(
-			 	element_tool->element_selection));
-			fe_region = Cmiss_region_get_FE_region(element_tool->region);
-			FE_region_begin_change(fe_region);
-			FE_region_remove_FE_element_list(fe_region, destroy_element_list);
-			if (0 < (number_not_destroyed =
-				NUMBER_IN_LIST(FE_element)(destroy_element_list)))
-			{
-				display_message(WARNING_MESSAGE,
-					"%d of the selected element(s) could not be destroyed",
-					number_not_destroyed);
-			}
-			FE_region_end_change(fe_region);
-			DESTROY(LIST(FE_element))(&destroy_element_list);
+			display_message(WARNING_MESSAGE,
+			  "%d of the selected element(s) could not be destroyed",
+			  number_not_destroyed);
 		}
-	
+		FE_region_end_change(fe_region);
+		DESTROY(LIST(FE_element))(&destroy_element_list);
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Element_tool_destroy_selected_CB.  Invalid argument(s)");
 	}
+ }
 
+void ElementToolInterfaceRenew(Element_tool *destination_element_tool)
+{
+	button_element = XRCCTRL(*this, "ButtonElement", wxCheckBox);
+	button_face = XRCCTRL(*this, "ButtonFace", wxCheckBox);
+	button_line = XRCCTRL(*this, "ButtonLine", wxCheckBox);
+	button_element->SetValue(destination_element_tool-> select_elements_enabled);
+	button_face->SetValue(destination_element_tool->select_faces_enabled);
+	button_line->SetValue(destination_element_tool->select_lines_enabled);
+}
 
-	}
-
+void ElementCommandFieldChecked(wxCommandEvent &event)
+{
+	 struct Computed_field *command_field;
+	 elementcommandfieldcheckbox = XRCCTRL(*this, "ElementCommandFieldCheckBox",wxCheckBox);
+	 element_command_field_chooser_panel = XRCCTRL(*this, "ElementCommandFieldChooserPanel", wxPanel);
+	 if (elementcommandfieldcheckbox->IsChecked())
+	 {
+			if (element_tool)
+			{
+				 if (Element_tool_get_command_field(element_tool))
+				 {
+						Element_tool_set_command_field(element_tool, (struct Computed_field *)NULL);
+						element_command_field_chooser_panel->Enable();
+				 }
+				 else
+				 {
+						/* get label field from widget */
+						command_field = element_command_field_chooser->get_object();
+						if (command_field)
+						{
+							 Element_tool_set_command_field(element_tool, command_field);
+						}
+						else
+						{
+							 elementcommandfieldcheckbox->SetValue(0);
+							 element_command_field_chooser_panel->Disable();
+						}
+				 }
+			}
+			else
+			{
+				 display_message(ERROR_MESSAGE,
+						"Elementt_tool_command_field_button_CB.  Invalid argument(s)");
+			}
+	 }
+	 else
+	 {
+			Element_tool_set_command_field(element_tool, (struct Computed_field *)NULL);
+			elementcommandfieldcheckbox->SetValue(0);
+			element_command_field_chooser_panel->Disable();
+	 }
+}
 
   DECLARE_DYNAMIC_CLASS(wxElementTool);
   DECLARE_EVENT_TABLE();
@@ -830,10 +921,11 @@ public:
 IMPLEMENT_DYNAMIC_CLASS(wxElementTool, wxPanel)
 
 BEGIN_EVENT_TABLE(wxElementTool, wxPanel)
-      EVT_CHECKBOX(XRCID("ButtonElement"),wxElementTool::OnButtonElementpressed)
-      EVT_CHECKBOX(XRCID("ButtonFace"),wxElementTool::OnButtonFacepressed)
-      EVT_CHECKBOX(XRCID("ButtonLine"),wxElementTool::OnButtonLinepressed)
-      EVT_BUTTON(XRCID("ButtonDestroy"),wxElementTool::OnButtonDestroypressed)
+	 EVT_CHECKBOX(XRCID("ButtonElement"),wxElementTool::OnButtonElementpressed)
+	 EVT_CHECKBOX(XRCID("ButtonFace"),wxElementTool::OnButtonFacepressed)
+	 EVT_CHECKBOX(XRCID("ButtonLine"),wxElementTool::OnButtonLinepressed)
+	 EVT_CHECKBOX(XRCID("ElementCommandFieldCheckBox"),wxElementTool::ElementCommandFieldChecked)
+EVT_BUTTON(XRCID("ButtonDestroy"),wxElementTool::OnButtonDestroypressed)
 END_EVENT_TABLE()
 
 
@@ -843,12 +935,14 @@ END_EVENT_TABLE()
 Global functions
 ----------------
 */
+
+
 static int Element_tool_copy_function(void *destination_tool_void, void *source_tool_void) 
 /*******************************************************************************
 LAST MODIFIED : 29 March 2007
 
 DESCRIPTION :
-Copies the state of one element tool to another.
+Copies the state of one element tool to another.WX only
 ==============================================================================*/
 {
 	int return_code;
@@ -861,6 +955,12 @@ Copies the state of one element tool to another.
 		destination_element_tool->select_faces_enabled = source_element_tool->select_faces_enabled;
 		destination_element_tool->select_lines_enabled = source_element_tool->select_lines_enabled;
 		destination_element_tool->command_field = source_element_tool->command_field;
+#if defined (WX_USER_INTERFACE)
+		if (destination_element_tool->wx_element_tool != (wxElementTool *) NULL)
+		{
+			destination_element_tool->wx_element_tool->ElementToolInterfaceRenew(destination_element_tool);
+		}
+#endif /*defined (WX_USER_INTERFACE)*/
 		return_code=1;
 	}
 	else
@@ -871,7 +971,6 @@ Copies the state of one element tool to another.
 	}
 	return (return_code);
 }
-
 
 struct Element_tool *CREATE(Element_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
@@ -1115,10 +1214,7 @@ Selects elements in <element_selection> in response to interactive_events.
 			}
 
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */ 
-
-
 			element_tool->wx_element_tool=(wxElementTool *)NULL;
-
 #endif /* defined (MOTIF) */
 		}
 		else
@@ -1602,3 +1698,4 @@ Returns the generic interactive_tool the represents the <element_tool>.
 
 	return (interactive_tool);
 } /* Element_tool_get_interactive_tool */
+

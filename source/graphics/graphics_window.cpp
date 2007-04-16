@@ -92,6 +92,12 @@ extern "C" {
 #include "graphics/scene_viewer.h"
 #include "graphics/texture.h"
 #include "graphics/transform_tool.h"
+#if defined (WX_USER_INTERFACE)
+#include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_set.h"
+#include "node/node_tool.h"
+#include "interaction/interactive_tool_private.h"
+#endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF)
 #include "interaction/interactive_toolbar_widget.h"
 #include "user_interface/gui_dialog_macros.h"
@@ -108,20 +114,6 @@ extern "C" {
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
 }
-#if defined (WX_USER_INTERFACE)
-struct Graphics_buffer *create_Graphics_buffer_wx(
-	struct Graphics_buffer_package *graphics_buffer_package,
-	wxPanel *parent,
-	enum Graphics_buffer_buffering_mode buffering_mode,
-	enum Graphics_buffer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
-	int minimum_accumulation_buffer_depth);
-/*******************************************************************************
-LAST MODIFIED : 7 December 2006
-
-DESCRIPTION :
-==============================================================================*/
-#endif /* defined (WX_USER_INTERFACE) */
 
 /*
 Module constants
@@ -180,9 +172,11 @@ Contains information for a graphics window.
         wxComboBox *up_view_options;
         wxButton *front_view_options;
 	     wxWindow *graphicsname; 
-	     wxPanel *ToolPanel;
+	     wxScrolledWindow *ToolPanel;
         wxPanel *interactive_toolbar_panel;
 		 wxFrame *GraphicsWindowTitle;
+	    Cmiss_region *root_region;
+	    wxScrolledWindow *left_panel;
 #endif /* defined (GTK_USER_INTERFACE) */
 	/* scene_viewers and their parameters: */
 	enum Graphics_window_layout_mode layout_mode;
@@ -2693,7 +2687,7 @@ class wxGraphicsWindow : public wxFrame
 	int wx_ortho_front_axis;
 	int location;
  	int up_choices;
-  int choices; 
+	 int choices; 
 
 public:
 
@@ -2706,7 +2700,6 @@ public:
   wxGraphicsWindow()
   {
   };
-
   
    void OnViewallpressed(wxCommandEvent& event)
   {    
@@ -2728,19 +2721,21 @@ public:
     char*  filename;
     
      wxFileDialog *saveImage = new wxFileDialog (this,"Save file","","",
-     "JPEG files (*.jpg)|*.jpg",wxSAVE,wxDefaultPosition);
-                    
+     "JPEG files (*.jpg)|*.jpg",wxSAVE,wxDefaultPosition);  
                         
    if (saveImage->ShowModal() == wxID_OK)
-    { file_name=saveImage->GetFilename();
-      filepath=saveImage->GetPath();
-      filename=(char*) filepath.mb_str();
-      storage = TEXTURE_RGBA;
-      force_onscreen = 0;
-      width = 0;
-      height = 0;
-           if(cmgui_image = Graphics_window_get_image(graphics_window,
-	       force_onscreen, width, height, /*preferred_antialias*/0,
+    { 
+			 file_name=saveImage->GetFilename();
+			 filepath=saveImage->GetPath();
+			 filename=(char*)filepath.mb_str();
+			 strcat (filename,".jpg");
+			 
+			 storage = TEXTURE_RGBA;
+			 force_onscreen = 0;
+			 width = 0;
+			 height = 0;
+			 if(cmgui_image = Graphics_window_get_image(graphics_window,
+						 force_onscreen, width, height, /*preferred_antialias*/0,
 						 /*preferred_transparency_layers*/0, storage))
 	{
 	  cmgui_image_information = CREATE(Cmgui_image_information)();
@@ -2749,7 +2744,6 @@ public:
 	  DESTROY(Cmgui_image_information)(&cmgui_image_information);
 	  DESTROY(Cmgui_image)(&cmgui_image);
 	}
-      DEALLOCATE(filename);
     }
   }
 
@@ -2811,9 +2805,10 @@ public:
 	}
       else
 	{
-	printf("wrong\n");
+	printf("OnViewOptionspressed error. Invalid argument.");
 	}
-        }
+			Redrawwindow->Layout();
+		}
 
     void OnUpViewOptionspressed(wxCommandEvent& event)
     {
@@ -3742,8 +3737,8 @@ it.
  			USE_PARAMETER(minimum_accumulation_buffer_depth);
  			USE_PARAMETER(Graphics_window_Scene_viewer_view_changed);
 
-
-
+			window->root_region = (struct Cmiss_region *)NULL;
+			window->root_region = ACCESS(Cmiss_region)(CREATE(Cmiss_region)());
 		  wxLogNull logNo;
 			wxXmlInit_graphics_window();
 
@@ -3765,10 +3760,14 @@ it.
 			window->front_view_options = XRCCTRL(*window->wx_graphics_window, "FrontViewOptions", wxButton);
 			window->up_view_options->Disable();
 			window->front_view_options->Disable();
-     
-			window->ToolPanel = XRCCTRL(*window->wx_graphics_window, "ToolPanel", wxPanel);
-
+			window->left_panel =XRCCTRL(*window->wx_graphics_window, "LeftPanel", wxScrolledWindow);
+			window->left_panel->FitInside();
+			window->left_panel->SetScrollbars(20, 20, 50, 50);
+			window->ToolPanel = XRCCTRL(*window->wx_graphics_window, "ToolPanel", wxScrolledWindow);
+			window->ToolPanel ->Layout();
 			window->interactive_toolbar_panel = NULL;
+			USE_PARAMETER(graphics_buffer);
+			USE_PARAMETER(add_interactive_tool_to_wx_toolbar);
 
 			if (window->panel)
 			{
@@ -3828,8 +3827,11 @@ it.
 								window->default_viewing_height);
 							/* initial view is of all of the current scene */
 							Graphics_window_view_all(window);
+							
+
 
 							window->wx_graphics_window->Show();
+
 			
 							return_code = 1;
 						}
@@ -7010,6 +7012,218 @@ to the command window.
 	return (return_code);
 } /* list_Graphics_window_commands */
 
+#if defined (WX_USER_INTERFACE)
+static int modify_Graphics_window_node_tool(struct Parse_state *state,
+	 void *window_void, void *modify_graphics_window_data_void)
+/*******************************************************************************
+LAST MODIFIED : 13 April 2007
+
+DESCRIPTION :
+Executes a GFX NODE_TOOL or GFX_DATA_TOOL command. If <data_tool_flag> is set,
+then the <data_tool> is being modified, otherwise the <node_tool>.
+Which tool that is being modified is passed in <node_tool_void>.
+==============================================================================*/
+{
+	static char *(dialog_strings[2]) = {"open_dialog", "close_dialog"};
+	char *dialog_string, *region_path;
+	int create_enabled,define_enabled,edit_enabled,motion_update_enabled,
+		return_code,select_enabled, streaming_create_enabled,
+		constrain_to_surface;
+#if defined (WX_USER_INTERFACE)
+	int element_dimension, element_create_enabled;
+#endif /*(WX_USER_INTERFACE)*/
+	Cmiss_region *root_region;
+	Computed_field *coordinate_field, *command_field;
+	Graphics_window *window;
+	Interactive_tool *interactive_tool;
+	Modify_graphics_window_data *modify_graphics_window_data;
+	Node_tool *node_tool;
+	Option_table *option_table;
+	Set_Computed_field_conditional_data set_coordinate_field_data,
+		set_command_field_data;
+
+	ENTER(execute_command_gfx_node_tool);
+	if (state && (modify_graphics_window_data=(Modify_graphics_window_data *)
+	  modify_graphics_window_data_void) && (window = (Graphics_window *)window_void))
+	{
+		 int data_tool_flag = 0;
+		 //		if (data_tool_flag)
+		 //{
+		 //node_tool = command_data->data_tool;
+		 //root_region = command_data->data_root_region;
+			//}
+			//e/lse
+			//{
+		 if (interactive_tool = FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)("node_tool", window->interactive_tool_manager))
+		 {
+				node_tool = static_cast<Node_tool *>(Interactive_tool_get_tool_data(interactive_tool));
+				root_region = window->root_region;
+				//}
+				/* initialize defaults */
+				coordinate_field=(struct Computed_field *)NULL;
+				create_enabled=0;
+				define_enabled=0;
+				edit_enabled=0;
+				motion_update_enabled=0;
+				select_enabled=1;
+				streaming_create_enabled = 0;
+				constrain_to_surface = 0;
+				command_field=(struct Computed_field *)NULL;
+				region_path = (char *)NULL;
+				if (!data_tool_flag)
+				{
+					 element_create_enabled = 0;
+					 element_dimension = 2;
+				}
+				if (node_tool)
+				{
+					 coordinate_field=Node_tool_get_coordinate_field(node_tool);
+					 create_enabled=Node_tool_get_create_enabled(node_tool);
+					 define_enabled=Node_tool_get_define_enabled(node_tool);
+					 edit_enabled=Node_tool_get_edit_enabled(node_tool);
+					 motion_update_enabled=Node_tool_get_motion_update_enabled(node_tool);
+					 select_enabled=Node_tool_get_select_enabled(node_tool);
+					 streaming_create_enabled =
+							Node_tool_get_streaming_create_enabled(node_tool);
+					 constrain_to_surface =
+							Node_tool_get_constrain_to_surface(node_tool);
+					 command_field=Node_tool_get_command_field(node_tool);
+					 Node_tool_get_region_path(node_tool, &region_path);
+					 if (!data_tool_flag)
+					 {
+							element_create_enabled = Node_tool_get_element_create_enabled(node_tool);
+							element_dimension =
+								 Node_tool_get_element_dimension(node_tool);
+					 }
+				}
+				if (coordinate_field)
+				{
+					 ACCESS(Computed_field)(coordinate_field);
+				}
+				if (command_field)
+				{
+					 ACCESS(Computed_field)(command_field);
+				}
+				
+				option_table=CREATE(Option_table)();
+				/* coordinate_field */
+				set_coordinate_field_data.computed_field_manager=
+					 Computed_field_package_get_computed_field_manager(
+							modify_graphics_window_data->computed_field_package);
+				set_coordinate_field_data.conditional_function=
+					 Computed_field_has_up_to_3_numerical_components;
+				set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
+				Option_table_add_entry(option_table,"coordinate_field",&coordinate_field,
+					 &set_coordinate_field_data,set_Computed_field_conditional);
+				/* constrain_to_surfaces/no_constrain_to_surfaces */
+				Option_table_add_switch(option_table,"constrain_to_surfaces","no_constrain_to_surfaces",
+					 &constrain_to_surface);
+				/* create/no_create */
+				Option_table_add_switch(option_table,"create","no_create",&create_enabled);
+				/* define/no_define */
+				Option_table_add_switch(option_table,"define","no_define",&define_enabled);
+				if (!data_tool_flag)
+				{
+					 /* create/no_create */
+					 Option_table_add_switch(option_table,"element_create","no_element_create",&element_create_enabled);
+					 /* element_dimension*/
+					 Option_table_add_entry(option_table,"element_dimension",
+							&element_dimension,NULL,set_int_non_negative);
+				}
+				/* edit/no_edit */
+				Option_table_add_switch(option_table,"edit","no_edit",&edit_enabled);
+				/* group */
+				Option_table_add_entry(option_table, "group", &region_path,
+					 root_region, set_Cmiss_region_path);
+				/* motion_update/no_motion_update */
+				Option_table_add_switch(option_table,"motion_update","no_motion_update",
+					 &motion_update_enabled);
+				/* open_dialog/close_dialog */
+				dialog_string = (char *)NULL;
+				Option_table_add_enumerator(option_table, /*number_of_valid_strings*/2,
+					 dialog_strings, &dialog_string);
+				/* select/no_select */
+				Option_table_add_switch(option_table,"select","no_select",&select_enabled);
+				/* streaming_create/no_streaming_create */
+				Option_table_add_switch(option_table, "streaming_create",
+					 "no_streaming_create", &streaming_create_enabled);
+				/* command_field */
+				set_command_field_data.computed_field_manager=
+					 Computed_field_package_get_computed_field_manager(
+							modify_graphics_window_data->computed_field_package);
+				set_command_field_data.conditional_function =
+					 Computed_field_has_string_value_type;
+				set_command_field_data.conditional_function_user_data=(void *)NULL;
+				Option_table_add_entry(option_table,"command_field",&command_field,
+					 &set_command_field_data,set_Computed_field_conditional);
+				if (return_code = Option_table_multi_parse(option_table,state))
+				{
+					 if (node_tool)
+					 {
+							if (dialog_string == dialog_strings[1])
+							{
+								 Node_tool_pop_down_dialog(node_tool);
+							}
+							Node_tool_set_coordinate_field(node_tool,coordinate_field);
+							Node_tool_set_region_path(node_tool,region_path);
+							Node_tool_set_streaming_create_enabled(node_tool,
+								 streaming_create_enabled);
+							Node_tool_set_command_field(node_tool,command_field);
+							
+							/* Set the state after setting the parameters as some of them
+								 states rely on these parameters */
+							Node_tool_set_edit_enabled(node_tool,edit_enabled);
+							Node_tool_set_select_enabled(node_tool,select_enabled);
+							Node_tool_set_define_enabled(node_tool,define_enabled);
+							Node_tool_set_create_enabled(node_tool,create_enabled);
+							Node_tool_set_constrain_to_surface(node_tool,constrain_to_surface);
+							Node_tool_set_motion_update_enabled(node_tool,motion_update_enabled);
+							if (!data_tool_flag)
+							{
+								 Node_tool_set_element_dimension(node_tool,element_dimension);
+								 Node_tool_set_element_create_enabled(node_tool,element_create_enabled);
+							}
+							if (dialog_string == dialog_strings[0])
+							{
+								 Node_tool_pop_up_dialog(node_tool, (struct Graphics_window *)NULL);
+							}
+							Node_tool_set_wx_interface(node_tool);
+					 }
+					 else
+					 {
+							display_message(ERROR_MESSAGE,
+								 "execute_command_gfx_node_tool.  Missing node/data tool");
+							return_code=0;
+					 }
+				} /* parse error,help */
+				DESTROY(Option_table)(&option_table);
+				if (region_path)
+				{
+					 DEALLOCATE(region_path);
+				}
+				if (command_field)
+				{
+					 DEACCESS(Computed_field)(&command_field);
+				}
+				if (coordinate_field)
+				{
+					 DEACCESS(Computed_field)(&coordinate_field);
+				}
+		 }
+	}
+	else
+	{
+		 display_message(ERROR_MESSAGE,
+				"execute_command_gfx_node_tool.  Invalid argument(s)");
+		 return_code=0;
+	}
+	LEAVE;
+	
+	return (return_code);
+} /* execute_command_gfx_node_tool */
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined
+			  (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined(WX_USER_INTERFACE */
+
 int modify_Graphics_window(struct Parse_state *state,void *help_mode,
 	void *modify_graphics_window_data_void)
 /*******************************************************************************
@@ -7073,6 +7287,11 @@ Parameter <help_mode> should be NULL when calling this function.
 				Option_table_add_entry(valid_window_option_table, "layout",
 						(void *)window, modify_graphics_window_data_void,
 						modify_Graphics_window_layout);
+#if defined (WX_USER_INTERFACE)
+				Option_table_add_entry(valid_window_option_table, "node_tool",
+						(void *)window, modify_graphics_window_data_void,
+						modify_Graphics_window_node_tool);
+#endif // defined (WX_USER_INTERFACE)
 				Option_table_add_entry(valid_window_option_table, "overlay",
 						(void *)window, modify_graphics_window_data_void,
 						modify_Graphics_window_overlay);
@@ -7448,7 +7667,7 @@ graphics window with the given <layout_mode>.
 } /* Graphics_window_layout_mode_is_projection_mode_valid_for_pane */
 
 #if defined (WX_USER_INTERFACE)
-wxPanel *Graphics_window_get_interactive_tool_panel(struct Graphics_window *graphics_window)
+wxScrolledWindow *Graphics_window_get_interactive_tool_panel(struct Graphics_window *graphics_window)
 /*******************************************************************************
 LAST MODIFIED : 9 February 2007
 
@@ -7456,18 +7675,20 @@ DESCRIPTION :
 Returns the panel to embed the interactive tool into.
 ==============================================================================*/
 {
-	wxPanel *panel;
+	wxScrolledWindow *panel;
 
 	ENTER(Graphics_window_get_interactive_tool_panel);
 	if (graphics_window)
 	{
 		panel = graphics_window->ToolPanel;
+		panel->Layout();
+		panel->SetScrollbars(-1, 20, -1, 50);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Graphics_window_layout_mode_from_string.  Invalid argument");
-		panel = (wxPanel *)NULL;
+		panel = (wxScrolledWindow *)NULL;
 	}
 	LEAVE;
 
