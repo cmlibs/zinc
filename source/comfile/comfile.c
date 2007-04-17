@@ -70,7 +70,7 @@ Opens a comfile, and a window if it is to be executed.  If a comfile is not
 specified on the command line, a file selection box is presented to the user.
 ==============================================================================*/
 {
-	 char *command_string, *filename, *last, *pathname, *temp_string, *old_directory, *old_directory_name;
+	 char *command_string, *filename;
 #if defined (MOTIF) || (WX_USER_INTERFACE)
 	char *name;
 #endif /* defined (MOTIF) */
@@ -80,11 +80,15 @@ specified on the command line, a file selection box is presented to the user.
 #endif /* defined (MOTIF) */
 	struct Open_comfile_data *open_comfile_data;
 	struct Option_table *option_table;
+#if defined (WX_USER_INTERFACE)
+	char *last, *pathname, *temp_string, *old_directory, *old_directory_name;
 	temp_string=NULL;
 	pathname=NULL;
 	last=NULL;
 	old_directory = NULL;
 	old_directory_name = NULL;
+#endif /* defined (WX_USER_INTERFACE) */
+
 	ENTER(open_comfile);
 	USE_PARAMETER(dummy_to_be_modified);
 	/* check arguments */
