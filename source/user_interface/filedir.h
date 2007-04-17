@@ -84,6 +84,9 @@ used to keep track of the widgets involved.
 	int allow_direct_to_printer;
 	void *arguments, *cancel_arguments;
 	struct User_interface *user_interface;
+#if defined (WX_USER_INTERFACE)
+	 struct Execute_command *execute_command;
+#endif /*defined (WX_USER_INTERFACE)*/
 	/* private */
 #if defined (MOTIF)
 	Widget activation,file_list,selection_shell,selection,selection_label,
@@ -102,7 +105,11 @@ Global functions
 */
 struct File_open_data *create_File_open_data(char *filter_extension,
 	enum File_type type,File_operation operation,void *arguments,
-	int allow_direct_to_printer,struct User_interface *user_interface);
+	 int allow_direct_to_printer,struct User_interface *user_interface 
+#if defined (WX_USER_INTERFACE)
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+);
 /*******************************************************************************
 LAST MODIFIED : 23 December 1996
 

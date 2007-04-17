@@ -62,7 +62,11 @@ int confirmation_warning_ok_cancel(char *title,char *prompt,
 #if defined (MOTIF)
 	Widget parent,
 #endif /* defined (MOTIF) */
-	struct User_interface *user_interface);
+	struct User_interface *user_interface
+#if  defined (WX_USER_INTERFACE) 
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+																	 );
 /*******************************************************************************
 LAST MODIFIED : 11 June 1999
 
@@ -75,7 +79,11 @@ is clicked and 0 if the cancel button is clicked.
 #if defined (MOTIF)
 int confirmation_warning_ok_cancel_plus_options(char *title,char *prompt,
 	Widget parent,Confirmation_add_widgets_function add_widgets,
-	void *add_widgets_user_data,struct User_interface *user_interface);
+	void *add_widgets_user_data,struct User_interface *user_interface
+#if  defined (WX_USER_INTERFACE) 
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+																								);
 /*******************************************************************************
 LAST MODIFIED : 11 June 1999
 
@@ -90,7 +98,11 @@ int confirmation_error_ok(char *title,char *prompt,
 #if defined (MOTIF)
 	Widget parent,
 #endif /* defined (MOTIF) */
-	struct User_interface *user_interface);
+	struct User_interface *user_interface
+#if  defined (WX_USER_INTERFACE) 
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+													);
 /*******************************************************************************
 LAST MODIFIED : 11 June 1999
 
@@ -104,7 +116,11 @@ int confirmation_information_ok(char *title,char *prompt,
 #if defined (MOTIF)
 	Widget parent,
 #endif /* defined (MOTIF) */
-	struct User_interface *user_interface);
+	struct User_interface *user_interface
+#if  defined (WX_USER_INTERFACE) 
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+																);
 /*******************************************************************************
 LAST MODIFIED : 11 June 1999
 
@@ -118,7 +134,11 @@ int confirmation_warning_ok(char *title,char *prompt,
 #if defined (MOTIF)
 	Widget parent,
 #endif /* defined (MOTIF) */
-	struct User_interface *user_interface);
+	struct User_interface *user_interface
+#if  defined (WX_USER_INTERFACE) 
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+														);
 /*******************************************************************************
 LAST MODIFIED : 11 June 1999
 
@@ -132,7 +152,11 @@ int confirmation_question_yes_no(char *title,char *prompt,
 #if defined (MOTIF)
 	Widget parent,
 #endif /* defined (MOTIF) */
-	struct User_interface *user_interface);
+	struct User_interface *user_interface
+#if  defined (WX_USER_INTERFACE) 
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+																 );
 /*******************************************************************************
 LAST MODIFIED : 11 June 1999
 
@@ -143,7 +167,11 @@ is clicked and No if it isn't.
 ==============================================================================*/
 
 char *confirmation_get_read_filename(char *extension,
-	struct User_interface *user_interface);
+	struct User_interface *user_interface
+#if  defined (WX_USER_INTERFACE) 
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+																		 );
 /*******************************************************************************
 LAST MODIFIED : 11 June 1999
 
@@ -152,7 +180,11 @@ This routine supplies a file selection dialog window
 ==============================================================================*/
 
 char *confirmation_get_write_filename(char *extension,
-	struct User_interface *user_interface);
+	struct User_interface *user_interface
+#if  defined (WX_USER_INTERFACE) 
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+																			);
 /*******************************************************************************
 LAST MODIFIED : 11 June 1999
 
@@ -161,7 +193,11 @@ This routine supplies a file selection dialog window
 ==============================================================================*/
 
 char *confirmation_change_current_working_directory(
-	struct User_interface *user_interface);
+	struct User_interface *user_interface
+#if  defined (WX_USER_INTERFACE) 
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+	);
 /*******************************************************************************
 LAST MODIFIED : 7 July 1999
 

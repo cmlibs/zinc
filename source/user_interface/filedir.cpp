@@ -81,6 +81,8 @@ static char filedir_uidh[] =
 #endif /* defined (MOTIF) */
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
+#include "general/mystring.h"
+#include "command/command.h"
 }
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
@@ -705,7 +707,11 @@ Global functions
 */
 struct File_open_data *create_File_open_data(char *filter_extension,
 	enum File_type type,File_operation operation,void *arguments,
-	int allow_direct_to_printer,struct User_interface *user_interface)
+	 int allow_direct_to_printer,struct User_interface *user_interface
+#if defined(WX_USER_INTERFACE)
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+																						 )
 /*******************************************************************************
 LAST MODIFIED : 3 June 1999
 
@@ -751,6 +757,9 @@ successful and NULL if unsuccessful.
 			file_open_data->cancel_arguments=NULL;
 			file_open_data->allow_direct_to_printer=allow_direct_to_printer;
 			file_open_data->user_interface=user_interface;
+#if defined(WX_USER_INTERFACE)
+			file_open_data->execute_command=execute_command;
+#endif /* defined (WX_USER_INTERFACE) */
 			file_open_data->file_name=(char *)NULL;
 #if defined (MOTIF)
 			file_open_data->activation=(Widget)NULL;
@@ -897,8 +906,8 @@ name the <file_operation> is performed on the file with the <arguments>.
 #if defined (WX_USER_INTERFACE)
 //	char *temp_str;
 //	int length,retry;
-	 char *shell_title,*temp_string, *extension;
-	int retry;
+	 char *filename, *shell_title,*temp_string, *extension,*last,*pathname, *old_directory, *old_directory_name;
+	 int retry, length;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF)
 	Atom WM_DELETE_WINDOW;
@@ -1197,19 +1206,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 								{
 									 extension = "*.exelem";
 								}
-								
-// 								strcpy(temp_string,"Specify a ");
-// 								strcat(temp_string,file_open_data->filter_extension);
-// 								strcat(temp_string," file");
-// 								shell_title=temp_string;
-// 								DEALLOCATE(temp_string);
 							}
-// 							if (ALLOCATE(temp_extension,char,7))
-// 							{
-// 								temp_extension = "*";
-// 								strcat(temp_extension,file_open_data->filter_extension);
-// 								extension=temp_extension;	
-// 							}			
 						}
 					} break;
 					case DIRECTORY:
@@ -1239,6 +1236,59 @@ wxFileDialog *ReadData = new wxFileDialog ((wxWindow *)NULL,shell_title,"","",
 			 {
 					retry=1;
 			 }
+		}
+		old_directory = NULL;
+		old_directory_name = NULL;
+		old_directory = (char *)malloc(4096);
+		getcwd(old_directory, 4096);
+		length = strlen(old_directory);
+		filename = file_open_data->file_name;
+		if ((ALLOCATE(old_directory_name,char,length+1)) && old_directory !=NULL)
+		{
+			 strcpy(old_directory_name, old_directory);
+			 strcat(old_directory_name,"/");
+		}
+		if (strcmp(file_open_data->filter_extension, ".com") != 0)
+		{
+			 last = strrchr(filename, '/');
+			 if (last != NULL)
+			 {
+					length = last-filename+1;
+					pathname = NULL;
+					if (ALLOCATE(pathname,char,length))
+					{
+						 strncpy(pathname,filename,length);
+						 pathname[length]='\0';
+						 if (strcmp (old_directory_name,pathname) != 0)
+						 {
+								make_valid_token(&pathname);
+								length = strlen(pathname);
+								if (ALLOCATE(temp_string,char,length+8))
+								{
+									 strcpy(temp_string, "set dir ");
+									 strcat(temp_string, pathname);
+									 temp_string[length+8]='\0';
+									 Execute_command_execute_string(file_open_data->execute_command,temp_string);
+								}
+								if (temp_string)
+								{
+									 DEALLOCATE(temp_string);
+								}
+						 }
+					}
+					if (pathname)
+					{
+						 DEALLOCATE(pathname);
+					}	
+			 }			 
+		}
+		if (old_directory_name)
+		{
+			 DEALLOCATE(old_directory_name);
+		}
+		if (old_directory)
+		{
+			 DEALLOCATE(old_directory);
 		}
 	}
 #endif /* defined (WX_USER_INTERFACE) */

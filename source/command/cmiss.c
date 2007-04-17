@@ -11553,7 +11553,11 @@ Executes a GFX EXPORT IGES command.
 					if (!file_name)
 					{
 						file_name = confirmation_get_write_filename(".igs",
-							command_data->user_interface);
+							 command_data->user_interface
+#if defined (WX_USER_INTERFACE)
+							 , command_data->execute_command
+#endif /* defined (WX_USER_INTERFACE)*/
+);
 					}
 					if (file_name)
 					{
@@ -11628,7 +11632,11 @@ Executes a GFX EXPORT VRML command.
 				if (!file_name)
 				{
 					file_name=confirmation_get_write_filename(".wrl",
-						command_data->user_interface);
+						 command_data->user_interface
+#if defined (WX_USER_INTERFACE)
+							 , command_data->execute_command
+#endif /* defined (WX_USER_INTERFACE)*/
+																										);
 				}
 				if (file_name)
 				{
@@ -16108,7 +16116,11 @@ Executes a GFX PRINT command.
 			if (!file_name)
 			{
 				if (!(file_name = confirmation_get_write_filename(NULL,
-					command_data->user_interface)))
+								 command_data->user_interface
+#if defined (WX_USER_INTERFACE)
+							 , command_data->execute_command
+#endif /* defined (WX_USER_INTERFACE)*/
+)))
 				{
 					display_message(ERROR_MESSAGE, "gfx print:  No file name specified");
 					return_code = 0;
@@ -16219,7 +16231,11 @@ instruction to read in the mesh.
 				if (!file_name)
 				{
 					if (!(file_name = confirmation_get_read_filename(".curve.com",
-						command_data->user_interface)))
+									 command_data->user_interface
+#if defined (WX_USER_INTERFACE)
+									 , command_data->execute_command
+#endif /*defined (WX_USER_INTERFACE)*/
+)))
 					{
 						return_code = 0;
 					}
@@ -16230,7 +16246,7 @@ instruction to read in the mesh.
 					if (return_code=check_suffix(&file_name,".curve.com"))
 					{
 						return_code=execute_comfile(file_name, command_data->io_stream_package,
-							command_data->execute_command);
+							 command_data->execute_command);
 					}
 				}
 			}
@@ -16319,7 +16335,11 @@ user, otherwise the elements file is read.
 			if (!file_name)
 			{
 				if (!(file_name = confirmation_get_read_filename(".exelem",
-					command_data->user_interface)))
+								 command_data->user_interface
+#if defined(WX_USER_INTERFACE)
+								 , command_data->execute_command
+#endif /*defined (WX_USER_INTERFACE) */
+																												 )))
 				{
 					return_code = 0;
 				}
@@ -16574,7 +16594,11 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 					if (use_data)
 					{
 						if (!(file_name = confirmation_get_read_filename(".exdata",
-							command_data->user_interface)))
+										 command_data->user_interface
+#if defined(WX_USER_INTERFACE)
+								 , command_data->execute_command
+#endif /*defined (WX_USER_INTERFACE) */
+																														 )))
 						{
 							return_code = 0;
 						}
@@ -16582,7 +16606,11 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 					else
 					{
 						if (!(file_name = confirmation_get_read_filename(".exnode",
-							command_data->user_interface)))
+							command_data->user_interface
+#if defined(WX_USER_INTERFACE)
+								 , command_data->execute_command
+#endif /*defined (WX_USER_INTERFACE) */
+																														 )))
 						{
 							return_code = 0;
 						}
@@ -16815,7 +16843,11 @@ otherwise the file of graphics objects is read.
 				if (!file_name)
 				{
 					if (!(file_name = confirmation_get_read_filename(".exgobj",
-						command_data->user_interface)))
+						command_data->user_interface
+#if defined(WX_USER_INTERFACE)
+								 , command_data->execute_command
+#endif /*defined (WX_USER_INTERFACE) */
+																													 )))
 					{
 						return_code = 0;
 					}
@@ -16896,7 +16928,11 @@ If <use_data> is set, writing data, otherwise writing nodes.
 			if (!file_name)
 			{
 				if (!(file_name = confirmation_get_read_filename(file_ext,
-					command_data->user_interface)))
+					command_data->user_interface
+#if defined(WX_USER_INTERFACE)
+								 , command_data->execute_command
+#endif /*defined (WX_USER_INTERFACE) */
+																												 )))
 				{
 					return_code = 0;
 				}
@@ -17024,7 +17060,11 @@ otherwise the wavefront obj file is read.
 				if (!file_name)
 				{
 					if (!(file_name = confirmation_get_read_filename(".obj",
-						command_data->user_interface)))
+						command_data->user_interface
+#if defined(WX_USER_INTERFACE)
+									 , command_data->execute_command
+#endif /*defined (WX_USER_INTERFACE) */
+																													 )))
 					{
 						return_code = 0;
 					}
@@ -19098,7 +19138,11 @@ Can also write individual element groups with the <group> option.
 			if (!file_name)
 			{
 				if (!(file_name = confirmation_get_write_filename(file_ext,
-					command_data->user_interface)))
+					command_data->user_interface
+#if defined(WX_USER_INTERFACE)
+									 , command_data->execute_command
+#endif /*defined (WX_USER_INTERFACE) */
+																													)))
 				{
 					return_code = 0;
 				}
@@ -19219,8 +19263,12 @@ If <use_data> is set, writing data, otherwise writing nodes.
 			}
 			if (!file_name)
 			{
-				if (!(file_name = confirmation_get_write_filename(file_ext,
-					command_data->user_interface)))
+				 if (!(file_name = confirmation_get_write_filename(file_ext,
+								 command_data->user_interface
+#if defined (WX_USER_INTERFACE)
+								 , command_data->execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+																													)))
 				{
 					return_code = 0;
 				}
@@ -19305,7 +19353,11 @@ If <use_data> is set, writing data, otherwise writing nodes.
 			if (!file_name)
 			{
 				if (!(file_name = confirmation_get_write_filename(file_ext,
-					command_data->user_interface)))
+					command_data->user_interface
+#if defined (WX_USER_INTERFACE)
+								 , command_data->execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+																													)))
 				{
 					return_code = 0;
 				}
@@ -19454,7 +19506,11 @@ Executes a GFX WRITE TEXTURE command.
 				if (!file_name)
 				{
 					if (!(file_name = confirmation_get_write_filename(NULL,
-						command_data->user_interface)))
+									 command_data->user_interface
+#if defined (WX_USER_INTERFACE)
+								 , command_data->execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+																														)))
 					{
 						display_message(ERROR_MESSAGE,
 							"gfx write texture:  No file name specified");

@@ -2711,7 +2711,11 @@ Reads stuff from a file.
 #if defined (MOTIF)
 								emoter_dialog->shell,
 #endif /* defined (MOTIF) */
-							shared->user_interface ))
+									shared->user_interface
+#if defined (WX_USER_INTERFACE)
+, shared->execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+ ))
 						{
 							if ( temp_filename = strrchr( temp_string, '/'))
 							{
@@ -2965,7 +2969,11 @@ Reads stuff from a file.
 #if defined (MOTIF)
 								emoter_dialog->shell,
 #endif /* defined (MOTIF) */
-								shared->user_interface );
+								 shared->user_interface
+#if defined (WX_USER_INTERFACE)
+, shared->execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+																													 );
 						}
 					}
 					if ( return_code )
@@ -3867,7 +3875,7 @@ DESCRIPTION :
 	if ( emoter_dialog )
 	{
 		if ( filename = confirmation_get_write_filename("#####.exnode", 
-			emoter_dialog->shared->user_interface))
+					emoter_dialog->shared->user_interface))
 		{
 			*strstr(filename, "#####.exnode") = 0;
 			emoter_export_nodes(emoter_dialog, filename);
@@ -4299,7 +4307,7 @@ DESCRIPTION :
 		{
 			if ( !emoter_dialog->movie )
 			{
-				if ( filename = confirmation_get_write_filename("", emoter_dialog->shared->user_interface ))
+				 if ( filename = confirmation_get_write_filename("", emoter_dialog->shared->user_interface))
 				{
 					emoter_create_movie(emoter_dialog, filename);
 					/* Normally only turn off the button for an error but the 

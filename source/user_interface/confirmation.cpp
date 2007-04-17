@@ -176,7 +176,11 @@ static int confirmation(enum Confirm_type type,char *title,char *prompt,
 	Widget parent,Confirmation_add_widgets_function add_widgets_function,
 	void *add_widgets_user_data,
 #endif /* defined (MOTIF) */
-	struct User_interface *user_interface)
+	 struct User_interface *user_interface 
+#if  defined (WX_USER_INTERFACE) 
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+												)
 /*******************************************************************************
 LAST MODIFIED : 17 December 2002
 
@@ -441,7 +445,11 @@ DESCRIPTION :
 } /* confirmation_cancel_filename_callback */
 
 static char *confirmation_get_filename(enum Confirm_filetype type,
-	char *extension,struct User_interface *user_interface)
+	char *extension,struct User_interface *user_interface
+#if defined (WX_USER_INTERFACE) 
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+)
 /*******************************************************************************
 LAST MODIFIED : 8 September 2000
 
@@ -466,13 +474,21 @@ This routine supplies a file selection dialog window
 			{
 				file_open_data=create_File_open_data(extension,REGULAR,
 					confirmation_get_filename_callback,(void *)&confirmation,0,
-					user_interface);
+					 user_interface
+#if defined (WX_USER_INTERFACE) 
+					 , execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+);
 			} break;
 			case CONFIRM_CHANGE_DIRECTORY:
 			{
 				file_open_data=create_File_open_data((char *)NULL,DIRECTORY,
 					confirmation_get_filename_callback,(void *)&confirmation,0,
-					user_interface);
+					 user_interface
+#if defined (WX_USER_INTERFACE) 
+					 , execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+																						 );
 			} break;
 		}
 		if (file_open_data)
@@ -646,7 +662,11 @@ int confirmation_warning_ok_cancel(char *title,char *prompt,
 #if defined (MOTIF)
 	Widget parent,
 #endif /* defined (MOTIF) */
-	struct User_interface *user_interface)
+	 struct User_interface *user_interface
+#if defined (WX_USER_INTERFACE) 
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+)
 /*******************************************************************************
 LAST MODIFIED : 11 June 1999
 
@@ -663,7 +683,11 @@ is clicked and 0 if the cancel button is clicked.
 #if defined (MOTIF)
 		parent,(Confirmation_add_widgets_function)NULL,NULL,
 #endif /* defined (MOTIF) */
-		user_interface);
+		 user_interface
+#if defined (WX_USER_INTERFACE) 
+		 , execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+);
 	LEAVE;
 
 	return (return_code);
@@ -697,7 +721,11 @@ int confirmation_error_ok(char *title,char *prompt,
 #if defined (MOTIF)
 	Widget parent,
 #endif /* defined (MOTIF) */
-	struct User_interface *user_interface)
+	struct User_interface *user_interface
+#if defined (WX_USER_INTERFACE) 
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+)
 /*******************************************************************************
 LAST MODIFIED : 11 June 1999
 
@@ -714,7 +742,11 @@ options are supplied.
 #if defined (MOTIF)
 		parent,(Confirmation_add_widgets_function)NULL,NULL,
 #endif /* defined (MOTIF) */
-		user_interface);
+		user_interface
+#if defined (WX_USER_INTERFACE) 
+					 , execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+);
 	LEAVE;
 
 	return (return_code);
@@ -724,7 +756,11 @@ int confirmation_information_ok(char *title,char *prompt,
 #if defined (MOTIF)
 	Widget parent,
 #endif /* defined (MOTIF) */
-	struct User_interface *user_interface)
+	struct User_interface *user_interface
+#if defined (WX_USER_INTERFACE) 
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+)
 /*******************************************************************************
 LAST MODIFIED : 11 June 1999
 
@@ -741,7 +777,11 @@ No other options are supplied.
 #if defined (MOTIF)
 		parent,(Confirmation_add_widgets_function)NULL,NULL,
 #endif /* defined (MOTIF) */
-		user_interface);
+		 user_interface
+#if defined (WX_USER_INTERFACE) 
+					 , execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+);
 	LEAVE;
 
 	return (return_code);
@@ -751,7 +791,11 @@ int confirmation_warning_ok(char *title,char *prompt,
 #if defined (MOTIF)
 	Widget parent,
 #endif /* defined (MOTIF) */
-	struct User_interface *user_interface)
+	struct User_interface *user_interface
+#if defined (WX_USER_INTERFACE) 
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+)
 /*******************************************************************************
 LAST MODIFIED : 11 June 1999
 
@@ -768,7 +812,11 @@ options are supplied.
 #if defined (MOTIF)
 		parent,(Confirmation_add_widgets_function)NULL,NULL,
 #endif /* defined (MOTIF) */
-		user_interface);
+		 user_interface
+#if defined (WX_USER_INTERFACE) 
+					 , execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+);
 	LEAVE;
 
 	return (return_code);
@@ -778,7 +826,11 @@ int confirmation_question_yes_no(char *title,char *prompt,
 #if defined (MOTIF)
 	Widget parent,
 #endif /* defined (MOTIF) */
-	struct User_interface *user_interface)
+	struct User_interface *user_interface
+#if defined (WX_USER_INTERFACE) 
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+)
 /*******************************************************************************
 LAST MODIFIED : 11 June 1999
 
@@ -795,14 +847,22 @@ is clicked and No if it isn't.
 #if defined (MOTIF)
 		parent,(Confirmation_add_widgets_function)NULL,NULL,
 #endif /* defined (MOTIF) */
-		user_interface);
+		user_interface
+#if defined (WX_USER_INTERFACE) 
+					 , execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+);
 	LEAVE;
 
 	return (return_code);
 } /* confirmation_question_yes_no */
 
 char *confirmation_get_read_filename(char *extension,
-	struct User_interface *user_interface)
+	struct User_interface *user_interface
+#if defined (WX_USER_INTERFACE) 
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+)
 /*******************************************************************************
 LAST MODIFIED : 8 April 1998
 
@@ -813,14 +873,22 @@ This routine supplies a file selection dialog window
 	char *filename;
 
 	ENTER(confirmation_get_read_filename);
-	filename=confirmation_get_filename(CONFIRM_READ,extension,user_interface);
+	filename=confirmation_get_filename(CONFIRM_READ,extension,user_interface
+#if defined (WX_USER_INTERFACE) 
+					 , execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+);
 	LEAVE;
 
 	return (filename);
 } /* confirmation_get_read_filename */
 
 char *confirmation_get_write_filename(char *extension,
-	struct User_interface *user_interface)
+	struct User_interface *user_interface
+#if defined (WX_USER_INTERFACE) 
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+)
 /*******************************************************************************
 LAST MODIFIED : 8 April 1998
 
@@ -831,14 +899,22 @@ This routine supplies a file selection dialog window
 	char *filename;
 
 	ENTER(confirmation_get_write_filename);
-	filename=confirmation_get_filename(CONFIRM_WRITE,extension,user_interface);
+	filename=confirmation_get_filename(CONFIRM_WRITE,extension,user_interface
+#if defined (WX_USER_INTERFACE) 
+					 , execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+);
 	LEAVE;
 
 	return (filename);
 } /* confirmation_get_write_filename */
 
 char *confirmation_change_current_working_directory(
-	struct User_interface *user_interface)
+	struct User_interface *user_interface
+#if defined (WX_USER_INTERFACE) 
+	 , struct Execute_command *execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+)
 /*******************************************************************************
 LAST MODIFIED : 7 July 1999
 
@@ -851,7 +927,11 @@ working directory.  The new directory will be created if necessary.
 
 	ENTER(confirmation_change_current_working_directory);
 	filename=confirmation_get_filename(CONFIRM_CHANGE_DIRECTORY,(char *)NULL,
-		user_interface);
+		user_interface
+#if defined (WX_USER_INTERFACE) 
+					 , execute_command
+#endif /* defined (WX_USER_INTERFACE) */
+);
 	LEAVE;
 
 	return (filename);

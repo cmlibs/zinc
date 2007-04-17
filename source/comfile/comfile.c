@@ -120,7 +120,11 @@ specified on the command line, a file selection box is presented to the user.
 				if (!filename)
 				{
 					if (!(filename = confirmation_get_read_filename(
-						open_comfile_data->file_extension, open_comfile_data->user_interface)))
+									 open_comfile_data->file_extension, open_comfile_data->user_interface
+#if defined (WX_USER_INTERFACE)
+, open_comfile_data->execute_command
+#endif /*defined (WX_USER_INTERFACE)*/
+)))
 					{
 						return_code = 0;
 					}
@@ -186,7 +190,6 @@ specified on the command line, a file selection box is presented to the user.
 											 strcat(temp_string, pathname);
 											 temp_string[length+8]='\0';
 											 Execute_command_execute_string(open_comfile_data->execute_command,temp_string);
-											 //change_dir(state, pathname,open_comfile_data);
 										}
 								 }
 							}
