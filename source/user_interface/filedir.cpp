@@ -1170,129 +1170,129 @@ name the <file_operation> is performed on the file with the <arguments>.
 	}
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
-				temp_string=(char *)NULL;
-				extension = (char *)NULL;
-				switch (file_open_data->type)
-				{
-					case REGULAR:
-					{
-						shell_title="Specify a file";
-						if (file_open_data->filter_extension)
-						{
-							if (ALLOCATE(temp_string,char,strlen(shell_title)+
-								strlen(file_open_data->filter_extension)+2))
-							{
-								strcpy(temp_string,"Specify a ");
-								strcat(temp_string,file_open_data->filter_extension);
-								strcat(temp_string," file");
-								shell_title=temp_string;
-								if (strcmp(file_open_data->filter_extension, ".com") == 0)
-								{
-									 extension = "*.com";
-								}
-								else if (strcmp(file_open_data->filter_extension, ".exdata") == 0)
-								{
-									 extension = "*.exdata";
-								}
-								else if (strcmp(file_open_data->filter_extension, ".curve.com") == 0)
-								{
-									 extension = "*.curve.com";
-								}
-								else if (strcmp(file_open_data->filter_extension, ".exnode") == 0)
-								{
-									 extension = "*.exnode";
-								}
-								else if (strcmp(file_open_data->filter_extension, ".exelem") == 0)
-								{
-									 extension = "*.exelem";
-								}
-							}
-						}
-					} break;
-					case DIRECTORY:
-					{
-						shell_title="Specify a directory";
-					} break;
-					default:
-					{
-						shell_title=(char *)NULL;
-					} break;
-	 			}
-wxFileDialog *ReadData = new wxFileDialog ((wxWindow *)NULL,shell_title,"","",
- extension,wxOPEN|wxFILE_MUST_EXIST,wxDefaultPosition);
- if (ReadData->ShowModal() == wxID_OK)
+	temp_string=(char *)NULL;
+	extension = (char *)NULL;
+	switch (file_open_data->type)
 	{
-    wxString file_name=ReadData->GetPath();
-		file_open_data->file_name=(char*)file_name.mb_str();
-
-		if (file_open_data->operation)
-		{
-			 if ((file_open_data->operation)((file_open_data->file_name)
-						 ,file_open_data->arguments))
-			 {
-					retry=0;
-			 }
-			 else
-			 {
-					retry=1;
-			 }
-		}
-		old_directory = NULL;
-		old_directory_name = NULL;
-		old_directory = (char *)malloc(4096);
-		getcwd(old_directory, 4096);
-		length = strlen(old_directory);
-		filename = file_open_data->file_name;
-		if ((ALLOCATE(old_directory_name,char,length+1)) && old_directory !=NULL)
-		{
-			 strcpy(old_directory_name, old_directory);
-			 strcat(old_directory_name,"/");
-		}
-		if (strcmp(file_open_data->filter_extension, ".com") != 0)
-		{
-			 last = strrchr(filename, '/');
-			 if (last != NULL)
-			 {
-					length = last-filename+1;
-					pathname = NULL;
-					if (ALLOCATE(pathname,char,length))
-					{
-						 strncpy(pathname,filename,length);
-						 pathname[length]='\0';
-						 if (strcmp (old_directory_name,pathname) != 0)
-						 {
-								make_valid_token(&pathname);
-								length = strlen(pathname);
-								if (ALLOCATE(temp_string,char,length+8))
-								{
-									 strcpy(temp_string, "set dir ");
-									 strcat(temp_string, pathname);
-									 temp_string[length+8]='\0';
-									 Execute_command_execute_string(file_open_data->execute_command,temp_string);
-								}
-								if (temp_string)
-								{
-									 DEALLOCATE(temp_string);
-								}
-						 }
-					}
-					if (pathname)
-					{
-						 DEALLOCATE(pathname);
+		 case REGULAR:
+		 {
+				shell_title="Specify a file";
+				if (file_open_data->filter_extension)
+				{
+					 if (ALLOCATE(temp_string,char,strlen(shell_title)+
+								 strlen(file_open_data->filter_extension)+2))
+					 {
+							strcpy(temp_string,"Specify a ");
+							strcat(temp_string,file_open_data->filter_extension);
+							strcat(temp_string," file");
+							shell_title=temp_string;
+							if (strcmp(file_open_data->filter_extension, ".com") == 0)
+							{
+								 extension = "*.com";
+							}
+							else if (strcmp(file_open_data->filter_extension, ".exdata") == 0)
+							{
+								 extension = "*.exdata";
+							}
+							else if (strcmp(file_open_data->filter_extension, ".curve.com") == 0)
+							{
+								 extension = "*.curve.com";
+							}
+							else if (strcmp(file_open_data->filter_extension, ".exnode") == 0)
+							{
+								 extension = "*.exnode";
+							}
+							else if (strcmp(file_open_data->filter_extension, ".exelem") == 0)
+							{
+								 extension = "*.exelem";
+							}
+					 }
+				}
+		 } break;
+		 case DIRECTORY:
+		 {
+				shell_title="Specify a directory";
+		 } break;
+		 default:
+		 {
+				shell_title=(char *)NULL;
+		 } break;
+	}
+	wxFileDialog *ReadData = new wxFileDialog ((wxWindow *)NULL,shell_title,"","",
+		 extension,wxOPEN|wxFILE_MUST_EXIST,wxDefaultPosition);
+	if (ReadData->ShowModal() == wxID_OK)
+	{
+		 wxString file_name=ReadData->GetPath();
+		 file_open_data->file_name=(char*)file_name.mb_str();
+		 
+		 if (file_open_data->operation)
+		 {
+				if ((file_open_data->operation)((file_open_data->file_name)
+							,file_open_data->arguments))
+				{
+					 retry=0;
+				}
+				else
+				{
+					 retry=1;
+				}
+		 }
+		 old_directory = NULL;
+		 old_directory_name = NULL;
+		 old_directory = (char *)malloc(4096);
+		 getcwd(old_directory, 4096);
+		 length = strlen(old_directory);
+		 filename = file_open_data->file_name;
+		 if ((ALLOCATE(old_directory_name,char,length+1)) && old_directory !=NULL)
+		 {
+				strcpy(old_directory_name, old_directory);
+				strcat(old_directory_name,"/");
+		 }
+		 if (strcmp(file_open_data->filter_extension, ".com") != 0)
+		 {
+				last = strrchr(filename, '/');
+				if (last != NULL)
+				{
+					 length = last-filename+1;
+					 pathname = NULL;
+					 if (ALLOCATE(pathname,char,length))
+					 {
+							strncpy(pathname,filename,length);
+							pathname[length]='\0';
+							if (strcmp (old_directory_name,pathname) != 0)
+							{
+								 make_valid_token(&pathname);
+								 length = strlen(pathname);
+								 if (ALLOCATE(temp_string,char,length+8))
+								 {
+										strcpy(temp_string, "set dir ");
+										strcat(temp_string, pathname);
+										temp_string[length+8]='\0';
+										Execute_command_execute_string(file_open_data->execute_command,temp_string);
+								 }
+								 if (temp_string)
+								 {
+										DEALLOCATE(temp_string);
+								 }
+							}
+					 }
+					 if (pathname)
+					 {
+							DEALLOCATE(pathname);
 					}	
-			 }			 
-		}
-		if (old_directory_name)
-		{
+				}			 
+		 }
+		 if (old_directory_name)
+		 {
 			 DEALLOCATE(old_directory_name);
-		}
-		if (old_directory)
-		{
-			 DEALLOCATE(old_directory);
+		 }
+		 if (old_directory)
+		 {
+				DEALLOCATE(old_directory);
 		}
 	}
 #endif /* defined (WX_USER_INTERFACE) */
- LEAVE;
+	LEAVE;
 } /* open_file_and_read */
 
 void open_file_and_write(

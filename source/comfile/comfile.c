@@ -80,7 +80,9 @@ specified on the command line, a file selection box is presented to the user.
 #endif /* defined (MOTIF) */
 	struct Open_comfile_data *open_comfile_data;
 	struct Option_table *option_table;
-
+	temp_string=NULL;
+	pathname=NULL;
+	last=NULL;
 	old_directory = NULL;
 	old_directory_name = NULL;
 	ENTER(open_comfile);
@@ -159,6 +161,7 @@ specified on the command line, a file selection box is presented to the user.
 				}
 				else
 				{
+#if defined (WX_USER_INTERFACE)
 					 /* Save the current working directory */
 					 old_directory = (char *)malloc(4096);
 					 getcwd(old_directory, 4096);
@@ -194,6 +197,7 @@ specified on the command line, a file selection box is presented to the user.
 								 }
 							}
 					 }
+#endif /*defined (WX_USER_INTERFACE)*/
 				}
 				/* open the file */
 				if (return_code = check_suffix(&filename,
@@ -206,6 +210,7 @@ specified on the command line, a file selection box is presented to the user.
 							 execute_comfile(filename, open_comfile_data->io_stream_package,
 									open_comfile_data->execute_command);
 						}
+#if defined (WX_USER_INTERFACE)
 						/* Change back to original dir */
 						if ((old_directory_name != NULL) && (strcmp (old_directory_name,pathname) != 0))
 						{
@@ -221,6 +226,7 @@ specified on the command line, a file selection box is presented to the user.
 									//change_dir(state, pathname,open_comfile_data);
 							 }
 						}
+#endif /*defined (WX_USER_INTERFACE)*/
 					 }
 					 else
 					 {
@@ -268,6 +274,7 @@ specified on the command line, a file selection box is presented to the user.
 						return_code=0;
 #endif /* defined (MOTIF) */
 					 }
+#if defined (WX_USER_INTERFACE)
 					 if (old_directory_name)
 					 {
 							 DEALLOCATE(old_directory_name);
@@ -276,6 +283,7 @@ specified on the command line, a file selection box is presented to the user.
 					 {
 							 DEALLOCATE(old_directory);
 					 }
+#endif /*defined (WX_USER_INTERFACE)*/
 				}
 			}
 			if (filename)

@@ -148,7 +148,7 @@ public:
 				 (wxWindow *)NULL, _T("CmguiComfileWindow"));
 			comfile_listbox = XRCCTRL(*this, "ComfileListBox", wxListBox);
 			this_frame = XRCCTRL(*this, "CmguiComfileWindow", wxFrame);
-			char **command,*line;
+			char **command,*line, *temp_string;
 			struct IO_stream *comfile;
 			int i,number_of_commands;
 			wxString blank = "";	 
@@ -192,7 +192,18 @@ public:
 									*command=(char *)NULL;
 									command++;
 							 }
-							 this_frame->SetLabel(comfile_window->name);
+							 temp_string = NULL;
+							 if (ALLOCATE(temp_string,char,(strlen(comfile_window->name) + 9)))
+							 {
+									strcpy(temp_string, "comfile: ");
+									strcat(temp_string, comfile_window->name);
+									temp_string[(strlen(comfile_window->name) + 9)]='\0';
+									this_frame->SetTitle(temp_string);
+							 }
+							 if (temp_string)
+							 {
+									DEALLOCATE(temp_string);
+							 }							 
 						}
 						else
 						{
@@ -200,18 +211,18 @@ public:
 									"identify_command_list.  Could not allocate memory for commands");
 						}
 				 }
-				 IO_stream_close(comfile);
-				 DESTROY(IO_stream)(&comfile);
+			IO_stream_close(comfile);
+			DESTROY(IO_stream)(&comfile);
 			}
 			else
 			{
 				 display_message(ERROR_MESSAGE,
 						"identify_command_list.  Could not open file");
 			}
- 
-	 Show();
-};
-
+			
+			Show();
+	 };
+	 
   wxComfileWindow()
   {
   };

@@ -1731,6 +1731,63 @@ When changes have been made by the user, renew the label on the list
 			}
 	}
 
+	void RevertClicked(wxCommandEvent &event)
+	{
+		 int return_code;
+		 struct GT_element_group *gt_element_group;
+		 if (scene_editor && scene_editor->scene_object)
+		 {
+				return_code = 1;
+				switch (Scene_object_get_type(scene_editor->scene_object))
+				{
+					 case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
+					 {
+							if (gt_element_group = Scene_object_get_graphical_element_group(
+										 scene_editor->scene_object))
+							{
+								 graphicalitemschecklist =  XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
+								 graphicalitemschecklist->Clear();
+								 if (!for_each_settings_in_GT_element_group(scene_editor->gt_element_group,
+											 Scene_editor_add_element_settings_item, (void *)scene_editor));
+								 {
+										display_message(ERROR_MESSAGE, "Scene_editor_revert_child.  "
+											 "Could not revert graphical element");
+										for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
+											 Scene_editor_add_element_settings_item, (void *)scene_editor);
+										return_code = 0;
+								 }
+								 
+							}
+							else
+							{
+								 display_message(ERROR_MESSAGE,
+										"Scene_editor_revert_child.  Missing graphical element");
+								 return_code = 0;
+							}
+					 } break;
+					 case SCENE_OBJECT_GRAPHICS_OBJECT:
+					 case SCENE_OBJECT_SCENE:
+					 {
+							/* nothing to do */
+					 } break;
+				}
+				if (return_code)
+				{
+					 scene_editor->child_edited = 0;
+					 applybutton = XRCCTRL(*this, "ApplyButton", wxButton);
+					 revertbutton = XRCCTRL(*this,"RevertButton", wxButton);
+					 applybutton->Disable();
+					 revertbutton->Disable();
+				}
+		 }
+		 else
+		 {
+				display_message(ERROR_MESSAGE,
+					 "Scene Editor WX Revert Clicked.  Invalid argument(s)");
+				return_code = 0;
+		 }				
+	}
+
 	void ApplyClicked(wxCommandEvent &event)
 	{
  				if (!GT_element_group_modify(scene_editor->gt_element_group,
@@ -2088,12 +2145,12 @@ When changes have been made by the user, renew the label on the list
 																												 scene_editor->edit_gt_element_group, settings, 0))
 					{
 						//Update the list of settings
-						wxCheckListBox *graphicalitemchecklist =  XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
+						wxCheckListBox *graphicalitemschecklist =  XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
 						graphicalitemschecklist->Clear();
 						for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
 						  Scene_editor_add_element_settings_item, (void *)scene_editor);
-						graphicalitemchecklist->SetSelection((graphicalitemchecklist->GetCount()-1));
-						UpdateGraphicalElementList(static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(graphicalitemchecklist->GetCount()-1)));
+						graphicalitemschecklist->SetSelection((graphicalitemschecklist->GetCount()-1));
+						UpdateGraphicalElementList(static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(graphicalitemschecklist->GetCount()-1)));
 					}
 				if (!return_code)
 					{
@@ -3904,6 +3961,7 @@ BEGIN_EVENT_TABLE(wxSceneEditor, wxFrame)
 	 EVT_CHECKBOX(XRCID("NativeDiscretisationFieldCheckBox"),wxSceneEditor::NativeDiscretisationFieldChecked)
 	 EVT_CHECKBOX(XRCID("AutoCheckBox"),wxSceneEditor::AutoChecked)
 	 EVT_BUTTON(XRCID("ApplyButton"),wxSceneEditor::ApplyClicked)
+	 EVT_BUTTON(XRCID("RevertButton"),wxSceneEditor::RevertClicked)
 	 EVT_CHECKLISTBOX(XRCID("SceneCheckList"), wxSceneEditor::SceneCheckListClicked)
 	 EVT_LISTBOX(XRCID("SceneCheckList"), wxSceneEditor::SceneCheckListClicked)
 	 EVT_BUTTON(XRCID("SceneObjectUpButton"),wxSceneEditor::SceneObjectUpClicked)

@@ -1634,13 +1634,15 @@ public:
 	 void wx_Add_to_command_list(wxString command)
 	 {
 			history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
-			number = history_list->GetCount();
-			if (number == 0)
-				 history_list->InsertItems(1, &blank,number);
-			number = history_list->GetCount();
-			history_list->InsertItems(1,&command, number-1);
+			history_list->Freeze();
+			if(history_list->GetCount() == 0)
+				 history_list->Append(command);
+			else
+				 history_list->SetString(history_list->GetCount()-1, command);
+			history_list->Append("");	
+			// make item visible
 			history_list->SetSelection(history_list->GetCount()-1);
-			history_list->Thaw();
+			history_list->Thaw(); 
 	 }	 
 	 
 	 void SingleClick(wxCommandEvent& event)
