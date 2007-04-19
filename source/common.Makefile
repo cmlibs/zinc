@@ -524,7 +524,7 @@ endif # $(USER_INTERFACE) == WIN32_USER_INTERFACE
 
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 
-WX_COMPILER = $(firstword $(wildcard $(WX_DIR)utils/wxrc/wxrc) $(WX_DIR)wxrc)
+WX_COMPILER = $(shell $(WX_DIR)wx-config --utility=wxrc)
 
 %.xrch : %.xrc
 	@if [ ! -d $(XRCH_PATH)/$(*D) ]; then \
@@ -587,9 +587,9 @@ define BuildStaticLibraryTarget
 endef
 
 ifeq ($(OPERATING_SYSTEM), win32)
-  LINK_LINE = $(LINK) -shared -o $(1).dll  $(ALL_FLAGS) -Wl,--export-all-symbols -Wl,--out-implib,$(1).dll.a -Wl,--kill-at -Wl,--output-def,$(1).def -Wl,--whole-archive `cat $(1).list$$$$`  -Wl,--no-whole-archive $(4) $(6) && cp $(1).dll $(2)/$(1).dll && cp $(1).dll.a $(2)/$(1).dll.a && cp $(1).def $(2)/$(1).def
+  LINK_LINE = $(LINK) -shared -o $(2)/$(1)$(SO_LIB_SUFFIX)  $(ALL_FLAGS) -Wl,--export-all-symbols -Wl,--out-implib,$(2)/$(1)$(SO_LIB_IMPORT_LIB_SUFFIX) -Wl,--kill-at -Wl,--output-def,$(2)/$(1).def -Wl,--whole-archive `cat $(1).list$$$$`  -Wl,--no-whole-archive $(4) $(foreach import_lib,$(6),$(import_lib)$(SO_LIB_IMPORT_LIB_SUFFIX))
 else
-  LINK_LINE = $(LINK) -shared -o $(1).tmp$$$$ $(ALL_FLAGS) `cat $(1).list$$$$` $(4) -Wl,-soname,$(5) && mv $(1).tmp$$$$ $(2)/$(1)
+  LINK_LINE = $(LINK) -shared -o $(2)/$(1)$(SO_LIB_SUFFIX) $(ALL_FLAGS) `cat $(1).list$$$$` $(4) -Wl,-soname,$(5)
 endif
 
 define BuildSharedLibraryTarget
