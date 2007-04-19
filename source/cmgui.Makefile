@@ -1438,6 +1438,8 @@ ifeq ($(SYSNAME),Linux)
    ALL_SO_LINK_FLAGS =
 endif # SYSNAME == Linux
 
+STATIC_LIB_SUFFIX = .a
+
 ifeq ($(SYSNAME),win32)
    SO_LIB_SUFFIX = .dll
    SO_LIB_IMPORT_LIB_SUFFIX = .dll.a
@@ -1628,7 +1630,6 @@ endif # USE_COMPUTED)VARIABLES == true
 #Make so_lib to be a shorthand for making all the so_libs
 so_lib : $(SO_LIB_GENERAL_TARGET) $(SO_LIB_FINITE_ELEMENT_TARGET) $(SO_LIB_TARGET) $(SO_LIB_PASS_THROUGH_TARGET)
 
-STATIC_LIB_SUFFIX = .a
 STATIC_LIB_TARGET = lib$(TARGET_EXECUTABLE_BASENAME)$(STATIC_LIB_SUFFIX)
 
 $(STATIC_LIB_TARGET) : $(OBJS)
