@@ -5289,6 +5289,9 @@ DESCRIPTION :
 	LEAVE;
 } /* fieldml_sax_fatalError */
 
+#if defined (OLD_CODE)
+Now there is a function to use in libxml2 (although this has also been deprecated
+	by SAX2).
 static int specialXmlSAXParseFile(xmlSAXHandlerPtr sax, void *user_data, char *filename)
 /*******************************************************************************
 LAST MODIFIED : 10 February 2003
@@ -5317,12 +5320,13 @@ DESCRIPTION :
     
 	return ret;
 } /* specialXmlSAXParseFile */
+#endif /* defined (OLD_CODE) */
 
 struct Cmiss_region *parse_fieldml_file(char *filename,
 	struct MANAGER(FE_basis) *basis_manager,
 	struct LIST(FE_element_shape) *element_shape_list)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2003
+LAST MODIFIED : 19 April 2007
 
 DESCRIPTION :
 Reads fieldml file <filename> and returns a Cmiss_region containing its
@@ -5427,15 +5431,12 @@ Cmiss_region.
 		fieldml_handler.error = fieldml_sax_error;
 		fieldml_handler.fatalError = fieldml_sax_fatalError;
 	
-		if (0 == specialXmlSAXParseFile(&fieldml_handler, &fieldml_data, filename))
+		int return_code = xmlSAXUserParseFile(&fieldml_handler, &fieldml_data,
+			filename);
+		FE_region_end_change(fieldml_data.root_fe_region);
+		Cmiss_region_end_change(fieldml_data.root_region);
+		if (return_code != 0)
 		{
-			FE_region_end_change(fieldml_data.root_fe_region);
-			Cmiss_region_end_change(fieldml_data.root_region);
-		}
-		else
-		{
-			FE_region_end_change(fieldml_data.root_fe_region);
-			Cmiss_region_end_change(fieldml_data.root_region);
 			DESTROY(Cmiss_region)(&root_region);
 			root_region = (struct Cmiss_region *)NULL;
 		}
