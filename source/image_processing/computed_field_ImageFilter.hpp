@@ -827,7 +827,18 @@ Evaluate the templated version of this filter
 				typename ImageType::IndexType index;
 				for (i = 0 ; i < dimension ; i++)
 				{
-					index[i] = (long int)(xi[i] * sizes[i] - 0.5);
+					if (xi[i] < 0.0)
+						{
+							index[i] = 0;
+						}
+					else if (xi[i] >= 1.0)
+						{
+							index[i] = sizes[i] - 1;
+						}
+					else
+						{
+							index[i] = (long int)(xi[i] * (FE_value)sizes[i]);
+						}
 				}
 				assign_field_values( outputImage->GetPixel( index ) );
 				return_code = 1;
