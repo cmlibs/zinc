@@ -146,9 +146,9 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    source field : %s\n",field->source_fields[0]->name);
 		display_message(INFORMATION_MESSAGE,
-			"    filter minimum : %g\n", variance);
+			"    variance : %g\n", variance);
 		display_message(INFORMATION_MESSAGE,
-			"    filter maximum : %g\n", maxKernelWidth);
+			"    maxKernelWidth : %d\n", maxKernelWidth);
 	}
 	else
 	{
