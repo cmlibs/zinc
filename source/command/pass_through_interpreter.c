@@ -49,6 +49,28 @@ Just passes commands through without interpretation
 #include "command/pass_through_interpreter.h"
 #include "general/debug.h"
 
+#if defined (USE_PARAMETER_ON)
+#define USE_PARAMETER_PTI(dummy) use_parameter_pti(0,dummy)
+
+void use_parameter_pti(int dummy, ... )
+/*******************************************************************************
+LAST MODIFIED : 26 November 2001
+
+DESCRIPTION :
+Definition of function which is called in the development stage (when
+USE_PARAMETER_ON is defined) to swallow unused parameters to functions which
+would otherwise cause compiler warnings. For example, parameter <dummy_void>
+is swallowed with the call USE_PARAMETER_PTI(dummy_void); at the start of function.
+==============================================================================*/
+{
+	if (dummy)
+	{
+	}
+} /* use_parameter_pti */
+#else /* defined (USE_PARAMETER_ON) */
+#define USE_PARAMETER_PTI(dummy)
+#endif /* defined (USE_PARAMETER_ON) */
+
 struct Interpreter 
 /*******************************************************************************
 LAST MODIFIED : 18 April 2007
@@ -89,9 +111,9 @@ Creates the interpreter for processing commands.
 	const char *pcre_error_string;
 	int pcre_error_offset, return_code;
 
-  USE_PARAMETER(argc);
-  USE_PARAMETER(argv);
-  USE_PARAMETER(initial_comfile);
+  USE_PARAMETER_PTI(argc);
+  USE_PARAMETER_PTI(argv);
+  USE_PARAMETER_PTI(initial_comfile);
 
   return_code = 1;
 
@@ -173,8 +195,8 @@ Sets the function that will be called whenever the Interpreter wants to report
 information.
 ==============================================================================*/
 {
-	USE_PARAMETER(interpreter);
-	USE_PARAMETER(function);
+	USE_PARAMETER_PTI(interpreter);
+	USE_PARAMETER_PTI(function);
 	*status = 1;
 }
 
@@ -187,7 +209,7 @@ This redirects the output from stdout to a pipe so that the handle_output
 routine can write this to the command window.
 ==============================================================================*/
 {
-	USE_PARAMETER(interpreter);
+	USE_PARAMETER_PTI(interpreter);
   *status = 1;
 }
 
@@ -366,8 +388,8 @@ DESCRIPTION:
 NOT_IMPLEMENTED
 ==============================================================================*/
 {
-	USE_PARAMETER(interpreter);
-	USE_PARAMETER(expression);
+	USE_PARAMETER_PTI(interpreter);
+	USE_PARAMETER_PTI(expression);
 	*result = (char *)NULL;
 	*status = 0;
 } /* interpreter_evaluate_string_ */
@@ -381,9 +403,9 @@ DESCRIPTION:
 NOT_IMPLEMENTED
 ==============================================================================*/
 {
-	USE_PARAMETER(interpreter);
-	USE_PARAMETER(variable_name);
-	USE_PARAMETER(value);
+	USE_PARAMETER_PTI(interpreter);
+	USE_PARAMETER_PTI(variable_name);
+	USE_PARAMETER_PTI(value);
 	*status = 0;
 } /* interpreter_set_string_ */
 
@@ -396,27 +418,10 @@ DESCRIPTION:
 NOT_IMPLEMENTED
 ==============================================================================*/
 {
-	USE_PARAMETER(interpreter);
-	USE_PARAMETER(variable_name);
-	USE_PARAMETER(class_name);
-	USE_PARAMETER(value);
+	USE_PARAMETER_PTI(interpreter);
+	USE_PARAMETER_PTI(variable_name);
+	USE_PARAMETER_PTI(class_name);
+	USE_PARAMETER_PTI(value);
 	*status = 0;
 } /* interpreter_set_string_ */
 
-#if defined (USE_PARAMETER_ON)
-void use_parameter(int dummy, ... )
-/*******************************************************************************
-LAST MODIFIED : 26 November 2001
-
-DESCRIPTION :
-Definition of function which is called in the development stage (when
-USE_PARAMETER_ON is defined) to swallow unused parameters to functions which
-would otherwise cause compiler warnings. For example, parameter <dummy_void>
-is swallowed with the call USE_PARAMETER(dummy_void); at the start of function.
-==============================================================================*/
-{
-	if (dummy)
-	{
-	}
-} /* use_parameter */
-#endif /* defined (USE_PARAMETER_ON) */
