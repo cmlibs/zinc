@@ -99,39 +99,43 @@ Enumerates the main different types of vertex/fragment program for materials
 	MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING = 1,
 	MATERIAL_PROGRAM_CLASS_PER_PIXEL_LIGHTING = 2,
 	/* Use these bits to indicate the presence of and dimension (1, 2 or 3) of a colour texture. */
-	MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1 = 4,
-	MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2 = 8,
+	MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1 = (1<<2),
+	MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2 = (1<<3),
 	/* If either bit is set then we are using a texture */
 	MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE = 12,
 	/* If this bit is set then a colour texture will replace the lighting calculation for a colour,
 		if it is not set then the texture will modulate the lighting calculation colour */
-	MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_DECAL = 16,
+	MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_DECAL = (1<<4),
 	/* Specifies the output dimension of the texture and therefore how it is applied.
 		OUTPUT1 = grayscale, OUTPUT2 = grayscale and alpha, OUTPUT1 & OUTPUT2 = rgb
 		!OUPUT1 & !OUTPUT2 = rgba. */
-	MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 = 32,
-	MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 = 64,
+	MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 = (1<<5),
+	MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 = (1<<6),
 
 	/* Use these bits to indicate the presence of and dimension (1, 2 or 3) of a secondary or bump map texture. */
-	MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_1 = 128,
-	MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_2 = 256,
+	MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_1 = (1<<7),
+	MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_2 = (1<<8),
 	MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE = 384,
    /* Specifies that the secondary texture is intended to be used as a bump map texture, modulating
 		the per pixel value of the normal in the lighting calculation */
-	MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_BUMPMAP = 512,
+	MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_BUMPMAP = (1<<9),
 
 	/* The colour value is used as the input, derived from the primary texture or the lighting. 
-	   The specified number of input components (1, 2 or 3) are used directly from the input source */
-	MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 = 1024,
-	MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2 = 2048,
+	   Specify which input components are used directly from the input source,
+		at most 3 of the input values can be used (a 3D texture lookup) */
+	MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 = (1<<10),
+	MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2 = (1<<11),
+	MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3 = (1<<12),
+	MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4 = (1<<13),
+	MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_INPUTS = (1<<10) + (1<<11) + (1<<12) + (1<<13),
 
 	/* Specify the outputs in the dependent texture lookup, either replacing the colour, alpha or both. */
-	MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR = 4096,
-	MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA = 8192,
+	MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR = (1<<14),
+	MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA = (1<<15),
 
    /* Order independent transparency passes */
-	MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_FIRST_LAYER = 16384,
-	MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER = 32768
+	MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_FIRST_LAYER = (1<<16),
+	MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER = (1<<17)
 }; /* enum Material_program_type */
 
 struct Material_program
@@ -856,31 +860,47 @@ be shared by multiple materials using the same program.
 
 					}
 					if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 | 
-							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2) & material_program->type)
+							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2 | 
+							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3 | 
+							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4) & material_program->type)
 					{
 						append_string(&fragment_program_string, 	
 							"TEMP dependentlookup;\n"
 							, &error);
 						switch ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 | 
-								MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2) & material_program->type)
+								MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2| 
+							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3 | 
+							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4) & material_program->type)
 						{
 							case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1:
 							{
 								append_string(&fragment_program_string,
-									"TEX		dependentlookup, finalCol, texture[2], 1D;\n"
+									"TEX		dependentlookup, finalCol.r, texture[2], 1D;\n"
 									, &error);
 							} break;
 							case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2:
 							{
 								append_string(&fragment_program_string,
-									"TEX		dependentlookup, finalCol, texture[2], 2D;\n"
+									"TEX		dependentlookup, finalCol.g, texture[2], 1D;\n"
+									, &error);
+							} break;
+							case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3:
+							{
+								append_string(&fragment_program_string,
+									"TEX		dependentlookup, finalCol.b, texture[2], 1D;\n"
+									, &error);
+							} break;
+							case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4:
+							{
+								append_string(&fragment_program_string,
+									"TEX		dependentlookup, finalCol.a, texture[2], 1D;\n"
 									, &error);
 							} break;
 							case (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 |
 								MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2):
 							{
 								append_string(&fragment_program_string,
-									"TEX		dependentlookup, finalCol, texture[2], 3D;\n"
+									"TEX		dependentlookup, finalCol.rgrg, texture[2], 2D;\n"
 									, &error);
 							} break;
 						}
@@ -2636,7 +2656,9 @@ LAST MODIFIED : 23 January 2004
 DESCRIPTION :
 ==============================================================================*/
 {
-	char bump_mapping_flag, *current_token, normal_mode_flag, per_pixel_mode_flag;
+	char bump_mapping_flag, colour_lookup_red_flag, colour_lookup_green_flag,
+		colour_lookup_blue_flag, colour_lookup_alpha_flag, *current_token,
+		normal_mode_flag, per_pixel_mode_flag;
 	enum Spectrum_colour_components spectrum_colour_components;
 	int dimension, process, return_code;
 	struct Graphical_material *material_to_be_modified,
@@ -2741,6 +2763,11 @@ DESCRIPTION :
 					bump_mapping_flag = 0;
 					normal_mode_flag = 0;
 					per_pixel_mode_flag = 0;
+					colour_lookup_red_flag = 0;
+					colour_lookup_green_flag = 0;
+					colour_lookup_blue_flag = 0;
+					colour_lookup_alpha_flag = 0;
+
 					option_table = CREATE(Option_table)();
 					Option_table_add_entry(option_table, "alpha",
 						&(material_to_be_modified_copy->alpha), NULL,
@@ -2750,6 +2777,14 @@ DESCRIPTION :
 						set_Colour);
 					Option_table_add_char_flag_entry(option_table,
 						"bump_mapping", &bump_mapping_flag);
+					Option_table_add_char_flag_entry(option_table,
+						"colour_lookup_alpha", &colour_lookup_alpha_flag);
+					Option_table_add_char_flag_entry(option_table,
+						"colour_lookup_blue", &colour_lookup_blue_flag);
+					Option_table_add_char_flag_entry(option_table,
+						"colour_lookup_green", &colour_lookup_green_flag);
+					Option_table_add_char_flag_entry(option_table,
+						"colour_lookup_red", &colour_lookup_red_flag);
 					Option_table_add_entry(option_table, "colour_lookup_spectrum",
 						&(material_to_be_modified_copy->spectrum), 
 						material_package->spectrum_manager,
@@ -2786,6 +2821,43 @@ DESCRIPTION :
 						{
 							display_message(ERROR_MESSAGE,
 								"Specify only one of normal_mode/per_pixel_mode.");
+							return_code = 0;
+						}
+						if ((colour_lookup_alpha_flag + colour_lookup_blue_flag +
+								colour_lookup_green_flag + colour_lookup_red_flag) > 0)
+						{
+							if (!material_to_be_modified_copy->spectrum)
+							{
+								display_message(ERROR_MESSAGE,
+									"If you specify a colour lookup colour you must also specify a colour_lookup_spectrum.");
+								return_code = 0;
+							}
+							else
+							{
+								if ((colour_lookup_alpha_flag + colour_lookup_blue_flag +
+										colour_lookup_green_flag + colour_lookup_red_flag) != 
+									Spectrum_get_number_of_components(material_to_be_modified_copy->spectrum))
+								{
+									display_message(ERROR_MESSAGE,
+										"Number of components used in colour_lookup_spectrum does not match the number of colour_lookup_colours specified.");
+									return_code = 0;
+								}
+							}
+							if ((colour_lookup_alpha_flag + colour_lookup_blue_flag +
+									colour_lookup_green_flag + colour_lookup_red_flag) > 3)
+							{
+								display_message(ERROR_MESSAGE,
+									"A maximum of three colours (3 of colour_lookup_alpha, colour_lookup_blue, colour_lookup_green_flag or colour_lookup_red_flag) can be used as input to a colour_lookup_spectrum.");
+								return_code = 0;
+							}
+						}
+						else if (material_to_be_modified_copy->spectrum &&
+							(!(material_to_be_modified_copy->program) ||
+							!(material_to_be_modified_copy->program->type &
+								MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_INPUTS)))
+						{
+							display_message(ERROR_MESSAGE,
+								"If you specify a colour_lookup_spectrum you must also specify the input colours. (1 to 3 of colour_lookup_alpha, colour_lookup_blue, colour_lookup_green_flag and colour_lookup_red_flag)");
 							return_code = 0;
 						}
 						/* Don't check run time availability yet as we may 
@@ -2954,24 +3026,24 @@ DESCRIPTION :
 										(void *)material_to_be_modified_copy, material_to_be_modified_copy->package->spectrum_manager);
 								}
 
-								switch (Spectrum_get_number_of_components(
-									material_to_be_modified_copy->spectrum))
+								/* Specify the input colours */
+								if (colour_lookup_red_flag)
 								{
-									case 1:
-									{
-										type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1;
-									} break;
-									case 2:
-									{
-										type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2;
-									} break;
-									case 3:
-									default:
-									{
-										type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 |
-											MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2;
-									} break;
+									type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1;
 								}
+								if (colour_lookup_green_flag)
+								{
+									type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2;
+								}
+								if (colour_lookup_blue_flag)
+								{
+									type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3;
+								}
+								if (colour_lookup_alpha_flag)
+								{
+									type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4;
+								}
+
 								spectrum_colour_components = Spectrum_get_colour_components(
 									material_to_be_modified_copy->spectrum);
 								if (spectrum_colour_components & SPECTRUM_COMPONENT_ALPHA) 
