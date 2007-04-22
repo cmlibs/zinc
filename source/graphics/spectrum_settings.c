@@ -54,6 +54,8 @@ appearance of spectrums.
 #include "general/compare.h"
 #include "general/mystring.h"
 #include "general/object.h"
+#include "computed_field/computed_field.h"
+#include "computed_field/computed_field_set.h"
 #include "graphics/colour.h"
 #include "graphics/graphics_library.h"
 #include "graphics/material.h"
@@ -101,6 +103,10 @@ Stores one group of settings for a single part of a spectrum rendition.
 	/* The number of bands in a banded contour and the proportion (out of 1000)
 		of the black bands */
 	int number_of_bands, black_band_proportion;
+
+	/* SPECTRUM_FIELD type */
+	struct Computed_field *input_field;
+	struct Computed_field *output_field;
 
 #if defined (OPENGL_API)
 	/* Texture number for banded and step spectrums */
@@ -336,6 +342,8 @@ Allocates memory and assigns fields for a struct Spectrum_settings.
 		settings->black_band_proportion = 200;
 		settings->active=1;
 		settings->position = 0;
+		settings->input_field = (struct Computed_field *)NULL;
+		settings->output_field = (struct Computed_field *)NULL;
 #if defined (OPENGL_API)
 		settings->texture_id=0;
 #endif /* defined (OPENGL_API) */
@@ -378,6 +386,7 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 			{
 				case SPECTRUM_LINEAR:
 				case SPECTRUM_LOG:
+				case SPECTRUM_FIELD:
 				{
 					/* Don't need to do anything */
 				} break;
@@ -386,6 +395,14 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 					display_message(ERROR_MESSAGE,
 						"DESTROY(Spectrum_settings).  Unknown element settings type");
 				} break;
+			}
+			if (settings->input_field)
+			{
+				DEACCESS(Computed_field)(&settings->input_field);
+			}
+			if (settings->output_field)
+			{
+				DEACCESS(Computed_field)(&settings->output_field);
 			}
 			/*???RC check temp access_count is zero! */
 			if (0!=settings->access_count)
@@ -443,6 +460,10 @@ Note: destination->access_count is not changed by COPY.
 		destination->number_of_bands = source->number_of_bands;
 		destination->black_band_proportion = source->black_band_proportion;
 		destination->step_value = source->step_value;
+		REACCESS(Computed_field)(&destination->input_field, 
+			source->input_field);
+		REACCESS(Computed_field)(&destination->output_field, 
+			source->output_field);
 		return_code = 1;
 	}
 	else
@@ -889,7 +910,7 @@ line. Parameter <settings_detail> selects whether appearance settings are
 included in the string. User must remember to DEALLOCATE the name afterwards.
 ==============================================================================*/
 {
-	char *settings_string,temp_string[80];
+	char *name,*settings_string,temp_string[80];
 	int error;
 
 	ENTER(Spectrum_settings_string);
@@ -924,6 +945,28 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 					append_string(&settings_string," right",&error);
 				}					
 			} break;
+			case SPECTRUM_FIELD:
+			{
+				append_string(&settings_string,"field",&error);
+				append_string(&settings_string," input ",&error);
+				name=(char *)NULL;
+				if (GET_NAME(Computed_field)(settings->input_field,&name))
+				{
+					/* put quotes around name if it contains special characters */
+					make_valid_token(&name);
+					append_string(&settings_string,name,&error);
+					DEALLOCATE(name);
+				}
+				append_string(&settings_string," output ",&error);
+				name=(char *)NULL;
+				if (GET_NAME(Computed_field)(settings->output_field,&name))
+				{
+					/* put quotes around name if it contains special characters */
+					make_valid_token(&name);
+					append_string(&settings_string,name,&error);
+					DEALLOCATE(name);
+				}
+			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
@@ -937,11 +980,11 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 		sprintf(temp_string," range %g %g",settings->minimum,
 			settings->maximum);
 		append_string(&settings_string,temp_string,&error);
-		if ((settings->extend_above)&&(settings->settings_type!=SPECTRUM_STEP))
+		if ((settings->extend_above)&&(settings->colour_mapping!=SPECTRUM_STEP))
 		{
 			append_string(&settings_string," extend_above",&error);
 		}
-		if ((settings->extend_below)&&(settings->settings_type!=SPECTRUM_STEP))
+		if ((settings->extend_below)&&(settings->colour_mapping!=SPECTRUM_STEP))
 		{
 			append_string(&settings_string," extend_below",&error);
 		}
@@ -985,9 +1028,9 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 					append_string(&settings_string,temp_string,&error);
 				} break;	
 			}
+			sprintf(temp_string," component %d",settings->component_number + 1);
+			append_string(&settings_string,temp_string,&error);	
 		}
-		sprintf(temp_string," component %d",settings->component_number + 1);
-		append_string(&settings_string,temp_string,&error);	
 	}
 	else
 	{
@@ -2025,9 +2068,22 @@ component number used.  The first component_index is 0, so this means 1 componen
 	ENTER(Spectrum_settings_expand_maximum_component_index);
 	if (settings && (component_index = (int *)component_index_void))
 	{
-		if (*component_index < settings->component_number)
+		if (settings->settings_type == SPECTRUM_FIELD)
 		{
-			*component_index = settings->component_number;
+			int number_of_input_components = 
+				Computed_field_get_number_of_components(settings->input_field);
+			if (*component_index < number_of_input_components - 1)
+			{
+				/* The maximum index is 1 less than the number of components */
+				*component_index = number_of_input_components - 1;
+			}
+		}
+		else
+		{
+			if (*component_index < settings->component_number)
+			{
+				*component_index = settings->component_number;
+			}
 		}
 		return_code=1;
 	}
@@ -2053,51 +2109,80 @@ in the value pointed to by <colour_components_void>.
 ==============================================================================*/
 {
 	enum Spectrum_colour_components *colour_components;
-	int return_code;
+	int done, return_code;
 
 	ENTER(Spectrum_settings_set_colour_components);
 	if (settings && (colour_components = 
 			(enum Spectrum_colour_components *)colour_components_void))
 	{
-		switch (settings->colour_mapping)
+		done = 0;
+		if (settings->settings_type == SPECTRUM_FIELD)
 		{
-			case SPECTRUM_RAINBOW:
-			case SPECTRUM_WHITE_TO_BLUE:
-			case SPECTRUM_WHITE_TO_RED:
+			int number_of_components = Computed_field_get_number_of_components
+					(settings->output_field);
+			if (2 == number_of_components)
+			{
+				*colour_components |= (SPECTRUM_COMPONENT_RED
+					| SPECTRUM_COMPONENT_GREEN | SPECTRUM_COMPONENT_BLUE
+					| SPECTRUM_COMPONENT_ALPHA);
+				done = 1;
+			}
+			else if (3 == number_of_components)
 			{
 				*colour_components |= (SPECTRUM_COMPONENT_RED
 					| SPECTRUM_COMPONENT_GREEN | SPECTRUM_COMPONENT_BLUE);
-			} break;
-			case SPECTRUM_RED:
+				done = 1;
+			} 
+			else if (4 <= number_of_components)
 			{
-				*colour_components |= SPECTRUM_COMPONENT_RED;
-			} break;
-			case SPECTRUM_GREEN:
+				*colour_components |= (SPECTRUM_COMPONENT_RED
+					| SPECTRUM_COMPONENT_GREEN | SPECTRUM_COMPONENT_BLUE
+					| SPECTRUM_COMPONENT_ALPHA);
+				done = 1;
+			} 
+		}
+		if (!done)
+		{
+			switch (settings->colour_mapping)
 			{
-				*colour_components |= SPECTRUM_COMPONENT_GREEN;
-			} break;
-			case SPECTRUM_BLUE:
-			{
-				*colour_components |= SPECTRUM_COMPONENT_BLUE;
-			} break;
-			case SPECTRUM_ALPHA:
-			{
-				*colour_components |= SPECTRUM_COMPONENT_ALPHA;
-			} break;
-			case SPECTRUM_MONOCHROME:
-			{
-				*colour_components |= SPECTRUM_COMPONENT_MONOCHROME;
-			} break;
-			case SPECTRUM_BANDED:
-			{
-				*colour_components |= SPECTRUM_COMPONENT_RED
-					| SPECTRUM_COMPONENT_GREEN | SPECTRUM_COMPONENT_BLUE;
-			} break;
-			case SPECTRUM_STEP:
-			{
-				*colour_components |= SPECTRUM_COMPONENT_RED
-					| SPECTRUM_COMPONENT_GREEN | SPECTRUM_COMPONENT_BLUE;
-			} break;	
+				case SPECTRUM_RAINBOW:
+				case SPECTRUM_WHITE_TO_BLUE:
+				case SPECTRUM_WHITE_TO_RED:
+				{
+					*colour_components |= (SPECTRUM_COMPONENT_RED
+						| SPECTRUM_COMPONENT_GREEN | SPECTRUM_COMPONENT_BLUE);
+				} break;
+				case SPECTRUM_RED:
+				{
+					*colour_components |= SPECTRUM_COMPONENT_RED;
+				} break;
+				case SPECTRUM_GREEN:
+				{
+					*colour_components |= SPECTRUM_COMPONENT_GREEN;
+				} break;
+				case SPECTRUM_BLUE:
+				{
+					*colour_components |= SPECTRUM_COMPONENT_BLUE;
+				} break;
+				case SPECTRUM_ALPHA:
+				{
+					*colour_components |= SPECTRUM_COMPONENT_ALPHA;
+				} break;
+				case SPECTRUM_MONOCHROME:
+				{
+					*colour_components |= SPECTRUM_COMPONENT_MONOCHROME;
+				} break;
+				case SPECTRUM_BANDED:
+				{
+					*colour_components |= SPECTRUM_COMPONENT_RED
+						| SPECTRUM_COMPONENT_GREEN | SPECTRUM_COMPONENT_BLUE;
+				} break;
+				case SPECTRUM_STEP:
+				{
+					*colour_components |= SPECTRUM_COMPONENT_RED
+						| SPECTRUM_COMPONENT_GREEN | SPECTRUM_COMPONENT_BLUE;
+				} break;	
+			}
 		}
 		return_code=1;
 	}
@@ -2357,7 +2442,8 @@ Modifies the material in the render data to represent the data value
 passed in render data.
 ==============================================================================*/
 {
-	int return_code,texels_per_band;
+	FE_value *values;
+	int number_of_components, return_code,texels_per_band;
 	float data_component,value,step_xi,total_texels;
 	struct Spectrum_render_data *render_data;
 
@@ -2365,215 +2451,332 @@ passed in render data.
 	if (settings&&(render_data=(struct Spectrum_render_data *)render_data_void))
 	{
 		return_code=1;
-		/* Ignore inactive settings or settings which act on a component for which
-			there is no data */
-		if (settings->active && 
-			(settings->component_number < render_data->number_of_data_components))
+		if (settings->settings_type == SPECTRUM_FIELD)
 		{
-			data_component = render_data->data[settings->component_number];
-			/* Always set a value for texture_coordinate based spectrums */
-			if ((SPECTRUM_BANDED==settings->colour_mapping)
-				|| (SPECTRUM_STEP==settings->colour_mapping)
-				|| (((data_component>=settings->minimum)||settings->extend_below)&&
-				((data_component<=settings->maximum)||settings->extend_above)))
+			if (settings->active)
 			{
-				/* first get value (normalised 0 to 1) from type */
-				if (settings->maximum != settings->minimum)
+				number_of_components = Computed_field_get_number_of_components
+					(settings->output_field);
+				ALLOCATE(values, FE_value, number_of_components); 
+				Computed_field_evaluate_at_field_coordinates(settings->output_field,
+					settings->input_field, render_data->number_of_data_components,
+					render_data->data, /*time*/0.0, values);
+
+				if (1 == number_of_components)
 				{
-					switch (settings->settings_type)
+					value = values[0];
+					switch (settings->colour_mapping)
 					{
-						case SPECTRUM_LINEAR:
+						case SPECTRUM_ALPHA:
 						{
-							value=(data_component-settings->minimum)/
-								(settings->maximum-settings->minimum);
+							render_data->rgba[3] = value;
 						} break;
-						case SPECTRUM_LOG:
+						case SPECTRUM_RAINBOW:
 						{
-							if (settings->exaggeration<0)
+							if (value<1.0/3.0)
 							{
-								value=1.0-log(1-settings->exaggeration*
-									(settings->maximum-data_component)/
-									(settings->maximum-settings->minimum))/
-									log(1-settings->exaggeration);
+								render_data->rgba[0]=1.0;
+								render_data->rgba[2]=0.0;
+								if (value<1.0/6.0)
+								{
+									render_data->rgba[1]=value*4.5;
+								}
+								else
+								{
+									render_data->rgba[1]=0.75+(value-1.0/6.0)*1.5;
+								}
 							}
 							else
 							{
-								value=log(1+settings->exaggeration*
-									(data_component-settings->minimum)/
-									(settings->maximum-settings->minimum))/
-									log(1+settings->exaggeration);
+								if (value<2.0/3.0)
+								{
+									render_data->rgba[0]=(2.0/3.0-value)*3.0;
+									render_data->rgba[1]=1.0;
+									render_data->rgba[2]=(value-1.0/3.0)*3.0;
+								}
+								else
+								{
+									render_data->rgba[0]=0.0;
+									render_data->rgba[2]=1.0;
+									if (value<5.0/6.0)
+									{
+										render_data->rgba[1]=1.0-(value-2.0/3.0)*1.5;
+									}
+									else
+									{
+										render_data->rgba[1]=0.75-(value-5.0/6.0)*4.5;
+									}
+								}
 							}
 						} break;
-						default:
+						case SPECTRUM_RED:
 						{
-							display_message(ERROR_MESSAGE,
-								"Spectrum_settings_activate.  Unknown type");
-							return_code=0;
+							render_data->rgba[0]=value;
+						} break;
+						case SPECTRUM_GREEN:
+						{
+							render_data->rgba[1]=value;
+						} break;
+						case SPECTRUM_BLUE:
+						{
+							render_data->rgba[2]=value;
+						} break;
+						case SPECTRUM_MONOCHROME:
+						{
+							render_data->rgba[0]=value;
+							render_data->rgba[1]=value;
+							render_data->rgba[2]=value;
+						} break;							
+						case SPECTRUM_WHITE_TO_BLUE:
+						{
+							render_data->rgba[2]=1.0;
+							render_data->rgba[0]=(1-value);
+							render_data->rgba[1]=(1-value);
+						} break;	
+						case SPECTRUM_WHITE_TO_RED:
+						{
+							render_data->rgba[0]=1;
+							render_data->rgba[2]=(1-value);
+							render_data->rgba[1]=(1-value);
 						} break;
 					}
-					/* ensure 0 - 1 */
-					if (value>1.0)
+				}
+				else if (2 == number_of_components)
+				{
+					render_data->rgba[0]=values[0];
+					render_data->rgba[1]=values[0];
+					render_data->rgba[2]=values[0];
+					render_data->rgba[3]=values[1];
+				}
+				else if (3 == number_of_components)
+				{
+					render_data->rgba[0]=values[0];
+					render_data->rgba[1]=values[1];
+					render_data->rgba[2]=values[2];
+				}
+				else if (4 <= number_of_components)
+				{
+					render_data->rgba[0]=values[0];
+					render_data->rgba[1]=values[1];
+					render_data->rgba[2]=values[2];
+					render_data->rgba[3]=values[3];
+				}
+
+				DEALLOCATE(values);
+			}
+		}
+		else
+		{
+			/* Ignore inactive settings or settings which act on a component for which
+				there is no data */
+			if (settings->active && 
+				(settings->component_number < render_data->number_of_data_components))
+			{
+				data_component = render_data->data[settings->component_number];
+				/* Always set a value for texture_coordinate based spectrums */
+				if ((SPECTRUM_BANDED==settings->colour_mapping)
+					|| (SPECTRUM_STEP==settings->colour_mapping)
+					|| (((data_component>=settings->minimum)||settings->extend_below)&&
+						((data_component<=settings->maximum)||settings->extend_above)))
+				{
+					/* first get value (normalised 0 to 1) from type */
+					if (settings->maximum != settings->minimum)
 					{
-						value=1.0;
+						switch (settings->settings_type)
+						{
+							case SPECTRUM_LINEAR:
+							{
+								value=(data_component-settings->minimum)/
+									(settings->maximum-settings->minimum);
+							} break;
+							case SPECTRUM_LOG:
+							{
+								if (settings->exaggeration<0)
+								{
+									value=1.0-log(1-settings->exaggeration*
+										(settings->maximum-data_component)/
+										(settings->maximum-settings->minimum))/
+										log(1-settings->exaggeration);
+								}
+								else
+								{
+									value=log(1+settings->exaggeration*
+										(data_component-settings->minimum)/
+										(settings->maximum-settings->minimum))/
+										log(1+settings->exaggeration);
+								}
+							} break;
+							default:
+							{
+								display_message(ERROR_MESSAGE,
+									"Spectrum_settings_activate.  Unknown type");
+								return_code=0;
+							} break;
+						}
+						/* ensure 0 - 1 */
+						if (value>1.0)
+						{
+							value=1.0;
+						}
+						if (value<0.0)
+						{
+							value=0.0;
+						}
 					}
-					if (value<0.0)
+					else
 					{
-						value=0.0;
+						if (data_component <= settings->minimum)
+						{
+							value = 0.0;
+						}
+						else
+						{
+							value = 1.0;
+						}
+					}
+					/* reverse the direction if necessary */
+					if (settings->reverse)
+					{
+						value=1.0-value;
+					}
+					/* apply the value minimums and maximums */
+					value=settings->min_value+(settings->max_value-settings->min_value)*
+						value;
+					switch (settings->colour_mapping)
+					{
+						case SPECTRUM_BANDED:
+						{
+							if ((settings->number_of_bands)&&(settings->black_band_proportion))
+							{
+								texels_per_band=1021/(settings->number_of_bands);
+								total_texels=(float)(texels_per_band*settings->number_of_bands);
+								if ((settings->black_band_proportion/settings->number_of_bands)%2)
+								{
+									value=((value*total_texels+1.5)/1024.0);
+								}
+								else
+								{
+									value=((value*total_texels+1.0)/1024.0);
+								}
+#if defined (OPENGL_API)
+								glTexCoord1f(value);
+#endif /* defined (OPENGL_API) */
+							}
+						} break;
+						case SPECTRUM_STEP:
+						{
+							step_xi=(settings->step_value-settings->minimum)/
+								(settings->maximum-settings->minimum);
+							if ((0.0==step_xi)||(1.0==step_xi))
+							{
+								step_xi=0.5;
+							}
+							if (settings->reverse)
+							{
+								step_xi=1.0-step_xi;
+							}
+							value=0.5*value*(1.0-value)/(step_xi*(1.0-step_xi))+
+								value*(value-step_xi)/(1.0-step_xi);
+#if defined (OPENGL_API)
+							glTexCoord1f(value);
+#endif /* defined (OPENGL_API) */
+						} break;
+						case SPECTRUM_ALPHA:
+						{
+							render_data->rgba[3] = value;
+						} break;
+						case SPECTRUM_RAINBOW:
+						{
+							if (value<1.0/3.0)
+							{
+								render_data->rgba[0]=1.0;
+								render_data->rgba[2]=0.0;
+								if (value<1.0/6.0)
+								{
+									render_data->rgba[1]=value*4.5;
+								}
+								else
+								{
+									render_data->rgba[1]=0.75+(value-1.0/6.0)*1.5;
+								}
+							}
+							else
+							{
+								if (value<2.0/3.0)
+								{
+									render_data->rgba[0]=(2.0/3.0-value)*3.0;
+									render_data->rgba[1]=1.0;
+									render_data->rgba[2]=(value-1.0/3.0)*3.0;
+								}
+								else
+								{
+									render_data->rgba[0]=0.0;
+									render_data->rgba[2]=1.0;
+									if (value<5.0/6.0)
+									{
+										render_data->rgba[1]=1.0-(value-2.0/3.0)*1.5;
+									}
+									else
+									{
+										render_data->rgba[1]=0.75-(value-5.0/6.0)*4.5;
+									}
+								}
+							}
+						} break;
+						case SPECTRUM_RED:
+						{
+							render_data->rgba[0]=value;
+						} break;
+						case SPECTRUM_GREEN:
+						{
+							render_data->rgba[1]=value;
+						} break;
+						case SPECTRUM_BLUE:
+						{
+							render_data->rgba[2]=value;
+						} break;
+						case SPECTRUM_MONOCHROME:
+						{
+							render_data->rgba[0]=value;
+							render_data->rgba[1]=value;
+							render_data->rgba[2]=value;
+						} break;							
+						case SPECTRUM_WHITE_TO_BLUE:
+						{
+							render_data->rgba[2]=1.0;
+							render_data->rgba[0]=(1-value);
+							render_data->rgba[1]=(1-value);
+						} break;	
+						case SPECTRUM_WHITE_TO_RED:
+						{
+							render_data->rgba[0]=1;
+							render_data->rgba[2]=(1-value);
+							render_data->rgba[1]=(1-value);
+						} break;
 					}
 				}
 				else
 				{
-					if (data_component <= settings->minimum)
+					switch (settings->settings_type)
 					{
-						value = 0.0;
-					}
-					else
-					{
-						value = 1.0;
-					}
-				}
-				/* reverse the direction if necessary */
-				if (settings->reverse)
-				{
-					value=1.0-value;
-				}
-				/* apply the value minimums and maximums */
-				value=settings->min_value+(settings->max_value-settings->min_value)*
-					value;
-				switch (settings->colour_mapping)
-				{
-					case SPECTRUM_BANDED:
-					{
-						if ((settings->number_of_bands)&&(settings->black_band_proportion))
+						case SPECTRUM_BANDED:
+						case SPECTRUM_STEP:
 						{
-							texels_per_band=1021/(settings->number_of_bands);
-							total_texels=(float)(texels_per_band*settings->number_of_bands);
-							if ((settings->black_band_proportion/settings->number_of_bands)%2)
+							/* the values are large so they quickly transition to the last
+								texel */
+							if (data_component>settings->maximum)
 							{
-								value=((value*total_texels+1.5)/1024.0);
+								value=1000.0;
 							}
 							else
 							{
-								value=((value*total_texels+1.0)/1024.0);
+								value= -999.0;
 							}
 #if defined (OPENGL_API)
 							glTexCoord1f(value);
 #endif /* defined (OPENGL_API) */
-						}
-					} break;
-					case SPECTRUM_STEP:
-					{
-						step_xi=(settings->step_value-settings->minimum)/
-							(settings->maximum-settings->minimum);
-						if ((0.0==step_xi)||(1.0==step_xi))
-						{
-							step_xi=0.5;
-						}
-						if (settings->reverse)
-						{
-							step_xi=1.0-step_xi;
-						}
-						value=0.5*value*(1.0-value)/(step_xi*(1.0-step_xi))+
-							value*(value-step_xi)/(1.0-step_xi);
-#if defined (OPENGL_API)
-						glTexCoord1f(value);
-#endif /* defined (OPENGL_API) */
-					} break;
-					case SPECTRUM_ALPHA:
-					{
-						render_data->rgba[3] = value;
-					} break;
-					case SPECTRUM_RAINBOW:
-					{
-						if (value<1.0/3.0)
-						{
-							render_data->rgba[0]=1.0;
-							render_data->rgba[2]=0.0;
-							if (value<1.0/6.0)
-							{
-								render_data->rgba[1]=value*4.5;
-							}
-							else
-							{
-								render_data->rgba[1]=0.75+(value-1.0/6.0)*1.5;
-							}
-						}
-						else
-						{
-							if (value<2.0/3.0)
-							{
-								render_data->rgba[0]=(2.0/3.0-value)*3.0;
-								render_data->rgba[1]=1.0;
-								render_data->rgba[2]=(value-1.0/3.0)*3.0;
-							}
-							else
-							{
-								render_data->rgba[0]=0.0;
-								render_data->rgba[2]=1.0;
-								if (value<5.0/6.0)
-								{
-									render_data->rgba[1]=1.0-(value-2.0/3.0)*1.5;
-								}
-								else
-								{
-									render_data->rgba[1]=0.75-(value-5.0/6.0)*4.5;
-								}
-							}
-						}
-					} break;
-					case SPECTRUM_RED:
-					{
-						render_data->rgba[0]=value;
-					} break;
-					case SPECTRUM_GREEN:
-					{
-						render_data->rgba[1]=value;
-					} break;
-					case SPECTRUM_BLUE:
-					{
-						render_data->rgba[2]=value;
-					} break;
-					case SPECTRUM_MONOCHROME:
-					{
-						render_data->rgba[0]=value;
-						render_data->rgba[1]=value;
-						render_data->rgba[2]=value;
-					} break;							
-					case SPECTRUM_WHITE_TO_BLUE:
-					{
-						render_data->rgba[2]=1.0;
-						render_data->rgba[0]=(1-value);
-						render_data->rgba[1]=(1-value);
-					} break;	
-					case SPECTRUM_WHITE_TO_RED:
-					{
-						render_data->rgba[0]=1;
-						render_data->rgba[2]=(1-value);
-						render_data->rgba[1]=(1-value);
-					} break;
-				}
-			}
-			else
-			{
-				switch (settings->settings_type)
-				{
-					case SPECTRUM_BANDED:
-					case SPECTRUM_STEP:
-					{
-						/* the values are large so they quickly transition to the last
-							texel */
-						if (data_component>settings->maximum)
-						{
-							value=1000.0;
-						}
-						else
-						{
-							value= -999.0;
-						}
-#if defined (OPENGL_API)
-						glTexCoord1f(value);
-#endif /* defined (OPENGL_API) */
-					} break;
+						} break;
+					}
 				}
 			}
 		}
@@ -3206,4 +3409,140 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 
 	return (return_code);
 } /* gfx_modify_spectrum_log */
+
+int gfx_modify_spectrum_settings_field(struct Parse_state *state,
+	void *modify_spectrum_data_void,void *spectrum_command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+Executes a GFX MODIFY SPECTRUM FIELD command.
+If return_code is 1, returns the completed Modify_spectrum_data with the
+parsed settings. Note that the settings are ACCESSed once on valid return.
+==============================================================================*/
+{
+	enum Spectrum_settings_colour_mapping colour_mapping;
+	int return_code;
+	struct Computed_field *input_field, *output_field;
+	struct Modify_spectrum_data *modify_spectrum_data;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_input_field_data,
+		set_output_field_data;
+	struct Spectrum_settings *settings;
+
+	ENTER(gfx_modify_spectrum_settings_field);
+	USE_PARAMETER(spectrum_command_data_void);
+	if (state)
+	{
+		if (modify_spectrum_data=
+			(struct Modify_spectrum_data *)modify_spectrum_data_void)
+		{
+			/* create the spectrum_settings: */
+			if (settings=modify_spectrum_data->settings=
+				CREATE(Spectrum_settings)())
+			{
+				/* access since deaccessed in gfx_modify_spectrum */
+				ACCESS(Spectrum_settings)(modify_spectrum_data->settings);
+
+				Spectrum_settings_set_type(settings,SPECTRUM_FIELD);
+
+				colour_mapping = Spectrum_settings_get_colour_mapping(settings);
+
+				input_field = (struct Computed_field *)NULL;	
+				output_field = (struct Computed_field *)NULL;
+				if (settings->input_field)
+				{
+					input_field = ACCESS(Computed_field)(settings->input_field);
+				}
+				if (settings->output_field)
+				{
+					output_field = ACCESS(Computed_field)(settings->output_field);
+				}
+
+				option_table = CREATE(Option_table)();
+				/* input_field */
+				set_input_field_data.computed_field_manager=
+					modify_spectrum_data->computed_field_manager;
+				set_input_field_data.conditional_function=
+					Computed_field_has_numerical_components;
+				set_input_field_data.conditional_function_user_data=(void *)NULL;
+				Option_table_add_entry(option_table,"input",
+					&input_field ,&set_input_field_data,
+					set_Computed_field_conditional);
+				/* output_field */
+				set_output_field_data.computed_field_manager=
+					modify_spectrum_data->computed_field_manager;
+				set_output_field_data.conditional_function=
+					Computed_field_has_numerical_components;
+				set_output_field_data.conditional_function_user_data=(void *)NULL;
+				Option_table_add_entry(option_table,"output",
+					&output_field, &set_output_field_data,
+					set_Computed_field_conditional);
+				/* conversion_mode */
+				OPTION_TABLE_ADD_ENUMERATOR(Spectrum_settings_colour_mapping)(
+					option_table, &colour_mapping);
+
+				if (!(return_code=Option_table_multi_parse(option_table,state)))
+				{
+					DEACCESS(Spectrum_settings)(&(modify_spectrum_data->settings));
+				}
+				DESTROY(Option_table)(&option_table);
+				if (return_code)
+				{
+					if (!input_field)
+					{
+						display_message(ERROR_MESSAGE,"gfx_modify_spectrum_settings_field.  "
+							"You must specify a numerical input field.");
+						return_code=0;
+					}
+					if (!output_field)
+					{
+						display_message(ERROR_MESSAGE,"gfx_modify_spectrum_settings_field.  "
+							"You must specify a numerical input field.");
+						return_code=0;
+					}
+				}
+				if (return_code)
+				{
+					if (input_field != settings->input_field)
+					{
+						REACCESS(Computed_field)(&settings->input_field,
+							input_field);
+						settings->settings_changed = 1;
+					}
+					if (output_field != settings->output_field)
+					{
+						REACCESS(Computed_field)(&settings->output_field,
+							output_field);
+						settings->settings_changed = 1;
+					}
+					Spectrum_settings_set_colour_mapping(settings,
+						colour_mapping);
+				}
+				DEACCESS(Computed_field)(&input_field);
+				DEACCESS(Computed_field)(&output_field);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"gfx_modify_spectrum_settings_field.  "
+					"Could not create settings");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"gfx_modify_spectrum_settings_field.  "
+				"No modify data");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"gfx_modify_spectrum_settings_field.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_modify_spectrum_field */
 

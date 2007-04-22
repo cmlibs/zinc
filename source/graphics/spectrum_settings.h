@@ -60,7 +60,8 @@ DESCRIPTION :
 {
 	SPECTRUM_INVALID_TYPE = -1,
 	SPECTRUM_LINEAR,
-	SPECTRUM_LOG
+	SPECTRUM_LOG,
+	SPECTRUM_FIELD
 }; /* enum Spectrum_settings_type */
 
 enum Spectrum_settings_colour_mapping
@@ -144,6 +145,7 @@ Structure modified by spectrum modify routine.
 {
 	int position;
 	float spectrum_minimum, spectrum_maximum;
+	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Spectrum_settings *settings;
 }; /* struct Modify_spectrum_data */
 
@@ -695,6 +697,17 @@ LAST MODIFIED : 17 January 2001
 
 DESCRIPTION :
 Executes a GFX MODIFY SPECTRUM LOG command.
+If return_code is 1, returns the completed Modify_spectrum_data with the
+parsed settings. Note that the settings are ACCESSed once on valid return.
+==============================================================================*/
+
+int gfx_modify_spectrum_settings_field(struct Parse_state *state,
+	void *modify_spectrum_data_void,void *spectrum_command_data_void);
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+Executes a GFX MODIFY SPECTRUM FIELD command.
 If return_code is 1, returns the completed Modify_spectrum_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
