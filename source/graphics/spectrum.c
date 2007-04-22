@@ -2350,7 +2350,14 @@ Rebuilds the display_list for <spectrum> if it is not current.
 				{
 					DEACCESS(Texture)(&spectrum->colour_lookup_texture);
 				}
+
 				texture = CREATE(Texture)("spectrum_texture");
+				/* The mode of this texture must match that relied upon by
+					the fragment program in material.c, specifically, to provide
+					correct linear interpolation the input value has to be offset
+					by half a pixel and scaled by (number_of_pixels-1)/(number_of_pixels)
+					as linear interpolation starts at the centres of each pixel */
+				Texture_set_filter_mode(texture, TEXTURE_NEAREST_FILTER);
 				Texture_set_wrap_mode(texture, TEXTURE_CLAMP_WRAP);
 				colour_table_ptr = colour_table;
 				switch (number_of_data_components)
