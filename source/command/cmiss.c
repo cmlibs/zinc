@@ -5063,6 +5063,9 @@ static and referred to by gfx_create_Spectrum
 						spectrum_to_be_modified_copy);
 					modify_spectrum_data.spectrum_maximum = get_Spectrum_maximum(
 						spectrum_to_be_modified_copy);
+					modify_spectrum_data.computed_field_manager 
+						= Computed_field_package_get_computed_field_manager(
+							command_data->computed_field_package);
 					spectrum_command_data.spectrum_manager 
 						= command_data->spectrum_manager;
 					option_table=CREATE(Option_table)();
@@ -5074,6 +5077,8 @@ static and referred to by gfx_create_Spectrum
 						set_char_flag);
 					Option_table_add_entry(option_table,"clear",&clear,NULL,
 						set_char_flag);
+					Option_table_add_entry(option_table,"field",&modify_spectrum_data,
+						&spectrum_command_data,gfx_modify_spectrum_settings_field);
 					Option_table_add_entry(option_table,"linear",&modify_spectrum_data,
 						&spectrum_command_data,gfx_modify_spectrum_settings_linear);
 					Option_table_add_entry(option_table,"log",&modify_spectrum_data,
