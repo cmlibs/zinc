@@ -89,6 +89,10 @@ Writes text for an <ipcoor_file> to support <field>.
 			{
 				fprintf(ipcoor_file, "    1\n");
 			} break;
+			case CYLINDRICAL_POLAR:
+			{
+				fprintf(ipcoor_file, "    2\n");
+			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE, "write_ipcoor_file.  "
@@ -99,6 +103,14 @@ Writes text for an <ipcoor_file> to support <field>.
 		fprintf(ipcoor_file, " Enter the number of global coordinates [3]: %d\n",
 			get_FE_field_number_of_components(field));
 		fprintf(ipcoor_file, " Do you want to specify another coord. system for dependent variables [N]? N\n");
+
+		if (coordinate_system->type == CYLINDRICAL_POLAR)
+		{
+			fprintf(ipcoor_file, " Specify whether radial interpolation is in [1]:\n"
+				"   (1) r\n"
+				"   (2) r^2\n"
+				"    1\n");
+		}
 		fprintf(ipcoor_file, " Enter x,y,z origin of coords relative to region 0 [0,0,0]:0.00000D+00  0.00000D+00  0.00000D+00\n");
 		fprintf(ipcoor_file, " Are there any non-standard mappings [N]? N\n");
 	}
