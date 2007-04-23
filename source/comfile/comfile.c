@@ -174,6 +174,7 @@ specified on the command line, a file selection box is presented to the user.
 					 {
 							strcpy(old_directory_name, old_directory);
 							strcat(old_directory_name,"/");
+							old_directory_name[length+1]='\0';
 					 }
 			 
 					 /* Set the current directory to that of filename */
@@ -209,27 +210,32 @@ specified on the command line, a file selection box is presented to the user.
 				{
 					 if (0 < open_comfile_data->execute_count)
 					 {
-						for (i=open_comfile_data->execute_count;i>0;i--)
-						{
-							 execute_comfile(filename, open_comfile_data->io_stream_package,
+							for (i=open_comfile_data->execute_count;i>0;i--)
+							{
+								 execute_comfile(filename, open_comfile_data->io_stream_package,
 									open_comfile_data->execute_command);
-						}
+							}
 #if defined (WX_USER_INTERFACE)
-						/* Change back to original dir */
-						if ((old_directory_name != NULL) && (strcmp (old_directory_name,pathname) != 0))
-						{
-							 make_valid_token(&old_directory_name);
-							 length = strlen(old_directory_name);
-							 temp_string = NULL;
-							 if (ALLOCATE(temp_string,char,length+8))
-							 {
-									strcpy(temp_string, "set dir ");
-									strcat(temp_string, old_directory_name);
-									temp_string[length+8]='\0';
-									Execute_command_execute_string(open_comfile_data->execute_command,temp_string);
-									//change_dir(state, pathname,open_comfile_data);
-							 }
-						}
+							/* Change back to original dir */
+							if ((old_directory_name != NULL) && (pathname != NULL))
+							{
+								 if (strcmp (old_directory_name,pathname) != 0)
+								 {
+										make_valid_token(&old_directory_name);
+										length = strlen(old_directory_name);
+										if (temp_string != NULL)
+										{
+											 temp_string = NULL;
+										}
+										if (ALLOCATE(temp_string,char,length+8))
+										{
+											 strcpy(temp_string, "set dir ");
+											 strcat(temp_string, old_directory_name);
+											 temp_string[length+8]='\0';
+											 Execute_command_execute_string(open_comfile_data->execute_command,temp_string);
+										}
+								 }
+							}
 #endif /*defined (WX_USER_INTERFACE)*/
 					 }
 					 else
@@ -242,14 +248,14 @@ specified on the command line, a file selection box is presented to the user.
 								 if (comfile_window = CREATE(Comfile_window)(name,
 											 filename, open_comfile_data->io_stream_package,
 											 open_comfile_data->execute_command,
-								open_comfile_data->set_command,
+											 open_comfile_data->set_command,
 											 open_comfile_data->user_interface))
 								 {
 										if (ADD_OBJECT_TO_MANAGER(Comfile_window)(comfile_window,
 													open_comfile_data->comfile_window_manager))
-								{
-									 return_code = 1;
-								}
+										{
+											 return_code = 1;
+										}
 										else
 										{
 											 display_message(ERROR_MESSAGE,
@@ -269,7 +275,7 @@ specified on the command line, a file selection box is presented to the user.
 							else
 							{
 								 display_message(ERROR_MESSAGE,
-								"open_comfile.  Could not allocate window name");
+										"open_comfile.  Could not allocate window name");
 								 return_code=0;
 							}
 #else /* defined (MOTIF) */

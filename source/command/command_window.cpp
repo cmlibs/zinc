@@ -75,6 +75,7 @@ static char command_window_uidh[] =
 #include "wx/wx.h"
 #include "wx/xrc/xmlres.h"
 #include "command/command_window.xrch"
+#include <wx/aboutdlg.h>
 #endif /* defined (WX_USER_INTERFACE)*/
 extern "C" {
 #include "user_interface/message.h"
@@ -1757,6 +1758,19 @@ public:
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx edit scene");
 	 }
+
+	 void ShowSimpleAboutDialog(wxCommandEvent& WXUNUSED(event))
+	 {
+			wxAboutDialogInfo info;
+			info.SetName(_("cmgui"));
+			info.SetDescription(_("This software is the cmgui part of CMISS and originally developed at The University of Auckland.This development has been for over 15 years and this release is under ongoing development. \n It is released under the Mozilla Public License v1.1"));
+			info.SetCopyright(_T("Copyright held by Auckland UniServices Ltd."));
+			info.SetWebSite(_("http://www.cmiss.org/cmgui"));
+
+			info.SetLicense(_T( "This software is the cmgui part of CMISS and originally developed at The University of Auckland.\nThis development has been for over 15 years and this release is under ongoing development.\n\nThe strengths of this development are field storage including many finite element basis types,\n3D visualisation and a mathematical field abstraction layer.\n\nIt includes some modules which are being deprecated and phased out, and some which under active development.\n\ncmgui is released under the Mozilla Public License v1.1.\nCopyright held by Auckland UniServices Ltd.\n\nIt is developed and built with the following sources.\n\nImageMagick-5.3.3\nCopyright (C) 2000 ImageMagick Studio\nhttp://www.imagemagick.org\n\nTiff\nCopyright (c) 1988-1997 Sam Leffler\nCopyright (c) 1991-1997 Silicon Graphics, Inc.\nhttp://www.libtiff.org\n\nJPEG\nThis software is copyright (C) 1991-1998, Thomas G. Lane.\nhttp://www.ijg.org\n\nzlib\n(C) 1995-1998 Jean-loup Gailly and Mark Adler\nftp://ftp.uu.net/pub/archiving/zip/zlib/zlib-1.1.3,gz\n\npnglib\nCopyright (c) 2000 Glenn Randers-Pehrso\n\nlibxml2\nCopyright (C) 1998-2002 Daniel Veillard.\n\nwxWidgets\ncopyright (C) 1998-2005 Julian Smart, Robert Roebling et al\nhttp://wxwidgets.org/"));
+
+			wxAboutBox(info);
+	 }
 	 
 	 void Exit(wxCommandEvent& event)
 	 {
@@ -1805,6 +1819,7 @@ BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	 EVT_MENU(XRCID("WriteNode"),wxCommandWindow::writenodes)
 	 EVT_MENU(XRCID("ModelNodeviewer"),wxCommandWindow::nodeviewer)
 	 EVT_MENU(XRCID("GraphicsSceneeditor"),wxCommandWindow::sceneeditor)
+	 EVT_MENU(XRCID("AboutCmgui"),wxCommandWindow::ShowSimpleAboutDialog)
 	EVT_MENU(XRCID("MenuExit"),wxCommandWindow::Exit)
 END_EVENT_TABLE()
 

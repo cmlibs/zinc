@@ -46,7 +46,6 @@ extern "C" {
 #include <string.h>
 #include "general/debug.h"
 #include "command/command.h"
-	 //#include "command/command_window.h"
 #include "general/indexed_list_private.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"
@@ -57,7 +56,6 @@ extern "C" {
 }
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
-#include <wx/tglbtn.h>
 #include "wx/xrc/xmlres.h"
 extern "C" {
 #include "comfile/comfile_window_wx.h"
@@ -103,7 +101,6 @@ etc ?
 	int access_count;
 #if defined (WX_USER_INTERFACE)
 	wxComfileWindow *wx_comfile_window;
- 
 #endif /* (WX_USER_INTERFACE) */
 }; /* struct Comfile_window */
 

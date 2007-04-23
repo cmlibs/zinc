@@ -899,6 +899,7 @@ Callback from wxChooser<Scene> when choice is made.
 						if (settings == newsettings)
 							{
 								graphicalitemschecklist->SetSelection(i);
+								UpdateGraphicalElementList(newsettings);
 								break;
 							}
 						graphicalitemschecklist->SetSelection(wxNOT_FOUND);

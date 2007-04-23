@@ -117,7 +117,13 @@
           <label>yz</label>
         </object>
       </object>
-    </object>
+	</object>
+    <object class ="wxMenu" name="MenuHelp">
+      <label>Help</label>
+      <object class = "wxMenuItem" name="AboutCmgui">
+        <label>About cmgui</label>
+      </object>
+	</object>
   </object>
 
     <object class="wxBoxSizer">
