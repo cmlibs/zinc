@@ -170,7 +170,7 @@ specified on the command line, a file selection box is presented to the user.
 					 old_directory = (char *)malloc(4096);
 					 getcwd(old_directory, 4096);
 					 length = strlen(old_directory);
-					 if ((ALLOCATE(old_directory_name,char,length+1)) && old_directory !=NULL)
+					 if ((ALLOCATE(old_directory_name,char,length+2)) && old_directory !=NULL)
 					 {
 							strcpy(old_directory_name, old_directory);
 							strcat(old_directory_name,"/");
@@ -184,7 +184,7 @@ specified on the command line, a file selection box is presented to the user.
 							length = last-filename+1;
 							pathname = NULL;
 							temp_string = NULL;
-							if (ALLOCATE(pathname,char,length))
+							if (ALLOCATE(pathname,char,length+1))
 							{
 								 strncpy(pathname,filename,length);
 								 pathname[length]='\0';
@@ -192,7 +192,7 @@ specified on the command line, a file selection box is presented to the user.
 								 {
 										make_valid_token(&pathname);
 										length = strlen(pathname);
-										if (ALLOCATE(temp_string,char,length+8))
+										if (ALLOCATE(temp_string,char,length+9))
 										{
 											 strcpy(temp_string, "set dir ");
 											 strcat(temp_string, pathname);
