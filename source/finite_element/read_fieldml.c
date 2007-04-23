@@ -5335,6 +5335,7 @@ Up to the calling function to check, merge and destroy the returned
 Cmiss_region.
 ==============================================================================*/
 {
+	int return_code;
 	static xmlSAXHandler fieldml_handler;
 	struct Cmiss_region *root_region;
 	struct Fieldml_sax_data fieldml_data;
@@ -5431,7 +5432,7 @@ Cmiss_region.
 		fieldml_handler.error = fieldml_sax_error;
 		fieldml_handler.fatalError = fieldml_sax_fatalError;
 	
-		int return_code = xmlSAXUserParseFile(&fieldml_handler, &fieldml_data,
+		return_code = xmlSAXUserParseFile(&fieldml_handler, &fieldml_data,
 			filename);
 		FE_region_end_change(fieldml_data.root_fe_region);
 		Cmiss_region_end_change(fieldml_data.root_region);
