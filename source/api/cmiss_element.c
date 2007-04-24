@@ -75,6 +75,23 @@ Returns the integer identifier of the <element>.
 	return (return_code);
 } /* Cmiss_element_get_identifier */
 
+int Cmiss_element_get_dimension(Cmiss_element_id element)
+/*******************************************************************************
+LAST MODIFIED : 17 April 2007
+
+DESCRIPTION :
+Returns the dimension of the <element> or an error if it does not have a shape.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_element_get_dimension);
+	return_code = get_FE_element_dimension(element);
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_element_get_dimension */
+
 int Cmiss_element_set_node(Cmiss_element_id element, int node_index,
 	Cmiss_node_id node)
 /*******************************************************************************
