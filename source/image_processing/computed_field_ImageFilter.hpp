@@ -816,13 +816,24 @@ Evaluate the templated version of this filter
 	if (field && location)
 	{
 		Field_element_xi_location* element_xi_location;
+		Field_coordinate_location* coordinate_location = NULL;
+		FE_value* xi = NULL;
 
 		if (element_xi_location = 
 			dynamic_cast<Field_element_xi_location*>(location))
 		{
-			FE_value* xi  = element_xi_location->get_xi();
+			xi  = element_xi_location->get_xi();
+		}
+		else if (coordinate_location = 
+			dynamic_cast<Field_coordinate_location*>(location))
+		{
+			xi = coordinate_location->get_values();
+		}
 
-			if (outputImage)
+		if (xi && outputImage)
+		{
+			typename ImageType::IndexType index;
+			for (i = 0 ; i < dimension ; i++)
 			{
 				typename ImageType::IndexType index;
 				for (i = 0 ; i < dimension ; i++)
@@ -843,10 +854,8 @@ Evaluate the templated version of this filter
 				assign_field_values( outputImage->GetPixel( index ) );
 				return_code = 1;
 			}
-			else
-			{
-				return_code = 0;
-			}
+			assign_field_values( outputImage->GetPixel( index ) );
+			return_code = 1;
 		}
 		else
 		{
@@ -943,19 +952,18 @@ Evaluate the templated version of this filter
 	ENTER(Computed_field_ImageFilter::evaluate_filter);
 	if (field && location)
 	{
-		Field_element_xi_location* element_xi_location;
+		Field_element_xi_location* element_xi_location = NULL;
+		Field_coordinate_location* coordinate_location = NULL;
 
 		typename ImageType::Pointer inputImage;
 
-		if (element_xi_location = 
-			dynamic_cast<Field_element_xi_location*>(location))
+		if ((element_xi_location = 
+				dynamic_cast<Field_element_xi_location*>(location))
+			|| (coordinate_location = 
+				dynamic_cast<Field_coordinate_location*>(location)))
 		{
-			FE_element* element = element_xi_location->get_element();
-			FE_value time = element_xi_location->get_time();
-
 			// If the input contains an ImageFilter of the correct type then use that as
 			// the input field
-
 			if ((input_field_image_filter = dynamic_cast<Computed_field_ImageFilter *>
 					(field->source_fields[0]->core))
 					&& (input_field_image_functor = dynamic_cast<Computed_field_ImageFilter_FunctorTmpl<ImageType>*>
@@ -1018,10 +1026,29 @@ Evaluate the templated version of this filter
 						pixel_xi[i] = 0.0;
 					}
 
-					Field_element_xi_location pixel_location(element, pixel_xi, 
-																									 time, /*top_level_element*/(struct FE_element *)NULL);
-					Computed_field_evaluate_cache_at_location(
-																										field->source_fields[0], &pixel_location);
+					if (element_xi_location)
+					{
+						FE_element* element = element_xi_location->get_element();
+						FE_value time = element_xi_location->get_time();
+					
+						Field_element_xi_location pixel_location(element, pixel_xi, 
+							time, /*top_level_element*/(struct FE_element *)NULL);
+
+						Computed_field_evaluate_cache_at_location(
+							field->source_fields[0], &pixel_location);
+					}
+					else if (coordinate_location)
+					{
+						Computed_field *reference_field = 
+							coordinate_location->get_reference_field();
+						FE_value time = coordinate_location->get_time();
+					
+						Field_coordinate_location pixel_location(reference_field, 
+							dimension, pixel_xi, time);
+
+						Computed_field_evaluate_cache_at_location(
+							field->source_fields[0], &pixel_location);	
+					}
 				
 					generateInput.Set( field->source_fields[0]->values[0] );
 				}
