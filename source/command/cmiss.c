@@ -508,7 +508,7 @@ to change the interactive tool settings.
 		(char *)tool_name,interactive_tool_manager))
 	{
 		Interactive_tool_copy(wx_interactive_tool,
-		  global_interactive_tool);
+			global_interactive_tool, (struct MANAGER(Interactive_tool) *)NULL);
 	}
     DEALLOCATE(tool_name);
 	return 1;
