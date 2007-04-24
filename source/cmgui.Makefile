@@ -1045,7 +1045,7 @@ GRAPHICS_SRCS = \
 	graphics/volume_texture.c
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    GRAPHICS_SRCS += \
-	   graphics/font.c \
+	   graphics/font.cpp \
 	   graphics/graphical_element.c \
 		graphics/graphics_library.c \
 		graphics/graphics_object.c \
