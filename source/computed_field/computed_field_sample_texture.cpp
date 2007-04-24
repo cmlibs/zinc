@@ -564,6 +564,23 @@ already) and allows its contents to be modified.
 			/* no errors,not asking for help */
 			if (return_code)
 			{
+ 				if (!texture_coordinate_field)
+				{
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_sample_texture.  "
+						"You must specify a coordinates field.");
+ 					return_code = 0;
+				}
+ 				if (!texture)
+				{
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_sample_texture.  "
+						"You must specify a texture.");
+ 					return_code = 0;
+				}
+			}
+			if (return_code)
+			{
 				return_code = Computed_field_set_type_sample_texture(field,
 					texture_coordinate_field, texture, minimum, maximum);
 			}
