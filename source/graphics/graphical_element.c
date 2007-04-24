@@ -822,7 +822,7 @@ If supplied, callbacks are requested from the <element_selection> and
 					FE_node_selection_add_callback(data_selection,
 						GT_element_group_data_selection_change,(void *)gt_element_group);
 				}
-				GT_element_group_update_default_coordinate(gt_element_group);
+				//GT_element_group_update_default_coordinate(gt_element_group);
 			}
 			else
 			{
