@@ -7684,8 +7684,8 @@ GT_element_group and therefore have the same rendition.
 						scene->node_selection,
 						scene->data_selection))
 					{
-						default_coordinate_field = 
-							GT_element_group_get_default_coordinate_field(gt_element_group);
+						default_coordinate_field = (struct Computed_field *)NULL;
+						//GT_element_group_get_default_coordinate_field(gt_element_group);
 						/* set default circle and element discretization in group */
 						read_circle_discretization_defaults(&default_value,
 							scene->user_interface);

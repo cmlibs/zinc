@@ -54,6 +54,7 @@ November 97 Created from rendering part of Drawing.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <math.h>
+#include "general/compare.h"
 #include "three_d_drawing/movie_extensions.h"
 #include "general/callback_private.h"
 #include "general/debug.h"
@@ -104,6 +105,11 @@ FULL_DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_callback, \
 FULL_DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_input_callback, \
 	struct Scene_viewer *, struct Graphics_buffer_input *);
 
+/*
+Module functions
+----------------
+*/
+
 enum Scene_viewer_drag_mode
 {
 	SV_DRAG_NOTHING,
@@ -132,6 +138,9 @@ The default data used to create Cmiss_scene_viewers.
 	struct Scene *scene;
 	struct MANAGER(Texture) *texture_manager;
 	struct User_interface *user_interface;
+	/* List of scene_viewers created with this package,
+		generally all scene_viewers that are not in graphics windows */
+	struct LIST(Scene_viewer) *scene_viewer_list;
 	struct LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_package_callback))
 		*destroy_callback_list;
 };
@@ -285,7 +294,10 @@ DESCRIPTION :
 	   *order_independent_transparency_data;
 	/* The connection to the systems user interface system */
 	struct User_interface *user_interface;
+	int access_count;
 }; /* struct Scene_viewer */
+
+DECLARE_LIST_TYPES(Scene_viewer);
 
 struct Scene_viewer_rendering_data
 /*******************************************************************************
@@ -351,6 +363,8 @@ functions may have their own user data.
 	int access_count;
 }; /* struct Scene_viewer_render_object */
 
+FULL_DECLARE_INDEXED_LIST_TYPE(Scene_viewer);
+
 /* We need to maintain the order, so we do not want an indexed list */
 FULL_DECLARE_LIST_TYPE(Scene_viewer_render_object);
 
@@ -358,6 +372,8 @@ FULL_DECLARE_LIST_TYPE(Scene_viewer_render_object);
 Module functions
 ----------------
 */
+
+PROTOTYPE_LIST_FUNCTIONS(Scene_viewer);
 
 PROTOTYPE_LIST_FUNCTIONS(Scene_viewer_render_object);
 
@@ -4124,7 +4140,7 @@ Creates a Cmiss_scene_viewer_package.
 {
 	struct Cmiss_scene_viewer_package *scene_viewer_package;
 
-	ENTER(CREATE(Scene_viewer));
+	ENTER(CREATE(Scene_viewer_package));
 	if (graphics_buffer_package&&background_colour&&default_light_model&&scene&&
 		user_interface&&graphics_buffer_package&&interactive_tool_manager)
 	{
@@ -4144,6 +4160,7 @@ Creates a Cmiss_scene_viewer_package.
 			scene_viewer_package->scene = ACCESS(Scene)(scene);
 			scene_viewer_package->texture_manager = texture_manager;
 			scene_viewer_package->user_interface = user_interface;
+			scene_viewer_package->scene_viewer_list = CREATE(LIST(Scene_viewer))();
 			scene_viewer_package->destroy_callback_list=
 					CREATE(LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_package_callback)))();
 		}
@@ -4163,6 +4180,50 @@ Creates a Cmiss_scene_viewer_package.
 	return (scene_viewer_package);
 } /* CREATE(Cmiss_scene_viewer_package) */
 
+static void Scene_viewer_destroy_remove_from_package(
+	struct Scene_viewer *scene_viewer,
+	void *dummy_void, void *package_void)
+/*******************************************************************************
+LAST MODIFIED : 19 April 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Cmiss_scene_viewer_package *package;
+
+	ENTER(create_Scene_viewer_from_package);
+	USE_PARAMETER(dummy_void);
+	if (scene_viewer && (package = (struct Cmiss_scene_viewer_package *)package_void))
+	{
+		REMOVE_OBJECT_FROM_LIST(Scene_viewer)(scene_viewer,
+			package->scene_viewer_list);
+	}
+}
+
+static int Scene_viewer_remove_from_package(
+	struct Scene_viewer *scene_viewer, void *package_void)
+/*******************************************************************************
+LAST MODIFIED : 19 April 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Cmiss_scene_viewer_package *package;
+
+	ENTER(create_Scene_viewer_from_package);
+	if (scene_viewer && (package = (struct Cmiss_scene_viewer_package *)package_void))
+	{
+		Scene_viewer_remove_destroy_callback(scene_viewer,
+			Scene_viewer_destroy_remove_from_package, package);
+		REMOVE_OBJECT_FROM_LIST(Scene_viewer)(scene_viewer,
+			package->scene_viewer_list);
+	}
+	return_code = 1;
+
+	return (return_code);
+}
+
 int DESTROY(Cmiss_scene_viewer_package)(
 	struct Cmiss_scene_viewer_package **scene_viewer_package_address)
 /*******************************************************************************
@@ -4178,12 +4239,16 @@ Destroys the scene_viewer_package.
 	ENTER(DESTROY(Cmiss_scene_viewer_package));
 	if (scene_viewer_package = *scene_viewer_package_address)
 	{
+		/* We don't want to be called back again */
+		FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(Scene_viewer_remove_from_package,
+			scene_viewer_package, scene_viewer_package->scene_viewer_list);
 		/* Call the destroy callbacks */
 		CMISS_CALLBACK_LIST_CALL(Cmiss_scene_viewer_package_callback)(
 			scene_viewer_package->destroy_callback_list,scene_viewer_package,NULL);
 		DESTROY(LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_package_callback)))
 			(&scene_viewer_package->destroy_callback_list);
 		/* Free */
+		DESTROY(LIST(Scene_viewer))(&scene_viewer_package->scene_viewer_list);
 		DEACCESS(Interactive_tool)(&scene_viewer_package->default_interactive_tool);
 		DEACCESS(Light)(&scene_viewer_package->default_light);
 		DEACCESS(Light_model)(&scene_viewer_package->default_light_model);
@@ -4408,6 +4473,7 @@ performed in idle time so that multiple redraws are avoided.
 			if (ALLOCATE(scene_viewer,struct Scene_viewer,1)&&
 				(scene_viewer->list_of_lights=CREATE(LIST(Light)())))
 			{
+				scene_viewer->access_count = 0;
 				scene_viewer->graphics_buffer=ACCESS(Graphics_buffer)(graphics_buffer);
 				/* access the scene, since don't want it to disappear */
 				scene_viewer->scene=ACCESS(Scene)(scene);
@@ -4654,6 +4720,12 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 	return (return_code);
 } /* DESTROY(Scene_viewer) */
 
+DECLARE_OBJECT_FUNCTIONS(Scene_viewer)
+/* Sort by the graphics_buffer as this should be unique */
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Scene_viewer, graphics_buffer,
+	struct Graphics_buffer *, compare_pointer)
+DECLARE_INDEXED_LIST_FUNCTIONS(Scene_viewer)
+
 struct Scene_viewer *create_Scene_viewer_from_package(
 	struct Graphics_buffer *graphics_buffer,
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
@@ -4664,6 +4736,7 @@ LAST MODIFIED : 19 January 2007
 DESCRIPTION :
 ==============================================================================*/
 {
+	struct MANAGER(Interactive_tool) *new_interactive_tool_manager;
 	struct Scene_viewer *scene_viewer;
 
 	ENTER(create_Scene_viewer_from_package);
@@ -4679,10 +4752,26 @@ DESCRIPTION :
 			scene,
 			cmiss_scene_viewer_package->texture_manager,
 			cmiss_scene_viewer_package->user_interface);
- 		Scene_viewer_set_interactive_tool(scene_viewer,
-			cmiss_scene_viewer_package->default_interactive_tool);
-		scene_viewer->interactive_tool_manager = 
-			cmiss_scene_viewer_package->interactive_tool_manager;
+		
+		new_interactive_tool_manager = CREATE(MANAGER(Interactive_tool))();
+		FOR_EACH_OBJECT_IN_MANAGER(Interactive_tool)(
+			Interactive_tool_create_copy_iterator, new_interactive_tool_manager,
+			cmiss_scene_viewer_package->interactive_tool_manager);
+
+		Scene_viewer_set_interactive_tool(scene_viewer,
+			FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)
+			("transform_tool", new_interactive_tool_manager));
+		scene_viewer->interactive_tool_manager = new_interactive_tool_manager;
+
+		/* Add this scene_viewer to the package list */
+		ADD_OBJECT_TO_LIST(Scene_viewer)(scene_viewer,
+			cmiss_scene_viewer_package->scene_viewer_list);
+
+		/* Register a callback so that if the scene_viewer is destroyed
+			then it is removed from the list */
+		Scene_viewer_add_destroy_callback(scene_viewer,
+			Scene_viewer_destroy_remove_from_package, 
+			cmiss_scene_viewer_package);
 	}
 	else
 	{
@@ -4693,6 +4782,38 @@ DESCRIPTION :
 
 	return (scene_viewer);
 } /* create_Scene_viewer_from_package */
+
+int destroy_Scene_viewer_from_package(struct Scene_viewer **scene_viewer_address,
+	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package)
+/*******************************************************************************
+LAST MODIFIED : 19 April 2007
+
+DESCRIPTION :
+Closes the scene_viewer and disposes of the scene_viewer data structure.
+==============================================================================*/
+{
+	int return_code;
+	struct Scene_viewer *scene_viewer;
+
+	ENTER(DESTROY(Scene_viewer));
+	if (scene_viewer_address&&(scene_viewer= *scene_viewer_address))
+	{
+		Scene_viewer_remove_from_package(*scene_viewer_address,
+			cmiss_scene_viewer_package);
+		*scene_viewer_address = (struct Scene_viewer *)NULL;
+
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Scene_viewer).  Missing scene_viewer");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Scene_viewer) */
 
 int Scene_viewer_awaken(struct Scene_viewer *scene_viewer)
 /*******************************************************************************

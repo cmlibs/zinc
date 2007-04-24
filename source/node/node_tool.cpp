@@ -2974,7 +2974,9 @@ Set the wx_interface for new settings.
 }
 #endif /*(WX_USER_INTERFACE)*/
 
-static int Node_tool_copy_function(void *destination_tool_void, void *source_tool_void) 
+static int Node_tool_copy_function(
+	void *destination_tool_void, void *source_tool_void,
+	struct MANAGER(Interactive_tool) *destination_tool_manager) 
 /*******************************************************************************
 LAST MODIFIED : 29 March 2007
 
@@ -2986,28 +2988,57 @@ Copies the state of one node tool to another.
 	struct Node_tool *destination_node_tool, *source_node_tool;
 
 	ENTER(Node_tool_copy_function);
-	if ((destination_node_tool=(struct Node_tool *)destination_tool_void) &&
-			(source_node_tool=(struct Node_tool *)source_tool_void))
+	if ((destination_tool_void || destination_tool_manager) &&
+		(source_node_tool=(struct Node_tool *)source_tool_void))
 	{
-		destination_node_tool->coordinate_field = source_node_tool->coordinate_field;
-		destination_node_tool->create_enabled = source_node_tool->create_enabled;
-		destination_node_tool->define_enabled = source_node_tool->define_enabled;
-		destination_node_tool->edit_enabled= source_node_tool->edit_enabled;
-		destination_node_tool->motion_update_enabled= source_node_tool->motion_update_enabled;
-		destination_node_tool->select_enabled = source_node_tool->select_enabled;
-		destination_node_tool->streaming_create_enabled = source_node_tool->streaming_create_enabled;
-		destination_node_tool->constrain_to_surface= source_node_tool->constrain_to_surface;
-		destination_node_tool->command_field = source_node_tool->command_field;
-		destination_node_tool->element_create_enabled = source_node_tool->element_create_enabled;
-		destination_node_tool->element_dimension = source_node_tool->element_dimension;
-#if defined (WX_USER_INTERFACE)
-		destination_node_tool->current_region_path= source_node_tool->current_region_path;
-		if (destination_node_tool->wx_node_tool != (wxNodeTool *) NULL)
-		{	
-			destination_node_tool->wx_node_tool->NodeToolInterfaceRenew(destination_node_tool);
+		if (destination_tool_void)
+		{
+			destination_node_tool = (struct Node_tool *)destination_tool_void;
 		}
-		return_code=1;
+		else
+		{
+			destination_node_tool = CREATE(Node_tool)(
+				destination_tool_manager,
+				source_node_tool->root_region, 
+				source_node_tool->use_data,
+				source_node_tool->node_selection,
+				source_node_tool->computed_field_package,
+				source_node_tool->rubber_band_material,
+				source_node_tool->user_interface,
+				source_node_tool->time_keeper,
+				source_node_tool->execute_command);
+		}
+		if (destination_node_tool)
+		{
+			destination_node_tool->coordinate_field = source_node_tool->coordinate_field;
+			destination_node_tool->create_enabled = source_node_tool->create_enabled;
+			destination_node_tool->define_enabled = source_node_tool->define_enabled;
+			destination_node_tool->edit_enabled= source_node_tool->edit_enabled;
+			destination_node_tool->motion_update_enabled= source_node_tool->motion_update_enabled;
+			destination_node_tool->select_enabled = source_node_tool->select_enabled;
+			destination_node_tool->streaming_create_enabled = source_node_tool->streaming_create_enabled;
+			destination_node_tool->constrain_to_surface= source_node_tool->constrain_to_surface;
+			destination_node_tool->command_field = source_node_tool->command_field;
+#if ! defined (MOTIF)
+			destination_node_tool->current_region_path= source_node_tool->current_region_path;	
+#endif /* ! defined (MOTIF) */
+			destination_node_tool->element_create_enabled = source_node_tool->element_create_enabled;
+			destination_node_tool->element_dimension = source_node_tool->element_dimension;
+#if defined (WX_USER_INTERFACE)
+			if (destination_node_tool->wx_node_tool != (wxNodeTool *) NULL)
+			{	
+				destination_node_tool->wx_node_tool->NodeToolInterfaceRenew(destination_node_tool);
+			}
+			return_code=1;
 #endif /*(WX_USER_INTERFACE)*/
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Node_tool_copy_function.  Could not create copy.");
+			return_code=0;
+		}
 	}
 	else
 	{

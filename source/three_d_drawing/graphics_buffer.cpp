@@ -241,6 +241,16 @@ DESCRIPTION :
 	   GdkGLConfig *glconfig;
 	   GdkGLContext *glcontext;
 	   GdkGLDrawable *gldrawable;
+
+	gulong initialise_handler_id;
+	gulong resize_handler_id;
+	gulong expose_handler_id;
+	gulong button_press_handler_id;
+	gulong button_release_handler_id;
+	gulong key_press_handler_id;
+	gulong key_release_handler_id;
+	gulong motion_handler_id;
+
 #   endif /* ! defined (GTK_USER_GLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
@@ -3236,27 +3246,35 @@ DESCRIPTION :
 						GDK_EXPOSURE_MASK|GDK_POINTER_MOTION_MASK|GDK_POINTER_MOTION_HINT_MASK|
 						GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|
 						GDK_KEY_PRESS_MASK|GDK_KEY_RELEASE_MASK);
+				buffer->initialise_handler_id = 
 					g_signal_connect(G_OBJECT(buffer->glarea), "realize",
 						G_CALLBACK(Graphics_buffer_gtkglarea_initialise_callback),
 						(gpointer)buffer);
+				buffer->resize_handler_id = 
 					g_signal_connect(G_OBJECT(buffer->glarea), "size-allocate",
 						G_CALLBACK(Graphics_buffer_gtkglarea_resize_callback),
 						(gpointer)buffer);
+				buffer->expose_handler_id = 
 					g_signal_connect(G_OBJECT(buffer->glarea), "expose-event",
 						G_CALLBACK(Graphics_buffer_gtkglarea_expose_callback),
 						(gpointer)buffer);
+				buffer->button_press_handler_id = 
 					g_signal_connect(G_OBJECT(buffer->glarea), "button-press-event",
 						G_CALLBACK(Graphics_buffer_gtkglarea_button_callback),
 						(gpointer)buffer);
+				buffer->button_release_handler_id = 
 					g_signal_connect(G_OBJECT(buffer->glarea), "button-release-event",
 						G_CALLBACK(Graphics_buffer_gtkglarea_button_callback),
 						(gpointer)buffer);
+				buffer->key_press_handler_id = 
 					g_signal_connect(G_OBJECT(buffer->glarea), "key-press-event",
 						G_CALLBACK(Graphics_buffer_gtkglarea_key_callback),
 						(gpointer)buffer);
+				buffer->key_release_handler_id = 
 					g_signal_connect(G_OBJECT(buffer->glarea), "key-release-event",
 						G_CALLBACK(Graphics_buffer_gtkglarea_key_callback),
 						(gpointer)buffer);
+				buffer->motion_handler_id = 
 					g_signal_connect(G_OBJECT(buffer->glarea), "motion-notify-event",
 						G_CALLBACK(Graphics_buffer_gtkglarea_motion_notify_callback),
 						(gpointer)buffer);
@@ -5801,11 +5819,28 @@ x==============================================================================*
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
 #if ! defined (GTK_USE_GTKGLAREA)
-                if (buffer->glconfig)
-                {
-                  g_object_unref(buffer->glconfig);
-                  buffer->glconfig = NULL;
-                }
+			if (buffer->glconfig)
+			{
+				g_object_unref(buffer->glconfig);
+				buffer->glconfig = NULL;
+			}
+
+			g_signal_handler_disconnect(GTK_OBJECT(buffer->glarea),
+				buffer->initialise_handler_id);
+			g_signal_handler_disconnect(GTK_OBJECT(buffer->glarea),
+				buffer->resize_handler_id);
+			g_signal_handler_disconnect(GTK_OBJECT(buffer->glarea),
+				buffer->expose_handler_id);
+			g_signal_handler_disconnect(GTK_OBJECT(buffer->glarea),
+				buffer->button_press_handler_id);
+			g_signal_handler_disconnect(GTK_OBJECT(buffer->glarea),
+				buffer->button_release_handler_id);
+			g_signal_handler_disconnect(GTK_OBJECT(buffer->glarea),
+				buffer->key_press_handler_id);
+			g_signal_handler_disconnect(GTK_OBJECT(buffer->glarea),
+				buffer->key_release_handler_id);
+			g_signal_handler_disconnect(GTK_OBJECT(buffer->glarea),
+				buffer->motion_handler_id);
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 

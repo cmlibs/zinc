@@ -81,10 +81,7 @@ Clear the scene viewer reference when it is no longer valid.
 	ENTER(Computed_field_window_projection_scene_viewer_destroy_callback);
 	if (gtk_cmiss_scene_viewer = (GtkCmissSceneViewer *)gtk_cmiss_scene_viewer_void)
 	{
-	  if (gtk_cmiss_scene_viewer->cmiss_scene_viewer)
-	  {
-		  DESTROY(Cmiss_scene_viewer)(&gtk_cmiss_scene_viewer->cmiss_scene_viewer);
-	  }
+		gtk_cmiss_scene_viewer->cmiss_scene_viewer = (Cmiss_scene_viewer_id)NULL;
 	}
 	else
 	{
@@ -137,7 +134,9 @@ DESCRIPTION:
 	  
 	  if (gtk_cmiss_scene_viewer->cmiss_scene_viewer)
 	  {
-		  DESTROY(Cmiss_scene_viewer)(&gtk_cmiss_scene_viewer->cmiss_scene_viewer);
+		  destroy_Scene_viewer_from_package(
+			  &gtk_cmiss_scene_viewer->cmiss_scene_viewer,
+			  gtk_cmiss_scene_viewer->cmiss_scene_viewer_package);
 	  
 		  Cmiss_scene_viewer_package_remove_destroy_callback(
 			  gtk_cmiss_scene_viewer->cmiss_scene_viewer_package,

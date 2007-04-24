@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interactive_event.c
 
-LAST MODIFIED : 10 April 2000
+LAST MODIFIED : 6 May 2005
 
 DESCRIPTION :
 Structure describing an interactive event containing:
@@ -83,11 +83,11 @@ struct Interactive_event *CREATE(Interactive_event)(
 	enum Interactive_event_type type,int button_number,int input_modifier,
 	struct Interaction_volume *interaction_volume,struct Scene *scene)
 /*******************************************************************************
-LAST MODIFIED : 10 April 2000
+LAST MODIFIED : 6 May 2005
 
 DESCRIPTION :
-Creates an Interactive_event. Note that the scene is optional. Also, both this
-object and the <interaction_volume> may be accessed to keep as long as
+Creates an Interactive_event. Note that the scene is optional.
+Also, both this object and the <interaction_volume> may be accessed to keep as long as
 necessary - they are not modifiable.
 ==============================================================================*/
 {

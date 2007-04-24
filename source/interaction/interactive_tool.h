@@ -63,17 +63,6 @@ Global types
 struct Graphics_buffer;
 struct Graphics_window;
 
-typedef void Interactive_event_handler(void *device_id,
-	struct Interactive_event *event,void *user_data,
-	struct Graphics_buffer *graphics_buffer);
-typedef int Interactive_tool_bring_up_dialog_function(void *user_data,
-	struct Graphics_window *graphics_window);
-typedef struct Cmgui_image *Interactive_tool_get_icon_function(
-	struct Colour *foreground, struct Colour *background, void *user_data);
-typedef int Interactive_tool_destroy_tool_data_function(
-   void **interactive_tool_data_address);
-typedef int Interactive_tool_copy_function(void *destination_tool, void *source_tool);
-
 struct Interactive_tool;
 /*******************************************************************************
 LAST MODIFIED : 10 April 2000
@@ -83,6 +72,20 @@ Wrapper object for CMGUI tools giving them a name, a consistent interface for
 sending input device events to, and can be put in a manager.
 The contents of this object are private.
 ==============================================================================*/
+struct MANAGER(Interactive_tool);
+
+typedef void Interactive_event_handler(void *device_id,
+	struct Interactive_event *event,void *user_data,
+	struct Graphics_buffer *graphics_buffer);
+typedef int Interactive_tool_bring_up_dialog_function(void *user_data,
+	struct Graphics_window *graphics_window);
+typedef struct Cmgui_image *Interactive_tool_get_icon_function(
+	struct Colour *foreground, struct Colour *background, void *user_data);
+typedef int Interactive_tool_destroy_tool_data_function(
+   void **interactive_tool_data_address);
+typedef int Interactive_tool_copy_function(
+	void *destination_tool, void *source_tool,
+	struct MANAGER(Interactive_tool) *destination_tool_manager);
 
 DECLARE_LIST_TYPES(Interactive_tool);
 DECLARE_MANAGER_TYPES(Interactive_tool);
@@ -172,13 +175,26 @@ Returns the icon which a user_interface can use to represent the tool.
 ==============================================================================*/
 
 int Interactive_tool_copy(struct Interactive_tool *destination_interactive_tool,
-   struct Interactive_tool *source_interactive_tool);
+   struct Interactive_tool *source_interactive_tool,
+	struct MANAGER(Interactive_tool) *destination_tool_manager);
 /*******************************************************************************
 LAST MODIFIED : 29 March 2007
 
 DESCRIPTION :
-If the bring_up_dialog function is defined for <interactive_tool> calls it to
-bring up the dialog for changing its settings.
+Copies the settings of the <source_interactive_tool> into either the
+<destination_interactive_tool> if that is set or creates a copy of the tool
+if <destination_interactive_tool> is NULL and adds that to the manager.
+==============================================================================*/
+
+int Interactive_tool_create_copy_iterator(struct Interactive_tool *interactive_tool,
+   void *interactive_tool_manager_void);
+/*******************************************************************************
+LAST MODIFIED : 4 April 2007
+
+DESCRIPTION :
+An iterator which copies the <interactive_tool>, creating a new one of the same
+type by calling Interactive_tool_copy and then adds this tool to the manager
+pointed to by <interactive_tool_manager_void>.
 ==============================================================================*/
 
 int Interactive_tool_bring_up_dialog(struct Interactive_tool *interactive_tool, struct Graphics_window *graphics_window);

@@ -108,6 +108,7 @@ DESCRIPTION :
 {
   struct Interactive_tool *interactive_tool;
 
+	struct User_interface *user_interface;
 	int free_spin_flag;
 #if defined (MOTIF)
 	Display *display;
@@ -360,7 +361,9 @@ Destroys the tool_data associated with a transform tool.
 	return (return_code);
 } /* destroy_Interactive_tool_transform_tool_data */
 
-static int Transform_tool_copy_function(void *destination_tool_void, void *source_tool_void) 
+static int Transform_tool_copy_function(
+	void *destination_tool_void, void *source_tool_void,
+	struct MANAGER(Interactive_tool) *destination_tool_manager) 
 /*******************************************************************************
 LAST MODIFIED : 29 March 2007
 
@@ -372,17 +375,39 @@ Copies the state of one transform tool to another.
 	struct Transform_tool *destination_transform_tool, *source_transform_tool;
 
 	ENTER(Transform_tool_copy_function);
-	if ((destination_transform_tool=(struct Transform_tool *)destination_tool_void) &&
-			(source_transform_tool=(struct Transform_tool *)source_tool_void))
+	if ((destination_tool_void || destination_tool_manager) &&
+		(source_transform_tool=(struct Transform_tool *)source_tool_void))
 	{
-		destination_transform_tool->free_spin_flag = source_transform_tool->free_spin_flag;
-#if defined (WX_USER_INTERFACE)
-		if (destination_transform_tool->wx_transform_tool != (wxTransformTool *) NULL)
-		{	
-			destination_transform_tool->wx_transform_tool->TransformToolInterafaceRenew(destination_transform_tool);
+		if (destination_tool_void)
+		{
+			destination_transform_tool = (struct Transform_tool *)destination_tool_void;
 		}
+		else
+		{
+			Interactive_tool *new_transform_tool = 
+				create_Interactive_tool_transform(source_transform_tool->user_interface);
+			ADD_OBJECT_TO_MANAGER(Interactive_tool)(
+				new_transform_tool, destination_tool_manager);
+			destination_transform_tool = (struct Transform_tool *)
+				Interactive_tool_get_tool_data(new_transform_tool);
+		}
+		if (destination_transform_tool)
+		{
+			destination_transform_tool->free_spin_flag = source_transform_tool->free_spin_flag;
+#if defined (WX_USER_INTERFACE)
+			if (destination_transform_tool->wx_transform_tool != (wxTransformTool *) NULL)
+			{	
+				destination_transform_tool->wx_transform_tool->TransformToolInterafaceRenew(destination_transform_tool);
+			}
 #endif /*defined (WX_USER_INTERFACE)*/
-		return_code=1;
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"transform_tool_copy_function.  Could not create copy.");
+			return_code=0;
+		}
 	}
 	else
 	{
@@ -541,7 +566,8 @@ scene_viewers.
 			}
 #elif defined (WX_USER_INTERFACE) /* (WX_USER_INTERFACE) */
 
-  transform_tool->wx_transform_tool = (wxTransformTool *)NULL; 
+			transform_tool->user_interface = user_interface;
+			transform_tool->wx_transform_tool = (wxTransformTool *)NULL; 
 
 #else /* switch (USER_INTERFACE) */
 			transform_tool->free_spin_flag = 0;

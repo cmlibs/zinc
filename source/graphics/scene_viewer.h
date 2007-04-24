@@ -345,6 +345,16 @@ struct Scene_viewer *create_Scene_viewer_from_package(
 LAST MODIFIED : 19 January 2007
 
 DESCRIPTION :
+Should be used with destroy_Scene_viewer_from_package.
+==============================================================================*/
+
+int destroy_Scene_viewer_from_package(struct Scene_viewer **scene_viewer_address,
+	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package);
+/*******************************************************************************
+LAST MODIFIED : 19 April 2007
+
+DESCRIPTION :
+Closes the scene_viewer and disposes of the scene_viewer data structure.
 ==============================================================================*/
 
 int Scene_viewer_awaken(struct Scene_viewer *scene_viewer);

@@ -114,6 +114,7 @@ DESCRIPTION :
 Object storing all the parameters for interactively selecting element points.
 ==============================================================================*/
 {
+	struct Computed_field_package *computed_field_package;
 	struct Execute_command *execute_command;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct Interactive_tool *interactive_tool;
@@ -138,7 +139,6 @@ Object storing all the parameters for interactively selecting element points.
 #endif /* defined (MOTIF) */
 
 #if defined (WX_USER_INTERFACE)
-	 struct Computed_field_package *computed_field_package;
 	 wxElementPointTool *wx_element_point_tool;
 #endif /* defined (WX_USER_INTERFACE) */
 
@@ -720,8 +720,10 @@ END_EVENT_TABLE()
 Global functions
 ----------------
 */
-
-	static int Element_point_tool_copy_function(void *destination_tool_void, void *source_tool_void) 
+	
+static int Element_point_tool_copy_function(
+	void *destination_tool_void, void *source_tool_void,
+	struct MANAGER(Interactive_tool) *destination_tool_manager) 
 /*******************************************************************************
 LAST MODIFIED : 29 March 2007
 
@@ -731,12 +733,37 @@ Copies the state of one element_point tool to another.
 {
 	int return_code;
 	struct Element_point_tool *destination_element_point_tool, *source_element_point_tool;
+
 	ENTER(Element_point_tool_copy_function);
-	if ((destination_element_point_tool=(struct Element_point_tool *)destination_tool_void) &&
-			(source_element_point_tool=(struct Element_point_tool *)source_tool_void))
+	if ((destination_tool_void || destination_tool_manager) &&
+		(source_element_point_tool=(struct Element_point_tool *)source_tool_void))
 	{
-		destination_element_point_tool->command_field = source_element_point_tool->command_field;
-		return_code=1;
+		if (destination_tool_void)
+		{
+			destination_element_point_tool = (struct Element_point_tool *)destination_tool_void;
+		}
+		else
+		{
+			destination_element_point_tool = CREATE(Element_point_tool)
+				(destination_tool_manager,
+				source_element_point_tool->element_point_ranges_selection,
+				source_element_point_tool->computed_field_package,
+				source_element_point_tool->rubber_band_material,
+				source_element_point_tool->user_interface,
+				source_element_point_tool->time_keeper,
+				source_element_point_tool->execute_command);
+		}
+		if (destination_element_point_tool)
+		{
+			destination_element_point_tool->command_field = source_element_point_tool->command_field;
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Element_point_tool_copy_function.  Could not create copy.");
+			return_code=0;
+		}
 	}
 	else
 	{
@@ -794,6 +821,7 @@ Creates an Element_point_tool with Interactive_tool in
 	{
 		if (ALLOCATE(element_point_tool,struct Element_point_tool,1))
 		{
+			element_point_tool->computed_field_package=computed_field_package;
 			element_point_tool->execute_command=execute_command;
 			element_point_tool->interactive_tool_manager=interactive_tool_manager;
 			element_point_tool->element_point_ranges_selection=

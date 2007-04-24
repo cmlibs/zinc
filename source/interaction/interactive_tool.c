@@ -500,36 +500,78 @@ Returns the icon which a user_interface can use to represent the tool.
 } /* Interactive_tool_get_icon */
 
 int Interactive_tool_copy(struct Interactive_tool *destination_interactive_tool,
-  struct Interactive_tool *source_interactive_tool)
+   struct Interactive_tool *source_interactive_tool,
+	struct MANAGER(Interactive_tool) *destination_tool_manager)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 29 March 2007
 
 DESCRIPTION :
-If the bring_up_dialog function is defined for <interactive_tool> calls it to
-bring up the dialog for changing its settings.
+Copies the settings of the <source_interactive_tool> into either the
+<destination_interactive_tool> if that is set or creates a copy of the tool
+if <destination_interactive_tool> is NULL and adds that to the manager.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Interactive_tool_bring_up_dialog);
-	if (source_interactive_tool && destination_interactive_tool &&
-			(source_interactive_tool->tool_type_name == destination_interactive_tool->tool_type_name))
+	ENTER(Interactive_tool_copy);
+	if (source_interactive_tool && destination_interactive_tool || destination_tool_manager)
 	{
-		return_code = (source_interactive_tool->copy_function)(destination_interactive_tool->tool_data,
-			source_interactive_tool->tool_data);
+		if (destination_interactive_tool)
+		{
+			return_code = (source_interactive_tool->copy_function)(
+				destination_interactive_tool->tool_data, source_interactive_tool->tool_data,
+				destination_tool_manager);
+		}
+		else
+		{
+			return_code = (source_interactive_tool->copy_function)(
+				NULL, source_interactive_tool->tool_data,
+				destination_tool_manager);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Interactive_tool_bring_up_dialog.  Invalid argument(s)");
-		return_code=1;
+			"Interactive_tool_copy.  Invalid argument(s)");
+		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Interactive_tool_bring_up_dialog */
+} /* Interactive_tool_copy */
 
+int Interactive_tool_create_copy_iterator(struct Interactive_tool *interactive_tool,
+   void *interactive_tool_manager_void)
+/*******************************************************************************
+LAST MODIFIED : 4 April 2007
 
+DESCRIPTION :
+An iterator which copies the <interactive_tool>, creating a new one of the same
+type by calling Interactive_tool_copy and then adds this tool to the manager
+pointed to by <interactive_tool_manager_void>.
+==============================================================================*/
+{
+	int return_code;
+	struct MANAGER(Interactive_tool) *new_interactive_tool_manager;
+
+	ENTER(Interactive_tool_create_copy_iterator);
+	if (interactive_tool && (new_interactive_tool_manager = 
+			(struct MANAGER(Interactive_tool) *)interactive_tool_manager_void))
+	{
+		return_code = Interactive_tool_copy(
+			(struct Interactive_tool *)NULL, interactive_tool,
+			new_interactive_tool_manager);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Interactive_tool_create_copy_iterator.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Interactive_tool_create_copy_iterator */
 
 int Interactive_tool_bring_up_dialog(struct Interactive_tool *interactive_tool, struct Graphics_window *graphics_window)
 /*******************************************************************************

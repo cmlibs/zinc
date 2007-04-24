@@ -935,9 +935,9 @@ END_EVENT_TABLE()
 Global functions
 ----------------
 */
-
-
-static int Element_tool_copy_function(void *destination_tool_void, void *source_tool_void) 
+static int Element_tool_copy_function(
+	void *destination_tool_void, void *source_tool_void,
+	struct MANAGER(Interactive_tool) *destination_tool_manager) 
 /*******************************************************************************
 LAST MODIFIED : 29 March 2007
 
@@ -948,20 +948,46 @@ Copies the state of one element tool to another.WX only
 	int return_code;
 	struct Element_tool *destination_element_tool, *source_element_tool;
 	ENTER(Element_tool_copy_function);
-	if ((destination_element_tool=(struct Element_tool *)destination_tool_void) &&
-			(source_element_tool=(struct Element_tool *)source_tool_void))
+	if ((destination_tool_void || destination_tool_manager) &&
+		(source_element_tool=(struct Element_tool *)source_tool_void))
 	{
-		destination_element_tool-> select_elements_enabled = source_element_tool->select_elements_enabled;
-		destination_element_tool->select_faces_enabled = source_element_tool->select_faces_enabled;
-		destination_element_tool->select_lines_enabled = source_element_tool->select_lines_enabled;
-		destination_element_tool->command_field = source_element_tool->command_field;
-#if defined (WX_USER_INTERFACE)
-		if (destination_element_tool->wx_element_tool != (wxElementTool *) NULL)
+		if (destination_tool_void)
 		{
-			destination_element_tool->wx_element_tool->ElementToolInterfaceRenew(destination_element_tool);
+			destination_element_tool = (struct Element_tool *)destination_tool_void;
 		}
+		else
+		{
+			destination_element_tool = CREATE(Element_tool)
+				(destination_tool_manager,
+				source_element_tool->region,
+				source_element_tool->element_selection,
+				source_element_tool->element_point_ranges_selection,
+				source_element_tool->computed_field_package,
+				source_element_tool->rubber_band_material,
+				source_element_tool->user_interface,
+				source_element_tool->time_keeper,
+				source_element_tool->execute_command);
+		}
+		if (destination_element_tool)
+		{
+			destination_element_tool-> select_elements_enabled = source_element_tool->select_elements_enabled;
+			destination_element_tool->select_faces_enabled = source_element_tool->select_faces_enabled;
+			destination_element_tool->select_lines_enabled = source_element_tool->select_lines_enabled;
+			destination_element_tool->command_field = source_element_tool->command_field;
+#if defined (WX_USER_INTERFACE)
+			if (destination_element_tool->wx_element_tool != (wxElementTool *) NULL)
+			{
+				destination_element_tool->wx_element_tool->ElementToolInterfaceRenew(destination_element_tool);
+			}
 #endif /*defined (WX_USER_INTERFACE)*/
-		return_code=1;
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Element_tool_copy_function.  Could not create copy.");
+			return_code=0;
+		}
 	}
 	else
 	{
