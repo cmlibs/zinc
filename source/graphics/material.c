@@ -1717,6 +1717,7 @@ Frees the memory for the material and sets <*material_address> to NULL.
 				MANAGER_DEREGISTER(Spectrum)(
 					material->spectrum_manager_callback_id,
 					material->package->spectrum_manager);
+				material->spectrum_manager_callback_id=NULL;
 			}
 			if (material->texture)
 			{
@@ -1866,6 +1867,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
 				MANAGER_DEREGISTER(Spectrum)(
 					destination->spectrum_manager_callback_id,
 					destination->package->spectrum_manager);
+				destination->spectrum_manager_callback_id=NULL;
 			}
 		}
 		REACCESS(Texture)(&(destination->texture), source->texture);
@@ -3074,6 +3076,7 @@ DESCRIPTION :
 									MANAGER_DEREGISTER(Spectrum)(
 										material_to_be_modified_copy->spectrum_manager_callback_id,
 										material_to_be_modified_copy->package->spectrum_manager);
+									material_to_be_modified_copy->spectrum_manager_callback_id=NULL;
 								}
 							}
 
