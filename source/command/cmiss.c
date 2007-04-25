@@ -486,7 +486,7 @@ Module functions
 */
 
 #if defined (WX_USER_INTERFACE)
-static int command_data_get_Interactive_tool(struct Graphics_window *graphics_window,
+static int Graphics_window_update_Interactive_tool(struct Graphics_window *graphics_window,
 	void *interactive_tool_void)
 /*******************************************************************************
 LAST MODIFIED : 27 March 2007
@@ -10970,10 +10970,13 @@ Executes a GFX ELEMENT_POINT_TOOL command.
 				}
 #if defined (WX_USER_INTERFACE)
 			FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
-				 command_data_get_Interactive_tool,
+				 Graphics_window_update_Interactive_tool,
 				 (void *)Element_point_tool_get_interactive_tool(element_point_tool),
 				 command_data->graphics_window_manager);
 #endif
+			Cmiss_scene_viewer_package_update_Interactive_tool(
+				command_data->scene_viewer_package,
+				Element_point_tool_get_interactive_tool(element_point_tool));
 			}
 			else
 			{
@@ -15992,7 +15995,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 				}
 #if defined (WX_USER_INTERFACE)
 				FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
-					 command_data_get_Interactive_tool,
+					 Graphics_window_update_Interactive_tool,
 					 (void *)Node_tool_get_interactive_tool(node_tool),
 					 command_data->graphics_window_manager);
 				display_message(WARNING_MESSAGE,
@@ -18926,8 +18929,8 @@ Executes a GFX TRANSFORM_TOOL command.
 			Interactive_tool_transform_set_free_spin(transform_tool, free_spin_flag);
 #if defined (WX_USER_INTERFACE)
 			FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
-						command_data_get_Interactive_tool,(void *)transform_tool,
-						command_data->graphics_window_manager);
+				Graphics_window_update_Interactive_tool,(void *)transform_tool,
+				command_data->graphics_window_manager);
 #endif /*(WX_USER_INTERFACE)*/
 		} /* parse error,help */
 		DESTROY(Option_table)(&option_table);

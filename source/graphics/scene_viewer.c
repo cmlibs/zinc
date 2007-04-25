@@ -4399,6 +4399,72 @@ DESCRIPTION :
 	return (default_scene);
 } /* Scene_viewer_get_default_scene */
 
+static int Scene_viewer_update_Interactive_tool(
+	struct Scene_viewer *scene_viewer, void *interactive_tool_void)
+/*******************************************************************************
+LAST MODIFIED : 26 April 2007
+
+DESCRIPTION :
+Updates the interactive_tool that matches the type of <interactive_tool_void>
+to have the same settings as <interactive_tool_void> overwriting the 
+settings the individual tool has.  Used to provide compatibility with the old
+global tools.  The scene_viewers in a graphics_window are updated separately
+from this.
+==============================================================================*/
+{
+	char *tool_name;
+	int return_code;
+	struct Interactive_tool *global_interactive_tool;
+	struct Interactive_tool *scene_viewer_interactive_tool;
+	global_interactive_tool = (struct Interactive_tool *)interactive_tool_void;
+	
+	if (GET_NAME(Interactive_tool)(global_interactive_tool,&tool_name)
+		&& (scene_viewer_interactive_tool=
+		FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
+		(char *)tool_name,scene_viewer->interactive_tool_manager)))
+	{
+		Interactive_tool_copy(scene_viewer_interactive_tool,
+			global_interactive_tool, (struct MANAGER(Interactive_tool) *)NULL);
+	}
+	return_code = 1;
+	DEALLOCATE(tool_name);
+	return (return_code);
+}
+
+int Cmiss_scene_viewer_package_update_Interactive_tool(
+	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
+	struct Interactive_tool *interactive_tool)
+/*******************************************************************************
+LAST MODIFIED : 26 April 2007
+
+DESCRIPTION :
+Updates the interactive tools in each of the scene_viewers created with the
+<cmiss_scene_viewer_package> to have the same settings as the <interactive_tool>.
+This enables the old global commands to continue to work for all scene_viewers,
+however new code should probably modify the particular tools for the 
+particular scene_viewer intended.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_scene_viewer_package_update_Interactive_tool);
+	if (cmiss_scene_viewer_package)
+	{
+		return_code = FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(
+			Scene_viewer_update_Interactive_tool, (void *)interactive_tool,
+			cmiss_scene_viewer_package->scene_viewer_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_package_update_Interactive_tool.  Missing scene_viewer");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_scene_viewer_package_update_Interactive_tool */
+
 struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffer,
 	struct Colour *background_colour,
 	struct MANAGER(Light) *light_manager,struct Light *default_light,
@@ -4798,7 +4864,7 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 	ENTER(DESTROY(Scene_viewer));
 	if (scene_viewer_address&&(scene_viewer= *scene_viewer_address))
 	{
-		Scene_viewer_remove_from_package(*scene_viewer_address,
+		Scene_viewer_remove_from_package(scene_viewer,
 			cmiss_scene_viewer_package);
 		*scene_viewer_address = (struct Scene_viewer *)NULL;
 

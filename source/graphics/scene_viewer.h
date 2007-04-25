@@ -308,6 +308,20 @@ LAST MODIFIED : 19 January 2007
 DESCRIPTION :
 ==============================================================================*/
 
+int Cmiss_scene_viewer_package_update_Interactive_tool(
+	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
+	struct Interactive_tool *interactive_tool);
+/*******************************************************************************
+LAST MODIFIED : 26 April 2007
+
+DESCRIPTION :
+Updates the interactive tools in each of the scene_viewers created with the
+<cmiss_scene_viewer_package> to have the same settings as the <interactive_tool>.
+This enables the old global commands to continue to work for all scene_viewers,
+however new code should probably modify the particular tools for the 
+particular scene_viewer intended.
+==============================================================================*/
+
 struct Scene_viewer *CREATE(Scene_viewer)(
 	struct Graphics_buffer *graphics_buffer,
 	struct Colour *background_colour,
