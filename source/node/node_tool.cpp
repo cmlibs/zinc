@@ -3024,6 +3024,8 @@ Copies the state of one node tool to another.
 #endif /* ! defined (MOTIF) */
 			destination_node_tool->element_create_enabled = source_node_tool->element_create_enabled;
 			destination_node_tool->element_dimension = source_node_tool->element_dimension;
+			Node_tool_set_Cmiss_region(destination_node_tool,
+				source_node_tool->region);
 #if defined (WX_USER_INTERFACE)
 			if (destination_node_tool->wx_node_tool != (wxNodeTool *) NULL)
 			{	
@@ -3144,6 +3146,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->interactive_tool_manager=interactive_tool_manager;
 			node_tool->root_region=root_region;
 			node_tool->region=(struct Cmiss_region *)NULL;
+			node_tool->fe_region=(struct FE_region *)NULL;
 			node_tool->use_data = use_data;
 			node_tool->node_selection=node_selection;
 			node_tool->computed_field_package=computed_field_package;

@@ -970,7 +970,7 @@ Copies the state of one element tool to another.WX only
 		}
 		if (destination_element_tool)
 		{
-			destination_element_tool-> select_elements_enabled = source_element_tool->select_elements_enabled;
+			destination_element_tool->select_elements_enabled = source_element_tool->select_elements_enabled;
 			destination_element_tool->select_faces_enabled = source_element_tool->select_faces_enabled;
 			destination_element_tool->select_lines_enabled = source_element_tool->select_lines_enabled;
 			destination_element_tool->command_field = source_element_tool->command_field;

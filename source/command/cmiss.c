@@ -16001,6 +16001,9 @@ Which tool that is being modified is passed in <node_tool_void>.
 				display_message(WARNING_MESSAGE,
 					 "This command changes the node tool settings for each window to the global settings. To change node tool settings for individual window, please see the command [gfx modify window <name> nodes ?]. \n");
 #endif /*(WX_USER_INTERFACE)*/
+				Cmiss_scene_viewer_package_update_Interactive_tool(
+					command_data->scene_viewer_package,
+					Node_tool_get_interactive_tool(node_tool));
 			}
 			else
 			{
@@ -18932,6 +18935,9 @@ Executes a GFX TRANSFORM_TOOL command.
 				Graphics_window_update_Interactive_tool,(void *)transform_tool,
 				command_data->graphics_window_manager);
 #endif /*(WX_USER_INTERFACE)*/
+			Cmiss_scene_viewer_package_update_Interactive_tool(
+				command_data->scene_viewer_package,
+				transform_tool);
 		} /* parse error,help */
 		DESTROY(Option_table)(&option_table);
 	}
