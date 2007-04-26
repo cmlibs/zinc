@@ -11092,7 +11092,7 @@ Executes a GFX ELEMENT_TOOL command.
 				}
 #if defined (WX_USER_INTERFACE)
 			FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
-				 command_data_get_Interactive_tool,
+				 Graphics_window_update_Interactive_tool,
 				 (void *)Element_tool_get_interactive_tool(element_tool),
 				 command_data->graphics_window_manager);
 #endif /*(WX_USER_INTERFACE)*/
