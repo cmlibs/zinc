@@ -2684,8 +2684,8 @@ class wxGraphicsWindow : public wxFrame
 	wxChoice *up_view_options;
 	wxButton *front_view_options;
 	wxString front_choices;
-	 wxScrolledWindow *leftpanel;
-	 wxSplitterWindow *splitterwindow;
+	 wxScrolledWindow *leftpanel, *toolscrolledwindow;
+	 wxSplitterWindow *splitterwindow; 
 	int wx_ortho_up_axis;
 	int wx_ortho_front_axis;
 	int location;
@@ -2895,6 +2895,9 @@ public:
 
 	 void OnSplitterPositionChanged(wxSplitterEvent &event)
 	 {
+			toolscrolledwindow =XRCCTRL(*this, "ToolPanel", wxScrolledWindow);
+			toolscrolledwindow ->Fit();
+			toolscrolledwindow ->Layout();
 			leftpanel = XRCCTRL(*this,"LeftPanel", wxScrolledWindow);
 			leftpanel->Layout();
 			splitterwindow = XRCCTRL(*this, "Splitter",wxSplitterWindow);
@@ -2917,7 +2920,7 @@ BEGIN_EVENT_TABLE(wxGraphicsWindow, wxFrame)
 	 EVT_CHOICE(XRCID("View"),wxGraphicsWindow::OnViewOptionspressed)
 	 EVT_CHOICE(XRCID("UpViewOptions"),wxGraphicsWindow::OnUpViewOptionspressed)
 	 EVT_BUTTON(XRCID("FrontViewOptions"),wxGraphicsWindow::OnFrontViewOptionspressed)
-	 EVT_SPLITTER_SASH_POS_CHANGING(XRCID("Splitter"),wxGraphicsWindow::OnSplitterPositionChanged)
+	 EVT_SPLITTER_SASH_POS_CHANGED(XRCID("Splitter"),wxGraphicsWindow::OnSplitterPositionChanged)
 END_EVENT_TABLE()
 
 
