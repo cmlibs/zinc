@@ -82,6 +82,7 @@ static char graphics_window_uidh[] =
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
 #include <wx/tglbtn.h>
+#include <wx/splitter.h>
 #include "wx/xrc/xmlres.h"
 #include "graphics/graphics_window.xrch"
 #endif /* defined (WX_USER_INTERFACE)*/
@@ -2683,6 +2684,8 @@ class wxGraphicsWindow : public wxFrame
 	wxChoice *up_view_options;
 	wxButton *front_view_options;
 	wxString front_choices;
+	 wxScrolledWindow *leftpanel;
+	 wxSplitterWindow *splitterwindow;
 	int wx_ortho_up_axis;
 	int wx_ortho_front_axis;
 	int location;
@@ -2890,20 +2893,31 @@ public:
     }
   }
 
+	 void OnSplitterPositionChanged(wxSplitterEvent &event)
+	 {
+			leftpanel = XRCCTRL(*this,"LeftPanel", wxScrolledWindow);
+			leftpanel->Layout();
+			splitterwindow = XRCCTRL(*this, "Splitter",wxSplitterWindow);
+			splitterwindow->Layout();
+			Redrawwindow = XRCCTRL(*this,"CmguiGraphicsWindow", wxFrame);
+			Redrawwindow->Layout();
+	 }
+
+
+
   DECLARE_DYNAMIC_CLASS(wxGraphicsWindow);
   DECLARE_EVENT_TABLE();
 };
 
-
-
 IMPLEMENT_DYNAMIC_CLASS(wxGraphicsWindow, wxFrame)
 
 BEGIN_EVENT_TABLE(wxGraphicsWindow, wxFrame)
-  EVT_BUTTON(XRCID("Button1"),wxGraphicsWindow::OnViewallpressed)
-  EVT_BUTTON(XRCID("Button2"),wxGraphicsWindow::OnSaveaspressed)
-  EVT_CHOICE(XRCID("View"),wxGraphicsWindow::OnViewOptionspressed)
-  EVT_CHOICE(XRCID("UpViewOptions"),wxGraphicsWindow::OnUpViewOptionspressed)
-  EVT_BUTTON(XRCID("FrontViewOptions"),wxGraphicsWindow::OnFrontViewOptionspressed)
+	 EVT_BUTTON(XRCID("Button1"),wxGraphicsWindow::OnViewallpressed)
+	 EVT_BUTTON(XRCID("Button2"),wxGraphicsWindow::OnSaveaspressed)
+	 EVT_CHOICE(XRCID("View"),wxGraphicsWindow::OnViewOptionspressed)
+	 EVT_CHOICE(XRCID("UpViewOptions"),wxGraphicsWindow::OnUpViewOptionspressed)
+	 EVT_BUTTON(XRCID("FrontViewOptions"),wxGraphicsWindow::OnFrontViewOptionspressed)
+	 EVT_SPLITTER_SASH_POS_CHANGING(XRCID("Splitter"),wxGraphicsWindow::OnSplitterPositionChanged)
 END_EVENT_TABLE()
 
 
