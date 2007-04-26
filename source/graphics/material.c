@@ -365,8 +365,8 @@ be shared by multiple materials using the same program.
 				Graphics_library_check_extension(GL_ARB_fragment_program))
 			{
 #if ! defined (TESTING_PROGRAM_STRINGS)
-				char *fragment_program_string, *vertex_program_string;
-				int error;
+				char *components_string, *fragment_program_string, *vertex_program_string;
+				int components_error, number_of_inputs, error;
 #if defined (DEBUG)
 				const GLubyte *error_msg;
 #endif /* defined (DEBUG) */
@@ -867,43 +867,43 @@ be shared by multiple materials using the same program.
 						append_string(&fragment_program_string, 	
 							"TEMP dependentlookup;\n"
 							, &error);
-						switch ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 | 
-								MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2| 
-							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3 | 
-							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4) & material_program->type)
+						components_string = (char *)NULL;
+						components_error = 0;
+						if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1
+							& material_program->type)
 						{
-							case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1:
-							{
-								append_string(&fragment_program_string,
-									"TEX		dependentlookup, finalCol.r, texture[2], 1D;\n"
-									, &error);
-							} break;
-							case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2:
-							{
-								append_string(&fragment_program_string,
-									"TEX		dependentlookup, finalCol.g, texture[2], 1D;\n"
-									, &error);
-							} break;
-							case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3:
-							{
-								append_string(&fragment_program_string,
-									"TEX		dependentlookup, finalCol.b, texture[2], 1D;\n"
-									, &error);
-							} break;
-							case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4:
-							{
-								append_string(&fragment_program_string,
-									"TEX		dependentlookup, finalCol.a, texture[2], 1D;\n"
-									, &error);
-							} break;
-							case (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 |
-								MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2):
-							{
-								append_string(&fragment_program_string,
-									"TEX		dependentlookup, finalCol.rgrg, texture[2], 2D;\n"
-									, &error);
-							} break;
+							append_string(&components_string, "r", &components_error);
 						}
+						if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2
+							& material_program->type)
+						{
+							append_string(&components_string, "g", &components_error);
+						}
+						if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3
+							& material_program->type)
+						{
+							append_string(&components_string, "b", &components_error);
+						}
+						if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4
+							& material_program->type)
+						{
+							append_string(&components_string, "a", &components_error);
+						}
+						number_of_inputs = strlen(components_string);
+						while (!components_error && (strlen(components_string) < 4))
+						{
+							append_string(&components_string, "r", &components_error);
+						}
+						if (!components_error)
+						{
+							char tex_string[100];
+							sprintf(tex_string,
+								"TEX		dependentlookup, finalCol.%s, texture[2], %1dD;\n",
+								components_string, number_of_inputs);
+							append_string(&fragment_program_string,
+								tex_string, &error);
+						}
+
 						switch ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
 								MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA) 
 							& material_program->type)
@@ -911,20 +911,20 @@ be shared by multiple materials using the same program.
 							case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR:
 							{
 								/* Don't touch alpha */
-								append_string(&fragment_program_string, 	
+								append_string(&fragment_program_string,
 									"MOV		finalCol.rgb, dependentlookup;\n"
 									, &error);
 							} break;
 							case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA:
 							{
-								append_string(&fragment_program_string, 	
+								append_string(&fragment_program_string,
 									"MUL		finalCol.w, finalCol.w, dependentlookup.r;\n"
 									, &error);
 							} break;
 							case (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
 								MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA):
 							{
-								append_string(&fragment_program_string, 	
+								append_string(&fragment_program_string,
 									"MOV		finalCol, dependentlookup;\n"
 									, &error);
 							} break;
