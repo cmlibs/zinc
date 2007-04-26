@@ -7681,7 +7681,6 @@ Returns the panel to embed the interactive tool into.
 	if (graphics_window)
 	{
 		panel = graphics_window->ToolPanel;
-		panel->Layout();
 		panel->SetScrollbars(-1, 20, -1, 50);
 	}
 	else

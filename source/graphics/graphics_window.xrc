@@ -9,7 +9,7 @@
 	 			<flag>wxEXPAND</flag>
 				<option>1</option>
         <object class ="wxSplitterWindow" name="Splitter">
-					<style>wxSP_3D|wxSP_LIVE_UPDATE</style>
+					<style>wxSP_3D</style>
 				  <orientation>vertical</orientation>
 					<minsize>1</minsize>
 					<sashpos>200</sashpos>
