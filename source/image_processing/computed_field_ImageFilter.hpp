@@ -963,7 +963,6 @@ Evaluate the templated version of this filter
 					&& (input_field_image_functor = dynamic_cast<Computed_field_ImageFilter_FunctorTmpl<ImageType>*>
 					(input_field_image_filter->functor)))
 			{
-				printf ("Found input image !\n");
 
 				// Force the input image to be generated (requires a location unfortunately
 				// so evaluate at the location given to this update).
