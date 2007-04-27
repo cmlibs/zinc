@@ -67,7 +67,9 @@ class Computed_field_canny_edge_detection_image_filter : public Computed_field_I
 {
 
 public:
-	Computed_field_canny_edge_detection_image_filter(Computed_field *field);
+
+  double variance;
+	Computed_field_canny_edge_detection_image_filter(Computed_field *field, double variance);
 
 	~Computed_field_canny_edge_detection_image_filter()
 	{
@@ -76,7 +78,7 @@ public:
 private:
 	Computed_field_core *copy(Computed_field* new_parent)
 	{
-		return new Computed_field_canny_edge_detection_image_filter(new_parent);
+		return new Computed_field_canny_edge_detection_image_filter(new_parent,variance);
 	}
 
 	char *get_type_string()
@@ -84,22 +86,108 @@ private:
 		return(computed_field_canny_edge_detection_image_filter_type_string);
 	}
 
-	int compare(Computed_field_core* other_field)
-	{
-		if (dynamic_cast<Computed_field_canny_edge_detection_image_filter*>(other_field))
-		{
-			return 1;
-		}
-		else
-		{
-			return 0;
-		}
-	}
+	int compare(Computed_field_core* other_field);
 
 	int list();
 
 	char* get_command_string();
 };
+
+int Computed_field_canny_edge_detection_image_filter::compare(Computed_field_core *other_core)
+/*******************************************************************************
+LAST MODIFIED : 18 October 2006
+
+DESCRIPTION :
+Compare the type specific data.
+==============================================================================*/
+{
+	Computed_field_canny_edge_detection_image_filter* other;
+	int return_code;
+
+	ENTER(Computed_field_canny_edge_detection_image_filter::compare);
+
+	// check field exists and can be cast to correct type
+	if (field && (other = dynamic_cast<Computed_field_canny_edge_detection_image_filter*>(other_core))) {
+		if( variance == other->variance) {
+		  return_code = 1;  // variance matches, field is the same
+		} else {
+			return_code = 0;
+		}
+	} else {
+		return_code = 0;		
+	}
+
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_canny_edge_detection_image_filter::compare */
+
+int Computed_field_canny_edge_detection_image_filter::list()
+/*******************************************************************************
+LAST MODIFIED : 30 August 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(List_Computed_field_canny_edge_detection_image_filter);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,
+			"    source field : %s\n",field->source_fields[0]->name);
+		display_message(INFORMATION_MESSAGE,
+			"    variance : %g\n", variance);
+
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_canny_edge_detection_image_filter.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_canny_edge_detection_image_filter */
+
+char *Computed_field_canny_edge_detection_image_filter::get_command_string()
+/*******************************************************************************
+LAST MODIFIED : 30 August 2006
+
+DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
+==============================================================================*/
+{
+	char *command_string, *field_name, temp_string[40];
+	int error;
+
+	ENTER(Computed_field_canny_edge_detection_image_filter::get_command_string);
+	command_string = (char *)NULL;
+	if (field)
+	{
+		error = 0;
+		append_string(&command_string, get_type_string(), &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		sprintf(temp_string, " variance %g", variance);
+		append_string(&command_string, temp_string, &error);		
+
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_canny_edge_detection_image_filter::get_command_string.  Invalid field");
+	}
+	LEAVE;
+
+	return (command_string);
+} /* Computed_field_canny_edge_detection_image_filter::get_command_string */
 
 template < class ImageType >
 class Computed_field_canny_edge_detection_image_filter_Functor :
@@ -137,19 +225,21 @@ and generate the outputImage.
 		typedef itk::CannyEdgeDetectionImageFilter< ImageType , ImageType > FilterType;
 		
 		typename FilterType::Pointer filter = FilterType::New();
-		
+
+		filter->SetVariance( (float)(canny_edge_detection_image_filter->variance) );
+	
 		return_code = canny_edge_detection_image_filter->update_output_image
 			(location, filter, this->outputImage,
 			static_cast<ImageType*>(NULL), static_cast<FilterType*>(NULL));
-		
+	  
 		return (return_code);
 	} /* set_filter */
 
 }; /* template < class ImageType > class Computed_field_canny_edge_detection_image_filter_Functor */
 	
 Computed_field_canny_edge_detection_image_filter::Computed_field_canny_edge_detection_image_filter(
-	Computed_field *field) :
-	Computed_field_ImageFilter(field)
+  Computed_field *field, double variance) :
+	Computed_field_ImageFilter(field), variance(variance)
 /*******************************************************************************
 LAST MODIFIED : 12 September 2006
 
@@ -168,71 +258,11 @@ Create the computed_field representation of the CannyEdgeDetectionFilter.
 #endif
 } /* Computed_field_canny_edge_detection_image_filter */
 
-int Computed_field_canny_edge_detection_image_filter::list()
-/*******************************************************************************
-LAST MODIFIED : 30 August 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(List_Computed_field_canny_edge_detection_image_filter);
-	if (field)
-	{
-		display_message(INFORMATION_MESSAGE,
-			"    source field : %s\n",field->source_fields[0]->name);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"list_Computed_field_canny_edge_detection_image_filter.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* list_Computed_field_canny_edge_detection_image_filter */
-
-char *Computed_field_canny_edge_detection_image_filter::get_command_string()
-/*******************************************************************************
-LAST MODIFIED : 30 August 2006
-
-DESCRIPTION :
-Returns allocated command string for reproducing field. Includes type.
-==============================================================================*/
-{
-	char *command_string, *field_name;
-	int error;
-
-	ENTER(Computed_field_canny_edge_detection_image_filter::get_command_string);
-	command_string = (char *)NULL;
-	if (field)
-	{
-		error = 0;
-		append_string(&command_string, get_type_string(), &error);
-		append_string(&command_string, " field ", &error);
-		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
-		{
-			make_valid_token(&field_name);
-			append_string(&command_string, field_name, &error);
-			DEALLOCATE(field_name);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_canny_edge_detection_image_filter::get_command_string.  Invalid field");
-	}
-	LEAVE;
-
-	return (command_string);
-} /* Computed_field_canny_edge_detection_image_filter::get_command_string */
 
 } //namespace
 
 int Computed_field_set_type_canny_edge_detection_image_filter(struct Computed_field *field,
-	struct Computed_field *source_field)
+	struct Computed_field *source_field, double variance)
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006
 
@@ -260,7 +290,7 @@ Converts <field> to type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER.
 			source_fields[0] = ACCESS(Computed_field)(source_field);
 			field->source_fields = source_fields;
 			field->number_of_source_fields = number_of_source_fields;			
-			field->core = new Computed_field_canny_edge_detection_image_filter(field);
+			field->core = new Computed_field_canny_edge_detection_image_filter(field, variance);
 		}
 		else
 		{
@@ -280,7 +310,7 @@ Converts <field> to type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER.
 } /* Computed_field_set_type_canny_edge_detection_image_filter */
 
 int Computed_field_get_type_canny_edge_detection_image_filter(struct Computed_field *field,
-	struct Computed_field **source_field)
+	struct Computed_field **source_field, double *variance)
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006
 
@@ -289,13 +319,15 @@ If the field is of type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER, the source_fiel
 used by it is returned - otherwise an error is reported.
 ==============================================================================*/
 {
+	Computed_field_canny_edge_detection_image_filter* core;
 	int return_code;
 
 	ENTER(Computed_field_get_type_canny_edge_detection_image_filter);
-	if (field && (dynamic_cast<Computed_field_canny_edge_detection_image_filter*>(field->core))
+	if (field && (core = dynamic_cast<Computed_field_canny_edge_detection_image_filter*>(field->core))
 		&& source_field)
 	{
 		*source_field = field->source_fields[0];
+		*variance = core->variance;
 		return_code = 1;
 	}
 	else
@@ -320,6 +352,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
+	double variance;
 	struct Computed_field *field, *source_field;
 	struct Computed_field_simple_package *computed_field_simple_package;
 	struct Option_table *option_table;
@@ -332,11 +365,12 @@ already) and allows its contents to be modified.
 		return_code = 1;
 		/* get valid parameters for projection field */
 		source_field = (struct Computed_field *)NULL;
+		variance = 3;
 		if (computed_field_canny_edge_detection_image_filter_type_string ==
 			Computed_field_get_type_string(field))
 		{
 			return_code =
-				Computed_field_get_type_canny_edge_detection_image_filter(field, &source_field);
+				Computed_field_get_type_canny_edge_detection_image_filter(field, &source_field, &variance);
 		}
 		if (return_code)
 		{
@@ -355,6 +389,9 @@ already) and allows its contents to be modified.
 			set_source_field_data.conditional_function_user_data = (void *)NULL;
 			Option_table_add_entry(option_table, "field", &source_field,
 				&set_source_field_data, set_Computed_field_conditional);
+			/* variance */
+			Option_table_add_double_entry(option_table, "variance",
+				&variance);
 			return_code = Option_table_multi_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
 
@@ -371,7 +408,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = Computed_field_set_type_canny_edge_detection_image_filter(
-					field, source_field);
+					field, source_field, variance);
 			}
 
 			if (!return_code)
