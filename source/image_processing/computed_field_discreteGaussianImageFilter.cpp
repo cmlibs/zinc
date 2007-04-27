@@ -69,7 +69,7 @@ class Computed_field_discrete_gaussian_image_filter : public Computed_field_Imag
 
 public:
 	double variance;
-        int maxKernelWidth;
+	int maxKernelWidth;
        
 
 	Computed_field_discrete_gaussian_image_filter(Computed_field *field,
@@ -365,7 +365,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-        double variance;
+	double variance;
 	int maxKernelWidth;
 	struct Computed_field *field, *source_field;
 	struct Computed_field_simple_package *computed_field_simple_package;
