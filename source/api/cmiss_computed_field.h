@@ -248,7 +248,7 @@ used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
 int Cmiss_computed_field_set_type_canny_edge_detection_image_filter(struct Computed_field *field,
-	struct Computed_field *source_field);
+	struct Computed_field *source_field, double variance);
 /*******************************************************************************
 LAST MODIFIED : 9 September 2006
 
@@ -259,7 +259,7 @@ Sets number of components to same number as <source_field>.
 ==============================================================================*/
 
 int Cmiss_computed_field_get_type_canny_edge_detection_image_filter(struct Computed_field *field,
-	struct Computed_field **source_field);
+	struct Computed_field **source_field, double *variance);
 /*******************************************************************************
 LAST MODIFIED : 9 September 2006
 
@@ -356,6 +356,27 @@ If the field is of type COMPUTED_FIELD_DISCRETEGAUSSIANIMAGEFILTER_H, the source
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
+int Cmiss_computed_field_set_type_gradient_magnitude_recursive_gaussian_image_filter(struct Computed_field *field,
+	struct Computed_field *source_field, double sigma);
+/*******************************************************************************
+LAST MODIFIED : 18 Nov 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_GRADIENT_MAGNITUDE_RECURSIVE_GAUSSIAN_IMAGE_FILTER, returning the value of
+<discrete_gaussian_image_filter> at the time/parameter value given by scalar <source_field>.
+Sets number of components to same number as <source_field>.
+==============================================================================*/
+
+int Cmiss_computed_field_get_type_gradient_magnitude_recursvie_gaussian_image_filter(struct Computed_field *field,
+	struct Computed_field **source_field, double *sigma);
+/*******************************************************************************
+LAST MODIFIED : 18 Nov 2006
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_GRADIENT_MAGNITUDE_RECURSIVE_GAUSSIAN_IMAGE_FILTER, 
+the source_field and discrete_gaussian_image_filter
+used by it are returned - otherwise an error is reported.
+==============================================================================*/
 
 int Cmiss_computed_field_set_type_mean_image_filter(struct Computed_field *field,
 	struct Computed_field *source_field, int *radius_sizes);
