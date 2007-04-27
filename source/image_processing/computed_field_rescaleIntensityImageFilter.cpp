@@ -4,7 +4,7 @@ FILE : computed_field_rescaleIntensityImageFilter.c
 LAST MODIFIED : 15 Dec 2006
 
 DESCRIPTION :
-Wraps itk::RescaleIntensityImageFilter
+Wraps itk::RescaleIntensityImageFiter
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -69,7 +69,7 @@ class Computed_field_rescale_intensity_image_filter : public Computed_field_Imag
 
 public:
 	int outputMin;
-        int outputMax;
+	int outputMax;
        
 
 	Computed_field_rescale_intensity_image_filter(Computed_field *field,
@@ -185,9 +185,9 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		sprintf(temp_string, " outputMin  %d", outputMin);
+		sprintf(temp_string, " output_min  %d", outputMin);
 		append_string(&command_string, temp_string, &error);	
-		sprintf(temp_string, " outputMax  %d", outputMax);
+		sprintf(temp_string, " output_max  %d", outputMax);
 		append_string(&command_string, temp_string, &error);	
 	}
 	else
@@ -340,7 +340,7 @@ used by it are returned - otherwise an error is reported.
 	{
 		*source_field = field->source_fields[0];
 		*outputMin = core->outputMin;
-		*outputMax=core->outputMax;
+		*outputMax = core->outputMax;
 		return_code = 1;
 	}
 	else
@@ -365,7 +365,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-        int outputMin;
+	int outputMin;
 	int outputMax;
 	struct Computed_field *field, *source_field;
 	struct Computed_field_simple_package *computed_field_simple_package;
@@ -380,7 +380,7 @@ already) and allows its contents to be modified.
 		/* get valid parameters for projection field */
 		source_field = (struct Computed_field *)NULL;
 		outputMin = 0;
-		outputMax=255;
+		outputMax = 255;
 		if (computed_field_rescale_intensity_image_filter_type_string ==
 			Computed_field_get_type_string(field))
 		{
@@ -405,11 +405,11 @@ already) and allows its contents to be modified.
 			Option_table_add_entry(option_table, "field", &source_field,
 				&set_source_field_data, set_Computed_field_conditional);
 			/* outputMin */
-			Option_table_add_int_non_negative_entry(option_table, "outputMin",
+			Option_table_add_int_non_negative_entry(option_table, "output_min",
 				&outputMin);
 			
 			/* outputMax */
-			Option_table_add_int_non_negative_entry(option_table, "outputMax",
+			Option_table_add_int_non_negative_entry(option_table, "output_max",
 				&outputMax);
 
 			return_code = Option_table_multi_parse(option_table, state);
