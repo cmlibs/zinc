@@ -146,9 +146,9 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    source field : %s\n",field->source_fields[0]->name);
 		display_message(INFORMATION_MESSAGE,
-			"    filter order : %g\n", order);
+			"    filter order : %d\n", order);
 		display_message(INFORMATION_MESSAGE,
-			"    filter direction : %g\n", direction);
+			"    filter direction : %d\n", direction);
 
 	}
 	else
@@ -278,7 +278,7 @@ int Computed_field_set_type_derivative_image_filter(struct Computed_field *field
 LAST MODIFIED : 18 October 2006
 
 DESCRIPTION :
-Converts <field> to type DISCRETEGAUSSIAN.  The <min> <max> 
+Converts <field> to type DERIVATIVE.  The <min> <max> 
 <alpha> and <beta> are the parameters of the derivative function
 ==============================================================================*/
 {
@@ -327,7 +327,7 @@ int Computed_field_get_type_derivative_image_filter(struct Computed_field *field
 LAST MODIFIED : 18 October 2006
 
 DESCRIPTION :
-If the field is of type DISCRETEGAUSSIAN, the source_field and derivative_image_filter
+If the field is of type DERIVATIVE, the source_field and derivative_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 {
@@ -360,7 +360,7 @@ int define_Computed_field_type_derivative_image_filter(struct Parse_state *state
 LAST MODIFIED : 18 October 2006
 
 DESCRIPTION :
-Converts <field> into type DISCRETEGAUSSIAN (if it is not 
+Converts <field> into type DERIVATIVE (if it is not 
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
@@ -380,7 +380,7 @@ already) and allows its contents to be modified.
 		/* get valid parameters for projection field */
 		source_field = (struct Computed_field *)NULL;
 		order = 1;
-		direction=0;
+		direction=1;
 
 		if (computed_field_derivative_image_filter_type_string ==
 			Computed_field_get_type_string(field))
