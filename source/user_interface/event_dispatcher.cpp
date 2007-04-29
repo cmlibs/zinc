@@ -62,6 +62,7 @@ extern "C" {
 }
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #include <wx/wx.h>
+#include <wx/apptrait.h>
 extern "C" {
 #include "user_interface/user_interface.h"
 }
@@ -1120,6 +1121,11 @@ class wxCmguiApp : public wxApp
 	Event_dispatcher *event_dispatcher;
 
 public:
+	wxCmguiApp() : wxApp()
+	{
+		event_dispatcher = static_cast<Event_dispatcher *>(NULL);
+	}
+
     virtual bool OnInit()
 	{
 		return (true);
@@ -1129,6 +1135,11 @@ public:
 	{
 	}
 	
+	virtual wxAppTraits * CreateTraits()
+	{
+		return new wxGUIAppTraits;
+	}
+
 	void OnIdle(wxIdleEvent& event)
 	{
 		if (Event_dispatcher_do_idle_event(event_dispatcher))
@@ -1195,6 +1206,10 @@ Creates a connection to a event_dispatcher of the specified type.
 #if defined(WIN32_USER_INTERFACE)
 		event_dispatcher->networkWindowHandle = (HWND)NULL;
 #endif /* defined(WIN32_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+		wxCmguiApp &app = wxGetApp();
+		app.SetEventDispatcher(event_dispatcher);
+#endif /* defined (WX_USER_INTERFACE) */
 	}
 	else
 	{
@@ -2357,7 +2372,6 @@ DESCRIPTION :
 #else /* ! defined (WX_USER_INTERFACE) */
 
 		wxCmguiApp &app = wxGetApp();
-		app.SetEventDispatcher(event_dispatcher);
 		app.OnRun();
 		return_code = 1;
 
