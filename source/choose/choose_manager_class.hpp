@@ -205,6 +205,18 @@ Returns the currently chosen object.
 		return(chooser->get_item());
 	} /* Managed_object_chooser::get_object */
 
+	 int get_number_of_object()
+/*****************************************************************************
+LAST MODIFIED : 20 April 2007
+
+DESCRIPTION :
+Returns the number in list
+============================================================================*/		
+	{
+		return(chooser->get_number_of_item());
+	} /* Managed_object_chooser::get_object */
+
+
 	int set_object(Managed_object *new_object)
 /*****************************************************************************
 LAST MODIFIED : 8 February 2007

@@ -678,10 +678,13 @@ public:
 						else
 						{
 							 /* get label field from widget */
-							 command_field = element_point_command_field_chooser->get_object();
-							 if (command_field)
+							 if (element_point_command_field_chooser->get_number_of_object() > 0)
 							 {
-									Element_point_tool_set_command_field(element_point_tool, command_field);
+									command_field = element_point_command_field_chooser->get_object();
+									if (command_field)
+									{
+										 Element_point_tool_set_command_field(element_point_tool, command_field);
+									}
 							 }
 							 else
 							 {

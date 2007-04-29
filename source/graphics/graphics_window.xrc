@@ -167,8 +167,8 @@
           				<flag>wxEXPAND</flag>
          					<option>1</option>
 				  				<object class= "wxScrolledWindow" name="ToolPanel"/>
-						  	</object>
-	
+									<style>wxVSCROLL</style>
+						  	</object>	
 						  </object>
   		 			</object>
 					</object>

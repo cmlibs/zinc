@@ -540,8 +540,8 @@ public:
   win->SetSizer(paneSz);
   paneSz->SetSizeHints(win);
   collpane->Collapse(1);
-  wxPanel *lowestpanel = 
-	 XRCCTRL(*this, "CmguiSceneEditor", wxPanel);
+  wxFrame *lowestpanel = 
+	 XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
   lowestpanel->Fit();
 
 	/* Set the default_coordinate_field_chooser_panel*/

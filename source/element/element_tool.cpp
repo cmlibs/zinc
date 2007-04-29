@@ -888,10 +888,13 @@ void ElementCommandFieldChecked(wxCommandEvent &event)
 				 else
 				 {
 						/* get label field from widget */
-						command_field = element_command_field_chooser->get_object();
-						if (command_field)
+						if (element_command_field_chooser->get_number_of_object() > 0)
 						{
-							 Element_tool_set_command_field(element_tool, command_field);
+							 command_field = element_command_field_chooser->get_object();
+							 if (command_field)
+							 {
+									Element_tool_set_command_field(element_tool, command_field);
+							 }
 						}
 						else
 						{

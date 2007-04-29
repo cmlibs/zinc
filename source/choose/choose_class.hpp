@@ -113,6 +113,14 @@ public:
 		return (return_code);
 	}
 
+	 int get_number_of_item()
+	{
+		 unsigned int return_code;
+		 return_code = 0;
+		 return_code = GetCount();
+		return (return_code);
+	}
+
 	int build_main_menu(int number_of_items, 
 		Object *items, char **item_names, 
 		Object current_item)

@@ -170,9 +170,8 @@ Contains information for a graphics window.
         wxPanel *panel2;
         wxPanel *panel3;
         wxPanel *panel4;
-        wxComboBox *up_view_options;
+        wxChoice *up_view_options;
         wxButton *front_view_options;
-	     wxWindow *graphicsname; 
 	     wxScrolledWindow *ToolPanel;
         wxPanel *interactive_toolbar_panel;
 		 wxFrame *GraphicsWindowTitle;
@@ -2697,7 +2696,7 @@ public:
   wxGraphicsWindow(Graphics_window *graphics_window): 
     graphics_window(graphics_window)
   {
-    last_button = (wxToggleButton*)NULL;
+		 last_button = (wxToggleButton*)NULL;
   };
 
   wxGraphicsWindow()
@@ -3772,10 +3771,9 @@ it.
 			window->panel2 = XRCCTRL(*window->wx_graphics_window, "Panel2", wxPanel);
 			window->panel3 = XRCCTRL(*window->wx_graphics_window, "Panel3", wxPanel);
 			window->panel4 = XRCCTRL(*window->wx_graphics_window, "Panel4", wxPanel);
-			window->graphicsname =XRCCTRL(*window->wx_graphics_window, "wxGraphicsWindow", wxWindow);
-			window->up_view_options = XRCCTRL(*window->wx_graphics_window, "UpViewOptions", wxComboBox);
-			window->front_view_options = XRCCTRL(*window->wx_graphics_window, "FrontViewOptions", wxButton);
+			window->up_view_options = XRCCTRL(*window->wx_graphics_window,"UpViewOptions", wxChoice);
 			window->up_view_options->Disable();
+			window->front_view_options = XRCCTRL(*window->wx_graphics_window, "FrontViewOptions", wxButton);
 			window->front_view_options->Disable();
 			window->left_panel =XRCCTRL(*window->wx_graphics_window, "LeftPanel", wxScrolledWindow);
 			window->left_panel->FitInside();
