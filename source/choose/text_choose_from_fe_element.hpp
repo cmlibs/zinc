@@ -46,7 +46,6 @@ Calls the client-specified callback routine if a different object is chosen.
 #if !defined (TEXT_CHOOSE_FROM_FE_ELEMENT_H)
 #define TEXT_CHOOSE_FROM_FE_ELEMENT_H
 
-
 extern "C" {
 #include <stdio.h>
 }
@@ -173,6 +172,11 @@ update in case it has changed, and writes the new object string in the widget.
 
 	if (current_string = const_cast<char *>(GetValue().c_str())) 
 	{ 
+		 if (new_object && ((!(FE_region_contains_FE_element(
+			 fe_region, new_object)) || 
+				(conditional_function && 
+				!(conditional_function(new_object, 
+							conditional_function_user_data))))))
 		 if (new_object && ((!FE_region_contains_FE_element( 
 			 fe_region, new_object)) || 
 				(conditional_function && 

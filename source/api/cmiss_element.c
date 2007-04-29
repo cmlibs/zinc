@@ -100,13 +100,15 @@ DESCRIPTION :
 Returns the region the <element> to.
 ==============================================================================*/
 {
-	int return_code;
 	struct FE_region *fe_region;
 	struct Cmiss_region *cmiss_region;
 	
 	ENTER(Cmiss_element_get_region);
-	fe_region = FE_element_get_FE_region(element);
-	return_code = FE_region_get_Cmiss_region(fe_region, &cmiss_region);
+	cmiss_region = (struct Cmiss_region *)NULL;
+	if (fe_region = FE_element_get_FE_region(element))
+	{
+		 FE_region_get_Cmiss_region(fe_region, &cmiss_region);
+	}
 	LEAVE;
 
 	return (cmiss_region);

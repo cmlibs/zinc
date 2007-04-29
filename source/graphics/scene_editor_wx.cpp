@@ -1611,7 +1611,7 @@ DESCRIPTION :
 When changes have been made by the user, renew the label on the list
 ==============================================================================*/
 {
-	int selection;
+	unsigned int selection;
 	char *settings_string;
 	unsigned int check;
 	graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
