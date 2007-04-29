@@ -1923,9 +1923,19 @@ Open the <user_interface>.
 		user_interface->widget_spacing=5;
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
-		wxEntryStart(*argc_address, argv);
-
-		wxXmlResource::Get()->InitAllHandlers();
+		if (wxEntryStart(*argc_address, argv))
+		{
+			 wxXmlResource::Get()->InitAllHandlers();
+			 /* Should do this as soon after wxEntry as possible */
+			 Event_dispatcher_initialise_wx_app(event_dispatcher);
+		}
+		else
+		{
+			 display_message(ERROR_MESSAGE,
+					"CREATE(User_interface).  Unable to initialise wxCmguiApp");
+			 DEALLOCATE(user_interface);
+			 user_interface = (struct User_interface *)NULL;
+		}
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 		/* Initialize i18n support */

@@ -177,6 +177,15 @@ DESCRIPTION :
 Destroys an Event_dispatcher object
 ==============================================================================*/
 
+#if defined (WX_USER_INTERFACE)
+int Event_dispatcher_initialise_wx_app(struct Event_dispatcher *event_dispatcher);
+/*******************************************************************************
+LAST MODIFIED : 30 April 2007
+
+DESCRIPTION :
+==============================================================================*/
+#endif /* defined (WX_USER_INTERFACE) */
+
 #if defined (USE_GENERIC_EVENT_DISPATCHER)
 struct Event_dispatcher_descriptor_callback *Event_dispatcher_add_descriptor_callback(
 	struct Event_dispatcher *event_dispatcher,

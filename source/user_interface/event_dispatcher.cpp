@@ -1209,10 +1209,6 @@ Creates a connection to a event_dispatcher of the specified type.
 #if defined(WIN32_USER_INTERFACE)
 		event_dispatcher->networkWindowHandle = (HWND)NULL;
 #endif /* defined(WIN32_USER_INTERFACE) */
-#if defined (WX_USER_INTERFACE)
-		wxCmguiApp &app = wxGetApp();
-		app.SetEventDispatcher(event_dispatcher);
-#endif /* defined (WX_USER_INTERFACE) */
 	}
 	else
 	{
@@ -1285,6 +1281,45 @@ Destroys a Event_dispatcher object
 
 	return (return_code);
 } /* DESTROY(Event_dispatcher) */
+
+#if defined (WX_USER_INTERFACE)
+int Event_dispatcher_initialise_wx_app(struct Event_dispatcher *event_dispatcher)
+/*******************************************************************************
+LAST MODIFIED : 30 April 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	 int return_code;
+
+	ENTER(Event_dispatcher_initialise_wx_app);
+
+	if (event_dispatcher)
+	{
+		 wxCmguiApp &app = wxGetApp();
+		 if (&app)
+		 {
+				app.SetEventDispatcher(event_dispatcher);
+				return_code = 1;
+		 }
+		 else
+		 {
+				display_message(ERROR_MESSAGE,
+					 "Event_dispatcher_initialise_wx_app.  wxCmguiApp not initialised.");
+				return_code = 0;
+		 }
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Event_dispatcher_initialise_wx_app.  Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Event_dispatcher_initialise_wx_app */
+#endif /* defined (WX_USER_INTERFACE) */
 
 #if defined (USE_GENERIC_EVENT_DISPATCHER)
 struct Event_dispatcher_descriptor_callback *Event_dispatcher_add_descriptor_callback(
