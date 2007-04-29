@@ -92,6 +92,26 @@ Returns the dimension of the <element> or an error if it does not have a shape.
 	return (return_code);
 } /* Cmiss_element_get_dimension */
 
+Cmiss_region_id Cmiss_element_get_region(Cmiss_element_id element)
+/*******************************************************************************
+LAST MODIFIED : 26 April 2007
+
+DESCRIPTION :
+Returns the region the <element> to.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_region *fe_region;
+	struct Cmiss_region *cmiss_region;
+	
+	ENTER(Cmiss_element_get_region);
+	fe_region = FE_element_get_FE_region(element);
+	return_code = FE_region_get_Cmiss_region(fe_region, &cmiss_region);
+	LEAVE;
+
+	return (cmiss_region);
+} /* Cmiss_element_get_region */
+
 int Cmiss_element_set_node(Cmiss_element_id element, int node_index,
 	Cmiss_node_id node)
 /*******************************************************************************

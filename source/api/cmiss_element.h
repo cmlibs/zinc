@@ -157,6 +157,14 @@ DESCRIPTION :
 Returns the dimension of the <element> or an error if it does not have a shape.
 ==============================================================================*/
 
+Cmiss_region_id Cmiss_element_get_region(Cmiss_element_id element);
+/*******************************************************************************
+LAST MODIFIED : 26 April 2007
+
+DESCRIPTION :
+Returns the region the <element> belongs to.
+==============================================================================*/
+
 int destroy_Cmiss_element(Cmiss_element_id *element_id_address);
 /*******************************************************************************
 LAST MODIFIED : 17 January 2007
