@@ -1142,9 +1142,12 @@ public:
 
 	void OnIdle(wxIdleEvent& event)
 	{
-		if (Event_dispatcher_do_idle_event(event_dispatcher))
+		if (event_dispatcher)
 		{
-			event.RequestMore();
+			if (Event_dispatcher_do_idle_event(event_dispatcher))
+			{
+				event.RequestMore();
+			}
 		}
 	}
 
