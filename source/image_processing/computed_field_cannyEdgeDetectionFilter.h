@@ -60,7 +60,8 @@ DESCRIPTION :
 ==============================================================================*/
 
 int Computed_field_set_type_canny_edge_detection_image_filter(struct Computed_field *field,
-	struct Computed_field *source_field, double variance);
+      struct Computed_field *source_field, double variance, double maximumError,
+      double upperThreshold, double lowerThreshold);
 /*******************************************************************************
 LAST MODIFIED : 9 September 2006
 
@@ -76,7 +77,8 @@ in response to changes in the canny_edge_detection_image_filter from the control
 ==============================================================================*/
 
 int Computed_field_get_type_canny_edge_detection_image_filter(struct Computed_field *field,
-  struct Computed_field **source_field, double *variance);
+      struct Computed_field **source_field, double *variance, double *maximumError,
+      double *upperThreshold, double *lowerThreshold);
 /*******************************************************************************
 LAST MODIFIED : 9 September 2006
 

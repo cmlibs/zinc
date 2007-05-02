@@ -69,7 +69,13 @@ class Computed_field_canny_edge_detection_image_filter : public Computed_field_I
 public:
 
   double variance;
-	Computed_field_canny_edge_detection_image_filter(Computed_field *field, double variance);
+  double maximumError;
+  double upperThreshold;
+  double lowerThreshold;
+  //  double outsideValue;
+
+  Computed_field_canny_edge_detection_image_filter(Computed_field *field, double variance,
+    double maximumError, double upperThreshold, double lowerThreshold);
 
 	~Computed_field_canny_edge_detection_image_filter()
 	{
@@ -78,7 +84,8 @@ public:
 private:
 	Computed_field_core *copy(Computed_field* new_parent)
 	{
-		return new Computed_field_canny_edge_detection_image_filter(new_parent,variance);
+	  return new Computed_field_canny_edge_detection_image_filter(new_parent,variance,
+                       maximumError,upperThreshold,lowerThreshold);
 	}
 
 	char *get_type_string()
@@ -108,8 +115,11 @@ Compare the type specific data.
 
 	// check field exists and can be cast to correct type
 	if (field && (other = dynamic_cast<Computed_field_canny_edge_detection_image_filter*>(other_core))) {
-		if( variance == other->variance) {
-		  return_code = 1;  // variance matches, field is the same
+		if( variance == other->variance &&
+		    maximumError == other->maximumError &&
+		    upperThreshold == other->upperThreshold &&
+		    lowerThreshold == other->lowerThreshold) {
+		  return_code = 1;  // parameters match, field is the same
 		} else {
 			return_code = 0;
 		}
@@ -138,6 +148,12 @@ DESCRIPTION :
 			"    source field : %s\n",field->source_fields[0]->name);
 		display_message(INFORMATION_MESSAGE,
 			"    variance : %g\n", variance);
+		display_message(INFORMATION_MESSAGE,
+			"    maximum_error : %g\n", maximumError);
+		display_message(INFORMATION_MESSAGE,
+			"    upper_threshold : %g\n", upperThreshold);
+		display_message(INFORMATION_MESSAGE,
+			"    lower_threshold : %g\n", lowerThreshold);
 
 	}
 	else
@@ -176,6 +192,12 @@ Returns allocated command string for reproducing field. Includes type.
 			DEALLOCATE(field_name);
 		}
 		sprintf(temp_string, " variance %g", variance);
+		append_string(&command_string, temp_string, &error);		
+		sprintf(temp_string, " maximum_error %g", maximumError);
+		append_string(&command_string, temp_string, &error);		
+		sprintf(temp_string, " upper_threshold %g", upperThreshold);
+		append_string(&command_string, temp_string, &error);		
+		sprintf(temp_string, " lower_threshold %g", lowerThreshold);
 		append_string(&command_string, temp_string, &error);		
 
 	}
@@ -223,10 +245,22 @@ and generate the outputImage.
 		int return_code;
 		
 		typedef itk::CannyEdgeDetectionImageFilter< ImageType , ImageType > FilterType;
-		
-		typename FilterType::Pointer filter = FilterType::New();
+		typedef typename ImageType::PixelType  OutputImagePixelType;
+		OutputImagePixelType upper;
+		OutputImagePixelType lower;
 
+		typename FilterType::Pointer filter = FilterType::New();
+		
+		// check whether we need to scale these values from
+		// 0-1 to 0-255
 		filter->SetVariance( (float)(canny_edge_detection_image_filter->variance) );
+		filter->SetMaximumError( (float)(canny_edge_detection_image_filter->maximumError) );
+
+		// wrong currently!
+		upper = canny_edge_detection_image_filter->upperThreshold;
+		filter->SetUpperThreshold(upper);
+		lower = canny_edge_detection_image_filter->lowerThreshold;
+		filter->SetLowerThreshold(lower);
 	
 		return_code = canny_edge_detection_image_filter->update_output_image
 			(location, filter, this->outputImage,
@@ -238,8 +272,9 @@ and generate the outputImage.
 }; /* template < class ImageType > class Computed_field_canny_edge_detection_image_filter_Functor */
 	
 Computed_field_canny_edge_detection_image_filter::Computed_field_canny_edge_detection_image_filter(
-  Computed_field *field, double variance) :
-	Computed_field_ImageFilter(field), variance(variance)
+  Computed_field *field, double variance, double maximumError, double upperThreshold, double lowerThreshold) :
+  Computed_field_ImageFilter(field), variance(variance), maximumError(maximumError),
+  upperThreshold(upperThreshold), lowerThreshold(lowerThreshold)
 /*******************************************************************************
 LAST MODIFIED : 12 September 2006
 
@@ -262,7 +297,8 @@ Create the computed_field representation of the CannyEdgeDetectionFilter.
 } //namespace
 
 int Computed_field_set_type_canny_edge_detection_image_filter(struct Computed_field *field,
-	struct Computed_field *source_field, double variance)
+      struct Computed_field *source_field, double variance, double maximumError, 
+      double upperThreshold, double lowerThreshold)
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006
 
@@ -290,7 +326,8 @@ Converts <field> to type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER.
 			source_fields[0] = ACCESS(Computed_field)(source_field);
 			field->source_fields = source_fields;
 			field->number_of_source_fields = number_of_source_fields;			
-			field->core = new Computed_field_canny_edge_detection_image_filter(field, variance);
+			field->core = new Computed_field_canny_edge_detection_image_filter(field, 
+  				            variance, maximumError, upperThreshold, lowerThreshold);
 		}
 		else
 		{
@@ -310,7 +347,8 @@ Converts <field> to type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER.
 } /* Computed_field_set_type_canny_edge_detection_image_filter */
 
 int Computed_field_get_type_canny_edge_detection_image_filter(struct Computed_field *field,
-	struct Computed_field **source_field, double *variance)
+      struct Computed_field **source_field, double *variance, double *maximumError,
+      double *upperThreshold, double *lowerThreshold)
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006
 
@@ -328,6 +366,9 @@ used by it is returned - otherwise an error is reported.
 	{
 		*source_field = field->source_fields[0];
 		*variance = core->variance;
+		*maximumError = core->maximumError;
+		*upperThreshold = core->upperThreshold;
+		*lowerThreshold = core->lowerThreshold;
 		return_code = 1;
 	}
 	else
@@ -353,6 +394,10 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	double variance;
+	double maximumError;
+	double upperThreshold;
+	double lowerThreshold;
+
 	struct Computed_field *field, *source_field;
 	struct Computed_field_simple_package *computed_field_simple_package;
 	struct Option_table *option_table;
@@ -365,12 +410,16 @@ already) and allows its contents to be modified.
 		return_code = 1;
 		/* get valid parameters for projection field */
 		source_field = (struct Computed_field *)NULL;
-		variance = 3;
+		variance = 0;
+		maximumError = 0.01;
+		upperThreshold = 0;
+		lowerThreshold = 0;
 		if (computed_field_canny_edge_detection_image_filter_type_string ==
 			Computed_field_get_type_string(field))
 		{
 			return_code =
-				Computed_field_get_type_canny_edge_detection_image_filter(field, &source_field, &variance);
+				Computed_field_get_type_canny_edge_detection_image_filter(field, &source_field, 
+				  &variance, &maximumError, &upperThreshold, &lowerThreshold);
 		}
 		if (return_code)
 		{
@@ -392,6 +441,15 @@ already) and allows its contents to be modified.
 			/* variance */
 			Option_table_add_double_entry(option_table, "variance",
 				&variance);
+			/* maximumError */
+			Option_table_add_double_entry(option_table, "maximum_error",
+				&maximumError);
+			/* upperThreshold */
+			Option_table_add_double_entry(option_table, "upper_threshold",
+				&upperThreshold);
+			/* lowerThreshold */
+			Option_table_add_double_entry(option_table, "lower_threshold",
+				&lowerThreshold);
 			return_code = Option_table_multi_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
 
@@ -408,7 +466,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = Computed_field_set_type_canny_edge_detection_image_filter(
-					field, source_field, variance);
+          					field, source_field, variance, maximumError, upperThreshold, lowerThreshold);
 			}
 
 			if (!return_code)
