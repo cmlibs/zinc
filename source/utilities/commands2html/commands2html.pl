@@ -6,6 +6,8 @@ $TOP_LEVEL = 'Commands:';
 $previous_level = 0;
 
 $localtime = localtime;
+$example_url = "http://cmiss.bioeng.auckland.ac.nz/development/examples/";
+$cmgui_url = "http://www.cmiss.org/cmgui";
 
 print <<HEADER;
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 3.0//EN">
@@ -15,8 +17,9 @@ print <<HEADER;
 </HEAD>
 <BODY>
 <p><CENTER>
-<H1><I>CMGUI Commands</H1>
-<p>For other help see <a href="http://www.cmiss.org/cmgui/">http://www.cmiss.org/cmgui/</a></p>
+<H1>CMGUI Commands</H1>
+<p>For other <a href="$cmgui_url">help see $cmgui_url</a></p>
+<p>For <a href="${example_url}a">examples see ${example_url}a</a></p>
 <P>
 $localtime
 <P></CENTER>
@@ -125,6 +128,7 @@ sub process_level
 					 {
 						$help_string = $string{"$complete_command${SEPARATOR}*", $i};
 						$help_string =~ s/^\*\s*//;
+						$help_string =~ s%\b(a\/[/\w]+)\b%<a href="${example_url}$1">$1</a>%g;
 						printf "%s\n", $help_string;
 					 }
 				  printf "</p>\n";
@@ -186,7 +190,7 @@ sub process_level
 print <<FOOTER;
 <HR>
 <ADDRESS>
-<A HREF="http://www.cmiss.org/cmgui">http://www.cmiss.org/cmgui</A></ADDRESS>
+<A HREF="$cmgui_url">$cmgui_url</A></ADDRESS>
 </BODY>
 </HTML>
 FOOTER
