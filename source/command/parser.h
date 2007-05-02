@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parser.h
 
-LAST MODIFIED : 4 December 2003
+LAST MODIFIED : 2 May 2007
 
 DESCRIPTION :
 Public interface for the beginnings of a simple parser (although at the moment
@@ -193,6 +193,15 @@ int DESTROY(Option_table)(struct Option_table **option_table_address);
 LAST MODIFIED : 15 December 1999
 
 DESCRIPTION :
+==============================================================================*/
+
+int Option_table_add_help(struct Option_table *option_table,
+	char *help_string);
+/*******************************************************************************
+LAST MODIFIED : 2 May 2007
+
+DESCRIPTION :
+Adds the given help to the option table.
 ==============================================================================*/
 
 int Option_table_add_entry(struct Option_table *option_table,char *token,

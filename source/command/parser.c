@@ -77,6 +77,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	struct Modifier_entry *entry;
+	char *help;
 	int allocated_entries,number_of_entries,valid;
 	/* store suboption_tables added to table for destroying with option_table */
 	int number_of_suboption_tables;
@@ -1194,7 +1195,8 @@ Creates an Option_table for text parsing.
 	{
 		option_table->allocated_entries = 0;
 		option_table->number_of_entries = 0;
-		option_table->entry = (struct Modifier_entry *)NULL;
+ 		option_table->entry = (struct Modifier_entry *)NULL;
+ 		option_table->help = (char *)NULL;
 		/* flag indicating all options successfully added */
 		option_table->valid = 1;
 		/* store suboption_tables added to table for destroying with option_table */
@@ -1238,6 +1240,10 @@ DESCRIPTION :
 					DESTROY(Option_table)(&(option_table->suboption_tables[i]));
 				}
 				DEALLOCATE(option_table->suboption_tables);
+			}
+			if (option_table->help)
+			{
+				DEALLOCATE(option_table->help);
 			}
 			if (option_table->entry)
 			{
@@ -1325,6 +1331,36 @@ If fails, marks the option_table as invalid.
 
 	return (return_code);
 } /* Option_table_add_entry_private */
+
+int Option_table_add_help(struct Option_table *option_table,
+	char *help_string)
+/*******************************************************************************
+LAST MODIFIED : 2 May 2007
+
+DESCRIPTION :
+Adds the given help to the option table.
+==============================================================================*/
+{
+	int error, return_code;
+
+	ENTER(Option_table_add_help);
+	if (option_table)
+	{
+		error = 0;
+		append_string(&option_table->help,
+			help_string, &error);
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_help.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_help */
 
 int Option_table_add_entry(struct Option_table *option_table,char *token,
 	void *to_be_modified,void *user_data,modifier_function modifier)
@@ -1681,7 +1717,7 @@ entered.
 int Option_table_multi_parse(struct Option_table *option_table,
 	struct Parse_state *state)
 /*******************************************************************************
-LAST MODIFIED : 23 December 1999
+LAST MODIFIED : 2 May 2007
 
 DESCRIPTION :
 Parses the options in the <option_table>, giving all options a chance to be
@@ -1693,6 +1729,46 @@ entered.
 	ENTER(Option_table_multi_parse);
 	if (option_table&&state)
 	{
+		/* Write out the help */
+		if (option_table->help && state && state->current_token &&
+			(!strcmp(PARSER_HELP_STRING,state->current_token)||
+			!strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+		{
+			char *space_offset;
+			int index = 0, output, length = strlen(option_table->help), local_indent,
+				in_text_indent;
+			local_indent = usage_indentation_level + 4;
+			in_text_indent = 0;
+			while (index < length)
+			{
+				if (index + 60 > length)
+				{
+					output = length - index;
+				}
+				else
+				{
+					if (space_offset = strchr(
+							 option_table->help + index + 50, ' '))
+					{
+						space_offset++;
+						while (*space_offset == ' ')
+						{
+							space_offset++;
+						}
+						output = space_offset - option_table->help - index;
+					}
+					else
+					{
+						output = length - index;
+					}
+				}
+				display_message(INFORMATION_MESSAGE,"\n%*s*%*s%.*s",
+					local_indent, " ", in_text_indent, " ", 
+					output, option_table->help + index);
+				index += output;
+				in_text_indent = 2;
+			}
+		}		
 		/* add blank entry needed for process_option */
 		Option_table_add_entry_private(option_table,(char *)NULL,(void *)NULL,
 			(void *)NULL,(modifier_function)NULL);

@@ -667,6 +667,8 @@ already) and allows its contents to be modified.
 			}
 
 			option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+				"The value of a compose field is found by evaluating the <texture_coordinates_field>, then searching for matching values of the <find_element_xi_field> in the elements of the <group> and then finally evaluating the <calculate_values_field> at this found location.  By restricting the <element_dimension> you can speed up the search and you can specify the outcome if the matching values cannot be found in the element <group> with <use_point_five_when_out_of_bounds> or <fail_when_out_of_bounds>.  See a/resample_texture or a/create_slices where the compose field is used to find the equivalent coordinate in another element to evaluate a texture.");
 			/* calculate_values_field */
 			set_calculate_values_field_data.computed_field_manager =
 				computed_field_compose_package->computed_field_manager;
