@@ -2356,11 +2356,8 @@ Rebuilds the display_list for <spectrum> if it is not current.
 					the fragment program in material.c.  Specifically, to provide
 					correct linear interpolation the input value has to be offset
 					by half a pixel and scaled by (number_of_pixels-1)/(number_of_pixels)
-					as linear interpolation starts at the centres of each pixel.
-					Currently this isn't done so we are using a rasterised nearest
-					interpolation which will reduce the resolution of the colours
-					when there are two or three input components. */
-				Texture_set_filter_mode(texture, TEXTURE_NEAREST_FILTER);
+					as linear interpolation starts at the centres of each pixel. */
+				Texture_set_filter_mode(texture, TEXTURE_LINEAR_FILTER);
 				Texture_set_wrap_mode(texture, TEXTURE_CLAMP_WRAP);
 				colour_table_ptr = colour_table;
 				switch (number_of_data_components)
@@ -2470,7 +2467,7 @@ If a NULL <spectrum> is supplied, spectrums are disabled.
 
 	ENTER(Spectrum_execute_colour_lookup);
 	return_code=0;
-	if (spectrum)
+	if (spectrum && spectrum->colour_lookup_texture)
 	{
 		return_code = execute_Texture(spectrum->colour_lookup_texture);
 	}
@@ -2482,4 +2479,47 @@ If a NULL <spectrum> is supplied, spectrums are disabled.
 
 	return (return_code);
 } /* Spectrum_execute_colour_lookup */
+
+int Spectrum_get_colour_lookup_sizes(struct Spectrum *spectrum,
+	int *lookup_dimension, int **lookup_sizes)
+/*******************************************************************************
+LAST MODIFIED : 2 May 2007
+
+DESCRIPTION :
+Returns the sizes used for the colour lookup spectrums internal texture.
+==============================================================================*/
+{
+	int return_code, width, height, depth;
+
+	ENTER(Spectrum_get_colour_lookup_sizes);
+	return_code=0;
+	if (spectrum && spectrum->colour_lookup_texture)
+	{
+		Texture_get_dimension(spectrum->colour_lookup_texture, lookup_dimension);
+
+		ALLOCATE(*lookup_sizes, int, *lookup_dimension);
+		Texture_get_size(spectrum->colour_lookup_texture,
+			&width, &height, &depth);
+		if (0 < *lookup_dimension)
+		{
+			(*lookup_sizes)[0] = width;
+		}
+		if (1 < *lookup_dimension)
+		{
+			(*lookup_sizes)[1] = height;
+		}
+		if (2 < *lookup_dimension)
+		{
+			(*lookup_sizes)[2] = depth;
+		}
+		return_code = 1;
+	}
+	else
+	{
+		return_code=1;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Spectrum_get_colour_lookup_sizes */
 

@@ -449,4 +449,14 @@ current, an error is reported.
 If a NULL <spectrum> is supplied, spectrums are disabled.
 ==============================================================================*/
 
+int Spectrum_get_colour_lookup_sizes(struct Spectrum *spectrum,
+	int *lookup_dimension, int **lookup_sizes);
+/*******************************************************************************
+LAST MODIFIED : 2 May 2007
+
+DESCRIPTION :
+Returns the sizes used for the colour lookup spectrums internal texture.
+==============================================================================*/
+
+
 #endif /* !defined(SPECTRUM_H) */

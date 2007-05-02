@@ -41,7 +41,7 @@ return to direct rendering, as described with these routines.
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
- * S. Blackett (s.blackett at auckland.ac.nz)
+ * Shane Blackett (s.blackett at auckland.ac.nz)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -647,11 +647,23 @@ be shared by multiple materials using the same program.
 						"TEMP lightVec, viewVec, reflVec, normal, attenuation, Len, finalCol, lightContrib, reverse, tex, tex2;\n"
 						"PARAM two = {2.0, 2.0, 2.0, 2.0};\n"
 						"PARAM m_one = {-1.0, -1.0, -1.0, -1.0};\n"
+						, &error);
 
+					if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 | 
+							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2 | 
+							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3 | 
+							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4) & material_program->type)
+					{
+ 						append_string(&fragment_program_string, 	
+							"PARAM lookup_offsets = program.env[1];\n"
+							"PARAM lookup_scales = program.env[2];\n"
+							, &error);
+					}
+
+					append_string(&fragment_program_string, 	
 						"#Set up reverse vector based on secondary colour\n"
 						"MAD      reverse, two, fragment.color.secondary.x, m_one;\n"
 						, &error);
-
 
 					if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE & material_program->type)
 					{
@@ -866,6 +878,7 @@ be shared by multiple materials using the same program.
 					{
 						append_string(&fragment_program_string, 	
 							"TEMP dependentlookup;\n"
+							"TEMP offsetcolour;\n"
 							, &error);
 						components_string = (char *)NULL;
 						components_error = 0;
@@ -896,9 +909,13 @@ be shared by multiple materials using the same program.
 						}
 						if (!components_error)
 						{
-							char tex_string[100];
+							char tex_string[1000];
 							sprintf(tex_string,
-								"TEX		dependentlookup, finalCol.%s, texture[2], %1dD;\n",
+								"#Offset and scale to counteract effect of linear interpolation\n"
+								"#starting at the middle of the first texel and finishing in the\n"
+								"#middle of the last texel\n"
+								"MAD		offsetcolour, finalCol.%s, lookup_scales, lookup_offsets;\n"
+								"TEX		dependentlookup, offsetcolour, texture[2], %1dD;\n",
 								components_string, number_of_inputs);
 							append_string(&fragment_program_string,
 								tex_string, &error);
@@ -3493,9 +3510,41 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 							Texture_execute_vertex_program_environment(material->secondary_texture);
 						}
 					}
+
+					if (material->spectrum)
+					{
+						int i, lookup_dimensions, *lookup_sizes;
+						float values[4];
+						
+						Spectrum_get_colour_lookup_sizes(material->spectrum,
+							&lookup_dimensions, &lookup_sizes);
+						/* Set the offsets = 0.5 / size */
+						for (i = 0 ; i < lookup_dimensions ; i++)
+						{
+							values[i] = 0.5 / ((double)lookup_sizes[i]);
+						}
+						for (; i < 4 ; i++)
+						{
+							values[i] = 0.0;
+						}
+						glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 1,
+							values[0], values[1], values[2], values[3]);
+						/* Set the scales = (size - 1) / (size) */
+						for (i = 0 ; i < lookup_dimensions ; i++)
+						{
+							values[i] = ((double)(lookup_sizes[i] - 1)) / ((double)lookup_sizes[i]);
+						}
+						for (; i < 4 ; i++)
+						{
+							values[i] = 1.0;
+						}
+						glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 2,
+							values[0], values[1], values[2], values[3]);
+						DEALLOCATE(lookup_sizes);
+					}
 					direct_render_Graphical_material(material);
 					glEndList();
-				}
+				}	
 				else
 				{
 					display_message(ERROR_MESSAGE,
