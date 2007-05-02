@@ -28,8 +28,9 @@ $localtime
 </OL>
 HEADER
 
-while (<>) {
 
+open INPUT, "$ARGV[0] -command_list|";
+while (defined ($_ = <INPUT>)) {
   chomp;
     @Fld = split(' ', $_);
 
