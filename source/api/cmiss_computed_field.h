@@ -248,7 +248,8 @@ used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
 int Cmiss_computed_field_set_type_canny_edge_detection_image_filter(struct Computed_field *field,
-	struct Computed_field *source_field, double variance);
+         struct Computed_field *source_field, double variance, double maximumError,
+         double upperThreshold, double lowerThreshold);
 /*******************************************************************************
 LAST MODIFIED : 9 September 2006
 
@@ -259,7 +260,8 @@ Sets number of components to same number as <source_field>.
 ==============================================================================*/
 
 int Cmiss_computed_field_get_type_canny_edge_detection_image_filter(struct Computed_field *field,
-	struct Computed_field **source_field, double *variance);
+         struct Computed_field **source_field, double *variance, double *maximumError,
+         double *upperThreshold, double *lowerThreshold);
 /*******************************************************************************
 LAST MODIFIED : 9 September 2006
 
