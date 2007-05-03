@@ -204,6 +204,9 @@ Functions for executing cmiss commands.
 #if defined (MOTIF)
 #include "node/node_viewer.h"
 #endif /* defined (MOTIF) */
+#if defined (WX_USER_INTERFACE)
+#include "node/node_viewer_wx.h"
+#endif /* defined (MOTIF) */
 #include "region/cmiss_region.h"
 #include "selection/any_object_selection.h"
 #if defined (MOTIF)
@@ -343,6 +346,9 @@ DESCRIPTION :
 	struct Spectrum_editor_dialog *spectrum_editor_dialog;
 	struct Time_editor_dialog *time_editor_dialog;
 #endif /* defined (MOTIF) */
+#if defined (WX_USER_INTERFACE)
+	struct Node_viewer *data_viewer,*node_viewer;
+#endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF) || defined (WX_USER_INTERFACE)
 	struct Scene_editor *scene_editor;
 #endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
@@ -3974,7 +3980,7 @@ Executes a GFX CREATE NODE_SELECTION_CALLBACK command.
 	return (return_code);
 } /* gfx_create_node_selection_callback */
 
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 static int gfx_create_node_viewer(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -4063,9 +4069,9 @@ Executes a GFX CREATE NODE_VIEWER command.
 
 	return (return_code);
 } /* gfx_create_node_viewer */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 static int gfx_create_data_viewer(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -4154,7 +4160,7 @@ Executes a GFX CREATE DATA_VIEWER command.
 
 	return (return_code);
 } /* gfx_create_data_viewer */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF)  || defined (WX_USER_INTERFACE)*/
 
 #if defined (MOTIF)
 static int gfx_create_element_point_viewer(struct Parse_state *state,
@@ -8684,10 +8690,10 @@ Executes a GFX CREATE command.
 #endif /* defined (MOTIF) */
 				Option_table_add_entry(option_table,"cylinders",NULL,
 					command_data_void,gfx_create_cylinders);
-#if defined (MOTIF)
+#if defined (MOTIF) || (WX_USER_INTERFACE)
 				Option_table_add_entry(option_table,"data_viewer",NULL,
 					command_data_void,gfx_create_data_viewer);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 				Option_table_add_entry(option_table,"data_points",/*use_data*/(void *)1,
 					command_data_void,gfx_create_node_points);
 				Option_table_add_entry(option_table, "dgroup", /*use_nodes*/(void *)1,
@@ -8785,10 +8791,10 @@ Executes a GFX CREATE command.
 					command_data_void,gfx_create_node_points);
 				Option_table_add_entry(option_table,"node_selection_callback",NULL,
 					command_data_void,gfx_create_node_selection_callback);
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 				Option_table_add_entry(option_table,"node_viewer",NULL,
 					command_data_void,gfx_create_node_viewer);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 				Option_table_add_entry(option_table, "region", NULL,
 					(void *)command_data->root_region, gfx_create_region);
 				Option_table_add_entry(option_table,"scene",NULL,
@@ -23327,6 +23333,10 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->time_editor_dialog = (struct Time_editor_dialog *)NULL;
 		/*???RC.  Temporary - should allow more than one */
 #endif /* defined (MOTIF) */
+#if defined (WX_USER_INTERFACE)
+		command_data->data_viewer=(struct Node_viewer *)NULL;
+		command_data->node_viewer=(struct Node_viewer *)NULL;
+#endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF) || defined (WX_USER_INTERFACE)
 		command_data->scene_editor = (struct Scene_editor *)NULL;
 #endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
@@ -24454,6 +24464,18 @@ Clean up the command_data, deallocating all the associated memory and resources.
 			DESTROY(Material_editor_dialog)(&(command_data->material_editor_dialog));
 		}
 #endif /* defined (MOTIF) */
+#if defined (WX_USER_INTERFACE)
+		/* viewers */
+		if (command_data->data_viewer)
+		{
+			DESTROY(Node_viewer)(&(command_data->data_viewer));
+		}
+
+		if (command_data->node_viewer)
+		{
+			DESTROY(Node_viewer)(&(command_data->node_viewer));
+		}
+#endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF) || defined (WX_USER_INTERFACE)
 		if (command_data->scene_editor)
 		{

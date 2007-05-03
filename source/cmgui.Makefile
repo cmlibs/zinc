@@ -1128,10 +1128,16 @@ MOTIF_INTERFACE_SRCS =  \
 NODE_SRCS = \
 	node/node_operations.c \
 	node/node_tool.cpp
+ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
+NODE_SRCS += \
+	node/node_viewer_wx.cpp
+endif # $(USER_INTERFACE) == WX_USER_INTERFACE
+ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
 NODE_INTERFACE_SRCS = \
 	node/node_field_viewer_widget.c \
 	node/node_viewer.c \
 	node/node_viewer_widget.c
+endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 REGION_SRCS = \
    region/cmiss_region.c \
    region/cmiss_region_write_info.c

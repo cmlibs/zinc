@@ -90,6 +90,65 @@ Global macros
 #define FE_region_changes_get_FE_node_changes(changes) changes->fe_node_changes
 #define FE_region_changes_get_FE_element_changes(changes) changes->fe_element_changes
 
+#define FE_region_FE_object_method_class( object_type ) FE_region_FE_object_method_class_FE_ ## object_type \
+
+#define DEFINE_FE_region_FE_object_method_class( object_type )	\
+class FE_region_FE_object_method_class( object_type ) \
+{ \
+ public: \
+	 typedef enum CHANGE_LOG_CHANGE(FE_ ## object_type) change_log_change_object_type; \
+	 typedef struct CHANGE_LOG(FE_ ## object_type) change_log_object_type;	\
+	 static const enum CHANGE_LOG_CHANGE(FE_ ## object_type) change_log_object_unchanged = \
+			CHANGE_LOG_OBJECT_UNCHANGED(FE_ ## object_type);	\
+	 static const enum CHANGE_LOG_CHANGE(FE_ ## object_type) change_log_object_added = \
+			CHANGE_LOG_OBJECT_ADDED(FE_ ## object_type); \
+	 static const enum CHANGE_LOG_CHANGE(FE_ ## object_type) change_log_object_removed = \
+			CHANGE_LOG_OBJECT_REMOVED(FE_ ## object_type); \
+	 static const enum CHANGE_LOG_CHANGE(FE_ ## object_type) change_log_object_identifier_changed = \
+			CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_ ## object_type);	\
+	 static const enum CHANGE_LOG_CHANGE(FE_ ## object_type) change_log_object_not_identifier_changed = \
+			CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_ ## object_type); \
+	 static const enum CHANGE_LOG_CHANGE(FE_ ## object_type) change_log_object_changed = \
+			CHANGE_LOG_OBJECT_CHANGED(FE_ ## object_type); \
+	 static const enum CHANGE_LOG_CHANGE(FE_ ## object_type) change_log_related_object_changed = \
+			CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_ ## object_type); \
+	 static inline FE_ ## object_type* string_to_object(struct FE_region *fe_region, char *string) \
+	 { \
+			return FE_region_ ## object_type ## _string_to_FE_ ## object_type(fe_region, string); \
+	 } \
+\
+    static inline FE_ ## object_type* get_first_object_that(struct FE_region *fe_region, \
+			 LIST_CONDITIONAL_FUNCTION(FE_ ## object_type) *conditional_function, \
+			 void *user_data_void) \
+	 { \
+			return FE_region_get_first_FE_ ## object_type ## _that(fe_region, \
+				 conditional_function, user_data_void); \
+	 } \
+\
+	 static inline int FE_region_contains_object(struct FE_region *fe_region, struct FE_## object_type *object) \
+	 { \
+			return FE_region_contains_FE_ ## object_type(fe_region, object); \
+	 } \
+\
+ 	 static inline int FE_object_to_string(struct FE_## object_type *object, char **string) \
+ 	 {	\
+			return FE_ ##object_type ## _to_ ##object_type## _string(object, string); \
+	 } \
+\
+	 static inline change_log_object_type *get_object_changes(struct FE_region_changes *changes) \
+	 { \
+			return changes->fe_ ## object_type ## _changes; \
+	 } \
+\
+	 static inline int change_log_query(struct CHANGE_LOG(FE_ ##object_type) *change_log, \
+			struct FE_ ##object_type *object,	enum CHANGE_LOG_CHANGE(FE_ ##object_type) *change_address )	\
+	 { \
+			return CHANGE_LOG_QUERY(FE_ ##object_type)( \
+				 change_log, object, change_address); \
+	 } \
+\
+}; 
+
 /*
 Global functions
 ----------------

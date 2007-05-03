@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<resource>
+  <object class="wxFrame" subclass="wxNodeViewer" name="CmguiNodeViewer">
+	  <title>Cmgui Node Viewer</title>
+	  <object class = "wxBoxSizer">
+		  <orient>wxVERTICAL</orient>
+    	  <object class ="sizeritem">
+				<flag>wxEXPAND</flag>	
+	 			<object class = "wxPanel" name="NodeTextPanel">
+					<size>-1,30</size>
+				</object>
+		  </object>
+		  <object class ="sizeritem">
+			  <flag>wxEXPAND</flag>
+			  <option>1</option>
+	 		  <object class = "wxScrolledWindow" name="VariableViewerPanel" />
+				<style>wxHSCROLL | wxVSCROLL</style>
+		  </object>
+		  <object class ="sizeritem">
+	         <flag>wxALIGN_BOTTOM</flag>
+	 		  <object class = "wxBoxSizer">
+		  		  <orient>wxHORIZONTAL</orient>
+				  <object class ="sizeritem">
+					  <object class = "wxButton"  name = "OKButton">
+					     <label>OK</label>
+					  </object>
+				  </object>
+				  <object class ="sizeritem">
+					  <object class = "wxButton"  name = "ApplyButton">
+					     <label>Apply</label>
+					  </object>
+				  </object>
+				  <object class ="sizeritem">
+					  <object class = "wxButton"  name = "RevertButton">
+					     <label>Revert</label>
+					  </object>
+				  </object>
+				  <object class ="sizeritem">
+					  <object class = "wxButton"  name = "CancelButton">
+					     <label>Cancel</label>
+					  </object>
+				  </object>
+			  </object>
+		 </object>
+	  </object>
+  </object>
+</resource>

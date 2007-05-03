@@ -734,7 +734,7 @@ public:
 		 delete radius_scalar_chooser;
 		 delete iso_scalar_chooser;
 		 delete glyph_chooser;
-		 delete orientation_scale_field_chooser;		
+		 delete orientation_scale_field_chooser;
 		 delete variable_scale_field_chooser;
 		 delete label_field_chooser;
 		 delete use_element_type_chooser;

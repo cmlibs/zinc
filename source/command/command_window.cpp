@@ -1746,6 +1746,12 @@ public:
 				 "gfx write nodes");
 	 }
 
+	 void dataviewer(wxCommandEvent& event)
+	 {
+			Execute_command_execute_string(command_window->execute_command,
+				 "gfx create data_viewer");
+	 }
+
 	 void nodeviewer(wxCommandEvent& event)
 	 {
 			Execute_command_execute_string(command_window->execute_command,
@@ -1817,6 +1823,7 @@ BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	 EVT_MENU(XRCID("WriteData"),wxCommandWindow::writedata)
 	 EVT_MENU(XRCID("WriteElements"),wxCommandWindow::writeelements)
 	 EVT_MENU(XRCID("WriteNode"),wxCommandWindow::writenodes)
+	 EVT_MENU(XRCID("ModelDataViewer"),wxCommandWindow::dataviewer)	 
 	 EVT_MENU(XRCID("ModelNodeviewer"),wxCommandWindow::nodeviewer)
 	 EVT_MENU(XRCID("GraphicsSceneeditor"),wxCommandWindow::sceneeditor)
 	 EVT_MENU(XRCID("AboutCmgui"),wxCommandWindow::ShowSimpleAboutDialog)
