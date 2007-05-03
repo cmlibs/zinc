@@ -920,6 +920,10 @@ be shared by multiple materials using the same program.
 							append_string(&fragment_program_string,
 								tex_string, &error);
 						}
+						if (components_string)
+						{
+							DEALLOCATE(components_string);
+						}
 
 						switch ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
 								MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA) 
