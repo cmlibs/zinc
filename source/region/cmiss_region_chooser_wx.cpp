@@ -162,7 +162,7 @@ Sets <path> of chosen region in the <chooser>.
 	{
 		Cmiss_region_get_child_region_name(current_region, i, &child_name);
 		
-		ALLOCATE(child_path, char, sizeof(strlen(current_path) + strlen(child_name) + 2));
+		ALLOCATE(child_path, char, strlen(current_path) + strlen(child_name) + 2);
 		sprintf(child_path, "%s%c%s", current_path, CMISS_REGION_PATH_SEPARATOR_CHAR,
 			child_name);
 		Append(child_path);

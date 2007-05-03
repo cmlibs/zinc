@@ -3492,7 +3492,7 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 			 discretizationtext->Show();
 					native_discretization_field=
 						 GT_element_settings_get_native_discretization_field(settings);
-			 if (native_discretization_field ==NULL)
+			 if (native_discretization_field_chooser ==NULL)
 			 {
 					native_discretization_field_chooser =
 						 new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>

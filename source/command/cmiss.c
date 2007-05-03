@@ -4131,7 +4131,7 @@ Executes a GFX CREATE DATA_VIEWER command.
 							return_code=1;
 						}
 						else
-						{
+					{
 							return_code=0;
 						}
 					}
@@ -15997,7 +15997,12 @@ Which tool that is being modified is passed in <node_tool_void>.
 #endif /*(WX_USER_INTERFACE)*/ 
 				if (dialog_string == dialog_strings[0])
 				{
-					Node_tool_pop_up_dialog(node_tool, (struct Graphics_window *)NULL);
+#if ! defined (WX_USER_INTERFACE)
+					 Node_tool_pop_up_dialog(node_tool, (struct Graphics_window *)NULL);
+#else /* defined (WX_USER_INTERFACE) */
+					 display_message(WARNING_MESSAGE,
+							"This command changes the node tool settings for each window to the global settings. To change node tool settings for individual window, please see the command [gfx modify window <name> nodes ?]. \n");
+#endif /* defined (WX_USER_INTERFACE) */
 				}
 #if defined (WX_USER_INTERFACE)
 				FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
