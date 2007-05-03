@@ -124,22 +124,30 @@ Creates the interpreter for processing commands.
  	  (*interpreter)->variable_names = (char **)NULL; 
  	  (*interpreter)->variable_values = (char **)NULL; 
 
+	  char assignment_regex[] = "^\\s*\\$([\\w][\\w\\d_]*)\\s*"
+	    "=\\s*((\\d+)|[\"']([^\"']*)[\"\'])\\s*;?\\s*$";
 	  if (!((*interpreter)->variable_assignment_regex = 
-		  pcre_compile("^\\s*[$]([\\w][\\w\\d_]+)\\s*"
-			  "[=]\\s*((\\d+)|[\"\']([^\"\']*)[\"\'])\\s*;?\\s*$",
-			  /*options*/0, &pcre_error_string, &pcre_error_offset,
-			  /*table_ptr*/(unsigned char *)NULL)))
+		  pcre_compile(assignment_regex,
+		  /*options*/0, &pcre_error_string, &pcre_error_offset,
+		  /*table_ptr*/(unsigned char *)NULL)))
 	  {
 		  printf("PCRE REGEX error %s\n", pcre_error_string);
 	  }
+#if defined (DEBUG)
+	  printf("Assignment regex: %s\n", assignment_regex);
+#endif /* defined (DEBUG) */
 
+	  char substitute_regex[] = "\\$(\\w[\\w\\d_]*|{\\w[\\w\\d_]*})";
 	  if (!((*interpreter)->variable_substitute_regex =
-		  pcre_compile("[$](\\w[\\w\\d_]+|[{]\\w[\\w\\d_]+[}])",
-			  /*options*/0, &pcre_error_string, &pcre_error_offset,
-			  /*table_ptr*/(unsigned char *)NULL)))
+		  pcre_compile(substitute_regex,
+		  /*options*/0, &pcre_error_string, &pcre_error_offset,
+		  /*table_ptr*/(unsigned char *)NULL)))
 	  {
 		  printf("PCRE REGEX error %s\n", pcre_error_string);
 	  }
+#if defined (DEBUG)
+	  printf("Substitute regex: %s\n", substitute_regex);
+#endif /* defined (DEBUG) */
   }
   else
   {
@@ -226,14 +234,14 @@ back to the main program.
 {
 	char *current_string, *new_name, *new_value, *temporary_string = NULL;
 	int i, match, match_value_length, return_code;
-	int matches[5 * 3];
+	int matches[10 * 3];
 
 	if (interpreter)
 	{
 		if (0 < pcre_exec(interpreter->variable_assignment_regex,
 				/*extra_data*/NULL, command_string, 
 				strlen(command_string), /*offset*/0, /*options*/0,
-				matches, sizeof(matches)/sizeof(int*)))
+				matches, sizeof(matches)/sizeof(int)))
 		{
 #if defined (DEBUG)
 			printf(" VARIABLE DEF MATCH %d %d\n%s\n",
@@ -298,18 +306,18 @@ back to the main program.
 			while (return_code && (0 < pcre_exec(interpreter->variable_substitute_regex,
 				/*extra_data*/NULL, current_string, 
 				strlen(current_string), /*offset*/0, /*options*/0,
-				matches, sizeof(matches)/sizeof(int*))))
+				matches, sizeof(matches)/sizeof(int))))
 			{
 #if defined (DEBUG)
-				printf(" MATCH %d %d\n",
-					matches[0], matches[1]);
+				printf(" MATCH %d %d %s\n",
+				       matches[0], matches[1], current_string);
 #endif /* defined (DEBUG) */
 				match = -1;
 				for (i = 0 ; (match == -1) && (i < interpreter->number_of_variables) ; i++)
 				{
 #if defined (DEBUG)
 					printf("Comparing %d characters %s  %s\n",
-						strlen(interpreter->variable_names[i]),
+					       (int)strlen(interpreter->variable_names[i]),
 						command_string + matches[0] + 1,
 						interpreter->variable_names[i]);
 #endif /* defined (DEBUG) */
