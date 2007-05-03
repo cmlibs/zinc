@@ -124,30 +124,34 @@ Creates the interpreter for processing commands.
  	  (*interpreter)->variable_names = (char **)NULL; 
  	  (*interpreter)->variable_values = (char **)NULL; 
 
-	  char assignment_regex[] = "^\\s*\\$([\\w][\\w\\d_]*)\\s*"
-	    "=\\s*((\\d+)|[\"']([^\"']*)[\"\'])\\s*;?\\s*$";
-	  if (!((*interpreter)->variable_assignment_regex = 
-		  pcre_compile(assignment_regex,
-		  /*options*/0, &pcre_error_string, &pcre_error_offset,
-		  /*table_ptr*/(unsigned char *)NULL)))
 	  {
-		  printf("PCRE REGEX error %s\n", pcre_error_string);
-	  }
+		  char assignment_regex[] = "^\\s*\\$([\\w][\\w\\d_]*)\\s*"
+			  "=\\s*((\\d+)|[\"']([^\"']*)[\"\'])\\s*;?\\s*$";
+		  if (!((*interpreter)->variable_assignment_regex = 
+			  pcre_compile(assignment_regex,
+			  /*options*/0, &pcre_error_string, &pcre_error_offset,
+			  /*table_ptr*/(unsigned char *)NULL)))
+		  {
+			  printf("PCRE REGEX error %s\n", pcre_error_string);
+		  }
 #if defined (DEBUG)
-	  printf("Assignment regex: %s\n", assignment_regex);
+		  printf("Assignment regex: %s\n", assignment_regex);
 #endif /* defined (DEBUG) */
+	  }
 
-	  char substitute_regex[] = "\\$(\\w[\\w\\d_]*|{\\w[\\w\\d_]*})";
-	  if (!((*interpreter)->variable_substitute_regex =
-		  pcre_compile(substitute_regex,
-		  /*options*/0, &pcre_error_string, &pcre_error_offset,
-		  /*table_ptr*/(unsigned char *)NULL)))
 	  {
-		  printf("PCRE REGEX error %s\n", pcre_error_string);
-	  }
+		  char substitute_regex[] = "\\$(\\w[\\w\\d_]*|{\\w[\\w\\d_]*})";
+		  if (!((*interpreter)->variable_substitute_regex =
+			  pcre_compile(substitute_regex,
+			  /*options*/0, &pcre_error_string, &pcre_error_offset,
+			  /*table_ptr*/(unsigned char *)NULL)))
+		  {
+			  printf("PCRE REGEX error %s\n", pcre_error_string);
+		  }
 #if defined (DEBUG)
-	  printf("Substitute regex: %s\n", substitute_regex);
+		  printf("Substitute regex: %s\n", substitute_regex);
 #endif /* defined (DEBUG) */
+	  }
   }
   else
   {
