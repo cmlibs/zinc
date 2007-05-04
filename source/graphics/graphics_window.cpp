@@ -3019,6 +3019,11 @@ it.
 	char *window_title;
 	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode;
 	enum Graphics_buffer_stereo_mode graphics_buffer_stereo_mode;
+#if defined (WX_USER_INTERFACE)
+	double eye[3],eye_distance,front[3],lookat[3],up[3],view[3];
+	int ortho_front_axis,ortho_up_axis;
+#endif /*(WX_USER_INTERFACE) */
+
 #if defined (MOTIF)
 	double eye[3],eye_distance,front[3],lookat[3],up[3],view[3];
 	EDIT_VAR_PRECISION time_value;
@@ -3809,52 +3814,75 @@ it.
 								scene_manager, window->scene,
 								texture_manager, user_interface))
 						{
-						        window->interactive_toolbar_panel = 
-							  XRCCTRL(*window->wx_graphics_window, "ToolbarPanel", wxPanel);
-							wxBoxSizer *toolbar_sizer = new wxBoxSizer( wxVERTICAL );
-							window->interactive_toolbar_panel->SetSizer(toolbar_sizer);
-						        FOR_EACH_OBJECT_IN_MANAGER(Interactive_tool)(
-								add_interactive_tool_to_wx_toolbar,
-								(void *)window,
-								interactive_tool_manager);
-							Scene_viewer_set_interactive_tool(
-								window->scene_viewer_array[pane_no],
-								window->interactive_tool);
-							/* get scene_viewer transform callbacks to allow
-								synchronising of views in multiple panes */
-							Scene_viewer_add_sync_callback(
-								window->scene_viewer_array[pane_no],
-								Graphics_window_Scene_viewer_view_changed,
-								window);
-							Scene_viewer_set_translation_rate(
-								window->scene_viewer_array[pane_no], 2.0);
-							Scene_viewer_set_tumble_rate(
-								window->scene_viewer_array[pane_no], 1.5);
-							Scene_viewer_set_zoom_rate(
-								window->scene_viewer_array[pane_no], 2.0);
-
-							/* set the initial layout */
-							Graphics_window_set_layout_mode(window,
-								GRAPHICS_WINDOW_LAYOUT_SIMPLE);
-							/* give the window its default size */
-							Graphics_window_set_viewing_area_size(window,
-								window->default_viewing_width,
-								window->default_viewing_height);
-							/* initial view is of all of the current scene */
-							Graphics_window_view_all(window);
+							 ortho_up_axis=window->ortho_up_axis;
+							 ortho_front_axis=window->ortho_front_axis;
+							 window->ortho_up_axis=0;
+							 window->ortho_front_axis=0;
+							 Graphics_window_set_orthographic_axes(window,
+									ortho_up_axis,ortho_front_axis);
+							 window->interactive_toolbar_panel = 
+									XRCCTRL(*window->wx_graphics_window, "ToolbarPanel", wxPanel);
+							 wxBoxSizer *toolbar_sizer = new wxBoxSizer( wxVERTICAL );
+							 window->interactive_toolbar_panel->SetSizer(toolbar_sizer);
+							 FOR_EACH_OBJECT_IN_MANAGER(Interactive_tool)(
+									add_interactive_tool_to_wx_toolbar,
+									(void *)window,
+									interactive_tool_manager);
+							 Scene_viewer_set_interactive_tool(
+									window->scene_viewer_array[pane_no],
+									window->interactive_tool);
+							 /* get scene_viewer transform callbacks to allow
+									synchronising of views in multiple panes */
+							 Scene_viewer_add_sync_callback(
+									window->scene_viewer_array[pane_no],
+									Graphics_window_Scene_viewer_view_changed,
+									window);
+							 Scene_viewer_set_translation_rate(
+									window->scene_viewer_array[pane_no], 2.0);
+							 Scene_viewer_set_tumble_rate(
+									window->scene_viewer_array[pane_no], 1.5);
+							 Scene_viewer_set_zoom_rate(
+									window->scene_viewer_array[pane_no], 2.0);
+							 if (Scene_viewer_get_lookat_parameters(
+											window->scene_viewer_array[0],
+											&(eye[0]),&(eye[1]),&(eye[2]),
+											&(lookat[0]),&(lookat[1]),&(lookat[2]),
+											&(up[0]),&(up[1]),&(up[2]))&&
+									axis_number_to_axis_vector(
+										 window->ortho_up_axis,up)&&
+									axis_number_to_axis_vector(
+										 window->ortho_front_axis,front))
+									{
+										 view[0]=eye[0]-lookat[0];
+										 view[1]=eye[1]-lookat[1];
+										 view[2]=eye[2]-lookat[2];
+										 eye_distance=normalize3(view);
+										 Scene_viewer_set_lookat_parameters(
+												window->scene_viewer_array[0],
+												lookat[0]+eye_distance*front[0],
+												lookat[1]+eye_distance*front[1],
+												lookat[2]+eye_distance*front[2],
+												lookat[0],lookat[1],lookat[2],up[0],up[1],up[2]);
+									}
+									/* set the initial layout */
+									Graphics_window_set_layout_mode(window,
+										 GRAPHICS_WINDOW_LAYOUT_SIMPLE);
+									/* give the window its default size */
+									Graphics_window_set_viewing_area_size(window,
+										 window->default_viewing_width,
+										 window->default_viewing_height);
+									/* initial view is of all of the current scene */
+									Graphics_window_view_all(window);
 							
-
-
-							window->wx_graphics_window->Show();
-
-			
-							return_code = 1;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"CREATE(Graphics_window).  "
-								"Could not create scene_viewer.");
+									window->wx_graphics_window->Show();
+		
+									return_code = 1;
+									}
+							 else
+							 {
+									display_message(ERROR_MESSAGE,
+										 "CREATE(Graphics_window).  "
+										 "Could not create scene_viewer.");
 							DESTROY(Graphics_window)(&window);
 							window = (struct Graphics_window *)NULL;
 						}
