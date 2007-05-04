@@ -587,7 +587,7 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
       ifeq ($(USE_GTK2),true)
          USER_INTERFACE_INC += $(shell pkg-config gtkglext-1.0 gtk+-2.0 --cflags)
          ifneq ($(STATIC_LINK),true)
-            USER_INTERFACE_LIB += -Wl,-Bstatic -lgtkglext-x11-1.0 -lgdkglext-x11-1.0 -lGLU -Wl,-Bdynamic -lGL $(shell pkg-config gtk+-2.0 --libs) -lXmu
+            USER_INTERFACE_LIB += -Wl,-Bstatic -lgtkglext-x11-1.0 -lgdkglext-x11-1.0 -lGLU -Wl,-Bdynamic -lGL $(shell pkg-config gtk+-2.0 pangox --libs) -lXmu
          else # $(STATIC_LINK) != true
             USER_INTERFACE_LIB += -L/home/blackett/lib -lgtkglext-x11-1.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 $(GRAPHICS_LIB)
          endif # $(STATIC_LINK) != true
@@ -613,7 +613,27 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
    #Default list does not include gl, so we list them here.
    #Using xrc means that we require most things (and static wx libs don't automatically pull
    #in the other dependent wx-libs)
-   USER_INTERFACE_LIB += $(shell $(WX_DIR)wx-config --linkdeps xrc,gl,xml,adv,html,core,base)
+   #Use linkdeps so that we don't get all the other system libraries.
+   ifneq ($(DEBUG),true)
+     WX_DEBUG_FLAG = no
+   else # $(DEBUG) != true
+     WX_DEBUG_FLAG = yes
+   endif # $(DEBUG) != true
+   WX_CONFIG_LIBS := $(shell $(WX_DIR)wx-config --linkdeps --unicode=no --debug=$(WX_DEBUG_FLAG) --static=yes xrc,gl,xml,adv,html,core,base)
+   ifneq ($(WX_CONFIG_LIBS),)
+     #Presume it succeeded, use this config
+     USER_INTERFACE_LIB += $(WX_CONFIG_LIBS)
+   else
+     $(warning Static wx build not detected, trying a dynamic version)
+     #Use the full libs
+     WX_CONFIG_LIBS := $(shell $(WX_DIR)wx-config --libs --unicode=no --debug=$(WX_DEBUG_FLAG) xrc,gl,xml,adv,html,core,base)
+     ifneq ($(WX_CONFIG_LIBS),)
+       #Presume this worked
+       USER_INTERFACE_LIB += $(WX_CONFIG_LIBS)
+     else
+       $(error cmgui build error wx config not matched for $(WX_DIR)wx-config --libs --unicode=no --debug=$(WX_DEBUG_FLAG) xrc,gl,xml,adv,html,core,base)
+     endif
+   endif
    USER_INTERFACE_LIB += $(GRAPHICS_LIB)
    ifeq ($(OPERATING_SYSTEM),linux)
       ifneq ($(STATIC_LINK),true)
