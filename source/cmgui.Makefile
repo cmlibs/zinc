@@ -609,16 +609,16 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
    WX_DIR = 
-   USER_INTERFACE_INC += $(shell $(WX_DIR)wx-config --cxxflags)
-   #Default list does not include gl, so we list them here.
-   #Using xrc means that we require most things (and static wx libs don't automatically pull
-   #in the other dependent wx-libs)
-   #Use linkdeps so that we don't get all the other system libraries.
    ifneq ($(DEBUG),true)
      WX_DEBUG_FLAG = no
    else # $(DEBUG) != true
      WX_DEBUG_FLAG = yes
    endif # $(DEBUG) != true
+   USER_INTERFACE_INC += $(shell $(WX_DIR)wx-config --cxxflags --unicode=no --debug=$(WX_DEBUG_FLAG) --static=yes)
+   #Default list does not include gl, so we list them here.
+   #Using xrc means that we require most things (and static wx libs don't automatically pull
+   #in the other dependent wx-libs)
+   #Use linkdeps so that we don't get all the other system libraries.
    WX_CONFIG_LIBS := $(shell $(WX_DIR)wx-config --linkdeps --unicode=no --debug=$(WX_DEBUG_FLAG) --static=yes xrc,gl,xml,adv,html,core,base)
    ifneq ($(WX_CONFIG_LIBS),)
      #Presume it succeeded, use this config
