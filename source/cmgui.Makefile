@@ -1325,8 +1325,11 @@ MAIN_OBJ = $(MAIN_SRC:.c=.o)
 clean :
 	-rm -r $(OBJECT_PATH)
 ifdef UIDH_PATH
-		-rm -r $(UIDH_PATH)
+	-rm -r $(UIDH_PATH)
 endif # UIDH_PATH
+ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
+	-rm -r $(XRCH_PATH)
+endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 
 clobber : clean
 	-rm $(BIN_PATH)/$(BIN_TARGET)
