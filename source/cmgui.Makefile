@@ -61,6 +61,8 @@ else # $(OPERATING_SYSTEM) == linux || $(OPERATING_SYSTEM) == aix
 endif # $(OPERATING_SYSTEM) == linux || $(OPERATING_SYSTEM) == aix
 #Disable computed variables by default.  To enable override on the command line or change to true.
 USE_COMPUTED_VARIABLES = false
+#Use GTKMAIN by default, gtkmain is no longer mangled into the version name
+USE_GTKMAIN = true
 
 ifeq ($(OPERATING_SYSTEM),win32)
    ifeq ($(filter CONSOLE_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
@@ -124,14 +126,14 @@ endif # $(MEMORYCHECK) != true
 ifneq ($(USE_GTKMAIN),true)
    MAINLOOP_SUFFIX =
 else # $(USE_GTKMAIN) != true
-   MAINLOOP_SUFFIX = -gtkmain
+   MAINLOOP_SUFFIX =
 endif # $(USE_GTKMAIN) != true 
 
 ifneq ($(UNEMAP),true)
    UNEMAP_SUFFIX =
-else # $(USE_GTKMAIN) != true
+else # $(UNEMAP) != true
    UNEMAP_SUFFIX = -unemap
-endif # $(USE_GTKMAIN) != true 
+endif # $(UNEMAP) != true 
 
 ifeq ($(SYSNAME:IRIX%=),)
    TARGET_FILETYPE_SUFFIX =
