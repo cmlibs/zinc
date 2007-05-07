@@ -796,9 +796,23 @@ Sets a particular value (<version>, <type>) for the <field> \
 and <component_number> at the <node>. \
 ==============================================================================*/
 
+#define PROTOTYPE_GET_FE_NODAL_VALUE_STORAGE_FUNCTION( value_type, value_enum ) \
+int get_FE_nodal_ ## value_type ## _storage(struct FE_node *node, \
+	struct FE_field *field, int component_number, int version, \
+	enum FE_nodal_value_type type, FE_value time, value_type *value); \
+/******************************************************************************* \
+LAST MODIFIED : 8 May 2007 \
+ \
+DESCRIPTION : \
+Returns a pointer to the memory which contains the values storage for this  \
+degree of freedom.  This pointer will be invalid if the node is modified so \
+it should only be used temporarily. \
+==============================================================================*/
+
 #define PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( value_type , value_enum ) \
 PROTOTYPE_GET_FE_NODAL_VALUE_FUNCTION(value_type,value_enum) \
-PROTOTYPE_SET_FE_NODAL_VALUE_FUNCTION(value_type,value_enum)
+PROTOTYPE_SET_FE_NODAL_VALUE_FUNCTION(value_type,value_enum) \
+PROTOTYPE_GET_FE_NODAL_VALUE_STORAGE_FUNCTION(value_type,value_enum)
 
 PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( FE_value , FE_VALUE_VALUE )
 PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( double , DOUBLE_VALUE )

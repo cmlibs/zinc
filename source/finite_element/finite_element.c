@@ -17807,9 +17807,94 @@ and <component_number> at the <node>. \
 	return (return_code); \
 } /* set_FE_nodal_ ## value_type ## _value */
 
+#define INSTANTIATE_GET_FE_NODAL_VALUE_STORAGE_FUNCTION( value_type, value_enum ) \
+int get_FE_nodal_ ## value_type ## _storage(struct FE_node *node, \
+	struct FE_field *field, int component_number, int version, \
+	enum FE_nodal_value_type type, FE_value time, value_type *value) \
+/******************************************************************************* \
+LAST MODIFIED : 8 May 2007 \
+ \
+DESCRIPTION : \
+Returns a pointer to the memory which contains the values storage for this  \
+degree of freedom.  This pointer will be invalid if the node is modified so \
+it should only be used temporarily. \
+==============================================================================*/ \
+{ \
+   value_type *array; \
+	int return_code, time_index;  \
+	struct FE_time_sequence *time_sequence; \
+	Value_storage *values_storage = NULL; \
+ \
+	ENTER(get_FE_nodal_ ## value_type ## _storage); \
+	return_code=0; \
+	/* check arguments */ \
+	if (node && field && (0<=component_number) && \
+		(component_number < field->number_of_components) && (0<=version)) \
+	{ \
+		/* get the values storage */ \
+		if (find_FE_nodal_values_storage_dest(node,field,component_number, \
+         version,type, value_enum,&values_storage,&time_sequence)) \
+		{ \
+			if (time_sequence) \
+			{ \
+				if (FE_time_sequence_get_index_for_time(time_sequence, time, &time_index)) \
+				{ \
+					array = *((value_type **)values_storage); \
+					value = &(array[time_index]);		\
+					return_code = 1; \
+				} \
+			   else \
+				{ \
+					display_message(ERROR_MESSAGE,"get_FE_nodal_" #value_type "_storage.  " \
+						"Time value for time %g not defined at this node.", time); \
+					return_code=0; \
+				} \
+			} \
+			else \
+			{ \
+				/* copy in the value */ \
+				 value = (value_type *)values_storage; \
+				return_code=1; \
+			} \
+         if (return_code) \
+         { \
+				/* Check this node is being managed by the region it belongs to (All nodes \
+					are created with respect to some region but they are not necessarily merged \
+					into it yet. */ \
+				/* Notify the clients that this node is changed, even though it hasn't \
+					changed yet.  If users of the this function have used begin_cache and \
+					end cache around their routines then the correct notifications will happen \
+					once the end cache is done */ \
+				if (node->fields && node->fields->fe_region && \
+					FE_region_or_data_hack_FE_region_contains_FE_node(node->fields->fe_region, node)) \
+				{ \
+					/* If so, notify the change */ \
+					FE_region_notify_FE_node_field_change(node->fields->fe_region, node, \
+						field); \
+				} \
+			} \
+		} \
+		else \
+		{	 \
+			display_message(ERROR_MESSAGE,"get_FE_nodal_" #value_type "_storage.  " \
+				"find_FE_nodal_values_storage_dest failed"); \
+			return_code=0; \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"get_FE_nodal_" #value_type "_storage.  Invalid argument(s)"); \
+	} \
+	LEAVE; \
+ \
+	return (return_code); \
+} /* set_FE_nodal_ ## value_type ## _value */
+
 #define INSTANTIATE_FE_NODAL_VALUE_FUNCTIONS( value_type , value_enum ) \
 INSTANTIATE_GET_FE_NODAL_VALUE_FUNCTION(value_type,value_enum) \
-INSTANTIATE_SET_FE_NODAL_VALUE_FUNCTION(value_type,value_enum)
+INSTANTIATE_SET_FE_NODAL_VALUE_FUNCTION(value_type,value_enum) \
+INSTANTIATE_GET_FE_NODAL_VALUE_STORAGE_FUNCTION(value_type,value_enum)
 
 INSTANTIATE_FE_NODAL_VALUE_FUNCTIONS( FE_value , FE_VALUE_VALUE )
 INSTANTIATE_FE_NODAL_VALUE_FUNCTIONS( double , DOUBLE_VALUE )
