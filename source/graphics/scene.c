@@ -8372,6 +8372,34 @@ Returns the position of <scene_object> in the <scene>->scene_object_list.
 	return (position);
 } /* Scene_get_scene_object_position */
 
+struct Scene_object *Scene_get_scene_object_at_position(struct Scene *scene,
+	int position)
+/*******************************************************************************
+LAST MODIFIED : 7 May 2007
+
+DESCRIPTION :
+Returns the <scene_object> at <position> in the <scene>->scene_object_list.
+==============================================================================*/
+{
+	struct Scene_object *scene_object;
+
+	ENTER(Scene_get_scene_object_at_position);
+	if (scene)
+	{
+		scene_object = FIND_BY_IDENTIFIER_IN_LIST(Scene_object,
+			 position)(position,scene->scene_object_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_get_scene_object_at_position.  Invalid argument(s)");
+		scene_object = (	struct Scene_object *)NULL;
+	}
+	LEAVE;
+
+	return (scene_object);
+} /* Scene_get_scene_object_at_position */
+
 int Scene_set_scene_object_position(struct Scene *scene,
 	struct Scene_object *scene_object,int position)
 /*******************************************************************************

@@ -1357,6 +1357,15 @@ DESCRIPTION :
 Returns the position of <scene_object> in the <scene>->scene_object_list.
 ==============================================================================*/
 
+struct Scene_object *Scene_get_scene_object_at_position(struct Scene *scene,
+	 int position);
+/*******************************************************************************
+LAST MODIFIED : 7 May 2007
+
+DESCRIPTION :
+Returns the <scene_object> at <position> in the <scene>->scene_object_list.
+==============================================================================*/
+
 int Scene_set_scene_object_position(struct Scene *scene,
 	struct Scene_object *scene_object,int position);
 /*******************************************************************************

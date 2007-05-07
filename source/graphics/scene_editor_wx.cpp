@@ -42,7 +42,6 @@ codes used to build scene editor with wxWidgets.
  *
  * ***** END LICENSE BLOCK ***** */
 
-
 extern "C" {
 #include <stdio.h>
 #include "general/debug.h"
@@ -75,7 +74,6 @@ extern "C" {
 Module types
 ------------
 */
-
 #if defined (WX_USER_INTERFACE)
 class wxSceneEditor;
 #endif /* defined (WX_USER_INTERFACE) */
@@ -88,10 +86,8 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	struct Scene_editor *scene_editor;
-
 	/* name of object: scene or scene_object being viewed */
 	char *name;
-
 	/* parent_scene, if any, plus the scene this object represents, if any */
 	struct Scene *parent_scene, *scene;
 	struct Scene_object *scene_object;
@@ -110,7 +106,6 @@ DECLARE_LIST_TYPES(Scene_editor_object);
 PROTOTYPE_LIST_FUNCTIONS(Scene_editor_object);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Scene_editor_object, name, \
 	char *);
-
 FULL_DECLARE_INDEXED_LIST_TYPE(Scene_editor_object);
 
 
@@ -127,55 +122,50 @@ DESCRIPTION :
 		transformation_expanded;
 
 	/* access gt_element_group for current_object if applicable */
-	struct GT_element_group *gt_element_group;
-	struct GT_element_group *edit_gt_element_group;
+	 struct GT_element_group *gt_element_group, *edit_gt_element_group;
 	Scene *scene;
 	Scene_object *scene_object;
 	/* keep address of pointer to editor so can self-destroy */
 	struct Scene_editor **scene_editor_address;
 	void *scene_manager_callback_id;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
-	struct Graphical_material *default_material;
-	struct Graphical_material *selected_material;
+	 struct Graphical_material *default_material, *selected_material;
 	struct Graphics_font *default_font;
-	struct MANAGER(Scene) *scene_manager;
-	struct User_interface *user_interface;
-	struct Computed_field_package *computed_field_package;
-	enum GT_element_settings_type current_settings_type;
-	struct GT_element_settings *current_settings;
-	struct Computed_field *default_coordinate_field;
-	struct LIST(GT_object) *glyph_list;
-	struct MANAGER(VT_volume_texture) *volume_texture_manager;
-	struct MANAGER(Computed_field) *computed_field_manager;
-	struct FE_field *native_discretization_field;
-	struct Computed_field *coordinate_field;
-	struct Computed_field *radius_scalar_field;
-	struct Cmiss_region *root_region;
-	enum Graphics_select_mode select_mode;
-	enum Use_element_type use_element_type;
-	enum Xi_discretization_mode xi_discretization_mode;
-	enum Streamline_type streamline_type;
-	enum Streamline_data_type streamline_data_type;
-	float constant_radius,radius_scale_factor;
-	struct MANAGER(Spectrum) *spectrum_manager;
-	struct Spectrum *spectrum;
-	enum Render_type render_type;
-	struct FE_element *fe_element;
+	 struct MANAGER(Scene) *scene_manager;
+	 struct User_interface *user_interface;
+	 struct Computed_field_package *computed_field_package;
+	 enum GT_element_settings_type current_settings_type;
+	 struct GT_element_settings *current_settings;
+	struct LIST(GT_object) *glyph_list;	
+	 struct MANAGER(VT_volume_texture) *volume_texture_manager;
+	 struct MANAGER(Computed_field) *computed_field_manager;
+	 struct FE_field *native_discretization_field;
+	 struct Computed_field *default_coordinate_field, *coordinate_field, *radius_scalar_field ;
+	 struct Cmiss_region *root_region;
+	 enum Graphics_select_mode select_mode;
+	 enum Use_element_type use_element_type;
+	 enum Xi_discretization_mode xi_discretization_mode;
+	 enum Streamline_type streamline_type;
+	 enum Streamline_data_type streamline_data_type;
+	 float constant_radius,radius_scale_factor;
+	 struct MANAGER(Spectrum) *spectrum_manager;
+	 struct Spectrum *spectrum;
+	 enum Render_type render_type;
+	 struct FE_element *fe_element;
 #if defined (WX_USER_INTERFACE)
-	wxSceneEditor *wx_scene_editor;
-	wxPanel *lower_panel;
-	wxScrolledWindow *sceneediting;
-	wxFrame *frame;
-	wxCheckListBox *checklistbox;
-	wxCheckListBox *graphicalitemslistbox;
-	wxSplitterWindow *lowersplitter;
-	wxSplitterWindow *topsplitter;
-	wxCheckBox *autocheckbox;
-	wxButton *applybutton;
-	wxButton *revertbutton;
+	 wxSceneEditor *wx_scene_editor;
+	 wxPanel *lower_panel;
+	 wxScrolledWindow *sceneediting;
+	 wxFrame *frame;
+	 wxCheckListBox *checklistbox;
+	 wxCheckListBox *graphicalitemslistbox;
+	 wxSplitterWindow *lowersplitter;
+	 wxSplitterWindow *topsplitter;
+	 wxCheckBox *autocheckbox;
+	 wxButton *applybutton;
+	 wxButton *revertbutton;
 #endif /*defined (WX_USER_INTERFACE)*/
 }; /*struct Scene_editor*/
-
 
 int DESTROY(Scene_editor_object)(
 	struct Scene_editor_object **scene_editor_object_address);
@@ -405,8 +395,24 @@ that of the first one in the scene.
 	return (scene_editor_object);
 } /* Scene_editor_get_first_object */
 
-#if defined (WX_USER_INTERFACE)
+#if defined (NEW_CODE)
+class wxSceneEditorCheckList : public wxCheckListBox
+{
+	 
+public:
 
+	 wxSceneEditorCheckList():
+	 {
+	 }
+
+
+	 ~wxSceneEditorCheckList()
+	 {
+	 }
+}
+#endif /*(NEW_CODE)*/
+
+#if defined (WX_USER_INTERFACE)
 class wxSceneEditor : public wxFrame
 {				
 	Scene_editor *scene_editor;
@@ -430,7 +436,7 @@ class wxSceneEditor : public wxFrame
 		*constantradiustextctrl, *scalefactorstextctrl, *isoscalartextctrl, *centretextctrl,
 		*baseglyphsizetextctrl,*glyphscalefactorstextctrl,*discretizationtextctrl,*xitextctrl,
 		*lengthtextctrl,*widthtextctrl,*linewidthtextctrl;
-	wxPanel *FE_chooser_panel,	*coordinate_field_chooser_panel,
+	 wxPanel *FE_chooser_panel,	*coordinate_field_chooser_panel,
 		*radius_scalar_chooser_panel, *iso_scalar_chooser_panel, *glyph_chooser_panel,
 		*orientation_scale_field_chooser_panel, *variable_scale_field_chooser_panel,
 		*label_chooser_panel, *use_element_type_chooser_panel, 
@@ -895,7 +901,8 @@ Callback from wxChooser<Scene> when choice is made.
 				int number= graphicalitemschecklist->GetCount();
 				for (int i=0;number>i;i++) 
 					{
-						newsettings = static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(i));
+						newsettings = get_settings_at_position_in_GT_element_group(
+							 scene_editor->edit_gt_element_group, i+1);
 						if (settings == newsettings)
 							{
 								graphicalitemschecklist->SetSelection(i);
@@ -1923,7 +1930,7 @@ When changes have been made by the user, renew the label on the list
  		scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
 		currentsceneobjecttext->SetLabel(scenechecklist->GetStringSelection());
 		int selection=scenechecklist->GetSelection();
-	 	UpdateSceneObjectList(static_cast<Scene_object*>(scenechecklist->GetClientData(selection)));
+		UpdateSceneObjectList(Scene_get_scene_object_at_position(scene_editor->scene,selection+1));
 		frame=XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
 		frame->Layout();
  	}
@@ -1934,14 +1941,13 @@ When changes have been made by the user, renew the label on the list
 		Scene_set_scene_object_position(scene,scene_object,selection);
 	}
 
-
 	void  SceneObjectUpClicked(wxCommandEvent &event)
 	{
  		scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
  		int selection = scenechecklist->GetSelection();
 		if (selection>=1)
 			{
-				SetSceneObjectPosition(static_cast<Scene_object*>(scenechecklist->GetClientData(selection)), scene_editor->scene, selection);
+				SetSceneObjectPosition(Scene_get_scene_object_at_position(scene_editor->scene,selection+1), scene_editor->scene, selection);
 				scenechecklist->Clear();
 				for_each_Scene_object_in_Scene(scene_editor->scene,
  				  add_scene_object_to_scene_check_box, (void *)scene_editor);
@@ -1956,7 +1962,7 @@ When changes have been made by the user, renew the label on the list
 		int number = scenechecklist->GetCount();
 		if (number>=(selection+2))
 			{
-				SetSceneObjectPosition(static_cast<Scene_object*>(scenechecklist->GetClientData(selection)), scene_editor->scene,(selection+2));
+				SetSceneObjectPosition(Scene_get_scene_object_at_position(scene_editor->scene,selection+1), scene_editor->scene,(selection+2));
 				scenechecklist->Clear();
 				for_each_Scene_object_in_Scene(scene_editor->scene,
 																			 add_scene_object_to_scene_check_box, (void *)scene_editor);
@@ -1970,7 +1976,8 @@ When changes have been made by the user, renew the label on the list
 		int selection= graphicalitemschecklist->GetSelection();
 		if (-1 != selection)
 			{
-				UpdateGraphicalElementList(static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(selection)));
+				 UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
+																			scene_editor->edit_gt_element_group, selection+1));
 			}
  	}
 	
@@ -2151,7 +2158,8 @@ When changes have been made by the user, renew the label on the list
 						for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
 						  Scene_editor_add_element_settings_item, (void *)scene_editor);
 						graphicalitemschecklist->SetSelection((graphicalitemschecklist->GetCount()-1));
-						UpdateGraphicalElementList(static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(graphicalitemschecklist->GetCount()-1)));
+						UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
+							 scene_editor->edit_gt_element_group, graphicalitemschecklist->GetCount()-1));
 					}
 				if (!return_code)
 					{
@@ -2179,12 +2187,14 @@ When changes have been made by the user, renew the label on the list
 				if (graphicalitemschecklist->GetCount()>=position)
 					{
 						graphicalitemschecklist->SetSelection(position-1);
-						UpdateGraphicalElementList(static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(position-1)));
+						UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
+																					scene_editor->edit_gt_element_group, position));
 					}
 				else
 					{
 						graphicalitemschecklist->SetSelection(position-2);
-						UpdateGraphicalElementList(static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(position-2)));
+						UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
+																					scene_editor->edit_gt_element_group, position-1));
 					}
 			}
 		}
@@ -2219,7 +2229,8 @@ When changes have been made by the user, renew the label on the list
 						for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
 						  Scene_editor_add_element_settings_item, (void *)scene_editor);
 						graphicalitemschecklist->SetSelection(position-2);
-						UpdateGraphicalElementList(static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(position-2)));
+						UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
+																					scene_editor->edit_gt_element_group, position-1));
 			/* By default the settings name is the position, so it needs to be updated
 			 even though the settings hasn't actually changed */
 			/* inform the client of the change */
@@ -2257,7 +2268,8 @@ When changes have been made by the user, renew the label on the list
 						for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
 						  Scene_editor_add_element_settings_item, (void *)scene_editor);
 						graphicalitemschecklist->SetSelection(position);
-						UpdateGraphicalElementList(static_cast<GT_element_settings*>(graphicalitemschecklist->GetClientData(position)));
+						UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
+																					scene_editor->edit_gt_element_group, position+1));
 			/* By default the settings name is the position, so it needs to be updated
 			 even though the settings hasn't actually changed */
 			/* inform the client of the change */
@@ -3492,7 +3504,7 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 			 discretizationtext->Show();
 					native_discretization_field=
 						 GT_element_settings_get_native_discretization_field(settings);
-			 if (native_discretization_field_chooser ==NULL)
+			 if (native_discretization_field_chooser==NULL)
 			 {
 					native_discretization_field_chooser =
 						 new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
@@ -4074,7 +4086,7 @@ Add scene_object as checklistbox item into the box
 
 	ENTER(add_scene_object_to_scene_check_box);
 	GET_NAME(Scene_object)(scene_object, &name);
-	checklist->Append(name, scene_object);
+	checklist->Append(name);
 	visible =(g_VISIBLE == Scene_object_get_visibility(scene_object));
 	if ( visible ==1)
 		{
@@ -4151,7 +4163,7 @@ Iterator function for Graphical_element_editor_update_Settings_item.
 		settings_string = GT_element_settings_string(settings,
 			SETTINGS_STRING_COMPLETE_PLUS);
 		wxCheckListBox *graphicalitemschecklist =  XRCCTRL(*scene_editor->wx_scene_editor, "GraphicalItemsListBox",wxCheckListBox);
-		graphicalitemschecklist->Append(settings_string, settings);
+		graphicalitemschecklist->Append(settings_string);
 		if (  GT_element_settings_get_visibility(settings) ==1)
 		{
 			graphicalitemschecklist->Check((graphicalitemschecklist->GetCount()-1),1);

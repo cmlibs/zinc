@@ -573,10 +573,13 @@ static int node_viewer_add_collpane(struct Computed_field *current_field, void *
 				 {
 						node_viewer->win->SetSizer(node_viewer->grid_field);
 						node_viewer->grid_field->SetSizeHints(node_viewer->win);
+						node_viewer->grid_field->Layout();
+						node_viewer->win->Layout();
 				 }
 			}
 			panel->FitInside();
 			panel->SetScrollbars(20, 20, 50, 50);
+			panel->Layout();
 			wxFrame *frame;
 			frame = 
 				 XRCCTRL(*node_viewer->wx_node_viewer, "CmguiNodeViewer", wxFrame);
