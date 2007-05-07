@@ -86,8 +86,8 @@ cmgui-unemap cmgui-unemap-debug : UNEMAP=true
 utilities utilities64 : TARGET_OPTION=utilities
 utilities utilities64 : force
 
-clean :
-   $(warning To 'make clean' a single version of cmgui, say cmgui-wx-debug use 'make cmgui-wx-debug TARGET=clean'.  To clean everything use 'make clean-all')
+clean : force
+	@echo "To 'make clean' a single version of cmgui, say cmgui-wx-debug use 'make cmgui-wx-debug TARGET=clean'.  To clean everything use 'make clean-all'"
 
 clean-all :
 	-rm -r object
