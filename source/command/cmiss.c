@@ -332,9 +332,7 @@ DESCRIPTION :
 	struct Streampoint *streampoint_list;
 	struct Time_keeper *default_time_keeper;
 	struct User_interface *user_interface;
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 	struct Emoter_dialog *emoter_slider_dialog;
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 #if defined (MOTIF)
 	Widget curve_editor_dialog,data_grabber_dialog,
 		grid_field_calculator_dialog,input_module_dialog,
@@ -8660,9 +8658,7 @@ Executes a GFX CREATE command.
 {
 	int return_code;
 	struct Cmiss_command_data *command_data;
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) 
 	struct Create_emoter_slider_data create_emoter_slider_data;
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 	struct Option_table *option_table;
 
 	ENTER(execute_command_gfx_create);
@@ -15331,12 +15327,10 @@ Executes a GFX MODIFY command.
 				/* egroup */
 				Option_table_add_entry(option_table,"egroup",NULL, 
 					(void *)command_data, gfx_modify_element_group);
-#if defined (MOTIF)
 				/* emoter */
 				Option_table_add_entry(option_table,"emoter",NULL, 
 					(void *)command_data->emoter_slider_dialog,
 					gfx_modify_emoter);
-#endif /* defined (MOTIF) */
 				/* environment_map */
 				modify_environment_map_data.graphical_material_manager=
 					Material_package_get_material_manager(command_data->material_package);
@@ -23318,9 +23312,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->set_command = CREATE(Execute_command)();
 		command_data->event_dispatcher = (struct Event_dispatcher *)NULL;
 		command_data->user_interface= (struct User_interface *)NULL;
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) 
 		command_data->emoter_slider_dialog=(struct Emoter_dialog *)NULL;
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)  */
 #if defined (MOTIF)
 		command_data->curve_editor_dialog=(Widget)NULL;
 		command_data->data_grabber_dialog=(Widget)NULL;
@@ -24435,12 +24427,10 @@ Clean up the command_data, deallocating all the associated memory and resources.
 #if defined (UNEMAP)
 		DESTROY(Unemap_command_data)(&command_data->unemap_command_data);
 #endif /* defined (UNEMAP) */
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) 
 		if (command_data->emoter_slider_dialog)
 		{
 			DESTROY(Emoter_dialog)(&command_data->emoter_slider_dialog);
 		}
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 #if defined (MOTIF)
 		/* viewers */
 		if (command_data->data_viewer)
