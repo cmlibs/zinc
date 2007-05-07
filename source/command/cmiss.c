@@ -8708,7 +8708,6 @@ Executes a GFX CREATE command.
 					command_data_void,gfx_create_element_points);
 				Option_table_add_entry(option_table,"element_selection_callback",NULL,
 					command_data_void,gfx_create_element_selection_callback);
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) 
 				create_emoter_slider_data.execute_command=command_data->execute_command;
 				create_emoter_slider_data.root_region=
 					command_data->root_region;
@@ -8748,7 +8747,6 @@ Executes a GFX CREATE command.
 					command_data->user_interface;
 				Option_table_add_entry(option_table,"emoter",NULL,
 					(void *)&create_emoter_slider_data,gfx_create_emoter);
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)  */
 #if defined (MOTIF)
 				Option_table_add_entry(option_table,"environment_map",NULL,
 					command_data_void,gfx_create_environment_map);
