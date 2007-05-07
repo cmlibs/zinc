@@ -799,7 +799,7 @@ and <component_number> at the <node>. \
 #define PROTOTYPE_GET_FE_NODAL_VALUE_STORAGE_FUNCTION( value_type, value_enum ) \
 int get_FE_nodal_ ## value_type ## _storage(struct FE_node *node, \
 	struct FE_field *field, int component_number, int version, \
-	enum FE_nodal_value_type type, FE_value time, value_type *value); \
+	enum FE_nodal_value_type type, FE_value time, value_type **value); \
 /******************************************************************************* \
 LAST MODIFIED : 8 May 2007 \
  \

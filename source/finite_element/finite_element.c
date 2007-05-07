@@ -17810,7 +17810,7 @@ and <component_number> at the <node>. \
 #define INSTANTIATE_GET_FE_NODAL_VALUE_STORAGE_FUNCTION( value_type, value_enum ) \
 int get_FE_nodal_ ## value_type ## _storage(struct FE_node *node, \
 	struct FE_field *field, int component_number, int version, \
-	enum FE_nodal_value_type type, FE_value time, value_type *value) \
+	enum FE_nodal_value_type type, FE_value time, value_type **value) \
 /******************************************************************************* \
 LAST MODIFIED : 8 May 2007 \
  \
@@ -17840,7 +17840,7 @@ it should only be used temporarily. \
 				if (FE_time_sequence_get_index_for_time(time_sequence, time, &time_index)) \
 				{ \
 					array = *((value_type **)values_storage); \
-					value = &(array[time_index]);		\
+					*value = &(array[time_index]);		\
 					return_code = 1; \
 				} \
 			   else \
@@ -17853,7 +17853,7 @@ it should only be used temporarily. \
 			else \
 			{ \
 				/* copy in the value */ \
-				 value = (value_type *)values_storage; \
+				*value = (value_type *)values_storage; \
 				return_code=1; \
 			} \
          if (return_code) \
