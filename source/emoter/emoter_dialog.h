@@ -47,6 +47,7 @@ used to scale the distance between a fixed node and a group of nodes.
 #define EMOTER_SLIDER_DIALOG_H
 
 #include "general/io_stream.h"
+#include "graphics/graphics_window.h"
 #include "region/cmiss_region.h"
 #include "user_interface/user_interface.h"
 
@@ -71,7 +72,9 @@ DESCRIPTION :
 	struct Execute_command *execute_command;
 	struct Cmiss_region *root_region;
 	struct MANAGER(FE_basis) *basis_manager;
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 	struct MANAGER(Graphics_window) *graphics_window_manager;
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 	struct MANAGER(Curve) *curve_manager;
 	struct MANAGER(Scene) *scene_manager;
 	struct IO_stream_package *io_stream_package;

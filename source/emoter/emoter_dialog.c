@@ -125,7 +125,9 @@ DESCRIPTION :
 	struct Light *viewer_light;
 	struct Light_model *viewer_light_model;
 	struct MANAGER(FE_basis) *basis_manager;
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 	struct MANAGER(Graphics_window) *graphics_window_manager;
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 	struct MANAGER(Curve) *curve_manager;
 	struct EM_Object *em_object;
 	struct Scene *viewer_scene;
@@ -6216,8 +6218,10 @@ in existence, then bring it to the front, otherwise create new one.
 									= create_emoter_slider_data->graphics_buffer_package;
 								shared_emoter_slider_data->user_interface
 									= create_emoter_slider_data->user_interface;
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 								shared_emoter_slider_data->graphics_window_manager
 									= create_emoter_slider_data->graphics_window_manager;
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 								shared_emoter_slider_data->viewer_scene
 									= create_emoter_slider_data->viewer_scene;
 								shared_emoter_slider_data->viewer_background_colour
