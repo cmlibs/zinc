@@ -2,6 +2,7 @@
 <resource>
   <object class="wxFrame" subclass="wxNodeViewer" name="CmguiNodeViewer">
 	  <title>Cmgui Node Viewer</title>
+	  <flag>wxCLIP_CHILDREN</flag>	
 	  <object class = "wxBoxSizer">
 		  <orient>wxVERTICAL</orient>
     	  <object class ="sizeritem">

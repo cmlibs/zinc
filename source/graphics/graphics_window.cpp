@@ -1,7 +1,7 @@
 /*******************************************************************************
-FILE : graphics_window.c
+FILE : graphics_window.cpp
 
-LAST MODIFIED : 14 February 2005
+LAST MODIFIED : 9 May 2007
 
 DESCRIPTION:
 Code for opening, closing and working a CMISS 3D display window.

@@ -3,6 +3,7 @@
 
   <object class="wxFrame" subclass="wxSceneEditor" name="CmguiSceneEditor" title="Scene Editor">
 	  <title>Scene Editor</title>
+	  <flag>wxCLIP_CHILDREN</flag>	
 	  <object class = "wxBoxSizer">
 			<orient>wxVERTICAL</orient>
 			<object class ="sizeritem">
@@ -113,7 +114,6 @@
 								    <label>General Settings</label>
  				       		</object>
 							</object>
-					
 
 							<object class ="sizeritem">
 								<flag>wxEXPAND</flag>
@@ -123,7 +123,7 @@
 									<minsize>100</minsize>
 			 	 					<orientation>horizontal</orientation>
 									
-									<object class ="wxPanel" name="LowestPanel">
+									<object class ="wxScrolledWindow" name="LowestPanel">
 				   						<object class = "wxBoxSizer">	
 											<orient>wxVERTICAL</orient>
 											<object class="sizeritem">
@@ -134,9 +134,9 @@
 													<label>TypeFormChooser</label>
 													<object class ="sizeritem">
 														<flag>wxALIGN_CENTRE</flag>
-														<option>1</option>
+														<option>0</option>
 														<object class = "wxPanel" name="TypeFormChooser">
-															<size>100,30</size>
+															<size>200,30</size>
 														</object>
 													</object>
 													<object class ="sizeritem">
@@ -169,6 +169,7 @@
 														<flag>wxEXPAND</flag>
 														<option>1</option>
 														<object class="wxCheckListBox" name="GraphicalItemsListBox">
+															<flag>wxVSCROLL|wxHSCROLL</flag>
 														</object>																					
 													</object>
 												</object>

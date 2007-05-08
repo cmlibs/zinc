@@ -110,6 +110,7 @@ Contains all the information carried by the node_viewer widget.
 	 wxBoxSizer *paneSz;
 	 wxFrame *frame;
 	 wxGridSizer *grid_field;
+	 wxSize frame_size;
 #endif /* (WX_USER_INTERFACE) */
 }; /* node_viewer_struct */
 
@@ -234,6 +235,7 @@ class wxNodeViewer : public wxFrame
 {	
 	 Node_viewer *node_viewer;
 	 wxPanel *node_text_panel;
+	 wxScrolledWindow *variable_viewer_panel;
 	 DEFINE_FE_region_FE_object_method_class(node);
  	 FE_object_text_chooser< FE_node, FE_region_FE_object_method_class(node) > *node_text_chooser;
 	 wxFrame *frame;
@@ -286,10 +288,8 @@ Callback from wxTextChooser when text is entered.
 				 FE_node_selection_clear(node_viewer->node_selection);
 				 if (node)
 				 {
-						FE_node_selection_select_node(node_viewer->node_selection, node);
 						node_viewer->current_node = node;
-// 						wxScrolledWindow *panel = node_viewer->collpane;
-// 						panel->DestroyChildren();
+						FE_node_selection_select_node(node_viewer->node_selection, node);
 						FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
 							 node_viewer_add_collpane,
 							 (void *)node_viewer,
@@ -321,9 +321,10 @@ Callback from wxTextChooser when text is entered.
 
 	 void RenewNodeViewer(wxCollapsiblePaneEvent& event)
 	 {
-			frame = 
-			  XRCCTRL(*this, "CmguiNodeViewer", wxFrame);
-			frame->Layout();
+			variable_viewer_panel = XRCCTRL(*this, "VariableViewerPanel", wxScrolledWindow);
+			variable_viewer_panel->FitInside();
+			frame = XRCCTRL(*this, "CmguiNodeViewer", wxFrame);
+			frame->FitInside();
 			frame->SetMinSize(wxSize(50,100));
 			frame->SetMaxSize(wxSize(2000,2000));
 	 }
@@ -346,8 +347,6 @@ Callback from wxTextChooser when text is entered.
 			Node_viewer_set_viewer_node(node_viewer);
 			if (node_viewer->wx_node_viewer && node_viewer->collpane)
 			{
-// 				 wxScrolledWindow *panel = node_viewer->collpane;
-// 				 panel->DestroyChildren();
 				 FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
 						node_viewer_add_collpane,
 						(void *)node_viewer,
@@ -538,6 +537,7 @@ static int node_viewer_add_collpane(struct Computed_field *current_field, void *
 			wxScrolledWindow *panel = node_viewer->collpane;
 			char *identifier;
 			int length;
+			identifier = (char *)NULL;
 			length = 	strlen(field_name);
 			if (ALLOCATE(identifier,char,length+length+1))
 			{
@@ -716,9 +716,10 @@ Since both nodes and data can depend on embedded fields, the
 			 node_viewer->frame=
 					XRCCTRL(*node_viewer->wx_node_viewer, "CmguiNodeViewer", wxFrame);
 			 node_viewer->frame->SetTitle(dialog_title);
-			 node_viewer->frame->Fit();
 			 node_viewer->frame->Layout();
 			 node_viewer->frame->SetMinSize(wxSize(50,100));
+			 node_viewer->collpane->Layout();
+
 #endif /* defined (WX_USER_INTERFACE) */	
 		 }
 		 else
@@ -830,8 +831,6 @@ Makes <node> the current_node in <node_viewer>.
 				Node_viewer_set_viewer_node(node_viewer);
 				if (node_viewer->wx_node_viewer && node_viewer->collpane)
 				{
-// 					 wxScrolledWindow *panel = node_viewer->collpane;
-// 					 panel->DestroyChildren();
 					 FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
 							node_viewer_add_collpane,
 							(void *)node_viewer,
@@ -964,8 +963,6 @@ Callback for change in the global node selection.
 				Node_viewer_set_viewer_node(node_viewer);
 				if (node_viewer->wx_node_viewer && node_viewer->collpane)
 				{
-// 					 wxScrolledWindow *panel = node_viewer->collpane;
-// 					 panel->DestroyChildren();
 					 FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
 							node_viewer_add_collpane,
 							(void *)node_viewer,
@@ -1174,6 +1171,7 @@ int node_viewer_add_textctrl(Node_viewer *node_viewer, Computed_field *field, in
 	 {
 			node_viewer_text ->Create (node_viewer->win, -1, temp_string,wxDefaultPosition,
 				 wxDefaultSize,wxTE_PROCESS_ENTER);
+			DEALLOCATE(temp_string);
 	 }
 	 else
 	 {
@@ -1354,18 +1352,16 @@ and their labels.
 										if (tmp == 0)
 										{
 											 node_viewer->grid_field = new wxGridSizer(number_of_components+1, node_viewer->number_of_nodal_value_types+1,1,1);		
-											 node_viewer->grid_field->Add(new wxStaticText(node_viewer->win, -1, wxT("")),0,wxADJUST_MINSIZE, 0);	
+											 node_viewer->grid_field->Add(new wxStaticText(node_viewer->win, -1, wxT("")),1,wxADJUST_MINSIZE, 0);	
 											 tmp = 1;
 										}
 										if (return_code)
 										{
 											 if (nodal_value_information)
 											 {
-
 													node_viewer_add_textctrl(node_viewer, field, (comp_no-1),nodal_value_type, 0);
 													count = count +1;
 													indicator =1;
-													
 													/* string and element_xi fields should be shown wider */
 											 }
 											 else
@@ -1377,11 +1373,11 @@ and their labels.
 														 {
 																for (int n=count; n < node_viewer->number_of_nodal_value_types+1; n++) 
 																{ 
-																	 node_viewer->grid_field->Add(new wxStaticText(node_viewer->win, -1, wxT("")),0,
+																	 node_viewer->grid_field->Add(new wxStaticText(node_viewer->win, -1, wxT("")),1,
 																			wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxADJUST_MINSIZE, 0);
 																}
 														 }
-														 node_viewer->grid_field->Add(new wxStaticText(node_viewer->win, -1, wxT(tmp_string)),0,
+														 node_viewer->grid_field->Add(new wxStaticText(node_viewer->win, -1, wxT(tmp_string)),1,
 																wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxADJUST_MINSIZE, 0);
 														 indicator =0;
 														 count =1;
@@ -1517,6 +1513,7 @@ values whose value_type was not recognized.
 								}
 								nodal_value_types[k]=nodal_value_type;
 								(*number_of_nodal_value_types)++;
+								DEALLOCATE(temp_nodal_value_types);
 							}
 							else
 							{
@@ -1565,7 +1562,7 @@ the viewer works on the node itself, not a local copy. Hence, only pass
 unmanaged nodes to this widget.
 ==============================================================================*/
 {
-	int return_code,setup_components;
+	int return_code;
 	struct Node_viewer *node_viewer;
 	if ((node_viewer = static_cast<Node_viewer*>(node_viewer_void)) && ((!node)||(!field)||
 				Computed_field_is_defined_at_node(field,node)))
@@ -1582,7 +1579,7 @@ unmanaged nodes to this widget.
 // 				(field&&(node_viewer->number_of_components !=
 // 					Computed_field_get_number_of_components(field))))
 // 			{
-				setup_components = 1;
+// 				setup_components = 1;
 // 			}
 // 			else
 // 			{
@@ -1590,10 +1587,7 @@ unmanaged nodes to this widget.
 // 			}
 			REACCESS(FE_node)(&(node_viewer->current_node), node);
 			REACCESS(Computed_field)(&(node_viewer->current_field), field);
-			if (setup_components)
-			{
- 				 node_viewer_setup_components(node_viewer);
-			}
+ 			node_viewer_setup_components(node_viewer);
 			if (node && field)
 			{
 				if (node_viewer->time_object)

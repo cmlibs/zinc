@@ -277,7 +277,7 @@ update in case it has changed, and writes the new object string in the widget.
 					 { 
 							set_item(object_name); 
 					 } 
-					 DEALLOCATE(object_name);
+					 //	 DEALLOCATE(object_name);
 				} 
 		 } 
 		 else 
