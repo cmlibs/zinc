@@ -8713,8 +8713,10 @@ Executes a GFX CREATE command.
 					command_data->root_region;
 				create_emoter_slider_data.basis_manager=
 					command_data->basis_manager;
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 				create_emoter_slider_data.graphics_window_manager=
 					command_data->graphics_window_manager;
+#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 				create_emoter_slider_data.graphics_buffer_package=
 					command_data->graphics_buffer_package;
 				create_emoter_slider_data.curve_manager=
