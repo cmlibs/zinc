@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_set.c
 
-LAST MODIFIED : 24 August 2006
+LAST MODIFIED : 7 May 2007
 
 DESCRIPTION :
 ==============================================================================*/
@@ -46,6 +46,7 @@ extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "user_interface/message.h"
+#include <stdio.h>
 }
 
 int set_Computed_field_conditional(struct Parse_state *state,
@@ -64,7 +65,9 @@ wrapper for field and add it to the manager.
 ==============================================================================*/
 {
 	char *current_token, *field_component_name, *temp_name;
-	int component_no, i, number_of_components, return_code;
+	int component_no, i, finished, number_of_components, number_of_values,
+		return_code;
+	FE_value *values;
 	struct Computed_field **field_address, *selected_field;
 	struct Set_Computed_field_conditional_data *set_field_data;
 
@@ -88,83 +91,113 @@ wrapper for field and add it to the manager.
 					}
 					return_code = 1;
 				}
-				else
+				else 
 				{
-					/* component_no = -1 denotes the whole field may be used */
-					component_no = -1;
-					if (!(selected_field =
-						FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(current_token,
-						set_field_data->computed_field_manager)))
+					if (current_token[0] == '[')
 					{
-						if (field_component_name = strchr(current_token, '.'))
+						number_of_values = 0;
+						/* Dont examine the '[' */
+						current_token += 1;
+
+						ALLOCATE(values, FE_value, 1);
+						/* This is a constant array, make a new field not in the manager */
+						finished = 0;
+						while (!finished)
 						{
-							*field_component_name = '\0';
-							field_component_name++;
-							if (selected_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
-								name)(current_token, set_field_data->computed_field_manager))
+							if (1 == sscanf(current_token, "%f", values + number_of_values))
 							{
-								/* get the component number */
-								number_of_components =
-									Computed_field_get_number_of_components(selected_field);
-								for (i = 0; (i < number_of_components) &&
-									(0 > component_no) && selected_field; i++)
+								number_of_values++;
+								REALLOCATE(values, values, FE_value, number_of_values + 1);
+							}
+							if (strchr(current_token,']') ||
+								(!shift_Parse_state(state, 1)) ||
+								(!(current_token = state->current_token)))
+							{
+								finished = 1;
+							}
+						}
+						selected_field = CREATE(Computed_field)("constants");
+						Computed_field_set_type_constant(selected_field, number_of_values, values);
+						DEALLOCATE(values);
+					}
+					else
+					{
+						/* component_no = -1 denotes the whole field may be used */
+						component_no = -1;
+						if (!(selected_field =
+								FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(current_token,
+									set_field_data->computed_field_manager)))
+						{
+							if (field_component_name = strchr(current_token, '.'))
+							{
+								*field_component_name = '\0';
+								field_component_name++;
+								if (selected_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
+										name)(current_token, set_field_data->computed_field_manager))
 								{
-									if (temp_name =
-										Computed_field_get_component_name(selected_field, i))
+									/* get the component number */
+									number_of_components =
+										Computed_field_get_number_of_components(selected_field);
+									for (i = 0; (i < number_of_components) &&
+											  (0 > component_no) && selected_field; i++)
 									{
-										if (0 == strcmp(field_component_name, temp_name))
+										if (temp_name =
+											Computed_field_get_component_name(selected_field, i))
 										{
-											component_no = i;
+											if (0 == strcmp(field_component_name, temp_name))
+											{
+												component_no = i;
+											}
+											DEALLOCATE(temp_name);
 										}
-										DEALLOCATE(temp_name);
-									}
-									else
-									{
-										display_message(WARNING_MESSAGE,
-											"set_Computed_field_component.  "
-											"Could not get component name");
-										selected_field = (struct Computed_field *)NULL;
-									}
-								}
-								if (0 <= component_no)
-								{
-									if (1 == number_of_components)
-									{
-										/* already a single component field */
-										component_no = -1;
-									}
-									else
-									{
-										/* get or make wrapper for field component */
-										if (!(selected_field =
-											Computed_field_manager_get_component_wrapper(
-												set_field_data->computed_field_manager,
-												selected_field, component_no)))
+										else
 										{
 											display_message(WARNING_MESSAGE,
 												"set_Computed_field_component.  "
-												"Could not make component wrapper");
+												"Could not get component name");
+											selected_field = (struct Computed_field *)NULL;
 										}
+									}
+									if (0 <= component_no)
+									{
+										if (1 == number_of_components)
+										{
+											/* already a single component field */
+											component_no = -1;
+										}
+										else
+										{
+											/* get or make wrapper for field component */
+											if (!(selected_field =
+													Computed_field_manager_get_component_wrapper(
+														set_field_data->computed_field_manager,
+														selected_field, component_no)))
+											{
+												display_message(WARNING_MESSAGE,
+													"set_Computed_field_component.  "
+													"Could not make component wrapper");
+											}
+										}
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"Unknown field component: %s.%s", current_token,
+											field_component_name);
+										selected_field = (struct Computed_field *)NULL;
 									}
 								}
 								else
 								{
-									display_message(ERROR_MESSAGE,
-										"Unknown field component: %s.%s", current_token,
-										field_component_name);
-									selected_field = (struct Computed_field *)NULL;
+									display_message(ERROR_MESSAGE, "Unknown field : %s",
+										current_token);
 								}
 							}
 							else
 							{
-								display_message(ERROR_MESSAGE, "Unknown field : %s",
+								display_message(ERROR_MESSAGE,"Unknown field : %s",
 									current_token);
 							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"Unknown field : %s",
-								current_token);
 						}
 					}
 					if (selected_field)
