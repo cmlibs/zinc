@@ -3389,8 +3389,6 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				display_message(ERROR_MESSAGE,
 					"CREATE(Node_tool).  Could not open hierarchy");
 			}
-
-
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */ 
 			node_tool->computed_field_manager=Computed_field_package_get_computed_field_manager(computed_field_package);
 			node_tool->wx_node_tool = (wxNodeTool *)NULL;
@@ -3398,12 +3396,9 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			Node_tool_set_Cmiss_region(node_tool, node_tool->root_region);
 			node_tool->current_region_path = (char *)NULL;
 			Node_tool_get_region_path(node_tool, &node_tool->current_region_path);
-
 #else /* defined (MOTIF) */
 			node_tool->current_region_path = (char *)NULL;
-
 #endif /* defined (USER_INTERFACE) */
-
 		}
 		else
 		{
@@ -3479,6 +3474,8 @@ structure itself.
 #if defined (WX_USER_INTERFACE)
 		if (node_tool->wx_node_tool)
 			 node_tool->wx_node_tool->Destroy();
+		if (node_tool->current_region_path)
+			 DEALLOCATE(node_tool->current_region_path);
 #endif /*(WX_USER_INTERFACE)*/
 		DEALLOCATE(*node_tool_address);
 		return_code=1;
@@ -4084,7 +4081,7 @@ Up to the calling function to DEALLOCATE the returned path.
 			 Cmiss_region_get_root_region_path(path_address);
 			 return_code = 0;
 		}
-#else /* defined (MOTIF) */
+#else /* switch USER_INTERFACE*/
 		if (node_tool->current_region_path)
 		{
 			*path_address = duplicate_string(node_tool->current_region_path);

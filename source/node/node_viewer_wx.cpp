@@ -565,6 +565,10 @@ static int node_viewer_add_collpane(struct Computed_field *current_field, void *
 			{
 				 DEALLOCATE(identifier);
 			}
+			if (field_name)
+			{
+				 DEALLOCATE(field_name);
+			}
 
  			if (node_viewer_set_node_field((void *)node_viewer,
 						node_viewer->current_node, node_viewer->current_field))
@@ -769,6 +773,8 @@ Destroys the Node_viewer. See also Node_viewer_close_CB.
 			 delete node_viewer->wx_node_viewer;
 		}
 		REACCESS(FE_node)(&(node_viewer->node_copy),(struct FE_node *)NULL);
+		DEACCESS(FE_node)(&(node_viewer->template_node));
+		DEACCESS(Time_object)(&(node_viewer->time_object));
 		DEALLOCATE(*node_viewer_address);
 		return_code=1;
 	}
@@ -1361,7 +1367,7 @@ and their labels.
 											 {
 													node_viewer_add_textctrl(node_viewer, field, (comp_no-1),nodal_value_type, 0);
 													count = count +1;
-													indicator =1;
+													indicator =1;	
 													/* string and element_xi fields should be shown wider */
 											 }
 											 else
@@ -1385,10 +1391,10 @@ and their labels.
 											 }
 										}	
 								 }
-							}
-							if (component_nodal_value_types)
-							{
-								 DEALLOCATE(component_nodal_value_types);
+								 if (component_nodal_value_types)
+								 {
+										DEALLOCATE(component_nodal_value_types);
+								 }
 							}
 					 }
 					 else
@@ -1513,7 +1519,6 @@ values whose value_type was not recognized.
 								}
 								nodal_value_types[k]=nodal_value_type;
 								(*number_of_nodal_value_types)++;
-								DEALLOCATE(temp_nodal_value_types);
 							}
 							else
 							{
@@ -1538,6 +1543,8 @@ values whose value_type was not recognized.
 					"get_FE_node_field_value_types.  Could not get nodal_value_types");
 				DEALLOCATE(nodal_value_types);
 				*number_of_nodal_value_types = 0;
+				if (temp_nodal_value_types)
+					 DEALLOCATE(temp_nodal_value_types);
 			}
 		}
 	}

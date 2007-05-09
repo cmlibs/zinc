@@ -1275,7 +1275,6 @@ Allocates and returns the path to the root_region.
 		return_code = 0;
 	}
 	LEAVE;
-
 	return (return_code);
 } /* Cmiss_region_get_root_region_path */
 

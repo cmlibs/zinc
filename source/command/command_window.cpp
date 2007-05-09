@@ -2330,7 +2330,6 @@ Create the structures and retrieve the command window from the uil file.
 			
 			command_window->wx_command_window = new 
 			  wxCommandWindow(command_window);
-
 			wxXmlResource::Get()->LoadFrame(command_window->wx_command_window,
 			   (wxWindow *)NULL, _T("CmguiCommandWindow"));
 			command_window->wx_command_window->Show();

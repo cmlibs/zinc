@@ -4089,6 +4089,12 @@ Graphics_window_destroy_CB.
 		{
 			DEACCESS(Light_model)(&window->default_light_model);
 		}
+#if defined (WX_USER_INTERFACE) 
+		if	(window->root_region)
+		{
+			 DEACCESS(Cmiss_region)(&window->root_region);
+		}
+#endif /* (WX_USER_INTERFACE) */
 #if defined (MOTIF) /* switch (USER_INTERFACE) */
 		destroy_Shell_list_item_from_shell(&(window->window_shell),
 			window->user_interface);
