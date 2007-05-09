@@ -3973,6 +3973,956 @@ although its cache may be lost.
 	return (return_code);
 } /* Computed_field_set_type_xi_coordinates */
 
+namespace {
+
+char computed_field_basis_derivative_type_string[] = "basis_derivative";
+
+class Computed_field_basis_derivative : public Computed_field_core
+{
+public:
+	FE_field* fe_field;
+	int order;
+	int *xi_indices;
+	FE_element_field_values* fe_element_field_values;
+	/* need pointer to fe_field_manager so can call MANAGED_OBJECT_NOT_IN_USE in
+		 Computed_field_basis_derivative::not_in_use */
+
+	/* Keep a cache of FE_element_field_values as calculation is expensive */
+	LIST(FE_element_field_values) *field_values_cache;
+
+	Computed_field_basis_derivative(Computed_field *field,
+		FE_field *fe_field, int order, int *xi_indices_in) :
+		Computed_field_core(field), fe_field(ACCESS(FE_field)(fe_field)),
+		order(order)
+	{
+		int i;
+
+		xi_indices = new int[order];
+		for (i = 0 ; i < order ; i++)
+		{
+			xi_indices[i] = xi_indices_in[i];
+		}
+		fe_element_field_values = (FE_element_field_values*)NULL;
+		field_values_cache = (LIST(FE_element_field_values) *)NULL;
+	};
+
+	~Computed_field_basis_derivative();
+
+private:
+	Computed_field_core *copy(Computed_field* new_parent);
+
+	char *get_type_string()
+	{
+		return(computed_field_basis_derivative_type_string);
+	}
+
+	int compare(Computed_field_core* other_field);
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
+
+	int clear_cache();
+
+	int is_defined_at_location(Field_location* location);
+
+	int has_multiple_times();
+
+	int has_numerical_components();
+
+	int not_in_use();
+
+	int calculate_FE_element_field_values_for_element(
+		int calculate_derivatives, struct FE_element *element,
+		FE_value time, struct FE_element *top_level_element);
+
+	int set_values_at_location(Field_location* location, FE_value *values);
+
+	int find_element_xi(
+		FE_value *values, int number_of_values, struct FE_element **element,
+		FE_value *xi, int element_dimension, struct Cmiss_region *search_region);
+};
+
+Computed_field_basis_derivative::~Computed_field_basis_derivative()
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+
+	ENTER(Computed_field_basis_derivative::~Computed_field_basis_derivative);
+	if (field)
+	{
+		delete xi_indices;
+		if (fe_field)
+		{
+			DEACCESS(FE_field)(&(fe_field));
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_basis_derivative::~Computed_field_basis_derivative.  "
+			"Invalid arguments.");
+	}
+	LEAVE;
+
+} /* Computed_field_basis_derivative::~Computed_field_basis_derivative */
+
+Computed_field_core* Computed_field_basis_derivative::copy(Computed_field* new_parent)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	Computed_field_basis_derivative* core;
+
+	ENTER(Computed_field_basis_derivative::copy);
+	if (new_parent)
+	{
+		core = new Computed_field_basis_derivative(new_parent, fe_field,
+			order, xi_indices);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_basis_derivative::copy.  "
+			"Invalid arguments.");
+		core = (Computed_field_basis_derivative*)NULL;
+	}
+	LEAVE;
+
+	return (core);
+} /* Computed_field_basis_derivative::copy */
+
+int Computed_field_basis_derivative::clear_cache()
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_basis_derivative::clear_cache_type_specific);
+	if (field)
+	{
+		if(fe_element_field_values)
+		{
+			clear_FE_element_field_values(fe_element_field_values);
+		}
+		if (field_values_cache)
+		{
+			DESTROY(LIST(FE_element_field_values))(&field_values_cache);
+		}
+		/* These are owned by the list */
+		fe_element_field_values = (FE_element_field_values *)NULL;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_basis_derivative::clear_cache_type_specific(.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_basis_derivative::clear_cache_type_specific( */
+
+int Computed_field_basis_derivative::compare(Computed_field_core *other_core)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	Computed_field_basis_derivative* other;
+	int return_code;
+
+	ENTER(Computed_field_basis_derivative::compare);
+	if (field && (other = dynamic_cast<Computed_field_basis_derivative*>(other_core)))
+	{
+		return_code = (fe_field == other->fe_field);
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_basis_derivative::compare */
+
+int Computed_field_basis_derivative::is_defined_at_location(Field_location* location)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_basis_derivative::is_defined_at_location);
+	if (field && location && fe_field)
+	{
+		return_code = 0;
+
+		Field_element_xi_location *element_xi_location;
+		Field_node_location *node_location;
+		
+		if (element_xi_location = 
+			dynamic_cast<Field_element_xi_location*>(location))
+		{
+			FE_element* element = element_xi_location->get_element();
+
+			return_code = FE_field_is_defined_in_element(fe_field,element);
+		}
+		else if (node_location = 
+			dynamic_cast<Field_node_location*>(location))
+		{
+			FE_node *node = node_location->get_node();
+
+			return_code = FE_field_is_defined_at_node(fe_field,node);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_basis_derivative::is_defined_at_location.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_basis_derivative::is_defined_at_location */
+
+int Computed_field_basis_derivative::has_multiple_times()
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Check the fe_field
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_basis_derivative::has_multiple_times);
+	if (field)
+	{
+		return_code=FE_field_has_multiple_times(fe_field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_basis_derivative::has_multiple_times.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_basis_derivative::has_multiple_times */
+
+int Computed_field_basis_derivative::has_numerical_components()
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_basis_derivative::has_numerical_components);
+	if (field)
+	{
+		return_code=Value_type_is_numeric_simple(
+			get_FE_field_value_type(fe_field));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_basis_derivative::has_numerical_components.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_basis_derivative::has_numerical_components */
+
+int Computed_field_basis_derivative::not_in_use()
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+The FE_field must also not be in use.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_region *fe_region;
+
+	ENTER(Computed_field_basis_derivative::not_in_use);
+	if (field)
+	{
+		/* check the fe_field can be destroyed */
+		if (fe_region = FE_field_get_FE_region(fe_field))
+		{
+			/* ask owning FE_region if fe_field is used in nodes and elements */
+			if (FE_region_is_FE_field_in_use(fe_region, fe_field))
+			{
+				return_code = 0;
+			}
+			else
+			{
+				return_code = 1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_basis_derivative::not_in_use.  Missing FE_region");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_basis_derivative::not_in_use.  Missing field");
+		return_code = 0;
+	}
+
+	return (return_code);
+} /* Computed_field_basis_derivative::not_in_use */
+
+int Computed_field_basis_derivative::calculate_FE_element_field_values_for_element(
+	int calculate_derivatives,
+	struct FE_element *element,FE_value time,struct FE_element *top_level_element)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Establishes the FE_element_field values necessary for evaluating <field>, which
+must be of type COMPUTED_FIELD_BASIS_DERIVATIVE. <calculate_derivatives> flag
+controls whether basis functions for derivatives are also evaluated. If <field>
+is already set up in the correct way, does nothing.
+==============================================================================*/
+{
+	int i, need_to_add_to_list, need_update, return_code;
+
+	ENTER(Computed_field_basis_derivative::calculate_FE_element_field_values_for_element);
+	if (field&&element)
+	{
+		return_code=1;
+		/* clear the cache if values already cached for a node */
+		if (field->node)
+		{
+			Computed_field_clear_cache(field);
+		}
+		/* ensure we have FE_element_field_values for element, with
+			 derivatives_calculated if requested */
+		if ((!fe_element_field_values)||
+			(!FE_element_field_values_are_for_element_and_time(
+				fe_element_field_values,element,time,top_level_element))||
+			(calculate_derivatives&&
+				(!FE_element_field_values_have_derivatives_calculated(fe_element_field_values))))
+		{
+			need_update = 0;
+			need_to_add_to_list = 0;
+			if (!field_values_cache)
+			{
+				field_values_cache = CREATE(LIST(FE_element_field_values))();
+			}
+			if (!(fe_element_field_values = FIND_BY_IDENTIFIER_IN_LIST(
+						FE_element_field_values, element)(element, field_values_cache)))
+			{
+				need_update = 1;
+				if (fe_element_field_values = CREATE(FE_element_field_values)())
+				{
+					need_to_add_to_list = 1;
+				}
+				else
+				{
+					return_code=0;
+				}
+			}
+			else
+			{
+				if ((!FE_element_field_values_are_for_element_and_time(
+						 fe_element_field_values,element,time,top_level_element))||
+					(calculate_derivatives&&
+						(!FE_element_field_values_have_derivatives_calculated(fe_element_field_values))))
+				{
+					need_update = 1;
+					clear_FE_element_field_values(fe_element_field_values);
+				}
+			}
+			if (return_code && need_update)
+			{
+				/* note that FE_element_field_values accesses the element */
+				if (calculate_FE_element_field_values(element,fe_field,
+						time,calculate_derivatives,fe_element_field_values,
+						top_level_element))
+				{
+
+					for (i = 0 ; i < order ; i++)
+					{
+						FE_element_field_values_differentiate(fe_element_field_values,
+							xi_indices[i]);
+					}
+					
+					if (need_to_add_to_list)
+					{
+						/* Set a cache size limit */
+						if (1000 < NUMBER_IN_LIST(FE_element_field_values)(field_values_cache))
+						{
+							REMOVE_ALL_OBJECTS_FROM_LIST(FE_element_field_values)
+								(field_values_cache);
+						}
+						return_code = ADD_OBJECT_TO_LIST(FE_element_field_values)(
+							fe_element_field_values, field_values_cache);
+					}
+				}
+				else
+				{
+					/* clear element to indicate that values are clear */
+					clear_FE_element_field_values(fe_element_field_values);
+					return_code=0;
+				}
+			 
+			}
+		}
+		if (!return_code)
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_basis_derivative::calculate_FE_element_field_values_for_element.  "
+				"Failed");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_basis_derivative::calculate_FE_element_field_values_for_element.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_basis_derivative::calculate_FE_element_field_values_for_element */
+
+int Computed_field_basis_derivative::evaluate_cache_at_location(
+    Field_location* location)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Evaluate the fields cache at the location
+==============================================================================*/
+{
+	enum Value_type value_type;
+	int return_code;
+
+	ENTER(Computed_field_basis_derivative::evaluate_cache_at_location);
+	if (field && location)
+	{
+		Field_element_xi_location *element_xi_location;
+		Field_node_location *node_location;
+
+		if (element_xi_location = 
+			dynamic_cast<Field_element_xi_location*>(location))
+		{
+			FE_element* element = element_xi_location->get_element();
+ 			FE_element* top_level_element = element_xi_location->get_top_level_element();
+			FE_value time = element_xi_location->get_time();
+			FE_value* xi = element_xi_location->get_xi();
+			int number_of_derivatives = location->get_number_of_derivatives();
+
+			/* 1. Precalculate any source fields that this field depends on.
+				For type COMPUTED_FIELD_BASIS_DERIVATIVE, this means getting
+				FE_element_field_values.*/
+			if (return_code=
+				calculate_FE_element_field_values_for_element(
+					/*derivatives_required*/1,element,time,top_level_element))
+			{
+				/* 2. Calculate the field */
+				value_type=get_FE_field_value_type(fe_field);
+				/* component number -1 = calculate all components */
+				switch (value_type)
+				{
+					case FE_VALUE_VALUE:
+					case SHORT_VALUE:
+					{
+						if (number_of_derivatives)
+						{
+							return_code=calculate_FE_element_field(-1,
+								fe_element_field_values,xi,field->values,
+								field->derivatives);
+							field->derivatives_valid = (0<number_of_derivatives);
+						}
+						else
+						{
+							return_code=calculate_FE_element_field(-1,
+								fe_element_field_values,xi,field->values,
+								(FE_value *)NULL);
+						}
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_basis_derivative::evaluate_cache_at_location.  "
+							"Unsupported value type %s in basis_derivative field",
+							Value_type_string(value_type));
+						return_code=0;
+					} break;
+				}
+			}
+		}
+		else if (node_location = 
+			dynamic_cast<Field_node_location*>(location))
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_basis_derivative::evaluate_cache_at_location.  "
+				"This field is valid for elements only.");
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_basis_derivative::evaluate_cache_at_location.  "
+				"Location type unknown or not implemented.");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_basis_derivative::evaluate_cache_at_location.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_basis_derivative::evaluate_cache_at_location */
+
+int Computed_field_basis_derivative::set_values_at_location(
+	Field_location* location, FE_value *values)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Sets the <values> of the computed <field> over the <element>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_basis_derivative::set_values_at_location);
+	if (field && location && values)
+	{
+		display_message(WARNING_MESSAGE,
+			"Computed_field_basis_derivative::set_values_at_location.  "
+			"The basis derivative is calculated from another field and cannot be set.");
+		return_code = 0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_basis_derivative::set_values_at_location.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_basis_derivative::set_values_at_location */
+
+int Computed_field_basis_derivative::find_element_xi(
+	FE_value *values, int number_of_values, struct FE_element **element,
+	FE_value *xi, int element_dimension, struct Cmiss_region *search_region)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_find_element_xi);
+	if (field && values && (number_of_values == field->number_of_components) &&
+		element && xi && search_region)
+	{
+		return_code = Computed_field_perform_find_element_xi(field,
+			values, number_of_values, element, xi, element_dimension, search_region,
+			/*find_nearest_element*/0);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_find_element_xi.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_find_element_xi */
+
+int Computed_field_basis_derivative::list()
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *field_name;
+	int return_code;
+
+	ENTER(List_Computed_field_basis_derivative);
+	if (field)
+	{
+		if (return_code=GET_NAME(FE_field)(fe_field,&field_name))
+		{
+			display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
+			DEALLOCATE(field_name);
+		}
+		display_message(INFORMATION_MESSAGE,"    CM field type : %s\n",
+			ENUMERATOR_STRING(CM_field_type)(get_FE_field_CM_field_type(fe_field)));
+		display_message(INFORMATION_MESSAGE,"    Value type : %s\n",
+			Value_type_string(get_FE_field_value_type(fe_field)));
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_basis_derivative.  Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_basis_derivative */
+
+char *Computed_field_basis_derivative::get_command_string()
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
+==============================================================================*/
+{
+	char *command_string, *component_name, temp_string[40];
+	int error, i, number_of_components;
+
+	ENTER(Computed_field_basis_derivative::get_command_string);
+	command_string = (char *)NULL;
+	if (field)
+	{
+		error = 0;
+		append_string(&command_string,
+			computed_field_basis_derivative_type_string, &error);
+		number_of_components = get_FE_field_number_of_components(fe_field);
+		sprintf(temp_string, " number_of_components %d ", number_of_components);
+		append_string(&command_string, temp_string, &error);
+		append_string(&command_string, ENUMERATOR_STRING(CM_field_type)(
+			get_FE_field_CM_field_type(fe_field)), &error);
+		append_string(&command_string, " ", &error);
+		append_string(&command_string,
+			Value_type_string(get_FE_field_value_type(fe_field)), &error);
+		append_string(&command_string, " component_names", &error);
+		for (i = 0; i < number_of_components; i++)
+		{
+			if (component_name = get_FE_field_component_name(fe_field, i))
+			{
+				make_valid_token(&component_name);
+				append_string(&command_string, " ", &error);
+				append_string(&command_string, component_name, &error);
+				DEALLOCATE(component_name);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_basis_derivative::get_command_string.  Invalid field");
+	}
+	LEAVE;
+
+	return (command_string);
+} /* Computed_field_basis_derivative::get_command_string */
+
+} //namespace
+
+int Computed_field_is_type_basis_derivative(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 14 August 2006
+
+DESCRIPTION :
+Returns true if <field> has the appropriate static type string.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_basis_derivative);
+	if (field)
+	{
+		if (dynamic_cast<Computed_field_basis_derivative*>(field->core))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_basis_derivative.  Missing field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_type_basis_derivative */
+
+int Computed_field_set_type_basis_derivative(struct Computed_field *field,
+	struct FE_field *fe_field, int order, int *xi_indices)
+/*******************************************************************************
+LAST MODIFIED : 9 May 2007
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_BASIS_DERIVATIVE.  This function 
+modifies the calculated monomial coefficients by differentiating them wrt 
+to the xi directions in accordance with the vector of <xi_indices> which is
+length <order>.
+==============================================================================*/
+{
+	char **component_names;
+	int i, number_of_components, return_code;
+
+	ENTER(Computed_field_set_type_basis_derivative);
+	if (field && fe_field)
+	{
+		return_code=1;
+		number_of_components = get_FE_field_number_of_components(fe_field);
+		/* 1. make dynamic allocations for any new type-specific data */
+		if (ALLOCATE(component_names, char *, number_of_components))
+		{
+			for (i = 0 ; i < number_of_components; i++)
+			{
+				if (!(component_names[i]=get_FE_field_component_name(fe_field,i)))
+				{
+					return_code = 0;
+				}
+			}
+		}
+		else
+		{
+			return_code = 0;
+		}
+		if (return_code)
+		{
+			/* 2. free current type-specific data */
+			Computed_field_clear_type(field);
+			/* 3. establish the new type */
+			field->number_of_components = number_of_components;
+			field->component_names = component_names;
+			field->core = new Computed_field_basis_derivative(field, fe_field, 
+				order, xi_indices);
+		}
+		else
+		{
+			for (i = 0 ; i < number_of_components ; i++)
+			{
+				if (component_names[i])
+				{
+					DEALLOCATE(component_names[i]);
+				}
+			}
+			DEALLOCATE(component_names);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_basis_derivative.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_basis_derivative */
+
+int Computed_field_get_type_basis_derivative(struct Computed_field *field,
+	struct FE_field **fe_field)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_BASIS_DERIVATIVE, the FE_field being
+"wrapped" by it is returned - otherwise an error is reported.
+==============================================================================*/
+{
+	Computed_field_basis_derivative* core;
+	int return_code;
+
+	ENTER(Computed_field_get_type_basis_derivative);
+	if (field&&(core=dynamic_cast<Computed_field_basis_derivative*>(field->core)))
+	{
+		*fe_field=core->fe_field;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_basis_derivative.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_basis_derivative */
+
+int define_Computed_field_type_basis_derivative(struct Parse_state *state,
+	void *field_void,void *computed_field_finite_element_package_void)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Creates FE_fields with the given name, coordinate_system, value_type,
+cm_field_type, number_of_components and component_names.
+The actual finite_element wrapper is not made here but in response to the
+FE_field being made and/or modified.
+==============================================================================*/
+{
+	char basis_derivative_help[] =
+		"The basis_derivative calculates a monomial derivative on element based fields.  It is not defined for nodes.  It allows you to calculate an arbitrary derivative by specifying an <order> and a list of <xi_indices> of length order.  This derivative then becomes the \"value\" for the field.";
+	char *current_token;
+	int i, order, previous_state_index, return_code, *xi_indices;
+	struct Computed_field *field;
+	Computed_field_finite_element_package *computed_field_finite_element_package;
+	struct FE_field *fe_field;
+	struct Option_table *option_table;
+
+	ENTER(define_Computed_field_type_finite_element);
+	if (state&&(field=(struct Computed_field *)field_void)&&
+		(computed_field_finite_element_package=
+		(Computed_field_finite_element_package *)
+		computed_field_finite_element_package_void))
+	{
+		return_code = 1;
+		order = 0;
+		xi_indices = (int *)NULL;
+		fe_field = (struct FE_field *)NULL;
+		if (computed_field_basis_derivative_type_string ==
+			Computed_field_get_type_string(field))
+		{
+			return_code =
+				Computed_field_get_type_finite_element(field, &fe_field);
+		}
+		if (return_code)
+		{
+			if (fe_field)
+			{
+				ACCESS(FE_field)(fe_field);
+			}
+			/* try to handle help first */
+			if (current_token=state->current_token)
+			{
+				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
+				{
+					option_table=CREATE(Option_table)();
+					Option_table_add_help(option_table, basis_derivative_help);
+					/* fe_field */
+					Option_table_add_set_FE_field_from_FE_region(
+						option_table, "fe_field" ,&fe_field,
+					  computed_field_finite_element_package->fe_region);
+					Option_table_add_int_positive_entry(option_table,
+						"order", &order);
+					Option_table_add_int_vector_entry(option_table,
+						"xi_indices", xi_indices, &order);
+					return_code=Option_table_multi_parse(option_table,state);
+					DESTROY(Option_table)(&option_table);
+				}
+			}
+			/* parse the fe_field if the "fe_field" token is next */
+			if (return_code)
+			{
+				// store previous state so that we can return to it
+				previous_state_index = state->current_index;
+
+				/* parse the order of the differentiation. */
+				option_table = CREATE(Option_table)();
+				Option_table_add_help(option_table, basis_derivative_help);
+				/* num_seed_points */
+				Option_table_add_int_positive_entry(option_table, "order",
+					&order);
+				/* Ignore all the other entries */
+				Option_table_ignore_all_unmatched_entries(option_table);
+				return_code = Option_table_multi_parse(option_table, state);
+				DESTROY(Option_table)(&option_table);				
+				/* Return back to where we were */
+				shift_Parse_state(state, previous_state_index - state->current_index);
+			}
+			if (return_code)
+			{
+				REALLOCATE(xi_indices, xi_indices, int, order);
+				option_table=CREATE(Option_table)();
+				/* fe_field */
+				Option_table_add_set_FE_field_from_FE_region(
+					option_table, "fe_field" ,&fe_field,
+					computed_field_finite_element_package->fe_region);
+				Option_table_add_int_positive_entry(option_table,
+					"order", &order);
+				Option_table_add_int_vector_entry(option_table,
+					"xi_indices", xi_indices, &order);
+				return_code=Option_table_multi_parse(option_table,state);
+				DESTROY(Option_table)(&option_table);
+			}
+			if (return_code)
+			{
+				for (i = 0 ; i < order ; i++)
+				{
+					xi_indices[i]--;
+				}
+				return_code=Computed_field_set_type_basis_derivative(field,
+					fe_field, order, xi_indices);
+			}
+			if (!return_code)
+			{
+				if ((!state->current_token)||
+					(strcmp(PARSER_HELP_STRING,state->current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+				{
+					/* error */
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_node_value.  Failed");
+				}
+			}
+			if (fe_field)
+			{
+				DEACCESS(FE_field)(&fe_field);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_finite_element.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_finite_element */
+
 int Computed_field_manager_update_wrapper(
 	struct MANAGER(Computed_field) *computed_field_manager,
 	struct Computed_field *wrapper, enum CHANGE_LOG_CHANGE(FE_field) change)
@@ -4875,6 +5825,10 @@ automatically wrapped in corresponding computed_fields.
 		Computed_field_package_add_type(computed_field_package,
 			computed_field_embedded_type_string,
 			define_Computed_field_type_embedded,
+			computed_field_finite_element_package);
+		Computed_field_package_add_type(computed_field_package,
+			computed_field_basis_derivative_type_string,
+			define_Computed_field_type_basis_derivative,
 			computed_field_finite_element_package);
 		if (FE_region_add_callback(fe_region, Computed_field_FE_region_change, 
 			(void *)computed_field_finite_element_package))

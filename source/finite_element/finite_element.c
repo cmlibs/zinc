@@ -34846,6 +34846,88 @@ The optional <top_level_element> forces inheritance from it as needed.
 	return (return_code);
 } /* calculate_FE_element_field_values */
 
+int FE_element_field_values_differentiate(
+	struct FE_element_field_values *element_field_values, int xi_index)
+/*******************************************************************************
+LAST MODIFIED : 9 May 2007
+
+DESCRIPTION :
+Modifies the calculated values for an FE_field so that it will calculate
+derivatives wrt xi_index for the original field.  The <element_field_values>
+must have already been calculated.  Currently only implemented for monomials.
+==============================================================================*/
+{
+	FE_value *derivative_value, *value;
+	int element_dimension, i, j, k, number_of_values, offset, order,
+		*orders, power, return_code;
+
+	ENTER(FE_element_field_values_differentiate);
+	return_code=0;
+	if (element_field_values && element_field_values->derivatives_calculated)
+	{
+		element_dimension=element_field_values->element->shape->dimension;
+		for (k = 0 ; k < element_field_values->number_of_components ; k++)
+		{
+			if (monomial_basis_functions==
+				element_field_values->component_standard_basis_functions[k])
+			{
+				number_of_values = element_field_values->component_number_of_values[k];
+				value = element_field_values->component_values[k];
+
+				/* Copy the specified derivative back into the values */
+				derivative_value = value + number_of_values * (xi_index + 1);
+ 				for (j=0;j<number_of_values;j++)
+				{
+					*value = *derivative_value;
+					value++;
+					derivative_value++;
+				}
+
+				/* Now differentiate the values monomial as we did to calculate them above */
+				
+				value = element_field_values->component_values[k];
+				derivative_value = value + number_of_values;
+
+				orders= ((int**)element_field_values->component_standard_basis_function_arguments)[k];
+				offset = 1;
+
+				for (i=element_dimension;i>0;i--)
+				{
+					orders++;
+					order= *orders;
+					for (j=0;j<number_of_values;j++)
+					{
+						/* calculate derivative value */
+						power=(j/offset)%(order+1);
+						if (order==power)
+						{
+							*derivative_value=0;
+						}
+						else
+						{
+							*derivative_value=
+								(FE_value)(power+1)*value[j+offset];
+						}
+						/* move to the next derivative value */
+						derivative_value++;
+					}
+					offset *= (order+1);
+				}
+			}
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"clear_FE_element_field_values.  Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* clear_FE_element_field_values */
+
 int clear_FE_element_field_values(
 	struct FE_element_field_values *element_field_values)
 /*******************************************************************************

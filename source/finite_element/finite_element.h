@@ -2026,6 +2026,17 @@ not allocate memory for the structure.
 The optional <top_level_element> forces inheritance from it as needed.
 ==============================================================================*/
 
+int FE_element_field_values_differentiate(
+	struct FE_element_field_values *element_field_values, int xi_index);
+/*******************************************************************************
+LAST MODIFIED : 9 May 2007
+
+DESCRIPTION :
+Modifies the calculated values for an FE_field so that it will calculate
+derivatives wrt xi_index for the original field.  The <element_field_values>
+must have already been calculated.  Currently only implemented for monomials.
+==============================================================================*/
+
 int clear_FE_element_field_values(
 	struct FE_element_field_values *element_field_values);
 /*******************************************************************************
