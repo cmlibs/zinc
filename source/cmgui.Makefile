@@ -608,7 +608,7 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
    endif # $(SYSNAME) != win32
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
-   WX_DIR = 
+   WX_DIR =
    ifneq ($(DEBUG),true)
      WX_DEBUG_FLAG = no
    else # $(DEBUG) != true
@@ -637,7 +637,7 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
    USER_INTERFACE_LIB += $(GRAPHICS_LIB)
    ifeq ($(OPERATING_SYSTEM),linux)
       ifneq ($(STATIC_LINK),true)
-         USER_INTERFACE_LIB += $(shell pkg-config gtk+-2.0 gthread-2.0 --libs) -lXmu
+         USER_INTERFACE_LIB += $(shell pkg-config gtk+-2.0 gthread-2.0 --libs) -lXmu  -lXinerama -lXxf86vm
       else # $(STATIC_LINK) != true
          USER_INTERFACE_LIB += -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0
       endif # $(STATIC_LINK) != true

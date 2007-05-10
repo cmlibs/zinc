@@ -70,6 +70,7 @@ private:
 	 LIST_CONDITIONAL_FUNCTION(FE_node) *conditional_function;
 	 void *conditional_function_user_data;
 	 Callback_base<FE_object*> *update_callback;
+	 void *manager_callback_id;
 
 public:
 	 FE_object_text_chooser(wxWindow *parent, 
@@ -85,6 +86,7 @@ LAST MODIFIED : 28 March 2007
 DESCRIPTION :
 =============================================================================*/
 	 {
+			manager_callback_id = (void *)NULL;
 			 current_object = (FE_object *)NULL;
 			 last_updated_object = (FE_object *)NULL;
 			 update_callback = (Callback_base<FE_object*> *)NULL;

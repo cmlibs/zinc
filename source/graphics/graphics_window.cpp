@@ -2959,8 +2959,9 @@ static int add_interactive_tool_to_wx_toolbar(struct Interactive_tool *interacti
     
   wxInteractiveToolButton *button = new wxInteractiveToolButton(interactive_tool, graphics_window);
   
-  button->Create(panel, /*id*/-1,
-     Interactive_tool_get_display_name(interactive_tool));
+  char *interactive_tool_name = Interactive_tool_get_display_name(interactive_tool);
+  button->Create(panel, /*id*/-1, interactive_tool_name);
+	DEALLOCATE(interactive_tool_name);
 
   if (Interactive_tool_is_Transform_tool(interactive_tool))
     {
@@ -3771,6 +3772,8 @@ it.
 	
 			window->GraphicsWindowTitle = XRCCTRL(*window->wx_graphics_window, "CmguiGraphicsWindow", wxFrame);
 			window->GraphicsWindowTitle->SetTitle(window_title);
+			if (window_title)
+				 DEALLOCATE(window_title);
 			window->GraphicsWindowTitle->SetMinSize(wxSize(0,0));
 			window->panel = XRCCTRL(*window->wx_graphics_window, "Panel", wxPanel);
 			window->panel2 = XRCCTRL(*window->wx_graphics_window, "Panel2", wxPanel);
@@ -4090,6 +4093,12 @@ Graphics_window_destroy_CB.
 			DEACCESS(Light_model)(&window->default_light_model);
 		}
 #if defined (WX_USER_INTERFACE) 
+		/* In this version each graphics window has it's own interactive
+			 tool manager so we need to destroy it. */
+		if (window->interactive_tool_manager)
+		{
+			 DESTROY(MANAGER(Interactive_tool))(&window->interactive_tool_manager);
+		}
 		if	(window->root_region)
 		{
 			 DEACCESS(Cmiss_region)(&window->root_region);

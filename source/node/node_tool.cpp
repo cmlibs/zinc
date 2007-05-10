@@ -3395,7 +3395,6 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			/* Set defaults until we have some sort of region chooser */
 			Node_tool_set_Cmiss_region(node_tool, node_tool->root_region);
 			node_tool->current_region_path = (char *)NULL;
-			Node_tool_get_region_path(node_tool, &node_tool->current_region_path);
 #else /* defined (MOTIF) */
 			node_tool->current_region_path = (char *)NULL;
 #endif /* defined (USER_INTERFACE) */
@@ -3474,8 +3473,6 @@ structure itself.
 #if defined (WX_USER_INTERFACE)
 		if (node_tool->wx_node_tool)
 			 node_tool->wx_node_tool->Destroy();
-		if (node_tool->current_region_path)
-			 DEALLOCATE(node_tool->current_region_path);
 #endif /*(WX_USER_INTERFACE)*/
 		DEALLOCATE(*node_tool_address);
 		return_code=1;

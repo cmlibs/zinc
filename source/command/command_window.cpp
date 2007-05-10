@@ -2391,7 +2391,9 @@ DESCRIPTION:
 #endif /* GTK_MAJOR_VERSION >= 2 */
 		gtk_widget_destroy (command_window->shell);
 #endif /* switch (USER_INTERFACE) */
-
+#if (WX_USER_INTERFACE)
+		delete command_window->wx_command_window;
+#endif /* (WX_USER_INTERFACE) */
 		DEALLOCATE(*command_window_pointer);
 		return_code = 1;
 	}

@@ -300,8 +300,6 @@ Callback from wxTextChooser when text is entered.
 						Node_viewer_set_viewer_node(node_viewer);
 						if (node_viewer->wx_node_viewer && node_viewer->collpane)
 						{
-// 							 wxScrolledWindow *panel = node_viewer->collpane;
-// 							 panel->DestroyChildren();
 							 FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
 									node_viewer_add_collpane,
 									(void *)node_viewer,
@@ -524,7 +522,7 @@ static int node_viewer_add_collpane(struct Computed_field *current_field, void *
 	 GET_NAME(Computed_field)(current_field, &field_name);
 	 node_viewer->current_field = current_field;
 	 int condition;
-	 	 if (node_viewer->current_node)
+	 if (node_viewer->current_node)
 	 {
 			condition = Computed_field_is_defined_at_node_conditional(current_field, (void *)node_viewer->current_node);
 	 }
@@ -565,10 +563,6 @@ static int node_viewer_add_collpane(struct Computed_field *current_field, void *
 			{
 				 DEALLOCATE(identifier);
 			}
-			if (field_name)
-			{
-				 DEALLOCATE(field_name);
-			}
 
  			if (node_viewer_set_node_field((void *)node_viewer,
 						node_viewer->current_node, node_viewer->current_field))
@@ -589,6 +583,10 @@ static int node_viewer_add_collpane(struct Computed_field *current_field, void *
 				 XRCCTRL(*node_viewer->wx_node_viewer, "CmguiNodeViewer", wxFrame);
 			frame->Layout();
 			frame->SetMinSize(wxSize(50,100));
+	 }
+	 if (field_name)
+	 {
+			DEALLOCATE(field_name);
 	 }
 	 return 1;
 }
@@ -1369,6 +1367,7 @@ and their labels.
 													count = count +1;
 													indicator =1;	
 													/* string and element_xi fields should be shown wider */
+													DEALLOCATE(nodal_value_information);
 											 }
 											 else
 											 {
