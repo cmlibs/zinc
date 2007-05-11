@@ -2895,14 +2895,15 @@ public:
 	 void OnSplitterPositionChanged(wxSplitterEvent &event)
 	 {
 			toolscrolledwindow =XRCCTRL(*this, "ToolPanel", wxScrolledWindow);
-			toolscrolledwindow ->Fit();
-			toolscrolledwindow ->Layout();
-			leftpanel = XRCCTRL(*this,"LeftPanel", wxScrolledWindow);
-			leftpanel->Layout();
-			splitterwindow = XRCCTRL(*this, "Splitter",wxSplitterWindow);
-			splitterwindow->Layout();
-			Redrawwindow = XRCCTRL(*this,"CmguiGraphicsWindow", wxFrame);
-			Redrawwindow->Layout();
+			toolscrolledwindow->SetSize(toolscrolledwindow->GetSize()+wxSize(0,1));
+			toolscrolledwindow->SetSize(toolscrolledwindow->GetSize()-wxSize(0,1));
+
+// 			leftpanel = XRCCTRL(*this,"LeftPanel", wxScrolledWindow);
+// 			leftpanel->Layout();
+// 			splitterwindow = XRCCTRL(*this, "Splitter",wxSplitterWindow);
+// 			splitterwindow->Layout();
+// 			Redrawwindow = XRCCTRL(*this,"CmguiGraphicsWindow", wxFrame);
+// 			Redrawwindow->Layout();
 	 }
 
 

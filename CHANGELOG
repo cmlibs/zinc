@@ -10,6 +10,36 @@ It is released under the Mozilla Public License v1.1
 Further information, help pages, a tracker and a wiki is available at 
 http://www.cmiss.org/cmgui/
 
+v2.4
+11 May 2007
+Releasing wx version.
+Lots of new ITK filters.
+Add support for a Graphics_library_tentative_check_extension which is true until we are sure whether
+ or not an extension works.  This can be used for commands, which may be called before OpenGL is 
+ initialised but we would like them to fail if they aren't working after it has been initialised.
+Graphics_library_check_extension should be tested before actually using any extension, it will be 
+ false unless we know the extension really works.  By now the display should have been initialised.
+Use this new tentative check for bump_mapping and colour_lookup_spectra in materials.
+Update perl modules to work with CMGUI without global variables.
+Add image_resample computed field to commands.
+No longer need to specify_width, specify_height, specify_depth or texture coordinate when working 
+ using evaluate_image, the default values are retrieved from the source field.
+Respect clear colour setting on spectrum when requesting rgb value.
+Add support for bzip memory streams.
+Each graphics window has its own interactive tools and settings of different interactive tools can now
+ be triggered using commands and apply to all current graphics windows.
+Add gfx define font to allow font objects to be created and most
+ importantly to allow the default font to be redefined.
+List the total number when nodes or elements are listed with gfx list node.
+Allow the font to be specified when creating a colour_bar.
+Allow a colour bar to be created for a specific data component.
+Cmgui-wx now remember the directory where you previously open the file from.
+Add a spectrum_settings that uses computed_fields to calculate the colour tranformation.
+Add Option_table_add_help and try this function with the compose computed field.
+Fix a bug passing the array of variables for matches and tidy up the regular expressions.
+Fix a memory leak with the swizzle string for the material dependent texture program.
+Node viewer now allows user to show variables from all fields at the same time.
+
 v2.3.3
 18 December 2006
 Shifted to externally visible subversion server.

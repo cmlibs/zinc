@@ -319,12 +319,9 @@ Callback from wxTextChooser when text is entered.
 
 	 void RenewNodeViewer(wxCollapsiblePaneEvent& event)
 	 {
-			variable_viewer_panel = XRCCTRL(*this, "VariableViewerPanel", wxScrolledWindow);
-			variable_viewer_panel->FitInside();
 			frame = XRCCTRL(*this, "CmguiNodeViewer", wxFrame);
-			frame->FitInside();
-			frame->SetMinSize(wxSize(50,100));
-			frame->SetMaxSize(wxSize(2000,2000));
+			frame->SetSize(frame->GetSize()+wxSize(0,1));
+			frame->SetSize(frame->GetSize()-wxSize(0,1));
 	 }
 
 	void OnOKpressed(wxCommandEvent &event)
@@ -552,7 +549,6 @@ static int node_viewer_add_collpane(struct Computed_field *current_field, void *
 			{
 				 wxCollapsiblePane *collapsiblepane = new wxCollapsiblePane;
 				 wxSizer *sizer = panel->GetSizer();
-				 collapsiblepane = new wxCollapsiblePane;
 				 collapsiblepane->Create(panel, /*id*/-1, field_name);
 				 sizer->Add(collapsiblepane, 0,wxALL, 5);
 				 node_viewer->win = collapsiblepane->GetPane();
@@ -688,8 +684,6 @@ Since both nodes and data can depend on embedded fields, the
 									Node_viewer_set_viewer_node(node_viewer);
 									if (node_viewer->wx_node_viewer && node_viewer->collpane)
 									{
-// 										 wxScrolledWindow *panel = node_viewer->collpane;
-// 										 panel->DestroyChildren();
 										 FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
 												node_viewer_add_collpane,
 												(void *)node_viewer,

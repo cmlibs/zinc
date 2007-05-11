@@ -1604,7 +1604,7 @@ Callback from wxChooser<Render Type> when choice is made.
 			  XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
 			frame->Layout();
 			frame->SetMinSize(wxSize(50,100));
-			//		frame->SetMaxSize(wxSize(2000,2000));
+			frame->SetMaxSize(wxSize(2000,2000));
 	}
 
 	void AutoApplyorNot(struct GT_element_group  *gt_element_group, GT_element_group *edit_gt_element_group)
@@ -2046,7 +2046,8 @@ When changes have been made by the user, renew the label on the list
 																			scene_editor->edit_gt_element_group, selection+1));
 		 }
 		 lowest_panel = XRCCTRL(*this, "LowestPanel",wxScrolledWindow);
-		 lowest_panel->Update();		
+		 lowest_panel->SetSize(lowest_panel->GetSize()+wxSize(0,1));
+		 lowest_panel->SetSize(lowest_panel->GetSize()-wxSize(0,1));
 		 lowest_panel->SetScrollbars(10,10,40,40);
 		 lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
 		 lowersplitter->Layout();	
@@ -2054,8 +2055,8 @@ When changes have been made by the user, renew the label on the list
 		 topsplitter->Layout();	
 		 frame = 
 				XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
-		 frame->Layout();
-		 frame->SetMinSize(wxSize(50,100));
+		 frame->SetSize(frame->GetSize()+wxSize(0,1));
+		 frame->SetSize(frame->GetSize()-wxSize(0,1));
  	}
 	void AddToSettingList(wxCommandEvent &event)
 	{
