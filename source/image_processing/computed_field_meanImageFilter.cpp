@@ -500,6 +500,9 @@ already) and allows its contents to be modified.
 			{
 				/* Write help */
 					option_table = CREATE(Option_table)();
+					Option_table_add_help(option_table,
+				"The mean_filter field uses the itk::MeanImageFilter code to replace each pixel with the mean intensity of the pixel and its surrounding neighbours.  It is useful for reducing the level of noise.   The <field> it operates on is usually a sample_texture field, based on a texture that has been created from image file(s).   The size of the neighbourhood of pixels used to calculate the mean is determined be a list of <radius_sizes>, one value for each dimension.  Each radius size sets how many pixels to include either side of the central pixel for the corresponding dimension. If radius values are increased, more neighbouring pixels are included and the image becomes smoother. See a/testing/image_processing_2D for an example of using this field. For more information see the itk software guide.");
+					
 					/* field */
 					set_source_field_data.computed_field_manager =
 						computed_field_simple_package->get_computed_field_manager();
