@@ -398,6 +398,9 @@ already) and allows its contents to be modified.
 			}
 
 			option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+				"The derivative_filter field uses the itk::DerivativeImageFilter code to calculate the derivative of a field in a particular direction. The <field> it operates on is usually a sample_texture field, based on a texture that has been created from image file(s).  The <order> paramater sets the order of the derivative and the <direction> parameter is an integer value that specifies the direction to evaluate the derivative in.  0 corresponds to the x direction. See a/testing/image_processing_2D for an example of using this field. For more information see the itk software guide.");
+
 			/* field */
 			set_source_field_data.computed_field_manager =
 				computed_field_simple_package->get_computed_field_manager();
