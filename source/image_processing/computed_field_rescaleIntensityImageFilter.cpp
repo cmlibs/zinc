@@ -397,6 +397,9 @@ already) and allows its contents to be modified.
 			}
 
 			option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+				"The rescale_intensity_filter field uses the itk::RescaleIntensityImageFilter code to linearly scale the pixel intensity to vary between the specified minimum and maximum intensity values.  The <field> it operates on is usually a sample_texture field, based on a texture that has been created from image file(s). Set the <output_min> and <output_max> values to define the new range to scale to.  See a/testing/image_processing_2D for an example of using this field. For more information see the itk software guide.");
+
 			/* field */
 			set_source_field_data.computed_field_manager =
 				computed_field_simple_package->get_computed_field_manager();
