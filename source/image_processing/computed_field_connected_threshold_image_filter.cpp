@@ -534,6 +534,9 @@ already) and allows its contents to be modified.
 			{
 				/* Handle help separately */
 				option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+				"The connected_threshold_filter field uses the itk::ConnectedThresholdImageFilter code to segment a field. The <field> it operates on is usually a sample_texture field, based on a texture that has been created from image file(s).  The segmentation is based on a region growing algorithm which requires at least one seed point.  To specify the seed points first set the <num_seed_points> and the <dimension> of the image.  The <seed_values> are a list of the coordinates for the first and any subsequent seed points.  Starting from the seed points any neighbouring pixels with an intensity between <lower_threshold> and the <upper_threshold> are added to the region.  Pixels within the region have their pixel intensity set to <replace_value> while the remaining pixels are set to 0. See a/testing/image_processing_2D for an example of using this field.  For more information see the itk software guide.");
+
 				/* field */
 				set_source_field_data.computed_field_manager =
 					computed_field_simple_package->get_computed_field_manager();
