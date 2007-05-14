@@ -431,6 +431,9 @@ already) and allows its contents to be modified.
 
 			/* Discover the source field */
 			option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+				"The canny_edge_detection field uses the itk::CannyEdgeDetectionImageFilter code to detect edges in a field. The <field> it operates on is usually a sample_texture field, based on a texture that has been created from image file(s).  Increasing the <variance> smooths the input image more, which reduces sensitivity to image noise at the expense of losing some detail. Decreasing the <maximum_error> also reduces edges detected as the result of noise.  The <upper_threshold> sets the level which a point must be above to use it as the start of the edge. The edge will then grow from that point until the level drops below the <lower_threshold>. Increasing the <upper_threshold> will decrease the number of edges detected. Increasing the <lower_threshold> will reduce the length of edges.  See a/testing/image_processing_2D for an example of using this field.");
+
 			/* field */
 			set_source_field_data.computed_field_manager =
 				computed_field_simple_package->get_computed_field_manager();
