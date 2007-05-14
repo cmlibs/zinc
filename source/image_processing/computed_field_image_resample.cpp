@@ -481,6 +481,9 @@ already) and allows its contents to be modified.
 			{
 				/* Handle help separately */
 				option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+				"The image_resample field resamples the field to a new user specified size. It is especially useful for resizing image based fields.  The new size of the field is specified by using the <sizes> option with a list of values for the new size in each dimension.  See a/testing/image_processing_2D for an example of using this field.");
+
 				/* source field */
 				set_source_field_data.computed_field_manager=
 					computed_field_image_resample_package->computed_field_manager;
