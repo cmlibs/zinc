@@ -408,6 +408,9 @@ already) and allows its contents to be modified.
 			}
 
 			option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+				"The curvature_anisotropic_filter field uses the itk::CurvatureAnisotropicImageFilter code to smooth a field to reduce noise (or unwanted detail) while preserving edges. The <field> it operates on is usually a sample_texture field, based on a texture that has been created from image file(s).  The smoothing is accomplished by numerically solving a modified curvature diffusion equation.  The accuracy of the numerical solution can be adjusted by varying the <time_step> and <num_iterations> used.  The <conductance> is a parameter used by the diffusion equation.  A high value of conductance causes the image to diffuse (smooth) more, while a low value puts more emphasis on preserving features.  Typical conductance values are often in the range 0.5 to 2. See a/testing/image_processing_2D for an example of using this field. For more information see the itk software guide.");
+
 			/* field */
 			set_source_field_data.computed_field_manager =
 				computed_field_simple_package->get_computed_field_manager();
