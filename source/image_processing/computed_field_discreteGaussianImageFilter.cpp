@@ -398,6 +398,9 @@ already) and allows its contents to be modified.
 			}
 
 			option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+				"The discrete_gaussian_filter field uses the itk::DiscreteGaussianImageFilter code to smooth a field. It is useful for removing noise or unwanted detail.  The <field> it operates on is usually a sample_texture field, based on a texture that has been created from image file(s).  The effect of applying a discrete gaussian image filter is that a pixel value is based on a weighted average of surrounding pixel values, where the closer the pixel the more weight its value is given. Increasing the <variance> increases the width of the gaussian distribution used and hence the number of pixels used to calculate the weighted average. This smooths the image more.  A limit is set on the <max_kernel_width> used to approximate the guassian to ensure the calculation completes.  See a/testing/image_processing_2D for an example of using this field. For more information see the itk software guide.");
+
 			/* field */
 			set_source_field_data.computed_field_manager =
 				computed_field_simple_package->get_computed_field_manager();
