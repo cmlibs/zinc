@@ -402,6 +402,9 @@ already) and allows its contents to be modified.
 			}
 
 			option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+				"The binary_threshold_filter field uses the itk::BinaryThresholdImageFilter code to produce an output field where each pixel has one of two values (either 0 or 1). It is useful for separating out regions of interest. The <field> it operates on is usually a sample_texture field, based on a texture that has been created from image file(s).  Pixels with an intensity range between <lower_threshold> and the <upper_threshold> are set to 1, the rest are set to 0. See a/testing/image_processing_2D for an example of using this field.  For more information see the itk software guide.");
+
 			/* field */
 			set_source_field_data.computed_field_manager =
 				computed_field_simple_package->get_computed_field_manager();
