@@ -974,8 +974,7 @@ Creates an Element_point_tool with Interactive_tool in
 			}
 
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */ 
-			element_point_tool->computed_field_package=computed_field_package;
-			element_point_tool->wx_element_point_tool = (wxElementPointTool *)NULL;
+ 			element_point_tool->wx_element_point_tool = (wxElementPointTool *)NULL;
 #endif /* switch (USER_INTERFACE) */
 		}
 		else

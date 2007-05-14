@@ -2702,6 +2702,10 @@ public:
   wxGraphicsWindow()
   {
   };
+
+	 ~wxGraphicsWindow()
+	 {
+	 };
   
    void OnViewallpressed(wxCommandEvent& event)
   {    
@@ -2897,7 +2901,6 @@ public:
 			toolscrolledwindow =XRCCTRL(*this, "ToolPanel", wxScrolledWindow);
 			toolscrolledwindow->SetSize(toolscrolledwindow->GetSize()+wxSize(0,1));
 			toolscrolledwindow->SetSize(toolscrolledwindow->GetSize()-wxSize(0,1));
-
 // 			leftpanel = XRCCTRL(*this,"LeftPanel", wxScrolledWindow);
 // 			leftpanel->Layout();
 // 			splitterwindow = XRCCTRL(*this, "Splitter",wxSplitterWindow);
@@ -2908,11 +2911,11 @@ public:
 
 
 
-  DECLARE_DYNAMIC_CLASS(wxGraphicsWindow);
+//   DECLARE_DYNAMIC_CLASS(wxGraphicsWindow);
   DECLARE_EVENT_TABLE();
 };
 
-IMPLEMENT_DYNAMIC_CLASS(wxGraphicsWindow, wxFrame)
+// IMPLEMENT_DYNAMIC_CLASS(wxGraphicsWindow, wxFrame)
 
 BEGIN_EVENT_TABLE(wxGraphicsWindow, wxFrame)
 	 EVT_BUTTON(XRCID("Button1"),wxGraphicsWindow::OnViewallpressed)
@@ -2922,8 +2925,6 @@ BEGIN_EVENT_TABLE(wxGraphicsWindow, wxFrame)
 	 EVT_BUTTON(XRCID("FrontViewOptions"),wxGraphicsWindow::OnFrontViewOptionspressed)
 	 EVT_SPLITTER_SASH_POS_CHANGED(XRCID("Splitter"),wxGraphicsWindow::OnSplitterPositionChanged)
 END_EVENT_TABLE()
-
-
 
 class wxInteractiveToolButton : public wxToggleButton
 {

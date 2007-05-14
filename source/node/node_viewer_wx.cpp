@@ -320,8 +320,10 @@ Callback from wxTextChooser when text is entered.
 	 void RenewNodeViewer(wxCollapsiblePaneEvent& event)
 	 {
 			frame = XRCCTRL(*this, "CmguiNodeViewer", wxFrame);
-			frame->SetSize(frame->GetSize()+wxSize(0,1));
-			frame->SetSize(frame->GetSize()-wxSize(0,1));
+			//	frame->SetSize(frame->GetSize()+wxSize(0,1));
+			//frame->SetSize(frame->GetSize()-wxSize(0,1));
+			frame->SetMinSize(wxSize(50,100));
+			frame->SetMaxSize(wxSize(2000,2000));
 	 }
 
 	void OnOKpressed(wxCommandEvent &event)
@@ -516,6 +518,7 @@ static int node_viewer_add_collpane(struct Computed_field *current_field, void *
 {
 	 char *field_name;
 	 Node_viewer *node_viewer = (struct Node_viewer *)node_viewer_void;
+	 field_name = (char *)NULL;
 	 GET_NAME(Computed_field)(current_field, &field_name);
 	 node_viewer->current_field = current_field;
 	 int condition;
@@ -534,7 +537,7 @@ static int node_viewer_add_collpane(struct Computed_field *current_field, void *
 			int length;
 			identifier = (char *)NULL;
 			length = 	strlen(field_name);
-			if (ALLOCATE(identifier,char,length+length+1))
+			if (ALLOCATE(identifier,char,length+length+2))
 			{
 				 strcpy(identifier, field_name);
 				 strcat(identifier, field_name);
