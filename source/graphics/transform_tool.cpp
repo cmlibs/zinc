@@ -116,6 +116,7 @@ DESCRIPTION :
 
 #if defined (WX_USER_INTERFACE)
   wxTransformTool *wx_transform_tool;
+	 wxPoint	 tool_position;
 #endif /* defined (WX_USER_INTERFACE) */
 }; /* struct Transform_tool */
 /*
@@ -221,13 +222,21 @@ Pops up a dialog for editing settings of the Transform_tool.
 	if (transform_tool)
 	{
 #if defined (WX_USER_INTERFACE) /* (WX_USER_INTERFACE) */
-
+		wxPanel *pane;
 		if (!transform_tool->wx_transform_tool)
 			{
 				transform_tool->wx_transform_tool = new wxTransformTool(transform_tool,
 					Graphics_window_get_interactive_tool_panel(graphics_window));
+				pane = XRCCTRL(*transform_tool->wx_transform_tool, "CmguiTransformTool", wxPanel);
+				transform_tool->tool_position = pane->GetPosition();
+				transform_tool->wx_transform_tool->Show();
 			}
-		transform_tool->wx_transform_tool->Show();
+		else
+		{
+			 pane = XRCCTRL(*transform_tool->wx_transform_tool, "CmguiTransformTool", wxPanel);
+			 pane->SetPosition(transform_tool->tool_position);
+			 transform_tool->wx_transform_tool->Show();
+		}
 		
 #else /* (WX_USER_INTERFACE) */
 		display_message(ERROR_MESSAGE, "Transform_tool_pop_up_dialog.  "

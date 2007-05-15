@@ -165,18 +165,19 @@ Contains information for a graphics window.
 #elif defined (WIN32_USER_INTERFACE)
 	HWND hWnd;
 #elif defined (WX_USER_INTERFACE)
-        wxGraphicsWindow *wx_graphics_window;
-        wxPanel *panel;
-        wxPanel *panel2;
-        wxPanel *panel3;
-        wxPanel *panel4;
-        wxChoice *up_view_options;
-        wxButton *front_view_options;
-	     wxScrolledWindow *ToolPanel;
-        wxPanel *interactive_toolbar_panel;
-		 wxFrame *GraphicsWindowTitle;
-	    Cmiss_region *root_region;
-	    wxScrolledWindow *left_panel;
+	 wxGraphicsWindow *wx_graphics_window;
+	 wxPanel *panel;
+	 wxPanel *panel2;
+	 wxPanel *panel3;
+	 wxPanel *panel4;
+	 wxChoice *up_view_options;
+	 wxButton *front_view_options;
+	 wxScrolledWindow *ToolPanel;
+	 wxPanel *interactive_toolbar_panel;
+	 wxFrame *GraphicsWindowTitle;
+	 Cmiss_region *root_region;
+	 wxScrolledWindow *left_panel;
+	 wxCheckBox *wx_perspective_button;
 #endif /* defined (GTK_USER_INTERFACE) */
 	/* scene_viewers and their parameters: */
 	enum Graphics_window_layout_mode layout_mode;
@@ -2488,12 +2489,12 @@ view angle, interest point etc.
 					if (perspective_projection_flag)
 					{
 						Graphics_window_set_projection_mode(window,window->current_pane,
-							SCENE_VIEWER_PERSPECTIVE);
+							SCENE_VIEWER_PERSPECTIVE);	 
 					}
 					if (custom_projection_flag)
 					{
 						Graphics_window_set_projection_mode(window,window->current_pane,
-							SCENE_VIEWER_CUSTOM);
+							SCENE_VIEWER_CUSTOM); 
 					}
 					projection_mode=
 						Graphics_window_get_projection_mode(window,window->current_pane);
@@ -2670,91 +2671,88 @@ view angle, interest point etc.
 	return (return_code);
 } /* modify_Graphics_window_view */
 
-
-
-
 #if defined (WX_USER_INTERFACE)
 class wxGraphicsWindow : public wxFrame
 {
-  Graphics_window *graphics_window;
-  wxToggleButton *last_button;
-	wxChoice *view_options;     
-	wxFrame *Redrawwindow;
-	wxChoice *up_view_options;
-	wxButton *front_view_options;
-	wxString front_choices;
+	 Graphics_window *graphics_window;
+	 wxToggleButton *last_button;
+	 wxChoice *view_options;     
+	 wxFrame *Redrawwindow;
+	 wxChoice *up_view_options;
+	 wxButton *front_view_options;
+	 wxString front_choices;
 	 wxScrolledWindow *leftpanel, *toolscrolledwindow;
 	 wxSplitterWindow *splitterwindow; 
-	int wx_ortho_up_axis;
-	int wx_ortho_front_axis;
-	int location;
- 	int up_choices;
+	 int wx_ortho_up_axis;
+	 int wx_ortho_front_axis;
+	 int location;
+	 int up_choices;
 	 int choices; 
-
+	 
 public:
-
-  wxGraphicsWindow(Graphics_window *graphics_window): 
-    graphics_window(graphics_window)
-  {
-		 last_button = (wxToggleButton*)NULL;
-  };
-
-  wxGraphicsWindow()
-  {
-  };
-
+	 
+	 wxGraphicsWindow(Graphics_window *graphics_window): 
+			graphics_window(graphics_window)
+	 {
+			last_button = (wxToggleButton*)NULL;
+	 };
+	 
+	 wxGraphicsWindow()
+	 {
+	 };
+	 
 	 ~wxGraphicsWindow()
 	 {
 	 };
-  
+	 
    void OnViewallpressed(wxCommandEvent& event)
-  {    
-    if (Graphics_window_view_all(graphics_window))
-    {
-	Graphics_window_update(graphics_window);
-    }
-  }
-  
-  void OnSaveaspressed(wxCommandEvent& event)
-  {
-    enum Texture_storage_type storage;
-    int force_onscreen, height, width;
-    struct Cmgui_image *cmgui_image;
-    struct Cmgui_image_information *cmgui_image_information;
-     
-    wxString file_name;
-    wxString filepath;
-    char*  filename;
-    
-     wxFileDialog *saveImage = new wxFileDialog (this,"Save file","","",
-     "JPEG files (*.jpg)|*.jpg",wxSAVE,wxDefaultPosition);  
-                        
-   if (saveImage->ShowModal() == wxID_OK)
-    { 
-			 file_name=saveImage->GetFilename();
-			 filepath=saveImage->GetPath();
-			 filename=(char*)filepath.mb_str();
-			 strcat (filename,".jpg");
-			 
-			 storage = TEXTURE_RGBA;
-			 force_onscreen = 0;
-			 width = 0;
-			 height = 0;
-			 if(cmgui_image = Graphics_window_get_image(graphics_window,
-						 force_onscreen, width, height, /*preferred_antialias*/0,
-						 /*preferred_transparency_layers*/0, storage))
-	{
-	  cmgui_image_information = CREATE(Cmgui_image_information)();
-	  Cmgui_image_information_add_file_name(cmgui_image_information,filename);
-	  Cmgui_image_write(cmgui_image, cmgui_image_information);
-	  DESTROY(Cmgui_image_information)(&cmgui_image_information);
-	  DESTROY(Cmgui_image)(&cmgui_image);
-	}
-    }
-  }
-
-    void OnViewOptionspressed(wxCommandEvent& event)
-    {  
+	 {    
+			if (Graphics_window_view_all(graphics_window))
+			{
+				 Graphics_window_update(graphics_window);
+			}
+	 }
+	 
+	 void OnSaveaspressed(wxCommandEvent& event)
+	 {
+			enum Texture_storage_type storage;
+			int force_onscreen, height, width;
+			struct Cmgui_image *cmgui_image;
+			struct Cmgui_image_information *cmgui_image_information;
+			
+			wxString file_name;
+			wxString filepath;
+			char*  filename;
+			
+			wxFileDialog *saveImage = new wxFileDialog (this,"Save file","","",
+				 "JPEG files (*.jpg)|*.jpg",wxSAVE,wxDefaultPosition);  
+			
+			if (saveImage->ShowModal() == wxID_OK)
+			{ 
+				 file_name=saveImage->GetFilename();
+				 filepath=saveImage->GetPath();
+				 filename=(char*)filepath.mb_str();
+				 strcat (filename,".jpg");
+				 
+				 storage = TEXTURE_RGBA;
+				 force_onscreen = 0;
+				 width = 0;
+				 height = 0;
+				 if(cmgui_image = Graphics_window_get_image(graphics_window,
+							 force_onscreen, width, height, /*preferred_antialias*/0,
+							 /*preferred_transparency_layers*/0, storage))
+				 {
+						cmgui_image_information = CREATE(Cmgui_image_information)();
+						Cmgui_image_information_add_file_name(cmgui_image_information,filename);
+						Cmgui_image_write(cmgui_image, cmgui_image_information);
+						DESTROY(Cmgui_image_information)(&cmgui_image_information);
+						DESTROY(Cmgui_image)(&cmgui_image);
+				 }
+			}
+	 }
+	 
+	 void OnViewOptionspressed(wxCommandEvent& event)
+	 {  
       view_options = XRCCTRL(*this,"View", wxChoice);
       up_view_options = XRCCTRL(*this,"UpViewOptions", wxChoice);
       front_view_options = XRCCTRL(*this,"FrontViewOptions", wxButton);
@@ -2762,106 +2760,119 @@ public:
       
       choices = view_options->GetCurrentSelection();
       if (choices == 0) 
-	{
-        front_view_options->Enable();
-	up_view_options->Enable();
-	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_2D);
-	}
+			{
+				 front_view_options->Enable();
+				 up_view_options->Enable();
+				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_2D);
+			}
       else if (choices == 1 )
-	{
-	front_view_options->Disable();
-	up_view_options->Disable();
-	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_FREE_ORTHO);
-	}
+			{
+				 front_view_options->Disable();
+				 up_view_options->Disable();
+				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_FREE_ORTHO);
+			}
       else if (choices == 2)
-	{
-	front_view_options->Enable();
-	up_view_options->Enable();
-	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_FRONT_BACK);  
-	}
+			{
+				 front_view_options->Enable();
+				 up_view_options->Enable();
+				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_FRONT_BACK);  
+			}
       else if (choices == 3)
-	{
-        front_view_options->Enable();
-	up_view_options->Enable();
-	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE);
-	}
+			{
+				 front_view_options->Enable();
+				 up_view_options->Enable();
+				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE);
+			}
       else if (choices == 4)
-	{
-        front_view_options->Enable();
-	up_view_options->Enable();
-	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC);
-	}
+			{
+				 front_view_options->Enable();
+				 up_view_options->Enable();
+				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC);
+			}
       else if (choices == 5)
-	{
-        front_view_options->Disable();
-	up_view_options->Disable();
-  	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D);  
-	}
+			{
+				 front_view_options->Disable();
+				 up_view_options->Disable();
+				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D);  
+			}
       else if (choices == 6)
-	{
-        front_view_options->Disable();
-	up_view_options->Disable();
-  	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_TWO_FREE);  
-	}
+			{
+				 front_view_options->Disable();
+				 up_view_options->Disable();
+				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_TWO_FREE);  
+			}
       else if (choices == 7)
-	{
-        front_view_options->Disable();
-	up_view_options->Disable();
-	Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_SIMPLE);
-	}
+			{
+				 front_view_options->Disable();
+				 up_view_options->Disable();
+				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_SIMPLE);
+			}
       else
-	{
-	printf("OnViewOptionspressed error. Invalid argument.");
-	}
-			Redrawwindow->Layout();
-		}
-
-    void OnUpViewOptionspressed(wxCommandEvent& event)
-    {
+			{
+				 printf("OnViewOptionspressed error. Invalid argument.");
+			}
+			Redrawwindow->SetSize(Redrawwindow->GetSize()+wxSize(0,1));
+			Redrawwindow->SetSize(Redrawwindow->GetSize()-wxSize(0,1));
+	 }
+	 
+	 void OnPerspectivePressed(wxCommandEvent& event)
+	 {
+			enum Scene_viewer_projection_mode projection_mode;
+			projection_mode = Graphics_window_get_projection_mode(graphics_window, graphics_window->current_pane);
+			if (SCENE_VIEWER_PERSPECTIVE == projection_mode)
+			{
+				 Graphics_window_set_projection_mode(graphics_window,
+						graphics_window->current_pane, SCENE_VIEWER_PARALLEL);
+			}																				 
+			else
+			{
+				 Graphics_window_set_projection_mode(graphics_window,
+						graphics_window->current_pane, SCENE_VIEWER_PERSPECTIVE);
+			}		
+	 }
+	 
+	 void OnUpViewOptionspressed(wxCommandEvent& event)
+	 {
       wxString option[6] = { "x", "y", "z","-x", "-y", "-z"};
-
       up_view_options = XRCCTRL(*this,"UpViewOptions", wxChoice);
       front_view_options = XRCCTRL(*this,"FrontViewOptions", wxButton);
       up_choices = up_view_options->GetCurrentSelection();
       front_choices = front_view_options->GetLabel();
-       
       for (int n=0; n<6; n++) {
-				if (front_choices == option[n])
-	    	location = n;
+				 if (front_choices == option[n])
+						location = n;
       }
       if ((up_choices == location) || (up_choices == ((location+3) % 6)))
-	{     
-	 front_view_options->SetLabel(option[(location+1) % 6]);
-	}
-
+			{     
+				 front_view_options->SetLabel(option[(location+1) % 6]);
+			}
+			
       front_choices = front_view_options->GetLabel();
       wx_ortho_up_axis = axis_name_to_axis_number((char*) option[up_choices].mb_str());
       wx_ortho_front_axis = axis_name_to_axis_number((char*) front_choices.mb_str());
       Graphics_window_set_orthographic_axes(graphics_window,wx_ortho_up_axis, wx_ortho_front_axis);
       Graphics_window_set_layout_mode(graphics_window,graphics_window->layout_mode);
       Graphics_window_update(graphics_window);
-     }
-
-    void OnFrontViewOptionspressed(wxCommandEvent& event)
-    {
+	 }
+	 
+	 void OnFrontViewOptionspressed(wxCommandEvent& event)
+	 {
       wxString option[6] = { "x", "y", "z","-x", "-y", "-z"};
-
       up_view_options = XRCCTRL(*this,"UpViewOptions", wxChoice);
       front_view_options = XRCCTRL(*this,"FrontViewOptions", wxButton);
       up_choices = up_view_options->GetCurrentSelection();
       front_choices = front_view_options->GetLabel();
-      
       for (int n=0; n<6; n++) {
-	if (front_choices == option[n])
-	  location = n;
-      }
+				 if (front_choices == option[n])
+						location = n;
+			}
       {
-      if ((((location+1) % 6) == up_choices) || (((location+4) % 6) == up_choices))
-         front_view_options->SetLabel(option[(location+2) % 6]);
-      else
-         front_view_options->SetLabel(option[(location+1) % 6]);
+				 if ((((location+1) % 6) == up_choices) || (((location+4) % 6) == up_choices))
+						front_view_options->SetLabel(option[(location+2) % 6]);
+				 else
+						front_view_options->SetLabel(option[(location+1) % 6]);
       }
-       
+			
       front_choices = front_view_options->GetLabel();
       wx_ortho_up_axis = axis_name_to_axis_number((char*) option[up_choices].mb_str());
       wx_ortho_front_axis = axis_name_to_axis_number((char*) front_choices.mb_str());
@@ -2909,17 +2920,13 @@ public:
 // 			Redrawwindow->Layout();
 	 }
 
-
-
-//   DECLARE_DYNAMIC_CLASS(wxGraphicsWindow);
   DECLARE_EVENT_TABLE();
 };
-
-// IMPLEMENT_DYNAMIC_CLASS(wxGraphicsWindow, wxFrame)
 
 BEGIN_EVENT_TABLE(wxGraphicsWindow, wxFrame)
 	 EVT_BUTTON(XRCID("Button1"),wxGraphicsWindow::OnViewallpressed)
 	 EVT_BUTTON(XRCID("Button2"),wxGraphicsWindow::OnSaveaspressed)
+	 EVT_CHECKBOX(XRCID("PerspectiveButton"), wxGraphicsWindow::OnPerspectivePressed)
 	 EVT_CHOICE(XRCID("View"),wxGraphicsWindow::OnViewOptionspressed)
 	 EVT_CHOICE(XRCID("UpViewOptions"),wxGraphicsWindow::OnUpViewOptionspressed)
 	 EVT_BUTTON(XRCID("FrontViewOptions"),wxGraphicsWindow::OnFrontViewOptionspressed)
@@ -3774,6 +3781,7 @@ it.
 	
 			window->GraphicsWindowTitle = XRCCTRL(*window->wx_graphics_window, "CmguiGraphicsWindow", wxFrame);
 			window->GraphicsWindowTitle->SetTitle(window_title);
+			window->wx_perspective_button = XRCCTRL(*window->wx_graphics_window,"PerspectiveButton", wxCheckBox);
 			if (window_title)
 				 DEALLOCATE(window_title);
 			window->GraphicsWindowTitle->SetMinSize(wxSize(0,0));
@@ -4934,8 +4942,6 @@ Sets the layout mode in effect on the <window>.
 					window->panel2->Show();
 					window->panel3->Hide();
 					window->panel4->Hide();					
-				    
-					
 					/* un-grey orthographic view controls */
 					//XtSetSensitive(window->orthographic_form,True);
 #endif /* defined (WX_USER_INTERFACE) */
@@ -5227,6 +5233,31 @@ Must call Graphics_window_view_changed after changing tied pane.
 						XtSetSensitive(window->perspective_button,True);
 					}
 #endif /* defined (MOTIF) */
+
+#if defined (WX_USER_INTERFACE)
+					/* set perspective widgets */
+					if (window->wx_perspective_button)
+					{
+						 if (SCENE_VIEWER_PERSPECTIVE == projection_mode)
+						 {
+								window->wx_perspective_button->SetValue(true);
+						 }
+						 else
+						 {
+								window->wx_perspective_button->SetValue(false);
+						 }
+						 if ((!Graphics_window_layout_mode_is_projection_mode_valid_for_pane(
+										 window->layout_mode,pane_no,SCENE_VIEWER_PERSPECTIVE))||
+								(SCENE_VIEWER_CUSTOM==projection_mode))
+						 {
+								window->wx_perspective_button->Disable();
+						 }
+						 else
+						 {
+								window->wx_perspective_button->Enable();
+						 }
+					}
+#endif /* defined (WX_USER_INTERFACE) */
 				}
 			}
 		}
@@ -7735,13 +7766,12 @@ DESCRIPTION :
 Returns the panel to embed the interactive tool into.
 ==============================================================================*/
 {
-	wxScrolledWindow *panel;
-
+	 wxScrolledWindow *panel;
 	ENTER(Graphics_window_get_interactive_tool_panel);
 	if (graphics_window)
 	{
-		panel = graphics_window->ToolPanel;
-		panel->SetScrollbars(-1, 20, -1, 50);
+		 panel = graphics_window->ToolPanel;
+		 panel->SetScrollbars(-1, 20, -1, 50);
 	}
 	else
 	{

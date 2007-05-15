@@ -197,6 +197,7 @@ changes in node position and derivatives etc.
 #if defined (WX_USER_INTERFACE)
 	wxNodeTool *wx_node_tool;
 	struct MANAGER(Computed_field) *computed_field_manager;
+	 wxPoint tool_position;
 #endif /* defined (WX_USER_INTERFACE) */
 }; /* struct Node_tool */
 
@@ -2706,8 +2707,6 @@ Set the selected option in the Coordinate Field chooser.
 	{    
 		struct LIST(FE_node) *destroy_node_list;	 
 		button_destroy = XRCCTRL(*this, "ButtonDestroy", wxButton);;
-
-
 	 if (destroy_node_list=CREATE(LIST(FE_node))())
 	   {
 	     COPY_LIST(FE_node)(destroy_node_list,
@@ -3395,6 +3394,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			/* Set defaults until we have some sort of region chooser */
 			Node_tool_set_Cmiss_region(node_tool, node_tool->root_region);
 			node_tool->current_region_path = (char *)NULL;
+			node_tool->tool_position=wxPoint(0,0);
 #else /* defined (MOTIF) */
 			node_tool->current_region_path = (char *)NULL;
 #endif /* defined (USER_INTERFACE) */
@@ -3505,12 +3505,22 @@ Pops up a dialog for editing settings of the Node_tool.
 		/* make sure in addition that it is not shown as an icon */
 		XtVaSetValues(node_tool->window_shell, XmNiconic, False, NULL);
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
+		wxPanel *pane;
 		if (!node_tool->wx_node_tool)
-			{
-				node_tool->wx_node_tool = new wxNodeTool(node_tool,
-					Graphics_window_get_interactive_tool_panel(graphics_window));
-			}
-		node_tool->wx_node_tool->Show();
+		{
+			 wxScrolledWindow *GeneralSettingPanel = Graphics_window_get_interactive_tool_panel(graphics_window);
+			 node_tool->wx_node_tool = new wxNodeTool(node_tool,
+					GeneralSettingPanel);
+			 pane = XRCCTRL(*node_tool->wx_node_tool, "CmguiNodeTool", wxPanel);
+			 node_tool->tool_position = pane->GetPosition();
+			 node_tool->wx_node_tool->Show();
+		}
+		else
+		{
+			 pane = XRCCTRL(*node_tool->wx_node_tool, "CmguiNodeTool", wxPanel);
+			 pane->SetPosition(node_tool->tool_position);
+			 node_tool->wx_node_tool->Show();
+		}
 #else /* switch (USER_INTERFACE) */
 		display_message(ERROR_MESSAGE, "Node_tool_pop_up_dialog.  "
 			"No dialog implemented for this User Interface");

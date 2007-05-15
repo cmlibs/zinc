@@ -140,6 +140,7 @@ Object storing all the parameters for interactively selecting element points.
 
 #if defined (WX_USER_INTERFACE)
 	 wxElementPointTool *wx_element_point_tool;
+	 wxPoint tool_position;
 #endif /* defined (WX_USER_INTERFACE) */
 
 }; /* struct Element_point_tool */
@@ -1067,12 +1068,21 @@ Pops up a dialog for editing settings of the Element_point_tool.
 		/* make sure in addition that it is not shown as an icon */
 		XtVaSetValues(element_point_tool->window_shell, XmNiconic, False, NULL);
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
+		wxPanel *pane;
 		if (!element_point_tool->wx_element_point_tool)
-			{
-				 element_point_tool->wx_element_point_tool= new wxElementPointTool(element_point_tool,
-           Graphics_window_get_interactive_tool_panel(graphics_window));
-			}
-		element_point_tool->wx_element_point_tool->Show();
+		{
+			 element_point_tool->wx_element_point_tool= new wxElementPointTool(element_point_tool,
+					Graphics_window_get_interactive_tool_panel(graphics_window));
+			 pane = XRCCTRL(*element_point_tool->wx_element_point_tool, "CmguiElementPointTool", wxPanel);
+			 element_point_tool->tool_position = pane->GetPosition();
+			 element_point_tool->wx_element_point_tool->Show();
+		}
+		else
+		{
+			 pane = XRCCTRL(*element_point_tool->wx_element_point_tool, "CmguiElementPointTool", wxPanel);
+			 pane->SetPosition(element_point_tool->tool_position);
+			 element_point_tool->wx_element_point_tool->Show();
+		}
 #else /* switch (USER_INTERFACE) */
 		display_message(ERROR_MESSAGE, "Element_point_tool_pop_up_dialog.  "
 			"No dialog implemented for this User Interface");

@@ -42,6 +42,13 @@
 	          							<default>1</default>		 
   	        						</object>
               				</object>
+              				<object class="sizeritem">
+	 	        						<flag>>wxEXPAND</flag>
+    	        					<object class="wxCheckBox" name="PerspectiveButton">
+	          							<label>Perspective</label> 	
+	          							<default>1</default>		 
+  	        						</object>
+              				</object>
            					</object>
 	 								</object>
 

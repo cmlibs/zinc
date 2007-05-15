@@ -120,7 +120,6 @@ DESCRIPTION :
 		 element will automatically be applied globally */
 	int auto_apply, child_edited, child_expanded, transformation_edited,
 		transformation_expanded;
-
 	/* access gt_element_group for current_object if applicable */
 	 struct GT_element_group *gt_element_group, *edit_gt_element_group;
 	Scene *scene;
@@ -1617,14 +1616,19 @@ Check if the auto apply clicked or not, if clicked, apply the current changes
 	{
 		autocheckbox = XRCCTRL(*this, "AutoCheckBox", wxCheckBox);
 		if(autocheckbox->IsChecked())
-			{
-				if (!GT_element_group_modify(gt_element_group,
-																	edit_gt_element_group))
-					{
-						display_message(ERROR_MESSAGE, "wxSceneEditor::UpdateGraphicalElementList.  "
-														"Could not modify graphical element");
-					}
-		  }
+		{
+			 if (!GT_element_group_modify(gt_element_group,
+						 edit_gt_element_group))
+			 {
+					display_message(ERROR_MESSAGE, "wxSceneEditor::UpdateGraphicalElementList.  "
+						 "Could not modify graphical element");
+			 }
+		}
+		else
+		{
+			 applybutton->Enable();
+			 revertbutton->Enable();
+		}
 	}
 
 void RenewLabelonList(GT_element_settings *settings)
@@ -1751,8 +1755,8 @@ When changes have been made by the user, renew the label on the list
 			}
 		else
 			{
-				applybutton->Enable();
-		       revertbutton->Enable();
+				applybutton->Disable();
+		       revertbutton->Disable();
 			}
 	}
 
@@ -1771,17 +1775,17 @@ When changes have been made by the user, renew the label on the list
 										 scene_editor->scene_object))
 							{
 								 graphicalitemschecklist =  XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
+								 int selection=graphicalitemschecklist->GetSelection();
 								 graphicalitemschecklist->Clear();
-								 if (!for_each_settings_in_GT_element_group(scene_editor->gt_element_group,
-											 Scene_editor_add_element_settings_item, (void *)scene_editor));
-								 {
-										display_message(ERROR_MESSAGE, "Scene_editor_revert_child.  "
-											 "Could not revert graphical element");
-										for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
-											 Scene_editor_add_element_settings_item, (void *)scene_editor);
-										return_code = 0;
-								 }
-								 
+								 for_each_settings_in_GT_element_group(scene_editor->gt_element_group,
+										Scene_editor_add_element_settings_item, (void *)scene_editor);
+								 scene_editor->edit_gt_element_group =
+										create_editor_copy_GT_element_group(gt_element_group);
+								 graphicalitemschecklist->SetSelection(selection);
+								 scene_editor->lower_panel->Show();
+								 set_general_settings((void *)scene_editor);
+								 UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
+									 scene_editor->edit_gt_element_group, selection+1));
 							}
 							else
 							{
@@ -1923,6 +1927,8 @@ When changes have been made by the user, renew the label on the list
 
  	void 	UpdateGraphicalElementList(GT_element_settings *settings)
  	{
+		 wxScrolledWindow *scenededitingpanel= XRCCTRL(*this, "SceneEditing",wxScrolledWindow);
+		 scenededitingpanel->Show();
  		graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
 		int selection =	graphicalitemschecklist->GetSelection();
 		REACCESS(GT_element_settings)(&scene_editor->current_settings, settings);
@@ -2036,8 +2042,8 @@ When changes have been made by the user, renew the label on the list
 			}
 	}
 
-	void GraphicalItemsListBoxClicked(wxCommandEvent &event)
-	{
+  void GraphicalItemsListBoxClicked(wxCommandEvent &event)
+   {
 		 graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
 		 int selection= graphicalitemschecklist->GetSelection();
 		 if (-1 != selection)
@@ -2245,45 +2251,54 @@ When changes have been made by the user, renew the label on the list
 			}
 	}
 
-	void RemoveFromSettingList(wxCommandEvent &event)
-	{
-	unsigned int position;
-	if 	(scene_editor->edit_gt_element_group)
-		{
- 		graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
-		position = GT_element_group_get_settings_position(
-			scene_editor->edit_gt_element_group, scene_editor->current_settings);
-		GT_element_group_remove_settings(
-			scene_editor->edit_gt_element_group, scene_editor->current_settings);
-		/* inform the client of the changes */
-		graphicalitemschecklist->Clear();
-		for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
-		 Scene_editor_add_element_settings_item, (void *)scene_editor);
-		if (position>=1)
+void RemoveFromSettingList(wxCommandEvent &event)
+{
+	 unsigned int position;
+	 if 	(scene_editor->edit_gt_element_group)
+	 {
+			graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
+			position = GT_element_group_get_settings_position(
+				 scene_editor->edit_gt_element_group, scene_editor->current_settings);
+			GT_element_group_remove_settings(
+				 scene_editor->edit_gt_element_group, scene_editor->current_settings);
+			/* inform the client of the changes */
+			if (graphicalitemschecklist->GetCount()>1)
 			{
-				if (graphicalitemschecklist->GetCount()>=position)
-					{
-						graphicalitemschecklist->SetSelection(position-1);
-						UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
-																					scene_editor->edit_gt_element_group, position));
-					}
-				else
-					{
-						graphicalitemschecklist->SetSelection(position-2);
-						UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
-																					scene_editor->edit_gt_element_group, position-1));
-					}
+				 graphicalitemschecklist->Clear();
+				 for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
+						Scene_editor_add_element_settings_item, (void *)scene_editor);
+				 if (position>1)
+				 {
+						if (graphicalitemschecklist->GetCount()>=position)
+						{
+							 graphicalitemschecklist->SetSelection(position-1);
+							 UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
+																						 scene_editor->edit_gt_element_group, position));
+						}
+						else
+						{
+							 graphicalitemschecklist->SetSelection(position-2);
+							 UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
+																						 scene_editor->edit_gt_element_group, position-1));
+						}
+				 }
 			}
-		}
-	else
-		{
+			else
+			{
+				 graphicalitemschecklist->Clear();
+				 wxScrolledWindow *scenededitingpanel= XRCCTRL(*this, "SceneEditing",wxScrolledWindow);
+				 scenededitingpanel->Hide();
+			}
+	 }
+	 else
+	 {
 			display_message(ERROR_MESSAGE,
-			   "graphical_element_editor_delete_button_CB.  Invalid argument(s)");
-		}
-	/*check if autoapply*/
-	AutoApplyorNot(scene_editor->gt_element_group,
-								 scene_editor->edit_gt_element_group);
-	}
+				"graphical_element_editor_delete_button_CB.  Invalid argument(s)");
+	 }
+	 /*check if autoapply*/
+	 AutoApplyorNot(scene_editor->gt_element_group,
+			scene_editor->edit_gt_element_group);
+}
 
 	void MoveUpInSettingList(wxCommandEvent &event)
 	{
@@ -4222,7 +4237,7 @@ return(1);
  };
 
 static int Scene_editor_add_element_settings_item(
-																									struct GT_element_settings *settings, void *scene_editor_void)
+	 struct GT_element_settings *settings, void *scene_editor_void)
 /*******************************************************************************
 LAST MODIFIED : 19 November 2001
 

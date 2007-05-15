@@ -145,6 +145,7 @@ Object storing all the parameters for interactively selecting elements.
 
 #if defined (WX_USER_INTERFACE)
 	 wxElementTool *wx_element_tool;
+	 wxPoint tool_position;
 #endif /* defined (WX_USER_INTERFACE) */
 }; /* struct Element_tool */
 
@@ -1328,12 +1329,21 @@ Pops up a dialog for editing settings of the Element_tool.
 		/* make sure in addition that it is not shown as an icon */
 		XtVaSetValues(element_tool->window_shell, XmNiconic, False, NULL);
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
+		wxPanel *pane;
 		if (!element_tool->wx_element_tool)
-			{
-				element_tool->wx_element_tool = new wxElementTool(element_tool,
+		{
+			 element_tool->wx_element_tool = new wxElementTool(element_tool,
 					Graphics_window_get_interactive_tool_panel(graphics_window));
-			}
-		element_tool->wx_element_tool->Show();
+			 pane = XRCCTRL(*element_tool->wx_element_tool, "CmguiElementTool", wxPanel);
+			 element_tool->tool_position = pane->GetPosition();
+			 element_tool->wx_element_tool->Show();
+		}
+		else
+		{
+			 pane = XRCCTRL(*element_tool->wx_element_tool, "CmguiElementTool", wxPanel);
+			 pane->SetPosition(element_tool->tool_position);
+			 element_tool->wx_element_tool->Show();
+		}
 #else /* switch (USER_INTERFACE) */
 		display_message(ERROR_MESSAGE, "Element_tool_pop_up_dialog.  "
 			"No dialog implemented for this User Interface");
