@@ -76,6 +76,7 @@ static char command_window_uidh[] =
 #include "wx/xrc/xmlres.h"
 #include "command/command_window.xrch"
 #include <wx/aboutdlg.h>
+#include <wx/fontdlg.h>
 #endif /* defined (WX_USER_INTERFACE)*/
 extern "C" {
 #include "user_interface/message.h"
@@ -1765,6 +1766,34 @@ public:
 				 "gfx edit scene");
 	 }
 
+	 void OnFormatFont(wxCommandEvent& event)
+	 {
+			wxFontData fdata;
+			wxFont font;
+			wxColour colour;
+			command_line = XRCCTRL(*this, "CommandLine", wxTextCtrl);
+			output_list = XRCCTRL(*this,"OutputWindow", wxTextCtrl);
+			history_list = XRCCTRL(*this,"CommandHistory", wxListBox);
+			font = history_list->GetFont();
+			fdata.SetInitialFont(font);
+			colour = history_list->GetForegroundColour();
+			fdata.SetColour(colour);
+			fdata.SetShowHelp(true);
+			wxFontDialog *FontDlg = new wxFontDialog(this, fdata);
+
+			if(FontDlg->ShowModal() == wxID_OK)
+			{
+				 fdata = FontDlg->GetFontData();
+				 font = fdata.GetChosenFont();
+				 output_list->SetFont(font);
+				 command_line->SetFont(font);
+				 history_list->SetFont(font);
+				 output_list->SetForegroundColour(fdata.GetColour()); 
+				 command_line->SetForegroundColour(fdata.GetColour()); 
+				 history_list->SetForegroundColour(fdata.GetColour()); 
+			}
+	 } 
+	 
 	 void ShowSimpleAboutDialog(wxCommandEvent& WXUNUSED(event))
 	 {
 			wxAboutDialogInfo info;
@@ -1826,6 +1855,7 @@ BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	 EVT_MENU(XRCID("ModelDataViewer"),wxCommandWindow::dataviewer)	 
 	 EVT_MENU(XRCID("ModelNodeviewer"),wxCommandWindow::nodeviewer)
 	 EVT_MENU(XRCID("GraphicsSceneeditor"),wxCommandWindow::sceneeditor)
+	 EVT_MENU(XRCID("FontCmgui"),wxCommandWindow::OnFormatFont)
 	 EVT_MENU(XRCID("AboutCmgui"),wxCommandWindow::ShowSimpleAboutDialog)
 	EVT_MENU(XRCID("MenuExit"),wxCommandWindow::Exit)
 END_EVENT_TABLE()

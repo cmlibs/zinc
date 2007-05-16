@@ -667,8 +667,8 @@ public:
 	}
 
 	/* Set the data_chooser*/
-	Spectrum *temp_spectrum;
-	Computed_field *temp_data_field;
+	Spectrum *temp_spectrum = (Spectrum *)NULL;
+	Computed_field *temp_data_field = (Computed_field *)NULL;
 	if (scene_editor->current_settings != NULL)
 	{
 	GT_element_settings_get_data_spectrum_parameters(scene_editor->current_settings,
@@ -1971,20 +1971,17 @@ When changes have been made by the user, renew the label on the list
 		frame->Layout();
  	}
 
-	void SetSceneObjectPosition(Scene_object *scene_object, Scene *scene, int selection)
-	{
- 		REACCESS(Scene_object)(&scene_editor->scene_object, scene_object);
-		Scene_set_scene_object_position(scene,scene_object,selection);
-	}
-
 	void  SceneObjectUpClicked(wxCommandEvent &event)
 	{
- 		scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
- 		int selection = scenechecklist->GetSelection();
+		 scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
+		 int selection = scenechecklist->GetSelection();
 		if (selection>=1)
 			{
-				SetSceneObjectPosition(Scene_get_scene_object_at_position(scene_editor->scene,selection+1), scene_editor->scene, selection);
-				scenechecklist->Clear();
+				 struct Scene *parent_scene;
+				 parent_scene = Scene_object_get_parent_scene(Scene_get_scene_object_at_position(scene_editor->scene,selection+1));
+				 Scene_set_scene_object_position(parent_scene,
+						Scene_get_scene_object_at_position(scene_editor->scene,selection+1), selection);
+				 scenechecklist->Clear();
 				for_each_Scene_object_in_Scene(scene_editor->scene,
  				  add_scene_object_to_scene_check_box, (void *)scene_editor);
 				scenechecklist->SetSelection(selection-1);
@@ -2016,7 +2013,10 @@ When changes have been made by the user, renew the label on the list
 		int number = scenechecklist->GetCount();
 		if (number>=(selection+2))
 		{
-				 SetSceneObjectPosition(Scene_get_scene_object_at_position(scene_editor->scene,selection+1), scene_editor->scene,(selection+2));
+				 struct Scene *parent_scene;
+				 parent_scene = Scene_object_get_parent_scene(Scene_get_scene_object_at_position(scene_editor->scene,selection+1));
+				 Scene_set_scene_object_position(parent_scene,
+						Scene_get_scene_object_at_position(scene_editor->scene,selection+1), selection+2);
 				scenechecklist->Clear();
 				for_each_Scene_object_in_Scene(scene_editor->scene,
 					 add_scene_object_to_scene_check_box, (void *)scene_editor);
@@ -2233,7 +2233,7 @@ When changes have been made by the user, renew the label on the list
 							}
 					}
 				if (return_code && GT_element_group_add_settings(
-																												 scene_editor->edit_gt_element_group, settings, 0))
+							 scene_editor->edit_gt_element_group, settings, 0))
 					{
 						//Update the list of settings
 						wxCheckListBox *graphicalitemschecklist =  XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
@@ -2242,7 +2242,7 @@ When changes have been made by the user, renew the label on the list
 						  Scene_editor_add_element_settings_item, (void *)scene_editor);
 						graphicalitemschecklist->SetSelection((graphicalitemschecklist->GetCount()-1));
 						UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
-							 scene_editor->edit_gt_element_group, graphicalitemschecklist->GetCount()-1));
+							 scene_editor->edit_gt_element_group, graphicalitemschecklist->GetCount()));
 					}
 				if (!return_code)
 					{

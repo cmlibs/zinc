@@ -320,8 +320,6 @@ Callback from wxTextChooser when text is entered.
 	 void RenewNodeViewer(wxCollapsiblePaneEvent& event)
 	 {
 			frame = XRCCTRL(*this, "CmguiNodeViewer", wxFrame);
-			//	frame->SetSize(frame->GetSize()+wxSize(0,1));
-			//frame->SetSize(frame->GetSize()-wxSize(0,1));
 			frame->SetMinSize(wxSize(50,100));
 			frame->SetMaxSize(wxSize(2000,2000));
 	 }
@@ -505,7 +503,6 @@ public:
   {
   }
 
-
   void OnNodeViewerTextCtrlEntered(wxCommandEvent& Event)
   {
 		 node_viewer->wx_node_viewer->NodeViewerTextEntered
@@ -562,7 +559,6 @@ static int node_viewer_add_collpane(struct Computed_field *current_field, void *
 			{
 				 DEALLOCATE(identifier);
 			}
-
  			if (node_viewer_set_node_field((void *)node_viewer,
 						node_viewer->current_node, node_viewer->current_field))
 			{
@@ -1353,7 +1349,7 @@ and their labels.
 										if (tmp == 0)
 										{
 											 node_viewer->grid_field = new wxGridSizer(number_of_components+1, node_viewer->number_of_nodal_value_types+1,1,1);		
-											 node_viewer->grid_field->Add(new wxStaticText(node_viewer->win, -1, wxT("")),1,wxADJUST_MINSIZE, 0);	
+											 node_viewer->grid_field->Add(new wxStaticText(node_viewer->win, -1, wxT("")),1,wxEXPAND|wxADJUST_MINSIZE, 0);	
 											 tmp = 1;
 										}
 										if (return_code)
@@ -1376,11 +1372,11 @@ and their labels.
 																for (int n=count; n < node_viewer->number_of_nodal_value_types+1; n++) 
 																{ 
 																	 node_viewer->grid_field->Add(new wxStaticText(node_viewer->win, -1, wxT("")),1,
-																			wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxADJUST_MINSIZE, 0);
+																			wxEXPAND|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxADJUST_MINSIZE, 0);
 																}
 														 }
 														 node_viewer->grid_field->Add(new wxStaticText(node_viewer->win, -1, wxT(tmp_string)),1,
-																wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxADJUST_MINSIZE, 0);
+																wxEXPAND|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxADJUST_MINSIZE, 0);
 														 indicator =0;
 														 count =1;
 													}
@@ -1616,12 +1612,6 @@ unmanaged nodes to this widget.
 						}					
 					}
 				}
-// 				node_field_viewer_widget_update_values(node_field_viewer);
-// 				XtManageChild(node_field_viewer->widget);
-			}
-			else
-			{
-// 				XtUnmanageChild(node_field_viewer->widget);
 			}
 			return_code=1;
 		}

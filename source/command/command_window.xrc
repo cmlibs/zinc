@@ -118,6 +118,12 @@
         </object>
       </object>
 	</object>
+    <object class ="wxMenu">
+      <label>Font</label>
+      <object class = "wxMenuItem" name="FontCmgui">
+        <label>Set Font</label>
+      </object>
+	</object>
     <object class ="wxMenu" name="MenuHelp">
       <label>Help</label>
       <object class = "wxMenuItem" name="AboutCmgui">
