@@ -72,11 +72,24 @@ LAST MODIFIED : 11 April 2007
 DESCRIPTION :
 ==============================================================================*/
 
+
 int DESTROY(Graphics_font_package)(struct Graphics_font_package **package_address);
 /*******************************************************************************
 LAST MODIFIED : 11 April 2007
 
 DESCRIPTION :
+==============================================================================*/
+
+struct MANAGER(Graphics_font)	
+	 *Graphics_font_package_get_font_manager(
+		 struct Graphics_font_package *font_package);
+/*******************************************************************************
+LAST MODIFIED : 17 May 2007
+
+DESCRIPTION :
+Extracts the font_manager from the graphics_font_package. Note that
+the rest of the program should use this sparingly - it is really only here to
+allow interfacing to the choose_object widgets.
 ==============================================================================*/
 
 int Graphics_font_package_define_font(

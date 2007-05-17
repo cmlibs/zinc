@@ -66,6 +66,7 @@ extern "C" {
 #include "graphics/scene_editor_wx.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field.h"
+#include "graphics/font.h"
 }
 #include "graphics/scene_editor_wx.xrch"
 #endif /* defined (WX_USER_INTERFACE)*/
@@ -138,6 +139,7 @@ DESCRIPTION :
 	struct LIST(GT_object) *glyph_list;	
 	 struct MANAGER(VT_volume_texture) *volume_texture_manager;
 	 struct MANAGER(Computed_field) *computed_field_manager;
+	 struct MANAGER(Graphics_font) *font_manager;
 	 struct FE_field *native_discretization_field;
 	 struct Computed_field *default_coordinate_field, *coordinate_field, *radius_scalar_field ;
 	 struct Cmiss_region *root_region;
@@ -425,7 +427,7 @@ class wxSceneEditor : public wxFrame
 		*glyphscalefactorstext, *useelementtypetext, *xidiscretizationmodetext,
 		*discretizationtext, *densityfieldtext,*xitext, *streamtypetext, *streamlengthtext,
 		*streamwidthtext, *streamvectortext, *linewidthtext, *streamlinedatatypetext,
-		*spectrumtext, *rendertypetext;
+		 *spectrumtext, *rendertypetext, *fonttext;
 	wxButton *sceneupbutton, scenedownbutton, *applybutton, *revertbutton;
 	wxCheckBox *nativediscretizationcheckbox,*autocheckbox,	*coordinatefieldcheckbox,
 		*radiusscalarcheckbox, *orientationscalecheckbox,*variablescalecheckbox,
@@ -438,7 +440,7 @@ class wxSceneEditor : public wxFrame
 	 wxPanel  *FE_chooser_panel,	*coordinate_field_chooser_panel,
 		*radius_scalar_chooser_panel, *iso_scalar_chooser_panel, *glyph_chooser_panel,
 		*orientation_scale_field_chooser_panel, *variable_scale_field_chooser_panel,
-		*label_chooser_panel, *use_element_type_chooser_panel, 
+			*label_chooser_panel, *font_chooser_panel, *use_element_type_chooser_panel, 
 		*xi_discretization_mode_chooser_panel,	*native_discretization_field_chooser_panel,
 		*density_field_chooser_panel,*streamline_type_chooser_panel,
 		*stream_vector_chooser_panel , *streamline_data_type_chooser_panel,
@@ -486,6 +488,9 @@ class wxSceneEditor : public wxFrame
 	*variable_scale_field_chooser;
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 	*label_field_chooser;
+// 	 DEFINE_MANAGER_CLASS(Graphics_font); 
+// 	 Managed_object_chooser<Graphics_font,MANAGER_CLASS(Graphics_font)>
+// 	 *font_chooser;	
 	DEFINE_ENUMERATOR_TYPE_CLASS(Use_element_type);
 	Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Use_element_type)>
 		*use_element_type_chooser;
@@ -2098,8 +2103,8 @@ When changes have been made by the user, renew the label on the list
 								scene_editor->current_settings_type)
 							{
 								FE_region *data_fe_region = Cmiss_region_get_FE_region(
-																														GT_element_group_get_data_Cmiss_region(
-																																																	 scene_editor->edit_gt_element_group));
+									 GT_element_group_get_data_Cmiss_region(
+											scene_editor->edit_gt_element_group));
 								Computed_field *default_coordinate_field=
 									GT_element_group_get_default_coordinate_field(
 																																scene_editor->edit_gt_element_group);
@@ -2128,9 +2133,9 @@ When changes have been made by the user, renew the label on the list
 							{
 								Computed_field *iso_scalar_field;
 								MANAGER(Computed_field) *computed_field_manager=  Computed_field_package_get_computed_field_manager(
-																																																										scene_editor->computed_field_package);
+									 scene_editor->computed_field_package);
 								if (iso_scalar_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-																																									Computed_field_is_scalar,(void *)NULL,computed_field_manager))
+											 Computed_field_is_scalar,(void *)NULL,computed_field_manager))
 									{
 										double iso_value_default = 0;
 										if (!GT_element_settings_set_iso_surface_parameters(settings,
@@ -3484,6 +3489,8 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 		/* label field */
 		labelcheckbox=XRCCTRL(*this,"LabelCheckBox",wxCheckBox);
 		label_chooser_panel = XRCCTRL(*this,"LabelChooserPanel",wxPanel);
+		fonttext=XRCCTRL(*this,"FontText",wxStaticText);
+		font_chooser_panel = XRCCTRL(*this,"FontChooserPanel",wxPanel);	
 
 		if (((GT_ELEMENT_SETTINGS_NODE_POINTS==scene_editor->current_settings_type)||
 			(GT_ELEMENT_SETTINGS_DATA_POINTS==scene_editor->current_settings_type)||
@@ -4299,6 +4306,7 @@ struct Scene_editor *CREATE(Scene_editor)(
 	struct MANAGER(Spectrum) *spectrum_manager,
 	struct Spectrum *default_spectrum,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
+	struct Graphics_font_package *font_package,
 	struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 2 Febuary 2007
@@ -4313,7 +4321,7 @@ DESCRIPTION :
 	if (scene_manager && scene && computed_field_package && root_region &&
 		graphical_material_manager && default_material &&
 		glyph_list && spectrum_manager && default_spectrum &&
-		volume_texture_manager && user_interface)
+		volume_texture_manager && font_package && user_interface)
 	{
 		if (ALLOCATE(scene_editor,struct Scene_editor,1))
 		{		
@@ -4341,6 +4349,7 @@ DESCRIPTION :
 			 scene_editor->default_coordinate_field=(Computed_field *)NULL;
 			 scene_editor->volume_texture_manager=volume_texture_manager;
 			 scene_editor->computed_field_manager=Computed_field_package_get_computed_field_manager(computed_field_package);
+ 			 scene_editor->font_manager=Graphics_font_package_get_font_manager(font_package);
 			 scene_editor->native_discretization_field=(FE_field*)NULL ;
 			 scene_editor->coordinate_field=(Computed_field *)NULL;	
 			 scene_editor->select_mode=(Graphics_select_mode)NULL;

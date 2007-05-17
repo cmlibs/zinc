@@ -121,7 +121,7 @@
     <object class ="wxMenu">
       <label>Font</label>
       <object class = "wxMenuItem" name="FontCmgui">
-        <label>Set Font</label>
+        <label>Font Settings</label>
       </object>
 	</object>
     <object class ="wxMenu" name="MenuHelp">

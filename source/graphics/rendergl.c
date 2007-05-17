@@ -46,8 +46,8 @@ GL rendering calls - API specific.
 #include <math.h>
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
-#include "graphics/font.h"
 #include "graphics/graphics_library.h"
+#include "graphics/font.h"
 #include "graphics/graphics_object.h"
 #include "graphics/light_model.h"
 #include "graphics/mcubes.h"

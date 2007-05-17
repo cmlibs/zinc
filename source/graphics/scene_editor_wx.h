@@ -37,6 +37,7 @@ struct Scene_editor *CREATE(Scene_editor)(
 	struct MANAGER(Spectrum) *spectrum_manager,
 	struct Spectrum *default_spectrum,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
+	struct Graphics_font_package *font_package,
 	struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 24 November 2005

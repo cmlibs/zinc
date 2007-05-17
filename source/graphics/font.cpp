@@ -336,6 +336,37 @@ DESCRIPTION :
 	return (return_code);
 } /* DESTROY(Graphics_font_package) */
 
+struct MANAGER(Graphics_font)
+	*Graphics_font_package_get_font_manager(
+		struct Graphics_font_package *font_package)
+/*******************************************************************************
+LAST MODIFIED : 17 May 2007
+
+DESCRIPTION :
+Extracts the font_manager from the graphics_font_package. Note that
+the rest of the program should use this sparingly - it is really only here to
+allow interfacing to the choose_object widgets.
+==============================================================================*/
+{
+	 struct MANAGER(Graphics_font) *font_manager;
+
+	ENTER(Graphics_font_package_get_font_manager);
+	if (font_package)
+	{
+		font_manager=font_package->font_manager;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_font_package_get_font_manager.  "
+			"graphics_font_package");
+		font_manager=(struct MANAGER(Graphics_font) *)NULL;
+	}
+	LEAVE;
+
+	return (font_manager);
+} /* Graphics_font_package_get_font_manager */
+
 int Graphics_font_package_define_font(
 	struct Graphics_font_package *font_package,
 	char *font_name, char *font_string)

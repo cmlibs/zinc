@@ -10666,6 +10666,7 @@ Executes a GFX EDIT_SCENE command.  Brings up the Scene_editor.
 						command_data->spectrum_manager,
 						command_data->default_spectrum,
 						command_data->volume_texture_manager,
+						command_data->graphics_font_package,
 						command_data->user_interface)))
 #endif /* defined (SWITCH_USER_INTERFACE) */
 				{

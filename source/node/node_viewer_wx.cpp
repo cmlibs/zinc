@@ -249,14 +249,12 @@ public:
 			node_viewer->wx_node_viewer = (wxNodeViewer *)NULL;
 			wxXmlResource::Get()->LoadFrame(this,
 				 (wxWindow *)NULL, _T("CmguiNodeViewer"));
-			
 			wxPanel *node_text_panel =
 				 XRCCTRL(*this, "NodeTextPanel",wxPanel);
 			node_text_chooser =
 				 new FE_object_text_chooser<FE_node, FE_region_FE_object_method_class(node) >
 				 (node_text_panel, node_viewer->initial_node, node_viewer->fe_region, 
-						(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,
-						NULL);
+						(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,NULL);
 			Callback_base< FE_node* > *node_text_callback = 
 				 new Callback_member_callback< FE_node*, 
 				 wxNodeViewer, int (wxNodeViewer::*)(FE_node *) >
@@ -667,27 +665,28 @@ Since both nodes and data can depend on embedded fields, the
 							{
 								 /* select the node to be displayed in dialog; note this is ok
 										here as we are not receiving selection callbacks yet */
-								 if (initial_node)
-								 {
-										node_viewer->template_node = ACCESS(FE_node)(
-											 CREATE(FE_node)(0, (struct FE_region *)NULL, initial_node));
-								 }
-								 else
-								 {
-										node_viewer->template_node = (struct FE_node *)NULL;
-								 }
+// 								 if (initial_node)
+// 								 {
+// 										node_viewer->template_node = ACCESS(FE_node)(
+// 											 CREATE(FE_node)(0, (struct FE_region *)NULL, initial_node));
+// 								 }
+// 								 else
+// 								 {
+// 										node_viewer->template_node = (struct FE_node *)NULL;
+// 								 }
+// 								 node_viewer->initial_node = initial_node;
 								 FE_node_selection_select_node(node_selection,initial_node);
-									FE_region_add_callback(node_viewer->fe_region,
+								 FE_region_add_callback(node_viewer->fe_region,
 										Node_viewer_FE_region_change, (void *)node_viewer);
-									node_viewer->initial_node = initial_node;
-									Node_viewer_set_viewer_node(node_viewer);
-									if (node_viewer->wx_node_viewer && node_viewer->collpane)
-									{
-										 FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
-												node_viewer_add_collpane,
+								 
+								 Node_viewer_set_viewer_node(node_viewer);
+								 if (node_viewer->wx_node_viewer && node_viewer->collpane)
+								 {
+										FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
+											 node_viewer_add_collpane,
 												(void *)node_viewer,
-												node_viewer->computed_field_manager);
-									}
+											 node_viewer->computed_field_manager);
+								 }
 							}
 					 }
 				}
@@ -696,6 +695,16 @@ Since both nodes and data can depend on embedded fields, the
 					 Node_viewer_node_selection_change,(void *)node_viewer);
 				/* make the dialog shell */
 #if defined (WX_USER_INTERFACE)
+				node_viewer->initial_node = initial_node;
+				if (initial_node)
+				{
+					 node_viewer->template_node = ACCESS(FE_node)(
+							CREATE(FE_node)(0, (struct FE_region *)NULL, initial_node));
+				}
+				else
+				{
+					 node_viewer->template_node = (struct FE_node *)NULL;
+				}
 				node_viewer->wx_node_viewer = new wxNodeViewer(node_viewer);
 				node_viewer->collpane = 
 					 XRCCTRL(*node_viewer->wx_node_viewer, "VariableViewerPanel", wxScrolledWindow);

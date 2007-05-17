@@ -654,6 +654,25 @@
 													</object>
  												</object>
 											</object>
+
+
+											<object class="sizeritem">
+												<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<flag>wxALIGN_CENTRE_VERTICAL</flag>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTER</flag>
+														<object class	="wxStaticText" name="FontText"> 
+															<label>Font:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="FontChooserPanel">
+															<size>200,30</size>
+ 														</object>
+													</object>
+ 												</object>
+											</object>
 							
 											<object class="sizeritem">
 				   								<object class = "wxBoxSizer">	

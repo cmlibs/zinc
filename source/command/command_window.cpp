@@ -1806,10 +1806,24 @@ public:
 
 			wxAboutBox(info);
 	 }
-	 
+
 	 void Exit(wxCommandEvent& event)
 	 {
+			wxMessageDialog *dlg = new wxMessageDialog(NULL,"Are you sure you want to quit cmgui?", 
+				 "Exit Confirmation", wxYES_NO|wxICON_QUESTION|wxSTAY_ON_TOP);
+			if ( dlg->ShowModal() == wxID_YES)
 					 Execute_command_execute_string(command_window->execute_command, "QUIT");
+			dlg->Destroy();
+	 } 
+	 
+	 void Terminate(wxCloseEvent& event)
+	 {
+			wxMessageDialog *dlg = new wxMessageDialog(NULL,"Are you sure you want to quit cmgui?", 
+				 "Exit Confirmation", wxYES_NO|wxICON_QUESTION|wxSTAY_ON_TOP);
+			 if ( dlg->ShowModal() == wxID_YES)
+					Execute_command_execute_string(command_window->execute_command, "QUIT"); 
+					//else: dialog was cancelled or some another button pressed
+			 dlg->Destroy();
 	 } 
 
 	 void wx_Display_on_command_list(char *command_string)
@@ -1857,6 +1871,7 @@ BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	 EVT_MENU(XRCID("GraphicsSceneeditor"),wxCommandWindow::sceneeditor)
 	 EVT_MENU(XRCID("FontCmgui"),wxCommandWindow::OnFormatFont)
 	 EVT_MENU(XRCID("AboutCmgui"),wxCommandWindow::ShowSimpleAboutDialog)
+	 EVT_CLOSE(wxCommandWindow::Terminate)
 	EVT_MENU(XRCID("MenuExit"),wxCommandWindow::Exit)
 END_EVENT_TABLE()
 
