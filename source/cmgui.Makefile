@@ -1107,6 +1107,7 @@ ifeq ($(USE_ITK),true)
 	   image_processing/computed_field_derivativeImageFilter.cpp \
 	   image_processing/computed_field_rescaleIntensityImageFilter.cpp \
 	   image_processing/computed_field_connected_threshold_image_filter.cpp \
+	   image_processing/computed_field_gradient_magnitude_recursive_gaussian_image_filter.cpp \
 	   image_processing/computed_field_ImageFilter.cpp
 endif # $(USE_ITK) == true
 INTERACTION_SRCS = \
