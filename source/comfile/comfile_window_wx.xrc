@@ -2,9 +2,19 @@
 <resource>
   <object class="wxFrame" subclass="wxComfileWindow" name="CmguiComfileWindow" title="Comfile Window">
 	  <title>Comfile Window</title>
+
+  <object class="wxMenuBar">
+    <size>-1,8</size>	
+    <object class ="wxMenu">
+      <label>Font</label>
+      <object class = "wxMenuItem" name="FontSettings">
+        <label>Font Settings</label>
+	</object>
+	</object>
+	</object>
+
 	  <object class = "wxBoxSizer">
 		  <orient>wxVERTICAL</orient>
-
 		  <object class ="sizeritem">
 			  <flag>wxEXPAND</flag>
 			  <option>1</option>

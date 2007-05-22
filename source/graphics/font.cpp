@@ -76,24 +76,23 @@ extern "C" {
 #include <wx/image.h>
 #include <wx/dcmemory.h>
 #endif /* defined (WX_USER_INTERFACE) */
-
 /*
 Module types
 ------------
 */
 
-DECLARE_LIST_TYPES(Graphics_font);
+// DECLARE_LIST_TYPES(Graphics_font);
 
-DECLARE_MANAGER_TYPES(Graphics_font);
+// DECLARE_MANAGER_TYPES(Graphics_font);
 
-PROTOTYPE_OBJECT_FUNCTIONS(Graphics_font);
+// PROTOTYPE_OBJECT_FUNCTIONS(Graphics_font);
 
-PROTOTYPE_LIST_FUNCTIONS(Graphics_font);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Graphics_font,name,char *);
+// PROTOTYPE_LIST_FUNCTIONS(Graphics_font);
+// PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Graphics_font,name,char *);
 
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Graphics_font,name,char *);
-PROTOTYPE_MANAGER_FUNCTIONS(Graphics_font);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_font,name,char *);
+// PROTOTYPE_MANAGER_COPY_FUNCTIONS(Graphics_font,name,char *);
+// PROTOTYPE_MANAGER_FUNCTIONS(Graphics_font);
+// PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_font,name,char *);
 
 struct Graphics_font_package
 /*******************************************************************************
@@ -102,7 +101,7 @@ LAST MODIFIED : 11 April 2007
 DESCRIPTION :
 ==============================================================================*/
 {
-	MANAGER(Graphics_font) *font_manager;
+	struct MANAGER(Graphics_font) *font_manager;
 };
 
 struct Graphics_font
@@ -348,7 +347,7 @@ the rest of the program should use this sparingly - it is really only here to
 allow interfacing to the choose_object widgets.
 ==============================================================================*/
 {
-	 struct MANAGER(Graphics_font) *font_manager;
+	 struct MANAGER(Graphics_font) *font_manager
 
 	ENTER(Graphics_font_package_get_font_manager);
 	if (font_package)

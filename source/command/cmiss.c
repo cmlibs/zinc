@@ -520,6 +520,79 @@ to change the interactive tool settings.
 }
 #endif /*(WX_USER_INTERFACE)*/
 
+#if defined (WX_USER_INTERFACE) && (__WIN32__)
+char *CMISS_set_directory_and_filename_WIN32(char *file_name,
+	struct Cmiss_command_data *command_data)
+/*******************************************************************************
+LAST MODIFIED : 27 March 2007
+
+DESCRIPTION :
+WX_USER_INTERFACE_ONLY, get the interactive_tool_manager and pass it
+to change the interactive tool settings.
+==============================================================================*/
+{
+	 char *drive_name = NULL;
+	 char *first = NULL;	
+	 char *last = NULL;	
+	 char *temp_directory_name,*directory_name, *temp_name, *temp_string;
+	 int lastlength, length;
+	 first = strchr(file_name, '\\');
+	 last = strrchr(file_name, '\\');
+	 lastlength = last - file_name +1;
+	 length = first - file_name +1;
+	 if ((length>0))
+	 {
+			if (ALLOCATE(drive_name,char,length))
+			{		 
+				 strncpy(drive_name,file_name,length);
+				 drive_name[length-1]='\0';
+				 if (ALLOCATE(temp_string,char,length+8))
+				 {
+						strcpy(temp_string, "set dir ");
+						strcat(temp_string, drive_name);
+						temp_string[length+7]='\0';
+						Execute_command_execute_string(command_data->execute_command,temp_string);
+						DEALLOCATE(temp_string);
+				 }
+				 DEALLOCATE(drive_name);
+			}
+	 }
+	 if (lastlength>length)
+	 {
+			if (ALLOCATE(temp_directory_name,char,lastlength+1))
+			{
+				 strncpy(temp_directory_name,file_name,lastlength);
+				 temp_directory_name[lastlength]='\0';
+				 if (ALLOCATE(directory_name,char,lastlength-length+2))
+				 {
+						directory_name = &temp_directory_name[length-1];
+						directory_name[lastlength-length+1]='\0';
+						if (ALLOCATE(temp_string,char,lastlength-length+10))
+						{
+							 strcpy(temp_string, "set dir ");
+							 strcat(temp_string, directory_name);
+							 temp_string[lastlength-length+9]='\0';
+							 Execute_command_execute_string(command_data->execute_command,temp_string);
+							 DEALLOCATE(temp_string);
+						}
+						DEALLOCATE(directory_name);
+				 }
+				 DEALLOCATE(temp_directory_name);
+			}
+	 }
+	 if (lastlength>0)
+	 {
+			temp_name = &file_name[lastlength];
+	 }
+	 else
+	 {
+			temp_name = file_name;
+	 }
+	 return (temp_name);
+}
+
+#endif /*(WX_USER_INTERFACE)*/
+
 static int set_command_prompt(char *prompt, struct Cmiss_command_data *command_data)
 /*******************************************************************************
 LAST MODIFIED : 26 June 2002
@@ -16253,11 +16326,18 @@ instruction to read in the mesh.
 #if defined (WX_USER_INTERFACE)
 									 , command_data->execute_command
 #endif /*defined (WX_USER_INTERFACE)*/
-)))
+																													 )))
 					{
 						return_code = 0;
 					}
 				}
+#if defined (WX_USER_INTERFACE) &&  (__WIN32__)
+			if (file_name)
+			{
+				 file_name = CMISS_set_directory_and_filename_WIN32(file_name, 
+						command_data); 
+			}
+#endif /* defined (__WIN32__)*/
 				if (return_code)
 				{
 					/* open the file */
@@ -16356,12 +16436,20 @@ user, otherwise the elements file is read.
 								 command_data->user_interface
 #if defined(WX_USER_INTERFACE)
 								 , command_data->execute_command
-#endif /*defined (WX_USER_INTERFACE) */
-																												 )))
+#endif /*defined (WX_USER_INTERFACE) */				
+		 )))	 
 				{
 					return_code = 0;
 				}
 			}
+#if defined (WX_USER_INTERFACE) &&  (__WIN32__)
+			if (file_name)
+			{
+				 file_name = CMISS_set_directory_and_filename_WIN32(file_name,
+						command_data); 
+			}
+#endif /* defined (__WIN32__)*/
+
 			if (return_code)
 			{
 				if (!check_suffix(&file_name,".exelem"))
@@ -16641,6 +16729,13 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 				}
 				if (return_code)
 				{
+#if defined (WX_USER_INTERFACE) &&  (__WIN32__)
+			if (file_name)
+			{
+				 file_name = CMISS_set_directory_and_filename_WIN32(file_name,
+						command_data); 
+			}
+#endif /* defined (__WIN32__)*/
 					/* open the file */
 					if (use_data)
 					{
@@ -19168,6 +19263,13 @@ Can also write individual element groups with the <group> option.
 					return_code = 0;
 				}
 			}
+#if defined (WX_USER_INTERFACE) && (__WIN32__)
+			if (file_name)
+			{
+				 file_name = CMISS_set_directory_and_filename_WIN32(file_name,
+						command_data);
+			}
+#endif /* defined (WX_USER_INTERFACE) && (__WIN32__) */
 			if (return_code)
 			{
 				/* open the file */
@@ -19294,6 +19396,13 @@ If <use_data> is set, writing data, otherwise writing nodes.
 					return_code = 0;
 				}
 			}
+#if defined (WX_USER_INTERFACE) && (__WIN32__)
+			if (file_name)
+			{
+				 file_name = CMISS_set_directory_and_filename_WIN32(file_name,
+						command_data); 
+			}
+#endif /* defined (WX_USER_INTERFACE) && (__WIN32__) */
 			if (return_code)
 			{
 				/* open the file */
@@ -19383,6 +19492,13 @@ If <use_data> is set, writing data, otherwise writing nodes.
 					return_code = 0;
 				}
 			}
+#if defined (WX_USER_INTERFACE) && (__WIN32__)
+			if (file_name)
+			{
+				 file_name = CMISS_set_directory_and_filename_WIN32(file_name,
+						command_data); 
+			}
+#endif /* defined (WX_USER_INTERFACE) && (__WIN32__) */
 			if (return_code)
 			{
 				/* open the file */
@@ -20346,6 +20462,13 @@ Executes a CELL WRITE IPCELL command.
               return_code = 0;
             }
           }
+#if defined (WX_USER_INTERFACE) && (__WIN32__)
+			if (file_name)
+			{
+				 file_name = CMISS_set_directory_and_filename_WIN32(file_name,
+						command_data); 
+			}
+#endif /* defined (WX_USER_INTERFACE) && (__WIN32__) */
           if (file_name)
           {
             if (check_suffix(&file_name,".ipcell"))

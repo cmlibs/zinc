@@ -130,7 +130,7 @@ specified on the command line, a file selection box is presented to the user.
 #if defined (WX_USER_INTERFACE)
 , open_comfile_data->execute_command
 #endif /*defined (WX_USER_INTERFACE)*/
-)))
+									 )))
 					{
 						return_code = 0;
 					}
@@ -166,13 +166,64 @@ specified on the command line, a file selection box is presented to the user.
 				else
 				{
 #if defined (WX_USER_INTERFACE)
-					 /* Save the current working directory */
-					 old_directory = (char *)malloc(4096);
-					 getcwd(old_directory, 4096);
-					 length = strlen(old_directory);
-					 if ((ALLOCATE(old_directory_name,char,length+2)) && old_directory !=NULL)
+#if defined (__WIN32__)
+					 char *drive_name = NULL;
+					 char *first = NULL;	
+					 char *last = NULL;	
+					 char *temp_directory_name,*directory_name;
+					 int lastlength;
+					 first = strchr(filename, '\\');
+					 last = strrchr(filename, '\\');
+					 lastlength = last - filename +1;
+					 length = first - filename +1;
+					 if ((length>0))
 					 {
-							strcpy(old_directory_name, old_directory);
+							if (ALLOCATE(drive_name,char,length))
+							{		 
+								 strncpy(drive_name,filename,length);
+								 drive_name[length-1]='\0';
+								 if (ALLOCATE(temp_string,char,length+8))
+								 {
+										strcpy(temp_string, "set dir ");
+										strcat(temp_string, drive_name);
+										temp_string[length+7]='\0';
+										Execute_command_execute_string(open_comfile_data->execute_command,temp_string);
+										DEALLOCATE(temp_string);
+								 }
+								 DEALLOCATE(drive_name);
+							}
+					 }
+					 if (lastlength>length)
+					 {
+							if (ALLOCATE(temp_directory_name,char,lastlength+1))
+							{
+								 strncpy(temp_directory_name,filename,lastlength);
+								 temp_directory_name[lastlength]='\0';
+								 if (ALLOCATE(directory_name,char,lastlength-length+2))
+								 {
+										directory_name = &temp_directory_name[length-1];
+										directory_name[lastlength-length+1]='\0';
+										if (ALLOCATE(temp_string,char,lastlength-length+10))
+										{
+											 strcpy(temp_string, "set dir ");
+											 strcat(temp_string, directory_name);
+											 temp_string[lastlength-length+9]='\0';
+											 Execute_command_execute_string(open_comfile_data->execute_command,temp_string);
+											 DEALLOCATE(temp_string);
+										}
+										DEALLOCATE(directory_name);
+								 }
+								 DEALLOCATE(temp_directory_name);
+							}
+					 }
+#else /* defined (__WIN32__)*/
+				 /* Save the current working directory */
+				 old_directory = (char *)malloc(4096);
+				getcwd(old_directory, 4096);
+				length = strlen(old_directory);
+				if ((ALLOCATE(old_directory_name,char,length+2)) && old_directory !=NULL)
+				{
+					 strcpy(old_directory_name, old_directory);
 							strcat(old_directory_name,"/");
 							old_directory_name[length+1]='\0';
 					 }
@@ -202,9 +253,28 @@ specified on the command line, a file selection box is presented to the user.
 								 }
 							}
 					 }
-#endif /*defined (WX_USER_INTERFACE)*/
+#endif /*defined (__WIN32__) */
+#endif /*defined (WX_USER_INTERFACE) */
+			}
+#if defined (WX_USER_INTERFACE)  && (__WIN32__)
+				int lastlength;
+				char *temp_name;
+				char *first = NULL;	
+				char *last = NULL;	
+				first = strchr(filename, '\\');
+				last = strrchr(filename, '\\');
+				lastlength = last - filename +1;
+				if (lastlength>0)
+				{
+					 temp_name = &filename[lastlength];
 				}
-				/* open the file */
+				else
+				{
+					 temp_name = filename;
+				}
+				filename=temp_name;
+#endif /* defined (WX_USER_INTERFACE)  && (__WIN32__)*/
+						 /* open the file */
 				if (return_code = check_suffix(&filename,
 							open_comfile_data->file_extension))
 				{
@@ -213,7 +283,8 @@ specified on the command line, a file selection box is presented to the user.
 							for (i=open_comfile_data->execute_count;i>0;i--)
 							{
 								 execute_comfile(filename, open_comfile_data->io_stream_package,
-									open_comfile_data->execute_command);
+												open_comfile_data->execute_command);
+								 
 							}
 #if defined (WX_USER_INTERFACE)
 							/* Change back to original dir */

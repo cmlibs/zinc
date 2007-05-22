@@ -45,9 +45,9 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #define GRAPHICS_FONT_H
 
 #include "general/callback.h"
+#include "general/manager.h"
 #include "general/object.h"
 #include "user_interface/user_interface.h"
-
 
 /*
 Global types
@@ -57,6 +57,11 @@ Global types
 struct Graphics_font_package;
 
 struct Graphics_font;
+
+DECLARE_LIST_TYPES(Graphics_font);
+
+DECLARE_MANAGER_TYPES(Graphics_font);
+
 
 struct Graphics_buffer;
 
@@ -79,6 +84,8 @@ LAST MODIFIED : 11 April 2007
 
 DESCRIPTION :
 ==============================================================================*/
+
+
 
 struct MANAGER(Graphics_font)	
 	 *Graphics_font_package_get_font_manager(
@@ -118,12 +125,20 @@ PROTOTYPE_OBJECT_FUNCTIONS(Graphics_font);
 
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Graphics_font);
 
+PROTOTYPE_LIST_FUNCTIONS(Graphics_font); 
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Graphics_font,name,char *);
+
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(Graphics_font,name,char *);
+PROTOTYPE_MANAGER_FUNCTIONS(Graphics_font);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_font,name,char *); 
+
 int DESTROY(Graphics_font)(struct Graphics_font **font_address);
 /*******************************************************************************
 LAST MODIFIED : 17 November 2005
 
 DESCRIPTION :
 ==============================================================================*/
+
 
 int Graphics_font_compile(struct Graphics_font *font,
 	struct Graphics_buffer *buffer);

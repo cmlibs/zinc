@@ -659,11 +659,10 @@
 											<object class="sizeritem">
 												<object class = "wxBoxSizer">	
 													<orient>wxHORIZONTAL</orient>
-													<flag>wxALIGN_CENTRE_VERTICAL</flag>
 													<object class="sizeritem">
-														<flag>wxALIGN_CENTER</flag>
+														<flag>wxALIGN_CENTER_VERTICAL</flag>
 														<object class	="wxStaticText" name="FontText"> 
-															<label>Font:</label>				  			
+															<label>Graphics Font:</label>				  			
 	 													</object>
 													</object>
 													<object class="sizeritem">
@@ -791,7 +790,6 @@
 														<flag>wxALIGN_CENTRE_VERTICAL</flag>
 														<object class	="wxCheckBox" name="DataCheckBox"> 
 															<label>Data:</label>				  			
-
 	 													</object>
 													</object>
 													<object class="sizeritem">

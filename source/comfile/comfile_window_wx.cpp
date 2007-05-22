@@ -57,6 +57,7 @@ extern "C" {
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
 #include "wx/xrc/xmlres.h"
+#include <wx/fontdlg.h>
 extern "C" {
 #include "comfile/comfile_window_wx.h"
 }
@@ -134,6 +135,8 @@ class wxComfileWindow : public wxFrame
 	 wxString blank;	 
 	 int number;
 	 wxString selectedcommand;
+	 wxFont comfile_font;
+	 wxColour comfile_colour;
 public:
 
 	 wxComfileWindow(Comfile_window *comfile_window): 
@@ -216,13 +219,36 @@ public:
 				 display_message(ERROR_MESSAGE,
 						"identify_command_list.  Could not open file");
 			}
-			
+
 			Show();
 	 };
 	 
   wxComfileWindow()
   {
   };
+
+	 void OnFormatFont(wxCommandEvent& event)
+	 {
+			wxFontData fdata;
+			wxFont font;
+			wxColour colour;
+
+			comfile_listbox = XRCCTRL(*this, "ComfileListBox", wxListBox);
+			font = comfile_listbox->GetFont();
+			fdata.SetInitialFont(font);
+			colour = comfile_listbox->GetForegroundColour();
+			fdata.SetColour(colour);
+			fdata.SetShowHelp(true);
+			wxFontDialog *FontDlg = new wxFontDialog(this, fdata);
+
+			if(FontDlg->ShowModal() == wxID_OK)
+			{
+				 fdata = FontDlg->GetFontData();
+				 font = fdata.GetChosenFont();
+				 comfile_listbox->SetFont(font);
+				 comfile_listbox->SetForegroundColour(fdata.GetColour()); 
+			}
+	 } 
 
 void SingleClickedOnList(wxCommandEvent &event)
 	 {		
@@ -296,7 +322,6 @@ void SelectedClicked(wxCommandEvent &event)
 						const_cast<char *>(selectedcommand.c_str())) ;
 			}
 	 }
-	 // 	 wx_Display_on_command_list((char)NULL);
 }
 
 
@@ -312,6 +337,7 @@ void CloseClicked(wxCommandEvent &event)
 
 IMPLEMENT_DYNAMIC_CLASS(wxComfileWindow, wxFrame)
 BEGIN_EVENT_TABLE(wxComfileWindow, wxFrame)
+	 EVT_MENU(XRCID("FontSettings"),wxComfileWindow::OnFormatFont)
 	 EVT_LISTBOX(XRCID("ComfileListBox"),wxComfileWindow::SingleClickedOnList)
 	 EVT_LISTBOX_DCLICK(XRCID("ComfileListBox"),wxComfileWindow::DoubleClickedOnList)
 	 EVT_BUTTON(XRCID("AllButton"),wxComfileWindow::AllClicked)

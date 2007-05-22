@@ -64,9 +64,9 @@ extern "C" {
 #include <wx/splitter.h>
 extern "C" {
 #include "graphics/scene_editor_wx.h"
+#include "graphics/font.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field.h"
-#include "graphics/font.h"
 }
 #include "graphics/scene_editor_wx.xrch"
 #endif /* defined (WX_USER_INTERFACE)*/
@@ -128,15 +128,15 @@ DESCRIPTION :
 	/* keep address of pointer to editor so can self-destroy */
 	struct Scene_editor **scene_editor_address;
 	void *scene_manager_callback_id;
-	struct MANAGER(Graphical_material) *graphical_material_manager;
+	 struct MANAGER(Graphical_material) *graphical_material_manager;
 	 struct Graphical_material *default_material, *selected_material;
-	struct Graphics_font *default_font;
+	 struct Graphics_font *default_font;
 	 struct MANAGER(Scene) *scene_manager;
 	 struct User_interface *user_interface;
 	 struct Computed_field_package *computed_field_package;
 	 enum GT_element_settings_type current_settings_type;
 	 struct GT_element_settings *current_settings;
-	struct LIST(GT_object) *glyph_list;	
+	 struct LIST(GT_object) *glyph_list;	
 	 struct MANAGER(VT_volume_texture) *volume_texture_manager;
 	 struct MANAGER(Computed_field) *computed_field_manager;
 	 struct MANAGER(Graphics_font) *font_manager;
@@ -156,6 +156,7 @@ DESCRIPTION :
 #if defined (WX_USER_INTERFACE)
 	 wxSceneEditor *wx_scene_editor;
 	 wxPanel *lower_panel;
+	 //	 wxPanel *dummy_panel;
 	 wxScrolledWindow *sceneediting;
 	 wxFrame *frame;
 	 wxCheckListBox *checklistbox;
@@ -488,9 +489,9 @@ class wxSceneEditor : public wxFrame
 	*variable_scale_field_chooser;
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 	*label_field_chooser;
-// 	 DEFINE_MANAGER_CLASS(Graphics_font); 
-// 	 Managed_object_chooser<Graphics_font,MANAGER_CLASS(Graphics_font)>
-// 	 *font_chooser;	
+	 DEFINE_MANAGER_CLASS(Graphics_font); 
+	 	 Managed_object_chooser<Graphics_font,MANAGER_CLASS(Graphics_font)>
+	 *font_chooser;	
 	DEFINE_ENUMERATOR_TYPE_CLASS(Use_element_type);
 	Enumerator_chooser<ENUMERATOR_TYPE_CLASS(Use_element_type)>
 		*use_element_type_chooser;
@@ -710,6 +711,7 @@ public:
 	orientation_scale_field_chooser = NULL;		
 	variable_scale_field_chooser = NULL;
 	label_field_chooser= NULL;
+	font_chooser=NULL;
 	use_element_type_chooser = NULL;
 	xi_discretization_mode_chooser = NULL;
 	native_discretization_field_chooser = NULL;
@@ -768,7 +770,9 @@ Callback from wxChooser<Scene> when choice is made.
 ==============================================================================*/
 	{
 		Scene_editor_set_scene(scene_editor, scene);
+		scene_editor->lower_panel->Disable();
 		scene_editor->lower_panel->Hide();
+		//		scene_editor->dummy_panel->Show();
 		wxCheckListBox *checklist = scene_editor->checklistbox;
  		checklist->Clear();
  		for_each_Scene_object_in_Scene(scene,
@@ -777,16 +781,22 @@ Callback from wxChooser<Scene> when choice is made.
 		{
 			 case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 			 {
-					scene_editor->lower_panel->Show();					
+					scene_editor->lower_panel->Enable();	
+					scene_editor->lower_panel->Show();
+					//					scene_editor->dummy_panel->Hide();
 			 } break;
 			 case SCENE_OBJECT_GRAPHICS_OBJECT:
 			 {
-							scene_editor->lower_panel->Hide();		
-							/* nothing to do */
+					scene_editor->lower_panel->Disable();
+					scene_editor->lower_panel->Hide();
+					//			scene_editor->dummy_panel->Show();
+					/* nothing to do */
 			 } break;	
 			 case SCENE_OBJECT_SCENE:
 			 {
+					scene_editor->lower_panel->Disable();
 					scene_editor->lower_panel->Hide();		
+					//					scene_editor->dummy_panel->Show();
 					/* nothing to do */
 			 } break;			
 		}
@@ -1142,6 +1152,28 @@ Callback from wxChooser<label> when choice is made.
 	RenewLabelonList(scene_editor->current_settings);
 	return 1;
 }
+
+int font_callback(Graphics_font *graphics_font)
+/*******************************************************************************
+LAST MODIFIED : 22 May 2007
+
+DESCRIPTION :
+Callback from wxChooser<font> when choice is made.
+==============================================================================*/
+{
+	struct Computed_field *temp_label_field;
+	struct Graphics_font *font;
+	GT_element_settings_get_label_field(scene_editor->current_settings, 
+		&temp_label_field, &font);
+	GT_element_settings_set_label_field(scene_editor->current_settings, 
+		 temp_label_field, graphics_font);
+	AutoApplyorNot(scene_editor->gt_element_group,
+	    scene_editor->edit_gt_element_group);
+	RenewLabelonList(scene_editor->current_settings);
+	return 1;
+}
+
+
 
 int use_element_type_callback(enum Use_element_type use_element_type)
 /*******************************************************************************
@@ -1788,6 +1820,7 @@ When changes have been made by the user, renew the label on the list
 										create_editor_copy_GT_element_group(gt_element_group);
 								 graphicalitemschecklist->SetSelection(selection);
 								 scene_editor->lower_panel->Show();
+								 //				 scene_editor->dummy_panel->Hide();
 								 set_general_settings((void *)scene_editor);
 								 UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
 									 scene_editor->edit_gt_element_group, selection+1));
@@ -1886,7 +1919,9 @@ When changes have been made by the user, renew the label on the list
 			{
 				for_each_settings_in_GT_element_group(edit_gt_element_group,
 				   Scene_editor_add_element_settings_item, (void *)scene_editor);
+				scene_editor->lower_panel->Enable();
 				scene_editor->lower_panel->Show();
+				//			scene_editor->dummy_panel->Hide();
 				set_general_settings((void *)scene_editor);
 				get_and_set_graphical_element_settings((void *)scene_editor);
 			}
@@ -1924,7 +1959,9 @@ When changes have been made by the user, renew the label on the list
 				{
 					scene_editor->graphicalitemslistbox = XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
 					scene_editor->graphicalitemslistbox->Clear();
+					scene_editor->lower_panel->Disable();
 					scene_editor->lower_panel->Hide();
+					//		scene_editor->dummy_panel->Show();
 					/* nothing to do */
 				} break;
 			}
@@ -1932,8 +1969,9 @@ When changes have been made by the user, renew the label on the list
 
  	void 	UpdateGraphicalElementList(GT_element_settings *settings)
  	{
-		 wxScrolledWindow *scenededitingpanel= XRCCTRL(*this, "SceneEditing",wxScrolledWindow);
-		 scenededitingpanel->Show();
+		 wxScrolledWindow *sceneeditingpanel= XRCCTRL(*this, "SceneEditing",wxScrolledWindow);
+		 sceneeditingpanel->Enable();
+		 sceneeditingpanel->Show();
  		graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
 		int selection =	graphicalitemschecklist->GetSelection();
 		REACCESS(GT_element_settings)(&scene_editor->current_settings, settings);
@@ -1995,16 +2033,22 @@ When changes have been made by the user, renew the label on the list
 				{
 					 case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 					 {
-							scene_editor->lower_panel->Show();					
+							scene_editor->lower_panel->Enable();
+							scene_editor->lower_panel->Show();
+							//				scene_editor->dummy_panel->Hide();
 					 } break;
 					 case SCENE_OBJECT_GRAPHICS_OBJECT:
 					 {
-							scene_editor->lower_panel->Hide();		
+							scene_editor->lower_panel->Disable();
+							scene_editor->lower_panel->Hide();	
+							//						scene_editor->dummy_panel->Show();
 							/* nothing to do */
 					 } break;	
 					 case SCENE_OBJECT_SCENE:
 					 {
-							scene_editor->lower_panel->Hide();		
+							scene_editor->lower_panel->Disable();
+							scene_editor->lower_panel->Hide();	
+							//			scene_editor->dummy_panel->Show();
 							/* nothing to do */
 					 } break;			
 				}
@@ -2031,16 +2075,22 @@ When changes have been made by the user, renew the label on the list
 				{
 					 case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 					 {
-							scene_editor->lower_panel->Show();					
+							scene_editor->lower_panel->Enable();
+							scene_editor->lower_panel->Show();
+							//			scene_editor->dummy_panel->Hide();
 					 } break;
 					 case SCENE_OBJECT_GRAPHICS_OBJECT:
 					 {
-							scene_editor->lower_panel->Hide();		
+							scene_editor->lower_panel->Disable();
+							scene_editor->lower_panel->Hide();	
+							//					scene_editor->dummy_panel->Show();
 							/* nothing to do */
 					 } break;	
 					 case SCENE_OBJECT_SCENE:
 					 {
-							scene_editor->lower_panel->Hide();		
+							scene_editor->lower_panel->Disable();
+							scene_editor->lower_panel->Hide();	
+							//					scene_editor->dummy_panel->Show();
 							/* nothing to do */
 					 } break;			
 				}
@@ -2291,8 +2341,9 @@ void RemoveFromSettingList(wxCommandEvent &event)
 			else
 			{
 				 graphicalitemschecklist->Clear();
-				 wxScrolledWindow *scenededitingpanel= XRCCTRL(*this, "SceneEditing",wxScrolledWindow);
-				 scenededitingpanel->Hide();
+				 wxScrolledWindow *sceneeditingpanel= XRCCTRL(*this, "SceneEditing",wxScrolledWindow);
+				 sceneeditingpanel->Disable();
+				 sceneeditingpanel->Hide();
 			}
 	 }
 	 else
@@ -3510,8 +3561,23 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 							 (this, &wxSceneEditor::label_callback);
 						label_field_chooser->set_callback(label_callback);
 				 }
+				 if (font_chooser == NULL)
+				 {
+						font_chooser =
+							 new Managed_object_chooser<Graphics_font,MANAGER_CLASS(Graphics_font)>
+							 (font_chooser_panel, font, scene_editor->font_manager,
+									(MANAGER_CONDITIONAL_FUNCTION(Graphics_font) *)NULL , (void *)NULL, 
+									scene_editor->user_interface);
+						Callback_base< Graphics_font* > *font_callback = 
+							 new Callback_member_callback< Graphics_font*, 
+							 wxSceneEditor, int (wxSceneEditor::*)(Graphics_font *) >
+							 (this, &wxSceneEditor::font_callback);
+						font_chooser->set_callback(font_callback);
+				 }
 				 labelcheckbox->Show();
 				 label_chooser_panel->Show();
+				 fonttext->Show();
+				 font_chooser_panel->Show();
 				 if ((struct Computed_field *)NULL!=label_field)
 				 {
 						label_field_chooser->set_object(label_field);
@@ -3523,11 +3589,23 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 						labelcheckbox->SetValue(0);
 						label_chooser_panel->Disable();
 				 }
+				 if ((struct Graphics_font *)NULL!=font)
+				 {
+						//font_chooser->set_object(font);
+						font_chooser_panel->Enable();
+				 }
+				 else
+				 {
+						font_chooser_panel->Disable();
+				 }
+
 			}
 		else
 		{
 			 labelcheckbox->Hide();
 			 label_chooser_panel->Hide();
+			 font_chooser_panel->Hide();
+			 fonttext->Hide();
 		}
 		
 		/* element_points and iso_surfaces */
@@ -4226,6 +4304,7 @@ Add scene_object as checklistbox item into the box
 						 for_each_settings_in_GT_element_group(edit_gt_element_group,
 								Scene_editor_add_element_settings_item, (void *)scene_editor);
 						 scene_editor->lower_panel->Show();
+						 //					 scene_editor->dummy_panel->Hide();
 						 set_general_settings((void *)scene_editor);
 						 get_and_set_graphical_element_settings((void *)scene_editor);
 					}
@@ -4371,6 +4450,8 @@ DESCRIPTION :
 					wxSceneEditor(scene_editor);
 			 scene_editor->lower_panel=
 					XRCCTRL(*scene_editor->wx_scene_editor, "LowerPanel", wxPanel);
+			 //			 scene_editor->dummy_panel=
+			 //					XRCCTRL(*scene_editor->wx_scene_editor, "DummyPanel", wxPanel);
 			 scene_editor->checklistbox = XRCCTRL(*scene_editor->wx_scene_editor, "SceneCheckList", wxCheckListBox);
 			 scene_editor->checklistbox->Clear();
 			 for_each_Scene_object_in_Scene(scene,
@@ -4379,11 +4460,15 @@ DESCRIPTION :
 			 {
 					case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 					{
-						 scene_editor->lower_panel->Show();					
+						 scene_editor->lower_panel->Enable();	
+						 scene_editor->lower_panel->Show();	
+						 //				 scene_editor->dummy_panel->Hide();
 					} break;
 					case SCENE_OBJECT_GRAPHICS_OBJECT:
 					 {
+							scene_editor->lower_panel->Disable();	
 							scene_editor->lower_panel->Hide();		
+							//					scene_editor->dummy_panel->Show();
 							/* nothing to do */
 					 } break;	
 					case SCENE_OBJECT_SCENE:

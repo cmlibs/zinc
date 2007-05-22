@@ -1,10 +1,10 @@
 /*******************************************************************************
 FILE : filedir.c
 
-LAST MODIFIED : 23 April 2004
+LAST MODIFIED : 22 May 2007
 
 DESCRIPTION :
-Routines for opening files using Motif widgets.
+Routines for opening files using Motif and wx widgets.
 ???DB.  Return sometimes doesn't work for writing ?  This is because Cancel is
 the default button.
 ==============================================================================*/
@@ -904,9 +904,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 ==============================================================================*/
 {
 #if defined (WX_USER_INTERFACE)
-//	char *temp_str;
-//	int length,retry;
-	 char *filename, *shell_title,*temp_string, *extension,*last,*pathname, *old_directory, *old_directory_name;
+	 char *filename, *shell_title,*temp_string, *extension;
 	 int retry, length;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF)
@@ -917,7 +915,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 	Widget file_selection_child,parent;
 #endif /*defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
-	char *temp_str;
+	char *tempstr;
 	int length,retry;
 #endif /* defined (WIN32_USER_INTERFACE) */
 
@@ -1224,7 +1222,75 @@ name the <file_operation> is performed on the file with the <arguments>.
 	{
 		 wxString file_name=ReadData->GetPath();
 		 file_open_data->file_name=(char*)file_name.mb_str();
-		 
+#if defined (__WIN32__)
+		 char *drive_name = NULL;
+		 char *first = NULL;	
+		 char *last = NULL;	
+		 char *temp_directory_name,*directory_name, *temp_name;
+		 int lastlength;
+		 filename = file_open_data->file_name;
+		 first = strchr(filename, '\\');
+		 last = strrchr(filename, '\\');
+		 lastlength = last - filename +1;
+		 length = first - filename +1;
+		 if ((length>0))
+		 {
+				if (ALLOCATE(drive_name,char,length))
+				{		 
+					 strncpy(drive_name,file_name,length);
+					 drive_name[length-1]='\0';
+					 if (ALLOCATE(temp_string,char,length+8))
+					 {
+							strcpy(temp_string, "set dir ");
+							strcat(temp_string, drive_name);
+							temp_string[length+7]='\0';
+							Execute_command_execute_string(file_open_data->execute_command,temp_string);
+							DEALLOCATE(temp_string);
+					 }
+					 DEALLOCATE(drive_name);
+					 if (length == lastlength)
+					 {
+							temp_name = &filename[lastlength];
+					 }
+				}
+				if (lastlength>length)
+				{
+					 if (ALLOCATE(temp_directory_name,char,lastlength+1))
+					 {
+							strncpy(temp_directory_name,filename,lastlength);
+							temp_directory_name[lastlength]='\0';
+							if (ALLOCATE(directory_name,char,lastlength-length+2))
+							{
+								 directory_name = &temp_directory_name[length-1];
+								 directory_name[lastlength-length+1]='\0';			
+								 if (ALLOCATE(temp_string,char,lastlength-length+10))
+								 {
+										strcpy(temp_string, "set dir ");
+										strcat(temp_string, directory_name);
+										temp_string[lastlength-length+9]='\0';
+										Execute_command_execute_string(file_open_data->execute_command,temp_string);
+										temp_name=&filename[lastlength];
+										if (file_open_data->operation)
+										{
+											 if ((file_open_data->operation)((temp_name)
+														 ,file_open_data->arguments))
+											 {
+													retry=0;
+											 }
+											 else
+											 {
+													retry=1;
+											 }
+										}
+										DEALLOCATE(temp_string);
+								 }
+								 DEALLOCATE(directory_name);
+							}
+							DEALLOCATE(temp_directory_name);
+					 }
+				}
+		 }
+#else /*defined (__WIN32__)*/
 		 if (file_open_data->operation)
 		 {
 				if ((file_open_data->operation)((file_open_data->file_name)
@@ -1237,8 +1303,9 @@ name the <file_operation> is performed on the file with the <arguments>.
 					 retry=1;
 				}
 		 }
-		 old_directory = NULL;
-		 old_directory_name = NULL;
+		 char *old_directory = NULL;
+		 char *old_directory_name = NULL;
+		 char *last,*pathname;
 		 old_directory = (char *)malloc(4096);
 		 getcwd(old_directory, 4096);
 		 length = strlen(old_directory);
@@ -1249,13 +1316,16 @@ name the <file_operation> is performed on the file with the <arguments>.
 				strcat(old_directory_name,"/");
 		 }
 		 if (strcmp(file_open_data->filter_extension, ".com") != 0)
+				/* Set the directory if the file extension is not .com. 
+					 if the file extension is .com, the directory will be set in the
+					 comfile.com */
 		 {
 				last = strrchr(filename, '/');
 				if (last != NULL)
 				{
 					 length = last-filename+1;
 					 pathname = NULL;
-					 if (ALLOCATE(pathname,char,length))
+					 if (ALLOCATE(pathname,char,length+1))
 					 {
 							strncpy(pathname,filename,length);
 							pathname[length]='\0';
@@ -1263,7 +1333,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 							{
 								 make_valid_token(&pathname);
 								 length = strlen(pathname);
-								 if (ALLOCATE(temp_string,char,length+8))
+								 if (ALLOCATE(temp_string,char,length+9))
 								 {
 										strcpy(temp_string, "set dir ");
 										strcat(temp_string, pathname);
@@ -1274,22 +1344,19 @@ name the <file_operation> is performed on the file with the <arguments>.
 								 {
 										DEALLOCATE(temp_string);
 								 }
-							}
+							}					
 					 }
 					 if (pathname)
 					 {
 							DEALLOCATE(pathname);
-					}	
+					 }	
 				}			 
-		 }
-		 if (old_directory_name)
-		 {
-			 DEALLOCATE(old_directory_name);
 		 }
 		 if (old_directory)
 		 {
 				DEALLOCATE(old_directory);
-		}
+		 }
+#endif /* !defined (__WIN32__)*/
 	}
 #endif /* defined (WX_USER_INTERFACE) */
 	LEAVE;
@@ -1319,7 +1386,7 @@ specified file.
 #if defined (WX_USER_INTERFACE)
 //	char *temp_str;
   int retry;
-	char *shell_title,*temp_string,*temp_extension,*extension;
+	char *shell_title,*temp_string,*extension;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF)
 	Atom WM_DELETE_WINDOW;
@@ -1692,6 +1759,7 @@ specified file.
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 				temp_string=(char *)NULL;
+				extension = (char *)NULL;
 				switch (file_open_data->type)
 				{
 					case REGULAR:
@@ -1706,9 +1774,26 @@ specified file.
 								strcat(temp_string,file_open_data->filter_extension);
 								strcat(temp_string," file");
 								shell_title=temp_string;
-								strcpy(temp_extension,"*");
-								strcat(temp_extension,file_open_data->filter_extension);
-								extension=temp_extension;								
+								if (strcmp(file_open_data->filter_extension, ".com") == 0)
+								{
+									 extension = "*.com";
+								}
+								else if (strcmp(file_open_data->filter_extension, ".exdata") == 0)
+								{
+									 extension = "*.exdata";
+								}
+								else if (strcmp(file_open_data->filter_extension, ".curve.com") == 0)
+								{
+									 extension = "*.curve.com";
+								}
+								else if (strcmp(file_open_data->filter_extension, ".exnode") == 0)
+								{
+									 extension = "*.exnode";
+								}
+								else if (strcmp(file_open_data->filter_extension, ".exelem") == 0)
+								{
+									 extension = "*.exelem";
+								}
 							}
 						}
 					} break;
@@ -1721,25 +1806,94 @@ specified file.
 						shell_title=(char *)NULL;
 					} break;
 				}
-
 wxFileDialog *SaveData = new wxFileDialog ((wxWindow *)NULL,shell_title,"","",
   extension,wxSAVE|wxOVERWRITE_PROMPT,wxDefaultPosition);
  if (SaveData->ShowModal() == wxID_OK)
 	{
 	  wxString file_name=SaveData->GetPath();
 		file_open_data->file_name=(char*)file_name.mb_str();
-				if (file_open_data->operation)
-				{
-					if ((file_open_data->operation)((file_open_data->file_name)
-						,file_open_data->arguments))
-					{
-						retry=0;
-					}
-					else
-					{
-						retry=1;
-					}
+#if defined (__WIN32__)
+		 char *drive_name = NULL;
+		 char *first = NULL;	
+		 char *last = NULL;	
+		 char *temp_directory_name,*directory_name, *temp_name, *filename;
+		 int lastlength, length;
+		 filename = file_open_data->file_name;
+		 first = strchr(filename, '\\');
+		 last = strrchr(filename, '\\');
+		 lastlength = last - filename +1;
+		 length = first - filename +1;
+		 if ((length>0))
+		 {
+				if (ALLOCATE(drive_name,char,length))
+				{		 
+					 strncpy(drive_name,file_name,length);
+					 drive_name[length-1]='\0';
+					 if (ALLOCATE(temp_string,char,length+8))
+					 {
+							strcpy(temp_string, "set dir ");
+							strcat(temp_string, drive_name);
+							temp_string[length+7]='\0';
+							Execute_command_execute_string(file_open_data->execute_command,temp_string);
+							DEALLOCATE(temp_string);
+					 }
+					 DEALLOCATE(drive_name);
+					 if (length == lastlength)
+					 {
+							temp_name = &filename[lastlength];
+					 }
 				}
+				if (lastlength>length)
+				{
+					 if (ALLOCATE(temp_directory_name,char,lastlength+1))
+					 {
+							strncpy(temp_directory_name,filename,lastlength);
+							temp_directory_name[lastlength]='\0';
+							if (ALLOCATE(directory_name,char,lastlength-length+2))
+							{
+								 directory_name = &temp_directory_name[length-1];
+								 directory_name[lastlength-length+1]='\0';			
+								 if (ALLOCATE(temp_string,char,lastlength-length+10))
+								 {
+										strcpy(temp_string, "set dir ");
+										strcat(temp_string, directory_name);
+										temp_string[lastlength-length+9]='\0';
+										Execute_command_execute_string(file_open_data->execute_command,temp_string);
+										temp_name=&filename[lastlength];
+										if (file_open_data->operation)
+										{
+											 if ((file_open_data->operation)((temp_name)
+														 ,file_open_data->arguments))
+											 {
+													retry=0;
+											 }
+											 else
+											 {
+													retry=1;
+											 }
+										}
+										DEALLOCATE(temp_string);
+								 }
+								 DEALLOCATE(directory_name);
+							}
+							DEALLOCATE(temp_directory_name);
+					 }
+				}
+		 }
+#else /*defined (__WIN32__)*/
+		 if (file_open_data->operation)
+		 {
+				if ((file_open_data->operation)((file_open_data->file_name)
+							,file_open_data->arguments))
+				{
+					 retry=0;
+				}
+				else
+				{
+					 retry=1;
+				}
+		 }
+#endif /* !defined (__WIN32__)*/
 	}
 #endif /* defined (WX_USER_INTERFACE) */
 	LEAVE;
