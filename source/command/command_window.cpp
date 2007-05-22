@@ -2065,6 +2065,9 @@ Create the structures and retrieve the command window from the uil file.
 							{
 								/*???DB.  Get rid of image processing and unemap if not being
 								  used ? */
+								/* PJB: Is this the best way to set the default window size?
+									 Note tha XtVaSetValues must be called before XtManageChild */
+								XtVaSetValues(command_window->window,XmNwidth,400,XmNheight,500,NULL);
 								XtManageChild(command_window->window);
 								XtRealizeWidget(command_window->shell);
 								/* set up for communication with other applications */
