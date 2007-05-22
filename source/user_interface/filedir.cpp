@@ -915,7 +915,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 	Widget file_selection_child,parent;
 #endif /*defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
-	char *tempstr;
+	char *temp_str;
 	int length,retry;
 #endif /* defined (WIN32_USER_INTERFACE) */
 
