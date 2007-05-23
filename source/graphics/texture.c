@@ -330,6 +330,14 @@ DESCRIPTION :
 			{
 				switch (number_of_components)
 				{
+					case 1:
+					{
+						return_code = GL_COMPRESSED_LUMINANCE_ARB;
+					} break;
+					case 2:
+					{
+						return_code = GL_COMPRESSED_LUMINANCE_ALPHA_ARB;
+					} break;
 					case 3:
 					{
 						return_code = GL_COMPRESSED_RGB_ARB;
@@ -4778,8 +4786,9 @@ Writes the properties of the <texture> to the command window.
 			}
 			/* get the compressed texture size */
 			glBindTexture(texture_target, texture->texture_id);
-			glGetTexParameteriv(texture_target, GL_TEXTURE_COMPRESSED_IMAGE_SIZE_ARB, &texture_size);
-			display_message(INFORMATION_MESSAGE,"  compressed storage used in graphics : %u\n",
+			glGetTexLevelParameteriv(texture_target, (GLint)0,
+			  GL_TEXTURE_COMPRESSED_IMAGE_SIZE_ARB, &texture_size);
+			display_message(INFORMATION_MESSAGE,"  compressed storage used in graphics : %d\n",
 				texture_size);
 		}
 #endif /* defined (GL_ARB_texture_compression) */
