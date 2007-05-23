@@ -182,11 +182,11 @@ specified on the command line, a file selection box is presented to the user.
 							{		 
 								 strncpy(drive_name,filename,length);
 								 drive_name[length-1]='\0';
-								 if (ALLOCATE(temp_string,char,length+8))
+								 if (ALLOCATE(temp_string,char,length+9))
 								 {
 										strcpy(temp_string, "set dir ");
 										strcat(temp_string, drive_name);
-										temp_string[length+7]='\0';
+										temp_string[length+8]='\0';
 										Execute_command_execute_string(open_comfile_data->execute_command,temp_string);
 										DEALLOCATE(temp_string);
 								 }
@@ -298,7 +298,7 @@ specified on the command line, a file selection box is presented to the user.
 										{
 											 temp_string = NULL;
 										}
-										if (ALLOCATE(temp_string,char,length+8))
+										if (ALLOCATE(temp_string,char,length+9))
 										{
 											 strcpy(temp_string, "set dir ");
 											 strcat(temp_string, old_directory_name);
