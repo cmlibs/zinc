@@ -4484,9 +4484,7 @@ Evaluate the fields cache at the location
 		}
 		else 
 		{
-			 Field_node_location *node_location; 
-			 if (node_location = 
-					dynamic_cast<Field_node_location*>(location))
+			 if (dynamic_cast<Field_node_location*>(location))
 			 {
 					display_message(ERROR_MESSAGE,
 						 "Computed_field_basis_derivative::evaluate_cache_at_location.  "
