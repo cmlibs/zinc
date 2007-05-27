@@ -45,11 +45,22 @@ The data structures used for representing textures.
 #define TEXTURE_H
 
 #include <stdio.h>
+#include "api/cmiss_texture.h"
 #include "general/enumerator.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
 #include "graphics/colour.h"
+
+/* SAB.  Modify names and types to conform to the api specification.
+   There isn't a consistent policy on making api interfaces,
+   this one works like scene_viewer, where exported functions are
+   typedef and #defined to be the exported version. */
+
+#define Texture Cmiss_texture
+
+#define Texture_get_original_texel_sizes \
+	Cmiss_texture_get_original_texel_sizes
 
 /*
 Global types
@@ -514,6 +525,18 @@ DESCRIPTION :
 Returns the number of components used per texel in the texture: 1, 2, 3 or 4.
 ==============================================================================*/
 
+int Cmiss_texture_get_graphics_storage_size(Cmiss_texture_id texture);
+/*******************************************************************************
+LAST MODIFIED : 25 May 2007
+
+DESCRIPTION :
+Returns the amount of graphics memory used to store the texture.
+If the texture is compressed then this parameter will be requested directly
+from the graphics card, so if it hasn't been rendered yet will be undefined.
+If the texture is not compressed then it is calculated from the texture
+parameters.
+==============================================================================*/
+
 int Texture_get_original_size(struct Texture *texture,
 	int *original_width_texels, int *original_height_texels, 
 	int *original_depth_texels);
@@ -523,6 +546,17 @@ LAST MODIFIED : 8 February 2002
 DESCRIPTION :
 Returns the width, height and depth of the image from which the texture was
 read. May differ from the dimensions of the texture which is in powers of 2.
+==============================================================================*/
+
+int Texture_get_original_texel_sizes(struct Texture *texture,
+	unsigned int *dimension, unsigned int **sizes);
+/*******************************************************************************
+LAST MODIFIED : 25 May 2007
+
+DESCRIPTION :
+Returns the original texel sizes of the texture.  These may have been
+subsequently modified by cmgui such as to support platforms which require
+each size to be a power of two.
 ==============================================================================*/
 
 int Texture_get_physical_size(struct Texture *texture,float *width,
@@ -543,6 +577,33 @@ DESCRIPTION :
 Sets the physical size in model coordinates of the original texture image. The
 default is 1.0, so that texture coordinates in the range from 0 to 1 represent
 real image data and not padding to make image sizes up to powers of 2.
+==============================================================================*/
+
+int Cmiss_texture_get_texture_coordinate_sizes(Cmiss_texture_id texture, 
+   unsigned int *dimension, double **texture_coordinate_sizes);
+/*******************************************************************************
+LAST MODIFIED : 25 May 2007
+
+DESCRIPTION :
+Returns the texture coordinates sizes of the texture.  
+This is the same as the physical size above.  When rendered the
+texture will be rendered mapping the texture coordinates [0,0,0] to the bottom
+left of the texture and
+[textureCoordinateWidth, textureCoordinateHeight, textureCoordinateDepth] to
+the top right of the texture.
+==============================================================================*/
+
+int Cmiss_texture_set_texture_coordinate_sizes(Cmiss_texture_id texture, 
+   unsigned int dimension, double *texture_coordinate_sizes);
+/*******************************************************************************
+LAST MODIFIED : 25 May 2007
+
+DESCRIPTION :
+Returns the texture coordinates sizes of the texture.  When rendered the
+texture will be rendered mapping the texture coordinates [0,0,0] to the bottom
+left of the texture and
+[textureCoordinateWidth, textureCoordinateHeight, textureCoordinateDepth] to
+the top right of the texture.
 ==============================================================================*/
 
 int Texture_get_distortion_info(struct Texture *texture,

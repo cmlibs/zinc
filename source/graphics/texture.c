@@ -2420,6 +2420,43 @@ DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS( \
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Texture,name,char *)
 #endif /* defined (OLD_CODE) */
 
+int Texture_notify_change(struct Texture *texture)
+/*******************************************************************************
+LAST MODIFIED : 13 February 1998
+
+DESCRIPTION :
+Returns the alpha value used for combining the texture.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Texture_notify_change);
+	if (texture)
+	{
+		if (texture->texture_manager)
+		{
+			MANAGER_BEGIN_CHANGE(Texture)(texture->texture_manager,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture), texture);
+		}
+		/* display list needs to be compiled again */
+		texture->display_list_current=0;
+		if (texture->texture_manager)
+		{
+			MANAGER_END_CHANGE(Texture)(texture->texture_manager);
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_notify_change.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_notify_change */
+
 int Texture_get_combine_alpha(struct Texture *texture,float *alpha)
 /*******************************************************************************
 LAST MODIFIED : 13 February 1998
@@ -2463,8 +2500,7 @@ Sets the alpha value used for combining the texture.
 		if (alpha != texture->combine_alpha)
 		{
 			texture->combine_alpha=alpha;
-			/* display list needs to be compiled again */
-			texture->display_list_current=0;
+			Texture_notify_change(texture);
 		}
 		return_code=1;
 	}
@@ -2524,8 +2560,7 @@ Sets the colour to be combined with the texture in blending combine mode.
 		texture->combine_colour.red=colour->red;
 		texture->combine_colour.green=colour->green;
 		texture->combine_colour.blue=colour->blue;
-		/* display list needs to be compiled again */
-		texture->display_list_current=0;
+		Texture_notify_change(texture);
 		return_code=1;
 	}
 	else
@@ -2582,8 +2617,7 @@ Sets how the texture is combined with the material: blend, decal or modulate.
 		if (combine_mode != texture->combine_mode)
 		{
 			texture->combine_mode = combine_mode;
-			/* display list needs to be compiled again */
-			texture->display_list_current=0;
+			Texture_notify_change(texture);
 		}
 		return_code=1;
 	}
@@ -2640,9 +2674,8 @@ Sets how the texture is compressed.
 	{
 		if (compression_mode != texture->compression_mode)
 		{
-			texture->compression_mode = compression_mode;
-			/* display list needs to be compiled again */
-			texture->display_list_current=0;
+			texture->compression_mode = compression_mode;	
+			Texture_notify_change(texture);
 		}
 		return_code=1;
 	}
@@ -2700,8 +2733,7 @@ Sets the texture filter: linear or nearest.
 		if (filter_mode != texture->filter_mode)
 		{
 			texture->filter_mode = filter_mode;
-			/* display list needs to be compiled again */
-			texture->display_list_current=0;
+			Texture_notify_change(texture);
 		}
 		return_code=1;
 	}
@@ -2760,8 +2792,7 @@ Sets the texture filter: linear or nearest.
 		if (resize_filter_mode != texture->resize_filter_mode)
 		{
 			texture->resize_filter_mode = resize_filter_mode;
-			/* display list needs to be compiled again */
-			texture->display_list_current=0;
+			Texture_notify_change(texture);
 		}
 		return_code=1;
 	}
@@ -4312,6 +4343,101 @@ Returns the number of components used per texel in the texture: 1, 2, 3 or 4.
 	return (return_code);
 } /* Texture_get_number_of_components */
 
+int Cmiss_texture_get_graphics_storage_size(Cmiss_texture_id texture)
+/*******************************************************************************
+LAST MODIFIED : 26 May 2007
+
+DESCRIPTION :
+Returns the amount of graphics memory used to store the texture.
+If the texture is compressed then this parameter will be requested directly
+from the graphics card, so if it hasn't been rendered yet will be undefined.
+If the texture is not compressed then it is calculated from the texture
+parameters.
+==============================================================================*/
+{
+	int size;
+
+	ENTER(Texture_get_graphics_storage_size);
+	if (texture)
+	{
+#if defined (GL_ARB_texture_compression)
+		if (Graphics_library_check_extension(GL_ARB_texture_compression) &&
+			(TEXTURE_COMPRESSED_UNSPECIFIED == texture->compression_mode))
+		{
+			GLint texture_size;
+			GLenum texture_target;
+
+			switch (texture->dimension)
+			{
+				case 1:
+				{
+					texture_target = GL_TEXTURE_1D;
+				} break;
+				case 2:
+				{
+					texture_target = GL_TEXTURE_2D;
+				} break;
+				case 3:
+				{
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+					if (
+#  if defined (GL_VERSION_1_2)
+						Graphics_library_check_extension(GL_VERSION_1_2)
+#    if defined (GL_EXT_texture3D)
+						||
+#    endif /* defined (GL_EXT_texture3D) */
+#  endif /* defined (GL_VERSION_1_2) */
+#  if defined (GL_EXT_texture3D)
+						Graphics_library_check_extension(GL_EXT_texture3D)
+#  endif /* defined (GL_EXT_texture3D) */
+						)
+					{
+						texture_target = GL_TEXTURE_3D;
+					}
+					else
+					{
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+						display_message(ERROR_MESSAGE,
+							"compile_Texture.  "
+							"3D textures not supported on this display.");
+						size = 0;
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+					}
+#endif /* defined (GL_ARB_texture_compression) */
+				} break;
+				default:
+				{
+					size = 0;
+				}
+			}
+
+			/* get the compressed texture size */
+			glBindTexture(texture_target, texture->texture_id);
+			glGetTexLevelParameteriv(texture_target, (GLint)0,
+			  GL_TEXTURE_COMPRESSED_IMAGE_SIZE_ARB, &texture_size);
+			size = texture_size;
+		}
+		else
+		{
+#endif /* defined (GL_ARB_texture_compression) */
+			size = texture->width_texels * texture->height_texels *
+				texture->depth_texels * texture->number_of_bytes_per_component *
+				Texture_storage_type_get_number_of_components(texture->storage);
+#if defined (GL_ARB_texture_compression)
+		}
+#endif /* defined (GL_ARB_texture_compression) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Texture_get_graphics_storage_size.  "
+			"Invalid argument(s)");
+		size = 0;
+	}
+	LEAVE;
+
+	return (size);
+} /* Texture_get_graphics_storage_size */
+
 int Texture_get_original_size(struct Texture *texture,
 	int *original_width_texels, int *original_height_texels, 
 	int *original_depth_texels)
@@ -4412,6 +4538,112 @@ real image data and not padding to make image sizes up to powers of 2.
 
 	return (return_code);
 } /* Texture_set_physical_size */
+
+int Cmiss_texture_get_texture_coordinate_sizes(Cmiss_texture_id texture,
+   unsigned int *dimension, double **sizes)
+/*******************************************************************************
+LAST MODIFIED : 26 May 2007
+
+DESCRIPTION :
+Returns the texture coordinates sizes of the texture.  
+This is the same as the physical size above.  When rendered the
+texture will be rendered mapping the texture coordinates [0,0,0] to the bottom
+left of the texture and
+[textureCoordinateWidth, textureCoordinateHeight, textureCoordinateDepth] to
+the top right of the texture.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Texture_get_texture_coordinate_sizes);
+	if (texture)
+	{
+		if (ALLOCATE(*sizes, double, texture->dimension))
+		{
+			*dimension = texture->dimension;
+			if (texture->dimension > 0)
+			{
+				(*sizes)[0] = texture->width;
+				if (texture->dimension > 1)
+				{
+					(*sizes)[1] = texture->height;
+					if (texture->dimension > 2)
+					{
+						(*sizes)[2] = texture->depth;
+					}
+				}
+			}
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Texture_get_texture_coordinate_sizes.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_get_texture_coordinate_sizes */
+
+int Cmiss_texture_set_texture_coordinate_sizes(Cmiss_texture_id texture,
+   unsigned int dimension, double *sizes)
+/*******************************************************************************
+LAST MODIFIED : 26 May 2007
+
+DESCRIPTION :
+Returns the texture coordinates sizes of the texture.  
+This is the same as the physical size above.  When rendered the
+texture will be rendered mapping the texture coordinates [0,0,0] to the bottom
+left of the texture and
+[textureCoordinateWidth, textureCoordinateHeight, textureCoordinateDepth] to
+the top right of the texture.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Texture_set_texture_coordinate_sizes);
+	if (texture)
+	{
+		if (dimension > 0)
+		{
+			if (texture->width != sizes[0])
+			{
+				texture->width = sizes[0];
+				texture->display_list_current = 0;
+			}
+			if (dimension > 1)
+			{
+				if (texture->height != sizes[1])
+				{
+					texture->height = sizes[1];
+					texture->display_list_current = 0;
+				}
+				if (dimension > 2)
+				{
+					if (texture->depth != sizes[2])
+					{
+						texture->depth = sizes[2];
+						texture->display_list_current = 0;
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Texture_set_texture_coordinate_sizes.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_set_texture_coordinate_sizes */
 
 int Texture_get_distortion_info(struct Texture *texture,
 	float *distortion_centre_x,float *distortion_centre_y,
@@ -4515,12 +4747,18 @@ into the texture.
 } /* Texture_get_size */
 
 int Texture_get_dimension(struct Texture *texture, int *dimension)
+/*******************************************************************************
+LAST MODIFIED : 24 May 2007
+
+DESCRIPTION :
+Returns the dimension of the texture image.
+==============================================================================*/
 {
         int return_code;
 	ENTER(Texture_get_dimension);
 	if (texture)
 	{
-	        *dimension = texture->dimension;
+		*dimension = texture->dimension;
 	}
 	else
 	{
@@ -4532,6 +4770,54 @@ int Texture_get_dimension(struct Texture *texture, int *dimension)
 
 	return (return_code);
 }/* Texture_get_dimension */
+
+int Texture_get_original_texel_sizes(struct Texture *texture,
+	unsigned int *dimension, unsigned int **sizes)
+/*******************************************************************************
+LAST MODIFIED : 25 May 2007
+
+DESCRIPTION :
+Returns the original texel sizes of the texture.  These may have been
+subsequently modified by cmgui such as to support platforms which require
+each size to be a power of two.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Texture_get_original_texel_sizes);
+	if (texture)
+	{
+		if (ALLOCATE(*sizes, unsigned int, texture->dimension))
+		{
+			*dimension = texture->dimension;
+			if (texture->dimension > 0)
+			{
+				(*sizes)[0] = texture->width_texels;
+				if (texture->dimension > 1)
+				{
+					(*sizes)[1] = texture->height_texels;
+					if (texture->dimension > 2)
+					{
+						(*sizes)[2] = texture->depth_texels;
+					}
+				}
+			}
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Texture_get_original_texel_sizes.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_get_original_texel_sizes */
 
 enum Texture_wrap_mode Texture_get_wrap_mode(struct Texture *texture)
 /*******************************************************************************
@@ -4630,12 +4916,7 @@ DESCRIPTION :
 Writes the properties of the <texture> to the command window.
 ==============================================================================*/
 {
-	int return_code;
-#if defined (GL_ARB_texture_compression)
-	GLenum texture_target;
-	GLint texture_size;
-#endif /* defined (GL_ARB_texture_compression) */
-	
+	int return_code;	
 
 	ENTER(list_Texture);
 	USE_PARAMETER(dummy);
@@ -4741,57 +5022,9 @@ Writes the properties of the <texture> to the command window.
 		/* write the compression type */
 		display_message(INFORMATION_MESSAGE,"  compression type : %s\n",
 			ENUMERATOR_STRING(Texture_compression_mode)(texture->compression_mode));
-#if defined (GL_ARB_texture_compression)
-		if (Graphics_library_check_extension(GL_ARB_texture_compression) &&
-			(TEXTURE_COMPRESSED_UNSPECIFIED == texture->compression_mode))
-		{
-			switch (texture->dimension)
-			{
-				case 1:
-				{
-					texture_target = GL_TEXTURE_1D;
-				} break;
-				case 2:
-				{
-					texture_target = GL_TEXTURE_2D;
-				} break;
-				case 3:
-				{
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-					if (
-#  if defined (GL_VERSION_1_2)
-						Graphics_library_check_extension(GL_VERSION_1_2)
-#    if defined (GL_EXT_texture3D)
-						||
-#    endif /* defined (GL_EXT_texture3D) */
-#  endif /* defined (GL_VERSION_1_2) */
-#  if defined (GL_EXT_texture3D)
-						Graphics_library_check_extension(GL_EXT_texture3D)
-#  endif /* defined (GL_EXT_texture3D) */
-						)
-					{
-						texture_target = GL_TEXTURE_3D;
-					}
-					else
-					{
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-						display_message(ERROR_MESSAGE,
-							"compile_Texture.  "
-							"3D textures not supported on this display.");
-						return_code=0;
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-					}
-#endif /* defined (GL_ARB_texture_compression) */
-				} break;
-			}
-			/* get the compressed texture size */
-			glBindTexture(texture_target, texture->texture_id);
-			glGetTexLevelParameteriv(texture_target, (GLint)0,
-			  GL_TEXTURE_COMPRESSED_IMAGE_SIZE_ARB, &texture_size);
-			display_message(INFORMATION_MESSAGE,"  compressed storage used in graphics : %d\n",
-				texture_size);
-		}
-#endif /* defined (GL_ARB_texture_compression) */
+
+		display_message(INFORMATION_MESSAGE,"  storage used in graphics : %d\n",
+		     Cmiss_texture_get_graphics_storage_size(texture));
 
 		/* write the colour */
 		display_message(INFORMATION_MESSAGE,

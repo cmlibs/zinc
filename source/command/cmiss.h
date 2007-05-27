@@ -220,7 +220,7 @@ DESCRIPTION :
 Gets the user_interface for this <command_data>
 ==============================================================================*/
 
-struct MANAGER(Texture) *Cmiss_command_data_get_texture_manager(
+struct MANAGER(Cmiss_texture) *Cmiss_command_data_get_texture_manager(
 	struct Cmiss_command_data *command_data);
 /*******************************************************************************
 LAST MODIFIED : 7 November 2006
