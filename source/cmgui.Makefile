@@ -589,7 +589,7 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
          ifneq ($(STATIC_LINK),true)
             USER_INTERFACE_LIB += -Wl,-Bstatic -lgtkglext-x11-1.0 -lgdkglext-x11-1.0 -lGLU -Wl,-Bdynamic -lGL $(shell pkg-config gtk+-2.0 pangox --libs) -lXmu
          else # $(STATIC_LINK) != true
-            USER_INTERFACE_LIB += -L/home/blackett/lib -lgtkglext-x11-1.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 $(GRAPHICS_LIB)
+            USER_INTERFACE_LIB += -lgtkglext-x11-1.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 $(GRAPHICS_LIB)
          endif # $(STATIC_LINK) != true
       else # $(USE_GTK2) == true
          USER_INTERFACE_INC +=  -I/usr/include/gtk-1.2 -I/usr/include/glib-1.2 -I/usr/lib/glib/include/
@@ -779,7 +779,8 @@ API_SRCS = \
 	api/cmiss_time_sequence.c
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    API_SRCS += \
-	   api/cmiss_scene_viewer.c
+	   api/cmiss_scene_viewer.c \
+		api/cmiss_texture.c
 endif
 ifeq ($(USE_COMPUTED_VARIABLES), true)
    API_SRCS += \
