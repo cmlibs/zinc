@@ -665,16 +665,6 @@ Since both nodes and data can depend on embedded fields, the
 							{
 								 /* select the node to be displayed in dialog; note this is ok
 										here as we are not receiving selection callbacks yet */
-// 								 if (initial_node)
-// 								 {
-// 										node_viewer->template_node = ACCESS(FE_node)(
-// 											 CREATE(FE_node)(0, (struct FE_region *)NULL, initial_node));
-// 								 }
-// 								 else
-// 								 {
-// 										node_viewer->template_node = (struct FE_node *)NULL;
-// 								 }
-// 								 node_viewer->initial_node = initial_node;
 								 FE_node_selection_select_node(node_selection,initial_node);
 								 FE_region_add_callback(node_viewer->fe_region,
 										Node_viewer_FE_region_change, (void *)node_viewer);
@@ -723,7 +713,6 @@ Since both nodes and data can depend on embedded fields, the
 			 node_viewer->frame->Layout();
 			 node_viewer->frame->SetMinSize(wxSize(50,100));
 			 node_viewer->collpane->Layout();
-
 #endif /* defined (WX_USER_INTERFACE) */	
 		 }
 		 else
@@ -1467,7 +1456,7 @@ values whose value_type was not recognized.
 ==============================================================================*/
 {
 	enum FE_nodal_value_type *component_nodal_value_types,nodal_value_type,
-		*nodal_value_types,*temp_nodal_value_types;
+		*nodal_value_types;
 	int i,j,k,l,number_of_components,number_of_derivatives,return_code;
 
 	ENTER(get_FE_node_field_value_types);
@@ -1509,9 +1498,10 @@ values whose value_type was not recognized.
 						if ((k >= (*number_of_nodal_value_types))||
 							(nodal_value_type != nodal_value_types[k]))
 						{
+							 enum FE_nodal_value_type *temp_nodal_value_types;
 							/* add to list in numerical order */
 							if (REALLOCATE(temp_nodal_value_types,nodal_value_types,
-								enum FE_nodal_value_type,(*number_of_nodal_value_types)+1))
+								enum FE_nodal_value_type ,(*number_of_nodal_value_types)+1))
 							{
 								nodal_value_types=temp_nodal_value_types;
 								for (l = *number_of_nodal_value_types;l>k;l--)
@@ -1542,10 +1532,8 @@ values whose value_type was not recognized.
 			{
 				display_message(ERROR_MESSAGE,
 					"get_FE_node_field_value_types.  Could not get nodal_value_types");
-				DEALLOCATE(nodal_value_types);
-				*number_of_nodal_value_types = 0;
-				if (temp_nodal_value_types)
-					 DEALLOCATE(temp_nodal_value_types);
+					 DEALLOCATE(nodal_value_types);
+					 *number_of_nodal_value_types = 0;
 			}
 		}
 	}

@@ -75,6 +75,7 @@ static char command_window_uidh[] =
 #include "wx/wx.h"
 #include "wx/xrc/xmlres.h"
 #include "command/command_window.xrch"
+#include "icon/cmiss_icon.xpm"
 #include <wx/aboutdlg.h>
 #include <wx/fontdlg.h>
 #endif /* defined (WX_USER_INTERFACE)*/
@@ -198,6 +199,9 @@ DESCRIPTION :
 	 wxFrame *frame;
 	 wxPanel *lower_panel;
 	 wxTextCtrl *output_window;
+// #if defined(__WIN32__)
+// 	 wxIcon icon("/cmgui_windows_icon.ico");
+// #endif
 #endif
 	FILE *out_file;
 	enum Command_window_outfile_mode out_file_mode;
@@ -1626,13 +1630,7 @@ public:
 				const_cast<char *>(command.c_str()));
 			command_line -> Clear();
 	 }      
-                
-	 void display_output(wxString outmessage)
-	 {
-			output_list = XRCCTRL(*this,"OutputWindow", wxTextCtrl);
-			output_list->AppendText(outmessage);
-	 }
-	 
+                 
 	 void wx_Add_to_command_list(wxString command)
 	 {
 			history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
@@ -1655,7 +1653,6 @@ public:
 			command_line -> Clear();
 			command_line -> WriteText(SelectedCommand);
 	 }
-	 
 	 
 	 void DoubleClick(wxCommandEvent& event)
 	 {
@@ -1798,14 +1795,24 @@ public:
 	 {
 			wxAboutDialogInfo info;
 			info.SetName(_("cmgui"));
-			info.SetDescription(_("This software is the cmgui part of CMISS and originally developed at The University of Auckland.This development has been for over 15 years and this release is under ongoing development. \n It is released under the Mozilla Public License v1.1"));
-			info.SetCopyright(_T("Copyright held by Auckland UniServices Ltd."));
+			info.SetDescription(_("This software is part of CMISS and originally developed at The University of Auckland.\n It is released under the Mozilla Public License v1.1"));
+			info.SetCopyright(_T("Copyright held partially by Auckland UniServices Ltd."));
 			info.SetWebSite(_("http://www.cmiss.org/cmgui"));
 
-			info.SetLicense(_T( "This software is the cmgui part of CMISS and originally developed at The University of Auckland.\nThis development has been for over 15 years and this release is under ongoing development.\n\nThe strengths of this development are field storage including many finite element basis types,\n3D visualisation and a mathematical field abstraction layer.\n\nIt includes some modules which are being deprecated and phased out, and some which under active development.\n\ncmgui is released under the Mozilla Public License v1.1.\nCopyright held by Auckland UniServices Ltd.\n\nIt is developed and built with the following sources.\n\nImageMagick-5.3.3\nCopyright (C) 2000 ImageMagick Studio\nhttp://www.imagemagick.org\n\nTiff\nCopyright (c) 1988-1997 Sam Leffler\nCopyright (c) 1991-1997 Silicon Graphics, Inc.\nhttp://www.libtiff.org\n\nJPEG\nThis software is copyright (C) 1991-1998, Thomas G. Lane.\nhttp://www.ijg.org\n\nzlib\n(C) 1995-1998 Jean-loup Gailly and Mark Adler\nftp://ftp.uu.net/pub/archiving/zip/zlib/zlib-1.1.3,gz\n\npnglib\nCopyright (c) 2000 Glenn Randers-Pehrso\n\nlibxml2\nCopyright (C) 1998-2002 Daniel Veillard.\n\nwxWidgets\ncopyright (C) 1998-2005 Julian Smart, Robert Roebling et al\nhttp://wxwidgets.org/"));
+			info.SetLicense(_T( "This software is of CMISS and originally developed at The University of Auckland.\n\nThe strengths of this development are field storage including many finite element basis types,\n3D visualisation and a mathematical field abstraction layer.\n\nIt includes some modules which are being deprecated and phased out, and some which under active development.\n\ncmgui is released under the Mozilla Public License v1.1.\nCopyright held partially by Auckland UniServices Ltd.\n\nIt is developed and built with the following sources.\n\nImageMagick-5.3.3\nCopyright (C) 2000 ImageMagick Studio\nhttp://www.imagemagick.org\n\nTiff\nCopyright (c) 1988-1997 Sam Leffler\nCopyright (c) 1991-1997 Silicon Graphics, Inc.\nhttp://www.libtiff.org\n\nJPEG\nThis software is copyright (C) 1991-1998, Thomas G. Lane.\nhttp://www.ijg.org\n\nzlib\n(C) 1995-1998 Jean-loup Gailly and Mark Adler\nftp://ftp.uu.net/pub/archiving/zip/zlib/zlib-1.1.3,gz\n\npnglib\nCopyright (c) 2000 Glenn Randers-Pehrso\n\nlibxml2\nCopyright (C) 1998-2002 Daniel Veillard.\n\nwxWidgets\ncopyright (C) 1998-2005 Julian Smart, Robert Roebling et al\nhttp://wxwidgets.org/\n\nITK\nCopyright (c) 1999-2003 Insight Software Consortium\n\nExternal Contributors/Dependencies:\nZest\nSpark Dental"));
 
 			wxAboutBox(info);
 	 }
+
+	 void Terminate(wxCloseEvent& event)
+	 {
+			wxMessageDialog *dlg = new wxMessageDialog(NULL,"Are you sure you want to quit cmgui?", 
+				 "Exit Confirmation", wxYES_NO|wxICON_QUESTION|wxSTAY_ON_TOP);
+			 if ( dlg->ShowModal() == wxID_YES)
+					Execute_command_execute_string(command_window->execute_command, "QUIT"); 
+					//else: dialog was cancelled or some another button pressed
+			 dlg->Destroy();
+	 } 
 
 	 void Exit(wxCommandEvent& event)
 	 {
@@ -1816,15 +1823,61 @@ public:
 			dlg->Destroy();
 	 } 
 	 
-	 void Terminate(wxCloseEvent& event)
+void keydown(wxKeyEvent& event)
+{
+	 command_line = XRCCTRL(*this, "CommandLine", wxTextCtrl);
+	 history_list = XRCCTRL(*this,"CommandHistory", wxListBox);
+	 int selection = history_list->GetSelection();
+	 int number_of_items = history_list->GetCount();
+	 if (event.GetKeyCode()==WXK_DOWN)
 	 {
-			wxMessageDialog *dlg = new wxMessageDialog(NULL,"Are you sure you want to quit cmgui?", 
-				 "Exit Confirmation", wxYES_NO|wxICON_QUESTION|wxSTAY_ON_TOP);
-			 if ( dlg->ShowModal() == wxID_YES)
-					Execute_command_execute_string(command_window->execute_command, "QUIT"); 
-					//else: dialog was cancelled or some another button pressed
-			 dlg->Destroy();
-	 } 
+			if (selection == wxNOT_FOUND)
+			{
+				 history_list->SetSelection(number_of_items - 1);
+			}
+			else if (number_of_items>selection+1)
+			{
+				 history_list->SetSelection(selection+1);
+			}
+			history_list->SetFocus();
+			SelectedCommand = history_list->GetStringSelection();
+			command_line -> Clear();
+			command_line -> WriteText(SelectedCommand);
+			event.Skip(); 
+	 }
+	 else if (event.GetKeyCode()==WXK_UP)
+	 {
+			if (selection == wxNOT_FOUND)
+			{
+				 history_list->SetSelection(number_of_items - 2);
+				 
+			}
+			else if (selection-1>=0)
+			{
+				 history_list->SetSelection(selection-1);
+			}
+			history_list->SetFocus();
+			SelectedCommand = history_list->GetStringSelection();
+			command_line -> Clear();
+			command_line -> WriteText(SelectedCommand);
+			event.Skip(); 
+	 }
+	 else if ((event.GetKeyCode()==WXK_LEFT) || (event.GetKeyCode()==WXK_RIGHT))
+	 {
+			event.Skip(); 
+			command_line->SetFocus();
+	 }
+	 else if  ((event.GetKeyCode()>31) &&  (event.GetKeyCode()<127))
+	 {
+			command_line->SetFocus();
+			command_line -> AppendText("");
+			event.Skip(); 
+	 }
+	 else
+	 {
+			event.Skip(); 
+	 }
+} 
 
 	 void wx_Display_on_command_list(char *command_string)
 /*******************************************************************************
@@ -1872,7 +1925,8 @@ BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	 EVT_MENU(XRCID("FontCmgui"),wxCommandWindow::OnFormatFont)
 	 EVT_MENU(XRCID("AboutCmgui"),wxCommandWindow::ShowSimpleAboutDialog)
 	 EVT_CLOSE(wxCommandWindow::Terminate)
-	EVT_MENU(XRCID("MenuExit"),wxCommandWindow::Exit)
+	 EVT_MENU(XRCID("MenuExit"),wxCommandWindow::Exit)
+	 EVT_KEY_DOWN(wxCommandWindow::keydown)
 END_EVENT_TABLE()
 
 #endif /* defined (WX_USER_INTERFACE) */
@@ -1970,7 +2024,6 @@ Create the structures and retrieve the command window from the uil file.
 			if (MrmOpenHierarchy_binary_string(command_window_uidh,sizeof(command_window_uidh),
 				&command_window_hierarchy,&command_window_hierarchy_open))
 			{
-
 				/* file menu */
 				command_window->main_menu.file_menu.open_menu.open_comfile_button=
 					(Widget)NULL;
@@ -2374,12 +2427,16 @@ Create the structures and retrieve the command window from the uil file.
 					"CREATE(Command_window).  Insufficient memory for command_window prompt");
 			}
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
+			command_window->output_window = NULL;
 			wxXmlInit_command_window();
-			
 			command_window->wx_command_window = new 
 			  wxCommandWindow(command_window);
 			wxXmlResource::Get()->LoadFrame(command_window->wx_command_window,
 			   (wxWindow *)NULL, _T("CmguiCommandWindow"));
+			wxBitmap iconbmp(Cmiss_icon);
+			wxIcon icon;
+			icon.CopyFromBitmap(iconbmp); 
+			command_window->wx_command_window->SetIcon(icon);
 			command_window->wx_command_window->Show();
 			command_window->output_window = 
 			  XRCCTRL(*command_window->wx_command_window, "OutputWindow", wxTextCtrl);
@@ -2392,6 +2449,7 @@ Create the structures and retrieve the command window from the uil file.
 			  XRCCTRL(*command_window->wx_command_window, "CmguiCommandWindow", wxFrame);
 			command_window->frame->Layout();
 			command_window->frame->SetMinSize(wxSize(1,1));
+			
 #endif /* switch (USER_INTERFACE) */
 		}
 		else
@@ -2824,8 +2882,12 @@ Writes the <message> to the <command_window>.
 		return_code = 1;
 #endif /* GTK_MAJOR_VERSION >= 2 */
 #elif defined (WX_USER_INTERFACE)
-		command_window->wx_command_window->display_output(message);
-		return_code = 1;
+		if (command_window->output_window)
+		{
+			 //		 	command_window->output_window =  XRCCTRL(*command_window->wx_command_window, "OutputWindow", wxTextCtrl);
+			 command_window->output_window->WriteText(message);
+			 return_code = 1;
+		}
 #endif /* switch (USER_INTERFACE) */
 		if (command_window->out_file &&
 			(command_window->out_file_mode & OUTFILE_OUTPUT))

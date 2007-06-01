@@ -98,6 +98,16 @@ extern "C" {
 #include "computed_field/computed_field_set.h"
 #include "node/node_tool.h"
 #include "interaction/interactive_tool_private.h"
+#include "icon/Data_tool_clicked.xpm"
+#include "icon/Data_tool_unclicked.xpm"
+#include "icon/Element_point_tool_clicked.xpm"
+#include "icon/Element_point_tool_unclicked.xpm"
+#include "icon/Element_tool_clicked.xpm"
+#include "icon/Element_tool_unclicked.xpm"
+#include "icon/Node_tool_clicked.xpm"
+#include "icon/Node_tool_unclicked.xpm"
+#include "icon/Transform_tool_clicked.xpm"
+#include "icon/Transform_tool_unclicked.xpm"
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF)
 #include "interaction/interactive_toolbar_widget.h"
@@ -178,6 +188,7 @@ Contains information for a graphics window.
 	 Cmiss_region *root_region;
 	 wxScrolledWindow *left_panel;
 	 wxCheckBox *wx_perspective_button;
+	 wxGridSizer *grid_field;
 #endif /* defined (GTK_USER_INTERFACE) */
 	/* scene_viewers and their parameters: */
 	enum Graphics_window_layout_mode layout_mode;
@@ -2675,7 +2686,7 @@ view angle, interest point etc.
 class wxGraphicsWindow : public wxFrame
 {
 	 Graphics_window *graphics_window;
-	 wxToggleButton *last_button;
+	 wxBitmapButton *last_button;
 	 wxChoice *view_options;     
 	 wxFrame *Redrawwindow;
 	 wxChoice *up_view_options;
@@ -2694,7 +2705,7 @@ public:
 	 wxGraphicsWindow(Graphics_window *graphics_window): 
 			graphics_window(graphics_window)
 	 {
-			last_button = (wxToggleButton*)NULL;
+			last_button = (wxBitmapButton*)NULL;
 	 };
 	 
 	 wxGraphicsWindow()
@@ -2882,14 +2893,39 @@ public:
      }
 
 
-  void InteractiveButtonClicked(wxToggleButton *button, Interactive_tool *tool, Graphics_window *graphics_window)
+  void InteractiveButtonClicked(wxBitmapButton *button, Interactive_tool *tool, Graphics_window *graphics_window)
   {
-    if (last_button == button)
+
+		 char *test_string;
+
+    if (last_button != button)
     {
-      button->SetValue(true);
-    }
-    else
-    {
+			 test_string=const_cast<char *>(button->GetLabel().c_str());
+			 if (strcmp("Transform tool", test_string) == 0)
+			 {
+					wxBitmap interactive_clicked_bmp(Transform_tool_clicked_xpm);
+					button->SetBitmapLabel(interactive_clicked_bmp);
+			 }
+			 else if (strcmp("Node tool", test_string) == 0)
+			 {
+					wxBitmap interactive_clicked_bmp(Node_tool_clicked_xpm);
+					button->SetBitmapLabel(interactive_clicked_bmp);
+			 }
+			 else if (strcmp("Data tool", test_string) == 0)
+			 {
+					wxBitmap interactive_clicked_bmp(Data_tool_clicked_xpm);
+					button->SetBitmapLabel(interactive_clicked_bmp);
+			 }
+			 else if (strcmp("Element tool", test_string) == 0)
+			 {
+					wxBitmap interactive_clicked_bmp(Element_tool_clicked_xpm);
+					button->SetBitmapLabel(interactive_clicked_bmp);
+			 }
+			 else if (strcmp("Element point tool", test_string) == 0)
+			 {
+					wxBitmap interactive_clicked_bmp(Element_point_tool_clicked_xpm);
+					button->SetBitmapLabel(interactive_clicked_bmp);
+			 }
 			wxWindowList child_list = graphics_window->ToolPanel->GetChildren();
 			wxWindowListNode *child = child_list.GetFirst();
 			while (child)
@@ -2897,27 +2933,46 @@ public:
 				child->GetData()->Hide();
 				child = child->GetNext();
 			}
-      if (last_button)
-      {
-				last_button->SetValue(false);
-      }
-      last_button = button;
-      Interactive_tool_bring_up_dialog(tool,graphics_window);
-      Graphics_window_set_interactive_tool(graphics_window, tool);    
-    }
-  }
+			if (last_button)
+			{
+				 test_string=const_cast<char *>(last_button->GetLabel().c_str());
+				 if (strcmp("Transform tool", test_string) == 0)
+				 {
+						wxBitmap interactive_unclicked_bmp(Transform_tool_unclicked_xpm);
+						last_button->SetBitmapLabel(interactive_unclicked_bmp);
+				 }
+				 if (strcmp("Node tool", test_string) == 0)
+				 {
+						wxBitmap interactive_unclicked_bmp(Node_tool_unclicked_xpm);
+						last_button->SetBitmapLabel(interactive_unclicked_bmp);
+				 }
+				 else if (strcmp("Data tool", test_string) == 0)
+				 {
+						wxBitmap interactive_unclicked_bmp(Data_tool_unclicked_xpm);
+						last_button->SetBitmapLabel(interactive_unclicked_bmp);
+				 }
+				 else if (strcmp("Element tool", test_string) == 0)
+				 {
+						wxBitmap interactive_unclicked_bmp(Element_tool_unclicked_xpm);
+						last_button->SetBitmapLabel(interactive_unclicked_bmp);
+				 }
+				 else if (strcmp("Element point tool", test_string) == 0)
+				 {
+						wxBitmap interactive_unclicked_bmp(Element_point_tool_unclicked_xpm);
+						last_button->SetBitmapLabel(interactive_unclicked_bmp);
+				 }
+			}
+			last_button = button;
+			Interactive_tool_bring_up_dialog(tool,graphics_window);
+			Graphics_window_set_interactive_tool(graphics_window, tool);    
+		}
+	}
 
 	 void OnSplitterPositionChanged(wxSplitterEvent &event)
 	 {
 			toolscrolledwindow =XRCCTRL(*this, "ToolPanel", wxScrolledWindow);
 			toolscrolledwindow->SetSize(toolscrolledwindow->GetSize()+wxSize(0,1));
 			toolscrolledwindow->SetSize(toolscrolledwindow->GetSize()-wxSize(0,1));
-// 			leftpanel = XRCCTRL(*this,"LeftPanel", wxScrolledWindow);
-// 			leftpanel->Layout();
-// 			splitterwindow = XRCCTRL(*this, "Splitter",wxSplitterWindow);
-// 			splitterwindow->Layout();
-// 			Redrawwindow = XRCCTRL(*this,"CmguiGraphicsWindow", wxFrame);
-// 			Redrawwindow->Layout();
 	 }
 
   DECLARE_EVENT_TABLE();
@@ -2933,23 +2988,79 @@ BEGIN_EVENT_TABLE(wxGraphicsWindow, wxFrame)
 	 EVT_SPLITTER_SASH_POS_CHANGED(XRCID("Splitter"),wxGraphicsWindow::OnSplitterPositionChanged)
 END_EVENT_TABLE()
 
-class wxInteractiveToolButton : public wxToggleButton
+// class wxInteractiveToolButton : public wxToggleButton
+// {
+//   Interactive_tool *tool;
+//   Graphics_window *graphics_window;
+  
+// public:
+
+//   wxInteractiveToolButton(Interactive_tool *tool, Graphics_window *graphics_window) :
+//     tool(tool), graphics_window(graphics_window)
+//   {
+//   };
+
+// 	 wxInteractiveToolButton()
+// 	 {
+// 	 };
+
+//   ~wxInteractiveToolButton()
+//   {
+//   };
+
+//   void OnInteractiveButtonPressed(wxCommandEvent& Event)
+//   {
+//     graphics_window->wx_graphics_window->InteractiveButtonClicked
+//       (this, tool,graphics_window);
+//    }
+
+// };
+
+// static int add_interactive_tool_to_wx_toolbar(struct Interactive_tool *interactive_tool,
+// 					      void *graphics_window_void)
+// {
+//   Graphics_window *graphics_window = static_cast<Graphics_window*>(graphics_window_void);
+//   wxPanel *panel = graphics_window->interactive_toolbar_panel;
+//   wxSizer *sizer = panel->GetSizer();
+    
+//   wxInteractiveToolButton *button = new wxInteractiveToolButton(interactive_tool, graphics_window);
+  
+//   char *interactive_tool_name = Interactive_tool_get_display_name(interactive_tool);
+//   button->Create(panel, /*id*/-1, interactive_tool_name);
+// 	DEALLOCATE(interactive_tool_name);
+
+//   if (Interactive_tool_is_Transform_tool(interactive_tool))
+//     {
+//       button->SetValue(true);
+//       graphics_window->wx_graphics_window->InteractiveButtonClicked
+// 				(button, interactive_tool, graphics_window);
+//     }
+
+//   button->Connect(wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler(wxInteractiveToolButton::OnInteractiveButtonPressed));
+
+//   sizer->Add(button, wxSizerFlags(1).Align(0).Expand().Border(wxALL, 2));
+//   return (1);
+// }
+
+class wxInteractiveToolButton : public wxBitmapButton
 {
   Interactive_tool *tool;
   Graphics_window *graphics_window;
-  
   
 public:
 
   wxInteractiveToolButton(Interactive_tool *tool, Graphics_window *graphics_window) :
     tool(tool), graphics_window(graphics_window)
   {
-  }
+  };
+
+	 wxInteractiveToolButton()
+	 {
+	 };
 
   ~wxInteractiveToolButton()
   {
-  }
-
+  };
 
   void OnInteractiveButtonPressed(wxCommandEvent& Event)
   {
@@ -2962,27 +3073,93 @@ public:
 static int add_interactive_tool_to_wx_toolbar(struct Interactive_tool *interactive_tool,
 					      void *graphics_window_void)
 {
-  Graphics_window *graphics_window = static_cast<Graphics_window*>(graphics_window_void);
-  wxPanel *panel = graphics_window->interactive_toolbar_panel;
-  wxSizer *sizer = panel->GetSizer();
-    
-  wxInteractiveToolButton *button = new wxInteractiveToolButton(interactive_tool, graphics_window);
-  
-  char *interactive_tool_name = Interactive_tool_get_display_name(interactive_tool);
-  button->Create(panel, /*id*/-1, interactive_tool_name);
-	DEALLOCATE(interactive_tool_name);
+	 Graphics_window *window = static_cast<Graphics_window*>(graphics_window_void);
+	 wxPanel *panel = window->interactive_toolbar_panel;
+	 //	 wxSizer *sizer = panel->GetSizer();
+	 wxInteractiveToolButton *button = new wxInteractiveToolButton(interactive_tool, window);
+	 char *interactive_tool_name = Interactive_tool_get_display_name(interactive_tool);
+	 int return_int = 0;
 
-  if (Interactive_tool_is_Transform_tool(interactive_tool))
-    {
-      button->SetValue(true);
-      graphics_window->wx_graphics_window->InteractiveButtonClicked
-				(button, interactive_tool, graphics_window);
-    }
+	 if (window->grid_field == NULL)
+	 {
+			window->grid_field = new wxGridSizer(0,3,1,1);
+	 }
+	 if (strcmp("Transform tool", interactive_tool_name) == 0)
+	 {
+			wxBitmap interactive_unclicked_bmp(Transform_tool_unclicked_xpm);
+			button->Create(panel, /*id*/-1, interactive_unclicked_bmp);
+			button->SetLabel("Transform tool");
+			window->grid_field->Add(button);
+			return_int = 1;
+	 }
+	 else if (strcmp("Node tool", interactive_tool_name) == 0)
+	 {
+			wxBitmap interactive_unclicked_bmp(Node_tool_unclicked_xpm);
+			button->Create(panel, /*id*/-1, interactive_unclicked_bmp);
+			button->SetLabel("Node tool");
+			window->grid_field->Add(button);
+			return_int = 1;
+	 }
+	 else if (strcmp("Data tool", interactive_tool_name) == 0)
+	 {
+			wxBitmap interactive_unclicked_bmp(Data_tool_unclicked_xpm);
+			button->Create(panel, /*id*/-1, interactive_unclicked_bmp);
+			button->SetLabel("Data tool");
+			window->grid_field->Add(button);
+			return_int = 1;
+	 }
+	 else if (strcmp("Element tool", interactive_tool_name) == 0)
+	 {
+			wxBitmap interactive_unclicked_bmp(Element_tool_unclicked_xpm);
+			button->Create(panel, /*id*/-1, interactive_unclicked_bmp);
+			button->SetLabel("Element tool");
+			window->grid_field->Add(button);
+			return_int = 1;
+	 }
+	 else if (strcmp("Element point tool", interactive_tool_name) == 0)
+	 {
+			wxBitmap interactive_unclicked_bmp(Element_point_tool_unclicked_xpm);
+			button->Create(panel, /*id*/-1, interactive_unclicked_bmp);
+			button->SetLabel("Element point tool");
+			window->grid_field->Add(button);
+			return_int = 1;
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "add_interactive_tool_to_wx_toolbar.  Could not find bitmap for the interactive tool");
+			return_int = 0;
+	 }
+	 if (window->grid_field != NULL)
+	 {
+			panel->SetSizer(window->grid_field);
+			window->grid_field->SetSizeHints(panel);
+			window->grid_field->Layout();
+			panel->Layout();
+	 }
 
-  button->Connect(wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler(wxInteractiveToolButton::OnInteractiveButtonPressed));
 
-  sizer->Add(button, wxSizerFlags(1).Align(0).Expand().Border(wxALL, 2));
-  return (1);
+	 if (return_int ==1)
+	 {
+			DEALLOCATE(interactive_tool_name);
+			
+			if (Interactive_tool_is_Transform_tool(interactive_tool))
+			{
+				 wxBitmap interactive_clicked_bmp(Transform_tool_clicked_xpm);
+				 button->SetBitmapLabel(interactive_clicked_bmp);
+				 window->wx_graphics_window->InteractiveButtonClicked
+						(button, interactive_tool, window);
+			}
+	 
+			button->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
+				 wxCommandEventHandler(wxInteractiveToolButton::OnInteractiveButtonPressed));
+			//			sizer->Add(button, wxSizerFlags(1).Align(0).Border(wxALL, 2));
+			return (1);
+	 }
+	 else
+	 {
+			return (0);
+	 }
 }
 
 
@@ -3778,12 +3955,14 @@ it.
 
 			wxXmlResource::Get()->LoadFrame(window->wx_graphics_window,
 			   (wxWindow *)NULL, _T("CmguiGraphicsWindow"));
-	
+			window->grid_field =NULL;
 			window->GraphicsWindowTitle = XRCCTRL(*window->wx_graphics_window, "CmguiGraphicsWindow", wxFrame);
 			window->GraphicsWindowTitle->SetTitle(window_title);
 			window->wx_perspective_button = XRCCTRL(*window->wx_graphics_window,"PerspectiveButton", wxCheckBox);
 			if (window_title)
 				 DEALLOCATE(window_title);
+			/* The time_slider receives messages from the
+				 default_time_keeper of the scene */
 			window->GraphicsWindowTitle->SetMinSize(wxSize(0,0));
 			window->panel = XRCCTRL(*window->wx_graphics_window, "Panel", wxPanel);
 			window->panel2 = XRCCTRL(*window->wx_graphics_window, "Panel2", wxPanel);
@@ -3795,7 +3974,6 @@ it.
 			window->front_view_options->Disable();
 			window->left_panel =XRCCTRL(*window->wx_graphics_window, "LeftPanel", wxScrolledWindow);
 			window->left_panel->FitInside();
-			window->left_panel->SetScrollbars(20, 20, 50, 50);
 			window->ToolPanel = XRCCTRL(*window->wx_graphics_window, "ToolPanel", wxScrolledWindow);
 			window->ToolPanel ->Layout();
 			window->interactive_toolbar_panel = NULL;
@@ -7771,7 +7949,7 @@ Returns the panel to embed the interactive tool into.
 	if (graphics_window)
 	{
 		 panel = graphics_window->ToolPanel;
-		 panel->SetScrollbars(-1, 20, -1, 50);
+		 panel->SetScrollbars(10, 20, 25, 50);
 	}
 	else
 	{

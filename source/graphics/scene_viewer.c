@@ -927,7 +927,7 @@ handles the flags that mark render_objects as processed.
 {
 	int return_code;
 	struct Scene_viewer_render_object *render_object;
-
+	render_object= NULL;
 	ENTER(Scene_viewer_call_next_renderer);
 	if (rendering_data)
 	{
@@ -936,7 +936,7 @@ handles the flags that mark render_objects as processed.
 			rendering_data->render_callstack);
 		render_object->already_processed = 1;
 		return_code = (*(render_object->render_function))(
-			rendering_data);
+			 rendering_data);
 		/* The flag must be set back as we may call parts of the tree
 			many times. */
 		render_object->already_processed = 0;

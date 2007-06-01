@@ -14,7 +14,6 @@
 					<minsize>1</minsize>
 					<sashpos>200</sashpos>
 				  <object class ="wxScrolledWindow" name="LeftPanel">
-					 <style>wxVSCROLL</style>	
 			 	    <object class = "wxBoxSizer">	
 							<object class="sizeritem">
 	 							<flag>wxEXPAND</flag>
@@ -45,8 +44,7 @@
               				<object class="sizeritem">
 	 	        						<flag>>wxEXPAND</flag>
     	        					<object class="wxCheckBox" name="PerspectiveButton">
-	          							<label>Perspective</label> 	
-	          							<default>1</default>		 
+	          							<label>Perspective</label> 			 
   	        						</object>
               				</object>
            					</object>
@@ -160,11 +158,10 @@
 									<object class="wxStaticBoxSizer">
 										<orient>wxVERTICAL</orient>
 										<object class="sizeritem">
-		            	    <flag>wxEXPAND</flag>	
-												
-    	      					<flag>wxALIGN_CENTER</flag>	
+		            					    <flag>wxALIGN_LEFT</flag>	
+											<option>1</option>
 	 										<object class= "wxPanel" name="ToolbarPanel">
-												<size>-1,150</size>
+
 	  									</object>
 										</object>
 	  							</object>
@@ -174,7 +171,7 @@
           				<flag>wxEXPAND</flag>
          					<option>1</option>
 				  				<object class= "wxScrolledWindow" name="ToolPanel"/>
-									<style>wxVSCROLL</style>
+									<style>wxHSCROLL|wxVSCROLL</style>
 						  	</object>	
 						  </object>
   		 			</object>

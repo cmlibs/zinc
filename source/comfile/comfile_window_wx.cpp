@@ -193,17 +193,17 @@ public:
 									command++;
 							 }
 							 temp_string = NULL;
-							 if (ALLOCATE(temp_string,char,(strlen(comfile_window->name) + 9)))
+							 if (ALLOCATE(temp_string,char,(strlen(comfile_window->name) + 10)))
 							 {
 									strcpy(temp_string, "comfile: ");
 									strcat(temp_string, comfile_window->name);
 									temp_string[(strlen(comfile_window->name) + 9)]='\0';
 									this_frame->SetTitle(temp_string);
-							 }
-							 if (temp_string)
-							 {
-									DEALLOCATE(temp_string);
-							 }							 
+									if (temp_string)
+									{
+										 DEALLOCATE(temp_string);
+									}	
+							 }	
 						}
 						else
 						{

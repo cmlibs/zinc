@@ -79,6 +79,10 @@ public:
 		Show();
 	}
 
+// 	 ~wxChooser()
+// 	 {
+// 	 }
+
 	void OnChoiceSelected(wxCommandEvent& Event)
 	{
 		if (callback)

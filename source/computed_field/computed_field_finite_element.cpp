@@ -4433,6 +4433,7 @@ Evaluate the fields cache at the location
 	if (field && location)
 	{
 		Field_element_xi_location *element_xi_location;
+		//Field_node_location *node_location;
 		if (element_xi_location = 
 			dynamic_cast<Field_element_xi_location*>(location))
 		{
@@ -4484,6 +4485,7 @@ Evaluate the fields cache at the location
 		}
 		else 
 		{
+			 //if (node_location = dynamic_cast<Field_node_location*>(location))
 			 if (dynamic_cast<Field_node_location*>(location))
 			 {
 					display_message(ERROR_MESSAGE,

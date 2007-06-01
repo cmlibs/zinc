@@ -174,7 +174,7 @@ Returns the currently chosen object.
 	{
 		 FE_object *new_object, *return_address; 
 		 new_object = FE_region_method_class::string_to_object(fe_region,
-				get_item());
+				const_cast<char *>(GetValue().c_str()));
 		 select_object(new_object);
 		 return_address = current_object;
 		 
@@ -235,14 +235,14 @@ Makes sure the <new_object> is valid for this text chooser, then calls an
 update in case it has changed, and writes the new object string in the widget. 
 ============================================================================*/
 	{ 
-	const char *current_string; 
-	static char *null_object_name="<NONE>"; 
-	char *object_name; 
-	int return_code; 
+		 const char *current_string; 
+		 static char *null_object_name="<NONE>"; 
+		 char *object_name; 
+		 int return_code; 
 
 	ENTER(TEXT_CHOOSE_FROM_FE_REGION_SELECT_OBJECT(object_type));
 
-	if (current_string = get_item()) 
+	if (current_string = const_cast<char *>(GetValue().c_str())) 
 	{ 
 		 if (new_object && ((!(FE_region_method_class::FE_region_contains_object(
 															fe_region, new_object)) || 
@@ -258,27 +258,22 @@ update in case it has changed, and writes the new object string in the widget.
 		 { 
  				current_object=new_object;
 		 } 
-		 else 
+		 else if (!current_object) 
 		 { 
-				if (!current_object) 
-				{ 
-					 current_object= 
-							FE_region_method_class::get_first_object_that(
-								 fe_region, 
-								 conditional_function, 
-								 conditional_function_user_data); 
-				}
+				current_object= 
+					 FE_region_method_class::get_first_object_that(
+							fe_region, 
+							conditional_function, 
+							conditional_function_user_data); 
 		 }
+
 		 /* write out the current_object */ 
 		 if (current_object) 
 		 { 
 				if (FE_region_method_class::FE_object_to_string
 							(current_object,&object_name)) 
-				{ 
-					 if (strcmp(object_name,current_string)) 
-					 { 
-							set_item(object_name); 
-					 } 
+				{
+					 set_item(object_name);
 					 DEALLOCATE(object_name);
 				} 
 		 } 
@@ -287,7 +282,7 @@ update in case it has changed, and writes the new object string in the widget.
 				if (strcmp(null_object_name,current_string)) 
 				{ 
 					 set_item(null_object_name); 
-				} 
+				}
 		 } 
 		 /* inform the client of any change */
 		 update();
@@ -340,10 +335,10 @@ Updates the chosen object and text field in response to messages.
 		update_callback = callback_object;
 		return (1);
 	}
-	 char *get_item()
-	{
-		 return (const_cast<char *>(GetValue().c_str()));
-	}
+// 	 char *get_item()
+// 	{
+// 		 return (const_cast<char *>(GetValue().c_str()));
+// 	}
 
 	int set_item(char *new_item)
 	{

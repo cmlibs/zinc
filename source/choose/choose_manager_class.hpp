@@ -127,16 +127,7 @@ DESCRIPTION :
 ============================================================================*/
 	{
 		int i;
-	
-		if (chooser)
-		{
-			delete chooser;
-		}
-		if (manager_callback_id)
-		{
-			manager->deregister_callback(manager_callback_id);
-		}
-		delete manager;
+
 		if (items)
 		{
 			DEALLOCATE(items);
@@ -149,6 +140,16 @@ DESCRIPTION :
 			}
 			DEALLOCATE(item_names);
 		}
+// 		if (chooser)
+// 		{
+// 			delete chooser;
+// 		}
+		if (manager_callback_id)
+		{
+			manager->deregister_callback(manager_callback_id);
+		}
+		delete manager;
+
 	} /* Managed_object_chooser::~Managed_object_chooser() */
 
 	int chooser_callback(Managed_object *object)
