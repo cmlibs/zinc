@@ -2433,10 +2433,7 @@ Create the structures and retrieve the command window from the uil file.
 			  wxCommandWindow(command_window);
 			wxXmlResource::Get()->LoadFrame(command_window->wx_command_window,
 			   (wxWindow *)NULL, _T("CmguiCommandWindow"));
-			wxBitmap iconbmp(Cmiss_icon);
-			wxIcon icon;
-			icon.CopyFromBitmap(iconbmp); 
-			command_window->wx_command_window->SetIcon(icon);
+			command_window->wx_command_window->SetIcon(cmiss_icon_xpm);
 			command_window->wx_command_window->Show();
 			command_window->output_window = 
 			  XRCCTRL(*command_window->wx_command_window, "OutputWindow", wxTextCtrl);

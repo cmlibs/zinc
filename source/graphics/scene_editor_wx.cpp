@@ -62,6 +62,7 @@ extern "C" {
 #include "choose/text_choose_from_fe_element.hpp"
 #include <wx/collpane.h>
 #include <wx/splitter.h>
+#include "icon/cmiss_icon.xpm"
 extern "C" {
 #include "graphics/scene_editor_wx.h"
 #include "graphics/font.h"
@@ -526,6 +527,7 @@ public:
 		 scene_editor->wx_scene_editor = (wxSceneEditor *)NULL;
 		 wxXmlResource::Get()->LoadFrame(this,
 				(wxWindow *)NULL, _T("CmguiSceneEditor"));
+		 this->SetIcon(cmiss_icon_xpm);
 		 
  /* Set the chooser panel  in the secne editor */
   wxPanel *scene_object_chooser_panel = 

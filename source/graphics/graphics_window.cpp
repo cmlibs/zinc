@@ -108,6 +108,7 @@ extern "C" {
 #include "icon/Node_tool_unclicked.xpm"
 #include "icon/Transform_tool_clicked.xpm"
 #include "icon/Transform_tool_unclicked.xpm"
+#include "icon/cmiss_icon.xpm"
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF)
 #include "interaction/interactive_toolbar_widget.h"
@@ -3949,12 +3950,11 @@ it.
 			window->root_region = ACCESS(Cmiss_region)(CREATE(Cmiss_region)());
 		  wxLogNull logNo;
 			wxXmlInit_graphics_window();
-
 			window->wx_graphics_window = new 
 			  wxGraphicsWindow(window);
-
 			wxXmlResource::Get()->LoadFrame(window->wx_graphics_window,
 			   (wxWindow *)NULL, _T("CmguiGraphicsWindow"));
+			window->wx_graphics_window->SetIcon(cmiss_icon_xpm);
 			window->grid_field =NULL;
 			window->GraphicsWindowTitle = XRCCTRL(*window->wx_graphics_window, "CmguiGraphicsWindow", wxFrame);
 			window->GraphicsWindowTitle->SetTitle(window_title);

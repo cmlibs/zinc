@@ -62,6 +62,7 @@ extern "C" {
 #include "wx/xrc/xmlres.h"
 #include "node/node_viewer_wx.xrch"
 #include "choose/text_FE_choose_class.hpp"
+#include "icon/cmiss_icon.xpm"
 #endif /*defined (WX_USER_INTERFACE)*/
 
 /*
@@ -249,6 +250,10 @@ public:
 			node_viewer->wx_node_viewer = (wxNodeViewer *)NULL;
 			wxXmlResource::Get()->LoadFrame(this,
 				 (wxWindow *)NULL, _T("CmguiNodeViewer"));
+// 			wxBitmap iconbmp(Cmiss_icon);
+// 			wxIcon icon;
+// 			icon.CopyFromBitmap(iconbmp); 
+			this->SetIcon(cmiss_icon_xpm);
 			wxPanel *node_text_panel =
 				 XRCCTRL(*this, "NodeTextPanel",wxPanel);
 			node_text_chooser =
@@ -337,13 +342,16 @@ Callback from wxTextChooser when text is entered.
 
 	 void OnRevertpressed(wxCommandEvent &event)
 	 {
-			Node_viewer_set_viewer_node(node_viewer);
-			if (node_viewer->wx_node_viewer && node_viewer->collpane)
+			if (node_viewer->current_node)
 			{
-				 FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
-						node_viewer_add_collpane,
-						(void *)node_viewer,
-						node_viewer->computed_field_manager);
+				 Node_viewer_set_viewer_node(node_viewer);
+				 if (node_viewer->wx_node_viewer && node_viewer->collpane)
+				 {
+						FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
+							 node_viewer_add_collpane,
+							 (void *)node_viewer,
+							 node_viewer->computed_field_manager);
+				 }
 			}
 	 }
 
@@ -644,12 +652,12 @@ Since both nodes and data can depend on embedded fields, the
 				node_viewer->user_interface=user_interface;
 				node_viewer->current_node=(struct FE_node *)NULL;
 				node_viewer->computed_field_manager=Computed_field_package_get_computed_field_manager(computed_field_package);
-			node_viewer->time_object = ACCESS(Time_object)(time_object);
-			node_viewer->time_object_callback = 0;
-			node_viewer->current_field=(struct Computed_field *)NULL;
-			node_viewer->number_of_components=-1;
-			node_viewer->number_of_nodal_value_types=0;
-			node_viewer->grid_field = NULL;
+				node_viewer->time_object = ACCESS(Time_object)(time_object);
+				node_viewer->time_object_callback = 0;
+				node_viewer->current_field=(struct Computed_field *)NULL;
+				node_viewer->number_of_components=-1;
+				node_viewer->number_of_nodal_value_types=0;
+				node_viewer->grid_field = NULL;
 #if defined (WX_USER_INTERFACE)
 				node_viewer->wx_node_viewer = (wxNodeViewer *)NULL;
 #endif /* defined (WX_USER_INTERFACE) */	
@@ -1120,7 +1128,7 @@ char *node_viewer_update_value(Node_viewer *node_viewer, Computed_field *field, 
 									fe_field, component_number,
 									version,type,time,&int_value);
 							 sprintf(temp_value_string, "%d", int_value);
-									new_value_string = duplicate_string(temp_value_string);
+							 new_value_string = duplicate_string(temp_value_string);
 						} break;	
 						case STRING_VALUE:
 						{
@@ -1149,8 +1157,16 @@ char *node_viewer_update_value(Node_viewer *node_viewer, Computed_field *field, 
 			}
 			else /* all other types of computed field */
 			{
-				 sprintf(temp_value_string, FE_VALUE_INPUT_STRING,
-						values[component_number]);
+				 if (values !=NULL)
+				 {
+						sprintf(temp_value_string, FE_VALUE_INPUT_STRING,
+							 values[component_number]);
+				 }
+				 else
+				 {
+						sprintf(temp_value_string, "%s", "nan"
+							 );
+				 }		
 				 new_value_string = duplicate_string(temp_value_string);
 			}
 	 }
