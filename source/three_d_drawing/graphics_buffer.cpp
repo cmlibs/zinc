@@ -382,6 +382,12 @@ contained in the this module only.
 #   endif /* ! defined (GTK_USER_GLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 
+#if defined (WIN32_USER_INTERFACE)
+		 buffer->hWnd = (HWND)NULL;
+		 buffer->hDC = (HDC)NULL;
+		 buffer->hRC = (HGLRC)NULL;
+#endif // defined (WIN32_USER_INTERFACE)
+
 #if defined (CARBON_USER_INTERFACE)
 		 buffer->port = 0;
 		 buffer->width = 0;
@@ -3318,7 +3324,7 @@ DESCRIPTION :
 #if defined (WIN32_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_win32(
 	struct Graphics_buffer_package *graphics_buffer_package,
-	HWND hWnd,
+	HWND hWnd, HDC hDC,
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
@@ -3327,6 +3333,10 @@ struct Graphics_buffer *create_Graphics_buffer_win32(
 LAST MODIFIED : 9 August 2004
 
 DESCRIPTION :
+Creates a Graphics buffer on the specified <hWnd> window handle.
+If the <hDC> is specified it is used to render.
+Alternatively if <hWnd> is NULL and <hDC> is specified then no window functions
+are performed but the graphics window will render into the supplied device context.
 ==============================================================================*/
 {
 	PIXELFORMATDESCRIPTOR pfd;
@@ -3339,81 +3349,103 @@ DESCRIPTION :
 	USE_PARAMETER(stereo_mode);
 	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
 	{
-        SetWindowLongPtr(hWnd, GWL_WNDPROC, (LONG)Graphics_buffer_callback_proc);
-		SetWindowLongPtr(hWnd, GWL_USERDATA, (LONG)buffer);
-
 		buffer->type = GRAPHICS_BUFFER_WIN32_TYPE;
 
-		buffer->hWnd=hWnd;
-
-		/* get the device context (DC) */
-		buffer->hDC=GetDC(hWnd);
-
-	   /* set the pixel format for the DC */
-		ZeroMemory( &pfd, sizeof( PIXELFORMATDESCRIPTOR ) );
-		pfd.nSize = sizeof( pfd );
-		pfd.nVersion = 1;
-		pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-		pfd.iPixelType = PFD_TYPE_RGBA;
-		pfd.iLayerType = PFD_MAIN_PLANE;
-   
-		
-		if (minimum_colour_buffer_depth)
+		if (hWnd)
 		{
-/*			pfd.cColorBits = minimum_colour_buffer_depth;
-*/
-		}
-		
+			buffer->hWnd = hWnd;
 
-		
-		if (minimum_depth_buffer_depth)
-		{
-/*			pfd.cDepthBits = minimum_depth_buffer_depth;
-*/
-		}
-		
+			SetWindowLongPtr(hWnd, GWL_WNDPROC, 
+				(LONG)Graphics_buffer_callback_proc);
+			SetWindowLongPtr(hWnd, GWL_USERDATA, (LONG)buffer);
 
-		
-		if (minimum_accumulation_buffer_depth)
-		{
-/*
-			accumulation_colour_size = minimum_accumulation_buffer_depth / 4;
-			pfd.cAccumRedBits = accumulation_colour_size;
-			pfd.cAccumGreenBits = accumulation_colour_size;
-			pfd.cAccumBlueBits = accumulation_colour_size;
-			pfd.cAccumAlphaBits = accumulation_colour_size;
-*/
-		}
-		
-                /* setting these to get an accelerated visual on the ATI chipset */
-		pfd.cColorBits =    24;           // color mode
-		pfd.cDepthBits =    24;           // depth buffer size
-		pfd.cStencilBits =  8;         // stencil buffer
-		//pfd.cAccumBits =    0;           // accumulation buffer
-		//pfd.cAlphaBits = 0;
-
-		if((format = ChoosePixelFormat( buffer->hDC, &pfd )))
-		{
-
-			if(SetPixelFormat( buffer->hDC, format, &pfd ))
+			if (hDC)
 			{
-				/* create and enable the render context (RC) */
-				if(buffer->hRC = wglCreateContext( buffer->hDC ))
-				{
-					wglShareLists(wglGetCurrentContext(), buffer->hRC);
+				buffer->hDC = hDC;
+			}
+			else
+			{
+				buffer->hDC=GetDC(hWnd);
+			}
+		}
+		else
+		{
+			buffer->hDC = hDC;
+		}
 
-					if(!wglMakeCurrent(buffer->hDC,buffer->hRC))
+		if (buffer->hDC)
+		{
+			/* set the pixel format for the DC */
+			ZeroMemory( &pfd, sizeof( PIXELFORMATDESCRIPTOR ) );
+			pfd.nSize = sizeof( pfd );
+			pfd.nVersion = 1;
+			pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+			pfd.iPixelType = PFD_TYPE_RGBA;
+			pfd.iLayerType = PFD_MAIN_PLANE;
+		
+			if (minimum_colour_buffer_depth)
+			{
+				/*			pfd.cColorBits = minimum_colour_buffer_depth;
+				 */
+			}
+		
+			if (minimum_depth_buffer_depth)
+			{
+				/*			pfd.cDepthBits = minimum_depth_buffer_depth;
+				 */
+			}
+		
+			if (minimum_accumulation_buffer_depth)
+			{
+				/*
+				  accumulation_colour_size = minimum_accumulation_buffer_depth / 4;
+				  pfd.cAccumRedBits = accumulation_colour_size;
+				  pfd.cAccumGreenBits = accumulation_colour_size;
+				  pfd.cAccumBlueBits = accumulation_colour_size;
+				  pfd.cAccumAlphaBits = accumulation_colour_size;
+				*/
+			}
+		
+			/* setting these to get an accelerated visual on the ATI chipset */
+			pfd.cColorBits =    24;           // color mode
+			pfd.cDepthBits =    24;           // depth buffer size
+			pfd.cStencilBits =  8;         // stencil buffer
+			//pfd.cAccumBits =    0;           // accumulation buffer
+			//pfd.cAlphaBits = 0;
+
+			if((format = ChoosePixelFormat( buffer->hDC, &pfd )))
+			{
+				/* If we can't set the pixel format on the hDC then
+					alternatively we could render to an offscreen buffer and
+					then just copy into the render buffer on paint */
+				if(SetPixelFormat( buffer->hDC, format, &pfd ))
+				{
+					/* create and enable the render context (RC) */
+					if(buffer->hRC = wglCreateContext( buffer->hDC ))
+					{
+						wglShareLists(wglGetCurrentContext(), buffer->hRC);
+
+						if(!wglMakeCurrent(buffer->hDC,buffer->hRC))
+						{
+							display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
+								"Unable enable the render context.");
+							DESTROY(Graphics_buffer)(&buffer);
+							buffer = (struct Graphics_buffer *)NULL;
+						}
+					}
+					else
 					{
 						display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
-							"Unable enable the render context.");
+							"Unable to create the render context.");
 						DESTROY(Graphics_buffer)(&buffer);
 						buffer = (struct Graphics_buffer *)NULL;
 					}
 				}
 				else
 				{
+					DWORD error = GetLastError();
 					display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
-						"Unable to create the render context.");
+						"Unable to set pixel format. Microsoft error code: %d", error);
 					DESTROY(Graphics_buffer)(&buffer);
 					buffer = (struct Graphics_buffer *)NULL;
 				}
@@ -3421,18 +3453,19 @@ DESCRIPTION :
 			else
 			{
 				display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
-					"Unable to set pixel format.");
+					"Unable to choose pixel format.");
 				DESTROY(Graphics_buffer)(&buffer);
 				buffer = (struct Graphics_buffer *)NULL;
-			}
+			}	
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
-				"Unable to set choose format.");
+				"Unable to get drawing context.");
 			DESTROY(Graphics_buffer)(&buffer);
 			buffer = (struct Graphics_buffer *)NULL;
 		}	
+
 	}
 	else
 	{
@@ -3444,6 +3477,96 @@ DESCRIPTION :
 
 	return (buffer);
 } /* create_Graphics_buffer_win32 */
+#endif /* defined (WIN32_USER_INTERFACE) */
+
+#if defined (WIN32_USER_INTERFACE)
+int Graphics_buffer_handle_windows_event(struct Graphics_buffer *buffer,
+	UINT message_identifier,WPARAM first_message,LPARAM second_message)
+/*******************************************************************************
+LAST MODIFIED : 5 June 2007
+
+DESCRIPTION:
+Handle an external windows event.  Used to try and support windowless plugin
+mode with zinc.  Requiring development.
+==============================================================================*/
+{
+  int return_code;
+
+  ENTER(Graphics_buffer_handle_windows_event);
+
+  switch (message_identifier)
+  {
+	  case WM_CREATE:
+	  {
+		  return_code=1;
+	  }
+	  case WM_PAINT:
+	  {
+#if defined (OLD_CODE)
+		  // get the dirty rectangle to update or repaint the whole window
+		  RECT * drc = (RECT *)second_message;
+		  FillRect((HDC)first_message, drc, (HBRUSH)(COLOR_HIGHLIGHT));
+#endif // defined (OLD_CODE)
+
+		  CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+			  buffer->expose_callback_list, buffer, NULL);
+		  return_code=1;
+	  } break;
+	  case WM_SIZING:
+	  {
+		  CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+			  buffer->resize_callback_list, buffer, NULL);
+		  return_code=1;
+	  } break;
+	  case WM_LBUTTONDOWN:
+	  {
+		  Graphics_buffer_win32_button_callback(&message_identifier,
+			  buffer, first_message, second_message);
+		  return_code=1;
+	  } break;
+	  case WM_LBUTTONUP:
+	  {
+		  Graphics_buffer_win32_button_callback(&message_identifier,
+			  buffer, first_message, second_message);
+		  return_code=1;
+	  } break;
+	  case WM_RBUTTONDOWN:
+	  {
+		  Graphics_buffer_win32_button_callback(&message_identifier,
+			  buffer, first_message, second_message);
+		  return_code=1;
+	  } break;
+	  case WM_RBUTTONUP:
+	  {
+		  Graphics_buffer_win32_button_callback(&message_identifier,
+			  buffer, first_message, second_message);
+		  return_code=1;
+	  } break;
+	  case WM_MBUTTONDOWN:
+	  {
+		  Graphics_buffer_win32_button_callback(&message_identifier,
+			  buffer, first_message, second_message);
+		  return_code=1;
+	  } break;
+	  case WM_MBUTTONUP:
+	  {
+		  Graphics_buffer_win32_button_callback(&message_identifier,
+			  buffer, first_message, second_message);
+		  return_code=1;
+	  } break;
+	  case WM_MOUSEMOVE:
+	  {
+		  Graphics_buffer_win32_button_callback(&message_identifier,
+			  buffer, first_message, second_message);
+		  return_code=1;
+	  } break;
+	  default:
+	  {
+	  } break;
+  }
+
+  return (return_code);
+} /* Graphics_buffer_handle_windows_event */
 #endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (WIN32_USER_INTERFACE)
@@ -3461,7 +3584,8 @@ DESCRIPTION:
 	ENTER(Graphics_buffer_callback_proc);
 
 	return_code=FALSE;
-        struct Graphics_buffer *graphics_buffer = (struct Graphics_buffer *)GetWindowLongPtr(window, GWL_USERDATA);
+	struct Graphics_buffer *graphics_buffer = 
+		(struct Graphics_buffer *)GetWindowLongPtr(window, GWL_USERDATA);
 
 	switch (message_identifier)
 	{
@@ -5003,7 +5127,7 @@ Returns the width of buffer represented by <buffer>.
 				{
 					display_message(ERROR_MESSAGE,"Graphics_buffer_get_width.  "
 						"Failed to get window rectangle");				
-					width = 0;				
+					width = 200;
 				}
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -5147,9 +5271,9 @@ Returns the height of buffer represented by <buffer>.
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"Graphics_buffer_get_width.  "
+					display_message(ERROR_MESSAGE,"Graphics_buffer_get_height.  "
 						"Failed to get window rectangle");				
-					height = 0;				
+					height = 200;
 				}
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -5867,7 +5991,10 @@ x==============================================================================*
 #if defined (WIN32_USER_INTERFACE)
 		wglMakeCurrent(NULL, NULL);
 		wglDeleteContext(buffer->hRC);
-		ReleaseDC(buffer->hWnd, buffer->hDC);
+		if (buffer->hWnd)
+		{
+			ReleaseDC(buffer->hWnd, buffer->hDC);
+		}
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (CARBON_USER_INTERFACE)
 		aglDisable(buffer->aglContext, AGL_BUFFER_RECT);

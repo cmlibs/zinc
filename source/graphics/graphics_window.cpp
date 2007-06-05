@@ -3852,7 +3852,7 @@ it.
 				{
 					if (graphics_buffer = create_Graphics_buffer_win32(
 						graphics_buffer_package,
-						window->hWnd,
+						window->hWnd, (HDC)NULL,
 						graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
 						minimum_colour_buffer_depth, minimum_depth_buffer_depth,
 						minimum_accumulation_buffer_depth))

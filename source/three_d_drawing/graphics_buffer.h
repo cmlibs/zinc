@@ -221,15 +221,26 @@ DESCRIPTION :
 #if defined (WIN32_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_win32(
 	struct Graphics_buffer_package *graphics_buffer_package,
-	HWND hWnd,
+	HWND hWnd, HDC hDC,
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
 	int minimum_accumulation_buffer_depth);
 /*******************************************************************************
-LAST MODIFIED : 9 August 2004
+LAST MODIFIED : 1 June 2007
 
 DESCRIPTION :
+==============================================================================*/
+#endif /* defined (WIN32_USER_INTERFACE) */
+
+#if defined (WIN32_USER_INTERFACE)
+int Graphics_buffer_handle_windows_event(struct Graphics_buffer *graphics_buffer,
+	UINT event,WPARAM first_message,LPARAM second_message);
+/*******************************************************************************
+LAST MODIFIED : 31 May 2007
+
+DESCRIPTION:
+Passes the supplied windows event on to the graphics buffer.
 ==============================================================================*/
 #endif /* defined (WIN32_USER_INTERFACE) */
 

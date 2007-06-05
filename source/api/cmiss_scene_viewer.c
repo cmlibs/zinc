@@ -222,13 +222,13 @@ chosen.
 #if defined (WIN32_USER_INTERFACE)
 Cmiss_scene_viewer_id create_Cmiss_scene_viewer_win32(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
-	HWND hWnd,
+	HWND hWnd, HDC hDC,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
 	enum Cmiss_scene_viewer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
 	int minimum_accumulation_buffer_depth)
 /*******************************************************************************
-LAST MODIFIED : 2 September 2004
+LAST MODIFIED : 1 June 2007
 
 DESCRIPTION :
 Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified 
@@ -274,7 +274,7 @@ chosen.
 		}
 		graphics_buffer = create_Graphics_buffer_win32(
 			Cmiss_scene_viewer_package_get_graphics_buffer_package(cmiss_scene_viewer_package),
-			hWnd,
+			hWnd, hDC,
 			graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
 			minimum_colour_buffer_depth, minimum_depth_buffer_depth,
 			minimum_accumulation_buffer_depth);
@@ -292,6 +292,38 @@ chosen.
 	LEAVE;
 
 	return (scene_viewer);
+}
+#endif /* defined (WIN32_USER_INTERFACE) */
+
+#if defined (WIN32_USER_INTERFACE)
+int Cmiss_scene_viewer_handle_windows_event(Cmiss_scene_viewer_id scene_viewer,
+	UINT event,WPARAM first_message,LPARAM second_message)
+/*******************************************************************************
+LAST MODIFIED : 31 May 2007
+
+DESCRIPTION:
+Passes the supplied windows event on to the graphics buffer.
+==============================================================================*/
+{
+   int return_code;
+	struct Graphics_buffer *graphics_buffer;
+
+	ENTER(create_Cmiss_scene_viewer_win32);
+	if (scene_viewer)
+	{
+	  graphics_buffer = Scene_viewer_get_graphics_buffer(scene_viewer);
+	  return_code = Graphics_buffer_handle_windows_event(graphics_buffer,
+		 event, first_message, second_message);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"create_Cmiss_scene_viewer_win32.  "
+			"Scene viewer required.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
 }
 #endif /* defined (WIN32_USER_INTERFACE) */
 
