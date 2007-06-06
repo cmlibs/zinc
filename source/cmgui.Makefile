@@ -612,21 +612,22 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
    ifneq ($(DEBUG),true)
      WX_DEBUG_FLAG = no
    else # $(DEBUG) != true
-     WX_DEBUG_FLAG = yes
+     WX_DEBUG_FLAG = no
    endif # $(DEBUG) != true
-   USER_INTERFACE_INC += $(shell $(WX_DIR)wx-config --cxxflags --unicode=no --debug=$(WX_DEBUG_FLAG) --static=yes)
    #Default list does not include gl, so we list them here.
    #Using xrc means that we require most things (and static wx libs don't automatically pull
    #in the other dependent wx-libs)
    #Use linkdeps so that we don't get all the other system libraries.
-   WX_CONFIG_LIBS := $(shell $(WX_DIR)wx-config --linkdeps --unicode=no --debug=$(WX_DEBUG_FLAG) --static=yes xrc,gl,xml,adv,html,core,base)
+   WX_STATIC_FLAG=yes
+   WX_CONFIG_LIBS := $(shell $(WX_DIR)wx-config --linkdeps --unicode=no --debug=$(WX_DEBUG_FLAG) --static=$(WX_STATIC_FLAG) xrc,gl,xml,adv,html,core,base)
    ifneq ($(WX_CONFIG_LIBS),)
      #Presume it succeeded, use this config
      USER_INTERFACE_LIB += $(WX_CONFIG_LIBS)
    else
      $(warning Static wx build not detected, trying a dynamic version)
      #Use the full libs
-     WX_CONFIG_LIBS := $(shell $(WX_DIR)wx-config --libs --unicode=no --debug=$(WX_DEBUG_FLAG) xrc,gl,xml,adv,html,core,base)
+     WX_STATIC_FLAG = no
+     WX_CONFIG_LIBS := $(shell $(WX_DIR)wx-config --libs --unicode=no --debug=$(WX_DEBUG_FLAG) --static=$(WX_STATIC_FLAG) xrc,gl,xml,adv,html,core,base)
      ifneq ($(WX_CONFIG_LIBS),)
        #Presume this worked
        USER_INTERFACE_LIB += $(WX_CONFIG_LIBS)
@@ -634,6 +635,7 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
        $(error cmgui build error wx config not matched for $(WX_DIR)wx-config --libs --unicode=no --debug=$(WX_DEBUG_FLAG) xrc,gl,xml,adv,html,core,base)
      endif
    endif
+   USER_INTERFACE_INC += $(shell $(WX_DIR)wx-config --cxxflags --unicode=no --debug=$(WX_DEBUG_FLAG) --static=$(WX_STATIC_FLAG))
    USER_INTERFACE_LIB += $(GRAPHICS_LIB)
    ifeq ($(OPERATING_SYSTEM),linux)
       ifneq ($(STATIC_LINK),true)
@@ -878,6 +880,7 @@ endif
 COMMAND_INTERFACE_SRCS = \
 	command/command_window.cpp
 COMPUTED_FIELD_SRCS = \
+	minimise/minimise.cpp \
 	computed_field/computed_field.cpp \
 	computed_field/computed_field_component_operations.cpp \
 	computed_field/computed_field_compose.cpp \
@@ -893,6 +896,7 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_logical_operators.cpp \
 	computed_field/computed_field_lookup.cpp \
 	computed_field/computed_field_matrix_operations.cpp \
+	computed_field/computed_field_region_operations.cpp \
 	computed_field/computed_field_sample_texture.cpp \
 	computed_field/computed_field_set.cpp \
 	computed_field/computed_field_string_constant.cpp \

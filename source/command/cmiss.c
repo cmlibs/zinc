@@ -84,6 +84,7 @@ Functions for executing cmiss commands.
 #include "computed_field/computed_field_logical_operators.h"
 #include "computed_field/computed_field_lookup.h"
 #include "computed_field/computed_field_matrix_operations.h"
+#include "computed_field/computed_field_region_operations.h"
 #include "computed_field/computed_field_sample_texture.h"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_string_constant.h"
@@ -200,6 +201,7 @@ Functions for executing cmiss commands.
 #if defined (MOTIF)
 #include "material/material_editor_dialog.h"
 #endif /* defined (MOTIF) */
+#include "minimise/minimise.h"
 #include "node/node_operations.h"
 #include "node/node_tool.h"
 #if defined (MOTIF)
@@ -19809,6 +19811,7 @@ Executes a GFX command.
 {
 	int return_code;
 	struct Option_table *option_table;
+	struct Minimisation_package *minimisation_package;
 	struct Cmiss_command_data *command_data;
 
 	ENTER(execute_command_gfx);
@@ -19818,6 +19821,9 @@ Executes a GFX command.
 		if (state->current_token)
 		{
 			option_table=CREATE(Option_table)();
+			minimisation_package = CREATE(Minimisation_package)(
+				command_data->default_time_keeper, command_data->computed_field_package,
+				command_data->root_region);
 			Option_table_add_entry(option_table, "change_identifier", NULL,
 				command_data_void, gfx_change_identifier);
 			Option_table_add_entry(option_table, "convert", NULL,
@@ -19861,6 +19867,8 @@ Executes a GFX command.
 #endif /* defined (OLD_CODE) */
 			Option_table_add_entry(option_table, "list", NULL,
 				command_data_void, execute_command_gfx_list);
+			Option_table_add_entry(option_table, "minimise",
+				NULL, minimisation_package, gfx_minimise);
 			Option_table_add_entry(option_table, "modify", NULL,
 				command_data_void, execute_command_gfx_modify);
 #if defined (SGI_MOVIE_FILE)
@@ -19898,6 +19906,7 @@ Executes a GFX command.
 				command_data_void, execute_command_gfx_write);
 			return_code = Option_table_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
+			DESTROY(Minimisation_package)(&minimisation_package);
 		}
 		else
 		{
@@ -24007,6 +24016,12 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			}
 			Computed_field_register_types_matrix_operations(
 				command_data->computed_field_package);
+			if (command_data->root_region)
+			{
+				Computed_field_register_types_region_operations(
+					command_data->computed_field_package, 
+					command_data->root_region);
+			}
 			Computed_field_register_types_vector_operations(
 				command_data->computed_field_package);
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
