@@ -112,7 +112,7 @@ int DESTROY(Minimisation_package)(struct Minimisation_package **package)
 LAST MODIFIED : 7 May 2007
 
 DESCRIPTION :
-Creates the package required for minimisation.
+Destroys the package required for minimisation.
 ==============================================================================*/
 {
 	int return_code;
@@ -205,13 +205,18 @@ Clear the type specific data used by this type.
 int Minimisation::construct_dof_arrays(struct FE_node *node,
 		void *minimisation_object_void)
 /*******************************************************************************
-LAST MODIFIED : 8 May 2007
+LAST MODIFIED : 7 June 2007
 
 DESCRIPTION :
+Populates the array of pointers to the dof values and the array of the dof
+initial values. Notice the population includes both nodal values and derivatives
+but does NOT handle versions - this needs to be added by someone who understands
+and can test versions.
 ==============================================================================*/
 {
+	enum FE_nodal_value_type *nodal_value_types;
   FE_field *fe_field;
-	int i, return_code, number_of_components;
+	int i, component_number, return_code, number_of_components, number_of_values;
 	Minimisation *minimisation;
 
 	ENTER(Minimisation::construct_dof_arrays);
@@ -222,14 +227,22 @@ DESCRIPTION :
 		Computed_field_get_type_finite_element(minimisation->independent_field,
 			&fe_field);
 		
-//		if(FE_field_is_defined_at_node(fe_field, node))
-//		{
-			//Get number of components
-			number_of_components = get_FE_field_number_of_components(fe_field);
+		//Get number of components
+		number_of_components = get_FE_field_number_of_components(fe_field);
+		
+		//for each component in field
+		for(component_number=0; component_number<number_of_components; 
+				component_number++)
+		{
+			number_of_values=1+get_FE_node_field_component_number_of_derivatives(node,
+				fe_field, component_number);
+		
+			nodal_value_types=get_FE_node_field_component_nodal_value_types(node,
+			fe_field,component_number);
 			
-			//for each component in field
-			for (i = 0 ; i < number_of_components ; i++)
+			for(i=0;i<number_of_values;i++)
 			{
+				
 				// increment total_dof
 				minimisation->total_dof++;
 				
@@ -241,17 +254,22 @@ DESCRIPTION :
 				
 				// get value storage pointer
 				get_FE_nodal_FE_value_storage(node,
-					fe_field,/*component_number*/i, /*version_number*/0,
-					/*nodal_value_type*/FE_NODAL_VALUE, minimisation->current_time,
+					fe_field,/*component_number*/component_number, /*version_number*/0,
+					/*nodal_value_type*/nodal_value_types[i], minimisation->current_time,
 					&(minimisation->dof_storage_array[minimisation->total_dof-1]));
-				
+					
 				// get initial value from value storage pointer
 				minimisation->dof_initial_values[minimisation->total_dof-1] =
 					*minimisation->dof_storage_array[minimisation->total_dof-1];
 				
+				cout << minimisation->dof_storage_array[minimisation->total_dof-1]<<"   "<<
+				  minimisation->dof_initial_values[minimisation->total_dof-1] << endl;
 			}
-//		}
-		
+			
+			DEALLOCATE(nodal_value_types);
+			
+		}
+	
 	  return_code = 1;		
 	}
 	else
@@ -271,6 +289,7 @@ void Minimisation::set_dof_value(int dof_index, FE_value new_value)
 LAST MODIFIED : 8 May 2007
 
 DESCRIPTION :
+Sets the dof value to <new_value>
 ==============================================================================*/
 {
   
@@ -287,6 +306,8 @@ void Minimisation::list_dof_values()
 LAST MODIFIED : 8 May 2007
 
 DESCRIPTION :
+Simple function to list the dof values. This is mainly for debugging purposes
+and may be removed later.
 ==============================================================================*/
 {
   int i;
@@ -308,6 +329,7 @@ FE_value Minimisation::evaluate_objective_function()
 LAST MODIFIED : 8 May 2007
 
 DESCRIPTION :
+Evalulates the objective function value given the currents dof values.
 ==============================================================================*/
 {
   FE_value objective_value[3];
@@ -334,6 +356,12 @@ void Minimisation::minimise()
 LAST MODIFIED : 8 May 2007
 
 DESCRIPTION :
+Calculates the normalised steepest decent vector and does a Golden section line
+search in the direction of the steepest decent vector to find the minimum along
+the line. This is repeated until the stopping criteria is met and overall
+minimum is found. The intention is to replace this minimisations function with
+the non-linear minimisation function in PetSc. This should be more efficient
+and may be parallelised.
 ==============================================================================*/
 {
   int i, iteration, max_iterations, stop;
@@ -345,6 +373,7 @@ DESCRIPTION :
 	
 	ENTER(Minimisation::minimise);
 	
+	// Initialisation
 	h = 1E-5; // independent variable perturbation value
 	tol = 1E-5; // outside loop tolerance
 	lstol = 0.1*tol; // inside loop (line search) tolerance
@@ -365,11 +394,12 @@ DESCRIPTION :
 	ds = tol+1.0;
 	stop = 0;
 	Fi = evaluate_objective_function();
+	// Outside loop searching for the overall minimum
 	while((ds>tol) && (iteration<max_iterations) && (stop==0))
 	{
 		iteration++;
 		
-		// Construct dFdx
+		// Construct dFdx, the steepest decent vector
 		F0 = evaluate_objective_function();
 		for (i=0;i<total_dof;i++)
 		{
@@ -393,7 +423,7 @@ DESCRIPTION :
 		{
 			stop = 1;
 		}
-		else
+		else // Line search
 		{
 			for (i=0;i<total_dof;i++)
 			{
@@ -424,7 +454,7 @@ DESCRIPTION :
 			}
 			Fb = evaluate_objective_function();
 			
-			// Golden Section Line Search
+			// Golden Section Line Search, searching for line minimum
 			while (((s1-s0) > lstol)&&(stop==0)){
 			
 				if (Fb > Fa)
@@ -498,8 +528,8 @@ int gfx_minimise(struct Parse_state *state, void *dummy_to_be_modified,
 /*******************************************************************************
 LAST MODIFIED : 04 May 2007
 
-DESCRIPTION : Minimises the <objective_field> by changing the <independent_field> over a 
-<region>
+DESCRIPTION : Minimises the <objective_field> by changing the <independent_field>
+over a <region>
 ==============================================================================*/
 {
 	char *region_path;
@@ -563,14 +593,17 @@ DESCRIPTION : Minimises the <objective_field> by changing the <independent_field
 						
 						FE_region_begin_change(fe_region);
 						
+						// Create minimisation object
 						Minimisation minimisation(objective_field, independent_field, fe_region);
 						
+						// Populate the dof pointers and initial values for each node
 						if (Computed_field_is_type_finite_element(independent_field))
 						{
 							FE_region_for_each_FE_node(fe_region, Minimisation::construct_dof_arrays,
 								&minimisation);
 						}
 						
+						// Minimise the objective function
 						minimisation.minimise();
 						
 						FE_region_end_change(fe_region);
