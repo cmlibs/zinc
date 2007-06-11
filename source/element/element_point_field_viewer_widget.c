@@ -210,8 +210,8 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 						"element_point_field_viewer_widget_update_values.  "
 						"Could not get component as string");
 				}
-			Computed_field_clear_cache(field);
 			}
+			Computed_field_clear_cache(field);
 		}
 		else
 		{
