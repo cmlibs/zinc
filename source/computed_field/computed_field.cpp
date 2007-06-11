@@ -2150,7 +2150,9 @@ It is up to the calling function to DEALLOCATE the returned string.
 	{
 		if (Computed_field_evaluate_cache_at_location(field, location))
 		{
-			if (field->string_cache)
+			// cache may be valid but we also need to check that the cached string
+			// is the string for the component number we are interested in.
+			if (field->string_cache && field->string_component == component_number)
 			{
 				return_string = duplicate_string(field->string_cache);
 			}
