@@ -4583,19 +4583,24 @@ DESCRIPTION :
 {
 	char *field_name;
 	int return_code;
+	int i;
 
 	ENTER(List_Computed_field_basis_derivative);
 	if (field)
 	{
 		if (return_code=GET_NAME(FE_field)(fe_field,&field_name))
 		{
-			display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
-			DEALLOCATE(field_name);
+			display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);			
+			display_message(INFORMATION_MESSAGE,"    order : %d\n",order);
+			display_message(INFORMATION_MESSAGE,"    xi_indices : ");
+			for (i=0;i<order;i++)
+			{
+				display_message(INFORMATION_MESSAGE," %d",xi_indices[i]+1);
+			}
+			display_message(INFORMATION_MESSAGE,"\n");
+
+			DEALLOCATE(field_name);					 
 		}
-		display_message(INFORMATION_MESSAGE,"    CM field type : %s\n",
-			ENUMERATOR_STRING(CM_field_type)(get_FE_field_CM_field_type(fe_field)));
-		display_message(INFORMATION_MESSAGE,"    Value type : %s\n",
-			Value_type_string(get_FE_field_value_type(fe_field)));
 		return_code = 1;
 	}
 	else
@@ -4617,35 +4622,37 @@ DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	char *command_string, *component_name, temp_string[40];
-	int error, i, number_of_components;
+	char *command_string, *field_name, temp_string[40];
+	int error, i;
 
 	ENTER(Computed_field_basis_derivative::get_command_string);
 	command_string = (char *)NULL;
 	if (field)
 	{
+
 		error = 0;
 		append_string(&command_string,
 			computed_field_basis_derivative_type_string, &error);
-		number_of_components = get_FE_field_number_of_components(fe_field);
-		sprintf(temp_string, " number_of_components %d ", number_of_components);
-		append_string(&command_string, temp_string, &error);
-		append_string(&command_string, ENUMERATOR_STRING(CM_field_type)(
-			get_FE_field_CM_field_type(fe_field)), &error);
-		append_string(&command_string, " ", &error);
-		append_string(&command_string,
-			Value_type_string(get_FE_field_value_type(fe_field)), &error);
-		append_string(&command_string, " component_names", &error);
-		for (i = 0; i < number_of_components; i++)
+
+		append_string(&command_string, " fe_field ", &error);
+		if (GET_NAME(FE_field)(fe_field, &field_name))
 		{
-			if (component_name = get_FE_field_component_name(fe_field, i))
-			{
-				make_valid_token(&component_name);
-				append_string(&command_string, " ", &error);
-				append_string(&command_string, component_name, &error);
-				DEALLOCATE(component_name);
-			}
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
 		}
+
+		append_string(&command_string, " order", &error);
+		sprintf(temp_string, " %d", order);
+		append_string(&command_string, temp_string, &error);
+
+		append_string(&command_string, " xi_indices", &error);
+		for (i = 0; i < order; i++)
+		{
+			sprintf(temp_string, " %d", xi_indices[i]+1);
+			append_string(&command_string, temp_string, &error);
+		}
+
 	}
 	else
 	{
@@ -4806,7 +4813,7 @@ FE_field being made and/or modified.
 	char basis_derivative_help[] =
 		"The basis_derivative calculates a monomial derivative on element based fields.  It is not defined for nodes.  It allows you to calculate an arbitrary derivative by specifying an <order> and a list of <xi_indices> of length order.  This derivative then becomes the \"value\" for the field.";
 	char *current_token;
-	int i, order, previous_state_index, return_code, *xi_indices;
+	int i, order, previous_state_index, return_code, *xi_indices, *temp_xi_indices;
 	struct Computed_field *field;
 	Computed_field_finite_element_package *computed_field_finite_element_package;
 	struct FE_field *fe_field;
@@ -4819,15 +4826,24 @@ FE_field being made and/or modified.
 		computed_field_finite_element_package_void))
 	{
 		return_code = 1;
-		order = 0;
+		order = 1;
 		xi_indices = (int *)NULL;
 		fe_field = (struct FE_field *)NULL;
 		if (computed_field_basis_derivative_type_string ==
 			Computed_field_get_type_string(field))
 		{
 			return_code =
-				Computed_field_get_type_finite_element(field, &fe_field);
+				Computed_field_get_type_basis_derivative(field, &fe_field);
+		} else {
 		}
+
+		/* Assign default values for xi_indices */
+		ALLOCATE(xi_indices, int, order);
+		for (i = 0 ; i < order ; i++)
+		{
+			xi_indices[i] = 1;
+		}
+
 		if (return_code)
 		{
 			if (fe_field)
@@ -4863,7 +4879,6 @@ FE_field being made and/or modified.
 				/* parse the order of the differentiation. */
 				option_table = CREATE(Option_table)();
 				Option_table_add_help(option_table, basis_derivative_help);
-				/* num_seed_points */
 				Option_table_add_int_positive_entry(option_table, "order",
 					&order);
 				/* Ignore all the other entries */
@@ -4875,7 +4890,17 @@ FE_field being made and/or modified.
 			}
 			if (return_code)
 			{
-				REALLOCATE(xi_indices, xi_indices, int, order);
+				/* Allocate memory for xi_indices array based on order
+					 and default all index values to 1 */
+				if (REALLOCATE(temp_xi_indices, xi_indices, int, order))
+				{
+					xi_indices = temp_xi_indices;
+					for (i = 0 ; i < order ; i++)
+					{
+						xi_indices[i] = 1;
+					}
+				}
+
 				option_table=CREATE(Option_table)();
 				/* fe_field */
 				Option_table_add_set_FE_field_from_FE_region(
@@ -4883,6 +4908,7 @@ FE_field being made and/or modified.
 					computed_field_finite_element_package->fe_region);
 				Option_table_add_int_positive_entry(option_table,
 					"order", &order);
+
 				Option_table_add_int_vector_entry(option_table,
 					"xi_indices", xi_indices, &order);
 				return_code=Option_table_multi_parse(option_table,state);
@@ -4890,6 +4916,7 @@ FE_field being made and/or modified.
 			}
 			if (return_code)
 			{
+				/* decrement each xi index so that the first index is 0 rather than 1*/
 				for (i = 0 ; i < order ; i++)
 				{
 					xi_indices[i]--;
@@ -4905,9 +4932,12 @@ FE_field being made and/or modified.
 				{
 					/* error */
 					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_node_value.  Failed");
+						"define_Computed_field_type_basis_derivative.  Failed");
 				}
 			}
+
+			DEALLOCATE(xi_indices);
+
 			if (fe_field)
 			{
 				DEACCESS(FE_field)(&fe_field);
@@ -4917,13 +4947,13 @@ FE_field being made and/or modified.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_finite_element.  Invalid argument(s)");
+			"define_Computed_field_type_basis_derivative.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* define_Computed_field_type_finite_element */
+} /* define_Computed_field_type_basis_derivative */
 
 int Computed_field_manager_update_wrapper(
 	struct MANAGER(Computed_field) *computed_field_manager,
