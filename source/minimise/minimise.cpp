@@ -367,10 +367,12 @@ and may be parallelised.
   int i, iteration, max_iterations, stop;
 	FE_value h, tol, lstol, line_size;
 	FE_value phi, LFa, LFb;
-	FE_value dFdx[total_dof], sum;
+	FE_value *dFdx, sum;
 	FE_value s0, s1, sa, sb, ds;
 	FE_value F0, F1, Fa, Fb, Fi, Ff;
 	
+	ALLOCATE(dFdx,FE_value,total_dof);
+
 	ENTER(Minimisation::minimise);
 	
 	// Initialisation
@@ -509,7 +511,9 @@ and may be parallelised.
 		
 	if(iteration>=max_iterations) cout << "Max number of iterations reached" << endl;
 	list_dof_values();
-	
+
+	DEALLOCATE(dFdx);
+
 	LEAVE;
 	
 } /* Minimisation::minimise */
