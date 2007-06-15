@@ -369,7 +369,10 @@ and may be parallelised.
 	FE_value phi, LFa, LFb;
 	FE_value *dFdx, sum;
 	FE_value s0, s1, sa, sb, ds;
-	FE_value F0, F1, Fa, Fb, Fi, Ff;
+	// pjb: temporarily removed declaration of F1 as it is not yet used,
+	// otherwise irix compilation will fail
+	//	FE_value F0, F1, Fa, Fb, Fi, Ff;	
+	FE_value F0, Fa, Fb, Fi, Ff;
 	
 	ALLOCATE(dFdx,FE_value,total_dof);
 
@@ -440,7 +443,7 @@ and may be parallelised.
 			{
 				set_dof_value(i, (dof_initial_values[i] - dFdx[i]*s1));
 			}
-			F1 = evaluate_objective_function();
+			// F1 = evaluate_objective_function();
 			
 			sa = s0 + LFa*(s1-s0);
 			for (i=0;i<total_dof;i++)
@@ -462,7 +465,7 @@ and may be parallelised.
 				if (Fb > Fa)
 				{
 					s1 = sb;
-					F1 = Fb;
+					// F1 = Fb;
 					sb = sa;
 					Fb = Fa;
 					sa = s0 + LFa*(s1-s0);
@@ -537,7 +540,9 @@ over a <region>
 ==============================================================================*/
 {
 	char *region_path;
-	FE_value time;
+	// pjb: temporarily removed declaration of time as it is not yet used,
+	// otherwise irix compilation will fail
+	//	FE_value time;
 	int return_code;
 	struct Cmiss_region *region;
 	struct Computed_field *objective_field, *independent_field;
@@ -555,11 +560,11 @@ over a <region>
 		independent_field = (struct Computed_field *)NULL;
 		if (package->time_keeper)
 		{
-			time = Time_keeper_get_time(package->time_keeper);
+			// time = Time_keeper_get_time(package->time_keeper);
 		}
 		else
 		{
-			time = 0;
+			// time = 0;
 		}
 		
 		option_table = CREATE(Option_table)();
