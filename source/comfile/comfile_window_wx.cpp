@@ -219,7 +219,8 @@ public:
 				 display_message(ERROR_MESSAGE,
 						"identify_command_list.  Could not open file");
 			}
-
+			this_frame->SetSize(wxSize(800,600));		
+			this_frame->SetMinSize(wxSize(20,20));
 			Show();
 	 };
 	 

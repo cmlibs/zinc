@@ -18,6 +18,8 @@
 				<style>wxHSCROLL | wxVSCROLL</style>
 		  </object>
 		  <object class ="sizeritem">
+			  <flag>wxEXPAND</flag>
+			  <option>0</option>
 	         <flag>wxALIGN_BOTTOM</flag>
 	 		  <object class = "wxBoxSizer">
 		  		  <orient>wxHORIZONTAL</orient>

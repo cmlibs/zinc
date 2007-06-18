@@ -57,7 +57,6 @@ extern "C" {
 }
 #if defined (WX_USER_INTERFACE)
 #include <wx/collpane.h>
-#include <wx/grid.h>
 #include "wx/wx.h"
 #include "wx/xrc/xmlres.h"
 #include "node/node_viewer_wx.xrch"
@@ -250,9 +249,6 @@ public:
 			node_viewer->wx_node_viewer = (wxNodeViewer *)NULL;
 			wxXmlResource::Get()->LoadFrame(this,
 				 (wxWindow *)NULL, _T("CmguiNodeViewer"));
-// 			wxBitmap iconbmp(Cmiss_icon);
-// 			wxIcon icon;
-// 			icon.CopyFromBitmap(iconbmp); 
 			this->SetIcon(cmiss_icon_xpm);
 			wxPanel *node_text_panel =
 				 XRCCTRL(*this, "NodeTextPanel",wxPanel);
@@ -322,6 +318,8 @@ Callback from wxTextChooser when text is entered.
 
 	 void RenewNodeViewer(wxCollapsiblePaneEvent& event)
 	 {
+			wxScrolledWindow *VariableViewer = XRCCTRL(*this,"VariableViewerPanel",wxScrolledWindow);
+			VariableViewer->Layout();	
 			frame = XRCCTRL(*this, "CmguiNodeViewer", wxFrame);
 			frame->SetMinSize(wxSize(50,100));
 			frame->SetMaxSize(wxSize(2000,2000));
@@ -359,6 +357,11 @@ Callback from wxTextChooser when text is entered.
 	 {
 			DESTROY(Node_viewer)(node_viewer->node_viewer_address);
 	 }
+
+void Terminate(wxCloseEvent& event)
+{
+	 DESTROY(Node_viewer)(node_viewer->node_viewer_address);
+} 
 
 	 void NodeViewerTextEntered(wxTextCtrl *textctrl , Node_viewer *node_viewer,Computed_field *field, int component_number, FE_nodal_value_type type, int version)
 	 {
@@ -483,6 +486,7 @@ BEGIN_EVENT_TABLE(wxNodeViewer, wxFrame)
 	 EVT_BUTTON(XRCID("ApplyButton"),wxNodeViewer::OnApplypressed)
 	 EVT_BUTTON(XRCID("RevertButton"),wxNodeViewer::OnRevertpressed)
 	 EVT_BUTTON(XRCID("CancelButton"),wxNodeViewer::OnCancelpressed)
+	 EVT_CLOSE(wxNodeViewer::Terminate)
 END_EVENT_TABLE()
 
 class wxNodeViewerTextCtrl : public wxTextCtrl
@@ -527,7 +531,8 @@ static int node_viewer_add_collpane(struct Computed_field *current_field, void *
 	 int condition;
 	 if (node_viewer->current_node)
 	 {
-			condition = Computed_field_is_defined_at_node_conditional(current_field, (void *)node_viewer->current_node);
+			condition = Computed_field_is_defined_at_node_conditional(
+				 current_field, (void *)node_viewer->current_node);
 	 }
 	 else
 	 {
@@ -659,6 +664,7 @@ Since both nodes and data can depend on embedded fields, the
 				node_viewer->number_of_nodal_value_types=0;
 				node_viewer->grid_field = NULL;
 #if defined (WX_USER_INTERFACE)
+				node_viewer->grid_field = NULL;
 				node_viewer->wx_node_viewer = (wxNodeViewer *)NULL;
 #endif /* defined (WX_USER_INTERFACE) */	
 				if (!initial_node)
@@ -1022,6 +1028,12 @@ object cause updates.
 
 char *node_viewer_update_value(Node_viewer *node_viewer, Computed_field *field, int component_number, FE_nodal_value_type type, int version)
 {
+/*******************************************************************************
+LAST MODIFIED : 24 April 2007
+
+DESCRIPTION :
+Give the textctrl a value.
+==============================================================================*/
 	 char *cmiss_number_string, *new_value_string, temp_value_string[VALUE_STRING_SIZE];
 	 int element_dimension, j, number_of_components, return_code;
 	 struct CM_element_information cm_identifier;
@@ -1029,6 +1041,8 @@ char *node_viewer_update_value(Node_viewer *node_viewer, Computed_field *field, 
 	 struct FE_field *fe_field;
 	 struct FE_node *node;
 	 struct Computed_field *temp_field;
+
+	 ENTER(node_viewer_update_value);
 	 if (node_viewer&&(node = node_viewer->current_node) &&
 			(temp_field=node_viewer->current_field))
 	 number_of_components = Computed_field_get_number_of_components(temp_field);
@@ -1171,14 +1185,23 @@ char *node_viewer_update_value(Node_viewer *node_viewer, Computed_field *field, 
 			}
 	 }
 	 return(new_value_string);
+	 LEAVE;
 }
 
 
 int node_viewer_add_textctrl(Node_viewer *node_viewer, Computed_field *field, int component_number, FE_nodal_value_type type, int version)
+/*******************************************************************************
+LAST MODIFIED : 24 April 2007
+
+DESCRIPTION :
+Add textctrl box onto the viewer.
+==============================================================================*/
 {
 	 char *temp_string;
-	 wxNodeViewerTextCtrl *node_viewer_text = new wxNodeViewerTextCtrl(node_viewer, field, component_number, type, version);
-	 if (temp_string = node_viewer_update_value(node_viewer, field, component_number, type, version))
+	 wxNodeViewerTextCtrl *node_viewer_text = 
+			new wxNodeViewerTextCtrl(node_viewer, field, component_number, type, version);
+	 if (temp_string = node_viewer_update_value(
+					node_viewer, field, component_number, type, version))
 	 {
 			node_viewer_text ->Create (node_viewer->win, -1, temp_string,wxDefaultPosition,
 				 wxDefaultSize,wxTE_PROCESS_ENTER);
@@ -1193,7 +1216,7 @@ int node_viewer_add_textctrl(Node_viewer *node_viewer, Computed_field *field, in
 			wxCommandEventHandler(wxNodeViewerTextCtrl::OnNodeViewerTextCtrlEntered));
 	 node_viewer_text->Connect(wxEVT_KILL_FOCUS,
 			wxCommandEventHandler(wxNodeViewerTextCtrl::OnNodeViewerTextCtrlEntered));
-	 node_viewer->grid_field->Add(node_viewer_text,0,
+	 node_viewer->grid_field->Add(node_viewer_text, 0,
 			wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxADJUST_MINSIZE, 0); 
 	 return (1);
 }
@@ -1362,15 +1385,17 @@ and their labels.
 										}
 										if (tmp == 0)
 										{
-											 node_viewer->grid_field = new wxGridSizer(number_of_components+1, node_viewer->number_of_nodal_value_types+1,1,1);		
-											 node_viewer->grid_field->Add(new wxStaticText(node_viewer->win, -1, wxT("")),1,wxEXPAND|wxADJUST_MINSIZE, 0);	
+											 node_viewer->grid_field = new wxGridSizer(
+													number_of_components+1, node_viewer->number_of_nodal_value_types+1,1,1);		
+											 node_viewer->grid_field->Add(new wxStaticText(
+													node_viewer->win, -1, wxT("")),1,wxEXPAND|wxADJUST_MINSIZE, 0);	
 											 tmp = 1;
 										}
 										if (return_code)
 										{
 											 if (nodal_value_information)
 											 {
-													node_viewer_add_textctrl(node_viewer, field, (comp_no-1),nodal_value_type, 0);
+													node_viewer_add_textctrl(node_viewer, field, (comp_no - 1),nodal_value_type, 0);
 													count = count +1;
 													indicator =1;	
 													/* string and element_xi fields should be shown wider */
@@ -1386,11 +1411,13 @@ and their labels.
 																for (int n=count; n < node_viewer->number_of_nodal_value_types+1; n++) 
 																{ 
 																	 node_viewer->grid_field->Add(new wxStaticText(node_viewer->win, -1, wxT("")),1,
-																			wxEXPAND|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxADJUST_MINSIZE, 0);
+																			wxEXPAND|wxALIGN_CENTER_VERTICAL|
+																			wxALIGN_CENTER_HORIZONTAL|wxADJUST_MINSIZE, 0);
 																}
 														 }
 														 node_viewer->grid_field->Add(new wxStaticText(node_viewer->win, -1, wxT(tmp_string)),1,
-																wxEXPAND|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL|wxADJUST_MINSIZE, 0);
+																wxALIGN_CENTER_VERTICAL|
+																wxALIGN_CENTER_HORIZONTAL|wxADJUST_MINSIZE, 0);
 														 indicator =0;
 														 count =1;
 													}
@@ -1712,3 +1739,5 @@ this widget.
 	
 	return (return_code);
 } /* node_viewer_widget_set_node */
+
+

@@ -136,10 +136,10 @@
       <object class="sizeritem">
 	 			<flag>wxEXPAND</flag>
 				<option>1</option>
-				<object class ="wxSplitterWindow">
+				<object class ="wxSplitterWindow" name="CommandSplitterWindow">
 					<style>wxSP_3D|wxSP_LIVE_UPDATE</style>
 				  <orientation>horizontal</orientation>
-					<sashpos>150</sashpos>
+
 					<object class ="wxPanel">
 			 	    <object class = "wxBoxSizer">	
       				<orient>wxVERTICAL</orient>
@@ -148,14 +148,12 @@
 	 							<flag>wxEXPAND</flag>
 								<option>1</option>
         				<object class="wxListBox" name="CommandHistory">
-						<size>400,-1</size>
-          				<style>wxSUNKEN_BORDER</style>
+          				<style>wxLB_HSCROLL|wxSUNKEN_BORDER</style>
         				</object>  
         				<border>10</border>
       				</object>
       				<object class="sizeritem">
         				<object class="wxTextCtrl" name="CommandLine">
-          				<size>1,-1d</size>
           				<style>wxTE_PROCESS_ENTER</style>
           				<value></value>
         				</object>
@@ -173,8 +171,7 @@
 								<flag>wxEXPAND</flag>
 								<option>1</option>
 			  				<object class="wxTextCtrl" name="OutputWindow">
-						<size>-1,400</size>
-          				<style>wxTE_MULTILINE|wxTE_READONLY</style>
+          				<style>wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH2|wxHSCROLL</style>
        					</object>
         				<flag>wxEXPAND|wxALL</flag>
 		  					<option>1</option>

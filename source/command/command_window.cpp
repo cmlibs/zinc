@@ -78,6 +78,7 @@ static char command_window_uidh[] =
 #include "icon/cmiss_icon.xpm"
 #include <wx/aboutdlg.h>
 #include <wx/fontdlg.h>
+#include <wx/splitter.h>
 #endif /* defined (WX_USER_INTERFACE)*/
 extern "C" {
 #include "user_interface/message.h"
@@ -199,6 +200,7 @@ DESCRIPTION :
 	 wxFrame *frame;
 	 wxPanel *lower_panel;
 	 wxTextCtrl *output_window;
+	 wxListBox *history_window;
 // #if defined(__WIN32__)
 // 	 wxIcon icon("/cmgui_windows_icon.ico");
 // #endif
@@ -1755,6 +1757,12 @@ public:
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx create node_viewer");
 	 }
+
+	 void elementpointviewer(wxCommandEvent& event)
+	 {
+			Execute_command_execute_string(command_window->execute_command,
+				 "gfx create element_point_viewer");
+	 }
 	 
 	 void sceneeditor(wxCommandEvent& event)
 	 {
@@ -1777,7 +1785,6 @@ public:
 			fdata.SetColour(colour);
 			fdata.SetShowHelp(true);
 			wxFontDialog *FontDlg = new wxFontDialog(this, fdata);
-
 			if(FontDlg->ShowModal() == wxID_OK)
 			{
 				 fdata = FontDlg->GetFontData();
@@ -1804,15 +1811,15 @@ public:
 			wxAboutBox(info);
 	 }
 
-	 void Terminate(wxCloseEvent& event)
-	 {
-			wxMessageDialog *dlg = new wxMessageDialog(NULL,"Are you sure you want to quit cmgui?", 
-				 "Exit Confirmation", wxYES_NO|wxICON_QUESTION|wxSTAY_ON_TOP);
-			 if ( dlg->ShowModal() == wxID_YES)
-					Execute_command_execute_string(command_window->execute_command, "QUIT"); 
-					//else: dialog was cancelled or some another button pressed
-			 dlg->Destroy();
-	 } 
+void Terminate(wxCloseEvent& event)
+{
+	 wxMessageDialog *dlg = new wxMessageDialog(NULL,"Are you sure you want to quit cmgui?", 
+			"Exit Confirmation", wxYES_NO|wxICON_QUESTION|wxSTAY_ON_TOP);
+	 if ( dlg->ShowModal() == wxID_YES)
+			Execute_command_execute_string(command_window->execute_command, "QUIT"); 
+	 //else: dialog was cancelled or some another button pressed
+	 dlg->Destroy();
+} 
 
 	 void Exit(wxCommandEvent& event)
 	 {
@@ -1864,8 +1871,8 @@ void keydown(wxKeyEvent& event)
 	 }
 	 else if ((event.GetKeyCode()==WXK_LEFT) || (event.GetKeyCode()==WXK_RIGHT))
 	 {
-			event.Skip(); 
 			command_line->SetFocus();
+			event.Skip(); 
 	 }
 	 else if  ((event.GetKeyCode()>31) &&  (event.GetKeyCode()<127))
 	 {
@@ -1921,6 +1928,7 @@ BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	 EVT_MENU(XRCID("WriteNode"),wxCommandWindow::writenodes)
 	 EVT_MENU(XRCID("ModelDataViewer"),wxCommandWindow::dataviewer)	 
 	 EVT_MENU(XRCID("ModelNodeviewer"),wxCommandWindow::nodeviewer)
+	 EVT_MENU(XRCID("ModelElementpointviewer"),wxCommandWindow::elementpointviewer)
 	 EVT_MENU(XRCID("GraphicsSceneeditor"),wxCommandWindow::sceneeditor)
 	 EVT_MENU(XRCID("FontCmgui"),wxCommandWindow::OnFormatFont)
 	 EVT_MENU(XRCID("AboutCmgui"),wxCommandWindow::ShowSimpleAboutDialog)
@@ -2437,16 +2445,22 @@ Create the structures and retrieve the command window from the uil file.
 			command_window->wx_command_window->Show();
 			command_window->output_window = 
 			  XRCCTRL(*command_window->wx_command_window, "OutputWindow", wxTextCtrl);
-			command_window->output_window->SetSize(wxDefaultCoord,wxDefaultCoord,400,400);
+			command_window->output_window->SetSize(wxSize(400,-1));
+			command_window->history_window = 
+				 XRCCTRL(*command_window->wx_command_window, "CommandHistory", wxListBox);
+			command_window->output_window->SetSize(wxSize(400,-1)); 
 			command_window->output_window->Layout();
 			command_window->lower_panel = 
 			  XRCCTRL(*command_window->wx_command_window, "LowerPanel", wxPanel);
 			command_window->lower_panel->Layout();
 			command_window->frame = 
 			  XRCCTRL(*command_window->wx_command_window, "CmguiCommandWindow", wxFrame);
-			command_window->frame->Layout();
+			command_window->frame->SetSize(wxSize(400,600)); 
 			command_window->frame->SetMinSize(wxSize(1,1));
-			
+			wxSplitterWindow *splitter_window =
+				 XRCCTRL(*command_window->wx_command_window, "CommandSplitterWindow", 
+						wxSplitterWindow);
+			splitter_window->SetSashPosition(220);
 #endif /* switch (USER_INTERFACE) */
 		}
 		else
@@ -2881,8 +2895,7 @@ Writes the <message> to the <command_window>.
 #elif defined (WX_USER_INTERFACE)
 		if (command_window->output_window)
 		{
-			 //		 	command_window->output_window =  XRCCTRL(*command_window->wx_command_window, "OutputWindow", wxTextCtrl);
-			 command_window->output_window->WriteText(message);
+			 command_window->output_window->AppendText(message);
 			 return_code = 1;
 		}
 #endif /* switch (USER_INTERFACE) */

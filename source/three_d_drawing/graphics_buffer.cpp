@@ -4101,9 +4101,17 @@ class wxGraphicsBuffer : public wxGLCanvas
 public:
 
 	wxGraphicsBuffer(wxPanel *parent, wxGLContext* sharedContext,
-		Graphics_buffer *graphics_buffer): 
+		Graphics_buffer *graphics_buffer
+#if !defined (__WXMSW__)
+, int *attrib_list
+#endif /*!defined (__WXMSW__)*/
+):
 		wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, wxSize(10, 10),
-			wxFULL_REPAINT_ON_RESIZE),
+			wxFULL_REPAINT_ON_RESIZE, "GLCanvas"
+#if !defined (__WXMSW__)
+, attrib_list
+#endif /*!defined (__WXMSW__)*/
+							 ),
 		graphics_buffer(graphics_buffer), parent(parent)
 	{
 	};
@@ -4284,9 +4292,23 @@ DESCRIPTION :
 		buffer->type = GRAPHICS_BUFFER_WX_TYPE;
 
 		buffer->parent = parent;
-
+#if !defined (__WXMSW__)
+		int attrib_array[] = {
+			 WX_GL_DEPTH_SIZE,
+			 /*Overwrite with depth, some compilers don't allow it in the
+				 initialiser I think */0,
+			 WX_GL_MIN_ALPHA,
+			 0,
+		/*List must finish with a zero*/0};
+		attrib_array[1] = minimum_depth_buffer_depth;
+		attrib_array[3] = 8;		
+#endif /*!defined (__WXMSW__)*/
 		buffer->canvas = new wxGraphicsBuffer(parent, 
-			graphics_buffer_package->wxSharedContext, buffer);
+			 graphics_buffer_package->wxSharedContext, buffer
+#if !defined (__WXMSW__) 
+			 ,attrib_array
+#endif /*!defined (__WXMSW__)*/
+);
 
 		wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
 		
@@ -4536,7 +4558,7 @@ Returns the depth of the colour buffer used by the graphics buffer.
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_colour_buffer_depth.  "
-					"Graphics_bufffer type unknown or not supported.");
+					"Graphics_buffer type unknown or not supported.");
 				*colour_buffer_depth = 0;
 				return_code = 0;
 			} break;

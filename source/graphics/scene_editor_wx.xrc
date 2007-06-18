@@ -180,7 +180,6 @@
 									<object class ="wxScrolledWindow" name="SceneEditing">
 					   						<object class = "wxBoxSizer">	
 											<orient>wxVERTICAL</orient>
-
 											<object class="sizeritem">
 				   								<object class = "wxBoxSizer">	
 													<orient>wxHORIZONTAL</orient>
@@ -216,7 +215,7 @@
 													</object>
 													<object class="sizeritem">
 														<object class	="wxPanel" name="CoordinateFieldChooserPanel">
-															<size>200,30</size>
+															<size>300,30</size>
 	 													</object>
 													</object>
 												</object>

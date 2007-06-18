@@ -19,8 +19,7 @@
 			  <flag>wxEXPAND</flag>
 			  <option>1</option>
 			  <object class = "wxListBox" name = "ComfileListBox">
-				  <size>800,600</size>
-            	  <style>wxLB_EXTENDED|wxSUNKEN_BORDER</style>
+            	  <style>wxLB_EXTENDED|wxLB_HSCROLL|wxSUNKEN_BORDER</style>
 			  </object>
 		  </object>
 
