@@ -102,6 +102,9 @@ Functions for executing cmiss commands.
 #if defined (MOTIF)
 #include "element/element_point_viewer.h"
 #endif /* defined (MOTIF) */
+#if defined (WX_USER_INTERFACE)
+#include "element/element_point_viewer_wx.h"
+#endif /* defined (WX_USER_INTERFACE) */
 #include "element/element_tool.h"
 #include "emoter/emoter_dialog.h"
 #include "finite_element/export_cm_files.h"
@@ -349,6 +352,7 @@ DESCRIPTION :
 #endif /* defined (MOTIF) */
 #if defined (WX_USER_INTERFACE)
 	struct Node_viewer *data_viewer,*node_viewer;
+	struct Element_point_viewer *element_point_viewer;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF) || defined (WX_USER_INTERFACE)
 	struct Scene_editor *scene_editor;
@@ -4236,7 +4240,7 @@ Executes a GFX CREATE DATA_VIEWER command.
 } /* gfx_create_data_viewer */
 #endif /* defined (MOTIF)  || defined (WX_USER_INTERFACE)*/
 
-#if defined (MOTIF)
+#if defined (MOTIF)  || defined (WX_USER_INTERFACE)
 static int gfx_create_element_point_viewer(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -4325,7 +4329,7 @@ Executes a GFX CREATE ELEMENT_POINT_VIEWER command.
 
 	return (return_code);
 } /* gfx_create_element_point_viewer */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF)  || defined (WX_USER_INTERFACE) */
 
 static int gfx_create_node_points(struct Parse_state *state,
 	void *use_data,void *command_data_void)
@@ -8776,10 +8780,10 @@ Executes a GFX CREATE command.
 				Option_table_add_entry(option_table,"element_creator",NULL,
 					command_data_void,gfx_create_element_creator);
 #endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
-#if defined (MOTIF)
+#if defined (MOTIF)  || defined (WX_USER_INTERFACE)
 				Option_table_add_entry(option_table,"element_point_viewer",NULL,
 					command_data_void,gfx_create_element_point_viewer);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF)  || defined (WX_USER_INTERFACE) */
 				Option_table_add_entry(option_table,"element_points",NULL,
 					command_data_void,gfx_create_element_points);
 				Option_table_add_entry(option_table,"element_selection_callback",NULL,
@@ -23467,6 +23471,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #if defined (WX_USER_INTERFACE)
 		command_data->data_viewer=(struct Node_viewer *)NULL;
 		command_data->node_viewer=(struct Node_viewer *)NULL;
+		command_data->element_point_viewer=(struct Element_point_viewer *)NULL;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF) || defined (WX_USER_INTERFACE)
 		command_data->scene_editor = (struct Scene_editor *)NULL;
@@ -24607,10 +24612,13 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		{
 			DESTROY(Node_viewer)(&(command_data->data_viewer));
 		}
-
 		if (command_data->node_viewer)
 		{
 			DESTROY(Node_viewer)(&(command_data->node_viewer));
+		}
+		if (command_data->element_point_viewer)
+		{
+			DESTROY(Element_point_viewer)(&(command_data->element_point_viewer));
 		}
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF) || defined (WX_USER_INTERFACE)

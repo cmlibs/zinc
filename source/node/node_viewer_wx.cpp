@@ -110,7 +110,7 @@ Contains all the information carried by the node_viewer widget.
 	 wxBoxSizer *paneSz;
 	 wxFrame *frame;
 	 wxGridSizer *grid_field;
-	 wxSize frame_size;
+	 int init_width, init_height, frame_width, frame_height;
 #endif /* (WX_USER_INTERFACE) */
 }; /* node_viewer_struct */
 
@@ -239,7 +239,6 @@ class wxNodeViewer : public wxFrame
 	 DEFINE_FE_region_FE_object_method_class(node);
  	 FE_object_text_chooser< FE_node, FE_region_FE_object_method_class(node) > *node_text_chooser;
 	 wxFrame *frame;
-
 public:
 	 
 	 wxNodeViewer(Node_viewer *node_viewer): 
@@ -262,6 +261,11 @@ public:
 				 (this, &wxNodeViewer::node_text_callback);
 			node_text_chooser->set_callback(node_text_callback);
 			Show();
+			frame = XRCCTRL(*this, "CmguiNodeViewer",wxFrame);
+			frame->GetSize(&(node_viewer->init_width), &(node_viewer->init_height));
+			frame->SetSize(node_viewer->frame_width,node_viewer->frame_height+100);
+			frame->GetSize(&(node_viewer->frame_width), &(node_viewer->frame_height));
+			frame->Layout();
 	 };
 	 
 	 wxNodeViewer()
@@ -356,6 +360,36 @@ Callback from wxTextChooser when text is entered.
 	 void OnCancelpressed(wxCommandEvent &event)
 	 {
 			DESTROY(Node_viewer)(node_viewer->node_viewer_address);
+	 }
+
+	 void FrameSetSize(wxSizeEvent &event)
+/*******************************************************************************
+LAST MODIFIED : 19 June 2007
+
+DESCRIPTION :
+Callback of size event to prevent minising the size of the windows
+after a collapsible pane is opened/closed.
+==============================================================================*/
+	 {
+			int temp_width, temp_height;
+			
+			frame = XRCCTRL(*this, "CmguiNodeViewer",wxFrame);
+			frame->Freeze();
+			frame->GetSize(&temp_width, &temp_height);
+			if (temp_height !=node_viewer->frame_height || temp_width !=node_viewer->frame_width)
+			{
+				 if (temp_width>node_viewer->init_width || temp_height>node_viewer->init_height)
+				 {
+						node_viewer->frame_width = temp_width;
+						node_viewer->frame_height = temp_height;
+				 }
+				 else
+				 {
+						frame->SetSize(node_viewer->frame_width,node_viewer->frame_height);
+				 }
+			}
+			frame->Thaw();
+			frame->Layout();		
 	 }
 
 void Terminate(wxCloseEvent& event)
@@ -475,6 +509,8 @@ void Terminate(wxCloseEvent& event)
 		  return node_text_chooser->set_object(new_node);
 	 }
 
+	 
+
   DECLARE_DYNAMIC_CLASS(wxNodeViewer);
   DECLARE_EVENT_TABLE();
 };
@@ -486,6 +522,9 @@ BEGIN_EVENT_TABLE(wxNodeViewer, wxFrame)
 	 EVT_BUTTON(XRCID("ApplyButton"),wxNodeViewer::OnApplypressed)
 	 EVT_BUTTON(XRCID("RevertButton"),wxNodeViewer::OnRevertpressed)
 	 EVT_BUTTON(XRCID("CancelButton"),wxNodeViewer::OnCancelpressed)
+#if !defined (__WXGTK__)
+	 EVT_SIZE(wxNodeViewer::FrameSetSize)
+#endif /*!defined (__WXGTK__)*/
 	 EVT_CLOSE(wxNodeViewer::Terminate)
 END_EVENT_TABLE()
 
@@ -700,6 +739,10 @@ Since both nodes and data can depend on embedded fields, the
 				/* make the dialog shell */
 #if defined (WX_USER_INTERFACE)
 				node_viewer->initial_node = initial_node;
+				node_viewer->frame_width = 0;
+				node_viewer->frame_height = 0;
+				node_viewer->init_width = 0;
+				node_viewer->init_height=0;
 				if (initial_node)
 				{
 					 node_viewer->template_node = ACCESS(FE_node)(

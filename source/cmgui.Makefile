@@ -985,14 +985,20 @@ DOF3_INTERFACE_SRCS = \
 	dof3/dof3_control.c \
 	dof3/dof3_input.c
 ELEMENT_SRCS = \
-  element/element_operations.c \
+  	element/element_operations.c \
 	element/element_point_tool.cpp \
 	element/element_tool.cpp
+ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
+ELEMENT_SRCS += \
+	 element/element_point_viewer_wx.cpp
+endif # $(USER_INTERFACE) == WX_USER_INTERFACE
+ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
 ELEMENT_INTERFACE_SRCS = \
 	element/element_creator.c \
 	element/element_point_field_viewer_widget.c \
 	element/element_point_viewer.c \
 	element/element_point_viewer_widget.c
+endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 EMOTER_SRCS = \
 	emoter/em_cmgui.c \
 	emoter/emoter_dialog.c
@@ -1346,7 +1352,7 @@ $(OBJECT_PATH)/version.o.h : $(OBJS) $(UNEMAP_OBJS) cmgui.Makefile
 	fi	
 	echo '/* This is a generated file.  Do not edit.  Edit cmgui.c or cmgui.imake instead */' > $(OBJECT_PATH)/version.o.h;	  
 	date > date.h
-	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 2.4  &/;s/.$$/&\\nCopyright 1996-2006, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
+	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 2.4  &/;s/.$$/&\\nCopyright 1996-2007, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
 
 $(MAIN_OBJ) : $(MAIN_SRC) $(OBJECT_PATH)/version.o.h $(INTERPRETER_LIB)
 	@set -x; \
@@ -1462,6 +1468,11 @@ ifeq ($(USER_INTERFACE),WIN32_USER_INTERFACE)
    RESOURCE_FILES += command/command_window.rc
    COMPILED_RESOURCE_FILES += $(RESOURCE_FILES:.rc=.res)
 endif # $(USER_INTERFACE) == WIN32_USER_INTERFACE
+ifeq ($(SYSNAME),win32)
+	ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
+   		RESOURCE_FILES += command/command_window_wx.rc
+	endif # $(USER_INTERFACE) == WX_USER_INTERFACE
+endif # $(SYSNAME) == win32
 
 $(BIN_TARGET) : $(OBJS) $(UNEMAP_OBJS) $(COMPILED_RESOURCE_FILES) $(MAIN_OBJ) $(EXPORTS_DEPEND)
 	$(call BuildNormalTarget,$(BIN_TARGET),$(BIN_PATH),$(OBJS) $(UNEMAP_OBJS) $(MAIN_OBJ),$(ALL_LIB) $(INTERPRETER_LINK_FLAGS) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES))

@@ -1,0 +1,202 @@
+<?xml version="1.0"?>
+<resource>
+  <object class="wxFrame" subclass="wxElementPointViewer" name="CmguiElementPointViewer">
+	  <title>Element Point Viewer</title>
+	  <flag>wxCLIP_CHILDREN</flag>	
+	  <object class = "wxBoxSizer">
+		  <orient>wxVERTICAL</orient>
+    	  <object class ="sizeritem">
+			  <flag>wxALIGN_CENTRE_VERTICAL</flag>	
+	 		  <object class = "wxCheckBox" name="ApplyOptionCheckBox">
+				  <flag>wxSUNKEN_BORDER</flag>
+				  <label>Auto Apply Options</label>
+			  </object>
+		  </object>
+		  <object class="sizeritem">			
+			  <object class="wxStaticLine">
+				  <size>300,-1</size>
+				  <style>wxLI_HORIZONTAL</style>
+			  </object>
+		  </object>
+	      <object class ="sizeritem">
+				<object class ="wxBoxSizer">
+					<orient>wxHORIZONTAL</orient>
+	    	  		<object class ="sizeritem">
+						<flag>wxALIGN_CENTRE_VERTICAL</flag>
+	 					<object class = "wxStaticText" name="ElementText">
+							<label>Element:</label>
+						</object>
+		  			</object>				
+    	  			<object class ="sizeritem">
+	 					<object class = "wxPanel" name="ElementTextPanel">
+							<size>100,30</size>
+						</object>
+		  			</object>
+				</object>
+		   </object>
+	      <object class ="sizeritem">
+			   <object class ="wxBoxSizer">
+				   <orient>wxHORIZONTAL</orient>
+	    	  		<object class ="sizeritem">
+						<flag>wxALIGN_CENTRE_VERTICAL</flag>
+	 					<object class = "wxStaticText" name="TopElementText">
+							<label>Top-level Element:</label>
+						</object>
+		  			</object>	
+    	  			<object class ="sizeritem">
+	 					<object class = "wxPanel" name="TopElementTextPanel">
+							<size>100,30</size>
+						</object>
+		  		  </object>
+		  	  </object>
+		  </object>
+	      <object class ="sizeritem">
+			   <object class ="wxBoxSizer">
+				   <orient>wxHORIZONTAL</orient>
+	    	  		<object class ="sizeritem">
+						<flag>wxALIGN_CENTRE_VERTICAL</flag>
+	 					<object class = "wxStaticText" name="XiDiscretizationModeText">
+							<label>Xi discretization mode:</label>
+						</object>
+		  			</object>	
+    	  			<object class ="sizeritem">
+	 					<object class = "wxPanel" name="XiDiscretizationModePanel">
+							<size>200,30</size>
+						</object>
+		  		  </object>
+		  	  </object>
+		  </object>
+		  <object class="sizeritem">
+			  <object class = "wxBoxSizer">	
+			     <orient>wxHORIZONTAL</orient>
+				  <object class="sizeritem">
+				     <flag>wxALIGN_CENTRE_VERTICAL</flag>
+					  <object class	="wxStaticText" name="DiscretizationText"> 
+						  <label>Discretization:</label>
+	 				  </object>
+				   </object>
+				   <object class="sizeritem">
+					   <object class	="wxTextCtrl" name="DiscretizationTextCtrl">
+						   <style>wxTE_PROCESS_ENTER</style>
+		  				   <size>200,-1</size>
+	 				   </object>
+				  </object>
+			  </object>
+		  </object>
+		  <object class="sizeritem">
+			  <object class = "wxBoxSizer">	
+			     <orient>wxHORIZONTAL</orient>
+				  <object class="sizeritem">
+				     <flag>wxALIGN_CENTRE_VERTICAL</flag>
+					  <object class	="wxStaticText" name="PointText"> 
+						  <label>Point:</label>				  			
+	 				  </object>
+				   </object>
+				   <object class="sizeritem">
+					   <object class	="wxTextCtrl" name="PointTextCtrl">
+						   <style>wxTE_PROCESS_ENTER|wxTE_READONLY</style>
+		  				   <size>200,-1</size>
+	 				   </object>
+				  </object>
+			  </object>
+		  </object>
+		  <object class="sizeritem">
+			  <object class = "wxBoxSizer">	
+			     <orient>wxHORIZONTAL</orient>
+				  <object class="sizeritem">
+				     <flag>wxALIGN_CENTRE_VERTICAL</flag>
+					  <object class	="wxStaticText" name="XiText"> 
+						  <label>Xi:</label>				  			
+	 				  </object>
+				   </object>
+				   <object class="sizeritem">
+					   <object class	="wxTextCtrl" name="XiTextCtrl">
+						   <style>wxTE_PROCESS_ENTER</style>
+					   	   <value>NULL</value>
+		  				   <size>200,-1</size>
+	 				   </object>
+				  </object>
+			  </object>
+		  </object>
+		  <object class="sizeritem">			
+			  <object class="wxStaticLine">
+				  <size>300,-1</size>
+				  <style>wxLI_HORIZONTAL</style>
+			  </object>
+		  </object>
+	      <object class ="sizeritem">
+			   <object class ="wxBoxSizer">
+				   <orient>wxHORIZONTAL</orient>
+	    	  		<object class ="sizeritem">
+						<flag>wxALIGN_CENTRE_VERTICAL</flag>
+	 					<object class = "wxStaticText" name="GridFieldText">
+							<label>Grid field:</label>
+						</object>
+		  			</object>	
+    	  			<object class ="sizeritem">
+	 					<object class = "wxPanel" name="GridFieldPanel">
+							<size>200,30</size>
+						</object>
+		  		  </object>
+		  	  </object>
+		  </object>
+	      <object class ="sizeritem">
+			   <object class ="wxBoxSizer">
+				   <orient>wxHORIZONTAL</orient>
+	    	  		<object class ="sizeritem">
+						<flag>wxALIGN_CENTRE_VERTICAL</flag>
+	 					<object class = "wxStaticText" name="GridValueText">
+							<label>Grid value:</label>
+						</object>
+		  			</object>	
+    	  			<object class ="sizeritem">
+	 					<object class = "wxTextCtrl" name="GridValueTextCtrl">
+							<style>wxTE_PROCESS_ENTER</style>
+							<size>200,-1</size>
+						</object>
+		  		  </object>
+		  	  </object>
+		  </object>
+		  <object class ="sizeritem">
+			  <flag>wxEXPAND</flag>
+			  <option>1</option>
+			  <object class = "wxStaticBoxSizer">
+				  <label>Variable Viewer</label>
+		  		  <object class ="sizeritem">
+			  		  <flag>wxEXPAND</flag>
+			  		  <option>1</option>
+	 		  		  <object class = "wxScrolledWindow" name="ElementVariableViewerPanel">
+						  <style>wxHSCROLL | wxVSCROLL</style>
+		  			  </object>
+				   </object>
+				</object>
+			</object>
+		  <object class ="sizeritem">
+	         <flag>wxALIGN_BOTTOM</flag>
+	 		  <object class = "wxBoxSizer">
+		  		  <orient>wxHORIZONTAL</orient>
+				  <object class ="sizeritem">
+					  <object class = "wxButton"  name = "ApplyButton">
+					     <label>Apply</label>
+					  </object>
+				  </object>
+				  <object class ="sizeritem">
+					  <object class = "wxButton"  name = "ApplyAllButton">
+					     <label>Apply All</label>
+					  </object>
+				  </object>
+				  <object class ="sizeritem">
+					  <object class = "wxButton"  name = "RevertButton">
+					     <label>Revert</label>
+					  </object>
+				  </object>
+				  <object class ="sizeritem">
+					  <object class = "wxButton"  name = "CancelButton">
+					     <label>Cancel</label>
+					  </object>
+				  </object>
+			  </object>
+		 </object>
+	  </object>
+  </object>
+</resource>
