@@ -619,7 +619,7 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
    #in the other dependent wx-libs)
    #Use linkdeps so that we don't get all the other system libraries.
    WX_STATIC_FLAG=yes
-   WX_CONFIG_LIBS := $(shell $(WX_DIR)wx-config --libs --unicode=no --debug=$(WX_DEBUG_FLAG) --static=$(WX_STATIC_FLAG) xrc,gl,xml,adv,html,core,base)
+   WX_CONFIG_LIBS := $(shell $(WX_DIR)wx-config --linkdeps --unicode=no --debug=$(WX_DEBUG_FLAG) --static=$(WX_STATIC_FLAG) xrc,gl,xml,adv,html,core,base)
    ifneq ($(WX_CONFIG_LIBS),)
      #Presume it succeeded, use this config
      USER_INTERFACE_LIB += $(WX_CONFIG_LIBS)
