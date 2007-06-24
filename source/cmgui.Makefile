@@ -641,7 +641,7 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
       ifneq ($(STATIC_LINK),true)
          USER_INTERFACE_LIB += $(shell pkg-config gtk+-2.0 gthread-2.0 --libs) -lXmu  -lXinerama -lXxf86vm
       else # $(STATIC_LINK) != true
-         USER_INTERFACE_LIB += -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0
+         USER_INTERFACE_LIB += -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 -lwxexpat-2.8
       endif # $(STATIC_LINK) != true
    else # $(OPERATING_SYSTEM) == linux
       ifeq ($(OPERATING_SYSTEM),win32)
