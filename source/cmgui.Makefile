@@ -985,7 +985,7 @@ DOF3_INTERFACE_SRCS = \
 	dof3/dof3_control.c \
 	dof3/dof3_input.c
 ELEMENT_SRCS = \
-  	element/element_operations.c \
+	element/element_operations.c \
 	element/element_point_tool.cpp \
 	element/element_tool.cpp
 ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
@@ -1119,6 +1119,7 @@ ifeq ($(USE_ITK),true)
 	   image_processing/computed_field_rescaleIntensityImageFilter.cpp \
 	   image_processing/computed_field_connected_threshold_image_filter.cpp \
 	   image_processing/computed_field_gradient_magnitude_recursive_gaussian_image_filter.cpp \
+	   image_processing/computed_field_fast_marching_image_filter.cpp \
 	   image_processing/computed_field_ImageFilter.cpp
 endif # $(USE_ITK) == true
 INTERACTION_SRCS = \
@@ -1470,7 +1471,7 @@ ifeq ($(USER_INTERFACE),WIN32_USER_INTERFACE)
 endif # $(USER_INTERFACE) == WIN32_USER_INTERFACE
 ifeq ($(SYSNAME),win32)
 	ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
-   		RESOURCE_FILES += command/command_window_wx.rc
+		RESOURCE_FILES += command/command_window_wx.rc
 	endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 endif # $(SYSNAME) == win32
 
