@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.c
 
-LAST MODIFIED : 22 March 2005
+LAST MODIFIED : 21 June 2007
 
 DESCRIPTION :
 The functions for manipulating graphical textures.
@@ -534,23 +534,25 @@ GL_EXT_texture_object extension.
 #endif /* defined (OPENGL_API) */
 
 #if defined (OPENGL_API)
-static int Texture_get_hardware_reduction(struct Texture *texture)
+static int Texture_get_hardware_reduction(struct Texture *texture,
+   int *reductions)
 /*******************************************************************************
-LAST MODIFIED : 21 February 2002
+LAST MODIFIED : 21 June 2007
 
 DESCRIPTION :
 Queries the graphics hardware to determine how much the texture size must be
-reduced to fit the available space. Returns the reduction factor which will be
-a power of two, where 1 means no reduction, 2 means the size must be halved,
-and 0 is returned without writing an error if there is no space for the texture.
-The reduction factor applies equally in all texture dimensions.
+reduced to fit the available space. Returns the reduction factors <reductions> which must be an array equal in size to the dimension of the texture.
+The function returns 0 if the texture cannot be loaded at all, 1 if no
+reduction is required and 2 if the texture can be loaded if reduced according
+to the <reductions>.
 ==============================================================================*/
 {
-	int reduction;
 #if defined (OPENGL_API)
-	int return_code;
+	char *cmiss_max_texture_size;
+	int next_reduction, return_code;
 	GLenum format, type;
-	GLint number_of_components, test_width, hardware_texture_format;
+	GLint max_texture_size, number_of_components, test_width, 
+		hardware_texture_format;
 #endif /* defined (OPENGL_API) */
 
 	ENTER(Texture_get_hardware_reduction);
@@ -563,112 +565,184 @@ The reduction factor applies equally in all texture dimensions.
 			texture->number_of_bytes_per_component, &type, &format);
 		hardware_texture_format = Texture_get_hardware_storage_format(
 			texture->compression_mode, number_of_components);
-		reduction = 1;
-		switch (texture->dimension)
+
+		max_texture_size = 0;
+		if (texture->dimension > 2)
 		{
-			case 1:
+			if (cmiss_max_texture_size = getenv("CMISS_MAX_3D_TEXTURE_SIZE"))
 			{
-				do
+				if (!sscanf(cmiss_max_texture_size, "%d", &max_texture_size))
 				{
-					glTexImage1D(GL_PROXY_TEXTURE_1D, (GLint)0, hardware_texture_format,
-						(GLint)(texture->width_texels/reduction), (GLint)0,
-						format, type, (GLvoid *)(texture->image));
-					glGetTexLevelParameteriv(GL_PROXY_TEXTURE_1D, (GLint)0,
-						GL_TEXTURE_WIDTH, &test_width);
-					if (0 == test_width)
-					{
-						reduction *= 2;
-						return_code = (reduction < texture->width_texels);
-					}
+					display_message(ERROR_MESSAGE,
+						"Texture_get_hardware_reduction.  "
+						"Unable to parse environment variable: %s",
+						cmiss_max_texture_size);
 				}
-				while ((test_width == 0) && return_code);
-			} break;
-			case 2:
+			}
+			else
 			{
-				do
+				glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &max_texture_size);
+			}
+		}
+		else
+		{
+			if (cmiss_max_texture_size = getenv("CMISS_MAX_TEXTURE_SIZE"))
+			{
+				if (!sscanf(cmiss_max_texture_size, "%d", &max_texture_size))
 				{
-					glTexImage2D(GL_PROXY_TEXTURE_2D, (GLint)0, hardware_texture_format,
-						(GLint)(texture->width_texels/reduction),
-						(GLint)(texture->height_texels/reduction), (GLint)0,
-						format, type, (GLvoid *)(texture->image));
-					glGetTexLevelParameteriv(GL_PROXY_TEXTURE_2D, (GLint)0,
-						GL_TEXTURE_WIDTH, &test_width);
-					if (0 == test_width)
-					{
-						reduction *= 2;
-						return_code = (reduction < texture->width_texels) &&
-							(reduction < texture->height_texels);
-					}
+					display_message(ERROR_MESSAGE,
+						"Texture_get_hardware_reduction.  "
+						"Unable to parse environment variable: %s",
+						cmiss_max_texture_size);
 				}
-				while ((test_width == 0) && return_code);
-			} break;
-			case 3:
+			}
+			else
 			{
+				glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
+			}
+		}
+
+		if (max_texture_size > 0)
+		{
+			test_width = 0;
+			return_code = 1;
+			next_reduction = 0;
+			if (texture->dimension > 0)
+			{
+				reductions[0] = 1;
+				while ((texture->width_texels / reductions[0]) > max_texture_size)
+				{
+					reductions[0] *= 2;
+					return_code = 2;
+				}
+			}
+			if (texture->dimension > 1)
+			{
+				reductions[1] = 1;
+				while ((texture->height_texels / reductions[1]) > max_texture_size)
+				{
+					reductions[1] *= 2;
+					return_code = 2;
+				}
+			}
+			if (texture->dimension > 2)
+			{
+				reductions[2] = 1;
+				while ((texture->depth_texels / reductions[2]) > max_texture_size)
+				{
+					reductions[2] *= 2;
+					return_code = 2;
+				}
+			}
+			while ((test_width == 0) && return_code)
+			{
+				switch (texture->dimension)
+				{
+					case 1:
+					{
+						glTexImage1D(GL_PROXY_TEXTURE_1D, (GLint)0, hardware_texture_format,
+							(GLint)(texture->width_texels/reductions[0]), (GLint)0,
+							format, type, (GLvoid *)(texture->image));
+						glGetTexLevelParameteriv(GL_PROXY_TEXTURE_1D, (GLint)0,
+							GL_TEXTURE_WIDTH, &test_width);
+					} break;
+					case 2:
+					{
+						glTexImage2D(GL_PROXY_TEXTURE_2D, (GLint)0, hardware_texture_format,
+							(GLint)(texture->width_texels/reductions[0]),
+							(GLint)(texture->height_texels/reductions[1]), (GLint)0,
+							format, type, (GLvoid *)(texture->image));
+						glGetTexLevelParameteriv(GL_PROXY_TEXTURE_2D, (GLint)0,
+							GL_TEXTURE_WIDTH, &test_width);
+					} break;
+					case 3:
+					{
 #if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-				if (
+						if (
 #  if defined (GL_VERSION_1_2)
-					Graphics_library_check_extension(GL_VERSION_1_2)
+							Graphics_library_check_extension(GL_VERSION_1_2)
 #    if defined (GL_EXT_texture3D)
-					||
+							||
 #    endif /* defined (GL_EXT_texture3D) */
 #  endif /* defined (GL_VERSION_1_2) */
 #  if defined (GL_EXT_texture3D)
-					Graphics_library_check_extension(GL_EXT_texture3D)
+							Graphics_library_check_extension(GL_EXT_texture3D)
 #  endif /* defined (GL_EXT_texture3D) */
-					)
-				{
-					do
-					{
-						glTexImage3D(GL_PROXY_TEXTURE_3D, (GLint)0, hardware_texture_format,
-							(GLint)(texture->width_texels/reduction),
-							(GLint)(texture->height_texels/reduction),
-							(GLint)(texture->depth_texels/reduction), (GLint)0,
-							format, type, NULL);
-						glGetTexLevelParameteriv(GL_PROXY_TEXTURE_3D, (GLint)0,
-							GL_TEXTURE_WIDTH, &test_width);
-						if (0 == test_width)
+							)
 						{
-							reduction *= 2;
-							return_code = (reduction < texture->width_texels) &&
-								(reduction < texture->height_texels) &&
-								(reduction < texture->depth_texels);
+							glTexImage3D(GL_PROXY_TEXTURE_3D, (GLint)0, hardware_texture_format,
+								(GLint)(texture->width_texels/reductions[0]),
+								(GLint)(texture->height_texels/reductions[1]),
+								(GLint)(texture->depth_texels/reductions[2]), (GLint)0,
+								format, type, NULL);
+							glGetTexLevelParameteriv(GL_PROXY_TEXTURE_3D, (GLint)0,
+								GL_TEXTURE_WIDTH, &test_width);
 						}
-					}
-					while ((test_width == 0) && return_code);
-				}
-				else
-				{
+						else
+						{
 #endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-					display_message(ERROR_MESSAGE,
-						"Texture_get_hardware_reduction.  "
-						"3D textures not supported on this display.");
-					return_code=0;
+							display_message(ERROR_MESSAGE,
+								"Texture_get_hardware_reduction.  "
+								"3D textures not supported on this display.");
+							return_code=0;
 #if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-				}
+						}
 #endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-			} break;
-			default:
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"Texture_get_hardware_reduction.  Invalid texture dimension");
+						return_code = 0;
+					} break;
+				}
+				if (0 == test_width)
+				{
+					/* Halve the texture in one dimension */
+					reductions[next_reduction] *= 2;
+					return_code = 2;
+					next_reduction++;
+					if (next_reduction == texture->dimension)
+					{
+						next_reduction = 0;
+					}
+				}
+			}
+#if defined (DEBUG)
 			{
-				display_message(ERROR_MESSAGE,
-					"Texture_get_hardware_reduction.  Invalid texture dimension");
-				return_code = 0;
-			} break;
+				int i;
+				printf(" texture.c : max_texture_size %d\n", max_texture_size);
+				for (i = 0 ; i < texture->dimension ; i++)
+				{
+					printf(" texture.c : reduction[%d] = %d\n", i, reductions[i]);
+				}
+				printf("\n");
+			}
+#endif /* defined (DEBUG) */
 		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Texture_get_hardware_reduction.  "
+				"Maximum texture size less than 1");
+			return_code=0;
+		}
+
 #else /* defined (OPENGL_API) */
 		display_message(ERROR_MESSAGE,
 			"Texture_get_hardware_reduction.  Only implemented for OpenGL");
-		reduction = 0;
+		return_code = 0;
 #endif /* defined (OPENGL_API) */
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Texture_get_hardware_reduction.  Missing texture");
-		reduction = 0;
+		return_code = 0;
 	}
 	LEAVE;
 
-	return (reduction);
+	return (return_code);
 } /* Texture_get_hardware_reduction */
 #endif /* defined (OPENGL_API)*/
 
@@ -1047,7 +1121,7 @@ Directly outputs the commands setting up the <texture>.
 	int  return_code;
 #if defined (OPENGL_API)
 	int hardware_storage_format, number_of_components,reduced_depth_texels,
-		reduced_height_texels,reduced_width_texels,reduction;
+		reduced_height_texels,reduced_width_texels,reduction_flag,reductions[3];
 	GLenum format, texture_target, type;
 	GLfloat values[4];
 	unsigned char *reduced_image;
@@ -1193,16 +1267,18 @@ Directly outputs the commands setting up the <texture>.
 					Texture_storage_type_get_number_of_components(texture->storage);
 				hardware_storage_format = Texture_get_hardware_storage_format
 					(texture->compression_mode, number_of_components);
-				if (0 < (reduction = Texture_get_hardware_reduction(texture)))
+				if (0 < (reduction_flag = Texture_get_hardware_reduction(texture,
+					reductions)))
 				{
 					reduced_image = (unsigned char *)NULL;
-					if (1 < reduction)
+					if (1 < reduction_flag)
 					{
 						switch (texture->dimension)
 						{
 							case 1:
 							{
-								reduced_width_texels = texture->width_texels / reduction;
+								reduced_width_texels = texture->width_texels /
+									reductions[0];
 								reduced_height_texels = 1;
 								reduced_depth_texels = 1;
 								display_message(WARNING_MESSAGE,
@@ -1213,8 +1289,10 @@ Directly outputs the commands setting up the <texture>.
 							} break;
 							case 2:
 							{
-								reduced_width_texels = texture->width_texels / reduction;
-								reduced_height_texels = texture->height_texels / reduction;
+								reduced_width_texels = texture->width_texels /
+									reductions[0];
+								reduced_height_texels = texture->height_texels /
+									reductions[1];
 								reduced_depth_texels = 1;
 								display_message(WARNING_MESSAGE,
 									"Image %s is too large for this display.  "
@@ -1225,9 +1303,12 @@ Directly outputs the commands setting up the <texture>.
 							} break;
 							case 3:
 							{
-								reduced_width_texels = texture->width_texels / reduction;
-								reduced_height_texels = texture->height_texels / reduction;
-								reduced_depth_texels = texture->depth_texels / reduction;
+								reduced_width_texels = texture->width_texels /
+									reductions[0];
+								reduced_height_texels = texture->height_texels /
+									reductions[1];
+								reduced_depth_texels = texture->depth_texels /
+									reductions[2];
 								display_message(WARNING_MESSAGE,
 									"3-D image %s is too large for this display.  "
 									"Reducing (%d,%d,%d) to (%d,%d,%d) for display only",
@@ -4573,6 +4654,7 @@ the top right of the texture.
 					}
 				}
 			}
+			return_code = 1;
 		}
 		else
 		{
@@ -4754,15 +4836,16 @@ DESCRIPTION :
 Returns the dimension of the texture image.
 ==============================================================================*/
 {
-        int return_code;
+	int return_code;
 	ENTER(Texture_get_dimension);
 	if (texture)
 	{
 		*dimension = texture->dimension;
+		return_code = 1;
 	}
 	else
 	{
-	        display_message(ERROR_MESSAGE,
+		display_message(ERROR_MESSAGE,
 			"Texture_get_dimension.  Missing texture");
 		return_code=0;
 	}
@@ -4802,6 +4885,7 @@ each size to be a power of two.
 					}
 				}
 			}
+			return_code = 1;
 		}
 		else
 		{
@@ -5154,7 +5238,6 @@ execute_Texture should just call direct_render_Texture.
 #if defined (OPENGL_API)
 	GLboolean resident;
 	GLenum texture_target;
-	GLuint old_texture_id;
 #endif /* defined (OPENGL_API) */
 
 	ENTER(compile_Texture);
@@ -5331,17 +5414,9 @@ execute_Texture should just call direct_render_Texture.
 				}
 				else
 				{
-					/* SAB Mirage Octanes are not allowing the texture to be reread into
-						the bound texture so I am going to destroy them every time they
-						need to be reconstructed.  Further, a texture in both the window 
-						window background and loaded onto an object doesn't get updated
-						correctly still, now I'm making sure the new texture_id is at
-						least recently new */
-					old_texture_id = texture->texture_id;
-					glGenTextures(1, &(texture->texture_id));
-					if (old_texture_id)
+					if (!texture->texture_id)
 					{
-						glDeleteTextures(1, &(old_texture_id));
+						glGenTextures(1, &(texture->texture_id));
 					}
 					glBindTexture(texture_target, texture->texture_id);
 					if(texture->storage==TEXTURE_DMBUFFER || 
