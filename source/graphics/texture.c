@@ -4715,6 +4715,7 @@ the top right of the texture.
 				}
 			}
 		}
+		return_code = 1;
 	}
 	else
 	{
