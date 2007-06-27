@@ -24672,9 +24672,7 @@ Clean up the command_data, deallocating all the associated memory and resources.
 
 		DEACCESS(Scene)(&(command_data->default_scene));
 		DESTROY(MANAGER(Scene))(&command_data->scene_manager);
-
-		DEACCESS(Time_keeper)(&command_data->default_time_keeper);
-
+		DESTROY(Time_keeper)(&command_data->default_time_keeper);
 		if (command_data->computed_field_package)
 		{
 			Computed_field_package_remove_types(command_data->computed_field_package);
@@ -24760,7 +24758,7 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		{
 			DESTROY(Console)(&command_data->command_console);
 		}
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 		if (command_data->command_window)
 		{
 			DESTROY(Command_window)(&command_data->command_window);
