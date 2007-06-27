@@ -3515,7 +3515,7 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 						}
 					}
 
-					if (material->spectrum)
+					if (material->spectrum && Graphics_library_check_extension(GL_ARB_fragment_program))
 					{
 						int i, lookup_dimensions, *lookup_sizes;
 						float values[4];
