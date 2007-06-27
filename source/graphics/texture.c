@@ -549,7 +549,7 @@ to the <reductions>.
 {
 #if defined (OPENGL_API)
 	char *cmiss_max_texture_size;
-	int next_reduction, return_code;
+	int max_texture_size_int, next_reduction, return_code;
 	GLenum format, type;
 	GLint max_texture_size, number_of_components, test_width, 
 		hardware_texture_format;
@@ -571,7 +571,11 @@ to the <reductions>.
 		{
 			if (cmiss_max_texture_size = getenv("CMISS_MAX_3D_TEXTURE_SIZE"))
 			{
-				if (!sscanf(cmiss_max_texture_size, "%d", &max_texture_size))
+				if (sscanf(cmiss_max_texture_size, "%d", &max_texture_size_int))
+				{
+					max_texture_size = max_texture_size_int;
+				}
+				else
 				{
 					display_message(ERROR_MESSAGE,
 						"Texture_get_hardware_reduction.  "
@@ -588,7 +592,11 @@ to the <reductions>.
 		{
 			if (cmiss_max_texture_size = getenv("CMISS_MAX_TEXTURE_SIZE"))
 			{
-				if (!sscanf(cmiss_max_texture_size, "%d", &max_texture_size))
+				if (sscanf(cmiss_max_texture_size, "%d", &max_texture_size_int))
+				{
+					max_texture_size = max_texture_size_int;
+				}
+				else
 				{
 					display_message(ERROR_MESSAGE,
 						"Texture_get_hardware_reduction.  "
