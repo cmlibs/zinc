@@ -764,12 +764,12 @@ Since both nodes and data can depend on embedded fields, the
 					 node_viewer_add_collpane,
 					 (void *)node_viewer,
 					 node_viewer->computed_field_manager);
-			 node_viewer->frame=
-					XRCCTRL(*node_viewer->wx_node_viewer, "CmguiNodeViewer", wxFrame);
-			 node_viewer->frame->SetTitle(dialog_title);
-			 node_viewer->frame->Layout();
-			 node_viewer->frame->SetMinSize(wxSize(50,100));
-			 node_viewer->collpane->Layout();
+				node_viewer->frame=
+					 XRCCTRL(*node_viewer->wx_node_viewer, "CmguiNodeViewer", wxFrame);
+				node_viewer->frame->SetTitle(dialog_title);
+				node_viewer->frame->Layout();
+				node_viewer->frame->SetMinSize(wxSize(50,100));
+				node_viewer->collpane->Layout();
 #endif /* defined (WX_USER_INTERFACE) */	
 		 }
 		 else
@@ -813,6 +813,10 @@ Destroys the Node_viewer. See also Node_viewer_close_CB.
 		/* end callbacks from global node selection */
 		FE_node_selection_remove_callback(node_viewer->node_selection,
 			Node_viewer_node_selection_change,(void *)node_viewer);
+		if (node_viewer->nodal_value_types)
+		{
+			 DEALLOCATE(node_viewer->nodal_value_types);
+		}
 		/* deaccess the local node_copy */
 		if (node_viewer->wx_node_viewer)
 		{
