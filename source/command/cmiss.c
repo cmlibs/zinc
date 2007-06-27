@@ -7814,7 +7814,7 @@ Executes a GFX CREATE WINDOW command.
 					    transform_tool=create_Interactive_tool_transform(
 				             command_data->user_interface);
 						ADD_OBJECT_TO_MANAGER(Interactive_tool)(transform_tool,
-				              interactive_tool_manager);
+							 interactive_tool_manager);
 						CREATE(Node_tool)(
 								interactive_tool_manager,
 								command_data->root_region, /*use_data*/0,
@@ -7851,7 +7851,6 @@ Executes a GFX CREATE WINDOW command.
 								command_data->user_interface,
 								command_data->default_time_keeper,
 								command_data->execute_command);
-
 						if (window=CREATE(Graphics_window)(name,buffer_mode,stereo_mode,
 							minimum_colour_buffer_depth, minimum_depth_buffer_depth,
 							minimum_accumulation_buffer_depth,
@@ -23523,7 +23522,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->computed_field_package=(struct Computed_field_package *)NULL;
 		command_data->default_scene=(struct Scene *)NULL;
 		command_data->scene_manager=(struct MANAGER(Scene) *)NULL;
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 		command_data->command_window=(struct Command_window *)NULL;
 #endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 #if defined (SGI_MOVIE_FILE) && defined (MOTIF)
@@ -23868,7 +23867,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				Graphical_material_set_alpha(material, 1.0);
 			}
 		}
-
 		command_data->graphics_font_package = CREATE(Graphics_font_package)();
 		command_data->default_font = ACCESS(Graphics_font)(
 			Graphics_font_package_get_font(command_data->graphics_font_package, "default"));
@@ -23932,6 +23930,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		{
 			Cmiss_region_attach_FE_region(command_data->root_region, root_fe_region);
 		}
+		
 
 		command_data->data_root_region =
 			ACCESS(Cmiss_region)(CREATE(Cmiss_region)());
