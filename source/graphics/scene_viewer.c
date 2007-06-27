@@ -3361,14 +3361,14 @@ Converts mouse button-press and motion events into viewing transformations in
 							scene_viewer->tumble_active = 0;
 							switch (scene_viewer->interact_mode)
 							{
-							       case SCENE_VIEWER_INTERACT_MODE_STANDARD:
+							       case SCENE_VIEWER_INTERACT_STANDARD:
 							       {
 							               if (0.0 != scene_viewer->tumble_rate)
 							               {
 								               scene_viewer->drag_mode=SV_DRAG_TUMBLE;
 							               }
 							       }break;
-							       case SCENE_VIEWER_INTERACT_MODE_2D:
+							       case SCENE_VIEWER_INTERACT_2D:
 							       {
 							               if (0.0 != scene_viewer->translate_rate)
 							               {
@@ -3381,14 +3381,14 @@ Converts mouse button-press and motion events into viewing transformations in
 						{
 							switch (scene_viewer->interact_mode)
 							{
-							       case SCENE_VIEWER_INTERACT_MODE_STANDARD:
+							       case SCENE_VIEWER_INTERACT_STANDARD:
 							       {
 							               if (0.0 != scene_viewer->translate_rate)
 							               {
 							                       scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
 								       }
 							       }break;
-							       case SCENE_VIEWER_INTERACT_MODE_2D:
+							       case SCENE_VIEWER_INTERACT_2D:
 							       {
 							               if (0.0 != scene_viewer->tumble_rate)
 							               {
@@ -3688,11 +3688,11 @@ transformations.
 					{
 						switch (scene_viewer->interact_mode)
 						{
-							case SCENE_VIEWER_INTERACT_MODE_STANDARD:
+							case SCENE_VIEWER_INTERACT_STANDARD:
 							{
 							        scene_viewer->drag_mode=SV_DRAG_TUMBLE;
 							}break;
-						        case SCENE_VIEWER_INTERACT_MODE_2D:
+						        case SCENE_VIEWER_INTERACT_2D:
 							{
 							  scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
 							}break;
@@ -3702,11 +3702,11 @@ transformations.
 					{
 						switch (scene_viewer->interact_mode)
 						{
-							case SCENE_VIEWER_INTERACT_MODE_STANDARD:
+							case SCENE_VIEWER_INTERACT_STANDARD:
 							{
 							        scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
 							}break;
-						        case SCENE_VIEWER_INTERACT_MODE_2D:
+						        case SCENE_VIEWER_INTERACT_2D:
 							{
 							  scene_viewer->drag_mode=SV_DRAG_TUMBLE;
 							}break;
@@ -4640,7 +4640,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->bk_texture_left=0.0;
 				scene_viewer->bk_texture_width=0.0;
 				scene_viewer->bk_texture_height=0.0;
-				scene_viewer->interact_mode=SCENE_VIEWER_INTERACT_MODE_STANDARD;
+				scene_viewer->interact_mode=SCENE_VIEWER_INTERACT_STANDARD;
 				scene_viewer->drag_mode=SV_DRAG_NOTHING;
 				scene_viewer->previous_pointer_x = 0;
 				scene_viewer->previous_pointer_y = 0;
@@ -5878,8 +5878,8 @@ Set the mouse and keyboard interaction configuration
 	int return_code;
 
 	ENTER(Scene_viewer_set_interact_mode);
-	if (scene_viewer&&((SCENE_VIEWER_INTERACT_MODE_STANDARD==interact_mode)||
-		(SCENE_VIEWER_INTERACT_MODE_2D==interact_mode)))
+	if (scene_viewer&&((SCENE_VIEWER_INTERACT_STANDARD==interact_mode)||
+		(SCENE_VIEWER_INTERACT_2D==interact_mode)))
 	{
 		return_code=1;
 		scene_viewer->interact_mode=interact_mode;
