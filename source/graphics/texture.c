@@ -5001,6 +5001,59 @@ Sets how textures coordinates outside [0,1] are handled.
 	return (return_code);
 } /* Texture_set_wrap_mode */
 
+int Cmiss_texture_write_to_file(Cmiss_texture_id texture, 
+   const char *filename)
+/*******************************************************************************
+LAST MODIFIED : 27 June 2007
+
+DESCRIPTION :
+Writes the <texture> to file <filename>.
+I think it is best to write a separate function if you want to write a 
+3D texture to a file sequence rather than handle it with this function.
+==============================================================================*/
+{
+	struct Cmgui_image *cmgui_image;
+	struct Cmgui_image_information *cmgui_image_information;
+	int return_code;
+
+	ENTER(Cmiss_texture_write_to_file);
+	if (texture)
+	{
+		cmgui_image_information = CREATE(Cmgui_image_information)();
+		Cmgui_image_information_add_file_name(cmgui_image_information,
+			(char *)filename);
+		if (cmgui_image = Texture_get_image(texture))
+		{
+			if (!Cmgui_image_write(cmgui_image, cmgui_image_information))
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_texture_write_to_file:  "
+					"Error writing image %s", filename);
+				return_code = 0;
+			}
+			DESTROY(Cmgui_image)(&cmgui_image);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_texture_write_to_file:  "
+				"Could not get image from texture");
+			return_code = 0;
+		}
+		DESTROY(Cmgui_image_information)(&cmgui_image_information);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_texture_write_to_file:  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+  
+	return (return_code);
+} /* Cmiss_texture_write_to_file */
+
 int list_Texture(struct Texture *texture,void *dummy)
 /*******************************************************************************
 LAST MODIFIED : 8 February 2002

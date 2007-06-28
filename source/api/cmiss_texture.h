@@ -102,6 +102,8 @@ typedef struct Cmiss_texture *Cmiss_texture_id;
 
 struct Cmiss_texture_manager;
 
+struct IO_stream_package;
+
 /*
 Global functions
 ----------------
@@ -114,6 +116,35 @@ LAST MODIFIED : 24 May 2007
 
 DESCRIPTION :
 Returns the texture of <name> from the <manager> if it is defined.
+==============================================================================*/
+
+Cmiss_texture_id Cmiss_texture_manager_create_texture_from_file(
+	struct Cmiss_texture_manager *manager, const char *name,
+	struct IO_stream_package *io_stream_package, const char *filename);
+/*******************************************************************************
+LAST MODIFIED : 28 June 2007
+
+DESCRIPTION :
+Creates a texture <name> in <manager> if it can be read from <filename>.
+==============================================================================*/
+
+Cmiss_texture_id Cmiss_texture_manager_create_texture_from_file_with_parameters(
+	struct Cmiss_texture_manager *manager, const char *name,
+	struct IO_stream_package *io_stream_package, const char *filename,
+	int specify_width, int specify_height,
+	int specify_depth, int specify_format,
+	int specify_number_of_bytes_per_component);
+/*******************************************************************************
+LAST MODIFIED : 28 June 2007
+
+DESCRIPTION :
+Creates a texture <name> in <manager> if it can be read from <filename>.
+The extra parameters are supplied to the image reader and will only be 
+used if the image format specified in <filename> does not override them.
+They will normally only be used for formats such as .gray or .rgb which
+only contain raw data. The <specify_format> values are defined in
+Texture.idl.  Supplying zero for any of these parameters ensures that 
+particular parameter will be ignored.
 ==============================================================================*/
 
 int Cmiss_texture_get_graphics_storage_size(Cmiss_texture_id texture);
@@ -218,5 +249,15 @@ left of the texture and
 the top right of the texture.
 ==============================================================================*/
 
+int Cmiss_texture_write_to_file(Cmiss_texture_id texture, 
+   const char *filename);
+/*******************************************************************************
+LAST MODIFIED : 27 June 2007
+
+DESCRIPTION :
+Writes the <texture> to file <filename>.
+I think it is best to write a separate function if you want to write a 
+3D texture to a file sequence rather than handle it with this function.
+==============================================================================*/
 
 #endif /* __CMISS_TEXTURE_H__ */

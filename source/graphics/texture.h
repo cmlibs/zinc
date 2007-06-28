@@ -661,6 +661,17 @@ DESCRIPTION :
 Sets how textures coordinates outside [0,1] are handled.
 ==============================================================================*/
 
+int Cmiss_texture_write_to_file(Cmiss_texture_id texture, 
+   const char *filename);
+/*******************************************************************************
+LAST MODIFIED : 27 June 2007
+
+DESCRIPTION :
+Writes the <texture> to file <filename>.
+I think it is best to write a separate function if you want to write a 
+3D texture to a file sequence rather than handle it with this function.
+==============================================================================*/
+
 int list_Texture(struct Texture *texture,void *dummy);
 /*******************************************************************************
 LAST MODIFIED : 19 May 1999

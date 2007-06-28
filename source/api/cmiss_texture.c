@@ -45,6 +45,7 @@ The public interface to the Cmiss_texture object.
 
 #include "api/cmiss_texture.h"
 #include "general/debug.h"
+#include "general/image_utilities.h"
 #include "graphics/texture.h"
 #include "user_interface/message.h"
 
@@ -64,7 +65,7 @@ Returns the texture of <name> from the <manager> if it is defined.
 {
 	struct Cmiss_texture *texture;
 
-	ENTER(Cmiss_texture_manager_get_field);
+	ENTER(Cmiss_texture_manager_get_texture);
 	if (manager && name)
 	{
 		texture=FIND_BY_IDENTIFIER_IN_MANAGER(Texture,name)(
@@ -73,13 +74,148 @@ Returns the texture of <name> from the <manager> if it is defined.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_texture_manager_get_field.  Invalid argument(s)");
+			"Cmiss_texture_manager_get_texture.  Invalid argument(s)");
 		texture = (struct Cmiss_texture *)NULL;
 	}
 	LEAVE;
 
 	return (texture);
-} /* Cmiss_texture_manager_get_field */
+} /* Cmiss_texture_manager_get_texture */
+
+Cmiss_texture_id Cmiss_texture_manager_create_texture_from_file_with_parameters(
+	struct Cmiss_texture_manager *manager, const char *name,
+	struct IO_stream_package *io_stream_package, const char *filename,
+	int specify_width, int specify_height,
+	int specify_depth, int specify_format,
+	int specify_number_of_bytes_per_component)
+/*******************************************************************************
+LAST MODIFIED : 28 June 2007
+
+DESCRIPTION :
+Creates a texture <name> in <manager> if it can be read from <filename>.
+The extra parameters are supplied to the image reader and will only be 
+used if the image format specified in <filename> does not override them.
+They will normally only be used for formats such as .gray or .rgb which
+only contain raw data. The <specify_format> values are defined in
+Texture.idl.  Supplying zero for any of these parameters ensures that 
+particular parameter will be ignored.
+==============================================================================*/
+{
+	struct Cmgui_image *cmgui_image;
+	struct Cmgui_image_information *cmgui_image_information;
+	struct Cmiss_texture *texture;
+
+	ENTER(Cmiss_texture_manager_create_texture_from_file_with_parameters);
+	if (manager && name && filename)
+	{
+		cmgui_image_information = CREATE(Cmgui_image_information)();
+		Cmgui_image_information_add_file_name(cmgui_image_information,
+			(char *)filename);
+		if (specify_width)
+		{
+			Cmgui_image_information_set_width(cmgui_image_information,
+				specify_width);
+		}
+		if (specify_height)
+		{
+			Cmgui_image_information_set_height(cmgui_image_information,
+				specify_height);
+		}
+		/* There isn't a specify depth as this is assumed by the filesize
+		if (specify_depth)
+		{
+			Cmgui_image_information_set_depth(cmgui_image_information,
+				specify_depth);
+		} */
+		USE_PARAMETER(specify_depth);
+		Cmgui_image_information_set_io_stream_package(cmgui_image_information,
+			io_stream_package);
+		if (specify_format)
+		{
+			Cmgui_image_information_set_number_of_components(
+				cmgui_image_information, specify_format);
+		}
+		if (specify_number_of_bytes_per_component)
+		{
+			Cmgui_image_information_set_number_of_bytes_per_component(
+				cmgui_image_information, specify_number_of_bytes_per_component);
+		}
+		if (cmgui_image = Cmgui_image_read(cmgui_image_information))
+		{
+			if ((texture=CREATE(Texture)((char *)name))
+				&& (Texture_set_image(texture, cmgui_image,
+				(char *)filename, /*file_number_pattern*/(char *)NULL,
+				/*file_number_series_data.start*/0,
+				/*file_number_series_data.stop*/0,
+				/*file_number_series_data.increment*/0,
+				/*image_data.crop_left_margin*/0,
+				/*image_data.crop_bottom_margin*/0,
+				/*image_data.crop_width*/0,
+				/*image_data.crop_height*/0)))
+			{
+				ADD_OBJECT_TO_MANAGER(Texture)(texture,
+					manager);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_texture_manager_create_texture_from_file_with_parameters.  "
+					"Unable to set image into texture object");
+				texture = (struct Cmiss_texture *)NULL;
+			}
+			DESTROY(Cmgui_image)(&cmgui_image);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Unable to load texture from file : %s", filename);
+			texture = (struct Cmiss_texture *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_texture_manager_create_texture_from_file_with_parameters.  "
+			"Invalid argument(s)");
+		texture = (struct Cmiss_texture *)NULL;
+	}
+	LEAVE;
+
+	return (texture);
+} /* Cmiss_texture_manager_create_texture_from_file_with_parameters */
+
+Cmiss_texture_id Cmiss_texture_manager_create_texture_from_file(
+	struct Cmiss_texture_manager *manager, const char *name,
+	struct IO_stream_package *io_stream_package, const char *filename)
+/*******************************************************************************
+LAST MODIFIED : 28 June 2007
+
+DESCRIPTION :
+Creates a texture <name> in <manager> if it can be read from <filename>.
+==============================================================================*/
+{
+	struct Cmiss_texture *texture;
+
+	ENTER(Cmiss_texture_manager_create_texture_from_file);
+	if (manager && name && filename)
+	{
+		texture = Cmiss_texture_manager_create_texture_from_file_with_parameters(
+			manager, name, io_stream_package, filename,
+			/*specify_width*/0, /*specify_height*/0,
+			/*specify_depth*/0, /*specify_format*/0,
+			/*specify_number_of_bytes_per_component*/0);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_texture_manager_create_texture_from_file.  "
+			"Invalid argument(s)");
+		texture = (struct Cmiss_texture *)NULL;
+	}
+	LEAVE;
+
+	return (texture);
+} /* Cmiss_texture_manager_create_texture_from_file */
 
 enum Cmiss_texture_combine_mode Cmiss_texture_get_combine_mode(Cmiss_texture_id texture)
 /*******************************************************************************
@@ -355,11 +491,11 @@ Specfiy how the graphics hardware rasterises the texture onto the screen.
 	  }
   }
   else
-    {
-      display_message(ERROR_MESSAGE,
-		      "Cmiss_texture_set_filter_mode.  Invalid argument(s)");
-      return_code=0;
-    }
+  {
+	  display_message(ERROR_MESSAGE,
+		  "Cmiss_texture_set_filter_mode.  Invalid argument(s)");
+	  return_code=0;
+  }
   LEAVE;
 
   return (return_code);
