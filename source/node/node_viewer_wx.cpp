@@ -107,7 +107,6 @@ Contains all the information carried by the node_viewer widget.
 	 wxNodeViewer *wx_node_viewer;
 	 wxScrolledWindow *collpane;
 	 wxWindow *win;
-	 wxBoxSizer *paneSz;
 	 wxFrame *frame;
 	 wxGridSizer *grid_field;
 	 int init_width, init_height, frame_width, frame_height;
@@ -593,7 +592,6 @@ static int node_viewer_add_collpane(struct Computed_field *current_field, void *
 			if (node_viewer->win = panel->FindWindowByName(identifier))
 			{
 				 node_viewer->win->DestroyChildren();
-				 node_viewer->paneSz = new wxBoxSizer(wxVERTICAL);
 			}
 			else
 			{
@@ -603,7 +601,6 @@ static int node_viewer_add_collpane(struct Computed_field *current_field, void *
 				 sizer->Add(collapsiblepane, 0,wxALL, 5);
 				 node_viewer->win = collapsiblepane->GetPane();
 				 node_viewer->win->SetName(identifier);
-				 node_viewer->paneSz = new wxBoxSizer(wxVERTICAL);
 			}
 			if (identifier)
 			{
@@ -756,7 +753,6 @@ Since both nodes and data can depend on embedded fields, the
 				node_viewer->collpane = 
 					 XRCCTRL(*node_viewer->wx_node_viewer, "VariableViewerPanel", wxScrolledWindow);
 				node_viewer->win=NULL;
-				node_viewer->paneSz = NULL;
 				node_viewer->current_node= initial_node;
 				wxBoxSizer *Collpane_sizer = new wxBoxSizer( wxVERTICAL );
 				node_viewer->collpane->SetSizer(Collpane_sizer);
@@ -817,11 +813,11 @@ Destroys the Node_viewer. See also Node_viewer_close_CB.
 		{
 			 DEALLOCATE(node_viewer->nodal_value_types);
 		}
-		/* deaccess the local node_copy */
 		if (node_viewer->wx_node_viewer)
 		{
 			 delete node_viewer->wx_node_viewer;
 		}
+		/* deaccess the local node_copy */
 		REACCESS(FE_node)(&(node_viewer->node_copy),(struct FE_node *)NULL);
 		DEACCESS(FE_node)(&(node_viewer->template_node));
 		DEACCESS(Time_object)(&(node_viewer->time_object));

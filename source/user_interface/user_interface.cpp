@@ -2083,6 +2083,10 @@ DESCRIPTION :
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
 #endif /* defined (MOTIF) */
 #if defined (WX_USER_INTERFACE)
+		if (user_interface->local_machine_info)
+		{
+			DESTROY(Machine_information)(&(user_interface->local_machine_info));
+		}
 		wxEntryCleanup();
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
