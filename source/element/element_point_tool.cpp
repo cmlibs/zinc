@@ -1019,7 +1019,6 @@ structure itself.
 		REMOVE_OBJECT_FROM_MANAGER(Interactive_tool)(
 			element_point_tool->interactive_tool,
 			element_point_tool->interactive_tool_manager);
-		}
 #endif /* defined (MOTIF) */
 		REACCESS(Interaction_volume)(
 			&(element_point_tool->last_interaction_volume),
