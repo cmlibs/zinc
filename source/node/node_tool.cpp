@@ -3466,11 +3466,11 @@ structure itself.
 				node_tool->user_interface);
 			XtDestroyWidget(node_tool->window_shell);
 		}
-#else /* defined (MOTIF) */
-		if (node_tool->current_region_path)
-		{
-			DEALLOCATE(node_tool->current_region_path);
-		}
+// #else /* defined (MOTIF) */
+// 		if (node_tool->current_region_path)
+// 		{
+// 			DEALLOCATE(node_tool->current_region_path);
+// 		}
 #endif /* defined (MOTIF) */
 #if defined (WX_USER_INTERFACE)
 		if (node_tool->wx_node_tool)
