@@ -3432,9 +3432,11 @@ structure itself.
 	if (node_tool_address&&
 		(node_tool= *node_tool_address))
 	{
+#if defined (MOTIF)
 		REMOVE_OBJECT_FROM_MANAGER(Interactive_tool)(
 			node_tool->interactive_tool,
 			node_tool->interactive_tool_manager);
+#endif /* defined (MOTIF) */
 		if (node_tool->last_picked_node)
 		{
 			DEACCESS(FE_node)(&(node_tool->last_picked_node));

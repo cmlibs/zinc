@@ -269,10 +269,15 @@ DESCRIPTION :
 #endif /* USE_CMGUI_COMMAND_WINDOW */
 	struct Colour background_colour,foreground_colour;
 	struct Execute_command *execute_command,*set_command;
-	struct Element_point_tool *element_point_tool;
-	struct Element_tool *element_tool;
+	 struct Element_point_tool *element_point_tool;
+	 struct Element_tool *element_tool;
 	struct Event_dispatcher *event_dispatcher;
-	struct Node_tool *data_tool,*node_tool;
+	 struct Node_tool *data_tool,*node_tool;
+#if defined (WX_USER_INTERFACE)
+	 struct Element_point_tool *wx_element_point_tool;
+	 struct Element_tool *wx_element_tool;
+	 struct Node_tool *wx_data_tool,*wx_node_tool;
+#endif /*(WX_USER_INTERFACE)*/
 #if defined (MOTIF)
 	struct Select_tool *select_tool;
 #endif /* defined (MOTIF) */
@@ -7815,7 +7820,7 @@ Executes a GFX CREATE WINDOW command.
 				             command_data->user_interface);
 						ADD_OBJECT_TO_MANAGER(Interactive_tool)(transform_tool,
 							 interactive_tool_manager);
-						CREATE(Node_tool)(
+						command_data->wx_node_tool=CREATE(Node_tool)(
 								interactive_tool_manager,
 								command_data->root_region, /*use_data*/0,
 								command_data->node_selection,
@@ -7824,7 +7829,7 @@ Executes a GFX CREATE WINDOW command.
 								command_data->user_interface,
 								command_data->default_time_keeper,
 								command_data->execute_command);
-							CREATE(Node_tool)(
+							command_data->wx_data_tool=CREATE(Node_tool)(
 								interactive_tool_manager,
 								command_data->data_root_region, /*use_data*/1,
 								command_data->data_selection,
@@ -7833,7 +7838,7 @@ Executes a GFX CREATE WINDOW command.
 								command_data->user_interface,
 								command_data->default_time_keeper,
 								command_data->execute_command);
-							CREATE(Element_tool)(
+							command_data->wx_element_tool=CREATE(Element_tool)(
 								interactive_tool_manager,
 								command_data->root_region,
 								command_data->element_selection,
@@ -7843,7 +7848,7 @@ Executes a GFX CREATE WINDOW command.
 								command_data->user_interface,
 								command_data->default_time_keeper,
 								command_data->execute_command);
-							CREATE(Element_point_tool)(
+							command_data->wx_element_point_tool=CREATE(Element_point_tool)(
 								interactive_tool_manager,
 								command_data->element_point_ranges_selection,
 								command_data->computed_field_package,
@@ -23533,6 +23538,12 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->element_tool=(struct Element_tool *)NULL;
 		command_data->data_tool=(struct Node_tool *)NULL;
 		command_data->element_point_tool=(struct Element_point_tool *)NULL;
+#if defined (WX_USER_INTERFACE)
+		command_data->wx_node_tool=(struct Node_tool *)NULL;
+		command_data->wx_element_tool=(struct Element_tool *)NULL;
+		command_data->wx_data_tool=(struct Node_tool *)NULL;
+		command_data->wx_element_point_tool=(struct Element_point_tool *)NULL;
+#endif /*defined (WX_USER_INTERFACE)*/
 #if defined (MOTIF)
 		command_data->select_tool=(struct Select_tool *)NULL;
 
@@ -24181,7 +24192,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				the windows system */
 			Open_image_environment("cmgui");
 #endif /* switch (Operating_System) */
-
 			command_data->transform_tool=create_Interactive_tool_transform(
 				command_data->user_interface);
 			ADD_OBJECT_TO_MANAGER(Interactive_tool)(command_data->transform_tool,
@@ -24667,6 +24677,24 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		{
 			DESTROY(Node_tool)(&command_data->node_tool);
 		}
+#if defined (WX_USER_INTERFACE)
+		if (command_data->wx_element_point_tool)
+		{
+			DESTROY(Element_point_tool)(&command_data->wx_element_point_tool);
+		}
+		if (command_data->wx_element_tool)
+		{
+			DESTROY(Element_tool)(&command_data->wx_element_tool);
+		}
+		if (command_data->wx_data_tool)
+		{
+			DESTROY(Node_tool)(&command_data->wx_data_tool);
+		}
+		if (command_data->wx_node_tool)
+		{
+			DESTROY(Node_tool)(&command_data->wx_node_tool);
+		}
+#endif /*defined (WX_USER_INTERFACE)*/
 		DESTROY(MANAGER(Interactive_tool))(
 			&(command_data->interactive_tool_manager));
 
