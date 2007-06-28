@@ -559,6 +559,16 @@ subsequently modified by cmgui such as to support platforms which require
 each size to be a power of two.
 ==============================================================================*/
 
+int Cmiss_texture_get_rendered_texel_sizes(Cmiss_texture_id texture,
+	unsigned int *dimension, unsigned int **sizes);
+/*******************************************************************************
+LAST MODIFIED : 29 June 2007
+
+DESCRIPTION :
+Returns the rendered texel sizes of the texture.  These indicate what sizes
+were actually loaded into OpenGL and until the texture is rendered will be
+zero.
+==============================================================================*/
 int Texture_get_physical_size(struct Texture *texture,float *width,
 	float *height, float *depth);
 /*******************************************************************************

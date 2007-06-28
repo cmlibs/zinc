@@ -129,6 +129,8 @@ The properties of a graphical texture.
 	int depth_texels, height_texels, width_texels;
 	/* original image size in texels */
 	int original_depth_texels,original_height_texels,original_width_texels;
+	/* actually rendered size in texels (zero until rendered) */
+	int rendered_depth_texels, rendered_height_texels,rendered_width_texels;
 	/* cropping of image in file */
 	int crop_bottom_margin,crop_height,crop_left_margin,crop_width;
 	/* texture display options */
@@ -1128,11 +1130,11 @@ Directly outputs the commands setting up the <texture>.
 {
 	int  return_code;
 #if defined (OPENGL_API)
-	int hardware_storage_format, number_of_components,reduced_depth_texels,
-		reduced_height_texels,reduced_width_texels,reduction_flag,reductions[3];
+	int hardware_storage_format, number_of_components,
+		reduction_flag,reductions[3];
 	GLenum format, texture_target, type;
 	GLfloat values[4];
-	unsigned char *reduced_image;
+	unsigned char *reduced_image, *rendered_image;
 #endif /* defined (OPENGL_API) */
 
 	ENTER(direct_render_Texture);
@@ -1140,6 +1142,7 @@ Directly outputs the commands setting up the <texture>.
 	if (texture)
 	{
 #if defined (OPENGL_API)
+		rendered_image = (unsigned char *)NULL;
 		switch (texture->dimension)
 		{
 			case 1:
@@ -1285,46 +1288,49 @@ Directly outputs the commands setting up the <texture>.
 						{
 							case 1:
 							{
-								reduced_width_texels = texture->width_texels /
-									reductions[0];
-								reduced_height_texels = 1;
-								reduced_depth_texels = 1;
+								texture->rendered_width_texels =
+									texture->width_texels / reductions[0];
+								texture->rendered_height_texels = 1;
+								texture->rendered_depth_texels = 1;
 								display_message(WARNING_MESSAGE,
 									"1-D image %s is too large for this display.  "
 									"Reducing width from %d to %d for display only",
 									texture->name,
-									texture->width_texels, reduced_width_texels); 
+									texture->width_texels,
+									texture->rendered_width_texels); 
 							} break;
 							case 2:
 							{
-								reduced_width_texels = texture->width_texels /
-									reductions[0];
-								reduced_height_texels = texture->height_texels /
-									reductions[1];
-								reduced_depth_texels = 1;
+								texture->rendered_width_texels =
+									texture->width_texels / reductions[0];
+								texture->rendered_height_texels =
+									texture->height_texels / reductions[1];
+								texture->rendered_depth_texels = 1;
 								display_message(WARNING_MESSAGE,
 									"Image %s is too large for this display.  "
 									"Reducing (%d,%d) to (%d,%d) for display only",
 									texture->name,
 									texture->width_texels, texture->height_texels,
-									reduced_width_texels, reduced_height_texels); 
+									texture->rendered_width_texels,
+									texture->rendered_height_texels); 
 							} break;
 							case 3:
 							{
-								reduced_width_texels = texture->width_texels /
-									reductions[0];
-								reduced_height_texels = texture->height_texels /
-									reductions[1];
-								reduced_depth_texels = texture->depth_texels /
-									reductions[2];
+								texture->rendered_width_texels =
+									texture->width_texels / reductions[0];
+								texture->rendered_height_texels =
+									texture->height_texels / reductions[1];
+								texture->rendered_depth_texels =
+									texture->depth_texels / reductions[2];
 								display_message(WARNING_MESSAGE,
 									"3-D image %s is too large for this display.  "
 									"Reducing (%d,%d,%d) to (%d,%d,%d) for display only",
 									texture->name,
 									texture->width_texels, texture->height_texels,
 									texture->depth_texels,
-									reduced_width_texels, reduced_height_texels,
-									reduced_depth_texels); 
+									texture->rendered_width_texels, 
+									texture->rendered_height_texels,
+									texture->rendered_depth_texels); 
 							} break;
 							default:
 							{
@@ -1335,9 +1341,13 @@ Directly outputs the commands setting up the <texture>.
 						}
 						if (return_code)
 						{
-							if (!(reduced_image = Texture_get_resized_image(texture,
-								reduced_width_texels, reduced_height_texels,
-								reduced_depth_texels, texture->resize_filter_mode)))
+							if (reduced_image = Texture_get_resized_image(texture,
+								texture->rendered_width_texels, texture->rendered_height_texels,
+								texture->rendered_depth_texels, texture->resize_filter_mode))
+							{
+								rendered_image = reduced_image;
+							}
+							else
 							{
 								display_message(ERROR_MESSAGE, "direct_render_Texture.  "
 									"Could not reduce texture size for display");
@@ -1345,45 +1355,31 @@ Directly outputs the commands setting up the <texture>.
 							}
 						}
 					}
+					else
+					{
+						rendered_image = texture->image;
+						texture->rendered_width_texels = texture->width_texels;
+						texture->rendered_height_texels = texture->height_texels;
+						texture->rendered_depth_texels = texture->depth_texels;
+					}
 					if (return_code)
 					{
 						switch (texture->dimension)
 						{
 							case 1:
 							{
-								if (reduced_image)
-								{
-									glTexImage1D(GL_TEXTURE_1D, (GLint)0,
-										(GLint)hardware_storage_format,
-										(GLint)reduced_width_texels, (GLint)0,
-										format, type, (GLvoid *)reduced_image);
-								}
-								else
-								{
-									glTexImage1D(GL_TEXTURE_1D, (GLint)0,
-										(GLint)hardware_storage_format,
-										(GLint)(texture->width_texels), (GLint)0,
-										format, type, (GLvoid *)(texture->image));
-								}
+								glTexImage1D(GL_TEXTURE_1D, (GLint)0,
+									(GLint)hardware_storage_format,
+									(GLint)texture->rendered_width_texels, (GLint)0,
+									format, type, (GLvoid *)rendered_image);
 							} break;
 							case 2:
 							{
-								if (reduced_image)
-								{
-									glTexImage2D(GL_TEXTURE_2D, (GLint)0,
-										(GLint)hardware_storage_format,
-										(GLint)reduced_width_texels,
-										(GLint)reduced_height_texels, (GLint)0,
-										format, type, (GLvoid *)reduced_image);
-								}
-								else
-								{
-									glTexImage2D(GL_TEXTURE_2D, (GLint)0,
-										(GLint)hardware_storage_format,
-										(GLint)(texture->width_texels),
-										(GLint)(texture->height_texels), (GLint)0,
-										format, type, (GLvoid *)(texture->image));
-								}
+								glTexImage2D(GL_TEXTURE_2D, (GLint)0,
+									(GLint)hardware_storage_format,
+									(GLint)texture->rendered_width_texels,
+									(GLint)texture->rendered_height_texels, (GLint)0,
+									format, type, (GLvoid *)rendered_image);
 							} break;
 							case 3:
 							{
@@ -1400,24 +1396,12 @@ Directly outputs the commands setting up the <texture>.
 #  endif /* defined (GL_EXT_texture3D) */
 									)
 								{
-									if (reduced_image)
-									{
-										glTexImage3D(GL_TEXTURE_3D, (GLint)0,
-											(GLint)hardware_storage_format,
-											(GLint)reduced_width_texels,
-											(GLint)reduced_height_texels,
-											(GLint)reduced_depth_texels, (GLint)0,
-											format, type, (GLvoid *)reduced_image);
-									}
-									else
-									{
-										glTexImage3D(GL_TEXTURE_3D, (GLint)0,	
-											(GLint)hardware_storage_format,
-											(GLint)(texture->width_texels),
-											(GLint)(texture->height_texels),
-											(GLint)(texture->depth_texels), (GLint)0,
-											format, type, (GLvoid *)(texture->image));
-									}
+									glTexImage3D(GL_TEXTURE_3D, (GLint)0,
+										(GLint)hardware_storage_format,
+										(GLint)texture->rendered_width_texels,
+										(GLint)texture->rendered_height_texels,
+										(GLint)texture->rendered_depth_texels, (GLint)0,
+										format, type, (GLvoid *)rendered_image);
 								}
 								else
 								{
@@ -2120,6 +2104,9 @@ of all textures.
 			texture->original_depth_texels=1;
 			texture->original_height_texels=1;
 			texture->original_width_texels=1;
+			texture->rendered_depth_texels=0;
+			texture->rendered_height_texels=0;
+			texture->rendered_width_texels=0;
 			texture->distortion_centre_x=0.0;
 			texture->distortion_centre_y=0.0;
 			texture->distortion_factor_k1=0.0;
@@ -2426,6 +2413,8 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Texture,name)
 			destination->number_of_bytes_per_component=source->number_of_bytes_per_component;
 			destination->original_height_texels=source->original_height_texels;
 			destination->original_width_texels=source->original_width_texels;
+			/* Not copying the rendered texel size as this is based on the
+				actual size sent to OpenGL */
 			destination->height_texels=source->height_texels;
 			destination->width_texels=source->width_texels;
 			destination->combine_mode=source->combine_mode;
@@ -4812,9 +4801,10 @@ int Texture_get_size(struct Texture *texture,
 LAST MODIFIED : 8 February 2002
 
 DESCRIPTION :
-Returns the dimensions of the texture image in powers of 2. The width, height
-and depth returned are at least as large as those of the original image read
-into the texture.
+Returns the dimensions of the texture image as stored, these may have been
+modified to match the requirements of the current OpenGL display.
+The width, height and depth returned are at least as large as those of the
+original image read into the texture.
 ==============================================================================*/
 {
 	int return_code;
@@ -4911,6 +4901,55 @@ each size to be a power of two.
 
 	return (return_code);
 } /* Texture_get_original_texel_sizes */
+
+int Cmiss_texture_get_rendered_texel_sizes(struct Texture *texture,
+	unsigned int *dimension, unsigned int **sizes)
+/*******************************************************************************
+LAST MODIFIED : 29 June 2007
+
+DESCRIPTION :
+Returns the rendered texel sizes of the texture.  These indicate what sizes
+were actually loaded into OpenGL and until the texture is rendered will be
+zero.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Texture_get_rendered_texel_sizes);
+	if (texture)
+	{
+		if (ALLOCATE(*sizes, unsigned int, texture->dimension))
+		{
+			*dimension = texture->dimension;
+			if (texture->dimension > 0)
+			{
+				(*sizes)[0] = texture->rendered_width_texels;
+				if (texture->dimension > 1)
+				{
+					(*sizes)[1] = texture->rendered_height_texels;
+					if (texture->dimension > 2)
+					{
+						(*sizes)[2] = texture->rendered_depth_texels;
+					}
+				}
+			}
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Texture_get_rendered_texel_sizes.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_get_rendered_texel_sizes */
 
 enum Texture_wrap_mode Texture_get_wrap_mode(struct Texture *texture)
 /*******************************************************************************
@@ -5171,6 +5210,11 @@ Writes the properties of the <texture> to the command window.
 
 		display_message(INFORMATION_MESSAGE,"  storage used in graphics : %d\n",
 		     Cmiss_texture_get_graphics_storage_size(texture));
+		/* write the rendered image size */
+		display_message(INFORMATION_MESSAGE,
+			"  rendered width (texels) = %d, rendered height (texels) = %d, "
+			"rendered depth (texels) = %d\n", texture->rendered_width_texels,
+			texture->rendered_height_texels, texture->rendered_depth_texels);
 
 		/* write the colour */
 		display_message(INFORMATION_MESSAGE,
