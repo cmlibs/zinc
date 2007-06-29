@@ -64,17 +64,17 @@ cmgui-static cmgui-static-debug : STATIC_LINK_OPTION=STATIC_LINK=$(STATIC_LINK)
 cmgui-static cmgui-static-debug : STATIC_LINK=true
 cmgui cmgui-static cmgui64 cmgui-console cmgui-wx cmgui-carbon cmgui-gtk cmgui-no3dgraphics cmgui64-no3dgraphics cmgui-unemap : DEBUG_OPTION=DEBUG=$(DEBUG)
 cmgui cmgui-static cmgui64 cmgui-console cmgui-wx cmgui-carbon cmgui-gtk cmgui-no3dgraphics cmgui64-no3dgraphics cmgui-unemap : DEBUG=false
-cmgui-debug cmgui-debug-memorycheck cmgui-static-debug cmgui64-debug cmgui-wx-debug  cmgui-carbon-debug cmgui-gtk-debug cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui64-no3dgraphics-debug cmgui-unemap-debug : DEBUG_OPTION=DEBUG=$(DEBUG)
-cmgui-debug cmgui-debug-memorycheck cmgui-static-debug cmgui64-debug cmgui-wx-debug  cmgui-carbon-debug cmgui-gtk-debug cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui64-no3dgraphics-debug cmgui-unemap-debug : DEBUG=true
+cmgui-debug cmgui-debug-memorycheck cmgui-wx-debug-memorycheck cmgui-static-debug cmgui64-debug cmgui-wx-debug  cmgui-carbon-debug cmgui-gtk-debug cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui64-no3dgraphics-debug cmgui-unemap-debug : DEBUG_OPTION=DEBUG=$(DEBUG)
+cmgui-debug cmgui-debug-memorycheck cmgui-wx-debug-memorycheck cmgui-static-debug cmgui64-debug cmgui-wx-debug  cmgui-carbon-debug cmgui-gtk-debug cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui64-no3dgraphics-debug cmgui-unemap-debug : DEBUG=true
 cmgui64 cmgui64-debug cmgui64-no3dgraphics cmgui64-no3dgraphics-debug utilities64 : ABI_OPTION=ABI=$(ABI)
 cmgui64 cmgui64-debug cmgui64-no3dgraphics cmgui64-no3dgraphics-debug utilities64 : ABI=64
-cmgui-debug-memorycheck cmgui-no3dgraphics-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=$(MEMORYCHECK)
-cmgui-debug-memorycheck cmgui-no3dgraphics-debug-memorycheck : MEMORYCHECK=true
+cmgui-debug-memorycheck cmgui-wx-debug-memorycheck cmgui-no3dgraphics-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=$(MEMORYCHECK)
+cmgui-debug-memorycheck cmgui-wx-debug-memorycheck cmgui-no3dgraphics-debug-memorycheck : MEMORYCHECK=true
 cmgui-console : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
 cmgui-console : USER_INTERFACE=CONSOLE_USER_INTERFACE
 cmgui-gtk cmgui-gtk-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
-cmgui-wx cmgui-wx-debug : USER_INTERFACE=WX_USER_INTERFACE
-cmgui-wx cmgui-wx-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
+cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck: USER_INTERFACE=WX_USER_INTERFACE
+cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck: USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
 cmgui-carbon cmgui-carbon-debug : USER_INTERFACE=CARBON_USER_INTERFACE
 cmgui-carbon cmgui-carbon-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
 cmgui-gtk cmgui-gtk-debug : USER_INTERFACE=GTK_USER_INTERFACE
@@ -129,7 +129,7 @@ ifeq ($(SYSNAME),Linux)
    endif
 endif
 
-cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui64 cmgui64-debug cmgui-console cmgui-wx cmgui-wx-debug cmgui-carbon cmgui-carbon-debug cmgui-gtk cmgui-gtk-debug utilities cmgui-no3dgraphics cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui64-no3dgraphics cmgui64-no3dgraphics-debug cmgui-unemap cmgui-unemap-debug :
+cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui64 cmgui64-debug cmgui-console cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck cmgui-carbon cmgui-carbon-debug cmgui-gtk cmgui-gtk-debug utilities cmgui-no3dgraphics cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui64-no3dgraphics cmgui64-no3dgraphics-debug cmgui-unemap cmgui-unemap-debug :
 		cd source ; \
 		$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
@@ -178,7 +178,7 @@ ifeq ($(SYSNAME),Linux)
    ifeq ($(MACHNAME),x86_64)
 all : svn_update cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static-lib cmgui-debug-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui-no3dgraphics-debug-memorycheck-static-lib cmgui-gtk-debug-static-lib 
    else # MACHNAME == x86_64
-all : svn_update cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui-console cmgui-static-lib cmgui-debug-static-lib cmgui-gtk cmgui-gtk-debug cmgui-gtk-lib cmgui-gtk-debug-lib cmgui-gtk-static-lib cmgui-gtk-debug-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui-no3dgraphics-debug-memorycheck-static-lib cmgui-unemap cmgui-wx cmgui-wx-debug
+all : svn_update cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui-console cmgui-static-lib cmgui-debug-static-lib cmgui-gtk cmgui-gtk-debug cmgui-gtk-lib cmgui-gtk-debug-lib cmgui-gtk-static-lib cmgui-gtk-debug-static-lib cmgui-no3dgraphics-static-lib cmgui-no3dgraphics-debug-static-lib cmgui-no3dgraphics-debug-memorycheck-static-lib cmgui-unemap cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck
    endif # MACHNAME == x86_64
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)
