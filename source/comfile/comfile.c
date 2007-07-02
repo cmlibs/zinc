@@ -249,6 +249,7 @@ specified on the command line, a file selection box is presented to the user.
 											 strcat(temp_string, pathname);
 											 temp_string[length+8]='\0';
 											 Execute_command_execute_string(open_comfile_data->execute_command,temp_string);
+											 DEALLOCATE(temp_string);
 										}
 								 }
 							}
@@ -294,16 +295,14 @@ specified on the command line, a file selection box is presented to the user.
 								 {
 										make_valid_token(&old_directory_name);
 										length = strlen(old_directory_name);
-										if (temp_string != NULL)
-										{
-											 temp_string = NULL;
-										}
+										temp_string = NULL;
 										if (ALLOCATE(temp_string,char,length+9))
 										{
 											 strcpy(temp_string, "set dir ");
 											 strcat(temp_string, old_directory_name);
 											 temp_string[length+8]='\0';
 											 Execute_command_execute_string(open_comfile_data->execute_command,temp_string);
+											 DEALLOCATE(temp_string);
 										}
 								 }
 							}
@@ -358,12 +357,16 @@ specified on the command line, a file selection box is presented to the user.
 #if defined (WX_USER_INTERFACE)
 					 if (old_directory_name)
 					 {
-							 DEALLOCATE(old_directory_name);
+							DEALLOCATE(old_directory_name);
 					 }
-/* 					 if (old_directory) */
-/* 					 { */
-/* 							 DEALLOCATE(old_directory); */
-/* 					 } */
+					 if (old_directory)
+					 {
+							free(old_directory);
+					 }
+					 if (pathname)
+					 {
+							DEALLOCATE(pathname);
+					 }
 #endif /*defined (WX_USER_INTERFACE)*/
 				}
 			}

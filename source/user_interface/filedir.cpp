@@ -1352,10 +1352,10 @@ name the <file_operation> is performed on the file with the <arguments>.
 					 }	
 				}			 
 		 }
-// 		 if (old_directory)
-// 		 {
-// 				DEALLOCATE(old_directory);
-// 		 }
+		 if (old_directory)
+		 {
+				free(old_directory);
+		 }
 #endif /* !defined (__WIN32__)*/
 	}
 #endif /* defined (WX_USER_INTERFACE) */
