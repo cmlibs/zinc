@@ -46,6 +46,7 @@ extern "C" {
 #include "computed_field/computed_field.h"
 }
 #include "computed_field/computed_field_private.hpp"
+#include "image_processing/computed_field_ImageFilter.hpp"
 extern "C" {
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_set.h"
@@ -55,6 +56,9 @@ extern "C" {
 #include "user_interface/message.h"
 #include "computed_field/computed_field_derivatives.h"
 }
+#include "itkImage.h"
+#include "itkVector.h"
+#include "itkDerivativeImageFilter.h"
 
 class Computed_field_derivatives_package : public Computed_field_type_package
 {
@@ -62,19 +66,217 @@ public:
 	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
+using namespace CMISS;
+
 namespace {
 
 char computed_field_derivative_type_string[] = "derivative";
 
+class Computed_field_derivative_image_filter : public Computed_field_ImageFilter
+{
+	/* This class is only used when the input is deemed to be grid based, 
+		the derivative is not calculable on the input field and the 
+		get_native_resolution method is implemented. */
+
+public:
+	int xi_index;
+	int derivative_operator_order;
+       
+	Computed_field_derivative_image_filter(Computed_field *field,
+		int xi_index, int derivative_operator_order);
+
+	~Computed_field_derivative_image_filter()
+	{
+	};
+
+	int clear_cache()
+	{
+		int return_code = Computed_field_ImageFilter::clear_cache();
+		return (return_code);
+	};
+
+	int evaluate_cache_at_location(Field_location* location)
+	{
+		int return_code =
+			Computed_field_ImageFilter::evaluate_cache_at_location(location);
+		return (return_code);
+	};
+
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
+	{
+		return new Computed_field_derivative_image_filter(new_parent, xi_index, derivative_operator_order);
+	}
+
+	char *get_type_string()
+	{
+		return(computed_field_derivative_type_string);
+	}
+
+	int compare(Computed_field_core* other_field);
+
+	int list();
+
+	char* get_command_string();
+
+};
+
+int Computed_field_derivative_image_filter::compare(Computed_field_core *other_core)
+/*******************************************************************************
+LAST MODIFIED : 2 July 2007
+
+DESCRIPTION :
+Not needed but required to construct object.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_derivative_image_filter::compare);
+	display_message(ERROR_MESSAGE,
+		"Computed_field_derivative_image_filter::compare.  Not implemented.");
+	return_code = 0;
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_derivative_image_filter::compare */
+
+int Computed_field_derivative_image_filter::list()
+/*******************************************************************************
+LAST MODIFIED : 2 July 2007
+
+DESCRIPTION :
+Not needed but required to construct object.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(List_Computed_field_derivative_image_filter);
+	display_message(ERROR_MESSAGE,
+		"Computed_field_derivative_image_filter::list.  Not implemented.");
+	return_code = 0;
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_derivative_image_filter */
+
+char *Computed_field_derivative_image_filter::get_command_string()
+/*******************************************************************************
+LAST MODIFIED : 2 July 2007
+
+DESCRIPTION :
+Not needed but required to construct object.
+==============================================================================*/
+{
+	char *command_string;
+
+	ENTER(Computed_field_derivative_image_filter::get_command_string);
+	display_message(ERROR_MESSAGE,
+		"Computed_field_derivative_image_filter::get_command_string.  Not implemented.");
+	command_string = static_cast<char *>(NULL);
+	LEAVE;
+
+	return (command_string);
+} /* Computed_field_derivative_image_filter::get_command_string */
+
+template < class ImageType >
+class Computed_field_derivative_image_filter_Functor :
+	public Computed_field_ImageFilter_FunctorTmpl< ImageType >
+/*******************************************************************************
+LAST MODIFIED : 2 July 2007
+
+DESCRIPTION :
+This class actually does the work of processing images with the filter.
+It is instantiated for each of the chosen ImageTypes.
+==============================================================================*/
+{
+	Computed_field_derivative_image_filter *derivative_image_filter;
+
+public:
+
+	Computed_field_derivative_image_filter_Functor(
+		Computed_field_derivative_image_filter *derivative_image_filter) :
+		Computed_field_ImageFilter_FunctorTmpl< ImageType >(derivative_image_filter),
+		derivative_image_filter(derivative_image_filter)
+	{
+	}
+
+	int set_filter(Field_location* location)
+/*******************************************************************************
+LAST MODIFIED : 2 July 2007
+
+DESCRIPTION :
+Create a filter of the correct type, set the filter specific parameters
+and generate the outputImage.
+==============================================================================*/
+	{
+		int return_code;
+
+		typedef itk::DerivativeImageFilter< ImageType , ImageType > FilterType;
+		
+		typename FilterType::Pointer filter = FilterType::New();
+
+		filter->SetDirection( derivative_image_filter->xi_index );
+		filter->SetOrder( derivative_image_filter->derivative_operator_order );
+		
+		return_code = derivative_image_filter->update_output_image
+			(location, filter, this->outputImage,
+			static_cast<ImageType*>(NULL), static_cast<FilterType*>(NULL));
+		
+		return (return_code);
+	} /* set_filter */
+
+}; /* template < class ImageType > class Computed_field_derivative_image_filter_Functor */
+
+Computed_field_derivative_image_filter::Computed_field_derivative_image_filter(
+	Computed_field *field, int xi_index, int derivative_operator_order) : 
+	Computed_field_ImageFilter(field), 
+	xi_index(xi_index), derivative_operator_order(derivative_operator_order)
+/*******************************************************************************
+LAST MODIFIED : 2 July 2007
+
+DESCRIPTION :
+Create the ITK implementation for a Computed_field_derivative.
+==============================================================================*/
+{
+#if defined DONOTUSE_TEMPLATETEMPLATES
+	create_filters_singlecomponent_multidimensions(
+		Computed_field_derivative_image_filter_Functor, this);
+#else
+	create_filters_singlecomponent_multidimensions
+		< Computed_field_derivative_image_filter_Functor, Computed_field_derivative_image_filter >
+		(this);
+#endif
+}
+
 class Computed_field_derivative : public Computed_field_core
 {
+	/* This is the actual Computed_field implementation.
+		Normally this derivative is the xi derivative taken from
+		the input_field.  If the derivatives are not defined on the
+		input field but the get_native_resolution function is then
+		an image based derivative is calculated using ITK.
+		It creates a Computed_field_derivative_image_filter if and
+		when required. */
+
 public:
 
 	int xi_index;
 
+	Computed_field_derivative_image_filter *derivative_image_filter;
+
 	Computed_field_derivative(Computed_field *field, int xi_index) : 
 		Computed_field_core(field), xi_index(xi_index)
 	{
+		/* Only construct the image filter version if it is required */
+		derivative_image_filter = (Computed_field_derivative_image_filter *)NULL;
+	};
+
+	~Computed_field_derivative()
+	{
+		if (derivative_image_filter)
+		{
+			delete derivative_image_filter;
+		}
 	};
 
 private:
@@ -94,6 +296,18 @@ private:
 	char* get_command_string();
 
 	int is_defined_at_location(Field_location* location);
+
+	int clear_cache()
+	{
+		/* Call the parent */
+		int return_code = Computed_field_core::clear_cache();
+		if (derivative_image_filter)
+		{
+			return_code = derivative_image_filter->clear_cache();
+		}
+		return (return_code);
+	};
+
 };
 
 Computed_field_core* Computed_field_derivative::copy(Computed_field* new_parent)
@@ -169,7 +383,8 @@ Check the source fields using the default.
 	if (field && location)
 	{
 		Field_element_xi_location* element_xi_location;
-		/* Only works for element_xi locations */
+		Field_coordinate_location* coordinate_location = NULL;
+		/* Derivative values are only defined for element_xi locations */
 		if ((element_xi_location  = 
 				dynamic_cast<Field_element_xi_location*>(location))
 			/* Derivatives can only be calculated up to element dimension */
@@ -178,6 +393,31 @@ Check the source fields using the default.
 		{
 			/* Check the source field */
 			return_code = Computed_field_core::is_defined_at_location(location);
+		}
+		else if (coordinate_location = 
+			dynamic_cast<Field_coordinate_location*>(location))
+		{
+			/* This can only be valid if the input field has 
+				a native resolution as we will be using image filter. */
+			if (Computed_field_core::is_defined_at_location(location))
+			{
+				int dimension;
+				int *sizes = static_cast<int *>(NULL);
+				Computed_field *texture_coordinate_field;
+
+				return_code = Computed_field_get_native_resolution(
+					field->source_fields[0], &dimension, &sizes, 
+					&texture_coordinate_field);
+
+				if (sizes)
+				{
+					DEALLOCATE(sizes);
+				}
+			}
+			else
+			{
+				return_code = 0;
+			}
 		}
 		else
 		{
@@ -212,6 +452,7 @@ Evaluate the fields cache at the location
 		location)
 	{
 		Field_element_xi_location* element_xi_location;
+		int return_code = 0;
 		/* Only works for element_xi locations */
 		if (element_xi_location  = 
 			dynamic_cast<Field_element_xi_location*>(location))
@@ -249,12 +490,31 @@ Evaluate the fields cache at the location
 			}
 			field->derivatives_valid = 0;
 		}
-		else
+		if (!return_code)
 		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_derivative::evaluate_cache_at_location.  "
-				"Derivative field on valid in elements.");
-			return_code = 0;
+			int dimension;
+			int *sizes = static_cast<int *>(NULL);
+			Computed_field *texture_coordinate_field;
+
+			/* If it isn't calculated then try with the ImageFilter */
+			if (Computed_field_get_native_resolution(field->source_fields[0],
+					&dimension, &sizes, &texture_coordinate_field))
+			{
+				if (!derivative_image_filter)
+				{
+					/* Hard coding the default first order operator for now */
+					derivative_image_filter = new 
+						Computed_field_derivative_image_filter(field, xi_index,
+							/*derivative_operator_order*/1);
+				}
+				return_code = derivative_image_filter->evaluate_cache_at_location(
+					location);
+			}
+			
+			if (sizes)
+			{
+				DEALLOCATE(sizes);
+			}
 		}
 	}
 	else
@@ -464,6 +724,21 @@ already) and allows its contents to be modified.
 				ACCESS(Computed_field)(source_field);
 			}
 			option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+				"The derivative field has two modes of operation.  For normal "
+				"finite element fields it simply promotes the derivative "
+				"values corresponding to <xi_index> calculated by the input "
+				"<field> to be the field values.  These derivatives are with "
+				"respect to xi. "
+				"If the input <field> cannot cannot calculate element based "
+				"derivatives then if the input field has a native resolution "
+				"then this field uses the ITK DerivativeImageFilter to calculate "
+				"a pixel based derivative at that same resolution.  "
+				"The derivative filter will use the image pixel physical spacing "
+				"if that is defined for ITK.  Note that as the derivative is a "
+				"signed value you may want to offset and scale the resultant "
+				"values if you intend to store them in an unsigned pixel format.");
+
 			/* field */
 			set_source_field_data.computed_field_manager=
 				computed_field_derivatives_package->computed_field_manager;
