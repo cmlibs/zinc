@@ -888,7 +888,6 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_curve.cpp \
 	computed_field/computed_field_coordinate.cpp \
 	computed_field/computed_field_deformation.cpp \
-	computed_field/computed_field_derivatives.cpp \
 	computed_field/computed_field_fibres.cpp \
 	computed_field/computed_field_find_xi.cpp \
 	computed_field/computed_field_finite_element.cpp \
@@ -908,6 +907,10 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_wrappers.cpp
 COMPUTED_FIELD_INTERFACE_SRCS = \
 	computed_field/computed_field_window_projection.cpp
+ifeq ($(USE_ITK),true)
+COMPUTED_FIELD_SRCS += \
+	computed_field/computed_field_derivatives.cpp
+endif # $(USE_ITK) == true
 ifneq ($(USE_COMPUTED_VARIABLES), true)
 COMPUTED_VARIABLE_SRCS =
 else # USE_COMPUTED_VARIABLES != true
