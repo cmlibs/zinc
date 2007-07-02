@@ -219,7 +219,7 @@ specified on the command line, a file selection box is presented to the user.
 #else /* defined (__WIN32__)*/
 				 /* Save the current working directory */
 				 old_directory = (char *)malloc(4096);
-				getcwd(old_directory, 4096);
+				 getcwd(old_directory, 4096);
 				length = strlen(old_directory);
 				if ((ALLOCATE(old_directory_name,char,length+2)) && old_directory !=NULL)
 				{
@@ -360,10 +360,10 @@ specified on the command line, a file selection box is presented to the user.
 					 {
 							 DEALLOCATE(old_directory_name);
 					 }
-					 if (old_directory)
-					 {
-							 DEALLOCATE(old_directory);
-					 }
+/* 					 if (old_directory) */
+/* 					 { */
+/* 							 DEALLOCATE(old_directory); */
+/* 					 } */
 #endif /*defined (WX_USER_INTERFACE)*/
 				}
 			}

@@ -692,9 +692,10 @@ Returns an allocated copy of <source_string>, or NULL in case of error.
 	ENTER(duplicate_string);
 	if (source_string)
 	{
-		if (ALLOCATE(copy_of_string,char,strlen(source_string)+1))
+		if (ALLOCATE(copy_of_string,char,strlen(source_string)+2))
 		{
 			strcpy(copy_of_string,source_string);
+			copy_of_string[strlen(source_string)+1]='\0';
 		}
 		else
 		{
