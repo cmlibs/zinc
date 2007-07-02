@@ -273,11 +273,6 @@ DESCRIPTION :
 	 struct Element_tool *element_tool;
 	struct Event_dispatcher *event_dispatcher;
 	 struct Node_tool *data_tool,*node_tool;
-#if defined (WX_USER_INTERFACE)
-	 struct Element_point_tool *wx_element_point_tool;
-	 struct Element_tool *wx_element_tool;
-	 struct Node_tool *wx_data_tool,*wx_node_tool;
-#endif /*(WX_USER_INTERFACE)*/
 #if defined (MOTIF)
 	struct Select_tool *select_tool;
 #endif /* defined (MOTIF) */
@@ -316,7 +311,7 @@ DESCRIPTION :
 	struct Light *default_light;
 	struct MANAGER(Light_model) *light_model_manager;
 	struct Light_model *default_light_model;
-	struct Material_package *material_package;
+	 struct Material_package *material_package;
 	struct Graphics_font *default_font;
 #if defined (SGI_MOVIE_FILE) && defined (MOTIF)
 	struct MANAGER(Movie_graphics) *movie_graphics_manager;
@@ -7438,12 +7433,12 @@ Modifies the properties of a texture.
 
 static int gfx_create_texture(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
+/******************************************************************************
 LAST MODIFIED : 14 June 1999
 
 DESCRIPTION :
 Executes a GFX CREATE TEXTURE command.
-==============================================================================*/
+==============================================================================*/ 
 {
 	char *current_token;
 	int return_code;
@@ -7538,7 +7533,7 @@ Executes a GFX CREATE TEXTURE command.
 	LEAVE;
 
 	return (return_code);
-} /* gfx_create_texture */
+} /*gfx_create_texture */
 
 #if defined (MOTIF)
 static int gfx_create_time_editor(struct Parse_state *state,
@@ -7820,7 +7815,9 @@ Executes a GFX CREATE WINDOW command.
 				             command_data->user_interface);
 						ADD_OBJECT_TO_MANAGER(Interactive_tool)(transform_tool,
 							 interactive_tool_manager);
-						command_data->wx_node_tool=CREATE(Node_tool)(
+						if (command_data->node_tool)
+							 DEALLOCATE(command_data->node_tool);
+						command_data->node_tool=CREATE(Node_tool)(
 								interactive_tool_manager,
 								command_data->root_region, /*use_data*/0,
 								command_data->node_selection,
@@ -7829,7 +7826,9 @@ Executes a GFX CREATE WINDOW command.
 								command_data->user_interface,
 								command_data->default_time_keeper,
 								command_data->execute_command);
-							command_data->wx_data_tool=CREATE(Node_tool)(
+						if (command_data->data_tool)
+							 DEALLOCATE(command_data->data_tool);
+						command_data->data_tool=CREATE(Node_tool)(
 								interactive_tool_manager,
 								command_data->data_root_region, /*use_data*/1,
 								command_data->data_selection,
@@ -7838,7 +7837,9 @@ Executes a GFX CREATE WINDOW command.
 								command_data->user_interface,
 								command_data->default_time_keeper,
 								command_data->execute_command);
-							command_data->wx_element_tool=CREATE(Element_tool)(
+						if (command_data->data_tool)
+							 DEALLOCATE(command_data->element_tool);
+						command_data->element_tool=CREATE(Element_tool)(
 								interactive_tool_manager,
 								command_data->root_region,
 								command_data->element_selection,
@@ -7848,7 +7849,9 @@ Executes a GFX CREATE WINDOW command.
 								command_data->user_interface,
 								command_data->default_time_keeper,
 								command_data->execute_command);
-							command_data->wx_element_point_tool=CREATE(Element_point_tool)(
+						if (command_data->data_tool)
+							 DEALLOCATE(command_data->element_point_tool);
+						command_data->element_point_tool=CREATE(Element_point_tool)(
 								interactive_tool_manager,
 								command_data->element_point_ranges_selection,
 								command_data->computed_field_package,
@@ -8888,8 +8891,8 @@ Executes a GFX CREATE command.
 					command_data_void,gfx_create_streamlines);
 				Option_table_add_entry(option_table,"surfaces",NULL,
 					command_data_void,gfx_create_surfaces);
-				Option_table_add_entry(option_table,"texture",NULL,
-					command_data_void,gfx_create_texture);
+				Option_table_add_entry(option_table,"texture",NULL, 
+					command_data_void,gfx_create_texture); 
 #if defined (MOTIF)
 				Option_table_add_entry(option_table,"time_editor",NULL,
 					command_data_void,gfx_create_time_editor);
@@ -23538,12 +23541,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->element_tool=(struct Element_tool *)NULL;
 		command_data->data_tool=(struct Node_tool *)NULL;
 		command_data->element_point_tool=(struct Element_point_tool *)NULL;
-#if defined (WX_USER_INTERFACE)
-		command_data->wx_node_tool=(struct Node_tool *)NULL;
-		command_data->wx_element_tool=(struct Element_tool *)NULL;
-		command_data->wx_data_tool=(struct Node_tool *)NULL;
-		command_data->wx_element_point_tool=(struct Element_point_tool *)NULL;
-#endif /*defined (WX_USER_INTERFACE)*/
 #if defined (MOTIF)
 		command_data->select_tool=(struct Select_tool *)NULL;
 
@@ -23939,10 +23936,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		if (root_fe_region = CREATE(FE_region)((struct FE_region *)NULL,
 			command_data->basis_manager, command_data->element_shape_list))
 		{
-			Cmiss_region_attach_FE_region(command_data->root_region, root_fe_region);
+			 Cmiss_region_attach_FE_region(command_data->root_region, root_fe_region);
 		}
 		
-
 		command_data->data_root_region =
 			ACCESS(Cmiss_region)(CREATE(Cmiss_region)());
 		/* add FE_region to data_root_region but make it use fields and elements
@@ -23982,7 +23978,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			CREATE(FE_element_selection)(root_fe_region);
 		command_data->node_selection = CREATE(FE_node_selection)(root_fe_region);
 		command_data->data_selection =
-			CREATE(FE_node_selection)(data_root_fe_region);
+			 CREATE(FE_node_selection)(data_root_fe_region);	
 
 		/* interactive_tool manager */
 		command_data->interactive_tool_manager=CREATE(MANAGER(Interactive_tool))();
@@ -24491,7 +24487,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		{
 			cmiss_execute_command("??", (void *)command_data);
 		}
-
 		if (example_id)
 		{
 			DEALLOCATE(example_id);
@@ -24677,24 +24672,6 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		{
 			DESTROY(Node_tool)(&command_data->node_tool);
 		}
-#if defined (WX_USER_INTERFACE)
-		if (command_data->wx_element_point_tool)
-		{
-			DESTROY(Element_point_tool)(&command_data->wx_element_point_tool);
-		}
-		if (command_data->wx_element_tool)
-		{
-			DESTROY(Element_tool)(&command_data->wx_element_tool);
-		}
-		if (command_data->wx_data_tool)
-		{
-			DESTROY(Node_tool)(&command_data->wx_data_tool);
-		}
-		if (command_data->wx_node_tool)
-		{
-			DESTROY(Node_tool)(&command_data->wx_node_tool);
-		}
-#endif /*defined (WX_USER_INTERFACE)*/
 		DESTROY(MANAGER(Interactive_tool))(
 			&(command_data->interactive_tool_manager));
 
@@ -24735,11 +24712,9 @@ Clean up the command_data, deallocating all the associated memory and resources.
 
 		DEACCESS(Cmiss_region)(&(command_data->data_root_region));
 		DEACCESS(Cmiss_region)(&(command_data->root_region));
-
 		DESTROY(MANAGER(FE_basis))(&command_data->basis_manager);
 
 		DESTROY(LIST(FE_element_shape))(&command_data->element_shape_list);
-
 		DEACCESS(Spectrum)(&(command_data->default_spectrum));
 		DESTROY(MANAGER(Spectrum))(&command_data->spectrum_manager);
 		DEACCESS(Material_package)(&command_data->material_package);
