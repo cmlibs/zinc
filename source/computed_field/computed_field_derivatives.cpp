@@ -383,7 +383,6 @@ Check the source fields using the default.
 	if (field && location)
 	{
 		Field_element_xi_location* element_xi_location;
-		Field_coordinate_location* coordinate_location = NULL;
 		/* Derivative values are only defined for element_xi locations */
 		if ((element_xi_location  = 
 				dynamic_cast<Field_element_xi_location*>(location))
@@ -394,8 +393,7 @@ Check the source fields using the default.
 			/* Check the source field */
 			return_code = Computed_field_core::is_defined_at_location(location);
 		}
-		else if (coordinate_location = 
-			dynamic_cast<Field_coordinate_location*>(location))
+		else if (dynamic_cast<Field_coordinate_location*>(location))
 		{
 			/* This can only be valid if the input field has 
 				a native resolution as we will be using image filter. */
@@ -452,7 +450,7 @@ Evaluate the fields cache at the location
 		location)
 	{
 		Field_element_xi_location* element_xi_location;
-		int return_code = 0;
+		return_code = 0;
 		/* Only works for element_xi locations */
 		if (element_xi_location  = 
 			dynamic_cast<Field_element_xi_location*>(location))
@@ -469,10 +467,10 @@ Evaluate the fields cache at the location
 
 				/* 1. Precalculate any source fields that this field depends on,
 					we always want the derivatives */
-				if (return_code = 
-					Computed_field_evaluate_source_fields_cache_at_location(field, 
-						&location_with_derivatives))
+				if (Computed_field_evaluate_source_fields_cache_at_location(field, 
+						&location_with_derivatives) && field->derivatives_valid)
 				{
+					return_code = 1;
 					/* 2. Calculate the field */
 					for (i = 0 ; i < field->number_of_components ; i++)
 					{
