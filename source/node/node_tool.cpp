@@ -3393,7 +3393,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->wx_node_tool = (wxNodeTool *)NULL;
 			/* Set defaults until we have some sort of region chooser */
 			Node_tool_set_Cmiss_region(node_tool, node_tool->root_region);
-			node_tool->current_region_path = (char *)NULL;
+			node_tool->current_region_path = NULL;
 			node_tool->tool_position=wxPoint(0,0);
 #else /* defined (MOTIF) */
 			node_tool->current_region_path = (char *)NULL;
@@ -3466,11 +3466,11 @@ structure itself.
 				node_tool->user_interface);
 			XtDestroyWidget(node_tool->window_shell);
 		}
-// #else /* defined (MOTIF) */
-// 		if (node_tool->current_region_path)
-// 		{
-// 			DEALLOCATE(node_tool->current_region_path);
-// 		}
+#else /* defined (MOTIF) */
+		if (node_tool->current_region_path)
+		{
+			 DEALLOCATE(node_tool->current_region_path);
+		}
 #endif /* defined (MOTIF) */
 #if defined (WX_USER_INTERFACE)
 		if (node_tool->wx_node_tool)
@@ -4136,6 +4136,11 @@ Sets the <path> to the region/FE_region where nodes created by
 		Cmiss_region_chooser_get_region(node_tool->cmiss_region_chooser, &region);
 		return_code = Node_tool_set_Cmiss_region(node_tool, region);
 #elif defined (WX_USER_INTERFACE)
+		if (node_tool->current_region_path)
+		{
+			 DEALLOCATE(node_tool->current_region_path);
+			 node_tool->current_region_path = NULL;
+		}
 		node_tool->current_region_path = duplicate_string(path);
 		region = (struct Cmiss_region *)NULL;
 		if (node_tool->wx_node_tool)
