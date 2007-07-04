@@ -81,7 +81,7 @@ Module types
 */
 enum Material_program_type
 /*******************************************************************************
-LAST MODIFIED : 14 September 2005
+LAST MODIFIED : 4 July 2007
 
 DESCRIPTION :
 Enumerates the main different types of vertex/fragment program for materials
@@ -133,9 +133,18 @@ Enumerates the main different types of vertex/fragment program for materials
 	MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR = (1<<14),
 	MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA = (1<<15),
 
+	/* Assume that the texture contains an intensity followed by a 3 component
+		normal vector.  This vector is used to light volume rendering by
+		performing per pixel lighting using this normal. */
+	MATERIAL_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE = (1<<16),
+	/* Calculate a normal by using a finite difference operator. */
+	MATERIAL_PROGRAM_CLASS_LIT_VOLUME_FINITE_DIFFERENCE_NORMAL = (1<<17),
+	/* Scale the alpha by the magnitude of the normal */
+	MATERIAL_PROGRAM_CLASS_LIT_VOLUME_SCALE_ALPHA = (1<<18),
+
    /* Order independent transparency passes */
-	MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_FIRST_LAYER = (1<<16),
-	MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER = (1<<17)
+	MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_FIRST_LAYER = (1<<19),
+	MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER = (1<<20)
 }; /* enum Material_program_type */
 
 struct Material_program
@@ -338,7 +347,7 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Material_program, type,
 
 static int Material_program_compile(struct Material_program *material_program)
 /*******************************************************************************
-LAST MODIFIED : 23 January 2004
+LAST MODIFIED : 4 July 2007
 
 DESCRIPTION :
 Compiles the material program objects.  These are separate objects so they can
@@ -353,6 +362,7 @@ be shared by multiple materials using the same program.
 #if defined (OPENGL_API)
 		return_code = 1;
 /* #define TESTING_PROGRAM_STRINGS */
+/* #define WRITE_STRING */
 /* #define DEBUG */
 #if defined (TESTING_PROGRAM_STRINGS)
 		/* If testing always recompile */
@@ -716,31 +726,31 @@ be shared by multiple materials using the same program.
 								, &error);
 						}
 					}
-					if (MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_BUMPMAP & material_program->type)
-					{
-						append_string(&fragment_program_string, 
-							"#Expand the range of the normal texture\n"
-							"MAD      normal, two, tex2, m_one;\n"
-							
-							"#Reverse the texture normal direction component if required\n"
-							"MUL      normal.z, reverse.z, normal.z;\n"
-							, &error);
-					}
-					else
-					{
-						/* Normal is stored in texcoord[3] */
-						append_string(&fragment_program_string, 
-							"#Normalize the normal.\n"
-							"DP3		normal.w, fragment.texcoord[3], fragment.texcoord[3];\n"
-							"RSQ		normal.w, normal.w;\n"
-							"MUL		normal.xyz, fragment.texcoord[3], normal.w;\n"
-
-							"#Reverse the normal if required\n"
-							"MUL      normal, reverse, normal;\n"
-							, &error);
-					}
 					if (!(MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_DECAL & material_program->type))
 					{
+						if (MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_BUMPMAP & material_program->type)
+						{
+							append_string(&fragment_program_string, 
+								"#Expand the range of the normal texture\n"
+								"MAD      normal, two, tex2, m_one;\n"
+							
+								"#Reverse the texture normal direction component if required\n"
+								"MUL      normal.z, reverse.z, normal.z;\n"
+								, &error);
+						}
+						else
+						{
+							/* Normal is stored in texcoord[3] */
+							append_string(&fragment_program_string, 
+								"#Normalize the normal.\n"
+								"DP3		normal.w, fragment.texcoord[3], fragment.texcoord[3];\n"
+								"RSQ		normal.w, normal.w;\n"
+								"MUL		normal.xyz, fragment.texcoord[3], normal.w;\n"
+
+								"#Reverse the normal if required\n"
+								"MUL      normal, reverse, normal;\n"
+								, &error);
+						}
 						/* Usual lighting calculations */
 						append_string(&fragment_program_string, 
 							"#Normalize lightvec and viewvec.\n"
@@ -953,6 +963,87 @@ be shared by multiple materials using the same program.
 					
 					}
 
+					if (MATERIAL_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE &
+						material_program->type)
+					{
+						/* I think with some rearrangement we could consolidate
+							this with the per pixel lighting above assuming that we
+							don't want to light using the fragment normals and
+							then do this lighting too. */
+						
+						append_string(&fragment_program_string, 
+							"TEMP unlitColour;\n"
+							"MOV     unlitColour, finalCol;\n"
+							"#Expand the range of the normal texture\n"
+							/* We are assuming the normal is in .gba */
+							"MAD     normal, two, tex.gbaa, m_one;\n"
+							/* Normalise the normal but keep the squared
+								magnitude so we can use it to scale the alpha */
+							"TEMP  eyeNormal, normalMag;\n"
+							"PARAM c2[4] = { state.matrix.modelview.invtrans };\n"
+							"\n"
+							"#Put the normal into eye point space\n"
+							"DP4 eyeNormal.x, c2[0], normal;\n"
+							"DP4 eyeNormal.y, c2[1], normal;\n"
+							"DP4 eyeNormal.z, c2[2], normal;\n"
+							"\n"
+							"#Reverse the texture normal direction component if required\n"
+							"MUL      eyeNormal, reverse, eyeNormal;\n"
+							"\n"
+							"#Normalize the normal.\n"
+							"DP3		normalMag.w, eyeNormal, eyeNormal;\n"
+							"RSQ		eyeNormal.w, normalMag.w;\n"
+							"MUL		eyeNormal.xyz, eyeNormal, eyeNormal.w;\n"
+							"\n"
+							"#Normalize lightvec and viewvec.\n"
+							"DP3		Len.w, fragment.texcoord[1], fragment.texcoord[1];\n"
+							"RSQ		lightVec.w, Len.w;\n"
+							"MUL		lightVec.xyz, fragment.texcoord[1], lightVec.w;\n"
+							"DP3		viewVec.w, fragment.texcoord[2], fragment.texcoord[2];\n"
+							"RSQ		viewVec.w, viewVec.w;\n"
+							"MUL		viewVec.xyz, fragment.texcoord[2], viewVec.w;\n"
+							"#Calculate attenuation.\n"
+							"MAD		attenuation, state.light[0].attenuation.z, Len.w, state.light[0].attenuation.x;\n"
+							"RCP		Len, lightVec.w;\n"
+							"MAD		attenuation, Len.w, state.light[0].attenuation.y, attenuation.x;\n"
+							"RCP		attenuation.x, attenuation.x;\n"
+							"#Diffuse\n"
+							"DP3_SAT	   lightContrib.x, eyeNormal, lightVec;\n"
+							""
+							"#Specular\n"
+							"# Phong:\n"
+							"DP3		reflVec, lightVec, eyeNormal;\n"
+							"MUL		reflVec, reflVec, two;\n"
+							"MAD		reflVec, reflVec, eyeNormal, -lightVec;\n"
+							"\n"
+							"DP3_SAT	lightContrib.y, reflVec, viewVec;\n"
+							"MOV		lightContrib.w, state.material.shininess.x;\n"
+							"#Accelerates lighting computations\n"
+							"LIT	   lightContrib, lightContrib;\n"
+							"MAD		finalCol, lightContrib.y, unlitColour, state.lightprod[0].ambient;\n"
+							"MAD		finalCol, lightContrib.z, state.lightprod[0].specular, finalCol;\n"
+							"MAD		finalCol, finalCol, attenuation.x, state.material.emission;\n"
+							"#Ambient lighting contribution;\n"
+							"MAD		finalCol, unlitColour, state.lightmodel.ambient, finalCol;\n"
+							, &error);
+
+						if (MATERIAL_PROGRAM_CLASS_LIT_VOLUME_SCALE_ALPHA &
+							material_program->type)
+						{
+							append_string(&fragment_program_string, 
+								"#Alpha value;\n"
+								"MUL		finalCol.w, unlitColour.w, normalMag.w;\n"
+								, &error);
+						}
+						else
+						{
+							append_string(&fragment_program_string, 
+								"#Alpha value;\n"
+								"MOV		finalCol.w, unlitColour.w;\n"
+								, &error);
+						}
+					}
+
 					append_string(&fragment_program_string, 
 						"MOV		result.color, finalCol;\n"
 						"END"
@@ -969,6 +1060,14 @@ be shared by multiple materials using the same program.
 #if defined (DEBUG)
 				error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
 #endif /* defined (DEBUG) */
+#if defined (WRITE_STRING)
+				FILE *program_file;
+				if (program_file = fopen("out.vp", "w"))
+				{
+					fprintf(program_file, "%s", vertex_program_string);
+					fclose (program_file);
+				}				
+#endif /* defined (WRITE_STRING) */
 				DEALLOCATE(vertex_program_string);
 				
 				if (!material_program->fragment_program)
@@ -981,6 +1080,13 @@ be shared by multiple materials using the same program.
 #if defined (DEBUG)
 				error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
 #endif /* defined (DEBUG) */
+#if defined (WRITE_STRING)
+				if (program_file = fopen("out.fp", "w"))
+				{
+					fprintf(program_file, "%s", fragment_program_string);
+					fclose (program_file);
+				}				
+#endif /* defined (WRITE_STRING) */
 				DEALLOCATE(fragment_program_string);
 				
 #else /* ! defined (TESTING_PROGRAM_STRINGS) */
@@ -2674,13 +2780,15 @@ If the material already exists, then behaves like gfx modify material.
 int modify_Graphical_material(struct Parse_state *state,void *material_void,
 	void *material_package_void)
 /*******************************************************************************
-LAST MODIFIED : 23 January 2004
+LAST MODIFIED : 4 July 2007
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	char bump_mapping_flag, colour_lookup_red_flag, colour_lookup_green_flag,
 		colour_lookup_blue_flag, colour_lookup_alpha_flag, *current_token,
+		lit_volume_finite_difference_normal_flag,
+		lit_volume_intensity_normal_texture_flag, lit_volume_scale_alpha_flag,
 		normal_mode_flag, per_pixel_mode_flag;
 	enum Spectrum_colour_components spectrum_colour_components;
 	int dimension, process, return_code;
@@ -2790,8 +2898,60 @@ DESCRIPTION :
 					colour_lookup_green_flag = 0;
 					colour_lookup_blue_flag = 0;
 					colour_lookup_alpha_flag = 0;
+					lit_volume_intensity_normal_texture_flag = 0;
+					lit_volume_scale_alpha_flag = 0;
 
 					option_table = CREATE(Option_table)();
+					Option_table_add_help(option_table,
+						"The material controls how pixels will be rendered on the "
+						"screen.  The initial mode of operation reflects the "
+						"standard gouraud shading model usual within OpenGL, "
+						"this is called <normal_mode>. "
+						"This has rgb colour values for <diffuse>, <ambient> "
+						"<emission> and <specular> colours.  The <ambient> "
+						"colour is the unlit colour, the <diffuse> colour "
+						"interacts with the light and is the lit surface, "
+						"the <specular> colour is used for the glossy "
+						"highlights, the spread of which is specified by the"
+						"<shininess>.  The <alpha> controls the transparency "
+						"of the material.  See a/a1."
+						"If a <texture> is specified then this is combined with "
+						"the calculated gouraud colour according to the textures "
+						"rendering mode and the texture coordinates.  "
+						"Additional support is provided for more accurate "
+						"rendering using phong shading calculated at every pixel, "
+						"called <per_pixel_lighting>.  This is implemented using "
+						"the ARB_vertex_program and ARB_fragment_program OpenGL "
+						"extensions.  The program only implements a single point "
+						"light so you should set the default light to a point light "
+						"at the position you want.  See a/per_pixel_lighting.  "
+						"<bump_mapping> uses a <secondary_texture> to specify "
+						"a perturbation to the normal, giving a smooth model "
+						"a much more detailed surface appearance.  "
+						"Also demonstrated in a/per_pixel_lighting.  "
+						"A <colour_lookup_spectrum> takes the calculated colour values "
+						"and further modifies them by using the specified subset "
+						"of colour values specified by <colour_lookup_red>, "
+						"<colour_lookup_green>, "
+						"<colour_lookup_blue> and <colour_lookup_alpha>, as inputs "
+						"to a 1, 2 or 3 component spectrum.  Depending on the "
+						"spectrum this will override either the rgb colour, "
+						"the alpha value or both rgb and alpha.  This spectrum "
+						"can be modified to quickly change the appearance of a "
+						"large volume dataset, see example a/indexed_volume.  "
+						"A lit volume uses a per voxel normal to calculate the "
+						"phong lighting model at each pixel.  The normal can "
+						"be specified by encoding it into the blue, green and "
+						"alpha channels of an input texture (the red channel "
+						"being the intensity) <lit_volume_intensity_normal_texture>."
+						"Alternatively it can be estimated on the fly by applying "
+						"a finite difference operator to the pixel intensities. "
+						"<lit_volume_finite_difference_normal>."
+						"Optionally with either normal, the magnitude of that normal"
+						"can multiply the calculated alpha value, "
+						"<lit_volume_scale_alpha> making those pixels with small "
+						"gradients more transparent.  See a/lit_volume.");
+
 					Option_table_add_entry(option_table, "alpha",
 						&(material_to_be_modified_copy->alpha), NULL,
 						set_float_0_to_1_inclusive);
@@ -2818,6 +2978,15 @@ DESCRIPTION :
 					Option_table_add_entry(option_table, "emission",
 						&(material_to_be_modified_copy->emission), NULL,
 						set_Colour);
+					Option_table_add_char_flag_entry(option_table,
+						"lit_volume_intensity_normal_texture",
+						&lit_volume_intensity_normal_texture_flag);
+					Option_table_add_char_flag_entry(option_table,
+						"lit_volume_finite_difference_normal",
+						&lit_volume_finite_difference_normal_flag);
+					Option_table_add_char_flag_entry(option_table,
+						"lit_volume_scale_alpha",
+						&lit_volume_scale_alpha_flag);
 					mode_option_table = CREATE(Option_table)();
 					Option_table_add_char_flag_entry(mode_option_table,
 						"normal_mode", &normal_mode_flag);
@@ -3088,6 +3257,7 @@ DESCRIPTION :
 									/* Colour only */
 									type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR;
 								}
+
 							}
 							else
 							{
@@ -3099,6 +3269,19 @@ DESCRIPTION :
 										material_to_be_modified_copy->package->spectrum_manager);
 									material_to_be_modified_copy->spectrum_manager_callback_id=NULL;
 								}
+							}
+
+							if (lit_volume_intensity_normal_texture_flag)
+							{
+								type |= MATERIAL_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE;
+							}
+							if (lit_volume_finite_difference_normal_flag)
+							{
+								type |= MATERIAL_PROGRAM_CLASS_LIT_VOLUME_FINITE_DIFFERENCE_NORMAL;
+							}
+							if (lit_volume_scale_alpha_flag)
+							{
+								type |= MATERIAL_PROGRAM_CLASS_LIT_VOLUME_SCALE_ALPHA;
 							}
 
 							if (!material_to_be_modified_copy->program ||
