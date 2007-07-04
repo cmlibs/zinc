@@ -361,8 +361,8 @@ be shared by multiple materials using the same program.
 	{
 #if defined (OPENGL_API)
 		/* #define TESTING_PROGRAM_STRINGS */
-#define WRITE_STRING
-#define DEBUG
+		/* #define WRITE_STRING */
+		/* #define DEBUG */
 #if defined (DEBUG)
 		const GLubyte *error_msg;
 #endif /* defined (DEBUG) */
