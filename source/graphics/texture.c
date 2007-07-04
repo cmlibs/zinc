@@ -5671,16 +5671,18 @@ by vertex programs.
 ==============================================================================*/
 {
 	int return_code;
-#if defined GL_ARB_vertex_program
+#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
 	GLfloat texture_scaling[4];
-#endif /* defined GL_ARB_vertex_program */
+	GLfloat texel_size[4];
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 
 	ENTER(Texture_execute_vertex_program_environment);
 	return_code=0;
 	if (texture)
 	{
-#if defined GL_ARB_vertex_program
-		if (Graphics_library_check_extension(GL_ARB_vertex_program))
+#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
+		if (Graphics_library_check_extension(GL_ARB_vertex_program) &&
+			Graphics_library_check_extension(GL_ARB_fragment_program))
 		{
 			if (texture->width)
 			{
@@ -5712,14 +5714,43 @@ by vertex programs.
 			texture_scaling[3] = 1.0;
 			glProgramEnvParameter4fvARB(GL_VERTEX_PROGRAM_ARB, 0,
 				texture_scaling);
+
+
+			if (texture->width)
+			{
+				texel_size[0] = 1.0 / texture->width_texels;
+			}
+			else
+			{
+				texel_size[0] = 0.0;
+			}
+			if (texture->height)
+			{
+				texel_size[1] = 1.0 / texture->height_texels;
+			}
+			else
+			{
+				texel_size[1] = 0.0;
+			}
+			if (texture->depth)
+			{
+				texel_size[2] = 1.0 / texture->depth_texels;
+			}
+			else
+			{
+				texel_size[2] = 0.0;
+			}
+			texel_size[3] = 0.0;
+			glProgramEnvParameter4fvARB(GL_FRAGMENT_PROGRAM_ARB, 0,
+				texel_size);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE, "Texture_execute_vertex_program_environment.  "
-				"GL_ARB_vertex_program extension unavailable.");
+				"GL_ARB_vertex_program or GL_ARB_fragment_program extension unavailable.");
 			return_code=0;
 		}
-#endif /* defined GL_ARB_vertex_program */
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 	}
 	else
 	{

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material.c
 
-LAST MODIFIED : 6 October 2006
+LAST MODIFIED : 5 July 2007
 
 DESCRIPTION :
 The functions for manipulating graphical materials.
@@ -360,10 +360,13 @@ be shared by multiple materials using the same program.
 	if (material_program)
 	{
 #if defined (OPENGL_API)
+		/* #define TESTING_PROGRAM_STRINGS */
+#define WRITE_STRING
+#define DEBUG
+#if defined (DEBUG)
+		const GLubyte *error_msg;
+#endif /* defined (DEBUG) */
 		return_code = 1;
-/* #define TESTING_PROGRAM_STRINGS */
-/* #define WRITE_STRING */
-/* #define DEBUG */
 #if defined (TESTING_PROGRAM_STRINGS)
 		/* If testing always recompile */
 		material_program->compiled = 0;
@@ -377,9 +380,6 @@ be shared by multiple materials using the same program.
 #if ! defined (TESTING_PROGRAM_STRINGS)
 				char *components_string, *fragment_program_string, *vertex_program_string;
 				int components_error, number_of_inputs, error;
-#if defined (DEBUG)
-				const GLubyte *error_msg;
-#endif /* defined (DEBUG) */
 				
 				error = 0;
 				if (MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING & material_program->type)
@@ -963,20 +963,71 @@ be shared by multiple materials using the same program.
 					
 					}
 
-					if (MATERIAL_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE &
+					if ((MATERIAL_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE |
+						MATERIAL_PROGRAM_CLASS_LIT_VOLUME_FINITE_DIFFERENCE_NORMAL) &
 						material_program->type)
 					{
 						/* I think with some rearrangement we could consolidate
 							this with the per pixel lighting above assuming that we
 							don't want to light using the fragment normals and
 							then do this lighting too. */
-						
 						append_string(&fragment_program_string, 
 							"TEMP unlitColour;\n"
 							"MOV     unlitColour, finalCol;\n"
-							"#Expand the range of the normal texture\n"
-							/* We are assuming the normal is in .gba */
-							"MAD     normal, two, tex.gbaa, m_one;\n"
+							, &error);
+
+						if (MATERIAL_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE &
+							material_program->type)
+						{
+							/* Normal comes from the texture */
+							append_string(&fragment_program_string, 
+								"#Expand the range of the normal texture\n"
+								/* We are assuming the normal is in .gba */
+								"MAD     normal, two, tex.gbaa, m_one;\n"
+								, &error);
+						}
+						else
+						{
+							/* Normal is calculated from the red intensity,
+								may want colour magnitude or alpha value. */
+							append_string(&fragment_program_string,
+								"#Calculate a finite difference normal based on the magnitude of unlitColour.r\n"
+								"PARAM texture_scaling = program.env[0];\n"
+								"TEMP position_up, position_down, tex_up, tex_down;\n"
+								"\n"
+								"PARAM stencil_xup = {1, 0, 0, 0};\n"
+								"MAD      position_up, stencil_xup, texture_scaling, fragment.texcoord[0];\n"
+								"TEX		tex_up, position_up, texture[0], 3D;\n"
+								"PARAM stencil_xdown = {-1, 0, 0, 0};\n"
+								"MAD      position_down, stencil_xdown, texture_scaling, fragment.texcoord[0];\n"
+								"TEX		tex_down, position_down, texture[0], 3D;\n"
+								"SUB  normal.x, tex_up.r, tex_down.r;\n"
+								"#SUB   normal.x, tex_up.r, tex.r;\n"
+								"\n"
+								"PARAM stencil_yup = {0, 1, 0, 0};\n"
+								"MAD      position_up, stencil_yup, texture_scaling, fragment.texcoord[0];\n"
+								"TEX		tex_up, position_up, texture[0], 3D;\n"
+								"PARAM stencil_ydown = {0, -1, 0, 0};\n"
+								"MAD      position_down, stencil_ydown, texture_scaling, fragment.texcoord[0];\n"
+								"TEX		tex_down, position_down, texture[0], 3D;\n"
+								"SUB  normal.y, tex_up.r, tex_down.r;\n"
+								"#SUB   normal.y, tex_up.r, tex.r;\n"
+								"\n"
+								"PARAM stencil_zup = {0, 0, 1, 0};\n"
+								"MAD      position_up, stencil_zup, texture_scaling, fragment.texcoord[0];\n"
+								"TEX		tex_up, position_up, texture[0], 3D;\n"
+								"PARAM stencil_zdown = {0, 0, -1, 0};\n"
+								"MAD      position_down, stencil_zdown, texture_scaling, fragment.texcoord[0];\n"
+								"TEX		tex_down, position_down, texture[0], 3D;\n"
+								"SUB  normal.z, tex_up.r, tex_down.r;\n"
+								"#SUB   normal.z, tex_up.r, tex.r;\n"
+								"\n"
+								/* Scale this normal, the 10 here is arbitrary. */
+								"MUL  normal, normal, {10,10,10,0};\n"
+								, &error);
+						}
+
+ 						append_string(&fragment_program_string,
 							/* Normalise the normal but keep the squared
 								magnitude so we can use it to scale the alpha */
 							"TEMP  eyeNormal, normalMag;\n"
@@ -1059,6 +1110,8 @@ be shared by multiple materials using the same program.
 					strlen(vertex_program_string), vertex_program_string);
 #if defined (DEBUG)
 				error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
+				display_message(WARNING_MESSAGE,
+					"Material_program_compile.  Result: %s\n", error_msg);
 #endif /* defined (DEBUG) */
 #if defined (WRITE_STRING)
 				FILE *program_file;
@@ -1079,6 +1132,8 @@ be shared by multiple materials using the same program.
 					strlen(fragment_program_string), fragment_program_string);
 #if defined (DEBUG)
 				error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
+				display_message(WARNING_MESSAGE,
+					"Material_program_compile.  Result: %s\n", error_msg);
 #endif /* defined (DEBUG) */
 #if defined (WRITE_STRING)
 				if (program_file = fopen("out.fp", "w"))
@@ -1140,6 +1195,12 @@ be shared by multiple materials using the same program.
 					glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
 						strlen(vertex_program_string), vertex_program_string);
 
+#if defined (DEBUG)
+					error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
+					display_message(WARNING_MESSAGE,
+						"Material_program_compile.  Result: %s", error_msg);
+#endif /* defined (DEBUG) */
+
 					if (!material_program->fragment_program)
 					{
 						glGenProgramsARB(1, &material_program->fragment_program);
@@ -1148,6 +1209,12 @@ be shared by multiple materials using the same program.
 					glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
 					glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
 						strlen(fragment_program_string), fragment_program_string);
+
+#if defined (DEBUG)
+					error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
+					display_message(WARNING_MESSAGE,
+						"Material_program_compile.  Result: %s", error_msg);
+#endif /* defined (DEBUG) */
 
 					material_program->compiled = 1;
 					
@@ -3687,7 +3754,9 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 					glNewList(material->display_list,GL_COMPILE);
 					if (material->program)
 					{
-						/* Load up the texture size into the vertex program environment */
+						/* Load up the texture scaling into the vertex program
+							environment and the texel size into the fragment
+							program environment. */
 						if (material->texture)
 						{
 							Texture_execute_vertex_program_environment(material->texture);
