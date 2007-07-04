@@ -230,8 +230,10 @@ and generate the outputImage.
 		
 		typename FilterType::Pointer filter = FilterType::New();
 
-		double sigmaOut = gradient_magnitude_recursive_gaussian_image_filter->sigma;
-		printf ("sigma is %g\n",sigmaOut);
+		/* Code to output sigma value for debugging purposes
+			double sigmaOut = gradient_magnitude_recursive_gaussian_image_filter->sigma;
+			("sigma is %g\n",sigmaOut);
+		*/
 
 		filter->SetSigma( gradient_magnitude_recursive_gaussian_image_filter->sigma );
 		
