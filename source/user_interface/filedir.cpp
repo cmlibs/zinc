@@ -873,7 +873,10 @@ frees the memory for <**file_open_data> and changes <*file_open_data> to NULL.
 			XtDestroyWidget((*file_open_data)->selection_shell);
 		}
 #endif /* defined (MOTIF) */
-		DEALLOCATE((*file_open_data)->filter_extension);
+		if ((*file_open_data)->filter_extension)
+		{
+			 DEALLOCATE((*file_open_data)->filter_extension);
+		}
 		DEALLOCATE(*file_open_data);
 		*file_open_data=(struct File_open_data *)NULL;
 	}
@@ -886,10 +889,7 @@ void open_file_and_read(
 #if defined (MOTIF)
 	Widget widget,XtPointer client_data,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-	struct File_open_data *file_open_data
-#endif /* defined (WIN32_USER_INTERFACE) */
-#if defined (WX_USER_INTERFACE)
+#if defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 	struct File_open_data *file_open_data
 #endif /* defined (WX_USER_INTERFACE) */
 
@@ -1204,6 +1204,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 							{
 								 extension = "*.exelem";
 							}
+							DEALLOCATE(temp_string);
 					 }
 				}
 		 } break;
@@ -1306,6 +1307,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 		 char *old_directory = NULL;
 		 char *old_directory_name = NULL;
 		 char *last,*pathname;
+		 int return_code=1;
 		 old_directory = (char *)malloc(4096);
 		 getcwd(old_directory, 4096);
 		 length = strlen(old_directory);
@@ -1314,6 +1316,10 @@ name the <file_operation> is performed on the file with the <arguments>.
 		 {
 				strcpy(old_directory_name, old_directory);
 				strcat(old_directory_name,"/");
+		 }
+		 else
+		 {
+				return_code=0;
 		 }
 		 if (strcmp(file_open_data->filter_extension, ".com") != 0)
 				/* Set the directory if the file extension is not .com. 
@@ -1329,7 +1335,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 					 {
 							strncpy(pathname,filename,length);
 							pathname[length]='\0';
-							if (strcmp (old_directory_name,pathname) != 0)
+							if (return_code && (strcmp (old_directory_name,pathname) != 0))
 							{
 								 make_valid_token(&pathname);
 								 length = strlen(pathname);
@@ -1351,6 +1357,10 @@ name the <file_operation> is performed on the file with the <arguments>.
 							DEALLOCATE(pathname);
 					 }	
 				}			 
+		 }
+		 if (old_directory_name)
+		 {
+				DEALLOCATE(old_directory_name);
 		 }
 		 if (old_directory)
 		 {

@@ -568,7 +568,11 @@ This routine supplies a file selection dialog window
 			}
 			/*???DB.  The X events to do with processing the closing of the dialog
 				haven't necessarily been completed */
-/*			destroy_File_open_data(&file_open_data);*/
+#if defined (WX_USER_INTERFACE)
+			{
+				 destroy_File_open_data(&file_open_data);
+			}
+#endif /*defined (WX_USER_INTERFACE)*/
 		}
 		else
 		{

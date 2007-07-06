@@ -148,12 +148,10 @@ public:
 				 (wxWindow *)NULL, _T("CmguiComfileWindow"));
 			comfile_listbox = XRCCTRL(*this, "ComfileListBox", wxListBox);
 			this_frame = XRCCTRL(*this, "CmguiComfileWindow", wxFrame);
-			char **command,*line, *temp_string;
+			char **command,*line, *temp_string, *command_string;
 			struct IO_stream *comfile;
 			int i,number_of_commands;
 			wxString blank = "";	 
-			wxString command_string;
-			
 			if ((comfile_window->file_name)&&
 				 (comfile=CREATE(IO_stream)(comfile_window->io_stream_package))&&
 				 IO_stream_open_for_read(comfile, comfile_window->file_name))
@@ -170,8 +168,10 @@ public:
 									if (number == 0)
 										 comfile_listbox->InsertItems(1, &blank,number);
 									number = comfile_listbox->GetCount();
-									comfile_listbox->InsertItems(1,&command_string, number-1);
+									wxString string(command_string, wxConvUTF8);
+									comfile_listbox->InsertItems(1,&string, number-1);
 									number_of_commands++;
+									DEALLOCATE(command_string);
 							 }
 						}
 						DEALLOCATE(line);
@@ -233,7 +233,6 @@ public:
 			wxFontData fdata;
 			wxFont font;
 			wxColour colour;
-
 			comfile_listbox = XRCCTRL(*this, "ComfileListBox", wxListBox);
 			font = comfile_listbox->GetFont();
 			fdata.SetInitialFont(font);
@@ -249,6 +248,7 @@ public:
 				 comfile_listbox->SetFont(font);
 				 comfile_listbox->SetForegroundColour(fdata.GetColour()); 
 			}
+			this_frame = XRCCTRL(*this, "CmguiComfileWindow", wxFrame);
 	 } 
 
 void SingleClickedOnList(wxCommandEvent &event)
