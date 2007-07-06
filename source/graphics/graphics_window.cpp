@@ -4296,6 +4296,8 @@ Graphics_window_destroy_CB.
 			window->user_interface);
 		/* destroy the graphics window widget */
 		XtDestroyWidget(window->window_shell);
+#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
+		DestroyWindow(window->hWnd);
 #elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #if GTK_MAJOR_VERSION >= 2
 		g_signal_handler_disconnect (G_OBJECT(window->shell_window), 

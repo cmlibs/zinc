@@ -2501,14 +2501,20 @@ DESCRIPTION:
 			(Property_notify_callback)NULL, (void *)NULL, (Widget)NULL);
 		destroy_Shell_list_item_from_shell(&(command_window->shell),
 			command_window->user_interface);
+#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
+		/* Set the window proc back to the default so that we don't 
+			get any more messages, particularly the close message, we
+			do not necessarily want to quit the whole program */
+		SetWindowLong(command_window->dialog, 
+			GWL_WNDPROC, (long)DefWindowProc);
+		DestroyWindow(command_window->dialog);
 #elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #if GTK_MAJOR_VERSION >= 2
 		g_signal_handler_disconnect (G_OBJECT(command_window->shell), 
 			command_window->close_handler_id);
 #endif /* GTK_MAJOR_VERSION >= 2 */
 		gtk_widget_destroy (command_window->shell);
-#endif /* switch (USER_INTERFACE) */
-#if (WX_USER_INTERFACE)
+#elif (WX_USER_INTERFACE)
 		delete command_window->wx_command_window;
 #endif /* (WX_USER_INTERFACE) */
 		DEALLOCATE(*command_window_pointer);
