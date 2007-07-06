@@ -724,6 +724,28 @@ END_EVENT_TABLE()
 Global functions
 ----------------
 */
+#if defined (WX_USER_INTERFACE)
+static int Element_point_tool_destroy_element_point_tool(void **element_point_tool_void)
+/*******************************************************************************
+LAST MODIFIED : 6 July 2007
+
+DESCRIPTION :
+Function to call DESTROY
+==============================================================================*/
+{
+	ENTER(element_point_tool_destroy_element_point_tool);
+	Element_point_tool *element_point_tool;
+	int return_code;
+	return_code=0;
+
+	if (element_point_tool = (struct Element_point_tool *)*element_point_tool_void)
+	{
+		 return_code = DESTROY(Element_point_tool)(&element_point_tool);
+	}
+	LEAVE;
+	return (return_code);
+}
+#endif /*defined (WX_USER_INTERFACE)*/
 	
 static int Element_point_tool_copy_function(
 	void *destination_tool_void, void *source_tool_void,
@@ -847,9 +869,13 @@ Creates an Element_point_tool with Interactive_tool in
 				Element_point_tool_interactive_event_handler,
 				Element_point_tool_get_icon,
 				Element_point_tool_bring_up_interactive_tool_dialog,
-				(Interactive_tool_destroy_tool_data_function *)NULL,
+#if defined (WX_USER_INTERFACE)
+ 				Element_point_tool_destroy_element_point_tool,
+#else
+ 				(Interactive_tool_destroy_tool_data_function *)NULL,
+#endif /*defined (SWITCH_USER_INTERFACE)*/
 				Element_point_tool_copy_function,
-				(void *)element_point_tool)                                           ;
+				(void *)element_point_tool);
 			ADD_OBJECT_TO_MANAGER(Interactive_tool)(
 				element_point_tool->interactive_tool,
 				element_point_tool->interactive_tool_manager);
@@ -892,8 +918,7 @@ Creates an Element_point_tool with Interactive_tool in
 						WM_DELETE_WINDOW,Element_point_tool_close_CB,element_point_tool);
 					/* Register the shell with the busy signal list */
 					create_Shell_list_item(&(element_point_tool->window_shell),user_interface);
-					/* register the callbacks */
-					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
+					/* register the callbacks */					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
 							 element_point_tool_hierarchy,callback_list,XtNumber(callback_list)))
 					{
 						/* assign and register the identifiers */

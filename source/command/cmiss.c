@@ -7815,9 +7815,7 @@ Executes a GFX CREATE WINDOW command.
 				             command_data->user_interface);
 						ADD_OBJECT_TO_MANAGER(Interactive_tool)(transform_tool,
 							 interactive_tool_manager);
-						if (command_data->node_tool)
-							 DEALLOCATE(command_data->node_tool);
-						command_data->node_tool=CREATE(Node_tool)(
+						CREATE(Node_tool)(
 								interactive_tool_manager,
 								command_data->root_region, /*use_data*/0,
 								command_data->node_selection,
@@ -7826,9 +7824,7 @@ Executes a GFX CREATE WINDOW command.
 								command_data->user_interface,
 								command_data->default_time_keeper,
 								command_data->execute_command);
-						if (command_data->data_tool)
-							 DEALLOCATE(command_data->data_tool);
-						command_data->data_tool=CREATE(Node_tool)(
+						CREATE(Node_tool)(
 								interactive_tool_manager,
 								command_data->data_root_region, /*use_data*/1,
 								command_data->data_selection,
@@ -7837,9 +7833,7 @@ Executes a GFX CREATE WINDOW command.
 								command_data->user_interface,
 								command_data->default_time_keeper,
 								command_data->execute_command);
-						if (command_data->data_tool)
-							 DEALLOCATE(command_data->element_tool);
-						command_data->element_tool=CREATE(Element_tool)(
+						CREATE(Element_tool)(
 								interactive_tool_manager,
 								command_data->root_region,
 								command_data->element_selection,
@@ -7849,9 +7843,7 @@ Executes a GFX CREATE WINDOW command.
 								command_data->user_interface,
 								command_data->default_time_keeper,
 								command_data->execute_command);
-						if (command_data->data_tool)
-							 DEALLOCATE(command_data->element_point_tool);
-						command_data->element_point_tool=CREATE(Element_point_tool)(
+						CREATE(Element_point_tool)(
 								interactive_tool_manager,
 								command_data->element_point_ranges_selection,
 								command_data->computed_field_package,
@@ -22697,6 +22689,7 @@ and then executes the returned strings
 	struct Cmiss_command_data *command_data;
 
 	ENTER(cmiss_execute_command);
+	command_data = (struct Cmiss_command_data *)NULL;
 	if (command_data=(struct Cmiss_command_data *)command_data_void)
 	{
 #if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
@@ -23981,8 +23974,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			 CREATE(FE_node_selection)(data_root_fe_region);	
 
 		/* interactive_tool manager */
+#if !defined (WX_USER_INTERFACE)
 		command_data->interactive_tool_manager=CREATE(MANAGER(Interactive_tool))();
-
+#endif 
 		/* computed field manager and default computed fields zero, xi,
 			default_coordinate, etc. */
 		/*???RC should the default computed fields be established in
@@ -24188,6 +24182,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				the windows system */
 			Open_image_environment("cmgui");
 #endif /* switch (Operating_System) */
+#if !defined (WX_USER_INTERFACE)
 			command_data->transform_tool=create_Interactive_tool_transform(
 				command_data->user_interface);
 			ADD_OBJECT_TO_MANAGER(Interactive_tool)(command_data->transform_tool,
@@ -24228,6 +24223,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->user_interface,
 				command_data->default_time_keeper,
 				command_data->execute_command);
+#endif /*!defined (WX_USER_INTERFACE)*/
 #if defined (MOTIF)
 			command_data->select_tool=CREATE(Select_tool)(
 				command_data->interactive_tool_manager,
@@ -24241,7 +24237,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->hInstance=current_instance;
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (USE_CMGUI_GRAPHICS_WINDOW)
+#if defined (USE_CMGUI_GRAPHICS_WINDOW) && !defined (WX_USER_INTERFACE)
 		if (command_data->user_interface)
 		{
 			command_data->scene_viewer_package = CREATE(Cmiss_scene_viewer_package)
@@ -24656,6 +24652,7 @@ Clean up the command_data, deallocating all the associated memory and resources.
 			DESTROY(Select_tool)(&command_data->select_tool);
 		}
 #endif /* defined (MOTIF) */
+#if !defined (WX_USER_INTERFACE)
 		if (command_data->element_point_tool)
 		{
 			DESTROY(Element_point_tool)(&command_data->element_point_tool);
@@ -24664,17 +24661,17 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		{
 			DESTROY(Element_tool)(&command_data->element_tool);
 		}
-		if (command_data->data_tool)
-		{
-			DESTROY(Node_tool)(&command_data->data_tool);
-		}
-		if (command_data->node_tool)
-		{
-			DESTROY(Node_tool)(&command_data->node_tool);
-		}
+		if (command_data->data_tool) 
+		{ 
+			DESTROY(Node_tool)(&command_data->data_tool); 
+		} 
+		if (command_data->node_tool) 
+		{ 
+			DESTROY(Node_tool)(&command_data->node_tool); 
+		} 
 		DESTROY(MANAGER(Interactive_tool))(
 			&(command_data->interactive_tool_manager));
-
+#endif /* defined (WX_USER_INTERFACE) */
 		DEACCESS(Scene)(&(command_data->default_scene));
 		DESTROY(MANAGER(Scene))(&command_data->scene_manager);
 		DESTROY(Time_keeper)(&command_data->default_time_keeper);
@@ -24713,7 +24710,6 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		DEACCESS(Cmiss_region)(&(command_data->data_root_region));
 		DEACCESS(Cmiss_region)(&(command_data->root_region));
 		DESTROY(MANAGER(FE_basis))(&command_data->basis_manager);
-
 		DESTROY(LIST(FE_element_shape))(&command_data->element_shape_list);
 		DEACCESS(Spectrum)(&(command_data->default_spectrum));
 		DESTROY(MANAGER(Spectrum))(&command_data->spectrum_manager);

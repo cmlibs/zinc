@@ -290,8 +290,6 @@ static int Node_tool_refresh_element_dimension_text(
 	 struct Node_tool *node_tool);
 #endif /*defined (WX_USER_INTERFACE)*/
 
-
-
 static int Node_tool_define_field_at_node(struct Node_tool *node_tool,
 	struct FE_node *node)
 /*******************************************************************************
@@ -2341,6 +2339,31 @@ release.
 	LEAVE;
 } /* Node_tool_interactive_event_handler */
 
+#if defined (WX_USER_INTERFACE)
+static int Node_tool_destroy_node_tool(void **node_tool_void)
+/*******************************************************************************
+LAST MODIFIED : 6 July 2007
+
+DESCRIPTION :
+Function to call DESTROY
+==============================================================================*/
+{
+	ENTER(Node_tool_destroy_node_tool);
+
+	Node_tool *node_tool;
+	int return_code;
+	return_code=0;
+
+	if (node_tool = (struct Node_tool *)*node_tool_void)
+	{
+		 return_code = DESTROY(Node_tool)(&node_tool);
+	}
+
+	LEAVE;
+	return (return_code);
+}
+#endif /*defined (WX_USER_INTERFACE)*/
+
 static int Node_tool_bring_up_interactive_tool_dialog(void *node_tool_void,
 	 struct Graphics_window *graphics_window)
 /*******************************************************************************
@@ -3201,7 +3224,11 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				Node_tool_interactive_event_handler,
 				Node_tool_get_icon,
 				Node_tool_bring_up_interactive_tool_dialog,
-				(Interactive_tool_destroy_tool_data_function *)NULL,
+#if defined (WX_USER_INTERFACE)
+ 				Node_tool_destroy_node_tool,
+#else
+ 				(Interactive_tool_destroy_tool_data_function *)NULL,
+#endif /*defined (WX_USER_INTERFACE)*/
 				Node_tool_copy_function,		
 				(void *)node_tool);
 			ADD_OBJECT_TO_MANAGER(Interactive_tool)(

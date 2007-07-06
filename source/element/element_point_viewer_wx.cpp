@@ -1747,6 +1747,7 @@ data, and then changes the correct value in the array structure.
 			(xi=element_point_field_viewer->xi)&&
 			(field)&&
 			(0<=component_number)&&
+			(element_point_viewer->current_field=field) &&
 			(component_number<Computed_field_get_number_of_components(field)))
 	 {
 			time = Time_object_get_current_time(element_point_field_viewer->time_object);
@@ -2018,12 +2019,12 @@ Add textctrl box onto the viewer.
 			if (editable)
 			{
 				 element_point_viewer_text ->Create(element_point_viewer->element_point_win, 
-						-1, temp_string, wxDefaultPosition,wxDefaultSize,wxTE_PROCESS_ENTER);
+						-1, temp_string, wxPoint(100,component_number * 35),wxDefaultSize,wxTE_PROCESS_ENTER);
 			}
 			else
 			{
 				 element_point_viewer_text ->Create (element_point_viewer->element_point_win, -1, 
-						temp_string ,wxDefaultPosition,wxDefaultSize,wxTE_READONLY);
+						temp_string ,wxPoint(100,component_number * 35),wxDefaultSize,wxTE_READONLY);
 				 element_point_viewer_text->SetBackgroundColour(wxColour(231, 231, 231, 255));
 			}
 			DEALLOCATE(temp_string);
@@ -2031,7 +2032,7 @@ Add textctrl box onto the viewer.
 	 else
 	 {
 			element_point_viewer_text->Create (element_point_viewer->element_point_win, -1, "ERROR"
-				 , wxDefaultPosition, wxDefaultSize,wxTE_PROCESS_ENTER);	
+				 , wxPoint(100,component_number * 35), wxDefaultSize,wxTE_PROCESS_ENTER);	
 	 }
 	 if (editable)
 	 {
@@ -2068,17 +2069,6 @@ static int element_point_viewer_add_collpane(struct Computed_field *current_fiel
 	 }
 	 if (condition)
 	 {
-// 			element_point_viewer->collpane = new wxScrolledWindow(element_point_viewer->variable_viewer_panel,
-// 				-1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-// 			element_point_viewer->variable_viewer_panel->SetScrollRate(10, 10);
-// 			element_point_viewer->collpane->SetScrollRate(10, 10);
-// 			wxBoxSizer *sizer_2 = new wxBoxSizer(wxVERTICAL);
-// 			sizer_2->Add(element_point_viewer->collpane, 1, wxEXPAND, 0);
-// 			sizer_2->Fit(element_point_viewer->collpane);
-// 			sizer_2->SetSizeHints(element_point_viewer->collpane);
-// 			element_point_viewer->sizer_1->Add(sizer_2,1,wxEXPAND,0);
-// 			wxBoxSizer *Collpane_sizer = new wxBoxSizer( wxVERTICAL );
-// 			element_point_viewer->collpane->SetSizer(Collpane_sizer);
 			wxScrolledWindow *panel = element_point_viewer->collpane;
 			char *identifier;
 			int length;
@@ -2089,8 +2079,8 @@ static int element_point_viewer_add_collpane(struct Computed_field *current_fiel
 				 &(element_point_viewer->element_point_identifier));
 			temp_element_point_number=
 				 element_point_viewer->element_point_number;
-			/* Check the collapsible plane is created, if yes, renew the
-				 content, if collapsible does not exist, create a new one */
+			/* Check the collapsible panel is created, if yes, renew the
+				 content, if collapsible panel does not exist, create a new one */
 			if (ALLOCATE(identifier,char,length+length+length+2))
 			{
 				 strcpy(identifier, field_name);
@@ -2678,7 +2668,10 @@ Creates the array of cells containing field component names and values.
 								 element_point_viewer->element_point_grid_field = new wxGridSizer(2,2,1,1);
 							}
 							element_point_viewer->element_point_grid_field->Add(new wxStaticText(
-																																		 element_point_viewer->element_point_win, -1, wxT(tmp_string)),1,
+								 element_point_viewer->element_point_win, -1, wxT(tmp_string), 
+								 /*the default position is not nice in the optimised
+									 version, so manually setting up the position*/
+								 wxPoint(0,comp_no*35 + 5),wxDefaultSize),1,
 								 wxALIGN_CENTER_VERTICAL|
 								 wxALIGN_CENTER_HORIZONTAL|wxADJUST_MINSIZE, 0);
 							element_point_viewer_add_textctrl(editable,element_point_viewer, field, comp_no);

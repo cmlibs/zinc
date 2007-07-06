@@ -734,6 +734,28 @@ and as a child of <parent>.
 	return (image);
 } /* Element_tool_get_icon */
 
+#if defined (WX_USER_INTERFACE)
+static int Element_tool_destroy_element_tool(void **element_tool_void)
+/*******************************************************************************
+LAST MODIFIED : 6 July 2007
+
+DESCRIPTION :
+Function to call DESTROY
+==============================================================================*/
+{
+	ENTER(element_point_tool_destroy_element_point_tool);
+	Element_tool *element_tool;
+	int return_code;
+	return_code=0;
+
+	if (element_tool = (struct Element_tool *)*element_tool_void)
+	{
+		 return_code = DESTROY(Element_tool)(&element_tool);
+	}
+	LEAVE;
+	return (return_code);
+}
+#endif /*defined (WX_USER_INTERFACE)*/
 
 #if defined (WX_USER_INTERFACE)
 class wxElementTool : public wxPanel
@@ -801,9 +823,9 @@ public:
   };
 
  ~ wxElementTool()
-  {
+ {
 		 //		 delete element_command_field_chooser;
-  };
+ };
 	 int element_command_field_callback(Computed_field *command_field)
 	 {
 			Element_tool_set_command_field(element_tool, command_field);
@@ -1093,7 +1115,11 @@ Selects elements in <element_selection> in response to interactive_events.
 				Element_tool_interactive_event_handler,
 				Element_tool_get_icon,
 				Element_tool_bring_up_interactive_tool_dialog,
+#if defined (WX_USER_INTERFACE)
+ 				Element_tool_destroy_element_tool,
+#else
 				(Interactive_tool_destroy_tool_data_function *)NULL,
+#endif
 				Element_tool_copy_function,
 				(void *)element_tool);
 #else /* defined (OPENGL_API) */
@@ -1300,6 +1326,10 @@ structure itself.
 			XtDestroyWidget(element_tool->window_shell);
 		}
 #endif /* defined (MOTIF) */
+#if defined (WX_USER_INTERFACE)
+		if (element_tool->wx_element_tool)
+			 element_tool->wx_element_tool->Destroy();
+#endif /*(WX_USER_INTERFACE)*/
 		DEALLOCATE(*element_tool_address);
 		return_code=1;
 	}
