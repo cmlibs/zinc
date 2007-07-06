@@ -379,7 +379,8 @@ be shared by multiple materials using the same program.
 			{
 #if ! defined (TESTING_PROGRAM_STRINGS)
 				char *components_string, *fragment_program_string, *vertex_program_string;
-				int components_error, number_of_inputs, error;
+				int colour_texture_dimension, components_error, number_of_inputs,
+					error;
 				
 				error = 0;
 				if (MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING & material_program->type)
@@ -677,28 +678,32 @@ be shared by multiple materials using the same program.
 
 					if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE & material_program->type)
 					{
+						char tex_string[100];
 						/* Load the colour texture */
 						if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1 & material_program->type)
 						{
 							if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2 & material_program->type)
 							{
-								append_string(&fragment_program_string, 
-									"TEX		tex, fragment.texcoord[0], texture[0], 3D;\n"
-									, &error);
+								colour_texture_dimension = 3;
 							}
 							else
 							{
-								append_string(&fragment_program_string, 
-									"TEX		tex, fragment.texcoord[0], texture[0], 1D;\n"
-									, &error);
+								colour_texture_dimension = 1;
 							}								
 						}
 						else
 						{
-							append_string(&fragment_program_string, 
-								"TEX		tex, fragment.texcoord[0], texture[0], 2D;\n"
-								, &error);
+							colour_texture_dimension = 2;
 						}
+						sprintf(tex_string,
+							"TEX		tex, fragment.texcoord[0], texture[0], %dD;\n",
+							colour_texture_dimension);
+						append_string(&fragment_program_string, 
+							tex_string, &error);
+					}
+					else
+					{
+						colour_texture_dimension = 0;
 					}
 
 					if (MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE & material_program->type)
@@ -988,42 +993,88 @@ be shared by multiple materials using the same program.
 						}
 						else
 						{
+							char tex_string[1000];
+							char *component_labels[] = {"x", "y", "z"};
+							int i;
+
 							/* Normal is calculated from the red intensity,
 								may want colour magnitude or alpha value. */
 							append_string(&fragment_program_string,
-								"#Calculate a finite difference normal based on the magnitude of unlitColour.r\n"
+								"#Calculate a finite difference normal based on the magnitude of texture components used.\n"
 								"PARAM texture_scaling = program.env[0];\n"
 								"TEMP position_up, position_down, tex_up, tex_down;\n"
 								"\n"
-								"PARAM stencil_xup = {1, 0, 0, 0};\n"
-								"MAD      position_up, stencil_xup, texture_scaling, fragment.texcoord[0];\n"
-								"TEX		tex_up, position_up, texture[0], 3D;\n"
-								"PARAM stencil_xdown = {-1, 0, 0, 0};\n"
-								"MAD      position_down, stencil_xdown, texture_scaling, fragment.texcoord[0];\n"
-								"TEX		tex_down, position_down, texture[0], 3D;\n"
-								"SUB  normal.x, tex_up.r, tex_down.r;\n"
-								"#SUB   normal.x, tex_up.r, tex.r;\n"
-								"\n"
-								"PARAM stencil_yup = {0, 1, 0, 0};\n"
-								"MAD      position_up, stencil_yup, texture_scaling, fragment.texcoord[0];\n"
-								"TEX		tex_up, position_up, texture[0], 3D;\n"
-								"PARAM stencil_ydown = {0, -1, 0, 0};\n"
-								"MAD      position_down, stencil_ydown, texture_scaling, fragment.texcoord[0];\n"
-								"TEX		tex_down, position_down, texture[0], 3D;\n"
-								"SUB  normal.y, tex_up.r, tex_down.r;\n"
-								"#SUB   normal.y, tex_up.r, tex.r;\n"
-								"\n"
-								"PARAM stencil_zup = {0, 0, 1, 0};\n"
-								"MAD      position_up, stencil_zup, texture_scaling, fragment.texcoord[0];\n"
-								"TEX		tex_up, position_up, texture[0], 3D;\n"
-								"PARAM stencil_zdown = {0, 0, -1, 0};\n"
-								"MAD      position_down, stencil_zdown, texture_scaling, fragment.texcoord[0];\n"
-								"TEX		tex_down, position_down, texture[0], 3D;\n"
-								"SUB  normal.z, tex_up.r, tex_down.r;\n"
-								"#SUB   normal.z, tex_up.r, tex.r;\n"
-								"\n"
-								/* Scale this normal, the 10 here is arbitrary. */
-								"MUL  normal, normal, {10,10,10,0};\n"
+								, &error);
+							
+							if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1 & material_program->type)
+							{
+								if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2 & material_program->type)
+								{
+									colour_texture_dimension = 3;
+								}
+								else
+								{
+									colour_texture_dimension = 1;
+								}								
+							}
+							else
+							{
+								colour_texture_dimension = 2;
+							}
+
+							for (i = 0 ; i < colour_texture_dimension ; i++)
+							{
+								sprintf(tex_string,
+									"PARAM stencil_%sup = {%d, %d, %d, %d};\n"
+									"MAD      position_up, stencil_%sup, texture_scaling, fragment.texcoord[0];\n"
+									"TEX		tex_up, position_up, texture[0], %dD;\n"
+									"PARAM stencil_%sdown = {%d, %d, %d, %d};\n"
+									"MAD      position_down, stencil_%sdown, texture_scaling, fragment.texcoord[0];\n"
+									"TEX		tex_down, position_down, texture[0], %dD;\n",
+									component_labels[i],
+									(i==0),(i==1),(i==2),0,
+									component_labels[i], 
+									colour_texture_dimension,
+									component_labels[i],
+									-(i==0),-(i==1),-(i==2),0,
+									component_labels[i], 
+									colour_texture_dimension);
+								append_string(&fragment_program_string,
+									tex_string, &error);
+
+								switch ((MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1
+										| MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2) & material_program->type)
+								{
+									case MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1
+										| MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2:
+									case 0:
+									{
+										/* RGB or RGBA texture
+										   Take the magnitude of the differences */
+										sprintf(tex_string,
+											"SUB  tex_up, tex_up, tex_down;\n"
+											"DP3	tex_up.w, tex_up, tex_up;\n"
+											"RSQ  tex_up.w, tex_up.w;\n"
+											"RCP  normal.%s, tex_up.w;\n"
+											, component_labels[i]);
+										append_string(&fragment_program_string,
+											tex_string, &error);
+									} break;
+									case MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1:
+									case MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2:
+									{
+										/* Intensity or IntensityAlpha texture */
+										sprintf(tex_string,
+											"SUB  normal.%s, tex_up.r, tex_down.r;\n"
+											, component_labels[i]);
+										append_string(&fragment_program_string,
+											tex_string, &error);
+									} break;
+								}
+							}
+							append_string(&fragment_program_string,
+								/* Scale this normal, the 3 here is arbitrary. */
+								"MUL  normal, normal, {3,3,3,0};\n"
 								, &error);
 						}
 
@@ -3017,7 +3068,7 @@ DESCRIPTION :
 						"Optionally with either normal, the magnitude of that normal"
 						"can multiply the calculated alpha value, "
 						"<lit_volume_scale_alpha> making those pixels with small "
-						"gradients more transparent.  See a/lit_volume.");
+						"gradients more transparent.  See a/volume_render.");
 
 					Option_table_add_entry(option_table, "alpha",
 						&(material_to_be_modified_copy->alpha), NULL,
