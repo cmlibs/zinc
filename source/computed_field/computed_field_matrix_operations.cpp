@@ -1873,6 +1873,8 @@ already) and allows its contents to be modified.
 						strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
 					{
 						option_table = CREATE(Option_table)();
+						Option_table_add_help(option_table,
+						  "A matrix_mutliply field calculates the product of two matrices, giving a new m by n matrix.  The product is represented as a field with a list of (m * n) components.   The components of the matrix are listed row by row.  The <number_of_rows> m is used to infer the dimensions of the source matrices.  The two source <fields> are multiplied, with the components of the first interpreted as a matrix with dimensions m by s and the second as a matrix with dimensions s by n.  If the matrix dimensions are not consistent then an error is returned.  See a/curvature for an example of using the matrix_multiply field.");
 						Option_table_add_entry(option_table,"number_of_rows",
 							&number_of_rows,NULL,set_int_positive);
 						set_field_data.conditional_function=
