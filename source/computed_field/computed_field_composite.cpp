@@ -1508,6 +1508,8 @@ and allows its contents to be modified.
 			{
 				option_table = CREATE(Option_table)();
 				/* default option: composite field definition */
+				Option_table_add_help(option_table,
+		 		  "A constant field may be defined as having one or more components.  Each of the <values> listed is used to asign a constant value to the corresponding field component. Fields with more than 1 component can be used to represent vectors or matrices.  An m by n matrix requires (m*n) components and the components of the matrix are listed row by row.");
 				Option_table_add_entry(option_table, (char *)NULL, values,
 					&number_of_values, set_FE_value_array);
 				if (return_code = Option_table_multi_parse(option_table, state))
