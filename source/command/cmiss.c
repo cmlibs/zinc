@@ -24648,8 +24648,13 @@ Clean up the command_data, deallocating all the associated memory and resources.
 			DESTROY(Select_tool)(&command_data->select_tool);
 		}
 #endif /* defined (MOTIF) */
-		DESTROY(MANAGER(Interactive_tool))(
-			&(command_data->interactive_tool_manager));
+		if (command_data->interactive_tool_manager&& command_data->node_tool
+			 && command_data->data_tool && command_data->element_tool &&
+			 command_data->element_point_tool)
+		{
+			 DESTROY(MANAGER(Interactive_tool))(
+					&(command_data->interactive_tool_manager));
+		}
 		DEACCESS(Scene)(&(command_data->default_scene));
 		DESTROY(MANAGER(Scene))(&command_data->scene_manager);
 		DESTROY(Time_keeper)(&command_data->default_time_keeper);
