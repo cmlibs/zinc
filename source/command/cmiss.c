@@ -24648,13 +24648,27 @@ Clean up the command_data, deallocating all the associated memory and resources.
 			DESTROY(Select_tool)(&command_data->select_tool);
 		}
 #endif /* defined (MOTIF) */
-		if (command_data->interactive_tool_manager&& command_data->node_tool
-			 && command_data->data_tool && command_data->element_tool &&
-			 command_data->element_point_tool)
+#if !defined (WX_USER_INTERFACE)
+		if (command_data->data_tool)
 		{
-			 DESTROY(MANAGER(Interactive_tool))(
-					&(command_data->interactive_tool_manager));
+			 DESTROY(Node_tool)(&command_data->data_tool);
 		}
+		if (command_data->node_tool)
+		{
+			 DESTROY(Node_tool)(&command_data->node_tool);
+		}
+		if (command_data->element_tool)
+		{
+			 DESTROY(Element_tool)(&command_data->element_tool);
+		}
+		if (command_data->element_point_tool)
+		{
+			 DESTROY(Element_point_tool)(&command_data->element_point_tool);
+		}
+#endif /* !defined(WX_USER_INTERFACE)*/
+		DESTROY(MANAGER(Interactive_tool))(
+			 &(command_data->interactive_tool_manager));
+
 		DEACCESS(Scene)(&(command_data->default_scene));
 		DESTROY(MANAGER(Scene))(&command_data->scene_manager);
 		DESTROY(Time_keeper)(&command_data->default_time_keeper);

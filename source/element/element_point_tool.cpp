@@ -724,7 +724,7 @@ END_EVENT_TABLE()
 Global functions
 ----------------
 */
-
+#if defined (WX_USER_INTERFACE)
 static int Element_point_tool_destroy_element_point_tool(void **element_point_tool_void)
 /*******************************************************************************
 LAST MODIFIED : 6 July 2007
@@ -745,6 +745,7 @@ Function to call DESTROY
 	LEAVE;
 	return (return_code);
 }
+#endif /*defined (WX_USER_INTERFACE)*/
 	
 static int Element_point_tool_copy_function(
 	void *destination_tool_void, void *source_tool_void,
@@ -868,7 +869,11 @@ Creates an Element_point_tool with Interactive_tool in
 				Element_point_tool_interactive_event_handler,
 				Element_point_tool_get_icon,
 				Element_point_tool_bring_up_interactive_tool_dialog,
+#if defined (WX_USER_INTERFACE)
  				Element_point_tool_destroy_element_point_tool,
+#else
+ 				(Interactive_tool_destroy_tool_data_function *)NULL,
+#endif /*defined (SWITCH_USER_INTERFACE)*/
 				Element_point_tool_copy_function,
 				(void *)element_point_tool);
 			ADD_OBJECT_TO_MANAGER(Interactive_tool)(
