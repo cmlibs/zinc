@@ -11,11 +11,16 @@ Further information, help pages, a tracker and a wiki is available at
 http://www.cmiss.org/cmgui/
 
 Dependencies:
-Required:
+Cmgui-Motif Required:
 Motif:  Except for the gtk and win32 versions which have no interactive
 user interface, motif is required (and therefore X).  The lesstif implementation
 of Motif is insufficient as the uil compiler is incomplete, instead use the
 OpenMotif implementation.
+OpenGL: The 3D graphics is built on OpenGL.
+
+Cmgui-wx Required:
+WxWidgets: wxWidgets-2.8.4 is required for the current version of cmgui-wx 
+and can be compiled under different platform such as X, windows and Mac.
 OpenGL: The 3D graphics is built on OpenGL.
 
 Optional but recommended:
@@ -28,6 +33,9 @@ A debug executable 'cmgui-debug' should be able to be built by running GNU make 
 the cmgui directory.  make -f cmgui.make
 If successful it will make an executable in bin/ARCH/.
 An optimised executable is made with the target 'cmgui'.  make -f cmgui.make cmgui
+A debug executable is made with the target 'cmgui'.  make cmgui-debug.
+An optimised cmgui-wx executable is made with the target 'cmgui-wx'. make cmgui-wx.
+A debug cmgui-wx executable is made with the target 'cmgui-wx'. make cmgui-wx-debug.
 
 On AIX and IRIX there is a known problem with bootstrapping the creation of 
 the uidh files.  To make these once you will need to specify these uidh files as 
