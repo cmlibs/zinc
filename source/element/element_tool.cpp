@@ -734,7 +734,6 @@ and as a child of <parent>.
 	return (image);
 } /* Element_tool_get_icon */
 
-#if defined (WX_USER_INTERFACE)
 static int Element_tool_destroy_element_tool(void **element_tool_void)
 /*******************************************************************************
 LAST MODIFIED : 6 July 2007
@@ -755,7 +754,6 @@ Function to call DESTROY
 	LEAVE;
 	return (return_code);
 }
-#endif /*defined (WX_USER_INTERFACE)*/
 
 #if defined (WX_USER_INTERFACE)
 class wxElementTool : public wxPanel
@@ -1115,11 +1113,7 @@ Selects elements in <element_selection> in response to interactive_events.
 				Element_tool_interactive_event_handler,
 				Element_tool_get_icon,
 				Element_tool_bring_up_interactive_tool_dialog,
-#if defined (WX_USER_INTERFACE)
  				Element_tool_destroy_element_tool,
-#else
-				(Interactive_tool_destroy_tool_data_function *)NULL,
-#endif
 				Element_tool_copy_function,
 				(void *)element_tool);
 #else /* defined (OPENGL_API) */
