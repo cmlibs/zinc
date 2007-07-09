@@ -724,6 +724,7 @@ END_EVENT_TABLE()
 Global functions
 ----------------
 */
+
 static int Element_point_tool_destroy_element_point_tool(void **element_point_tool_void)
 /*******************************************************************************
 LAST MODIFIED : 6 July 2007
