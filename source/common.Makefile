@@ -426,8 +426,8 @@ ifeq ($(SYSNAME),Darwin)
       CPP_STRICT_FLAGS = -Wno-long-double -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-      STRIP = strip --strip-unneeded
-      STRIP_SHARED = strip --strip-unneeded
+      STRIP =
+      STRIP_SHARED =
    else  # DEBUG != true
       OPTIMISATION_FLAGS = -g
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
