@@ -154,6 +154,8 @@ ifeq ($(SYSNAME:IRIX%=),)
    FORTRAN = f77 -c
    MAKEDEPEND = makedepend -f- -Y --
    CPREPROCESS = cc -P
+	STRIP =
+   STRIP_SHARED =
    # LINK = cc
    # Must use C++ linker for XML */
    LINK = CC
@@ -236,6 +238,8 @@ ifeq ($(SYSNAME),Linux)
       CPP_STRICT_FLAGS = -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      STRIP = strip --strip-unneeded
+      STRIP_SHARED = strip --strip-unneeded
    else  # DEBUG != true
       OPTIMISATION_FLAGS = -g
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
@@ -244,6 +248,8 @@ ifeq ($(SYSNAME),Linux)
       CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      STRIP =
+      STRIP_SHARED =
    endif # DEBUG != true
    TARGET_TYPE_FLAGS =
    TARGET_TYPE_DEFINES =
@@ -285,6 +291,8 @@ ifeq ($(SYSNAME),AIX)
    CPP_STRICT_FLAGS = 
    DIGITAL_MEDIA_NON_STRICT_FLAGS = 
    DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+   STRIP =
+   STRIP_SHARED =
    ifeq ($(ABI),64)
       TARGET_TYPE_FLAGS =  -q64
       TARGET_TYPE_DEFINES = -DO64
@@ -303,7 +311,7 @@ ifeq ($(SYSNAME),win32)
    CPP_FLAGS =
    FORTRAN = f77 -c -mno-cygwin -mms-bitfields
    MAKEDEPEND = gcc -MM -MG -mno-cygwin
-   CPREPROCESS = 
+   CPREPROCESS = gcc -E -P -mno-cygwin
    LINK = g++ -mno-cygwin -fnative-struct -mms-bitfields
    ifeq ($(filter-out CONSOLE_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
       LINK += -mconsole 
@@ -318,6 +326,8 @@ ifeq ($(SYSNAME),win32)
       CPP_STRICT_FLAGS = -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      STRIP = strip --strip-unneeded
+      STRIP_SHARED = strip --strip-unneeded
    else # DEBUG != true
       OPTIMISATION_FLAGS = -g
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
@@ -326,6 +336,8 @@ ifeq ($(SYSNAME),win32)
       CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      STRIP =
+      STRIP_SHARED =
    endif # DEBUG != true
    TARGET_TYPE_FLAGS =
    TARGET_TYPE_DEFINES =
@@ -354,6 +366,8 @@ ifeq ($(SYSNAME:CYGWIN%=),)# CYGWIN
       CPP_STRICT_FLAGS = -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      STRIP = strip --strip-unneeded
+      STRIP_SHARED = strip --strip-unneeded
    else  # DEBUG != true
       OPTIMISATION_FLAGS = -g
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
@@ -362,6 +376,8 @@ ifeq ($(SYSNAME:CYGWIN%=),)# CYGWIN
       CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-undefined-parameter -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      STRIP =
+      STRIP_SHARED =
       TARGET_TYPE_FLAGS =
       TARGET_TYPE_DEFINES =
    endif # DEBUG != true
@@ -410,6 +426,8 @@ ifeq ($(SYSNAME),Darwin)
       CPP_STRICT_FLAGS = -Wno-long-double -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      STRIP = strip --strip-unneeded
+      STRIP_SHARED = strip --strip-unneeded
    else  # DEBUG != true
       OPTIMISATION_FLAGS = -g
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
@@ -418,6 +436,8 @@ ifeq ($(SYSNAME),Darwin)
       CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Wno-long-double -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      STRIP =
+      STRIP_SHARED =
    endif # DEBUG != true
    TARGET_TYPE_FLAGS =
    TARGET_TYPE_DEFINES =
@@ -556,6 +576,14 @@ ifeq ($(TMPDIR),)
   endif
 endif
 
+ifneq ($(STRIP),)
+   STRIP_TARGET = $(STRIP) $(TMPDIR)/$(1).tmp$$$$ &&
+   STRIP_SHARED = $(STRIP) $(2)/$(1)$(SO_LIB_SUFFIX) &&
+else
+   STRIP_TARGET =
+   STRIP_SHARED =
+endif
+
 define BuildNormalTarget
 	echo 'Building $(2)/$(1)'
 	if [ ! -d $(OBJECT_PATH) ]; then \
@@ -567,6 +595,7 @@ define BuildNormalTarget
 	cd $(OBJECT_PATH) && \
 	(echo $(3) 2>&1 > $(1).list$$$$) && \
 	$(LINK) -o $(TMPDIR)/$(1).tmp$$$$ $(ALL_FLAGS) `cat $(1).list$$$$` $(4) && \
+	$(STRIP_TARGET) \
    rm $(1).list$$$$ && \
 	mv $(TMPDIR)/$(1).tmp$$$$ $(2)/$(1) ;
 endef
@@ -587,7 +616,7 @@ define BuildStaticLibraryTarget
 endef
 
 ifeq ($(OPERATING_SYSTEM), win32)
-  LINK_LINE = $(LINK) -shared -o $(2)/$(1)$(SO_LIB_SUFFIX)  $(ALL_FLAGS) -Wl,--export-all-symbols -Wl,--out-implib,$(2)/$(1)$(SO_LIB_IMPORT_LIB_SUFFIX) -Wl,--kill-at -Wl,--output-def,$(2)/$(1).def -Wl,--whole-archive `cat $(1).list$$$$`  -Wl,--no-whole-archive $(4) $(foreach import_lib,$(6),$(import_lib)$(SO_LIB_IMPORT_LIB_SUFFIX))
+  LINK_LINE = $(LINK) -shared -o $(2)/$(1)$(SO_LIB_SUFFIX) $(ALL_FLAGS) -Wl,--out-implib,$(2)/$(1)$(SO_LIB_IMPORT_LIB_SUFFIX) -Wl,--kill-at -Wl,--output-def,$(2)/$(1).def -Wl,--whole-archive `cat $(1).list$$$$`  -Wl,--no-whole-archive $(4) $(foreach import_lib,$(6),$(import_lib)$(SO_LIB_IMPORT_LIB_SUFFIX))
 else
   LINK_LINE = $(LINK) -shared -o $(2)/$(1)$(SO_LIB_SUFFIX) $(ALL_FLAGS) `cat $(1).list$$$$` $(4) -Wl,-soname,$(5)
 endif
@@ -603,5 +632,6 @@ define BuildSharedLibraryTarget
 	cd $(OBJECT_PATH) && \
 	(echo $(3) 2>&1 > $(1).list$$$$) && \
 	$(LINK_LINE) && \
+	$(STRIP_SHARED) \
    rm $(1).list$$$$ ;
 endef
