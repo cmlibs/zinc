@@ -3017,6 +3017,7 @@ DESCRIPTION :
 					colour_lookup_blue_flag = 0;
 					colour_lookup_alpha_flag = 0;
 					lit_volume_intensity_normal_texture_flag = 0;
+					lit_volume_finite_difference_normal_flag = 0;
 					lit_volume_scale_alpha_flag = 0;
 
 					option_table = CREATE(Option_table)();
