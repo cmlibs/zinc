@@ -24665,6 +24665,19 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		{
 			 DESTROY(Element_point_tool)(&command_data->element_point_tool);
 		}
+#else
+		 /* deallocate the current region path when cmiss command_data is
+			 being destroyed to prevent multiple deallocations of the same
+			 address under DESTROY(Node_tool) which cause segfault in
+			 cmgui-wx since the interactive tools are set up differently*/
+		{
+			 char *path;
+			 path = Node_tool_get_current_region_path(command_data->node_tool);	
+			 if (path)
+			 {
+					DEALLOCATE(path);
+			 }
+		}
 #endif /* !defined(WX_USER_INTERFACE)*/
 		DESTROY(MANAGER(Interactive_tool))(
 			 &(command_data->interactive_tool_manager));

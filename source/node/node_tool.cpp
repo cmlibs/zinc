@@ -3218,6 +3218,16 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				tool_name="node_tool";
 				tool_display_name="Node tool";
 			}
+#if defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */ 
+			node_tool->computed_field_manager=Computed_field_package_get_computed_field_manager(computed_field_package);
+			node_tool->wx_node_tool = (wxNodeTool *)NULL;
+			/* Set defaults until we have some sort of region chooser */
+			Node_tool_set_Cmiss_region(node_tool, node_tool->root_region);
+			node_tool->current_region_path = (char *)NULL;
+			node_tool->tool_position=wxPoint(0,0);
+#elif !defined (MOTIF)
+			node_tool->current_region_path = (char *)NULL;
+#endif /*defined (WX_USER_INTERFACE)*/
 			node_tool->interactive_tool=CREATE(Interactive_tool)(
 				tool_name,tool_display_name,
 				Interactive_tool_node_type_string,
@@ -3415,15 +3425,6 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				display_message(ERROR_MESSAGE,
 					"CREATE(Node_tool).  Could not open hierarchy");
 			}
-#elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */ 
-			node_tool->computed_field_manager=Computed_field_package_get_computed_field_manager(computed_field_package);
-			node_tool->wx_node_tool = (wxNodeTool *)NULL;
-			/* Set defaults until we have some sort of region chooser */
-			Node_tool_set_Cmiss_region(node_tool, node_tool->root_region);
-			node_tool->current_region_path = NULL;
-			node_tool->tool_position=wxPoint(0,0);
-#else /* defined (MOTIF) */
-			node_tool->current_region_path = (char *)NULL;
 #endif /* defined (USER_INTERFACE) */
 		}
 		else
@@ -3493,8 +3494,8 @@ structure itself.
 				node_tool->user_interface);
 			XtDestroyWidget(node_tool->window_shell);
 		}
-#else /* defined (MOTIF) */
-		if (node_tool->current_region_path)
+#elif !defined (WX_USER_INTERFACE)
+		if (node_tool->current_region_path != NULL)
 		{
 			 DEALLOCATE(node_tool->current_region_path);
 		}
@@ -4141,6 +4142,31 @@ Up to the calling function to DEALLOCATE the returned path.
 	return (return_code);
 } /* Node_tool_get_region_path */
 
+#if defined (WX_USER_INTERFACE)
+char *Node_tool_get_current_region_path(struct Node_tool *node_tool)
+/*******************************************************************************
+LAST MODIFIED : 10 July 2007
+
+DESCRIPTION :
+Return the pointer of the node_tool->current_region_path, used for
+deallocate the current region path outside whe cmiss command_data is
+being destroy to prevent multiple deallocations of the same address.
+==============================================================================*/
+{
+	 ENTER(Node_tool_get_region_path);
+	 char *path;
+	 path = NULL;
+	 if (node_tool)
+	 {
+			if (node_tool->current_region_path)
+			{
+				 path = node_tool->current_region_path;
+			}
+	 }
+	 return (path);
+}
+#endif /* defined (WX_USER_INTERFACE)	*/
+		
 int Node_tool_set_region_path(struct Node_tool *node_tool,
 	char *path)
 /*******************************************************************************

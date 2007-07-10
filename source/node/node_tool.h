@@ -247,6 +247,16 @@ the <node_tool> are put.
 Up to the calling function to DEALLOCATE the returned path.
 ==============================================================================*/
 
+char *Node_tool_get_current_region_path(struct Node_tool *node_tool);
+/*******************************************************************************
+LAST MODIFIED : 10 July 2007
+
+DESCRIPTION :
+Return the pointer of the node_tool->current_region_path, used for
+deallocating the current region path outside whe cmiss command_data is
+being destroy to prevent multiple deallocations of the same address.
+==============================================================================*/
+
 int Node_tool_set_region_path(struct Node_tool *node_tool,
 	char *path);
 /*******************************************************************************
