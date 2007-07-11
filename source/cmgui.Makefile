@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 8 March 2005
+# LAST MODIFIED : 11 July 2007
 #
 # DESCRIPTION :
 #
@@ -79,6 +79,12 @@ else # $(ABI) != 64
 endif # $(ABI) != 64
 
 TARGET_USER_INTERFACE_SUFFIX :=
+ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
+   TARGET_USER_INTERFACE_SUFFIX := -motif
+endif # $(USER_INTERFACE) == 	MOTIF_USER_INTERFACE
+ifeq ($(USER_INTERFACE), WIN32_USER_INTERFACE)
+   TARGET_USER_INTERFACE_SUFFIX := -win32
+endif # $(USER_INTERFACE) == 	WIN32_USER_INTERFACE
 ifeq ($(USER_INTERFACE), CONSOLE_USER_INTERFACE)
    TARGET_USER_INTERFACE_SUFFIX := -console
 endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE
@@ -608,11 +614,11 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
    endif # $(SYSNAME) != win32
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
-   WX_DIR =
+   WX_DIR = 
    ifneq ($(DEBUG),true)
      WX_DEBUG_FLAG = no
    else # $(DEBUG) != true
-     WX_DEBUG_FLAG = no
+     WX_DEBUG_FLAG = yes
    endif # $(DEBUG) != true
    #Default list does not include gl, so we list them here.
    #Using xrc means that we require most things (and static wx libs don't automatically pull
