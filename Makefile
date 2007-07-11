@@ -71,14 +71,14 @@ cmgui-win32 cmgui-win32-debug cmgui-win32-static cmgui-win32-static-debug cmgui6
 cmgui-win32 cmgui-win32-debug cmgui-win32-static cmgui-win32-static-debug cmgui64-win32 cmgui64-win32-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
 cmgui-motif-static cmgui-motif-static-debug : STATIC_LINK_OPTION=STATIC_LINK=$(STATIC_LINK)
 cmgui-motif-static cmgui-motif-static-debug : STATIC_LINK=true
-cmgui-motif cmgui-motif-static cmgui64-motif cmgui-console cmgui-wx cmgui-carbon cmgui-gtk cmgui-no3dgraphics cmgui64-motif-no3dgraphics cmgui-motif-unemap cmgui-win32 : DEBUG_OPTION=DEBUG=$(DEBUG)
-cmgui-motif cmgui-motif-static cmgui64-motif cmgui-console cmgui-wx cmgui-carbon cmgui-gtk cmgui-no3dgraphics cmgui64-motif-no3dgraphics cmgui-motif-unemap cmgui-win32 : DEBUG=false
-cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-wx-debug-memorycheck cmgui-motif-static-debug cmgui64-motif-debug cmgui-wx-debug  cmgui-carbon-debug cmgui-gtk-debug cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui64-motif-no3dgraphics-debug cmgui-motif-unemap-debug cmgui-win32-debug : DEBUG_OPTION=DEBUG=$(DEBUG)
-cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-wx-debug-memorycheck cmgui-motif-static-debug cmgui64-motif-debug cmgui-wx-debug  cmgui-carbon-debug cmgui-gtk-debug cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui64-motif-no3dgraphics-debug cmgui-motif-unemap-debug cmgui-win32-debug : DEBUG=true
-cmgui64-motif cmgui64-motif-debug cmgui64-motif-no3dgraphics cmgui64-motif-no3dgraphics-debug utilities64 : ABI_OPTION=ABI=$(ABI)
-cmgui64-motif cmgui64-motif-debug cmgui64-motif-no3dgraphics cmgui64-motif-no3dgraphics-debug utilities64 : ABI=64
-cmgui-motif-debug-memorycheck cmgui-wx-debug-memorycheck cmgui-no3dgraphics-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=$(MEMORYCHECK)
-cmgui-motif-debug-memorycheck cmgui-wx-debug-memorycheck cmgui-no3dgraphics-debug-memorycheck : MEMORYCHECK=true
+cmgui-motif cmgui-motif-static cmgui64-motif cmgui-console cmgui-wx cmgui-carbon cmgui-gtk cmgui-no3dgraphics-motif cmgui64-no3dgraphics-motif cmgui-motif-unemap cmgui-win32 : DEBUG_OPTION=DEBUG=$(DEBUG)
+cmgui-motif cmgui-motif-static cmgui64-motif cmgui-console cmgui-wx cmgui-carbon cmgui-gtk cmgui-no3dgraphics-motif cmgui64-no3dgraphics-motif cmgui-motif-unemap cmgui-win32 : DEBUG=false
+cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-wx-debug-memorycheck cmgui-motif-static-debug cmgui64-motif-debug cmgui-wx-debug  cmgui-carbon-debug cmgui-gtk-debug cmgui-no3dgraphics-motif-debug cmgui-no3dgraphics-motif-debug-memorycheck cmgui64-no3dgraphics-motif-debug cmgui-motif-unemap-debug cmgui-win32-debug : DEBUG_OPTION=DEBUG=$(DEBUG)
+cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-wx-debug-memorycheck cmgui-motif-static-debug cmgui64-motif-debug cmgui-wx-debug  cmgui-carbon-debug cmgui-gtk-debug cmgui-no3dgraphics-motif-debug cmgui-no3dgraphics-motif-debug-memorycheck cmgui64-no3dgraphics-motif-debug cmgui-motif-unemap-debug cmgui-win32-debug : DEBUG=true
+cmgui64-motif cmgui64-motif-debug cmgui64-no3dgraphics-motif cmgui64-no3dgraphics-motif-debug utilities64 : ABI_OPTION=ABI=$(ABI)
+cmgui64-motif cmgui64-motif-debug cmgui64-no3dgraphics-motif cmgui64-no3dgraphics-motif-debug utilities64 : ABI=64
+cmgui-motif-debug-memorycheck cmgui-wx-debug-memorycheck cmgui-no3dgraphics-motif-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=$(MEMORYCHECK)
+cmgui-motif-debug-memorycheck cmgui-wx-debug-memorycheck cmgui-no3dgraphics-motif-debug-memorycheck : MEMORYCHECK=true
 cmgui-console : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
 cmgui-console : USER_INTERFACE=CONSOLE_USER_INTERFACE
 cmgui-gtk cmgui-gtk-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
@@ -87,8 +87,8 @@ cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck: USER_INTERFACE_OPTION=USER_I
 cmgui-carbon cmgui-carbon-debug : USER_INTERFACE=CARBON_USER_INTERFACE
 cmgui-carbon cmgui-carbon-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
 cmgui-gtk cmgui-gtk-debug : USER_INTERFACE=GTK_USER_INTERFACE
-cmgui-no3dgraphics cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui64-motif-no3dgraphics cmgui64-motif-no3dgraphics-debug : GRAPHICS_API_OPTION=GRAPHICS_API=$(GRAPHICS_API)
-cmgui-no3dgraphics cmgui-no3dgraphics-debug cmgui-no3dgraphics-debug-memorycheck cmgui64-motif-no3dgraphics cmgui64-motif-no3dgraphics-debug : GRAPHICS_API=NO3D_GRAPHICS
+cmgui-no3dgraphics-motif cmgui-no3dgraphics-motif-debug cmgui-no3dgraphics-motif-debug-memorycheck cmgui64-no3dgraphics-motif cmgui64-no3dgraphics-motif-debug : GRAPHICS_API_OPTION=GRAPHICS_API=$(GRAPHICS_API)
+cmgui-no3dgraphics-motif cmgui-no3dgraphics-motif-debug cmgui-no3dgraphics-motif-debug-memorycheck cmgui64-no3dgraphics-motif cmgui64-no3dgraphics-motif-debug : GRAPHICS_API=NO3D_GRAPHICS
 cmgui-motif-unemap cmgui-motif-unemap-debug : UNEMAP_OPTION=UNEMAP=$(UNEMAP)
 cmgui-motif-unemap cmgui-motif-unemap-debug : UNEMAP=true
 
@@ -138,7 +138,7 @@ ifeq ($(SYSNAME),Linux)
    endif
 endif
 
-cmgui-motif cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-motif-static cmgui-motif-static-debug cmgui64-motif cmgui64-motif-debug cmgui-console cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck cmgui-carbon cmgui-carbon-debug cmgui-gtk cmgui-gtk-debug utilities cmgui-no3dgraphics cmgui-motif-no3dgraphics-debug cmgui-motif-no3dgraphics-debug-memorycheck cmgui64-motif-no3dgraphics cmgui64-motif-no3dgraphics-debug cmgui-motif-unemap cmgui-motif-unemap-debug cmgui-win32 cmgui-win32-debug :
+cmgui-motif cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-motif-static cmgui-motif-static-debug cmgui64-motif cmgui64-motif-debug cmgui-console cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck cmgui-carbon cmgui-carbon-debug cmgui-gtk cmgui-gtk-debug utilities cmgui-no3dgraphics-motif cmgui-no3dgraphics-motif-debug cmgui-no3dgraphics-motif-debug-memorycheck cmgui64-no3dgraphics-motif cmgui64-no3dgraphics-motif-debug cmgui-motif-unemap cmgui-motif-unemap-debug cmgui-win32 cmgui-win32-debug :
 		cd source ; \
 		$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) $(DEVELOPER_OPTIONS) ;
 
@@ -171,35 +171,35 @@ cmgui-win32-static-lib :
 	$(MAKE) -f $(MAKEFILE) cmgui-win32 TARGET=static_lib ;
 cmgui-win32-debug-static-lib:
 	$(MAKE) -f $(MAKEFILE) cmgui-win32-debug TARGET=static_lib ;
-cmgui-motif-no3dgraphics-lib :
-	$(MAKE) -f $(MAKEFILE) cmgui-motif-no3dgraphics TARGET=so_lib ;
-cmgui-motif-no3dgraphics-debug-lib :
-	$(MAKE) -f $(MAKEFILE) cmgui-motif-no3dgraphics-debug TARGET=so_lib ;
-cmgui-motif-no3dgraphics-static-lib :
-	$(MAKE) -f $(MAKEFILE) cmgui-motif-no3dgraphics TARGET=static_lib ;
-cmgui-motif-no3dgraphics-debug-static-lib:
-	$(MAKE) -f $(MAKEFILE) cmgui-motif-no3dgraphics-debug TARGET=static_lib ;
-cmgui-motif-no3dgraphics-debug-memorycheck-static-lib:
-	$(MAKE) -f $(MAKEFILE) cmgui-motif-no3dgraphics-debug-memorycheck TARGET=static_lib ;
-cmgui64-motif-no3dgraphics-static-lib :
-	$(MAKE) -f $(MAKEFILE) cmgui64-motif-no3dgraphics TARGET=static_lib ;
-cmgui64-motif-no3dgraphics-debug-static-lib:
-	$(MAKE) -f $(MAKEFILE) cmgui64-motif-no3dgraphics-debug TARGET=static_lib ;
+cmgui-no3dgraphics-motif-lib :
+	$(MAKE) -f $(MAKEFILE) cmgui-no3dgraphics-motif TARGET=so_lib ;
+cmgui-no3dgraphics-motif-debug-lib :
+	$(MAKE) -f $(MAKEFILE) cmgui-no3dgraphics-motif-debug TARGET=so_lib ;
+cmgui-no3dgraphics-motif-static-lib :
+	$(MAKE) -f $(MAKEFILE) cmgui-no3dgraphics-motif TARGET=static_lib ;
+cmgui-no3dgraphics-motif-debug-static-lib:
+	$(MAKE) -f $(MAKEFILE) cmgui-no3dgraphics-motif-debug TARGET=static_lib ;
+cmgui-no3dgraphics-motif-debug-memorycheck-static-lib:
+	$(MAKE) -f $(MAKEFILE) cmgui-no3dgraphics-motif-debug-memorycheck TARGET=static_lib ;
+cmgui64-no3dgraphics-motif-static-lib :
+	$(MAKE) -f $(MAKEFILE) cmgui64-no3dgraphics-motif TARGET=static_lib ;
+cmgui64-no3dgraphics-motif-debug-static-lib:
+	$(MAKE) -f $(MAKEFILE) cmgui64-no3dgraphics-motif-debug TARGET=static_lib ;
 
 .NOTPARALLEL:
 
 ifeq ($(SYSNAME:IRIX%=),)
-all : cmgui-motif cmgui-motif-debug cmgui64-motif cmgui-console cmgui-motif-debug-memorycheck cmgui-motif-static-lib cmgui-motif-debug-static-lib cmgui-motif-no3dgraphics-static-lib cmgui-motif-no3dgraphics-debug-static-lib cmgui-motif-no3dgraphics-debug-memorycheck-static-lib cmgui64-motif-no3dgraphics-static-lib
+all : cmgui-motif cmgui-motif-debug cmgui64-motif cmgui-console cmgui-motif-debug-memorycheck cmgui-motif-static-lib cmgui-motif-debug-static-lib cmgui-no3dgraphics-motif-static-lib cmgui-no3dgraphics-motif-debug-static-lib cmgui-no3dgraphics-motif-debug-memorycheck-static-lib cmgui64-no3dgraphics-motif-static-lib
 endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
    ifeq ($(MACHNAME),x86_64)
-all : svn_update cmgui-motif cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-motif-static-lib cmgui-motif-debug-static-lib cmgui-motif-no3dgraphics-static-lib cmgui-motif-no3dgraphics-debug-static-lib cmgui-motif-no3dgraphics-debug-memorycheck-static-lib cmgui-gtk-debug-static-lib cmgui-gtk-static-lib 
+all : svn_update cmgui-motif cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-motif-static-lib cmgui-motif-debug-static-lib cmgui-no3dgraphics-motif-static-lib cmgui-no3dgraphics-motif-debug-static-lib cmgui-no3dgraphics-motif-debug-memorycheck-static-lib cmgui-gtk-debug-static-lib cmgui-gtk-static-lib 
    else # MACHNAME == x86_64
-all : svn_update cmgui-motif cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-motif-static cmgui-motif-static-debug cmgui-console cmgui-motif-static-lib cmgui-motif-debug-static-lib cmgui-gtk cmgui-gtk-debug cmgui-gtk-lib cmgui-gtk-debug-lib cmgui-gtk-static-lib cmgui-gtk-debug-static-lib cmgui-motif-no3dgraphics-static-lib cmgui-motif-no3dgraphics-debug-static-lib cmgui-motif-no3dgraphics-debug-memorycheck-static-lib cmgui-motif-unemap cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck
+all : svn_update cmgui-motif cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-motif-static cmgui-motif-static-debug cmgui-console cmgui-motif-static-lib cmgui-motif-debug-static-lib cmgui-gtk cmgui-gtk-debug cmgui-gtk-lib cmgui-gtk-debug-lib cmgui-gtk-static-lib cmgui-gtk-debug-static-lib cmgui-no3dgraphics-motif-static-lib cmgui-no3dgraphics-motif-debug-static-lib cmgui-no3dgraphics-motif-debug-memorycheck-static-lib cmgui-motif-unemap cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck
    endif # MACHNAME == x86_64
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)
-all : cmgui-motif cmgui-motif-debug cmgui64-motif cmgui64-motif-debug cmgui-motif-static-lib cmgui-motif-no3dgraphics-static-lib cmgui-motif-no3dgraphics-debug-static-lib cmgui64-motif-no3dgraphics-static-lib cmgui64-motif-no3dgraphics-debug-static-lib
+all : cmgui-motif cmgui-motif-debug cmgui64-motif cmgui64-motif-debug cmgui-motif-static-lib cmgui-no3dgraphics-motif-static-lib cmgui-no3dgraphics-motif-debug-static-lib cmgui64-no3dgraphics-motif-static-lib cmgui64-no3dgraphics-motif-debug-static-lib
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
 all : svn_update cmgui-win32 cmgui-win32-debug cmgui-gtk cmgui-wx cmgui-wx-debug cmgui-win32-lib cmgui-win32-static-lib cmgui-win32-debug-lib cmgui-win32-debug-static-lib
@@ -211,7 +211,7 @@ ifeq ($(SYSNAME),Darwin)
    ifeq ($(MACHNAME),i386)
       all : cmgui-carbon cmgui-carbon-debug cmgui-carbon-debug-static-lib cmgui-wx cmgui-wx-debug
    else # MACHNAME == i386
-      all : cmgui-motif cmgui-motif-debug cmgui-motif-static-lib cmgui-motif-no3dgraphics-static-lib cmgui-motif-no3dgraphics-debug-static-lib cmgui-carbon cmgui-carbon-debug cmgui-carbon-debug-static-lib
+      all : cmgui-motif cmgui-motif-debug cmgui-motif-static-lib cmgui-no3dgraphics-motif-static-lib cmgui-no3dgraphics-motif-debug-static-lib cmgui-carbon cmgui-carbon-debug cmgui-carbon-debug-static-lib
    endif # MACHNAME == i386
 endif # SYSNAME == Darwin
 
