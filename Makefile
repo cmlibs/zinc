@@ -20,6 +20,15 @@ ifndef MACHNAME
   endif
 endif
 
+ifeq ($(SYSNAME:CYGWIN%=),)# CYGWIN
+  #Default to win32
+  SYSNAME=win32
+endif
+ifeq ($(SYSNAME:MINGW32%=),)# MSYS
+  #Default to win32
+  SYSNAME=win32
+endif
+
 #Paths
 PRODUCT_PATH=$(CMISS_ROOT)/cmgui
 PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source

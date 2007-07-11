@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : common.Makefile
 #
-# LAST MODIFIED : 20 August 2004
+# LAST MODIFIED : 11 July 2007
 #
 # DESCRIPTION :
 #
@@ -13,9 +13,6 @@ ifndef SYSNAME
   SYSNAME := $(shell uname)
   ifeq ($(SYSNAME),)
     $(error error with shell command uname)
-  endif
-  ifeq ($(SYSNAME),MINGW32_NT-5.1)
-    SYSNAME=win32
   endif
 endif
 
@@ -87,6 +84,14 @@ ifeq ($(SYSNAME),Linux)
   endif
   OPERATING_SYSTEM = linux
 endif
+ifeq ($(SYSNAME:CYGWIN%=),)# CYGWIN
+  #Default to win32
+  SYSNAME=win32
+endif
+ifeq ($(SYSNAME:MINGW32%=),)# MSYS
+  #Default to win32
+  SYSNAME=win32
+endif
 ifeq ($(SYSNAME),win32)
   INSTRUCTION = i386
   OPERATING_SYSTEM = win32
@@ -111,13 +116,6 @@ ifeq ($(SYSNAME),AIX)
   endif
   INSTRUCTION = rs6000
   OPERATING_SYSTEM = aix
-endif
-ifeq ($(SYSNAME:CYGWIN%=),)# CYGWIN
-  ifndef STATIC
-    STATIC = true
-  endif
-  INSTRUCTION = i686
-  OPERATING_SYSTEM = cygwin
 endif
 ifeq ($(SYSNAME),Darwin)
   ifeq ($(filter-out i%86,$(MACHNAME)),)
@@ -342,46 +340,6 @@ ifeq ($(SYSNAME),win32)
    TARGET_TYPE_FLAGS =
    TARGET_TYPE_DEFINES =
 endif # SYSNAME == win32
-ifeq ($(SYSNAME:CYGWIN%=),)# CYGWIN
-   UIL = uil
-   CC = gcc -c
-   CPP = g++ -c
-   CPP_FLAGS =
-   FORTRAN = g77 -c -fno-second-underscore
-   MAKEDEPEND = gcc -MM -MG
-   CPREPROCESS = gcc -E -P
-   ifneq ($(STATIC_LINK),true)
-      LINK = gcc
-      # LINK = egcs -shared -L/usr/X11R6/lib -v */
-      # LINK = gcc -L/usr/X11R6/lib -v */
-   else # STATIC_LINK) != true
-      LINK = gcc -static
-      # LINK = g++ --no-demangle -rdynamic -L/usr/X11R6/lib*/
-   endif # STATIC_LINK) != true
-   ifneq ($(DEBUG),true)
-      OPTIMISATION_FLAGS = -O
-      COMPILE_DEFINES = -DOPTIMISED
-      COMPILE_FLAGS = 
-      STRICT_FLAGS = -Werror
-      CPP_STRICT_FLAGS = -Werror
-      DIGITAL_MEDIA_NON_STRICT_FLAGS = 
-      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-      STRIP = strip --strip-unneeded
-      STRIP_SHARED = strip --strip-unneeded
-   else  # DEBUG != true
-      OPTIMISATION_FLAGS = -g
-      COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
-      COMPILE_FLAGS = 
-      STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Werror
-      CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-undefined-parameter -Werror
-      DIGITAL_MEDIA_NON_STRICT_FLAGS = 
-      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
-      STRIP =
-      STRIP_SHARED =
-      TARGET_TYPE_FLAGS =
-      TARGET_TYPE_DEFINES =
-   endif # DEBUG != true
-endif # SYSNAME == CYGWIN%=
 ifeq ($(SYSNAME),Darwin)
    OPENMOTIF_DIR = /usr/OpenMotif-2.1.31-22i
    UIL = $(OPENMOTIF_DIR)/bin/uil
