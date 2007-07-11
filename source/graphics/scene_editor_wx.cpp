@@ -170,14 +170,14 @@ DESCRIPTION :
 #endif /*defined (WX_USER_INTERFACE)*/
 }; /*struct Scene_editor*/
 
-int DESTROY(Scene_editor_object)(
-	struct Scene_editor_object **scene_editor_object_address);
-/*******************************************************************************
-LAST MODIFIED : 31 October 2001
+// int DESTROY(Scene_editor_object)(
+// 	struct Scene_editor_object **scene_editor_object_address);
+// /*******************************************************************************
+// LAST MODIFIED : 31 October 2001
 
-DESCRIPTION :
-Prototype.
-==============================================================================*/
+// DESCRIPTION :
+// Prototype.
+// ==============================================================================*/
 static int set_general_settings(void *scene_editor_void);
 /*******************************************************************************
 LAST MODIFIED : 16 Match 2007
@@ -210,153 +210,153 @@ Module functions
 ----------------
 */
 
-struct Scene_editor_object *CREATE(Scene_editor_object)(
-	struct Scene_editor *scene_editor, struct Scene *scene,
-	struct Scene_object *scene_object)
-/*******************************************************************************
-LAST MODIFIED : 4 December 2001
+// struct Scene_editor_object *CREATE(Scene_editor_object)(
+// 	struct Scene_editor *scene_editor, struct Scene *scene,
+// 	struct Scene_object *scene_object)
+// /*******************************************************************************
+// LAST MODIFIED : 4 December 2001
 
-DESCRIPTION :
-Creates a scene_editor_object for editing either the <scene> or a
-<scene_object>. Note Scene_editor_object_update function is responsible for
-creating and updating widgets.
-==============================================================================*/
-{
-	struct Scene *parent_scene;
-	struct Scene_editor_object *scene_editor_object;
+// DESCRIPTION :
+// Creates a scene_editor_object for editing either the <scene> or a
+// <scene_object>. Note Scene_editor_object_update function is responsible for
+// creating and updating widgets.
+// ==============================================================================*/
+// {
+// 	struct Scene *parent_scene;
+// 	struct Scene_editor_object *scene_editor_object;
 
-	ENTER(CREATE(Scene_editor_object));
-	parent_scene = (struct Scene *)NULL;
-	if (scene_editor && ((scene && (!scene_object)) ||
-		((!scene) && scene_object &&
-			(parent_scene = Scene_object_get_parent_scene(scene_object)))))
-	{
-		if (ALLOCATE(scene_editor_object, struct Scene_editor_object, 1))
-		{
-			scene_editor_object->scene_editor = scene_editor;
-			scene_editor_object->parent_scene = parent_scene;
-			scene_editor_object->name = (char *)NULL;
-			if (scene)
-			{
-				scene_editor_object->scene = scene;
-				scene_editor_object->scene_object = (struct Scene_object *)NULL;
-				GET_NAME(Scene)(scene, &(scene_editor_object->name));
-				scene_editor_object->visible = 1;
-				scene_editor_object->expanded = 0;
-			}
-			else
-			{
-				scene_editor_object->scene_object = ACCESS(Scene_object)(scene_object);
-				if (SCENE_OBJECT_SCENE == Scene_object_get_type(scene_object))
-				{
-					scene_editor_object->scene =
-						Scene_object_get_child_scene(scene_object);
-				}
-				else
-				{
-					scene_editor_object->scene = (struct Scene *)NULL;
-				}
-				GET_NAME(Scene_object)(scene_object, &(scene_editor_object->name));
-				scene_editor_object->visible =
-					(g_VISIBLE == Scene_object_get_visibility(scene_object));
-				scene_editor_object->expanded = 0;
-			}
-			if (scene_editor_object->scene)
-			{
-				scene_editor_object->scene_editor_objects =
-					CREATE(LIST(Scene_editor_object))();
-			}
-			else
-			{
-				scene_editor_object->scene_editor_objects =
-					(struct LIST(Scene_editor_object) *)NULL;
-			}
-			scene_editor_object->in_use = 0;
-			scene_editor_object->access_count = 0;
+// 	ENTER(CREATE(Scene_editor_object));
+// 	parent_scene = (struct Scene *)NULL;
+// 	if (scene_editor && ((scene && (!scene_object)) ||
+// 		((!scene) && scene_object &&
+// 			(parent_scene = Scene_object_get_parent_scene(scene_object)))))
+// 	{
+// 		if (ALLOCATE(scene_editor_object, struct Scene_editor_object, 1))
+// 		{
+// 			scene_editor_object->scene_editor = scene_editor;
+// 			scene_editor_object->parent_scene = parent_scene;
+// 			scene_editor_object->name = (char *)NULL;
+// 			if (scene)
+// 			{
+// 				scene_editor_object->scene = scene;
+// 				scene_editor_object->scene_object = (struct Scene_object *)NULL;
+// 				GET_NAME(Scene)(scene, &(scene_editor_object->name));
+// 				scene_editor_object->visible = 1;
+// 				scene_editor_object->expanded = 0;
+// 			}
+// 			else
+// 			{
+// 				scene_editor_object->scene_object = ACCESS(Scene_object)(scene_object);
+// 				if (SCENE_OBJECT_SCENE == Scene_object_get_type(scene_object))
+// 				{
+// 					scene_editor_object->scene =
+// 						Scene_object_get_child_scene(scene_object);
+// 				}
+// 				else
+// 				{
+// 					scene_editor_object->scene = (struct Scene *)NULL;
+// 				}
+// 				GET_NAME(Scene_object)(scene_object, &(scene_editor_object->name));
+// 				scene_editor_object->visible =
+// 					(g_VISIBLE == Scene_object_get_visibility(scene_object));
+// 				scene_editor_object->expanded = 0;
+// 			}
+// 			if (scene_editor_object->scene)
+// 			{
+// 				scene_editor_object->scene_editor_objects =
+// 					CREATE(LIST(Scene_editor_object))();
+// 			}
+// 			else
+// 			{
+// 				scene_editor_object->scene_editor_objects =
+// 					(struct LIST(Scene_editor_object) *)NULL;
+// 			}
+// 			scene_editor_object->in_use = 0;
+// 			scene_editor_object->access_count = 0;
 
-			if ((!(scene_editor_object->name)) || (scene_editor_object->scene &&
-				(!scene_editor_object->scene_editor_objects)))
-			{
-				display_message(ERROR_MESSAGE,
-					"CREATE(Scene_editor_object).  Could not fill object");
-				DESTROY(Scene_editor_object)(&scene_editor_object);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(Scene_editor_object).  Could not allocate space for object");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(Scene_editor_object).  Invalid argument(s)");
-		scene_editor_object = (struct Scene_editor_object *)NULL;
-	}
-	LEAVE;
+// 			if ((!(scene_editor_object->name)) || (scene_editor_object->scene &&
+// 				(!scene_editor_object->scene_editor_objects)))
+// 			{
+// 				display_message(ERROR_MESSAGE,
+// 					"CREATE(Scene_editor_object).  Could not fill object");
+// 				DESTROY(Scene_editor_object)(&scene_editor_object);
+// 			}
+// 		}
+// 		else
+// 		{
+// 			display_message(ERROR_MESSAGE,
+// 				"CREATE(Scene_editor_object).  Could not allocate space for object");
+// 		}
+// 	}
+// 	else
+// 	{
+// 		display_message(ERROR_MESSAGE,
+// 			"CREATE(Scene_editor_object).  Invalid argument(s)");
+// 		scene_editor_object = (struct Scene_editor_object *)NULL;
+// 	}
+// 	LEAVE;
 
-	return (scene_editor_object);
-} /* CREATE(Scene_editor_object) */
+// 	return (scene_editor_object);
+// } /* CREATE(Scene_editor_object) */
 
-int DESTROY(Scene_editor_object)(
-	struct Scene_editor_object **scene_editor_object_address)
-/*******************************************************************************
-LAST MODIFIED : 4 December 2001
+// int DESTROY(Scene_editor_object)(
+// 	struct Scene_editor_object **scene_editor_object_address)
+// /*******************************************************************************
+// LAST MODIFIED : 4 December 2001
 
-DESCRIPTION :
-==============================================================================*/
-{
-	struct Scene_editor_object *scene_editor_object;
-	int return_code;
+// DESCRIPTION :
+// ==============================================================================*/
+// {
+// 	struct Scene_editor_object *scene_editor_object;
+// 	int return_code;
 
-	ENTER(DESTROY(Scene_editor_object));
-	if (scene_editor_object_address &&
-		(scene_editor_object = *scene_editor_object_address))
-	{
-		if (0 == scene_editor_object->access_count)
-		{
-			if (scene_editor_object->scene_object)
-			{
-				DEACCESS(Scene_object)(&(scene_editor_object->scene_object));
-			}
-			DEALLOCATE(scene_editor_object->name);
-			if (scene_editor_object->scene_editor_objects)
-			{
-				DESTROY(LIST(Scene_editor_object))(
-					&(scene_editor_object->scene_editor_objects));
-			}
-			DEALLOCATE(*scene_editor_object_address);
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"DESTROY(Scene_editor_object).  Non-zero access_count");
-			return_code = 0;
-		}
-		*scene_editor_object_address = (struct Scene_editor_object *)NULL;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(Scene_editor_object).  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
+// 	ENTER(DESTROY(Scene_editor_object));
+// 	if (scene_editor_object_address &&
+// 		(scene_editor_object = *scene_editor_object_address))
+// 	{
+// 		if (0 == scene_editor_object->access_count)
+// 		{
+// 			if (scene_editor_object->scene_object)
+// 			{
+// 				DEACCESS(Scene_object)(&(scene_editor_object->scene_object));
+// 			}
+// 			DEALLOCATE(scene_editor_object->name);
+// 			if (scene_editor_object->scene_editor_objects)
+// 			{
+// 				DESTROY(LIST(Scene_editor_object))(
+// 					&(scene_editor_object->scene_editor_objects));
+// 			}
+// 			DEALLOCATE(*scene_editor_object_address);
+// 			return_code = 1;
+// 		}
+// 		else
+// 		{
+// 			display_message(ERROR_MESSAGE,
+// 				"DESTROY(Scene_editor_object).  Non-zero access_count");
+// 			return_code = 0;
+// 		}
+// 		*scene_editor_object_address = (struct Scene_editor_object *)NULL;
+// 	}
+// 	else
+// 	{
+// 		display_message(ERROR_MESSAGE,
+// 			"DESTROY(Scene_editor_object).  Invalid argument(s)");
+// 		return_code = 0;
+// 	}
+// 	LEAVE;
 
-	return (return_code);
-} /* DESTROY(Scene_editor_object) */
+// 	return (return_code);
+// } /* DESTROY(Scene_editor_object) */
 
-DECLARE_OBJECT_FUNCTIONS(Scene_editor_object)
+// DECLARE_OBJECT_FUNCTIONS(Scene_editor_object)
 
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Scene_editor_object, name, char *, \
-	strcmp)
+// DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Scene_editor_object, name, char *,
+// 	strcmp)
 
-DECLARE_INDEXED_LIST_FUNCTIONS(Scene_editor_object)
+// DECLARE_INDEXED_LIST_FUNCTIONS(Scene_editor_object)
 
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Scene_editor_object, \
-	name, char *, strcmp)
+// DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Scene_editor_object, 
+// 	name, char *, strcmp)
 
 
 struct Scene_editor_object *Scene_editor_get_first_object(
@@ -541,7 +541,6 @@ public:
 		  wxSceneEditor, int (wxSceneEditor::*)(Scene *) >
 		  (this, &wxSceneEditor::scene_object_callback);
       scene_chooser->set_callback(scene_object_callback);
-
  /* Set the collapsible pane in the secne editor */
   wxCollapsiblePane *collpane = XRCCTRL(*this, "CollapsiblePane", wxCollapsiblePane);
   wxPanel *GeneralSettingPanel = new wxPanel;
@@ -574,7 +573,7 @@ public:
 				wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
 		 (this, &wxSceneEditor::default_coordinate_field_callback);
 	computed_field_chooser->set_callback(default_coordinate_field_callback);
-
+	
 	/* Set the native_discretisation_chooser_panel*/
 	if (scene_editor->edit_gt_element_group != NULL)
 	{
@@ -735,32 +734,58 @@ public:
 
   ~wxSceneEditor()
 	 {
-		 delete scene_chooser;
-		 delete computed_field_chooser;
-		 delete FE_field_chooser;
-		 delete coordinate_field_chooser;
-		 delete graphical_material_chooser;
-		 delete selected_material_chooser;
-		 delete settings_type_chooser;
-		 delete select_mode_chooser;
-		 delete data_field_chooser;
-		 delete spectrum_chooser;
-		 delete radius_scalar_chooser;
-		 delete iso_scalar_chooser;
-		 delete glyph_chooser;
-		 delete orientation_scale_field_chooser;
-		 delete variable_scale_field_chooser;
-		 delete label_field_chooser;
-		 delete use_element_type_chooser;
-		 delete xi_discretization_mode_chooser;
-		 delete	 native_discretization_field_chooser;
-		 delete  xi_point_density_field_chooser;
-		 delete streamline_type_chooser;
-		 delete stream_vector_chooser;
-		 delete streamline_data_type_chooser;
-		 delete texture_coord_field_chooser;
-		 delete render_type_chooser;
-		 delete seed_element_chooser;
+			if (scene_chooser)
+				 delete scene_chooser;
+			if (computed_field_chooser)
+				 delete computed_field_chooser;
+			if (FE_field_chooser)
+				 delete FE_field_chooser;
+			if (coordinate_field_chooser)
+				 delete coordinate_field_chooser;
+			if (graphical_material_chooser)
+				 delete graphical_material_chooser;
+			if (selected_material_chooser)
+				 delete selected_material_chooser;
+			if (settings_type_chooser)		
+				 delete settings_type_chooser;
+			if (select_mode_chooser)
+				 delete select_mode_chooser;
+			if (data_field_chooser)
+				 delete data_field_chooser;
+			if (spectrum_chooser)
+				 delete spectrum_chooser;
+			if (radius_scalar_chooser)
+				 delete radius_scalar_chooser;
+			if (iso_scalar_chooser)
+				 delete iso_scalar_chooser;
+			if (glyph_chooser)
+				 delete glyph_chooser;
+			if (orientation_scale_field_chooser)
+				 delete orientation_scale_field_chooser;
+			if (variable_scale_field_chooser)
+				 delete variable_scale_field_chooser;
+			if (label_field_chooser)
+				 delete label_field_chooser;
+			if (use_element_type_chooser)
+				 delete use_element_type_chooser;
+			if (xi_discretization_mode_chooser)
+				 delete xi_discretization_mode_chooser;
+			if (native_discretization_field_chooser)
+				 delete	 native_discretization_field_chooser;
+			if (xi_point_density_field_chooser)
+				 delete  xi_point_density_field_chooser;
+			if (streamline_type_chooser)
+				 delete streamline_type_chooser;
+			if (stream_vector_chooser)
+				 delete stream_vector_chooser;
+			if (streamline_data_type_chooser)
+				 delete streamline_data_type_chooser;
+			if (texture_coord_field_chooser)
+				 delete texture_coord_field_chooser;
+			if (render_type_chooser)
+				 delete render_type_chooser;
+			if (seed_element_chooser)
+				 delete seed_element_chooser;
 	 }
 	 
 	 int scene_object_callback(Scene *scene)
@@ -4542,16 +4567,16 @@ DESCRIPTION :
 				scene_editor->scene_manager);
 			scene_editor->scene_manager_callback_id = (void *)NULL;
 		}
+		if (scene_editor->gt_element_group)
+		{
+			 DEACCESS(GT_element_group)(&scene_editor->gt_element_group);
+		}
+		if (scene_editor->edit_gt_element_group)
+		{
+			 DEACCESS(GT_element_group)(&scene_editor->edit_gt_element_group);
+		}
 		DEACCESS(GT_element_settings)(&scene_editor->current_settings);
-
 		delete scene_editor->wx_scene_editor;
-
-	//DESTROY(LIST(Scene_editor_object))(&(scene_editor->scene_editor_objects));
-		//if (scene_editor->window_shell)
-		//{
-		//	destroy_Shell_list_item_from_shell(&(scene_editor->window_shell),
-		//		scene_editor->user_interface);
-		//}
 		DEALLOCATE(*scene_editor_address);
 		return_code = 1;
 	}
