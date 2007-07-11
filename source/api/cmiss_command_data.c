@@ -53,10 +53,10 @@ Global functions
 ----------------
 */
 
-int Cmiss_command_data_execute(struct Cmiss_command_data *command_data,
-	char *command)
+int Cmiss_command_data_execute_command(struct Cmiss_command_data *command_data,
+	const char *command)
 /*******************************************************************************
-LAST MODIFIED : 5 April 2004
+LAST MODIFIED : 9 July 2007
 
 DESCRIPTION :
 Parses the supplied <command> using the command parser interpreter.
@@ -64,10 +64,11 @@ Parses the supplied <command> using the command parser interpreter.
 {
 	int return_code;
 
-	ENTER(Cmiss_command_data_execute);
+	ENTER(Cmiss_command_data_execute_command);
 	if (command)
 	{
-		return_code = cmiss_execute_command(command, (void *)command_data);
+		return_code = cmiss_execute_command((char *)command,
+			(void *)command_data);
 	}
 	else
 	{
@@ -76,7 +77,7 @@ Parses the supplied <command> using the command parser interpreter.
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_command_data_execute */
+} /* Cmiss_command_data_execute_command */
 
 struct Cmiss_scene_viewer *Cmiss_command_data_get_graphics_window_pane_by_name(
 	struct Cmiss_command_data *command_data, const char *name, int pane_number)

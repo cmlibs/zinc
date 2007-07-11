@@ -92,10 +92,10 @@ DESCRIPTION :
 Clean up the command_data, deallocating all the associated memory and resources.
 ==============================================================================*/
 
-int Cmiss_command_data_execute(struct Cmiss_command_data *command_data,
-	char *command);
+int Cmiss_command_data_execute_command(struct Cmiss_command_data *command_data,
+	const char *command);
 /*******************************************************************************
-LAST MODIFIED : 5 April 2004
+LAST MODIFIED : 9 July 2007
 
 DESCRIPTION :
 Parses the supplied <command> using the command parser interpreter.
