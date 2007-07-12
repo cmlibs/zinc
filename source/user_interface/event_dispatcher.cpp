@@ -1189,6 +1189,7 @@ Creates a connection to a event_dispatcher of the specified type.
 #if defined (WIN32_USER_INTERFACE)
 		event_dispatcher->socket_list = 
 			CREATE(LIST(Fdio))();
+		event_dispatcher->networkWindowHandle = (HWND)NULL;
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (USE_GENERIC_EVENT_DISPATCHER)
 		event_dispatcher->descriptor_list = 
@@ -1206,9 +1207,6 @@ Creates a connection to a event_dispatcher of the specified type.
 			(struct Event_dispatcher_idle_callback *)NULL;
 #endif /* defined (USE_XTAPP_CONTEXT) */
 		event_dispatcher->continue_flag = 1;
-#if defined(WIN32_USER_INTERFACE)
-		event_dispatcher->networkWindowHandle = (HWND)NULL;
-#endif /* defined(WIN32_USER_INTERFACE) */
 	}
 	else
 	{
@@ -1241,6 +1239,10 @@ Destroys a Event_dispatcher object
 		{
 			DESTROY(LIST(Fdio))
 				(&event_dispatcher->socket_list);
+		}
+		if (event_dispatcher->networkWindowHandle)
+		{
+			DestroyWindow(event_dispatcher->networkWindowHandle);
 		}
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (USE_GENERIC_EVENT_DISPATCHER)
