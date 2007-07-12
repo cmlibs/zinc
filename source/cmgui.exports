@@ -56,7 +56,7 @@ Cmiss_scene_viewer_get_viewing_volume
 
 /* #if defined (LIBCMGUI_GENERAL) */
 Cmiss_deallocate
-/* #endif /* defined (LIBCMGUI_GENERAL) */ */
+/* #endif /* defined (LIBCMGUI_GENERAL) */
 
 #if defined (GTK_USER_INTERFACE)
 gtk_cmiss_scene_viewer_get_type
@@ -150,7 +150,7 @@ create_IO_stream_package
 destroy_IO_stream_package
 IO_stream_package_define_memory_block
 IO_stream_package_free_memory_block
-/* #endif /* defined (LIBCMGUI_FINITE_ELEMENT) */ */
+/* #endif /* defined (LIBCMGUI_FINITE_ELEMENT) */
 
 manager_add_object_Computed_field
 create_Computed_field
