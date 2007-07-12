@@ -577,7 +577,7 @@ ifeq ($(OPERATING_SYSTEM), win32)
   LINK_LINE = $(LINK) -shared -o $(2)/$(1)$(SO_LIB_SUFFIX) $(ALL_FLAGS) -Wl,--out-implib,$(2)/$(1)$(SO_LIB_IMPORT_LIB_SUFFIX) -Wl,--kill-at -Wl,--output-def,$(2)/$(1).def -Wl,--whole-archive `cat $(1).list$$$$`  -Wl,--no-whole-archive $(4) $(foreach import_lib,$(6),$(import_lib)$(SO_LIB_IMPORT_LIB_SUFFIX))
   LINK_LINE += && (cd $(2) ; if ! lib /machine:i386 /def:$(1).def && [ -f $(1).lib ] ; then rm $(1).lib ; fi  )
 else
-  LINK_LINE = $(LINK) -shared -o $(2)/$(1)$(SO_LIB_SUFFIX) $(ALL_FLAGS) `cat $(1).list$$$$` $(4) -Wl,-soname,$(5)
+  LINK_LINE = $(LINK) -shared -o $(2)/$(1)$(SO_LIB_SUFFIX) $(ALL_FLAGS) `cat $(1).list$$$$` $(4) -Wl,-soname,$(5) $(foreach import_lib,$(6),$(import_lib)$(SO_LIB_SUFFIX))
 endif
 
 define BuildSharedLibraryTarget
