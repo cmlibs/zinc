@@ -650,7 +650,7 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
       endif # $(STATIC_LINK) != true
    else # $(OPERATING_SYSTEM) == linux
       ifeq ($(OPERATING_SYSTEM),win32)
-         USER_INTERFACE_LIB += -lcomctl32 -lctl3d32
+         USER_INTERFACE_LIB += -lcomctl32 -lctl3d32 -lwxexpat-2.8-i386-mingw32msvc
       else # $(OPERATING_SYSTEM) == win32
          ifeq ($(OPERATING_SYSTEM),darwin)
             USER_INTERFACE_LIB += -L$(shell $(WX_DIR)wx-config --prefix)/lib -framework QuickTime -framework IOKit -framework Carbon -framework Cocoa -framework System -framework WebKit -lwxexpat-2.8
