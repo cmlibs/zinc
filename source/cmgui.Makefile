@@ -360,7 +360,6 @@ else # ! PERL_INTERPRETER
    ifeq ($(OPERATING_SYSTEM),win32)
       INTERPRETER_LIB = \
 	      $(INTERPRETER_PATH)/lib/$(LIB_ARCH_DIR)/libperlinterpreter-includeperl.a
-      INTERPRETER_LINK_FLAGS = -Wl,--export-all-symbols
    endif # $(OPERATING_SYSTEM) == win32
 endif # ! PERL_INTERPRETER
 
@@ -651,7 +650,7 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
       endif # $(STATIC_LINK) != true
    else # $(OPERATING_SYSTEM) == linux
       ifeq ($(OPERATING_SYSTEM),win32)
-         USER_INTERFACE_LIB += -lwxexpat-2.6-i386-mingw32msvc -lcomctl32 -lctl3d32
+         USER_INTERFACE_LIB += -lcomctl32 -lctl3d32
       else # $(OPERATING_SYSTEM) == win32
          ifeq ($(OPERATING_SYSTEM),darwin)
             USER_INTERFACE_LIB += -L$(shell $(WX_DIR)wx-config --prefix)/lib -framework QuickTime -framework IOKit -framework Carbon -framework Cocoa -framework System -framework WebKit -lwxexpat-2.8
@@ -675,7 +674,9 @@ ifeq ($(USER_INTERFACE),WIN32_USER_INTERFACE)
 endif # $(USER_INTERFACE) == WIN32_USER_INTERFACE
 
 MATRIX_LIB =
+COMPUTED_VARIABLE_DEFINES=
 ifeq ($(USE_COMPUTED_VARIABLES),true)
+  COMPUTED_VARIABLE_DEFINES= -DUSE_COMPUTED_VARIABLES
   MATRIX_LIB += -L$(CMISS_ROOT)/linear_solvers/lib/$(LIB_ARCH_DIR) -llapack-debug
   ifneq ($(OPERATING_SYSTEM),aix)
     MATRIX_LIB += -lblas-debug
@@ -760,7 +761,7 @@ ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
 	$(EXTERNAL_INPUT_DEFINES) \
 	$(GRAPHICS_LIBRARY_DEFINES) $(HELP_DEFINES) \
 	$(POSTSCRIPT_DEFINES) $(NAME_DEFINES) $(TEMPORARY_DEVELOPMENT_FLAGS) \
-	$(UNEMAP_DEFINES) $(ITK_DEFINES) \
+	$(UNEMAP_DEFINES) $(COMPUTED_VARIABLE_DEFINES) $(ITK_DEFINES) \
 	$(CELL_DEFINES) $(MOVIE_FILE_DEFINES) $(INTERPRETER_DEFINES)\
 	$(IMAGEMAGICK_DEFINES) $(XML2_DEFINES)
 
@@ -1371,7 +1372,7 @@ $(MAIN_OBJ) : $(MAIN_SRC) $(OBJECT_PATH)/version.o.h $(INTERPRETER_LIB)
 
 # We want to limit the dynamic symbols in the final executable so that
 # dlopen routines can't access symbols we don't want them to */
-ifeq ($(SYSNAME:IRIX%=),)
+ifeq ($(OPERATING_SYSTEM),irix)
    ifneq ($(EXPORT_EVERYTHING),true)
       # The .link extension prevents the makefile predecessor cycle 
       EXPORTS_FILE = cmgui.exports.link
@@ -1395,7 +1396,7 @@ ifeq ($(SYSNAME:IRIX%=),)
 			touch $(OBJECT_PATH)/$(EXPORTS_FILE)
    endif # $(EXPORT_EVERYTHING) != true
 endif # SYSNAME == IRIX%=
-ifeq ($(SYSNAME),Linux)
+ifeq ($(OPERATING_SYSTEM),linux)
    ifneq ($(STATIC_LINK),true)
       ifneq ($(EXPORT_EVERYTHING),true)
          LD_VERSION := $(shell ld -v | grep "version \([3-9]\.\|2\.[2-9]\d\|2\.1[2-9]\)")
@@ -1471,6 +1472,35 @@ ifeq ($(SYSNAME),Linux)
 			touch $(OBJECT_PATH)/$(EXPORTS_FILE)
    endif # STATIC_LINK) != true
 endif # SYSNAME == Linux
+ifeq ($(OPERATING_SYSTEM), win32)
+   #Default to true as I had runtime problems using the resulting dll's in 
+   #zinc with the correct exports, even though everything linked.
+   #Error 1114 loading zinc.dll, which is a dll initialisation error.
+   EXPORT_EVERYTHING=true
+   ifneq ($(EXPORT_EVERYTHING),true)
+      # The .link extension prevents the makefile predecessor cycle 
+      EXPORTS_FILE = cmgui.exports.def
+      SRC_EXPORTS_FILE = cmgui.exports
+      EXPORTS_DEPEND = $(OBJECT_PATH)/$(EXPORTS_FILE)
+      EXPORTS_LINK_FLAGS = -Wl,-exports_file,$(EXPORTS_FILE)
+      $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
+			@if [ ! -d $(OBJECT_PATH) ]; then \
+				mkdir -p $(OBJECT_PATH); \
+			fi
+			@if [ -f $(OBJECT_PATH)/$(EXPORTS_FILE).c ]; then \
+				rm $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
+			fi
+			cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c
+			cd $(OBJECT_PATH) ; $(CPREPROCESS) $(ALL_DEFINES) $(EXPORTS_FILE).c -o $(OBJECT_PATH)/$(EXPORTS_FILE).i
+			echo > $(OBJECT_PATH)/$(EXPORTS_FILE)	'EXPORTS'
+			cat $(OBJECT_PATH)/$(EXPORTS_FILE).i >> $(OBJECT_PATH)/$(EXPORTS_FILE)
+   else # $(EXPORT_EVERYTHING) != true
+      EXPORTS_FILE = no.exports
+      EXPORTS_LINK_FLAGS = -Wl,--export-all-symbols
+      $(OBJECT_PATH)/$(EXPORTS_FILE) :	
+			touch $(OBJECT_PATH)/$(EXPORTS_FILE)
+   endif # $(EXPORT_EVERYTHING) != true
+endif # OPERATING_SYSTEM == win32
 
 RESOURCE_FILES = 
 COMPILED_RESOURCE_FILES = 
@@ -1488,12 +1518,12 @@ $(BIN_TARGET) : $(OBJS) $(UNEMAP_OBJS) $(COMPILED_RESOURCE_FILES) $(MAIN_OBJ) $(
 	$(call BuildNormalTarget,$(BIN_TARGET),$(BIN_PATH),$(OBJS) $(UNEMAP_OBJS) $(MAIN_OBJ),$(ALL_LIB) $(INTERPRETER_LINK_FLAGS) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES))
 
 SO_LIB_SUFFIX = .so
-ifeq ($(SYSNAME:IRIX%=),)
+ALL_SO_LINK_FLAGS =
+ifeq ($(OPERATING_SYSTEM),irix)
    ALL_SO_LINK_FLAGS = -no_unresolved
 endif # SYSNAME == IRIX%=
-ifeq ($(SYSNAME),Linux)
-#   ALL_SO_LINK_FLAGS = -lgcc_s -Wl,--no-undefined 
-   ALL_SO_LINK_FLAGS =
+ifeq ($(OPERATING_SYSTEM),linux)
+   ALL_SO_LINK_FLAGS = -Wl,--no-undefined 
 endif # SYSNAME == Linux
 
 STATIC_LIB_SUFFIX = .a
@@ -1535,6 +1565,8 @@ SO_LIB_FINITE_ELEMENT_TARGET = lib$(SO_LIB_FINITE_ELEMENT)$(SO_LIB_SUFFIX)
 SO_LIB_FINITE_ELEMENT_EXTRA_ARGS = $(XML2_LIB) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a
 
 LIB_FINITE_ELEMENT_SRCS = \
+	api/cmiss_element.c \
+	api/cmiss_node.c \
 	api/cmiss_region.c \
 	api/cmiss_time_sequence.c \
 	finite_element/export_finite_element.c \
@@ -1668,7 +1700,7 @@ ifeq ($(USE_COMPUTED_VARIABLES), true)
 # so_name but that would have to be used by the actual external Cmiss::Perl_cmiss
 # perl and python modules that are supplying us the connections to their interpreters.
 $(SO_LIB_TARGET) : $(REMAINING_LIB_OBJS) $(COMPILED_RESOURCE_FILES) $(OBJECT_PATH)/$(EXPORTS_FILE) $(SO_LIB_COMPUTED_VARIABLE_TARGET) $(SO_LIB_FINITE_ELEMENT_TARGET) $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
-	$(call BuildSharedLibraryTarget,$(SO_LIB_BASE),$(BIN_PATH),$(REMAINING_LIB_OBJS),$(SO_ALL_LIB) $(COMPILED_RESOURCE_FILES) ,$(SO_LIB_SONAME),$(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_BASE) $(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_BASE) $(BIN_PATH)/$(SO_LIB_FINITE_ELEMENT_BASE) $(BIN_PATH)/$(SO_LIB_GENERAL_BASE))
+	$(call BuildSharedLibraryTarget,$(SO_LIB_BASE),$(BIN_PATH),$(REMAINING_LIB_OBJS),$(EXPORTS_LINK_FLAGS) $(SO_ALL_LIB) $(COMPILED_RESOURCE_FILES) ,$(SO_LIB_SONAME),$(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_BASE) $(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_BASE) $(BIN_PATH)/$(SO_LIB_FINITE_ELEMENT_BASE) $(BIN_PATH)/$(SO_LIB_GENERAL_BASE))
 
 #Make so_lib to be a shorthand for making all the so_libs
 so_lib : $(SO_LIB_COMPUTED_VARIABLE_TARGET) $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET)
@@ -1682,7 +1714,7 @@ else # USE_COMPUTED)VARIABLES == true
 # so_name but that would have to be used by the actual external Cmiss::Perl_cmiss
 # perl and python modules that are supplying us the connections to their interpreters.
 $(SO_LIB_TARGET) : $(REMAINING_LIB_OBJS) $(COMPILED_RESOURCE_FILES) $(OBJECT_PATH)/$(EXPORTS_FILE) $(SO_LIB_FINITE_ELEMENT_TARGET) $(SO_LIB_GENERAL_TARGET) $(SO_LIB_PASS_THROUGH_TARGET) cmgui.Makefile
-	$(call BuildSharedLibraryTarget,$(SO_LIB_BASE),$(BIN_PATH),$(REMAINING_LIB_OBJS),$(SO_ALL_LIB) $(COMPILED_RESOURCE_FILES) ,$(SO_LIB_SONAME), $(BIN_PATH)/$(SO_LIB_FINITE_ELEMENT_BASE) $(BIN_PATH)/$(SO_LIB_GENERAL_BASE) $(BIN_PATH)/$(SO_LIB_PASS_THROUGH_BASE))
+	$(call BuildSharedLibraryTarget,$(SO_LIB_BASE),$(BIN_PATH),$(REMAINING_LIB_OBJS),$(EXPORTS_LINK_FLAGS) $(SO_ALL_LIB) $(COMPILED_RESOURCE_FILES) ,$(SO_LIB_SONAME), $(BIN_PATH)/$(SO_LIB_FINITE_ELEMENT_BASE) $(BIN_PATH)/$(SO_LIB_GENERAL_BASE) $(BIN_PATH)/$(SO_LIB_PASS_THROUGH_BASE))
 endif # USE_COMPUTED)VARIABLES == true
 
 #Make so_lib to be a shorthand for making all the so_libs
