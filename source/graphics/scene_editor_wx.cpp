@@ -3504,6 +3504,11 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 					 variable_scale_field_chooser->set_callback(variable_scale_callback);
 				}
 
+				if (glyph != NULL)
+				{
+					 glyph_chooser ->set_object(glyph);
+				}
+					 
 				sprintf(temp_string,"%g,%g,%g",
 					glyph_centre[0],glyph_centre[1],glyph_centre[2]);
 				centretextctrl->SetValue(temp_string);
