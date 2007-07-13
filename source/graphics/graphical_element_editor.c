@@ -1474,7 +1474,7 @@ Add button press: create new settings of the current type.
 						iso_value_default = 0;
 						if (!GT_element_settings_set_iso_surface_parameters(settings,
 							iso_scalar_field,/*number_of_iso_values*/1,&iso_value_default,
-							/*decimation_threshold*/0.0))
+							/*first_iso_value*/0.0,/*last_iso_value*/0.0,/*decimation_threshold*/0.0))
 						{
 							return_code=0;
 						}
