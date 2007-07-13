@@ -4517,13 +4517,16 @@ DESCRIPTION :
 					XRCCTRL(*scene_editor->wx_scene_editor, "CmguiSceneEditor", wxFrame);
 			 scene_editor->frame->Layout();
 			 scene_editor->frame->SetMinSize(wxSize(50,100));
+			 scene_editor->frame->SetSize(wxSize(500,800));		 
 			 scene_editor->sceneediting = 
 					XRCCTRL(*scene_editor->wx_scene_editor, "SceneEditing", wxScrolledWindow);
 			 scene_editor->sceneediting->Layout();
 			 scene_editor->sceneediting->SetScrollbars(10,10,40,40);
 			 scene_editor->lowersplitter=XRCCTRL(*scene_editor->wx_scene_editor,"LowerSplitter",wxSplitterWindow);
+			 scene_editor->lowersplitter->SetSashPosition(160);
 			 scene_editor->lowersplitter->Layout();	
 			 scene_editor->topsplitter=XRCCTRL(*scene_editor->wx_scene_editor,"TopSplitter",wxSplitterWindow);
+			 scene_editor->topsplitter->SetSashPosition(150);
 			 scene_editor->topsplitter->Layout();
 #endif /*  (WX_USER_INTERFACE) */
 		}
