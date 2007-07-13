@@ -1032,7 +1032,8 @@ Called when entry is made into the iso_value text field.
 ==============================================================================*/
 {
 	char *text_entry, temp_string[50], *vector_temp_string;
-	double *current_iso_values, decimation_threshold, *iso_values;
+	double *current_iso_values, decimation_threshold, *iso_values,
+		first_iso_value, last_iso_value;
 	int allocated_length, changed_value, error, i, length, number_of_iso_values,
 		offset, valid_value;
 	struct Computed_field *scalar_field;
@@ -3846,7 +3847,7 @@ Changes the currently chosen settings.
 ==============================================================================*/
 {
 	char *name, temp_string[50], *vector_temp_string;
-	double decimation_threshold,*iso_values;
+	double decimation_threshold,*iso_values, first_iso_value, last_iso_value;
 	enum Graphics_select_mode select_mode;
 	enum GT_element_settings_type settings_type;
 	enum Streamline_type streamline_type;
