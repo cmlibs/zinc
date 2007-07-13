@@ -114,7 +114,11 @@ finite element group rendition.
 	/* for iso_surfaces only */
 	struct Computed_field *iso_scalar_field;
 	int number_of_iso_values;
-	double *iso_values, decimation_threshold;
+	/* If the iso_values array is set then these values are used,
+		otherwise number_of_iso_values values are distributed from 
+		first_iso_value to last_iso_value including these values for n>1 */
+	double *iso_values, first_iso_value, last_iso_value,
+		decimation_threshold;
 	/* for node_points, data_points and element_points only */
 	struct GT_object *glyph;
 	enum Glyph_scaling_mode glyph_scaling_mode;
@@ -691,6 +695,8 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->iso_scalar_field=(struct Computed_field *)NULL;
 			settings->number_of_iso_values=0;
 			settings->iso_values=(double *)NULL;
+			settings->first_iso_value=0.0;
+			settings->last_iso_value=0.0;
 			settings->decimation_threshold = 0.0;
 			/* for node_points, data_points and element_points only */
 			settings->glyph=(struct GT_object *)NULL;
@@ -990,7 +996,9 @@ graphics_object is NOT copied; destination->graphics_object is cleared.
 		{
 			GT_element_settings_set_iso_surface_parameters(destination,
 				source->iso_scalar_field,source->number_of_iso_values,
-				source->iso_values, source->decimation_threshold);
+				source->iso_values, 
+				source->first_iso_value, source->last_iso_value,
+				source->decimation_threshold);
 		}
 		else
 		{
@@ -2118,12 +2126,16 @@ finite_element/finite_element_to_graphics object for explanation of how the
 
 int GT_element_settings_get_iso_surface_parameters(
 	struct GT_element_settings *settings,struct Computed_field **iso_scalar_field,
-	int *number_of_iso_values, double **iso_values, double *decimation_threshold)
+	int *number_of_iso_values, double **iso_values,
+	double *first_iso_value, double *last_iso_value, 
+	double *decimation_threshold)
 /*******************************************************************************
-LAST MODIFIED : 21 February 2005
+LAST MODIFIED : 13 July 2007
 
 DESCRIPTION :
 Returns parameters for the iso_surface: iso_scalar_field = iso_value.
+Either the iso_values are stored in the array <iso_values> or they are
+distributed from <first_iso_value> to <last_iso_value>.
 For settings_type GT_ELEMENT_SETTINGS_ISO_SURFACES only.
 ==============================================================================*/
 {
@@ -2138,21 +2150,31 @@ For settings_type GT_ELEMENT_SETTINGS_ISO_SURFACES only.
 		*decimation_threshold=settings->decimation_threshold;
 		if (0 < settings->number_of_iso_values)
 		{
-			if (ALLOCATE(*iso_values, double, settings->number_of_iso_values))
+			if (settings->iso_values)
 			{
-				for (i = 0 ; i < settings->number_of_iso_values ; i++)
+				if (ALLOCATE(*iso_values, double, settings->number_of_iso_values))
 				{
-					(*iso_values)[i] = settings->iso_values[i];
+					for (i = 0 ; i < settings->number_of_iso_values ; i++)
+					{
+						(*iso_values)[i] = settings->iso_values[i];
+					}
+					*number_of_iso_values = settings->number_of_iso_values;
+					return_code = 1;
 				}
-				*number_of_iso_values = settings->number_of_iso_values;
-				return_code = 1;
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"GT_element_settings_get_iso_surface_parameters.  "
+						"Could not allocate memory.");
+					return_code=0;
+				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"GT_element_settings_get_iso_surface_parameters.  "
-					"Could not allocate memory/");
-				return_code=0;
+				*iso_values = (double *)NULL;
+				*number_of_iso_values = settings->number_of_iso_values;
+				*first_iso_value = settings->first_iso_value;
+				*last_iso_value = settings->last_iso_value;
 			}
 		}
 		else
@@ -2175,12 +2197,16 @@ For settings_type GT_ELEMENT_SETTINGS_ISO_SURFACES only.
 
 int GT_element_settings_set_iso_surface_parameters(
 	struct GT_element_settings *settings,struct Computed_field *iso_scalar_field,
-	int number_of_iso_values, double *iso_values, double decimation_threshold)
+	int number_of_iso_values, double *iso_values,
+	double first_iso_value, double last_iso_value,
+	double decimation_threshold)
 /*******************************************************************************
-LAST MODIFIED : 21 February 2005
+LAST MODIFIED : 13 July 2007
 
 DESCRIPTION :
 Sets parameters for the iso_surface: iso_scalar_field = iso_value.
+Either the iso_values are stored in the array <iso_values> or they are
+distributed from <first_iso_value> to <last_iso_value>.
 For settings_type GT_ELEMENT_SETTINGS_ISO_SURFACES only - must call this after
 CREATE to define a valid iso_surface.
 ==============================================================================*/
@@ -2197,21 +2223,34 @@ CREATE to define a valid iso_surface.
 		settings->decimation_threshold = decimation_threshold;
 		if (0 < number_of_iso_values)
 		{
-			if (REALLOCATE(settings->iso_values, settings->iso_values, double,
-					number_of_iso_values))
+			if (iso_values)
 			{
-				settings->number_of_iso_values = number_of_iso_values;
-				for (i = 0 ; i < number_of_iso_values ; i++)
+				if (REALLOCATE(settings->iso_values, settings->iso_values, double,
+						number_of_iso_values))
 				{
-					settings->iso_values[i] = iso_values[i];
+					settings->number_of_iso_values = number_of_iso_values;
+					for (i = 0 ; i < number_of_iso_values ; i++)
+					{
+						settings->iso_values[i] = iso_values[i];
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"GT_element_settings_set_iso_surface_parameters.  "
+						"Could not allocate memory.");
+					return_code=0;
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"GT_element_settings_set_iso_surface_parameters.  "
-					"Could not allocate memory.");
-				return_code=0;
+				if (settings->iso_values)
+				{
+					DEALLOCATE(settings->iso_values);
+				}
+				settings->number_of_iso_values = number_of_iso_values;
+				settings->first_iso_value = first_iso_value;
+				settings->last_iso_value = last_iso_value;
 			}
 		}
 		else
@@ -2222,6 +2261,8 @@ CREATE to define a valid iso_surface.
 				settings->iso_values = (double *)NULL;
 			}
 			settings->number_of_iso_values = 0;
+			settings->first_iso_value = 0;
+			settings->last_iso_value = 0;
 		}
 	}
 	else
@@ -4280,14 +4321,40 @@ settings describe EXACTLY the same geometry.
 				second_settings->number_of_iso_values)&&
 				(settings->decimation_threshold==second_settings->decimation_threshold)&&
 				(settings->iso_scalar_field==second_settings->iso_scalar_field);
-			i = 0;
-			while (return_code && (i < settings->number_of_iso_values))
+			if (return_code)
 			{
-				if (settings->iso_values[i] != second_settings->iso_values[i])
+				if (settings->iso_values)
 				{
-					return_code = 0;
+					if (second_settings->iso_values)
+					{
+						i = 0;
+						while (return_code && (i < settings->number_of_iso_values))
+						{
+							if (settings->iso_values[i] != second_settings->iso_values[i])
+							{
+								return_code = 0;
+							}
+							i++;
+						}
+					}
+					else
+					{
+						return_code = 0;
+					}
 				}
-				i++;
+				else
+				{
+					if (second_settings->iso_values)
+					{
+						return_code = 0;
+					}
+					else
+					{
+						return_code =
+							(settings->first_iso_value == second_settings->first_iso_value)
+							&& (settings->last_iso_value == second_settings->last_iso_value);
+					}
+				}
 			}
 		}
 		/* for node_points, data_points and element_points only */
@@ -4795,11 +4862,26 @@ if no coordinate field. Currently only write if we have a field.
 				DEALLOCATE(settings_string);
 				error=1;
 			}
-			sprintf(temp_string," iso_values");
-			append_string(&settings_string,temp_string,&error);
-			for (i = 0 ; i < settings->number_of_iso_values ; i++)
+			if (settings->iso_values)
 			{
-				sprintf(temp_string, " %g", settings->iso_values[i]);
+				sprintf(temp_string," iso_values");
+				append_string(&settings_string,temp_string,&error);
+				for (i = 0 ; i < settings->number_of_iso_values ; i++)
+				{
+					sprintf(temp_string, " %g", settings->iso_values[i]);
+					append_string(&settings_string,temp_string,&error);				
+				}
+			}
+			else
+			{
+				sprintf(temp_string," number_of_iso_values %d",
+					settings->number_of_iso_values);
+				append_string(&settings_string,temp_string,&error);				
+				sprintf(temp_string," first_iso_value %g",
+					settings->first_iso_value);
+				append_string(&settings_string,temp_string,&error);				
+				sprintf(temp_string," last_iso_value %g",
+					settings->last_iso_value);
 				append_string(&settings_string,temp_string,&error);				
 			}
 			if (settings->decimation_threshold > 0.0)
@@ -5527,17 +5609,49 @@ Converts a finite element into a graphics object with the supplied settings.
 										}
 										else
 										{
-											for (i = 0 ; i < settings->number_of_iso_values ; i++)
+											if (settings->iso_values)
 											{
-												return_code = create_iso_surfaces_from_FE_element(element,
-													settings->iso_values[i],
-													settings_to_object_data->time,
-													(struct Clipping *)NULL,
-													settings_to_object_data->rc_coordinate_field,
-													settings->data_field, settings->iso_scalar_field,
-													settings->texture_coordinate_field,
-													number_in_xi, settings->decimation_threshold,
-													settings->graphics_object, settings->render_type);
+												for (i = 0 ; i < settings->number_of_iso_values ; i++)
+												{
+													return_code = create_iso_surfaces_from_FE_element(element,
+														settings->iso_values[i],
+														settings_to_object_data->time,
+														(struct Clipping *)NULL,
+														settings_to_object_data->rc_coordinate_field,
+														settings->data_field, settings->iso_scalar_field,
+														settings->texture_coordinate_field,
+														number_in_xi, settings->decimation_threshold,
+														settings->graphics_object, settings->render_type);
+												}
+											}
+											else
+											{
+												double iso_value_range;
+												if (settings->number_of_iso_values > 1)
+												{
+													iso_value_range =
+														(settings->last_iso_value - settings->first_iso_value)
+														/ (double)(settings->number_of_iso_values - 1);
+												}
+												else
+												{
+													iso_value_range = 0;
+												}
+												for (i = 0 ; i < settings->number_of_iso_values ; i++)
+												{
+													double iso_value = 
+														settings->first_iso_value +
+														(double)i * iso_value_range;
+													return_code = create_iso_surfaces_from_FE_element(element,
+														iso_value,
+														settings_to_object_data->time,
+														(struct Clipping *)NULL,
+														settings_to_object_data->rc_coordinate_field,
+														settings->data_field, settings->iso_scalar_field,
+														settings->texture_coordinate_field,
+														number_in_xi, settings->decimation_threshold,
+														settings->graphics_object, settings->render_type);
+												}
 											}
 										}
 									}
@@ -5578,15 +5692,45 @@ Converts a finite element into a graphics object with the supplied settings.
 										}
 										else
 										{
-											for (i = 0 ; i < settings->number_of_iso_values ; i++)
+											if (settings->iso_values)
 											{
-												return_code = create_iso_lines_from_FE_element(element,
-													settings_to_object_data->rc_coordinate_field,
-													settings->iso_scalar_field, settings->iso_values[i],
-													settings_to_object_data->time,
-													settings->data_field, number_in_xi[0], number_in_xi[1],
-													top_level_element, settings->graphics_object, 
-													/*graphics_object_time*/0.0);
+												for (i = 0 ; i < settings->number_of_iso_values ; i++)
+												{
+													return_code = create_iso_lines_from_FE_element(element,
+														settings_to_object_data->rc_coordinate_field,
+														settings->iso_scalar_field, settings->iso_values[i],
+														settings_to_object_data->time,
+														settings->data_field, number_in_xi[0], number_in_xi[1],
+														top_level_element, settings->graphics_object, 
+														/*graphics_object_time*/0.0);
+												}
+											}
+											else
+											{
+												double iso_value_range;
+												if (settings->number_of_iso_values > 1)
+												{
+													iso_value_range =
+														(settings->last_iso_value - settings->first_iso_value)
+														/ (double)(settings->number_of_iso_values - 1);
+												}
+												else
+												{
+													iso_value_range = 0;
+												}
+												for (i = 0 ; i < settings->number_of_iso_values ; i++)
+												{
+													double iso_value = 
+														settings->first_iso_value +
+														(double)i * iso_value_range;
+													return_code = create_iso_lines_from_FE_element(element,
+														settings_to_object_data->rc_coordinate_field,
+														settings->iso_scalar_field, iso_value,
+														settings_to_object_data->time,
+														settings->data_field, number_in_xi[0], number_in_xi[1],
+														top_level_element, settings->graphics_object, 
+														/*graphics_object_time*/0.0);
+												}
 											}
 										}
 									}
@@ -8184,7 +8328,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	enum Graphics_select_mode select_mode;
 	enum Render_type render_type;
 	enum Use_element_type use_element_type;
-	int number_of_valid_strings,return_code,visibility;
+	int number_of_valid_strings,range_number_of_iso_values,
+		return_code,visibility;
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
 	struct G_element_command_data *g_element_command_data;
@@ -8241,7 +8386,30 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 							Computed_field_is_scalar,(void *)NULL,computed_field_manager));
 					}
 					visibility = settings->visibility;
+					range_number_of_iso_values = 0;
 					option_table=CREATE(Option_table)();
+					Option_table_add_help(option_table,
+						"Create isosurfaces in volume elements <use_elements> or isolines in face or surface elements <use_faces>.  "
+						"The isosurface will be generated at the values in the elements where <iso_scalar> equals the iso values specified.  "
+						"The iso values can be specified either as a list with the <iso_values> option "
+						"or by specifying <range_number_of_iso_values>, <first_iso_value> and <last_iso_value>.  "
+						"The <as> parameter allows a name to be specified for this setting.  "
+						"The <coordinate> parameter optionally overrides the groups default coordinate field.  "
+						"If a <data> field is specified then the <spectrum> is used to render the data values as colour on the generated isosurface.  "
+						"If a <decimation_threshold> is specified then the resulting iso_surface will be decimated according to the threshold.  "
+						"If <delete> is specified then if the settings matches an existing setting (either by parameters or name) then it will be removed.  "
+						"If <exterior> is specified then only faces with one parent will be selected when <use_faces> is specified.  "
+						"If <face> is specified then only that face will be selected when <use_faces> is specified.  "
+						"The <material> is used to render the surface.  "
+						"You can specify the <scene> the settings is for.  "
+						"You can specify the <position> the settings has in the settings list.  "
+						"You can render a mesh as solid <render_shaded> or as a wireframe <render_wireframe>.  "
+						"If <select_on> is active then the element tool will select the elements the iso_surface was generated from.  "
+						"If <no_select> is active then the iso_surface cannot be selected.  "
+						"If <draw_selected> is active then iso_surfaces will only be generated in elements that are selected.  "
+						"Conversely, if <draw_unselected> is active then iso_surfaces will only be generated in elements that are not selected.  "
+						"The <texture_coordinates> are used to lay out a texture if the <material> contains a texture.  "
+						"A settings can be made <visible> or <invisible>.  ");
 					/* as */
 					Option_table_add_entry(option_table,"as",&(settings->name),
 						(void *)1,set_name);
@@ -8290,9 +8458,22 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"material",&(settings->material),
 						g_element_command_data->graphical_material_manager,
 						set_Graphical_material);
+					/* last_iso_value */
+					Option_table_add_double_entry(option_table,"last_iso_value",
+						&(settings->last_iso_value));
+					/* first_iso_value */
+					Option_table_add_double_entry(option_table,"first_iso_value",
+						&(settings->first_iso_value));	
 					/* position */
 					Option_table_add_entry(option_table,"position",
 						&(modify_g_element_data->position),NULL,set_int_non_negative);
+					/* range_number_of_iso_values */
+					/* Use a different temporary storage for this value so we
+						can tell it from the original variable_length array
+						"iso_values" above. */
+					Option_table_add_int_positive_entry(option_table,
+						"range_number_of_iso_values",
+						&range_number_of_iso_values);
 					/* render_type */
 					render_type = settings->render_type;
 					render_type_string = ENUMERATOR_STRING(Render_type)(render_type);
@@ -8351,6 +8532,31 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_switch(option_table, "visible", "invisible", &visibility);
 					if (return_code=Option_table_multi_parse(option_table,state))
 					{
+						if (settings->iso_values)
+						{
+							if (range_number_of_iso_values || 
+								 settings->first_iso_value ||
+								 settings->last_iso_value)
+							{
+								display_message(ERROR_MESSAGE,
+									"When specifying a list of <iso_values> do not specify <range_number_of_iso_values>, <first_iso_value> or <last_iso_value>.");
+								return_code=0;
+							}
+						}
+						else
+						{
+							if (range_number_of_iso_values)
+							{
+								settings->number_of_iso_values = 
+									range_number_of_iso_values;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"You must either specify a list of <iso_values> or a range with <range_number_of_iso_values>, <first_iso_value> or <last_iso_value>.");
+								return_code=0;
+							}
+						}
 						if ((struct Computed_field *)NULL==settings->iso_scalar_field)
 						{
 							display_message(ERROR_MESSAGE,

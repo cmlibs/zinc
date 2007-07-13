@@ -425,7 +425,7 @@ class wxSceneEditor : public wxFrame
 	wxCheckListBox *scenechecklist,*graphicalitemschecklist;
 	wxListBox *scenelistbox,*graphicalitemslistbox;
 	wxStaticText *currentsceneobjecttext,*constantradius,*scalefactor,
-		*isoscalartext, *isovaluetext, *glyphtext, *centretext, *baseglyphsizetext,
+		*isoscalartext, *glyphtext, *centretext, *baseglyphsizetext,
 		*glyphscalefactorstext, *useelementtypetext, *xidiscretizationmodetext,
 		*discretizationtext, *densityfieldtext,*xitext, *streamtypetext, *streamlengthtext,
 		*streamwidthtext, *streamvectortext, *linewidthtext, *streamlinedatatypetext,
@@ -435,10 +435,14 @@ class wxSceneEditor : public wxFrame
 		*radiusscalarcheckbox, *orientationscalecheckbox,*variablescalecheckbox,
 		*labelcheckbox,*nativediscretizationfieldcheckbox,*reversecheckbox,*datacheckbox,
 		*texturecoordinatescheckbox,*exteriorcheckbox,*facecheckbox, *seedelementcheckbox;	
+	wxRadioButton *isovaluelistradiobutton, *isovaluesequenceradiobutton;
+	wxPanel *isovalueoptionspane;
 	wxTextCtrl *elementdiscretisationpanel, *nametextfield, *circlediscretisationpanel,
 		*constantradiustextctrl, *scalefactorstextctrl, *isoscalartextctrl, *centretextctrl,
 		*baseglyphsizetextctrl,*glyphscalefactorstextctrl,*discretizationtextctrl,*xitextctrl,
-		*lengthtextctrl,*widthtextctrl,*linewidthtextctrl;
+		*lengthtextctrl,*widthtextctrl,*linewidthtextctrl,
+		*isovaluesequencenumbertextctrl, *isovaluesequencefirsttextctrl,
+		*isovaluesequencelasttextctrl;
 	 wxPanel  *FE_chooser_panel,	*coordinate_field_chooser_panel,
 		*radius_scalar_chooser_panel, *iso_scalar_chooser_panel, *glyph_chooser_panel,
 		*orientation_scale_field_chooser_panel, *variable_scale_field_chooser_panel,
@@ -1055,16 +1059,19 @@ DESCRIPTION :
 Callback from wxChooser<Iso Scalar> when choice is made.
 ==============================================================================*/
 	{
-		double decimation_threshold, *iso_values;
+		double decimation_threshold, *iso_values,
+			first_iso_value, last_iso_value;
 		int number_of_iso_values;
 		struct Computed_field *scalar_field;
 
 		GT_element_settings_get_iso_surface_parameters(
 			scene_editor->current_settings,&scalar_field,&number_of_iso_values,
-			&iso_values,&decimation_threshold);
+			&iso_values,&first_iso_value,&last_iso_value,
+			&decimation_threshold);
 		GT_element_settings_set_iso_surface_parameters(
 			scene_editor->current_settings,iso_scalar_field,number_of_iso_values,
-			iso_values,decimation_threshold);
+			iso_values,first_iso_value,last_iso_value,
+			decimation_threshold);
 		AutoApplyorNot(scene_editor->gt_element_group,
 			scene_editor->edit_gt_element_group);
 		RenewLabelonList(scene_editor->current_settings);
@@ -2212,6 +2219,7 @@ void GraphicalItemsListBoxClicked(wxCommandEvent &event)
 										double iso_value_default = 0;
 										if (!GT_element_settings_set_iso_surface_parameters(settings,
 																																				iso_scalar_field,/*number_of_iso_values*/1,&iso_value_default,
+												/*first_iso_value*/0.0, /*last_iso_value*/0.0,
 																																				/*decimation_threshold*/0.0))
 											{
 												return_code=0;
@@ -2582,28 +2590,46 @@ void RemoveFromSettingList(wxCommandEvent &event)
 
 	void EnterIsoScalar(wxCommandEvent &event)
 	{
-		double *current_iso_values,decimation_threshold, *iso_values;
+		double *current_iso_values,decimation_threshold, *iso_values,
+			current_first_iso_value, current_last_iso_value, first_iso_value,
+			last_iso_value;
 		char *text_entry, temp_string[50], *vector_temp_string;
-		int allocated_length, changed_value, error, i, length, number_of_iso_values,
-			 offset, valid_value;
+		int allocated_length, changed_value, error, i, length,
+			new_number_of_iso_values, number_of_iso_values,
+			offset, valid_value;
 		struct Computed_field *scalar_field;
 #define VARIABLE_LENGTH_ALLOCATION_STEP (10)
 		
 		GT_element_settings_get_iso_surface_parameters(
 			scene_editor->current_settings,&scalar_field,&number_of_iso_values,
-			&current_iso_values,&decimation_threshold);
+			&current_iso_values,
+			&current_first_iso_value, &current_last_iso_value,
+			&decimation_threshold);
+		isovaluelistradiobutton=XRCCTRL(*this,"IsoValueListRadioButton",wxRadioButton);
+		isovaluesequenceradiobutton=XRCCTRL(*this,"IsoValueSequenceRadioButton",wxRadioButton);
+
 		isoscalartextctrl=XRCCTRL(*this,"IsoScalarTextCtrl",wxTextCtrl);
-		text_entry = const_cast<char *>(isoscalartextctrl->GetValue().c_str());
-		if (text_entry)
+		isovaluesequencenumbertextctrl=XRCCTRL(*this,"IsoValueSequenceNumberTextCtrl",wxTextCtrl);
+		isovaluesequencefirsttextctrl=XRCCTRL(*this,"IsoValueSequenceFirstTextCtrl",wxTextCtrl);
+		isovaluesequencelasttextctrl=XRCCTRL(*this,"IsoValueSequenceLastTextCtrl",wxTextCtrl);
+
+		if (isovaluelistradiobutton->GetValue())
 		{
-			 i = 0;
-			 valid_value = 1;
-			 changed_value = 0;
-			 offset = 0;
-			 iso_values = (double *)NULL;
-			 allocated_length = 0;
-			 while (valid_value)
-			 {
+			isoscalartextctrl->Enable();
+			isovaluesequencenumbertextctrl->Disable();
+			isovaluesequencefirsttextctrl->Disable();
+			isovaluesequencelasttextctrl->Disable();
+			text_entry = const_cast<char *>(isoscalartextctrl->GetValue().c_str());
+			if (text_entry)
+			{
+				i = 0;
+				valid_value = 1;
+				changed_value = 0;
+				offset = 0;
+				iso_values = (double *)NULL;
+				allocated_length = 0;
+				while (valid_value)
+				{
 					if (i >= allocated_length)
 					{
 						REALLOCATE(iso_values, iso_values, double, 
@@ -2613,7 +2639,8 @@ void RemoveFromSettingList(wxCommandEvent &event)
 					if (0 < sscanf(text_entry+offset,"%lg%n",&iso_values[i], &length))
 					{
 						offset += length;
-						if ((i >= number_of_iso_values) || (iso_values[i] != current_iso_values[i]))
+						if ((i >= number_of_iso_values) || (!current_iso_values) ||
+							(iso_values[i] != current_iso_values[i]))
 						{
 							changed_value = 1;
 						}
@@ -2623,40 +2650,120 @@ void RemoveFromSettingList(wxCommandEvent &event)
 					{
 						valid_value = 0;
 					}
-			 }
-			 if (changed_value || (number_of_iso_values != i))
-			 {
+				}
+				if (changed_value || (number_of_iso_values != i))
+				{
 					number_of_iso_values = i;
 					GT_element_settings_set_iso_surface_parameters(
-						 scene_editor->current_settings,scalar_field,
-						 number_of_iso_values, iso_values, decimation_threshold);
+						scene_editor->current_settings,scalar_field,
+						number_of_iso_values, iso_values,
+						first_iso_value, last_iso_value, decimation_threshold);
 					AutoApplyorNot(scene_editor->gt_element_group,
-						 scene_editor->edit_gt_element_group);
+						scene_editor->edit_gt_element_group);
 					RenewLabelonList(scene_editor->current_settings);		/* inform the client of the change */
-			 }
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"EnterIsoScalar.  Missing text");
+			}
+			if (current_iso_values)
+			{
+				DEALLOCATE(current_iso_values);
+			}
+
+			vector_temp_string = (char *)NULL;
+			error = 0;
+			for (i = 0 ; !error && (i < number_of_iso_values) ; i++)
+			{
+				sprintf(temp_string,"%g ",iso_values[i]);
+				append_string(&vector_temp_string, temp_string, &error);
+			}
+			if (vector_temp_string)
+			{
+				isoscalartextctrl->SetValue(vector_temp_string);
+				DEALLOCATE(vector_temp_string);
+			}
+			if (iso_values)
+			{
+				DEALLOCATE(iso_values);
+			}
+		}
+		else if (isovaluesequenceradiobutton->GetValue())
+		{
+			if (current_iso_values)
+			{
+				DEALLOCATE(current_iso_values);
+			}
+			isoscalartextctrl->Disable();
+			isovaluesequencenumbertextctrl->Enable();
+			isovaluesequencefirsttextctrl->Enable();
+			isovaluesequencelasttextctrl->Enable();
+			text_entry=const_cast<char *>(isovaluesequencenumbertextctrl->GetValue().c_str());
+			if (text_entry)
+			{
+				sscanf(text_entry,"%d",&new_number_of_iso_values);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"settings_editor_streamline_width_text_CB.  Missing text");
+			}
+
+			text_entry=const_cast<char *>(isovaluesequencefirsttextctrl->GetValue().c_str());
+			if (text_entry)
+			{
+				sscanf(text_entry,"%lg",&first_iso_value);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"settings_editor_streamline_width_text_CB.  Missing text");
+			}
+
+			text_entry=const_cast<char *>(isovaluesequencelasttextctrl->GetValue().c_str());
+			if (text_entry)
+			{
+				sscanf(text_entry,"%lg",&last_iso_value);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"settings_editor_streamline_width_text_CB.  Missing text");
+			}
+
+			if ((changed_value != number_of_iso_values) ||
+				(current_first_iso_value != first_iso_value) ||
+				(current_last_iso_value != last_iso_value))
+			{
+				GT_element_settings_set_iso_surface_parameters(
+					scene_editor->current_settings,scalar_field,
+					new_number_of_iso_values, /*iso value list*/(double *)NULL,
+					first_iso_value, last_iso_value, decimation_threshold);
+
+				/* inform the client of the change */
+				AutoApplyorNot(scene_editor->gt_element_group,
+					scene_editor->edit_gt_element_group);
+				RenewLabelonList(scene_editor->current_settings);
+			}
+
+			/* always restore strings to actual value in use */
+ 			sprintf(temp_string,"%d",new_number_of_iso_values);
+			isovaluesequencenumbertextctrl->SetValue(temp_string);			 
+
+ 			sprintf(temp_string,"%g",first_iso_value);
+			isovaluesequencefirsttextctrl->SetValue(temp_string);			 
+
+ 			sprintf(temp_string,"%g",last_iso_value);
+			isovaluesequencelasttextctrl->SetValue(temp_string);			 
+
 		}
 		else
 		{
-			 display_message(ERROR_MESSAGE,
-					"EnterIsoScalar.  Missing text");
-		}
-		DEALLOCATE(current_iso_values);
-		
-		vector_temp_string = (char *)NULL;
-		error = 0;
-		for (i = 0 ; !error && (i < number_of_iso_values) ; i++)
-		{
-			 sprintf(temp_string,"%g ",iso_values[i]);
-			 append_string(&vector_temp_string, temp_string, &error);
-		}
-		if (vector_temp_string)
-		{
-			 isoscalartextctrl->SetValue(vector_temp_string);
-			 DEALLOCATE(vector_temp_string);
-		}
-		if (iso_values)
-		{
-			 DEALLOCATE(iso_values);
+			display_message(ERROR_MESSAGE,
+				"wx_settings_editor_enter_iso_scalar.  Missing iso value option.");
+			
 		}
 
 	}
@@ -3298,7 +3405,8 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 	void SetSettings(GT_element_settings *settings)
 	{
 		int error,number_of_iso_values, i,reverse_track,line_width, face;
-		double decimation_threshold, *iso_values;
+		double decimation_threshold, *iso_values, first_iso_value,
+			last_iso_value;
 		char temp_string[50], *vector_temp_string;;
 		struct Computed_field *radius_scalar_field, *iso_scalar_field, 
 			*orientation_scale_field, *variable_scale_field,	*label_field, 
@@ -3382,16 +3490,26 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 		 iso_scalar_chooser_panel=XRCCTRL(*this, "IsoScalarChooserPanel",wxPanel);
 		 isoscalartextctrl = XRCCTRL(*this, "IsoScalarTextCtrl",wxTextCtrl);
 		 isoscalartext=XRCCTRL(*this,"IsoScalarText",wxStaticText);
-		 isovaluetext=XRCCTRL(*this,"IsoValueText",wxStaticText);
+		 isovalueoptionspane=XRCCTRL(*this,"IsoValueOptions",wxPanel);
+
+		 isovaluelistradiobutton=XRCCTRL(*this,"IsoValueListRadioButton",wxRadioButton);
+		 isovaluesequenceradiobutton=XRCCTRL(*this,"IsoValueSequenceRadioButton",wxRadioButton);
+		 
+		 isoscalartextctrl=XRCCTRL(*this,"IsoScalarTextCtrl",wxTextCtrl);
+		 isovaluesequencenumbertextctrl=XRCCTRL(*this,"IsoValueSequenceNumberTextCtrl",wxTextCtrl);
+		 isovaluesequencefirsttextctrl=XRCCTRL(*this,"IsoValueSequenceFirstTextCtrl",wxTextCtrl);
+		 isovaluesequencelasttextctrl=XRCCTRL(*this,"IsoValueSequenceLastTextCtrl",wxTextCtrl);
+
 		if ((GT_ELEMENT_SETTINGS_ISO_SURFACES==scene_editor->current_settings_type)&&
 				GT_element_settings_get_iso_surface_parameters(settings,
 					 &iso_scalar_field,&number_of_iso_values,&iso_values,
+					 &first_iso_value,&last_iso_value,
 					 &decimation_threshold)&&iso_scalar_field)
 			{
 				iso_scalar_chooser_panel->Show();
 				isoscalartextctrl->Show();
 				isoscalartext->Show();
-				isovaluetext->Show();
+				isovalueoptionspane->Show();
 				if (iso_scalar_chooser == NULL)
 				{
 					 iso_scalar_chooser = 
@@ -3404,25 +3522,47 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 							(this, &wxSceneEditor::iso_scalar_callback);
 					 iso_scalar_chooser->set_callback(iso_scalar_callback);
 				}
-					 vector_temp_string = (char *)NULL;
-				error = 0;
-				for (i = 0 ; !error && (i < number_of_iso_values) ; i++)
+				if (iso_values)
+				{
+					isovaluelistradiobutton->SetValue(true);
+					isoscalartextctrl->Enable();
+					isovaluesequencenumbertextctrl->Disable();
+					isovaluesequencefirsttextctrl->Disable();
+					isovaluesequencelasttextctrl->Disable();
+					vector_temp_string = (char *)NULL;
+					error = 0;
+					for (i = 0 ; !error && (i < number_of_iso_values) ; i++)
 					{
 						sprintf(temp_string,"%g ",iso_values[i]);
 						append_string(&vector_temp_string, temp_string, &error);
 					}
-				if (vector_temp_string)
+					if (vector_temp_string)
 					{
 						isoscalartextctrl ->SetValue(vector_temp_string);
 						DEALLOCATE(vector_temp_string);
 					}
+				}
+				else
+				{
+					isoscalartextctrl->Disable();
+					isovaluesequencenumbertextctrl->Enable();
+					isovaluesequencefirsttextctrl->Enable();
+					isovaluesequencelasttextctrl->Enable();
+					isovaluesequenceradiobutton->SetValue(true);
+					sprintf(temp_string,"%d", number_of_iso_values);
+					isovaluesequencenumbertextctrl->SetValue(temp_string);
+					sprintf(temp_string,"%g", first_iso_value);
+					isovaluesequencefirsttextctrl->SetValue(temp_string);
+					sprintf(temp_string,"%g", last_iso_value);
+					isovaluesequencelasttextctrl->SetValue(temp_string);
+				}
 			}
 		else
 			{			
 				iso_scalar_chooser_panel->Hide();
 				isoscalartextctrl->Hide();
 				isoscalartext->Hide();
-				isovaluetext->Hide();
+				isovalueoptionspane->Hide();
 			}
 
 		/* node_points, data_points, element_points */
@@ -4194,7 +4334,12 @@ BEGIN_EVENT_TABLE(wxSceneEditor, wxFrame)
 	 EVT_TEXT_ENTER(XRCID("ConstantRadiusTextCtrl"), wxSceneEditor::EnterRadius)
 	 EVT_TEXT_ENTER(XRCID("ScaleFactorsTextCtrl"), wxSceneEditor::EnterRadius)
 	 EVT_CHECKBOX(XRCID("RadiusScalarCheckBox"), wxSceneEditor::EnterRadius)
+	 EVT_RADIOBUTTON(XRCID("IsoValueListRadioButton"), wxSceneEditor::EnterIsoScalar)
+	 EVT_RADIOBUTTON(XRCID("IsoValueSequenceRadioButton"), wxSceneEditor::EnterIsoScalar)
 	 EVT_TEXT_ENTER(XRCID("IsoScalarTextCtrl"),wxSceneEditor::EnterIsoScalar)
+	 EVT_TEXT_ENTER(XRCID("IsoValueSequenceNumberTextCtrl"),wxSceneEditor::EnterIsoScalar)
+	 EVT_TEXT_ENTER(XRCID("IsoValueSequenceFirstTextCtrl"),wxSceneEditor::EnterIsoScalar)
+	 EVT_TEXT_ENTER(XRCID("IsoValueSequenceLastTextCtrl"),wxSceneEditor::EnterIsoScalar)
 	 EVT_TEXT_ENTER(XRCID("CentreTextCtrl"),wxSceneEditor::EnterGlyphCentre)
 	 EVT_TEXT_ENTER(XRCID("BaseGlyphSizeTextCtrl"),wxSceneEditor::EnterGlyphSize)
 	 EVT_TEXT_ENTER(XRCID("GlyphScaleFactorsTextCtrl"),wxSceneEditor::EnterGlyphScale)

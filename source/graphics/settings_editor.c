@@ -991,7 +991,7 @@ DESCRIPTION :
 Callback for change of iso_scalar field.
 ==============================================================================*/
 {
-	double decimation_threshold, *iso_values;
+	double decimation_threshold, *iso_values, first_iso_value, last_iso_value;
 	int number_of_iso_values;
 	struct Computed_field *scalar_field;
 	struct Settings_editor *settings_editor;
@@ -1003,11 +1003,11 @@ Callback for change of iso_scalar field.
 	{
 		GT_element_settings_get_iso_surface_parameters(
 			settings_editor->current_settings,&scalar_field,&number_of_iso_values,
-			&iso_values,&decimation_threshold);
+			&iso_values,&first_iso_value,&last_iso_value,&decimation_threshold);
 		scalar_field=(struct Computed_field *)scalar_field_void;
 		if (GT_element_settings_set_iso_surface_parameters(
 			settings_editor->current_settings,scalar_field,number_of_iso_values,
-			iso_values,decimation_threshold))
+			iso_values,first_iso_value,last_iso_value,decimation_threshold))
 		{
 			/* inform the client of the change */
 			settings_editor_update(settings_editor);
@@ -1049,7 +1049,8 @@ Called when entry is made into the iso_value text field.
 		{
 			GT_element_settings_get_iso_surface_parameters(
 				settings_editor->current_settings,&scalar_field,&number_of_iso_values,
-				&current_iso_values, &decimation_threshold);
+				&current_iso_values, &first_iso_value,&last_iso_value,
+				&decimation_threshold);
 			/* Get the text string */
 			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
 			if (text_entry)
@@ -1071,7 +1072,8 @@ Called when entry is made into the iso_value text field.
 					if (0 < sscanf(text_entry+offset,"%lg%n",&iso_values[i], &length))
 					{
 						offset += length;
-						if ((i >= number_of_iso_values) || (iso_values[i] != current_iso_values[i]))
+						if ((i >= number_of_iso_values) || (!current_iso_values)
+							|| (iso_values[i] != current_iso_values[i]))
 						{
 							changed_value = 1;
 						}
@@ -1088,7 +1090,8 @@ Called when entry is made into the iso_value text field.
 					number_of_iso_values = i;
 					GT_element_settings_set_iso_surface_parameters(
 						settings_editor->current_settings,scalar_field,
-						number_of_iso_values, iso_values, decimation_threshold);
+						number_of_iso_values, iso_values, 
+						first_iso_value,last_iso_value,decimation_threshold);
 					/* inform the client of the change */
 					settings_editor_update(settings_editor);
 				}
@@ -1098,7 +1101,10 @@ Called when entry is made into the iso_value text field.
 				display_message(ERROR_MESSAGE,
 					"settings_editor_constant_iso_value_text_CB.  Missing text");
 			}
-			DEALLOCATE(current_iso_values);
+			if (current_iso_values)
+			{
+				DEALLOCATE(current_iso_values);
+			}
 
 			vector_temp_string = (char *)NULL;
 			error = 0;
@@ -3968,23 +3974,27 @@ Changes the currently chosen settings.
 							if ((GT_ELEMENT_SETTINGS_ISO_SURFACES==settings_type)&&
 								GT_element_settings_get_iso_surface_parameters(new_settings,
 									&iso_scalar_field,&number_of_iso_values,&iso_values,
+									&first_iso_value,&last_iso_value,
 									&decimation_threshold)&&iso_scalar_field)
 							{
 								CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
 									settings_editor->iso_scalar_field_widget,
 									iso_scalar_field);
-								vector_temp_string = (char *)NULL;
-								error = 0;
-								for (i = 0 ; !error && (i < number_of_iso_values) ; i++)
+								if (iso_values)
 								{
-									sprintf(temp_string,"%g ",iso_values[i]);
-									append_string(&vector_temp_string, temp_string, &error);
-								}
-								if (vector_temp_string)
-								{
-									XtVaSetValues(settings_editor->iso_value_text,XmNvalue,
-										vector_temp_string,NULL);
-									DEALLOCATE(vector_temp_string);
+									vector_temp_string = (char *)NULL;
+									error = 0;
+									for (i = 0 ; !error && (i < number_of_iso_values) ; i++)
+									{
+										sprintf(temp_string,"%g ",iso_values[i]);
+										append_string(&vector_temp_string, temp_string, &error);
+									}
+									if (vector_temp_string)
+									{
+										XtVaSetValues(settings_editor->iso_value_text,XmNvalue,
+											vector_temp_string,NULL);
+										DEALLOCATE(vector_temp_string);
+									}
 								}
 								/* turn on callbacks */
 								callback.data=(void *)settings_editor;

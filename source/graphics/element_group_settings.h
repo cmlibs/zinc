@@ -663,24 +663,31 @@ finite_element/finite_element_to_graphics object for explanation of how the
 
 int GT_element_settings_get_iso_surface_parameters(
 	struct GT_element_settings *settings,struct Computed_field **iso_scalar_field,
-	int *number_of_iso_values, double **iso_values, double *decimation_threshold);
+	int *number_of_iso_values, double **iso_values,
+	double *first_iso_value, double *last_iso_value, 
+	double *decimation_threshold);
 /*******************************************************************************
-LAST MODIFIED : 21 February 2005
+LAST MODIFIED : 13 July 2007
 
 DESCRIPTION :
-Returns parameters for a set of iso_surfaces: iso_scalar_field = iso_values.
-It is up to the calling function to DEALLOCATE the returned array of iso_values.
+Returns parameters for the iso_surface: iso_scalar_field = iso_value.
+Either the iso_values are stored in the array <iso_values> or they are
+distributed from <first_iso_value> to <last_iso_value>.
 For settings_type GT_ELEMENT_SETTINGS_ISO_SURFACES only.
 ==============================================================================*/
 
 int GT_element_settings_set_iso_surface_parameters(
 	struct GT_element_settings *settings,struct Computed_field *iso_scalar_field,
-	int number_of_iso_values, double *iso_values, double decimation_threshold);
+	int number_of_iso_values, double *iso_values,
+	double first_iso_value, double last_iso_value,
+	double decimation_threshold);
 /*******************************************************************************
-LAST MODIFIED : 21 February 2005
+LAST MODIFIED : 13 July 2007
 
 DESCRIPTION :
-Sets parameters for a set of iso_surfaces: iso_scalar_field = iso_values.
+Sets parameters for the iso_surface: iso_scalar_field = iso_value.
+Either the iso_values are stored in the array <iso_values> or they are
+distributed from <first_iso_value> to <last_iso_value>.
 For settings_type GT_ELEMENT_SETTINGS_ISO_SURFACES only - must call this after
 CREATE to define a valid iso_surface.
 ==============================================================================*/

@@ -328,7 +328,7 @@
 													<object class="sizeritem">
 														<flag>wxALIGN_CENTRE_VERTICAL</flag>
 														<object class	="wxStaticText" name="IsoScalarText"> 
-															<label>Iso-scaler:</label>				  			
+															<label>Iso-scalar:</label>				  			
 	 													</object>
 													</object>
 													<object class="sizeritem">
@@ -340,12 +340,17 @@
 											</object>
 
 											<object class="sizeritem">
-				   								<object class = "wxBoxSizer">	
+				   							<object class = "wxPanel" name="IsoValueOptions">	
+				   							<object class = "wxStaticBoxSizer" name="IsoValueOptionsSizer">
+													<label>Iso-values</label>
+												<orient>wxVERTICAL</orient>
+													<object class="sizeritem">
+			   								<object class = "wxBoxSizer">	
 													<orient>wxHORIZONTAL</orient>
 													<object class="sizeritem">
 														<flag>wxALIGN_CENTRE_VERTICAL</flag>
-														<object class	="wxStaticText" name="IsoValueText"> 
-															<label>  =Iso-value:</label>				  			
+														<object class	="wxRadioButton" name="IsoValueListRadioButton">
+															<label>List:</label>
 	 													</object>
 													</object>
 													<object class="sizeritem">
@@ -353,6 +358,59 @@
 															<style>wxTE_PROCESS_ENTER</style>	
 														<value>0</value>
 	 													</object>
+													</object>
+												</object>
+													</object>
+													<object class="sizeritem">
+			   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxRadioButton" name="IsoValueSequenceRadioButton">
+															<label>Sequence:</label>
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText" name="IsoValueSequenceNumberStaticText">
+															<label>Number:</label>
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+ 														<object class	="wxTextCtrl" name="IsoValueSequenceNumberTextCtrl">
+															<style>wxTE_PROCESS_ENTER</style>	
+														<value>0</value>
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText" name="IsoValueSequenceFirstStaticText">
+															<label>First:</label>
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+ 														<object class	="wxTextCtrl" name="IsoValueSequenceFirstTextCtrl">
+															<style>wxTE_PROCESS_ENTER</style>	
+														<value>0</value>
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxStaticText" name="IsoValueSequenceLastStaticText">
+															<label>Last:</label>
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+ 														<object class	="wxTextCtrl" name="IsoValueSequenceLastTextCtrl">
+															<style>wxTE_PROCESS_ENTER</style>	
+														<value>0</value>
+	 													</object>
+													</object>
+												</object>
+													</object>
 													</object>
 												</object>
 											</object>
