@@ -1624,6 +1624,11 @@ public:
   {
   };
 
+
+  ~wxCommandWindow()
+  {
+  };
+
 	 void CommandEntered(wxCommandEvent& event)
 	 {
 			command_line = XRCCTRL(*this, "CommandLine", wxTextCtrl);
@@ -1836,53 +1841,57 @@ void keydown(wxKeyEvent& event)
 	 history_list = XRCCTRL(*this,"CommandHistory", wxListBox);
 	 int selection = history_list->GetSelection();
 	 int number_of_items = history_list->GetCount();
-	 if (event.GetKeyCode()==WXK_DOWN)
+	 int key_code = event.GetKeyCode();
+	 
+	 switch (key_code)
 	 {
-			if (selection == wxNOT_FOUND)
-			{
-				 history_list->SetSelection(number_of_items - 1);
-			}
-			else if (number_of_items>selection+1)
-			{
-				 history_list->SetSelection(selection+1);
-			}
-			history_list->SetFocus();
-			SelectedCommand = history_list->GetStringSelection();
-			command_line -> Clear();
-			command_line -> WriteText(SelectedCommand);
-			event.Skip(); 
-	 }
-	 else if (event.GetKeyCode()==WXK_UP)
-	 {
-			if (selection == wxNOT_FOUND)
-			{
-				 history_list->SetSelection(number_of_items - 2);
-				 
-			}
-			else if (selection-1>=0)
-			{
-				 history_list->SetSelection(selection-1);
-			}
-			history_list->SetFocus();
-			SelectedCommand = history_list->GetStringSelection();
-			command_line -> Clear();
-			command_line -> WriteText(SelectedCommand);
-			event.Skip(); 
-	 }
-	 else if ((event.GetKeyCode()==WXK_LEFT) || (event.GetKeyCode()==WXK_RIGHT))
-	 {
-			command_line->SetFocus();
-			event.Skip(); 
-	 }
-	 else if  ((event.GetKeyCode()>31) &&  (event.GetKeyCode()<127))
-	 {
-			command_line->SetFocus();
-			command_line -> AppendText("");
-			event.Skip(); 
-	 }
-	 else
-	 {
-			event.Skip(); 
+			case WXK_DOWN:
+				 if (selection == wxNOT_FOUND)
+				 {
+						history_list->SetSelection(number_of_items - 1);
+				 }
+				 else if (number_of_items>selection+1)
+				 {
+						history_list->SetSelection(selection+1);
+				 }
+				 history_list->SetFocus();
+				 SelectedCommand = history_list->GetStringSelection();
+				 command_line -> Clear();
+				 command_line -> WriteText(SelectedCommand);
+				 event.Skip(); 
+				 break;
+			case WXK_UP:
+				 if (selection == wxNOT_FOUND)
+				 {
+						history_list->SetSelection(number_of_items - 2);
+						
+				 }
+				 else if (selection-1>=0)
+				 {
+						history_list->SetSelection(selection-1);
+				 }
+				 history_list->SetFocus();
+				 SelectedCommand = history_list->GetStringSelection();
+				 command_line -> Clear();
+				 command_line -> WriteText(SelectedCommand);
+				 event.Skip();
+				 break;
+			case WXK_LEFT: case WXK_RIGHT:
+				 command_line->SetFocus();
+				 event.Skip();
+				 break;
+			default:
+				 if  (key_code>31 && key_code<127)
+				 {
+						command_line->SetFocus();
+						command_line -> AppendText("");
+						event.Skip(); 
+				 }
+				 else
+				 {
+						event.Skip(); 
+				 }
+				 break;
 	 }
 } 
 
@@ -1905,11 +1914,9 @@ Display the command onto the list
 	 }
 }	 
 	 
-DECLARE_DYNAMIC_CLASS(wxCommandWindow);
+
    DECLARE_EVENT_TABLE();
 };
-
-IMPLEMENT_DYNAMIC_CLASS(wxCommandWindow, wxFrame)
 
 BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	 EVT_TEXT_ENTER(XRCID("CommandLine"), wxCommandWindow::CommandEntered)
@@ -2461,6 +2468,8 @@ Create the structures and retrieve the command window from the uil file.
 				 XRCCTRL(*command_window->wx_command_window, "CommandSplitterWindow", 
 						wxSplitterWindow);
 			splitter_window->SetSashPosition(220);
+			wxTextCtrl *command_line = XRCCTRL(*command_window->wx_command_window, "CommandLine", wxTextCtrl);
+			command_line->SetFocus();
 #endif /* switch (USER_INTERFACE) */
 		}
 		else
