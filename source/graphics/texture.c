@@ -4874,13 +4874,13 @@ each size to be a power of two.
 			*dimension = texture->dimension;
 			if (texture->dimension > 0)
 			{
-				(*sizes)[0] = texture->width_texels;
+				(*sizes)[0] = texture->original_width_texels;
 				if (texture->dimension > 1)
 				{
-					(*sizes)[1] = texture->height_texels;
+					(*sizes)[1] = texture->original_height_texels;
 					if (texture->dimension > 2)
 					{
-						(*sizes)[2] = texture->depth_texels;
+						(*sizes)[2] = texture->original_depth_texels;
 					}
 				}
 			}
@@ -5716,25 +5716,25 @@ by vertex programs.
 				texture_scaling);
 
 
-			if (texture->width)
+			if (texture->rendered_width_texels)
 			{
-				texel_size[0] = 1.0 / texture->width_texels;
+				texel_size[0] = 1.0 / texture->rendered_width_texels;
 			}
 			else
 			{
 				texel_size[0] = 0.0;
 			}
-			if (texture->height)
+			if (texture->rendered_height_texels)
 			{
-				texel_size[1] = 1.0 / texture->height_texels;
+				texel_size[1] = 1.0 / texture->rendered_height_texels;
 			}
 			else
 			{
 				texel_size[1] = 0.0;
 			}
-			if (texture->depth)
+			if (texture->rendered_depth_texels)
 			{
-				texel_size[2] = 1.0 / texture->depth_texels;
+				texel_size[2] = 1.0 / texture->rendered_depth_texels;
 			}
 			else
 			{
