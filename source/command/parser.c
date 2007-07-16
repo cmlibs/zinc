@@ -5441,6 +5441,37 @@ the token following is assigned to <value>.
 	return (return_code);
 } /* Option_table_add_float_entry */
 
+int Option_table_add_float_vector_entry(struct Option_table *option_table,
+	char *token, float *vector, int *number_of_components)
+/*******************************************************************************
+LAST MODIFIED : 16 July 2007
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  The <vector> is filled in with the
+<number_of_components>.
+<number_of_components> can be zero and <values> can be NULL as long as only
+help mode is entered.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_add_float_vector_entry);
+	if (option_table && token && number_of_components)
+	{
+		return_code = Option_table_add_entry(option_table, token, vector,
+			(void *)number_of_components, set_float_vector);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_float_vector_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_float_vector_entry */
+
 int Option_table_add_FE_value_vector_entry(struct Option_table *option_table,
 	char *token, FE_value *vector, int *number_of_components)
 /*******************************************************************************
