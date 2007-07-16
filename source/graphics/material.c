@@ -219,6 +219,11 @@ The properties of a material.
 	/* the shared information for Graphical Materials, allowing them to share
 	   Material_programs */
 	struct Material_package *package;
+	/* The normal calculated from the volume texture needs to be 
+		scaled similarly to how it is scaled into coordinate space,
+		we do not take account of rotations or any other distortions.
+		Four components as that is what ProgramEnvParameter4fvARB wants. */
+	float lit_volume_normal_scaling[4];
 	/* the graphics state program that represents this material */
 	struct Material_program *program;
 	int access_count;
@@ -1002,6 +1007,7 @@ be shared by multiple materials using the same program.
 							append_string(&fragment_program_string,
 								"#Calculate a finite difference normal based on the magnitude of texture components used.\n"
 								"PARAM texture_scaling = program.env[0];\n"
+								"PARAM normal_scaling = program.env[3];\n"
 								"TEMP position_up, position_down, tex_up, tex_down;\n"
 								"\n"
 								, &error);
@@ -1073,8 +1079,7 @@ be shared by multiple materials using the same program.
 								}
 							}
 							append_string(&fragment_program_string,
-								/* Scale this normal, the 3 here is arbitrary. */
-								"MUL  normal, normal, {3,3,3,0};\n"
+								"MUL  normal, normal, normal_scaling;\n"
 								, &error);
 						}
 
@@ -1116,7 +1121,7 @@ be shared by multiple materials using the same program.
 							"# Phong:\n"
 							"DP3		reflVec, lightVec, eyeNormal;\n"
 							"MUL		reflVec, reflVec, two;\n"
-							"MAD		reflVec, reflVec, eyeNormal, -lightVec;\n"
+							"MAD		reflVec, reflVec, -eyeNormal, lightVec;\n"
 							"\n"
 							"DP3_SAT	lightContrib.y, reflVec, viewVec;\n"
 							"MOV		lightContrib.w, state.material.shininess.x;\n"
@@ -1466,6 +1471,14 @@ material results.
 		if (material->program)
 		{
 			Material_program_execute(material->program);
+#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
+			if (Graphics_library_check_extension(GL_ARB_vertex_program) &&
+				Graphics_library_check_extension(GL_ARB_fragment_program))
+			{
+				glProgramEnvParameter4fvARB(GL_FRAGMENT_PROGRAM_ARB, 3,
+					material->lit_volume_normal_scaling);
+			}
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 		}
 		else
 		{
@@ -1903,6 +1916,10 @@ Allocates memory and assigns fields for a material.
 			material->texture=(struct Texture *)NULL;
 			material->secondary_texture=(struct Texture *)NULL;
 			material->package = (struct Material_package *)NULL;
+			material->lit_volume_normal_scaling[0] = 1.0;
+			material->lit_volume_normal_scaling[1] = 1.0;
+			material->lit_volume_normal_scaling[2] = 1.0;
+			material->lit_volume_normal_scaling[3] = 1.0;
 			material->program = (struct Material_program *)NULL;
 #if defined (OPENGL_API)
 			material->display_list=0;
@@ -2093,6 +2110,14 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
 			destination->package = (struct Material_package *)NULL;
 		}
 		REACCESS(Material_program)(&destination->program, source->program);
+		destination->lit_volume_normal_scaling[0] = 
+			source->lit_volume_normal_scaling[0];
+		destination->lit_volume_normal_scaling[1] = 
+			source->lit_volume_normal_scaling[1];
+		destination->lit_volume_normal_scaling[2] = 
+			source->lit_volume_normal_scaling[2];
+		destination->lit_volume_normal_scaling[3] = 
+			source->lit_volume_normal_scaling[3];
 		REACCESS(Spectrum)(&(destination->spectrum), source->spectrum);
 		if (destination->spectrum)
 		{
@@ -2909,7 +2934,7 @@ DESCRIPTION :
 		lit_volume_intensity_normal_texture_flag, lit_volume_scale_alpha_flag,
 		normal_mode_flag, per_pixel_mode_flag;
 	enum Spectrum_colour_components spectrum_colour_components;
-	int dimension, process, return_code;
+	int dimension, lit_volume_normal_scaling_number, process, return_code;
 	struct Graphical_material *material_to_be_modified,
 		*material_to_be_modified_copy;
 	struct Material_package *material_package;
@@ -3066,6 +3091,16 @@ DESCRIPTION :
 						"Alternatively it can be estimated on the fly by applying "
 						"a finite difference operator to the pixel intensities. "
 						"<lit_volume_finite_difference_normal>."
+						"A <lit_volume_normal_scaling> can be applied, modifying "
+						"the estimated normal by scaling it.  The normal is used "
+						"as if it is a coordinate normal and so the texture "
+						"coordinates must line up with the geometrical coordinates. "
+						"The <lit_volume_normal_scaling> can be used to account for "
+						"when the texture coordinates are not equally matched to "
+						"the geometrical coordinates. "
+						"The magnitude of the <lit_volume_normal_scaling> will only "
+						"affect the optional following parameter, "
+						"<lit_volume_scale_alpha>, scaling the alpha attenuation. "
 						"Optionally with either normal, the magnitude of that normal"
 						"can multiply the calculated alpha value, "
 						"<lit_volume_scale_alpha> making those pixels with small "
@@ -3103,6 +3138,11 @@ DESCRIPTION :
 					Option_table_add_char_flag_entry(option_table,
 						"lit_volume_finite_difference_normal",
 						&lit_volume_finite_difference_normal_flag);
+					lit_volume_normal_scaling_number = 3;
+					Option_table_add_float_vector_entry(option_table,
+						"lit_volume_normal_scaling",
+						material_to_be_modified_copy->lit_volume_normal_scaling,
+						&lit_volume_normal_scaling_number);
 					Option_table_add_char_flag_entry(option_table,
 						"lit_volume_scale_alpha",
 						&lit_volume_scale_alpha_flag);
