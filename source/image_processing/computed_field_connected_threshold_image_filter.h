@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_connected_threshold_filter.h
 
-LAST MODIFIED : 22 February 2007
+LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
 ==============================================================================*/
@@ -54,7 +54,7 @@ DESCRIPTION :
 int Computed_field_register_types_connected_threshold_image_filter(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
-LAST MODIFIED : 22 February 2007
+LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
 ==============================================================================*/
@@ -62,9 +62,9 @@ DESCRIPTION :
 int Computed_field_set_type_connected_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field *source_field,
   double lower_threshold, double upper_threshold, double replace_value,
-	int num_seed_points, int dimension, double *seed_values);
+	int num_seed_points, int dimension, double *seed_points);
 /*******************************************************************************
-LAST MODIFIED : 22 February 2007
+LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER, returning the value of
@@ -80,9 +80,9 @@ in response to changes in the connected_threshold_image_filter from the control 
 int Computed_field_get_type_connected_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field,
   double *lower_threshold, double *upper_threshold, double *replace_value,
-	int *num_seed_points, int *dimension, double **seed_values);
+	int *num_seed_points, int *dimension, double **seed_points);
 /*******************************************************************************
-LAST MODIFIED : 22 February 2007
+LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER, the source_field and connected_threshold_image_filter

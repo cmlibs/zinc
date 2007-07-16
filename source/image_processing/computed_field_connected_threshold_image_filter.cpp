@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_connected_threshold_image_filter.c
 
-LAST MODIFIED : 22 February 2007
+LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
 Wraps itk::MeanImageFilter
@@ -72,17 +72,17 @@ public:
 	double upper_threshold;
   double replace_value;
 	int num_seed_points;
-	double *seed_values;
+	double *seed_points;
 
 	// Need something to represent index
 
 	Computed_field_connected_threshold_image_filter(Computed_field *field,
-		double lower_threshold, double upper_threshold, double replace_value, int num_seed_points, double *seed_values);
+		double lower_threshold, double upper_threshold, double replace_value, int num_seed_points, double *seed_points);
 
 	~Computed_field_connected_threshold_image_filter()
 	{
-		if (seed_values) {
-			delete seed_values;
+		if (seed_points) {
+			delete seed_points;
 		}				
 	}
 
@@ -90,7 +90,7 @@ private:
 	Computed_field_core *copy(Computed_field* new_parent)
 	{
 		return new Computed_field_connected_threshold_image_filter(new_parent,
- 		  lower_threshold, upper_threshold, replace_value, num_seed_points, seed_values);
+ 		  lower_threshold, upper_threshold, replace_value, num_seed_points, seed_points);
 	}
 
 	char *get_type_string()
@@ -107,7 +107,7 @@ private:
 
 int Computed_field_connected_threshold_image_filter::compare(Computed_field_core *other_core)
 /*******************************************************************************
-LAST MODIFIED : 22 February 2007
+LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
 Compare the type specific data.
@@ -129,10 +129,10 @@ Compare the type specific data.
 
 			return_code = 1;
 
-			// check that all seed_values match
+			// check that all seed_points match
 			for (i = 0 ; return_code && (i < dimension*num_seed_points) ; i++)
 				{
-				if (seed_values[i] != other->seed_values[i])
+				if (seed_points[i] != other->seed_points[i])
 				{
 					return_code = 0;
 				}
@@ -157,7 +157,7 @@ template < class ImageType >
 class Computed_field_connected_threshold_image_filter_Functor :
 	public Computed_field_ImageFilter_FunctorTmpl< ImageType >
 /*******************************************************************************
-LAST MODIFIED : 22 February 2007
+LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
 This class actually does the work of processing images with the filter.
@@ -205,7 +205,7 @@ and generate the outputImage.
 		// get first seed  point
 		for (i = 0; i < dimension; i++)
 		{
-			seedIndex[i]=(int)(connected_threshold_image_filter->seed_values[i] * image_size[i]);
+			seedIndex[i]=(int)(connected_threshold_image_filter->seed_points[i] * image_size[i]);
 		}
 		filter->SetSeed(seedIndex);
 
@@ -213,7 +213,7 @@ and generate the outputImage.
 		for (j = 1; j < num_seed_points; j++) {
 
 			for (i = 0; i < dimension; i++) {
-				seedIndex[i]=(int)(connected_threshold_image_filter->seed_values[j * dimension + i] * image_size[i]);
+				seedIndex[i]=(int)(connected_threshold_image_filter->seed_points[j * dimension + i] * image_size[i]);
 			}
 			filter->AddSeed(seedIndex);
 		}
@@ -230,12 +230,12 @@ and generate the outputImage.
 
 Computed_field_connected_threshold_image_filter::Computed_field_connected_threshold_image_filter(
 	Computed_field *field,
-	double lower_threshold, double upper_threshold, double replace_value, int num_seed_points, double *seed_values_in) :
+	double lower_threshold, double upper_threshold, double replace_value, int num_seed_points, double *seed_points_in) :
 	Computed_field_ImageFilter(field),
 	lower_threshold(lower_threshold), upper_threshold(upper_threshold), 
   replace_value(replace_value), num_seed_points(num_seed_points)
 /*******************************************************************************
-LAST MODIFIED : 22 February 2007
+LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
 Create the computed_field representation of the connected threshold image filter.
@@ -243,14 +243,14 @@ Create the computed_field representation of the connected threshold image filter
 {
 
 	
-	// NEED to allocate seed_values array by copying it to memory here.
+	// NEED to allocate seed_points array by copying it to memory here.
 	// see resample code for some idea
 	int i;
-	int num_seed_values;
-	num_seed_values = dimension * num_seed_points;
-	seed_values = new double[num_seed_values];
-	for (i = 0 ; i < num_seed_values ; i++) {
-		seed_values[i] = seed_values_in[i];
+	int seed_points_length;
+	seed_points_length = dimension * num_seed_points;
+	seed_points = new double[seed_points_length];
+	for (i = 0 ; i < seed_points_length; i++) {
+		seed_points[i] = seed_points_in[i];
 	}
 	
 	
@@ -267,7 +267,7 @@ Create the computed_field representation of the connected threshold image filter
 
 int Computed_field_connected_threshold_image_filter::list()
 /*******************************************************************************
-LAST MODIFIED : 22 February 2007
+LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
 ==============================================================================*/
@@ -290,10 +290,10 @@ DESCRIPTION :
 			"    num_seed_points : %d\n", num_seed_points);
 		display_message(INFORMATION_MESSAGE,
 			"    dimension : %d\n", dimension);
-		display_message(INFORMATION_MESSAGE,"    seed_values :");
+		display_message(INFORMATION_MESSAGE,"    seed_points :");
 
 		for (i = 0; i < dimension*num_seed_points; i++) {
-			display_message(INFORMATION_MESSAGE," %g",seed_values[i]);
+			display_message(INFORMATION_MESSAGE," %g",seed_points[i]);
 		}		
 		display_message(INFORMATION_MESSAGE,"\n");
 
@@ -311,7 +311,7 @@ DESCRIPTION :
 
 char *Computed_field_connected_threshold_image_filter::get_command_string()
 /*******************************************************************************
-LAST MODIFIED : 22 February 2007
+LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
@@ -345,10 +345,10 @@ Returns allocated command string for reproducing field. Includes type.
 		append_string(&command_string, temp_string, &error);		
 		sprintf(temp_string, " dimension %d", dimension);	
 		append_string(&command_string, temp_string, &error);		
-		append_string(&command_string, " seed_values", &error);
+		append_string(&command_string, " seed_points", &error);
 		for (i = 0; i < dimension*num_seed_points; i++)
 		{
-			sprintf(temp_string, " %g", seed_values[i]);
+			sprintf(temp_string, " %g", seed_points[i]);
 			append_string(&command_string, temp_string, &error);
 		}
 
@@ -367,9 +367,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 int Computed_field_set_type_connected_threshold_image_filter(struct Computed_field *field,
   struct Computed_field *source_field, double lower_threshold, double upper_threshold, 
-		double replace_value, int num_seed_points, int dimension, double *seed_values)
+		double replace_value, int num_seed_points, int dimension, double *seed_points)
 /*******************************************************************************
-LAST MODIFIED : 22 February 2007
+LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER.
@@ -403,7 +403,7 @@ occurs.
 			field->source_fields = source_fields;
 			field->number_of_source_fields = number_of_source_fields;			
 			field->core = new Computed_field_connected_threshold_image_filter(field,lower_threshold, 
-            							upper_threshold, replace_value, num_seed_points, seed_values);
+            							upper_threshold, replace_value, num_seed_points, seed_points);
 		}
 		else
 		{
@@ -424,9 +424,9 @@ occurs.
 
 int Computed_field_get_type_connected_threshold_image_filter(struct Computed_field *field,
   struct Computed_field **source_field, double *lower_threshold, double *upper_threshold, 
-	  double *replace_value, int *num_seed_points, int *seed_dimension, double **seed_values)
+	  double *replace_value, int *num_seed_points, int *seed_dimension, double **seed_points)
 /*******************************************************************************
-LAST MODIFIED : 22 February 2007
+LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER, 
@@ -436,7 +436,7 @@ otherwise an error is reported.
 {
 	Computed_field_connected_threshold_image_filter* core;
 	int return_code;
-	int i, num_seed_values;
+	int i, seed_points_length;
 
 
 	ENTER(Computed_field_get_type_connected_threshold_image_filter);
@@ -450,10 +450,10 @@ otherwise an error is reported.
 		*num_seed_points = core->num_seed_points;
 		*seed_dimension = core->dimension;
 
-		num_seed_values = core->dimension * core->num_seed_points;
-		ALLOCATE(*seed_values, double, num_seed_values);
-		for (i=0; i < num_seed_values ;i++) {
-			(*seed_values)[i]=core->seed_values[i];
+		seed_points_length = core->dimension * core->num_seed_points;
+		ALLOCATE(*seed_points, double, seed_points_length);
+		for (i=0; i < seed_points_length;i++) {
+			(*seed_points)[i]=core->seed_points[i];
 		}
 		
 		return_code = 1;
@@ -482,9 +482,9 @@ already) and allows its contents to be modified.
 	double lower_threshold, upper_threshold, replace_value;
 	int num_seed_points;
 	int seed_dimension;
-  double *seed_values;
+  double *seed_points;
 	int return_code;
-	int num_values;
+	int seed_points_length;
 	int previous_state_index, expected_parameters;
 
 	struct Computed_field *field, *source_field;
@@ -501,15 +501,15 @@ already) and allows its contents to be modified.
 		source_field = (struct Computed_field *)NULL;
 		lower_threshold = 0.0;
 		upper_threshold = 1.0;
-		replace_value = 255;
+		replace_value = 1;
 		num_seed_points = 0;
 		seed_dimension  = 2;
-		seed_values = (double *)NULL;
+		seed_points = (double *)NULL;
 
 		// should probably default to having 1 seed point
-		//		seed_values[0] = 0.5;  // pjb: is this ok?
-		//		seed_values[1] = 0.5;
-		num_values = 0;
+		//		seed_points[0] = 0.5;  // pjb: is this ok?
+		//		seed_points[1] = 0.5;
+		seed_points_length = 0;
 
 		/* get valid parameters for projection field */
 		if (computed_field_connected_threshold_image_filter_type_string ==
@@ -518,7 +518,7 @@ already) and allows its contents to be modified.
 			return_code =
 				Computed_field_get_type_connected_threshold_image_filter(field, &source_field,
   				&lower_threshold, &upper_threshold, &replace_value, 
-          &num_seed_points, &seed_dimension, &seed_values);
+          &num_seed_points, &seed_dimension, &seed_points);
 		}
 		if (return_code)
 		{
@@ -535,7 +535,7 @@ already) and allows its contents to be modified.
 				/* Handle help separately */
 				option_table = CREATE(Option_table)();
 			Option_table_add_help(option_table,
-				"The connected_threshold_filter field uses the itk::ConnectedThresholdImageFilter code to segment a field. The <field> it operates on is usually a sample_texture field, based on a texture that has been created from image file(s).  The segmentation is based on a region growing algorithm which requires at least one seed point.  To specify the seed points first set the <num_seed_points> and the <dimension> of the image.  The <seed_values> are a list of the coordinates for the first and any subsequent seed points.  Starting from the seed points any neighbouring pixels with an intensity between <lower_threshold> and the <upper_threshold> are added to the region.  Pixels within the region have their pixel intensity set to <replace_value> while the remaining pixels are set to 0. See a/testing/image_processing_2D for an example of using this field.  For more information see the itk software guide.");
+				"The connected_threshold_filter field uses the itk::ConnectedThresholdImageFilter code to segment a field. The <field> it operates on is usually a sample_texture field, based on a texture that has been created from image file(s).  The segmentation is based on a region growing algorithm which requires at least one seed point.  To specify the seed points first set the <num_seed_points> and the <dimension> of the image.  The <seed_points> are a list of the coordinates for the first and any subsequent seed points.  Starting from the seed points any neighbouring pixels with an intensity between <lower_threshold> and the <upper_threshold> are added to the region.  Pixels within the region have their pixel intensity set to <replace_value> while the remaining pixels are set to 0. See a/testing/image_processing_2D for an example of using this field.  For more information see the itk software guide.");
 
 				/* field */
 				set_source_field_data.computed_field_manager =
@@ -558,8 +558,8 @@ already) and allows its contents to be modified.
 																						&num_seed_points);
 				Option_table_add_int_positive_entry(option_table, "dimension",
 																						&seed_dimension);
-				Option_table_add_double_vector_entry(option_table, "seed_values", 
-																						 seed_values, &num_values);
+				Option_table_add_double_vector_entry(option_table, "seed_points", 
+																						 seed_points, &seed_points_length);
 				return_code = Option_table_multi_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 			}
@@ -593,9 +593,9 @@ already) and allows its contents to be modified.
 			/* parse the rest of the table */
 			if (return_code)
 			{
-				num_values = num_seed_points * seed_dimension;
+				seed_points_length = num_seed_points * seed_dimension;
 								
-				REALLOCATE(seed_values, seed_values, double, num_values);
+				REALLOCATE(seed_points, seed_points, double, seed_points_length);
 				// pjb: should I populate array with dummy values?
 
 				option_table = CREATE(Option_table)();
@@ -621,8 +621,8 @@ already) and allows its contents to be modified.
 				expected_parameters = 1;
 				Option_table_add_ignore_token_entry(option_table, "dimension", 
 																						&expected_parameters);
-				Option_table_add_double_vector_entry(option_table, "seed_values", 
-																						 seed_values, &num_values);
+				Option_table_add_double_vector_entry(option_table, "seed_points", 
+																						 seed_points, &seed_points_length);
 				return_code=Option_table_multi_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
 			}
@@ -642,7 +642,7 @@ already) and allows its contents to be modified.
 			{
 				return_code = Computed_field_set_type_connected_threshold_image_filter(field, 
           source_field, lower_threshold, upper_threshold, replace_value, 
-          num_seed_points, seed_dimension, seed_values);				
+          num_seed_points, seed_dimension, seed_points);				
 			}
 			
 			if (!return_code)
@@ -662,8 +662,8 @@ already) and allows its contents to be modified.
 				DEACCESS(Computed_field)(&source_field);
 			}
 
-			if (seed_values) {
-				DEALLOCATE(seed_values);
+			if (seed_points) {
+				DEALLOCATE(seed_points);
 			}
 		}
 	}
