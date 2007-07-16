@@ -71,19 +71,19 @@ cmgui-win32 cmgui-win32-debug cmgui-win32-static cmgui-win32-static-debug cmgui6
 cmgui-win32 cmgui-win32-debug cmgui-win32-static cmgui-win32-static-debug cmgui64-win32 cmgui64-win32-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
 cmgui-motif-static cmgui-motif-static-debug : STATIC_LINK_OPTION=STATIC_LINK=$(STATIC_LINK)
 cmgui-motif-static cmgui-motif-static-debug : STATIC_LINK=true
-cmgui-motif cmgui-motif-static cmgui64-motif cmgui-console cmgui-wx cmgui-carbon cmgui-gtk cmgui-no3dgraphics-motif cmgui64-no3dgraphics-motif cmgui-motif-unemap cmgui-win32 : DEBUG_OPTION=DEBUG=$(DEBUG)
-cmgui-motif cmgui-motif-static cmgui64-motif cmgui-console cmgui-wx cmgui-carbon cmgui-gtk cmgui-no3dgraphics-motif cmgui64-no3dgraphics-motif cmgui-motif-unemap cmgui-win32 : DEBUG=false
-cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-wx-debug-memorycheck cmgui-motif-static-debug cmgui64-motif-debug cmgui-wx-debug  cmgui-carbon-debug cmgui-gtk-debug cmgui-no3dgraphics-motif-debug cmgui-no3dgraphics-motif-debug-memorycheck cmgui64-no3dgraphics-motif-debug cmgui-motif-unemap-debug cmgui-win32-debug : DEBUG_OPTION=DEBUG=$(DEBUG)
-cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-wx-debug-memorycheck cmgui-motif-static-debug cmgui64-motif-debug cmgui-wx-debug  cmgui-carbon-debug cmgui-gtk-debug cmgui-no3dgraphics-motif-debug cmgui-no3dgraphics-motif-debug-memorycheck cmgui64-no3dgraphics-motif-debug cmgui-motif-unemap-debug cmgui-win32-debug : DEBUG=true
+cmgui-motif cmgui-motif-static cmgui64-motif cmgui-console cmgui-wx cmgui64-wx cmgui-carbon cmgui-gtk cmgui-no3dgraphics-motif cmgui64-no3dgraphics-motif cmgui-motif-unemap cmgui-win32 : DEBUG_OPTION=DEBUG=$(DEBUG)
+cmgui-motif cmgui-motif-static cmgui64-motif cmgui-console cmgui-wx cmgui64-wx cmgui-carbon cmgui-gtk cmgui-no3dgraphics-motif cmgui64-no3dgraphics-motif cmgui-motif-unemap cmgui-win32 : DEBUG=false
+cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-wx-debug-memorycheck cmgui64-wx-debug cmgui64-wx-debug-memorycheck cmgui-motif-static-debug cmgui64-motif-debug cmgui-wx-debug  cmgui-carbon-debug cmgui-gtk-debug cmgui-no3dgraphics-motif-debug cmgui-no3dgraphics-motif-debug-memorycheck cmgui64-no3dgraphics-motif-debug cmgui-motif-unemap-debug cmgui-win32-debug : DEBUG_OPTION=DEBUG=$(DEBUG)
+cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-wx-debug-memorycheck cmgui64-wx-debug cmgui64-wx-debug-memorycheck cmgui-motif-static-debug cmgui64-motif-debug cmgui-wx-debug  cmgui-carbon-debug cmgui-gtk-debug cmgui-no3dgraphics-motif-debug cmgui-no3dgraphics-motif-debug-memorycheck cmgui64-no3dgraphics-motif-debug cmgui-motif-unemap-debug cmgui-win32-debug : DEBUG=true
 cmgui64-motif cmgui64-motif-debug cmgui64-no3dgraphics-motif cmgui64-no3dgraphics-motif-debug utilities64 : ABI_OPTION=ABI=$(ABI)
 cmgui64-motif cmgui64-motif-debug cmgui64-no3dgraphics-motif cmgui64-no3dgraphics-motif-debug utilities64 : ABI=64
-cmgui-motif-debug-memorycheck cmgui-wx-debug-memorycheck cmgui-no3dgraphics-motif-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=$(MEMORYCHECK)
-cmgui-motif-debug-memorycheck cmgui-wx-debug-memorycheck cmgui-no3dgraphics-motif-debug-memorycheck : MEMORYCHECK=true
+cmgui-motif-debug-memorycheck cmgui-wx-debug-memorycheck cmgui-no3dgraphics-motif-debug-memorycheck cmgui64-wx-debug-memorycheck: MEMORYCHECK_OPTION=MEMORYCHECK=$(MEMORYCHECK)
+cmgui-motif-debug-memorycheck cmgui-wx-debug-memorycheck cmgui-no3dgraphics-motif-debug-memorycheck cmgui64-wx-debug-memorycheck: MEMORYCHECK=true
 cmgui-console : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
 cmgui-console : USER_INTERFACE=CONSOLE_USER_INTERFACE
 cmgui-gtk cmgui-gtk-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
-cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck: USER_INTERFACE=WX_USER_INTERFACE
-cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck: USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
+cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck cmgui64-wx cmgui64-wx-debug cmgui64-wx-debug-memorycheck: USER_INTERFACE=WX_USER_INTERFACE
+cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck cmgui64-wx cmgui64-wx-debug cmgui64-wx-debug-memorycheck: USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
 cmgui-carbon cmgui-carbon-debug : USER_INTERFACE=CARBON_USER_INTERFACE
 cmgui-carbon cmgui-carbon-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
 cmgui-gtk cmgui-gtk-debug : USER_INTERFACE=GTK_USER_INTERFACE
@@ -138,7 +138,7 @@ ifeq ($(SYSNAME),Linux)
    endif
 endif
 
-cmgui-motif cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-motif-static cmgui-motif-static-debug cmgui64-motif cmgui64-motif-debug cmgui-console cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck cmgui-carbon cmgui-carbon-debug cmgui-gtk cmgui-gtk-debug utilities cmgui-no3dgraphics-motif cmgui-no3dgraphics-motif-debug cmgui-no3dgraphics-motif-debug-memorycheck cmgui64-no3dgraphics-motif cmgui64-no3dgraphics-motif-debug cmgui-motif-unemap cmgui-motif-unemap-debug cmgui-win32 cmgui-win32-debug :
+cmgui-motif cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-motif-static cmgui-motif-static-debug cmgui64-motif cmgui64-motif-debug cmgui-console cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck cmgui64-wx cmgui64-wx-debug cmgui64-wx-debug-memorycheck cmgui-carbon cmgui-carbon-debug cmgui-gtk cmgui-gtk-debug utilities cmgui-no3dgraphics-motif cmgui-no3dgraphics-motif-debug cmgui-no3dgraphics-motif-debug-memorycheck cmgui64-no3dgraphics-motif cmgui64-no3dgraphics-motif-debug cmgui-motif-unemap cmgui-motif-unemap-debug cmgui-win32 cmgui-win32-debug :
 		cd source ; \
 		$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) $(DEVELOPER_OPTIONS) ;
 
@@ -193,7 +193,7 @@ all : cmgui-motif cmgui-motif-debug cmgui64-motif cmgui-console cmgui-motif-debu
 endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
    ifeq ($(MACHNAME),x86_64)
-all : svn_update cmgui-motif cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-motif-static-lib cmgui-motif-debug-static-lib cmgui-no3dgraphics-motif-static-lib cmgui-no3dgraphics-motif-debug-static-lib cmgui-no3dgraphics-motif-debug-memorycheck-static-lib cmgui-gtk-debug-static-lib cmgui-gtk-static-lib 
+all : svn_update cmgui-motif cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-motif-static-lib cmgui-motif-debug-static-lib cmgui-no3dgraphics-motif-static-lib cmgui-no3dgraphics-motif-debug-static-lib cmgui-no3dgraphics-motif-debug-memorycheck-static-lib cmgui-gtk-debug-static-lib cmgui-gtk-static-lib cmgui64-wx cmgui64-wx-debug cmgui64-wx-debug-memorycheck
    else # MACHNAME == x86_64
 all : svn_update cmgui-motif cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-motif-static cmgui-motif-static-debug cmgui-console cmgui-motif-static-lib cmgui-motif-debug-static-lib cmgui-gtk cmgui-gtk-debug cmgui-gtk-lib cmgui-gtk-debug-lib cmgui-gtk-static-lib cmgui-gtk-debug-static-lib cmgui-no3dgraphics-motif-static-lib cmgui-no3dgraphics-motif-debug-static-lib cmgui-no3dgraphics-motif-debug-memorycheck-static-lib cmgui-motif-unemap cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck
    endif # MACHNAME == x86_64
