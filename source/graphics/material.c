@@ -1471,14 +1471,68 @@ material results.
 		if (material->program)
 		{
 			Material_program_execute(material->program);
-#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
-			if (Graphics_library_check_extension(GL_ARB_vertex_program) &&
-				Graphics_library_check_extension(GL_ARB_fragment_program))
+			if (material->texture)
 			{
-				glProgramEnvParameter4fvARB(GL_FRAGMENT_PROGRAM_ARB, 3,
-					material->lit_volume_normal_scaling);
-			}
+#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
+				if (Graphics_library_check_extension(GL_ARB_vertex_program) &&
+					Graphics_library_check_extension(GL_ARB_fragment_program))
+				{
+					/* Adjust the scaling by the ratio from the original texel
+						size to the actually rendered texture size so that
+						we are independent of texture reduction. */
+					float normal_scaling[4];
+					unsigned int original_dimension, *original_sizes,
+						rendered_dimension, *rendered_sizes;
+
+					if (Cmiss_texture_get_original_texel_sizes(material->texture,
+							&original_dimension, &original_sizes) &&
+						Cmiss_texture_get_rendered_texel_sizes(material->texture,
+							&rendered_dimension, &rendered_sizes))
+					{
+						if ((original_dimension > 0) && (rendered_dimension > 0)
+							&& (original_sizes[0] > 0))
+						{
+							normal_scaling[0] = (float)rendered_sizes[0] / 
+								(float)original_sizes[0] *
+								material->lit_volume_normal_scaling[0];
+						}
+						else
+						{
+							normal_scaling[0] = 1.0;
+						}
+						if ((original_dimension > 1) && (rendered_dimension > 1)
+							&& (original_sizes[1] > 0))
+						{
+							normal_scaling[1] = (float)rendered_sizes[1] / 
+								(float)original_sizes[1] *
+								material->lit_volume_normal_scaling[1];
+						}
+						else
+						{
+							normal_scaling[1] = 1.0;
+						}
+						if ((original_dimension > 2) && (rendered_dimension > 2)
+							&& (original_sizes[2] > 0))
+						{
+							normal_scaling[2] = (float)rendered_sizes[2] / 
+								(float)original_sizes[2] *
+								material->lit_volume_normal_scaling[2];
+						}
+						else
+						{
+							normal_scaling[2] = 1.0;
+						}
+						normal_scaling[3] = 0.0;
+
+						glProgramEnvParameter4fvARB(GL_FRAGMENT_PROGRAM_ARB, 3,
+							normal_scaling);
+
+						DEALLOCATE(original_sizes);
+						DEALLOCATE(rendered_sizes);
+					}
 #endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+				}
+			}
 		}
 		else
 		{
