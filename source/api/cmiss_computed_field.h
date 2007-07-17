@@ -236,6 +236,52 @@ Sets number of components to same number as <source_field>.
 ==============================================================================*/
 
 
+int Cmiss_computed_field_get_type_binary_dilate_image_filter(struct Computed_field *field,
+	struct Computed_field **source_field,
+	int *radius, double *dilate_value);
+/*******************************************************************************
+LAST MODIFIED : 16 July 2007
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_BINARYDILATEFILTER, the source_field and binary_dilate_image_filter
+used by it are returned - otherwise an error is reported.
+==============================================================================*/
+
+int Cmiss_computed_field_set_type_binary_dilate_image_filter(struct Computed_field *field,
+	struct Computed_field *source_field,
+	int radius, double dilate_value);
+/*******************************************************************************
+LAST MODIFIED : 16 July 2007
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_BINARYDILATEFILTER, returning the value of
+<binary_dilate_image_filter> at the time/parameter value given by scalar <source_field>.
+Sets number of components to same number as <source_field>.
+==============================================================================*/
+
+int Cmiss_computed_field_get_type_binary_erode_image_filter(struct Computed_field *field,
+	struct Computed_field **source_field,
+	int *radius, double *erode_value);
+/*******************************************************************************
+LAST MODIFIED : 16 July 2007
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_BINARYERODEFILTER, the source_field and binary_erode_image_filter
+used by it are returned - otherwise an error is reported.
+==============================================================================*/
+
+int Cmiss_computed_field_set_type_binary_erode_image_filter(struct Computed_field *field,
+	struct Computed_field *source_field,
+	int radius, double erode_value);
+/*******************************************************************************
+LAST MODIFIED : 16 July 2007
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_BINARYERODEFILTER, returning the value of
+<binary_erode_image_filter> at the time/parameter value given by scalar <source_field>.
+Sets number of components to same number as <source_field>.
+==============================================================================*/
+
 int Cmiss_computed_field_get_type_binary_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field,
 	double *lower_threshold, double *upper_threshold);
@@ -273,9 +319,9 @@ used by it are returned - otherwise an error is reported.
 int Cmiss_computed_field_set_type_connected_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field *source_field,
   double lower_threshold, double upper_threshold, double replace_value, 
-  int num_seed_points, int dimension, double *seed_values);
+  int num_seed_points, int dimension, double *seed_points);
 /*******************************************************************************
-LAST MODIFIED : 9 March 2007
+LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER, returning the value of
@@ -285,9 +331,9 @@ Converts <field> to type COMPUTED_FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER, return
 int Cmiss_computed_field_get_type_connected_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field,
   double *lower_threshold, double *upper_threshold, double *replace_value,
-  int *num_seed_points, int *dimension, double **seed_values);
+  int *num_seed_points, int *dimension, double **seed_points);
 /*******************************************************************************
-LAST MODIFIED : 9 March 2007
+LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER, the source_field and connected_threshold_image_filter
