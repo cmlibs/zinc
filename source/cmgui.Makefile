@@ -644,7 +644,12 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
    USER_INTERFACE_LIB += $(GRAPHICS_LIB)
    ifeq ($(OPERATING_SYSTEM),linux)
       ifneq ($(STATIC_LINK),true)
-         USER_INTERFACE_LIB += $(shell pkg-config gtk+-2.0 gthread-2.0 --libs) -lXmu  -lXinerama -lXxf86vm
+         USER_INTERFACE_LIB += $(shell pkg-config gtk+-2.0 gthread-2.0 --libs) -lXmu  -lXinerama
+         ifeq ($(INSTRUCTION),x86_64)
+	    USER_INTERFACE_LIB +=
+	 else
+	    USER_INTERFACE_LIB += -lXxf86vm
+	 endif 
       else # $(STATIC_LINK) != true
          USER_INTERFACE_LIB += -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 -lwxexpat-2.6-i686-linux
       endif # $(STATIC_LINK) != true
