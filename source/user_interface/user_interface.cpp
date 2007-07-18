@@ -2745,7 +2745,9 @@ constructed and the <hierarchy> for those files opened.  1 is returned for
 success and 0 for failure.
 ==============================================================================*/
 {
-	char *ptr_temp_uid_name,temp_uid_name[L_tmpnam];
+	char *ptr_temp_uid_name;
+	char temp_uid_name[]="/tmp/cmguiXXXXXX";
+	int temp_fd;
 	FILE *uid_file;
 	int return_code;
 
@@ -2759,12 +2761,17 @@ success and 0 for failure.
 		}
 		else
 		{
-			if (tmpnam(temp_uid_name) && (uid_file=fopen(temp_uid_name, "w")))
+			/* use mkstemp instead of tmpnam to generate a temporary name
+			 * mkstemp returns a file descriptor 
+			 */
+			temp_fd=mkstemp(temp_uid_name);
+		  if ( (temp_fd != -1) && 
+           (uid_file=fdopen(temp_fd,"w")))
 			{
 				fwrite(binary_string,1,string_length,uid_file);
 				fclose(uid_file);
 				ptr_temp_uid_name=temp_uid_name;
-				if (MrmSUCCESS==MrmOpenHierarchy(1, &ptr_temp_uid_name,
+			  if (MrmSUCCESS==MrmOpenHierarchy(1, &ptr_temp_uid_name,
 					NULL,hierarchy))
 				{
 #if defined (DEBUG)
@@ -2818,8 +2825,10 @@ success and 0 for failure.
 ==============================================================================*/
 {
 	char **temp_uid_names;
+	int * temp_fds;
 	FILE *uid_file;
 	int k,length,return_code;
+	char file_template[]="/tmp/cmguiXXXXXX";
 
 	ENTER(MrmOpenHierarchy_binary_multiple_strings);
 	/* check arguments */
@@ -2832,12 +2841,16 @@ success and 0 for failure.
 		else
 		{
 			return_code=1;
-			if (ALLOCATE(temp_uid_names, char *, number_of_strings))
+			if (ALLOCATE(temp_uid_names, char *, number_of_strings) &&
+					ALLOCATE(temp_fds, int, number_of_strings))
 			{
 				for (k=0;k<number_of_strings && return_code;k++)
 				{
-					if (!(ALLOCATE(temp_uid_names[k], char, L_tmpnam) 
-						&& tmpnam(temp_uid_names[k])))
+					if (!( ALLOCATE(temp_uid_names[k], char, L_tmpnam) &&
+								 (strlen(file_template) < L_tmpnam) &&
+								 (strcpy(temp_uid_names[k], file_template)) && 
+								 (temp_fds[k]=mkstemp(temp_uid_names[k])) && 
+								 (temp_fds[k] != -1)) )
 					{
 						display_message(ERROR_MESSAGE,
 							"MrmOpenHierarchy_binary_multiple_strings.  Unable to allocate temp filename memory.");
@@ -2848,7 +2861,7 @@ success and 0 for failure.
 				{
 					for (k=0;k<number_of_strings && return_code;k++)
 					{
-						if (uid_file=fopen(temp_uid_names[k], "w"))
+						if (uid_file=fdopen(temp_fds[k], "w"))
 						{
 							length=string_lengths[k];
 							fwrite(binary_strings[k], 1, length,
@@ -2888,6 +2901,7 @@ success and 0 for failure.
 							DEALLOCATE(temp_uid_names[k]);
 						}
 						DEALLOCATE(temp_uid_names);
+						DEALLOCATE(temp_fds);
 					}
 				}
 			}
