@@ -1403,7 +1403,13 @@ specified file.
 #if defined (OLD_CODE)
 	char first;
 #endif /* defined (OLD_CODE) */
-	char *label,*print_command,*shell_title;
+	char *label,*shell_title;
+	/** Commented out print_command as it is currently not used.
+			See the explanation further down the routine about
+      printing direct to the printer
+
+			char *print_command,
+	*/
 	MrmType selection_class;
 	static char *printer_command=(char *)NULL;
 	struct File_open_data *file_open_data;
@@ -1460,6 +1466,24 @@ specified file.
 		if (printer_command&&strcmp(printer_command,"print to file")&&
 			(file_open_data->allow_direct_to_printer))
 		{
+
+			display_message(ERROR_MESSAGE,
+			  "open_file_and_write.  Could not print direct to printer.\nThis feature has been disabled for security reasons.\nIf you would like it reenabled a cmgui developer will need to edit filedir.cpp");
+
+/******************************************************************************
+ * The following code was intended to allow printing direct to a 
+ * printer, rather that to a file.  Unfortunately it uses the tmpnam function 
+ * which poses a security risk.  
+
+ * As the current cmgui user interface does not make it possible
+ * for the user to print directly to the printer this code is never
+ * called and commenting out this code will have no effect. 
+ * It is preserved here in case a developer wishes to add direct 
+ * printing back into cmgui at some point.
+ *
+ * This code will provide a starting point, although it should
+ * be rewritten to avoid the call to tmpnam.
+
 			if (file_open_data->operation)
 			{
 				if (ALLOCATE(print_command,char,strlen(printer_command)+
@@ -1467,7 +1491,7 @@ specified file.
 					tmpnam(print_command+(strlen(printer_command)+1)))
 				{
 					print_command[strlen(printer_command)]=' ';
-					/* perform the operation */
+					// perform the operation
 					if ((file_open_data->operation)(
 						print_command+(strlen(printer_command)+1),
 						file_open_data->arguments))
@@ -1481,12 +1505,15 @@ specified file.
 						"open_file_and_write.  Could not create print command");
 				}
 				DEALLOCATE(print_command);
+
+
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"open_file_and_write.  Missing file operation");
 			}
+=============================================================================*/
 		}
 		else
 		{
