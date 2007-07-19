@@ -1105,7 +1105,7 @@ wholly from the file name extension
 			width = 0;
 			height = 0;
 			if(cmgui_image = Graphics_window_get_image(graphics_window,
-					 force_onscreen, width, height, /*preferred_antialias*/0,
+					 force_onscreen, width, height, /*preferred_antialias*/8,
 								   /*preferred_transparency_layers*/0, storage))
 			{
 				cmgui_image_information = CREATE(Cmgui_image_information)();
@@ -2735,23 +2735,47 @@ public:
 			wxString file_name;
 			wxString filepath;
 			char*  filename;
-			
+			int filter_index;
 			wxFileDialog *saveImage = new wxFileDialog (this,"Save file","","",
-				 "JPEG files (*.jpg)|*.jpg",wxSAVE,wxDefaultPosition);  
+				 "PNG files (*.png)|*.png|JPEG files (*.jpg)|*.jpg|SGI files (*.sgi)|*.sgi|TIF files (*.tiff)|*.tiff|BMP files (*.bmp)|*.bmp|GIF files (*.gif)|*.gif",wxSAVE,wxDefaultPosition);  
 			
 			if (saveImage->ShowModal() == wxID_OK)
 			{ 
 				 file_name=saveImage->GetFilename();
 				 filepath=saveImage->GetPath();
 				 filename=(char*)filepath.mb_str();
-				 strcat (filename,".jpg");
-				 
+				 filter_index=saveImage->GetFilterIndex();
+				 if (filter_index == 0)
+				 {
+						strcat (filename,".png");
+				 }
+				 else if (filter_index == 1)
+				 {
+						strcat (filename,".jpg");
+				 }
+				 else if (filter_index == 2)
+				 {
+						strcat (filename,".sgi");
+				 }
+				 else if (filter_index == 3)
+				 {
+						strcat (filename,".tiff");
+				 }
+				 else if (filter_index == 4)
+				 {
+						strcat (filename,".bmp");
+				 }
+				 else if (filter_index == 5)
+				 {
+						strcat (filename,".gif");
+				 }
+
 				 storage = TEXTURE_RGBA;
 				 force_onscreen = 0;
 				 width = 0;
 				 height = 0;
 				 if(cmgui_image = Graphics_window_get_image(graphics_window,
-							 force_onscreen, width, height, /*preferred_antialias*/0,
+							 force_onscreen, width, height, /*preferred_antialias*/8,
 							 /*preferred_transparency_layers*/0, storage))
 				 {
 						cmgui_image_information = CREATE(Cmgui_image_information)();
@@ -3138,8 +3162,6 @@ static int add_interactive_tool_to_wx_toolbar(struct Interactive_tool *interacti
 			window->grid_field->Layout();
 			panel->Layout();
 	 }
-
-
 	 if (return_int ==1)
 	 {
 			DEALLOCATE(interactive_tool_name);
@@ -4282,6 +4304,23 @@ Graphics_window_destroy_CB.
 #if defined (WX_USER_INTERFACE) 
 		/* In this version each graphics window has it's own interactive
 			 tool manager so we need to destroy it. */
+
+		 /* deallocate the current region path when cmiss command_data is
+			 being destroyed to prevent multiple deallocations of the same
+			 address under DESTROY(Node_tool) which cause segfault in
+			 cmgui-wx since the interactive tools are set up differently*/
+		char *path;
+		Interactive_tool *temp_interactive_tool;
+		Node_tool *temp_node_tool;
+		if (temp_interactive_tool = FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)("node_tool", window->interactive_tool_manager))
+		{
+			 temp_node_tool = static_cast<Node_tool *>(Interactive_tool_get_tool_data(temp_interactive_tool));
+			 path = Node_tool_get_current_region_path(temp_node_tool);	
+			 if (path)
+			 {
+					DEALLOCATE(path);
+			 }
+		}
 		if (window->interactive_tool_manager)
 		{
 			 DESTROY(MANAGER(Interactive_tool))(&window->interactive_tool_manager);
@@ -4290,6 +4329,7 @@ Graphics_window_destroy_CB.
 		{
 			 DEACCESS(Cmiss_region)(&window->root_region);
 		}
+		window->wx_graphics_window->Destroy();
 #endif /* (WX_USER_INTERFACE) */
 #if defined (MOTIF) /* switch (USER_INTERFACE) */
 		destroy_Shell_list_item_from_shell(&(window->window_shell),
@@ -4994,8 +5034,6 @@ Sets the layout mode in effect on the <window>.
 					window->panel2->Hide();
 					window->panel3->Hide();
 					window->panel4->Hide();	      
-					
-
 					/* un-grey orthographic view controls */
 					//XtSetSensitive(window->orthographic_form,True);
 #endif /* defined (WX_USER_INTERFACE) */
