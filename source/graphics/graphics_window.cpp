@@ -2735,7 +2735,6 @@ public:
 			wxString file_name;
 			wxString filepath;
 			char*  filename;
-			int filter_index;
 			wxFileDialog *saveImage = new wxFileDialog (this,"Save file","","",
 				 "PNG files (*.png)|*.png|JPEG files (*.jpg)|*.jpg|SGI files (*.sgi)|*.sgi|TIF files (*.tiff)|*.tiff|BMP files (*.bmp)|*.bmp|GIF files (*.gif)|*.gif",wxSAVE,wxDefaultPosition);  
 			
@@ -2744,6 +2743,8 @@ public:
 				 file_name=saveImage->GetFilename();
 				 filepath=saveImage->GetPath();
 				 filename=(char*)filepath.mb_str();
+#if !defined (__WXMSW__)
+				 int filter_index;
 				 filter_index=saveImage->GetFilterIndex();
 				 if (filter_index == 0)
 				 {
@@ -2769,6 +2770,7 @@ public:
 				 {
 						strcat (filename,".gif");
 				 }
+#endif  /*!defined (__WXMSW__)*/
 
 				 storage = TEXTURE_RGBA;
 				 force_onscreen = 0;
@@ -3012,60 +3014,6 @@ BEGIN_EVENT_TABLE(wxGraphicsWindow, wxFrame)
 	 EVT_BUTTON(XRCID("FrontViewOptions"),wxGraphicsWindow::OnFrontViewOptionspressed)
 	 EVT_SPLITTER_SASH_POS_CHANGED(XRCID("Splitter"),wxGraphicsWindow::OnSplitterPositionChanged)
 END_EVENT_TABLE()
-
-// class wxInteractiveToolButton : public wxToggleButton
-// {
-//   Interactive_tool *tool;
-//   Graphics_window *graphics_window;
-  
-// public:
-
-//   wxInteractiveToolButton(Interactive_tool *tool, Graphics_window *graphics_window) :
-//     tool(tool), graphics_window(graphics_window)
-//   {
-//   };
-
-// 	 wxInteractiveToolButton()
-// 	 {
-// 	 };
-
-//   ~wxInteractiveToolButton()
-//   {
-//   };
-
-//   void OnInteractiveButtonPressed(wxCommandEvent& Event)
-//   {
-//     graphics_window->wx_graphics_window->InteractiveButtonClicked
-//       (this, tool,graphics_window);
-//    }
-
-// };
-
-// static int add_interactive_tool_to_wx_toolbar(struct Interactive_tool *interactive_tool,
-// 					      void *graphics_window_void)
-// {
-//   Graphics_window *graphics_window = static_cast<Graphics_window*>(graphics_window_void);
-//   wxPanel *panel = graphics_window->interactive_toolbar_panel;
-//   wxSizer *sizer = panel->GetSizer();
-    
-//   wxInteractiveToolButton *button = new wxInteractiveToolButton(interactive_tool, graphics_window);
-  
-//   char *interactive_tool_name = Interactive_tool_get_display_name(interactive_tool);
-//   button->Create(panel, /*id*/-1, interactive_tool_name);
-// 	DEALLOCATE(interactive_tool_name);
-
-//   if (Interactive_tool_is_Transform_tool(interactive_tool))
-//     {
-//       button->SetValue(true);
-//       graphics_window->wx_graphics_window->InteractiveButtonClicked
-// 				(button, interactive_tool, graphics_window);
-//     }
-
-//   button->Connect(wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler(wxInteractiveToolButton::OnInteractiveButtonPressed));
-
-//   sizer->Add(button, wxSizerFlags(1).Align(0).Expand().Border(wxALL, 2));
-//   return (1);
-// }
 
 class wxInteractiveToolButton : public wxBitmapButton
 {
@@ -3995,6 +3943,7 @@ it.
 			window->front_view_options->Disable();
 			window->left_panel =XRCCTRL(*window->wx_graphics_window, "LeftPanel", wxScrolledWindow);
 			window->left_panel->FitInside();
+			window->left_panel->SetMinSize(wxSize(10,10));
 			window->ToolPanel = XRCCTRL(*window->wx_graphics_window, "ToolPanel", wxScrolledWindow);
 			window->ToolPanel ->Layout();
 			window->interactive_toolbar_panel = NULL;
