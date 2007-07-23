@@ -68,12 +68,12 @@ class Computed_field_rescale_intensity_image_filter : public Computed_field_Imag
 {
 
 public:
-	int outputMin;
-	int outputMax;
+	double outputMin;
+	double outputMax;
        
 
 	Computed_field_rescale_intensity_image_filter(Computed_field *field,
-		int outputMin, int outputMax);
+		double outputMin, double outputMax);
 
 	~Computed_field_rescale_intensity_image_filter()
 	{
@@ -185,9 +185,9 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		sprintf(temp_string, " output_min  %d", outputMin);
+		sprintf(temp_string, " output_min  %g", outputMin);
 		append_string(&command_string, temp_string, &error);	
-		sprintf(temp_string, " output_max  %d", outputMax);
+		sprintf(temp_string, " output_max  %g", outputMax);
 		append_string(&command_string, temp_string, &error);	
 	}
 	else
@@ -250,7 +250,7 @@ and generate the outputImage.
 }; /* template < class ImageType > class Computed_field_rescale_intensity_image_filter_Functor */
 
 Computed_field_rescale_intensity_image_filter::Computed_field_rescale_intensity_image_filter(
-	Computed_field *field, int outputMin, int outputMax) : 
+	Computed_field *field, double outputMin, double outputMax) : 
         Computed_field_ImageFilter(field), 
         outputMin(outputMin), outputMax(outputMax)
 /*******************************************************************************
@@ -273,7 +273,7 @@ Create the computed_field representation of the RescaleIntensityImageFilter.
 } //namespace
 
 int Computed_field_set_type_rescale_intensity_image_filter(struct Computed_field *field,
-	struct Computed_field *source_field, int outputMin, int outputMax)
+	struct Computed_field *source_field, double outputMin, double outputMax)
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
 
@@ -322,7 +322,7 @@ Converts <field> to type DISCRETEGAUSSIAN.  The <min> <max>
 } /* Computed_field_set_type_rescale_intensity_image_filter */
 
 int Computed_field_get_type_rescale_intensity_image_filter(struct Computed_field *field,
-	struct Computed_field **source_field, int *outputMin, int *outputMax)
+	struct Computed_field **source_field, double *outputMin, double *outputMax)
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
 
@@ -365,8 +365,8 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	int outputMin;
-	int outputMax;
+	double outputMin;
+	double outputMax;
 	struct Computed_field *field, *source_field;
 	struct Computed_field_simple_package *computed_field_simple_package;
 	struct Option_table *option_table;
@@ -408,11 +408,11 @@ already) and allows its contents to be modified.
 			Option_table_add_entry(option_table, "field", &source_field,
 				&set_source_field_data, set_Computed_field_conditional);
 			/* outputMin */
-			Option_table_add_int_non_negative_entry(option_table, "output_min",
+			Option_table_add_double_entry(option_table, "output_min",
 				&outputMin);
 			
 			/* outputMax */
-			Option_table_add_int_non_negative_entry(option_table, "output_max",
+			Option_table_add_double_entry(option_table, "output_max",
 				&outputMax);
 
 			return_code = Option_table_multi_parse(option_table, state);
