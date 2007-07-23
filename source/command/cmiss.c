@@ -16397,6 +16397,7 @@ user, otherwise the elements file is read.
 
 	ENTER(gfx_read_elements);
 	USE_PARAMETER(dummy_to_be_modified);
+	input_file = NULL;
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		element_flag = 0;
@@ -16665,6 +16666,7 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 	struct Option_table *option_table;
 
 	ENTER(gfx_read_nodes);
+	input_file=NULL;
 	if (state)
 	{
 		if (command_data = (struct Cmiss_command_data *)command_data_void)
@@ -16874,6 +16876,7 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 							}
 							IO_stream_close(input_file);
 							DESTROY(IO_stream)(&input_file);
+							input_file =NULL;
 						}
 						else
 						{
@@ -16910,7 +16913,8 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 			DESTROY(Option_table)(&option_table);
 #if defined (WX_USER_INTERFACE)
 			if (input_file)
-				 DESTROY(IO_stream)(&input_file); 
+				 DESTROY(IO_stream)(&input_file);
+			input_file =NULL;
 #endif /*defined (WX_USER_INTERFACE)*/
 			if (file_name)
 			{
