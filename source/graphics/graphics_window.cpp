@@ -4253,23 +4253,6 @@ Graphics_window_destroy_CB.
 #if defined (WX_USER_INTERFACE) 
 		/* In this version each graphics window has it's own interactive
 			 tool manager so we need to destroy it. */
-
-		 /* deallocate the current region path when cmiss command_data is
-			 being destroyed to prevent multiple deallocations of the same
-			 address under DESTROY(Node_tool) which cause segfault in
-			 cmgui-wx since the interactive tools are set up differently*/
-		char *path;
-		Interactive_tool *temp_interactive_tool;
-		Node_tool *temp_node_tool;
-		if (temp_interactive_tool = FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)("node_tool", window->interactive_tool_manager))
-		{
-			 temp_node_tool = static_cast<Node_tool *>(Interactive_tool_get_tool_data(temp_interactive_tool));
-			 path = Node_tool_get_current_region_path(temp_node_tool);	
-			 if (path)
-			 {
-					DEALLOCATE(path);
-			 }
-		}
 		if (window->interactive_tool_manager)
 		{
 			 DESTROY(MANAGER(Interactive_tool))(&window->interactive_tool_manager);
