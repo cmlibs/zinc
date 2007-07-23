@@ -448,7 +448,7 @@ used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
 int Cmiss_computed_field_set_type_rescale_intensity_image_filter(struct Computed_field *field,
-	struct Computed_field *source_field, int outputMin, int outputMax);
+	struct Computed_field *source_field, double outputMin, double outputMax);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
@@ -459,7 +459,7 @@ Sets number of components to same number as <source_field>.
 ==============================================================================*/
 
 int Cmiss_computed_field_get_type_rescale_intensity_image_filter(struct Computed_field *field,
-	struct Computed_field **source_field, int *outputMin, int *outputMax);
+	struct Computed_field **source_field, double *outputMin, double *outputMax);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
