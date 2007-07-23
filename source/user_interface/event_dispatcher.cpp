@@ -84,6 +84,8 @@ Module types
 ------------
 */
 
+class wxEventTimer;
+
 #if defined (USE_GENERIC_EVENT_DISPATCHER)
 struct Event_dispatcher_descriptor_callback
 /*******************************************************************************
@@ -135,6 +137,9 @@ Contains all information necessary for a file descriptor callback.
 #if defined (USE_GTK_MAIN_STEP)
 	guint gtk_timeout_id;
 #endif /* defined (USE_GTK_MAIN_STEP) */
+#if defined (WX_USER_INTERFACE)
+	wxEventTimer *wx_timer;
+#endif /* defined (WX_USER_INTERFACE) */
 }; /* struct Event_dispatcher_timeout_callback */
 
 PROTOTYPE_OBJECT_FUNCTIONS(Event_dispatcher_timeout_callback);
@@ -596,6 +601,9 @@ Create a single object that belongs to a specific file descriptor.
 #if defined (CARBON_USER_INTERFACE)
 		timeout_callback->carbon_timer_ref = (EventLoopTimerRef)NULL;
 #endif /* defined (CARBON_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+		timeout_callback->wx_timer = (wxEventTimer *)NULL;
+#endif /* defined (WX_USER_INTERFACE) */
 		timeout_callback->access_count = 0;
 	}
 	else
@@ -1677,22 +1685,22 @@ class wxEventTimer : public wxTimer
 {
   struct Event_dispatcher_timeout_callback *timeout_callback;
 
-
-	~wxEventTimer()
-	{
-		DESTROY(Event_dispatcher_timeout_callback)(&timeout_callback);
-	}
-
 	void Notify()
 	{
 		(*timeout_callback->timeout_function)(
 			timeout_callback->user_data);
+		delete this;
 	}
 	
 public:
 	wxEventTimer(struct Event_dispatcher_timeout_callback *timeout_callback):
 		timeout_callback(timeout_callback)
 	{
+	}
+
+	~wxEventTimer()
+	{
+		DESTROY(Event_dispatcher_timeout_callback)(&timeout_callback);
 	}
 }; // class wxEventTimer
 
@@ -1716,8 +1724,8 @@ Set a timeout on wx widgets
 		if (timeout_callback = CREATE(Event_dispatcher_timeout_callback)(
 			timeout_s, timeout_ns, timeout_function, user_data))
 		{
-			wxEventTimer *timer = new wxEventTimer(timeout_callback);
-			timer->Start(timeout_s * 1000 + timeout_ns / 1000000, /*OneShot*/true);
+			timeout_callback->wx_timer = new wxEventTimer(timeout_callback);
+			timeout_callback->wx_timer->Start(timeout_s * 1000 + timeout_ns / 1000000, /*OneShot*/true);
 		}
 		else
 		{
@@ -1944,6 +1952,7 @@ DESCRIPTION :
 		RemoveEventLoopTimer(callback_id->carbon_timer_ref);
 		callback_id->carbon_timer_ref = (EventLoopTimerRef)NULL;
 #elif defined (WX_USER_INTERFACE)
+		delete callback_id->wx_timer;
 #elif defined (WIN32_USER_INTERFACE)
 		return_code = 1;
 		KillTimer(event_dispatcher->networkWindowHandle, (ULONG)callback_id);
