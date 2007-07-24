@@ -6258,6 +6258,10 @@ value searches just elements of that dimension.
 			ALLOCATE(image_plane, unsigned char, image_height*image_width_bytes);
 			ALLOCATE(data_values, FE_value,
 				Computed_field_get_number_of_components(field));
+			for (i = 0; (Computed_field_get_number_of_components(field) >i);  i++)
+			{
+				 data_values[i]=0.0;
+			}
 			Graphical_material_get_diffuse(fail_material, &fail_colour);
 			Graphical_material_get_alpha(fail_material, &fail_alpha);
 			if (image_plane && data_values)
@@ -6897,6 +6901,7 @@ Modifies the properties of a texture.
 #endif /* defined (SGI_MOVIE_FILE) */
 
 	ENTER(gfx_modify_Texture);
+	cmgui_image_information = NULL;
 	if (state)
 	{
 		if (current_token = state->current_token)

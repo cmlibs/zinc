@@ -4192,7 +4192,6 @@ Sets the <path> to the region/FE_region where nodes created by
 		if (node_tool->current_region_path)
 		{
 			 DEALLOCATE(node_tool->current_region_path);
-			 node_tool->current_region_path = NULL;
 		}
 		node_tool->current_region_path = duplicate_string(path);
 		region = (struct Cmiss_region *)NULL;

@@ -58,6 +58,7 @@ extern "C" {
 #include "wx/wx.h"
 #include "wx/xrc/xmlres.h"
 #include <wx/fontdlg.h>
+#include "icon/cmiss_icon.xpm"
 extern "C" {
 #include "comfile/comfile_window_wx.h"
 }
@@ -146,6 +147,7 @@ public:
 			comfile_window->wx_comfile_window = (wxComfileWindow *)NULL;
 			wxXmlResource::Get()->LoadFrame(this,
 				 (wxWindow *)NULL, _T("CmguiComfileWindow"));
+			this->SetIcon(cmiss_icon_xpm);
 			comfile_listbox = XRCCTRL(*this, "ComfileListBox", wxListBox);
 			this_frame = XRCCTRL(*this, "CmguiComfileWindow", wxFrame);
 			char **command,*line, *temp_string, *command_string;

@@ -193,8 +193,9 @@ DESCRIPTION :
 	{
 		if (chooser)
 		{
-			delete chooser;
+			  chooser->Destroy();
 		}
+		
 		delete enumerator;
 		if (item_names)
 		{

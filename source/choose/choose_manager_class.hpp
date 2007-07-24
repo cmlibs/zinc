@@ -140,10 +140,6 @@ DESCRIPTION :
 			}
 			DEALLOCATE(item_names);
 		}
-// 		if (chooser)
-// 		{
-// 			delete chooser;
-// 		}
 		if (manager_callback_id)
 		{
 			manager->deregister_callback(manager_callback_id);

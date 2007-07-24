@@ -2450,6 +2450,7 @@ passed in render data.
 	ENTER(Spectrum_settings_activate);
 	if (settings&&(render_data=(struct Spectrum_render_data *)render_data_void))
 	{
+		 data_component = 0.0;
 		return_code=1;
 		if (settings->settings_type == SPECTRUM_FIELD)
 		{
@@ -2569,6 +2570,7 @@ passed in render data.
 		{
 			/* Ignore inactive settings or settings which act on a component for which
 				there is no data */
+  		   value = 0.0;	 
 			if (settings->active && 
 				(settings->component_number < render_data->number_of_data_components))
 			{
@@ -2586,8 +2588,8 @@ passed in render data.
 						{
 							case SPECTRUM_LINEAR:
 							{
-								value=(data_component-settings->minimum)/
-									(settings->maximum-settings->minimum);
+										value=(data_component-settings->minimum)/
+											 (settings->maximum-settings->minimum);
 							} break;
 							case SPECTRUM_LOG:
 							{
