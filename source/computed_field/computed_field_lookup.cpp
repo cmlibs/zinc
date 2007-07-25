@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_lookup.c
 
-LAST MODIFIED : 25 August 2006
+LAST MODIFIED : 25 July 2007
 
 DESCRIPTION :
 Defines fields for looking up values at given locations.
@@ -78,16 +78,17 @@ char computed_field_nodal_lookup_type_string[] = "nodal_lookup";
 class Computed_field_nodal_lookup : public Computed_field_core
 {
 public:
+  char *region_path;
 	FE_node *nodal_lookup_node;
 	Cmiss_region *nodal_lookup_region;
 	int nodal_lookup_node_identifier;
 	Computed_field_lookup_package *lookup_package;
 
 	Computed_field_nodal_lookup(Computed_field *field,
-		FE_node *nodal_lookup_node,
+		FE_node *nodal_lookup_node,char* region_path,
 		Cmiss_region *region, int nodal_lookup_node_identifier, 
 		Computed_field_lookup_package *lookup_package) : 
-		Computed_field_core(field), 
+		Computed_field_core(field), region_path(duplicate_string(region_path)),
 		nodal_lookup_node(ACCESS(FE_node)(nodal_lookup_node)),
 		nodal_lookup_region(ACCESS(Cmiss_region)(region)),
 		nodal_lookup_node_identifier(nodal_lookup_node_identifier),
@@ -144,6 +145,10 @@ Clear the type specific data used by this type.
 		{
 			DEACCESS(FE_node)(&(nodal_lookup_node));
 		}
+		if (region_path)
+		{
+			DEALLOCATE(region_path);
+		}
 	}
 	else
 	{
@@ -168,8 +173,8 @@ Copy the type specific data used by this type.
 	if (new_parent)
 	{
 		core = new Computed_field_nodal_lookup(new_parent,
-			nodal_lookup_node, nodal_lookup_region, nodal_lookup_node_identifier,
-			lookup_package);
+			nodal_lookup_node, region_path, nodal_lookup_region,
+      nodal_lookup_node_identifier, lookup_package);
 	}
 	else
 	{
@@ -197,6 +202,7 @@ Compare the type specific data.
 	if (field && (other = dynamic_cast<Computed_field_nodal_lookup*>(other_core)))
 	{
 		if ((nodal_lookup_region == other->nodal_lookup_region) &&
+			(!strcmp(region_path, other->region_path)) &&
       (nodal_lookup_node_identifier == other->nodal_lookup_node_identifier))
 		{
 			return_code = 1;
@@ -315,6 +321,8 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    node : %d\n",
 			get_FE_node_identifier(nodal_lookup_node));
+		display_message(INFORMATION_MESSAGE,
+			"    region : %s\n", region_path);
 		return_code = 1;
 	}
 	else
@@ -337,7 +345,7 @@ DESCRIPTION :
 Returns allocated command string for reproducing field.
 ==============================================================================*/
 {
-	char *command_string, *field_name,node_id[10];
+	char *command_string, *field_name,node_id[10],*region_name;
 	int error,node_number;
 
 	ENTER(Computed_field_time_nodal_lookup::get_command_string);
@@ -353,6 +361,13 @@ Returns allocated command string for reproducing field.
 			make_valid_token(&field_name);
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
+		}
+		append_string(&command_string, " region ", &error);
+    if (region_name = duplicate_string(region_path))
+		{
+			make_valid_token(&region_name);
+			append_string(&command_string, region_name, &error);
+			DEALLOCATE(region_name);
 		}
 		append_string(&command_string, " node ", &error);
     node_number = get_FE_node_identifier(nodal_lookup_node);
@@ -438,8 +453,8 @@ If the node we are looking at changes generate a computed field change message.
 } //namespace
 
 int Computed_field_set_type_nodal_lookup(struct Computed_field *field,
-	struct Computed_field *source_field,struct Cmiss_region *region,
-	int nodal_lookup_node_identifier, 
+	struct Computed_field *source_field, char* region_path,
+  struct Cmiss_region *region, int nodal_lookup_node_identifier, 
 	Computed_field_lookup_package *lookup_package)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
@@ -456,13 +471,14 @@ than using the current node the <nodal_lookup_node_identifier> node is used.
 	FE_region *fe_region;
 
 	ENTER(Computed_field_set_type_time_nodal_lookup);
-	if (field && source_field && region)
+	if (field && source_field && region && region_path)
 	{
 		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=1;
 		number_of_source_values=0;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields) &&
+		if (ALLOCATE(source_fields,struct Computed_field *,
+        number_of_source_fields) &&
 			(fe_region = Cmiss_region_get_FE_region(region)))
 		{
 			/* 2. free current type-specific data */
@@ -479,7 +495,7 @@ than using the current node the <nodal_lookup_node_identifier> node is used.
 				fe_region, nodal_lookup_node_identifier);
 
 			field->core = new Computed_field_nodal_lookup(field,
-				nodal_lookup_node, region, nodal_lookup_node_identifier,
+				nodal_lookup_node, region_path, region, nodal_lookup_node_identifier,
 				lookup_package);
 		}
 		else
@@ -500,7 +516,8 @@ than using the current node the <nodal_lookup_node_identifier> node is used.
 } /* Computed_field_set_type_nodal_lookup */
 
 int Computed_field_get_type_nodal_lookup(struct Computed_field *field,
-  struct Computed_field **nodal_lookup_field,struct Cmiss_region **nodal_lookup_region,
+  struct Computed_field **nodal_lookup_field, char **region_path,
+  struct Cmiss_region **nodal_lookup_region,
 	int *nodal_lookup_node_identifier,
 	Computed_field_lookup_package **lookup_package)
 /*******************************************************************************
@@ -519,6 +536,7 @@ Note that nothing returned has been ACCESSed.
 	if (field && (core = dynamic_cast<Computed_field_nodal_lookup*>(field->core)))
 	{
 		*nodal_lookup_field = field->source_fields[0];
+		*region_path = core->region_path;
 		*nodal_lookup_region = core->nodal_lookup_region;
 		*nodal_lookup_node_identifier = core->nodal_lookup_node_identifier;
 		*lookup_package = core->lookup_package;
@@ -552,8 +570,8 @@ already) and allows its contents to be modified.
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
   int node_identifier;
-  char node_flag;
-  struct Cmiss_region *dummy_region;
+  char node_flag,*region_path,*dummy_region_path;
+  struct Cmiss_region *dummy_region,*region;
 
 	ENTER(define_Computed_field_type_nodal_lookup);
 	if (state&&(field=(struct Computed_field *)field_void)&&
@@ -573,7 +591,8 @@ already) and allows its contents to be modified.
 				Computed_field_get_type_string(field))
 			{
 				return_code=Computed_field_get_type_nodal_lookup(field, 
-					source_fields,&dummy_region,&node_identifier,&lookup_package_dummy);
+					source_fields,&dummy_region_path,&dummy_region,&node_identifier,
+          &lookup_package_dummy);
 			}
 			if (return_code)
 			{
@@ -583,6 +602,7 @@ already) and allows its contents to be modified.
 					ACCESS(Computed_field)(source_fields[0]);
 				}
 
+        Cmiss_region_get_root_region_path(&region_path);
 				option_table = CREATE(Option_table)();
 				/* source field */
 				set_source_field_data.computed_field_manager=
@@ -595,14 +615,28 @@ already) and allows its contents to be modified.
 				/* the node to nodal_lookup */
 				Option_table_add_entry(option_table, "node", &node_identifier,
 					&node_flag, set_int_and_char_flag);
+        /* and the node region */
+        Option_table_add_entry(option_table,"region",&region_path,
+          computed_field_lookup_package->root_region,set_Cmiss_region_path);
 				/* process the option table */
 				return_code=Option_table_multi_parse(option_table,state);
 				/* no errors,not asking for help */
 				if (return_code && node_flag)
 				{
-					return_code = Computed_field_set_type_nodal_lookup(field,
-						source_fields[0],computed_field_lookup_package->root_region,
-						node_identifier, computed_field_lookup_package);
+          if (Cmiss_region_get_region_from_path(
+                computed_field_lookup_package->root_region,region_path,
+                &region))
+          {
+            return_code = Computed_field_set_type_nodal_lookup(field,
+              source_fields[0],region_path,region,node_identifier,
+              computed_field_lookup_package);
+          }
+          else
+          {
+            /* error */
+            display_message(ERROR_MESSAGE,
+              "define_Computed_field_type_time_nodal_lookup.  Invalid region");
+          }
 				}
 				else
 				{
@@ -620,6 +654,7 @@ already) and allows its contents to be modified.
 					DEACCESS(Computed_field)(&source_fields[0]);
 				}
 				DESTROY(Option_table)(&option_table);
+        DEALLOCATE(region_path);
 			}
 			DEALLOCATE(source_fields);
 		}
