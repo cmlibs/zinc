@@ -1180,6 +1180,7 @@ BEGIN_EVENT_TABLE(wxCmguiApp, wxApp)
 	EVT_IDLE(wxCmguiApp::OnIdle)
 END_EVENT_TABLE()
 
+#if defined (UNIX)
 void Event_dispatcher_use_wxCmguiApp_OnAssertFailure(int a)
 /*******************************************************************************
 LAST MODIFIED : 25 July 2007
@@ -1188,6 +1189,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 }
+#endif /* defined (UNIX) */
 
 #endif /* defined (WX_USER_INTERFACE) */
 

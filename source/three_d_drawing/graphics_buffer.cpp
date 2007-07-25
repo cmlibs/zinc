@@ -4104,15 +4104,15 @@ public:
 
 	wxGraphicsBuffer(wxPanel *parent, wxGLContext* sharedContext,
 		Graphics_buffer *graphics_buffer
-#if !defined (__WXMSW__)
+#if defined (UNIX)
 		 , int *attrib_list
-#endif /*!defined (__WXMSW__)*/
+#endif /*!defined (UNIX)*/
 ):
 		wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, wxSize(10, 10),
 			wxFULL_REPAINT_ON_RESIZE, "GLCanvas"
-#if !defined (__WXMSW__)
+#if defined (UNIX)
  , attrib_list
-#endif /*!defined (__WXMSW__)*/
+#endif /*!defined (UNIX)*/
 							 ),
 		graphics_buffer(graphics_buffer), parent(parent)
 	{
@@ -4269,7 +4269,7 @@ END_EVENT_TABLE()
 
 #endif /* defined (WX_USER_INTERFACE) */
 
-#if defined (WX_USER_INTERFACE) && !defined (__WXMSW__) 
+#if defined (WX_USER_INTERFACE) && defined (UNIX) 
 class wxTestingBuffer : public wxGLCanvas
 {
 	Graphics_buffer *graphics_buffer;
@@ -4287,7 +4287,7 @@ public:
 	{
 	};
 };
-#endif /* defined (WX_USER_INTERFACE) && !defined (__WXMSW__) */
+#endif /* defined (WX_USER_INTERFACE) && defined (UNIX) */
 
 #if defined (WX_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_wx(
@@ -4304,9 +4304,10 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	struct Graphics_buffer *buffer;
-#if !defined (__WXMSW__) 
+#if defined (UNIX) 
 	wxGLCanvas *test_canvas;
-#endif /*!defined (__WXMSW__)*/
+	int count;
+#endif /*!defined (UNIX)*/
 
 	ENTER(create_Graphics_buffer_wx);
 	USE_PARAMETER(buffering_mode);
@@ -4316,7 +4317,7 @@ DESCRIPTION :
 	{	
 		 buffer->type = GRAPHICS_BUFFER_WX_TYPE;		 
 		 buffer->parent = parent;
-#if !defined (__WXMSW__)
+#if defined (UNIX)
 		 Event_dispatcher_use_wxCmguiApp_OnAssertFailure(1);
 		 int attrib_array[] = {
 				WX_GL_DEPTH_SIZE,
@@ -4348,106 +4349,108 @@ DESCRIPTION :
 		 attrib_array[13] = 24;
 		 attrib_array[15] = 24;
 		 attrib_array[17] = 24;
+		 count = 0;
 
 		 test_canvas = new wxTestingBuffer(parent, 
 				graphics_buffer_package->wxSharedContext, buffer, attrib_array);	
 
 		 while 	(test_canvas->m_vi == NULL)
 		 {
-				if (attrib_array[3] >= 8)
+				count = count +1;
+				while ((attrib_array[3] > 0) && (test_canvas->m_vi == NULL))
 				{
 					 attrib_array[3] = attrib_array[3] - 8;
+					 test_canvas = new wxTestingBuffer(parent, 
+							graphics_buffer_package->wxSharedContext, buffer
+							,attrib_array);
 				}
-				test_canvas = new wxTestingBuffer(parent, 
-					 graphics_buffer_package->wxSharedContext, buffer
-					 ,attrib_array);
 				if (test_canvas->m_vi == NULL)
 				{
-					 attrib_array[3] = attrib_array[3] + 8;
-					 if (attrib_array[5] >= 8)
+					 attrib_array[3] = (4 - count) * 8;
+					 while ((attrib_array[5] > 0) && (test_canvas->m_vi == NULL))
 					 {
 							attrib_array[5] = attrib_array[5] - 8;
+							test_canvas = new wxTestingBuffer(parent, 
+								 graphics_buffer_package->wxSharedContext, buffer
+								 ,attrib_array);
 					 }
-					 test_canvas = new wxTestingBuffer(parent, 
-							graphics_buffer_package->wxSharedContext, buffer
-							,attrib_array);
 				}
 				if (test_canvas->m_vi == NULL)
 				{
-					 attrib_array[5] = attrib_array[5] + 8;
-					 if (attrib_array[7] >= 8)
+					 attrib_array[5]  = (4 - count) * 8;
+					 while ((attrib_array[7] > 0) && (test_canvas->m_vi == NULL))
 					 {
 							attrib_array[7] = attrib_array[7] - 8;
+							test_canvas = new wxTestingBuffer(parent, 
+								 graphics_buffer_package->wxSharedContext, buffer
+								 ,attrib_array);
 					 }
-					 test_canvas = new wxTestingBuffer(parent, 
-							graphics_buffer_package->wxSharedContext, buffer
-							,attrib_array);
 				}
 				if (test_canvas->m_vi == NULL)
 				{
-					 attrib_array[7] = attrib_array[7] + 8;
-					 if (attrib_array[9] >= 8)
+					 attrib_array[7]  = (4 - count) * 8;
+					 while ((attrib_array[9] > 0) && (test_canvas->m_vi == NULL))
 					 {
 							attrib_array[9] = attrib_array[9] - 8;
+							test_canvas = new wxTestingBuffer(parent, 
+								 graphics_buffer_package->wxSharedContext, buffer
+								 ,attrib_array);
 					 }
-					 test_canvas = new wxTestingBuffer(parent, 
-							graphics_buffer_package->wxSharedContext, buffer
-							,attrib_array);
 				}
 				if (test_canvas->m_vi == NULL)
 				{
-					 attrib_array[9] = attrib_array[9] + 8;
-					 if (attrib_array[11] >= 8)
+					 attrib_array[9]  = (4 - count) * 8;
+					 while ((attrib_array[11] > 0) && (test_canvas->m_vi == NULL))
 					 {
 							attrib_array[11] = attrib_array[11] - 8;
+							test_canvas = new wxTestingBuffer(parent, 
+								 graphics_buffer_package->wxSharedContext, buffer
+								 ,attrib_array);
 					 }
-					 test_canvas = new wxTestingBuffer(parent, 
-							graphics_buffer_package->wxSharedContext, buffer
-							,attrib_array);
 				}
 				if (test_canvas->m_vi == NULL)
 				{
-					 attrib_array[11] = attrib_array[11] + 8;
-					 if (attrib_array[13] >= 8)
+					 attrib_array[11]  = (4 - count) * 8;
+					 while ((attrib_array[13] > 0) && (test_canvas->m_vi == NULL))
 					 {
 							attrib_array[13] = attrib_array[13] - 8;
+							test_canvas = new wxTestingBuffer(parent, 
+								 graphics_buffer_package->wxSharedContext, buffer
+								 ,attrib_array);
 					 }
-					 test_canvas = new wxTestingBuffer(parent, 
-							graphics_buffer_package->wxSharedContext, buffer
-							,attrib_array);
 				}
 				if (test_canvas->m_vi == NULL)
 				{
-					 attrib_array[13] = attrib_array[13] + 8;
-					 if (attrib_array[15] >= 8)
+					 attrib_array[13]  = (4 - count) * 8;
+					 while ((attrib_array[15] > 0) && (test_canvas->m_vi == NULL))
 					 {
 							attrib_array[15] = attrib_array[15] - 8;
+							test_canvas = new wxTestingBuffer(parent, 
+								 graphics_buffer_package->wxSharedContext, buffer
+								 ,attrib_array);
 					 }
-					 test_canvas = new wxTestingBuffer(parent, 
-							graphics_buffer_package->wxSharedContext, buffer
-							,attrib_array);
 				}
 				if (test_canvas->m_vi == NULL)
 				{
-					 attrib_array[15] = attrib_array[15] + 8;
-					 if (attrib_array[17] >= 8)
+					 attrib_array[15]  = (4 - count) * 8;
+					 while ((attrib_array[17] > 0) && (test_canvas->m_vi == NULL))
 					 {
 							attrib_array[17] = attrib_array[17] - 8;
+							test_canvas = new wxTestingBuffer(parent, 
+								 graphics_buffer_package->wxSharedContext, buffer
+								 ,attrib_array);
 					 }
-					 test_canvas = new wxTestingBuffer(parent, 
-							graphics_buffer_package->wxSharedContext, buffer
-							,attrib_array);
 				}
 				if (test_canvas->m_vi == NULL)
 				{
-					 attrib_array[17] = attrib_array[17] + 8;
-					 if (attrib_array[1] > 0)
-					 { 
-							attrib_array[1] = attrib_array[1] /2;
+					 attrib_array[17]  = (4 - count) * 8;
+					 while ((attrib_array[1] > 0) && (test_canvas->m_vi == NULL))
+					 {
+							attrib_array[1] = attrib_array[1] - 8;
+							test_canvas = new wxTestingBuffer(parent, 
+								 graphics_buffer_package->wxSharedContext, buffer
+								 ,attrib_array);
 					 }
-					 test_canvas = new wxTestingBuffer(parent, 
-							graphics_buffer_package->wxSharedContext, buffer
-							,attrib_array);
 				}
 				if (test_canvas->m_vi == NULL)
 				{
@@ -4483,14 +4486,17 @@ DESCRIPTION :
 					 {
 							attrib_array[3] = attrib_array[3] - 8;
 					 }
+					 attrib_array[1] = (4 - count) * 8;
+					 test_canvas = new wxTestingBuffer(parent, 
+							graphics_buffer_package->wxSharedContext, buffer, attrib_array);	
 				}
 		 }
-#endif /*!defined (__WXMSW__)*/
+#endif /*defined (UNIX)*/
 		buffer->canvas = new wxGraphicsBuffer(parent, 
 			 graphics_buffer_package->wxSharedContext, buffer
-			 #if !defined (__WXMSW__) 
+#if defined (UNIX) 
 			 			 ,attrib_array
-			 #endif /*!defined (__WXMSW__)*/
+#endif /*!defined (UNIX)*/
 																					);
 
 		wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
