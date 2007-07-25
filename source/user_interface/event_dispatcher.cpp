@@ -45,7 +45,7 @@ extern "C" {
 #include <math.h>
 #include <stdio.h>
 #include <general/time.h>
-
+#include "api/cmiss_fdio.h"
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/list.h"

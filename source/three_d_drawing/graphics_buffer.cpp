@@ -4304,7 +4304,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	struct Graphics_buffer *buffer;
-#if defined (UNIX) 
+#if defined (UNIX)  && !defined (DARWIN)
 	wxGLCanvas *test_canvas;
 	int count;
 #endif /*!defined (UNIX)*/
