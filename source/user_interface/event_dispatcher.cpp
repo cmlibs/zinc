@@ -1124,6 +1124,7 @@ DESCRIPTION :
 	return (return_code);
 } /* Event_dispatcher_do_idle_event */
 
+
 class wxCmguiApp : public wxApp
 {
 	Event_dispatcher *event_dispatcher;
@@ -1164,6 +1165,12 @@ public:
 		event_dispatcher = event_dispatcher_in;
 	}
 
+#if defined (__WXDEBUG__)
+	 void OnAssertFailure(const wxChar *file, int line, const wxChar* func, const wxChar* cond, const wxChar *msg)
+	 {
+	 }
+#endif /* defined (__WXDEBUG__) */
+
    DECLARE_EVENT_TABLE();
 };	
 
@@ -1172,6 +1179,15 @@ IMPLEMENT_APP_NO_MAIN(wxCmguiApp)
 BEGIN_EVENT_TABLE(wxCmguiApp, wxApp)
 	EVT_IDLE(wxCmguiApp::OnIdle)
 END_EVENT_TABLE()
+
+void Event_dispatcher_use_wxCmguiApp_OnAssertFailure(int a)
+/*******************************************************************************
+LAST MODIFIED : 25 July 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+}
 
 #endif /* defined (WX_USER_INTERFACE) */
 

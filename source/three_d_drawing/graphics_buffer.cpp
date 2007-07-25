@@ -82,6 +82,7 @@ extern "C" {
 #if defined (WX_USER_INTERFACE)
 #include <wx/wx.h>
 #include <wx/glcanvas.h>
+#include <wx/debug.h>
 #endif /* defined (WX_USER_INTERFACE) */
 extern "C" {
 #include "general/callback_private.h"
@@ -89,6 +90,7 @@ extern "C" {
 #include "general/indexed_list_private.h"
 #include "general/object.h"
 #include "three_d_drawing/graphics_buffer.h"
+#include "user_interface/event_dispatcher.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -4102,15 +4104,15 @@ public:
 
 	wxGraphicsBuffer(wxPanel *parent, wxGLContext* sharedContext,
 		Graphics_buffer *graphics_buffer
-// #if !defined (__WXMSW__)
-// , int *attrib_list
-// #endif /*!defined (__WXMSW__)*/
+#if !defined (__WXMSW__)
+		 , int *attrib_list
+#endif /*!defined (__WXMSW__)*/
 ):
 		wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, wxSize(10, 10),
 			wxFULL_REPAINT_ON_RESIZE, "GLCanvas"
-// #if !defined (__WXMSW__)
-// , attrib_list
-// #endif /*!defined (__WXMSW__)*/
+#if !defined (__WXMSW__)
+ , attrib_list
+#endif /*!defined (__WXMSW__)*/
 							 ),
 		graphics_buffer(graphics_buffer), parent(parent)
 	{
@@ -4267,6 +4269,26 @@ END_EVENT_TABLE()
 
 #endif /* defined (WX_USER_INTERFACE) */
 
+#if defined (WX_USER_INTERFACE) && !defined (__WXMSW__) 
+class wxTestingBuffer : public wxGLCanvas
+{
+	Graphics_buffer *graphics_buffer;
+	wxPanel *parent;
+public:
+	 wxTestingBuffer(wxPanel *parent, wxGLContext* sharedContext,
+			Graphics_buffer *graphics_buffer, int *attrib_array):
+			wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, wxSize(10, 10),
+				 wxFULL_REPAINT_ON_RESIZE, "GLCanvas", attrib_array),
+			graphics_buffer(graphics_buffer), parent(parent)
+	 {
+	 };
+	
+	~wxTestingBuffer()
+	{
+	};
+};
+#endif /* defined (WX_USER_INTERFACE) && !defined (__WXMSW__) */
+
 #if defined (WX_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_wx(
 	struct Graphics_buffer_package *graphics_buffer_package,
@@ -4282,33 +4304,194 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	struct Graphics_buffer *buffer;
+#if !defined (__WXMSW__) 
+	wxGLCanvas *test_canvas;
+#endif /*!defined (__WXMSW__)*/
 
 	ENTER(create_Graphics_buffer_wx);
 	USE_PARAMETER(buffering_mode);
 	USE_PARAMETER(stereo_mode);
+	wxLogNull logNo;
 	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
-	{
+	{	
+		 buffer->type = GRAPHICS_BUFFER_WX_TYPE;		 
+		 buffer->parent = parent;
+#if !defined (__WXMSW__)
+		 Event_dispatcher_use_wxCmguiApp_OnAssertFailure(1);
+		 int attrib_array[] = {
+				WX_GL_DEPTH_SIZE,
+				/*Overwrite with depth, some compilers don't allow it in the
+					initialiser I think */0,
+				WX_GL_MIN_ALPHA,
+				0,
+				WX_GL_MIN_RED,
+				0,
+				WX_GL_MIN_GREEN,
+				0,
+				WX_GL_MIN_BLUE,
+				0,
+				WX_GL_MIN_ACCUM_RED,
+				0,
+				WX_GL_MIN_ACCUM_GREEN,
+				0,
+				WX_GL_MIN_ACCUM_BLUE,
+				0,
+				WX_GL_MIN_ACCUM_ALPHA,
+				0,			
+		 		/*List must finish with a zero*/0};
+		 attrib_array[1] = 32;
+		 attrib_array[3] = 24;
+		 attrib_array[5] = 24;
+		 attrib_array[7] = 24;
+		 attrib_array[9] = 24;
+		 attrib_array[11] = 24;
+		 attrib_array[13] = 24;
+		 attrib_array[15] = 24;
+		 attrib_array[17] = 24;
 
-		buffer->type = GRAPHICS_BUFFER_WX_TYPE;
+		 test_canvas = new wxTestingBuffer(parent, 
+				graphics_buffer_package->wxSharedContext, buffer, attrib_array);	
 
-		buffer->parent = parent;
-// #if !defined (__WXMSW__)
-// 		int attrib_array[] = {
-// 			 WX_GL_DEPTH_SIZE,
-// 			 /*Overwrite with depth, some compilers don't allow it in the
-// 				 initialiser I think */0,
-// 			 WX_GL_MIN_ALPHA,
-// 			 0,
-// 		/*List must finish with a zero*/0};
-// 		attrib_array[1] = minimum_depth_buffer_depth;
-// 		attrib_array[3] = 8;		
-// #endif /*!defined (__WXMSW__)*/
+		 while 	(test_canvas->m_vi == NULL)
+		 {
+				if (attrib_array[3] >= 8)
+				{
+					 attrib_array[3] = attrib_array[3] - 8;
+				}
+				test_canvas = new wxTestingBuffer(parent, 
+					 graphics_buffer_package->wxSharedContext, buffer
+					 ,attrib_array);
+				if (test_canvas->m_vi == NULL)
+				{
+					 attrib_array[3] = attrib_array[3] + 8;
+					 if (attrib_array[5] >= 8)
+					 {
+							attrib_array[5] = attrib_array[5] - 8;
+					 }
+					 test_canvas = new wxTestingBuffer(parent, 
+							graphics_buffer_package->wxSharedContext, buffer
+							,attrib_array);
+				}
+				if (test_canvas->m_vi == NULL)
+				{
+					 attrib_array[5] = attrib_array[5] + 8;
+					 if (attrib_array[7] >= 8)
+					 {
+							attrib_array[7] = attrib_array[7] - 8;
+					 }
+					 test_canvas = new wxTestingBuffer(parent, 
+							graphics_buffer_package->wxSharedContext, buffer
+							,attrib_array);
+				}
+				if (test_canvas->m_vi == NULL)
+				{
+					 attrib_array[7] = attrib_array[7] + 8;
+					 if (attrib_array[9] >= 8)
+					 {
+							attrib_array[9] = attrib_array[9] - 8;
+					 }
+					 test_canvas = new wxTestingBuffer(parent, 
+							graphics_buffer_package->wxSharedContext, buffer
+							,attrib_array);
+				}
+				if (test_canvas->m_vi == NULL)
+				{
+					 attrib_array[9] = attrib_array[9] + 8;
+					 if (attrib_array[11] >= 8)
+					 {
+							attrib_array[11] = attrib_array[11] - 8;
+					 }
+					 test_canvas = new wxTestingBuffer(parent, 
+							graphics_buffer_package->wxSharedContext, buffer
+							,attrib_array);
+				}
+				if (test_canvas->m_vi == NULL)
+				{
+					 attrib_array[11] = attrib_array[11] + 8;
+					 if (attrib_array[13] >= 8)
+					 {
+							attrib_array[13] = attrib_array[13] - 8;
+					 }
+					 test_canvas = new wxTestingBuffer(parent, 
+							graphics_buffer_package->wxSharedContext, buffer
+							,attrib_array);
+				}
+				if (test_canvas->m_vi == NULL)
+				{
+					 attrib_array[13] = attrib_array[13] + 8;
+					 if (attrib_array[15] >= 8)
+					 {
+							attrib_array[15] = attrib_array[15] - 8;
+					 }
+					 test_canvas = new wxTestingBuffer(parent, 
+							graphics_buffer_package->wxSharedContext, buffer
+							,attrib_array);
+				}
+				if (test_canvas->m_vi == NULL)
+				{
+					 attrib_array[15] = attrib_array[15] + 8;
+					 if (attrib_array[17] >= 8)
+					 {
+							attrib_array[17] = attrib_array[17] - 8;
+					 }
+					 test_canvas = new wxTestingBuffer(parent, 
+							graphics_buffer_package->wxSharedContext, buffer
+							,attrib_array);
+				}
+				if (test_canvas->m_vi == NULL)
+				{
+					 attrib_array[17] = attrib_array[17] + 8;
+					 if (attrib_array[1] > 0)
+					 { 
+							attrib_array[1] = attrib_array[1] /2;
+					 }
+					 test_canvas = new wxTestingBuffer(parent, 
+							graphics_buffer_package->wxSharedContext, buffer
+							,attrib_array);
+				}
+				if (test_canvas->m_vi == NULL)
+				{
+					 if (attrib_array[17] > 0)
+					 {
+							attrib_array[17] = attrib_array[17] - 8;
+					 }
+					 if (attrib_array[15] > 0)
+					 {
+							attrib_array[15] = attrib_array[15] - 8;
+					 }
+					 if (attrib_array[13] > 0)
+					 {
+							attrib_array[13] = attrib_array[13] - 8;
+					 }
+					 if (attrib_array[11] > 0)
+					 {
+							attrib_array[11] = attrib_array[11] - 8;
+					 }
+					 if (attrib_array[9] > 0)
+					 {
+							attrib_array[9] = attrib_array[9] - 8;
+					 }
+					 if (attrib_array[7] > 0)
+					 {
+							attrib_array[7] = attrib_array[7] - 8;
+					 }
+					 if (attrib_array[5] > 0)
+					 {
+							attrib_array[5] = attrib_array[5] - 8;
+					 }
+					 if (attrib_array[3] > 0)
+					 {
+							attrib_array[3] = attrib_array[3] - 8;
+					 }
+				}
+		 }
+#endif /*!defined (__WXMSW__)*/
 		buffer->canvas = new wxGraphicsBuffer(parent, 
 			 graphics_buffer_package->wxSharedContext, buffer
-// #if !defined (__WXMSW__) 
-// 			 ,attrib_array
-// #endif /*!defined (__WXMSW__)*/
-);
+			 #if !defined (__WXMSW__) 
+			 			 ,attrib_array
+			 #endif /*!defined (__WXMSW__)*/
+																					);
 
 		wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
 		

@@ -162,6 +162,15 @@ Global functions
 PROTOTYPE_OBJECT_FUNCTIONS(Fdio);
 PROTOTYPE_LIST_FUNCTIONS(Fdio);
 
+#if defined (WX_USER_INTERFACE)
+void Event_dispatcher_use_wxCmguiApp_OnAssertFailure(int a);
+/*******************************************************************************
+LAST MODIFIED : 25 Jul 2007
+
+DESCRIPTION :
+==============================================================================*/
+#endif /* defined (WX_USER_INTERFACE) */
+
 struct Event_dispatcher *CREATE(Event_dispatcher)(void);
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
