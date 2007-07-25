@@ -162,7 +162,7 @@ Global functions
 PROTOTYPE_OBJECT_FUNCTIONS(Fdio);
 PROTOTYPE_LIST_FUNCTIONS(Fdio);
 
-#if defined (WX_USER_INTERFACE) && defined (UNIX)
+#if defined (WX_USER_INTERFACE) && defined (UNIX)  && !defined (DARWIN)
 void Event_dispatcher_use_wxCmguiApp_OnAssertFailure(int a);
 /*******************************************************************************
 LAST MODIFIED : 25 Jul 2007

@@ -89,8 +89,8 @@ extern "C" {
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/object.h"
-#include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/event_dispatcher.h"
+#include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -4104,13 +4104,13 @@ public:
 
 	wxGraphicsBuffer(wxPanel *parent, wxGLContext* sharedContext,
 		Graphics_buffer *graphics_buffer
-#if defined (UNIX)
+#if defined (UNIX) && !defined (DARWIN)
 		 , int *attrib_list
 #endif /*!defined (UNIX)*/
 ):
 		wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, wxSize(10, 10),
 			wxFULL_REPAINT_ON_RESIZE, "GLCanvas"
-#if defined (UNIX)
+#if defined (UNIX) && !defined (DARWIN)
  , attrib_list
 #endif /*!defined (UNIX)*/
 							 ),
@@ -4269,7 +4269,7 @@ END_EVENT_TABLE()
 
 #endif /* defined (WX_USER_INTERFACE) */
 
-#if defined (WX_USER_INTERFACE) && defined (UNIX) 
+#if defined (WX_USER_INTERFACE) && defined (UNIX)  && !defined (DARWIN)
 class wxTestingBuffer : public wxGLCanvas
 {
 	Graphics_buffer *graphics_buffer;
@@ -4317,7 +4317,7 @@ DESCRIPTION :
 	{	
 		 buffer->type = GRAPHICS_BUFFER_WX_TYPE;		 
 		 buffer->parent = parent;
-#if defined (UNIX)
+#if defined (UNIX) && !defined (DARWIN)
 		 Event_dispatcher_use_wxCmguiApp_OnAssertFailure(1);
 		 int attrib_array[] = {
 				WX_GL_DEPTH_SIZE,
@@ -4338,7 +4338,7 @@ DESCRIPTION :
 				WX_GL_MIN_ACCUM_BLUE,
 				0,
 				WX_GL_MIN_ACCUM_ALPHA,
-				0,			
+				0,		
 		 		/*List must finish with a zero*/0};
 		 attrib_array[1] = 32;
 		 attrib_array[3] = 24;
@@ -4494,9 +4494,9 @@ DESCRIPTION :
 #endif /*defined (UNIX)*/
 		buffer->canvas = new wxGraphicsBuffer(parent, 
 			 graphics_buffer_package->wxSharedContext, buffer
-#if defined (UNIX) 
+#if defined (UNIX)  && !defined (DARWIN)
 			 			 ,attrib_array
-#endif /*!defined (UNIX)*/
+#endif /*!defined (UNIX) && !defined (DARWIN) */
 																					);
 
 		wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
