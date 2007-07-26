@@ -89,8 +89,10 @@ extern "C" {
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/object.h"
-#include "user_interface/event_dispatcher.h"
 #include "three_d_drawing/graphics_buffer.h"
+#if defined (UNIX) && !defined (DARWIN)
+#include "user_interface/event_dispatcher.h"
+#endif /* defined (UNIX) && !defined (DARWIN) */
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
