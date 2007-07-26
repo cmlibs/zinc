@@ -2443,7 +2443,7 @@ passed in render data.
 ==============================================================================*/
 {
 	FE_value *values;
-	int number_of_components, return_code,texels_per_band;
+	int i, number_of_components, return_code,texels_per_band;
 	float data_component,value,step_xi,total_texels;
 	struct Spectrum_render_data *render_data;
 
@@ -2463,6 +2463,18 @@ passed in render data.
 					settings->input_field, render_data->number_of_data_components,
 					render_data->data, /*time*/0.0, values);
 
+				for (i = 0 ; i < number_of_components ; i++)
+				{
+					/* ensure 0 - 1 */
+					if (values[i] > 1.0)
+					{
+						values[i] = 1.0;
+					}
+					if (values[i] < 0.0)
+					{
+						values[i] = 0.0;
+					}
+				}
 				if (1 == number_of_components)
 				{
 					value = values[0];
