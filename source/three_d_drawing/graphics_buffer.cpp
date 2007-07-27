@@ -4649,8 +4649,14 @@ Returns the visual id used by the graphics buffer.
 #if defined (WX_USER_INTERFACE)
 			case GRAPHICS_BUFFER_WX_TYPE:
 			{
+#if defined (__WXGTK__)
+				*visual_id = (int)((XVisualInfo*)buffer->canvas->m_vi)
+					->visualid;
+				return_code = 1;
+#else /* if defined (__WXGTK__) */
 				*visual_id = 0;
 				return_code = 0;
+#endif /* if defined (__WXGTK__) */
 			} break;
 #endif /* defined (WX_USER_INTERFACE) */
 			default:
