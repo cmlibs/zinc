@@ -897,6 +897,7 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_component_operations.cpp \
 	computed_field/computed_field_compose.cpp \
 	computed_field/computed_field_composite.cpp \
+	computed_field/computed_field_conditional.cpp \
 	computed_field/computed_field_curve.cpp \
 	computed_field/computed_field_coordinate.cpp \
 	computed_field/computed_field_deformation.cpp \

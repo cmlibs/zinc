@@ -73,6 +73,7 @@ Functions for executing cmiss commands.
 #include "computed_field/computed_field_component_operations.h"
 #include "computed_field/computed_field_compose.h"
 #include "computed_field/computed_field_composite.h"
+#include "computed_field/computed_field_conditional.h"
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_curve.h"
 #include "computed_field/computed_field_deformation.h"
@@ -24019,6 +24020,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->root_region);
 			}
 			Computed_field_register_types_composite(
+				command_data->computed_field_package);		
+			Computed_field_register_types_conditional(
 				command_data->computed_field_package);		
 			if (command_data->curve_manager)
 			{
