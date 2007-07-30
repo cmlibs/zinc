@@ -186,6 +186,15 @@ DESCRIPTION :
 Prototype.
 ==============================================================================*/
 
+static int Scene_editor_wx_graphical_element_change(
+	 struct GT_element_group *gt_element_group, void *scene_editor_void);
+/*******************************************************************************
+LAST MODIFIED : 30 July 2007
+
+DESCRIPTION :
+This function will be called whenever there are global changes 
+==============================================================================*/
+
 static int get_and_set_graphical_element_settings(void *scene_editor_void);
 /*******************************************************************************
 LAST MODIFIED : 19 Match 2007
@@ -209,155 +218,6 @@ static int Scene_editor_add_element_settings_item(
 Module functions
 ----------------
 */
-
-// struct Scene_editor_object *CREATE(Scene_editor_object)(
-// 	struct Scene_editor *scene_editor, struct Scene *scene,
-// 	struct Scene_object *scene_object)
-// /*******************************************************************************
-// LAST MODIFIED : 4 December 2001
-
-// DESCRIPTION :
-// Creates a scene_editor_object for editing either the <scene> or a
-// <scene_object>. Note Scene_editor_object_update function is responsible for
-// creating and updating widgets.
-// ==============================================================================*/
-// {
-// 	struct Scene *parent_scene;
-// 	struct Scene_editor_object *scene_editor_object;
-
-// 	ENTER(CREATE(Scene_editor_object));
-// 	parent_scene = (struct Scene *)NULL;
-// 	if (scene_editor && ((scene && (!scene_object)) ||
-// 		((!scene) && scene_object &&
-// 			(parent_scene = Scene_object_get_parent_scene(scene_object)))))
-// 	{
-// 		if (ALLOCATE(scene_editor_object, struct Scene_editor_object, 1))
-// 		{
-// 			scene_editor_object->scene_editor = scene_editor;
-// 			scene_editor_object->parent_scene = parent_scene;
-// 			scene_editor_object->name = (char *)NULL;
-// 			if (scene)
-// 			{
-// 				scene_editor_object->scene = scene;
-// 				scene_editor_object->scene_object = (struct Scene_object *)NULL;
-// 				GET_NAME(Scene)(scene, &(scene_editor_object->name));
-// 				scene_editor_object->visible = 1;
-// 				scene_editor_object->expanded = 0;
-// 			}
-// 			else
-// 			{
-// 				scene_editor_object->scene_object = ACCESS(Scene_object)(scene_object);
-// 				if (SCENE_OBJECT_SCENE == Scene_object_get_type(scene_object))
-// 				{
-// 					scene_editor_object->scene =
-// 						Scene_object_get_child_scene(scene_object);
-// 				}
-// 				else
-// 				{
-// 					scene_editor_object->scene = (struct Scene *)NULL;
-// 				}
-// 				GET_NAME(Scene_object)(scene_object, &(scene_editor_object->name));
-// 				scene_editor_object->visible =
-// 					(g_VISIBLE == Scene_object_get_visibility(scene_object));
-// 				scene_editor_object->expanded = 0;
-// 			}
-// 			if (scene_editor_object->scene)
-// 			{
-// 				scene_editor_object->scene_editor_objects =
-// 					CREATE(LIST(Scene_editor_object))();
-// 			}
-// 			else
-// 			{
-// 				scene_editor_object->scene_editor_objects =
-// 					(struct LIST(Scene_editor_object) *)NULL;
-// 			}
-// 			scene_editor_object->in_use = 0;
-// 			scene_editor_object->access_count = 0;
-
-// 			if ((!(scene_editor_object->name)) || (scene_editor_object->scene &&
-// 				(!scene_editor_object->scene_editor_objects)))
-// 			{
-// 				display_message(ERROR_MESSAGE,
-// 					"CREATE(Scene_editor_object).  Could not fill object");
-// 				DESTROY(Scene_editor_object)(&scene_editor_object);
-// 			}
-// 		}
-// 		else
-// 		{
-// 			display_message(ERROR_MESSAGE,
-// 				"CREATE(Scene_editor_object).  Could not allocate space for object");
-// 		}
-// 	}
-// 	else
-// 	{
-// 		display_message(ERROR_MESSAGE,
-// 			"CREATE(Scene_editor_object).  Invalid argument(s)");
-// 		scene_editor_object = (struct Scene_editor_object *)NULL;
-// 	}
-// 	LEAVE;
-
-// 	return (scene_editor_object);
-// } /* CREATE(Scene_editor_object) */
-
-// int DESTROY(Scene_editor_object)(
-// 	struct Scene_editor_object **scene_editor_object_address)
-// /*******************************************************************************
-// LAST MODIFIED : 4 December 2001
-
-// DESCRIPTION :
-// ==============================================================================*/
-// {
-// 	struct Scene_editor_object *scene_editor_object;
-// 	int return_code;
-
-// 	ENTER(DESTROY(Scene_editor_object));
-// 	if (scene_editor_object_address &&
-// 		(scene_editor_object = *scene_editor_object_address))
-// 	{
-// 		if (0 == scene_editor_object->access_count)
-// 		{
-// 			if (scene_editor_object->scene_object)
-// 			{
-// 				DEACCESS(Scene_object)(&(scene_editor_object->scene_object));
-// 			}
-// 			DEALLOCATE(scene_editor_object->name);
-// 			if (scene_editor_object->scene_editor_objects)
-// 			{
-// 				DESTROY(LIST(Scene_editor_object))(
-// 					&(scene_editor_object->scene_editor_objects));
-// 			}
-// 			DEALLOCATE(*scene_editor_object_address);
-// 			return_code = 1;
-// 		}
-// 		else
-// 		{
-// 			display_message(ERROR_MESSAGE,
-// 				"DESTROY(Scene_editor_object).  Non-zero access_count");
-// 			return_code = 0;
-// 		}
-// 		*scene_editor_object_address = (struct Scene_editor_object *)NULL;
-// 	}
-// 	else
-// 	{
-// 		display_message(ERROR_MESSAGE,
-// 			"DESTROY(Scene_editor_object).  Invalid argument(s)");
-// 		return_code = 0;
-// 	}
-// 	LEAVE;
-
-// 	return (return_code);
-// } /* DESTROY(Scene_editor_object) */
-
-// DECLARE_OBJECT_FUNCTIONS(Scene_editor_object)
-
-// DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Scene_editor_object, name, char *,
-// 	strcmp)
-
-// DECLARE_INDEXED_LIST_FUNCTIONS(Scene_editor_object)
-
-// DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Scene_editor_object, 
-// 	name, char *, strcmp)
-
 
 struct Scene_editor_object *Scene_editor_get_first_object(
 	struct Scene_editor *scene_editor)
@@ -1256,7 +1116,7 @@ Callback from wxChooser<Use Element Type> when choice is made.
 	 return 1;
  }
 
-	int xi_discretization_mode_callback(enum Xi_discretization_mode xi_discretization_mode)
+int xi_discretization_mode_callback(enum Xi_discretization_mode xi_discretization_mode)
 /*******************************************************************************
 LAST MODIFIED : 22 March 2007
 
@@ -1353,7 +1213,7 @@ Callback from wxChooser<xi Discretization Mode> when choice is made.
 	return 1;
 }
 
-	int native_discretization_callback(Computed_field *native_discretization_field)
+int native_discretization_callback(Computed_field *native_discretization_field)
 /*******************************************************************************
 LAST MODIFIED : 22 March 2007
 
@@ -1381,7 +1241,7 @@ Callback from wxChooser<Native discretization> when choice is made.
 	return 1;
 }
 
-	int xi_point_density_callback(Computed_field *xi_point_density_field)
+int xi_point_density_callback(Computed_field *xi_point_density_field)
 /*******************************************************************************
 LAST MODIFIED : 22 March 2007
 
@@ -1421,7 +1281,7 @@ Callback from wxChooser<Seed Element> when choice is made.
 	return 1;
 }
 
-	int streamline_type_callback(enum Streamline_type streamline_type)
+int streamline_type_callback(enum Streamline_type streamline_type)
 /*******************************************************************************
 LAST MODIFIED : 23 March 2007
 
@@ -1677,7 +1537,7 @@ Callback from wxChooser<Render Type> when choice is made.
 			frame->SetMaxSize(wxSize(2000,2000));
 	}
 
-	void AutoApplyorNot(struct GT_element_group  *gt_element_group, GT_element_group *edit_gt_element_group)
+	void AutoApplyorNot(struct GT_element_group  *destination, GT_element_group *source)
 /*******************************************************************************
 LAST MODIFIED : 20 March 2007
 
@@ -1688,8 +1548,7 @@ Check if the auto apply clicked or not, if clicked, apply the current changes
 		autocheckbox = XRCCTRL(*this, "AutoCheckBox", wxCheckBox);
 		if(autocheckbox->IsChecked())
 		{
-			 if (!GT_element_group_modify(gt_element_group,
-						 edit_gt_element_group))
+			 if (!GT_element_group_modify(destination,source))
 			 {
 					display_message(ERROR_MESSAGE, "wxSceneEditor::UpdateGraphicalElementList.  "
 						 "Could not modify graphical element");
@@ -1979,15 +1838,23 @@ When changes have been made by the user, renew the label on the list
 		switch (Scene_object_get_type(scene_object))
 			{
 			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
-				{
-					gt_element_group = Scene_object_get_graphical_element_group(
+			{
+				 if (scene_editor->gt_element_group)
+				 {
+						GT_element_group_remove_callback(scene_editor->gt_element_group,
+							 Scene_editor_wx_graphical_element_change, (void *)scene_editor);
+				 }
+				 gt_element_group = Scene_object_get_graphical_element_group(
 						scene_object);
-					if (scene_editor->gt_element_group != NULL)
-					{
-						 computed_field_chooser->set_object(GT_element_group_get_default_coordinate_field(scene_editor->gt_element_group));
-					}
-					SetGraphicalElementGroup(gt_element_group);
-			} break;
+				 REACCESS(GT_element_group)(&scene_editor->gt_element_group, gt_element_group);
+						GT_element_group_add_callback(scene_editor->gt_element_group,
+							 Scene_editor_wx_graphical_element_change, (void *)scene_editor);
+						if (scene_editor->gt_element_group != NULL)
+						{
+							 computed_field_chooser->set_object(GT_element_group_get_default_coordinate_field(scene_editor->gt_element_group));
+						}
+						SetGraphicalElementGroup(gt_element_group);
+						} break;
 			case SCENE_OBJECT_GRAPHICS_OBJECT:
 			case SCENE_OBJECT_SCENE:
 				{
@@ -2001,28 +1868,39 @@ When changes have been made by the user, renew the label on the list
 			}
 	}
 
- 	void 	UpdateGraphicalElementList(GT_element_settings *settings)
- 	{
-		 wxScrolledWindow *sceneeditingpanel= XRCCTRL(*this, "SceneEditing",wxScrolledWindow);
-		 sceneeditingpanel->Enable();
-		 sceneeditingpanel->Show();
- 		graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
-		int selection =	graphicalitemschecklist->GetSelection();
-		REACCESS(GT_element_settings)(&scene_editor->current_settings, settings);
-		scene_editor->current_settings_type = GT_element_settings_get_settings_type(settings);
-		settings_type_chooser->set_value(scene_editor->current_settings_type);
-		if (graphicalitemschecklist->IsChecked(selection))
-			{
-				GT_element_settings_set_visibility(settings, 1);
-			}
-		else
-			{
-				GT_element_settings_set_visibility(settings, 0);
-			}
-		get_and_set_graphical_element_settings((void *)scene_editor);
-		AutoApplyorNot(scene_editor->gt_element_group,
+void Scene_editor_wx_UpdateGraphicalElementList(GT_element_settings *settings)
+{
+	 wxScrolledWindow *sceneeditingpanel= XRCCTRL(*this, "SceneEditing",wxScrolledWindow);
+	 sceneeditingpanel->Enable();
+	 sceneeditingpanel->Show();
+	 graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
+	 REACCESS(GT_element_settings)(&scene_editor->current_settings, settings);
+	 scene_editor->current_settings_type = GT_element_settings_get_settings_type(settings);
+	 settings_type_chooser->set_value(scene_editor->current_settings_type);
+}
+
+void 	UpdateGraphicalElementList(GT_element_settings *settings)
+{
+	 wxScrolledWindow *sceneeditingpanel= XRCCTRL(*this, "SceneEditing",wxScrolledWindow);
+	 sceneeditingpanel->Enable();
+	 sceneeditingpanel->Show();
+	 graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
+	 int selection =	graphicalitemschecklist->GetSelection();
+	 REACCESS(GT_element_settings)(&scene_editor->current_settings, settings);
+	 scene_editor->current_settings_type = GT_element_settings_get_settings_type(settings);
+	 settings_type_chooser->set_value(scene_editor->current_settings_type);
+	 if (graphicalitemschecklist->IsChecked(selection))
+	 {
+			GT_element_settings_set_visibility(settings, 1);
+	 }
+	 else
+	 {
+			GT_element_settings_set_visibility(settings, 0);
+	 }
+	 get_and_set_graphical_element_settings((void *)scene_editor);
+	 AutoApplyorNot(scene_editor->gt_element_group,
 			scene_editor->edit_gt_element_group);
- 	}
+}
 
 	void SceneCheckListClicked(wxCommandEvent &event)
 	{
@@ -3758,7 +3636,7 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 				 }
 				 if ((struct Graphics_font *)NULL!=font)
 				 {
-						//font_chooser->set_object(font);
+						font_chooser->set_object(font);
 						font_chooser_panel->Enable();
 				 }
 				 else
@@ -4399,25 +4277,59 @@ Get and set the display of  the graphical element settings
 	Scene_editor *scene_editor = static_cast<Scene_editor*>(scene_editor_void);
 
 	/*for the text field*/
-	char *name;
-	GET_NAME(GT_element_settings)(scene_editor->current_settings,
-																&name);
-	wxTextCtrl *nametextfield = XRCCTRL(*scene_editor->wx_scene_editor, "NameTextField", wxTextCtrl);
-	nametextfield->SetValue(name);
-	DEALLOCATE(name);
+	if (scene_editor->current_settings)
+	{
+		 char *name;
+		 GET_NAME(GT_element_settings)(scene_editor->current_settings,
+				&name);
+		 wxTextCtrl *nametextfield = XRCCTRL(*scene_editor->wx_scene_editor, "NameTextField", wxTextCtrl);
+		 nametextfield->SetValue(name);
+		 DEALLOCATE(name);
 
-	/*for the coordinate field*/
-	scene_editor->wx_scene_editor->SetCoordinateFieldChooser(scene_editor->current_settings);
-	/*for the selected and material chooser*/
-	scene_editor->wx_scene_editor->SetBothMaterialChooser(scene_editor->current_settings);
-	/*for the select mode chooser*/
-	scene_editor->wx_scene_editor->SetSelectMode(scene_editor->current_settings);
+		 /*for the coordinate field*/
+		 scene_editor->wx_scene_editor->SetCoordinateFieldChooser(scene_editor->current_settings);
+		 /*for the selected and material chooser*/
+		 scene_editor->wx_scene_editor->SetBothMaterialChooser(scene_editor->current_settings);
+		 /*for the select mode chooser*/
+		 scene_editor->wx_scene_editor->SetSelectMode(scene_editor->current_settings);
 	scene_editor->wx_scene_editor->SetSettings(scene_editor->current_settings);
+	}
 	wxFrame *frame=XRCCTRL(*scene_editor->wx_scene_editor, "CmguiSceneEditor", wxFrame);
 	frame->Layout();
 	return 1;
 }
 
+static int Scene_editor_wx_graphical_element_change(
+	struct GT_element_group *gt_element_group, void *scene_editor_void)
+/*******************************************************************************
+LAST MODIFIED : 30 July 2007
+
+DESCRIPTION :
+This function will be called whenever there are global changes 
+==============================================================================*/
+{
+	 Scene_editor *scene_editor = static_cast<Scene_editor*>(scene_editor_void);
+	 int selection;
+	 wxCheckListBox *graphicalitemschecklist = 
+			XRCCTRL(*scene_editor->wx_scene_editor,"GraphicalItemsListBox",wxCheckListBox);	 
+	 if (graphicalitemschecklist)
+	 {
+			selection = graphicalitemschecklist->GetSelection();
+			graphicalitemschecklist->Clear();
+			scene_editor->wx_scene_editor->AutoApplyorNot(
+				 scene_editor->edit_gt_element_group, scene_editor->gt_element_group);
+			for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
+				 Scene_editor_add_element_settings_item, (void *)scene_editor);
+			graphicalitemschecklist->SetSelection(selection);
+			if (-1 != selection)
+			{
+				 scene_editor->wx_scene_editor->Scene_editor_wx_UpdateGraphicalElementList(
+						get_settings_at_position_in_GT_element_group(
+							 scene_editor->edit_gt_element_group, selection+1));
+			}
+	 }
+	 return 1;
+}
 
 static int add_scene_object_to_scene_check_box(struct Scene_object *scene_object,
 					      void *scene_editor_void)
@@ -4456,6 +4368,8 @@ Add scene_object as checklistbox item into the box
 					{
 						 edit_gt_element_group =
 								create_editor_copy_GT_element_group(gt_element_group);
+						 GT_element_group_add_callback(scene_editor->gt_element_group,
+								Scene_editor_wx_graphical_element_change, (void *)scene_editor);
 						 if (!edit_gt_element_group)
 						 {
 								display_message(ERROR_MESSAGE,
@@ -4616,14 +4530,11 @@ DESCRIPTION :
 			 scene_editor->render_type =(Render_type)NULL;
 			 scene_editor->fe_element =(FE_element *)NULL;
 			 scene_editor->root_region = root_region;
-#if defined (WX_USER_INTERFACE)
 			 scene_editor->wx_scene_editor = (wxSceneEditor *)NULL;
 			 scene_editor->wx_scene_editor = new 
 					wxSceneEditor(scene_editor);
 			 scene_editor->lower_panel=
 					XRCCTRL(*scene_editor->wx_scene_editor, "LowerPanel", wxPanel);
-			 //			 scene_editor->dummy_panel=
-			 //					XRCCTRL(*scene_editor->wx_scene_editor, "DummyPanel", wxPanel);
 			 scene_editor->checklistbox = XRCCTRL(*scene_editor->wx_scene_editor, "SceneCheckList", wxCheckListBox);
 			 scene_editor->checklistbox->Clear();
 			 for_each_Scene_object_in_Scene(scene,
@@ -4673,7 +4584,6 @@ DESCRIPTION :
 			 scene_editor->topsplitter=XRCCTRL(*scene_editor->wx_scene_editor,"TopSplitter",wxSplitterWindow);
 			 scene_editor->topsplitter->SetSashPosition(150);
 			 scene_editor->topsplitter->Layout();
-#endif /*  (WX_USER_INTERFACE) */
 		}
 		else
 		{
@@ -4720,14 +4630,10 @@ DESCRIPTION :
 				scene_editor->scene_manager);
 			scene_editor->scene_manager_callback_id = (void *)NULL;
 		}
-		if (scene_editor->gt_element_group)
-		{
-			 DEACCESS(GT_element_group)(&scene_editor->gt_element_group);
-		}
-		if (scene_editor->edit_gt_element_group)
-		{
-			 DEACCESS(GT_element_group)(&scene_editor->edit_gt_element_group);
-		}
+		GT_element_group_remove_callback(scene_editor->gt_element_group,
+			 Scene_editor_wx_graphical_element_change, (void *)scene_editor);
+		DEACCESS(GT_element_group)(&scene_editor->edit_gt_element_group);
+		DEACCESS(GT_element_group)(&scene_editor->gt_element_group);	
 		DEACCESS(GT_element_settings)(&scene_editor->current_settings);
 		delete scene_editor->wx_scene_editor;
 		DEALLOCATE(*scene_editor_address);
