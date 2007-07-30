@@ -19081,7 +19081,7 @@ Executes a GFX TRANSFORM_TOOL command.
 	return (return_code);
 } /* execute_command_gfx_transform_tool */
 
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 static int execute_command_gfx_update(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -19146,7 +19146,7 @@ Executes a GFX UPDATE command.
 
 	return (return_code);
 } /* execute_command_gfx_update */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 
 static int gfx_write_Curve(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -19923,10 +19923,10 @@ Executes a GFX command.
 				command_data_void, gfx_transform_tool);
 			Option_table_add_entry(option_table, "unselect", NULL,
 				command_data_void, execute_command_gfx_unselect);
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 			Option_table_add_entry(option_table, "update", NULL,
 				command_data_void, execute_command_gfx_update);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 			Option_table_add_entry(option_table, "write", NULL,
 				command_data_void, execute_command_gfx_write);
 			return_code = Option_table_parse(option_table, state);
