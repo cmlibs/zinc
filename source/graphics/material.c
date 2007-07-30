@@ -130,21 +130,26 @@ Enumerates the main different types of vertex/fragment program for materials
 	MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_INPUTS = (1<<10) + (1<<11) + (1<<12) + (1<<13),
 
 	/* Specify the outputs in the dependent texture lookup, either replacing the colour, alpha or both. */
+	/* These modes work by assuming that the dependent_texture inputs form
+		the axes of a single 1D, 2D or 3D texture */
 	MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR = (1<<14),
 	MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA = (1<<15),
+	/* This mode works by looking up each input component independently
+		in a common 1D texture */
+	MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1D_COMPONENT_LOOKUP = (1<<16),
 
 	/* Assume that the texture contains an intensity followed by a 3 component
 		normal vector.  This vector is used to light volume rendering by
 		performing per pixel lighting using this normal. */
-	MATERIAL_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE = (1<<16),
+	MATERIAL_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE = (1<<17),
 	/* Calculate a normal by using a finite difference operator. */
-	MATERIAL_PROGRAM_CLASS_LIT_VOLUME_FINITE_DIFFERENCE_NORMAL = (1<<17),
+	MATERIAL_PROGRAM_CLASS_LIT_VOLUME_FINITE_DIFFERENCE_NORMAL = (1<<18),
 	/* Scale the alpha by the magnitude of the normal */
-	MATERIAL_PROGRAM_CLASS_LIT_VOLUME_SCALE_ALPHA = (1<<18),
+	MATERIAL_PROGRAM_CLASS_LIT_VOLUME_SCALE_ALPHA = (1<<19),
 
    /* Order independent transparency passes */
-	MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_FIRST_LAYER = (1<<19),
-	MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER = (1<<20)
+	MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_FIRST_LAYER = (1<<20),
+	MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER = (1<<21)
 }; /* enum Material_program_type */
 
 struct Material_program
@@ -896,81 +901,131 @@ be shared by multiple materials using the same program.
 							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3 | 
 							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4) & material_program->type)
 					{
-						append_string(&fragment_program_string, 	
-							"TEMP dependentlookup;\n"
-							"TEMP offsetcolour;\n"
-							, &error);
-						components_string = (char *)NULL;
-						components_error = 0;
-						if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1
-							& material_program->type)
+						if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR | 
+							MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA) & material_program->type)
 						{
-							append_string(&components_string, "r", &components_error);
+							append_string(&fragment_program_string, 	
+								"TEMP dependentlookup;\n"
+								"TEMP offsetcolour;\n"
+								, &error);
+							components_string = (char *)NULL;
+							components_error = 0;
+							if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1
+								& material_program->type)
+							{
+								append_string(&components_string, "r", &components_error);
+							}
+							if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2
+								& material_program->type)
+							{
+								append_string(&components_string, "g", &components_error);
+							}
+							if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3
+								& material_program->type)
+							{
+								append_string(&components_string, "b", &components_error);
+							}
+							if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4
+								& material_program->type)
+							{
+								append_string(&components_string, "a", &components_error);
+							}
+							number_of_inputs = strlen(components_string);
+							while (!components_error && (strlen(components_string) < 4))
+							{
+								append_string(&components_string, "r", &components_error);
+							}
+							if (!components_error)
+							{
+								char tex_string[1000];
+								sprintf(tex_string,
+									"#Offset and scale to counteract effect of linear interpolation\n"
+									"#starting at the middle of the first texel and finishing in the\n"
+									"#middle of the last texel\n"
+									"MAD		offsetcolour, finalCol.%s, lookup_scales, lookup_offsets;\n"
+									"TEX		dependentlookup, offsetcolour, texture[2], %1dD;\n",
+									components_string, number_of_inputs);
+								append_string(&fragment_program_string,
+									tex_string, &error);
+							}
+							if (components_string)
+							{
+								DEALLOCATE(components_string);
+							}
+
+							switch ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
+									MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA) 
+								& material_program->type)
+							{
+								case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR:
+								{
+									/* Don't touch alpha */
+									append_string(&fragment_program_string,
+										"MOV		finalCol.rgb, dependentlookup;\n"
+										, &error);
+								} break;
+								case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA:
+								{
+									append_string(&fragment_program_string,
+										"MUL		finalCol.w, finalCol.w, dependentlookup.r;\n"
+										, &error);
+								} break;
+								case (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
+									MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA):
+									{
+										append_string(&fragment_program_string,
+											"MOV		finalCol, dependentlookup;\n"
+											, &error);
+									} break;
+							}
 						}
-						if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2
-							& material_program->type)
-						{
-							append_string(&components_string, "g", &components_error);
-						}
-						if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3
-							& material_program->type)
-						{
-							append_string(&components_string, "b", &components_error);
-						}
-						if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4
-							& material_program->type)
-						{
-							append_string(&components_string, "a", &components_error);
-						}
-						number_of_inputs = strlen(components_string);
-						while (!components_error && (strlen(components_string) < 4))
-						{
-							append_string(&components_string, "r", &components_error);
-						}
-						if (!components_error)
+						else if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1D_COMPONENT_LOOKUP & material_program->type)
 						{
 							char tex_string[1000];
-							sprintf(tex_string,
+							char lookup_one_component_string[] = 
 								"#Offset and scale to counteract effect of linear interpolation\n"
 								"#starting at the middle of the first texel and finishing in the\n"
 								"#middle of the last texel\n"
 								"MAD		offsetcolour, finalCol.%s, lookup_scales, lookup_offsets;\n"
-								"TEX		dependentlookup, offsetcolour, texture[2], %1dD;\n",
-								components_string, number_of_inputs);
-							append_string(&fragment_program_string,
-								tex_string, &error);
-						}
-						if (components_string)
-						{
-							DEALLOCATE(components_string);
-						}
-
-						switch ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
-								MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA) 
-							& material_program->type)
-						{
-							case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR:
+								"TEX		dependentlookup, offsetcolour, texture[2], 1D;\n"
+								"MOV		finalCol.%s, dependentlookup.r;\n";
+							append_string(&fragment_program_string, 	
+								"TEMP dependentlookup;\n"
+								"TEMP offsetcolour;\n"
+								, &error);
+							if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1
+								& material_program->type)
 							{
-								/* Don't touch alpha */
+ 								sprintf(tex_string, lookup_one_component_string,
+									"rrrr", "r");
 								append_string(&fragment_program_string,
-									"MOV		finalCol.rgb, dependentlookup;\n"
-									, &error);
-							} break;
-							case MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA:
+									tex_string, &error);
+							}
+							if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2
+								& material_program->type)
 							{
+ 								sprintf(tex_string, lookup_one_component_string,
+									"gggg", "g");
 								append_string(&fragment_program_string,
-									"MUL		finalCol.w, finalCol.w, dependentlookup.r;\n"
-									, &error);
-							} break;
-							case (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR |
-								MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA):
+									tex_string, &error);
+							}
+							if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2
+								& material_program->type)
 							{
+ 								sprintf(tex_string, lookup_one_component_string,
+									"bbbb", "b");
 								append_string(&fragment_program_string,
-									"MOV		finalCol, dependentlookup;\n"
-									, &error);
-							} break;
+									tex_string, &error);
+							}
+							if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2
+								& material_program->type)
+							{
+ 								sprintf(tex_string, lookup_one_component_string,
+									"aaaa", "a");
+								append_string(&fragment_program_string,
+									tex_string, &error);
+							}
 						}
-					
 					}
 
 					if ((MATERIAL_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE |
@@ -2988,7 +3043,8 @@ DESCRIPTION :
 		lit_volume_intensity_normal_texture_flag, lit_volume_scale_alpha_flag,
 		normal_mode_flag, per_pixel_mode_flag;
 	enum Spectrum_colour_components spectrum_colour_components;
-	int dimension, lit_volume_normal_scaling_number, process, return_code;
+	int dimension, lit_volume_normal_scaling_number,
+		number_of_spectrum_components, process, return_code;
 	struct Graphical_material *material_to_be_modified,
 		*material_to_be_modified_copy;
 	struct Material_package *material_package;
@@ -3134,7 +3190,13 @@ DESCRIPTION :
 						"<colour_lookup_blue> and <colour_lookup_alpha>, as inputs "
 						"to a 1, 2 or 3 component spectrum.  Depending on the "
 						"spectrum this will override either the rgb colour, "
-						"the alpha value or both rgb and alpha.  This spectrum "
+						"the alpha value or both rgb and alpha.  "
+						"If the number of input components used in the spectrum "
+						"matches the number of components specified then a texture "
+						"of this dimension will be used and evaluated for each tensor "
+						"product combination.  If only a 1 component spectrum is "
+						"specified then it will be applied independently to each input "
+						"component specified.  This spectrum "
 						"can be modified to quickly change the appearance of a "
 						"large volume dataset, see example a/indexed_volume.  "
 						"A lit volume uses a per voxel normal to calculate the "
@@ -3239,12 +3301,23 @@ DESCRIPTION :
 							}
 							else
 							{
+								number_of_spectrum_components = 
+									Spectrum_get_number_of_components(material_to_be_modified_copy->spectrum);
 								if ((colour_lookup_alpha_flag + colour_lookup_blue_flag +
-										colour_lookup_green_flag + colour_lookup_red_flag) != 
-									Spectrum_get_number_of_components(material_to_be_modified_copy->spectrum))
+										colour_lookup_green_flag + colour_lookup_red_flag) == 
+									number_of_spectrum_components)
+								{
+									/* OK */
+								}
+								else if (1 == number_of_spectrum_components)
+								{
+									/* Lookup each component specified in the 1D spectra only */
+									/* Also OK */
+								}
+								else
 								{
 									display_message(ERROR_MESSAGE,
-										"Number of components used in colour_lookup_spectrum does not match the number of colour_lookup_colours specified.");
+										"Either your spectrum should have 1 component, or the number of components must match the number of colour lookups specfied (colour_lookup_alpha, colour_lookup_blue, colour_lookup_green_flag or colour_lookup_red_flag).");
 									return_code = 0;
 								}
 							}
@@ -3449,28 +3522,39 @@ DESCRIPTION :
 									type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4;
 								}
 
-								spectrum_colour_components = Spectrum_get_colour_components(
-									material_to_be_modified_copy->spectrum);
-								if (spectrum_colour_components & SPECTRUM_COMPONENT_ALPHA) 
+								number_of_spectrum_components = 
+									Spectrum_get_number_of_components(material_to_be_modified_copy->spectrum);
+								if ((colour_lookup_alpha_flag + colour_lookup_blue_flag +
+										colour_lookup_green_flag + colour_lookup_red_flag) == 
+									number_of_spectrum_components)
 								{
-									if (spectrum_colour_components == SPECTRUM_COMPONENT_ALPHA)
+									spectrum_colour_components = Spectrum_get_colour_components(
+										material_to_be_modified_copy->spectrum);
+									if (spectrum_colour_components & SPECTRUM_COMPONENT_ALPHA) 
 									{
-										/* Alpha only */
-										type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA;
+										if (spectrum_colour_components == SPECTRUM_COMPONENT_ALPHA)
+										{
+											/* Alpha only */
+											type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA;
+										}
+										else
+										{
+											/* Colour and alpha */
+											type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR
+												| MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA;
+										}
 									}
 									else
 									{
-										/* Colour and alpha */
-										type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR
-											| MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA;
+										/* Colour only */
+										type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR;
 									}
 								}
-								else
+								else if (1 == number_of_spectrum_components)
 								{
-									/* Colour only */
-									type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR;
+									/* Lookup each component specified in the 1D spectra only */
+									type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1D_COMPONENT_LOOKUP;
 								}
-
 							}
 							else
 							{
