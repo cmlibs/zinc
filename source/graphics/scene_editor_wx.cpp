@@ -1820,23 +1820,23 @@ When changes have been made by the user, renew the label on the list
 			}
 	}
 
-	void UpdateSceneObjectList(Scene_object *scene_object)
-	{
-		GT_element_group *gt_element_group;
-		REACCESS(Scene_object)(&scene_editor->scene_object, scene_object);
- 		scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
-		int selection =	scenechecklist->GetSelection();
-		if(scenechecklist->IsChecked(selection))
-			{
-				Scene_object_set_visibility(scene_object, g_VISIBLE);
-			}
-		else
-			{
-				Scene_object_set_visibility(scene_object, g_INVISIBLE);
-			}
-
-		switch (Scene_object_get_type(scene_object))
-			{
+void UpdateSceneObjectList(Scene_object *scene_object)
+{
+	 GT_element_group *gt_element_group;
+	 REACCESS(Scene_object)(&scene_editor->scene_object, scene_object);
+	 scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
+	 int selection =	scenechecklist->GetSelection();
+	 if(scenechecklist->IsChecked(selection))
+	 {
+			Scene_object_set_visibility(scene_object, g_VISIBLE);
+	 }
+	 else
+	 {
+			Scene_object_set_visibility(scene_object, g_INVISIBLE);
+	 }
+	 
+	 switch (Scene_object_get_type(scene_object))
+	 {
 			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 			{
 				 if (scene_editor->gt_element_group)
@@ -1847,26 +1847,26 @@ When changes have been made by the user, renew the label on the list
 				 gt_element_group = Scene_object_get_graphical_element_group(
 						scene_object);
 				 REACCESS(GT_element_group)(&scene_editor->gt_element_group, gt_element_group);
-						GT_element_group_add_callback(scene_editor->gt_element_group,
-							 Scene_editor_wx_graphical_element_change, (void *)scene_editor);
-						if (scene_editor->gt_element_group != NULL)
-						{
-							 computed_field_chooser->set_object(GT_element_group_get_default_coordinate_field(scene_editor->gt_element_group));
-						}
-						SetGraphicalElementGroup(gt_element_group);
-						} break;
+				 GT_element_group_add_callback(scene_editor->gt_element_group,
+						Scene_editor_wx_graphical_element_change, (void *)scene_editor);
+				 if (scene_editor->gt_element_group != NULL)
+				 {
+						computed_field_chooser->set_object(GT_element_group_get_default_coordinate_field(scene_editor->gt_element_group));
+				 }
+				 SetGraphicalElementGroup(gt_element_group);
+			} break;
 			case SCENE_OBJECT_GRAPHICS_OBJECT:
 			case SCENE_OBJECT_SCENE:
-				{
-					scene_editor->graphicalitemslistbox = XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
-					scene_editor->graphicalitemslistbox->Clear();
-					scene_editor->lower_panel->Disable();
-					scene_editor->lower_panel->Hide();
-					//		scene_editor->dummy_panel->Show();
-					/* nothing to do */
-				} break;
-			}
-	}
+			{
+				 scene_editor->graphicalitemslistbox = XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
+				 scene_editor->graphicalitemslistbox->Clear();
+				 scene_editor->lower_panel->Disable();
+				 scene_editor->lower_panel->Hide();
+				 //		scene_editor->dummy_panel->Show();
+				 /* nothing to do */
+			} break;
+	 }
+}
 
 void Scene_editor_wx_UpdateGraphicalElementList(GT_element_settings *settings)
 {
@@ -1902,70 +1902,70 @@ void 	UpdateGraphicalElementList(GT_element_settings *settings)
 			scene_editor->edit_gt_element_group);
 }
 
-	void SceneCheckListClicked(wxCommandEvent &event)
-	{
-		currentsceneobjecttext=XRCCTRL(*this,"CurrentSceneObjectText",wxStaticText);
- 		scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
-		currentsceneobjecttext->SetLabel(scenechecklist->GetStringSelection());
-		int selection=scenechecklist->GetSelection();
-		UpdateSceneObjectList(Scene_get_scene_object_at_position(scene_editor->scene,selection+1));
-		lowest_panel = XRCCTRL(*this, "LowestPanel",wxScrolledWindow);
-		lowest_panel->Fit();	
-		lowest_panel->Layout();	
-		lowest_panel->SetScrollbars(10,10,40,40);
-		sceneediting = 
-			 XRCCTRL(*this, "SceneEditing", wxScrolledWindow);
-		sceneediting->Layout();
-		sceneediting->SetScrollbars(10,10,40,40);
-		lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
-		lowersplitter->Layout();	
-		topsplitter=XRCCTRL(*this,"TopSplitter",wxSplitterWindow);
-		topsplitter->Layout();	
-		frame = 
+void SceneCheckListClicked(wxCommandEvent &event)
+{
+	 currentsceneobjecttext=XRCCTRL(*this,"CurrentSceneObjectText",wxStaticText);
+	 scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
+	 currentsceneobjecttext->SetLabel(scenechecklist->GetStringSelection());
+	 int selection=scenechecklist->GetSelection();
+	 UpdateSceneObjectList(Scene_get_scene_object_at_position(scene_editor->scene,selection+1));
+	 lowest_panel = XRCCTRL(*this, "LowestPanel",wxScrolledWindow);
+	 lowest_panel->Fit();	
+	 lowest_panel->Layout();	
+	 lowest_panel->SetScrollbars(10,10,40,40);
+	 sceneediting = 
+			XRCCTRL(*this, "SceneEditing", wxScrolledWindow);
+	 sceneediting->Layout();
+	 sceneediting->SetScrollbars(10,10,40,40);
+	 lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
+	 lowersplitter->Layout();	
+	 topsplitter=XRCCTRL(*this,"TopSplitter",wxSplitterWindow);
+	 topsplitter->Layout();	
+	 frame = 
 			 XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
-		frame->Layout();
- 	}
+	 frame->Layout();
+}
 
-	void  SceneObjectUpClicked(wxCommandEvent &event)
-	{
-		 scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
-		 int selection = scenechecklist->GetSelection();
-		if (selection>=1)
+void  SceneObjectUpClicked(wxCommandEvent &event)
+{
+	 scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
+	 int selection = scenechecklist->GetSelection();
+	 if (selection>=1)
+	 {
+			struct Scene *parent_scene;
+			parent_scene = Scene_object_get_parent_scene(Scene_get_scene_object_at_position(scene_editor->scene,selection+1));
+			Scene_set_scene_object_position(parent_scene,
+				 Scene_get_scene_object_at_position(scene_editor->scene,selection+1), selection);
+			scenechecklist->Clear();
+			for_each_Scene_object_in_Scene(scene_editor->scene,
+				 add_scene_object_to_scene_check_box, (void *)scene_editor);
+			scenechecklist->SetSelection(selection-1);
+			currentsceneobjecttext->SetLabel(scenechecklist->GetStringSelection());
+			switch (Scene_object_get_type(Scene_get_scene_object_at_position(scene_editor->scene,selection)))
 			{
-				 struct Scene *parent_scene;
-				 parent_scene = Scene_object_get_parent_scene(Scene_get_scene_object_at_position(scene_editor->scene,selection+1));
-				 Scene_set_scene_object_position(parent_scene,
-						Scene_get_scene_object_at_position(scene_editor->scene,selection+1), selection);
-				 scenechecklist->Clear();
-				for_each_Scene_object_in_Scene(scene_editor->scene,
- 				  add_scene_object_to_scene_check_box, (void *)scene_editor);
-				scenechecklist->SetSelection(selection-1);
-				currentsceneobjecttext->SetLabel(scenechecklist->GetStringSelection());
-				switch (Scene_object_get_type(Scene_get_scene_object_at_position(scene_editor->scene,selection)))
-				{
-					 case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
-					 {
-							scene_editor->lower_panel->Enable();
-							scene_editor->lower_panel->Show();
-							//				scene_editor->dummy_panel->Hide();
-					 } break;
-					 case SCENE_OBJECT_GRAPHICS_OBJECT:
-					 {
-							scene_editor->lower_panel->Disable();
-							scene_editor->lower_panel->Hide();	
-							//						scene_editor->dummy_panel->Show();
-							/* nothing to do */
-					 } break;	
-					 case SCENE_OBJECT_SCENE:
-					 {
-							scene_editor->lower_panel->Disable();
-							scene_editor->lower_panel->Hide();	
-							//			scene_editor->dummy_panel->Show();
-							/* nothing to do */
-					 } break;			
-				}
-		}
- 	}
+				 case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
+				 {
+						scene_editor->lower_panel->Enable();
+						scene_editor->lower_panel->Show();
+						//				scene_editor->dummy_panel->Hide();
+				 } break;
+				 case SCENE_OBJECT_GRAPHICS_OBJECT:
+				 {
+						scene_editor->lower_panel->Disable();
+						scene_editor->lower_panel->Hide();	
+						//						scene_editor->dummy_panel->Show();
+						/* nothing to do */
+				 } break;	
+				 case SCENE_OBJECT_SCENE:
+				 {
+						scene_editor->lower_panel->Disable();
+						scene_editor->lower_panel->Hide();	
+						//			scene_editor->dummy_panel->Show();
+						/* nothing to do */
+				 } break;			
+			}
+	 }
+}
 
 void  SceneObjectDownClicked(wxCommandEvent &event)
 {
@@ -2026,92 +2026,93 @@ void GraphicalItemsListBoxClicked(wxCommandEvent &event)
 			XRCCTRL(*this, "SceneEditing", wxScrolledWindow);
 	 sceneediting->Layout();
 }
-	void AddToSettingList(wxCommandEvent &event)
-	{
-		GT_element_settings *settings;
-		int return_code;
 
-		if (settings =
-				CREATE(GT_element_settings)(scene_editor->current_settings_type))
+void AddToSettingList(wxCommandEvent &event)
+{
+	 GT_element_settings *settings;
+	 int return_code;
+	 
+	 if (settings =
+			CREATE(GT_element_settings)(scene_editor->current_settings_type))
+	 {
+			return_code = 1;
+			if (scene_editor->current_settings)
 			{
-				return_code = 1;
-				if (scene_editor->current_settings)
-					{
-						/* copy current settings into new settings */
-						return_code = GT_element_settings_copy_without_graphics_object(settings,
-																																					 scene_editor->current_settings);
-						/* make sure new settings is visible */
-						GT_element_settings_set_visibility(settings,1);
-					}
-				else
-					{
-					 	/* set materials for all settings */
-						GT_element_settings_set_material(settings,
-																						 scene_editor->default_material);
-						GT_element_settings_set_label_field(settings,
-																								(struct Computed_field *)NULL, scene_editor->default_font);
-						GT_element_settings_set_selected_material(settings,
-																											FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-																																																						 "default_selected",scene_editor->graphical_material_manager));
-						/* for data_points, ensure either there are points with
-							 default_coordinate defined at them. If not, and any have
-							 the element_xi_coordinate field defined over them, use that */
-						if (GT_ELEMENT_SETTINGS_DATA_POINTS==
-								scene_editor->current_settings_type)
-							{
-								FE_region *data_fe_region = Cmiss_region_get_FE_region(
-									 GT_element_group_get_data_Cmiss_region(
-											scene_editor->edit_gt_element_group));
-								Computed_field *default_coordinate_field=
-									GT_element_group_get_default_coordinate_field(
-																																scene_editor->edit_gt_element_group);
-								if (!FE_region_get_first_FE_node_that(data_fe_region,
-																											FE_node_has_Computed_field_defined,
-																											(void *)default_coordinate_field))
-									{
-										MANAGER(Computed_field) *computed_field_manager=  Computed_field_package_get_computed_field_manager(
-											scene_editor->computed_field_package);
-										Computed_field *element_xi_coordinate_field;
-										if ((element_xi_coordinate_field=
-												 FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-																																						"element_xi_coordinate",computed_field_manager)) &&
-												FE_region_get_first_FE_node_that(data_fe_region,
-																												 FE_node_has_Computed_field_defined,
-																												 (void *)element_xi_coordinate_field))
-											{
-												GT_element_settings_set_coordinate_field(settings,
-																																 element_xi_coordinate_field);
-											}
-									}
-							}
-						/* set iso_scalar_field for iso_surfaces */
-						if (GT_ELEMENT_SETTINGS_ISO_SURFACES==
-								scene_editor->current_settings_type)
-							{
-								Computed_field *iso_scalar_field;
-								MANAGER(Computed_field) *computed_field_manager=  Computed_field_package_get_computed_field_manager(
-									 scene_editor->computed_field_package);
-								if (iso_scalar_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-											 Computed_field_is_scalar,(void *)NULL,computed_field_manager))
-									{
-										double iso_value_default = 0;
-										if (!GT_element_settings_set_iso_surface_parameters(settings,
-																																				iso_scalar_field,/*number_of_iso_values*/1,&iso_value_default,
-												/*first_iso_value*/0.0, /*last_iso_value*/0.0,
-																																				/*decimation_threshold*/0.0))
-											{
-												return_code=0;
-											}
-									}
-								else
-									{
-										display_message(WARNING_MESSAGE,"No scalar fields defined");
-										return_code=0;
-									}
-							}
-						/* set initial glyph for settings types that use them */
-						if ((GT_ELEMENT_SETTINGS_NODE_POINTS==
-								 scene_editor->current_settings_type)||
+				 /* copy current settings into new settings */
+				 return_code = GT_element_settings_copy_without_graphics_object(settings,
+						scene_editor->current_settings);
+				 /* make sure new settings is visible */
+				 GT_element_settings_set_visibility(settings,1);
+			}
+			else
+			{
+				 /* set materials for all settings */
+				 GT_element_settings_set_material(settings,
+						scene_editor->default_material);
+				 GT_element_settings_set_label_field(settings,
+						(struct Computed_field *)NULL, scene_editor->default_font);
+				 GT_element_settings_set_selected_material(settings,
+						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+							 "default_selected",scene_editor->graphical_material_manager));
+				 /* for data_points, ensure either there are points with
+						default_coordinate defined at them. If not, and any have
+						the element_xi_coordinate field defined over them, use that */
+				 if (GT_ELEMENT_SETTINGS_DATA_POINTS==
+						scene_editor->current_settings_type)
+				 {
+						FE_region *data_fe_region = Cmiss_region_get_FE_region(
+							 GT_element_group_get_data_Cmiss_region(
+									scene_editor->edit_gt_element_group));
+						Computed_field *default_coordinate_field=
+							 GT_element_group_get_default_coordinate_field(
+									scene_editor->edit_gt_element_group);
+						if (!FE_region_get_first_FE_node_that(data_fe_region,
+									FE_node_has_Computed_field_defined,
+									(void *)default_coordinate_field))
+						{
+							 MANAGER(Computed_field) *computed_field_manager=  Computed_field_package_get_computed_field_manager(
+									scene_editor->computed_field_package);
+							 Computed_field *element_xi_coordinate_field;
+							 if ((element_xi_coordinate_field=
+										 FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+												"element_xi_coordinate",computed_field_manager)) &&
+									FE_region_get_first_FE_node_that(data_fe_region,
+										 FE_node_has_Computed_field_defined,
+										 (void *)element_xi_coordinate_field))
+							 {
+									GT_element_settings_set_coordinate_field(settings,
+										 element_xi_coordinate_field);
+							 }
+						}
+				 }
+				 /* set iso_scalar_field for iso_surfaces */
+				 if (GT_ELEMENT_SETTINGS_ISO_SURFACES==
+						scene_editor->current_settings_type)
+				 {
+						Computed_field *iso_scalar_field;
+						MANAGER(Computed_field) *computed_field_manager=  Computed_field_package_get_computed_field_manager(
+							 scene_editor->computed_field_package);
+						if (iso_scalar_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+									 Computed_field_is_scalar,(void *)NULL,computed_field_manager))
+						{
+							 double iso_value_default = 0;
+							 if (!GT_element_settings_set_iso_surface_parameters(settings,
+										 iso_scalar_field,/*number_of_iso_values*/1,&iso_value_default,
+										 /*first_iso_value*/0.0, /*last_iso_value*/0.0,
+										 /*decimation_threshold*/0.0))
+							 {
+									return_code=0;
+							 }
+						}
+						else
+						{
+							 display_message(WARNING_MESSAGE,"No scalar fields defined");
+							 return_code=0;
+						}
+				 }
+				 /* set initial glyph for settings types that use them */
+				 if ((GT_ELEMENT_SETTINGS_NODE_POINTS==
+							 scene_editor->current_settings_type)||
 								(GT_ELEMENT_SETTINGS_DATA_POINTS==
 								 scene_editor->current_settings_type)||
 								(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==
@@ -4292,7 +4293,7 @@ Get and set the display of  the graphical element settings
 		 scene_editor->wx_scene_editor->SetBothMaterialChooser(scene_editor->current_settings);
 		 /*for the select mode chooser*/
 		 scene_editor->wx_scene_editor->SetSelectMode(scene_editor->current_settings);
-	scene_editor->wx_scene_editor->SetSettings(scene_editor->current_settings);
+		 scene_editor->wx_scene_editor->SetSettings(scene_editor->current_settings);
 	}
 	wxFrame *frame=XRCCTRL(*scene_editor->wx_scene_editor, "CmguiSceneEditor", wxFrame);
 	frame->Layout();
@@ -4309,23 +4310,36 @@ This function will be called whenever there are global changes
 ==============================================================================*/
 {
 	 Scene_editor *scene_editor = static_cast<Scene_editor*>(scene_editor_void);
-	 int selection;
+	 int selection, number_of_items, return_code;
 	 wxCheckListBox *graphicalitemschecklist = 
 			XRCCTRL(*scene_editor->wx_scene_editor,"GraphicalItemsListBox",wxCheckListBox);	 
 	 if (graphicalitemschecklist)
 	 {
+			return_code = 1;
 			selection = graphicalitemschecklist->GetSelection();
 			graphicalitemschecklist->Clear();
 			scene_editor->wx_scene_editor->AutoApplyorNot(
 				 scene_editor->edit_gt_element_group, scene_editor->gt_element_group);
 			for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
 				 Scene_editor_add_element_settings_item, (void *)scene_editor);
-			graphicalitemschecklist->SetSelection(selection);
-			if (-1 != selection)
+			number_of_items = graphicalitemschecklist->GetCount();
+			if ((selection >= number_of_items) && (number_of_items >= 1))
 			{
-				 scene_editor->wx_scene_editor->Scene_editor_wx_UpdateGraphicalElementList(
-						get_settings_at_position_in_GT_element_group(
-							 scene_editor->edit_gt_element_group, selection+1));
+				 selection = number_of_items -1;
+			}
+			else if (number_of_items == 0)
+			{
+				 return_code = 0;
+			}
+			if (return_code == 1)
+			{
+				 graphicalitemschecklist->SetSelection(selection);
+				 if (-1 != selection)
+				 {
+						scene_editor->wx_scene_editor->Scene_editor_wx_UpdateGraphicalElementList(
+							 get_settings_at_position_in_GT_element_group(
+									scene_editor->edit_gt_element_group, selection+1));
+				 }
 			}
 	 }
 	 return 1;
@@ -4630,8 +4644,9 @@ DESCRIPTION :
 				scene_editor->scene_manager);
 			scene_editor->scene_manager_callback_id = (void *)NULL;
 		}
-		GT_element_group_remove_callback(scene_editor->gt_element_group,
-			 Scene_editor_wx_graphical_element_change, (void *)scene_editor);
+// 		GT_element_group_remove_callback(scene_editor->gt_element_group,
+// 			 Scene_editor_wx_graphical_element_change, (void
+// 			 *)scene_editor);
 		DEACCESS(GT_element_group)(&scene_editor->edit_gt_element_group);
 		DEACCESS(GT_element_group)(&scene_editor->gt_element_group);	
 		DEACCESS(GT_element_settings)(&scene_editor->current_settings);
