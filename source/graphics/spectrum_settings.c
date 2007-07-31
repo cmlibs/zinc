@@ -2450,7 +2450,7 @@ passed in render data.
 	ENTER(Spectrum_settings_activate);
 	if (settings&&(render_data=(struct Spectrum_render_data *)render_data_void))
 	{
-		 data_component = 0.0;
+		data_component = 0.0;
 		return_code=1;
 		if (settings->settings_type == SPECTRUM_FIELD)
 		{
@@ -2458,10 +2458,21 @@ passed in render data.
 			{
 				number_of_components = Computed_field_get_number_of_components
 					(settings->output_field);
-				ALLOCATE(values, FE_value, number_of_components); 
-				Computed_field_evaluate_at_field_coordinates(settings->output_field,
-					settings->input_field, render_data->number_of_data_components,
-					render_data->data, /*time*/0.0, values);
+				ALLOCATE(values, FE_value, number_of_components);
+				if (settings->component_number > 0)
+				{
+					Computed_field_evaluate_at_field_coordinates(settings->output_field,
+						settings->input_field, /*Number of values*/1,
+						render_data->data + settings->component_number,
+						/*time*/0.0, values);
+				}
+				else
+				{
+					Computed_field_evaluate_at_field_coordinates(settings->output_field,
+						settings->input_field, render_data->number_of_data_components,
+						render_data->data,
+						/*time*/0.0, values);
+				}
 
 				for (i = 0 ; i < number_of_components ; i++)
 				{
@@ -3435,7 +3446,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
 	enum Spectrum_settings_colour_mapping colour_mapping;
-	int return_code;
+	int component, return_code;
 	struct Computed_field *input_field, *output_field;
 	struct Modify_spectrum_data *modify_spectrum_data;
 	struct Option_table *option_table;
@@ -3460,6 +3471,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				Spectrum_settings_set_type(settings,SPECTRUM_FIELD);
 
 				colour_mapping = Spectrum_settings_get_colour_mapping(settings);
+				component = Spectrum_settings_get_component_number(settings);
 
 				input_field = (struct Computed_field *)NULL;	
 				output_field = (struct Computed_field *)NULL;
@@ -3473,6 +3485,9 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				}
 
 				option_table = CREATE(Option_table)();
+				/* component */
+				Option_table_add_int_positive_entry(option_table, "component",
+					&component);
 				/* input_field */
 				set_input_field_data.computed_field_manager=
 					modify_spectrum_data->computed_field_manager;
@@ -3529,6 +3544,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 							output_field);
 						settings->settings_changed = 1;
 					}
+					Spectrum_settings_set_component_number(settings,
+						component);
 					Spectrum_settings_set_colour_mapping(settings,
 						colour_mapping);
 				}
