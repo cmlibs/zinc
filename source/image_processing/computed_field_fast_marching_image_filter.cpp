@@ -454,7 +454,7 @@ Returns allocated command string for reproducing field. Includes type.
 		}
 
 		append_string(&command_string, " output_size", &error);
-		for (i = 0; i < num_seed_points; i++)
+		for (i = 0; i < dimension; i++)
 		{
 			sprintf(temp_string, " %d", output_size[i]);
 			append_string(&command_string, temp_string, &error);
@@ -564,7 +564,7 @@ otherwise an error is reported.
 			(*seed_points)[i]=core->seed_points[i];
 		}
 
-		ALLOCATE(*seed_points, double, *num_seed_points);
+		ALLOCATE(*seed_values, double, *num_seed_points);
 		for (i=0; i < *num_seed_points ;i++) {
 			(*seed_values)[i]=core->seed_values[i];
 		}
@@ -600,12 +600,13 @@ already) and allows its contents to be modified.
 	double stopping_value;
 	int num_seed_points;
 	int dimension;
-  double *seed_points;
-  double *seed_values;
+	double *seed_points;
+	double *seed_values;
 	int *output_size;
 	int length_seed_points;
 	int return_code;
 	int previous_state_index, expected_parameters;
+	int i;
 
 	struct Computed_field *field, *source_field;
 	struct Computed_field_simple_package *computed_field_simple_package;
@@ -725,13 +726,22 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				length_seed_points = num_seed_points * dimension;
-								
+					
+				/* reallocate memory for arrays */
 				REALLOCATE(seed_points, seed_points, double, length_seed_points);
 				REALLOCATE(seed_values, seed_values, double, num_seed_points);
 				REALLOCATE(output_size, output_size, int, dimension);
 
-
-				// pjb: should I populate array with dummy values?
+				/* set default values, in case options are not specified in field definition. */
+				for (i=0; i < length_seed_points ;i++) {
+					seed_points[i] = 0;
+				}				
+				for (i=0; i < num_seed_points ;i++) {
+					seed_values[i] = 0;
+				}				
+				for (i=0; i < dimension ;i++) {
+					output_size[i] = 128;
+				}
 
 				option_table = CREATE(Option_table)();
 				/* field */
@@ -753,12 +763,18 @@ already) and allows its contents to be modified.
 				Option_table_add_double_vector_entry(option_table, "seed_points", 
 																						 seed_points, &length_seed_points);
 				Option_table_add_double_vector_entry(option_table, "seed_values", 
-																						 seed_points, &num_seed_points);
+																						 seed_values, &num_seed_points);
 				Option_table_add_int_vector_entry(option_table, "output_size", 
 																						 output_size, &dimension);
 
 				return_code=Option_table_multi_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
+
+			
+				printf("seed_values after reading option table :");
+				for (i = 0; i < num_seed_points; i++) {
+					printf(" %g",seed_values[i]);
+				}		
 			}
 
 			/* no errors,not asking for help */
