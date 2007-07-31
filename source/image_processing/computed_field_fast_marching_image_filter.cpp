@@ -769,12 +769,7 @@ already) and allows its contents to be modified.
 
 				return_code=Option_table_multi_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
-
 			
-				printf("seed_values after reading option table :");
-				for (i = 0; i < num_seed_points; i++) {
-					printf(" %g",seed_values[i]);
-				}		
 			}
 
 			/* no errors,not asking for help */
