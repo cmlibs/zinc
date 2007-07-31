@@ -43,8 +43,6 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_PRIVATE_H)
 #define COMPUTED_FIELD_PRIVATE_H
 
-#include "field_location.hpp"
-
 /* Used by the register_type_function, Computed_field_type_data and 
 	Computed_field_add_type_to_option_table*/
 typedef int (*Define_Computed_field_type_function)(
@@ -56,6 +54,8 @@ Computed field types
 --------------------
 Types used only internally to computed fields.
 */
+
+#include "field_location.hpp"
 
 class Computed_field_type_package
 /*******************************************************************************
@@ -403,23 +403,87 @@ DESCRIPTION :
 Sets the coordinate system of the <field> to match that of it's sources.
 ==============================================================================*/
 
-int Computed_field_evaluate_cache_at_location(
-	struct Computed_field *field, Field_location* location);
+inline int Computed_field_evaluate_cache_at_location(
+	Computed_field *field, Field_location* location)
 /*******************************************************************************
-LAST MODIFIED : 9 August 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Calculates the values of <field> at <node>, if it is defined over the element.
+Calculates the values of <field> at <location>.
 Upon successful return the node values of the <field> are stored in its cache.
-
-???RC Could have a separate values cache for node computations. I am thinking of
-cases where we have wrappers for calculating a coordinate field at element:xi
-taken from a field or fields at a node - for showing the projection of a data
-point during mesh fitting. At present the coordinate field of data pt. position
-may be the same as that of the element, but the position is quite different.
-Ideally, they should have distinct coordinate fields, but 3-component coordinate
-fields with the name 'coordinates' are quite pervasive.
 ==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_evaluate_cache_at_location);
+#if ! defined (OPTIMISED)
+	if (field && location)
+	{
+#endif /* ! defined (OPTIMISED) */
+		return_code=1;
+
+		/* make sure we have allocated values AND derivatives, or nothing */
+		if (!field->values)
+		{
+			/* get enough space for derivatives in highest dimension element */
+			if (!(ALLOCATE(field->values,FE_value,field->number_of_components)&&
+					ALLOCATE(field->derivatives,FE_value,
+						MAXIMUM_ELEMENT_XI_DIMENSIONS*field->number_of_components)))
+			{
+				if (field->values)
+				{
+					DEALLOCATE(field->values);
+				}
+				return_code=0;
+			}
+		}
+		
+		if (!location->check_cache_for_location(field))
+		{
+			field->derivatives_valid=0;
+			if (field->string_cache)
+			{
+				DEALLOCATE(field->string_cache);
+			}
+			if (return_code)
+			{
+				/* Before we set up a better typed cache storage we are assuming 
+					the evaluate will generate valid values, for those which don't
+					this will be set to zero in the evaluate.  This allows the valid
+					evaluation to a string, which potentially will expand to more types. */
+				field->values_valid = 1;
+				return_code = field->core->evaluate_cache_at_location(location);
+
+				if (return_code)
+				{
+					location->update_cache_for_location(field);
+				}
+				else
+				{
+					if (field->node)
+					{
+						DEACCESS(FE_node)(&field->node);
+					}
+					if (field->element)
+					{
+						DEACCESS(FE_element)(&field->element);
+					}
+				}
+			}
+		}
+#if ! defined (OPTIMISED)
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_evaluate_cache_at_location.  Invalid argument(s)");
+		return_code=0;
+	}
+#endif /* ! defined (OPTIMISED) */
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_evaluate_cache_at_location */
 
 int Computed_field_set_values_at_location(struct Computed_field *field,
 	Field_location* location, FE_value *values);
@@ -439,16 +503,46 @@ continues until the actual FE_field values at the node are changed or a field
 is reached for which its calculation is not reversible, or is not supported yet.
 ==============================================================================*/
 
-int Computed_field_evaluate_source_fields_cache_at_location(
-	struct Computed_field *field, Field_location* location);
+inline int Computed_field_evaluate_source_fields_cache_at_location(
+	struct Computed_field *field, Field_location *location)
 /*******************************************************************************
-LAST MODIFIED : 9 August 2006
+LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
 Calculates the cache values of each source field in <field> at <node>, if it 
-is defined over the element.
+is defined.
 Upon successful return the node values of the source fields are stored in their
 cache.
 ==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(Computed_field_evaluate_source_fields_cache_at_location);
+#if ! defined (OPTIMISED)
+	/* These checks cost us a lot when evaluating thousands of fields */
+	if (field && location)
+	{
+#endif /* ! defined (OPTIMISED) */
+		return_code = 1;
+		/* calculate values of source_fields */
+		for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
+		{
+			return_code=Computed_field_evaluate_cache_at_location(
+				field->source_fields[i], location);
+		}
+#if ! defined (OPTIMISED)
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_evaluate_source_fields_cache_at_location.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+#endif /* ! defined (OPTIMISED) */
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_evaluate_source_fields_cache_at_location */
 
 #endif /* !defined (COMPUTED_FIELD_PRIVATE_H) */
