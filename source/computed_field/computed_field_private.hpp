@@ -55,7 +55,10 @@ Computed field types
 Types used only internally to computed fields.
 */
 
-#include "field_location.hpp"
+#include "computed_field/field_location.hpp"
+extern "C" {
+#include "general/debug.h"
+}
 
 class Computed_field_type_package
 /*******************************************************************************
