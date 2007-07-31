@@ -518,15 +518,24 @@ DESCRIPTION :
 Frees memory/deaccess objects in computed_field at <*field_address>.
 ==============================================================================*/
 {
-	int return_code;
+	 char **component_name;
+	 int  i, return_code;
 	struct Computed_field *field;
-
 	ENTER(DESTROY(Computed_field));
 	if (field_address&&(field= *field_address))
 	{
 		if (0 >= field->access_count)
 		{
-			DEALLOCATE(field->name);
+			 DEALLOCATE(field->name);
+			if (component_name=field->component_names)
+			{
+				for (i=field->number_of_components;i>0;i--)
+				{
+					DEALLOCATE(*component_name);
+					component_name++;
+				}
+				DEALLOCATE(field->component_names);
+			}
 			Computed_field_clear_type(field);
 			DEALLOCATE(*field_address);
 			return_code=1;

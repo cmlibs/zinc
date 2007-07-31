@@ -2582,7 +2582,6 @@ passed in render data.
 		{
 			/* Ignore inactive settings or settings which act on a component for which
 				there is no data */
-  		   value = 0.0;	 
 			if (settings->active && 
 				(settings->component_number < render_data->number_of_data_components))
 			{

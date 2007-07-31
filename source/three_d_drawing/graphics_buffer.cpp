@@ -4702,6 +4702,15 @@ Returns the depth of the colour buffer used by the graphics buffer.
 				return_code = 1;
 			} break;
 #endif /* defined (MOTIF) */
+#if defined (WX_USER_INTERFACE)
+			 case GRAPHICS_BUFFER_WX_TYPE:
+			{
+				 display_message(ERROR_MESSAGE,"Graphics_buffer_get_colour_buffer_depth.  "
+			"Not yet implemented in the cmgui-wx.");
+				 *colour_buffer_depth = 0;
+				 return_code = 0;
+			} break;
+#endif /* defined (WX_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -4762,6 +4771,15 @@ Returns the depth of the depth buffer used by the graphics buffer.
 				return_code = 1;
 			} break;
 #endif /* defined (MOTIF) */
+#if defined (WX_USER_INTERFACE)
+			 case GRAPHICS_BUFFER_WX_TYPE:
+			{
+				 display_message(ERROR_MESSAGE,"Graphics_buffer_get_depth_buffer_depth.  "
+			"Not yet implemented in the cmgui-wx.");
+				 *depth_buffer_depth = 0;
+				 return_code = 0;
+			} break;
+#endif /* defined (WX_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -4833,11 +4851,20 @@ Returns the depth of the accumulation buffer used by the graphics buffer.
 				return_code = 1;
 			} break;
 #endif /* defined (MOTIF) */
+#if defined (WX_USER_INTERFACE)
+			 case GRAPHICS_BUFFER_WX_TYPE:
+			{
+				 display_message(ERROR_MESSAGE,"Graphics_buffer_get_accumulation_buffer_depth.  "
+			"Not yet implemented in the cmgui-wx.");
+				 *accumulation_buffer_depth = 0;
+				 return_code = 0;
+			} break;
+#endif /* defined (WX_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
 			{
-				*accumulation_buffer_depth = 0;
+				 *accumulation_buffer_depth = 0;
 				return_code = 0;
 			} break;
 #else /* defined (GTK_USE_GTKGLAREA) */
