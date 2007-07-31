@@ -207,27 +207,25 @@ ifeq ($(SYSNAME),Linux)
 #       FORTRAN = efc -c -W1 -w95 -cm -auto -fpp0 -stack_temps
 #    else
       # gcc
-      # for profiling
-      #CC = gcc -c -std=gnu99 -pg
       CC = gcc -c -std=gnu99
-      # for profiling
-      #CPP = g++ -c -pg
       CPP = g++ -c
+      ifeq ($(PROFILE),true)
+        CC += -pg
+        CPP += -pg
+      endif	
       CPP_FLAGS =
       FORTRAN = g77 -c -fno-second-underscore
 #    endif
    MAKEDEPEND = gcc -MM -MG
    CPREPROCESS = gcc -E -P
    ifneq ($(STATIC_LINK),true)
-      # for profiling
-      #LINK = gcc -pg
       LINK = gcc
-      # LINK = egcs -shared -L/usr/X11R6/lib -v */
-      # LINK = gcc -L/usr/X11R6/lib -v */
    else # STATIC_LINK) != true
       LINK = gcc -static
-      # LINK = g++ --no-demangle -rdynamic -L/usr/X11R6/lib*/
    endif # STATIC_LINK) != true
+   ifeq ($(PROFILE),true)
+      LINK += -pg
+   endif
    ifneq ($(DEBUG),true)
       OPTIMISATION_FLAGS = -O
       COMPILE_DEFINES = -DOPTIMISED
@@ -236,8 +234,14 @@ ifeq ($(SYSNAME),Linux)
       CPP_STRICT_FLAGS = -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-      STRIP = strip --strip-unneeded
-      STRIP_SHARED = strip --strip-unneeded
+      ifeq ($(PROFILE),true)
+        #Don't strip if profiling
+        STRIP =
+        STRIP_SHARED =
+      else
+        STRIP = strip --strip-unneeded
+        STRIP_SHARED = strip --strip-unneeded
+      endif
    else  # DEBUG != true
       OPTIMISATION_FLAGS = -g
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
