@@ -894,6 +894,7 @@ COMMAND_INTERFACE_SRCS = \
 COMPUTED_FIELD_SRCS = \
 	minimise/minimise.cpp \
 	computed_field/computed_field.cpp \
+	computed_field/field_location.cpp \
 	computed_field/computed_field_component_operations.cpp \
 	computed_field/computed_field_compose.cpp \
 	computed_field/computed_field_composite.cpp \

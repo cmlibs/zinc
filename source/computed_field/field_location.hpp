@@ -71,6 +71,18 @@ public:
 	{
 		return number_of_derivatives;
 	}
+
+	virtual int check_cache_for_location(Computed_field *field)
+	{
+		/* Default is that the cache is invalid */
+		return 0;
+	}
+
+	virtual int update_cache_for_location(Computed_field *field)
+	{
+		/* Don't need to do anything */
+		return 1;
+	}
 };
 
 class Field_element_xi_location : public Field_location
@@ -107,6 +119,10 @@ public:
 	{
 		return top_level_element;
 	}
+
+	int check_cache_for_location(Computed_field *field);
+
+	int update_cache_for_location(Computed_field *field);
 };
 
 class Field_node_location : public Field_location
@@ -130,6 +146,9 @@ public:
 		return node;
 	}
 
+	int check_cache_for_location(Computed_field *field);
+
+	virtual int update_cache_for_location(Computed_field *field);
 };
 
 class Field_coordinate_location : public Field_location
@@ -174,6 +193,7 @@ public:
 		return values;
 	}
 
+	int check_cache_for_location(Computed_field *field);
 };
 
 #endif /* !defined (__FIELD_LOCATION_HPP__) */
