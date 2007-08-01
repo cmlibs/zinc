@@ -259,6 +259,14 @@ left of the texture and
 the top right of the texture.
 ==============================================================================*/
 
+int Cmiss_texture_get_number_of_components(Cmiss_texture_id texture);
+/*******************************************************************************
+LAST MODIFIED : 1 August 2007
+
+DESCRIPTION :
+Returns the number of components used per texel in the texture: 1, 2, 3 or 4.
+==============================================================================*/
+
 int Cmiss_texture_write_to_file(Cmiss_texture_id texture, 
    const char *filename);
 /*******************************************************************************
