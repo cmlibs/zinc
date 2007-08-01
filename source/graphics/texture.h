@@ -61,6 +61,8 @@ The data structures used for representing textures.
 
 #define Texture_get_original_texel_sizes \
 	Cmiss_texture_get_original_texel_sizes
+#define Texture_get_number_of_components \
+	Cmiss_texture_get_number_of_components
 
 /*
 Global types
