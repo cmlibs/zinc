@@ -459,29 +459,38 @@ already) and allows its contents to be modified.
 				}
 				if (return_code)
 				{
-					return_code = Computed_field_get_native_resolution(source_field,
-						&dimension, &sizes, &texture_coordinate_field);
-					DEALLOCATE(sizes);
-				
-					if (!radius_sizes || (old_dimension != dimension))
+					if (return_code = Computed_field_get_native_resolution(source_field,
+							&dimension, &sizes, &texture_coordinate_field))
 					{
-						REALLOCATE(radius_sizes, radius_sizes, int, dimension);
-						for (i = old_dimension ; i < dimension ; i++)
+						DEALLOCATE(sizes);
+						
+						if (!radius_sizes || (old_dimension != dimension))
 						{
-							radius_sizes[i] = 1;
+							REALLOCATE(radius_sizes, radius_sizes, int, dimension);
+							for (i = old_dimension ; i < dimension ; i++)
+							{
+								radius_sizes[i] = 1;
+							}
 						}
+						/* Read the radius sizes */
+						option_table = CREATE(Option_table)();
+						/* field */
+						expected_parameters = 1;
+						Option_table_add_ignore_token_entry(option_table, "field", 
+							&expected_parameters);
+						/* radius_sizes */
+						Option_table_add_int_vector_entry(option_table,
+							"radius_sizes", radius_sizes, &dimension);
+						return_code = Option_table_multi_parse(option_table, state);
+						DESTROY(Option_table)(&option_table);
 					}
-					/* Read the radius sizes */
-					option_table = CREATE(Option_table)();
-					/* field */
-					expected_parameters = 1;
-					Option_table_add_ignore_token_entry(option_table, "field", 
-						&expected_parameters);
-					/* radius_sizes */
-					Option_table_add_int_vector_entry(option_table,
-						"radius_sizes", radius_sizes, &dimension);
-					return_code = Option_table_multi_parse(option_table, state);
-					DESTROY(Option_table)(&option_table);
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"define_Computed_field_type_mean_image_filter.  "
+							"Source field does not have an image dimension.");
+						return_code = 0;
+					}
 				}
 				if (return_code)
 				{
