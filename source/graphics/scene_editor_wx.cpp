@@ -1785,40 +1785,40 @@ When changes have been made by the user, renew the label on the list
 								 scene_editor->edit_gt_element_group);
 	 }
 
-	void SetGraphicalElementGroup(GT_element_group *gt_element_group)
-	{
-		GT_element_group *edit_gt_element_group;
-		REACCESS(GT_element_group)(&scene_editor->gt_element_group, gt_element_group);
-		if (gt_element_group)
+void SetGraphicalElementGroup(GT_element_group *gt_element_group)
+{
+	 GT_element_group *edit_gt_element_group;
+	 REACCESS(GT_element_group)(&scene_editor->gt_element_group, gt_element_group);
+	 if (gt_element_group)
+	 {
+			edit_gt_element_group =
+				 create_editor_copy_GT_element_group(gt_element_group);
+			if (!edit_gt_element_group)
 			{
-				edit_gt_element_group =
-					create_editor_copy_GT_element_group(gt_element_group);
-				if (!edit_gt_element_group)
-					{
-						display_message(ERROR_MESSAGE,
-														"graphical_element_editor_set_gt_element_group.  "
-														"Could not copy graphical element");
-			 		}
+				 display_message(ERROR_MESSAGE,
+						"graphical_element_editor_set_gt_element_group.  "
+						"Could not copy graphical element");
 			}
-		else
-			{
-				edit_gt_element_group = (struct GT_element_group *)NULL;
-			}
-		REACCESS(GT_element_group)(&(scene_editor->edit_gt_element_group),
-						edit_gt_element_group);
-		scene_editor->graphicalitemslistbox = XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
-		scene_editor->graphicalitemslistbox->Clear();
-		if (edit_gt_element_group)
-			{
-				for_each_settings_in_GT_element_group(edit_gt_element_group,
-				   Scene_editor_add_element_settings_item, (void *)scene_editor);
-				scene_editor->lower_panel->Enable();
-				scene_editor->lower_panel->Show();
-				//			scene_editor->dummy_panel->Hide();
-				set_general_settings((void *)scene_editor);
-				get_and_set_graphical_element_settings((void *)scene_editor);
-			}
-	}
+	 }
+	 else
+	 {
+			edit_gt_element_group = (struct GT_element_group *)NULL;
+	 }
+	 REACCESS(GT_element_group)(&(scene_editor->edit_gt_element_group),
+			edit_gt_element_group);
+	 scene_editor->graphicalitemslistbox = XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
+	 scene_editor->graphicalitemslistbox->Clear();
+	 if (edit_gt_element_group)
+	 {
+			for_each_settings_in_GT_element_group(edit_gt_element_group,
+				 Scene_editor_add_element_settings_item, (void *)scene_editor);
+			scene_editor->lower_panel->Enable();
+			scene_editor->lower_panel->Show();
+			//			scene_editor->dummy_panel->Hide();
+			set_general_settings((void *)scene_editor);
+			get_and_set_graphical_element_settings((void *)scene_editor);
+	 }
+}
 
 void UpdateSceneObjectList(Scene_object *scene_object)
 {
@@ -2265,40 +2265,40 @@ void RemoveFromSettingList(wxCommandEvent &event)
 			scene_editor->edit_gt_element_group);
 }
 
-	void MoveUpInSettingList(wxCommandEvent &event)
-	{
-	int position;
-	GT_element_settings *settings;
-	if (scene_editor->edit_gt_element_group)
-	{
-		if (1 < (position = GT_element_group_get_settings_position(
-			scene_editor->edit_gt_element_group, scene_editor->current_settings)))
-		{
-			settings = scene_editor->current_settings;
-			ACCESS(GT_element_settings)(settings);
-			GT_element_group_remove_settings(scene_editor->edit_gt_element_group,
-				scene_editor->current_settings);
-			GT_element_group_add_settings(scene_editor->edit_gt_element_group,
-				scene_editor->current_settings, position - 1);
-			DEACCESS(GT_element_settings)(&settings);
-						graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
-						graphicalitemschecklist->Clear();
-						for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
-						  Scene_editor_add_element_settings_item, (void *)scene_editor);
-						graphicalitemschecklist->SetSelection(position-2);
-						UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
-																					scene_editor->edit_gt_element_group, position-1));
-			/* By default the settings name is the position, so it needs to be updated
-			 even though the settings hasn't actually changed */
-			/* inform the client of the change */
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"graphical_element_editor_up_button_CB.  Invalid argument(s)");
-	}
-	}
+void MoveUpInSettingList(wxCommandEvent &event)
+{
+	 int position;
+	 GT_element_settings *settings;
+	 if (scene_editor->edit_gt_element_group)
+	 {
+			if (1 < (position = GT_element_group_get_settings_position(
+									scene_editor->edit_gt_element_group, scene_editor->current_settings)))
+			{
+				 settings = scene_editor->current_settings;
+				 ACCESS(GT_element_settings)(settings);
+				 GT_element_group_remove_settings(scene_editor->edit_gt_element_group,
+						scene_editor->current_settings);
+				 GT_element_group_add_settings(scene_editor->edit_gt_element_group,
+						scene_editor->current_settings, position - 1);
+				 DEACCESS(GT_element_settings)(&settings);
+				 graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
+				 graphicalitemschecklist->Clear();
+				 for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
+						Scene_editor_add_element_settings_item, (void *)scene_editor);
+				 graphicalitemschecklist->SetSelection(position-2);
+				 UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
+																			 scene_editor->edit_gt_element_group, position-1));
+				 /* By default the settings name is the position, so it needs to be updated
+						even though the settings hasn't actually changed */
+				 /* inform the client of the change */
+			}
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "graphical_element_editor_up_button_CB.  Invalid argument(s)");
+	 }
+}
 
 	void MoveDownInSettingList(wxCommandEvent &event)
 	{

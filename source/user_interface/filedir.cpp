@@ -1230,6 +1230,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 		 char *temp_directory_name,*directory_name, *temp_name;
 		 int lastlength;
 		 filename = file_open_data->file_name;
+		 directory_name = NULL;
 		 first = strchr(filename, '\\');
 		 last = strrchr(filename, '\\');
 		 lastlength = last - filename +1;
@@ -1285,7 +1286,6 @@ name the <file_operation> is performed on the file with the <arguments>.
 										}
 										DEALLOCATE(temp_string);
 								 }
-								 DEALLOCATE(directory_name);
 							}
 							DEALLOCATE(temp_directory_name);
 					 }
