@@ -19242,7 +19242,7 @@ Can also write individual groups with the <group> option.
 	 char *com_file_name, *data_file_name, *elem_file_name, *file_name, *node_file_name, *region_path,
 			**valid_strings, *write_criterion_string;
 	 enum FE_write_criterion write_criterion;
-	 int allocate_code, number_of_valid_strings, data_return_code, elem_return_code, node_return_code, return_code;
+	 int number_of_valid_strings, data_return_code, elem_return_code, node_return_code, return_code;
 	 struct Cmiss_command_data *command_data;
 	 struct FE_field_order_info *field_order_info;
 	 struct Option_table *option_table;
@@ -19260,7 +19260,6 @@ Can also write individual groups with the <group> option.
 			elem_return_code = 1;
 			node_return_code = 1;
 			return_code = 1; 
-			allocate_code =0;
 			region_path = (char *)NULL;
 			field_order_info = (struct FE_field_order_info *)NULL;
 			file_name = (char *)NULL;
@@ -19322,7 +19321,6 @@ Can also write individual groups with the <group> option.
 							 strcat(node_file_name, ".exnode");
 							 node_file_name[length+8]='\0';
 						}
-						allocate_code = 1;
 				 }
 				 if ((!field_order_info ||
 						(0 == get_FE_field_order_info_number_of_fields(field_order_info))) &&
@@ -19489,7 +19487,7 @@ Can also write individual groups with the <group> option.
 						elem_file_name, node_file_name, data_return_code,
 						elem_return_code, node_return_code, file_name);
 #endif /* defined (WX_USER_INTERFACE) && (__WIN32__) */
-				 DEALLOCATE(com_file_name);			 
+				 DEALLOCATE(com_file_name);
 				 DEALLOCATE(node_file_name);
 				 DEALLOCATE(elem_file_name);						
 				 DEALLOCATE(data_file_name);		
