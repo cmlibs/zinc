@@ -3858,6 +3858,104 @@ The command is started with the string pointed to by <command_prefix>.
 	return (return_code);
 } /* list_Graphical_material_commands */
 
+int write_Graphical_material_commands_to_comfile(struct Graphical_material *material,
+	void *command_prefix_void)
+/*******************************************************************************
+LAST MODIFIED : 10 August 2007
+
+DESCRIPTION :
+Writes on the command window the command needed to recreate the <material>.
+The command is started with the string pointed to by <command_prefix>.
+==============================================================================*/
+{
+	char *command_prefix,line[100],*name;
+	int return_code;
+
+	ENTER(write_Graphical_material_commands_to_comfile);
+	if (material&&(command_prefix=(char *)command_prefix_void))
+	{
+		write_message_to_file(INFORMATION_MESSAGE,command_prefix);
+		if (name=duplicate_string(material->name))
+		{
+			/* put quotes around name if it contains special characters */
+			make_valid_token(&name);
+			write_message_to_file(INFORMATION_MESSAGE,name);
+			DEALLOCATE(name);
+		}
+		if (material->program)
+		{
+			if (MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING & material->program->type)
+			{
+				write_message_to_file(INFORMATION_MESSAGE," normal_mode");
+			}
+			else if (MATERIAL_PROGRAM_CLASS_PER_PIXEL_LIGHTING & material->program->type)
+			{
+				write_message_to_file(INFORMATION_MESSAGE," per_pixel_mode");
+			}
+			else if (MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_BUMPMAP & material->program->type)
+			{
+				write_message_to_file(INFORMATION_MESSAGE," per_pixel_mode bump_mapping");
+			}
+		}
+		else
+		{
+			write_message_to_file(INFORMATION_MESSAGE," normal_mode");
+		}
+		sprintf(line," ambient %g %g %g",
+			(material->ambient).red,(material->ambient).green,
+			(material->ambient).blue);
+		write_message_to_file(INFORMATION_MESSAGE,line);
+		sprintf(line," diffuse %g %g %g",
+			(material->diffuse).red,(material->diffuse).green,
+			(material->diffuse).blue);
+		write_message_to_file(INFORMATION_MESSAGE,line);
+		sprintf(line," emission %g %g %g",
+			(material->emission).red,(material->emission).green,
+			(material->emission).blue);
+		write_message_to_file(INFORMATION_MESSAGE,line);
+		sprintf(line," specular %g %g %g",
+			(material->specular).red,(material->specular).green,
+			(material->specular).blue);
+		write_message_to_file(INFORMATION_MESSAGE,line);
+		sprintf(line," alpha %g",material->alpha);
+		write_message_to_file(INFORMATION_MESSAGE,line);
+		sprintf(line," shininess %g",material->shininess);
+		write_message_to_file(INFORMATION_MESSAGE,line);
+		if (material->texture&&GET_NAME(Texture)(material->texture,&name))
+		{
+			/* put quotes around name if it contains special characters */
+			make_valid_token(&name);
+			write_message_to_file(INFORMATION_MESSAGE," texture %s",name);
+			DEALLOCATE(name);
+		}
+		if (material->secondary_texture&&GET_NAME(Texture)(material->secondary_texture,&name))
+		{
+			/* put quotes around name if it contains special characters */
+			make_valid_token(&name);
+			write_message_to_file(INFORMATION_MESSAGE," secondary_texture %s",name);
+			DEALLOCATE(name);
+		}
+		if (material->spectrum&&GET_NAME(Spectrum)(material->spectrum,&name))
+		{
+			/* put quotes around name if it contains special characters */
+			make_valid_token(&name);
+			write_message_to_file(INFORMATION_MESSAGE," colour_lookup_spectrum %s",name);
+			DEALLOCATE(name);
+		}
+		write_message_to_file(INFORMATION_MESSAGE,";\n");
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Graphical_material_commands.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* write_Graphical_material_commands_to_comfile */
+
 int file_read_Graphical_material_name(struct IO_stream *stream,
 	struct Graphical_material **material_address,
 	struct MANAGER(Graphical_material) *graphical_material_manager)

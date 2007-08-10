@@ -417,6 +417,16 @@ Writes on the command window the commands needed to recreate the <material>.
 The command is started with the string pointed to by <command_prefix>.
 ==============================================================================*/
 
+int write_Graphical_material_commands_to_comfile(struct Graphical_material *material,
+	 void *command_prefix_void);
+/*******************************************************************************
+LAST MODIFIED : 10 August 2007
+
+DESCRIPTION :
+Writes on the command window the command needed to recreate the <material>.
+The command is started with the string pointed to by <command_prefix>.
+==============================================================================*/
+
 int file_read_Graphical_material_name(struct IO_stream *file,
 	struct Graphical_material **material_address,
 	struct MANAGER(Graphical_material) *graphical_material_manager);

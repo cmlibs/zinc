@@ -869,6 +869,29 @@ Note, must be cycled through as many times as it takes till listed_fields -> 0.
 Second argument is a struct List_Computed_field_commands_data.
 ==============================================================================*/
 
+int write_Computed_field_commands_to_comfile(struct Computed_field *field,
+	 void *command_prefix_void);
+/*******************************************************************************
+LAST MODIFIED : 10 August 2007
+
+DESCRIPTION :
+Writes the commands needed to reproduce <field> to the com file.
+==============================================================================*/
+
+int write_Computed_field_commands_if_managed_source_fields_in_list_to_comfile(
+	 struct Computed_field *field, void *list_commands_data_void);
+/*******************************************************************************
+LAST MODIFIED : 10 August 2007
+
+DESCRIPTION :
+Calls list_Computed_field_commands if the field is not already in the list,
+has no source fields, or all its source fields are either not managed or
+already in the list. If the field is listed, it is added to the list.
+Ensures field command list comes out in the order they need to be created.
+Note, must be cycled through as many times as it takes till listed_fields -> 0.
+Second argument is a struct List_Computed_field_commands_data.
+==============================================================================*/
+
 int list_Computed_field_name(struct Computed_field *field,void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 4 February 1999

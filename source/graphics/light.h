@@ -290,6 +290,17 @@ name of the light if it contains any special characters.
 Follows the light name with semicolon and carriage return.
 ==============================================================================*/
 
+int write_Light_name_command_to_comfile(struct Light *light,void *preceding_text_void);
+/*******************************************************************************
+LAST MODIFIED : 10 August  2007
+
+DESCRIPTION :
+Writes the name of the <light> to the com file, preceded on each line by
+the optional <preceding_text> string. Makes sure quotes are put around the
+name of the light if it contains any special characters.
+Follows the light name with semicolon and carriage return.
+==============================================================================*/
+
 int reset_Lights(void);
 /*******************************************************************************
 LAST MODIFIED : 4 December 1997

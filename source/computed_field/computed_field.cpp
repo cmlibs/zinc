@@ -3975,6 +3975,114 @@ Second argument is a struct List_Computed_field_commands_data.
 	return (return_code);
 } /* list_Computed_field_commands_if_managed_source_fields_in_list */
 
+int write_Computed_field_commands_to_comfile(struct Computed_field *field,
+	 void *command_prefix_void)
+/*******************************************************************************
+LAST MODIFIED : 10 August 2007
+
+DESCRIPTION :
+Writes the commands needed to reproduce <field> to the com file.
+==============================================================================*/
+{
+	char *command_prefix, *command_string, *field_name, *temp_string;
+	int return_code;
+
+	ENTER(write_Computed_field_commands_to_comfile);
+	if (field && (command_prefix = (char *)command_prefix_void))
+	{
+		if (field_name = duplicate_string(field->name))
+		{
+			make_valid_token(&field_name);
+			write_message_to_file(INFORMATION_MESSAGE, "%s%s", command_prefix, field_name);
+			DEALLOCATE(field_name);
+		}
+		if (temp_string = Coordinate_system_string(&field->coordinate_system))
+		{
+			write_message_to_file(INFORMATION_MESSAGE, " coordinate_system %s",
+				 temp_string);
+			DEALLOCATE(temp_string);
+		}
+		if (command_string = field->core->get_command_string())
+		{
+			 write_message_to_file(INFORMATION_MESSAGE, " %s", command_string);
+			DEALLOCATE(command_string);
+		}
+		write_message_to_file(INFORMATION_MESSAGE, ";\n");
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_commands.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* write_Computed_field_commands_to_comfile */
+
+int write_Computed_field_commands_if_managed_source_fields_in_list_to_comfile(
+	 struct Computed_field *field, void *list_commands_data_void)
+/*******************************************************************************
+LAST MODIFIED : 10 August 2007
+
+DESCRIPTION :
+Calls list_Computed_field_commands if the field is not already in the list,
+has no source fields, or all its source fields are either not managed or
+already in the list. If the field is listed, it is added to the list.
+Ensures field command list comes out in the order they need to be created.
+Note, must be cycled through as many times as it takes till listed_fields -> 0.
+Second argument is a struct List_Computed_field_commands_data.
+==============================================================================*/
+{
+	int i, list_field, return_code;
+	struct List_Computed_field_commands_data *list_commands_data;
+
+	ENTER(write_Computed_field_commands_if_managed_source_fields_in_list_to_comfile);
+	if (field && (list_commands_data =
+		(struct List_Computed_field_commands_data *)list_commands_data_void))
+	{
+		return_code = 1;
+		/* is the field not listed yet? */
+		if (!IS_OBJECT_IN_LIST(Computed_field)(field,
+			list_commands_data->computed_field_list))
+		{
+			list_field = 1;
+			for (i = 0; list_field && (i < field->number_of_source_fields); i++)
+			{
+				if ((!IS_OBJECT_IN_LIST(Computed_field)(
+					field->source_fields[i], list_commands_data->computed_field_list)) &&
+					IS_MANAGED(Computed_field)(field->source_fields[i],
+						list_commands_data->computed_field_manager))
+				{
+					list_field = 0;
+				}
+			}
+			if (list_field)
+			{
+				/* do not list commands for read-only computed fields created
+					 automatically by cmgui */
+				return_code = ((field->read_only ||
+					write_Computed_field_commands_to_comfile(field,
+						 (void *)list_commands_data->command_prefix)) &&
+					ADD_OBJECT_TO_LIST(Computed_field)(field,
+						list_commands_data->computed_field_list));
+				list_commands_data->listed_fields++;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_commands_if_managed_source_fields_in_list.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* write_Computed_field_commands_if_managed_source_fields_in_list_to_comfile */
+
 int list_Computed_field_name(struct Computed_field *field,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006

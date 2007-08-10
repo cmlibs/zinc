@@ -35,6 +35,9 @@
       </object>
       <object class ="wxMenu" name="MenuWrite">
         <label>Write...</label>
+        <object class = "wxMenuItem" name="WriteAll">
+          <label>All files</label>
+        </object>
         <object class = "wxMenuItem" name="WriteCurve">
           <label>All Curve files</label>
 				</object>

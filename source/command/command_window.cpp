@@ -1722,6 +1722,13 @@ public:
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx read nodes");
 	 }
+
+	 void writeall(wxCommandEvent& event)
+	 {
+			SelectedCommand = "gfx write all";
+			Execute_command_execute_string(command_window->execute_command,
+				 "gfx write all");
+	 }
 	 
 	 void writecurve(wxCommandEvent& event)
 	 {
@@ -1929,6 +1936,7 @@ BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	 EVT_MENU(XRCID("ReadData"),wxCommandWindow::readdata)
 	 EVT_MENU(XRCID("ReadElements"),wxCommandWindow::readelements)
 	 EVT_MENU(XRCID("ReadNode"),wxCommandWindow::readnodes)
+	 EVT_MENU(XRCID("WriteAll"),wxCommandWindow::writeall)
 	 EVT_MENU(XRCID("WriteCurve"),wxCommandWindow::writecurve)
 	 EVT_MENU(XRCID("WriteData"),wxCommandWindow::writedata)
 	 EVT_MENU(XRCID("WriteElements"),wxCommandWindow::writeelements)

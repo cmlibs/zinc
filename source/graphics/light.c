@@ -1847,6 +1847,46 @@ Follows the light name with semicolon and carriage return.
 	return (return_code);
 } /* list_Light_name_command */
 
+int write_Light_name_command_to_comfile(struct Light *light,void *preceding_text_void)
+/*******************************************************************************
+LAST MODIFIED : 10 August 2007
+
+DESCRIPTION :
+Writes the name of the <light> to the comfile, preceded on each line by
+the optional <preceding_text> string. Makes sure quotes are put around the
+name of the light if it contains any special characters.
+Follows the light name with semicolon and carriage return.
+==============================================================================*/
+{
+	char *name,*preceding_text;
+	int return_code;
+
+	ENTER(write_Light_name_command_to_comfile);
+	if (light)
+	{
+		if (preceding_text=(char *)preceding_text_void)
+		{
+			write_message_to_file(INFORMATION_MESSAGE,preceding_text);
+		}
+		if (name=duplicate_string(light->name))
+		{
+			/* put quotes around name if it contains special characters */
+			make_valid_token(&name);
+			write_message_to_file(INFORMATION_MESSAGE,"%s;\n",name);
+			DEALLOCATE(name);
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"list_Light_name_command.  Missing light");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* write_Light_name_command_to_comfile */
+
 #if defined (OLD_CODE)
 int activate_Light(struct Light *light)
 /*******************************************************************************

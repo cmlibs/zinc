@@ -90,4 +90,12 @@ DESCRIPTION :
 A function for displaying a message of the specified <message_type>.  The printf
 form of arguments is used.
 ==============================================================================*/
+
+int write_message_to_file(enum Message_type message_type,char *format, ... );
+/*******************************************************************************
+LAST MODIFIED : 10 August 2007
+
+DESCRIPTION :
+A function for writing out commands to com file.
+==============================================================================*/
 #endif /* !defined (MESSAGE_H) */

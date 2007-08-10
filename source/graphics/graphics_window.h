@@ -512,6 +512,16 @@ Writes the commands for creating the <window> and establishing the views in it
 to the command window.
 ==============================================================================*/
 
+int write_Graphics_window_commands_to_comfile(struct Graphics_window *window,
+	 void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 10 August 2007
+
+DESCRIPTION :
+Writes the commands for creating the <window> and establishing the views in it
+to the com file.
+==============================================================================*/
+
 int modify_Graphics_window(struct Parse_state *state,void *window_void,
 	void *modify_graphics_window_data_void);
 /*******************************************************************************

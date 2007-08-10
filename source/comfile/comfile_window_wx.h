@@ -123,4 +123,9 @@ in the <comfile_window_manager>. Does so by appending a number in angle
 brackets.
 Up to the calling routine to deallocate the returned string.
 ==============================================================================*/
+
+int compressing_process_wx_compress(char *com_file_name, char *data_file_name, char *elem_file_name, 
+	 char *node_file_name, int data_return_code, int elem_return_code, 
+	 int node_return_code, char *zip_file_name);
+
 #endif /* !defined (COMFILE_WINDOW_H) */

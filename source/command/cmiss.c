@@ -12151,6 +12151,82 @@ Executes a GFX FILTER command.
 } /* execute_command_gfx_filter */
 #endif /* defined (OLD_CODE) */
 
+static int gfx_list_all_commands(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 14 October 1998
+
+DESCRIPTION :
+Executes a GFX LIST WINDOW.
+==============================================================================*/
+{
+	 int return_code;
+	 static char	*command_prefix;
+	 struct Cmiss_command_data *command_data;
+	 struct MANAGER(Graphical_material) *graphical_material_manager;
+	 struct MANAGER(Computed_field) *computed_field_manager;
+	 struct LIST(Computed_field) *list_of_fields;
+	 struct List_Computed_field_commands_data list_commands_data;
+	 ENTER(gfx_list_all_commands);
+	 USE_PARAMETER(dummy_to_be_modified);
+	 if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
+	 {
+
+			/* Command of graphical_material */
+			if (graphical_material_manager =
+				 Material_package_get_material_manager(command_data->material_package))
+			{
+				 command_prefix="gfx create material ";
+				 return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
+						list_Graphical_material_commands,(void *)command_prefix, 
+						graphical_material_manager);
+			}
+
+			/* Command of computed_field */
+			if (command_data->computed_field_package && (computed_field_manager=
+						Computed_field_package_get_computed_field_manager(
+							 command_data->computed_field_package)))
+			{
+				 if (list_of_fields = CREATE(LIST(Computed_field))())
+				 {
+						command_prefix="gfx define field ";
+						list_commands_data.command_prefix = command_prefix;
+						list_commands_data.listed_fields = 0;
+						list_commands_data.computed_field_list = list_of_fields;
+						list_commands_data.computed_field_manager =
+							 computed_field_manager;
+						while (FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
+											list_Computed_field_commands_if_managed_source_fields_in_list,
+											(void *)&list_commands_data, computed_field_manager) &&
+							 (0 != list_commands_data.listed_fields))
+						{
+							 list_commands_data.listed_fields = 0;
+						}			 
+						DESTROY(LIST(Computed_field))(&list_of_fields);
+				 } 
+				 else
+				 {
+						return_code=0;
+				 }
+				 if (!return_code)
+				 {
+						display_message(ERROR_MESSAGE,
+							 "gfx_list_Computed_field.  Could not list field commands");
+				 }
+			}
+
+			/* Command of graphics window */
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
+			return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
+				 list_Graphics_window_commands,(void *)NULL,
+				 command_data->graphics_window_manager);
+#endif /*defined (USE_CMGUI_GRAPHICS_WINDOW)*/
+	 }
+	 LEAVE;
+
+	 return (return_code);
+}/* gfx_list_all_commands */
+
 static int gfx_list_environment_map(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -13786,6 +13862,9 @@ Executes a GFX LIST command.
 		if (state->current_token)
 		{
 			option_table = CREATE(Option_table)();
+			/* all_commands */
+			Option_table_add_entry(option_table, "all_commands", NULL,
+				command_data_void, gfx_list_all_commands);
 			/* curve */
 			Option_table_add_entry(option_table, "curve", NULL,
 				command_data->curve_manager, gfx_list_Curve);
@@ -19148,6 +19227,365 @@ Executes a GFX UPDATE command.
 } /* execute_command_gfx_update */
 #endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 
+static int gfx_write_All(struct Parse_state *state,
+	 void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 3 August  2007
+
+DESCRIPTION :
+If an zip file is not specified a file selection box is presented to the
+user, otherwise files are written.
+Can also write individual groups with the <group> option.
+==============================================================================*/
+{
+	 FILE *com_file;
+	 char *com_file_name, *data_file_name, *elem_file_name, *file_name, *node_file_name, *region_path,
+			**valid_strings, *write_criterion_string;
+	 enum FE_write_criterion write_criterion;
+	 int allocate_code, number_of_valid_strings, data_return_code, elem_return_code, node_return_code, return_code;
+	 struct Cmiss_command_data *command_data;
+	 struct FE_field_order_info *field_order_info;
+	 struct Option_table *option_table;
+	 struct MANAGER(Graphical_material) *graphical_material_manager;
+	 struct MANAGER(Computed_field) *computed_field_manager;
+	 struct LIST(Computed_field) *list_of_fields;
+	 struct List_Computed_field_commands_data list_commands_data;
+	 static char	*command_prefix;
+	 
+	 ENTER(gfx_write_all);
+	 USE_PARAMETER(dummy_to_be_modified);
+	 if (state && (command_data=(struct Cmiss_command_data *)command_data_void))
+	 {
+			data_return_code = 1;
+			elem_return_code = 1;
+			node_return_code = 1;
+			return_code = 1; 
+			allocate_code =0;
+			region_path = (char *)NULL;
+			field_order_info = (struct FE_field_order_info *)NULL;
+			file_name = (char *)NULL;
+			com_file_name = (char *)NULL;		
+			data_file_name = (char *)NULL;
+			elem_file_name = (char *)NULL;
+			node_file_name = (char *)NULL;
+			write_criterion = FE_WRITE_COMPLETE_GROUP;
+			
+			option_table = CREATE(Option_table)();
+			/* complete_group|with_all_listed_fields|with_any_listed_fields */ 
+			write_criterion_string =
+				 ENUMERATOR_STRING(FE_write_criterion)(write_criterion);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(FE_write_criterion)(
+				 &number_of_valid_strings,
+				 (ENUMERATOR_CONDITIONAL_FUNCTION(FE_write_criterion) *)NULL,
+				 (void *)NULL);
+			Option_table_add_enumerator(option_table, number_of_valid_strings,
+				 valid_strings, &write_criterion_string);
+			DEALLOCATE(valid_strings);
+			/* fields */
+			Option_table_add_entry(option_table, "fields", &field_order_info,
+				 Cmiss_region_get_FE_region(command_data->root_region),
+				 set_FE_fields_FE_region);
+			/* group */
+			Option_table_add_entry(option_table, "group", &region_path,
+				 command_data->root_region, set_Cmiss_region_path);
+			/* default option: file name */
+			Option_table_add_entry(option_table, (char *)NULL, &file_name,
+				 NULL, set_name);			
+			if (return_code = Option_table_multi_parse(option_table, state))
+			{
+				 STRING_TO_ENUMERATOR(FE_write_criterion)(write_criterion_string,
+						&write_criterion);
+				 if (file_name)
+				 {
+						int length = strlen(file_name);
+						if (ALLOCATE(com_file_name, char, length+6))
+						{
+							 strcpy(com_file_name, file_name);
+							 strcat(com_file_name, ".com");
+							 com_file_name[length+5]='\0';
+						}
+						if (ALLOCATE(data_file_name, char, length+9))
+						{
+							 strcpy(data_file_name, file_name);
+							 strcat(data_file_name, ".exdata");
+							 data_file_name[length+8]='\0';
+						}
+						if (ALLOCATE(elem_file_name, char, length+9))
+						{
+							 strcpy(elem_file_name, file_name);
+							 strcat(elem_file_name, ".exelem");
+							 elem_file_name[length+8]='\0';
+						}
+						if (ALLOCATE(node_file_name, char, length+9))
+						{
+							 strcpy(node_file_name, file_name);
+							 strcat(node_file_name, ".exnode");
+							 node_file_name[length+8]='\0';
+						}
+						allocate_code = 1;
+				 }
+				 if ((!field_order_info ||
+						(0 == get_FE_field_order_info_number_of_fields(field_order_info))) &&
+						(FE_WRITE_COMPLETE_GROUP != write_criterion))
+				 {
+						display_message(WARNING_MESSAGE,
+							 "gfx_write_All.  Must specify fields to use %s",
+							 write_criterion_string);
+						return_code = 0;
+						data_return_code = 0;
+						elem_return_code = 0;
+						node_return_code = 0;		
+				 }
+				 if (!file_name)
+				 {
+						com_file_name = "temp.com";
+						if (!(data_file_name = confirmation_get_write_filename(".exdata",
+										 command_data->user_interface
+#if defined(WX_USER_INTERFACE)
+										 , command_data->execute_command
+#endif /*defined (WX_USER_INTERFACE) */
+																																	 )))
+						{
+							 data_return_code = 0;
+						}
+						if (!(elem_file_name = confirmation_get_write_filename(".exelem",
+										 command_data->user_interface
+#if defined(WX_USER_INTERFACE)
+										 , command_data->execute_command
+#endif /*defined (WX_USER_INTERFACE) */
+																															)))
+						{
+							 elem_return_code = 0;
+						}
+	
+						if (!(node_file_name = confirmation_get_write_filename(".exnode",
+										 command_data->user_interface
+#if defined(WX_USER_INTERFACE)
+										 , command_data->execute_command
+#endif /*defined (WX_USER_INTERFACE) */
+																															)))
+						{
+							 node_return_code = 0;
+						}
+				 }
+#if defined (WX_USER_INTERFACE) && (__WIN32__)
+				 if (com_file_name)
+				 {
+						com_file_name = CMISS_set_directory_and_filename_WIN32(com_file_name,
+							 command_data);
+				 }
+				 if (data_file_name)
+				 {
+						data_file_name = CMISS_set_directory_and_filename_WIN32(data_file_name,
+							 command_data);
+				 }
+				 if (elem_file_name)
+				 {
+						elem_file_name = CMISS_set_directory_and_filename_WIN32(elem_file_name,
+							 command_data);
+				 }
+				 if (node_file_name)
+				 {
+						node_file_name = CMISS_set_directory_and_filename_WIN32(node_file_name,
+							 command_data);
+				 }
+#endif /* defined (WX_USER_INTERFACE) && (__WIN32__) */
+				 if (data_return_code)
+				 {
+						/* open the file */
+						if (data_return_code = check_suffix(&data_file_name,".exdata"))
+						{
+							 data_return_code = write_exregion_file_of_name(data_file_name, 
+									command_data->data_root_region, region_path,
+									/*write_elements*/0, /*write_nodes*/1,
+									write_criterion, field_order_info);
+						}
+				 }
+				 if (elem_return_code)
+				 {
+						if (elem_return_code = check_suffix(&elem_file_name,".exelem"))
+						{
+							 elem_return_code = write_exregion_file_of_name(elem_file_name, 
+									command_data->root_region, region_path,
+							 /*write_elements*/1, /*write_nodes*/0,
+									write_criterion, field_order_info);
+						}
+				 }
+				 if (node_return_code)
+				 {		
+						if (node_return_code = check_suffix(&node_file_name,".exnode"))
+						{
+							 node_return_code = write_exregion_file_of_name(node_file_name, 
+									command_data->root_region, region_path,
+									/*write_elements*/0, /*write_nodes*/1,
+									write_criterion, field_order_info);
+						}
+				 }
+				 if (com_file_name)
+				 {
+						if (com_file = fopen("temp_file_com.com", "w"))
+						{
+							 if (data_return_code)
+							 {		
+									fprintf(com_file, "gfx read data %s\n",data_file_name);
+							 }
+							 if (elem_return_code)
+							 {		
+									fprintf(com_file, "gfx read elements %s\n",elem_file_name);
+							 }
+							 if (node_return_code)
+							 {		
+									fprintf(com_file, "gfx read nodes %s\n",node_file_name);
+							 }
+							 fclose(com_file);
+							 if (graphical_material_manager =
+									Material_package_get_material_manager(command_data->material_package))
+							 {
+									command_prefix="gfx create material ";
+									return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
+										 write_Graphical_material_commands_to_comfile,(void *)command_prefix, 
+										 graphical_material_manager);
+							 }
+							 if (command_data->computed_field_package && (computed_field_manager=
+										 Computed_field_package_get_computed_field_manager(
+												command_data->computed_field_package)))
+							 {
+									if (list_of_fields = CREATE(LIST(Computed_field))())
+									{
+										 command_prefix="gfx define field ";
+										 list_commands_data.command_prefix = command_prefix;
+										 list_commands_data.listed_fields = 0;
+										 list_commands_data.computed_field_list = list_of_fields;
+										 list_commands_data.computed_field_manager =
+												computed_field_manager;
+										 while (FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
+															 write_Computed_field_commands_if_managed_source_fields_in_list_to_comfile,
+															 (void *)&list_commands_data, computed_field_manager) &&
+												(0 != list_commands_data.listed_fields))
+										 {
+												list_commands_data.listed_fields = 0;
+										 }			 
+										 DESTROY(LIST(Computed_field))(&list_of_fields);
+									} 
+									else
+									{
+										 return_code=0;
+									}
+									if (!return_code)
+									{
+										 display_message(ERROR_MESSAGE,
+												"gfx_list_Computed_field.  Could not list field commands");
+									}
+							 }
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
+							 return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
+									write_Graphics_window_commands_to_comfile,(void *)NULL,
+									command_data->graphics_window_manager);
+#endif /*defined (USE_CMGUI_GRAPHICS_WINDOW)*/
+						}
+				 }
+#if defined (WX_USER_INTERFACE)
+				 compressing_process_wx_compress(com_file_name, data_file_name,
+						elem_file_name, node_file_name, data_return_code,
+						elem_return_code, node_return_code, file_name);
+#endif /* defined (WX_USER_INTERFACE) && (__WIN32__) */
+				 DEALLOCATE(com_file_name);			 
+				 DEALLOCATE(node_file_name);
+				 DEALLOCATE(elem_file_name);						
+				 DEALLOCATE(data_file_name);		
+			}
+			DESTROY(Option_table)(&option_table);
+			if (region_path)
+			{
+				 DEALLOCATE(region_path);
+			}
+			if (field_order_info)
+			{
+				 DESTROY(FE_field_order_info)(&field_order_info);
+			}
+			if (file_name)
+			{
+				 DEALLOCATE(file_name);
+			}
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE, "gfx_write_elements.  Invalid argument(s)");
+			return_code = 0;
+	 }
+	 LEAVE;
+	 
+	 return (return_code);
+} /* gfx_write_elements */
+
+#if defined (NEW_CODE)
+static int gfx_write_Com(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 25 November 1999
+
+DESCRIPTION :
+Writes a com file
+==============================================================================*/
+{
+	char write_all_curves_flag;
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Modifier_entry option_table[]=
+	{
+		{"all",NULL,NULL,set_char_flag},
+		{NULL,NULL,NULL,set_Curve}
+	};
+	struct Curve *curve;
+
+	ENTER(gfx_write_Curve);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
+	{
+		return_code=1;
+		write_all_curves_flag=0;
+		curve=(struct Curve *)NULL;
+		(option_table[0]).to_be_modified= &write_all_curves_flag;
+		(option_table[1]).to_be_modified= &curve;
+		(option_table[1]).user_data=command_data->curve_manager;
+		if (return_code=process_multiple_options(state,option_table))
+		{
+			if (write_all_curves_flag&&!curve)
+			{
+				return_code=FOR_EACH_OBJECT_IN_MANAGER(Curve)(
+					write_Curve,(void *)NULL,
+					command_data->curve_manager);
+			}
+			else if (curve&&!write_all_curves_flag)
+			{
+				return_code=write_Curve(curve,(void *)NULL);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_write_Curve.  Specify either a curve name or 'all'");
+				return_code=0;
+			}
+		}
+		if (curve)
+		{
+			DEACCESS(Curve)(&curve);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_write_Curve.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_write_Curve */
+
+
+#endif /* defined (NEW_CODE) */
+
 static int gfx_write_Curve(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -19792,7 +20230,11 @@ Executes a GFX WRITE command.
 	{
 		if (state->current_token)
 		{
+			 //#if defined (NEW_CODE) 
 			option_table = CREATE(Option_table)();
+			Option_table_add_entry(option_table, "all", NULL,
+				command_data_void, gfx_write_All);
+			//#endif /* defined NEW_CODE) */
 			Option_table_add_entry(option_table, "curve", NULL,
 				command_data_void, gfx_write_Curve);
 			Option_table_add_entry(option_table, "data", /*use_data*/(void *)1,
