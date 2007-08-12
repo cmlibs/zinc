@@ -8230,7 +8230,6 @@ scene viewer on screen.
 				/*drawing_offscreen*/0);
 			number_of_components =
 				Texture_storage_type_get_number_of_components(storage);
-			number_of_components=4; // should always be 4?
 			if (ALLOCATE(*frame_data, unsigned char,
 				number_of_components * (*width) * (*height)))
 			{
