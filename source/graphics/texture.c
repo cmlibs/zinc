@@ -199,6 +199,7 @@ Returns the number of components used per texel for <storage> type.
 			return_code = 2;
 		} break;
 		case TEXTURE_RGB:
+		case TEXTURE_BGR:
 		{
 			return_code = 3;
 		} break;

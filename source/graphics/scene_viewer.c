@@ -8176,6 +8176,7 @@ scene viewer on screen.
 #endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 
 	ENTER(Scene_viewer_get_frame_pixels);
+
 #if ! defined (MOTIF) && ! defined (GTK_USER_INTERFACE)
 	USE_PARAMETER(force_onscreen);
 #endif /* ! defined (MOTIF) && ! defined (GTK_USER_INTERFACE) */
@@ -8229,6 +8230,7 @@ scene viewer on screen.
 				/*drawing_offscreen*/0);
 			number_of_components =
 				Texture_storage_type_get_number_of_components(storage);
+			number_of_components=4; // should always be 4?
 			if (ALLOCATE(*frame_data, unsigned char,
 				number_of_components * (*width) * (*height)))
 			{
