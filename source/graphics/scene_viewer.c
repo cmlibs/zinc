@@ -8153,7 +8153,7 @@ extensions can get the updated frame from the backbuffer.
 	return (return_code);
 } /* Scene_viewer_redraw_now_without_swapbuffers */
 
-static int Scene_viewer_get_frame_pixels(struct Scene_viewer *scene_viewer,
+int Scene_viewer_get_frame_pixels(struct Scene_viewer *scene_viewer,
 	enum Texture_storage_type storage, int *width, int *height,
 	int preferred_antialias, int preferred_transparency_layers,
 	unsigned char **frame_data, int force_onscreen)

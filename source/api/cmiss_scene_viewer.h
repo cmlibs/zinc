@@ -59,6 +59,8 @@ scenes.
 #endif /* defined (MOTIF) */
 #include "general/object.h"
 
+#include "cmiss_texture.h"
+
 /*
 Global types
 ------------
@@ -821,5 +823,21 @@ The viewing volume can be made unsymmetric to create special effects such as
 rendering a higher resolution image in parts.
 ==============================================================================*/
 
+int Cmiss_scene_viewer_get_frame_pixels(Cmiss_scene_viewer_id  scene_viewer,
+	enum Cmiss_texture_storage_type storage, int *width, int *height,
+	int preferred_antialias, int preferred_transparency_layers,
+	unsigned char **frame_data, int force_onscreen);
+/*******************************************************************************
+LAST MODIFIED : 18 September 2002
+
+DESCRIPTION :
+Returns the contents of the scene viewer as pixels.  <width> and <height>
+will be respected if the window is drawn offscreen and they are non zero,
+otherwise they are set in accordance with current size of the scene viewer.
+If <preferred_antialias> or <preferred_transparency_layers> are non zero then they
+attempt to override the default values for just this call.
+If <force_onscreen> is non zero then the pixels will always be grabbed from the
+scene viewer on screen.
+==============================================================================*/
 
 #endif /* __CMISS_SCENE_VIEWER_H__ */

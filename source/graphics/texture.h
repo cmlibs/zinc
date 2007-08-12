@@ -131,6 +131,7 @@ DESCRIPTION :
 	TEXTURE_RGB,
 	TEXTURE_RGBA,
 	TEXTURE_ABGR,
+	TEXTURE_BGR,
 	/* The last two types are special and are not user-selectable */
 	TEXTURE_DMBUFFER,
 	TEXTURE_PBUFFER

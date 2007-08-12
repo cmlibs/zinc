@@ -3177,7 +3177,7 @@ positive. Cropping is not available in the depth direction.
 					return_code = Cmgui_image_dispatch(cmgui_image, /*image_number*/k,
 						texture_left, texture_bottom, texture_width, texture_height,
 						padded_width_bytes, /*number_of_fill_bytes*/1, &fill_byte,
-						destination);
+									   0,destination);
 					destination += padded_width_bytes * texture_height;
 				}
 
@@ -3427,7 +3427,7 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 					return_code = Cmgui_image_dispatch(cmgui_image, /*image_number*/i,
 						texture_left, texture_bottom, texture_width, texture_height,
 						padded_width_bytes, /*number_of_fill_bytes*/1, &fill_byte,
-						destination);
+									   0, destination);
 					i++;
 					destination += padded_width_bytes * texture_height;
 				}

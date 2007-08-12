@@ -381,7 +381,7 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 int Cmgui_image_dispatch(struct Cmgui_image *cmgui_image,
 	int image_number, int left, int bottom, int width, int height,
 	int padded_width_bytes, int number_of_fill_bytes, unsigned char *fill_bytes,
-	unsigned char *destination_pixels);
+	int components, unsigned char *destination_pixels);
 /*******************************************************************************
 LAST MODIFIED : 27 February 2002
 
@@ -392,12 +392,14 @@ The <left>, <bottom>, <width> and <height> specify the part of <cmgui_image>
 output and must be wholly within its bounds.
 Image data is ordered from the bottom row to the top, and within each row from
 the left to the right.
-All number_of_components components of the image are output at each pixel, and
-pixel values relate to number_of_components by:
+If <components> is > 0, the specified components are output at each pixel, 
+otherwise all the number_of_components components of the image are output at each pixel.
+Pixel values relate to components by:
   1 -> I    = Intensity;
   2 -> IA   = Intensity Alpha;
   3 -> RGB  = Red Green Blue;
   4 -> RGBA = Red Green Blue Alpha;
+  5 -> BGR  = Blue Green Red
 
 If <padded_width_bytes> is zero, image data for subsequent rows follows exactly
 after the right-most pixel of the row below. If a positive number is specified,

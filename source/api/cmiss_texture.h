@@ -96,6 +96,24 @@ Specfiy how the graphics hardware rasterises the texture onto the screen.
 	CMISS_TEXTURE_FILTER_LINEAR
 }; /* enum Texture_filter_mode */
 
+enum Cmiss_texture_storage_type
+/*******************************************************************************
+LAST MODIFIED : 6 August 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	CMISS_TEXTURE_LUMINANCE,
+	CMISS_TEXTURE_LUMINANCE_ALPHA,
+	CMISS_TEXTURE_RGB,
+	CMISS_TEXTURE_RGBA,
+	CMISS_TEXTURE_ABGR,
+	CMISS_TEXTURE_BGR,
+	/* The last two types are special and are not user-selectable */
+	CMISS_TEXTURE_DMBUFFER,
+	CMISS_TEXTURE_PBUFFER
+}; /* enum Texture_storage_type */
+
 typedef struct Cmiss_texture *Cmiss_texture_id;
 
 #define Cmiss_texture_manager manager_Cmiss_texture

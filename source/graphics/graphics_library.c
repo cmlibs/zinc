@@ -633,6 +633,12 @@ double buffered context.
 					GL_UNSIGNED_BYTE,frame_data);
 				return_code=1;
 			} break;
+			case TEXTURE_BGR:
+			{
+				glReadPixels(0, 0, width, height, GL_BGR,
+					GL_UNSIGNED_BYTE,frame_data);
+				return_code=1;
+			} break;
 			case TEXTURE_RGBA:
 			{
 				glReadPixels(0, 0, width, height, GL_RGBA,

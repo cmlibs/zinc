@@ -6309,7 +6309,7 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 int Cmgui_image_dispatch(struct Cmgui_image *cmgui_image,
 	int image_number, int left, int bottom, int width, int height,
 	int padded_width_bytes, int number_of_fill_bytes, unsigned char *fill_bytes,
-	unsigned char *destination_pixels)
+	int components, unsigned char *destination_pixels)
 /*******************************************************************************
 LAST MODIFIED : 12 March 2002
 
@@ -6320,12 +6320,14 @@ The <left>, <bottom>, <width> and <height> specify the part of <cmgui_image>
 output and must be wholly within its bounds.
 Image data is ordered from the bottom row to the top, and within each row from
 the left to the right.
-All number_of_components components of the image are output at each pixel, and
-pixel values relate to number_of_components by:
+If <components> is > 0, the specified components are output at each pixel, 
+otherwise all the number_of_components components of the image are output at each pixel.
+Pixel values relate to components by:
   1 -> I    = Intensity;
   2 -> IA   = Intensity Alpha;
   3 -> RGB  = Red Green Blue;
   4 -> RGBA = Red Green Blue Alpha;
+  5 -> BGR  = Blue Green Red
 
 If <padded_width_bytes> is zero, image data for subsequent rows follows exactly
 after the right-most pixel of the row below. If a positive number is specified,
@@ -6344,11 +6346,11 @@ equal to the number_of_components.
 
 ???RC May wish to expand capabilities of this function in future to handle:
 - choosing a different output_number_of_bytes_per_component
-- different colour spaces output, currently fixed for the number_of_components;
+- different colour spaces output;
 ==============================================================================*/
 {
-	int bytes_per_pixel, fill_byte_number, i, padding_bytes, return_code,
-		width_bytes, y, y_limit;
+        int bytes_per_pixel, fill_byte_number, i, number_of_components, 
+            padding_bytes, return_code, width_bytes, y, y_limit;
 	unsigned char *destination;
 #if defined (IMAGEMAGICK)
 	char *magick_image_storage;
@@ -6364,11 +6366,21 @@ equal to the number_of_components.
 #endif /* defined (IMAGEMAGICK) */
 
 	ENTER(Cmgui_image_dispatch);
+
+	if(components == 0){
+	  number_of_components = cmgui_image->number_of_components;
+	  components = cmgui_image->number_of_components;
+	}else if(components <= 4){
+	  number_of_components = components; 
+	}else if(components == 5){
+	  number_of_components = 3;
+	}
+
 	if (cmgui_image &&
 		(0 <= image_number) && (image_number < cmgui_image->number_of_images) &&
 		(0 <= left) && (0 < width) && (left + width <= cmgui_image->width) &&
 		(0 <= bottom) && (0 < height) && (bottom + height <= cmgui_image->height) &&
-		(bytes_per_pixel = cmgui_image->number_of_components *
+		(bytes_per_pixel = number_of_components *
 			cmgui_image->number_of_bytes_per_component) &&
 		(width_bytes = width * bytes_per_pixel) &&
 		((0 == padded_width_bytes) ||
@@ -6401,7 +6413,7 @@ equal to the number_of_components.
 				"Cmgui_image_dispatch.  No image at image number %d",image_number);
 			return_code = 0;
 		}
-		switch (cmgui_image->number_of_components)
+		switch (components)
 		{
 			case 1:
 			{
@@ -6423,10 +6435,15 @@ equal to the number_of_components.
 				magick_image_storage = "RGBA";
 				reverse_alpha = 0;
 			} break;
+			case 5:
+			{
+				magick_image_storage = "BGR";
+				reverse_alpha = 0;
+			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmgui_image_dispatch.  Invalid number_of_components");
+						"Cmgui_image_dispatch.  Invalid components %d", components);
 				return_code = 0;
 			} break;
 		}
