@@ -326,7 +326,7 @@ Generates an X Pixmap which represents the <cmgui_image>.
 			(ximage_data = (char *)malloc(width * height * 4)))
 		{
 			if (Cmgui_image_dispatch(cmgui_image, 0, 0, 0, width, height,
-				0, 0, NULL, pixels))
+					0, 0, NULL, 0, pixels))
 			{
 				if (pixmap = XCreatePixmap(display, DefaultRootWindow(display),
 					width, height, depth))
