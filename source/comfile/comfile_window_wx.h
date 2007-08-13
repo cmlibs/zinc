@@ -124,8 +124,8 @@ brackets.
 Up to the calling routine to deallocate the returned string.
 ==============================================================================*/
 
-int compressing_process_wx_compress(char *com_file_name, char *data_file_name, char *elem_file_name, 
-	 char *node_file_name, int data_return_code, int elem_return_code, 
-	 int node_return_code, char *zip_file_name);
+int compressing_process_wx_compress(char *com_file_name, char *data_file_name, 
+	 char *elem_file_name, char *node_file_name, int data_return_code, int elem_return_code, 
+	 int node_return_code, char *zip_file_name, char *temp_data, char *temp_elem, char* temp_node);
 
 #endif /* !defined (COMFILE_WINDOW_H) */

@@ -19267,6 +19267,7 @@ Can also write individual groups with the <group> option.
 			data_file_name = (char *)NULL;
 			elem_file_name = (char *)NULL;
 			node_file_name = (char *)NULL;
+
 			write_criterion = FE_WRITE_COMPLETE_GROUP;
 			
 			option_table = CREATE(Option_table)();
@@ -19366,7 +19367,8 @@ Can also write individual groups with the <group> option.
 							 node_return_code = 0;
 						}
 				 }
-#if defined (WX_USER_INTERFACE) && (__WIN32__)
+#if defined (WX_USER_INTERFACE) 
+#if defined (__WIN32__)
 				 if (com_file_name)
 				 {
 						com_file_name = CMISS_set_directory_and_filename_WIN32(com_file_name,
@@ -19387,38 +19389,172 @@ Can also write individual groups with the <group> option.
 						node_file_name = CMISS_set_directory_and_filename_WIN32(node_file_name,
 							 command_data);
 				 }
-#endif /* defined (WX_USER_INTERFACE) && (__WIN32__) */
+				 /* 	Non MS-windows platform does not have mkstemp implemented,
+						therefore tmpnam is used.*/
+				 char temp_data[L_tmpnam];
+				 char temp_elem[L_tmpnam];
+				 char temp_node[L_tmpnam];
 				 if (data_return_code)
 				 {
 						/* open the file */
 						if (data_return_code = check_suffix(&data_file_name,".exdata"))
 						{
-							 data_return_code = write_exregion_file_of_name(data_file_name, 
-									command_data->data_root_region, region_path,
-									/*write_elements*/0, /*write_nodes*/1,
-									write_criterion, field_order_info);
+							 tmpnam(temp_data);
+							 if (!(data_return_code = write_exregion_file_of_name(temp_data, 
+												command_data->root_region, region_path,
+												/*write_elements*/0, /*write_nodes*/1,
+												write_criterion, field_order_info)))
+							 {
+									display_message(ERROR_MESSAGE,
+										 "gfx_write_All.  Could not create temprary data file");
+							 }
 						}
 				 }
 				 if (elem_return_code)
 				 {
 						if (elem_return_code = check_suffix(&elem_file_name,".exelem"))
 						{
-							 elem_return_code = write_exregion_file_of_name(elem_file_name, 
-									command_data->root_region, region_path,
-							 /*write_elements*/1, /*write_nodes*/0,
-									write_criterion, field_order_info);
+							 tmpnam(temp_elem);
+							 if (!(elem_return_code = write_exregion_file_of_name(temp_elem, 
+												command_data->root_region, region_path,
+												/*write_elements*/1, /*write_nodes*/0,
+												write_criterion, field_order_info)))
+							 {
+									display_message(ERROR_MESSAGE,
+										 "gfx_write_All.  Could not create temprary elem file");
+							 }
 						}
 				 }
 				 if (node_return_code)
 				 {		
 						if (node_return_code = check_suffix(&node_file_name,".exnode"))
 						{
-							 node_return_code = write_exregion_file_of_name(node_file_name, 
-									command_data->root_region, region_path,
-									/*write_elements*/0, /*write_nodes*/1,
-									write_criterion, field_order_info);
+							 tmpnam(temp_node);
+							 if (!(node_return_code = write_exregion_file_of_name(temp_node, 
+												command_data->root_region, region_path,
+												/*write_elements*/0, /*write_nodes*/1,
+												write_criterion, field_order_info)))
+							 {
+									display_message(ERROR_MESSAGE,
+										 "gfx_write_All.  Could not create temprary node file");
+							 }
 						}
 				 }
+#else
+				 /* Non MS-windows platform has mkstemp implemented into it*/
+				 char temp_data[] = "dataXXXXXX";
+				 char temp_elem[] = "elemXXXXXX";
+				 char temp_node[] = "nodeXXXXXX";
+				 int data_fd, elem_fd, node_fd;
+				 if (data_return_code)
+				 {
+						/* open the file */
+						if (data_return_code = check_suffix(&data_file_name,".exdata"))
+						{
+							 data_fd = mkstemp((char *)temp_data);
+							 if (data_fd == -1)
+							 {
+									display_message(ERROR_MESSAGE,
+										 "gfx_write_All.  Could not open temprary data file");
+							 }
+							 if (!(data_return_code = write_exregion_file_of_name(temp_data, 
+												command_data->root_region, region_path,
+												/*write_elements*/0, /*write_nodes*/1,
+												write_criterion, field_order_info)))
+							 {
+									display_message(ERROR_MESSAGE,
+										 "gfx_write_All.  Could not create temprary data file");
+							 }
+						}
+				 }
+				 if (elem_return_code)
+				 {
+						if (elem_return_code = check_suffix(&elem_file_name,".exelem"))
+						{
+							 elem_fd = mkstemp((char *)temp_elem);
+							 if (elem_fd == -1)
+							 {
+									display_message(ERROR_MESSAGE,
+										 "gfx_write_All.  Could not open temprary elem file");
+							 }
+							 if (!(elem_return_code = write_exregion_file_of_name(temp_elem, 
+												command_data->root_region, region_path,
+												/*write_elements*/1, /*write_nodes*/0,
+												write_criterion, field_order_info)))
+							 {
+									display_message(ERROR_MESSAGE,
+										 "gfx_write_All.  Could not create temprary elem file");
+							 }
+						}
+				 }
+				 if (node_return_code)
+				 {		
+						if (node_return_code = check_suffix(&node_file_name,".exnode"))
+						{
+							 node_fd = mkstemp((char *)temp_node);
+							 if (node_fd == -1)
+							 {
+									display_message(ERROR_MESSAGE,
+										 "gfx_write_All.  Could not open temprary node file");
+							 }
+							 if (!(node_return_code = write_exregion_file_of_name(temp_node, 
+												command_data->root_region, region_path,
+												/*write_elements*/0, /*write_nodes*/1,
+												write_criterion, field_order_info)))
+							 {
+									display_message(ERROR_MESSAGE,
+										 "gfx_write_All.  Could not create temprary node file");
+							 }
+						}
+				 }
+#endif /* (__WIN32__) */
+#else /* (WX_USER_INTERFACE) */
+				 /* Non wx_user_interface won't be able to stored the file in
+						a zip file at the moment */
+				 if (data_return_code)
+				 {
+						/* open the file */
+						if (data_return_code = check_suffix(&data_file_name,".exdata"))
+						{
+							 if (!(data_return_code = write_exregion_file_of_name(data_file_name, 
+												command_data->root_region, region_path,
+												/*write_elements*/0, /*write_nodes*/1,
+												write_criterion, field_order_info)))
+							 {
+									display_message(ERROR_MESSAGE,
+										 "gfx_write_All.  Could not create temprary data file");
+							 }
+						}
+				 }
+				 if (elem_return_code)
+				 {
+						if (elem_return_code = check_suffix(&elem_file_name,".exelem"))
+						{
+							 if (!(elem_return_code = write_exregion_file_of_name(elem_file_name, 
+												command_data->root_region, region_path,
+												/*write_elements*/1, /*write_nodes*/0,
+												write_criterion, field_order_info)))
+							 {
+									display_message(ERROR_MESSAGE,
+										 "gfx_write_All.  Could not create temprary elem file");
+							 }
+						}
+				 }
+				 if (node_return_code)
+				 {		
+						if (node_return_code = check_suffix(&node_file_name,".exnode"))
+						{
+							 if (!(node_return_code = write_exregion_file_of_name(node_file_name, 
+												command_data->root_region, region_path,
+												/*write_elements*/0, /*write_nodes*/1,
+												write_criterion, field_order_info)))
+							 {
+									display_message(ERROR_MESSAGE,
+										 "gfx_write_All.  Could not create temprary node file");
+							 }
+						}
+				 }
+#endif /* (WX_USER_INTERFACE) */
 				 if (com_file_name)
 				 {
 						if (com_file = fopen("temp_file_com.com", "w"))
@@ -19472,7 +19608,7 @@ Can also write individual groups with the <group> option.
 									if (!return_code)
 									{
 										 display_message(ERROR_MESSAGE,
-												"gfx_list_Computed_field.  Could not list field commands");
+												"gfx_write_All.  Could not list field commands");
 									}
 							 }
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
@@ -19484,9 +19620,26 @@ Can also write individual groups with the <group> option.
 				 }
 #if defined (WX_USER_INTERFACE)
 				 compressing_process_wx_compress(com_file_name, data_file_name,
-						elem_file_name, node_file_name, data_return_code,
-						elem_return_code, node_return_code, file_name);
-#endif /* defined (WX_USER_INTERFACE) && (__WIN32__) */
+						elem_file_name, node_file_name, data_return_code, elem_return_code, 
+						node_return_code, file_name, temp_data, temp_elem, temp_node);
+#if !defined (__WIN32__)
+				 if (unlink(temp_data) == -1) 
+				 {
+						display_message(ERROR_MESSAGE,
+							 "gfx_write_All.  Could not unlink temporary data file");
+				 }
+				 if (unlink(temp_elem) == -1) 
+				 {
+						display_message(ERROR_MESSAGE,
+							 "gfx_write_All.  Could not unlink temporary elem file");
+				 }
+				 if (unlink(temp_node) == -1) 
+				 {
+						display_message(ERROR_MESSAGE,
+							 "gfx_write_All.  Could not unlink temporary node file");
+				 }         
+#endif /*!definde (__WIN32__)*/
+#endif /* defined (WX_USER_INTERFACE) */
 				 DEALLOCATE(com_file_name);
 				 DEALLOCATE(node_file_name);
 				 DEALLOCATE(elem_file_name);						
@@ -19508,7 +19661,7 @@ Can also write individual groups with the <group> option.
 	 }
 	 else
 	 {
-			display_message(ERROR_MESSAGE, "gfx_write_elements.  Invalid argument(s)");
+			display_message(ERROR_MESSAGE, "gfx_write_All.  Invalid argument(s)");
 			return_code = 0;
 	 }
 	 LEAVE;
