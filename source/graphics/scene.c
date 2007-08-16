@@ -9853,7 +9853,7 @@ in the <scene> which point to this spectrum.
 
 struct Temp_data
 {
-	 int write_into_comfile;
+	 char *write_into_comfile;
 	 char *name;
 };
 
@@ -9894,7 +9894,7 @@ int list_scene_object_in_scene_get_command_list(struct Scene_object *scene_objec
 							return_code = 0;
 							gt_element_group = Scene_object_get_graphical_element_group(
 								 scene_object);
-							if (!(temp_data->write_into_comfile))
+							if (strcmp(temp_data->write_into_comfile, "false") == 0)
 							{
 								 return_code = GT_element_group_list_commands(gt_element_group,
 										command_prefix, command_suffix);
@@ -9935,7 +9935,7 @@ elements and those chained together with other graphics objects
 	 USE_PARAMETER(scene);
 	 if (ALLOCATE(temp_data,struct Temp_data,1))
 	 {
-			temp_data->write_into_comfile = (int)write_into_comfile_void;
+			temp_data->write_into_comfile = (char *)write_into_comfile_void;
 			temp_data->name = scene->name;
 			
 			if (0<NUMBER_IN_LIST(Scene_object)(scene->scene_object_list))

@@ -12229,8 +12229,9 @@ Executes a GFX LIST WINDOW.
 										 "gfx_list_Computed_field.  Could not list field commands");
 							 }
 						}
+						
 						return_code=FOR_EACH_OBJECT_IN_MANAGER(Scene)(
-							 for_each_graphics_object_in_scene_get_command_list, (void*) 0,
+							 for_each_graphics_object_in_scene_get_command_list, (void*) "false",
 							 command_data->scene_manager);
 						/* Command of graphics window */
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
@@ -19632,7 +19633,7 @@ Can also write individual groups with the <group> option.
 									}
 							 }
 							 return_code=FOR_EACH_OBJECT_IN_MANAGER(Scene)(
-									for_each_graphics_object_in_scene_get_command_list, (void*) 1,
+									for_each_graphics_object_in_scene_get_command_list, (void*) "true",
 									command_data->scene_manager);
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 							 return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
