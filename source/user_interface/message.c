@@ -293,16 +293,6 @@ A function for writing out commands to com file.
 				if (com_file = fopen("temp_file_com.com", "a"))
 				{
 #if defined (WIN32_USER_INTERFACE)
-					 /*				{ 
-						 CHAR szBuf[80]; 
-						 DWORD dw = GetLastError(); 
-						 
-						 sprintf(szBuf, "%s\n", 
-						 message_string, dw); 
-						 
-						 MessageBox(NULL, szBuf, "Information", MB_OK); 
-						 } 
-						 return_code = 1;*/
 					 fprintf(com_file, message_string);
 #else /* defined (WIN32_USER_INTERFACE) */
 					 fprintf(com_file, message_string);
@@ -334,3 +324,4 @@ A function for writing out commands to com file.
 
 	return (return_code);
 } /* display_message */
+

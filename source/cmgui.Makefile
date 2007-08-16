@@ -1096,7 +1096,7 @@ GRAPHICS_SRCS = \
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    GRAPHICS_SRCS += \
 	   graphics/font.cpp \
-	   graphics/graphical_element.c \
+	   graphics/graphical_element.cpp \
 		graphics/graphics_library.c \
 		graphics/graphics_object.c \
 		graphics/light.c \

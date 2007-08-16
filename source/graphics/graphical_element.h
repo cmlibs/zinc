@@ -351,15 +351,27 @@ Returns the data_Cmiss_region used by <gt_element_group>.
 ==============================================================================*/
 
 int GT_element_group_list_commands(struct GT_element_group *gt_element_group,
-	char *command_prefix,char *command_suffix);
+	 char *command_prefix,char *command_suffix);
 /*******************************************************************************
-LAST MODIFIED : 22 July 1998
+LAST MODIFIED : 16 August 2007
 
 DESCRIPTION :
 Lists the general settings and graphics defined for <gt_element_group> - as a
 set of commands that can be used to reproduce the groups appearance. The
 <command_prefix> should generally contain "gfx modify g_element" while the
 optional <command_suffix> may describe the scene (eg. "scene default").
+Note the command prefix is expected to contain the name of the region.
+==============================================================================*/
+
+int GT_element_group_write_commands_to_comfile(struct GT_element_group *gt_element_group,
+	 char *command_prefix,char *command_suffix);
+/*******************************************************************************
+LAST MODIFIED : 16 August 2007
+
+DESCRIPTION:
+Similar to the GT_element_group_list_commands, but pass a class to
+GT_element_group_process_list_or_write_window_commands which will
+write commadns into a comfile.
 ==============================================================================*/
 
 int GT_element_group_list_contents(struct GT_element_group *gt_element_group);

@@ -3761,9 +3761,9 @@ Writes the properties of the <material> to the command window.
 } /* list_Graphical_material */
 
 int list_Graphical_material_commands(struct Graphical_material *material,
-	void *command_prefix_void)
+	 void *command_prefix_void)
 /*******************************************************************************
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 15 August 2007
 
 DESCRIPTION :
 Writes on the command window the command needed to recreate the <material>.
@@ -3859,9 +3859,9 @@ The command is started with the string pointed to by <command_prefix>.
 } /* list_Graphical_material_commands */
 
 int write_Graphical_material_commands_to_comfile(struct Graphical_material *material,
-	void *command_prefix_void)
+	 void *command_prefix_void)
 /*******************************************************************************
-LAST MODIFIED : 10 August 2007
+LAST MODIFIED : 15 August 2007
 
 DESCRIPTION :
 Writes on the command window the command needed to recreate the <material>.
@@ -3874,7 +3874,7 @@ The command is started with the string pointed to by <command_prefix>.
 	ENTER(write_Graphical_material_commands_to_comfile);
 	if (material&&(command_prefix=(char *)command_prefix_void))
 	{
-		write_message_to_file(INFORMATION_MESSAGE,command_prefix);
+		 write_message_to_file(INFORMATION_MESSAGE,command_prefix);
 		if (name=duplicate_string(material->name))
 		{
 			/* put quotes around name if it contains special characters */
@@ -3886,7 +3886,7 @@ The command is started with the string pointed to by <command_prefix>.
 		{
 			if (MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING & material->program->type)
 			{
-				write_message_to_file(INFORMATION_MESSAGE," normal_mode");
+				 write_message_to_file(INFORMATION_MESSAGE," normal_mode");
 			}
 			else if (MATERIAL_PROGRAM_CLASS_PER_PIXEL_LIGHTING & material->program->type)
 			{
@@ -3899,7 +3899,7 @@ The command is started with the string pointed to by <command_prefix>.
 		}
 		else
 		{
-			write_message_to_file(INFORMATION_MESSAGE," normal_mode");
+			 write_message_to_file(INFORMATION_MESSAGE," normal_mode");
 		}
 		sprintf(line," ambient %g %g %g",
 			(material->ambient).red,(material->ambient).green,
@@ -3916,9 +3916,9 @@ The command is started with the string pointed to by <command_prefix>.
 		sprintf(line," specular %g %g %g",
 			(material->specular).red,(material->specular).green,
 			(material->specular).blue);
-		write_message_to_file(INFORMATION_MESSAGE,line);
+		write_message_to_file	(INFORMATION_MESSAGE,line);
 		sprintf(line," alpha %g",material->alpha);
-		write_message_to_file(INFORMATION_MESSAGE,line);
+		write_message_to_file	(INFORMATION_MESSAGE,line);
 		sprintf(line," shininess %g",material->shininess);
 		write_message_to_file(INFORMATION_MESSAGE,line);
 		if (material->texture&&GET_NAME(Texture)(material->texture,&name))
@@ -3955,6 +3955,51 @@ The command is started with the string pointed to by <command_prefix>.
 
 	return (return_code);
 } /* write_Graphical_material_commands_to_comfile */
+
+
+/* int list_Graphical_material_commands(struct Graphical_material *material, */
+/* 	void *command_prefix_void) */
+/* ****************************************************************************** */
+/* LAST MODIFIED : 15 August 2007 */
+
+/* DESCRIPTION : */
+/* List on the command window the command needed to recreate the <material>. */
+/* The command is started with the string pointed to by <command_prefix>. */
+/* ==============================================================================*/ 
+/* { */
+/* 	 int return_code; */
+
+/* 	 ENTER(list_Graphical_material_commands); */
+/* 	 Process_list_command_class *list_message = */
+/* 			new Process_list_command_class(); */
+/* 	 return_code = process_list_or_write_Graphical_material_commands( */
+/* 			material,command_prefix_void, list_message); */
+/* 	 LEAVE; */
+
+/* 	return (return_code); */
+/* }  write_Graphical_material_commands_to_comfile */ 
+
+/* int write_Graphical_material_commands_to_comfile(struct Graphical_material *material, */
+/* 	void *command_prefix_void) */
+/* ****************************************************************************** */
+/* LAST MODIFIED : 15 August 2007 */
+
+/* DESCRIPTION : */
+/* Writes on the command window the command needed to recreate the <material>. */
+/* The command is started with the string pointed to by <command_prefix>. */
+/* ==============================================================================*/ 
+/* { */
+/* 	 int return_code; */
+
+/* 	 ENTER(write_Graphical_material_commands_to_comfile); */
+/* 	 Process_write_command_class *write_message = */
+/* 			new Process_write_command_class(); */
+/* 	 return_code = process_list_or_write_Graphical_material_commands( */
+/* 			material,command_prefix_void, write_message); */
+/* 	 LEAVE; */
+
+/* 	 return (return_code); */
+/* } write_Graphical_material_commands_to_comfile */ 
 
 int file_read_Graphical_material_name(struct IO_stream *stream,
 	struct Graphical_material **material_address,

@@ -1582,4 +1582,19 @@ Sets the range to include the data values of any of the graphics object
 in the <scene> which point to this spectrum.  The <range_set> flag is set if
 any valid graphics objects using this spectrum were found.
 ==============================================================================*/
+
+
+int get_command_list(struct Scene_object *scene_object,
+	 void *dummy_void);
+
+int for_each_graphics_object_in_scene_get_command_list(struct Scene *scene,
+	 void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 13 Aug 2007
+
+DESCRIPTION :
+This function iterates through every graphics object in the scene
+including those in each individual settings of the graphical finite
+elements and those chained together with other graphics objects
+==============================================================================*/
 #endif /* !defined (SCENE_H) */

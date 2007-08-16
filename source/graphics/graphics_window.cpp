@@ -126,7 +126,7 @@ extern "C" {
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
 }
-
+#include "user_interface/process_list_or_write_command.hpp"
 /*
 Module constants
 ----------------
@@ -6982,14 +6982,15 @@ Writes the properties of the <window> to the command window.
 	return (return_code);
 } /* list_Graphics_window */
 
-int list_Graphics_window_commands(struct Graphics_window *window,
-	void *dummy_void)
+int process_list_or_write_Graphics_window_commands(struct Graphics_window *window,
+	class Process_list_or_write_command_class *process_message)
 /*******************************************************************************
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 15 August 2007
 
 DESCRIPTION :
 Writes the commands for creating the <window> and establishing the views in it
-to the command window.
+to the command window. Or writes the commadns for creating the window 
+and establishing the views in it to the command window to a com file.
 ==============================================================================*/
 {
 	char *name,*prefix;
@@ -7011,30 +7012,29 @@ to the command window.
 	struct Texture *texture;
 
 	ENTER(list_Graphics_window);
-	USE_PARAMETER(dummy_void);
 	if (window&&ALLOCATE(prefix,char,50+strlen(window->name)))
 	{
 		if (name=duplicate_string(window->name))
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
-			display_message(INFORMATION_MESSAGE,"gfx create window %s",name);
+			process_message->process_command(INFORMATION_MESSAGE,"gfx create window %s",name);
 			DEALLOCATE(name);
 		}
 		if (buffering_mode=Scene_viewer_get_buffering_mode(window->scene_viewer_array[0]))
 		{
-			display_message(INFORMATION_MESSAGE," %s",
+			process_message->process_command(INFORMATION_MESSAGE," %s",
 				Scene_viewer_buffering_mode_string(buffering_mode));
 		}
-		display_message(INFORMATION_MESSAGE,";\n");
+		process_message->process_command(INFORMATION_MESSAGE,";\n");
 		/* image */
-		display_message(INFORMATION_MESSAGE,"gfx modify window %s image",
+		process_message->process_command(INFORMATION_MESSAGE,"gfx modify window %s image",
 			window->name);
 		if (GET_NAME(Scene)(window->scene,&name))
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
-			display_message(INFORMATION_MESSAGE," scene %s",name);
+			process_message->process_command(INFORMATION_MESSAGE," scene %s",name);
 			DEALLOCATE(name);
 		}
 		if (GET_NAME(Light_model)(
@@ -7042,16 +7042,16 @@ to the command window.
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
-			display_message(INFORMATION_MESSAGE," light_model %s",name);
+			process_message->process_command(INFORMATION_MESSAGE," light_model %s",name);
 			DEALLOCATE(name);
 		}
-		display_message(INFORMATION_MESSAGE,";\n");
+		process_message->process_command(INFORMATION_MESSAGE,";\n");
 		sprintf(prefix,"gfx modify window %s image add_light ",window->name);
 		for_each_Light_in_Scene_viewer(window->scene_viewer_array[0],
 			list_Light_name_command, (void *)prefix);
 		/* layout */
 		Graphics_window_get_viewing_area_size(window,&width,&height);
-		display_message(INFORMATION_MESSAGE,
+		process_message->process_command(INFORMATION_MESSAGE,
 			"gfx modify window %s layout %s ortho_axes %s %s eye_spacing %g"
 			" width %d height %d;\n",window->name,
 			Graphics_window_layout_mode_string(window->layout_mode),
@@ -7061,14 +7061,14 @@ to the command window.
 		for (pane_no=0;pane_no<window->number_of_panes;pane_no++)
 		{
 			scene_viewer=window->scene_viewer_array[pane_no];
-			display_message(INFORMATION_MESSAGE,
+			process_message->process_command(INFORMATION_MESSAGE,
 				"gfx modify window %s set current_pane %d;\n",
 				window->name,pane_no+1);
 			/* background */
-			display_message(INFORMATION_MESSAGE,
+			process_message->process_command(INFORMATION_MESSAGE,
 				"gfx modify window %s background",window->name);
 			Scene_viewer_get_background_colour(scene_viewer,&colour);
-			display_message(INFORMATION_MESSAGE,
+			process_message->process_command(INFORMATION_MESSAGE,
 				" colour %g %g %g",colour.red,colour.green,colour.blue);
 			if ((texture=Scene_viewer_get_background_texture(scene_viewer))&&
 				Scene_viewer_get_background_texture_info(scene_viewer,
@@ -7078,45 +7078,45 @@ to the command window.
 			{
 				/* put quotes around name if it contains special characters */
 				make_valid_token(&name);
-				display_message(INFORMATION_MESSAGE," texture %s",name);
-				display_message(INFORMATION_MESSAGE," tex_placement %g %g %g %g",
+				process_message->process_command(INFORMATION_MESSAGE," texture %s",name);
+				process_message->process_command(INFORMATION_MESSAGE," tex_placement %g %g %g %g",
 					left,top,texture_width,texture_height);
 				if (undistort_on)
 				{
-					display_message(INFORMATION_MESSAGE," undistort_texture");
+					process_message->process_command(INFORMATION_MESSAGE," undistort_texture");
 				}
 				else
 				{
-					display_message(INFORMATION_MESSAGE," no_undistort_texture");
+					process_message->process_command(INFORMATION_MESSAGE," no_undistort_texture");
 				}
-				display_message(INFORMATION_MESSAGE," max_pixels_per_polygon %g",
+				process_message->process_command(INFORMATION_MESSAGE," max_pixels_per_polygon %g",
 					max_pixels_per_polygon);
 				DEALLOCATE(name);
 			}
 			else
 			{
-				display_message(INFORMATION_MESSAGE," texture none");
+				process_message->process_command(INFORMATION_MESSAGE," texture none");
 			}
-			display_message(INFORMATION_MESSAGE,";\n");
+			process_message->process_command(INFORMATION_MESSAGE,";\n");
 			/* view */
-			display_message(INFORMATION_MESSAGE,
+			process_message->process_command(INFORMATION_MESSAGE,
 				"gfx modify window %s view",window->name);
 			Scene_viewer_get_projection_mode(scene_viewer, &projection_mode);
-			display_message(INFORMATION_MESSAGE," %s",
+			process_message->process_command(INFORMATION_MESSAGE," %s",
 				Scene_viewer_projection_mode_string(projection_mode));
 			if (SCENE_VIEWER_CUSTOM==projection_mode)
 			{
 				Scene_viewer_get_modelview_matrix(scene_viewer,modelview_matrix);
 				Scene_viewer_get_projection_matrix(scene_viewer,projection_matrix);
-				display_message(INFORMATION_MESSAGE," modelview_matrix");
+				process_message->process_command(INFORMATION_MESSAGE," modelview_matrix");
 				for (i=0;i<16;i++)
 				{
-					display_message(INFORMATION_MESSAGE," %13.6e",modelview_matrix[i]);
+					process_message->process_command(INFORMATION_MESSAGE," %13.6e",modelview_matrix[i]);
 				}
-				display_message(INFORMATION_MESSAGE," projection_matrix");
+				process_message->process_command(INFORMATION_MESSAGE," projection_matrix");
 				for (i=0;i<16;i++)
 				{
-					display_message(INFORMATION_MESSAGE," %13.6e",projection_matrix[i]);
+					process_message->process_command(INFORMATION_MESSAGE," %13.6e",projection_matrix[i]);
 				}
 			}
 			else
@@ -7128,15 +7128,15 @@ to the command window.
 				Scene_viewer_get_viewing_volume(scene_viewer,&left,&right,
 					&bottom,&top,&near_plane,&far_plane);
 				Scene_viewer_get_view_angle(scene_viewer,&view_angle);
-				display_message(INFORMATION_MESSAGE,
+				process_message->process_command(INFORMATION_MESSAGE,
 					" eye_point %g %g %g",eye[0],eye[1],eye[2]);
-				display_message(INFORMATION_MESSAGE,
+				process_message->process_command(INFORMATION_MESSAGE,
 					" interest_point %g %g %g",lookat[0],lookat[1],lookat[2]);
-				display_message(INFORMATION_MESSAGE,
+				process_message->process_command(INFORMATION_MESSAGE,
 					" up_vector %g %g %g",up[0],up[1],up[2]);
-				display_message(INFORMATION_MESSAGE,
+				process_message->process_command(INFORMATION_MESSAGE,
 					" view_angle %g",view_angle*180/PI);
-				display_message(INFORMATION_MESSAGE,
+				process_message->process_command(INFORMATION_MESSAGE,
 					" near_clipping_plane %g far_clipping_plane %g",near_plane,far_plane);
 				/* work out if view is skew = up not orthogonal to view direction */
 				eye[0] -= lookat[0];
@@ -7146,27 +7146,27 @@ to the command window.
 				normalize3(up);
 				if (0.00001<fabs(dot_product3(up,eye)))
 				{
-					display_message(INFORMATION_MESSAGE," allow_skew");
+					process_message->process_command(INFORMATION_MESSAGE," allow_skew");
 				}
 			}
 			viewport_mode=Scene_viewer_get_viewport_mode(scene_viewer);
-			display_message(INFORMATION_MESSAGE," %s",
+			process_message->process_command(INFORMATION_MESSAGE," %s",
 				Scene_viewer_viewport_mode_string(viewport_mode));
 
 
 			Scene_viewer_get_NDC_info(scene_viewer,
 				&NDC_left,&NDC_top,&NDC_width,&NDC_height);
-			display_message(INFORMATION_MESSAGE," ndc_placement %g %g %g %g",
+			process_message->process_command(INFORMATION_MESSAGE," ndc_placement %g %g %g %g",
 				NDC_left,NDC_top,NDC_width,NDC_height);
 			Scene_viewer_get_viewport_info(scene_viewer,
 				&viewport_left,&viewport_top,&viewport_pixels_per_unit_x,
 				&viewport_pixels_per_unit_y);
-			display_message(INFORMATION_MESSAGE,
+			process_message->process_command(INFORMATION_MESSAGE,
 				" viewport_coordinates %g %g %g %g",viewport_left,viewport_top,
 				viewport_pixels_per_unit_x,viewport_pixels_per_unit_y);
-			display_message(INFORMATION_MESSAGE,";\n");
+			process_message->process_command(INFORMATION_MESSAGE,";\n");
 			/* overlay */
-			display_message(INFORMATION_MESSAGE,
+			process_message->process_command(INFORMATION_MESSAGE,
 				"gfx modify window %s overlay",window->name);
 			if (overlay_scene=Scene_viewer_get_overlay_scene(scene_viewer))
 			{
@@ -7174,76 +7174,76 @@ to the command window.
 				{
 					/* put quotes around name if it contains special characters */
 					make_valid_token(&name);
-					display_message(INFORMATION_MESSAGE," scene %s",name);
+					process_message->process_command(INFORMATION_MESSAGE," scene %s",name);
 					DEALLOCATE(name);
 				}
 			}
 			else
 			{
-				display_message(INFORMATION_MESSAGE," scene none");
+				process_message->process_command(INFORMATION_MESSAGE," scene none");
 			}
-			display_message(INFORMATION_MESSAGE,";\n");
+			process_message->process_command(INFORMATION_MESSAGE,";\n");
 		}
 		/* settings */
-		display_message(INFORMATION_MESSAGE,
+		process_message->process_command(INFORMATION_MESSAGE,
 			"gfx modify window %s set",window->name);
 		if (GET_NAME(Interactive_tool)(window->interactive_tool,&name))
 		{
-			display_message(INFORMATION_MESSAGE," %s",name);
+			process_message->process_command(INFORMATION_MESSAGE," %s",name);
 			DEALLOCATE(name);
 		}
-		display_message(INFORMATION_MESSAGE,
+		process_message->process_command(INFORMATION_MESSAGE,
 			" current_pane %d",window->current_pane+1);
-		display_message(INFORMATION_MESSAGE,
+		process_message->process_command(INFORMATION_MESSAGE,
 			" std_view_angle %g",window->std_view_angle);
 		Scene_viewer_get_perturb_lines(window->scene_viewer_array[0],&perturb_lines);
 		if (perturb_lines)
 		{
-			display_message(INFORMATION_MESSAGE," perturb_lines");
+			process_message->process_command(INFORMATION_MESSAGE," perturb_lines");
 		}
 		else
 		{
-			display_message(INFORMATION_MESSAGE," normal_lines");
+			process_message->process_command(INFORMATION_MESSAGE," normal_lines");
 		}
 		Scene_viewer_get_antialias_mode(window->scene_viewer_array[0],&antialias);
 		if (antialias)
 		{
-			display_message(INFORMATION_MESSAGE," antialias %d",antialias);
+			process_message->process_command(INFORMATION_MESSAGE," antialias %d",antialias);
 		}
 		else
 		{
-			display_message(INFORMATION_MESSAGE," no_antialias");
+			process_message->process_command(INFORMATION_MESSAGE," no_antialias");
 		}
 		Scene_viewer_get_depth_of_field(window->scene_viewer_array[0],
 			&depth_of_field, &focal_depth);
 		if (depth_of_field > 0.0)
 		{
-			display_message(INFORMATION_MESSAGE," depth_of_field %lf", depth_of_field);
-			display_message(INFORMATION_MESSAGE," focal_depth %lf", focal_depth);
+			process_message->process_command(INFORMATION_MESSAGE," depth_of_field %lf", depth_of_field);
+			process_message->process_command(INFORMATION_MESSAGE," focal_depth %lf", focal_depth);
 		}
 		else
 		{
-			display_message(INFORMATION_MESSAGE," depth_of_field 0.0");
+			process_message->process_command(INFORMATION_MESSAGE," depth_of_field 0.0");
 		}
 		Scene_viewer_get_transparency_mode(scene_viewer, &transparency_mode);
-		display_message(INFORMATION_MESSAGE," %s",
+		process_message->process_command(INFORMATION_MESSAGE," %s",
 			Scene_viewer_transparency_mode_string(transparency_mode));
 		if ((transparency_mode == SCENE_VIEWER_LAYERED_TRANSPARENCY) ||
 			(transparency_mode == SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY))
 		{
 			Scene_viewer_get_transparency_layers(scene_viewer, &transparency_layers);
-			display_message(INFORMATION_MESSAGE," %d",transparency_layers);
+			process_message->process_command(INFORMATION_MESSAGE," %d",transparency_layers);
 		}
 		Scene_viewer_get_blending_mode(window->scene_viewer_array[0],&blending_mode);
-		display_message(INFORMATION_MESSAGE," %s",
+		process_message->process_command(INFORMATION_MESSAGE," %s",
 			ENUMERATOR_STRING(Scene_viewer_blending_mode)(blending_mode));
-		display_message(INFORMATION_MESSAGE,";\n");
+		process_message->process_command(INFORMATION_MESSAGE,";\n");
 		DEALLOCATE(prefix);
 		return_code=1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
+		process_message->process_command(ERROR_MESSAGE,
 			"list_Graphics_window.  Invalid argument(s)");
 		return_code=0;
 	}
@@ -7252,275 +7252,48 @@ to the command window.
 	return (return_code);
 } /* list_Graphics_window_commands */
 
-int write_Graphics_window_commands_to_comfile(struct Graphics_window *window,
-	void *dummy_void)
+int list_Graphics_window_commands(struct Graphics_window *window,
+	 void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 10 August 2007
+LAST MODIFIED : 15 August 2007
 
 DESCRIPTION :
 Writes the commands for creating the <window> and establishing the views in it
-to the com file.
+to the command window. Or writes the commadns for creating the window 
+and establishing the views in it to the command window to a com file.
 ==============================================================================*/
 {
-	char *name,*prefix;
-	double bottom, depth_of_field, eye[3],far_plane,
-		focal_depth, left,lookat[3],max_pixels_per_polygon,modelview_matrix[16],
-		NDC_height,NDC_left,NDC_top,NDC_width,near_plane,projection_matrix[16],right,
-		texture_height,texture_width,top,up[3],view_angle,viewport_left,
-		viewport_top,viewport_pixels_per_unit_x,viewport_pixels_per_unit_y;
-	enum Scene_viewer_blending_mode blending_mode;
-	enum Scene_viewer_buffering_mode buffering_mode;
-	enum Scene_viewer_projection_mode projection_mode;
-	enum Scene_viewer_transparency_mode transparency_mode;
-	enum Scene_viewer_viewport_mode viewport_mode;
-	int height,i,pane_no,perturb_lines,return_code,width,undistort_on;
-	unsigned int antialias, transparency_layers;
-	struct Colour colour;
-	struct Scene *overlay_scene;
-	struct Scene_viewer *scene_viewer;
-	struct Texture *texture;
+	 int return_code;
 
-	ENTER(write_Graphics_window_commands_to_comfile);
-	USE_PARAMETER(dummy_void);
-	if (window&&ALLOCATE(prefix,char,50+strlen(window->name)))
-	{
-		if (name=duplicate_string(window->name))
-		{
-			/* put quotes around name if it contains special characters */
-			make_valid_token(&name);
-			write_message_to_file(INFORMATION_MESSAGE,"gfx create window %s",name);
-			DEALLOCATE(name);
-		}
-		if (buffering_mode=Scene_viewer_get_buffering_mode(window->scene_viewer_array[0]))
-		{
-			write_message_to_file(INFORMATION_MESSAGE," %s",
-				Scene_viewer_buffering_mode_string(buffering_mode));
-		}
-		write_message_to_file(INFORMATION_MESSAGE,";\n");
-		/* image */
-		write_message_to_file(INFORMATION_MESSAGE,"gfx modify window %s image",
-			window->name);
-		if (GET_NAME(Scene)(window->scene,&name))
-		{
-			/* put quotes around name if it contains special characters */
-			make_valid_token(&name);
-			write_message_to_file(INFORMATION_MESSAGE," scene %s",name);
-			DEALLOCATE(name);
-		}
-		if (GET_NAME(Light_model)(
-			Scene_viewer_get_light_model(window->scene_viewer_array[0]),&name))
-		{
-			/* put quotes around name if it contains special characters */
-			make_valid_token(&name);
-			write_message_to_file(INFORMATION_MESSAGE," light_model %s",name);
-			DEALLOCATE(name);
-		}
-		write_message_to_file(INFORMATION_MESSAGE,";\n");
-		sprintf(prefix,"gfx modify window %s image add_light ",window->name);
-		for_each_Light_in_Scene_viewer(window->scene_viewer_array[0],
-			write_Light_name_command_to_comfile, (void *)prefix);
-		/* layout */
-		Graphics_window_get_viewing_area_size(window,&width,&height);
-		write_message_to_file(INFORMATION_MESSAGE,
-			"gfx modify window %s layout %s ortho_axes %s %s eye_spacing %g"
-			" width %d height %d;\n",window->name,
-			Graphics_window_layout_mode_string(window->layout_mode),
-			axis_name[window->ortho_up_axis],axis_name[window->ortho_front_axis],
-			window->eye_spacing,width,height);
-		/* background, view and overlay in each active pane */
-		for (pane_no=0;pane_no<window->number_of_panes;pane_no++)
-		{
-			scene_viewer=window->scene_viewer_array[pane_no];
-			write_message_to_file(INFORMATION_MESSAGE,
-				"gfx modify window %s set current_pane %d;\n",
-				window->name,pane_no+1);
-			/* background */
-			write_message_to_file(INFORMATION_MESSAGE,
-				"gfx modify window %s background",window->name);
-			Scene_viewer_get_background_colour(scene_viewer,&colour);
-			write_message_to_file(INFORMATION_MESSAGE,
-				" colour %g %g %g",colour.red,colour.green,colour.blue);
-			if ((texture=Scene_viewer_get_background_texture(scene_viewer))&&
-				Scene_viewer_get_background_texture_info(scene_viewer,
-					&left,&top,&texture_width,&texture_height,&undistort_on,
-					&max_pixels_per_polygon)&&
-				GET_NAME(Texture)(texture,&name))
-			{
-				/* put quotes around name if it contains special characters */
-				make_valid_token(&name);
-				write_message_to_file(INFORMATION_MESSAGE," texture %s",name);
-				write_message_to_file(INFORMATION_MESSAGE," tex_placement %g %g %g %g",
-					left,top,texture_width,texture_height);
-				if (undistort_on)
-				{
-					write_message_to_file(INFORMATION_MESSAGE," undistort_texture");
-				}
-				else
-				{
-					write_message_to_file(INFORMATION_MESSAGE," no_undistort_texture");
-				}
-				write_message_to_file(INFORMATION_MESSAGE," max_pixels_per_polygon %g",
-					max_pixels_per_polygon);
-				DEALLOCATE(name);
-			}
-			else
-			{
-				write_message_to_file(INFORMATION_MESSAGE," texture none");
-			}
-			write_message_to_file(INFORMATION_MESSAGE,";\n");
-			/* view */
-			write_message_to_file(INFORMATION_MESSAGE,
-				"gfx modify window %s view",window->name);
-			Scene_viewer_get_projection_mode(scene_viewer, &projection_mode);
-			write_message_to_file(INFORMATION_MESSAGE," %s",
-				Scene_viewer_projection_mode_string(projection_mode));
-			if (SCENE_VIEWER_CUSTOM==projection_mode)
-			{
-				Scene_viewer_get_modelview_matrix(scene_viewer,modelview_matrix);
-				Scene_viewer_get_projection_matrix(scene_viewer,projection_matrix);
-				write_message_to_file(INFORMATION_MESSAGE," modelview_matrix");
-				for (i=0;i<16;i++)
-				{
-					write_message_to_file(INFORMATION_MESSAGE," %13.6e",modelview_matrix[i]);
-				}
-				write_message_to_file(INFORMATION_MESSAGE," projection_matrix");
-				for (i=0;i<16;i++)
-				{
-					write_message_to_file(INFORMATION_MESSAGE," %13.6e",projection_matrix[i]);
-				}
-			}
-			else
-			{
-				/* parallel/perspective: write eye and interest points and up-vector */
-				Scene_viewer_get_lookat_parameters(scene_viewer,
-					&(eye[0]),&(eye[1]),&(eye[2]),&(lookat[0]),&(lookat[1]),&(lookat[2]),
-					&(up[0]),&(up[1]),&(up[2]));
-				Scene_viewer_get_viewing_volume(scene_viewer,&left,&right,
-					&bottom,&top,&near_plane,&far_plane);
-				Scene_viewer_get_view_angle(scene_viewer,&view_angle);
-				write_message_to_file(INFORMATION_MESSAGE,
-					" eye_point %g %g %g",eye[0],eye[1],eye[2]);
-				write_message_to_file(INFORMATION_MESSAGE,
-					" interest_point %g %g %g",lookat[0],lookat[1],lookat[2]);
-				write_message_to_file(INFORMATION_MESSAGE,
-					" up_vector %g %g %g",up[0],up[1],up[2]);
-				write_message_to_file(INFORMATION_MESSAGE,
-					" view_angle %g",view_angle*180/PI);
-				write_message_to_file(INFORMATION_MESSAGE,
-					" near_clipping_plane %g far_clipping_plane %g",near_plane,far_plane);
-				/* work out if view is skew = up not orthogonal to view direction */
-				eye[0] -= lookat[0];
-				eye[1] -= lookat[1];
-				eye[2] -= lookat[2];
-				normalize3(eye);
-				normalize3(up);
-				if (0.00001<fabs(dot_product3(up,eye)))
-				{
-					write_message_to_file(INFORMATION_MESSAGE," allow_skew");
-				}
-			}
-			viewport_mode=Scene_viewer_get_viewport_mode(scene_viewer);
-			write_message_to_file(INFORMATION_MESSAGE," %s",
-				Scene_viewer_viewport_mode_string(viewport_mode));
+	 ENTER(list_Graphics_window_commands);
+	 Process_list_command_class *list_message =
+			new Process_list_command_class();
+	 return_code = process_list_or_write_Graphics_window_commands(window, list_message);
+	 LEAVE;
 
+	 return (return_code);
+}
 
-			Scene_viewer_get_NDC_info(scene_viewer,
-				&NDC_left,&NDC_top,&NDC_width,&NDC_height);
-			write_message_to_file(INFORMATION_MESSAGE," ndc_placement %g %g %g %g",
-				NDC_left,NDC_top,NDC_width,NDC_height);
-			Scene_viewer_get_viewport_info(scene_viewer,
-				&viewport_left,&viewport_top,&viewport_pixels_per_unit_x,
-				&viewport_pixels_per_unit_y);
-			write_message_to_file(INFORMATION_MESSAGE,
-				" viewport_coordinates %g %g %g %g",viewport_left,viewport_top,
-				viewport_pixels_per_unit_x,viewport_pixels_per_unit_y);
-			write_message_to_file(INFORMATION_MESSAGE,";\n");
-			/* overlay */
-			write_message_to_file(INFORMATION_MESSAGE,
-				"gfx modify window %s overlay",window->name);
-			if (overlay_scene=Scene_viewer_get_overlay_scene(scene_viewer))
-			{
-				if (GET_NAME(Scene)(overlay_scene,&name))
-				{
-					/* put quotes around name if it contains special characters */
-					make_valid_token(&name);
-					write_message_to_file(INFORMATION_MESSAGE," scene %s",name);
-					DEALLOCATE(name);
-				}
-			}
-			else
-			{
-				write_message_to_file(INFORMATION_MESSAGE," scene none");
-			}
-			write_message_to_file(INFORMATION_MESSAGE,";\n");
-		}
-		/* settings */
-		write_message_to_file(INFORMATION_MESSAGE,
-			"gfx modify window %s set",window->name);
-		if (GET_NAME(Interactive_tool)(window->interactive_tool,&name))
-		{
-			write_message_to_file(INFORMATION_MESSAGE," %s",name);
-			DEALLOCATE(name);
-		}
-		write_message_to_file(INFORMATION_MESSAGE,
-			" current_pane %d",window->current_pane+1);
-		write_message_to_file(INFORMATION_MESSAGE,
-			" std_view_angle %g",window->std_view_angle);
-		Scene_viewer_get_perturb_lines(window->scene_viewer_array[0],&perturb_lines);
-		if (perturb_lines)
-		{
-			write_message_to_file(INFORMATION_MESSAGE," perturb_lines");
-		}
-		else
-		{
-			write_message_to_file(INFORMATION_MESSAGE," normal_lines");
-		}
-		Scene_viewer_get_antialias_mode(window->scene_viewer_array[0],&antialias);
-		if (antialias)
-		{
-			write_message_to_file(INFORMATION_MESSAGE," antialias %d",antialias);
-		}
-		else
-		{
-			write_message_to_file(INFORMATION_MESSAGE," no_antialias");
-		}
-		Scene_viewer_get_depth_of_field(window->scene_viewer_array[0],
-			&depth_of_field, &focal_depth);
-		if (depth_of_field > 0.0)
-		{
-			write_message_to_file(INFORMATION_MESSAGE," depth_of_field %lf", depth_of_field);
-			write_message_to_file(INFORMATION_MESSAGE," focal_depth %lf", focal_depth);
-		}
-		else
-		{
-			write_message_to_file(INFORMATION_MESSAGE," depth_of_field 0.0");
-		}
-		Scene_viewer_get_transparency_mode(scene_viewer, &transparency_mode);
-		write_message_to_file(INFORMATION_MESSAGE," %s",
-			Scene_viewer_transparency_mode_string(transparency_mode));
-		if ((transparency_mode == SCENE_VIEWER_LAYERED_TRANSPARENCY) ||
-			(transparency_mode == SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY))
-		{
-			Scene_viewer_get_transparency_layers(scene_viewer, &transparency_layers);
-			write_message_to_file(INFORMATION_MESSAGE," %d",transparency_layers);
-		}
-		Scene_viewer_get_blending_mode(window->scene_viewer_array[0],&blending_mode);
-		write_message_to_file(INFORMATION_MESSAGE," %s",
-			ENUMERATOR_STRING(Scene_viewer_blending_mode)(blending_mode));
-		write_message_to_file(INFORMATION_MESSAGE,";\n");
-		DEALLOCATE(prefix);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"write_Graphics_window_commands_to_comfile.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+int write_Graphics_window_commands_to_comfile(struct Graphics_window *window,
+	 void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 15 August 2007
 
-	return (return_code);
-} /* write_Graphics_window_commands_to_comfile */
+DESCRIPTION :
+Writes the commadns for creating the window 
+and establishing the views in it to the command window to a com file.
+==============================================================================*/
+{
+	 int return_code;
+
+	 ENTER(write_Graphics_window_commands_to_comfile);
+	 Process_write_command_class *write_message =
+			new Process_write_command_class();
+	 return_code = process_list_or_write_Graphics_window_commands(window, write_message);
+	 LEAVE;
+	 
+	 return (return_code);
+}
 
 #if defined (WX_USER_INTERFACE)
 static int modify_Graphics_window_node_tool(struct Parse_state *state,

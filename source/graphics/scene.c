@@ -5252,7 +5252,7 @@ it. For example, rendervrml.c needs to output all the window objects in a scene.
 	if (scene&&iterator_function)
 	{
 		return_code=FOR_EACH_OBJECT_IN_LIST(Scene_object)(iterator_function,
-			user_data,scene->scene_object_list);	
+			user_data,scene->scene_object_list);
 	}
 	else
 	{
@@ -9851,3 +9851,107 @@ in the <scene> which point to this spectrum.
 	return (return_code);
 } /* Scene_get_data_range_for_spectrum */
 
+struct Temp_data
+{
+	 int write_into_comfile;
+	 char *name;
+};
+
+int list_scene_object_in_scene_get_command_list(struct Scene_object *scene_object,
+	 void *temp_data_void)
+{
+	int return_code;
+	struct GT_element_group *gt_element_group;
+	struct Temp_data *temp_data;
+	ENTER(for_each_graphics_object_in_scene_get_command_list);
+	return_code = 0;
+	if (scene_object)
+	{
+		 return_code = 1;
+		 switch (scene_object->type)
+		 {
+				case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
+				{
+					 if (temp_data = (struct Temp_data *)temp_data_void)
+					 {
+							int error = 0;
+							char *command_prefix, *command_suffix, *region_path;
+							command_prefix = duplicate_string("gfx modify g_element ");
+							region_path = scene_object->name;
+							make_valid_token(&region_path);
+							append_string(&command_prefix, region_path, &error);
+							append_string(&command_prefix, " ", &error);
+							command_suffix = (char *)NULL;
+							if (temp_data->name)
+							{
+								 if (strcmp(temp_data->name, "default") != 0)
+								 {
+										append_string(&command_suffix, " scene ", &error);
+										append_string(&command_suffix,temp_data->name, &error);
+								 }
+							}
+							append_string(&command_suffix, ";", &error);
+							return_code = 0;
+							gt_element_group = Scene_object_get_graphical_element_group(
+								 scene_object);
+							if (!(temp_data->write_into_comfile))
+							{
+								 return_code = GT_element_group_list_commands(gt_element_group,
+										command_prefix, command_suffix);
+							}
+							else
+							{
+								 return_code = GT_element_group_write_commands_to_comfile(
+										gt_element_group, command_prefix, command_suffix);
+							}
+							DEALLOCATE(command_suffix);
+							DEALLOCATE(command_prefix);
+					 }
+				} break;
+				default:
+				{
+				} break;
+		 }
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+int for_each_graphics_object_in_scene_get_command_list(struct Scene *scene,
+	 void *write_into_comfile_void)
+/*******************************************************************************
+LAST MODIFIED :  13 Aug 2007
+
+DESCRIPTION :
+This function iterates through every graphics object in the scene
+including those in each individual settings of the graphical finite
+elements and those chained together with other graphics objects
+==============================================================================*/
+{
+	 int return_code;
+	 struct Temp_data *temp_data;
+	 ENTER(for_each_graphics_object_in_scene_get_command_list);
+	 USE_PARAMETER(scene);
+	 if (ALLOCATE(temp_data,struct Temp_data,1))
+	 {
+			temp_data->write_into_comfile = (int)write_into_comfile_void;
+			temp_data->name = scene->name;
+			
+			if (0<NUMBER_IN_LIST(Scene_object)(scene->scene_object_list))
+			{
+				 FOR_EACH_OBJECT_IN_LIST(Scene_object)(
+						list_scene_object_in_scene_get_command_list, (void *)temp_data,
+						scene->scene_object_list);
+				 return_code = 1;
+			}
+			else
+			{
+				 return_code = 0;
+			}
+			DEALLOCATE(temp_data);
+	 }
+	 LEAVE;
+	 
+	 return (return_code);
+} /* for_each_graphics_object_in_scene */

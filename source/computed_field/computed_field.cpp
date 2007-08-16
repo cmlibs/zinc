@@ -184,6 +184,7 @@ extern "C" {
 #include "user_interface/message.h"
 }
 #include <typeinfo>
+#include "user_interface/process_list_or_write_command.hpp"
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Computed_field);
 
@@ -3867,8 +3868,8 @@ Writes the properties of the <field> to the command window.
 	return (return_code);
 } /* list_Computed_field */
 
-int list_Computed_field_commands(struct Computed_field *field,
-	void *command_prefix_void)
+int process_list_or_write_Computed_field_commands(struct Computed_field *field,
+	 void *command_prefix_void, Process_list_or_write_command_class *process_message)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -3885,21 +3886,23 @@ Writes the commands needed to reproduce <field> to the command window.
 		if (field_name = duplicate_string(field->name))
 		{
 			make_valid_token(&field_name);
-			display_message(INFORMATION_MESSAGE, "%s%s", command_prefix, field_name);
+			process_message->process_command(
+				 INFORMATION_MESSAGE, "%s%s", command_prefix, field_name);
 			DEALLOCATE(field_name);
 		}
 		if (temp_string = Coordinate_system_string(&field->coordinate_system))
 		{
-			display_message(INFORMATION_MESSAGE, " coordinate_system %s",
-				temp_string);
+			 process_message->process_command(
+					INFORMATION_MESSAGE, " coordinate_system %s",temp_string);
 			DEALLOCATE(temp_string);
 		}
 		if (command_string = field->core->get_command_string())
 		{
-			display_message(INFORMATION_MESSAGE, " %s", command_string);
+			process_message->process_command(
+				 INFORMATION_MESSAGE, " %s", command_string);
 			DEALLOCATE(command_string);
 		}
-		display_message(INFORMATION_MESSAGE, ";\n");
+		process_message->process_command(INFORMATION_MESSAGE, ";\n");
 		return_code = 1;
 	}
 	else
@@ -3912,6 +3915,27 @@ Writes the commands needed to reproduce <field> to the command window.
 
 	return (return_code);
 } /* list_Computed_field_commands */
+
+int list_Computed_field_commands(struct Computed_field *field,
+	void *command_prefix_void)
+/*******************************************************************************
+LAST MODIFIED : 14 August 2006
+
+DESCRIPTION :
+Writes the commands needed to reproduce <field> to the command window.
+==============================================================================*/
+{
+	 int return_code;
+
+	 ENTER(list_Computed_field_commands);
+	 Process_list_command_class *list_message =
+			new Process_list_command_class();
+	 return_code = process_list_or_write_Computed_field_commands(
+			field, command_prefix_void, list_message);
+	 LEAVE;
+
+	 return (return_code);
+}
 
 int list_Computed_field_commands_if_managed_source_fields_in_list(
 	struct Computed_field *field, void *list_commands_data_void)
@@ -3984,38 +4008,13 @@ DESCRIPTION :
 Writes the commands needed to reproduce <field> to the com file.
 ==============================================================================*/
 {
-	char *command_prefix, *command_string, *field_name, *temp_string;
 	int return_code;
 
 	ENTER(write_Computed_field_commands_to_comfile);
-	if (field && (command_prefix = (char *)command_prefix_void))
-	{
-		if (field_name = duplicate_string(field->name))
-		{
-			make_valid_token(&field_name);
-			write_message_to_file(INFORMATION_MESSAGE, "%s%s", command_prefix, field_name);
-			DEALLOCATE(field_name);
-		}
-		if (temp_string = Coordinate_system_string(&field->coordinate_system))
-		{
-			write_message_to_file(INFORMATION_MESSAGE, " coordinate_system %s",
-				 temp_string);
-			DEALLOCATE(temp_string);
-		}
-		if (command_string = field->core->get_command_string())
-		{
-			 write_message_to_file(INFORMATION_MESSAGE, " %s", command_string);
-			DEALLOCATE(command_string);
-		}
-		write_message_to_file(INFORMATION_MESSAGE, ";\n");
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"list_Computed_field_commands.  Invalid argument(s)");
-		return_code = 0;
-	}
+	 Process_write_command_class *write_message =
+			new Process_write_command_class();
+	 return_code = process_list_or_write_Computed_field_commands(field,  command_prefix_void, write_message);
+	 return (return_code);
 	LEAVE;
 
 	return (return_code);
