@@ -1931,7 +1931,7 @@ Writes out the <settings> as a text string in the command window with the
 	class Process_list_or_write_command_class *process_message;
 	struct GT_element_group_process_temp_data *process_temp_data;
 
-	ENTER(GT_element_settings_list_contents);
+	ENTER(GT_element_group_process_GT_element_settings_list_contents);
 	if (settings&&
 		 (process_temp_data=(struct GT_element_group_process_temp_data *)process_temp_data_void))
 	{
@@ -1985,7 +1985,7 @@ depending on the class.
 	int return_code;
 	struct GT_element_settings_list_data list_data;
 
-	ENTER(GT_element_group_list_commands);
+	ENTER(GT_element_group_process_list_or_write_window_command);
 	if (gt_element_group && command_prefix)
 	{
 		process_message->process_command(INFORMATION_MESSAGE,command_prefix);
@@ -2050,7 +2050,7 @@ depending on the class.
 	LEAVE;
 
 	return (return_code);
-} /* GT_element_group_list_commands */
+} /* GT_element_group_process_list_or_write_window_command*/
 
 int GT_element_group_list_commands(struct GT_element_group *gt_element_group,
 	char *command_prefix,char *command_suffix)
@@ -2090,7 +2090,7 @@ write commadns into a comfile.
 {
 	 int return_code;
 
-	 ENTER(GT_element_group_list_commands);
+	 ENTER(GT_element_write_commands_to_comfile);
 	 Process_write_command_class *write_message =
 			new Process_write_command_class();
 	 return_code = GT_element_group_process_list_or_write_window_commands(
