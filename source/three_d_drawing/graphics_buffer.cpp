@@ -167,6 +167,9 @@ DESCRIPTION :
 	  GdkGLContext *share_glcontext;
 #  endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (WIN32_USER_INTERFACE)
+	HGLRC wgl_shared_context;
+#endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 	wxGLContext* wxSharedContext;
 #endif /* defined (WX_USER_INTERFACE) */
@@ -2595,6 +2598,9 @@ it to share graphics contexts.
 #if defined (WX_USER_INTERFACE)
 		package->wxSharedContext = (wxGLContext*)NULL;
 #endif /* defined (WX_USER_INTERFACE) */
+#if defined (WIN32_USER_INTERFACE)
+		package->wgl_shared_context = (HGLRC)NULL;
+#endif /* defined (WIN32_USER_INTERFACE) */
 	}
 	else
 	{
@@ -2639,6 +2645,14 @@ Closes the Graphics buffer package
 		}
 #  endif /* ! defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (WIN32_USER_INTERFACE)
+		/* Destroy the shared_glx_context as we did not destroy it when closing
+			it's buffer */
+		if (package->wgl_shared_context)
+		{
+			wglDeleteContext(package->wgl_shared_context);
+		}
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 		DEALLOCATE(*package_ptr);
 		*package_ptr = (struct Graphics_buffer_package *)NULL;
@@ -3424,11 +3438,48 @@ are performed but the graphics window will render into the supplied device conte
 					then just copy into the render buffer on paint */
 				if(SetPixelFormat( buffer->hDC, format, &pfd ))
 				{
-					/* create and enable the render context (RC) */
-					if(buffer->hRC = wglCreateContext( buffer->hDC ))
+					/* A work around for Intel GMA 900 cards on windows where compilation
+						of textures only seems to work on the first context of a
+						share group.  On these cards only use a single 
+						graphics context for all graphics buffers.
+						The vendor string will not be defined the first time around,
+						although when using multiple instances in the same memory
+						space (such as with zinc) it could be set for the first
+						in a share group. */
+					const char *vendor_string = (const char *)glGetString(GL_VENDOR);
+					if (!graphics_buffer_package->wgl_shared_context ||
+						!vendor_string || strcmp("Intel", vendor_string))
 					{
-						wglShareLists(wglGetCurrentContext(), buffer->hRC);
-
+						/* Default normal implementation,
+							different context for each buffer with shared lists */
+						/* create and enable the render context (RC) */
+						if(buffer->hRC = wglCreateContext( buffer->hDC ))
+						{
+							if (graphics_buffer_package->wgl_shared_context)
+							{
+								wglShareLists(graphics_buffer_package->wgl_shared_context,
+									buffer->hRC);
+							}
+							else
+							{
+								graphics_buffer_package->wgl_shared_context = buffer->hRC;
+							}
+						}
+						else
+						{
+ 							display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
+								"Unable to create the render context.");
+ 							DESTROY(Graphics_buffer)(&buffer);
+							buffer = (struct Graphics_buffer *)NULL;
+						}
+					}
+					else
+					{
+						/* Use a single context for all graphics buffers */
+						buffer->hRC = graphics_buffer_package->wgl_shared_context;
+					}
+					if (buffer)
+					{
 						if(!wglMakeCurrent(buffer->hDC,buffer->hRC))
 						{
 							display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
@@ -3436,13 +3487,6 @@ are performed but the graphics window will render into the supplied device conte
 							DESTROY(Graphics_buffer)(&buffer);
 							buffer = (struct Graphics_buffer *)NULL;
 						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
-							"Unable to create the render context.");
-						DESTROY(Graphics_buffer)(&buffer);
-						buffer = (struct Graphics_buffer *)NULL;
 					}
 				}
 				else
@@ -6202,7 +6246,13 @@ x==============================================================================*
 		}
 #if defined (WIN32_USER_INTERFACE)
 		wglMakeCurrent(NULL, NULL);
-		wglDeleteContext(buffer->hRC);
+		/* Only delete it here if it isn't the share context, otherwise we
+			will destroy it when the graphics buffer package is destroyed.
+			In the intel workaround case we only want to destroy it at the end. */
+		if (buffer->hRC != buffer->package->wgl_shared_context)
+		{
+			wglDeleteContext(buffer->hRC);
+		}
 		if (buffer->hWnd)
 		{
 			ReleaseDC(buffer->hWnd, buffer->hDC);
