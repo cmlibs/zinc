@@ -108,7 +108,7 @@ DESCRIPTION :
 	CMISS_TEXTURE_RGB,
 	CMISS_TEXTURE_RGBA,
 	CMISS_TEXTURE_ABGR,
-	CMISS_TEXTURE_BGR,
+	CMISS_TEXTURE_BGR
 }; /* enum Cmiss_texture_storage_type */
 
 typedef struct Cmiss_texture *Cmiss_texture_id;
