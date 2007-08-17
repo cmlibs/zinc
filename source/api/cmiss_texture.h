@@ -109,10 +109,7 @@ DESCRIPTION :
 	CMISS_TEXTURE_RGBA,
 	CMISS_TEXTURE_ABGR,
 	CMISS_TEXTURE_BGR,
-	/* The last two types are special and are not user-selectable */
-	CMISS_TEXTURE_DMBUFFER,
-	CMISS_TEXTURE_PBUFFER
-}; /* enum Texture_storage_type */
+}; /* enum Cmiss_texture_storage_type */
 
 typedef struct Cmiss_texture *Cmiss_texture_id;
 
