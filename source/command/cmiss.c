@@ -19274,7 +19274,22 @@ Can also write individual groups with the <group> option.
 	 struct LIST(Computed_field) *list_of_fields;
 	 struct List_Computed_field_commands_data list_commands_data;
 	 static char	*command_prefix;
-	 
+#if defined (WX_USER_INTERFACE)
+#if defined (__WIN32__)
+	 char temp_data[L_tmpnam];
+	 char temp_elem[L_tmpnam];
+	 char temp_node[L_tmpnam];
+#else /* (__WIN32__) */
+	 char temp_data[] = "dataXXXXXX";
+	 char temp_elem[] = "elemXXXXXX";
+	 char temp_node[] = "nodeXXXXXX";
+#endif /* (__WIN32__) */
+#else /* (WX_USER_INTERFACE) */
+	 char *temp_data;
+	 char *temp_elem;
+	 char *temp_node;
+#endif /* (WX_USER_INTERFACE) */
+
 	 ENTER(gfx_write_all);
 	 USE_PARAMETER(dummy_to_be_modified);
 	 if (state && (command_data=(struct Cmiss_command_data *)command_data_void))
@@ -19445,9 +19460,6 @@ Can also write individual groups with the <group> option.
 #if defined (__WIN32__)
 				 /* 	Non MS-windows platform does not have mkstemp implemented,
 						therefore tmpnam is used.*/
-				 char temp_data[L_tmpnam];
-				 char temp_elem[L_tmpnam];
-				 char temp_node[L_tmpnam];
 				 if (data_return_code)
 				 {
 						tmpnam(temp_data);
@@ -19474,9 +19486,6 @@ Can also write individual groups with the <group> option.
 				 }
 #else
 				 /* Non MS-windows platform has mkstemp implemented into it*/
-				 char temp_data[] = "dataXXXXXX";
-				 char temp_elem[] = "elemXXXXXX";
-				 char temp_node[] = "nodeXXXXXX";
 				 if (data_return_code)
 				 {
 							 data_fd = mkstemp((char *)temp_data);
@@ -19493,9 +19502,6 @@ Can also write individual groups with the <group> option.
 #else /* (WX_USER_INTERFACE) */
 				 /* Non wx_user_interface won't be able to stored the file in
 						a zip file at the moment */
-				 char *temp_data;
-				 char *temp_elem;
-				 char *temp_node;
 				 if (data_return_code)
 				 {
 							 temp_data = data_file_name;
