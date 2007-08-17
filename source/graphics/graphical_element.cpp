@@ -2090,7 +2090,7 @@ write commadns into a comfile.
 {
 	 int return_code;
 
-	 ENTER(GT_element_write_commands_to_comfile);
+	 ENTER(GT_element_group_write_commands_to_comfile);
 	 Process_write_command_class *write_message =
 			new Process_write_command_class();
 	 return_code = GT_element_group_process_list_or_write_window_commands(

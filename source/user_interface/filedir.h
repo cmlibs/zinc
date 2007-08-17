@@ -179,4 +179,16 @@ LAST MODIFIED : 11 June 1998
 DESCRIPTION :
 Register a callback that gets called when the file dialog is cancelled.
 ==============================================================================*/
+
+#if defined (WX_USER_INTERFACE)
+int filedir_compressing_process_wx_compress(char *com_file_name, char *data_file_name, 
+	 char *elem_file_name, char *node_file_name, int data_return_code, int elem_return_code, 
+	 int node_return_code, char *file_name, char *temp_data ,char *temp_elem, char *temp_node);
+/*******************************************************************************
+LAST MODIFIED : 17 Aug 2007
+
+DESCRIPTION :
+Zip .com, .exnode, .exelem and .exdata files into a single zip file
+==============================================================================*/
+#endif /* defined (WX_USER_INTERFACE) */
 #endif /* !defined (FILEDIR_H) */

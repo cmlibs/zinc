@@ -88,6 +88,8 @@ static char filedir_uidh[] =
 #include "wx/wx.h"
 #include <wx/tglbtn.h>
 #include "wx/xrc/xmlres.h"
+#include <wx/wfstream.h>
+#include <wx/zipstrm.h>
 #endif /* defined (WX_USER_INTERFACE)*/
 
 /*
@@ -1845,6 +1847,11 @@ specified file.
 				}
 wxFileDialog *SaveData = new wxFileDialog ((wxWindow *)NULL,shell_title,"","",
   extension,wxSAVE|wxOVERWRITE_PROMPT,wxDefaultPosition);
+ if (temp_string)
+ {
+		DEALLOCATE(temp_string);
+ }
+
  if (SaveData->ShowModal() == wxID_OK)
 	{
 	  wxString file_name=SaveData->GetPath();
@@ -1965,3 +1972,62 @@ Register a callback that gets called when the file dialog is cancelled.
 
 	return (return_code);
 } /* register_file_cancel_callback */
+
+#if defined (WX_USER_INTERFACE)
+int filedir_compressing_process_wx_compress(char *com_file_name, char *data_file_name, 
+	 char *elem_file_name, char *node_file_name, int data_return_code, int elem_return_code, 
+	 int node_return_code, char *file_name, char *temp_data ,char *temp_elem, char *temp_node)
+/*******************************************************************************
+LAST MODIFIED : 17 Aug 2007
+
+DESCRIPTION :
+Zip .com, .exnode, .exelem and .exdata files into a single zip file
+==============================================================================*/
+{
+	 int return_code = 0;
+// 	 char *temp_data; //, *temp_elem, *temp_node;
+	 char *zip_file_name;
+	 if (!file_name)
+	 {
+			file_name = "temp";
+	 }
+
+	 int length = strlen(file_name);
+	 if (ALLOCATE(zip_file_name, char, length+6))
+	 {
+			strcpy(zip_file_name, file_name);
+			strcat(zip_file_name, ".zip");
+			zip_file_name[length+5]='\0';
+			wxFFileOutputStream out(_T(zip_file_name));
+			wxZipOutputStream zip(out);
+			
+			if (data_return_code)
+			{
+				 wxFFileInputStream data_in(wxT(temp_data), wxT("rb"));
+				 zip.PutNextEntry(wxT(data_file_name));
+				 zip.Write(data_in);
+			}
+			
+			if (elem_return_code)
+			{	 
+				 wxFFileInputStream element_in(wxT(temp_elem), wxT("rb"));
+				 zip.PutNextEntry(wxT(elem_file_name));
+				 zip.Write(element_in);
+			}
+			
+			if (node_return_code)
+			{
+				 wxFFileInputStream node_in(wxT(temp_node), wxT("rb"));
+				 zip.PutNextEntry(wxT(node_file_name));
+				 zip.Write(node_in);
+			}
+			wxFFileInputStream com_in(wxT(com_file_name),wxT("rb"));
+			zip.PutNextEntry(wxT(com_file_name));
+			zip.Write(com_in);
+			return_code = zip.Close();
+ 
+			DEALLOCATE(zip_file_name);
+	 }
+	 return(return_code);
+}
+#endif /* defined (WX_USER_INTERFACE) */

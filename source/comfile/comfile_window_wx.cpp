@@ -58,8 +58,6 @@ extern "C" {
 #include "wx/wx.h"
 #include "wx/xrc/xmlres.h"
 #include <wx/fontdlg.h>
-#include <wx/wfstream.h>
-#include <wx/zipstrm.h>
 #include "icon/cmiss_icon.xpm"
 extern "C" {
 #include "comfile/comfile_window_wx.h"
@@ -649,61 +647,4 @@ Up to the calling routine to deallocate the returned string.
 	LEAVE;
 
 	return (return_name);
-}
-
-
-int compressing_process_wx_compress(char *com_file_name, char *data_file_name, 
-	 char *elem_file_name, char *node_file_name, int data_return_code, int elem_return_code, 
-	 int node_return_code, char *file_name, char *temp_data ,char *temp_elem, char *temp_node)
-{
-	 int return_code = 0;
-// 	 char *temp_data; //, *temp_elem, *temp_node;
-	 char *zip_file_name;
-	 if (!file_name)
-	 {
-			file_name = "temp";
-	 }
-
-	 int length = strlen(file_name);
-	 if (ALLOCATE(zip_file_name, char, length+6))
-	 {
-			strcpy(zip_file_name, file_name);
-			strcat(zip_file_name, ".zip");
-			zip_file_name[length+5]='\0';
-			wxFFileOutputStream out(_T(zip_file_name));
-			wxZipOutputStream zip(out);
-			
-			if (data_return_code)
-			{
-				 wxFFileInputStream data_in(wxT(temp_data), wxT("rb"));
-				 zip.PutNextEntry(wxT(data_file_name));
-				 zip.Write(data_in);
-			}
-			
-			if (elem_return_code)
-			{	 
-				 wxFFileInputStream element_in(wxT(temp_elem), wxT("rb"));
-				 zip.PutNextEntry(wxT(elem_file_name));
-				 zip.Write(element_in);
-			}
-			
-			if (node_return_code)
-			{
-				 wxFFileInputStream node_in(wxT(temp_node), wxT("rb"));
-				 zip.PutNextEntry(wxT(node_file_name));
-				 zip.Write(node_in);
-			}
-			wxFFileInputStream com_in(wxT("temp_file_com.com"),wxT("rb"));
-			zip.PutNextEntry(wxT(com_file_name));
-			zip.Write(com_in);
-			if (unlink("temp_file_com.com") == -1) 
-			{
-				 display_message(ERROR_MESSAGE,
-						"compressing_process_wx_compress.  Could not unlink temporary com file");
-			}     
-			return_code = zip.Close();
- 
-			DEALLOCATE(zip_file_name);
-	 }
-	 return(return_code);
 }
