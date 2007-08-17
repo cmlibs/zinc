@@ -955,8 +955,8 @@ DESCRIPTION :
 Gets the NDC information.
 ==============================================================================*/
 {
-  return Scene_viewer_get_NDC_info((struct Scene_viewer*)scene_viewer, NDC_left, NDC_top,
-                                   NDC_width, NDC_height);
+	return Scene_viewer_get_NDC_info(scene_viewer, NDC_left, NDC_top,
+		NDC_width, NDC_height);
 }
 
 int Cmiss_scene_viewer_set_NDC_info(Cmiss_scene_viewer_id scene_viewer,
@@ -968,13 +968,11 @@ DESCRIPTION :
 Gets the NDC information.
 ==============================================================================*/
 {
-  return Scene_viewer_set_NDC_info((struct Scene_viewer*)scene_viewer, NDC_left, NDC_top,
-                                   NDC_width, NDC_height);
+	return Scene_viewer_set_NDC_info(scene_viewer, NDC_left, NDC_top,
+		NDC_width, NDC_height);
 }
 
-
-
-int Cmiss_scene_viewer_get_frame_pixels(Cmiss_scene_viewer_id  scene_viewer,
+int Cmiss_scene_viewer_get_frame_pixels(Cmiss_scene_viewer_id scene_viewer,
 	enum Cmiss_texture_storage_type storage, int *width, int *height,
 	int preferred_antialias, int preferred_transparency_layers,
 	unsigned char **frame_data, int force_onscreen)
@@ -991,7 +989,48 @@ If <force_onscreen> is non zero then the pixels will always be grabbed from the
 scene viewer on screen.
 ==============================================================================*/
 {
-  return Scene_viewer_get_frame_pixels((struct Scene_viewer*)scene_viewer,
-				       storage, width, height, preferred_antialias, preferred_transparency_layers,
-				       frame_data, force_onscreen);
+	enum Texture_storage_type internal_storage_type;
+	int return_code;
+	switch(storage)
+	{
+		case CMISS_TEXTURE_LUMINANCE:
+		{
+			internal_storage_type = TEXTURE_LUMINANCE;
+		} break;
+		case CMISS_TEXTURE_LUMINANCE_ALPHA:
+		{
+			internal_storage_type = TEXTURE_LUMINANCE_ALPHA;
+		} break;
+		case CMISS_TEXTURE_RGB:
+		{
+			internal_storage_type = TEXTURE_RGB;
+		} break;
+		case CMISS_TEXTURE_RGBA:
+		{
+			internal_storage_type = TEXTURE_RGBA;
+		} break;
+		case CMISS_TEXTURE_ABGR:
+		{
+			internal_storage_type = TEXTURE_ABGR;
+		} break;
+		case CMISS_TEXTURE_BGR:
+		{
+			internal_storage_type = TEXTURE_BGR;
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_scene_viewer_get_frame_pixels.  "
+				"Unknown storage mode.");
+			return_code = 0;
+		} break;
+	}
+	if (return_code)
+	{
+		return_code = Scene_viewer_get_frame_pixels(
+			scene_viewer,
+			internal_storage_type, width, height, preferred_antialias,
+			preferred_transparency_layers, frame_data, force_onscreen);
+	}
+	return (return_code);
 }
