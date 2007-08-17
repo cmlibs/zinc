@@ -552,7 +552,7 @@ to the <reductions>.
 {
 #if defined (OPENGL_API)
 	char *cmiss_max_texture_size;
-	int max_texture_size_int, next_reduction, return_code;
+	int max_texture_size_int, next_reduction, pixel_size, return_code;
 	GLenum format, type;
 	GLint max_texture_size, number_of_components, test_width, 
 		hardware_texture_format;
@@ -647,6 +647,28 @@ to the <reductions>.
 			}
 			while ((test_width == 0) && return_code)
 			{
+#if defined (DEBUG)
+				printf ("texture_dimension %d\n", texture->dimension);
+				printf ("hardware_texture_format %d\n", hardware_texture_format);
+				printf ("format %d\n", format);
+				printf ("type %d\n", type);
+				if (texture->dimension > 0)
+				{
+					printf ("width %d\n", texture->width_texels);
+					printf ("reductions[0] %d\n", reductions[0]);
+				}
+				if (texture->dimension > 1)
+				{
+					printf ("height %d\n", texture->height_texels);
+					printf ("reductions[1] %d\n", reductions[1]);
+				}
+				if (texture->dimension > 2)
+				{
+					printf ("depth %d\n", texture->depth_texels);
+					printf ("reductions[2] %d\n", reductions[2]);
+				}
+				printf ("next_reduction %d\n\n", next_reduction);
+#endif /* defined (DEBUG) */
 				switch (texture->dimension)
 				{
 					case 1:
@@ -712,6 +734,28 @@ to the <reductions>.
 					/* Halve the texture in one dimension */
 					reductions[next_reduction] *= 2;
 					return_code = 2;
+					switch (next_reduction)
+					{
+						case 0:
+						{
+							pixel_size = texture->width_texels;
+						} break;
+						case 1:
+						{
+							pixel_size = texture->height_texels;
+						} break;
+						case 2:
+						{
+							pixel_size = texture->depth_texels;
+						} break;
+					}
+					if (reductions[next_reduction] >= pixel_size)
+					{
+						/* The proxy texture says that the texture will not load,
+							this is probably a faulty OpenGL implementation,
+							try the max texture size instead. */
+						return_code = 0;
+					}
 					next_reduction++;
 					if (next_reduction == texture->dimension)
 					{
@@ -1121,9 +1165,10 @@ storage to power of two size in each direction.
 #endif /* defined (OPENGL_API)*/
 
 #if defined (OPENGL_API)
-static int direct_render_Texture(struct Texture *texture)
+static int direct_render_Texture(struct Texture *texture,
+	struct Graphics_buffer *graphics_buffer)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2005
+LAST MODIFIED : 18 August 2007
 
 DESCRIPTION :
 Directly outputs the commands setting up the <texture>.
@@ -1132,7 +1177,7 @@ Directly outputs the commands setting up the <texture>.
 	int  return_code;
 #if defined (OPENGL_API)
 	int hardware_storage_format, number_of_components,
-		reduction_flag,reductions[3];
+		reduction_flag,reductions[3], restore_current_context;
 	GLenum format, texture_target, type;
 	GLfloat values[4];
 	unsigned char *reduced_image, *rendered_image;
@@ -1140,9 +1185,11 @@ Directly outputs the commands setting up the <texture>.
 
 	ENTER(direct_render_Texture);
 	return_code = 1;
+	USE_PARAMETER(graphics_buffer);
 	if (texture)
 	{
 #if defined (OPENGL_API)
+		restore_current_context = 0;
 		rendered_image = (unsigned char *)NULL;
 		switch (texture->dimension)
 		{
@@ -1279,6 +1326,7 @@ Directly outputs the commands setting up the <texture>.
 					Texture_storage_type_get_number_of_components(texture->storage);
 				hardware_storage_format = Texture_get_hardware_storage_format
 					(texture->compression_mode, number_of_components);
+
 				if (0 < (reduction_flag = Texture_get_hardware_reduction(texture,
 					reductions)))
 				{
@@ -1536,6 +1584,7 @@ Directly outputs the commands setting up the <texture>.
 		values[2]=(texture->combine_colour).blue;
 		values[3]=texture->combine_alpha;
 		glTexParameterfv(texture_target,GL_TEXTURE_BORDER_COLOR,values);
+
 #endif /* defined (OPENGL_API) */
 	}
 	else
@@ -5325,12 +5374,12 @@ The command is started with the string pointed to by <command_prefix>.
 	return (return_code);
 } /* list_Texture_commands */
 
-int compile_Texture(struct Texture *texture,void *dummy_void)
+int compile_Texture(struct Texture *texture,
+	struct Graphics_buffer *graphics_buffer)
 /*******************************************************************************
-LAST MODIFIED : 14 March 2002
+LAST MODIFIED : 18 August 2007
 
 DESCRIPTION :
-Texture list/manager iterator function.
 Rebuilds the display_list for <texture> if it is not current. If <texture>
 does not have a display list, first attempts to give it one. The display list
 created here may be called using execute_Texture, below.
@@ -5348,7 +5397,12 @@ execute_Texture should just call direct_render_Texture.
 #endif /* defined (OPENGL_API) */
 
 	ENTER(compile_Texture);
-	if (texture && (!dummy_void))
+	/* Passed graphics_buffer through here as was using it to 
+		do special compilation for Intel graphics driver, but found
+		a more complete work around in the graphics_buffer creation.
+		This parameter is still better than the NULL from before. */
+	USE_PARAMETER(graphics_buffer);
+	if (texture)
 	{
 		if ((texture->display_list_current == 1) 
 #if defined (OPENGL_API)
@@ -5410,7 +5464,7 @@ execute_Texture should just call direct_render_Texture.
 						case TEXTURE_DMBUFFER:
 						{
 							/* If copied by reference we don't need to do anything */
-#if defined (DEBUG)
+#if defined (OLD_DEBUG)
 							Graphics_buffer_make_read_current(texture->graphics_buffer);
 							glBindTextureEXT(GL_TEXTURE_2D, texture->texture_id);
 							glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_FALSE);
@@ -5514,7 +5568,7 @@ execute_Texture should just call direct_render_Texture.
 								} break;
 							}
 #else /* defined (EXT_subtexture) */
-							direct_render_Texture(texture);
+							direct_render_Texture(texture, graphics_buffer);
 #endif /* defined (EXT_subtexture) */
 						} break;
 					}
@@ -5530,12 +5584,12 @@ execute_Texture should just call direct_render_Texture.
 						texture->storage==TEXTURE_PBUFFER)
 					{
 						Graphics_buffer_make_read_current(texture->graphics_buffer);				
-						direct_render_Texture(texture);
+						direct_render_Texture(texture, graphics_buffer);
 						/* X3dThreeDDrawingRemakeCurrent(); */
 					}
 					else
 					{
-						direct_render_Texture(texture);
+						direct_render_Texture(texture, graphics_buffer);
 					}
 					glNewList(texture->display_list,GL_COMPILE);
 					glBindTexture(texture_target, texture->texture_id);
@@ -5545,6 +5599,7 @@ execute_Texture should just call direct_render_Texture.
 
 					glEndList();
 				}
+
 				texture->display_list_current=1;
 				return_code=1;
 			}

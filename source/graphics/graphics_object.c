@@ -3801,17 +3801,17 @@ supplied <compile_context>.
 				if (graphics_object->default_material)
 				{
 					compile_Graphical_material(graphics_object->default_material,
-						(void *)NULL);
+						context->graphics_buffer);
 				}
 				if (graphics_object->selected_material)
 				{
 					compile_Graphical_material(graphics_object->selected_material,
-						(void *)NULL);
+						context->graphics_buffer);
 				}
 				if (graphics_object->secondary_material)
 				{
 					compile_Graphical_material(graphics_object->secondary_material,
-						(void *)NULL);
+						context->graphics_buffer);
 				}
 				switch (graphics_object->object_type)
 				{

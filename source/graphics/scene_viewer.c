@@ -573,7 +573,8 @@ DESCRIPTION :
 			-1.0,1.0);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-		compile_Texture(scene_viewer->background_texture,NULL);
+		compile_Texture(scene_viewer->background_texture,
+			scene_viewer->graphics_buffer);
 		execute_Texture(scene_viewer->background_texture);
 
 #if defined (OLD_CODE)

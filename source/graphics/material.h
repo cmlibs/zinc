@@ -450,9 +450,9 @@ Activates the <material> as part of the rendering loop.
 #endif /* defined (OLD_CODE) */
 
 int compile_Graphical_material(struct Graphical_material *material,
-	void *dummy_void);
+	struct Graphics_buffer *graphics_buffer);
 /*******************************************************************************
-LAST MODIFIED : 28 November 1997
+LAST MODIFIED : 16 August 2007
 
 DESCRIPTION :
 Graphical_material list/manager iterator function.

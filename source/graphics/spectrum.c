@@ -2425,7 +2425,8 @@ Rebuilds the display_list for <spectrum> if it is not current.
 	return (return_code);
 } /* Spectrum_render_colour_lookup */
 
-int Spectrum_compile_colour_lookup(struct Spectrum *spectrum)
+int Spectrum_compile_colour_lookup(struct Spectrum *spectrum,
+	struct Graphics_buffer *graphics_buffer)
 /*******************************************************************************
 LAST MODIFIED : 10 May 2005
 
@@ -2440,7 +2441,8 @@ Rebuilds the display_list for <spectrum> if it is not current.
 	{
 		Spectrum_render_colour_lookup(spectrum);
 		
-		return_code = compile_Texture(spectrum->colour_lookup_texture, NULL);
+		return_code = compile_Texture(spectrum->colour_lookup_texture,
+			graphics_buffer);
 	}
 	else
 	{

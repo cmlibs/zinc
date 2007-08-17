@@ -431,9 +431,12 @@ Frees the memory for the fields of <**spectrum>, frees the memory for
 
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Spectrum);
 
-int Spectrum_compile_colour_lookup(struct Spectrum *spectrum);
+struct Graphics_buffer;
+
+int Spectrum_compile_colour_lookup(struct Spectrum *spectrum,
+	struct Graphics_buffer *graphics_buffer);
 /*******************************************************************************
-LAST MODIFIED : 10 May 2005
+LAST MODIFIED : 18 August 2007
 
 DESCRIPTION :
 Rebuilds the display_list for <spectrum> if it is not current.

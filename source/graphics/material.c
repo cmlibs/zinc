@@ -1009,7 +1009,7 @@ be shared by multiple materials using the same program.
 								append_string(&fragment_program_string,
 									tex_string, &error);
 							}
-							if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2
+							if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3
 								& material_program->type)
 							{
  								sprintf(tex_string, lookup_one_component_string,
@@ -1017,7 +1017,7 @@ be shared by multiple materials using the same program.
 								append_string(&fragment_program_string,
 									tex_string, &error);
 							}
-							if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2
+							if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4
 								& material_program->type)
 							{
  								sprintf(tex_string, lookup_one_component_string,
@@ -1222,7 +1222,7 @@ be shared by multiple materials using the same program.
 #if defined (DEBUG)
 				error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
 				display_message(WARNING_MESSAGE,
-					"Material_program_compile.  Result: %s\n", error_msg);
+					"Material_program_compile.  Vertex Result: %s\n", error_msg);
 #endif /* defined (DEBUG) */
 #if defined (WRITE_STRING)
 				FILE *program_file;
@@ -1244,7 +1244,7 @@ be shared by multiple materials using the same program.
 #if defined (DEBUG)
 				error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
 				display_message(WARNING_MESSAGE,
-					"Material_program_compile.  Result: %s\n", error_msg);
+					"Material_program_compile.  Fragment Result: %s\n", error_msg);
 #endif /* defined (DEBUG) */
 #if defined (WRITE_STRING)
 				if (program_file = fopen("out.fp", "w"))
@@ -1309,7 +1309,7 @@ be shared by multiple materials using the same program.
 #if defined (DEBUG)
 					error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
 					display_message(WARNING_MESSAGE,
-						"Material_program_compile.  Result: %s", error_msg);
+						"Material_program_compile.  test.vp Vertex Result: %s", error_msg);
 #endif /* defined (DEBUG) */
 
 					if (!material_program->fragment_program)
@@ -1324,7 +1324,7 @@ be shared by multiple materials using the same program.
 #if defined (DEBUG)
 					error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
 					display_message(WARNING_MESSAGE,
-						"Material_program_compile.  Result: %s", error_msg);
+						"Material_program_compile.  test.fp Fragment Result: %s", error_msg);
 #endif /* defined (DEBUG) */
 
 					material_program->compiled = 1;
@@ -4077,12 +4077,11 @@ specified name and the default properties.
 } /* file_read_Graphical_material_name */
 
 int compile_Graphical_material(struct Graphical_material *material,
-	void *dummy_void)
+	struct Graphics_buffer *graphics_buffer)
 /*******************************************************************************
-LAST MODIFIED : 14 March 2002
+LAST MODIFIED : 18 August 2007
 
 DESCRIPTION :
-Graphical_material list/manager iterator function.
 Rebuilds the display_list for <material> if it is not current. If <material>
 does not have a display list, first attempts to give it one. The display list
 created here may be called using execute_Graphical_material, below.
@@ -4096,7 +4095,6 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 	int return_code;
 
 	ENTER(compile_Graphical_material);
-	USE_PARAMETER(dummy_void);
 	if (material)
 	{
 		return_code = 1;
@@ -4105,15 +4103,17 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 			/* must compile texture before opening material display list */
 			if (material->texture)
 			{
-				compile_Texture(material->texture, NULL);
+				compile_Texture(material->texture, graphics_buffer);
 			}
 			if (material->secondary_texture)
 			{
-				compile_Texture(material->secondary_texture, NULL);
+				compile_Texture(material->secondary_texture,
+					graphics_buffer);
 			}
 			if (material->spectrum)
 			{
-				Spectrum_compile_colour_lookup(material->spectrum);
+				Spectrum_compile_colour_lookup(material->spectrum,
+					graphics_buffer);
 			}
 			if (material->program)
 			{

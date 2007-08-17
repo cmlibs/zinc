@@ -702,9 +702,12 @@ Writes on the command window the command needed to recreate the <texture>.
 The command is started with the string pointed to by <command_prefix>.
 ==============================================================================*/
 
-int compile_Texture(struct Texture *texture,void *dummy_void);
+struct Graphics_buffer;
+
+int compile_Texture(struct Texture *texture, 
+	struct Graphics_buffer *graphics_buffer);
 /*******************************************************************************
-LAST MODIFIED : 12 February 1998
+LAST MODIFIED : 17 August 2007
 
 DESCRIPTION :
 Texture list/manager iterator function.
