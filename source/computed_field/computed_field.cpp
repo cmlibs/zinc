@@ -3912,7 +3912,7 @@ Writes the commands needed to reproduce <field> to the command window.
 		return_code = 0;
 	}
 	LEAVE;
-
+	
 	return (return_code);
 } /* list_Computed_field_commands */
 
@@ -3928,10 +3928,13 @@ Writes the commands needed to reproduce <field> to the command window.
 	 int return_code;
 
 	 ENTER(list_Computed_field_commands);
-	 Process_list_command_class *list_message =
-			new Process_list_command_class();
-	 return_code = process_list_or_write_Computed_field_commands(
-			field, command_prefix_void, list_message);
+	 if (Process_list_command_class *list_message =
+			new Process_list_command_class())
+	 {
+			return_code = process_list_or_write_Computed_field_commands(
+				 field, command_prefix_void, list_message);
+			delete list_message;
+	 }
 	 LEAVE;
 
 	 return (return_code);
@@ -4011,10 +4014,14 @@ Writes the commands needed to reproduce <field> to the com file.
 	int return_code;
 
 	ENTER(write_Computed_field_commands_to_comfile);
-	 Process_write_command_class *write_message =
-			new Process_write_command_class();
-	 return_code = process_list_or_write_Computed_field_commands(field,  command_prefix_void, write_message);
-	 return (return_code);
+	if (Process_write_command_class *write_message =
+		 new Process_write_command_class())
+	{
+		 return_code = process_list_or_write_Computed_field_commands(
+				field,  command_prefix_void, write_message);
+		 delete write_message;
+	}
+	return (return_code);
 	LEAVE;
 
 	return (return_code);

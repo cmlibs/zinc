@@ -2068,10 +2068,13 @@ Note the command prefix is expected to contain the name of the region.
 	 int return_code;
 
 	 ENTER(GT_element_group_list_commands);
-	 Process_list_command_class *list_message =
-			new Process_list_command_class();
-	 return_code = GT_element_group_process_list_or_write_window_commands(
-			gt_element_group, command_prefix, command_suffix, list_message);
+	 if (Process_list_command_class *list_message =
+			new Process_list_command_class())
+	 {
+			return_code = GT_element_group_process_list_or_write_window_commands(
+				 gt_element_group, command_prefix, command_suffix, list_message);
+			delete list_message;
+	 }
 	 LEAVE;
 
 	 return (return_code);
@@ -2091,10 +2094,13 @@ write commadns into a comfile.
 	 int return_code;
 
 	 ENTER(GT_element_group_write_commands_to_comfile);
-	 Process_write_command_class *write_message =
-			new Process_write_command_class();
-	 return_code = GT_element_group_process_list_or_write_window_commands(
-			gt_element_group, command_prefix, command_suffix, write_message);
+	 if (Process_write_command_class *write_message =
+			new Process_write_command_class())
+	 {
+			return_code = GT_element_group_process_list_or_write_window_commands(
+				 gt_element_group, command_prefix, command_suffix, write_message);
+			delete write_message;
+	 }
 	 LEAVE;
 
 	 return (return_code);

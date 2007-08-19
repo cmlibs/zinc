@@ -7266,9 +7266,12 @@ and establishing the views in it to the command window to a com file.
 	 int return_code;
 
 	 ENTER(list_Graphics_window_commands);
-	 Process_list_command_class *list_message =
-			new Process_list_command_class();
-	 return_code = process_list_or_write_Graphics_window_commands(window, list_message);
+	 if (Process_list_command_class *list_message =
+			new Process_list_command_class())
+	 {
+			return_code = process_list_or_write_Graphics_window_commands(window, list_message);
+			delete list_message;
+	 }
 	 LEAVE;
 
 	 return (return_code);
@@ -7287,9 +7290,12 @@ and establishing the views in it to the command window to a com file.
 	 int return_code;
 
 	 ENTER(write_Graphics_window_commands_to_comfile);
-	 Process_write_command_class *write_message =
-			new Process_write_command_class();
-	 return_code = process_list_or_write_Graphics_window_commands(window, write_message);
+	 if (Process_write_command_class *write_message =
+			new Process_write_command_class())
+	 {
+			return_code = process_list_or_write_Graphics_window_commands(window, write_message);
+			delete write_message;
+	 }
 	 LEAVE;
 	 
 	 return (return_code);
