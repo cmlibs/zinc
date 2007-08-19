@@ -1177,7 +1177,7 @@ Directly outputs the commands setting up the <texture>.
 	int  return_code;
 #if defined (OPENGL_API)
 	int hardware_storage_format, number_of_components,
-		reduction_flag,reductions[3], restore_current_context;
+		reduction_flag,reductions[3];
 	GLenum format, texture_target, type;
 	GLfloat values[4];
 	unsigned char *reduced_image, *rendered_image;
@@ -1189,7 +1189,6 @@ Directly outputs the commands setting up the <texture>.
 	if (texture)
 	{
 #if defined (OPENGL_API)
-		restore_current_context = 0;
 		rendered_image = (unsigned char *)NULL;
 		switch (texture->dimension)
 		{
