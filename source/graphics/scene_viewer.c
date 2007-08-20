@@ -896,7 +896,8 @@ modes, so push/pop them if you want them preserved.
 		{
 			char message[200];
 			GLenum error;
-			while(GL_NO_ERROR!=(error = glGetError()))
+			int max_error = 200;
+			while((max_error--) && (GL_NO_ERROR!=(error = glGetError())))
 			{
 				strcpy(message,"Scene_viewer_calculate_transformation: GL ERROR ");
 				strcat(message, (char *)gluErrorString(error));
@@ -2723,7 +2724,8 @@ access this function.
 			{
 				char message[200];
 				GLenum error;
-				while(GL_NO_ERROR!=(error = glGetError()))
+				int max_error = 200;
+				while((max_error--) && (GL_NO_ERROR!=(error = glGetError())))
 				{
 					strcpy(message,"Scene_viewer_render_scene_private: GL ERROR ");
 					strcat(message, (char *)gluErrorString(error));
