@@ -1585,8 +1585,8 @@ material results.
 						DEALLOCATE(original_sizes);
 						DEALLOCATE(rendered_sizes);
 					}
-#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 				}
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */	
 			}
 		}
 		else
@@ -4139,7 +4139,7 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 							Texture_execute_vertex_program_environment(material->secondary_texture);
 						}
 					}
-
+#if defined GL_ARB_fragment_program
 					if (material->spectrum && Graphics_library_check_extension(GL_ARB_fragment_program))
 					{
 						int i, lookup_dimensions, *lookup_sizes;
@@ -4171,6 +4171,7 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 							values[0], values[1], values[2], values[3]);
 						DEALLOCATE(lookup_sizes);
 					}
+#endif /* defined GL_ARB_fragment_program */
 					direct_render_Graphical_material(material);
 					glEndList();
 				}	
