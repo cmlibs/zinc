@@ -19417,6 +19417,11 @@ Can also write individual groups with the <group> option.
 						{
 							 node_return_code = 0;
 						}
+#if defined(WX_USER_INTERFACE)		
+						file_name = confirmation_get_write_filename(".zip",
+							 command_data->user_interface
+							 , command_data->execute_command);
+#endif /*defined (WX_USER_INTERFACE) */
 				 }
 #if defined (WX_USER_INTERFACE) && defined (__WIN32__)
 				 if (com_file_name)
