@@ -57,13 +57,6 @@ struct Spectrum_editor;
 Global Functions
 ----------------
 */
-static int spectrum_editor_update_scene_viewer(
-	 struct Spectrum_editor *spectrum_editor);
-/*******************************************************************************
-LAST MODIFIED : 5 July 1999
-
-DESCRIPTION :
-==============================================================================*/
 
 struct Spectrum_editor *CREATE(Spectrum_editor)(
 	 struct Spectrum *spectrum,
