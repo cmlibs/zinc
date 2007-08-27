@@ -455,8 +455,6 @@ the spectrums contained in the global list.
 				spectrum_editor_dialog->select_form=(Widget)NULL;
 				spectrum_editor_dialog->select_widget=(Widget)NULL;
 				spectrum_editor_dialog->editor_form=(Widget)NULL;
-				spectrum_editor_dialog->spectrum_editor =
-					(struct Spectrum_editor *)NULL;
 				spectrum_editor_dialog->ok_button=(Widget)NULL;
 				spectrum_editor_dialog->apply_button=(Widget)NULL;
 				spectrum_editor_dialog->revert_button=(Widget)NULL;

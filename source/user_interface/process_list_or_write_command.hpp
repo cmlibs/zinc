@@ -19,10 +19,13 @@ static char message_string[MESSAGE_STRING_SIZE];
 
 class Process_list_or_write_command_class
 {
+
 public:
 	 Process_list_or_write_command_class()
 	 {
 	 };
+	 
+	 virtual int write_enabled() = 0;
 
 	 virtual int process_command(enum Message_type message_type,char *format,...) = 0;
 
@@ -35,7 +38,7 @@ public:
 	 Process_list_command_class()
 	 {
 	 };
-
+	 
 	 int process_command(enum Message_type message_type,char *format,...)
 	 {
 			int return_code;
@@ -45,11 +48,19 @@ public:
 			return_code = display_message(message_type, message_string, "");
 			va_end(ap);
 			return (return_code);
-	 };
+	 }
+
+	 int write_enabled()
+	{
+		 int return_code = 0;
+		 return (return_code);
+	}
+
 };
 
 class Process_write_command_class : public Process_list_or_write_command_class
 {
+
 public:
 	 Process_write_command_class()
 	 {
@@ -65,6 +76,12 @@ public:
 			va_end(ap);
 			return (return_code);
 	 } 
+
+	 int write_enabled()
+	{
+		 int return_code = 1;
+		 return (return_code);
+	}
 };
 
 #endif /* define PROCESS_LIST_OR_WRITE_COMMAND_H */

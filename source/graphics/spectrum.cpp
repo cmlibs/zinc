@@ -41,6 +41,7 @@ Spectrum functions and support code.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -57,6 +58,8 @@ Spectrum functions and support code.
 #include "graphics/spectrum_settings.h"
 #include "graphics/spectrum.h"
 #include "user_interface/message.h"
+}
+#include "user_interface/process_list_or_write_command.hpp"
 
 /*
 Module types
@@ -697,7 +700,7 @@ If <number_of_bands>==0, simply removes any existing contour band settings.
 			number_of_settings=NUMBER_IN_LIST(Spectrum_settings)
 				(spectrum_settings_list);
 			spectrum_settings = FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,position)
-				(number_of_settings, spectrum_settings_list);
+				 ((int)number_of_settings, spectrum_settings_list);
 			/*if a contour, SPECTRUM_BANDED, remove */			
 			spectrum_settings_colour_mapping=
 				Spectrum_settings_get_colour_mapping(spectrum_settings);
@@ -1969,19 +1972,20 @@ Executes a GFX DESTROY SPECTRUM command.
 	return (return_code);
 } /* gfx_destroy_spectrum */
 
-int Spectrum_list_commands(struct Spectrum *spectrum,
-	char *command_prefix,char *command_suffix)
+int process_list_or_write_Spectrum_commands(struct Spectrum *spectrum,
+	 char *command_prefix,char *command_suffix,
+	 class Process_list_or_write_command_class *process_message)
 /*******************************************************************************
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 24 August 2007
 
 DESCRIPTION :
-Writes the properties of the <spectrum> to the command window.
+List the properties of the <spectrum> to the command window or write
+to the comfile.
 ==============================================================================*/
 {
 	char *line_prefix,*name;
 	int return_code;
 	struct Spectrum_settings_list_data list_data;
-
 	ENTER(Spectrum_list_commands);
 	/* check the arguments */
 	if (spectrum)
@@ -1991,30 +1995,45 @@ Writes the properties of the <spectrum> to the command window.
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
 			/* add spectrum name to command_prefix */
+			if (strcmp(name, "default") != 0)
+			{
+		 		 process_message->process_command(INFORMATION_MESSAGE,"gfx create spectrum %s",name);
+		 		 process_message->process_command(INFORMATION_MESSAGE,";\n");
+		 	}
 			if (ALLOCATE(line_prefix,char,strlen(command_prefix)+strlen(name)+3))
 			{
 				sprintf(line_prefix,"%s %s ",command_prefix,name);
-				display_message(INFORMATION_MESSAGE,line_prefix);
-				display_message(INFORMATION_MESSAGE,"clear");
+				process_message->process_command(INFORMATION_MESSAGE,line_prefix);
+				process_message->process_command(INFORMATION_MESSAGE,"clear");
 				if (spectrum->clear_colour_before_settings)
 				{
-					display_message(INFORMATION_MESSAGE," overwrite_colour");
+					process_message->process_command(INFORMATION_MESSAGE," overwrite_colour");
 				}
 				else
 				{
-					display_message(INFORMATION_MESSAGE," overlay_colour");
+					process_message->process_command(INFORMATION_MESSAGE," overlay_colour");
 				}
 				if (command_suffix)
 				{
-					display_message(INFORMATION_MESSAGE,command_suffix);
+					process_message->process_command(INFORMATION_MESSAGE,command_suffix);
 				}
-				display_message(INFORMATION_MESSAGE,";\n");
+				process_message->process_command(INFORMATION_MESSAGE,";\n");
 				list_data.settings_string_detail=SPECTRUM_SETTINGS_STRING_COMPLETE;
 				list_data.line_prefix=line_prefix;
 				list_data.line_suffix=command_suffix;
-				return_code=FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
-					Spectrum_settings_list_contents,(void *)&list_data,
-					spectrum->list_of_settings);
+				return_code = process_message->write_enabled();
+				if (return_code == 0)
+				{
+					 return_code=FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
+							Spectrum_settings_list_contents, (void *)&list_data,
+							spectrum->list_of_settings);
+				}
+				else
+				{
+					 return_code=FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
+							Spectrum_settings_write_contents, (void *)&list_data,
+							spectrum->list_of_settings);
+				}
 				DEALLOCATE(line_prefix);
 				return_code=1;
 			}
@@ -2042,6 +2061,95 @@ Writes the properties of the <spectrum> to the command window.
 
 	return (return_code);
 } /* Spectrum_list_commands */
+
+int for_each_spectrum_list_or_write_commands(struct Spectrum *spectrum,void *write_enabled_void)
+/*******************************************************************************
+LAST MODIFIED : 18 August 2007
+
+DESCRIPTION :
+For each spectrum in manager, list the spectrum commands to the command windows or write them out.
+==============================================================================*/
+{
+	 static char *command_prefix="gfx modify spectrum";
+	 char *write_enabled;
+	 int return_code;
+	 ENTER(for_each_spectrum_list_or_write_commands);
+	 if (write_enabled = (char *)write_enabled_void)
+	 {
+			if (strcmp(write_enabled, "false") == 0)
+			{
+				 if (Process_list_command_class *list_message =
+						new Process_list_command_class())
+				 {
+						return_code = process_list_or_write_Spectrum_commands(spectrum, command_prefix,
+							 (char *)NULL, list_message);
+						delete list_message;
+				 }
+				 else
+				 {
+						return_code = 0;
+						display_message(ERROR_MESSAGE,"Spectrum_list_commands. Cannot create a process_command_class");
+				 }
+			}
+			else
+			{
+				 if (Process_write_command_class *write_message =
+						new Process_write_command_class())
+				 {
+						return_code = process_list_or_write_Spectrum_commands(spectrum, command_prefix,
+							 (char *)NULL, write_message);
+						delete write_message;
+				 }
+				 else
+				 {
+						return_code = 0;
+						display_message(ERROR_MESSAGE,"Spectrum_list_commands. Cannot create a process_command_class");
+				 }
+			}
+	 }
+	 else
+	 {
+			return_code = 0;
+			display_message(ERROR_MESSAGE,"for_each_spectrum_list_or_write_commands.  Invalid argument(s)");
+	 }
+	 LEAVE;
+	 
+	 return (return_code);
+}
+
+int Spectrum_list_commands(struct Spectrum *spectrum,
+	char *command_prefix,char *command_suffix)
+/*******************************************************************************
+LAST MODIFIED : 24 Aug 2007
+
+DESCRIPTION :
+Writes the properties of the <spectrum> to the command window.
+==============================================================================*/
+{
+	 int return_code;
+	 ENTER(Spectrum_list_commands);
+	 if (spectrum)
+	 {
+			if (Process_list_command_class *list_message =
+				 new Process_list_command_class())
+			{
+				 return_code = process_list_or_write_Spectrum_commands(spectrum, command_prefix,
+						command_suffix, list_message);
+				 delete list_message;
+			}
+			else
+			{
+				 return_code = 0;
+				 display_message(ERROR_MESSAGE,"Spectrum_list_commands. Cannot create a process_command_class");
+			}
+	 }
+	 else
+	 {
+			return_code = 0;
+			display_message(ERROR_MESSAGE,"Spectrum_list_commands.  Invalid argument(s)");
+	 }
+	 return (return_code);
+}
 
 int Spectrum_list_contents(struct Spectrum *spectrum,void *dummy)
 /*******************************************************************************
@@ -2293,8 +2401,8 @@ Rebuilds the display_list for <spectrum> if it is not current.
 				number_of_values = 32;
 			}
 		}
-		table_size = number_of_texture_components *
-			pow(number_of_values, number_of_data_components);
+		table_size = (int) (number_of_texture_components *
+			 pow(number_of_values, number_of_data_components));
 		if (ALLOCATE(colour_table, unsigned char, table_size))
 		{
 			colour_table_ptr = colour_table;
@@ -2314,17 +2422,17 @@ Rebuilds the display_list for <spectrum> if it is not current.
 					if (colour_components != SPECTRUM_COMPONENT_ALPHA)
 					{
 						/* Not alpha only */
-						*colour_table_ptr = rgba[0] * 255.0;
+						 *colour_table_ptr =(unsigned char) (rgba[0] * 255.0);
 						colour_table_ptr++;
-						*colour_table_ptr = rgba[1] * 255.0;
+						*colour_table_ptr = (unsigned char) (rgba[1] * 255.0);
 						colour_table_ptr++;
- 						*colour_table_ptr = rgba[2] * 255.0;
+ 						*colour_table_ptr = (unsigned char) (rgba[2] * 255.0);
 						colour_table_ptr++;
 					}
 					if (colour_components & SPECTRUM_COMPONENT_ALPHA) 
 					{
 						/* Alpha with or without colour */
- 						*colour_table_ptr = rgba[3] * 255.0;
+						 *colour_table_ptr = (unsigned char) (rgba[3] * 255.0);
 						colour_table_ptr++;
 					}
 				}
@@ -2370,7 +2478,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 						Texture_set_image_block(texture,
 							/*left*/0, /*bottom*/0, number_of_values, 1, 
 							/*depth_plane*/0, number_of_values * number_of_texture_components,
-							(void *)colour_table_ptr);
+							colour_table_ptr);
 					} break;
 					case 2:
 					{
@@ -2380,7 +2488,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 						Texture_set_image_block(texture,
 							/*left*/0, /*bottom*/0, number_of_values, number_of_values, 
 							/*depth_plane*/0, number_of_values * number_of_texture_components,
-							(void *)colour_table_ptr);
+							colour_table_ptr);
 					} break;
 					case 3:
 					{
@@ -2393,7 +2501,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 								/*left*/0, /*bottom*/0, number_of_values, number_of_values, 
 								/*depth_plane*/i,
 								number_of_values * number_of_texture_components,
-								(void *)colour_table_ptr);
+								colour_table_ptr);
 							colour_table_ptr += number_of_values * number_of_values *
 								number_of_texture_components;
 						}

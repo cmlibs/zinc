@@ -679,6 +679,17 @@ Writes out the <settings> as a text string in the command window with the
 <list_data>.
 ==============================================================================*/
 
+int Spectrum_settings_write_contents(struct Spectrum_settings *settings,
+	void *list_data_void);
+/*******************************************************************************
+LAST MODIFIED : 5 August 1998
+
+DESCRIPTION :
+Writes out the <settings> as a text string in the command window with the
+<settings_string_detail>, <line_prefix> and <line_suffix> given in the
+<list_data>.
+==============================================================================*/
+
 int gfx_modify_spectrum_settings_linear(struct Parse_state *state,
 	void *modify_spectrum_data_void,void *spectrum_command_data_void);
 /*******************************************************************************

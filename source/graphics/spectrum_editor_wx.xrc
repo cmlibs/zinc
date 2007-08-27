@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<resource>
+
+<object class="wxFrame" subclass="wxSpectrumEditor" name="CmguiSpectrumEditor" title="Cmgui Spectrum Editor">
+   <title>Spectrum Editor</title>
+   <object class = "wxBoxSizer">
+      <orient>wxVERTICAL</orient>
+      <object class ="sizeritem">
+         <object class = "wxBoxSizer">
+ 		     <object class ="sizeritem">
+               <object class="wxButton" name="wxSpectrumCreateButton">
+				    <label>Create</label>
+				 </object>
+		     </object>
+ 		     <object class ="sizeritem">
+               <object class="wxButton" name="wxSpectrumDeleteButton">
+				    <label>Delete</label>
+				 </object>
+		     </object>
+ 		     <object class ="sizeritem">
+               <object class="wxButton" name="wxSpectrumRenameButton">
+				    <label>Rename</label>
+				 </object>
+		     </object>
+         </object>
+      </object>
+      <object class ="sizeritem">
+		  <flag>wxEXPAND</flag>
+         <object class="wxCheckListBox" name="SpectrumCheckList">
+		     <label>12412</label>
+	      </object>
+      </object>
+      <object class ="sizeritem">
+	 	  <flag>wxEXPAND</flag>
+         <object class="wxPanel" name="Panel">
+	      </object>
+      </object>
+    </object>
+</object>
+
+</resource>

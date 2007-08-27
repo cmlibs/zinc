@@ -1985,7 +1985,6 @@ Zip .com, .exnode, .exelem and .exdata files into a single zip file
 ==============================================================================*/
 {
 	 int return_code = 0;
-// 	 char *temp_data; //, *temp_elem, *temp_node;
 	 char *zip_file_name;
 	 if (!file_name)
 	 {

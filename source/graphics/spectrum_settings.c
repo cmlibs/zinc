@@ -62,7 +62,6 @@ appearance of spectrums.
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_settings.h"
 #include "user_interface/message.h"
-
 /*
 Global variables
 ----------------
@@ -2931,6 +2930,64 @@ Writes out the <settings> as a text string in the command window with the
 
 	return (return_code);
 } /* Spectrum_settings_list_contents */
+
+int Spectrum_settings_write_contents(struct Spectrum_settings *settings,
+	void *list_data_void)
+/*******************************************************************************
+LAST MODIFIED : 22 January 2002
+
+DESCRIPTION :
+Writes out the <settings> as a text string in the command window with the
+<settings_string_detail>, <line_prefix> and <line_suffix> given in the
+<list_data>.
+==============================================================================*/
+{
+	int return_code;
+	char *settings_string,line[80];
+	struct Spectrum_settings_list_data *list_data;
+
+	ENTER(Spectrum_settings_write_contents);
+	if (settings&&
+		(list_data=(struct Spectrum_settings_list_data *)list_data_void))
+	{
+		if (settings_string=Spectrum_settings_string(settings,
+			list_data->settings_string_detail))
+		{
+			if (list_data->line_prefix)
+			{
+				write_message_to_file(INFORMATION_MESSAGE,list_data->line_prefix);
+			}
+			write_message_to_file(INFORMATION_MESSAGE,settings_string);
+			if (list_data->line_suffix)
+			{
+				 write_message_to_file(INFORMATION_MESSAGE,list_data->line_suffix);
+			}
+			/*???RC temp */
+			if ((SPECTRUM_SETTINGS_STRING_COMPLETE_PLUS==list_data->settings_string_detail)&&
+				(settings->access_count != 1))
+			{
+				sprintf(line," (access count = %i)",settings->access_count);
+				write_message_to_file(INFORMATION_MESSAGE,line);
+			}
+			write_message_to_file(INFORMATION_MESSAGE,";\n");
+			DEALLOCATE(settings_string);
+			return_code=1;
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Spectrum_settings_list_contents.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Spectrum_settings_write_contents */
 
 int gfx_modify_spectrum_settings_linear(struct Parse_state *state,
 	void *modify_spectrum_data_void,void *spectrum_command_data_void)

@@ -1086,7 +1086,7 @@ GRAPHICS_SRCS = \
 	graphics/rendervrml.c \
 	graphics/renderwavefront.c \
 	graphics/selected_graphic.c \
-	graphics/spectrum.c \
+	graphics/spectrum.cpp \
 	graphics/spectrum_settings.c \
 	graphics/texture.c \
 	graphics/texture_line.c \
@@ -1110,7 +1110,9 @@ GRAPHICS_INTERFACE_SRCS = \
 	graphics/movie_graphics.c
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 GRAPHICS_SRCS += \
-    graphics/scene_editor_wx.cpp
+    graphics/scene_editor_wx.cpp\
+    graphics/spectrum_editor_wx.cpp \
+	graphics/spectrum_editor_dialog_wx.cpp
 endif #$(USER_INTERFACE) == WX_USER_INTERFACE
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    GRAPHICS_INTERFACE_SRCS += \

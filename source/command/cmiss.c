@@ -163,6 +163,10 @@ Functions for executing cmiss commands.
 #include "graphics/spectrum_editor.h"
 #include "graphics/spectrum_editor_dialog.h"
 #endif /* defined (MOTIF) */
+#if defined (WX_USER_INTERFACE)
+#include "graphics/spectrum_editor_wx.h"
+#include "graphics/spectrum_editor_dialog_wx.h"
+#endif /* defined (WX_USER_INTERFACE) */
 #include "graphics/spectrum_settings.h"
 #include "graphics/texture.h"
 #include "graphics/transform_tool.h"
@@ -351,7 +355,6 @@ DESCRIPTION :
 	struct Element_point_viewer *element_point_viewer;
 	struct Element_creator *element_creator;
 	struct Material_editor_dialog *material_editor_dialog;
-	struct Spectrum_editor_dialog *spectrum_editor_dialog;
 	struct Time_editor_dialog *time_editor_dialog;
 #endif /* defined (MOTIF) */
 #if defined (WX_USER_INTERFACE)
@@ -360,6 +363,7 @@ DESCRIPTION :
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF) || defined (WX_USER_INTERFACE)
 	struct Scene_editor *scene_editor;
+	struct Spectrum_editor_dialog *spectrum_editor_dialog;
 #endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	HINSTANCE hInstance;
@@ -10781,7 +10785,7 @@ Executes a GFX EDIT_SCENE command.  Brings up the Scene_editor.
 } /* gfx_edit_scene */
 #endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 static int gfx_edit_spectrum(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -10810,7 +10814,9 @@ Invokes the graphical spectrum group editor.
 		{
 			return_code = bring_up_spectrum_editor_dialog(
 				&(command_data->spectrum_editor_dialog),
+#if defined (MOTIF)
 				User_interface_get_application_shell(command_data->user_interface),
+#endif /* defined (MOTIF) */
 				command_data->spectrum_manager, spectrum,
 				command_data->default_font,
 				command_data->graphics_buffer_package, command_data->user_interface,
@@ -10834,7 +10840,7 @@ Invokes the graphical spectrum group editor.
 
 	return (return_code);
 } /* gfx_edit_spectrum */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF)  || defined (WX_USER_INTERFACE) */
 
 static int execute_command_gfx_edit(struct Parse_state *state,
 	void *dummy_to_be_modified, void *command_data_void)
@@ -10862,10 +10868,10 @@ Executes a GFX EDIT command.
 			Option_table_add_entry(option_table, "scene", NULL,
 				command_data_void, gfx_edit_scene);
 #endif /* defined (MOTIF) || if defined (WX_USER_INTERFACE) */
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 			Option_table_add_entry(option_table, "spectrum", NULL,
 				command_data_void, gfx_edit_spectrum);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 			return_code = Option_table_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
 		}
@@ -12196,7 +12202,14 @@ Executes a GFX LIST WINDOW.
 									list_Graphical_material_commands,(void *)command_prefix, 
 									graphical_material_manager);
 						}
-						
+
+						/* Commands of spectrum */
+						if (command_data->spectrum_manager)
+						{
+							 FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
+									for_each_spectrum_list_or_write_commands, (void *)"false", command_data->spectrum_manager);			
+						}
+
 						/* Command of computed_field */
 						if (command_data->computed_field_package && (computed_field_manager=
 									Computed_field_package_get_computed_field_manager(
@@ -19595,6 +19608,11 @@ Can also write individual groups with the <group> option.
 										 write_Graphical_material_commands_to_comfile,(void *)command_prefix, 
 										 graphical_material_manager);
 							 }
+							 if (command_data->spectrum_manager)
+							 {
+									FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
+										 for_each_spectrum_list_or_write_commands, (void *)"true", command_data->spectrum_manager);			
+							 }
 							 if (command_data->computed_field_package && (computed_field_manager=
 										 Computed_field_package_get_computed_field_manager(
 												command_data->computed_field_package)))
@@ -24118,7 +24136,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->projection_window=(struct Projection_window *)NULL;
 		command_data->material_editor_dialog = (struct Material_editor_dialog *)NULL;
 		/*???RC.  Temporary - should allow more than one */
-		command_data->spectrum_editor_dialog = (struct Spectrum_editor_dialog *)NULL;
 		command_data->time_editor_dialog = (struct Time_editor_dialog *)NULL;
 		/*???RC.  Temporary - should allow more than one */
 #endif /* defined (MOTIF) */
@@ -24129,6 +24146,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF) || defined (WX_USER_INTERFACE)
 		command_data->scene_editor = (struct Scene_editor *)NULL;
+		command_data->spectrum_editor_dialog = (struct Spectrum_editor_dialog *)NULL;
 #endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 		command_data->command_console = (struct Console *)NULL;
 #if defined (UNEMAP)
@@ -25255,10 +25273,6 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		{
 			DESTROY(Time_editor_dialog)(&(command_data->time_editor_dialog));
 		}
-		if (command_data->spectrum_editor_dialog)
-		{
-			DESTROY(Spectrum_editor_dialog)(&(command_data->spectrum_editor_dialog));
-		}
 		if (command_data->material_editor_dialog)
 		{
 			DESTROY(Material_editor_dialog)(&(command_data->material_editor_dialog));
@@ -25283,6 +25297,10 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		if (command_data->scene_editor)
 		{
 			DESTROY(Scene_editor)(&(command_data->scene_editor));
+		}
+		if (command_data->spectrum_editor_dialog)
+		{
+			DESTROY(Spectrum_editor_dialog)(&(command_data->spectrum_editor_dialog));
 		}
 #endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 
