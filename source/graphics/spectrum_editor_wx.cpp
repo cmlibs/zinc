@@ -724,6 +724,8 @@ Set the <spectrum> to be edited by the <spectrum_editor>.
 	return (return_code);
 } /* spectrum_editor_set_spectrum */
 
+// int Spectrum_editor_wx_add_item_to_spectrum_editor_check_list(
+
 int DESTROY(Spectrum_editor)(struct Spectrum_editor **spectrum_editor_address)
 /*******************************************************************************
 LAST MODIFIED : 12 August 2002

@@ -46,7 +46,6 @@ This module creates a spectrum_editor_dialog.
 extern "C" {
 #include <stdio.h>
 #include "three_d_drawing/graphics_buffer.h"
-#include "choose/choose_scene.h"
 #include "general/debug.h"
 #include "general/manager.h"
 #include "general/object.h"
@@ -56,7 +55,6 @@ extern "C" {
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_editor_wx.h"
 #include "graphics/spectrum_editor_dialog_wx.h"
-#include "select/select_spectrum.h"
 #include "user_interface/message.h"
 }
 
@@ -141,6 +139,13 @@ the spectrums contained in the global list.
 											"CREATE(Spectrum_editor_dialog).  "
 											"Could not create spectrum editor");
 									 init_widgets = 0;
+				}
+				else
+				{
+// 					 FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
+// 							Spectrum_editor_wx_add_item_to_spectrum_editor_check_list, 
+// 							(void *)spectrum_editor_dialog->spectrum_editor,
+// 							command_data->graphics_window_manager));
 				}
 // 				if (init_widgets)
 // 				{
