@@ -2402,7 +2402,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 			}
 		}
 		table_size = (int) (number_of_texture_components *
-			 pow(number_of_values, number_of_data_components));
+			 pow((double) number_of_values, number_of_data_components));
 		if (ALLOCATE(colour_table, unsigned char, table_size))
 		{
 			colour_table_ptr = colour_table;
