@@ -6861,7 +6861,18 @@ and other parameters for formats that require them.
 							{
 								if (IO_stream_read_to_memory(image_file, &image_data, &image_data_length))
 								{
+									/* Initialise the magick variable of the image info object.
+										This variable specifies the image encoding format. 
+									*/
 									SetImageInfo(magick_image_info, MagickFalse, &magick_exception);
+									
+									/* The BlobToImage function does not appear to handle dicom images with 
+                              an IMA suffix so explicitly set the magick variable to DCM for IMA images.
+									*/									
+									if (fuzzy_string_compare(magick_image_info->magick, "IMA"))
+									{
+										strcpy(magick_image_info->magick,"DCM");
+									}
 									magick_image = BlobToImage(magick_image_info,
 										image_data, image_data_length, &magick_exception);
 									IO_stream_deallocate_read_to_memory(image_file);
