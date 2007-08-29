@@ -6861,18 +6861,17 @@ and other parameters for formats that require them.
 							{
 								if (IO_stream_read_to_memory(image_file, &image_data, &image_data_length))
 								{
-									/* Initialise the magick variable of the image info object.
-										This variable specifies the image encoding format. 
-									*/
-									SetImageInfo(magick_image_info, MagickFalse, &magick_exception);
-									
-									/* The BlobToImage function does not appear to handle dicom images with 
-                              an IMA suffix so explicitly set the magick variable to DCM for IMA images.
-									*/									
-									if (fuzzy_string_compare(magick_image_info->magick, "IMA"))
+									/* strip off "memory:" prefix from filename in case a second prefix has 
+										been used to specify the image format */
+									if ( 0 == strncmp(magick_image_info->filename, "memory:",7))
 									{
-										strcpy(magick_image_info->magick,"DCM");
-									}
+										strcpy(magick_image_info->filename, magick_image_info->filename + 7);
+									} 
+									
+									/* set the "magick" variable which specifies the image format based on prefix
+										if present, or the suffix, or an attempt to read the file */
+									SetImageInfo(magick_image_info, MagickFalse, &magick_exception);
+
 									magick_image = BlobToImage(magick_image_info,
 										image_data, image_data_length, &magick_exception);
 									IO_stream_deallocate_read_to_memory(image_file);
@@ -6921,7 +6920,7 @@ and other parameters for formats that require them.
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"Could not read image: %s", file_name);
+							"Could not read image: %s\nYou may need to add a prefix indicating the file format.", file_name);
 						return_code = 0;
 					}
 					magick_image_info->size = (char *)NULL;
