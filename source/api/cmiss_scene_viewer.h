@@ -188,6 +188,9 @@ no materials used in the scene can contain textures.
 
 typedef struct Cmiss_scene_viewer *Cmiss_scene_viewer_id;
 
+typedef void (*Cmiss_scene_viewer_callback)(Cmiss_scene_viewer_id scene_viewer,
+	void *callback_data, void *user_data);
+
 /*
 Global functions
 ----------------
@@ -839,5 +842,26 @@ attempt to override the default values for just this call.
 If <force_onscreen> is non zero then the pixels will always be grabbed from the
 scene viewer on screen.
 ==============================================================================*/
+
+int Cmiss_scene_viewer_add_transform_callback(
+	Cmiss_scene_viewer_id scene_viewer,
+	Cmiss_scene_viewer_callback function,void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 28 August 2007
+
+DESCRIPTION :
+==============================================================================*/
+
+int Cmiss_scene_viewer_remove_transform_callback(
+	Cmiss_scene_viewer_id scene_viewer,
+	Cmiss_scene_viewer_callback function,void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 28 August 2007
+
+DESCRIPTION :
+Removes the callback calling <function> with <user_data> from
+<scene_viewer>.
+==============================================================================*/
+
 
 #endif /* __CMISS_SCENE_VIEWER_H__ */
