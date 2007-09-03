@@ -294,7 +294,6 @@ DESCRIPTION :
 	   *order_independent_transparency_data;
 	/* The connection to the systems user interface system */
 	struct User_interface *user_interface;
-	int access_count;
 }; /* struct Scene_viewer */
 
 DECLARE_LIST_TYPES(Scene_viewer);
@@ -363,7 +362,7 @@ functions may have their own user data.
 	int access_count;
 }; /* struct Scene_viewer_render_object */
 
-FULL_DECLARE_INDEXED_LIST_TYPE(Scene_viewer);
+FULL_DECLARE_LIST_TYPE(Scene_viewer);
 
 /* We need to maintain the order, so we do not want an indexed list */
 FULL_DECLARE_LIST_TYPE(Scene_viewer_render_object);
@@ -4542,7 +4541,6 @@ performed in idle time so that multiple redraws are avoided.
 			if (ALLOCATE(scene_viewer,struct Scene_viewer,1)&&
 				(scene_viewer->list_of_lights=CREATE(LIST(Light)())))
 			{
-				scene_viewer->access_count = 0;
 				scene_viewer->graphics_buffer=ACCESS(Graphics_buffer)(graphics_buffer);
 				/* access the scene, since don't want it to disappear */
 				scene_viewer->scene=ACCESS(Scene)(scene);
@@ -4733,7 +4731,7 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		{
 			CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 				scene_viewer->destroy_callback_list,scene_viewer,NULL);
-			DESTROY(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)))(
+			DESTROY( LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)))(
 				&scene_viewer->destroy_callback_list);
 		}
 		/* dispose of our data structure */
@@ -4789,11 +4787,29 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 	return (return_code);
 } /* DESTROY(Scene_viewer) */
 
-DECLARE_OBJECT_FUNCTIONS(Scene_viewer)
-/* Sort by the graphics_buffer as this should be unique */
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Scene_viewer, graphics_buffer,
-	struct Graphics_buffer *, compare_pointer)
-DECLARE_INDEXED_LIST_FUNCTIONS(Scene_viewer)
+struct Scene_viewer *ACCESS(Scene_viewer)(struct Scene_viewer *scene_viewer)
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	//Do nothing as the scene viewer removes itself from the package list
+	return(scene_viewer);
+}
+
+int DEACCESS(Scene_viewer)(struct Scene_viewer **scene_viewer_address)
+/*******************************************************************************
+LAST MODIFIED : 19 January 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	//Do nothing as the scene viewer removes itself from the package list
+	*scene_viewer_address = (struct Scene_viewer *)NULL;
+	return(1);
+}
+DECLARE_LIST_FUNCTIONS(Scene_viewer)
 
 struct Scene_viewer *create_Scene_viewer_from_package(
 	struct Graphics_buffer *graphics_buffer,
