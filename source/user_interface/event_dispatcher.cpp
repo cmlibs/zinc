@@ -1047,6 +1047,11 @@ DESCRIPTION :
 	{
 		if ((*idle_callback->idle_function)(idle_callback->user_data))
 		{
+			display_message(ERROR_MESSAGE,
+				"Event_dispatcher_carbon_idle_callback.  Callback function failed.");
+		}
+		else
+		{
 			RemoveEventLoopTimer(idle_callback->carbon_timer_ref);
 			idle_callback->carbon_timer_ref = (EventLoopTimerRef)NULL;
 		}
