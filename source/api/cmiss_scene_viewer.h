@@ -57,7 +57,6 @@ scenes.
 #if defined (MOTIF)
 #include <Xm/Xm.h>
 #endif /* defined (MOTIF) */
-#include "general/object.h"
 
 #include "cmiss_texture.h"
 
