@@ -175,7 +175,7 @@ public:
 	
    ~Field_coordinate_location()
 	{
-		delete values;
+		delete [] values;
 	}
 
 	Computed_field *get_reference_field()

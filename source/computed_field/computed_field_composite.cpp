@@ -164,11 +164,11 @@ Clear the type specific data used by this type.
 	{
 		if (source_field_numbers)
 		{
-			delete source_field_numbers;
+			delete [] source_field_numbers;
 		}
 		if (source_value_numbers)
 		{
-			delete source_value_numbers;
+			delete [] source_value_numbers;
 		}
 	}
 	else
