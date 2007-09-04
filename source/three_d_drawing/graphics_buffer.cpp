@@ -2192,7 +2192,7 @@ if there are no more expose events pending.
 {
 	struct Graphics_buffer *graphics_buffer;
 
-	ENTER(graphics_buffer_gtkglarea_expose_callback);
+	ENTER(Graphics_buffer_gtkglarea_expose_callback);
 	USE_PARAMETER(expose_event);
 	if (widget && (graphics_buffer = (struct Graphics_buffer *)graphics_buffer_void))
 	{
