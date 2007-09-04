@@ -560,6 +560,8 @@ scene_viewers.
 	{
 		if (ALLOCATE(transform_tool,struct Transform_tool,1))
 		{			
+			transform_tool->user_interface = user_interface;
+
 #if defined (MOTIF)
 			transform_tool_defaults.free_spin = False;
 			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
@@ -575,7 +577,6 @@ scene_viewers.
 			}
 #elif defined (WX_USER_INTERFACE) /* (WX_USER_INTERFACE) */
 
-			transform_tool->user_interface = user_interface;
 			transform_tool->wx_transform_tool = (wxTransformTool *)NULL; 
 
 #else /* switch (USER_INTERFACE) */
