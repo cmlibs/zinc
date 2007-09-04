@@ -51,4 +51,14 @@ LAST MODIFIED : 6 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
+
+int Computed_field_depends_on_texture(struct Computed_field *field,
+	struct Texture *texture);
+/*******************************************************************************
+LAST MODIFIED : 4 September 2007
+
+DESCRIPTION :
+Returns true if the field or recursively any source fields are sample
+texture fields which reference <texture>.
+==============================================================================*/
 #endif /* !defined (COMPUTED_FIELD_SAMPLE_TEXTURE_H) */

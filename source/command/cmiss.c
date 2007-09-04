@@ -6166,7 +6166,8 @@ value searches just elements of that dimension.
 	{
 		/* Setup sizes */
 		if (Computed_field_get_native_resolution(
-				 field, &source_dimension, &source_sizes, &source_texture_coordinate_field))
+			field, &source_dimension, &source_sizes,
+			&source_texture_coordinate_field))
 		{
 			if (!texture_coordinate_field)
 			{
@@ -6893,7 +6894,7 @@ Modifies the properties of a texture.
 	struct Cmiss_region *evaluate_data_region;
 	struct Colour colour;
 	struct Option_table *option_table;
-	struct Texture *texture;
+	struct Texture *texture, *texture_copy;
 	struct Texture_evaluate_image_data evaluate_data;
 	struct Texture_image_data image_data;
 	struct Texture_file_number_series_data file_number_series_data;
@@ -7359,7 +7360,19 @@ Modifies the properties of a texture.
 							evaluate_data.field && evaluate_data.spectrum && 
 							evaluate_data.texture_coordinates_field)
 						{
-							set_Texture_image_from_field(texture, 
+							if (Computed_field_depends_on_texture(evaluate_data.field,
+									texture))
+							{
+								texture_copy = CREATE(Texture)("temporary");
+								MANAGER_COPY_WITHOUT_IDENTIFIER(Texture,name)
+									(texture_copy, texture);
+							}
+							else
+							{
+								texture_copy = texture;
+							}
+							
+							set_Texture_image_from_field(texture_copy, 
 								evaluate_data.field,
 								evaluate_data.texture_coordinates_field,
 								evaluate_data.propagate_field, 
@@ -7369,10 +7382,14 @@ Modifies the properties of a texture.
 								specify_height, specify_depth,
 								command_data->graphics_buffer_package,
 								evaluate_data.fail_material);
+
+							if (texture_copy != texture)
+							{
+								MANAGER_MODIFY_NOT_IDENTIFIER(Texture,name)(texture,
+									texture_copy,command_data->texture_manager);
+								DESTROY(Texture)(&texture_copy);
+							}
 						}
-#if defined (GL_API)
-						texture->index= -(texture->index);
-#endif
 						if (texture_is_managed)
 						{
 							MANAGER_END_CHANGE(Texture)(command_data->texture_manager);

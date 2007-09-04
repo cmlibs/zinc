@@ -655,3 +655,49 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_register_type_sample_texture */
 
+int Computed_field_depends_on_texture(struct Computed_field *field,
+	struct Texture *texture)
+/*******************************************************************************
+LAST MODIFIED : 4 September 2007
+
+DESCRIPTION :
+Returns true if the field or recursively any source fields are sample
+texture fields which reference <texture>.
+==============================================================================*/
+{
+	int i,return_code;
+
+	ENTER(Computed_field_depends_on_texture);
+	if (field)
+	{
+		return_code=0;
+		if (computed_field_sample_texture_type_string ==
+			Computed_field_get_type_string(field))
+		{
+			Computed_field_sample_texture* sample_texture;
+			if ((sample_texture = dynamic_cast<Computed_field_sample_texture*>(
+					  field->core)) && (sample_texture->texture == texture))
+			{
+				return_code = 1;
+			}
+		}
+		else
+		{
+			for (i=0;(i<field->number_of_source_fields)&&(!return_code);i++)
+			{
+				return_code=Computed_field_depends_on_texture(
+					field->source_fields[i], texture);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_depends_on_texture.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_depends_on_texture */
+
