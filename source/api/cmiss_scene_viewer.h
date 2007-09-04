@@ -297,9 +297,9 @@ chosen.
 ==============================================================================*/
 #endif /* defined (MOTIF) */
 
-int DESTROY(Cmiss_scene_viewer)(Cmiss_scene_viewer_id *scene_viewer_id_address);
+int Cmiss_scene_viewer_destroy(Cmiss_scene_viewer_id *scene_viewer_id_address);
 /*******************************************************************************
-LAST MODIFIED : 10 September 2002
+LAST MODIFIED : 4 September 2007
 
 DESCRIPTION :
 Closes the scene_viewer.

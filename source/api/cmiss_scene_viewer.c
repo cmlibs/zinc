@@ -487,6 +487,19 @@ chosen.
 }
 #endif /* defined (NEW_CODE) */
 
+int Cmiss_scene_viewer_destroy(Cmiss_scene_viewer_id *scene_viewer_id_address)
+/*******************************************************************************
+LAST MODIFIED : 4 September 2007
+
+DESCRIPTION :
+Closes the scene_viewer.
+==============================================================================*/
+{
+	/* The normal destroy will call the Scene_viewer_package callback
+		to remove it from the package */
+	return (DESTROY(Scene_viewer)(scene_viewer_id_address));
+}
+
 int Cmiss_scene_viewer_get_near_and_far_plane(Cmiss_scene_viewer_id scene_viewer,
 	double *near_plane, double *far_plane)
 /*******************************************************************************
