@@ -4202,7 +4202,7 @@ DESCRIPTION :
 	}
 }
 
-static int Scene_viewer_remove_from_package(
+static int Scene_viewer_destroy_from_package(
 	struct Scene_viewer *scene_viewer, void *package_void)
 /*******************************************************************************
 LAST MODIFIED : 19 April 2007
@@ -4213,13 +4213,12 @@ DESCRIPTION :
 	int return_code;
 	struct Cmiss_scene_viewer_package *package;
 
-	ENTER(create_Scene_viewer_from_package);
+	ENTER(Scene_viewer_destroy_from_package);
 	if (scene_viewer && (package = (struct Cmiss_scene_viewer_package *)package_void))
 	{
 		Scene_viewer_remove_destroy_callback(scene_viewer,
 			Scene_viewer_destroy_remove_from_package, package);
-		REMOVE_OBJECT_FROM_LIST(Scene_viewer)(scene_viewer,
-			package->scene_viewer_list);
+		DESTROY(Scene_viewer)(&scene_viewer);
 	}
 	return_code = 1;
 
@@ -4241,16 +4240,22 @@ Destroys the scene_viewer_package.
 	ENTER(DESTROY(Cmiss_scene_viewer_package));
 	if (scene_viewer_package = *scene_viewer_package_address)
 	{
-		/* We don't want to be called back again */
-		FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(Scene_viewer_remove_from_package,
-			scene_viewer_package, scene_viewer_package->scene_viewer_list);
 		/* Call the destroy callbacks */
 		CMISS_CALLBACK_LIST_CALL(Cmiss_scene_viewer_package_callback)(
 			scene_viewer_package->destroy_callback_list,scene_viewer_package,NULL);
 		DESTROY(LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_package_callback)))
 			(&scene_viewer_package->destroy_callback_list);
-		/* Free */
+
+		/* Destroy the scene viewers in the list as they are not accessed
+			or deaccessed by the list (so not destroyed when delisted).
+			The owners of these scene viewers
+			should by virtue of having destroyed the command data and
+			therefore this package no longer reference these scene viewers or
+			they should register for destroy callbacks. */
+		FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(Scene_viewer_destroy_from_package,
+			scene_viewer_package, scene_viewer_package->scene_viewer_list);
 		DESTROY(LIST(Scene_viewer))(&scene_viewer_package->scene_viewer_list);
+
 		DEACCESS(Interactive_tool)(&scene_viewer_package->default_interactive_tool);
 		DEACCESS(Light)(&scene_viewer_package->default_light);
 		DEACCESS(Light_model)(&scene_viewer_package->default_light_model);
@@ -4867,38 +4872,6 @@ DESCRIPTION :
 
 	return (scene_viewer);
 } /* create_Scene_viewer_from_package */
-
-int destroy_Scene_viewer_from_package(struct Scene_viewer **scene_viewer_address,
-	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package)
-/*******************************************************************************
-LAST MODIFIED : 19 April 2007
-
-DESCRIPTION :
-Closes the scene_viewer and disposes of the scene_viewer data structure.
-==============================================================================*/
-{
-	int return_code;
-	struct Scene_viewer *scene_viewer;
-
-	ENTER(DESTROY(Scene_viewer));
-	if (scene_viewer_address&&(scene_viewer= *scene_viewer_address))
-	{
-		Scene_viewer_remove_from_package(scene_viewer,
-			cmiss_scene_viewer_package);
-		*scene_viewer_address = (struct Scene_viewer *)NULL;
-
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(Scene_viewer).  Missing scene_viewer");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(Scene_viewer) */
 
 int Scene_viewer_awaken(struct Scene_viewer *scene_viewer)
 /*******************************************************************************

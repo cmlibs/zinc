@@ -358,19 +358,14 @@ struct Scene_viewer *create_Scene_viewer_from_package(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	struct Scene *scene);
 /*******************************************************************************
-LAST MODIFIED : 19 January 2007
+LAST MODIFIED : 4 September 2007
 
 DESCRIPTION :
-Should be used with destroy_Scene_viewer_from_package.
-==============================================================================*/
-
-int destroy_Scene_viewer_from_package(struct Scene_viewer **scene_viewer_address,
-	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package);
-/*******************************************************************************
-LAST MODIFIED : 19 April 2007
-
-DESCRIPTION :
-Closes the scene_viewer and disposes of the scene_viewer data structure.
+Creates the scene viewer with respect to the cmiss_scene_viewer_package.
+The scene_viewer automatically removes itself from the package when it is
+destroyed.  If the package is destroyed at some point (usually by the 
+destruction of the Command data) then all the scene viewers will be
+destroyed as well.
 ==============================================================================*/
 
 int Scene_viewer_awaken(struct Scene_viewer *scene_viewer);
