@@ -580,7 +580,22 @@ already) and allows its contents to be modified.
 
 			option_table = CREATE(Option_table)();
 			Option_table_add_help(option_table,
-				"The sample_texture computed field .");
+				"The sample_texture computed field allows you to look up the "
+				"values of a <texture>.  The resulting field will have the same "
+				"number of components as the texture it was created from.  "
+				"The <coordinates> field is used as the texel location, with "
+				"values from 0..texture_width, 0..texture_height and 0..texture_depth "
+				"valid coordinates within the image.  "
+				"Normally the resulting colour values are real values for 0 to 1.  "
+				"The <minimum> and <maximum> values can be used to rerange the colour values.  "
+				"The <native_texture> or <not_native_texture> flag indicates whether "
+				"this sample texture computed field will supply this textures "
+				"dimensions as the default resolution to a modify texture evalutate_image "
+				"command that is using this field.  This is normally what you want "
+				"but the flag gives you the ability to discriminate which texture "
+				"should be used in a pipeline of fields.  "
+				"See examples a/resample_texture, a/create_slices and a/image_sampling.  "
+										 );
 
 			/* coordinates */
 			set_source_field_data.computed_field_manager=
