@@ -72,11 +72,13 @@ public:
 	Texture* texture;
 	float minimum;
 	float maximum;
+	int native_texture;
 
 	Computed_field_sample_texture(Computed_field *field, Texture* texture,
-		float minimum, float maximum) :
+		float minimum, float maximum, int native_texture) :
 		Computed_field_core(field), texture(ACCESS(Texture)(texture)),
-		minimum(minimum), maximum(maximum)	  
+		minimum(minimum), maximum(maximum),
+		native_texture(native_texture)
 	{
 	};
 
@@ -122,7 +124,7 @@ Copy the type specific data used by this type.
 	if (new_parent)
 	{
 		core = new Computed_field_sample_texture(new_parent,
-			texture, minimum, maximum);
+			texture, minimum, maximum, native_texture);
 	}
 	else
 	{
@@ -152,7 +154,8 @@ Compare the type specific data
 	{
 		if ((texture == other->texture) &&
 			(minimum == other->minimum) &&
-			(maximum == other->maximum))
+			(maximum == other->maximum) &&
+			(native_texture == other->native_texture))
 		{
 			return_code = 1;
 		}
@@ -253,45 +256,56 @@ the <field>. These parameters will be used in image processing.
 
 ==============================================================================*/
 {       
-        int return_code;
+	int return_code;
 	int w, h, d;
 	
 	ENTER(Computed_field_sample_texture::get_native_resolution);
 	if (field)
 	{
 		return_code = 1;
-		Texture_get_size(texture, &w, &h, &d);
-		Texture_get_dimension(texture,dimension);
-		if (!(ALLOCATE(*sizes, int, *dimension)))
+		if (native_texture)
 		{
-			return_code = 0;
-		}
-		if (return_code)
-		{
-			switch (*dimension)
+			Texture_get_size(texture, &w, &h, &d);
+			Texture_get_dimension(texture,dimension);
+			if (!(ALLOCATE(*sizes, int, *dimension)))
 			{
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_sample_texture::get_native_resolution.  "
-						"Texture dimension not implemented.");
-					return_code=0;
-				} break;
-				case 3:
-				{
-					(*sizes)[2] = d;
-				} /* no_break */
-				case 2:
-				{
-					(*sizes)[1] = h;
-				} /* no_break */
-				case 1:
-				{
-					(*sizes)[0] = w;
-				} /* no_break */
+				return_code = 0;
 			}
+			if (return_code)
+			{
+				switch (*dimension)
+				{
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_sample_texture::get_native_resolution.  "
+							"Texture dimension not implemented.");
+						return_code=0;
+					} break;
+					case 3:
+					{
+						(*sizes)[2] = d;
+					} /* no_break */
+					case 2:
+					{
+						(*sizes)[1] = h;
+					} /* no_break */
+					case 1:
+					{
+						(*sizes)[0] = w;
+					} /* no_break */
+				}
+			}
+			*texture_coordinate_field = field->source_fields[0];
 		}
-		*texture_coordinate_field = field->source_fields[0];
+		else
+		{
+			/* If this field is not the native texture field
+				then propagate this query to the texture coordinates
+				by calling the default implementation. */
+			return_code = Computed_field_core::get_native_resolution(
+				dimension, sizes, texture_coordinate_field);
+		}
 	}
 	else
 	{
@@ -328,6 +342,14 @@ DESCRIPTION :
 		}
 		display_message(INFORMATION_MESSAGE,"    minimum : %f\n",minimum);
 		display_message(INFORMATION_MESSAGE,"    maximum : %f\n",maximum);
+		if (native_texture)
+		{
+			display_message(INFORMATION_MESSAGE,"    native_texture\n");
+		}
+		else
+		{
+			display_message(INFORMATION_MESSAGE,"    not_native_texture\n");
+		}
 		return_code = 1;
 	}
 	else
@@ -379,6 +401,14 @@ Returns allocated command string for reproducing field. Includes type.
 		append_string(&command_string, temp_string, &error);
 		sprintf(temp_string, " maximum %f", maximum);
 		append_string(&command_string, temp_string, &error);
+		if (native_texture)
+		{
+			append_string(&command_string, " native_texture", &error);
+		}
+		else
+		{
+			append_string(&command_string, " not_native_texture", &error);
+		}
 	}
 	else
 	{
@@ -394,9 +424,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 int Computed_field_set_type_sample_texture(struct Computed_field *field,
 	struct Computed_field *texture_coordinate_field, struct Texture *texture,
-	float minimum, float maximum)
+	float minimum, float maximum, int native_texture)
 /*******************************************************************************
-LAST MODIFIED : 25 August 2006
+LAST MODIFIED : 5 September 2007
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_SAMPLE_TEXTURE with the supplied
@@ -430,7 +460,7 @@ although its cache may be lost.
 				field->source_fields=source_fields;
 				field->number_of_source_fields=number_of_source_fields;
 				field->core = new Computed_field_sample_texture(field, 
-					texture, minimum, maximum);
+					texture, minimum, maximum, native_texture);
 			}
 			else
 			{
@@ -459,9 +489,9 @@ although its cache may be lost.
 
 int Computed_field_get_type_sample_texture(struct Computed_field *field,
 	struct Computed_field **texture_coordinate_field, struct Texture **texture,
-	float *minimum, float *maximum)
+	float *minimum, float *maximum, int *native_texture)
 /*******************************************************************************
-LAST MODIFIED : 25 August 2006
+LAST MODIFIED : 5 September 2007
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_SAMPLE_TEXTURE, the 
@@ -480,6 +510,7 @@ returned.
 		*texture = core->texture;
 		*minimum = core->minimum;
 		*maximum = core->maximum;
+		*native_texture = core->native_texture;
 		return_code=1;
 	}
 	else
@@ -503,8 +534,9 @@ Converts <field> into type COMPUTED_FIELD_SAMPLE_TEXTURE (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
+	char native_texture_flag, not_native_texture_flag;
 	float minimum, maximum;
-	int return_code;
+	int native_texture, return_code;
 	struct Computed_field *field,*texture_coordinate_field;
 	Computed_field_sample_texture_package 
 		*computed_field_sample_texture_package;
@@ -522,13 +554,15 @@ already) and allows its contents to be modified.
 		/* get valid parameters for projection field */
 		minimum = 0.0;
 		maximum = 1.0;
+		native_texture = 1;
 		texture_coordinate_field = (struct Computed_field *)NULL;
 		texture = (struct Texture *)NULL;
 		if (computed_field_sample_texture_type_string ==
 			Computed_field_get_type_string(field))
 		{
 			return_code = Computed_field_get_type_sample_texture(field,
-				&texture_coordinate_field, &texture, &minimum, &maximum);
+				&texture_coordinate_field, &texture, &minimum, &maximum,
+				&native_texture);
 		}
 		if (return_code)
 		{
@@ -541,8 +575,13 @@ already) and allows its contents to be modified.
 			{
 				ACCESS(Texture)(texture);
 			}
+			native_texture_flag = 0;
+			not_native_texture_flag = 0;
 
 			option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+				"The sample_texture computed field .");
+
 			/* coordinates */
 			set_source_field_data.computed_field_manager=
 				computed_field_sample_texture_package->computed_field_manager;
@@ -557,6 +596,12 @@ already) and allows its contents to be modified.
 			/* minimum */
 			Option_table_add_entry(option_table,"minimum",&minimum,
 				NULL,set_float);
+			/* native_texture */
+			Option_table_add_char_flag_entry(option_table,"native_texture",
+				&native_texture_flag);
+			/* not_native_texture */
+			Option_table_add_char_flag_entry(option_table,"not_native_texture",
+				&not_native_texture_flag);
 			/* texture */
 			Option_table_add_entry(option_table,"texture",&texture,
 				computed_field_sample_texture_package->texture_manager,
@@ -565,6 +610,21 @@ already) and allows its contents to be modified.
 			/* no errors,not asking for help */
 			if (return_code)
 			{
+				if (native_texture_flag && not_native_texture_flag)
+				{
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_sample_texture.  "
+						"You cannot specify native_texture and not_native_texture.");
+ 					return_code = 0;					
+				}
+				if (native_texture_flag)
+				{
+					native_texture = 1;
+				}
+				else if (not_native_texture_flag)
+				{
+					native_texture = 0;
+				}
  				if (!texture_coordinate_field)
 				{
 					display_message(ERROR_MESSAGE,
@@ -583,7 +643,8 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = Computed_field_set_type_sample_texture(field,
-					texture_coordinate_field, texture, minimum, maximum);
+					texture_coordinate_field, texture, minimum, maximum,
+					native_texture);
 			}
 			if (!return_code)
 			{
@@ -680,6 +741,14 @@ texture fields which reference <texture>.
 					  field->core)) && (sample_texture->texture == texture))
 			{
 				return_code = 1;
+			}
+			else
+			{
+				for (i=0;(i<field->number_of_source_fields)&&(!return_code);i++)
+				{
+					return_code=Computed_field_depends_on_texture(
+						field->source_fields[i], texture);
+				}
 			}
 		}
 		else
