@@ -261,6 +261,34 @@ Global functions
 ----------------
 */
 
+struct Spectrum_settings *get_settings_at_position_in_Spectrum(
+	 struct Spectrum *spectrum,int position)
+/*******************************************************************************
+LAST MODIFIED : 30 August 2007
+
+DESCRIPTION :
+Wrapper for accessing the settings in <spectrum>.
+==============================================================================*/
+{
+	 struct Spectrum_settings *settings;
+
+	 ENTER(get_settings_at_position_in_GT_element_group);
+	 if (spectrum)
+	 {
+			settings=FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,
+				 position)(position,spectrum->list_of_settings);
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "get_settings_at_position_in_Spectrum.  Invalid arguments");
+			settings=(struct Spectrum_settings *)NULL;
+	 }
+	 LEAVE;
+
+	 return (settings);
+} /* get_settings_at_position_in_GT_element_group */
+
 int Spectrum_set_simple_type(struct Spectrum *spectrum,
 	enum Spectrum_simple_type type)
 /*******************************************************************************
@@ -1314,6 +1342,32 @@ Returns a bit mask for the colour components modified by the spectrum.
 
 	return (colour_components);
 } /* Spectrum_get_colour_components */
+
+char *Spectrum_get_name(struct Spectrum *spectrum)
+/*******************************************************************************
+LAST MODIFIED : 28 August 2007
+
+DESCRIPTION :
+Returns the string of the spectrum.
+==============================================================================*/
+{
+	char *name;
+
+	ENTER(Spectrum_get_name);
+	if (spectrum)
+	{
+		 name = spectrum->name;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Spectrum_get_name.  Invalid spectrum object.");
+		name = (char *)NULL;
+	}
+	LEAVE;
+
+	return (name);
+} /* Spectrum_get_name */
 
 int Spectrum_get_opaque_colour_flag(struct Spectrum *spectrum)
 /*******************************************************************************

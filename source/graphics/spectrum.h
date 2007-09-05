@@ -112,6 +112,15 @@ PROTOTYPE_MANAGER_FUNCTIONS(Spectrum);
 
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Spectrum,name,char *);
 
+struct Spectrum_settings *get_settings_at_position_in_Spectrum(
+	 struct Spectrum *spectrum,int position);
+/*******************************************************************************
+LAST MODIFIED : 30 August 2007
+
+DESCRIPTION :
+Wrapper for accessing the settings in <spectrum>.
+==============================================================================*/
+
 int Spectrum_set_simple_type(struct Spectrum *spectrum,
 	enum Spectrum_simple_type type);
 /*******************************************************************************
@@ -299,6 +308,14 @@ LAST MODIFIED : 29 July 1998
 DESCRIPTION :
 Expands the range of this spectrum by adjusting the range of each settings
 it contains.  The ratios of the different settings are preserved.
+==============================================================================*/
+
+char *Spectrum_get_name(struct Spectrum *spectrum);
+/*******************************************************************************
+LAST MODIFIED : 28 August 2007
+
+DESCRIPTION :
+Returns the string of the spectrum.
 ==============================================================================*/
 
 int Spectrum_get_opaque_colour_flag(struct Spectrum *spectrum);

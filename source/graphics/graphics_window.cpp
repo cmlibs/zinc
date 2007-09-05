@@ -2876,10 +2876,11 @@ public:
       front_view_options = XRCCTRL(*this,"FrontViewOptions", wxButton);
       up_choices = up_view_options->GetCurrentSelection();
       front_choices = front_view_options->GetLabel();
-      for (int n=0; n<6; n++) {
+      for (int n=0; n<6; n++)
+			{
 				 if (front_choices == option[n])
 						location = n;
-      }
+			}
       if ((up_choices == location) || (up_choices == ((location+3) % 6)))
 			{     
 				 front_view_options->SetLabel(option[(location+1) % 6]);

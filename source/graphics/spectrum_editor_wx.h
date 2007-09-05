@@ -45,7 +45,7 @@ Provides the widgets to manipulate graphical element group settings.
 #define SPECTRUM_EDITOR_H
 
 #include "user_interface/user_interface.h"
-
+#include "graphics/spectrum_editor_dialog_wx.h"
 /*
 Global Types
 ------------
@@ -59,6 +59,7 @@ Global Functions
 */
 
 struct Spectrum_editor *CREATE(Spectrum_editor)(
+	 struct Spectrum_editor_dialog **spectrum_editor_dialog_address,
 	 struct Spectrum *spectrum,
 	 struct Graphics_font *font,
 	 struct Graphics_buffer_package *graphics_buffer_package,
@@ -67,7 +68,8 @@ struct Spectrum_editor *CREATE(Spectrum_editor)(
 	 struct MANAGER(Graphical_material) *graphical_material_manager,
 	 struct MANAGER(Light) *light_manager,
 	 struct MANAGER(Spectrum) *spectrum_manager,
-	 struct MANAGER(Texture) *texture_manager);
+	 struct MANAGER(Texture) *texture_manager,
+	 struct MANAGER(Scene) *scene_manager);
 /*******************************************************************************
 LAST MODIFIED : 4 May 2004
 
@@ -75,7 +77,7 @@ DESCRIPTION :
 Creates a spectrum_editor widget.
 ==============================================================================*/
 
-int spectrum_editor_set_spectrum(
+int spectrum_editor_wx_set_spectrum(
 	struct Spectrum_editor *spectrum_editor,
 	struct Spectrum *spectrum);
 /*******************************************************************************
@@ -83,6 +85,14 @@ LAST MODIFIED : 23 August 2007
 
 DESCRIPTION :
 Set the <spectrum> for the <spectrum_editor_dialog>.
+==============================================================================*/
+
+int spectrum_editor_wx_add_item_to_spectrum_editor_check_list(struct Spectrum *spectrum, void *spectrum_editor_void);
+/*******************************************************************************
+LAST MODIFIED : 28 August 2007
+
+DESCRIPTION :
+Add spectrum item to the spectrum_editor.
 ==============================================================================*/
 
 int DESTROY(Spectrum_editor)(struct Spectrum_editor **spectrum_editor_address);

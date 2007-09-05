@@ -121,62 +121,26 @@ the spectrums contained in the global list.
 				spectrum_editor_dialog->spectrum_editor =
 					(struct Spectrum_editor *)NULL;
 				spectrum_editor_dialog->autorange_scene = (struct Scene *)NULL;
-// 				spectrum_editor_dialog->update_callback.procedure=
-// 					(Callback_procedure *)NULL;
-// 				spectrum_editor_dialog->update_callback.data=NULL;
 				spectrum_editor_dialog->user_interface = user_interface;
 				/* set the mode toggle to the correct position */
 				init_widgets=1;
 				if (!(spectrum_editor_dialog->spectrum_editor =
 							CREATE(Spectrum_editor)(
-								 (struct Spectrum *)NULL, font,
+								 spectrum_editor_dialog_address,
+								 init_data, font,
 								 graphics_buffer_package,
 								 user_interface, glyph_list,
 								 graphical_material_manager, light_manager,
-								 spectrum_manager, texture_manager)))
+								 spectrum_manager, texture_manager,
+								 scene_manager)))
 				{
 									 display_message(ERROR_MESSAGE,
 											"CREATE(Spectrum_editor_dialog).  "
 											"Could not create spectrum editor");
 									 init_widgets = 0;
 				}
-				else
-				{
-// 					 FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
-// 							Spectrum_editor_wx_add_item_to_spectrum_editor_check_list, 
-// 							(void *)spectrum_editor_dialog->spectrum_editor,
-// 							command_data->graphics_window_manager));
-				}
-// 				if (init_widgets)
-// 				{
-// 					 callback.data=(void *)spectrum_editor_dialog;
-// 					 callback.procedure=
-// 							spectrum_editor_dialog_set_autorange_scene;
-// 					 CHOOSE_OBJECT_SET_CALLBACK(Scene)(
-// 							spectrum_editor_dialog->autorange_scene_widget,&callback);
-// 					 /* set current_value to init_data */
 					 spectrum_editor_dialog_set_spectrum(
 							spectrum_editor_dialog,init_data);
-// 					 callback.procedure=spectrum_editor_dialog_update_selection;
-// 					 callback.data=spectrum_editor_dialog;
-// 					 SELECT_SET_UPDATE_CB(Spectrum)(
-// 							spectrum_editor_dialog->select_widget,&callback);
-// 					 /* Set up window manager callback for close window message */
-// 					 WM_DELETE_WINDOW=XmInternAtom(
-// 							XtDisplay(spectrum_editor_dialog->dialog),
-// 							"WM_DELETE_WINDOW", False);
-// 					 XmAddWMProtocolCallback(spectrum_editor_dialog->dialog,
-// 							WM_DELETE_WINDOW,spectrum_editor_dialog_close_CB,
-// 							spectrum_editor_dialog);
-// 					 create_Shell_list_item(&spectrum_editor_dialog->dialog,
-// 							user_interface);
-// 					 XtRealizeWidget(spectrum_editor_dialog->dialog);
-// 					 XtPopup(spectrum_editor_dialog->dialog, XtGrabNone);
-// 				}
-// 				else
-// 				{
-// 					 DEALLOCATE(spectrum_editor_dialog);
-// 				}
 			}
 			else
 			{
@@ -197,68 +161,6 @@ the spectrums contained in the global list.
 	
 	return (spectrum_editor_dialog);
 } /* CREATE(Spectrum_editor_dialog) */
-
-// int spectrum_editor_dialog_get_callback(
-// 	struct Spectrum_editor_dialog *spectrum_editor_dialog,struct Callback_data *callback)
-// /*******************************************************************************
-// LAST MODIFIED : 17 May 2002
-
-// DESCRIPTION :
-// Get the update <callback> information for the <spectrum_editor_dialog>.
-// ==============================================================================*/
-// {
-// 	int return_code;
-
-// 	ENTER(spectrum_editor_dialog_get_callback);
-// 	return_code=0;
-// 	/* check arguments */
-// 	if (spectrum_editor_dialog&&callback)
-// 	{
-// 		callback->procedure=spectrum_editor_dialog->update_callback.procedure;
-// 		callback->data=spectrum_editor_dialog->update_callback.data;
-// 		return_code=1;
-// 	}
-// 	else
-// 	{
-// 		display_message(ERROR_MESSAGE,
-// 			"spectrum_editor_dialog_get_callback.  Invalid argument(s)");
-// 		return_code=0;
-// 	}
-// 	LEAVE;
-
-// 	return (return_code);
-// } /* spectrum_editor_dialog_get_callback */
-
-// int spectrum_editor_dialog_set_callback(
-// 	struct Spectrum_editor_dialog *spectrum_editor_dialog,struct Callback_data *callback)
-// /*******************************************************************************
-// LAST MODIFIED : 17 May 2002
-
-// DESCRIPTION :
-// Set the update <callback> information for the <spectrum_editor_dialog>.
-// ==============================================================================*/
-// {
-// 	int return_code;
-
-// 	ENTER(spectrum_editor_dialog_set_callback);
-// 	return_code=0;
-// 	/* check arguments */
-// 	if (spectrum_editor_dialog&&callback)
-// 	{
-// 		spectrum_editor_dialog->update_callback.procedure=callback->procedure;
-// 		spectrum_editor_dialog->update_callback.data=callback->data;
-// 		return_code=1;
-// 	}
-// 	else
-// 	{
-// 		display_message(ERROR_MESSAGE,
-// 			"spectrum_editor_dialog_set_callback.  Invalid argument(s)");
-// 		return_code=0;
-// 	}
-// 	LEAVE;
-
-// 	return (return_code);
-// } /* spectrum_editor_dialog_set_callback */
 
 struct Spectrum *spectrum_editor_dialog_get_spectrum(
 	struct Spectrum_editor_dialog *spectrum_editor_dialog)
@@ -323,14 +225,10 @@ Set the <spectrum> for the <spectrum_editor_dialog>.
 				(void *)NULL,
 				spectrum_editor_dialog->spectrum_manager);
 		}
-// 		if (return_code=SELECT_SET_SELECT_ITEM(Spectrum)(
-// 			spectrum_editor_dialog->select_widget,spectrum))
-// 		{
-			spectrum_editor_dialog->current_value=spectrum;
-			spectrum_editor_set_spectrum(
-				spectrum_editor_dialog->spectrum_editor,
-				spectrum_editor_dialog->current_value);
-// 		}
+		spectrum_editor_dialog->current_value=spectrum;
+		spectrum_editor_wx_set_spectrum(
+			 spectrum_editor_dialog->spectrum_editor,
+			 spectrum_editor_dialog->current_value);
 	}
 	else
 	{

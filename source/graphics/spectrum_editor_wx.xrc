@@ -5,37 +5,464 @@
    <title>Spectrum Editor</title>
    <object class = "wxBoxSizer">
       <orient>wxVERTICAL</orient>
+
+      <object class ="sizeritem">
+		  <flag>wxEXPAND</flag>
+		  <object class = "wxStaticBoxSizer">
+            <orient>wxVERTICAL</orient>
+
+            <object class ="sizeritem">
+         		 <object class = "wxBoxSizer">
+ 		     		<object class ="sizeritem">
+                     <object class="wxButton" name="wxSpectrumCreateButton">
+				    	   <label>Create</label>
+				       </object>
+		           </object>
+ 		           <object class ="sizeritem">
+                     <object class="wxButton" name="wxSpectrumDeleteButton">
+                        <label>Delete</label>
+				       </object>
+		           </object>
+ 		           <object class ="sizeritem">
+                     <object class="wxButton" name="wxSpectrumRenameButton">
+				          <label>Rename</label>
+				       </object>
+		           </object>
+               </object>
+           </object>
+
+         <object class ="sizeritem">
+		     <flag>wxEXPAND</flag>
+            <object class="wxListBox" name="SpectrumCheckList">
+               <style>wxLB_SINGLE</style>
+            </object>
+         </object>
+
+         </object>
+      </object>
+
+      <object class ="sizeritem">
+         <flag>wxEXPAND</flag>
+		  <object class = "wxStaticBoxSizer">
+            <orient>wxVERTICAL</orient>
+
+            <object class ="sizeritem">
+               <flag>wxEXPAND</flag>
+		        <object class = "wxBoxSizer">
+
+      	           <object class ="sizeritem">
+                     <object class="wxButton" name="wxSpectrumAutorangeButton">
+				          <label>Autorange</label>
+				       </object>
+      	           </object>
+      	           <object class ="sizeritem">
+                     <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                     <object class="wxStaticText">
+				          <label> from scene </label>
+				       </object>
+      	           </object>
+      	           <object class ="sizeritem">
+                     <object class="wxPanel" name="wxSpectrumSceneChooserPanel">
+                        <size>200,30</size>
+				       </object>
+      	           </object>
+
+      	        </object>
+            </object>
+
+            <object class ="sizeritem">
+	 	        <flag>wxEXPAND</flag>
+               <object class="wxPanel" name="SpectrumPanel">
+               </object>
+            </object>
+
+         </object>
+      </object>
+
+      <object class ="sizeritem">
+         <flag>wxEXPAND</flag>
+		  <object class = "wxBoxSizer">
+
+            <object class ="sizeritem">
+               <object class="wxButton" name="wxSpectrumSettingsAdd">
+                  <label>Add</label>
+				 </object>
+      	     </object>
+            <object class ="sizeritem">
+               <object class="wxButton" name="wxSpectrumSettingsDel">
+                  <label>Del</label>
+				 </object>
+      	     </object>
+            <object class ="sizeritem">
+               <object class="wxButton" name="wxSpectrumSettingsUp">
+                  <label>Up</label>
+				 </object>
+      	     </object>
+            <object class ="sizeritem">
+               <object class="wxButton" name="wxSpectrumSettingsDn">
+                  <label>Dn</label>
+				 </object>
+      	     </object>
+
+         </object>
+      </object>
+
+      <object class ="sizeritem">
+         <flag>wxEXPAND</flag>
+         <option>1</option>
+    	  <object class ="wxSplitterWindow" name="wxSpectrumSplitter">
+            <style>wxSP_3D</style>
+            <orientation>horizontal</orientation>
+            <sashpos>100</sashpos>
+            <minsize>30</minsize>
+
+            <object class ="wxScrolledWindow" name="wxSpectrumHigherPanel">
+               <object class = "wxBoxSizer">
+                  <object class ="sizeritem">
+                     <flag>wxEXPAND</flag>
+                     <option>1</option>
+		              <object class = "wxCheckListBox" name="wxSpectrumSettingsCheckList">
+                     </object>
+                  </object>
+               </object>
+            </object>
+
+            <object class ="wxScrolledWindow" name="wxSpectrumLowerPanel">
+               <object class = "wxStaticBoxSizer">
+                  <orient>wxVERTICAL</orient>
+
+                  <object class ="sizeritem">
+                     <flag>wxEXPAND</flag>
+		              <object class = "wxBoxSizer">
+                        <object class ="sizeritem">
+                           <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                           <object class="wxStaticText">
+                              <label>Data Component: </label>
+				             </object>
+                        </object>
+                        <object class ="sizeritem">
+                           <object class="wxTextCtrl" name="wxSpectrumDataComponentText">
+                              <style>wxTE_PROCESS_ENTER</style>
+                              <size>-1,30</size>
+                              <value>1</value>
+				             </object>
+                        </object>
+                     </object>
+                  </object>
+
+                  <object class ="sizeritem">
+                     <flag>wxEXPAND</flag>
+		              <object class = "wxStaticBoxSizer">
+                        <orient>wxVERTICAL</orient>
+
+                        <object class ="sizeritem">
+                           <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                           <object class="wxStaticText">
+                              <label>Spectrum Range: </label>
+				             </object>
+                        </object>
+
+                        <object class ="sizeritem">
+		                    <object class = "wxBoxSizer">
+                              <object class ="sizeritem">
+                                 <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                 <object class="wxStaticText">
+                                    <label>      Min:  </label>
+				                   </object>
+                              </object>
+                              <object class ="sizeritem">
+                                 <object class="wxTextCtrl" name="wxSpectrumRangeMinText">
+                                    <style>wxTE_PROCESS_ENTER</style>
+                                    <size>-1,30</size>
+                                    <value>0</value>
+				                   </object>
+                              </object>
+                              <object class ="sizeritem">
+                                 <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                 <object class="wxStaticText">
+                                    <label>      Max:  </label>
+				                   </object>
+                              </object>
+                              <object class ="sizeritem">
+                                 <object class="wxTextCtrl" name="wxSpectrumRangeMaxText">
+                                    <style>wxTE_PROCESS_ENTER</style>
+                                    <size>-1,30</size>
+                                    <value>1</value>
+				                   </object>
+                              </object>
+				             </object>
+                        </object>
+
+                        <object class ="sizeritem">
+		                    <object class = "wxBoxSizer">
+                              <object class ="sizeritem">
+                                 <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                 <object class="wxStaticText">
+                                    <label>   </label>
+				                   </object>
+                              </object>
+                              <object class ="sizeritem">
+                                 <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                 <object class="wxCheckBox" name="wxSpectrumFixMinimumCheck">
+                                    <label>Fix Minimum         </label>
+				                   </object>
+                              </object>
+                              <object class ="sizeritem">
+                                 <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                 <object class="wxCheckBox" name="wxSpectrumFixMaximumCheck">
+                                    <label>Fix Maximum</label>
+				                   </object>
+                              </object>
+				             </object>
+                        </object>
+
+                        <object class ="sizeritem">
+		                    <object class = "wxBoxSizer">
+                              <object class ="sizeritem">
+                                 <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                 <object class="wxStaticText">
+                                    <label>   </label>
+				                   </object>
+                              </object>
+                              <object class ="sizeritem">
+                                 <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                 <object class="wxCheckBox" name="wxSpectrumExtendBelowCheck">
+                                    <label>Extend Below        </label>
+				                   </object>
+                              </object>
+                              <object class ="sizeritem">
+                                 <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                 <object class="wxCheckBox" name="wxSpectrumExtendAboveCheck">
+                                    <label>Extend Above</label>
+				                   </object>
+                              </object>
+				             </object>
+                        </object>
+
+                     </object>
+                  </object>
+
+                  <object class ="sizeritem">
+                     <flag>wxEXPAND</flag>
+		              <object class = "wxBoxSizer">
+                        <object class ="sizeritem">
+                           <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                           <object class="wxStaticText">
+                              <label> Colour: </label>
+				             </object>
+                        </object>
+                        <object class ="sizeritem">
+                           <object class="wxChoice" name="wxSpectrumColourChoice">
+                              <size>-1,30</size>
+                              <selection>0</selection>
+                              <content>
+                                <item>Rainbow</item>
+                  			    <item>Red</item>
+                  			    <item>Green</item>
+                  			    <item>Blue</item>
+                  			    <item>White to blue</item>
+                  			    <item>White to red</item>
+                  			    <item>Monochrome</item>
+                  			    <item>Alpha</item>
+                  			    <item>Contour Bands</item>
+                  			    <item>Step</item>
+                              </content>
+				             </object>
+                        </object>
+                     </object>
+                  </object>
+
+                  <object class ="sizeritem">
+                     <flag>wxEXPAND</flag>
+		              <object class = "wxBoxSizer">
+                        <object class ="sizeritem">
+                           <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                           <object class="wxStaticText">
+                              <label>    Type:</label>
+				             </object>
+                        </object>
+                        <object class ="sizeritem">
+                           <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                           <object class="wxChoice" name="wxSpectrumTypeChoice">
+                              <size>-1,30</size>
+                              <selection>0</selection>
+                              <content>
+                                <item>Linear</item>
+                  			    <item>Log</item>
+                              </content>
+				             </object>
+                        </object>
+                        <object class ="sizeritem">
+                           <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                           <object class="wxCheckBox" name="wxSpectrumReverseCheck">
+                              <label>Reverse</label>
+                              <size>-1,30</size>
+				             </object>
+                        </object>
+				       </object>
+                  </object>
+                  <object class ="sizeritem">
+                     <flag>wxEXPAND</flag>
+		              <object class = "wxBoxSizer">
+                        <object class ="sizeritem">
+                           <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                           <object class="wxStaticText">
+                              <label>        Exaggeration: </label>
+				             </object>
+                        </object>
+                        <object class ="sizeritem">
+                           <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                           <object class="wxTextCtrl" name="wxSpectrumExaggerationTextCtrl">
+                              <style>wxTE_PROCESS_ENTER</style>
+                              <size>-1,30</size>
+                              <value>0</value>
+				             </object>
+                        </object>
+                        <object class ="sizeritem">
+                           <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                           <object class="wxRadioBox" name="wxSpectrumLeftRightRadioBox">
+                              <style>wxRA_SPECIFY_ROWS</style>
+                                 <content>
+                                    <item>Left</item>
+                  			        <item>Right</item>
+                                 </content>
+				             </object>
+                        </object>
+                     </object>
+                  </object>
+
+                  <object class ="sizeritem">
+                     <flag>wxEXPAND</flag>
+		              <object class = "wxStaticBoxSizer">
+                        <orient>wxVERTICAL</orient>
+
+                        <object class ="sizeritem">
+                           <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                           <object class="wxStaticText">
+                              <label> Normalised colour range:   </label>
+                           </object>
+                        </object>
+
+                        <object class ="sizeritem">
+		                    <object class = "wxBoxSizer">
+                              <object class ="sizeritem">
+                                 <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                 <object class="wxStaticText">
+                                    <label>            Min:  </label>
+		                          </object>
+                              </object>
+                              <object class ="sizeritem">
+                                 <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                 <object class="wxTextCtrl" name="wxSpectrumNormalisedColourRangeMin">
+                                    <style>wxTE_PROCESS_ENTER</style>
+                                    <size>-1,30</size>
+                                    <value>0</value>
+				                   </object>
+                              </object>
+                              <object class ="sizeritem">
+                                 <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                 <object class="wxStaticText">
+                                    <label>   Max:  </label>
+				                   </object>
+                              </object>
+                              <object class ="sizeritem">
+                                 <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                 <object class="wxTextCtrl" name="wxSpectrumNormalisedColourRangeMax">
+                                    <style>wxTE_PROCESS_ENTER</style>
+                                    <size>-1,30</size>
+                                    <value>1</value>
+				                   </object>
+                               </object>
+				              </object>
+                         </object>
+
+                        <object class ="sizeritem">
+		                    <object class = "wxBoxSizer">
+                              <object class ="sizeritem">
+                                 <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                 <object class="wxStaticText">
+                                    <label> Number of bands:  </label>
+		                          </object>
+                              </object>
+                              <object class ="sizeritem">
+                                 <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                 <object class="wxTextCtrl" name="wxSpectrumNumberOfBandsTextCtrl">
+                                    <style>wxTE_PROCESS_ENTER</style>
+                                    <size>-1,30</size>
+                                    <value>10</value>
+				                   </object>
+                              </object>
+                              <object class ="sizeritem">
+                                 <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                 <object class="wxStaticText">
+                                    <label>   Ratio of black bands:  </label>
+				                   </object>
+                              </object>
+                              <object class ="sizeritem">
+                                 <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                 <object class="wxTextCtrl" name="wxSpectrumRatioOfBlackBandsTextCtrl">
+                                    <style>wxTE_PROCESS_ENTER</style>
+                                    <size>-1,30</size>
+                                    <value>0.2</value>
+				                   </object>
+                               </object>
+				              </object>
+                         </object>
+
+                        <object class ="sizeritem">
+		                    <object class = "wxBoxSizer">
+                              <object class ="sizeritem">
+                                 <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                 <object class="wxStaticText">
+                                    <label> Step value:  </label>
+		                          </object>
+                              </object>
+                              <object class ="sizeritem">
+                                 <flag>wxALIGN_CENTRE_VERTICAL</flag>
+                                 <object class="wxTextCtrl" name="wxSpectrumStepValueTextCtrl">
+                                    <style>wxTE_PROCESS_ENTER</style>
+                                    <size>-1,30</size>
+                                    <value>0.5</value>
+				                   </object>
+                              </object>
+				              </object>
+                         </object>
+
+				        </object>
+                   </object>
+
+               </object>
+            </object>
+
+         </object>
+      </object>
+
       <object class ="sizeritem">
          <object class = "wxBoxSizer">
  		     <object class ="sizeritem">
-               <object class="wxButton" name="wxSpectrumCreateButton">
-				    <label>Create</label>
+               <object class="wxButton" name="wxSpectrumOKButton">
+				    <label>OK</label>
 				 </object>
 		     </object>
  		     <object class ="sizeritem">
-               <object class="wxButton" name="wxSpectrumDeleteButton">
-				    <label>Delete</label>
-				 </object>
+               <object class="wxButton" name="wxSpectrumApplyButton">
+                  <label>Apply</label>
+		        </object>
 		     </object>
  		     <object class ="sizeritem">
-               <object class="wxButton" name="wxSpectrumRenameButton">
-				    <label>Rename</label>
+               <object class="wxButton" name="wxSpectrumRevertButton">
+		           <label>Revert</label>
+   				 </object>
+		     </object>
+ 		     <object class ="sizeritem">
+               <object class="wxButton" name="wxSpectrumCancelButton">
+				    <label>Cancel</label>
 				 </object>
 		     </object>
          </object>
       </object>
-      <object class ="sizeritem">
-		  <flag>wxEXPAND</flag>
-         <object class="wxCheckListBox" name="SpectrumCheckList">
-		     <label>12412</label>
-	      </object>
-      </object>
-      <object class ="sizeritem">
-	 	  <flag>wxEXPAND</flag>
-         <object class="wxPanel" name="Panel">
-	      </object>
-      </object>
-    </object>
+
+   </object>
 </object>
 
 </resource>

@@ -1783,6 +1783,13 @@ public:
 				 "gfx edit scene");
 	 }
 
+	 void spectrumeditor(wxCommandEvent& event)
+	 {
+			SelectedCommand = "gfx edit spectrum";
+			Execute_command_execute_string(command_window->execute_command,
+				 "gfx edit spectrum");
+	 }
+
 	 void OnFormatFont(wxCommandEvent& event)
 	 {
 			wxFontData fdata;
@@ -1945,6 +1952,7 @@ BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	 EVT_MENU(XRCID("ModelNodeviewer"),wxCommandWindow::nodeviewer)
 	 EVT_MENU(XRCID("ModelElementpointviewer"),wxCommandWindow::elementpointviewer)
 	 EVT_MENU(XRCID("GraphicsSceneeditor"),wxCommandWindow::sceneeditor)
+	 EVT_MENU(XRCID("GraphicsSpectrumeditor"),wxCommandWindow::spectrumeditor)
 	 EVT_MENU(XRCID("FontCmgui"),wxCommandWindow::OnFormatFont)
 	 EVT_MENU(XRCID("AboutCmgui"),wxCommandWindow::ShowSimpleAboutDialog)
 	 EVT_CLOSE(wxCommandWindow::Terminate)
