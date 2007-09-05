@@ -546,7 +546,8 @@ already) and allows its contents to be modified.
 			/* coordinates */
 			set_source_field_data.computed_field_manager=
 				computed_field_sample_texture_package->computed_field_manager;
-			set_source_field_data.conditional_function=Computed_field_has_at_least_2_components;
+			set_source_field_data.conditional_function =
+				Computed_field_has_numerical_components;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinates",&texture_coordinate_field,
 				&set_source_field_data,set_Computed_field_conditional);
