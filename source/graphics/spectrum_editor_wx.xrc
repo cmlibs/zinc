@@ -100,7 +100,7 @@
       	     </object>
             <object class ="sizeritem">
                <object class="wxButton" name="wxSpectrumSettingsDn">
-                  <label>Dn</label>
+                  <label>Down</label>
 				 </object>
       	     </object>
 

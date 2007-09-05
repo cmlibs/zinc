@@ -96,8 +96,8 @@ Destroys the edit_spectrum member of <spectrum_editor> and rebuilds it as
 a complete copy of <Spectrum>.
 ==============================================================================*/
 {
-	int return_code;
-
+	 int return_code, i, number_of_spectrums;
+	 struct Spectrum *temp_spectrum;
 	ENTER(make_currentspectrum);
 	if (spectrum_editor)
 	{
@@ -120,10 +120,19 @@ a complete copy of <Spectrum>.
 				(void *)NULL,
 				spectrum_editor->spectrum_manager);
 		}
-			spectrum_editor->current_spectrum=spectrum;
-			spectrum_editor_wx_set_spectrum(
-				 spectrum_editor,
-				spectrum_editor->current_spectrum);
+		number_of_spectrums = 
+			 spectrum_editor->spectrum_editor_check_list->GetCount();
+		for (i=0; i < number_of_spectrums ; i++ )
+		{
+			 temp_spectrum= (struct Spectrum *)(spectrum_editor->spectrum_editor_check_list->GetClientData(i));
+			 if (temp_spectrum == spectrum)
+			 {
+					spectrum_editor->spectrum_editor_check_list->SetSelection(i);
+			 }
+		}
+		spectrum_editor->current_spectrum=spectrum;
+		spectrum_editor_wx_set_spectrum(
+			 spectrum_editor, spectrum_editor->current_spectrum);
 	}
 	else
 	{
@@ -934,6 +943,13 @@ Callback for Spectrum settings.
 			{
 				 spectrum_editor->current_settings = temp_settings;
 			}
+			if (spectrum_editor->spectrum_settings_checklist->IsChecked(selection) != 
+				 Spectrum_settings_get_active(temp_settings))
+			{
+				 Spectrum_settings_set_active(temp_settings,
+						spectrum_editor->spectrum_settings_checklist->IsChecked(selection));
+				 spectrum_editor_wx_update_settings(spectrum_editor, temp_settings);
+			}
 			spectrum_editor_wx_select_settings_item(spectrum_editor);
 	 }
 }
@@ -1580,6 +1596,15 @@ void OnSpectrumAutorangePressed(wxCommandEvent &event)
 	 LEAVE;
 }
 
+void CloseSpectrumEditor(wxCloseEvent &event)
+{
+	 ENTER(CloseSpectrumEditor);
+	 spectrum_editor_wx_set_spectrum(spectrum_editor,
+			spectrum_editor->current_spectrum);
+	 DESTROY(Spectrum_editor_dialog)(spectrum_editor->spectrum_editor_dialog_address);
+	 LEAVE;
+}
+
 DECLARE_EVENT_TABLE();
 };
 	 
@@ -1613,6 +1638,7 @@ BEGIN_EVENT_TABLE(wxSpectrumEditor, wxFrame)
 	 EVT_TEXT_ENTER(XRCID("wxSpectrumRatioOfBlackBandsTextCtrl"), wxSpectrumEditor::OnSpectrumBandsValuesEntered)
 	 EVT_TEXT_ENTER(XRCID("wxSpectrumStepValueTextCtrl"), wxSpectrumEditor::OnSpectrumStepValueEntered)
 	 EVT_BUTTON(XRCID("wxSpectrumAutorangeButton"),wxSpectrumEditor::OnSpectrumAutorangePressed)
+	 EVT_CLOSE(wxSpectrumEditor::CloseSpectrumEditor)
 END_EVENT_TABLE()
 
 static int spectrum_editor_wx_update_scene_viewer(
@@ -2169,6 +2195,10 @@ Creates a spectrum_editor widget.
 					 if (spectrum)
 					 {
 							make_current_spectrum(spectrum_editor, spectrum);
+					 }
+					 else
+					 {
+							spectrum_editor->spectrum_editor_check_list->SetSelection(0);	
 					 }
 					 spectrum_editor->wx_spectrum_editor->set_autorange_scene();
 					 spectrum_editor->wx_spectrum_editor->Show();
