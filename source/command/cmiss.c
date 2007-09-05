@@ -6307,26 +6307,19 @@ value searches just elements of that dimension.
 							if (use_pixel_location)
 							{
 								/* Try to use a pixel coordinate first */
-								if (source_texture_coordinate_field == texture_coordinate_field)
+								if (Computed_field_evaluate_at_field_coordinates(field,
+									texture_coordinate_field, dimension, values, 
+										/*time*/0.0, data_values))
 								{
-									if (Computed_field_evaluate_at_field_coordinates(field,
-											texture_coordinate_field, dimension, values, 
-											/*time*/0.0, data_values))
+									if (!Spectrum_value_to_rgba(spectrum,
+											number_of_data_components, data_values,
+											rgba))
 									{
-										if (!Spectrum_value_to_rgba(spectrum,
-												number_of_data_components, data_values,
-												rgba))
-										{
-											rgba[0] = fail_colour.red;
-											rgba[1] = fail_colour.green;
-											rgba[2] = fail_colour.blue;
-											rgba[3] = fail_alpha;
-											spectrum_render_error_count++;
-										}
-									}
-									else
-									{
-										use_pixel_location = 0;
+										rgba[0] = fail_colour.red;
+										rgba[1] = fail_colour.green;
+										rgba[2] = fail_colour.blue;
+										rgba[3] = fail_alpha;
+										spectrum_render_error_count++;
 									}
 								}
 								else
