@@ -76,7 +76,7 @@ public:
 	{
 		if (radius_sizes)
 		{
-			delete radius_sizes;
+			delete [] radius_sizes;
 		}
 	};
 
