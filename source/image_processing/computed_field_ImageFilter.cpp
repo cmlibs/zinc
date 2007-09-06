@@ -4,7 +4,7 @@ FILE : computed_field_ImageFilter.cpp
 LAST MODIFIED : 9 September 2006
 
 DESCRIPTION :
-Wraps itk::MeanImageFilter
+Class used for wrapping itk filters
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -64,8 +64,8 @@ Evaluate the fields cache at the location
 {
 	int return_code;
 
-	ENTER(Computed_field_meanImageFilter::evaluate_cache_at_location);
-	if (field && location)
+	ENTER(Computed_field_ImageFilter::evaluate_cache_at_location);
+	if (functor && location)
 	{
 		return_code = functor->update_and_evaluate_filter(location);
 	}
