@@ -98,6 +98,10 @@ public:
 		}
 		else
 		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_ImageFilter::Computed_field_ImageFilter.  "
+				"Unable to get native resolution from source field");
+			dimension = 0;
 			texture_coordinate_field = (Computed_field *)NULL;
 			sizes = (int *)NULL;
 		}
