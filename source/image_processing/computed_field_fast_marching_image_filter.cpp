@@ -510,8 +510,19 @@ occurs.
 			source_fields[0] = ACCESS(Computed_field)(source_field);
 			field->source_fields = source_fields;
 			field->number_of_source_fields = number_of_source_fields;			
-			field->core = new Computed_field_fast_marching_image_filter(field,stopping_value, 
+			Computed_field_ImageFilter* filter_core = new Computed_field_fast_marching_image_filter(field,stopping_value, 
 				num_seed_points, seed_points, seed_values, output_size);
+			if (filter_core->functor)
+			{
+				field->core = filter_core;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_set_type_fast_marching_image_filter.  "
+					"Unable to create image filter.");
+				return_code = 0;
+			}
 		}
 		else
 		{

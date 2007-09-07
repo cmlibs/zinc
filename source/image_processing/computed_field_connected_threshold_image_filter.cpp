@@ -402,8 +402,19 @@ occurs.
 			source_fields[0] = ACCESS(Computed_field)(source_field);
 			field->source_fields = source_fields;
 			field->number_of_source_fields = number_of_source_fields;			
-			field->core = new Computed_field_connected_threshold_image_filter(field,lower_threshold, 
+			Computed_field_ImageFilter* filter_core = new Computed_field_connected_threshold_image_filter(field,lower_threshold, 
             							upper_threshold, replace_value, num_seed_points, seed_points);
+			if (filter_core->functor)
+			{
+				field->core = filter_core;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_set_type_connected_threshold_image_filter.  "
+					"Unable to create image filter.");
+				return_code = 0;
+			}
 		}
 		else
 		{

@@ -302,7 +302,18 @@ Converts <field> to type DISCRETEGAUSSIAN.  The <min> <max>
 			source_fields[0] = ACCESS(Computed_field)(source_field);
 			field->source_fields = source_fields;
 			field->number_of_source_fields = number_of_source_fields;			
-			field->core = new Computed_field_discrete_gaussian_image_filter(field, variance, maxKernelWidth);
+			Computed_field_ImageFilter* filter_core = new Computed_field_discrete_gaussian_image_filter(field, variance, maxKernelWidth);
+			if (filter_core->functor)
+			{
+				field->core = filter_core;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_set_type_discrete_gaussian_image_filter.  "
+					"Unable to create image filter.");
+				return_code = 0;
+			}
 		}
 		else
 		{

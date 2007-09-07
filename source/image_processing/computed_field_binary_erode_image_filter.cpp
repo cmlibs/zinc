@@ -322,8 +322,19 @@ for dilation and what pixel value to use for dilation
 			source_fields[0] = ACCESS(Computed_field)(source_field);
 			field->source_fields = source_fields;
 			field->number_of_source_fields = number_of_source_fields;			
-			field->core = new Computed_field_binary_erode_image_filter(field,
+			Computed_field_ImageFilter* filter_core = new Computed_field_binary_erode_image_filter(field,
 				radius, erode_value);
+			if (filter_core->functor)
+			{
+				field->core = filter_core;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_set_type_binary_erode_image_filter.  "
+					"Unable to create image filter.");
+				return_code = 0;
+			}
 		}
 		else
 		{

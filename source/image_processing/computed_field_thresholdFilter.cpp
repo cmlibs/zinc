@@ -433,9 +433,20 @@ The <above_value is used for above and outside thresholding.
 			source_fields[0] = ACCESS(Computed_field)(source_field);
 			field->source_fields = source_fields;
 			field->number_of_source_fields = number_of_source_fields;			
-			field->core = new Computed_field_threshold_image_filter(field,
+			Computed_field_ImageFilter* filter_core = new Computed_field_threshold_image_filter(field,
 				threshold_mode, outside_value,  
 				below_value, above_value);
+			if (filter_core->functor)
+			{
+				field->core = filter_core;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_set_type_threshold_image_filter.  "
+					"Unable to create image filter.");
+				return_code = 0;
+			}
 		}
 		else
 		{
