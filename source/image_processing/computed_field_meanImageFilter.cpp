@@ -424,9 +424,11 @@ already) and allows its contents to be modified.
 			return_code =
 				Computed_field_get_type_mean_image_filter(field, &source_field,
 					&radius_sizes);
-			return_code = Computed_field_get_native_resolution(source_field,
-				&old_dimension, &sizes, &texture_coordinate_field);
-			DEALLOCATE(sizes);
+			if (return_code = Computed_field_get_native_resolution(source_field,
+					&old_dimension, &sizes, &texture_coordinate_field))
+			{
+				DEALLOCATE(sizes);
+			}
 		}
 		if (return_code)
 		{
