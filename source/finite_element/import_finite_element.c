@@ -223,9 +223,9 @@ is in the root_region itself. The REGION_PATH must end in
 		first_string = (char *)NULL;
 		separator_string = (char *)NULL;
 		second_string = (char *)NULL;
-		if (IO_stream_read_string(input_file, "[^ \n]", &first_string) &&
-			IO_stream_read_string(input_file, "[ \n]", &separator_string) &&
-			IO_stream_read_string(input_file, "[^ \n]", &second_string))
+		if (IO_stream_read_string(input_file, "[^ \n\r]", &first_string) &&
+			IO_stream_read_string(input_file, "[ \n\r]", &separator_string) &&
+			IO_stream_read_string(input_file, "[^ \n\r]", &second_string))
 		{
 			element_type_string = (char *)NULL;
 			/* first determine the element_number, which is in the second_string
@@ -784,7 +784,7 @@ for node and element fields.
 				if (return_code)
 				{
 					/* next string required for value_type, below */
-					return_code = IO_stream_read_string(input_file, "[^,\n]", &next_block);
+					return_code = IO_stream_read_string(input_file, "[^,\n\r]", &next_block);
 					IO_stream_scan(input_file, ", ");
 				}
 			}
@@ -822,7 +822,7 @@ for node and element fields.
 			{
 				DEALLOCATE(next_block);
 				/* next string required for value_type, below */
-				return_code = IO_stream_read_string(input_file,"[^,\n]", &next_block);
+				return_code = IO_stream_read_string(input_file,"[^,\n\r]", &next_block);
 			}
 		}
 		else
@@ -922,7 +922,7 @@ the <field_order_info>.
 	if (input_file && fe_region && root_region && field_order_info)
 	{
 		rest_of_line = (char *)NULL;
-		IO_stream_read_string(input_file, "[^\n]", &rest_of_line);
+		IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line);
 		return_code = string_matches_without_whitespace(rest_of_line, "alues : ");
 		DEALLOCATE(rest_of_line);
 		if (return_code)
@@ -1139,7 +1139,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 							&number_of_derivatives)) && (0 <= number_of_derivatives))
 						{
 							/* first number which is the value, is automatically included */
-							if (IO_stream_read_string(input_file, "[^\n]", &rest_of_line))
+							if (IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
 							{
 								derivative_type_name = rest_of_line;
 								derivative_type++;
@@ -1270,7 +1270,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 					{
 						/* non GENERAL_FE_FIELD */
 						/* check there is nothing on remainder of line */
-						if (IO_stream_read_string(input_file, "[^\n]", &rest_of_line))
+						if (IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
 						{
 							if (!fuzzy_string_compare(rest_of_line, "."))
 							{
@@ -1824,7 +1824,7 @@ Note the returned shape will be NULL if the dimension is 0, denoting nodes.
 			{
 				IO_stream_scan(input_file,",");
 				/* read the shape description string */
-				if (IO_stream_read_string(input_file, "[^\n]", &shape_description_string))
+				if (IO_stream_read_string(input_file, "[^\n\r]", &shape_description_string))
 				{
 					if (shape_description_string)
 					{
@@ -2627,7 +2627,7 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 						{
 							/* non GENERAL_FE_FIELD */
 							/* check there is nothing on remainder of line */
-							if (IO_stream_read_string(input_file, "[^\n]", &rest_of_line))
+							if (IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
 							{
 								if (fuzzy_string_compare(rest_of_line, "."))
 								{
@@ -3503,7 +3503,7 @@ If objects are repeated in the file, they are merged correctly.
 						}
 						/* read the name of the group */
 						group_name = (char *)NULL;
-						if (IO_stream_read_string(input_file, "[^\n]", &group_name))
+						if (IO_stream_read_string(input_file, "[^\n\r]", &group_name))
 						{
 							/* trim trailing blanks */
 							last_character = group_name+(strlen(group_name)-1);
@@ -3844,7 +3844,7 @@ If objects are repeated in the file, they are merged correctly.
 					} break;
 					default:
 					{
-						if (IO_stream_read_string(input_file, "[^\n]", &temp_string))
+						if (IO_stream_read_string(input_file, "[^\n\r]", &temp_string))
 						{
 							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE,
