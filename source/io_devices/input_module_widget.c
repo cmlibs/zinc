@@ -80,8 +80,8 @@ FULL_DECLARE_CMISS_CALLBACK_TYPES(Input_module_polhemus_change,Widget, \
 Module functions
 ----------------
 */
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Input_module_device_change)
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Input_module_polhemus_change)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Input_module_device_change, void)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Input_module_polhemus_change, void)
 
 DEFINE_CMISS_CALLBACK_FUNCTIONS(Input_module_device_change,Widget, \
 	struct Input_module_widget_data *)

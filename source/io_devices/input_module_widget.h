@@ -76,8 +76,8 @@ device has changed.
 }; /* Input_module_widget_data */
 
 DECLARE_CMISS_CALLBACK_TYPES(Input_module_device_change,Widget, \
-	struct Input_module_widget_data *);
-DECLARE_CMISS_CALLBACK_TYPES(Input_module_polhemus_change,Widget,int/*button_num*/);
+	struct Input_module_widget_data *, void);
+DECLARE_CMISS_CALLBACK_TYPES(Input_module_polhemus_change,Widget,int/*button_num*/, void);
 
 struct Input_module_widget_struct
 /*******************************************************************************
