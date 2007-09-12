@@ -493,10 +493,12 @@ Evaluate the fields cache at the location.
 	FE_value *derivative;
 	int i, j, number_of_xi, return_code;
 
+#if ! defined (OPTIMISED)
 	ENTER(Computed_field_multiply_components::evaluate_cache_at_location);
 	if (field && location && (field->number_of_source_fields > 0) && 
 		(field->number_of_components == field->source_fields[0]->number_of_components))
 	{
+#endif /* ! defined (OPTIMISED) */
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
 			Computed_field_evaluate_source_fields_cache_at_location(field, location))
@@ -531,6 +533,7 @@ Evaluate the fields cache at the location.
 				field->derivatives_valid = 0;
 			}
 		}
+#if ! defined (OPTIMISED)
 	}
 	else
 	{
@@ -540,6 +543,7 @@ Evaluate the fields cache at the location.
 		return_code = 0;
 	}
 	LEAVE;
+#endif /* ! defined (OPTIMISED) */
 
 	return (return_code);
 } /* Computed_field_multiply_components::evaluate_cache_at_location */
@@ -1238,10 +1242,12 @@ Evaluate the fields cache at the location
 	int element_dimension, i, return_code;
 
 	ENTER(Computed_field_add::evaluate_cache_at_location);
+#if ! defined (OPTIMISED)
 	if (field && location && (field->number_of_source_fields == 2) && 
 		(field->number_of_components == field->source_fields[0]->number_of_components) && 
 		(field->number_of_components == field->source_fields[1]->number_of_components))
 	{
+#endif /* ! defined (OPTIMISED) */
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
 			Computed_field_evaluate_source_fields_cache_at_location(field, location))
@@ -1253,10 +1259,10 @@ Evaluate the fields cache at the location
 					field->source_values[0]*field->source_fields[0]->values[i]+
 					field->source_values[1]*field->source_fields[1]->values[i];
 			}
-			if (field->source_fields[0]->derivatives_valid && 
-				 field->source_fields[1]->derivatives_valid)
+			if ((element_dimension=location->get_number_of_derivatives()) &&
+				field->source_fields[0]->derivatives_valid && 
+				field->source_fields[1]->derivatives_valid)
 			{
-				element_dimension=location->get_number_of_derivatives();
 				temp=field->derivatives;
 				temp1=field->source_fields[0]->derivatives;
 				temp2=field->source_fields[1]->derivatives;
@@ -1276,6 +1282,7 @@ Evaluate the fields cache at the location
 				field->derivatives_valid = 0;
 			}
 		}
+#if ! defined (OPTIMISED)
 	}
 	else
 	{
@@ -1285,6 +1292,7 @@ Evaluate the fields cache at the location
 		return_code = 0;
 	}
 	LEAVE;
+#endif /* ! defined (OPTIMISED) */
 
 	return (return_code);
 } /* Computed_field_add::evaluate_cache_at_location */

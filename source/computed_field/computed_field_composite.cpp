@@ -80,18 +80,6 @@ public:
 	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
-struct Computed_field_composite_type_specific_data
-{
-	/* following are allocated with enough space for the number of components
-		 in the field. <source_field_numbers> are indices into the source fields
-		 for the field, with <source_values_numbers> referring to component number,
-		 with both arrays starting at 0. If <source_field_numbers> is -1 then
-		 the <source_value_numbers> at the same index contains the index into the
-		 source values for the field. */
-	int *source_field_numbers;
-	int *source_value_numbers;
-};
-
 namespace {
 
 char computed_field_composite_type_string[] = "composite";
@@ -107,6 +95,7 @@ public:
 		 source values for the field. */
 	int *source_field_numbers;
 	int *source_value_numbers;
+	FE_value** source_pointers;
 
 	Computed_field_composite(Computed_field *field,
 		int *source_field_numbers_in, int *source_value_numbers_in) : Computed_field_core(field)
@@ -114,6 +103,7 @@ public:
 		int i;
 		source_field_numbers = new int[field->number_of_components];
 		source_value_numbers = new int[field->number_of_components];
+		source_pointers = (FE_value**)NULL;
 		for (i = 0 ; i < field->number_of_components ; i++)
 		{
 			source_field_numbers[i] = source_field_numbers_in[i];
@@ -141,7 +131,15 @@ private:
 
 	char* get_command_string();
 
-	int clear_type_specific();
+	int clear_type_specific()
+	{
+		if (source_pointers)
+		{
+			delete [] source_pointers;
+			source_pointers = (FE_value**)NULL;
+		}
+		return (1);
+	}
 
 	int set_values_at_location(Field_location* location, FE_value *values);
 
@@ -169,6 +167,10 @@ Clear the type specific data used by this type.
 		if (source_value_numbers)
 		{
 			delete [] source_value_numbers;
+		}
+		if (source_pointers)
+		{
+			delete [] source_pointers;
 		}
 	}
 	else
@@ -255,59 +257,89 @@ Evaluate the fields cache at the location
 	int component_number, number_of_derivatives, i, j, return_code,
 		source_field_number;
 
+#if ! defined (OPTIMISED)
 	ENTER(Computed_field_composite::evaluate_cache_at_location);
 	if (field && location)
 	{
+#endif /* ! defined (OPTIMISED) */
 		/* 1. Precalculate any source fields that this field depends on */
 		if (return_code = 
 			Computed_field_evaluate_source_fields_cache_at_location(field, location))
 		{
+			/* 2. Cache value pointers directly into source fields. */
+			if (!source_pointers)
+			{
+				source_pointers = new FE_value*[field->number_of_components];
+				for (i=0;i<field->number_of_components;i++)
+				{
+					if (0 <= source_field_numbers[i])
+					{
+						source_pointers[i] =
+							&(field->source_fields[source_field_numbers[i]]->
+								values[source_value_numbers[i]]);
+					}
+					else
+					{
+						source_pointers[i] =
+							&field->source_values[source_value_numbers[i]];
+					}
+				}
+			}
 			/* 2. Calculate the field */
-			field->derivatives_valid = 1;
-			destination=field->derivatives;
-			number_of_derivatives = location->get_number_of_derivatives();
+			if (number_of_derivatives = location->get_number_of_derivatives())
+			{
+				field->derivatives_valid = 1;
+				destination=field->derivatives;
+			}
+			else
+			{
+				field->derivatives_valid = 0;
+			}
 			for (i=0;i<field->number_of_components;i++)
 			{
-				if (0 <= source_field_numbers[i])
+				field->values[i] = *(source_pointers[i]);
+
+				if (field->derivatives_valid)
 				{
-					/* source field component */
 					source_field_number = source_field_numbers[i];
 					component_number = source_value_numbers[i];
-					field->values[i] =
-						field->source_fields[source_field_number]->values[component_number];
-					if (number_of_derivatives && 
-						field->source_fields[source_field_number]->derivatives_valid)
+					if (0 <= source_field_number)
 					{
-						source = field->source_fields[source_field_number]->derivatives +
-							component_number*number_of_derivatives;
-						for (j=0;j<number_of_derivatives;j++)
+						if (field->source_fields[source_field_number]->derivatives_valid)
 						{
-							*destination = *source;
-							destination++;
-							source++;
+							/* source field component */
+							source = field->source_fields[source_field_number]->derivatives +
+								component_number*number_of_derivatives;
+							for (j=0;j<number_of_derivatives;j++)
+							{
+								*destination = *source;
+								destination++;
+								source++;
+							}
+						}
+						else
+						{
+							field->derivatives_valid = 0;
 						}
 					}
 					else
 					{
-						field->derivatives_valid = 0;
-					}
-				}
-				else
-				{
-					/* source value */
-					field->values[i] =
-						field->source_values[source_value_numbers[i]];
-					if (number_of_derivatives)
-					{
-						for (j=0;j<number_of_derivatives;j++)
+						/* source value */
+						field->values[i] =
+							field->source_values[component_number];
+						if (number_of_derivatives)
 						{
-							*destination = 0.0;
-							destination++;
+							for (j=0;j<number_of_derivatives;j++)
+							{
+								*destination = 0.0;
+								destination++;
+							}
 						}
 					}
 				}
 			}
 		}
+#if ! defined (OPTIMISED)
 	}
 	else
 	{
@@ -317,6 +349,7 @@ Evaluate the fields cache at the location
 		return_code = 0;
 	}
 	LEAVE;
+#endif /* ! defined (OPTIMISED) */
 
 	return (return_code);
 } /* Computed_field_composite::evaluate_cache_at_location */
