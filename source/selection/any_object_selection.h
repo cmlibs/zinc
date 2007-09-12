@@ -79,7 +79,7 @@ Data broadcast with callbacks from <Any_object_selection> describing the changes
 }; /* struct Any_object_selection_changes */
 
 DECLARE_CMISS_CALLBACK_TYPES(Any_object_selection_change, \
-	struct Any_object_selection *,struct Any_object_selection_changes *);
+	struct Any_object_selection *,struct Any_object_selection_changes *, void);
 
 /*
 Global functions

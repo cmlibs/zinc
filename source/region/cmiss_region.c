@@ -187,7 +187,7 @@ Frees the memory for the Cmiss_region_child_child and sets <*cmiss_region_child_
 	return (return_code);
 } /* DESTROY(Cmiss_region_child) */
 
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Cmiss_region_change)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Cmiss_region_change, void)
 
 DEFINE_CMISS_CALLBACK_FUNCTIONS(Cmiss_region_change, \
 	struct Cmiss_region *, struct Cmiss_region_changes *)

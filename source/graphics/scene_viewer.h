@@ -64,7 +64,7 @@ translating and zooming with mouse button press and motion events.
 #include "interaction/interactive_tool.h"
 
 struct Graphics_buffer;
-struct Graphics_buffer_input;
+#define Graphics_buffer_input Cmiss_scene_viewer_input
 
 struct Cmiss_scene_viewer_package;
 
@@ -135,6 +135,8 @@ and the functions given their public names.
 #define Scene_viewer_carbon_set_window_size Cmiss_scene_viewer_carbon_set_window_size
 #define Scene_viewer_add_transform_callback Cmiss_scene_viewer_add_transform_callback
 #define Scene_viewer_remove_transform_callback Cmiss_scene_viewer_remove_transform_callback
+#define Scene_viewer_add_input_callback Cmiss_scene_viewer_add_input_callback
+#define Scene_viewer_remove_input_callback Cmiss_scene_viewer_remove_input_callback
 
 /*
 Global types
@@ -234,13 +236,13 @@ Be sure to implement any new modes in Scene_viewer_viewport_mode_string.
 };
 
 DECLARE_CMISS_CALLBACK_TYPES(Cmiss_scene_viewer_package_callback, \
-	struct Cmiss_scene_viewer_package *, void *);
+	struct Cmiss_scene_viewer_package *, void *, void);
 
 DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_callback, \
-	struct Scene_viewer *, void *);
+	struct Scene_viewer *, void *, void);
 
 DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_input_callback, \
-	struct Scene_viewer *, struct Graphics_buffer_input *);
+	struct Scene_viewer *, struct Graphics_buffer_input *, int);
 
 /*
 Global functions
@@ -1458,15 +1460,33 @@ DESCRIPTION :
 Scales of the absolute image while keeping the same centre point.
 ==============================================================================*/
 
+int Scene_viewer_default_input_callback(struct Scene_viewer *scene_viewer,
+	struct Graphics_buffer_input *input, void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+The callback for mouse or keyboard input in the Scene_viewer window. The
+resulting behaviour depends on the <scene_viewer> input_mode. In Transform mode
+mouse clicks and drags are converted to transformation; in Select mode OpenGL
+picking is performed with picked objects and mouse click and drag information
+returned to the scene.
+==============================================================================*/
+
 int Scene_viewer_add_input_callback(struct Scene_viewer *scene_viewer,
 	CMISS_CALLBACK_FUNCTION(Scene_viewer_input_callback) *function,
-	void *user_data);
+	void *user_data, int add_first);
 /*******************************************************************************
-LAST MODIFIED : 2 July 2002
+LAST MODIFIED : 11 September 2007
 
 DESCRIPTION :
 Adds callback that will be activated each time input is received by the 
 scene_viewer.
+If <add_first> is true (non zero) then this callback will be added to the 
+front of the list.
+When a callback event is generated the list is processed as long as each
+callback function returns true, so to stop processing and not call any more
+of the callbacks registered after your handler then return false.
 ==============================================================================*/
 
 int Scene_viewer_remove_input_callback(struct Scene_viewer *scene_viewer,

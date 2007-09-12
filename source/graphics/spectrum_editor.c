@@ -844,16 +844,17 @@ Callback for when changes made in the settings editor.
 	LEAVE;
 } /* spectrum_editor_update_settings */
 
-static void spectrum_editor_viewer_input_callback(
+static int spectrum_editor_viewer_input_callback(
 	struct Scene_viewer *scene_viewer, struct Graphics_buffer_input *input,
 	void *spectrum_editor_void)
 /*******************************************************************************
-LAST MODIFIED : 2 July 2002
+LAST MODIFIED : 11 September 2007
 
 DESCRIPTION :
 Callback for when input is received by the scene_viewer.
 ==============================================================================*/
 {
+	int return_code;
 	struct Spectrum_editor *spectrum_editor;
 
 	ENTER(spectrum_editor_viewer_input_CB);
@@ -866,13 +867,16 @@ Callback for when input is received by the scene_viewer.
 			spectrum_editor->viewer_type++;
 			spectrum_editor_update_scene_viewer(spectrum_editor);
 		}
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"spectrum_editor_viewer_input_CB.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
+	return (return_code);
 } /* spectrum_editor_viewer_input_CB */
 
 static void spectrum_editor_opaque_button_CB(Widget widget, int *tag,
@@ -1261,7 +1265,7 @@ Creates a spectrum_editor widget.
 											Scene_viewer_add_input_callback(
 												spectrum_editor->spectrum_editor_scene_viewer,
 												spectrum_editor_viewer_input_callback,
-												(void *)spectrum_editor);
+												(void *)spectrum_editor, /*add_first*/0);
 											Scene_viewer_set_viewport_size(
 												spectrum_editor->spectrum_editor_scene_viewer,400,150);
 											Scene_viewer_set_lookat_parameters(

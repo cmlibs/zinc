@@ -78,7 +78,7 @@ the changes are limited to the fields listed in the <fe_field_changes>.
 }; /* struct FE_region_changes */
 
 DECLARE_CMISS_CALLBACK_TYPES(FE_region_change, \
-	struct FE_region *, struct FE_region_changes *);
+	struct FE_region *, struct FE_region_changes *, void);
 
 /*
 Global macros

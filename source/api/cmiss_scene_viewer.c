@@ -1047,3 +1047,358 @@ scene viewer on screen.
 	}
 	return (return_code);
 }
+
+int Cmiss_scene_viewer_default_input_callback(struct Scene_viewer *scene_viewer,
+	struct Graphics_buffer_input *input)
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+The callback for mouse or keyboard input in the Scene_viewer window. The
+resulting behaviour depends on the <scene_viewer> input_mode. In Transform mode
+mouse clicks and drags are converted to transformation; in Select mode OpenGL
+picking is performed with picked objects and mouse click and drag information
+returned to the scene.
+==============================================================================*/
+{
+	return Scene_viewer_default_input_callback(scene_viewer, input,
+		/*dummy_void*/NULL);
+}
+
+int Cmiss_scene_viewer_input_get_event_type(
+	Cmiss_scene_viewer_input_id input_data,
+	enum Cmiss_scene_viewer_input_event_type *event_type)
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_scene_viewer_input_get_event_type);
+	if (input_data)
+	{
+		switch(input_data->type)
+		{
+			case GRAPHICS_BUFFER_MOTION_NOTIFY:
+			{
+				*event_type = CMISS_SCENE_VIEWER_INPUT_MOTION_NOTIFY;
+				return_code = 1;
+			} break;
+			case GRAPHICS_BUFFER_BUTTON_PRESS:
+			{
+				*event_type = CMISS_SCENE_VIEWER_INPUT_BUTTON_PRESS;
+				return_code = 1;
+			} break;
+			case GRAPHICS_BUFFER_BUTTON_RELEASE:
+			{
+				*event_type = CMISS_SCENE_VIEWER_INPUT_BUTTON_RELEASE;
+				return_code = 1;
+			} break;
+			case GRAPHICS_BUFFER_KEY_PRESS:
+			{
+				*event_type = CMISS_SCENE_VIEWER_INPUT_KEY_PRESS;
+				return_code = 1;
+			} break;
+			case GRAPHICS_BUFFER_KEY_RELEASE:
+			{
+				*event_type = CMISS_SCENE_VIEWER_INPUT_KEY_RELEASE;
+				return_code = 1;
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_scene_viewer_input_get_event_type.  "
+					"Invalid type.");
+				return_code = 0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_input_get_event_type.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+int Cmiss_scene_viewer_input_set_event_type(
+	Cmiss_scene_viewer_input_id input_data,
+	enum Cmiss_scene_viewer_input_event_type event_type)
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_scene_viewer_set_projection_mode);
+	if (input_data)
+	{
+		switch(event_type)
+		{
+			case CMISS_SCENE_VIEWER_INPUT_MOTION_NOTIFY:
+			{
+				input_data->type = GRAPHICS_BUFFER_MOTION_NOTIFY;
+			} break;
+			case CMISS_SCENE_VIEWER_INPUT_BUTTON_PRESS:
+			{
+				input_data->type = GRAPHICS_BUFFER_BUTTON_PRESS;
+			} break;
+			case CMISS_SCENE_VIEWER_INPUT_BUTTON_RELEASE:
+			{
+				input_data->type = GRAPHICS_BUFFER_BUTTON_RELEASE;
+			} break;
+			case CMISS_SCENE_VIEWER_INPUT_KEY_PRESS:
+			{
+				input_data->type = GRAPHICS_BUFFER_KEY_PRESS;
+			} break;
+			case CMISS_SCENE_VIEWER_INPUT_KEY_RELEASE:
+			{
+				input_data->type = GRAPHICS_BUFFER_KEY_RELEASE;
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_scene_viewer_set_event_type.  "
+					"Unknown event type.");
+				return_code = 0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_set_event_type.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_scene_viewer_set_projection_mode */
+
+int Cmiss_scene_viewer_input_get_button_number(
+	Cmiss_scene_viewer_input_id input_data)
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Returns the button number that generated the event.
+This will be 1 to 3 for a button event and 0 for a non button event.
+The object is visible within cmiss but needs an interface to expose the
+data through the API.
+==============================================================================*/
+{
+	return (input_data->button_number);
+}
+
+int Cmiss_scene_viewer_input_set_button_number(
+	Cmiss_scene_viewer_input_id input_data, int button_number)
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Sets the button number that the event represents.
+1 to 3 for a button event and 0 for a non button event.
+==============================================================================*/
+{
+	if (input_data)
+	{
+		input_data->button_number = button_number;
+	}
+	return (1);
+}
+
+int Cmiss_scene_viewer_input_get_key_code(
+	Cmiss_scene_viewer_input_id input_data)
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Returns the button number that generated the event.
+This will be 1 to 3 for a button event and 0 for a non button event.
+The object is visible within cmiss but needs an interface to expose the
+data through the API.
+==============================================================================*/
+{
+	return (input_data->key_code);
+}
+
+int Cmiss_scene_viewer_input_set_key_code(
+	Cmiss_scene_viewer_input_id input_data, int key_code)
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Sets the button number that the event represents.
+1 to 3 for a button event and 0 for a non button event.
+==============================================================================*/
+{
+	if (input_data)
+	{
+		input_data->key_code = key_code;
+	}
+	return (1);
+}
+
+int Cmiss_scene_viewer_input_get_x_position(
+	Cmiss_scene_viewer_input_id input_data)
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Returns the x position of the mouse when the event occured in pixels from top left corner.
+==============================================================================*/
+{
+	return (input_data->position_x);
+}
+
+int Cmiss_scene_viewer_input_set_x_position(
+	Cmiss_scene_viewer_input_id input_data, int x_position)
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Sets the button number that the event represents.
+1 to 3 for a button event and 0 for a non button event.
+==============================================================================*/
+{
+	if (input_data)
+	{
+		input_data->position_x = x_position;
+	}
+	return (1);
+}
+
+int Cmiss_scene_viewer_input_get_y_position(
+	Cmiss_scene_viewer_input_id input_data)
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Returns the y position of the mouse when the event occured in pixels from top left corner.
+==============================================================================*/
+{
+	return (input_data->position_y);
+}
+
+int Cmiss_scene_viewer_input_set_y_position(
+	Cmiss_scene_viewer_input_id input_data, int y_position)
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Sets the button number that the event represents.
+1 to 3 for a button event and 0 for a non button event.
+==============================================================================*/
+{
+	if (input_data)
+	{
+		input_data->position_y = y_position;
+	}
+	return (1);
+}
+
+int Cmiss_scene_viewer_input_get_modifier_flags(
+	Cmiss_scene_viewer_input_id input_data,
+	enum Cmiss_scene_viewer_input_modifier_flags *modifier_flags)
+/*******************************************************************************
+LAST MODIFIED : 12 September 2007
+
+DESCRIPTION :
+Returns the set of bit flags showing the whether the modifier inputs
+were active when the event was generated.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_scene_viewer_input_get_event_type);
+	if (input_data)
+	{
+		*modifier_flags = 0;
+		if (input_data->input_modifier &
+			GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT)
+		{
+			*modifier_flags |= CMISS_SCENE_VIEWER_INPUT_MODIFIER_SHIFT;
+		}
+		if (input_data->input_modifier &
+			GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL)
+		{
+			*modifier_flags |= CMISS_SCENE_VIEWER_INPUT_MODIFIER_CONTROL;
+		}
+		if (input_data->input_modifier &
+			GRAPHICS_BUFFER_INPUT_MODIFIER_ALT)
+		{
+			*modifier_flags |= CMISS_SCENE_VIEWER_INPUT_MODIFIER_ALT;
+		}
+		if (input_data->input_modifier &
+			GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1)
+		{
+			*modifier_flags |= CMISS_SCENE_VIEWER_INPUT_MODIFIER_BUTTON1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_input_get_event_type.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+int Cmiss_scene_viewer_input_set_modifier_flags(
+	Cmiss_scene_viewer_input_id input_data,
+	enum Cmiss_scene_viewer_input_modifier_flags modifier_flags)
+/*******************************************************************************
+LAST MODIFIED : 12 September 2007
+
+DESCRIPTION :
+Sets the set of bit flags showing the whether the modifier inputs
+were active when the event was generated.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_scene_viewer_input_get_event_type);
+	if (input_data)
+	{
+		input_data->input_modifier = 0;
+		if (modifier_flags & CMISS_SCENE_VIEWER_INPUT_MODIFIER_SHIFT)
+		{
+			input_data->input_modifier |= 
+				GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+		}
+		if (modifier_flags & CMISS_SCENE_VIEWER_INPUT_MODIFIER_CONTROL)
+		{
+			input_data->input_modifier |= 
+				GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+		}
+		if (modifier_flags & CMISS_SCENE_VIEWER_INPUT_MODIFIER_ALT)
+		{
+			input_data->input_modifier |= 
+				GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+		}
+		if (modifier_flags & CMISS_SCENE_VIEWER_INPUT_MODIFIER_BUTTON1)
+		{
+			input_data->input_modifier |= 
+				GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_input_get_event_type.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+

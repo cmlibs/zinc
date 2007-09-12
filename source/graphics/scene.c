@@ -262,7 +262,7 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Scene_object,position,int,compare_int)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Scene)
 
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Scene_object_transformation)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Scene_object_transformation, void)
 
 DEFINE_CMISS_CALLBACK_FUNCTIONS(Scene_object_transformation, \
 	struct Scene_object *, gtMatrix *)

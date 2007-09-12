@@ -84,7 +84,7 @@ Module functions
 ----------------
 */
 
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(FE_element_selection_change)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(FE_element_selection_change, void)
 
 DEFINE_CMISS_CALLBACK_FUNCTIONS(FE_element_selection_change, \
 	struct FE_element_selection *,struct FE_element_selection_changes *)

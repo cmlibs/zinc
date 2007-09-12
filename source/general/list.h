@@ -209,6 +209,23 @@ Add the <object> to the <list>. \
 ==============================================================================*/
 
 #if ! defined (SHORT_NAMES)
+#define ADD_OBJECT_TO_FRONT_OF_LIST_( object_type )  list_add_object_to_front ## object_type
+#else
+#define ADD_OBJECT_TO_FRONT_OF_LIST_( object_type )  pl ## object_type
+#endif
+#define ADD_OBJECT_TO_FRONT_OF_LIST( object_type )  ADD_OBJECT_TO_FRONT_OF_LIST_(object_type)
+
+#define PROTOTYPE_ADD_OBJECT_TO_FRONT_OF_LIST_FUNCTION( object_type ) \
+int ADD_OBJECT_TO_FRONT_OF_LIST(object_type)(struct object_type *object, \
+	struct LIST(object_type) *list) \
+/***************************************************************************** \
+LAST MODIFIED : 11 September 2007 \
+\
+DESCRIPTION : \
+Add the <object> to the front of <list>. \
+==============================================================================*/
+
+#if ! defined (SHORT_NAMES)
 #define NUMBER_IN_LIST_( object_type )  list_number_ ## object_type
 #else
 #define NUMBER_IN_LIST_( object_type )  nl ## object_type
@@ -356,6 +373,11 @@ public: \
 DECLARE_LIST_TYPE(object_type); \
 DECLARE_LIST_CONDITIONAL_FUNCTION(object_type); \
 DECLARE_LIST_ITERATOR_FUNCTION(object_type)
+
+/* PROTOTYPE_ADD_OBJECT_TO_FRONT_OF_LIST_FUNCTION(object_type); is not
+	automatically included as it is unavailable to INDEXED lists so
+	it is up to the definer of the list to PROTOTYPE and DECLARE it 
+	if appropriate/required. */
 
 #define PROTOTYPE_LIST_FUNCTIONS( object_type ) \
 PROTOTYPE_CREATE_LIST_FUNCTION(object_type); \

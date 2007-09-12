@@ -128,10 +128,10 @@ struct Graphics_buffer_package;
 struct Graphics_buffer;
 
 DECLARE_CMISS_CALLBACK_TYPES(Graphics_buffer_callback, \
-	struct Graphics_buffer *, void *);
+	struct Graphics_buffer *, void *, void);
 
 DECLARE_CMISS_CALLBACK_TYPES(Graphics_buffer_input_callback, \
-	struct Graphics_buffer *, struct Graphics_buffer_input *);
+	struct Graphics_buffer *, struct Graphics_buffer_input *, void);
 
 /*
 Global functions

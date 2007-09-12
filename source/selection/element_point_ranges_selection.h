@@ -83,7 +83,7 @@ the changes.
 
 DECLARE_CMISS_CALLBACK_TYPES(Element_point_ranges_selection_change, \
 	struct Element_point_ranges_selection *, \
-	struct Element_point_ranges_selection_changes *);
+	struct Element_point_ranges_selection_changes *, void);
 
 struct FE_element_select_grid_field_ranges_data
 /*******************************************************************************

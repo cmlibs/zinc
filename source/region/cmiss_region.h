@@ -100,7 +100,7 @@ Data broadcast with callbacks from <Cmiss_region> describing the changes.
 }; /* struct Cmiss_region_changes */
 
 DECLARE_CMISS_CALLBACK_TYPES(Cmiss_region_change, \
-	struct Cmiss_region *, struct Cmiss_region_changes *);
+	struct Cmiss_region *, struct Cmiss_region_changes *, void);
 
 /*
 Global functions

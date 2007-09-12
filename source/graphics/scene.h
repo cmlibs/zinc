@@ -232,7 +232,7 @@ Contains all information necessary for an input callback from the scene.
 }; /* struct Scene_input_callback */
 
 DECLARE_CMISS_CALLBACK_TYPES(Scene_object_transformation, struct Scene_object *, \
-	gtMatrix *);
+	gtMatrix *, void);
 
 struct Scene_get_data_range_for_spectrum_data
 {

@@ -81,7 +81,7 @@ changes.
 }; /* struct FE_element_selection_changes */
 
 DECLARE_CMISS_CALLBACK_TYPES(FE_element_selection_change, \
-	struct FE_element_selection *,struct FE_element_selection_changes *);
+	struct FE_element_selection *,struct FE_element_selection_changes *, void);
 
 /*
 Global functions

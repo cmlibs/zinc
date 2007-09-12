@@ -190,6 +190,41 @@ typedef struct Cmiss_scene_viewer *Cmiss_scene_viewer_id;
 typedef void (*Cmiss_scene_viewer_callback)(Cmiss_scene_viewer_id scene_viewer,
 	void *callback_data, void *user_data);
 
+enum Cmiss_scene_viewer_input_event_type
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	CMISS_SCENE_VIEWER_INPUT_MOTION_NOTIFY,
+	CMISS_SCENE_VIEWER_INPUT_BUTTON_PRESS,
+	CMISS_SCENE_VIEWER_INPUT_BUTTON_RELEASE,
+	CMISS_SCENE_VIEWER_INPUT_KEY_PRESS,
+	CMISS_SCENE_VIEWER_INPUT_KEY_RELEASE
+};
+
+enum Cmiss_scene_viewer_input_modifier_flags
+/*******************************************************************************
+LAST MODIFIED : 12 September 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	CMISS_SCENE_VIEWER_INPUT_MODIFIER_SHIFT = 1,
+	CMISS_SCENE_VIEWER_INPUT_MODIFIER_CONTROL = 2,
+	CMISS_SCENE_VIEWER_INPUT_MODIFIER_ALT = 4,
+	CMISS_SCENE_VIEWER_INPUT_MODIFIER_BUTTON1 = 8
+};
+
+struct Cmiss_scene_viewer_input;
+typedef struct Cmiss_scene_viewer_input *Cmiss_scene_viewer_input_id;
+
+typedef int (*Cmiss_scene_viewer_input_callback)(
+	Cmiss_scene_viewer_id scene_viewer,
+	struct Cmiss_scene_viewer_input *, void *user_data);
+/* The Cmiss_scene_viewer_input describes the input event */
+
 /*
 Global functions
 ----------------
@@ -862,5 +897,163 @@ Removes the callback calling <function> with <user_data> from
 <scene_viewer>.
 ==============================================================================*/
 
+int Cmiss_scene_viewer_default_input_callback(
+	Cmiss_scene_viewer_id scene_viewer,
+	Cmiss_scene_viewer_input_id input_data);
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+The callback for mouse or keyboard input in the Scene_viewer window. The
+resulting behaviour depends on the <scene_viewer> input_mode. In Transform mode
+mouse clicks and drags are converted to transformation; in Select mode OpenGL
+picking is performed with picked objects and mouse click and drag information
+returned to the scene.
+==============================================================================*/
+
+int Cmiss_scene_viewer_add_input_callback(
+	Cmiss_scene_viewer_id scene_viewer,
+	Cmiss_scene_viewer_input_callback function,
+	void *user_data, int add_first);
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Adds callback <function> that will be activated each time input is received
+by the scene_viewer.
+If <add_first> is true (non zero) then this callback will be added to the 
+front of the list.
+When a callback event is generated the list is processed as long as each
+callback function returns true, so to stop processing and not call any more
+of the callbacks registered after your handler then return false.
+==============================================================================*/
+
+int Cmiss_scene_viewer_remove_input_callback(
+	Cmiss_scene_viewer_id scene_viewer,
+	Cmiss_scene_viewer_input_callback function,
+	void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Removes the callback calling <function> with <user_data> from
+<scene_viewer>.
+==============================================================================*/
+
+int Cmiss_scene_viewer_input_get_event_type(
+	Cmiss_scene_viewer_input_id input_data,
+	enum Cmiss_scene_viewer_input_event_type *event_type);
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Returns the type of event that <input_data> represents.
+==============================================================================*/
+
+int Cmiss_scene_viewer_input_set_event_type(
+	Cmiss_scene_viewer_input_id input_data,
+	enum Cmiss_scene_viewer_input_event_type event_type);
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Sets the type of event that <input_data> represents.
+==============================================================================*/
+
+int Cmiss_scene_viewer_input_get_button_number(
+	Cmiss_scene_viewer_input_id input_data);
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Returns the button number that generated the event.
+This will be 1 to 3 for a button event and 0 for a non button event.
+==============================================================================*/
+
+int Cmiss_scene_viewer_input_set_button_number(
+	Cmiss_scene_viewer_input_id input_data, int button_number);
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Sets the button number that the event represents.
+1 to 3 for a button event and 0 for a non button event.
+==============================================================================*/
+
+int Cmiss_scene_viewer_input_get_key_code(
+	Cmiss_scene_viewer_input_id input_data);
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Returns the key code that generated the event.
+==============================================================================*/
+
+int Cmiss_scene_viewer_input_set_key_code(
+	Cmiss_scene_viewer_input_id input_data, int key_code);
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Sets the key code that the event represents.
+==============================================================================*/
+
+int Cmiss_scene_viewer_input_get_x_position(
+	Cmiss_scene_viewer_input_id input_data);
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Returns the x position of the mouse when the event occured in pixels from top left corner.
+==============================================================================*/
+
+int Cmiss_scene_viewer_input_set_x_position(
+	Cmiss_scene_viewer_input_id input_data, int x_position);
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Sets the x position of the mouse when the event occured in pixels from top left corner.
+==============================================================================*/
+
+int Cmiss_scene_viewer_input_get_y_position(
+	Cmiss_scene_viewer_input_id input_data);
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Returns the y position of the mouse when the event occured in pixels from top left corner.
+==============================================================================*/
+
+int Cmiss_scene_viewer_input_set_y_position(
+	Cmiss_scene_viewer_input_id input_data, int y_position);
+/*******************************************************************************
+LAST MODIFIED : 11 September 2007
+
+DESCRIPTION :
+Sets the y position of the mouse when the event occured in pixels from top left corner.
+==============================================================================*/
+
+int Cmiss_scene_viewer_input_get_modifier_flags(
+	Cmiss_scene_viewer_input_id input_data,
+	enum Cmiss_scene_viewer_input_modifier_flags *modifier_flags);
+/*******************************************************************************
+LAST MODIFIED : 12 September 2007
+
+DESCRIPTION :
+Returns the set of bit flags showing the whether the modifier inputs
+were active when the event was generated.
+==============================================================================*/
+
+int Cmiss_scene_viewer_input_set_modifier_flags(
+	Cmiss_scene_viewer_input_id input_data,
+	enum Cmiss_scene_viewer_input_modifier_flags modifier_flags);
+/*******************************************************************************
+LAST MODIFIED : 12 September 2007
+
+DESCRIPTION :
+Sets the set of bit flags showing the whether the modifier inputs
+were active when the event was generated.
+==============================================================================*/
 
 #endif /* __CMISS_SCENE_VIEWER_H__ */

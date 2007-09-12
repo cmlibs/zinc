@@ -87,7 +87,7 @@ highlighting.
 Module functions
 ----------------
 */
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Element_point_ranges_selection_change)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Element_point_ranges_selection_change, void)
 
 DEFINE_CMISS_CALLBACK_FUNCTIONS(Element_point_ranges_selection_change, \
 	struct Element_point_ranges_selection *, \

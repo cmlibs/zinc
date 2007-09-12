@@ -478,17 +478,17 @@ Frees the memory for the render_object and sets <*render_object_address> to NULL
 DECLARE_OBJECT_FUNCTIONS(Scene_viewer_render_object)
 DECLARE_LIST_FUNCTIONS(Scene_viewer_render_object)
 
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Cmiss_scene_viewer_package_callback)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Cmiss_scene_viewer_package_callback, void)
 
 DEFINE_CMISS_CALLBACK_FUNCTIONS(Cmiss_scene_viewer_package_callback, \
 	struct Cmiss_scene_viewer_package *,void *)
 
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Scene_viewer_callback)
+	DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Scene_viewer_callback, void)
 
 DEFINE_CMISS_CALLBACK_FUNCTIONS(Scene_viewer_callback, \
 	struct Scene_viewer *,void *)
 
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Scene_viewer_input_callback)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Scene_viewer_input_callback, int)
 
 DEFINE_CMISS_CALLBACK_FUNCTIONS(Scene_viewer_input_callback, \
 	struct Scene_viewer *,struct Graphics_buffer_input *)
@@ -3487,7 +3487,7 @@ Converts mouse button-press and motion events into viewing transformations in
 									b[0]=scene_viewer->upx;
 									b[1]=scene_viewer->upy;
 									b[2]=scene_viewer->upz;
-									normalize3(c);
+									normalize3(b);
 									/* c = b (x) a = vector to the right */
 									cross_product3(b,a,c);
 									normalize3(c);
@@ -3804,10 +3804,10 @@ transformations.
 	return (return_code);
 } /* Scene_viewer_input_viewport_transform */
 
-static void Scene_viewer_input_callback(struct Graphics_buffer *graphics_buffer,
-	struct Graphics_buffer_input *input, void *scene_viewer_void)
+int Scene_viewer_default_input_callback(struct Scene_viewer *scene_viewer,
+	struct Graphics_buffer_input *input, void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 04 February 2005
+LAST MODIFIED : 11 September 2007
 
 DESCRIPTION :
 The callback for mouse or keyboard input in the Scene_viewer window. The
@@ -3817,11 +3817,11 @@ picking is performed with picked objects and mouse click and drag information
 returned to the scene.
 ==============================================================================*/
 {
-	struct Scene_viewer *scene_viewer;
+	int return_code;
 
-	ENTER(Scene_viewer_input_callback);
-	USE_PARAMETER(graphics_buffer);
-	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
+	ENTER(Scene_viewer_default_input_callback);
+	USE_PARAMETER(dummy_void);
+	if (scene_viewer)
 	{
 		Graphics_buffer_make_current(scene_viewer->graphics_buffer);
 		switch (scene_viewer->input_mode)
@@ -3874,7 +3874,7 @@ returned to the scene.
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"Scene_viewer_input_callback.  Always need an interactive tool");
+							"Scene_viewer_default_input_callback.  Always need an interactive tool");
 					}
 				}
 			} break;
@@ -3909,16 +3909,50 @@ returned to the scene.
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"Scene_viewer_input_callback.  Invalid input mode");
+					"Scene_viewer_default_input_callback.  Invalid input mode");
 			} break;
 		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_default_input_callback.  Invalid argument(s)");
+	}
+	LEAVE;
+	/* We want to call any other callbacks even if this fails. */
+	return_code = 1;
+
+	return(return_code);
+} /* Scene_viewer_default_input_callback */
+
+static void Scene_viewer_graphics_buffer_input_callback(
+	struct Graphics_buffer *graphics_buffer,
+	struct Graphics_buffer_input *input, void *scene_viewer_void)
+/*******************************************************************************
+LAST MODIFIED : 04 February 2005
+
+DESCRIPTION :
+The callback for mouse or keyboard input in the Scene_viewer window. The
+resulting behaviour depends on the <scene_viewer> input_mode. In Transform mode
+mouse clicks and drags are converted to transformation; in Select mode OpenGL
+picking is performed with picked objects and mouse click and drag information
+returned to the scene.
+==============================================================================*/
+{
+	struct Scene_viewer *scene_viewer;
+
+	ENTER(Scene_viewer_graphics_buffer_input_callback);
+	USE_PARAMETER(graphics_buffer);
+	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
+	{
 		CMISS_CALLBACK_LIST_CALL(Scene_viewer_input_callback)(
 			scene_viewer->input_callback_list,scene_viewer,input);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_input_callback.  Invalid argument(s)");
+			"Scene_viewer_graphics_buffer_input_callback.  "
+			"Invalid argument(s)");
 	}
 	LEAVE;
 } /* Scene_viewer_input_callback */
@@ -4663,6 +4697,10 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->transparency_layers=1;
 				scene_viewer->input_callback_list=
 					CREATE(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_input_callback)))();
+				/* Add the default callback */
+				CMISS_CALLBACK_LIST_ADD_CALLBACK(Scene_viewer_input_callback)(
+					scene_viewer->input_callback_list,
+					Scene_viewer_default_input_callback,NULL);
 				scene_viewer->sync_callback_list=
 					CREATE(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)))();
 				scene_viewer->transform_callback_list=
@@ -4690,7 +4728,7 @@ performed in idle time so that multiple redraws are avoided.
 					Scene_viewer_expose_callback, scene_viewer);
 
 				Graphics_buffer_add_input_callback(graphics_buffer,
-					 Scene_viewer_input_callback, scene_viewer);
+					 Scene_viewer_graphics_buffer_input_callback, scene_viewer);
 
 				Scene_viewer_awaken(scene_viewer);
 				Graphics_buffer_awaken(scene_viewer->graphics_buffer);
@@ -8614,13 +8652,18 @@ DESCRIPTION :
 
 int Scene_viewer_add_input_callback(struct Scene_viewer *scene_viewer,
 	CMISS_CALLBACK_FUNCTION(Scene_viewer_input_callback) *function,
-	void *user_data)
+	void *user_data, int add_first)
 /*******************************************************************************
-LAST MODIFIED : 2 July 2002
+LAST MODIFIED : 11 September 2007
 
 DESCRIPTION :
 Adds callback that will be activated each time input is received by the 
 scene_viewer.
+If <add_first> is true (non zero) then this callback will be added to the 
+front of the list.
+When a callback event is generated the list is processed as long as each
+callback function returns true, so to stop processing and not call any more
+of the callbacks registered after your handler then return false.
 ==============================================================================*/
 {
 	int return_code;
@@ -8628,12 +8671,19 @@ scene_viewer.
 	ENTER(Scene_viewer_add_input_callback);
 	if (scene_viewer&&function)
 	{
-		if (CMISS_CALLBACK_LIST_ADD_CALLBACK(Scene_viewer_input_callback)(
-			scene_viewer->input_callback_list,function,user_data))
+		if (add_first)
 		{
-			return_code=1;
+			return_code = 
+				CMISS_CALLBACK_LIST_ADD_CALLBACK_TO_FRONT(Scene_viewer_input_callback)(
+				scene_viewer->input_callback_list,function,user_data);
 		}
 		else
+		{
+			return_code = 
+				CMISS_CALLBACK_LIST_ADD_CALLBACK(Scene_viewer_input_callback)(
+				scene_viewer->input_callback_list,function,user_data);
+		}
+		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE,
 				"Scene_viewer_add_input_callback.  Could not add callback");

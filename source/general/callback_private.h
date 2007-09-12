@@ -165,14 +165,15 @@ Destroys the callback at <*callback_address>. \
 #define CMISS_CALLBACK_CALL( callback_type ) cbc_ ## callback_type
 #endif
 
-#define DEFINE_CMISS_CALLBACK_CALL_FUNCTION( callback_type ) \
-static int CMISS_CALLBACK_CALL(callback_type)( \
+#define DEFINE_CMISS_CALLBACK_CALL_FUNCTIONvoid( callback_type )				\
+	static int CMISS_CALLBACK_CALL(callback_type)(								\
 	struct CMISS_CALLBACK_ITEM(callback_type) *callback,void *callback_data_void) \
 /***************************************************************************** \
-LAST MODIFIED : 20 March 2000 \
+LAST MODIFIED : 11 September 2007 \
 \
 DESCRIPTION : \
 Sends <callback> with the object and call_data in <callback_data>. \
+Version for callback_function_return_type == void.
 ============================================================================*/ \
 { \
 	int return_code; \
@@ -186,6 +187,39 @@ Sends <callback> with the object and call_data in <callback_data>. \
 		(callback->function)(callback_data->object, \
 			callback_data->call_data,callback->user_data); \
 		return_code=1; \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"CMISS_CALLBACK_CALL(" #callback_type ").  Invalid argument(s)"); \
+		return_code=0; \
+	} \
+	LEAVE; \
+\
+	return (return_code); \
+} /* CMISS_CALLBACK_CALL(callback_type) */ \
+
+#define DEFINE_CMISS_CALLBACK_CALL_FUNCTIONint( callback_type )	\
+	static int CMISS_CALLBACK_CALL(callback_type)(								\
+	struct CMISS_CALLBACK_ITEM(callback_type) *callback,void *callback_data_void) \
+/***************************************************************************** \
+LAST MODIFIED : 11 September 2007 \
+\
+DESCRIPTION : \
+Sends <callback> with the object and call_data in <callback_data>. \
+Version for callback_function_return_type == int.
+============================================================================*/ \
+{ \
+	int return_code; \
+  struct CMISS_CALLBACK_OBJECT_AND_CALL_DATA(callback_type) *callback_data; \
+\
+	ENTER(CMISS_CALLBACK_CALL(callback_type)); \
+	if (callback&&callback->function&&(callback_data= \
+		(struct CMISS_CALLBACK_OBJECT_AND_CALL_DATA(callback_type) *) \
+    callback_data_void)&&callback_data->object) \
+	{ \
+		return_code=(callback->function)(callback_data->object, \
+			callback_data->call_data,callback->user_data); \
 	} \
 	else \
 	{ \
@@ -279,7 +313,7 @@ PROTOTYPE_CMISS_CALLBACK_LIST_ADD_CALLBACK_FUNCTION(callback_type) \
 LAST MODIFIED : 20 May 2003 \
 \
 DESCRIPTION : \
-Adds a callback = <function> + <user_data> to <callback_list>. \
+Adds a callback = <function> + <user_data> to end of <callback_list>. \
 ============================================================================*/ \
 { \
 	int return_code; \
@@ -332,6 +366,66 @@ Adds a callback = <function> + <user_data> to <callback_list>. \
 \
 	return (return_code); \
 } /* CMISS_CALLBACK_LIST_ADD_CALLBACK(callback_type) */
+
+#define DEFINE_CMISS_CALLBACK_LIST_ADD_CALLBACK_TO_FRONT_FUNCTION( callback_type ) \
+PROTOTYPE_CMISS_CALLBACK_LIST_ADD_CALLBACK_TO_FRONT_FUNCTION(callback_type) \
+/***************************************************************************** \
+LAST MODIFIED : 11 September 2007 \
+\
+DESCRIPTION : \
+Adds a callback = <function> + <user_data> to front of <callback_list>. \
+============================================================================*/ \
+{ \
+	int return_code; \
+  struct CMISS_CALLBACK_ITEM(callback_type) *callback; \
+\
+	ENTER(CMISS_CALLBACK_LIST_ADD_CALLBACK_TO_FRONT(callback_type)); \
+	if (callback_list && function) \
+	{ \
+		if (callback = \
+			CREATE(CMISS_CALLBACK_ITEM(callback_type))(function, user_data)) \
+		{ \
+			if (FIRST_OBJECT_IN_LIST_THAT(CMISS_CALLBACK_ITEM(callback_type))( \
+				CMISS_CALLBACK_MATCHES(callback_type), (void *)callback, \
+				callback_list)) \
+			{ \
+         /* we already have an equivalent callback, so destroy new one */ \
+         DESTROY(CMISS_CALLBACK_ITEM(callback_type))(&callback); \
+         return_code = 1; \
+			} \
+			else \
+			{ \
+				if (ADD_OBJECT_TO_FRONT_OF_LIST(CMISS_CALLBACK_ITEM(callback_type))( \
+					callback,callback_list)) \
+				{ \
+					return_code=1; \
+				} \
+				else \
+				{ \
+					display_message(ERROR_MESSAGE,"CMISS_CALLBACK_LIST_ADD_CALLBACK_TO_FRONT(" \
+						#callback_type ").  Could not add callback to list"); \
+					DESTROY(CMISS_CALLBACK_ITEM(callback_type))(&callback); \
+					return_code=0; \
+				} \
+			} \
+		} \
+		else \
+		{ \
+			display_message(ERROR_MESSAGE,"CMISS_CALLBACK_LIST_ADD_CALLBACK_TO_FRONT(" \
+				#callback_type ").  Could not create callback"); \
+			return_code=0; \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE,"CMISS_CALLBACK_LIST_ADD_CALLBACK_TO_FRONT(" \
+			#callback_type ").  Invalid argument(s)"); \
+		return_code=0; \
+	} \
+	LEAVE; \
+\
+	return (return_code); \
+} /* CMISS_CALLBACK_LIST_ADD_CALLBACK_TO_FRONT(callback_type) */
 
 #define DEFINE_CMISS_CALLBACK_LIST_REMOVE_CALLBACK_FUNCTION( callback_type ) \
 PROTOTYPE_CMISS_CALLBACK_LIST_REMOVE_CALLBACK_FUNCTION(callback_type) \
@@ -399,17 +493,19 @@ FULL_DECLARE_LIST_TYPE(CMISS_CALLBACK_ITEM(callback_type)); \
 FULL_DECLARE_CMISS_CALLBACK_OBJECT_AND_CALL_DATA_TYPE(callback_type,object_type, \
   call_data_type)
 
-#define DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS( callback_type ) \
+#define DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS( callback_type , callback_function_return_type ) \
 DEFINE_CREATE_CMISS_CALLBACK_FUNCTION(callback_type) \
 DEFINE_DESTROY_CMISS_CALLBACK_FUNCTION(callback_type) \
 DECLARE_OBJECT_FUNCTIONS(CMISS_CALLBACK_ITEM(callback_type)) \
-DEFINE_CMISS_CALLBACK_CALL_FUNCTION(callback_type) \
+DEFINE_CMISS_CALLBACK_CALL_FUNCTION ## callback_function_return_type(callback_type)		 \
 DEFINE_CMISS_CALLBACK_MATCHES_FUNCTION(callback_type)
 
 #define DEFINE_CMISS_CALLBACK_FUNCTIONS( callback_type , object_type , \
 	call_data_type ) \
 DECLARE_LIST_FUNCTIONS(CMISS_CALLBACK_ITEM(callback_type)) \
+DECLARE_ADD_OBJECT_TO_FRONT_OF_LIST_FUNCTION(CMISS_CALLBACK_ITEM(callback_type)) \
 DEFINE_CMISS_CALLBACK_LIST_CALL_FUNCTION( callback_type , object_type , \
 	call_data_type ) \
 DEFINE_CMISS_CALLBACK_LIST_ADD_CALLBACK_FUNCTION(callback_type) \
+DEFINE_CMISS_CALLBACK_LIST_ADD_CALLBACK_TO_FRONT_FUNCTION(callback_type) \
 DEFINE_CMISS_CALLBACK_LIST_REMOVE_CALLBACK_FUNCTION(callback_type)

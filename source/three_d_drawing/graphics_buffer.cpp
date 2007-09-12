@@ -297,12 +297,12 @@ static LRESULT CALLBACK Graphics_buffer_callback_proc(HWND window, UINT message_
 	WPARAM first_message, LPARAM second_message);
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Graphics_buffer_callback)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Graphics_buffer_callback, void)
 
 DEFINE_CMISS_CALLBACK_FUNCTIONS(Graphics_buffer_callback, \
 	struct Graphics_buffer *,void *)
 
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Graphics_buffer_input_callback)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Graphics_buffer_input_callback, void)
 
 DEFINE_CMISS_CALLBACK_FUNCTIONS(Graphics_buffer_input_callback, \
 	struct Graphics_buffer *, struct Graphics_buffer_input *)

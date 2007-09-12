@@ -82,7 +82,7 @@ Module functions
 ----------------
 */
 
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Any_object_selection_change)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Any_object_selection_change, void)
 
 DEFINE_CMISS_CALLBACK_FUNCTIONS(Any_object_selection_change, \
 	struct Any_object_selection *,struct Any_object_selection_changes *)

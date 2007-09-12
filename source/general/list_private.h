@@ -259,6 +259,51 @@ PROTOTYPE_ADD_OBJECT_TO_LIST_FUNCTION( object_type ) \
 	return (return_code); \
 } /* ADD_OBJECT_TO_LIST(object_type) */
 
+#define DECLARE_ADD_OBJECT_TO_FRONT_OF_LIST_FUNCTION( object_type ) \
+PROTOTYPE_ADD_OBJECT_TO_FRONT_OF_LIST_FUNCTION( object_type ) \
+{ \
+	int return_code; \
+	struct LIST_ITEM(object_type) *add_item; \
+\
+	ENTER(ADD_OBJECT_TO_FRONT_OF_LIST(object_type)); \
+	if (object && list) \
+	{ \
+		/* allocate memory for list item */ \
+		if (ALLOCATE(add_item, struct LIST_ITEM(object_type), 1)) \
+		{ \
+			add_item->object = ACCESS(object_type)(object); \
+			add_item->next = (struct LIST_ITEM(object_type) *)NULL; \
+			if (list->head) \
+			{ \
+				add_item->next = list->head; \
+				list->head = add_item; \
+			} \
+			else \
+			{ \
+				list->head = add_item; \
+				list->tail = add_item; \
+			} \
+			(list->count)++; \
+			return_code = 1; \
+		} \
+		else \
+		{ \
+			display_message(ERROR_MESSAGE, "ADD_OBJECT_TO_FRONT_OF_LIST(" #object_type \
+				").  Could not allocate memory for list item"); \
+			return_code = 0; \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"ADD_OBJECT_TO_FRONT_OF_LIST(" #object_type ").  Invalid argument(s)"); \
+		return_code = 0; \
+	} \
+	LEAVE; \
+\
+	return (return_code); \
+} /* ADD_OBJECT_TO_FRONT_OF_LIST(object_type) */
+
 #define DECLARE_REMOVE_OBJECT_FROM_LIST_FUNCTION( object_type ) \
 PROTOTYPE_REMOVE_OBJECT_FROM_LIST_FUNCTION(object_type) \
 { \
@@ -684,6 +729,11 @@ Should only be declared with manager functions. \
 DECLARE_LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier); \
 DECLARE_LIST_BEGIN_IDENTIFIER_CHANGE_FUNCTION(object_type,identifier) \
 DECLARE_LIST_END_IDENTIFIER_CHANGE_FUNCTION(object_type,identifier)
+
+/* DECLARE_ADD_OBJECT_TO_FRONT_OF_LIST_FUNCTION(object_type); is not
+	automatically included as it is unavailable to INDEXED lists so
+	it is up to the definer of the list to PROTOTYPE and DECLARE it 
+	if appropriate/required. */
 
 #define DECLARE_LIST_FUNCTIONS( object_type ) \
 DECLARE_CREATE_LIST_FUNCTION(object_type) \

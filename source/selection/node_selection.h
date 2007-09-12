@@ -80,7 +80,7 @@ Data broadcast with callbacks from <FE_node_selection> describing the changes.
 }; /* struct FE_node_selection_changes */
 
 DECLARE_CMISS_CALLBACK_TYPES(FE_node_selection_change,struct FE_node_selection *, \
-	struct FE_node_selection_changes *);
+	struct FE_node_selection_changes *, void);
 
 /*
 Global functions

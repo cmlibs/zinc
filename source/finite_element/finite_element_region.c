@@ -659,7 +659,7 @@ Clean-up function for FE_regions accessed by their any_object.
 	return (return_code);
 } /* FE_region_void_detach_from_Cmiss_region */
 
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(FE_region_change)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(FE_region_change, void)
 
 DEFINE_CMISS_CALLBACK_FUNCTIONS(FE_region_change, \
 	struct FE_region *, struct FE_region_changes *)
