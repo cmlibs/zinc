@@ -462,6 +462,8 @@ COMPUTED_FIELD_INVALID with no components.
 		if (ALLOCATE(field, struct Computed_field, 1) &&
 			(field->name = duplicate_string(name)))
 		{
+			/* By default the name and the command_string are the same */
+			field->command_string = field->name;
 			/* initialise all members of computed_field */	
 			field->number_of_components = 0;
 			/* allowed to modify/remove from manager until disabled with
@@ -480,6 +482,8 @@ COMPUTED_FIELD_INVALID with no components.
 			field->element = (struct FE_element *)NULL;
 			field->node = (struct FE_node *)NULL;
 			field->time = 0;
+			field->coordinate_reference_field = (struct Computed_field *)NULL;
+			field->field_does_not_depend_on_cached_location = 0;
 
 			field->find_element_xi_cache = (struct Computed_field_find_element_xi_cache *)NULL;
 
@@ -527,7 +531,12 @@ Frees memory/deaccess objects in computed_field at <*field_address>.
 	{
 		if (0 >= field->access_count)
 		{
-			 DEALLOCATE(field->name);
+			/* Only DEALLOCATE the command_string if it is different to the name */
+			if (field->command_string && (field->command_string != field->name))
+			{
+				DEALLOCATE(field->command_string);
+			}
+			DEALLOCATE(field->name);
 			if (component_name=field->component_names)
 			{
 				for (i=field->number_of_components;i>0;i--)
@@ -561,7 +570,44 @@ Frees memory/deaccess objects in computed_field at <*field_address>.
 
 DECLARE_OBJECT_FUNCTIONS(Computed_field)
 
-DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Computed_field)
+PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Computed_field)
+/*****************************************************************************
+LAST MODIFIED : 6 September 2007
+
+DESCRIPTION :
+Forms a string out of the objects identifier.
+If the name of the computed field is "constants" then this is a special field
+and the values are listed in an array.  See set_Computed_field_conditional
+in computed_field_set.cpp.
+============================================================================*/
+{
+	int return_code;
+
+	ENTER(GET_NAME(object_type));
+	if (object&&name_ptr)
+	{
+		if (ALLOCATE(*name_ptr,char,strlen(object->command_string)+1))
+		{
+			strcpy(*name_ptr,object->command_string);
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"GET_NAME(Computed_field).  Could not allocate space for name");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GET_NAME(Computed_field).  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GET_NAME(Computed_field) */
 
 DECLARE_INDEXED_LIST_FUNCTIONS(Computed_field)
 
@@ -1139,6 +1185,11 @@ are possibly not going to be called again for some time.
 		{
 			DEACCESS(FE_node)(&field->node);
 		}
+		if (field->coordinate_reference_field)
+		{
+			DEACCESS(Computed_field)(&field->coordinate_reference_field);
+		}
+		field->field_does_not_depend_on_cached_location = 0;
 		if (field->core)
 		{
 			field->core->clear_cache();
@@ -2819,6 +2870,40 @@ The calling function must not deallocate the returned string.
 
 	return (return_string);
 } /* Computed_field_get_type_string */
+
+int Computed_field_set_command_string(struct Computed_field *field,
+	const char *command_string)
+/*******************************************************************************
+LAST MODIFIED : 6 September 2007
+
+DESCRIPTION :
+Sets the string that will be printed for the computed fields name.
+This may be different from the name when it contains characters invalid for
+using as an identifier in the manager, such as spaces or punctuation.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_set_command_string);
+	if (field)
+	{
+		if (field->command_string && (field->command_string != field->name))
+		{
+			DEALLOCATE(field->command_string);
+		}
+		field->command_string = duplicate_string(command_string);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Computed_field_set_command_string.  "
+			"Missing field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_command_string */
 
 int Computed_field_get_native_resolution(struct Computed_field *field,
 	int *dimension, int **sizes, 

@@ -207,6 +207,11 @@ DESCRIPTION :
 {
 	/* the name/identifier of the Computed_field */
 	char *name;
+	/* The command string is what is printed for GET_NAME.  This is usually
+		the same as the name (and just points to it) however it is separated
+		out so that we can specify an string for the command_string which is not
+		a valid identifier (contains spaces etc.) */
+	char *command_string;
 	int number_of_components;
 	/* This is set for fields where the components have names other than
 		the defaults of 1,2...number_of_components */
@@ -343,6 +348,17 @@ LAST MODIFIED : 24 January 2007
 DESCRIPTION :
 Returns a pointer to a sharable simple type package which just contains a
 function to access the Computed_field_package.
+==============================================================================*/
+
+int Computed_field_set_command_string(struct Computed_field *field,
+	const char *command_string);
+/*******************************************************************************
+LAST MODIFIED : 6 September 2007
+
+DESCRIPTION :
+Sets the string that will be printed for the computed fields name.
+This may be different from the name when it contains characters invalid for
+using as an identifier in the manager, such as spaces or punctuation.
 ==============================================================================*/
 
 int Computed_field_clear_type(struct Computed_field *field);

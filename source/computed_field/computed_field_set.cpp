@@ -45,9 +45,11 @@ extern "C" {
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "user_interface/message.h"
 #include <stdio.h>
 }
+#include "computed_field/computed_field_private.hpp"
 
 int set_Computed_field_conditional(struct Parse_state *state,
 	void *field_address_void, void *set_field_data_void)
@@ -64,9 +66,9 @@ Allows the construction field.component name to automatically make a component
 wrapper for field and add it to the manager.
 ==============================================================================*/
 {
-	char *current_token, *field_component_name, *temp_name;
-	int component_no, i, finished, number_of_components, number_of_values,
-		return_code;
+	char *command_string, *current_token, *field_component_name, *temp_name;
+	int component_no, i, error, finished, index, number_of_components,
+		number_of_values, return_code;
 	FE_value *values;
 	struct Computed_field **field_address, *selected_field;
 	struct Set_Computed_field_conditional_data *set_field_data;
@@ -95,6 +97,9 @@ wrapper for field and add it to the manager.
 				{
 					if (current_token[0] == '[')
 					{
+						error = 0;
+						command_string = duplicate_string(current_token);
+
 						number_of_values = 0;
 						/* Dont examine the '[' */
 						current_token += 1;
@@ -104,10 +109,13 @@ wrapper for field and add it to the manager.
 						finished = 0;
 						while (!finished)
 						{
-							if (1 == sscanf(current_token, "%f", values + number_of_values))
+							while (current_token &&
+								(1 == sscanf(current_token, "%f%n",
+								values + number_of_values, &index)))
 							{
 								number_of_values++;
 								REALLOCATE(values, values, FE_value, number_of_values + 1);
+								current_token += index;
 							}
 							if (strchr(current_token,']') ||
 								(!shift_Parse_state(state, 1)) ||
@@ -115,8 +123,15 @@ wrapper for field and add it to the manager.
 							{
 								finished = 1;
 							}
+							else
+							{
+								append_string(&command_string, " ", &error);
+								append_string(&command_string, current_token, &error);
+							}
 						}
 						selected_field = CREATE(Computed_field)("constants");
+						Computed_field_set_command_string(selected_field, 
+							command_string);
 						Computed_field_set_type_constant(selected_field, number_of_values, values);
 						DEALLOCATE(values);
 					}
