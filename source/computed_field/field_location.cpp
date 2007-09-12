@@ -52,7 +52,7 @@ int Field_element_xi_location::check_cache_for_location(Computed_field *field)
  	int cache_is_valid, element_dimension, i;
 
 	/* clear the cache if values already cached for a node */
-	if (field->node)
+	if (field->node || field->coordinate_reference_field)
 	{
 		Computed_field_clear_cache(field);
 	}
@@ -102,7 +102,7 @@ int Field_node_location::check_cache_for_location(Computed_field *field)
  	int cache_is_valid;
 
 	/* clear the cache if values already cached for an element */
-	if (field->element)
+	if (field->element || field->coordinate_reference_field)
 	{
 		Computed_field_clear_cache(field);
 	}
@@ -129,6 +129,46 @@ int Field_node_location::update_cache_for_location(Computed_field *field)
 	return (return_code);
 }
 
+Field_coordinate_location::Field_coordinate_location(
+	Computed_field *reference_field,
+	int number_of_values_in, FE_value* values_in, FE_value time,
+	int number_of_derivatives):
+		Field_location(time, number_of_derivatives),
+		reference_field(reference_field)
+{
+	int i;
+	number_of_values = reference_field->number_of_components;
+	values = new FE_value[number_of_values];
+	for (i = 0 ; (i < number_of_values) && (i < number_of_values_in) ; i++)
+	{
+		values[i] = values_in[i];
+	}
+	for (; i < number_of_values ; i++)
+	{
+		values[i] = 0.0;
+	}
+}
+	
+Field_coordinate_location::~Field_coordinate_location()
+{
+	delete [] values;
+}
+
+int Field_coordinate_location::set_values(int number_of_values_in, 
+	FE_value* values_in)
+{
+	int i;
+	for (i = 0 ; (i < number_of_values) && (i < number_of_values_in) ; i++)
+	{
+		values[i] = values_in[i];
+	}
+	for (; i < number_of_values ; i++)
+	{
+		values[i] = 0.0;
+	}
+	return 1;
+}
+
 int Field_coordinate_location::check_cache_for_location(Computed_field *field)
 {
  	int cache_is_valid;
@@ -138,18 +178,17 @@ int Field_coordinate_location::check_cache_for_location(Computed_field *field)
 	{
 		Computed_field_clear_cache(field);
 	}
-	if (reference_field == field)
+	if (field->field_does_not_depend_on_cached_location &&
+		(field->coordinate_reference_field == reference_field) &&
+		(time == field->time))
+	{
+		cache_is_valid = 1;
+	}
+	else if (reference_field == field)
 	{
 		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
-			if (i < number_of_values)
-			{
 				field->values[i] = values[i];
-			}
-			else
-			{
-				field->values[i] = 0.0;
-			}
 		}
 		cache_is_valid = 1;
 	}
@@ -159,3 +198,21 @@ int Field_coordinate_location::check_cache_for_location(Computed_field *field)
 	}
 	return (cache_is_valid);
 }
+
+int Field_coordinate_location::update_cache_for_location(Computed_field *field)
+{
+	int return_code;
+
+	return_code = 1;
+	if (field->coordinate_reference_field != reference_field)
+	{
+		REACCESS(Computed_field)(&field->coordinate_reference_field,
+			reference_field);
+		field->field_does_not_depend_on_cached_location = 
+			!Computed_field_depends_on_Computed_field(field, reference_field);
+	}
+	field->time = time;
+
+	return (return_code);
+}
+

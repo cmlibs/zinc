@@ -254,6 +254,15 @@ DESCRIPTION :
 	/* last time the string cache was evaluated this is the component that was 
 		requested (-1 for all components) */
 	int string_component;
+	/* Record what reference field the values are calculated for with
+		a coordinate location. */
+	struct Computed_field *coordinate_reference_field;
+	/* Cache whether or not the value in the cache depends on the
+		cached location (node, element or coordinate_reference_field).
+		If it does not then the cache can be deemed valid if the next
+		location is the same type and for coordinates, has the same
+		reference field but different values. */
+	int field_does_not_depend_on_cached_location;
 
 	/* cache used when doing find_xi calculations */
 	struct Computed_field_find_element_xi_cache *find_element_xi_cache;
@@ -420,7 +429,7 @@ Upon successful return the node values of the <field> are stored in its cache.
 
 	ENTER(Computed_field_evaluate_cache_at_location);
 #if ! defined (OPTIMISED)
-	if (field && location)
+	if (field && field->core && location)
 	{
 #endif /* ! defined (OPTIMISED) */
 		return_code=1;
@@ -463,14 +472,7 @@ Upon successful return the node values of the <field> are stored in its cache.
 				}
 				else
 				{
-					if (field->node)
-					{
-						DEACCESS(FE_node)(&field->node);
-					}
-					if (field->element)
-					{
-						DEACCESS(FE_element)(&field->element);
-					}
+					Computed_field_clear_cache(field);
 				}
 			}
 		}

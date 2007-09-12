@@ -148,7 +148,7 @@ public:
 
 	int check_cache_for_location(Computed_field *field);
 
-	virtual int update_cache_for_location(Computed_field *field);
+	int update_cache_for_location(Computed_field *field);
 };
 
 class Field_coordinate_location : public Field_location
@@ -161,22 +161,9 @@ private:
 public:
 	Field_coordinate_location(Computed_field *reference_field,
 		int number_of_values_in, FE_value* values_in, FE_value time = 0,
-		int number_of_derivatives = 0):
-		Field_location(time, number_of_derivatives),
-		reference_field(reference_field)
-	{
-		number_of_values = number_of_values_in;
-		values = new FE_value[number_of_values];
-		for (int i = 0 ; i < number_of_values ; i++)
-		{
-			values[i] = values_in[i];
-		}
-	}
+		int number_of_derivatives = 0);
 	
-   ~Field_coordinate_location()
-	{
-		delete [] values;
-	}
+   ~Field_coordinate_location();
 
 	Computed_field *get_reference_field()
 	{
@@ -193,7 +180,11 @@ public:
 		return values;
 	}
 
+	int set_values(int number_of_values_in, FE_value* values_in);
+
 	int check_cache_for_location(Computed_field *field);
+
+	int update_cache_for_location(Computed_field *field);
 };
 
 #endif /* !defined (__FIELD_LOCATION_HPP__) */
