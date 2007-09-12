@@ -1320,7 +1320,7 @@ were active when the event was generated.
 	ENTER(Cmiss_scene_viewer_input_get_event_type);
 	if (input_data)
 	{
-		*modifier_flags = 0;
+		*modifier_flags = (enum Cmiss_scene_viewer_input_modifier_flags)0;
 		if (input_data->input_modifier &
 			GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT)
 		{
@@ -1369,7 +1369,7 @@ were active when the event was generated.
 	ENTER(Cmiss_scene_viewer_input_get_event_type);
 	if (input_data)
 	{
-		input_data->input_modifier = 0;
+		input_data->input_modifier = (enum Graphics_buffer_input_modifier)0;
 		if (modifier_flags & CMISS_SCENE_VIEWER_INPUT_MODIFIER_SHIFT)
 		{
 			input_data->input_modifier |= 
