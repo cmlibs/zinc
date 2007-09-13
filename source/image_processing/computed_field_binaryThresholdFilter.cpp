@@ -4,7 +4,7 @@ FILE : computed_field_binary_threshold_image_filter.c
 LAST MODIFIED : 9 September 2006
 
 DESCRIPTION :
-Wraps itk::MeanImageFilter
+Wraps itk::BinaryThresholdImageFilter
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
