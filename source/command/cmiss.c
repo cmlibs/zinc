@@ -6468,6 +6468,7 @@ value searches just elements of that dimension.
 				}
 				Computed_field_clear_cache(field);
 				Computed_field_clear_cache(texture_coordinate_field);
+				Spectrum_end_value_to_rgba(spectrum);
 				if (0 < field_evaluate_error_count)
 				{
 					display_message(WARNING_MESSAGE, "set_Texture_image_from_field.  "

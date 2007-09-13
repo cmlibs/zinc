@@ -521,6 +521,7 @@ Resets the graphics state after rendering values on current material.
 	ENTER(spectrum_end_rendervrml);
 	if (spectrum)
 	{
+		Spectrum_end_value_to_rgba(spectrum);
 		fprintf(vrml_file,"  ]\n");
 		fprintf(vrml_file,"} #Color\n");
 		return_code=1;

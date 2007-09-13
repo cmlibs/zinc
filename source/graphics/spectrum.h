@@ -390,6 +390,14 @@ Uses the <spectrum> to calculate RGBA components to represent the
 <rgba> is assumed to be an array of four values for red, green, blue and alpha.
 ==============================================================================*/
 
+int Spectrum_end_value_to_rgba(struct Spectrum *spectrum);
+/*******************************************************************************
+LAST MODIFIED : 13 September 2007
+
+DESCRIPTION :
+Resets the caches and graphics state after rendering values.
+==============================================================================*/
+
 struct LIST(Spectrum_settings) *get_Spectrum_settings_list(
 	struct Spectrum *spectrum );
 /*******************************************************************************

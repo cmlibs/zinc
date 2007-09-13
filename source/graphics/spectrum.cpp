@@ -1899,7 +1899,7 @@ Uses the <spectrum> to calculate RGBA components to represent the
 	int return_code;
 	struct Spectrum_render_data render_data;
 
-	ENTER(spectrum_value_to_rgb);
+	ENTER(spectrum_value_to_rgba);
 	if (spectrum)
 	{
 		if (spectrum->clear_colour_before_settings)
@@ -1917,17 +1917,49 @@ Uses the <spectrum> to calculate RGBA components to represent the
 			Spectrum_settings_activate,(void *)&render_data,
 			spectrum->list_of_settings);
 
+
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"spectrum_value_to_rgb.  Invalid spectrum object");
+			"spectrum_value_to_rgba.  Invalid spectrum object");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* spectrum_value_to_rgb */
+} /* spectrum_value_to_rgba */
+
+int Spectrum_end_value_to_rgba(struct Spectrum *spectrum)
+/*******************************************************************************
+LAST MODIFIED : 13 September 2007
+
+DESCRIPTION :
+Resets the caches and graphics state after rendering values.
+==============================================================================*/
+{
+	int return_code;
+	struct Spectrum_render_data render_data;
+
+	ENTER(Spectrum_end_value_to_rgba);
+	if (spectrum)
+	{
+		/* render data is currently not used in disable */
+		FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
+			Spectrum_settings_disable,(void *)&render_data,
+			spectrum->list_of_settings);
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Spectrum_end_value_to_rgba.  Invalid spectrum object");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Spectrum_end_value_to_rgba */
 
 struct LIST(Spectrum_settings) *get_Spectrum_settings_list(
 	struct Spectrum *spectrum )
@@ -2395,6 +2427,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 	FE_value data[3];
 	float rgba[4];
 	unsigned char *colour_table, *colour_table_ptr;
+	struct Spectrum_render_data render_data;
 	enum Texture_storage_type storage;
 		
 	ENTER(Spectrum_render_colour_lookup);
@@ -2467,11 +2500,28 @@ Rebuilds the display_list for <spectrum> if it is not current.
 				data[i] = 0.0;
 			}
 			colour_table_ptr = colour_table;
+
+			render_data.rgba = rgba;
+			render_data.data = data;
+			render_data.number_of_data_components = number_of_data_components;
+
+			FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
+				Spectrum_settings_enable,(void *)&render_data,
+				spectrum->list_of_settings);
+
 			while (indices[number_of_data_components - 1] < number_of_values)
 			{
-
-				if (return_code = Spectrum_value_to_rgba(spectrum,
-						number_of_data_components, data, rgba))
+				if (spectrum->clear_colour_before_settings)
+				{
+					rgba[0] = 0.0;
+					rgba[1] = 0.0;
+					rgba[2] = 0.0;
+					rgba[3] = 1.0;
+				}
+				
+				if (return_code = FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
+					Spectrum_settings_activate,(void *)&render_data,
+					spectrum->list_of_settings))
 				{
 					if (colour_components != SPECTRUM_COMPONENT_ALPHA)
 					{
@@ -2504,6 +2554,11 @@ Rebuilds the display_list for <spectrum> if it is not current.
 					data[i] = (FE_value)indices[i] / (FE_value)(number_of_values - 1);
 				}
 			}
+
+			/* Finished using the spectrum for now (clear computed field cache) */
+			FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
+				Spectrum_settings_disable,(void *)&render_data,
+				spectrum->list_of_settings);
 					
 			{
 				struct Texture *texture;

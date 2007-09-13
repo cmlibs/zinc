@@ -2833,6 +2833,10 @@ DESCRIPTION :
 		return_code=1;
 		if (settings->active)
 		{
+			if (settings->settings_type == SPECTRUM_FIELD)
+			{
+				Computed_field_clear_cache(settings->output_field);
+			}
 			switch (settings->colour_mapping)
 			{
 				case SPECTRUM_RAINBOW:
