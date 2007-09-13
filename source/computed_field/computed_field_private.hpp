@@ -488,7 +488,21 @@ Upon successful return the node values of the <field> are stored in its cache.
 				}
 				else
 				{
-					Computed_field_clear_cache(field);
+					/* Not calling clear_cache here because that does far more
+						work and propagates back down to the source fields */
+					if (field->node)
+					{
+						DEACCESS(FE_node)(&field->node);
+					}
+					if (field->element)
+					{
+						DEACCESS(FE_element)(&field->element);
+					}
+					if (field->coordinate_reference_field)
+					{
+						DEACCESS(Computed_field)(&field->coordinate_reference_field);
+					}
+					field->field_does_not_depend_on_cached_location = 0;
 				}
 			}
 		}
