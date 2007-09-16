@@ -134,6 +134,7 @@ wrapper for field and add it to the manager.
 							command_string);
 						Computed_field_set_type_constant(selected_field, number_of_values, values);
 						DEALLOCATE(values);
+						DEALLOCATE(command_string);
 					}
 					else
 					{
