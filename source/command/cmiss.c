@@ -12204,22 +12204,6 @@ Executes a GFX LIST WINDOW.
 			{
 				 if	(command_data = (struct Cmiss_command_data *)command_data_void)
 				 {
-						/* Command of graphical_material */
-						if (graphical_material_manager =
-							 Material_package_get_material_manager(command_data->material_package))
-						{
-							 command_prefix="gfx create material ";
-							 return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
-									list_Graphical_material_commands,(void *)command_prefix, 
-									graphical_material_manager);
-						}
-
-						/* Commands of spectrum */
-						if (command_data->spectrum_manager)
-						{
-							 FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
-									for_each_spectrum_list_or_write_commands, (void *)"false", command_data->spectrum_manager);			
-						}
 
 						/* Command of computed_field */
 						if (command_data->computed_field_package && (computed_field_manager=
@@ -12242,6 +12226,7 @@ Executes a GFX LIST WINDOW.
 										 list_commands_data.listed_fields = 0;
 									}			 
 									DESTROY(LIST(Computed_field))(&list_of_fields);
+									return_code=1;					
 							 } 
 							 else
 							 {
@@ -12253,7 +12238,21 @@ Executes a GFX LIST WINDOW.
 										 "gfx_list_Computed_field.  Could not list field commands");
 							 }
 						}
-						
+						/* Commands of spectrum */
+						if (command_data->spectrum_manager)
+						{
+							 FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
+									for_each_spectrum_list_or_write_commands, (void *)"false", command_data->spectrum_manager);			
+						}
+						/* Command of graphical_material */
+						if (graphical_material_manager =
+							 Material_package_get_material_manager(command_data->material_package))
+						{
+							 command_prefix="gfx create material ";
+							 return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
+									list_Graphical_material_commands,(void *)command_prefix, 
+									graphical_material_manager);
+						}	
 						return_code=FOR_EACH_OBJECT_IN_MANAGER(Scene)(
 							 for_each_graphics_object_in_scene_get_command_list, (void*) "false",
 							 command_data->scene_manager);
@@ -19602,28 +19601,15 @@ Can also write individual groups with the <group> option.
 							 {		
 									fprintf(com_file, "gfx read data %s\n",data_file_name);
 							 }
-							 if (elem_file_name)
-							 {		
-									fprintf(com_file, "gfx read elements %s\n",elem_file_name);
-							 }
 							 if (node_file_name)
 							 {		
 									fprintf(com_file, "gfx read nodes %s\n",node_file_name);
 							 }
+							 if (elem_file_name)
+							 {		
+									fprintf(com_file, "gfx read elements %s\n",elem_file_name);
+							 }
 							 fclose(com_file);
-							 if (graphical_material_manager =
-									Material_package_get_material_manager(command_data->material_package))
-							 {
-									command_prefix="gfx create material ";
-									return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
-										 write_Graphical_material_commands_to_comfile,(void *)command_prefix, 
-										 graphical_material_manager);
-							 }
-							 if (command_data->spectrum_manager)
-							 {
-									FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
-										 for_each_spectrum_list_or_write_commands, (void *)"true", command_data->spectrum_manager);			
-							 }
 							 if (command_data->computed_field_package && (computed_field_manager=
 										 Computed_field_package_get_computed_field_manager(
 												command_data->computed_field_package)))
@@ -19654,6 +19640,20 @@ Can also write individual groups with the <group> option.
 										 display_message(ERROR_MESSAGE,
 												"gfx_write_All.  Could not list field commands");
 									}
+							 }
+
+							 if (command_data->spectrum_manager)
+							 {
+									FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
+										 for_each_spectrum_list_or_write_commands, (void *)"true", command_data->spectrum_manager);			
+							 }
+							 if (graphical_material_manager =
+									Material_package_get_material_manager(command_data->material_package))
+							 {
+									command_prefix="gfx create material ";
+									return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
+										 write_Graphical_material_commands_to_comfile,(void *)command_prefix, 
+										 graphical_material_manager);
 							 }
 							 return_code=FOR_EACH_OBJECT_IN_MANAGER(Scene)(
 									for_each_graphics_object_in_scene_get_command_list, (void*) "true",
