@@ -4895,8 +4895,12 @@ Sets the layout mode in effect on the <window>.
 				/* make sure the current layout mode is displayed on the chooser */
 				choose_enumerator_set_string(window->layout_mode_widget,
 					Graphics_window_layout_mode_string(layout_mode));
-				// WX version set the choice in the list box to be correct for "layout" mode
-#endif /* defined (MOTIF) */
+#elif defined (WX_USER_INTERFACE)
+				wxChoice *layout_choice = XRCCTRL(
+					 *window->wx_graphics_window, "View", wxChoice);
+				layout_choice->SetStringSelection(
+					 Graphics_window_layout_mode_string(layout_mode));
+#endif /* defined (SWITCH_USER_INTERFACE) */
 				/* awaken scene_viewers in panes to be used; put others to sleep */
 				for (pane_no=0;pane_no<window->number_of_scene_viewers;pane_no++)
 				{
