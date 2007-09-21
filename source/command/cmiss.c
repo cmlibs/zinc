@@ -24227,14 +24227,12 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->cm_examples_directory=(char *)NULL;
 		command_data->cm_parameters_file_name=(char *)NULL;
 		command_data->default_time_keeper = (struct Time_keeper *)NULL;
-#if defined (MOTIF)
 		command_data->background_colour.red=(float)0;
 		command_data->background_colour.green=(float)0;
 		command_data->background_colour.blue=(float)0;
 		command_data->foreground_colour.red=(float)1;
 		command_data->foreground_colour.green=(float)1;
 		command_data->foreground_colour.blue=(float)1;
-#endif /* defined (MOTIF) */
 		command_data->help_directory=(char *)NULL;
 		command_data->help_url=(char *)NULL;
 #if defined (PERL_INTERPRETER)
