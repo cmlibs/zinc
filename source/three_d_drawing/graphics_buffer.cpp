@@ -96,7 +96,7 @@ extern "C" {
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
-/* #define DEBUG */
+	/* #define DEBUG */
 #if defined (DEBUG)
 #include <stdio.h>
 #endif /* defined (DEBUG) */
@@ -264,6 +264,13 @@ DESCRIPTION :
 	HWND hWnd;
 	HDC hDC;
 	HGLRC hRC;
+	/* x, y, width and height are used with the windowless mode (no hWnd). 
+		x and y locate the current hDC with respect to the top left corner of the plugin.
+		width and height are the total size of the plugin port.  */
+	int width;
+	int height;
+	int x;
+	int y;
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (CARBON_USER_INTERFACE)
 	CGrafPtr port;
@@ -338,7 +345,6 @@ contained in the this module only.
 		buffer->input_callback_list=
 			CREATE(LIST(CMISS_CALLBACK_ITEM(Graphics_buffer_input_callback)))();
 
-
 /* For GRAPHICS_BUFFER_GLX_X3D_TYPE */
 #if defined (MOTIF)
 		buffer->drawing_widget = (Widget)NULL;
@@ -393,6 +399,10 @@ contained in the this module only.
 		 buffer->hWnd = (HWND)NULL;
 		 buffer->hDC = (HDC)NULL;
 		 buffer->hRC = (HGLRC)NULL;
+		 buffer->width = 0;
+		 buffer->height = 0;
+		 buffer->x = 0;
+		 buffer->y = 0;
 #endif // defined (WIN32_USER_INTERFACE)
 
 #if defined (CARBON_USER_INTERFACE)
@@ -3388,8 +3398,37 @@ are performed but the graphics window will render into the supplied device conte
 		}
 		else
 		{
-			buffer->hDC = hDC;
+			BITMAPINFO   bmi;
+			
+			bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+			bmi.bmiHeader.biWidth = 1024;
+			bmi.bmiHeader.biHeight= 1024;
+			bmi.bmiHeader.biPlanes = 1;
+			bmi.bmiHeader.biBitCount = GetDeviceCaps(hDC, BITSPIXEL);
+			bmi.bmiHeader.biCompression = BI_RGB;
+			bmi.bmiHeader.biSizeImage = 0;
+			bmi.bmiHeader.biXPelsPerMeter = 0;
+			bmi.bmiHeader.biYPelsPerMeter = 0;
+			bmi.bmiHeader.biClrUsed = 0;
+			bmi.bmiHeader.biClrImportant = 0;
+     
+			HDC dib_hDC = CreateCompatibleDC(hDC);
+			
+			void *test_pixels;
+			HBITMAP hbmDIB = CreateDIBSection(hDC,
+				&bmi,
+				DIB_RGB_COLORS,
+				(void **)&test_pixels,
+				0,
+				0);
+			SelectObject(dib_hDC, hbmDIB);
+			buffer->hDC = dib_hDC;
 		}
+
+#if defined (DEBUG)
+		printf ("create_Graphics_buffer_win32 %p %p %p\n",
+			hWnd, hDC, buffer->hDC);
+#endif /* defined (DEBUG) */
 
 		if (buffer->hDC)
 		{
@@ -3397,7 +3436,15 @@ are performed but the graphics window will render into the supplied device conte
 			ZeroMemory( &pfd, sizeof( PIXELFORMATDESCRIPTOR ) );
 			pfd.nSize = sizeof( pfd );
 			pfd.nVersion = 1;
-			pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+			if (!hWnd)
+			{
+				/*Only make a single buffer as we will have to copy anyway ourselves */
+				pfd.dwFlags = PFD_DRAW_TO_BITMAP | PFD_SUPPORT_OPENGL;
+			}
+			else
+			{
+				pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+			}
 			pfd.iPixelType = PFD_TYPE_RGBA;
 			pfd.iLayerType = PFD_MAIN_PLANE;
 		
@@ -3424,11 +3471,20 @@ are performed but the graphics window will render into the supplied device conte
 				*/
 			}
 		
-			/* setting these to get an accelerated visual on the ATI chipset */
-			pfd.cColorBits =    24;           // color mode
-			pfd.cDepthBits =    24;           // depth buffer size
-			pfd.cStencilBits =  8;         // stencil buffer
-			//pfd.cAccumBits =    0;           // accumulation buffer
+			if (hWnd)
+			{
+				/* These should not be hardcoded but left like this to
+					maintain current behaviour */
+				/* setting these to get an accelerated visual on the ATI chipset */
+				pfd.cColorBits = 24;
+			}
+			else
+			{
+				pfd.cColorBits = GetDeviceCaps(hDC, BITSPIXEL);
+			}
+			pfd.cDepthBits = 24;           // depth buffer size
+			pfd.cStencilBits = 8;          // stencil buffer
+			//pfd.cAccumBits = 0;          // accumulation buffer
 			//pfd.cAlphaBits = 0;
 
 			if((format = ChoosePixelFormat( buffer->hDC, &pfd )))
@@ -3500,8 +3556,9 @@ are performed but the graphics window will render into the supplied device conte
 			}
 			else
 			{
+				DWORD error = GetLastError();
 				display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
-					"Unable to choose pixel format.");
+					"Unable to choose pixel format. Microsoft error code: %d", error);
 				DESTROY(Graphics_buffer)(&buffer);
 				buffer = (struct Graphics_buffer *)NULL;
 			}	
@@ -3550,18 +3607,34 @@ mode with zinc.  Requiring development.
 	  }
 	  case WM_PAINT:
 	  {
-#if defined (OLD_CODE)
-		  // get the dirty rectangle to update or repaint the whole window
+		  // We need to just paint what we are told otherwise we will mess up the
+		  // compositing
+		  HDC hdc = (HDC)first_message;
 		  RECT * drc = (RECT *)second_message;
-		  FillRect((HDC)first_message, drc, (HBRUSH)(COLOR_HIGHLIGHT));
-#endif // defined (OLD_CODE)
+
+#if defined (DEBUG)
+		  printf ("Graphics_buffer_handle_windows_event WMPAINT %ld %ld %ld %ld\n",
+			  drc->left, drc->right, drc->top, drc->bottom);
+#endif /* defined (DEBUG) */
+
+		  Graphics_buffer_expose_data expose_data;
 
 		  CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
-			  buffer->expose_callback_list, buffer, NULL);
+			  buffer->resize_callback_list, buffer, &expose_data);
+
+		  BitBlt(hdc, drc->left, drc->top, 
+			  drc->right - drc->left, drc->bottom - drc->top,
+			  buffer->hDC, - buffer->x + drc->left, - buffer->y + 1024 - buffer->height + drc->top,
+			  SRCCOPY);
+
 		  return_code=1;
 	  } break;
 	  case WM_SIZING:
 	  {
+#if defined (DEBUG)
+		  printf ("Graphics_buffer_handle_windows_event WM_SIZING\n");
+#endif /* defined (DEBUG) */
+
 		  CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
 			  buffer->resize_callback_list, buffer, NULL);
 		  return_code=1;
@@ -3615,6 +3688,39 @@ mode with zinc.  Requiring development.
 
   return (return_code);
 } /* Graphics_buffer_handle_windows_event */
+#endif /* defined (WIN32_USER_INTERFACE) */
+
+#if defined (WIN32_USER_INTERFACE)
+int Graphics_buffer_win32_set_window_size(struct Graphics_buffer *buffer,
+	int width, int height, int x, int y)
+/*******************************************************************************
+LAST MODIFIED : 14 September 2007
+
+DESCRIPTION :
+Sets the maximum extent of the graphics window within which individual paints 
+will be requested with handle_windows_event.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Graphics_buffer_win32_set_window_size);
+	if (buffer)
+	{
+		buffer->width = width;
+		buffer->height = height;
+		buffer->x = x;
+		buffer->y = y;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Cmiss_graphics_buffer_win32_set_window_size.  "
+			"Missing graphics_buffer parameter.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_graphics_buffer_win32_set_window_size */
 #endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (WIN32_USER_INTERFACE)
@@ -5374,16 +5480,23 @@ Returns the width of buffer represented by <buffer>.
 #if defined (WIN32_USER_INTERFACE)
 			case GRAPHICS_BUFFER_WIN32_TYPE:
 			{
-				RECT rect;
-				if(GetWindowRect(WindowFromDC(buffer->hDC), &rect))
+				if (buffer->hWnd)
 				{
-					width = rect.right - rect.left;
+					RECT rect;
+					if(GetWindowRect(buffer->hWnd, &rect))
+					{
+						width = rect.right - rect.left;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Graphics_buffer_get_width.  "
+							"Failed to get window rectangle");				
+						width = 0;
+					}
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"Graphics_buffer_get_width.  "
-						"Failed to get window rectangle");				
-					width = 200;
+					width = buffer->width;
 				}
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -5520,16 +5633,23 @@ Returns the height of buffer represented by <buffer>.
 #if defined (WIN32_USER_INTERFACE)
 			case GRAPHICS_BUFFER_WIN32_TYPE:
 			{
-				RECT rect;
-				if(GetWindowRect(WindowFromDC(buffer->hDC), &rect))
+				if (buffer->hWnd)
 				{
-					height = rect.bottom - rect.top;
+					RECT rect;
+					if(GetWindowRect(buffer->hWnd, &rect))
+					{
+						height = rect.bottom - rect.top;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Graphics_buffer_get_height.  "
+							"Failed to get window rectangle");				
+						height = 0;
+					}
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"Graphics_buffer_get_height.  "
-						"Failed to get window rectangle");				
-					height = 200;
+					height = buffer->height;
 				}
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */

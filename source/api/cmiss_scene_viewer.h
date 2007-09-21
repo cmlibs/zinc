@@ -309,6 +309,18 @@ Passes the supplied windows event on to the graphics buffer.
 ==============================================================================*/
 #endif /* defined (WIN32_USER_INTERFACE) */
 
+#if defined (WIN32_USER_INTERFACE)
+int Cmiss_scene_viewer_win32_set_window_size(Cmiss_scene_viewer_id scene_viewer,
+	int width, int height, int x, int y);
+/*******************************************************************************
+LAST MODIFIED : 14 September 2007
+
+DESCRIPTION :
+Sets the maximum extent of the graphics window within which individual paints 
+will be requested with handle_windows_event.
+==============================================================================*/
+#endif /* defined (WIN32_USER_INTERFACE) */
+
 #if defined (MOTIF)
 Cmiss_scene_viewer_id create_Cmiss_scene_viewer_motif(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
@@ -1055,5 +1067,28 @@ DESCRIPTION :
 Sets the set of bit flags showing the whether the modifier inputs
 were active when the event was generated.
 ==============================================================================*/
+
+int Cmiss_scene_viewer_add_repaint_required_callback(
+	Cmiss_scene_viewer_id scene_viewer,
+	Cmiss_scene_viewer_callback function,void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 20 September 2007
+
+DESCRIPTION :
+This callback will be notified when a repaint is required by a windowless mode
+scene_viewer, so that the host application can do the redraw.
+==============================================================================*/
+
+int Cmiss_scene_viewer_remove_repaint_required_callback(
+	Cmiss_scene_viewer_id scene_viewer,
+	Cmiss_scene_viewer_callback function,void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 28 August 2007
+
+DESCRIPTION :
+Removes the callback calling <function> with <user_data> from
+<scene_viewer>.
+==============================================================================*/
+
 
 #endif /* __CMISS_SCENE_VIEWER_H__ */

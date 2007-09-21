@@ -123,6 +123,14 @@ struct Graphics_buffer_input
 	enum Graphics_buffer_input_modifier input_modifier;
 };
 
+struct Graphics_buffer_expose_data
+{
+	int left;
+	int bottom;
+	int right;
+	int top;
+};
+
 struct Graphics_buffer_package;
 
 struct Graphics_buffer;
@@ -241,6 +249,18 @@ LAST MODIFIED : 31 May 2007
 
 DESCRIPTION:
 Passes the supplied windows event on to the graphics buffer.
+==============================================================================*/
+#endif /* defined (WIN32_USER_INTERFACE) */
+
+#if defined (WIN32_USER_INTERFACE)
+int Graphics_buffer_win32_set_window_size(struct Graphics_buffer *buffer,
+	int width, int height, int x, int y);
+/*******************************************************************************
+LAST MODIFIED : 14 September 2007
+
+DESCRIPTION :
+Sets the maximum extent of the graphics window within which individual paints 
+will be requested with handle_windows_event.
 ==============================================================================*/
 #endif /* defined (WIN32_USER_INTERFACE) */
 
