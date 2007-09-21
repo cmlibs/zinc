@@ -235,6 +235,10 @@ DESCRIPTION :
 	struct LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)) *transform_callback_list;
 	/* list of callbacks requested by other objects when scene viewer destroyed */
 	struct LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)) *destroy_callback_list;
+	/* When working in windowless mode we must only redraw as requested
+		by the host application, the host should register for these callbacks
+		and respond with a full repaint. */
+	struct LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)) *repaint_required_callback_list;
 	/* the scene_viewer must always have a light model */
 	struct Light_model *light_model;
 	/* lights in this list are oriented relative to the viewer */
@@ -2694,15 +2698,18 @@ access this function.
 					} break;
 #endif /* defined GL_VERSION_1_4 */
 				}
+
 				glViewport((GLint)rendering_data.viewport_left,
 					(GLint)rendering_data.viewport_bottom,
 					(GLint)rendering_data.viewport_width,
 					(GLint)rendering_data.viewport_height);
-				glScissor((GLint)rendering_data.viewport_left,
-					(GLint)rendering_data.viewport_bottom,
-					(GLint)rendering_data.viewport_width,
-					(GLint)rendering_data.viewport_height);
-				glEnable(GL_SCISSOR_TEST);
+
+				//glScissor((GLint)rendering_data.viewport_left,
+				//	(GLint)rendering_data.viewport_bottom,
+				//	(GLint)rendering_data.viewport_width,
+				//	(GLint)rendering_data.viewport_height);
+				//glEnable(GL_SCISSOR_TEST);
+
 				/* glPushAttrib(GL_VIEWPORT_BIT); */
 				reset_Lights();
 
@@ -2984,6 +2991,8 @@ Updates the scene_viewer.
 		{
 			Graphics_buffer_swap_buffers(scene_viewer->graphics_buffer);
 		}
+		CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
+			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
 		return_code = 0;
 	}
 	else
@@ -3095,7 +3104,7 @@ callbacks interested in the scene_viewers transformations.
 } /* Scene_viewer_resize_callback */
 
 static void Scene_viewer_expose_callback(struct Graphics_buffer *graphics_buffer,
-	void *dummy_void, void *scene_viewer_void)
+	void *expose_data_void, void *scene_viewer_void)
 /*******************************************************************************
 LAST MODIFIED : 1 July 2002
 
@@ -3106,14 +3115,30 @@ if there are no more expose events pending.
 ==============================================================================*/
 {
 	int return_code;
+	struct Graphics_buffer_expose_data *expose_data;
 	struct Scene_viewer *scene_viewer;
 
 	ENTER(Scene_viewer_expose_callback);
 	USE_PARAMETER(graphics_buffer);
-	USE_PARAMETER(dummy_void);
 	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
 	{
-		return_code = Scene_viewer_redraw(scene_viewer);
+		if (!(expose_data = (struct Graphics_buffer_expose_data *)expose_data_void))
+		{
+			/* The redraw everything in idle time default */
+			return_code = Scene_viewer_redraw(scene_viewer);
+		}
+		else
+		{
+			//Redraw now if idle callback is pending
+			//(otherwise assume we are up to date already
+			if (scene_viewer->idle_update_callback_id)
+			{
+				Scene_viewer_redraw_now(scene_viewer);
+				Event_dispatcher_remove_idle_callback(User_interface_get_event_dispatcher(
+					scene_viewer->user_interface), scene_viewer->idle_update_callback_id);
+				scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
+			}
+		}
 	}
 	else
 	{
@@ -4707,6 +4732,8 @@ performed in idle time so that multiple redraws are avoided.
 					CREATE(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)))();
 				scene_viewer->destroy_callback_list=
 					CREATE(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)))();
+				scene_viewer->repaint_required_callback_list=
+					CREATE(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)))();
 				scene_viewer->pixel_width=0;
 				scene_viewer->pixel_height=0;
 				scene_viewer->update_pixel_image=0;
@@ -4803,6 +4830,11 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		{
 			DESTROY(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_input_callback)))(
 				&scene_viewer->input_callback_list);
+		}
+		if (scene_viewer->repaint_required_callback_list)
+		{
+			DESTROY(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_callback)))(
+				&scene_viewer->repaint_required_callback_list);
 		}
 		if (scene_viewer->order_independent_transparency_data)
 		{
@@ -8082,6 +8114,8 @@ Requests a full redraw immediately.
 		{
 			Graphics_buffer_swap_buffers(scene_viewer->graphics_buffer);
 		}
+		CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
+			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
 	}
 	else
 	{
@@ -8964,6 +8998,74 @@ Removes the callback calling <function> with <user_data> from
 	return (return_code);
 } /* Scene_viewer_remove_destroy_callback */
 
+int Scene_viewer_add_repaint_required_callback(struct Scene_viewer *scene_viewer,
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 20 September 2007
+
+DESCRIPTION :
+This callback will be notified when a repaint is required by a windowless mode
+scene_viewer, so that the host application can do the redraw.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_add_repaint_required_callback);
+	if (scene_viewer&&function)
+	{
+		return_code = 
+			CMISS_CALLBACK_LIST_ADD_CALLBACK(Scene_viewer_callback)(
+				scene_viewer->repaint_required_callback_list,function,user_data);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_add_repaint_required_callback.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_add_repaint_required_callback */
+
+int Scene_viewer_remove_repaint_required_callback(struct Scene_viewer *scene_viewer,
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 20 September 2007
+
+DESCRIPTION :
+Removes the callback calling <function> with <user_data> from
+<scene_viewer>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_remove_repaint_required_callback);
+	if (scene_viewer&&function)
+	{
+		if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(Scene_viewer_callback)(
+			scene_viewer->repaint_required_callback_list,function,user_data))
+		{
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_viewer_remove_repaint_required_callback.  Could not remove callback");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_remove_repaint_required_callback.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_remove_repaint_required_callback */
+
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Scene_viewer_blending_mode)
 /*******************************************************************************
 LAST MODIFIED : 16 April 2003
@@ -9254,3 +9356,34 @@ respect.
 	return (return_code);
 } /* Cmiss_scene_viewer_carbon_set_window_size */
 #endif /* defined (CARBON_USER_INTERFACE) */
+
+#if defined (WIN32_USER_INTERFACE)
+int Scene_viewer_win32_set_window_size(struct Scene_viewer *scene_viewer,
+	int width, int height, int x, int y)
+/*******************************************************************************
+LAST MODIFIED : 14 September 2007
+
+DESCRIPTION :
+Sets the maximum extent of the graphics window within which individual paints 
+will be requested with handle_windows_event.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_scene_viewer_get_near_and_far_plane);
+	if (scene_viewer)
+	{
+		return_code = Graphics_buffer_win32_set_window_size(scene_viewer->graphics_buffer,
+			width, height, x, y);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_win32_set_window_size.  "
+			"Missing scene_viewer parameter.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_scene_viewer_win32_set_window_size */
+#endif /* defined (WIN32_USER_INTERFACE) */
