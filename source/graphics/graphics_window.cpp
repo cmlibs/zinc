@@ -4262,7 +4262,6 @@ Graphics_window_destroy_CB.
 		{
 			 DEACCESS(Cmiss_region)(&window->root_region);
 		}
-		window->wx_graphics_window->Destroy();
 #endif /* (WX_USER_INTERFACE) */
 #if defined (MOTIF) /* switch (USER_INTERFACE) */
 		destroy_Shell_list_item_from_shell(&(window->window_shell),
