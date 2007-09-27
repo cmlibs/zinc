@@ -2020,6 +2020,7 @@ already) and allows its contents to be modified.
 			computed_field_component_operations_package_void))
 	{
 		return_code = 1;
+		option_table = NULL;
 		/* get valid parameters for projection field */
 		set_source_field_data.computed_field_manager =
 			computed_field_component_operations_package->computed_field_manager;
