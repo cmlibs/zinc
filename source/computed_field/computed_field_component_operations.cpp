@@ -2020,7 +2020,6 @@ already) and allows its contents to be modified.
 			computed_field_component_operations_package_void))
 	{
 		return_code = 1;
-		option_table = NULL;
 		/* get valid parameters for projection field */
 		set_source_field_data.computed_field_manager =
 			computed_field_component_operations_package->computed_field_manager;
@@ -2147,7 +2146,6 @@ already) and allows its contents to be modified.
 			{
 				DEACCESS(Computed_field)(&source_field);
 			}
-			DESTROY(Option_table)(&option_table);
 		}
 		DEALLOCATE(scale_factors);
 	}
@@ -3693,7 +3691,6 @@ already) and allows its contents to be modified.
 			{
 				DEACCESS(Computed_field)(&source_field);
 			}
-			DESTROY(Option_table)(&option_table);
 		}
 		DEALLOCATE(offsets);
 	}
