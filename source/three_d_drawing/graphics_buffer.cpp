@@ -264,6 +264,7 @@ DESCRIPTION :
 	HWND hWnd;
 	HDC hDC;
 	HGLRC hRC;
+	int pixel_format;
 	/* x, y, width and height are used with the windowless mode (no hWnd). 
 		x and y locate the current hDC with respect to the top left corner of the plugin.
 		width and height are the total size of the plugin port.  */
@@ -399,6 +400,7 @@ contained in the this module only.
 		 buffer->hWnd = (HWND)NULL;
 		 buffer->hDC = (HDC)NULL;
 		 buffer->hRC = (HGLRC)NULL;
+		 buffer->pixel_format = 0;
 		 buffer->width = 0;
 		 buffer->height = 0;
 		 buffer->x = 0;
@@ -3368,15 +3370,15 @@ are performed but the graphics window will render into the supplied device conte
 ==============================================================================*/
 {
 	PIXELFORMATDESCRIPTOR pfd;
-	/* int accumulation_colour_size; */
-	int format;
+	int i, selection_level;
 	struct Graphics_buffer *buffer;
 
 	ENTER(create_Graphics_buffer_win32);
-	USE_PARAMETER(buffering_mode);
-	USE_PARAMETER(stereo_mode);
 	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
 	{
+		/* Hardcode this for the meantime so as not to change function interface */
+		int minimum_alpha_buffer_depth = 0;
+
 		buffer->type = GRAPHICS_BUFFER_WIN32_TYPE;
 
 		if (hWnd)
@@ -3432,68 +3434,185 @@ are performed but the graphics window will render into the supplied device conte
 
 		if (buffer->hDC)
 		{
-			/* set the pixel format for the DC */
-			ZeroMemory( &pfd, sizeof( PIXELFORMATDESCRIPTOR ) );
-			pfd.nSize = sizeof( pfd );
-			pfd.nVersion = 1;
-			if (!hWnd)
-			{
-				/*Only make a single buffer as we will have to copy anyway ourselves */
-				pfd.dwFlags = PFD_DRAW_TO_BITMAP | PFD_SUPPORT_OPENGL;
-			}
-			else
-			{
-				pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-			}
-			pfd.iPixelType = PFD_TYPE_RGBA;
-			pfd.iLayerType = PFD_MAIN_PLANE;
-		
-			if (minimum_colour_buffer_depth)
-			{
-				/*			pfd.cColorBits = minimum_colour_buffer_depth;
-				 */
-			}
-		
-			if (minimum_depth_buffer_depth)
-			{
-				/*			pfd.cDepthBits = minimum_depth_buffer_depth;
-				 */
-			}
-		
-			if (minimum_accumulation_buffer_depth)
-			{
-				/*
-				  accumulation_colour_size = minimum_accumulation_buffer_depth / 4;
-				  pfd.cAccumRedBits = accumulation_colour_size;
-				  pfd.cAccumGreenBits = accumulation_colour_size;
-				  pfd.cAccumBlueBits = accumulation_colour_size;
-				  pfd.cAccumAlphaBits = accumulation_colour_size;
-				*/
-			}
-		
-			if (hWnd)
-			{
-				/* These should not be hardcoded but left like this to
-					maintain current behaviour */
-				/* setting these to get an accelerated visual on the ATI chipset */
-				pfd.cColorBits = 24;
-			}
-			else
-			{
-				pfd.cColorBits = GetDeviceCaps(hDC, BITSPIXEL);
-			}
-			pfd.cDepthBits = 24;           // depth buffer size
-			pfd.cStencilBits = 8;          // stencil buffer
-			//pfd.cAccumBits = 0;          // accumulation buffer
-			//pfd.cAlphaBits = 0;
+			int number_of_formats = DescribePixelFormat(buffer->hDC, 1, 0, NULL);
+			int best_selection_level = 0;
+			int format = 0;
 
-			if((format = ChoosePixelFormat( buffer->hDC, &pfd )))
+			for (i = 0 ; i < number_of_formats ; i++)
 			{
-				/* If we can't set the pixel format on the hDC then
-					alternatively we could render to an offscreen buffer and
-					then just copy into the render buffer on paint */
+				/* set the pixel format for the DC */
+				ZeroMemory( &pfd, sizeof( PIXELFORMATDESCRIPTOR ) );
+				pfd.nSize = sizeof( pfd );
+				pfd.nVersion = 1;
+
+				DescribePixelFormat(buffer->hDC, i, pfd.nSize, &pfd);
+				
+				if ((pfd.dwFlags & PFD_SUPPORT_OPENGL)
+					&& (pfd.iPixelType == PFD_TYPE_RGBA))
+				{
+					selection_level = 10;
+				}
+				else
+				{
+					/* No good */
+					selection_level = 0;
+				}
+
+				if (pfd.dwFlags & PFD_GENERIC_ACCELERATED)
+				{
+					/* Windows driver accelerated OpenGL */
+					selection_level -= 2;
+				}
+				else
+				{
+					if (pfd.dwFlags & PFD_GENERIC_FORMAT)
+					{
+						/* Software OpenGL */
+						selection_level -= 4;
+					}
+					else
+					{
+						/* Independent driver accelerated OpenGL */
+						/* Best */
+					}
+				}
+
+				if (!hWnd)
+				{
+					if (!(pfd.dwFlags & PFD_DRAW_TO_BITMAP))
+					{
+						selection_level = 0;
+					}
+				}
+				else
+				{
+					if (!(pfd.dwFlags & PFD_DRAW_TO_WINDOW))
+					{
+						selection_level = 0;
+					}
+				}
+				
+				if (pfd.cColorBits >= 24)
+				{
+					/* Best */
+				}
+				else if (pfd.cColorBits >= minimum_colour_buffer_depth)
+				{
+					/* Satisfactory */
+					selection_level--;
+				}
+				else
+				{
+					/* Poor */
+					selection_level-=2;
+				}
+				
+				if (pfd.cDepthBits >= 24)
+				{
+					/* Best */
+				}
+				else if (pfd.cDepthBits >= minimum_depth_buffer_depth)
+				{
+					/* Satisfactory */
+					selection_level--;
+				}
+				else
+				{
+					/* Poor */					
+					selection_level-=2;
+				}
+				
+				if (pfd.cAlphaBits >= minimum_alpha_buffer_depth)
+				{
+					/* Best */
+				}
+				else if (pfd.cAlphaBits > 0)
+				{
+					/* Satisfactory */
+					selection_level--;
+				}
+				else
+				{
+					/* Poor */					
+					selection_level-=2;
+				}
+
+				if (pfd.cAccumBits >= minimum_accumulation_buffer_depth)
+				{
+					/* Best */
+				}
+				else if (pfd.cAccumBits > 0)
+				{
+					/* Satisfactory */
+					selection_level--;
+				}
+				else
+				{
+					/* Poor */					
+					selection_level-=2;
+				}
+
+				switch (buffering_mode)
+				{
+					case GRAPHICS_BUFFER_SINGLE_BUFFERING:
+					{
+						if (pfd.dwFlags & PFD_DOUBLEBUFFER)
+						{
+							selection_level = 0;
+						}
+					} break;
+					case GRAPHICS_BUFFER_DOUBLE_BUFFERING:
+					{
+						if (!(pfd.dwFlags & PFD_DOUBLEBUFFER))
+						{
+							selection_level = 0;
+						}
+					} break;
+					default: /* GRAPHICS_BUFFER_ANY_BUFFERING_MODE: */
+					{
+					} break;
+				}
+				switch (stereo_mode)
+				{
+					case GRAPHICS_BUFFER_MONO:
+					{
+						if (pfd.dwFlags & PFD_STEREO)
+						{
+							selection_level = 0;
+						}
+					} break;
+					case GRAPHICS_BUFFER_STEREO:
+					{
+						if (!(pfd.dwFlags & PFD_STEREO))
+						{
+							selection_level = 0;
+						}
+					} break;
+					default: /* GRAPHICS_BUFFER_ANY_STEREO_MODE: */
+					{
+					} break;
+				}
+
+				if (selection_level > best_selection_level)
+				{
+					format = i;
+					best_selection_level = selection_level;
+				}
+			}
+				
+			if (format)
+			{
+#if defined (DEBUG)
+				printf ("Trying format %d, selection level %d\n",
+					format, best_selection_level);
+#endif /* defined (DEBUG) */
 				if(SetPixelFormat( buffer->hDC, format, &pfd ))
 				{
+#if defined (DEBUG)
+					printf ("SetPixelFormat %d success\n", format);
+#endif /* defined (DEBUG) */
+					buffer->pixel_format = format;
+				
 					/* A work around for Intel GMA 900 cards on windows where compilation
 						of textures only seems to work on the first context of a
 						share group.  On these cards only use a single 
@@ -3523,9 +3642,9 @@ are performed but the graphics window will render into the supplied device conte
 						}
 						else
 						{
- 							display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
+							display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
 								"Unable to create the render context.");
- 							DESTROY(Graphics_buffer)(&buffer);
+							DESTROY(Graphics_buffer)(&buffer);
 							buffer = (struct Graphics_buffer *)NULL;
 						}
 					}
@@ -3536,7 +3655,43 @@ are performed but the graphics window will render into the supplied device conte
 					}
 					if (buffer)
 					{
-						if(!wglMakeCurrent(buffer->hDC,buffer->hRC))
+						if(wglMakeCurrent(buffer->hDC,buffer->hRC))
+						{
+#if defined (DEBUG)
+							ZeroMemory( &pfd, sizeof( PIXELFORMATDESCRIPTOR ) );
+							pfd.nSize = sizeof( pfd );
+							pfd.nVersion = 1;
+						
+							DescribePixelFormat(buffer->hDC, buffer->pixel_format, pfd.nSize, &pfd);
+						
+							printf("Pixel format %d\n", buffer->pixel_format);
+							const char *vendor_string = (const char *)glGetString(GL_VENDOR);
+							printf("OpenGL vendor string %s\n", vendor_string);
+							if (pfd.dwFlags & PFD_GENERIC_ACCELERATED)
+							{
+								/* Windows driver accelerated OpenGL */
+								printf("Windows driver accelerated OpenGL\n");
+							}
+							else
+							{
+								if (pfd.dwFlags & PFD_GENERIC_FORMAT)
+								{
+									/* Windows software OpenGL */
+									printf("Software OpenGL\n");
+								}
+								else
+								{
+									/* Independent driver accelerated OpenGL */
+									printf("Independent driver accelerated OpenGL\n");
+								}
+							}
+							printf("Colour depth %d\n",  pfd.cColorBits);
+							printf("Z depth %d\n",  pfd.cDepthBits);
+							printf("Alpha depth %d\n",  pfd.cAlphaBits);
+							printf("Accumulation depth %d\n",  pfd.cAccumBits);
+#endif /* defined (DEBUG) */
+						}
+						else
 						{
 							display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
 								"Unable enable the render context.");
@@ -3556,12 +3711,11 @@ are performed but the graphics window will render into the supplied device conte
 			}
 			else
 			{
-				DWORD error = GetLastError();
 				display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
-					"Unable to choose pixel format. Microsoft error code: %d", error);
+					"No valid pixel formats found.");
 				DESTROY(Graphics_buffer)(&buffer);
 				buffer = (struct Graphics_buffer *)NULL;
-			}	
+			}
 		}
 		else
 		{
@@ -3622,8 +3776,18 @@ mode with zinc.  Requiring development.
 		  CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
 			  buffer->resize_callback_list, buffer, &expose_data);
 
+#if defined (NEW_CODE)
+		  wglMakeCurrent( hdc, buffer->hRC );
+
+		  glClearColor(0.1, 0.8, 0.5, 1.0);
+		  glClearDepth(1.0);
+		  glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+		  USE_PARAMETER(drc);
+#endif /* defined (NEW_CODE) */
+		  
 		  BitBlt(hdc, drc->left, drc->top, 
-			  drc->right - drc->left, drc->bottom - drc->top,
+		  	  drc->right - drc->left, drc->bottom - drc->top,
 			  buffer->hDC, - buffer->x + drc->left, - buffer->y + 1024 - buffer->height + drc->top,
 			  SRCCOPY);
 
@@ -4785,7 +4949,7 @@ Returns the visual id used by the graphics buffer.
 #if defined (WIN32_USER_INTERFACE)
 			case GRAPHICS_BUFFER_WIN32_TYPE:
 			{
-				*visual_id = 0;
+				*visual_id = buffer->pixel_format;
 				return_code = 0;
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -4877,6 +5041,19 @@ Returns the depth of the colour buffer used by the graphics buffer.
 			} break;
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (WIN32_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WIN32_TYPE:
+			{
+				PIXELFORMATDESCRIPTOR pfd;
+				ZeroMemory( &pfd, sizeof( PIXELFORMATDESCRIPTOR ) );
+				pfd.nSize = sizeof( pfd );
+				pfd.nVersion = 1;
+				
+				DescribePixelFormat(buffer->hDC, buffer->pixel_format, pfd.nSize, &pfd);
+
+				*colour_buffer_depth = pfd.cColorBits;
+			} break;
+#endif /* defined (WIN32_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_colour_buffer_depth.  "
@@ -4946,6 +5123,19 @@ Returns the depth of the depth buffer used by the graphics buffer.
 			} break;
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (WIN32_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WIN32_TYPE:
+			{
+				PIXELFORMATDESCRIPTOR pfd;
+				ZeroMemory( &pfd, sizeof( PIXELFORMATDESCRIPTOR ) );
+				pfd.nSize = sizeof( pfd );
+				pfd.nVersion = 1;
+				
+				DescribePixelFormat(buffer->hDC, buffer->pixel_format, pfd.nSize, &pfd);
+
+				*depth_buffer_depth = pfd.cDepthBits;
+			} break;
+#endif /* defined (WIN32_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_depth_buffer_depth.  "
@@ -5035,6 +5225,19 @@ Returns the depth of the accumulation buffer used by the graphics buffer.
 			} break;
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
+#if defined (WIN32_USER_INTERFACE)
+			case GRAPHICS_BUFFER_WIN32_TYPE:
+			{
+				PIXELFORMATDESCRIPTOR pfd;
+				ZeroMemory( &pfd, sizeof( PIXELFORMATDESCRIPTOR ) );
+				pfd.nSize = sizeof( pfd );
+				pfd.nVersion = 1;
+				
+				DescribePixelFormat(buffer->hDC, buffer->pixel_format, pfd.nSize, &pfd);
+
+				*accumulation_buffer_depth = pfd.cAccumBits;
+			} break;
+#endif /* defined (WIN32_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_accumulation_buffer_depth.  "
@@ -5121,14 +5324,14 @@ Returns the buffering mode used by the graphics buffer.
 				int iPixelFormat;
 				iPixelFormat = GetPixelFormat(buffer->hDC);
 				DescribePixelFormat(buffer->hDC, iPixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
-				/* Should be able to get this out of the pfd somehow ? Just setting for now. */
-				*buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
-#if defined (OLD_CODE)
-				if(pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;)
+				if(pfd.dwFlags & PFD_DOUBLEBUFFER)
 				{
 					*buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
 				}
-#endif /* defined (OLD_CODE) */
+				else
+				{
+					*buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
+				}
 				return_code = 1;
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -5246,7 +5449,18 @@ Returns the stereo mode used by the graphics buffer.
 #if defined (WIN32_USER_INTERFACE)
 			case GRAPHICS_BUFFER_WIN32_TYPE:
 			{
-				*stereo_mode = GRAPHICS_BUFFER_MONO;
+				PIXELFORMATDESCRIPTOR pfd;
+				int iPixelFormat;
+				iPixelFormat = GetPixelFormat(buffer->hDC);
+				DescribePixelFormat(buffer->hDC, iPixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
+				if(pfd.dwFlags & PFD_STEREO)
+				{
+					*stereo_mode = GRAPHICS_BUFFER_STEREO;
+				}
+				else
+				{
+					*stereo_mode = GRAPHICS_BUFFER_MONO;
+				}
 				return_code = 1;
 			} break;
 #endif /* defined (WIN32_USER_INTERFACE) */
