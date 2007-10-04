@@ -5204,7 +5204,7 @@ To create an image need to specify most dimension arguments.
 		cmgui_image_information->file_names = (char **)NULL;
 		cmgui_image_information->height = 0;
 		cmgui_image_information->image_file_format = UNKNOWN_IMAGE_FILE_FORMAT;
-		cmgui_image_information->number_of_bytes_per_component = 1;
+		cmgui_image_information->number_of_bytes_per_component = 0;
 		cmgui_image_information->number_of_components = 3;
 		cmgui_image_information->width = 0;
 		cmgui_image_information->raw_image_storage = RAW_INTERLEAVED_RGB;
@@ -6833,9 +6833,14 @@ and other parameters for formats that require them.
 					{
 						magick_image_info->depth = 16;
 					}
-					else
+					else if (1 == cmgui_image_information->number_of_bytes_per_component)
 					{
 						magick_image_info->depth = 8;
+					}
+					else
+					{
+						/* Allow image magick to decide based on the image file */
+						magick_image_info->depth = 0;
 					}
 					/* set interlace type for raw RGB files */
 					switch (cmgui_image_information->raw_image_storage)
