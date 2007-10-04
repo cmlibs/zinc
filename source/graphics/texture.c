@@ -4175,10 +4175,10 @@ is constant from the half texel location to the edge.
 									{
 #if (1234==BYTE_ORDER)
 										short_value =
-											(((unsigned short)(*(pixel_ptr + 1))) << 8) - (*pixel_ptr);
+											(((unsigned short)(*(pixel_ptr + 1))) << 8) + (*pixel_ptr);
 #else /* (1234==BYTE_ORDER) */
 										short_value = 
-											(((unsigned short)(*pixel_ptr)) << 8) - (*(pixel_ptr + 1));
+											(((unsigned short)(*pixel_ptr)) << 8) + (*(pixel_ptr + 1));
 #endif /* (1234==BYTE_ORDER) */
 										values[n] += (double)short_value * weight;
 									}
@@ -4222,10 +4222,10 @@ is constant from the half texel location to the edge.
 						{
 #if (1234==BYTE_ORDER)
 							short_value =
-								(((unsigned short)(*(pixel_ptr + 1))) << 8) - (*pixel_ptr);
+								(((unsigned short)(*(pixel_ptr + 1))) << 8) + (*pixel_ptr);
 #else /* (1234==BYTE_ORDER) */
 							short_value = 
-								(((unsigned short)(*pixel_ptr)) << 8) - (*(pixel_ptr + 1));
+								(((unsigned short)(*pixel_ptr)) << 8) + (*(pixel_ptr + 1));
 #endif /* (1234==BYTE_ORDER) */
 							values[n] = (double)short_value / component_max;
 						}
