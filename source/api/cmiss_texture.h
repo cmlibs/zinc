@@ -293,4 +293,43 @@ I think it is best to write a separate function if you want to write a
 3D texture to a file sequence rather than handle it with this function.
 ==============================================================================*/
 
+int Cmiss_texture_pixel_dispatch(Cmiss_texture_id texture,
+	unsigned int left, unsigned int bottom, unsigned int depth_start,
+	int width, int height, int depth,
+	unsigned int padded_width_bytes, unsigned int number_of_fill_bytes, 
+	unsigned char *fill_bytes,
+	int components, unsigned char *destination_pixels);
+/*******************************************************************************
+LAST MODIFIED : 4 October 2007
+
+DESCRIPTION :
+Fills <destination_pixels> with all or part of <texture>.
+The <left>, <bottom>, <depth_start> and  <width>, <height>, <depth> specify the part of <cmgui_image> output and must be wholly within its bounds.
+Image data is ordered from the bottom row to the top, and within each row from
+the left to the right, and from the front to back.
+If <components> is > 0, the specified components are output at each pixel, 
+otherwise all the number_of_components components of the image are output at each pixel.
+Pixel values relate to components by:
+  1 -> I    = Intensity;
+  2 -> IA   = Intensity Alpha;
+  3 -> RGB  = Red Green Blue;
+  4 -> RGBA = Red Green Blue Alpha;
+  5 -> BGR  = Blue Green Red
+
+If <padded_width_bytes> is zero, image data for subsequent rows follows exactly
+after the right-most pixel of the row below. If a positive number is specified,
+which must be greater than <width>*number_of_components*
+number_of_bytes_per_component in <cmgui_image>, each
+row of the output image will take up the specified number of bytes, with
+pixels beyond the extracted image <width> undefined.
+If <number_of_fill_bytes> is positive, the <fill_bytes> are repeatedly output
+to fill the padded row; the cycle of outputting <fill_bytes> starts at the
+left of the image to make a more consitent output if more than one colour is
+specified in them -- it makes no difference if <number_of_fill_bytes> is 1 or
+equal to the number_of_components.
+<destination_pixels> must be large enough to take the greater of
+<depth> *(<padded_width_bytes> or <width>)*
+<height>*number_of_components*number_of_bytes_per_component in the image.
+==============================================================================*/
+
 #endif /* __CMISS_TEXTURE_H__ */

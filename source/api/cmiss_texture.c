@@ -500,3 +500,146 @@ Specfiy how the graphics hardware rasterises the texture onto the screen.
 
   return (return_code);
 } /* Cmiss_texture_set_filter_mode */
+
+int Cmiss_texture_pixel_dispatch(Cmiss_texture_id texture,
+	unsigned int left, unsigned int bottom, unsigned int depth_start,
+	int width, int height, int depth,
+	unsigned int padded_width_bytes, unsigned int number_of_fill_bytes, 
+	unsigned char *fill_bytes,
+	int components, unsigned char *destination_pixels)
+/*******************************************************************************
+LAST MODIFIED : 4 October 2007
+
+DESCRIPTION :
+Fills <destination_pixels> with all or part of <texture>.
+The <left>, <bottom>, <depth_start> and  <width>, <height>, <depth> specify the part of <cmgui_image> output and must be wholly within its bounds.
+Image data is ordered from the bottom row to the top, and within each row from
+the left to the right, and from the front to back.
+If <components> is > 0, the specified components are output at each pixel, 
+otherwise all the number_of_components components of the image are output at each pixel.
+Pixel values relate to components by:
+  1 -> I    = Intensity;
+  2 -> IA   = Intensity Alpha;
+  3 -> RGB  = Red Green Blue;
+  4 -> RGBA = Red Green Blue Alpha;
+  5 -> BGR  = Blue Green Red
+
+If <padded_width_bytes> is zero, image data for subsequent rows follows exactly
+after the right-most pixel of the row below. If a positive number is specified,
+which must be greater than <width>*number_of_components*
+number_of_bytes_per_component in <cmgui_image>, each
+row of the output image will take up the specified number of bytes, with
+pixels beyond the extracted image <width> undefined.
+If <number_of_fill_bytes> is positive, the <fill_bytes> are repeatedly output
+to fill the padded row; the cycle of outputting <fill_bytes> starts at the
+left of the image to make a more consitent output if more than one colour is
+specified in them -- it makes no difference if <number_of_fill_bytes> is 1 or
+equal to the number_of_components.
+<destination_pixels> must be large enough to take the greater of
+<depth> *(<padded_width_bytes> or <width>)*
+<height>*number_of_components*number_of_bytes_per_component in the image.
+==============================================================================*/
+{
+	struct Cmgui_image *cmgui_image;
+	int return_code;
+	unsigned char *frame_pixels;
+	unsigned int i, frame_bytes;
+
+	ENTER(Cmiss_texture_pixel_dispatch);
+	if (texture)
+	{
+		if (cmgui_image = Texture_get_image(texture))
+		{
+			if ((0 <= ((int)depth_start + depth)) &&
+				(((int)depth_start + depth) <=
+				Cmgui_image_get_number_of_images(cmgui_image)))
+			{
+				return_code = 1;
+				frame_pixels = destination_pixels;
+				if (depth != 1)
+				{
+					/* Lifted from image_utilities.c */
+					int number_of_components;
+					if(components == 0){
+						number_of_components = 
+							Cmgui_image_get_number_of_components(cmgui_image);
+						components = 
+							Cmgui_image_get_number_of_components(cmgui_image);
+					}else if(components <= 4){
+						number_of_components = components; 
+					}else if(components == 5){
+						number_of_components = 3;
+					}
+					unsigned int bytes_per_pixel = number_of_components *
+						Cmgui_image_get_number_of_bytes_per_component(cmgui_image);
+					unsigned int width_bytes = width * bytes_per_pixel;
+					if (padded_width_bytes > width_bytes)
+					{
+						width_bytes = padded_width_bytes;
+					}
+					frame_bytes = width_bytes * height;
+					if (depth > 0)
+					{
+						for (i = depth_start ; return_code &&
+								  (i < depth_start + depth) ; i++)
+						{
+							return_code = Cmgui_image_dispatch(cmgui_image,
+								/*image_number*/i, 
+								left, bottom, width, height,
+								padded_width_bytes, number_of_fill_bytes, fill_bytes,
+								components, frame_pixels);
+							frame_pixels += frame_bytes;
+						}
+					}
+					else
+					{
+						for (i = depth_start ; return_code &&
+								  (i > depth_start + depth) ; i--)
+						{
+							return_code = Cmgui_image_dispatch(cmgui_image,
+								/*image_number*/i, 
+								left, bottom, width, height,
+								padded_width_bytes, number_of_fill_bytes, fill_bytes,
+								components, frame_pixels);
+							frame_pixels += frame_bytes;
+						}
+					}
+				}
+				else
+				{
+					return_code = Cmgui_image_dispatch(cmgui_image,
+						/*image_number*/depth_start, 
+						left, bottom, width, height,
+						padded_width_bytes, number_of_fill_bytes, fill_bytes,
+						components, frame_pixels);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_texture_pixel_dispatch:  "
+					"Invalid depth parameters.");
+				return_code = 0;
+			}
+			DESTROY(Cmgui_image)(&cmgui_image);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_texture_pixel_dispatch:  "
+				"Could not get image from texture");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_texture_pixel_dispatch:  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+  
+	return (return_code);
+} /* Cmiss_texture_pixel_dispatch */
+
