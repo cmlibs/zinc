@@ -63,6 +63,8 @@ The data structures used for representing textures.
 	Cmiss_texture_get_original_texel_sizes
 #define Texture_get_number_of_components \
 	Cmiss_texture_get_number_of_components
+#define Texture_get_number_bytes_per_component \
+	Cmiss_texture_get_number_of_bytes_per_component
 
 /*
 Global types

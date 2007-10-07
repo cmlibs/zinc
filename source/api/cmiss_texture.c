@@ -541,9 +541,9 @@ equal to the number_of_components.
 ==============================================================================*/
 {
 	struct Cmgui_image *cmgui_image;
-	int return_code;
+	int number_of_components, return_code;
 	unsigned char *frame_pixels;
-	unsigned int i, frame_bytes;
+	unsigned int bytes_per_pixel, i, frame_bytes, width_bytes;
 
 	ENTER(Cmiss_texture_pixel_dispatch);
 	if (texture)
@@ -559,7 +559,6 @@ equal to the number_of_components.
 				if (depth != 1)
 				{
 					/* Lifted from image_utilities.c */
-					int number_of_components;
 					if(components == 0){
 						number_of_components = 
 							Cmgui_image_get_number_of_components(cmgui_image);
@@ -570,9 +569,9 @@ equal to the number_of_components.
 					}else if(components == 5){
 						number_of_components = 3;
 					}
-					unsigned int bytes_per_pixel = number_of_components *
+					bytes_per_pixel = number_of_components *
 						Cmgui_image_get_number_of_bytes_per_component(cmgui_image);
-					unsigned int width_bytes = width * bytes_per_pixel;
+					width_bytes = width * bytes_per_pixel;
 					if (padded_width_bytes > width_bytes)
 					{
 						width_bytes = padded_width_bytes;

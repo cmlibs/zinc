@@ -282,6 +282,15 @@ DESCRIPTION :
 Returns the number of components used per texel in the texture: 1, 2, 3 or 4.
 ==============================================================================*/
 
+int Cmiss_texture_get_number_of_bytes_per_component(Cmiss_texture_id texture);
+/*******************************************************************************
+LAST MODIFIED : 5 October 2007
+
+DESCRIPTION :
+Returns the number of bytes used per components per texel in the texture:
+1 = 8 bit image, 2 = 16 bit image.
+==============================================================================*/
+
 int Cmiss_texture_write_to_file(Cmiss_texture_id texture, 
    const char *filename);
 /*******************************************************************************
