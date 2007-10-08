@@ -181,6 +181,7 @@ extern "C" {
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "general/value.h"
+#include "graphics/scene.h"
 #include "user_interface/message.h"
 }
 #include <typeinfo>
@@ -210,6 +211,14 @@ PROTOTYPE_OBJECT_FUNCTIONS(Computed_field_type_data);
 DECLARE_LIST_TYPES(Computed_field_type_data);
 PROTOTYPE_LIST_FUNCTIONS(Computed_field_type_data);
 
+struct Transformation_data
+{
+	 struct Computed_field *existing_field;
+	 struct Scene *scene;
+	 struct Scene_object *scene_object;
+	 struct FE_node *node;
+};
+
 struct Computed_field_package
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -225,6 +234,7 @@ wrappers need to be automatically created for each FE_field.
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct LIST(Computed_field_type_data) *computed_field_type_list;
 	Computed_field_simple_package *simple_package;
+	 Transformation_data *transformation_data;
 }; /* struct Computed_field_package */
 
 /*
@@ -2838,6 +2848,156 @@ can describe prolate spheroidal values as RC to "open out" the heart model.
 	return (return_code);
 } /* Computed_field_set_coordinate_system */
 
+static int Computed_field_transformation_change(struct Time_keeper *time_keeper,
+	 enum Time_keeper_event event, void *transformation_data_void)
+/*******************************************************************************
+LAST MODIFIED : 8 Oct 2007
+
+DESCRIPTION : This function is called transformation is time dependent
+
+==============================================================================*/
+{
+	 struct Computed_field *existing_field;
+	 struct Transformation_data *transformation_data;
+ 	 FE_value time;
+	 int return_code, test_code, i, j, k;
+	 struct Scene_object *scene_object;
+	 gtMatrix transformation_matrix;
+
+	 ENTER(Computed_field_change_transformation);
+	 USE_PARAMETER(event);
+	 return_code = 0;
+	 test_code = 0;
+	 if (transformation_data = (struct Transformation_data *)transformation_data_void)
+	 {
+			if (existing_field = transformation_data->existing_field)
+			{
+				 ACCESS(Computed_field)(existing_field);
+				 if (existing_field->values)
+				 {
+						DEALLOCATE(existing_field->values);
+				 }
+				 if (ALLOCATE(existing_field->values,FE_value,existing_field->number_of_components))
+				 {
+						time = Time_keeper_get_time(time_keeper);
+						// get the time_interval between each new quaternions
+						// being read in and find the time where the
+						// quaternions are first read in as a computed field.
+						Field_node_location location(transformation_data->node, time);
+						existing_field->core->evaluate_cache_at_location(&location);
+						k = 0;
+						for (i=0; i<4; i++)
+						{
+							 for (j=0; j<4; j++)
+							 {
+									transformation_matrix[i][j] = existing_field->values[k];
+									k++;
+							 }
+						}
+						if (scene_object=transformation_data->scene_object)
+						{
+							 Scene_object_set_transformation(scene_object,
+									&transformation_matrix);
+						}
+						DEALLOCATE(existing_field->values);
+						return_code = 1;
+				 }				 
+				 DEACCESS(Computed_field)(&existing_field);
+			}
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "Computed_field_change_transformation.  Invalid argument(s)");
+	 }
+	 LEAVE;
+
+	 return (return_code);
+}
+
+int Computed_field_define_transformation(char *field_name, char *scene_object_name, 
+	 struct Computed_field_package *computed_field_package,
+	 void *default_time_keeper_void, void *scene_void, void *node_void)
+/*******************************************************************************
+LAST MODIFIED : 8 Oct 2007
+
+DESCRIPTION :
+Define the time dependent transformation
+==============================================================================*/
+{
+	 int return_code;
+ 	 struct Computed_field *existing_field;
+	 struct Scene *scene;
+	 struct Transformation_data *transformation_data;
+	 struct Time_keeper *default_time_keeper;
+	 struct FE_node *node;
+
+	 ENTER(Computed_field_define_transformation);
+	 return_code = 0;
+	 scene = (struct Scene *)scene_void;
+	 default_time_keeper = (struct Time_keeper *)default_time_keeper_void;
+	 node = (struct FE_node *)node_void;
+	 existing_field = (Computed_field *)NULL;
+	 existing_field =
+			FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(field_name,
+				 computed_field_package->computed_field_manager);
+	 if (existing_field)
+	 {
+			// Set which node should the quaternion will be read in from, 
+			// shouldn't be done this way. A.Wu
+			DEALLOCATE(field_name);
+			existing_field->node = node;
+			if (existing_field->core->has_multiple_times())
+			{
+				 if (existing_field->number_of_components == 16)
+				 {	 
+						if (ALLOCATE(transformation_data,struct Transformation_data,1))
+						{
+							 transformation_data->existing_field = existing_field;
+							 transformation_data->scene = scene;
+							 transformation_data->scene_object=NULL;
+							 transformation_data->scene_object=Scene_get_Scene_object_by_name(
+									scene,scene_object_name);
+							 transformation_data->node = node;
+							 computed_field_package->transformation_data = transformation_data;
+							 if  (transformation_data->scene_object != NULL)
+							 {
+									Time_keeper_add_callback(default_time_keeper,
+										 Computed_field_transformation_change,
+										 (void *)transformation_data,
+										 (enum Time_keeper_event) (TIME_KEEPER_NEW_TIME | 
+												TIME_KEEPER_NEW_MINIMUM | TIME_KEEPER_NEW_MAXIMUM ));
+							 }
+							 else
+							 {
+									display_message(ERROR_MESSAGE,
+										 "Computed_field_define_transformation. Must specify a correct scene object");						
+							 }
+							 return_code = 1;
+						}
+				 }
+				 else
+				 {
+						display_message(ERROR_MESSAGE,
+							 "Computed_field_define_transformation. It should have 16 components");
+				 }
+			}
+			else
+			{
+				 display_message(ERROR_MESSAGE,
+						"Computed_field_define_transformation. Field does not have multiple times");
+			}
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "Computed_field_define_transformation. Field not defined");
+	 }
+	 LEAVE;
+
+	 return (return_code);
+}
+
 char *Computed_field_get_type_string(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -3164,6 +3324,34 @@ components - useful for selecting vector/coordinate fields.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_has_4_components.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_has_4_components */
+
+int Computed_field_has_7_components(struct Computed_field *field,
+	void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 14 August 2006
+
+DESCRIPTION :
+Iterator/conditional function returning true if <field> has exactly four
+components - useful for selecting vector/coordinate fields.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_has_7_components);
+	USE_PARAMETER(dummy_void);
+	if (field)
+	{
+		return_code=(7 == field->number_of_components);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_has_7_components.  Missing field");
 		return_code=0;
 	}
 
@@ -3567,8 +3755,7 @@ and its parameter fields and values.
 	return (return_code);
 } /* define_Computed_field_type */
 
-int
-define_Computed_field_coordinate_system(struct Parse_state *state,
+int define_Computed_field_coordinate_system(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -4393,6 +4580,7 @@ created as part of the package.
 			new Computed_field_simple_package(
 				computed_field_package->computed_field_manager);
 		computed_field_package->simple_package->addref();
+		computed_field_package->transformation_data = (Transformation_data *)NULL;
 	}
 	else
 	{
@@ -4421,6 +4609,10 @@ Cancels any further messages from managers.
 	ENTER(DESTROY(Computed_field_package));
 	if (package_address&&(computed_field_package= *package_address))
 	{
+		 if (computed_field_package->transformation_data)
+		 {
+				DEALLOCATE(computed_field_package->transformation_data);
+		 }
 		DESTROY(MANAGER(Computed_field))(&computed_field_package->computed_field_manager);
 		DESTROY(LIST(Computed_field_type_data))(
 			&computed_field_package->computed_field_type_list);

@@ -9083,7 +9083,101 @@ Executes a GFX DEFINE FONT command.
 	LEAVE;
 
 	return (return_code);
-} /* gfx_define_faces */
+} /* gfx_define_font */
+
+static int gfx_define_transformation(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 11 April 2007
+
+DESCRIPTION :
+Executes a GFX DEFINE TRANSFORMATION command.
+==============================================================================*/
+{
+	 char *scene_object_name, *field_name, node_flag, *region_path;
+	 int return_code, node_identifier;
+	 struct Cmiss_command_data *command_data;
+	 struct Scene *scene;
+	 struct Option_table *option_table;
+	 struct Cmiss_region *region;
+	 struct FE_node *node;
+	 struct FE_region *fe_region;
+
+	 ENTER(gfx_define_transformation);
+	 USE_PARAMETER(dummy_to_be_modified);
+	 scene_object_name = (char *)NULL;
+	 field_name = (char *)NULL;
+	 scene = NULL;
+	 node_flag = 0;
+	 node_identifier = 0;
+	 node = NULL;
+	 region_path = (char *)NULL;
+	 if (state)
+	 {
+			if (command_data = (struct Cmiss_command_data *)command_data_void)
+			{
+				 Cmiss_region_get_root_region_path(&region_path);
+				 scene=ACCESS(Scene)(command_data->default_scene);
+				 option_table = CREATE(Option_table)();
+				 /* scene_object_name */
+				 Option_table_add_entry(option_table, "name", &scene_object_name,
+						NULL, set_name);
+				 /* field_name */
+				 Option_table_add_entry(option_table, "field", &field_name,
+						NULL, set_name);
+				 /* scene*/
+				 Option_table_add_entry(option_table, "scene", &scene,
+						command_data->scene_manager, set_Scene);
+				 Option_table_add_entry(option_table, "node", &node_identifier,
+						&node_flag, set_int_and_char_flag);
+				 Option_table_add_entry(option_table,"region",&region_path,
+						command_data->root_region,set_Cmiss_region_path);
+				 return_code = Option_table_multi_parse(option_table,state);
+				 if (return_code && node_flag)
+				 {
+						Cmiss_region_get_region_from_path(
+							 command_data->root_region,region_path,
+							 &region);
+						fe_region = Cmiss_region_get_FE_region(region);
+						node = FE_region_get_FE_node_from_identifier(
+							 fe_region, node_identifier);
+				 }
+				 if (node != NULL)
+				 {
+						Computed_field_define_transformation(field_name, scene_object_name, 
+							 command_data->computed_field_package,
+							 (void *)command_data->default_time_keeper, 
+							 (void *)scene, (void *)node);
+				 }
+				 else
+				 {
+						display_message(ERROR_MESSAGE,
+							 "gfx_define_transformation.  Must specify a node");
+						return_code=0;
+				 }
+				 if (region_path)
+				 {
+						DEALLOCATE(region_path);
+				 }
+				 DEACCESS(Scene)(&scene);
+				 DESTROY(Option_table)(&option_table);
+			}
+			else
+			{
+				 display_message(ERROR_MESSAGE,
+						"gfx_define_transformation.  Missing command_data_void");
+				 return_code=0;
+			}
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,"gfx_define_transformation.  Missing state");
+			return_code=0;
+	 }
+	 
+	 LEAVE;
+	 return (return_code);
+}
 
 static int execute_command_gfx_define(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -9124,6 +9218,9 @@ Executes a GFX DEFINE command.
 				/* font */
 				Option_table_add_entry(option_table, "font", NULL,
 					command_data_void, gfx_define_font);
+				/* transformation */
+				Option_table_add_entry(option_table, "transformation", NULL,
+					 command_data_void, gfx_define_transformation);			
 				return_code = Option_table_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 			}
@@ -15294,7 +15391,7 @@ use node_manager and node_selection.
 			if (define_field && undefine_field)
 			{
 				display_message(WARNING_MESSAGE,
-					"gfx modify data:  Only specify one of define or undefine field");
+				 	"gfx modify data:  Only specify one of define or undefine field");
 				return_code = 0;
 			}
 			if ((!define_field) && (!undefine_field))
