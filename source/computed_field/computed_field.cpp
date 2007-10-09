@@ -2860,14 +2860,13 @@ DESCRIPTION : This function is called transformation is time dependent
 	 struct Computed_field *existing_field;
 	 struct Transformation_data *transformation_data;
  	 FE_value time;
-	 int return_code, test_code, i, j, k;
+	 int return_code, i, j, k;
 	 struct Scene_object *scene_object;
 	 gtMatrix transformation_matrix;
 
 	 ENTER(Computed_field_change_transformation);
 	 USE_PARAMETER(event);
 	 return_code = 0;
-	 test_code = 0;
 	 if (transformation_data = (struct Transformation_data *)transformation_data_void)
 	 {
 			if (existing_field = transformation_data->existing_field)
