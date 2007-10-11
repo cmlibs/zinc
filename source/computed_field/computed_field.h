@@ -72,7 +72,6 @@ if a value is already known.
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
-#include "graphics/graphics_library.h"
 #include "region/cmiss_region.h"
 #include "user_interface/message.h"
 
@@ -742,14 +741,6 @@ to modify and destroy it.
 int Computed_field_define_transformation(char *field_name, char *scene_object_name,
 	 struct Computed_field_package *computed_field_package, 
 	 void *default_time_keeper_void, void *scene_void, void *node_void);
-
-struct Computed_field *Computed_field_set_transformation_matrix(gtMatrix transformation_matrix, 
-	 float time, struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 10 September 2007
-
-DESCRIPTION :
-==============================================================================*/
 
 int Computed_field_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
