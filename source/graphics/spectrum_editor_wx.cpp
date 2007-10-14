@@ -59,7 +59,6 @@ Contains all the information carried by the graphical element editor widget.
 	 struct Spectrum_editor_dialog **spectrum_editor_dialog_address;
 	 void *material_manager_callback_id;
 	 void *spectrum_manager_callback_id;
-// 	 struct Callback_data update_callback;
 	 struct Scene *spectrum_editor_scene, *autorange_scene;
 	 struct Scene_viewer *spectrum_editor_scene_viewer;
 	 struct GT_object *graphics_object, *tick_lines_graphics_object,
@@ -142,7 +141,7 @@ a complete copy of <Spectrum>.
 	LEAVE;
 
 	return (return_code);
-} /* make_edit_spectrum */
+} /* make_current_spectrum */
 
 static int make_edit_spectrum(
 	struct Spectrum_editor *spectrum_editor,
@@ -388,7 +387,7 @@ Changes the currently chosen settings.
 							 case SPECTRUM_ALPHA:
 							 {
 									spectrum_editor->spectrum_colour_mapping_choice->SetStringSelection("Alpha");
-							 } break;
+ 							 } break;
 							 case SPECTRUM_BLUE:
 							 {
 									spectrum_editor->spectrum_colour_mapping_choice->SetStringSelection("Blue");
@@ -564,7 +563,7 @@ Changes the currently chosen settings.
 			else
 			{
 				 display_message(ERROR_MESSAGE,
-						"spectrum_editor_wx_set_settings.  Invalid argument(s)");
+						"spectrum_editor_wx_set_settings.  current settings not available");
 				 return_code = 0;
 			}
 	 }
@@ -1581,7 +1580,7 @@ void OnSpectrumAutorangePressed(wxCommandEvent &event)
 			if ( range_set )
 			{
 				 Spectrum_set_minimum_and_maximum(
-						spectrum_editor->edit_spectrum,
+						spectrum_editor->current_spectrum,
 						minimum, maximum );
 				 spectrum_editor_wx_set_settings(spectrum_editor);
 				 spectrum_editor_wx_make_settings_list(spectrum_editor);
@@ -1874,7 +1873,7 @@ Creates a spectrum_editor widget.
 	 struct GT_pointset *tick_labels;
 	 struct Graphical_material *tick_material;
 	 char **strings, *string_data;
-	 struct Spectrum *default_scene_spectrum;
+	 struct Spectrum *default_scene_spectrum, *temp_spectrum;
 
 	ENTER(CREATE(Spectrum_editor));
 	spectrum_editor = (struct Spectrum_editor *)NULL;
@@ -2202,7 +2201,11 @@ Creates a spectrum_editor widget.
 					 }
 					 else
 					 {
-							spectrum_editor->spectrum_editor_check_list->SetSelection(0);	
+							temp_spectrum=FIRST_OBJECT_IN_MANAGER_THAT(Spectrum)(
+								 (MANAGER_CONDITIONAL_FUNCTION(Spectrum) *)NULL,
+								 (void *)NULL,
+								 spectrum_editor->spectrum_manager);
+							make_current_spectrum(spectrum_editor, spectrum);
 					 }
 					 spectrum_editor->wx_spectrum_editor->set_autorange_scene();
 					 spectrum_editor->wx_spectrum_editor->Show();
