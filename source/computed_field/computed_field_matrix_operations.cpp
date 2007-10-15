@@ -44,6 +44,8 @@ Implements a number of basic vector operations on computed fields.
 extern "C" {
 #include <math.h>
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
+#include "finite_element/finite_element.h"
 #include "computed_field/computed_field_matrix_operations.h"
 }
 #include "computed_field/computed_field_private.hpp"
@@ -3026,11 +3028,9 @@ class Computed_field_quaternions : public Computed_field_core
 {
 public:
 	 double *m, old_w, old_x, old_y, old_z, w, x, y, z, t;
-	 FE_value time_interval;
 
-	 Computed_field_quaternions(Computed_field *field, FE_value time_interval) : 
-			Computed_field_core(field),
-			time_interval(time_interval)
+	 Computed_field_quaternions(Computed_field *field) : 
+			Computed_field_core(field)
 	{
 		 m = (double *)NULL;
 	};
@@ -3040,7 +3040,7 @@ public:
 private:
 	Computed_field_core *copy(Computed_field* new_parent)
 	{
-		 return new Computed_field_quaternions(new_parent, time_interval);
+		 return new Computed_field_quaternions(new_parent);
 	}
 
 	char *get_type_string()
@@ -3107,11 +3107,13 @@ Clear the type specific data used by this type.
 	int return_code;
 
 	ENTER(Computed_field_quaternions::clear_cache);
+	return_code = 0;
 	if (field)
 	{
 		 if (m)
 		{
 			DEALLOCATE(m);
+			return_code = 1;
 		}
 	}
 	else
@@ -3142,6 +3144,7 @@ field->values.
 			omega, cosom, sinom,scale0,scale1;
 
 	ENTER(Computed_field_eigenvalues::evaluate);
+	return_code = 0;
 	if (field)
 	{
 		 //SLERP Implementation
@@ -3161,7 +3164,7 @@ field->values.
 				tol[2] = z;
 				tol[3] = w;
 		 }
-		 if ((1.0-cosom)>0.000001)
+		 if (fabs(1.0-cosom)>0.000001)
 		 {
 				omega = acos(cosom);
 				sinom = sin(omega);
@@ -3221,6 +3224,7 @@ field->values.
 				m[13] = y_translate;
 				m[14] = z_translate;
 				m[15] = 1;
+				return_code = 1;
 		 }
 		 else
 		 {
@@ -3248,65 +3252,106 @@ DESCRIPTION :
 Evaluate the fields cache at the location
 ==============================================================================*/
 {
-	 int i, return_code;
-	 double lower_time, upper_time, time, magnitude;
+	 int i, return_code, *time_index_one, *time_index_two;
+	 double time, magnitude;
+	 FE_time_sequence *time_sequence;
+	 FE_value *xi, *lower_time, *upper_time; 
 
 	ENTER(Computed_field_quaternions::evaluate_cache_at_location);
 	if (field && location && field->number_of_components == 16 &&
 		 field->source_fields[0]->number_of_components == 7)
 	{
-		 field->derivatives_valid = 0;
-		 upper_time = time_interval;
-		 lower_time = 0.0;
 		 time = location->get_time();
-		 while (time>upper_time)
-		 {
-				upper_time += time_interval;
-				lower_time += time_interval;
-		 }
 		 //t is the normalised time scaled from 0 to 1
-		 t = (time - lower_time ) / time_interval;
-		 Field_node_location old_location(field->node, lower_time);
-		 Computed_field_evaluate_source_fields_cache_at_location(field, &old_location);
-		 // get the old quaternions for SLERP
- 		 old_w = (double)(field->source_fields[0]->values[0]);
- 		 old_x = (double)(field->source_fields[0]->values[1]);
- 		 old_y = (double)(field->source_fields[0]->values[2]);
- 		 old_z = (double)(field->source_fields[0]->values[3]);
- 		 //convert to unit quaternion
- 		 magnitude = sqrt(old_w*old_w+ old_x*old_x + old_y*old_y + old_z * old_z);
- 		 old_w = old_w / magnitude;
- 		 old_x = old_x / magnitude;
- 		 old_y = old_y / magnitude;
- 		 old_z = old_z / magnitude;
-		 // get the new quaternions for SLERP
-		 Field_node_location new_location(field->node, upper_time);
-		 Computed_field_evaluate_source_fields_cache_at_location(field, &new_location);
-		 w = (double)(field->source_fields[0]->values[0]);
-		 x = (double)(field->source_fields[0]->values[1]);
-		 y = (double)(field->source_fields[0]->values[2]);
-		 z = (double)(field->source_fields[0]->values[3]);
-		 //convert to unit quaternion
-		 magnitude = sqrt(w*w+ x*x + y*y + z*z);
-		 w = w / magnitude;
-		 x = x / magnitude;
-		 y = y / magnitude;
-		 z = z / magnitude;
-		 if (Computed_field_evaluate_source_fields_cache_at_location(field, location) &&
-				evaluate())
+		 if ((ALLOCATE(time_index_one, int, 1)) &&
+				(ALLOCATE(time_index_two, int, 1)) &&
+				(ALLOCATE(xi, FE_value, 1)) &&
+				(ALLOCATE(upper_time, FE_value, 1)) &&
+				(ALLOCATE(lower_time, FE_value, 1)))
 		 {
-				for (i=0; i<16;i++)
+				time_sequence = Computed_field_get_FE_node_field_FE_time_sequence(field->node,
+					 field->source_fields[0]);
+				FE_time_sequence_get_interpolation_for_time(
+					 time_sequence, time, time_index_one,
+					 time_index_two, xi);
+				FE_time_sequence_get_time_for_index(
+					 time_sequence, *time_index_one, lower_time);
+				FE_time_sequence_get_time_for_index(
+					 time_sequence, *time_index_two, upper_time);
+				t = *xi;
+				if (t != 0)
 				{
-					 field->values[i] = m[i];
+					 Field_node_location old_location(field->node, *lower_time);
+					 Computed_field_evaluate_source_fields_cache_at_location(field, &old_location);
+					 // get the old quaternions for SLERP
+					 old_w = (double)(field->source_fields[0]->values[0]);
+					 old_x = (double)(field->source_fields[0]->values[1]);
+					 old_y = (double)(field->source_fields[0]->values[2]);
+					 old_z = (double)(field->source_fields[0]->values[3]);
+					 //convert to unit quaternion
+					 magnitude = sqrt(old_w*old_w+ old_x*old_x + old_y*old_y + old_z * old_z);
+					 old_w = old_w / magnitude;
+					 old_x = old_x / magnitude;
+					 old_y = old_y / magnitude;
+					 old_z = old_z / magnitude;
+					 // get the new quaternions for SLERP
 				}
-				return_code = 1;
+				else
+				{
+					 old_w = 1;
+					 old_x = 0;
+					 old_y = 0;
+					 old_z = 0;
+				}
+				if (t != 0)
+				{
+					 Field_node_location new_location(field->node, *upper_time);
+					 Computed_field_evaluate_source_fields_cache_at_location(field, &new_location);
+				}
+				else
+				{
+					 Computed_field_evaluate_source_fields_cache_at_location(field, location);		 
+				}
+				w = (double)(field->source_fields[0]->values[0]);
+				x = (double)(field->source_fields[0]->values[1]);
+				y = (double)(field->source_fields[0]->values[2]);
+				z = (double)(field->source_fields[0]->values[3]);
+				//convert to unit quaternion
+				magnitude = sqrt(w*w+ x*x + y*y + z*z);
+				w = w / magnitude;
+				x = x / magnitude;
+				y = y / magnitude;
+				z = z / magnitude;
+				if (t != 0)
+				{
+					 Computed_field_evaluate_source_fields_cache_at_location(field, location);
+				}
+				if (evaluate())
+				{
+					 for (i=0; i<16;i++)
+					 {
+							field->values[i] = m[i];
+					 }
+					 return_code = 1;
+				}
+				else
+				{
+					 display_message(ERROR_MESSAGE,
+							"Computed_field_quaternions::evaluate_cache_at_location.  "
+							"Cannot evaluate source fields cache at location");
+					 return_code = 0;		 
+				}
+				DEALLOCATE(time_index_one);
+				DEALLOCATE(time_index_two);
+				DEALLOCATE(xi);
+				DEALLOCATE(upper_time);
+				DEALLOCATE(lower_time);
 		 }
 		 else
 		 {
 				display_message(ERROR_MESSAGE,
 					 "Computed_field_quaternions::evaluate_cache_at_location.  "
-					 "Cannot evaluate source fields cache at location");
-				 return_code = 0;		 
+					 "not enough memory.");
 		 }
 	}
 	else
@@ -3388,7 +3433,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 int Computed_field_set_type_quaternions(struct Computed_field *field,
-	 struct Computed_field *source_field, FE_value time_interval)
+	 struct Computed_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 5 October 2007
 
@@ -3420,7 +3465,7 @@ although its cache may be lost.
 				source_fields[0] = ACCESS(Computed_field)(source_field);
 				field->source_fields = source_fields;
 				field->number_of_source_fields = number_of_source_fields;
-				field->core = new Computed_field_quaternions(field, time_interval);
+				field->core = new Computed_field_quaternions(field);
 				return_code=1;
 			}
 			else
@@ -3495,10 +3540,8 @@ contents to be modified.
 		*computed_field_matrix_operations_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
-	FE_value time_interval;
 
 	ENTER(define_Computed_field_type_quaternions);
-	time_interval = 0.0;
 	if (state && (field = (struct Computed_field *)field_void) &&
 		(computed_field_matrix_operations_package=
 			(Computed_field_matrix_operations_package *)
@@ -3532,20 +3575,9 @@ contents to be modified.
 				 computed_field_matrix_operations_package->computed_field_manager;
 			Option_table_add_entry(option_table, "field", &source_field,
 				 &set_source_field_data, set_Computed_field_conditional);
-			Option_table_add_entry(option_table, "time_interval", &time_interval,
-				 NULL, set_FE_value);
-			if (time_interval == 0)
-			{
-				 return_code = Option_table_multi_parse(option_table, state) && 
-						Computed_field_set_type_quaternions(
-							 field, source_field, time_interval);
-			}
-			else
-			{
-				 display_message(ERROR_MESSAGE,
-						"Missing time interval or time interval cannot be 0.");
-				 return_code = 0;
-			}
+			return_code = Option_table_multi_parse(option_table, state) && 
+				 Computed_field_set_type_quaternions(field, source_field);
+
 			if (source_field)
 			{
 				 DEACCESS(Computed_field)(&source_field);
