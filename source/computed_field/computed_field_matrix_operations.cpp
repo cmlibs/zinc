@@ -3279,39 +3279,22 @@ Evaluate the fields cache at the location
 				FE_time_sequence_get_time_for_index(
 					 time_sequence, *time_index_two, upper_time);
 				t = *xi;
-				if (t != 0)
-				{
-					 Field_node_location old_location(field->node, *lower_time);
-					 Computed_field_evaluate_source_fields_cache_at_location(field, &old_location);
-					 // get the old quaternions for SLERP
-					 old_w = (double)(field->source_fields[0]->values[0]);
-					 old_x = (double)(field->source_fields[0]->values[1]);
-					 old_y = (double)(field->source_fields[0]->values[2]);
-					 old_z = (double)(field->source_fields[0]->values[3]);
-					 //convert to unit quaternion
-					 magnitude = sqrt(old_w*old_w+ old_x*old_x + old_y*old_y + old_z * old_z);
-					 old_w = old_w / magnitude;
-					 old_x = old_x / magnitude;
-					 old_y = old_y / magnitude;
-					 old_z = old_z / magnitude;
-					 // get the new quaternions for SLERP
-				}
-				else
-				{
-					 old_w = 1;
-					 old_x = 0;
-					 old_y = 0;
-					 old_z = 0;
-				}
-				if (t != 0)
-				{
-					 Field_node_location new_location(field->node, *upper_time);
-					 Computed_field_evaluate_source_fields_cache_at_location(field, &new_location);
-				}
-				else
-				{
-					 Computed_field_evaluate_source_fields_cache_at_location(field, location);		 
-				}
+				Field_node_location old_location(field->node, *lower_time);
+				Computed_field_evaluate_source_fields_cache_at_location(field, &old_location);
+				// get the old quaternions for SLERP
+				old_w = (double)(field->source_fields[0]->values[0]);
+				old_x = (double)(field->source_fields[0]->values[1]);
+				old_y = (double)(field->source_fields[0]->values[2]);
+				old_z = (double)(field->source_fields[0]->values[3]);
+				//convert to unit quaternion
+				magnitude = sqrt(old_w*old_w+ old_x*old_x + old_y*old_y + old_z * old_z);
+				old_w = old_w / magnitude;
+				old_x = old_x / magnitude;
+				old_y = old_y / magnitude;
+				old_z = old_z / magnitude;
+				// get the new quaternions for SLERP
+				Field_node_location new_location(field->node, *upper_time);
+				Computed_field_evaluate_source_fields_cache_at_location(field, &new_location);
 				w = (double)(field->source_fields[0]->values[0]);
 				x = (double)(field->source_fields[0]->values[1]);
 				y = (double)(field->source_fields[0]->values[2]);
@@ -3322,10 +3305,7 @@ Evaluate the fields cache at the location
 				x = x / magnitude;
 				y = y / magnitude;
 				z = z / magnitude;
-				if (t != 0)
-				{
-					 Computed_field_evaluate_source_fields_cache_at_location(field, location);
-				}
+				Computed_field_evaluate_source_fields_cache_at_location(field, location);
 				if (evaluate())
 				{
 					 for (i=0; i<16;i++)
