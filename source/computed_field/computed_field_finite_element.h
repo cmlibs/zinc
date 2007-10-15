@@ -348,6 +348,24 @@ LAST MODIFIED : 19 July 2000
 DESCRIPTION :
 ==============================================================================*/
 
+
+int Computed_field_get_FE_field_time_array_index_at_FE_value_time(
+	 struct Computed_field *field,FE_value time, FE_value *the_time_high,
+	 FE_value *the_time_low, int *the_array_index,int *the_index_high,
+	 int *the_index_low);
+/*******************************************************************************
+LAST MODIFIED : 9 Oct 2007
+
+DESCRIPTION :
+==============================================================================*/
+
+struct FE_time_sequence *Computed_field_get_FE_node_field_FE_time_sequence(struct FE_node *node,
+	 struct Computed_field *computed_field);
+/*******************************************************************************
+LAST MODIFIED : 9 Oct 2007
+
+DESCRIPTION :
+==============================================================================*/
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

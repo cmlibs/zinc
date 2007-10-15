@@ -19777,155 +19777,6 @@ at the <node>.
 	return (return_code);
 } /* set_FE_nodal_short_array_element */
 
-int get_FE_field_time_array_index_at_FE_value_time(struct FE_field *field,
-	FE_value time,FE_value *the_time_high,FE_value *the_time_low,
-	int *the_array_index,int *the_index_high,int *the_index_low)
-/*******************************************************************************
-LAST MODIFIED : 1 August 2000
-
-DESCRIPTION 
-Given a <field> and <time>, checks that <field> has times defined and returns:
-<the_array_index>, the array index of <field> times closest to <time>.
-<the_index_high>, <the_index_low> the upper and lower limits for <the_array_index>
-(ideally <the_index_high>==<the_index_low>==<the_array_index>).
-<the_time_low> the time corresponding to <the_index_low>.
-<the_time_high> the time corresponding to <the_index_high>.
-
-All this information (rather than just <the_array_index> ) is returned so can
-perform interpolation, etc.
-==============================================================================*/
-{	
-	int array_index,done,index_high,index_low,number_of_times,return_code,step;	
-	FE_value first_time,last_time,this_time,fe_value_index,time_high,time_low;
-
-	ENTER(get_FE_field_time_array_index_at_FE_value_time);
-	return_code=0;
-	if (field&&the_time_high&&the_time_low&&the_array_index&&the_index_high&&
-		the_index_low&&(number_of_times=get_FE_field_number_of_times(field)))
-	{		
-		get_FE_field_time_FE_value(field,0,&first_time);
-		get_FE_field_time_FE_value(field,number_of_times-1,&last_time);
-		/*Initial est. of the array index, assuming times evenly spaced, no gaps */	
-		/*This assumption and hence estimate is true for most signal files. */
-		fe_value_index=((time-first_time)/(last_time-first_time))*(number_of_times-1);
-		fe_value_index+=0.5;/*round float to nearest int */
-		array_index=floor(fe_value_index);
-		time_low=0;
-		time_high=0;
-		done=0;
-		index_low=0;
-		index_high=number_of_times-1;
-		/* do binary search for <time>'s array index. Also look at time of */
-		/* adjacent array element, as index estimate may be slightly off due to*/
-		/* rounding error. This avoids unnecessarily long search from end of array */
-		while(!done)
-		{	
-			if (get_FE_field_time_FE_value(field,array_index,&this_time))
-			{
-				if (this_time>=time)
-				{ 
-					index_high=array_index;					
-					if (array_index>0)
-					{
-						/* get adjacent array element*/
-						get_FE_field_time_FE_value(field,array_index-1,&time_low);
-						/* are we between elements?*/
-						if (time_low<time)
-						{			
-							index_low=array_index-1;
-							return_code=1;
-							done=1;
-						}	
-						else
-						{
-							time_low=0;
-						}
-					}
-					else
-					{
-						/* can't get lower adjacent array element when array_index=0. Finished*/
-						get_FE_field_time_FE_value(field,array_index,&time_low);
-						index_low=array_index;
-						return_code=1;
-						done=1;
-					}
-				}
-				else /* (this_time<time) */
-				{
-					index_low=array_index;
-					if (array_index<(number_of_times-1))
-					{
-						/* get adjacent array element*/
-						get_FE_field_time_FE_value(field,array_index+1,&time_high);	
-						/* are we between elements?*/
-						if (time_high>time)
-						{		
-							index_high=array_index+1;
-							return_code=1;
-							done=1;
-						}	
-						else
-						{
-							time_high=0;
-						}
-					}
-					else
-					{
-						/* can't get higher adjacent array element when */
-						/*array_index=(number_of_times-1). Finished*/
-						get_FE_field_time_FE_value(field,array_index,&time_high);
-						index_high=array_index;
-						return_code=1;
-						done=1;
-					}
-				}	
-				if (!done)
-				{	
-					step=(index_high-index_low)/2;	
-					/* No exact match, can't subdivide further, must do interpolation.*/
-					if (step==0)												
-					{	
-						done=1;	
-						return_code=1;														
-					}
-					else
-					{
-						array_index=index_low+step;
-					}
-						
-				}/* if (!done)	*/
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"get_FE_field_time_array_index_at_FE_value_time time out of range");
-			}
-		}	/* while(!done)	*/
-		/* index_low and index_high should now be adjacent */
-		if (!time_low)
-		{
-			get_FE_field_time_FE_value(field,index_low,&time_low);
-		}
-		if (!time_high)
-		{
-			get_FE_field_time_FE_value(field,index_high,&time_high);
-		}
-		*the_time_high=time_high;
-		*the_time_low=time_low;
-		*the_array_index=array_index;
-		*the_index_high=index_high;
-		*the_index_low=index_low;
-	}
-	else
-	{
-		return_code=0;
-		display_message(ERROR_MESSAGE,
-			"get_FE_field_time_array_index_at_FE_value_time. Invalid arguments time out of range");
-	}	
-	LEAVE;
-	return (return_code);
-}/*get_FE_field_time_array_index_at_FE_value_time*/
-
 int get_FE_nodal_FE_value_array_value_at_FE_value_time(struct FE_node *node,
 	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,FE_value time,FE_value *value)
@@ -20183,6 +20034,155 @@ Gets a the minimum and maximum values for the _value_array
 	return (return_code);
 } /* get_FE_nodal_short_array_min_max */
 #endif /* defined (UNEMAP_USE_NODES) */
+
+int get_FE_field_time_array_index_at_FE_value_time(struct FE_field *field,
+	FE_value time,FE_value *the_time_high,FE_value *the_time_low,
+	int *the_array_index,int *the_index_high,int *the_index_low)
+/*******************************************************************************
+LAST MODIFIED : 1 August 2000
+
+DESCRIPTION 
+Given a <field> and <time>, checks that <field> has times defined and returns:
+<the_array_index>, the array index of <field> times closest to <time>.
+<the_index_high>, <the_index_low> the upper and lower limits for <the_array_index>
+(ideally <the_index_high>==<the_index_low>==<the_array_index>).
+<the_time_low> the time corresponding to <the_index_low>.
+<the_time_high> the time corresponding to <the_index_high>.
+
+All this information (rather than just <the_array_index> ) is returned so can
+perform interpolation, etc.
+==============================================================================*/
+{	
+	int array_index,done,index_high,index_low,number_of_times,return_code,step;	
+	FE_value first_time,last_time,this_time,fe_value_index,time_high,time_low;
+
+	ENTER(get_FE_field_time_array_index_at_FE_value_time);
+	return_code=0;
+	if (field&&the_time_high&&the_time_low&&the_array_index&&the_index_high&&
+		the_index_low&&(number_of_times=get_FE_field_number_of_times(field)))
+	{		
+		get_FE_field_time_FE_value(field,0,&first_time);
+		get_FE_field_time_FE_value(field,number_of_times-1,&last_time);
+		/*Initial est. of the array index, assuming times evenly spaced, no gaps */	
+		/*This assumption and hence estimate is true for most signal files. */
+		fe_value_index=((time-first_time)/(last_time-first_time))*(number_of_times-1);
+		fe_value_index+=0.5;/*round float to nearest int */
+		array_index=floor(fe_value_index);
+		time_low=0;
+		time_high=0;
+		done=0;
+		index_low=0;
+		index_high=number_of_times-1;
+		/* do binary search for <time>'s array index. Also look at time of */
+		/* adjacent array element, as index estimate may be slightly off due to*/
+		/* rounding error. This avoids unnecessarily long search from end of array */
+		while(!done)
+		{	
+			if (get_FE_field_time_FE_value(field,array_index,&this_time))
+			{
+				if (this_time>=time)
+				{ 
+					index_high=array_index;					
+					if (array_index>0)
+					{
+						/* get adjacent array element*/
+						get_FE_field_time_FE_value(field,array_index-1,&time_low);
+						/* are we between elements?*/
+						if (time_low<time)
+						{			
+							index_low=array_index-1;
+							return_code=1;
+							done=1;
+						}	
+						else
+						{
+							time_low=0;
+						}
+					}
+					else
+					{
+						/* can't get lower adjacent array element when array_index=0. Finished*/
+						get_FE_field_time_FE_value(field,array_index,&time_low);
+						index_low=array_index;
+						return_code=1;
+						done=1;
+					}
+				}
+				else /* (this_time<time) */
+				{
+					index_low=array_index;
+					if (array_index<(number_of_times-1))
+					{
+						/* get adjacent array element*/
+						get_FE_field_time_FE_value(field,array_index+1,&time_high);	
+						/* are we between elements?*/
+						if (time_high>time)
+						{		
+							index_high=array_index+1;
+							return_code=1;
+							done=1;
+						}	
+						else
+						{
+							time_high=0;
+						}
+					}
+					else
+					{
+						/* can't get higher adjacent array element when */
+						/*array_index=(number_of_times-1). Finished*/
+						get_FE_field_time_FE_value(field,array_index,&time_high);
+						index_high=array_index;
+						return_code=1;
+						done=1;
+					}
+				}	
+				if (!done)
+				{	
+					step=(index_high-index_low)/2;	
+					/* No exact match, can't subdivide further, must do interpolation.*/
+					if (step==0)												
+					{	
+						done=1;	
+						return_code=1;														
+					}
+					else
+					{
+						array_index=index_low+step;
+					}
+						
+				}/* if (!done)	*/
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"get_FE_field_time_array_index_at_FE_value_time time out of range");
+			}
+		}	/* while(!done)	*/
+		/* index_low and index_high should now be adjacent */
+		if (!time_low)
+		{
+			get_FE_field_time_FE_value(field,index_low,&time_low);
+		}
+		if (!time_high)
+		{
+			get_FE_field_time_FE_value(field,index_high,&time_high);
+		}
+		*the_time_high=time_high;
+		*the_time_low=time_low;
+		*the_array_index=array_index;
+		*the_index_high=index_high;
+		*the_index_low=index_low;
+	}
+	else
+	{
+		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"get_FE_field_time_array_index_at_FE_value_time. Invalid arguments time out of range");
+	}	
+	LEAVE;
+	return (return_code);
+}/*get_FE_field_time_array_index_at_FE_value_time*/
 
 int get_FE_nodal_string_value(struct FE_node *node,
 	struct FE_field *field,int component_number,int version,

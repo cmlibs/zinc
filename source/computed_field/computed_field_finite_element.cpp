@@ -5879,3 +5879,88 @@ automatically wrapped in corresponding computed_fields.
 
 	return (return_ptr);
 } /* Computed_field_register_types_finite_element */
+
+
+int Computed_field_get_FE_field_time_array_index_at_FE_value_time(
+	 struct Computed_field *field,FE_value time, FE_value *the_time_high,
+	 FE_value *the_time_low, int *the_array_index,int *the_index_high,
+	 int *the_index_low)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Given a <field> and <time>, checks that <field> has times defined and returns:
+<the_array_index>, the array index of <field> times closest to <time>.
+<the_index_high>, <the_index_low> the upper and lower limits for <the_array_index>
+(ideally <the_index_high>==<the_index_low>==<the_array_index>).
+<the_time_low> the time corresponding to <the_index_low>.
+<the_time_high> the time corresponding to <the_index_high>.
+
+All this information (rather than just <the_array_index> ) is returned so can
+perform interpolation, etc.
+==============================================================================*/
+{
+	Computed_field_finite_element* core;
+	int return_code;
+
+	ENTER(Computed_field_get_FE_field_time_array_index_at_FE_value_time);
+	if (field)
+	{
+		if (core=dynamic_cast<Computed_field_finite_element*>(field->core))
+		{
+			 return_code = get_FE_field_time_array_index_at_FE_value_time(
+					core->fe_field, time, the_time_high, the_time_low, the_array_index,
+					the_index_high, the_index_low);
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_FE_field_time_array_index_at_FE_value_time.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_scalar_integer_grid_in_element */
+
+struct FE_time_sequence *Computed_field_get_FE_node_field_FE_time_sequence(struct FE_node *node,
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 15 November 2004
+
+DESCRIPTION :
+Returns the <fe_time_sequence> corresponding to the <node> and <field>.  If the
+<node> and <field> have no time dependence then the function will return NULL.
+==============================================================================*/
+{
+	 Computed_field_finite_element* core;
+	 FE_time_sequence *time_sequence;
+
+	ENTER(Computed_field_get_FE_node_field_FE_time_sequence);
+	if (field)
+	{
+		if (core=dynamic_cast<Computed_field_finite_element*>(field->core))
+		{
+			 time_sequence = get_FE_node_field_FE_time_sequence(node,
+					core->fe_field);
+		}
+		else
+		{
+			 time_sequence = (FE_time_sequence *)NULL;
+		}
+	}
+	else
+	{
+		 display_message(ERROR_MESSAGE,
+				"Computed_field_get_FE_node_field_FE_time_sequence.  Invalid argument(s)");
+		 time_sequence = (FE_time_sequence *)NULL;
+	}
+	LEAVE;
+
+	return (time_sequence);
+} /* Computed_field_get_FE_node_field_FE_time_sequence */

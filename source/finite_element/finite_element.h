@@ -1261,24 +1261,6 @@ at the <node>.
 
 ==============================================================================*/
 
-int get_FE_field_time_array_index_at_FE_value_time(struct FE_field *field,
-	FE_value time,FE_value *the_time_high,FE_value *the_time_low,
-	int *the_array_index,int *the_index_high,int *the_index_low);
-/*******************************************************************************
-LAST MODIFIED : 1 August 2000
-
-DESCRIPTION 
-Given a <field> and <time>, checks that <field> has times defined and returns:
-<the_array_index>, the array index of <field> times closest to <time>.
-<the_index_high>, <the_index_low> the upper and lower limits for <the_array_index>
-(ideally <the_index_high>==<the_index_low>==<the_array_index>).
-<the_time_low> the time corresponding to <the_index_low>.
-<the_time_high> the time corresponding to <the_index_high>.
-
-All this information (rather than just <the_array_index> ) is returned so can
-perform interpolation, etc.
-==============================================================================*/
-
 int get_FE_nodal_FE_value_array_min_max(struct FE_node *node,
 	struct FE_field *field,int component_number,int version,
 	enum FE_nodal_value_type type,FE_value *minimum,FE_value *maximum);
@@ -1301,6 +1283,24 @@ Gets a the minimum and maximum values for the _value_array
 (<version>, <type>) for the field <component> at the <node>
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
+
+int get_FE_field_time_array_index_at_FE_value_time(struct FE_field *field,
+	FE_value time,FE_value *the_time_high,FE_value *the_time_low,
+	int *the_array_index,int *the_index_high,int *the_index_low);
+/*******************************************************************************
+LAST MODIFIED : 1 August 2000
+
+DESCRIPTION 
+Given a <field> and <time>, checks that <field> has times defined and returns:
+<the_array_index>, the array index of <field> times closest to <time>.
+<the_index_high>, <the_index_low> the upper and lower limits for <the_array_index>
+(ideally <the_index_high>==<the_index_low>==<the_array_index>).
+<the_time_low> the time corresponding to <the_index_low>.
+<the_time_high> the time corresponding to <the_index_high>.
+
+All this information (rather than just <the_array_index> ) is returned so can
+perform interpolation, etc.
+==============================================================================*/
 
 int get_FE_nodal_string_value(struct FE_node *node,
 	struct FE_field *field,int component_number,int version,
