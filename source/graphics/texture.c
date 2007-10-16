@@ -476,6 +476,102 @@ GL_EXT_texture_object extension.
 			{
 				glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
 			} break;
+			case TEXTURE_ADD:
+			{
+#if defined (GL_VERSION_1_3)
+				if (Graphics_library_check_extension(GL_VERSION_1_3))
+				{
+					glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_ADD);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"direct_render_Texture_environment.  "
+						"Texture environment combine mode ADD requires OpenGL 1.3 or better "
+						"which is not provided on this display.");
+					return_code=0;
+				}
+#else /* defined (GL_VERSION_1_3) */
+				display_message(ERROR_MESSAGE,
+					"direct_render_Texture_environment.  "
+					"Texture environment combine mode ADD requires OpenGL 1.3 or better "
+					"which was not compiled into this executable.");
+					return_code=0;
+#endif /* defined (GL_VERSION_1_3) */
+			} break;
+			case TEXTURE_ADD_SIGNED:
+			{
+#if defined (GL_VERSION_1_3)
+				if (Graphics_library_check_extension(GL_VERSION_1_3))
+				{
+					glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_COMBINE);
+					glTexEnvi(GL_TEXTURE_ENV,GL_COMBINE_RGB,GL_ADD_SIGNED);
+					glTexEnvi(GL_TEXTURE_ENV,GL_COMBINE_ALPHA,GL_ADD_SIGNED);
+					glTexEnvf(GL_TEXTURE_ENV,GL_RGB_SCALE,1.0);
+					glTexEnvf(GL_TEXTURE_ENV,GL_ALPHA_SCALE,1.0);
+					glTexEnvi(GL_TEXTURE_ENV,GL_SRC0_RGB,GL_TEXTURE);
+					glTexEnvi(GL_TEXTURE_ENV,GL_SRC1_RGB,GL_PREVIOUS);
+					glTexEnvi(GL_TEXTURE_ENV,GL_OPERAND0_RGB,GL_SRC_COLOR);
+					glTexEnvi(GL_TEXTURE_ENV,GL_OPERAND1_RGB,GL_SRC_COLOR);
+					glTexEnvi(GL_TEXTURE_ENV,GL_SRC0_ALPHA,GL_TEXTURE);
+					glTexEnvi(GL_TEXTURE_ENV,GL_SRC1_ALPHA,GL_PREVIOUS);
+					glTexEnvi(GL_TEXTURE_ENV,GL_OPERAND0_ALPHA,GL_SRC_ALPHA);
+					glTexEnvi(GL_TEXTURE_ENV,GL_OPERAND1_ALPHA,GL_SRC_ALPHA);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"direct_render_Texture_environment.  "
+						"Texture environment combine mode ADD_SIGNED requires OpenGL 1.3 or better "
+						"which is not provided on this display.");
+					return_code=0;
+				}
+#else /* defined (GL_VERSION_1_3) */
+				display_message(ERROR_MESSAGE,
+					"direct_render_Texture_environment.  "
+					"Texture environment combine mode ADD_SIGNED requires OpenGL 1.3 or better "
+					"which was not compiled into this executable.");
+					return_code=0;
+#endif /* defined (GL_VERSION_1_3) */
+			} break;
+			case TEXTURE_MODULATE_SCALE_4:
+			{
+#if defined (GL_VERSION_1_3)
+				if (Graphics_library_check_extension(GL_VERSION_1_3))
+				{
+					glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_COMBINE);
+					glTexEnvi(GL_TEXTURE_ENV,GL_COMBINE_RGB,GL_MODULATE);
+					glTexEnvi(GL_TEXTURE_ENV,GL_COMBINE_ALPHA,GL_MODULATE);
+					glTexEnvf(GL_TEXTURE_ENV,GL_RGB_SCALE,4.0);
+					glTexEnvf(GL_TEXTURE_ENV,GL_ALPHA_SCALE,4.0);
+					glTexEnvi(GL_TEXTURE_ENV,GL_SRC0_RGB,GL_TEXTURE);
+					glTexEnvi(GL_TEXTURE_ENV,GL_SRC1_RGB,GL_PREVIOUS);
+					glTexEnvi(GL_TEXTURE_ENV,GL_OPERAND0_RGB,GL_SRC_COLOR);
+					glTexEnvi(GL_TEXTURE_ENV,GL_OPERAND1_RGB,GL_SRC_COLOR);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"direct_render_Texture_environment.  "
+						"Texture environment combine mode MODULATE_SCALE_4 requires OpenGL 1.3 or better "
+						"which is not provided on this display.");
+					return_code=0;
+				}
+#else /* defined (GL_VERSION_1_3) */
+ 				display_message(ERROR_MESSAGE,
+					"direct_render_Texture_environment.  "
+					"Texture environment combine mode MODULATE_SCALE_4 requires OpenGL 1.3 or better "
+					"which was not compiled into this executable.");
+					return_code=0;
+#endif /* defined (GL_VERSION_1_3) */
+			} break;
+			default:
+			{
+ 				display_message(ERROR_MESSAGE,
+					"direct_render_Texture_environment.  "
+					"Unknown texture environment combine mode.");
+					return_code=0;
+			} break;
 		}
 		glTexEnvfv(GL_TEXTURE_ENV,GL_TEXTURE_ENV_COLOR,values);
 		switch (texture->dimension)
@@ -1889,6 +1985,18 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_combine_mode)
 		{
 			enumerator_string = "modulate";
 		} break;
+		case TEXTURE_ADD:
+		{
+			enumerator_string = "add";
+		} break;
+		case TEXTURE_ADD_SIGNED:
+		{
+			enumerator_string = "signed_add";
+		} break;
+		case TEXTURE_MODULATE_SCALE_4:
+		{
+			enumerator_string = "mod_scale_4";
+		} break;
 		default:
 		{
 			enumerator_string = (char *)NULL;
@@ -2729,7 +2837,7 @@ Returns how the texture is combined with the material: blend, decal or modulate.
 int Texture_set_combine_mode(struct Texture *texture,
 	enum Texture_combine_mode combine_mode)
 /*******************************************************************************
-LAST MODIFIED : 11 October 2000
+LAST MODIFIED : 16 October 2007
 
 DESCRIPTION :
 Sets how the texture is combined with the material: blend, decal or modulate.
@@ -2738,15 +2846,54 @@ Sets how the texture is combined with the material: blend, decal or modulate.
 	int return_code;
 
 	ENTER(Texture_set_combine_mode);
-	if (texture&&((TEXTURE_BLEND==combine_mode)||
-		(TEXTURE_DECAL==combine_mode)||(TEXTURE_MODULATE==combine_mode)))
+	if (texture)
 	{
-		if (combine_mode != texture->combine_mode)
+		return_code = 1;
+		if (texture->combine_mode != combine_mode)
 		{
-			texture->combine_mode = combine_mode;
-			Texture_notify_change(texture);
+			/* Check if supported on this platform */
+			switch (combine_mode)
+			{
+				case TEXTURE_BLEND:
+				case TEXTURE_DECAL:
+				case TEXTURE_MODULATE:
+				{
+					/* Do nothing, in all versions */
+				} break;
+				case TEXTURE_ADD:
+				case TEXTURE_ADD_SIGNED:
+				case TEXTURE_MODULATE_SCALE_4:
+				{
+#if defined (GL_VERSION_1_3)
+					if (!Graphics_library_tentative_check_extension(GL_VERSION_1_3))
+					{
+						display_message(ERROR_MESSAGE,
+							"Texture_set_combine_mode.  "
+							"Texture combine mode %s requires OpenGL 1.3 which is not available on this display.",
+						ENUMERATOR_STRING(Texture_combine_mode)(combine_mode));
+						return_code = 0;
+					}
+#else /* defined (GL_VERSION_1_3) */
+					display_message(ERROR_MESSAGE,
+						"Texture_set_combine_mode.  "
+						"Texture combine mode %s requires OpenGL 1.3 which was not compiled into this executable.",
+						ENUMERATOR_STRING(Texture_combine_mode)(combine_mode));
+					return_code = 0;
+#endif /* defined (GL_VERSION_1_3) */
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Texture_set_combine_mode.  Unknown texture combine mode.");
+					return_code=0;
+				} break;
+			}
+			if (return_code)
+			{
+				texture->combine_mode = combine_mode;
+				Texture_notify_change(texture);
+			}
 		}
-		return_code=1;
 	}
 	else
 	{

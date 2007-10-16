@@ -73,7 +73,7 @@ Global types
 
 enum Texture_combine_mode
 /*******************************************************************************
-LAST MODIFIED : 28 February 2002
+LAST MODIFIED : 16 October 2007
 
 DESCRIPTION :
 How the texture is combined with the material.
@@ -81,7 +81,12 @@ How the texture is combined with the material.
 {
 	TEXTURE_BLEND,
 	TEXTURE_DECAL,
-	TEXTURE_MODULATE
+	TEXTURE_MODULATE,
+	TEXTURE_ADD,
+	TEXTURE_ADD_SIGNED, /* Add the value and subtract 0.5 so the texture value
+								 effectively ranges from -0.5 to 0.5 */
+	TEXTURE_MODULATE_SCALE_4 /* Multiply and then scale by 4, so that we can
+										 scale down or up */
 }; /* enum Texture_combine_mode */
 
 enum Texture_compression_mode

@@ -112,13 +112,13 @@ Enumerates the main different types of vertex/fragment program for materials
 	MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 = (1<<5),
 	MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 = (1<<6),
 
-	/* Use these bits to indicate the presence of and dimension (1, 2 or 3) of a secondary or bump map texture. */
-	MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_1 = (1<<7),
-	MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_2 = (1<<8),
-	MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE = 384,
-   /* Specifies that the secondary texture is intended to be used as a bump map texture, modulating
+	/* Use these bits to indicate the presence of and dimension (1, 2 or 3) of a second or bump map texture. */
+	MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_1 = (1<<7),
+	MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_2 = (1<<8),
+	MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE = 384,
+   /* Specifies that the second texture is intended to be used as a bump map texture, modulating
 		the per pixel value of the normal in the lighting calculation */
-	MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_BUMPMAP = (1<<9),
+	MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP = (1<<9),
 
 	/* The colour value is used as the input, derived from the primary texture or the lighting. 
 	   Specify which input components are used directly from the input source,
@@ -210,13 +210,19 @@ The properties of a material.
 	MATERIAL_PRECISION shininess;
 #if defined (OPENGL_API)
 	GLuint display_list;
+
+	GLuint brightness_texture_id;
 #endif /* defined (OPENGL_API) */
 	/* enumeration indicates whether the graphics display list is up to date */
 	enum Graphics_compile_status compile_status;
 	/* the texture for this material */
 	struct Texture *texture;
-	/* the texture used for adjusting normal calculations with this material */
-	struct Texture *secondary_texture;
+	/* second stage multitexture (i.e. normals for bump mapping) */
+	struct Texture *second_texture;
+	/* third stage multitexture */
+	struct Texture *third_texture;
+	/* fourth stage multitexture */
+	struct Texture *fourth_texture;
 	/* spectrum used to render this material */
 	struct Spectrum *spectrum;	
 	/* callback if the spectrum changes */
@@ -547,14 +553,14 @@ be shared by multiple materials using the same program.
 						"ATTRIB normal = vertex.normal;\n"
 						"ATTRIB position = vertex.position;\n"
 						, &error);
-					if ((MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE | MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE)
+					if ((MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE | MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE)
 						& material_program->type)
 					{
 						append_string(&vertex_program_string, 
 							"PARAM texture_scaling = program.env[0];\n"
 							, &error);
 					}
-					if (MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_BUMPMAP & material_program->type)
+					if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material_program->type)
 					{
 						append_string(&vertex_program_string, 
 							"ATTRIB tangent = vertex.texcoord[1];\n"
@@ -569,7 +575,7 @@ be shared by multiple materials using the same program.
 						"TEMP eyeVertex;\n"
 						"TEMP viewVec;\n"
 						, &error);
-					if (MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_BUMPMAP & material_program->type)
+					if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material_program->type)
 					{
 						append_string(&vertex_program_string, 
 							"PARAM c3[4] = { state.matrix.modelview.inverse };\n"
@@ -595,7 +601,7 @@ be shared by multiple materials using the same program.
 						"DP4 eyeVertex.z, c1[2], position;\n"
 						, &error);								
 
-					if ((MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE | MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE)
+					if ((MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE | MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE)
 						& material_program->type)
 					{
 						append_string(&vertex_program_string, 
@@ -603,7 +609,7 @@ be shared by multiple materials using the same program.
 							, &error);
 					}
 
-					if (MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_BUMPMAP & material_program->type)
+					if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material_program->type)
 					{
 						append_string(&vertex_program_string, 
 							"MUL binormal.xyz, tangent.zxyz, normal.yzxy;\n"
@@ -716,12 +722,12 @@ be shared by multiple materials using the same program.
 						colour_texture_dimension = 0;
 					}
 
-					if (MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE & material_program->type)
+					if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE & material_program->type)
 					{
-						/* Load the secondary texture using the same texture coordinates as the colour texture */
-						if (MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_1 & material_program->type)
+						/* Load the second texture using the same texture coordinates as the colour texture */
+						if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_1 & material_program->type)
 						{
-							if (MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_2 & material_program->type)
+							if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_2 & material_program->type)
 							{
 								append_string(&fragment_program_string, 
 									"TEX		tex2, fragment.texcoord[0], texture[1], 3D;\n"
@@ -743,7 +749,7 @@ be shared by multiple materials using the same program.
 					}
 					if (!(MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_DECAL & material_program->type))
 					{
-						if (MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_BUMPMAP & material_program->type)
+						if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material_program->type)
 						{
 							append_string(&fragment_program_string, 
 								"#Expand the range of the normal texture\n"
@@ -1482,43 +1488,61 @@ material results.
 		}
 
 #if defined (GL_VERSION_1_3)
-		if (material->spectrum)
+		if (Graphics_library_check_extension(GL_VERSION_1_3))
 		{
-			if (Graphics_library_check_extension(GL_VERSION_1_3))
+			if (material->second_texture)
 			{
-				glActiveTexture(GL_TEXTURE2_ARB);
-				Spectrum_execute_colour_lookup(material->spectrum);
-				glActiveTexture(GL_TEXTURE0_ARB);
+				/* I used to test for the GL_VERSION_1_3 when setting the texture
+					and not here, but at that point the openGL may not have been
+					initialised yet, instead check here at display list compile time. */
+				glActiveTexture(GL_TEXTURE1);
+				execute_Texture(material->second_texture);
+				glActiveTexture(GL_TEXTURE0);
 			}
-		}
-		if (material->secondary_texture)
-		{
-			/* I used to test for the GL_VERSION_1_3 when setting the texture
-				and not here, but at that point the openGL may not have been
-				initialised yet, instead check at compile time. */
-			if (Graphics_library_check_extension(GL_VERSION_1_3))
+			else
 			{
-				glActiveTexture(GL_TEXTURE1_ARB);
-				execute_Texture(material->secondary_texture);
-				glActiveTexture(GL_TEXTURE0_ARB);
-			}
-		}
-		else
-		{
-			/* If the secondary_texture has been set then we know the
-				extension is available so we do not need to test above.
-				When disabling however we are unsure whether any multitextures
-				have been enabled and so have to check if the extension is available
-				and if so then disable. */
-			if (Graphics_library_check_extension(GL_VERSION_1_3))
-			{
-				glActiveTexture(GL_TEXTURE1_ARB);
-				glDisable(GL_TEXTURE_2D);
-				glActiveTexture(GL_TEXTURE2_ARB);
+				glActiveTexture(GL_TEXTURE1);
 				glDisable(GL_TEXTURE_1D);
 				glDisable(GL_TEXTURE_2D);
 				glDisable(GL_TEXTURE_3D);
-				glActiveTexture(GL_TEXTURE0_ARB);
+				glActiveTexture(GL_TEXTURE0);
+			}
+			/* The colour_lookup_spectrum is specified as the third texture 
+				so far, so can't have both a spectrum and an explicit third texture
+				at the moment. */
+			if (material->third_texture)
+			{
+				glActiveTexture(GL_TEXTURE2);
+				execute_Texture(material->third_texture);
+				glActiveTexture(GL_TEXTURE0);
+			}
+			else if (material->spectrum)
+			{
+				glActiveTexture(GL_TEXTURE2);
+				Spectrum_execute_colour_lookup(material->spectrum);
+				glActiveTexture(GL_TEXTURE0);
+			}
+			else
+			{
+				glActiveTexture(GL_TEXTURE2);
+				glDisable(GL_TEXTURE_1D);
+				glDisable(GL_TEXTURE_2D);
+				glDisable(GL_TEXTURE_3D);
+				glActiveTexture(GL_TEXTURE0);
+			}
+			if (material->fourth_texture)
+			{
+				glActiveTexture(GL_TEXTURE3);
+				execute_Texture(material->fourth_texture);
+				glActiveTexture(GL_TEXTURE0);
+			}
+			else
+			{
+				glActiveTexture(GL_TEXTURE3);
+				glDisable(GL_TEXTURE_1D);
+				glDisable(GL_TEXTURE_2D);
+				glDisable(GL_TEXTURE_3D);
+				glActiveTexture(GL_TEXTURE0);
 			}
 		}
 #endif /* defined (GL_VERSION_1_3) */
@@ -2023,7 +2047,9 @@ Allocates memory and assigns fields for a material.
 			material->spectrum=(struct Spectrum *)NULL;
 			material->spectrum_manager_callback_id=NULL;
 			material->texture=(struct Texture *)NULL;
-			material->secondary_texture=(struct Texture *)NULL;
+			material->second_texture=(struct Texture *)NULL;
+			material->third_texture=(struct Texture *)NULL;
+			material->fourth_texture=(struct Texture *)NULL;
 			material->package = (struct Material_package *)NULL;
 			material->lit_volume_normal_scaling[0] = 1.0;
 			material->lit_volume_normal_scaling[1] = 1.0;
@@ -2032,6 +2058,7 @@ Allocates memory and assigns fields for a material.
 			material->program = (struct Material_program *)NULL;
 #if defined (OPENGL_API)
 			material->display_list=0;
+			material->brightness_texture_id=0;
 #endif /* defined (OPENGL_API) */
 			material->compile_status = GRAPHICS_NOT_COMPILED;
 		}
@@ -2094,9 +2121,17 @@ Frees the memory for the material and sets <*material_address> to NULL.
 			{
 				DEACCESS(Texture)(&(material->texture));
 			}
-			if (material->secondary_texture)
+			if (material->second_texture)
 			{
-				DEACCESS(Texture)(&(material->secondary_texture));
+				DEACCESS(Texture)(&(material->second_texture));
+			}
+			if (material->third_texture)
+			{
+				DEACCESS(Texture)(&(material->third_texture));
+			}
+			if (material->fourth_texture)
+			{
+				DEACCESS(Texture)(&(material->fourth_texture));
 			}
 			if (material->program)
 			{
@@ -2250,7 +2285,9 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
 			}
 		}
 		REACCESS(Texture)(&(destination->texture), source->texture);
-		REACCESS(Texture)(&(destination->secondary_texture), source->secondary_texture);
+		REACCESS(Texture)(&(destination->second_texture), source->second_texture);
+		REACCESS(Texture)(&(destination->third_texture), source->third_texture);
+		REACCESS(Texture)(&(destination->fourth_texture), source->fourth_texture);
 		/* flag destination display list as no longer current */
 		destination->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code=1;
@@ -3220,7 +3257,10 @@ DESCRIPTION :
 						"Optionally with either normal, the magnitude of that normal"
 						"can multiply the calculated alpha value, "
 						"<lit_volume_scale_alpha> making those pixels with small "
-						"gradients more transparent.  See a/volume_render.");
+						"gradients more transparent.  See a/volume_render. "
+						"<secondary_texture>, <third_texture> and <fourth_texture> will "
+						"be blended with the first <texture> according to the multitexture "
+						"rules controlled by each textures combine mode (such as modulate or add).");
 
 					Option_table_add_entry(option_table, "alpha",
 						&(material_to_be_modified_copy->alpha), NULL,
@@ -3248,6 +3288,10 @@ DESCRIPTION :
 					Option_table_add_entry(option_table, "emission",
 						&(material_to_be_modified_copy->emission), NULL,
 						set_Colour);
+					Option_table_add_entry(option_table, "fourth_texture",
+						&(material_to_be_modified_copy->fourth_texture), 
+						material_package->texture_manager,
+						set_Texture);
 					Option_table_add_char_flag_entry(option_table,
 						"lit_volume_intensity_normal_texture",
 						&lit_volume_intensity_normal_texture_flag);
@@ -3269,7 +3313,7 @@ DESCRIPTION :
 						"per_pixel_mode", &per_pixel_mode_flag);
 					Option_table_add_suboption_table(option_table, mode_option_table);
 					Option_table_add_entry(option_table, "secondary_texture",
-						&(material_to_be_modified_copy->secondary_texture), 
+						&(material_to_be_modified_copy->second_texture), 
 						material_package->texture_manager,
 						set_Texture);
 					Option_table_add_entry(option_table, "shininess",
@@ -3280,6 +3324,10 @@ DESCRIPTION :
 						set_Colour);
 					Option_table_add_entry(option_table, "texture",
 						&(material_to_be_modified_copy->texture), 
+						material_package->texture_manager,
+						set_Texture);
+					Option_table_add_entry(option_table, "third_texture",
+						&(material_to_be_modified_copy->third_texture), 
 						material_package->texture_manager,
 						set_Texture);
 					if (return_code=Option_table_multi_parse(option_table, state))
@@ -3340,7 +3388,7 @@ DESCRIPTION :
 						}
 						/* Don't check run time availability yet as we may 
 							not have initialised any openGL display yet */
-						if (material_to_be_modified_copy->secondary_texture)
+						if (material_to_be_modified_copy->second_texture)
 						{
 #if defined (GL_VERSION_1_3)
 							if (!Graphics_library_tentative_check_extension(GL_VERSION_1_3))
@@ -3348,14 +3396,14 @@ DESCRIPTION :
 								display_message(ERROR_MESSAGE,
 									"Bump mapping requires OpenGL version 1.3 or better which is "
 									"not available on this display.");
-								DEACCESS(Texture)(&material_to_be_modified_copy->secondary_texture);
+								DEACCESS(Texture)(&material_to_be_modified_copy->second_texture);
 								return_code = 0;
 							}
 #else /* defined (GL_VERSION_1_3) */
 							display_message(ERROR_MESSAGE,
 								"Bump mapping requires OpenGL version 1.3 or better which was "
 								"not compiled into this executable.");
-							DEACCESS(Texture)(&material_to_be_modified_copy->secondary_texture);
+							DEACCESS(Texture)(&material_to_be_modified_copy->second_texture);
 							return_code = 0;
 #endif /* defined (GL_VERSION_1_3) */
 						}
@@ -3367,7 +3415,7 @@ DESCRIPTION :
 								display_message(ERROR_MESSAGE,
 									"A colour lookup spectrum requires OpenGL version 1.3 or better which is "
 									"not available on this display.");
-								DEACCESS(Texture)(&material_to_be_modified_copy->secondary_texture);
+								DEACCESS(Texture)(&material_to_be_modified_copy->second_texture);
 								return_code = 0;
 							}
 #else /* defined (GL_VERSION_1_3) */
@@ -3453,27 +3501,27 @@ DESCRIPTION :
 									}
 								}
 							}
-							if (material_to_be_modified_copy->secondary_texture)
+							if (material_to_be_modified_copy->second_texture)
 							{
-								Texture_get_dimension(material_to_be_modified_copy->secondary_texture, &dimension);
+								Texture_get_dimension(material_to_be_modified_copy->second_texture, &dimension);
 								switch (dimension)
 								{
 									case 1:
 									{
-										type |= MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_1;
+										type |= MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_1;
 									} break;
 									case 2:
 									{
-										type |= MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_2;
+										type |= MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_2;
 									} break;
 									case 3:
 									{
-										type |= MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_1 |
-											MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_2;
+										type |= MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_1 |
+											MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_2;
 									} break;
 									default:
 									{
-										display_message(ERROR_MESSAGE, "Secondary texture dimension %d not supported.",  
+										display_message(ERROR_MESSAGE, "Second texture dimension %d not supported.",  
 											dimension);
 										return_code = 0;
 									} break;
@@ -3481,14 +3529,14 @@ DESCRIPTION :
 							}
 							if (bump_mapping_flag)
 							{
-								if (material_to_be_modified_copy->secondary_texture)
+								if (material_to_be_modified_copy->second_texture)
 								{
-									type |= MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_BUMPMAP;
+									type |= MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP;
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"Bump mapping requires specification of a secondary texture containing a normal map.");
+										"Bump mapping requires specification of a second texture containing a normal map.");
 									return_code = 0;
 								}
 							}
@@ -3696,7 +3744,7 @@ Writes the properties of the <material> to the command window.
 			{
 				display_message(INFORMATION_MESSAGE,"  Per Pixel Shading\n");
 			}
-			else if (MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_BUMPMAP & material->program->type)
+			else if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material->program->type)
 			{
 				display_message(INFORMATION_MESSAGE,"  Per Pixel Bump map Shading\n");
 			}
@@ -3733,9 +3781,23 @@ Writes the properties of the <material> to the command window.
 			display_message(INFORMATION_MESSAGE, "\n");
 			DEALLOCATE(name);
 		}
-		if (material->secondary_texture&&GET_NAME(Texture)(material->secondary_texture,&name))
+		if (material->second_texture&&GET_NAME(Texture)(material->second_texture,&name))
 		{
-			display_message(INFORMATION_MESSAGE, "  secondary texture : ");
+			display_message(INFORMATION_MESSAGE, "  second texture : ");
+			display_message(INFORMATION_MESSAGE, name);
+			display_message(INFORMATION_MESSAGE, "\n");
+			DEALLOCATE(name);
+		}
+		if (material->third_texture&&GET_NAME(Texture)(material->third_texture,&name))
+		{
+			display_message(INFORMATION_MESSAGE, "  third texture : ");
+			display_message(INFORMATION_MESSAGE, name);
+			display_message(INFORMATION_MESSAGE, "\n");
+			DEALLOCATE(name);
+		}
+		if (material->fourth_texture&&GET_NAME(Texture)(material->fourth_texture,&name))
+		{
+			display_message(INFORMATION_MESSAGE, "  fourth texture : ");
 			display_message(INFORMATION_MESSAGE, name);
 			display_message(INFORMATION_MESSAGE, "\n");
 			DEALLOCATE(name);
@@ -3794,7 +3856,7 @@ The command is started with the string pointed to by <command_prefix>.
 			{
 				display_message(INFORMATION_MESSAGE," per_pixel_mode");
 			}
-			else if (MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_BUMPMAP & material->program->type)
+			else if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material->program->type)
 			{
 				display_message(INFORMATION_MESSAGE," per_pixel_mode bump_mapping");
 			}
@@ -3830,11 +3892,25 @@ The command is started with the string pointed to by <command_prefix>.
 			display_message(INFORMATION_MESSAGE," texture %s",name);
 			DEALLOCATE(name);
 		}
-		if (material->secondary_texture&&GET_NAME(Texture)(material->secondary_texture,&name))
+		if (material->second_texture&&GET_NAME(Texture)(material->second_texture,&name))
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
 			display_message(INFORMATION_MESSAGE," secondary_texture %s",name);
+			DEALLOCATE(name);
+		}
+		if (material->third_texture&&GET_NAME(Texture)(material->third_texture,&name))
+		{
+			/* put quotes around name if it contains special characters */
+			make_valid_token(&name);
+			display_message(INFORMATION_MESSAGE," third_texture %s",name);
+			DEALLOCATE(name);
+		}
+		if (material->fourth_texture&&GET_NAME(Texture)(material->fourth_texture,&name))
+		{
+			/* put quotes around name if it contains special characters */
+			make_valid_token(&name);
+			display_message(INFORMATION_MESSAGE," fourth_texture %s",name);
 			DEALLOCATE(name);
 		}
 		if (material->spectrum&&GET_NAME(Spectrum)(material->spectrum,&name))
@@ -3892,7 +3968,7 @@ The command is started with the string pointed to by <command_prefix>.
 			{
 				write_message_to_file(INFORMATION_MESSAGE," per_pixel_mode");
 			}
-			else if (MATERIAL_PROGRAM_CLASS_SECONDARY_TEXTURE_BUMPMAP & material->program->type)
+			else if (MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP & material->program->type)
 			{
 				write_message_to_file(INFORMATION_MESSAGE," per_pixel_mode bump_mapping");
 			}
@@ -3928,11 +4004,25 @@ The command is started with the string pointed to by <command_prefix>.
 			write_message_to_file(INFORMATION_MESSAGE," texture %s",name);
 			DEALLOCATE(name);
 		}
-		if (material->secondary_texture&&GET_NAME(Texture)(material->secondary_texture,&name))
+		if (material->second_texture&&GET_NAME(Texture)(material->second_texture,&name))
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
 			write_message_to_file(INFORMATION_MESSAGE," secondary_texture %s",name);
+			DEALLOCATE(name);
+		}
+		if (material->third_texture&&GET_NAME(Texture)(material->third_texture,&name))
+		{
+			/* put quotes around name if it contains special characters */
+			make_valid_token(&name);
+			write_message_to_file(INFORMATION_MESSAGE," third_texture %s",name);
+			DEALLOCATE(name);
+		}
+		if (material->fourth_texture&&GET_NAME(Texture)(material->fourth_texture,&name))
+		{
+			/* put quotes around name if it contains special characters */
+			make_valid_token(&name);
+			write_message_to_file(INFORMATION_MESSAGE," fourth_texture %s",name);
 			DEALLOCATE(name);
 		}
 		if (material->spectrum&&GET_NAME(Spectrum)(material->spectrum,&name))
@@ -4105,16 +4195,38 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 			{
 				compile_Texture(material->texture, graphics_buffer);
 			}
-			if (material->secondary_texture)
+#if defined (GL_VERSION_1_3)
+			if (Graphics_library_check_extension(GL_VERSION_1_3))
 			{
-				compile_Texture(material->secondary_texture,
-					graphics_buffer);
+				if (material->second_texture)
+				{
+					glActiveTexture(GL_TEXTURE1);
+					compile_Texture(material->second_texture,
+						graphics_buffer);
+					glActiveTexture(GL_TEXTURE0);
+				}
+				if (material->third_texture)
+				{
+					glActiveTexture(GL_TEXTURE2);
+					compile_Texture(material->third_texture,
+						graphics_buffer);
+					glActiveTexture(GL_TEXTURE0);
+				}
+				if (material->fourth_texture)
+				{
+					glActiveTexture(GL_TEXTURE3);
+					compile_Texture(material->fourth_texture,
+						graphics_buffer);
+					glActiveTexture(GL_TEXTURE0);
+				}
+				if (material->spectrum)
+				{
+					Spectrum_compile_colour_lookup(material->spectrum,
+						graphics_buffer);
+				}
 			}
-			if (material->spectrum)
-			{
-				Spectrum_compile_colour_lookup(material->spectrum,
-					graphics_buffer);
-			}
+#endif /* defined (GL_VERSION_1_3) */
+
 			if (material->program)
 			{
 				Material_program_compile(material->program);
@@ -4134,9 +4246,17 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 						{
 							Texture_execute_vertex_program_environment(material->texture);
 						}
-						else if (material->secondary_texture)
+						else if (material->second_texture)
 						{
-							Texture_execute_vertex_program_environment(material->secondary_texture);
+							Texture_execute_vertex_program_environment(material->second_texture);
+						}
+						else if (material->third_texture)
+						{
+							Texture_execute_vertex_program_environment(material->third_texture);
+						}
+						else if (material->fourth_texture)
+						{
+							Texture_execute_vertex_program_environment(material->fourth_texture);
 						}
 					}
 #if defined GL_ARB_fragment_program
