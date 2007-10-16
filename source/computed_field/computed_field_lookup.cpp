@@ -42,12 +42,15 @@ Defines fields for looking up values at given locations.
  *
  * ***** END LICENSE BLOCK ***** */
 extern "C" {
+#include <math.h>
 #include "computed_field/computed_field.h"
 }
 #include "computed_field/computed_field_private.hpp"
 extern "C" {
 #include "computed_field/computed_field_set.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element_region.h"
+#include "finite_element/finite_element_time.h"
 #include "region/cmiss_region.h"
 #include "general/debug.h"
 #include "general/mystring.h"
@@ -174,7 +177,7 @@ Copy the type specific data used by this type.
 	{
 		core = new Computed_field_nodal_lookup(new_parent,
 			nodal_lookup_node, region_path, nodal_lookup_region,
-      nodal_lookup_node_identifier, lookup_package);
+			 nodal_lookup_node_identifier, lookup_package);
 	}
 	else
 	{
@@ -336,8 +339,7 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_nodal_lookup */
 
-char *Computed_field_nodal_lookup::get_command_string(
-  )
+char *Computed_field_nodal_lookup::get_command_string()
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -617,7 +619,7 @@ already) and allows its contents to be modified.
 					&node_flag, set_int_and_char_flag);
         /* and the node region */
         Option_table_add_entry(option_table,"region",&region_path,
-          computed_field_lookup_package->root_region,set_Cmiss_region_path);
+					 computed_field_lookup_package->root_region,set_Cmiss_region_path);
 				/* process the option table */
 				return_code=Option_table_multi_parse(option_table,state);
 				/* no errors,not asking for help */
@@ -676,6 +678,1438 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_nodal_lookup */
 
+namespace {
+
+void Computed_field_quaternion_SLERP_FE_region_change(struct FE_region *fe_region,
+	 struct FE_region_changes *changes, void *computed_field_void);
+/*******************************************************************************
+LAST MODIFIED : 10 Oct 2007
+
+DESCRIPTION :
+If the node we are looking at changes generate a computed field change message.
+==============================================================================*/
+
+char computed_field_quaternion_SLERP_type_string[] = "quaternion_SLERP";
+
+class Computed_field_quaternion_SLERP : public Computed_field_core
+{
+public:
+	 char *region_path;
+	 FE_node *nodal_lookup_node;
+	 Cmiss_region *nodal_lookup_region;
+	 int nodal_lookup_node_identifier;
+	 Computed_field_lookup_package *lookup_package;
+	 double *m, old_w, old_x, old_y, old_z, w, x, y, z, t;
+	 
+	 Computed_field_quaternion_SLERP(Computed_field *field,
+			FE_node *nodal_lookup_node,char* region_path,
+			Cmiss_region *region, int nodal_lookup_node_identifier, 
+			Computed_field_lookup_package *lookup_package) : 
+			Computed_field_core(field), region_path(duplicate_string(region_path)),
+			nodal_lookup_node(ACCESS(FE_node)(nodal_lookup_node)),
+			nodal_lookup_region(ACCESS(Cmiss_region)(region)),
+			nodal_lookup_node_identifier(nodal_lookup_node_identifier),
+			lookup_package(lookup_package)
+	 {
+			m = (double *)NULL;
+			FE_region_add_callback(FE_node_get_FE_region(nodal_lookup_node), 
+				 Computed_field_quaternion_SLERP_FE_region_change, 
+				 (void *)field);
+	 };
+	 
+	 ~Computed_field_quaternion_SLERP();
+	 
+private:
+	 Computed_field_core *copy(Computed_field* new_parent);
+
+	 char *get_type_string()
+	 {
+			return(computed_field_quaternion_SLERP_type_string);
+	 }
+	 
+	int compare(Computed_field_core* other_field);
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	 int evaluate();
+
+	int list();
+
+	char* get_command_string();
+
+	int is_defined_at_location(Field_location* location);
+
+	int has_multiple_times();
+};
+
+Computed_field_quaternion_SLERP::~Computed_field_quaternion_SLERP()
+/*******************************************************************************
+LAST MODIFIED : 10 October 2007
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	ENTER(Computed_field_quaternion_SLERP::~Computed_field_quaternion_SLERP);
+	if (field)
+	{
+		 FE_region_remove_callback(Cmiss_region_get_FE_region(nodal_lookup_region),
+				Computed_field_quaternion_SLERP_FE_region_change, 
+				(void *)field);
+		 if (nodal_lookup_region)
+		 {
+				DEACCESS(Cmiss_region)(&(nodal_lookup_region));
+		 }
+		 if (nodal_lookup_node)
+		 {
+				DEACCESS(FE_node)(&(nodal_lookup_node));
+		 }
+		 if (region_path)
+		 {
+				DEALLOCATE(region_path);
+		 }
+		 if (m)
+		 {
+				DEALLOCATE(m);
+		 }
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_quaternion_SLERP::~Computed_field_quaternion_SLERP.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+} /* Computed_field_quaternionSLERP::~Computed_field_quaternion_SLERP */
+
+Computed_field_core* Computed_field_quaternion_SLERP::copy(Computed_field* new_parent)
+/*******************************************************************************
+LAST MODIFIED : 25 August 2006
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	Computed_field_quaternion_SLERP* core;
+
+	ENTER(Computed_field_quaternion_SLERP::copy);
+	if (new_parent)
+	{
+		core = new Computed_field_quaternion_SLERP(new_parent,
+			 nodal_lookup_node, region_path, nodal_lookup_region,
+			 nodal_lookup_node_identifier, lookup_package);
+	}
+	else
+	{
+		 display_message(ERROR_MESSAGE,
+				"Computed_field_quaternion_SLERP::copy.  Invalid argument(s)");
+		 core = (Computed_field_quaternion_SLERP*)NULL;
+	}
+	LEAVE;
+
+	return (core);
+} /* Computed_field_quaternion_SLERP::copy */
+
+int Computed_field_quaternion_SLERP::compare(Computed_field_core *other_core)
+/*******************************************************************************
+LAST MODIFIED : 25 August 2006
+
+DESCRIPTION :
+Compare the type specific data.
+==============================================================================*/
+{
+	Computed_field_quaternion_SLERP* other;
+	int return_code;
+
+	ENTER(Computed_field_quaternion_SLERP::compare);
+	if (field && (other = dynamic_cast<Computed_field_quaternion_SLERP*>(other_core)))
+	{
+		if ((nodal_lookup_region == other->nodal_lookup_region) &&
+			(!strcmp(region_path, other->region_path)) &&
+      (nodal_lookup_node_identifier == other->nodal_lookup_node_identifier))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_quaternion_SLERP::compare */
+
+int Computed_field_quaternion_SLERP::is_defined_at_location(Field_location* location)
+/*******************************************************************************
+LAST MODIFIED : 10 Oct 2007
+
+DESCRIPTION :
+Returns true if <field> can be calculated in <element>, which is determined
+by checking the source field on the lookup node.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_quaternion_SLERP::is_defined_at_location);
+	if (field && location)
+	{
+		Field_node_location nodal_location(nodal_lookup_node,
+			location->get_time());
+
+		return_code = Computed_field_is_defined_at_location(field->source_fields[0],
+			&nodal_location);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_quaternion_SLERP::is_defined_at_location.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_quaternion_SLERP::is_defined_at_location */
+
+int Computed_field_quaternion_SLERP::evaluate()
+/*******************************************************************************
+LAST MODIFIED : 10 October 2007
+
+DESCRIPTION :
+Evaluates the transformation matrix of the source field of <field> in
+double precision in the type_specific_data then copies the eigenvalues to the
+field->values.
+==============================================================================*/
+{
+	 int return_code;
+	 float tol[4];
+	 double magnitude, omega, cosom, sinom,scale0,scale1, tolerance;
+
+	ENTER(Computed_field_quaternion_SLERP::evaluate);
+	return_code = 0;
+	tolerance = 0.00000001;
+	if (field)
+	{
+		 return_code = 1;
+		 //SLERP Implementation
+		 cosom = old_x * x + old_y * y + old_z * z + old_w * w;
+		 if (cosom < 0.0)
+		 {
+				cosom = -cosom;
+				tol[0] = - x;
+				tol[1] = - y;
+				tol[2] = - z;
+				tol[3] = - w;
+		 }
+		 else
+		 {
+				tol[0] = x;
+				tol[1] = y;
+				tol[2] = z;
+				tol[3] = w;
+		 }
+		 if (fabs(1.0-cosom)>tolerance)
+		 {
+				omega = acos(cosom);
+				sinom = sin(omega);
+				scale0 = sin((1.0-t) * omega) / sinom;
+				scale1 = sin(t * omega) / sinom;
+		 }
+		 else
+		 {
+				scale0 = 1.0 - t;
+				scale1 = t;
+		 }
+		 x = scale0 * old_x + scale1 * tol[0];
+		 y = scale0 * old_y + scale1 * tol[1]; 
+		 z = scale0 * old_z + scale1 * tol[2];
+		 w = scale0 * old_w +scale1 * tol[3];
+		 //convert the final quaternion to unit quaternion
+		 magnitude = sqrt(w*w+ x*x + y*y + z*z);
+		 if (fabs(magnitude - 1.0) > tolerance)
+		 {
+				w = w / magnitude;
+				x = x / magnitude;
+				y = y / magnitude;
+				z = z / magnitude;
+		 }
+		 if (!m)
+		 {
+				ALLOCATE(m, double, 4); 
+		 }
+		 if(m)
+		 {
+				m[0] = w;
+				m[1] = x;
+				m[2] = y;
+				m[3] = z;
+		 }
+		 else
+		 {
+				display_message(ERROR_MESSAGE,
+					 "Computed_field_quaternion_SLERP::evaluate.  "
+					 "Cannot allocate cache(s)");
+		 }
+	}
+	else
+	{
+		 display_message(ERROR_MESSAGE,
+				"Computed_field_quaternion_SLERP::evaluate.  "
+				"Invalid argument(s)");
+	}
+
+	return (return_code);
+} /* Computed_field_quaternion_SLERP::evaluate */
+
+int Computed_field_quaternion_SLERP::evaluate_cache_at_location(
+	 Field_location* location)
+/*******************************************************************************
+LAST MODIFIED : 5 October 2007
+
+DESCRIPTION :
+Evaluate the fields cache at the location
+==============================================================================*/
+{
+	 int i, return_code, *time_index_one, *time_index_two;
+	 double time, magnitude, tolerance;
+	 FE_time_sequence *time_sequence;
+	 FE_value *xi, *lower_time, *upper_time; 
+
+	 ENTER(Computed_field_quaternion_SLERP::evaluate_cache_at_location);
+	 if (field && location && field->number_of_components == 4 &&
+			field->source_fields[0]->number_of_components == 4)
+	 {
+			time = location->get_time();
+			tolerance= 0.00000001;
+			//t is the normalised time scaled from 0 to 1
+			time_sequence = Computed_field_get_FE_node_field_FE_time_sequence(nodal_lookup_node,
+				 field->source_fields[0]);
+			if ((ALLOCATE(time_index_one, int, 1)) &&
+				 (ALLOCATE(time_index_two, int, 1)) &&
+				 (ALLOCATE(xi, FE_value, 1)) &&
+				 (ALLOCATE(upper_time, FE_value, 1)) &&
+				 (ALLOCATE(lower_time, FE_value, 1)))
+			{
+				 time_sequence = Computed_field_get_FE_node_field_FE_time_sequence(nodal_lookup_node,
+						field->source_fields[0]);
+				 FE_time_sequence_get_interpolation_for_time(
+						time_sequence, time, time_index_one,
+						time_index_two, xi);
+				 FE_time_sequence_get_time_for_index(
+						time_sequence, *time_index_one, lower_time);
+				 FE_time_sequence_get_time_for_index(
+						time_sequence, *time_index_two, upper_time);
+				 t = *xi;
+				 Field_node_location old_location(nodal_lookup_node, *lower_time);
+				 Computed_field_evaluate_source_fields_cache_at_location(field, &old_location);
+				 // get the old quaternion for SLERP
+				 old_w = (double)(field->source_fields[0]->values[0]);
+				 old_x = (double)(field->source_fields[0]->values[1]);
+				 old_y = (double)(field->source_fields[0]->values[2]);
+				 old_z = (double)(field->source_fields[0]->values[3]);
+				 //convert to unit quaternion
+				 magnitude = sqrt(old_w*old_w+ old_x*old_x + old_y*old_y + old_z * old_z);
+				 if (fabs(magnitude - 1.0) > tolerance)
+				 {
+						old_w = old_w / magnitude;
+						old_x = old_x / magnitude;
+						old_y = old_y / magnitude;
+						old_z = old_z / magnitude;
+				 }
+				 // get the new quaternion for SLERP
+				 Field_node_location new_location(nodal_lookup_node, *upper_time);
+				 Computed_field_evaluate_source_fields_cache_at_location(field, &new_location);
+				 w = (double)(field->source_fields[0]->values[0]);
+				 x = (double)(field->source_fields[0]->values[1]);
+				 y = (double)(field->source_fields[0]->values[2]);
+				 z = (double)(field->source_fields[0]->values[3]);
+				 //convert to unit quaternion
+				 magnitude = sqrt(w*w+ x*x + y*y + z*z);
+				 if (fabs(magnitude - 1.0) > tolerance)
+				 {
+						w = w / magnitude;
+						x = x / magnitude;
+						y = y / magnitude;
+						z = z / magnitude;
+				 }
+				 if (evaluate())
+				 {
+						for (i=0; i<4;i++)
+						{
+ 							 field->values[i] = m[i];
+						}
+						return_code = 1;
+				 }
+				 else
+				 {
+						display_message(ERROR_MESSAGE,
+							 "Computed_field_quaternion_SLERP::evaluate_cache_at_location.  "
+							 "Cannot evaluate source fields cache at location");
+						return_code = 0;		 
+				 }
+				 DEALLOCATE(time_index_one);
+				 DEALLOCATE(time_index_two);
+				 DEALLOCATE(xi);
+				 DEALLOCATE(upper_time);
+				 DEALLOCATE(lower_time);
+			}
+			else
+			{
+				 display_message(ERROR_MESSAGE,
+						"Computed_field_quaternion::evaluate_cache_at_location.  "
+						"not enough memory.");
+			}
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "Computed_field_quaternion_SLERP::evaluate_cache_at_location.  "
+				 "Invalid argument(s)");
+			return_code = 0;
+	 }
+	 LEAVE;
+	 
+	 return (return_code);
+} /* Computed_field_quaternion_SLERP::evaluate_cache_at_location */
+
+int Computed_field_quaternion_SLERP::list()
+/*******************************************************************************
+LAST MODIFIED : 25 August 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(List_Computed_field_quaternion_SLERP);
+	if (field)
+	{
+		 display_message(INFORMATION_MESSAGE,
+				"    field : %s\n",
+				field->source_fields[0]->name);
+		 display_message(INFORMATION_MESSAGE,
+				"    node : %d\n",
+				get_FE_node_identifier(nodal_lookup_node));
+		 display_message(INFORMATION_MESSAGE,
+				"    region : %s\n", region_path);
+		 return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_quaternion_SLERP.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_quaternion_SLERP */
+
+char *Computed_field_quaternion_SLERP::get_command_string()
+/*******************************************************************************
+LAST MODIFIED : 5 October 2007
+
+DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
+==============================================================================*/
+{
+	char *command_string, *field_name, node_id[10], *region_name;
+	int error, node_number;
+
+	ENTER(Computed_field_quaternion_SLERP::get_command_string);
+	command_string = (char *)NULL;
+	if (field)
+	{
+		error = 0;
+		append_string(&command_string,
+			computed_field_quaternion_SLERP_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			 make_valid_token(&field_name);
+			 append_string(&command_string, field_name, &error);
+			 DEALLOCATE(field_name);
+		}
+		append_string(&command_string, " region ", &error);
+		if (region_name = duplicate_string(region_path))
+		{
+			 make_valid_token(&region_name);
+			 append_string(&command_string, region_name, &error);
+			 DEALLOCATE(region_name);
+		}
+		append_string(&command_string, " node ", &error);
+		node_number = get_FE_node_identifier(nodal_lookup_node);
+		sprintf(node_id,"%d",node_number);
+		append_string(&command_string, " ", &error);
+		append_string(&command_string, node_id, &error);
+	}
+	else
+	{
+		 display_message(ERROR_MESSAGE,
+				"Computed_field_quaternion_SLERP::get_command_string.  "
+				"Invalid field");
+	}
+	LEAVE;
+
+	return (command_string);
+} /* Computed_field_quaternion_SLERP::get_command_string */
+
+int Computed_field_quaternion_SLERP::has_multiple_times()
+/*******************************************************************************
+LAST MODIFIED : 10 Oct 2007
+
+DESCRIPTION :
+Always has multiple times.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_quaternion_SLERP::has_multiple_times);
+	if (field)
+	{
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			 "Computed_field_quaternion_SLERP::has_multiple_times.  "
+			 "Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_quaternion_SLERP::has_multiple_times */
+
+void Computed_field_quaternion_SLERP_FE_region_change(struct FE_region *fe_region,
+	 struct FE_region_changes *changes, void *computed_field_void)
+/*******************************************************************************
+LAST MODIFIED : 10 Oct 2007
+
+DESCRIPTION :
+If the node we are looking at changes generate a computed field change message.
+==============================================================================*/
+{
+	Computed_field *field;
+	Computed_field_quaternion_SLERP *core;
+	enum CHANGE_LOG_CHANGE(FE_node) change;
+
+	ENTER(Computed_field_FE_region_change);
+	USE_PARAMETER(fe_region);
+	if (changes && (field = (struct Computed_field *)computed_field_void) &&
+		(core = dynamic_cast<Computed_field_quaternion_SLERP*>(field->core)))
+	{
+		/* I'm not sure if we could also check if we depend on an FE_field change
+			and so reduce the total number of changes? */
+		if (CHANGE_LOG_QUERY(FE_node)(changes->fe_node_changes,
+				core->nodal_lookup_node, &change))
+		{
+			if (change | CHANGE_LOG_OBJECT_CHANGED(FE_node))
+			{
+				Computed_field_changed(field,
+					core->lookup_package->computed_field_manager);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_FE_region_change.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Computed_field_FE_region_change */
+
+} //namespace
+
+int Computed_field_set_type_quaternion_SLERP(struct Computed_field *field,
+	 struct Computed_field *source_field, char* region_path,
+	 struct Cmiss_region *region, int quaternion_SLERP_node_identifier, 
+	 Computed_field_lookup_package *lookup_package) 
+/*******************************************************************************
+LAST MODIFIED : 10 October 2007
+
+DESCRIPTION :
+quaternion_SLERP, where
+<source_field> must have 4 components.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int number_of_source_fields, number_of_source_values, return_code;
+	struct Computed_field **source_fields;
+	FE_node *quaternion_SLERP_node;
+	FE_region *fe_region;
+
+	ENTER(Computed_field_set_type_quaternion_SLERP);
+	if (field && source_field && region && region_path)
+	{
+		 return_code=1;
+			/* 1. make dynamic allocations for any new type-specific data */
+		if (source_field->number_of_components == 4)
+		{
+			number_of_source_fields = 1;
+			number_of_source_values=0;
+			if (ALLOCATE(source_fields,struct Computed_field *,
+						number_of_source_fields) &&
+				 (fe_region = Cmiss_region_get_FE_region(region)))
+			{
+				 /* 2. free current type-specific data */
+				 Computed_field_clear_type(field);
+				 /* 3. establish the new type */
+				field->number_of_components = source_field->number_of_components;
+				source_fields[0]=ACCESS(Computed_field)(source_field);
+				field->source_fields=source_fields;
+				field->number_of_source_fields=number_of_source_fields;			
+				field->source_values=(FE_value *)NULL;
+				field->number_of_source_values=number_of_source_values;
+				quaternion_SLERP_node = FE_region_get_FE_node_from_identifier(
+					 fe_region, quaternion_SLERP_node_identifier);
+				field->core = new Computed_field_quaternion_SLERP(field, quaternion_SLERP_node, 
+					 region_path, region, quaternion_SLERP_node_identifier, lookup_package);
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_set_type_quaternion_SLERP.  Not enough memory");
+				DEALLOCATE(source_fields);
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Computed_field_set_type_quaternion_SLERP.  "
+				"Field %s does not have 4 components",source_field->name);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_quaternion_SLERP.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_quaternion */
+
+int Computed_field_get_type_quaternion_SLERP(struct Computed_field *field,
+	 struct Computed_field **quaternion_SLERP_field, char **region_path,
+	 struct Cmiss_region **quaternion_SLERP_region,
+	 int *quaternion_SLERP_node_identifier,
+	 Computed_field_lookup_package **lookup_package)
+/*******************************************************************************
+LAST MODIFIED : 10 October 2007
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_QUATERNION_SLERP, the function returns the source
+<quaternion_SLERP_field>, <quaternion_SLERP_region>, and the <quaternion_SLERP_node_identifier>.
+Note that nothing returned has been ACCESSed.
+==============================================================================*/
+{
+	 Computed_field_quaternion_SLERP* core;
+	 int return_code;
+
+	ENTER(Computed_field_get_type_quatenions_SLERP);
+	if (field && (core = dynamic_cast<Computed_field_quaternion_SLERP*>(field->core)))
+	{
+		 *quaternion_SLERP_field = field->source_fields[0];
+		 *region_path = core->region_path;
+		 *quaternion_SLERP_region = core->nodal_lookup_region;
+		 *quaternion_SLERP_node_identifier = core->nodal_lookup_node_identifier;
+		 *lookup_package = core->lookup_package;
+		 return_code = 1;
+	}
+	else
+	{
+		 display_message(ERROR_MESSAGE,
+				"Computed_field_get_type_nodal_lookup.  Invalid argument(s)");
+		 return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_quaternion_SLERP */
+
+int define_Computed_field_type_quaternion_SLERP(struct Parse_state *state,
+	void *field_void, void *computed_field_lookup_package_void)
+/*******************************************************************************
+LAST MODIFIED : 25 August 2006
+
+DESCRIPTION :
+Converts <field> into type 'quaterions' (if it is not already) and allows its
+contents to be modified.
+==============================================================================*/
+{
+	 int return_code;
+	struct Computed_field *field, **source_fields;
+	Computed_field_lookup_package *computed_field_lookup_package,
+		 *lookup_package_dummy;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_source_field_data;
+	int node_identifier;
+	char node_flag,*region_path,*dummy_region_path;
+	struct Cmiss_region *dummy_region,*region;
+	
+	ENTER(define_Computed_field_type_quaternion_SLERP);
+	if (state && (field = (struct Computed_field *)field_void) &&
+		 (computed_field_lookup_package=
+				(Computed_field_lookup_package *)
+				computed_field_lookup_package_void))
+	{
+		return_code=1;
+		source_fields = (struct Computed_field **)NULL;
+		if (ALLOCATE(source_fields, struct Computed_field *, 1))
+		{
+			 source_fields[0] = (struct Computed_field *)NULL;
+			 node_flag = 0;
+			 node_identifier = 0;
+			 if (computed_field_quaternion_SLERP_type_string ==
+					Computed_field_get_type_string(field))
+			 {
+					return_code = Computed_field_get_type_quaternion_SLERP(field, 
+						 source_fields, &dummy_region_path,&dummy_region,&node_identifier,
+						 &lookup_package_dummy);
+			 }
+			 if (return_code)
+			 {
+					if (source_fields[0])
+					{
+						 ACCESS(Computed_field)(source_fields[0]);
+					}
+					Cmiss_region_get_root_region_path(&region_path);
+					option_table = CREATE(Option_table)();
+					Option_table_add_help(option_table,
+						 "A 4 components quaternion field. The components of "
+						 "the quaternion field are expected to be the w, x, y, z components"
+						 "of a quaternion (4 components in total). The quaternion field  is "
+						 "evaluated and interpolated using SLERP at a normalised time between two"
+						 "quaternions (read in from the exnode generally). This quaternion field can be convert to a "
+						 "matrix with quaternion_to_matrix field, the resulting matrix can be used to "
+						 "create a smooth time dependent rotation for an object using the"
+						 "quaternion_to_matrix field");
+					set_source_field_data.computed_field_manager =
+						 computed_field_lookup_package->computed_field_manager;
+					set_source_field_data.conditional_function =
+						 Computed_field_has_4_components;
+					set_source_field_data.conditional_function_user_data = (void *)NULL;
+					Option_table_add_entry(option_table, "field", &source_fields[0],
+						 &set_source_field_data, set_Computed_field_conditional);
+					/* the node to nodal_lookup */
+					Option_table_add_entry(option_table, "node", &node_identifier,
+						 &node_flag, set_int_and_char_flag);
+					/* and the node region */
+					Option_table_add_entry(option_table,"region",&region_path,
+						 computed_field_lookup_package->root_region,set_Cmiss_region_path);
+					/* process the option table */
+					return_code = Option_table_multi_parse(option_table, state);
+					/* no errors, not asking for help */
+					if (return_code && node_flag)
+					{
+						 if (Cmiss_region_get_region_from_path(
+										computed_field_lookup_package->root_region,region_path,
+										&region))
+						 {
+								return_code = Computed_field_set_type_quaternion_SLERP(field,
+									 source_fields[0],region_path,region,node_identifier,
+									 computed_field_lookup_package);
+						 }
+						 else
+						 {
+								/* error */
+								display_message(ERROR_MESSAGE,
+									 "define_Computed_field_type_quaternion_SLERP.  Invalid region");
+						 }
+					}
+					else
+					{
+						 if ((!state->current_token)||
+								(strcmp(PARSER_HELP_STRING,state->current_token)&&
+									 strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+						 {
+								/* error */
+								display_message(ERROR_MESSAGE,
+									 "define_Computed_field_type_quaternion_SLERP.  Failed");
+						 }
+					}
+					if (source_fields[0])
+					{
+						 DEACCESS(Computed_field)(&source_fields[0]);
+					}
+					DESTROY(Option_table)(&option_table);
+					DEALLOCATE(region_path);
+			 }
+			 DEALLOCATE(source_fields);
+		}
+		else
+		{
+			 display_message(ERROR_MESSAGE,
+					"define_Computed_field_type_quaternion_SLERP.  Not enough memory");
+			 return_code = 0;
+		}
+	}
+	else
+	{
+		 display_message(ERROR_MESSAGE,
+				"define_Computed_field_type_quaternion_SLERP.  Invalid argument(s)");
+		 return_code = 0;
+	}
+	LEAVE;
+	
+	return (return_code);
+} /* define_Computed_field_type_quaternion_SLERP */
+
+namespace {
+
+void Computed_field_quaternion_to_matrix_FE_region_change(struct FE_region *fe_region,
+	 struct FE_region_changes *changes, void *computed_field_void);
+/*******************************************************************************
+LAST MODIFIED : 10 Oct 2007
+
+DESCRIPTION :
+If the node we are looking at changes generate a computed field change message.
+==============================================================================*/
+
+char computed_field_quaternion_to_matrix_type_string[] = "quaternion_to_matrix";
+
+class Computed_field_quaternion_to_matrix : public Computed_field_core
+{
+public:
+	 char *region_path;
+	 FE_node *nodal_lookup_node;
+	 Cmiss_region *nodal_lookup_region;
+	 int nodal_lookup_node_identifier;
+	 Computed_field_lookup_package *lookup_package;
+	 
+	 Computed_field_quaternion_to_matrix(Computed_field *field,
+			FE_node *nodal_lookup_node,char* region_path,
+			Cmiss_region *region, int nodal_lookup_node_identifier, 
+			Computed_field_lookup_package *lookup_package) : 
+			Computed_field_core(field), region_path(duplicate_string(region_path)),
+			nodal_lookup_node(ACCESS(FE_node)(nodal_lookup_node)),
+			nodal_lookup_region(ACCESS(Cmiss_region)(region)),
+			nodal_lookup_node_identifier(nodal_lookup_node_identifier),
+			lookup_package(lookup_package)
+	 {
+			FE_region_add_callback(FE_node_get_FE_region(nodal_lookup_node), 
+				 Computed_field_quaternion_to_matrix_FE_region_change, 
+				 (void *)field);
+	 };
+	 
+	 ~Computed_field_quaternion_to_matrix();
+	 
+private:
+	 Computed_field_core *copy(Computed_field* new_parent);
+
+	 char *get_type_string()
+	 {
+			return(computed_field_quaternion_to_matrix_type_string);
+	 }
+	 
+	int compare(Computed_field_core* other_field);
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	 int evaluate();
+
+	int list();
+
+	char* get_command_string();
+
+	int is_defined_at_location(Field_location* location);
+
+	int has_multiple_times();
+};
+
+Computed_field_quaternion_to_matrix::~Computed_field_quaternion_to_matrix()
+/*******************************************************************************
+LAST MODIFIED : 16 October 2007
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	ENTER(Computed_field_quaternion_to_matrix::~Computed_field_quaternion_to_matrix);
+	if (field)
+	{
+		 FE_region_remove_callback(Cmiss_region_get_FE_region(nodal_lookup_region),
+				Computed_field_quaternion_to_matrix_FE_region_change, 
+				(void *)field);
+		 if (nodal_lookup_region)
+		 {
+				DEACCESS(Cmiss_region)(&(nodal_lookup_region));
+		 }
+		 if (nodal_lookup_node)
+		 {
+				DEACCESS(FE_node)(&(nodal_lookup_node));
+		 }
+		 if (region_path)
+		 {
+				DEALLOCATE(region_path);
+		 }
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_quaternion_to_matrix::~Computed_field_quaternion_to_matrix.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+} /* Computed_field_quaternion_to_matrix::~Computed_field_quaternion_to_matrix */
+
+Computed_field_core* Computed_field_quaternion_to_matrix::copy(Computed_field* new_parent)
+/*******************************************************************************
+LAST MODIFIED : 16 October 2007
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	Computed_field_quaternion_to_matrix* core;
+
+	ENTER(Computed_field_quaternion_to_matrix::copy);
+	if (new_parent)
+	{
+		core = new Computed_field_quaternion_to_matrix(new_parent,
+			 nodal_lookup_node, region_path, nodal_lookup_region,
+			 nodal_lookup_node_identifier, lookup_package);
+	}
+	else
+	{
+		 display_message(ERROR_MESSAGE,
+				"Computed_field_quaternion_to_matrix::copy.  Invalid argument(s)");
+		 core = (Computed_field_quaternion_to_matrix*)NULL;
+	}
+	LEAVE;
+
+	return (core);
+} /* Computed_field_quaternion_to_matrix::copy */
+
+int Computed_field_quaternion_to_matrix::compare(Computed_field_core *other_core)
+/*******************************************************************************
+LAST MODIFIED : 16 October 2007
+
+DESCRIPTION :
+Compare the type specific data.
+==============================================================================*/
+{
+	Computed_field_quaternion_to_matrix* other;
+	int return_code;
+
+	ENTER(Computed_field_quaternion_to_matrix::compare);
+	if (field && (other = dynamic_cast<Computed_field_quaternion_to_matrix*>(other_core)))
+	{
+		if ((nodal_lookup_region == other->nodal_lookup_region) &&
+			(!strcmp(region_path, other->region_path)) &&
+      (nodal_lookup_node_identifier == other->nodal_lookup_node_identifier))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_quaternion_to_matrix::compare */
+
+int Computed_field_quaternion_to_matrix::is_defined_at_location(Field_location* location)
+/*******************************************************************************
+LAST MODIFIED : 16 Oct 2007
+
+DESCRIPTION :
+Returns true if <field> can be calculated in <element>, which is determined
+by checking the source field on the lookup node.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_quaternion_to_matrix::is_defined_at_location);
+	if (field && location)
+	{
+		Field_node_location nodal_location(nodal_lookup_node,
+			location->get_time());
+
+		return_code = Computed_field_is_defined_at_location(field->source_fields[0],
+			&nodal_location);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_quaternion_to_matrix::is_defined_at_location.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_quaternion_to_matrix::is_defined_at_location */
+
+int Computed_field_quaternion_to_matrix::evaluate_cache_at_location(
+	 Field_location* location)
+/*******************************************************************************
+LAST MODIFIED : 16 October 2007
+
+DESCRIPTION :
+Evaluate the fields cache at the location
+==============================================================================*/
+{
+	 int return_code;
+	 double time, w, x, y, z, magnitude, tolerance, wx, wy, wz, xx, yy, yz, xy, xz, zz, x2, y2, z2;
+
+	 ENTER(Computed_field_quaternion_to_matrix::evaluate_cache_at_location);
+	 tolerance = 0.000000001;
+	 if (field && location && field->number_of_components == 16 &&
+			field->source_fields[0]->number_of_components == 4)
+	 {
+			time = location->get_time();
+	 }
+	 Field_node_location new_location(nodal_lookup_node, time);
+	 if (Computed_field_evaluate_source_fields_cache_at_location(field, &new_location))
+	 {
+			w = (double)(field->source_fields[0]->values[0]);
+			x = (double)(field->source_fields[0]->values[1]);
+			y = (double)(field->source_fields[0]->values[2]);
+			z = (double)(field->source_fields[0]->values[3]);
+			//if not unit quaternion, normalise it into on
+			magnitude = sqrt(w*w+ x*x + y*y + z*z);
+			if (fabs(magnitude - 1.0)> tolerance) 
+			{
+				 w = w / magnitude;
+				 x = x / magnitude;
+				 y = y / magnitude;
+				 z = z / magnitude;
+			}
+			x2 = x + x;
+			y2 = y + y;
+			z2 = z + z;
+			xx = x * x2;
+			xy = x * y2;
+			xz = x * z2;
+			yy = y * y2;
+			yz = y * z2;
+			zz = z * z2;
+			wx = w * x2;
+			wy = w * y2;
+			wz = w * z2;
+			field->values[0] = 1 - yy - zz;
+			field->values[1] = xy - wz;
+			field->values[2] = xz+wy;
+			field->values[3] = 0;
+			field->values[4] = xy + wz;
+			field->values[5] = 1 - xx - zz;
+			field->values[6] = yz-  wx;
+			field->values[7] = 0;
+			field->values[8] = xz - wy;
+			field->values[9] = yz + wx;
+			field->values[10] = 1 - xx - yy;
+			field->values[11] = 0;
+			field->values[12] = 0;
+			field->values[13] = 0;
+			field->values[14] = 0;
+			field->values[15] = 1;
+			return_code = 1;
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "Computed_field_quaternion_to_matrix::evaluate_cache_at_location.  "
+				 "Invalid argument(s)");
+	 }
+	 
+	 return (return_code);
+} /* Computed_field_quaternion_to_matrix::evaluate_cache_at_location */
+
+int Computed_field_quaternion_to_matrix::list()
+/*******************************************************************************
+LAST MODIFIED : 16 October 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(List_Computed_field_quaternion_to_matrix);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,
+			"    field : %s\n",field->source_fields[0]->name);
+		 display_message(INFORMATION_MESSAGE,
+				"    node : %d\n",
+				get_FE_node_identifier(nodal_lookup_node));
+		 display_message(INFORMATION_MESSAGE,
+				"    region : %s\n", region_path);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_quaternion_to_matrix.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_quaternion_to_matrix */
+
+char *Computed_field_quaternion_to_matrix::get_command_string()
+/*******************************************************************************
+LAST MODIFIED : 16 October 2007
+
+DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
+==============================================================================*/
+{
+	char *command_string, *field_name, node_id[10], *region_name;
+	int error, node_number;
+
+	ENTER(Computed_field_quaternion_to_matrix::get_command_string);
+	command_string = (char *)NULL;
+	if (field)
+	{
+		error = 0;
+		append_string(&command_string,
+			computed_field_quaternion_to_matrix_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		append_string(&command_string, " region ", &error);
+		if (region_name = duplicate_string(region_path))
+		{
+			 make_valid_token(&region_name);
+			 append_string(&command_string, region_name, &error);
+			 DEALLOCATE(region_name);
+		}
+		append_string(&command_string, " node ", &error);
+		node_number = get_FE_node_identifier(nodal_lookup_node);
+		sprintf(node_id,"%d",node_number);
+		append_string(&command_string, " ", &error);
+		append_string(&command_string, node_id, &error);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_quaternion_to_matrix::get_command_string.  "
+			"Invalid field");
+	}
+	LEAVE;
+
+	return (command_string);
+} /* Computed_field_quaternion_to_matrix::get_command_string
+		 */
+
+int Computed_field_quaternion_to_matrix::has_multiple_times()
+/*******************************************************************************
+LAST MODIFIED : 16 Oct 2007
+
+DESCRIPTION :
+Always has multiple times.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_quaternion_to_matrix::has_multiple_times);
+	if (field)
+	{
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			 "Computed_field_quaternion_to_matrix::has_multiple_times.  "
+			 "Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_quaternion_to_matrix::has_multiple_times */
+
+void Computed_field_quaternion_to_matrix_FE_region_change(struct FE_region *fe_region,
+	 struct FE_region_changes *changes, void *computed_field_void)
+/*******************************************************************************
+LAST MODIFIED : 16 Oct 2007
+
+DESCRIPTION :
+If the node we are looking at changes generate a computed field change message.
+==============================================================================*/
+{
+	Computed_field *field;
+	Computed_field_quaternion_to_matrix *core;
+	enum CHANGE_LOG_CHANGE(FE_node) change;
+
+	ENTER(Computed_field_FE_region_change);
+	USE_PARAMETER(fe_region);
+	if (changes && (field = (struct Computed_field *)computed_field_void) &&
+		(core = dynamic_cast<Computed_field_quaternion_to_matrix*>(field->core)))
+	{
+		/* I'm not sure if we could also check if we depend on an FE_field change
+			and so reduce the total number of changes? */
+		if (CHANGE_LOG_QUERY(FE_node)(changes->fe_node_changes,
+				core->nodal_lookup_node, &change))
+		{
+			if (change | CHANGE_LOG_OBJECT_CHANGED(FE_node))
+			{
+				Computed_field_changed(field,
+					core->lookup_package->computed_field_manager);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_FE_region_change.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Computed_field_FE_region_change */
+
+} //namespace
+
+int Computed_field_set_type_quaternion_to_matrix(struct Computed_field *field,
+	 struct Computed_field *source_field, char* region_path,
+	 struct Cmiss_region *region, int quaternion_to_matrix_node_identifier, 
+	 Computed_field_lookup_package *lookup_package) 
+/*******************************************************************************
+LAST MODIFIED : 16 October 2007
+
+DESCRIPTION :
+Converts a 'quaternion' to a transformation matrix, where
+<source_field> must have 4 components.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int number_of_source_fields, number_of_source_values, return_code;
+	struct Computed_field **source_fields;
+	FE_node *quaternion_to_matrix_node;
+	FE_region *fe_region;
+
+	ENTER(Computed_field_set_type_quaternion_to_matrix);
+	if (field && source_field && region && region_path)
+	{
+		 return_code=1;
+		 /* 1. make dynamic allocations for any new type-specific data */
+		 if (source_field->number_of_components == 4)
+		 {
+				/* 1. make dynamic allocations for any new type-specific data */
+				number_of_source_fields = 1;
+				number_of_source_values=0;
+				if ((ALLOCATE(source_fields,struct Computed_field *,
+							number_of_source_fields)) &&
+				 (fe_region = Cmiss_region_get_FE_region(region)))
+				{
+					 /* 2. free current type-specific data */
+					 Computed_field_clear_type(field);
+					 /* 3. establish the new type */
+					 field->number_of_components = 16;
+					 source_fields[0] = ACCESS(Computed_field)(source_field);
+					 field->source_fields = source_fields;
+					 field->number_of_source_fields = number_of_source_fields;
+					 quaternion_to_matrix_node = FE_region_get_FE_node_from_identifier(
+							fe_region, quaternion_to_matrix_node_identifier);
+					 field->core = new Computed_field_quaternion_to_matrix(
+							field, quaternion_to_matrix_node, region_path, region, 
+							quaternion_to_matrix_node_identifier, lookup_package);
+					 return_code=1;
+				}
+				else
+				{
+					 display_message(ERROR_MESSAGE,
+							"Computed_field_set_type_quaternion_to_matrix.  Not enough memory");
+					 DEALLOCATE(source_fields);
+					 return_code=0;
+				}
+		 }
+		 else
+		 {
+				display_message(ERROR_MESSAGE,"Computed_field_set_type_quaternion_to_matrix.  "
+					 "Field %s does not have 4 components",source_field->name);
+				return_code = 0;
+		 }
+	}
+	else
+	{
+		 display_message(ERROR_MESSAGE,
+				"Computed_field_set_type_quaternion_to_matrix.  Invalid argument(s)");
+		 return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_quaternion_to_matrix */
+
+int Computed_field_get_type_quaternion_to_matrix(struct Computed_field *field,
+	struct Computed_field **quaternion_to_matrix_field, char **region_path,
+	 struct Cmiss_region **quaternion_to_matrix_region,
+	 int *quaternion_to_matrix_node_identifier,
+	 Computed_field_lookup_package **lookup_package)
+/*******************************************************************************
+LAST MODIFIED : 16 October 2007
+
+DESCRIPTION :
+If the field is of type 'transformation', the <source_field> it calculates the
+transformation of is returned.
+==============================================================================*/
+{
+	 Computed_field_quaternion_to_matrix* core;
+	 int return_code;
+
+	ENTER(Computed_field_get_type_quatenions_to_transformation);
+	if (field && (core = dynamic_cast<Computed_field_quaternion_to_matrix*>(field->core)))
+	{
+		 *quaternion_to_matrix_field = field->source_fields[0];
+		 *region_path = core->region_path;
+		 *quaternion_to_matrix_region = core->nodal_lookup_region;
+		 *quaternion_to_matrix_node_identifier = core->nodal_lookup_node_identifier;
+		 *lookup_package = core->lookup_package;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_quaternion_to_matrix.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_quaternion */
+
+int define_Computed_field_type_quaternion_to_matrix(struct Parse_state *state,
+	void *field_void, void *computed_field_lookup_package_void)
+/*******************************************************************************
+LAST MODIFIED : 16 October 2007
+
+DESCRIPTION :
+Converts a "quaternion" to a transformation matrix.
+==============================================================================*/
+{
+	 int return_code;
+	struct Computed_field *field, **source_fields;
+	Computed_field_lookup_package *computed_field_lookup_package,
+		 *lookup_package_dummy;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_source_field_data;
+	int node_identifier;
+	char node_flag,*region_path,*dummy_region_path;
+	struct Cmiss_region *dummy_region,*region;
+
+	ENTER(define_Computed_field_type_quaternion_to_matrix);
+	if (state && (field = (struct Computed_field *)field_void) &&
+		(computed_field_lookup_package=
+			(Computed_field_lookup_package *)
+			computed_field_lookup_package_void))
+	{
+		return_code=1;
+		source_fields = (struct Computed_field **)NULL;
+		if (ALLOCATE(source_fields, struct Computed_field *, 1))
+		{
+			 source_fields[0] = (struct Computed_field *)NULL;
+			 node_flag = 0;
+			 node_identifier = 0;
+			 if (computed_field_quaternion_to_matrix_type_string ==
+					Computed_field_get_type_string(field))
+			 {
+					return_code = Computed_field_get_type_quaternion_to_matrix(field, 
+						 source_fields, &dummy_region_path,&dummy_region,&node_identifier,
+						 &lookup_package_dummy);
+			 }
+			 if (return_code)
+			 {
+					if (source_fields[0])
+					{
+						 ACCESS(Computed_field)(source_fields[0]);
+					}
+					Cmiss_region_get_root_region_path(&region_path);
+					option_table = CREATE(Option_table)();
+					Option_table_add_help(option_table,
+						 "A computed field to convert a quaternion to a 4x4 matrix");
+					set_source_field_data.computed_field_manager =
+						 computed_field_lookup_package->computed_field_manager;
+					set_source_field_data.conditional_function =
+						 Computed_field_has_4_components;
+					set_source_field_data.conditional_function_user_data = (void *)NULL;
+					Option_table_add_entry(option_table, "field", &source_fields[0],
+						 &set_source_field_data, set_Computed_field_conditional);
+					/* the node to nodal_lookup */
+					Option_table_add_entry(option_table, "node", &node_identifier,
+						 &node_flag, set_int_and_char_flag);
+					/* and the node region */
+					Option_table_add_entry(option_table,"region",&region_path,
+						 computed_field_lookup_package->root_region,set_Cmiss_region_path);
+					/* process the option table */
+					return_code = Option_table_multi_parse(option_table, state);
+					/* no errors, not asking for help */
+					if (return_code && node_flag)
+					{
+						 if (Cmiss_region_get_region_from_path(
+										computed_field_lookup_package->root_region,region_path,
+										&region))
+						 {
+								return_code = Computed_field_set_type_quaternion_to_matrix(
+									 field, source_fields[0], region_path,region,node_identifier, 
+									 computed_field_lookup_package);
+						 }
+						 else
+						 {
+								/* error */
+								display_message(ERROR_MESSAGE,
+									 "define_Computed_field_type_quaternion_to_matrix."
+									 "Invalid region");
+						 }
+					}
+					else
+					{
+						 if ((!state->current_token)||
+								(strcmp(PARSER_HELP_STRING,state->current_token)&&
+									 strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+						 {
+								/* error */
+								display_message(ERROR_MESSAGE,
+									 "define_Computed_field_type_quaternion_to_matrix.  Failed");
+						 }
+					}
+					if (source_fields[0])
+					{
+						 DEACCESS(Computed_field)(&source_fields[0]);
+					}
+					DESTROY(Option_table)(&option_table);
+					DEALLOCATE(region_path);
+			 }
+			 DEALLOCATE(source_fields);
+		}
+		else
+		{
+			 display_message(ERROR_MESSAGE,
+					"define_Computed_field_type_quaternion_to_matrix. Not enought memory");
+			 return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_quaternion_to_matrix. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_quaternion_to_matrix */
+
 int Computed_field_register_types_lookup(
 	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *root_region)
@@ -701,6 +2135,14 @@ DESCRIPTION :
 			computed_field_nodal_lookup_type_string,
 			define_Computed_field_type_nodal_lookup,
 			computed_field_lookup_package);
+		return_code = Computed_field_package_add_type(computed_field_package,
+			 computed_field_quaternion_SLERP_type_string,
+			 define_Computed_field_type_quaternion_SLERP,
+			 computed_field_lookup_package);
+		return_code = Computed_field_package_add_type(computed_field_package,
+			 computed_field_quaternion_to_matrix_type_string,
+			 define_Computed_field_type_quaternion_to_matrix,
+			 computed_field_lookup_package);
 	}
 	else
 	{

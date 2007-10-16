@@ -329,6 +329,7 @@ DESCRIPTION :
 	struct Scene *default_scene;
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct MANAGER(VT_volume_texture) *volume_texture_manager;
+	struct Scene_object_transformation_data *scene_object_transformation_data;
 #if defined (MOTIF)
 	struct Prompt_window *prompt_window;
 	struct Projection_window *projection_window;
@@ -18692,8 +18693,11 @@ Sets the transformation for a graphics object from the command line.
 	{
 		{"name",NULL,(void *)1,set_name},
 		{"scene",NULL,NULL,set_Scene},
+		{"field",NULL,NULL,set_Computed_field_conditional},
 		{NULL,NULL,NULL,set_transformation_matrix}
 	};
+	struct Computed_field *computed_field;
+	struct Set_Computed_field_conditional_data set_field_data;
 
 	ENTER(gfx_set_transformation);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -18701,7 +18705,14 @@ Sets the transformation for a graphics object from the command line.
 	{
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
-			/* initialise defaults */
+			 /* initialise defaults */
+			computed_field=(struct Computed_field *)NULL;
+			set_field_data.conditional_function=
+				 (MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+			set_field_data.conditional_function_user_data=(void *)NULL;
+			set_field_data.computed_field_manager=
+				 Computed_field_package_get_computed_field_manager(
+						command_data->computed_field_package);
 			scene_object_name=(char *)NULL;
 			scene=ACCESS(Scene)(command_data->default_scene);
 			transformation_matrix[0][0]=1;
@@ -18724,7 +18735,9 @@ Sets the transformation for a graphics object from the command line.
 			(option_table[0]).to_be_modified= &scene_object_name;
 			(option_table[1]).to_be_modified= &scene;
 			(option_table[1]).user_data=command_data->scene_manager;
-			(option_table[2]).to_be_modified= &transformation_matrix;
+			(option_table[2]).to_be_modified= &computed_field;
+			(option_table[2]).user_data= &set_field_data;
+			(option_table[3]).to_be_modified= &transformation_matrix;
 			return_code=process_multiple_options(state,option_table);
 			/* no errors, not asking for help */
 			if (return_code)
@@ -18734,14 +18747,45 @@ Sets the transformation for a graphics object from the command line.
 					if (scene_object=Scene_get_Scene_object_by_name(scene,
 						scene_object_name))
 					{
-						Scene_object_set_transformation(scene_object,
-							&transformation_matrix);
+						 if (computed_field)
+						 {
+								if (!command_data->scene_object_transformation_data)
+								{
+									 ALLOCATE(command_data->scene_object_transformation_data,
+											struct Scene_object_transformation_data,1);
+								}
+								if (command_data->scene_object_transformation_data)
+								{
+									 command_data->scene_object_transformation_data->scene_object = 
+											scene_object;
+									 command_data->scene_object_transformation_data->computed_field = 
+											computed_field;
+									 Time_keeper_add_callback(command_data->default_time_keeper,
+											Scene_object_set_transformation_with_time_callback,
+											(void *)command_data->scene_object_transformation_data,
+											(enum Time_keeper_event) (TIME_KEEPER_NEW_TIME | 
+												 TIME_KEEPER_NEW_MINIMUM | TIME_KEEPER_NEW_MAXIMUM ));
+								}
+						 }
+						 else
+						 {
+								if (command_data->scene_object_transformation_data)
+								{
+									 Time_keeper_remove_callback(command_data->default_time_keeper,
+											Scene_object_set_transformation_with_time_callback, 
+											(void *)command_data->scene_object_transformation_data);
+									 DEALLOCATE(command_data->scene_object_transformation_data);
+									 command_data->scene_object_transformation_data = 
+											(struct Scene_object_transformation_data*)NULL;
+								}
+								Scene_object_set_transformation(scene_object,
+									 &transformation_matrix);
+						 }
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"No object named '%s' in scene",scene_object_name);
-						return_code=0;
+							"No object named '%s' in scene",scene_object_name);return_code=0;
 					}
 				}
 				else
@@ -24332,6 +24376,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->foreground_colour.blue=(float)1;
 		command_data->help_directory=(char *)NULL;
 		command_data->help_url=(char *)NULL;
+		command_data->scene_object_transformation_data = 
+			 (struct Scene_object_transformation_data*)NULL;
 #if defined (PERL_INTERPRETER)
 		command_data->interpreter = (struct Interpreter *)NULL;
 #endif /* defined (PERL_INTERPRETER) */
@@ -25519,6 +25565,10 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		DESTROY(MANAGER(Light_model))(&command_data->light_model_manager);
 		DEACCESS(Light)(&(command_data->default_light));
 		DESTROY(MANAGER(Light))(&command_data->light_manager);
+		if (command_data->scene_object_transformation_data)
+		{
+			 DEALLOCATE(command_data->scene_object_transformation_data);
+		}
 #if defined (MOTIF) || (WX_USER_INTERFACE)
 		DESTROY(MANAGER(Comfile_window))(&command_data->comfile_window_manager);
 #endif /* defined (MOTIF) || (WX_USER_INTERFACE) */

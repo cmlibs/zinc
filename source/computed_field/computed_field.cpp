@@ -1952,7 +1952,7 @@ is avoided.
 					number_of_derivatives = 0;
 				}
 				Field_element_xi_location location(element, xi, time,
-					top_level_element, number_of_derivatives);
+					 top_level_element, number_of_derivatives);
 				return_code = field->core->evaluate_cache_at_location(&location);
 					/* How to specify derivatives or not */
 				if (return_code&&calculate_derivatives&&!(field->derivatives_valid))
@@ -2376,6 +2376,48 @@ number_of_components.
 
 	return (return_code);
 } /* Computed_field_evaluate_at_node */
+
+int Computed_field_evaluate_without_node(struct Computed_field *field,
+	 FE_value time, FE_value *values)
+/*******************************************************************************
+LAST MODIFIED : 14 August 2006
+
+DESCRIPTION :
+Returns the <values> of <field> for nodal_lookup field if it is defined there. Can verify
+this in advance by calling function Computed_field_defined_at_location. Each <field>
+has a cache for storing its values and derivatives, which is allocated and the
+field->values array filled by a call to Computed_field_evaluate_cache_at_location,
+which is then copied to <values> by this function. 
+
+The <values> array must be large enough to store as many FE_values as there are
+number_of_components.
+==============================================================================*/
+{
+	int i,return_code;
+
+	ENTER(Computed_field_evaluate_without_node);
+	return_code=0;
+	if (field)
+	{
+		 Field_node_location location(NULL, time);
+		 if (return_code=Computed_field_evaluate_cache_at_location(field, &location))
+		 {
+				/* copy values from cache to <values> */
+				for (i=0;i<field->number_of_components;i++)
+				{
+					 values[i]=field->values[i];
+				}
+		 }
+	}
+	else
+	{
+		 display_message(ERROR_MESSAGE,
+				"Computed_field_evaluate_without_location.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_evaluate_without_node */
 
 int Computed_field_set_values_at_location(struct Computed_field *field,
 	Field_location* location, FE_value *values)
@@ -2853,7 +2895,7 @@ static int Computed_field_transformation_change(struct Time_keeper *time_keeper,
 /*******************************************************************************
 LAST MODIFIED : 8 Oct 2007
 
-DESCRIPTION : This function is called transformation is time dependent
+DESCRIPTION : This function is called when transformation is time dependent
 
 ==============================================================================*/
 {

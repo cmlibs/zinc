@@ -84,6 +84,7 @@ November 1997. Created from Scene description part of Drawing.
 #include "graphics/scene.h"
 #include "graphics/texture.h"
 #include "time/time.h"
+#include "time/time_keeper.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -3408,6 +3409,70 @@ Sets the transformation of <scene_object>.
 
 	return (return_code);
 } /* Scene_object_set_transformation */
+
+int Scene_object_set_transformation_with_time_callback(struct Time_keeper *time_keeper,
+	 enum Time_keeper_event event, void *scene_object_transformation_data_void)
+/*******************************************************************************
+LAST MODIFIED : 17 October 2007
+
+DESCRIPTION :
+
+==============================================================================*/
+{
+	 FE_value *values;
+	 gtMatrix transformation_matrix;
+	 int return_code, i, j, k;
+	 struct Computed_field *computed_field;
+	 struct Scene_object *scene_object;
+	 struct Scene_object_transformation_data *data;
+
+	 ENTER(Scene_object_set_transformation_with_time_callback);
+	 USE_PARAMETER(event);
+	 return_code = 0;
+	 if (data = (struct Scene_object_transformation_data *)scene_object_transformation_data_void)
+	 {
+			if ((scene_object = data->scene_object) && (computed_field = data->computed_field))
+			{
+				 if (ALLOCATE(values, FE_value, 16))
+				 {
+						Computed_field_evaluate_without_node(computed_field, 
+							 Time_keeper_get_time(time_keeper), values);
+						k = 0;
+						for (i = 0;i < 4; i++)
+						{
+							 for (j = 0; j < 4; j++)
+							 {
+									transformation_matrix[i][j] = values[k];
+									k++;
+							 }
+						}
+						DEALLOCATE(values);
+						return_code = Scene_object_set_transformation(scene_object,
+							 &transformation_matrix);
+				 }
+				 else
+				 {
+						display_message(ERROR_MESSAGE,
+							 "Scene_object_set_transformation_with_time_callback.  "
+							 "Unable to allocate values.");
+						return_code=0;
+				 }
+			}
+			else
+			{
+				 display_message(ERROR_MESSAGE,
+						"Scene_object_set_transformation_with_time_callback.  Invalid argument(s)");
+			}	
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "Scene_object_set_transformation_with_time_callback.  Invalid argument(s)");
+	 }
+	 LEAVE;	
+
+	 return (return_code);
+}
 
 int Scene_object_iterator_set_visibility(struct Scene_object *scene_object,
 	void *visibility_void)

@@ -421,6 +421,22 @@ The <values> array must be large enough to store as many FE_values as there are
 number_of_components.
 ==============================================================================*/
 
+int Computed_field_evaluate_without_node(struct Computed_field *field,
+	 FE_value time, FE_value *values);
+/*******************************************************************************
+LAST MODIFIED : 14 August 2006
+
+DESCRIPTION :
+Returns the <values> of <field> for nodal_lookup field if it is defined there. Can verify
+this in advance by calling function Computed_field_defined_at_location. Each <field>
+has a cache for storing its values and derivatives, which is allocated and the
+field->values array filled by a call to Computed_field_evaluate_cache_at_location,
+which is then copied to <values> by this function. 
+
+The <values> array must be large enough to store as many FE_values as there are
+number_of_components.
+==============================================================================*/
+
 int Computed_field_set_values_at_node(struct Computed_field *field,
 	struct FE_node *node, FE_value time, FE_value *values);
 /*******************************************************************************

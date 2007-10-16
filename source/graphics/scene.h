@@ -345,6 +345,27 @@ DESCRIPTION :
 Sets the transformation of <scene_object>.
 ==============================================================================*/
 
+struct Scene_object_transformation_data
+/*******************************************************************************
+LAST MODIFIED : 17 October 2007
+
+DESCRIPTION :
+Set Callback
+==============================================================================*/
+{
+ 	 struct Computed_field *computed_field;
+ 	 struct Scene_object *scene_object;
+};
+
+int Scene_object_set_transformation_with_time_callback(struct Time_keeper *time_keeper,
+	 enum Time_keeper_event event, void *scene_object_transformation_data_void);
+/*******************************************************************************
+LAST MODIFIED : 17 October 2007
+
+DESCRIPTION :
+
+==============================================================================*/
+
 int Scene_object_iterator_set_visibility(struct Scene_object *scene_object,
 	void *visibility_void);
 /*******************************************************************************
