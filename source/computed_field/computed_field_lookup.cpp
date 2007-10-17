@@ -56,6 +56,7 @@ extern "C" {
 #include "general/mystring.h"
 #include "user_interface/message.h"
 #include "computed_field/computed_field_lookup.h"
+#include "graphics/quaternion.hpp"
 }
 
 class Computed_field_lookup_package : public Computed_field_type_package
@@ -699,7 +700,7 @@ public:
 	 Cmiss_region *nodal_lookup_region;
 	 int nodal_lookup_node_identifier;
 	 Computed_field_lookup_package *lookup_package;
-	 
+
 	 Computed_field_quaternion_SLERP(Computed_field *field,
 			FE_node *nodal_lookup_node,char* region_path,
 			Cmiss_region *region, int nodal_lookup_node_identifier, 
@@ -710,8 +711,8 @@ public:
 			nodal_lookup_node_identifier(nodal_lookup_node_identifier),
 			lookup_package(lookup_package)
 	 {
-			quaternion_component = (double *)NULL;
 			normalised_t = 0;
+			quaternion_component = NULL;
 			FE_region_add_callback(FE_node_get_FE_region(nodal_lookup_node), 
 				 Computed_field_quaternion_SLERP_FE_region_change, 
 				 (void *)field);
@@ -733,8 +734,6 @@ private:
 	int compare(Computed_field_core* other_field);
 
 	int evaluate_cache_at_location(Field_location* location);
-
-	 int evaluate();
 
 	int list();
 
@@ -878,96 +877,6 @@ by checking the source field on the lookup node.
 	return (return_code);
 } /* Computed_field_quaternion_SLERP::is_defined_at_location */
 
-int Computed_field_quaternion_SLERP::evaluate()
-/*******************************************************************************
-LAST MODIFIED : 10 October 2007
-
-DESCRIPTION :
-Evaluates the transformation matrix of the source field of <field> in
-double precision in the type_specific_data then copies the eigenvalues to the
-field->values.
-==============================================================================*/
-{
-	 int return_code;
-	 float tol[4];
-	 double magnitude, omega, cosOmega, sinOmega,scale0,scale1, tolerance;
-
-	ENTER(Computed_field_quaternion_SLERP::evaluate);
-	return_code = 0;
-	tolerance = 0.00000001;
-	if (field)
-	{
-		 return_code = 1;
-		 //SLERP Implementation
-		 cosOmega = old_x * x + old_y * y + old_z * z + old_w * w;
-		 if (cosOmega < 0.0)
-		 {
-				cosOmega = -cosOmega;
-				tol[0] = - x;
-				tol[1] = - y;
-				tol[2] = - z;
-				tol[3] = - w;
-		 }
-		 else
-		 {
-				tol[0] = x;
-				tol[1] = y;
-				tol[2] = z;
-				tol[3] = w;
-		 }
-		 if (fabs(1.0-cosOmega)>tolerance)
-		 {
-				omega = acos(cosOmega);
-				sinOmega = sin(omega);
-				scale0 = sin((1.0-normalised_t) * omega) / sinOmega;
-				scale1 = sin(normalised_t * omega) / sinOmega;
-		 }
-		 else
-		 {
-				scale0 = 1.0 - normalised_t;
-				scale1 = normalised_t;
-		 }
-		 x = scale0 * old_x + scale1 * tol[0];
-		 y = scale0 * old_y + scale1 * tol[1]; 
-		 z = scale0 * old_z + scale1 * tol[2];
-		 w = scale0 * old_w +scale1 * tol[3];
-		 //convert the final quaternion to unit quaternion
-		 magnitude = sqrt(w*w+ x*x + y*y + z*z);
-		 if (fabs(magnitude - 1.0) > tolerance)
-		 {
-				w = w / magnitude;
-				x = x / magnitude;
-				y = y / magnitude;
-				z = z / magnitude;
-		 }
-		 if (!quaternion_component)
-		 {
-				ALLOCATE(quaternion_component, double, 4); 
-		 }
-		 if(quaternion_component)
-		 {
-				quaternion_component[0] = w;
-				quaternion_component[1] = x;
-				quaternion_component[2] = y;
-				quaternion_component[3] = z;
-		 }
-		 else
-		 {
-				display_message(ERROR_MESSAGE,
-					 "Computed_field_quaternion_SLERP::evaluate.  "
-					 "Cannot allocate cache(s)");
-		 }
-	}
-	else
-	{
-		 display_message(ERROR_MESSAGE,
-				"Computed_field_quaternion_SLERP::evaluate.  "
-				"Invalid argument(s)");
-	}
-
-	return (return_code);
-} /* Computed_field_quaternion_SLERP::evaluate */
-
 int Computed_field_quaternion_SLERP::evaluate_cache_at_location(
 	 Field_location* location)
 /*******************************************************************************
@@ -978,7 +887,7 @@ Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	 int i, return_code, *time_index_one, *time_index_two;
-	 double time, magnitude, tolerance;
+	 double time, tolerance;
 	 FE_time_sequence *time_sequence;
 	 FE_value *xi, *lower_time, *upper_time; 
 
@@ -1014,15 +923,6 @@ Evaluate the fields cache at the location
 				 old_x = (double)(field->source_fields[0]->values[1]);
 				 old_y = (double)(field->source_fields[0]->values[2]);
 				 old_z = (double)(field->source_fields[0]->values[3]);
-				 //convert to unit quaternion
-				 magnitude = sqrt(old_w*old_w+ old_x*old_x + old_y*old_y + old_z * old_z);
-				 if (fabs(magnitude - 1.0) > tolerance)
-				 {
-						old_w = old_w / magnitude;
-						old_x = old_x / magnitude;
-						old_y = old_y / magnitude;
-						old_z = old_z / magnitude;
-				 }
 				 // get the new quaternion for SLERP
 				 Field_node_location new_location(nodal_lookup_node, *upper_time);
 				 Computed_field_evaluate_source_fields_cache_at_location(field, &new_location);
@@ -1030,30 +930,28 @@ Evaluate the fields cache at the location
 				 x = (double)(field->source_fields[0]->values[1]);
 				 y = (double)(field->source_fields[0]->values[2]);
 				 z = (double)(field->source_fields[0]->values[3]);
-				 //convert to unit quaternion
-				 magnitude = sqrt(w*w+ x*x + y*y + z*z);
-				 if (fabs(magnitude - 1.0) > tolerance)
+
+				 Quaternion *from= new Quaternion(old_w, old_x, old_y, old_z);
+				 Quaternion *to = new Quaternion(w, x, y, z);
+				 Quaternion *current = new Quaternion(1, 0, 0, 0);
+				 from->normalise();
+				 to->normalise();
+				 current->interpolated_with_SLERP(*from, *to, normalised_t);
+				 
+				 if (!quaternion_component)
 				 {
-						w = w / magnitude;
-						x = x / magnitude;
-						y = y / magnitude;
-						z = z / magnitude;
+						ALLOCATE(quaternion_component, double, 4); 
 				 }
-				 if (evaluate())
+				 if(quaternion_component)
 				 {
-						for (i=0; i<4;i++)
-						{
- 							 field->values[i] =quaternion_component [i];
-						}
-						return_code = 1;
+						current->get(quaternion_component);
 				 }
-				 else
+				 for (i=0; i<4;i++)
 				 {
-						display_message(ERROR_MESSAGE,
-							 "Computed_field_quaternion_SLERP::evaluate_cache_at_location.  "
-							 "Cannot evaluate source fields cache at location");
-						return_code = 0;		 
+						field->values[i] =quaternion_component [i];
 				 }
+				 return_code = 1;
+
 				 DEALLOCATE(time_index_one);
 				 DEALLOCATE(time_index_two);
 				 DEALLOCATE(xi);
@@ -1668,10 +1566,10 @@ Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	 int return_code;
-	 double time, w, x, y, z, magnitude, tolerance, wx, wy, wz, xx, yy, yz, xy, xz, zz, x2, y2, z2;
+	 double time, w, x, y, z;
 
 	 ENTER(Computed_field_quaternion_to_matrix::evaluate_cache_at_location);
-	 tolerance = 0.000000001;
+	 return_code = 0;
 	 if (field && location && field->number_of_components == 16 &&
 			field->source_fields[0]->number_of_components == 4)
 	 {
@@ -1684,44 +1582,8 @@ Evaluate the fields cache at the location
 			x = (double)(field->source_fields[0]->values[1]);
 			y = (double)(field->source_fields[0]->values[2]);
 			z = (double)(field->source_fields[0]->values[3]);
-			//if not unit quaternion, normalise it into on
-			magnitude = sqrt(w*w+ x*x + y*y + z*z);
-			if (fabs(magnitude - 1.0)> tolerance) 
-			{
-				 w = w / magnitude;
-				 x = x / magnitude;
-				 y = y / magnitude;
-				 z = z / magnitude;
-			}
-			x2 = x + x;
-			y2 = y + y;
-			z2 = z + z;
-			xx = x * x2;
-			xy = x * y2;
-			xz = x * z2;
-			yy = y * y2;
-			yz = y * z2;
-			zz = z * z2;
-			wx = w * x2;
-			wy = w * y2;
-			wz = w * z2;
-			field->values[0] = 1 - yy - zz;
-			field->values[1] = xy - wz;
-			field->values[2] = xz+wy;
-			field->values[3] = 0;
-			field->values[4] = xy + wz;
-			field->values[5] = 1 - xx - zz;
-			field->values[6] = yz-  wx;
-			field->values[7] = 0;
-			field->values[8] = xz - wy;
-			field->values[9] = yz + wx;
-			field->values[10] = 1 - xx - yy;
-			field->values[11] = 0;
-			field->values[12] = 0;
-			field->values[13] = 0;
-			field->values[14] = 0;
-			field->values[15] = 1;
-			return_code = 1;
+			Quaternion *quad = new Quaternion(w, x, y, z);
+			return_code = quad->quaternion_to_matrix( field->values);
 	 }
 	 else
 	 {
