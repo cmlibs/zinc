@@ -55,20 +55,25 @@ Global types
 
 enum Cmiss_texture_combine_mode
 /*******************************************************************************
-LAST MODIFIED : 24 May 2007
+LAST MODIFIED : 17 October 2007
 
 DESCRIPTION :
-Describes the buffering mode of the scene viewer.  A DOUBLE_BUFFER allows the
-graphics to be drawn offscreen before being displayed all at once, reducing the
-apparent flicker.  A SINGLE_BUFFER may allow you a greater colour depth or 
-other features unavailable on a single buffer texture.  Secifying
-ANY_BUFFER_MODE will mean that with SINGLE_BUFFER or DOUBLE_BUFFER mode may
-be selected depending on the other requirements of the texture.
+Describes the blending of the texture with the texture constant colour and
+the underlying fragment colour
 ==============================================================================*/
 {
 	CMISS_TEXTURE_COMBINE_BLEND,
 	CMISS_TEXTURE_COMBINE_DECAL,
-	CMISS_TEXTURE_COMBINE_MODULATE
+	CMISS_TEXTURE_COMBINE_MODULATE,
+	CMISS_TEXTURE_COMBINE_ADD,
+	CMISS_TEXTURE_COMBINE_ADD_SIGNED, /* Add the value and subtract 0.5 so the texture value
+								 effectively ranges from -0.5 to 0.5 */
+	CMISS_TEXTURE_COMBINE_MODULATE_SCALE_4, /* Multiply and then scale by 4, so that we can
+										 scale down or up */
+	CMISS_TEXTURE_COMBINE_BLEND_SCALE_4, /* Same as blend with a 4 * scaling */
+	CMISS_TEXTURE_COMBINE_SUBTRACT,
+	CMISS_TEXTURE_COMBINE_ADD_SCALE_4,
+	CMISS_TEXTURE_COMBINE_SUBTRACT_SCALE_4
 };
 
 enum Cmiss_texture_compression_mode

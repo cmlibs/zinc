@@ -246,6 +246,34 @@ Returns how the texture is combined with the material: blend, decal or modulate.
 			{
 				combine_mode = CMISS_TEXTURE_COMBINE_MODULATE;
 			} break;
+			case TEXTURE_ADD:
+			{
+				combine_mode = CMISS_TEXTURE_COMBINE_ADD;
+			} break;
+			case TEXTURE_ADD_SIGNED:
+			{
+				combine_mode = CMISS_TEXTURE_COMBINE_ADD_SIGNED;
+			} break;
+			case TEXTURE_MODULATE_SCALE_4:
+			{
+				combine_mode = CMISS_TEXTURE_COMBINE_MODULATE_SCALE_4;
+			} break;
+			case TEXTURE_BLEND_SCALE_4:
+			{
+				combine_mode = CMISS_TEXTURE_COMBINE_BLEND_SCALE_4;
+			} break;
+			case TEXTURE_SUBTRACT:
+			{
+				combine_mode = CMISS_TEXTURE_COMBINE_SUBTRACT;
+			} break;
+			case TEXTURE_ADD_SCALE_4:
+			{
+				combine_mode = CMISS_TEXTURE_COMBINE_ADD_SCALE_4;
+			} break;
+			case TEXTURE_SUBTRACT_SCALE_4:
+			{
+				combine_mode = CMISS_TEXTURE_COMBINE_SUBTRACT_SCALE_4;
+			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
@@ -296,6 +324,41 @@ Sets how the texture is combined with the material: blend, decal or modulate.
 		  {
 			  return_code = Texture_set_combine_mode(texture, 
 				  TEXTURE_MODULATE);
+		  } break;
+		  case CMISS_TEXTURE_COMBINE_ADD:
+		  {
+			  return_code = Texture_set_combine_mode(texture, 
+				  CMISS_TEXTURE_COMBINE_ADD);
+		  } break;
+		  case CMISS_TEXTURE_COMBINE_ADD_SIGNED:
+		  {
+			  return_code = Texture_set_combine_mode(texture, 
+				  CMISS_TEXTURE_COMBINE_ADD_SIGNED);
+		  } break;
+		  case CMISS_TEXTURE_COMBINE_MODULATE_SCALE_4:
+		  {
+			  return_code = Texture_set_combine_mode(texture, 
+				  CMISS_TEXTURE_COMBINE_MODULATE_SCALE_4);
+		  } break;
+		  case CMISS_TEXTURE_COMBINE_BLEND_SCALE_4:
+		  {
+			  return_code = Texture_set_combine_mode(texture, 
+				  CMISS_TEXTURE_COMBINE_BLEND_SCALE_4);
+		  } break;
+		  case CMISS_TEXTURE_COMBINE_SUBTRACT:
+		  {
+			  return_code = Texture_set_combine_mode(texture, 
+				  CMISS_TEXTURE_COMBINE_SUBTRACT);
+		  } break;
+		  case CMISS_TEXTURE_COMBINE_ADD_SCALE_4:
+		  {
+			  return_code = Texture_set_combine_mode(texture, 
+				  CMISS_TEXTURE_COMBINE_ADD_SCALE_4);
+		  } break;
+		  case CMISS_TEXTURE_COMBINE_SUBTRACT_SCALE_4:
+		  {
+			  return_code = Texture_set_combine_mode(texture, 
+				  CMISS_TEXTURE_COMBINE_SUBTRACT_SCALE_4);
 		  } break;
 		  default:
 		  {
