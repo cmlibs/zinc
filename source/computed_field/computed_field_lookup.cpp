@@ -887,7 +887,7 @@ Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	 int i, return_code, *time_index_one, *time_index_two;
-	 double time, tolerance;
+	 double time;
 	 FE_time_sequence *time_sequence;
 	 FE_value *xi, *lower_time, *upper_time; 
 
@@ -896,7 +896,6 @@ Evaluate the fields cache at the location
 			field->source_fields[0]->number_of_components == 4)
 	 {
 			time = location->get_time();
-			tolerance= 0.00000001;
 			//t is the normalised time scaled from 0 to 1
 			time_sequence = Computed_field_get_FE_node_field_FE_time_sequence(nodal_lookup_node,
 				 field->source_fields[0]);
