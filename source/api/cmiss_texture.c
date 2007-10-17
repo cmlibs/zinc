@@ -333,32 +333,32 @@ Sets how the texture is combined with the material: blend, decal or modulate.
 		  case CMISS_TEXTURE_COMBINE_ADD_SIGNED:
 		  {
 			  return_code = Texture_set_combine_mode(texture, 
-				  CMISS_TEXTURE_COMBINE_ADD_SIGNED);
+				  TEXTURE_ADD_SIGNED);
 		  } break;
 		  case CMISS_TEXTURE_COMBINE_MODULATE_SCALE_4:
 		  {
 			  return_code = Texture_set_combine_mode(texture, 
-				  CMISS_TEXTURE_COMBINE_MODULATE_SCALE_4);
+				  TEXTURE_MODULATE_SCALE_4);
 		  } break;
 		  case CMISS_TEXTURE_COMBINE_BLEND_SCALE_4:
 		  {
 			  return_code = Texture_set_combine_mode(texture, 
-				  CMISS_TEXTURE_COMBINE_BLEND_SCALE_4);
+				  TEXTURE_BLEND_SCALE_4);
 		  } break;
 		  case CMISS_TEXTURE_COMBINE_SUBTRACT:
 		  {
 			  return_code = Texture_set_combine_mode(texture, 
-				  CMISS_TEXTURE_COMBINE_SUBTRACT);
+				  TEXTURE_SUBTRACT);
 		  } break;
 		  case CMISS_TEXTURE_COMBINE_ADD_SCALE_4:
 		  {
 			  return_code = Texture_set_combine_mode(texture, 
-				  CMISS_TEXTURE_COMBINE_ADD_SCALE_4);
+				  TEXTURE_ADD_SCALE_4);
 		  } break;
 		  case CMISS_TEXTURE_COMBINE_SUBTRACT_SCALE_4:
 		  {
 			  return_code = Texture_set_combine_mode(texture, 
-				  CMISS_TEXTURE_COMBINE_SUBTRACT_SCALE_4);
+				  TEXTURE_SUBTRACT_SCALE_4);
 		  } break;
 		  default:
 		  {
