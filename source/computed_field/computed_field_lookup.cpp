@@ -699,7 +699,6 @@ public:
 	 Cmiss_region *nodal_lookup_region;
 	 int nodal_lookup_node_identifier;
 	 Computed_field_lookup_package *lookup_package;
-	 double *m, old_w, old_x, old_y, old_z, w, x, y, z, t;
 	 
 	 Computed_field_quaternion_SLERP(Computed_field *field,
 			FE_node *nodal_lookup_node,char* region_path,
@@ -711,7 +710,8 @@ public:
 			nodal_lookup_node_identifier(nodal_lookup_node_identifier),
 			lookup_package(lookup_package)
 	 {
-			m = (double *)NULL;
+			quaternion_component = (double *)NULL;
+			normalised_t = 0;
 			FE_region_add_callback(FE_node_get_FE_region(nodal_lookup_node), 
 				 Computed_field_quaternion_SLERP_FE_region_change, 
 				 (void *)field);
@@ -720,6 +720,9 @@ public:
 	 ~Computed_field_quaternion_SLERP();
 	 
 private:
+
+	 double *quaternion_component, old_w, old_x, old_y, old_z, w, x, y, z, normalised_t;
+
 	 Computed_field_core *copy(Computed_field* new_parent);
 
 	 char *get_type_string()
@@ -768,9 +771,9 @@ Clear the type specific data used by this type.
 		 {
 				DEALLOCATE(region_path);
 		 }
-		 if (m)
+		 if (quaternion_component)
 		 {
-				DEALLOCATE(m);
+				DEALLOCATE(quaternion_component);
 		 }
 	}
 	else
@@ -887,7 +890,7 @@ field->values.
 {
 	 int return_code;
 	 float tol[4];
-	 double magnitude, omega, cosom, sinom,scale0,scale1, tolerance;
+	 double magnitude, omega, cosOmega, sinOmega,scale0,scale1, tolerance;
 
 	ENTER(Computed_field_quaternion_SLERP::evaluate);
 	return_code = 0;
@@ -896,10 +899,10 @@ field->values.
 	{
 		 return_code = 1;
 		 //SLERP Implementation
-		 cosom = old_x * x + old_y * y + old_z * z + old_w * w;
-		 if (cosom < 0.0)
+		 cosOmega = old_x * x + old_y * y + old_z * z + old_w * w;
+		 if (cosOmega < 0.0)
 		 {
-				cosom = -cosom;
+				cosOmega = -cosOmega;
 				tol[0] = - x;
 				tol[1] = - y;
 				tol[2] = - z;
@@ -912,17 +915,17 @@ field->values.
 				tol[2] = z;
 				tol[3] = w;
 		 }
-		 if (fabs(1.0-cosom)>tolerance)
+		 if (fabs(1.0-cosOmega)>tolerance)
 		 {
-				omega = acos(cosom);
-				sinom = sin(omega);
-				scale0 = sin((1.0-t) * omega) / sinom;
-				scale1 = sin(t * omega) / sinom;
+				omega = acos(cosOmega);
+				sinOmega = sin(omega);
+				scale0 = sin((1.0-normalised_t) * omega) / sinOmega;
+				scale1 = sin(normalised_t * omega) / sinOmega;
 		 }
 		 else
 		 {
-				scale0 = 1.0 - t;
-				scale1 = t;
+				scale0 = 1.0 - normalised_t;
+				scale1 = normalised_t;
 		 }
 		 x = scale0 * old_x + scale1 * tol[0];
 		 y = scale0 * old_y + scale1 * tol[1]; 
@@ -937,16 +940,16 @@ field->values.
 				y = y / magnitude;
 				z = z / magnitude;
 		 }
-		 if (!m)
+		 if (!quaternion_component)
 		 {
-				ALLOCATE(m, double, 4); 
+				ALLOCATE(quaternion_component, double, 4); 
 		 }
-		 if(m)
+		 if(quaternion_component)
 		 {
-				m[0] = w;
-				m[1] = x;
-				m[2] = y;
-				m[3] = z;
+				quaternion_component[0] = w;
+				quaternion_component[1] = x;
+				quaternion_component[2] = y;
+				quaternion_component[3] = z;
 		 }
 		 else
 		 {
@@ -1003,7 +1006,7 @@ Evaluate the fields cache at the location
 						time_sequence, *time_index_one, lower_time);
 				 FE_time_sequence_get_time_for_index(
 						time_sequence, *time_index_two, upper_time);
-				 t = *xi;
+				 normalised_t = *xi;
 				 Field_node_location old_location(nodal_lookup_node, *lower_time);
 				 Computed_field_evaluate_source_fields_cache_at_location(field, &old_location);
 				 // get the old quaternion for SLERP
@@ -1040,7 +1043,7 @@ Evaluate the fields cache at the location
 				 {
 						for (i=0; i<4;i++)
 						{
- 							 field->values[i] = m[i];
+ 							 field->values[i] =quaternion_component [i];
 						}
 						return_code = 1;
 				 }
@@ -1919,6 +1922,8 @@ although its cache may be lost.
 					 source_fields[0] = ACCESS(Computed_field)(source_field);
 					 field->source_fields = source_fields;
 					 field->number_of_source_fields = number_of_source_fields;
+					 field->source_values=(FE_value *)NULL;
+					 field->number_of_source_values=number_of_source_values;
 					 quaternion_to_matrix_node = FE_region_get_FE_node_from_identifier(
 							fe_region, quaternion_to_matrix_node_identifier);
 					 field->core = new Computed_field_quaternion_to_matrix(
