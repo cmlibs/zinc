@@ -85,8 +85,12 @@ How the texture is combined with the material.
 	TEXTURE_ADD,
 	TEXTURE_ADD_SIGNED, /* Add the value and subtract 0.5 so the texture value
 								 effectively ranges from -0.5 to 0.5 */
-	TEXTURE_MODULATE_SCALE_4 /* Multiply and then scale by 4, so that we can
+	TEXTURE_MODULATE_SCALE_4, /* Multiply and then scale by 4, so that we can
 										 scale down or up */
+	TEXTURE_BLEND_SCALE_4, /* Same as blend with a 4 * scaling */
+	TEXTURE_SUBTRACT,
+	TEXTURE_ADD_SCALE_4,
+	TEXTURE_SUBTRACT_SCALE_4
 }; /* enum Texture_combine_mode */
 
 enum Texture_compression_mode

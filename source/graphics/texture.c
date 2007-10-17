@@ -507,16 +507,6 @@ GL_EXT_texture_object extension.
 					glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_COMBINE);
 					glTexEnvi(GL_TEXTURE_ENV,GL_COMBINE_RGB,GL_ADD_SIGNED);
 					glTexEnvi(GL_TEXTURE_ENV,GL_COMBINE_ALPHA,GL_ADD_SIGNED);
-					glTexEnvf(GL_TEXTURE_ENV,GL_RGB_SCALE,1.0);
-					glTexEnvf(GL_TEXTURE_ENV,GL_ALPHA_SCALE,1.0);
-					glTexEnvi(GL_TEXTURE_ENV,GL_SRC0_RGB,GL_TEXTURE);
-					glTexEnvi(GL_TEXTURE_ENV,GL_SRC1_RGB,GL_PREVIOUS);
-					glTexEnvi(GL_TEXTURE_ENV,GL_OPERAND0_RGB,GL_SRC_COLOR);
-					glTexEnvi(GL_TEXTURE_ENV,GL_OPERAND1_RGB,GL_SRC_COLOR);
-					glTexEnvi(GL_TEXTURE_ENV,GL_SRC0_ALPHA,GL_TEXTURE);
-					glTexEnvi(GL_TEXTURE_ENV,GL_SRC1_ALPHA,GL_PREVIOUS);
-					glTexEnvi(GL_TEXTURE_ENV,GL_OPERAND0_ALPHA,GL_SRC_ALPHA);
-					glTexEnvi(GL_TEXTURE_ENV,GL_OPERAND1_ALPHA,GL_SRC_ALPHA);
 				}
 				else
 				{
@@ -539,15 +529,126 @@ GL_EXT_texture_object extension.
 #if defined (GL_VERSION_1_3)
 				if (Graphics_library_check_extension(GL_VERSION_1_3))
 				{
+					/* Same as GL_MODULATE with a 4 times scaling */
 					glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_COMBINE);
 					glTexEnvi(GL_TEXTURE_ENV,GL_COMBINE_RGB,GL_MODULATE);
-					glTexEnvi(GL_TEXTURE_ENV,GL_COMBINE_ALPHA,GL_MODULATE);
 					glTexEnvf(GL_TEXTURE_ENV,GL_RGB_SCALE,4.0);
-					glTexEnvf(GL_TEXTURE_ENV,GL_ALPHA_SCALE,4.0);
 					glTexEnvi(GL_TEXTURE_ENV,GL_SRC0_RGB,GL_TEXTURE);
 					glTexEnvi(GL_TEXTURE_ENV,GL_SRC1_RGB,GL_PREVIOUS);
 					glTexEnvi(GL_TEXTURE_ENV,GL_OPERAND0_RGB,GL_SRC_COLOR);
 					glTexEnvi(GL_TEXTURE_ENV,GL_OPERAND1_RGB,GL_SRC_COLOR);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"direct_render_Texture_environment.  "
+						"Texture environment combine mode MODULATE_SCALE_4 requires OpenGL 1.3 or better "
+						"which is not provided on this display.");
+					return_code=0;
+				}
+#else /* defined (GL_VERSION_1_3) */
+ 				display_message(ERROR_MESSAGE,
+					"direct_render_Texture_environment.  "
+					"Texture environment combine mode MODULATE_SCALE_4 requires OpenGL 1.3 or better "
+					"which was not compiled into this executable.");
+					return_code=0;
+#endif /* defined (GL_VERSION_1_3) */
+			} break;
+			case TEXTURE_BLEND_SCALE_4:
+			{
+#if defined (GL_VERSION_1_3)
+				if (Graphics_library_check_extension(GL_VERSION_1_3))
+				{
+					/* Same as GL_BLEND for RGB texture with a 4 times scaling */
+					glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_COMBINE);
+					glTexEnvi(GL_TEXTURE_ENV,GL_COMBINE_RGB,GL_INTERPOLATE);
+					glTexEnvf(GL_TEXTURE_ENV,GL_RGB_SCALE,4.0);
+					glTexEnvi(GL_TEXTURE_ENV,GL_SRC0_RGB,GL_CONSTANT);
+					glTexEnvi(GL_TEXTURE_ENV,GL_SRC1_RGB,GL_PREVIOUS);
+					glTexEnvi(GL_TEXTURE_ENV,GL_SRC2_RGB,GL_TEXTURE);
+					glTexEnvi(GL_TEXTURE_ENV,GL_OPERAND0_RGB,GL_SRC_COLOR);
+ 					glTexEnvi(GL_TEXTURE_ENV,GL_OPERAND1_RGB,GL_SRC_COLOR);
+					glTexEnvi(GL_TEXTURE_ENV,GL_OPERAND2_RGB,GL_SRC_COLOR);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"direct_render_Texture_environment.  "
+						"Texture environment combine mode MODULATE_SCALE_4 requires OpenGL 1.3 or better "
+						"which is not provided on this display.");
+					return_code=0;
+				}
+#else /* defined (GL_VERSION_1_3) */
+ 				display_message(ERROR_MESSAGE,
+					"direct_render_Texture_environment.  "
+					"Texture environment combine mode MODULATE_SCALE_4 requires OpenGL 1.3 or better "
+					"which was not compiled into this executable.");
+					return_code=0;
+#endif /* defined (GL_VERSION_1_3) */
+			} break;
+			case TEXTURE_ADD_SCALE_4:
+			{
+#if defined (GL_VERSION_1_3)
+				if (Graphics_library_check_extension(GL_VERSION_1_3))
+				{
+					glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_COMBINE);
+					glTexEnvi(GL_TEXTURE_ENV,GL_COMBINE_RGB,GL_ADD);
+					glTexEnvf(GL_TEXTURE_ENV,GL_RGB_SCALE,4.0);
+					glTexEnvi(GL_TEXTURE_ENV,GL_SRC0_RGB,GL_PREVIOUS);
+					glTexEnvi(GL_TEXTURE_ENV,GL_SRC1_RGB,GL_TEXTURE);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"direct_render_Texture_environment.  "
+						"Texture environment combine mode MODULATE_SCALE_4 requires OpenGL 1.3 or better "
+						"which is not provided on this display.");
+					return_code=0;
+				}
+#else /* defined (GL_VERSION_1_3) */
+ 				display_message(ERROR_MESSAGE,
+					"direct_render_Texture_environment.  "
+					"Texture environment combine mode MODULATE_SCALE_4 requires OpenGL 1.3 or better "
+					"which was not compiled into this executable.");
+					return_code=0;
+#endif /* defined (GL_VERSION_1_3) */
+			} break;
+			case TEXTURE_SUBTRACT_SCALE_4:
+			{
+#if defined (GL_VERSION_1_3)
+				if (Graphics_library_check_extension(GL_VERSION_1_3))
+				{
+					glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_COMBINE);
+					glTexEnvi(GL_TEXTURE_ENV,GL_COMBINE_RGB,GL_SUBTRACT);
+					glTexEnvf(GL_TEXTURE_ENV,GL_RGB_SCALE,4.0);
+					glTexEnvi(GL_TEXTURE_ENV,GL_SRC0_RGB,GL_PREVIOUS);
+					glTexEnvi(GL_TEXTURE_ENV,GL_SRC1_RGB,GL_TEXTURE);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"direct_render_Texture_environment.  "
+						"Texture environment combine mode MODULATE_SCALE_4 requires OpenGL 1.3 or better "
+						"which is not provided on this display.");
+					return_code=0;
+				}
+#else /* defined (GL_VERSION_1_3) */
+ 				display_message(ERROR_MESSAGE,
+					"direct_render_Texture_environment.  "
+					"Texture environment combine mode MODULATE_SCALE_4 requires OpenGL 1.3 or better "
+					"which was not compiled into this executable.");
+					return_code=0;
+#endif /* defined (GL_VERSION_1_3) */
+			} break;
+			case TEXTURE_SUBTRACT:
+			{
+#if defined (GL_VERSION_1_3)
+				if (Graphics_library_check_extension(GL_VERSION_1_3))
+				{
+					glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_COMBINE);
+					glTexEnvi(GL_TEXTURE_ENV,GL_COMBINE_RGB,GL_SUBTRACT);
+					glTexEnvi(GL_TEXTURE_ENV,GL_SRC0_RGB,GL_PREVIOUS);
+					glTexEnvi(GL_TEXTURE_ENV,GL_SRC1_RGB,GL_TEXTURE);
 				}
 				else
 				{
@@ -1995,7 +2096,23 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_combine_mode)
 		} break;
 		case TEXTURE_MODULATE_SCALE_4:
 		{
-			enumerator_string = "mod_scale_4";
+			enumerator_string = "scale_4_modulate";
+		} break;
+		case TEXTURE_BLEND_SCALE_4:
+		{
+			enumerator_string = "scale_4_blend";
+		} break;
+		case TEXTURE_SUBTRACT:
+		{
+			enumerator_string = "subtract";
+		} break;
+		case TEXTURE_ADD_SCALE_4:
+		{
+			enumerator_string = "scale_4_add";
+		} break;
+		case TEXTURE_SUBTRACT_SCALE_4:
+		{
+			enumerator_string = "scale_4_subtract";
 		} break;
 		default:
 		{
@@ -2862,7 +2979,11 @@ Sets how the texture is combined with the material: blend, decal or modulate.
 				} break;
 				case TEXTURE_ADD:
 				case TEXTURE_ADD_SIGNED:
+				case TEXTURE_SUBTRACT:
 				case TEXTURE_MODULATE_SCALE_4:
+				case TEXTURE_BLEND_SCALE_4:
+				case TEXTURE_ADD_SCALE_4:
+				case TEXTURE_SUBTRACT_SCALE_4:
 				{
 #if defined (GL_VERSION_1_3)
 					if (!Graphics_library_tentative_check_extension(GL_VERSION_1_3))
