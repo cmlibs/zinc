@@ -754,10 +754,6 @@ Clears read-only status of <field>, telling the program that the user is allowed
 to modify and destroy it.
 ==============================================================================*/
 
-int Computed_field_define_transformation(char *field_name, char *scene_object_name,
-	 struct Computed_field_package *computed_field_package, 
-	 void *default_time_keeper_void, void *scene_void, void *node_void);
-
 int Computed_field_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
 	FE_value *xi, int element_dimension, struct Cmiss_region *search_region,
