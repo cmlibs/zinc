@@ -328,7 +328,7 @@ Sets how the texture is combined with the material: blend, decal or modulate.
 		  case CMISS_TEXTURE_COMBINE_ADD:
 		  {
 			  return_code = Texture_set_combine_mode(texture, 
-				  CMISS_TEXTURE_COMBINE_ADD);
+				  TEXTURE_ADD);
 		  } break;
 		  case CMISS_TEXTURE_COMBINE_ADD_SIGNED:
 		  {
