@@ -1,9 +1,10 @@
 /*******************************************************************************
-FILE : quaternion.h
+FILE : quaternion.hpp
 
 LAST MODIFIED : 17 October 2007
 
-DESCRIPTION :
+DESCRIPTION : A class of quaternion operations, any new quaternion
+operations should be added into this class.
 ==============================================================================*/
 extern "C" {
 #include <math.h>
@@ -15,12 +16,16 @@ extern "C" {
 class Quaternion
 {
 
-	 double w, x, y, z;
 public:
 
 	 Quaternion(double quat_w, double quat_x, double quat_y, double quat_z)
 	 {
 			set(quat_w, quat_x, quat_y, quat_z);
+	 };
+
+	 Quaternion(void)
+	 {
+			set(1, 0, 0, 0);
 	 };
 
 	 ~Quaternion();
@@ -35,6 +40,10 @@ public:
 
 	 int quaternion_to_matrix(float *values);
 
+private:
+	 
+	 double w, x, y, z;
+
 };
 	 
 void Quaternion::set(double quat_w, double quat_x, double quat_y, double quat_z)
@@ -48,6 +57,13 @@ void Quaternion::set(double quat_w, double quat_x, double quat_y, double quat_z)
 }
 
  void Quaternion::get(double *values)
+/*******************************************************************************
+LAST MODIFIED : 18 Oct 2007
+
+DESCRIPTION :
+get the values stored in this quaternion and put it into the argument
+values, must allocate values before calling this function.
+==============================================================================*/
  {
 		ENTER(Quaternion::get);
 		values[0] = w;
@@ -61,7 +77,7 @@ void Quaternion::set(double quat_w, double quat_x, double quat_y, double quat_z)
  {
 		double tolerance, magnitude;
 
-		ENTER(Quaternion::evaluate_cache_at_location);
+		ENTER(Quaternion::normalise);
 		tolerance = 0.00000001;
 		magnitude = sqrt(w*w+ x*x + y*y + z*z);
 		if (fabs(magnitude - 1.0) > tolerance)
@@ -75,6 +91,13 @@ void Quaternion::set(double quat_w, double quat_x, double quat_y, double quat_z)
  }
 
  void Quaternion::interpolated_with_SLERP(Quaternion &from, Quaternion &to, double normalised_time)
+/*******************************************************************************
+LAST MODIFIED : 18 Oct 2007
+
+DESCRIPTION :
+Spherical linear interpolation of two quaternions at time index
+(normalised time between these two quaternion).
+==============================================================================*/
  {
 		float tol[4];
 		double omega, cosOmega, sinOmega, scale0, scale1, tolerance;
@@ -119,6 +142,12 @@ void Quaternion::set(double quat_w, double quat_x, double quat_y, double quat_z)
  }
 
  int Quaternion::quaternion_to_matrix(float *values)
+/*******************************************************************************
+LAST MODIFIED : 18 Oct 2007
+
+DESCRIPTION :
+Convert the quaternion to a matrix, the argument values must be allocated before this function.
+==============================================================================*/
  {
 		int return_code;
 		double wx, wy, wz, xx, yy, yz, xy, xz, zz, x2, y2, z2;

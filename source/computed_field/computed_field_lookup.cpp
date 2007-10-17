@@ -786,7 +786,7 @@ Clear the type specific data used by this type.
 
 Computed_field_core* Computed_field_quaternion_SLERP::copy(Computed_field* new_parent)
 /*******************************************************************************
-LAST MODIFIED : 25 August 2006
+LAST MODIFIED : 18 October 2007
 
 DESCRIPTION :
 Copy the type specific data used by this type.
@@ -814,7 +814,7 @@ Copy the type specific data used by this type.
 
 int Computed_field_quaternion_SLERP::compare(Computed_field_core *other_core)
 /*******************************************************************************
-LAST MODIFIED : 25 August 2006
+LAST MODIFIED : 18 October 2007
 
 DESCRIPTION :
 Compare the type specific data.
@@ -915,14 +915,14 @@ Evaluate the fields cache at the location
 				 FE_time_sequence_get_time_for_index(
 						time_sequence, *time_index_two, upper_time);
 				 normalised_t = *xi;
+				 // get the starting quaternion
 				 Field_node_location old_location(nodal_lookup_node, *lower_time);
 				 Computed_field_evaluate_source_fields_cache_at_location(field, &old_location);
-				 // get the old quaternion for SLERP
 				 old_w = (double)(field->source_fields[0]->values[0]);
 				 old_x = (double)(field->source_fields[0]->values[1]);
 				 old_y = (double)(field->source_fields[0]->values[2]);
 				 old_z = (double)(field->source_fields[0]->values[3]);
-				 // get the new quaternion for SLERP
+				 // get the last quaternion
 				 Field_node_location new_location(nodal_lookup_node, *upper_time);
 				 Computed_field_evaluate_source_fields_cache_at_location(field, &new_location);
 				 w = (double)(field->source_fields[0]->values[0]);
@@ -932,7 +932,7 @@ Evaluate the fields cache at the location
 
 				 Quaternion *from= new Quaternion(old_w, old_x, old_y, old_z);
 				 Quaternion *to = new Quaternion(w, x, y, z);
-				 Quaternion *current = new Quaternion(1, 0, 0, 0);
+				 Quaternion *current = new Quaternion();
 				 from->normalise();
 				 to->normalise();
 				 current->interpolated_with_SLERP(*from, *to, normalised_t);
@@ -950,7 +950,6 @@ Evaluate the fields cache at the location
 						field->values[i] =quaternion_component [i];
 				 }
 				 return_code = 1;
-
 				 DEALLOCATE(time_index_one);
 				 DEALLOCATE(time_index_two);
 				 DEALLOCATE(xi);
