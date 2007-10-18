@@ -210,14 +210,6 @@ PROTOTYPE_OBJECT_FUNCTIONS(Computed_field_type_data);
 DECLARE_LIST_TYPES(Computed_field_type_data);
 PROTOTYPE_LIST_FUNCTIONS(Computed_field_type_data);
 
-struct Transformation_data
-{
-	 struct Computed_field *existing_field;
-	 struct Scene *scene;
-	 struct Scene_object *scene_object;
-	 struct FE_node *node;
-};
-
 struct Computed_field_package
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -233,7 +225,6 @@ wrappers need to be automatically created for each FE_field.
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct LIST(Computed_field_type_data) *computed_field_type_list;
 	Computed_field_simple_package *simple_package;
-	 Transformation_data *transformation_data;
 }; /* struct Computed_field_package */
 
 /*
@@ -4471,7 +4462,6 @@ created as part of the package.
 			new Computed_field_simple_package(
 				computed_field_package->computed_field_manager);
 		computed_field_package->simple_package->addref();
-		computed_field_package->transformation_data = (Transformation_data *)NULL;
 	}
 	else
 	{
@@ -4500,10 +4490,6 @@ Cancels any further messages from managers.
 	ENTER(DESTROY(Computed_field_package));
 	if (package_address&&(computed_field_package= *package_address))
 	{
-		 if (computed_field_package->transformation_data)
-		 {
-				DEALLOCATE(computed_field_package->transformation_data);
-		 }
 		DESTROY(MANAGER(Computed_field))(&computed_field_package->computed_field_manager);
 		DESTROY(LIST(Computed_field_type_data))(
 			&computed_field_package->computed_field_type_list);
