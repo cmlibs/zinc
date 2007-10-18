@@ -274,6 +274,14 @@ Returns how the texture is combined with the material: blend, decal or modulate.
 			{
 				combine_mode = CMISS_TEXTURE_COMBINE_SUBTRACT_SCALE_4;
 			} break;
+			case TEXTURE_INVERT_ADD_SCALE_4:
+			{
+				combine_mode = CMISS_TEXTURE_COMBINE_INVERT_ADD_SCALE_4;
+			} break;
+			case TEXTURE_INVERT_SUBTRACT_SCALE_4:
+			{
+				combine_mode = CMISS_TEXTURE_COMBINE_INVERT_SUBTRACT_SCALE_4;
+			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
@@ -359,6 +367,16 @@ Sets how the texture is combined with the material: blend, decal or modulate.
 		  {
 			  return_code = Texture_set_combine_mode(texture, 
 				  TEXTURE_SUBTRACT_SCALE_4);
+		  } break;
+		  case CMISS_TEXTURE_COMBINE_INVERT_ADD_SCALE_4:
+		  {
+			  return_code = Texture_set_combine_mode(texture, 
+				  TEXTURE_INVERT_ADD_SCALE_4);
+		  } break;
+		  case CMISS_TEXTURE_COMBINE_INVERT_SUBTRACT_SCALE_4:
+		  {
+			  return_code = Texture_set_combine_mode(texture, 
+				  TEXTURE_INVERT_SUBTRACT_SCALE_4);
 		  } break;
 		  default:
 		  {

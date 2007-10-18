@@ -90,7 +90,9 @@ How the texture is combined with the material.
 	TEXTURE_BLEND_SCALE_4, /* Same as blend with a 4 * scaling */
 	TEXTURE_SUBTRACT,
 	TEXTURE_ADD_SCALE_4,
-	TEXTURE_SUBTRACT_SCALE_4
+	TEXTURE_SUBTRACT_SCALE_4,
+	TEXTURE_INVERT_ADD_SCALE_4,
+	TEXTURE_INVERT_SUBTRACT_SCALE_4
 }; /* enum Texture_combine_mode */
 
 enum Texture_compression_mode
