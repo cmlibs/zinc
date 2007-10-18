@@ -181,7 +181,6 @@ extern "C" {
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "general/value.h"
-#include "graphics/scene.h"
 #include "user_interface/message.h"
 }
 #include <typeinfo>
