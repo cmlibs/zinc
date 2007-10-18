@@ -6083,14 +6083,10 @@ The source_pixels are stored in rows from the bottom to top and from left to
 right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 ==============================================================================*/
 {
-	int i, return_code;
+	int return_code;
 	struct Cmgui_image *cmgui_image;
 #if defined (IMAGEMAGICK)
-	unsigned char *p, *start_p;
 	Image *magick_image;
-	int x, y;
-  PixelPacket *q;
-	unsigned short short_value[4];
 #else /* defined (IMAGEMAGICK) */
 	unsigned char *destination, *image, *source;
 	int width_bytes;
@@ -6107,8 +6103,101 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 	{
 		if (cmgui_image = CREATE(Cmgui_image)())
 		{
-			return_code = 1;
 #if defined (IMAGEMAGICK)
+#  if MagickLibVersion >= 0x636
+			ExceptionInfo magick_exception;
+			char *magick_map;
+			char magick_map_i[] = "I";
+			char magick_map_ia[] = "IA";
+			char magick_map_rgb[] = "RGB";
+			char magick_map_rgba[] = "RGBA";
+			StorageType magick_storage;
+			unsigned char *pixels;
+			int y;
+
+			return_code = 1;
+			GetExceptionInfo(&magick_exception);
+			switch (number_of_components)
+			{
+				case 1:
+				{
+					magick_map = magick_map_i;
+				} break;
+				case 2:
+				{
+					magick_map = magick_map_ia;
+				} break;
+				case 3:
+				{
+					magick_map = magick_map_rgb;
+				} break;
+				case 4:
+				{
+					magick_map = magick_map_rgba;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE, "Cmgui_image_constitute.  "
+						"Invalid number_of_bytes_per_component");
+					return_code = 0;
+				} break;
+			}
+			switch (number_of_bytes_per_component)
+			{
+				case 1:
+				{
+					magick_storage = CharPixel;
+				} break;
+				case 2:
+				{
+					magick_storage = ShortPixel;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE, "Cmgui_image_constitute.  "
+						"Invalid number_of_bytes_per_component");
+					return_code = 0;
+				} break;
+			}
+			if (return_code)
+			{
+				if (magick_image = AllocateImage((ImageInfo *) NULL))
+				{
+					magick_image->columns = width;
+					magick_image->rows = height;
+					(void) SetImageBackgroundColor(magick_image);
+					pixels = source_pixels + height*source_width_bytes;
+					for (y = 0; (y < height) && return_code; y++)
+					{
+						pixels -= source_width_bytes;
+						if (MagickFalse == ImportImagePixels(magick_image,
+							0,y,width,1,
+							magick_map,magick_storage,pixels))
+						{
+							display_message(ERROR_MESSAGE, "Cmgui_image_constitute.  "
+								"Error setting pixels in ImageMagick.");
+							return_code = 0;
+						}
+					}
+				}
+			}
+			if (return_code)
+			{
+				cmgui_image->magick_image = magick_image;
+				cmgui_image->width = width;
+				cmgui_image->height = height;
+				cmgui_image->number_of_components = number_of_components;
+				cmgui_image->number_of_bytes_per_component =
+					number_of_bytes_per_component;
+				cmgui_image->number_of_images = 1;
+			}
+#  else /* MagickLibVersion >= 0x636 */
+			unsigned char *p, *start_p;
+			int i, x, y;
+			PixelPacket *q;
+			unsigned short short_value[4];
+
+			return_code = 1;
 			/* following code adapted from ImageMagick's ConstituteImage function
 				 with does not support monochrome images */
 			if (magick_image = AllocateImage((ImageInfo *) NULL))
@@ -6250,7 +6339,10 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 					"Cmgui_image_constitute.  Allocate image failed");
 				return_code = 0;
 			}
+#  endif /* MagickLibVersion >= 0x636 */
 #else /* defined (IMAGEMAGICK) */
+			int i;
+
 			if (ALLOCATE(cmgui_image->image_arrays, unsigned char *, 1))
 			{
 				cmgui_image->image_arrays[0] = (unsigned char *)NULL;
@@ -6356,10 +6448,8 @@ equal to the number_of_components.
 	char *magick_image_storage;
 	ExceptionInfo magick_exception;
 	Image *magick_image;
-	int image_height_minus_1, reverse_alpha;
+	int image_height_minus_1;
 	StorageType magick_storage_type;
-	unsigned char *short_source, *temp_dest;
-	unsigned short short_value;
 #else /* defined (IMAGEMAGICK) */
 	unsigned char *source;
 	int source_width_bytes;
@@ -6417,28 +6507,23 @@ equal to the number_of_components.
 		{
 			case 1:
 			{
-				magick_image_storage = "R";
-				reverse_alpha = 0;
+				magick_image_storage = "I";
 			} break;
 			case 2:
 			{
-				magick_image_storage = "RA";
-				reverse_alpha = 0;
+				magick_image_storage = "IA";
 			} break;
 			case 3:
 			{
 				magick_image_storage = "RGB";
-				reverse_alpha = 0;
 			} break;
 			case 4:
 			{
 				magick_image_storage = "RGBA";
-				reverse_alpha = 0;
 			} break;
 			case 5:
 			{
 				magick_image_storage = "BGR";
-				reverse_alpha = 0;
 			} break;
 			default:
 			{
@@ -6480,32 +6565,6 @@ equal to the number_of_components.
 				DispatchImage(magick_image, left, image_height_minus_1 - y,
 					width, 1, magick_image_storage, magick_storage_type,
 					(void *)destination, &magick_exception);
-				if (reverse_alpha)
-				{
-					temp_dest = destination +
-						bytes_per_pixel - cmgui_image->number_of_bytes_per_component;
-					short_source = (unsigned char *)(&short_value);
-					for (i = 0; i < width; i++)
-					{
-						if (2 == cmgui_image->number_of_bytes_per_component)
-						{
-#if (1234==BYTE_ORDER)
-							short_value = 0xFFFF -
-								(((unsigned short)(*(temp_dest + 1))) << 8) - (*temp_dest);
-#else /* (1234==BYTE_ORDER) */
-							short_value = 0xFFFF -
-								(((unsigned short)(*temp_dest)) << 8) - (*(temp_dest + 1));
-#endif /* (1234==BYTE_ORDER) */
-							*temp_dest = *short_source;
-							*(temp_dest + 1) = *(short_source + 1);
-						}
-						else
-						{
-							*temp_dest = 0xFF - (*temp_dest);
-						}
-						temp_dest += bytes_per_pixel;
-					}
-				}
 #else /* defined (IMAGEMAGICK) */
 				memcpy(destination, source, width_bytes);
 				source += source_width_bytes;
