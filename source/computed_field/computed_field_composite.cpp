@@ -131,7 +131,7 @@ private:
 
 	char* get_command_string();
 
-	int clear_type_specific()
+	int clear_cache()
 	{
 		if (source_pointers)
 		{
