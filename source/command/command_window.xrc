@@ -60,9 +60,11 @@
       <label>Model</label>
       <object class = "wxMenuItem" name="ModelCell">
         <label>Cell</label>
+		 <enabled>0</enabled>
       </object>
-      <object class = "wxMenuItem" name="ModelCurveEdiotr">
+      <object class = "wxMenuItem" name="ModelCurveEditor">
         <label>Curve editor</label>
+		 <enabled>0</enabled>
       </object>
       <object class = "wxMenuItem" name="ModelDataViewer">
         <label>Data viewer</label>
@@ -72,17 +74,21 @@
       </object>
       <object class = "wxMenuItem" name="ModelGridfieldpcalculator">
         <label>Grid field calculator</label>
+		 <enabled>0</enabled>
       </object>
       <object class = "wxMenuItem" name="ModelInputcontroller">
         <label>Input controller</label>
+		 <enabled>0</enabled>
       </object>
       <object class = "wxMenuItem" name="ModelNodeviewer">
         <label>Node viewer</label>
       </object>
       <object class = "wxMenuItem" name="ModelTracking">
+		 <enabled>0</enabled>
         <label>Tracking</label>
       </object>
       <object class = "wxMenuItem" name="ModelUnemap">
+		 <enabled>0</enabled>
         <label>Unemap</label>
       </object>
     </object>
@@ -93,6 +99,7 @@
         <label>3-D Window</label>
       </object>
       <object class = "wxMenuItem" name="GraphicsMaterialeditor">
+		 <enabled>0</enabled>
         <label>Material editor</label>
       </object>
       <object class = "wxMenuItem" name="GraphicsSceneeditor">
@@ -102,9 +109,11 @@
         <label>Spectrum editor</label>
       </object>
       <object class = "wxMenuItem" name="GraphicsTimeeditor">
+		 <enabled>0</enabled>
         <label>Time editor</label>
       </object>
       <object class = "wxMenuItem" name="GraphicsVolumeeditor">
+		 <enabled>0</enabled>
         <label>Volume editor</label>
       </object>
       <object class="separator"/>
