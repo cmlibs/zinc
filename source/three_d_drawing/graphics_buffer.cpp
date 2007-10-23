@@ -147,6 +147,10 @@ DESCRIPTION :
 													 don't worry whether it shares context or not */
 };
 
+#if defined (WX_USER_INTERFACE)
+class wxGraphicsBuffer;
+#endif /* defined (WX_USER_INTERFACE) */
+
 struct Graphics_buffer_package
 /*******************************************************************************
 LAST MODIFIED : 5 May 2004
@@ -291,7 +295,7 @@ DESCRIPTION :
 #endif /* defined (CARBON_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 	wxPanel *parent;
-	wxGLCanvas *canvas;
+	wxGraphicsBuffer *canvas;
 #endif /* defined (WX_USER_INTERFACE) */
 };
 
@@ -4436,12 +4440,18 @@ public:
 	
 	~wxGraphicsBuffer()
 	{
-		if (GetContext() == graphics_buffer->package->wxSharedContext)
+		if (graphics_buffer &&
+			(GetContext() == graphics_buffer->package->wxSharedContext))
 		{
 			graphics_buffer->package->wxSharedContext = (wxGLContext *)NULL;
 		}
 
 	};
+
+	void ClearGraphicsBufferReference()
+	{
+		graphics_buffer = (Graphics_buffer *)NULL;
+	}
 
 	void OnPaint( wxPaintEvent& WXUNUSED(event) )
 	{
@@ -6612,6 +6622,13 @@ x==============================================================================*
 			RemoveEventHandler(buffer->resize_handler_ref);
 		}
 #endif /* defined (CARBON_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+		/* Remove reference to this object in wxGraphicsBuffer */
+		if (buffer->canvas)
+		{
+			buffer->canvas->ClearGraphicsBufferReference();
+		}
+#endif /* defined (WX_USER_INTERFACE) */
 
 		DEALLOCATE(*buffer_ptr);
 		*buffer_ptr = (struct Graphics_buffer *)NULL;
