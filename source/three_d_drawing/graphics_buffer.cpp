@@ -4436,6 +4436,11 @@ public:
 	
 	~wxGraphicsBuffer()
 	{
+		if (GetContext() == graphics_buffer->package->wxSharedContext)
+		{
+			graphics_buffer->package->wxSharedContext = (wxGLContext *)NULL;
+		}
+
 	};
 
 	void OnPaint( wxPaintEvent& WXUNUSED(event) )
