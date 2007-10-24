@@ -425,6 +425,10 @@ contained in the this module only.
 		 buffer->mouse_handler_ref = (EventHandlerRef)NULL;
 		 buffer->resize_handler_ref = (EventHandlerRef)NULL;
 #endif /* defined (CARBON_USER_INTERFACE) */
+
+#if defined (WX_USER_INTERFACE)
+		 buffer->canvas = (wxGraphicsBuffer *)NULL;
+#endif /* defined (CARBON_USER_INTERFACE) */
 	}
 	else
 	{
@@ -4440,12 +4444,14 @@ public:
 	
 	~wxGraphicsBuffer()
 	{
-		if (graphics_buffer &&
-			(GetContext() == graphics_buffer->package->wxSharedContext))
+		if (graphics_buffer)
 		{
-			graphics_buffer->package->wxSharedContext = (wxGLContext *)NULL;
+			graphics_buffer->canvas = (wxGraphicsBuffer *)NULL;
+			if ((GetContext() == graphics_buffer->package->wxSharedContext))
+			{
+				graphics_buffer->package->wxSharedContext = (wxGLContext *)NULL;
+			}
 		}
-
 	};
 
 	void ClearGraphicsBufferReference()
