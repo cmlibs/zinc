@@ -4247,7 +4247,7 @@ it.
 								window->panel,
 								graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
 								minimum_colour_buffer_depth, minimum_depth_buffer_depth,
-								minimum_accumulation_buffer_depth)
+								minimum_accumulation_buffer_depth))
 				 {
 						/* create one Scene_viewers */
 						window->number_of_scene_viewers = 1;
@@ -5089,7 +5089,7 @@ Sets the layout mode in effect on the <window>.
 						GRAPHICS_BUFFER_DOUBLE_BUFFERING,
 						GRAPHICS_BUFFER_ANY_STEREO_MODE,
 						/*minimum_colour_buffer_depth*/24, /*minimum_depth_buffer_depth*/16, 
-								/*minimum_accumulation_buffer_depth*/0)
+								/*minimum_accumulation_buffer_depth*/0))
 #endif
 					{
 						Scene_viewer_get_background_colour(first_scene_viewer,&background_colour);
