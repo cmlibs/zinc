@@ -101,6 +101,7 @@ greater than or equal to the number of components.
 		(number_of_values >= Computed_field_get_number_of_components(field)))
 	{
 		return_code = Computed_field_evaluate_at_node(field, node, time, values);
+		Computed_field_clear_cache(field);
 	}
 	else
 	{
@@ -187,6 +188,7 @@ number_of_components
 	{
 		return_code = Computed_field_evaluate_in_element(field, element, xi, time,
 			top_level_element, values, derivatives);
+		Computed_field_clear_cache(field);
 	}
 	else
 	{
@@ -223,6 +225,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 	{
 		return_code = Computed_field_evaluate_as_string_at_node(field,
 			/*component_number*/-1, node, time);
+		Computed_field_clear_cache(field);
 	}
 	else
 	{
