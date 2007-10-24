@@ -1005,9 +1005,9 @@ Updates the time display of the time_slider
 #if defined (MOTIF)
 	EDIT_VAR_PRECISION time;
 #endif /* defined (MOTIF) */
-#if defined (WX_USER_INTERFACE)
 	int return_code;
 	struct Graphics_window *window;
+#if defined (WX_USER_INTERFACE)
 	wxString time_string;
 	int time_slider_index;
 #endif
