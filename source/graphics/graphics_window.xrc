@@ -1,224 +1,318 @@
 <?xml version="1.0"?>
 <resource>
 
-
-  <object class="wxFrame" subclass="wxGraphicsWindow" name="CmguiGraphicsWindow" title="Cmgui Graphics Window">
-		<title>Cmgui Graphics Window</title>
-    <object class = "wxBoxSizer">
-      <object class ="sizeritem">
-	 			<flag>wxEXPAND</flag>
-				<option>1</option>
-        <object class ="wxSplitterWindow" name="Splitter">
-					<style>wxSP_3D</style>
-				  <orientation>vertical</orientation>
-					<minsize>1</minsize>
-					<sashpos>200</sashpos>
-				  <object class ="wxScrolledWindow" name="LeftPanel">
-			 	    <object class = "wxBoxSizer">	
-							<object class="sizeritem">
-	 							<flag>wxEXPAND</flag>
-								<option>1</option>
-								<object class = "wxBoxSizer">
+<object class="wxFrame" subclass="wxGraphicsWindow" name="CmguiGraphicsWindow" title="Cmgui Graphics Window">
+	<title>Cmgui Graphics Window</title>
+	<object class = "wxBoxSizer">
+		<object class ="sizeritem">
+	 		<flag>wxEXPAND</flag>
+			<option>1</option>
+        	<object class ="wxSplitterWindow" name="Splitter">
+				<style>wxSP_3D</style>
+				<orientation>vertical</orientation>
+				<minsize>1</minsize>
+				<sashpos>200</sashpos>
+				<object class ="wxScrolledWindow" name="LeftPanel">
+			 		<object class = "wxBoxSizer">	
+						<object class="sizeritem">
+	 						<flag>wxEXPAND</flag>
+							<option>1</option>
+							<object class = "wxBoxSizer">
 	  							<orient>wxVERTICAL</orient>
 	  							<object class = "sizeritem">
-	 									<flag>wxEXPAND</flag>
-   	    						<object class="wxStaticBoxSizer">
-              				<label>Options</label>
-              				<orient>wxVERTICAL</orient>
- 	      							<object class="sizeritem">
-	        							<flag>wxEXPAND</flag>
- 	        							<flag>wxALIGN_CENTER</flag>
-                				<object class="wxButton" name="Button1">
-	          							<label>View All</label>
-	          							<default>1</default>
-	        							</object>
-              				</object>             
-              				<object class="sizeritem">
-	        							<flag>wxEXPAND</flag>
-	 	        						<flag>wxALIGN_CENTER</flag>
-    	        					<object class="wxButton" name="Button2">
-	          							<label>Save as...</label> 	
-	          							<default>1</default>		 
-  	        						</object>
-              				</object>
-              				<object class="sizeritem">
-	 	        						<flag>>wxEXPAND</flag>
-    	        					<object class="wxCheckBox" name="PerspectiveButton">
-	          							<label>Perspective</label> 			 
-  	        						</object>
-              				</object>
-           					</object>
-	 								</object>
-
-         					<object class="sizeritem">
-										<flag>wxEXPAND</flag>
-	 	        				<flag>wxALIGN_CENTER</flag>
-		   	   				  <object class="wxBoxSizer">	
-							        <orient>wxVERTICAL</orient>
-
-              	<object class="sizeritem">							
-				    	    <flag>wxEXPAND</flag>		
-    	      			<flag>wxALIGN_CENTER</flag>	
-									<object class="wxStaticBoxSizer">
-										<orient>wxVERTICAL</orient>
-
-		   								<object class = "sizeritem">
-	 	        						<flag>wxEXPAND</flag>
-												<flag>wxALIGN_CENTER</flag>
-   	   							    <object class="wxBoxSizer">
-          								<orient>wxHORIZONTAL</orient>
-		   										<object class = "sizeritem">
- 	        									<flag>wxALIGN_CENTER</flag>
-														<object class = "wxStaticText" name="Layout">
-	   													<label>Layout:</label>
-														</object>
-													</object>
-             							<object class="sizeritem">
-														<flag>wxEXPAND</flag>
-														<option>1</option>
-	 	        								<flag>wxALIGN_CENTER</flag>
-	       										<object class="wxChoice" name="View">
-		 												<selection>7</selection>
-                 						<content>
-                   					<item>2d</item>
-                   					<item>free_ortho</item>
-                   					<item>front_back</item>
-                   					<item>front_side</item>
-                   					<item>orthographic</item>
-                   					<item>pseudo_3d</item>
-		   											<item>two_free</item>
-                   					<item>simple</item>
-                 						</content>
+	 								<flag>wxEXPAND</flag>
+   	    							<object class="wxStaticBoxSizer">
+              						<label>Options</label>
+              						<orient>wxVERTICAL</orient>
+ 	      								<object class="sizeritem">
+	        								<flag>wxEXPAND</flag>
+ 	        								<flag>wxALIGN_CENTER</flag>
+                							<object class="wxButton" name="Button1">
+	          									<label>View All</label>
 	        								</object>
-	      								</object>
-         							</object> 
-          					</object>  
+              						</object>             
+              						<object class="sizeritem">
+	        								<flag>wxEXPAND</flag>
+	 	        							<flag>wxALIGN_CENTER</flag>
+    	        							<object class="wxButton" name="Button2">
+	          									<label>Save as...</label> 	
+  	        								</object>
+              						</object>
+              						<object class="sizeritem">
+    	        							<object class="wxCheckBox" name="PerspectiveButton">
+	          									<label>Perspective</label> 			 
+  	        								</object>
+              						</object>
+           						</object>
+	 							</object>
+         						<object class="sizeritem">
+									<flag>wxEXPAND</flag>
+	 	        					<flag>wxALIGN_CENTER</flag>
+		   	   				 		<object class="wxBoxSizer">	
+							        	<orient>wxVERTICAL</orient>
+			              
+										<object class="sizeritem">							
+				    	   					<flag>wxEXPAND</flag>		
+    	      								<flag>wxALIGN_CENTER</flag>	
+											<object class="wxStaticBoxSizer">
+												<orient>wxVERTICAL</orient>
 
-
-           	 					<object class="sizeritem">
-	 	        						<flag>wxEXPAND</flag>
-												<flag>wxALIGN_CENTER</flag>
-	      								<object class="wxBoxSizer">
-													<orient>wxHORIZONTAL</orient>
-		   										<object class = "sizeritem">
- 	        									<flag>wxALIGN_CENTER</flag>
-														<object class = "wxStaticText" name="Up">
-	   													<label>Up:</label>
+					   							<object class = "sizeritem">
+	 	        									<flag>wxEXPAND</flag>
+													<flag>wxALIGN_CENTER</flag>
+   	   						    					<object class="wxBoxSizer">
+       												<orient>wxHORIZONTAL</orient>
+		   												<object class = "sizeritem">
+ 	        												<flag>wxALIGN_CENTER</flag>
+															<object class = "wxStaticText" name="Layout">
+	   															<label>Layout:</label>
+															</object>
 														</object>
-													</object>
-													<object class="sizeritem">
-								  					<flag>wxEXPAND</flag>
-														<option>1</option>
-          									<object class="wxChoice" name="UpViewOptions">
-          										<style>wxCB_READONLY</style>
-	    												<selection>2</selection>
-                 							<content>
-                   						<item>x</item>
-                     					<item>y</item>
-                   	  				<item>z</item>
-                   	 	  			<item>-x</item>
-                     					<item>-y</item>
-                     					<item>-z</item>
-             		     					</content>
-	 	 												</object>
-													</object>
-    	  								</object>
-    									</object>
+             											<object class="sizeritem">
+															<flag>wxEXPAND</flag>
+															<option>1</option>
+	 	        											<flag>wxALIGN_CENTER</flag>
+	       												<object class="wxChoice" name="View">
+		 														<selection>7</selection>
+                 												<content>
+                  												<item>2d</item>
+                   												<item>free_ortho</item>
+                   												<item>front_back</item>
+                   												<item>front_side</item>
+                   												<item>orthographic</item>
+                   												<item>pseudo_3d</item>
+		   															<item>two_free</item>
+                   												<item>simple</item>
+                 												</content>
+	        												</object>
+	      												</object>
+         											</object> 
+          										</object>  
+
+	           	 							<object class="sizeritem">
+	 	        									<flag>wxEXPAND</flag>
+													<flag>wxALIGN_CENTER</flag>
+	      											<object class="wxBoxSizer">
+														<orient>wxHORIZONTAL</orient>
+		   												<object class = "sizeritem">
+ 	        												<flag>wxALIGN_CENTER</flag>
+															<object class = "wxStaticText" name="Up">
+	   															<label>Up:</label>
+															</object>
+														</object>
+														<object class="sizeritem">
+								  							<flag>wxEXPAND</flag>
+															<option>1</option>
+          													<object class="wxChoice" name="UpViewOptions">
+          														<style>wxCB_READONLY</style>
+	    														<selection>2</selection>
+                 												<content>
+                   												<item>x</item>
+                     											<item>y</item>
+                   	  											<item>z</item>
+                   	 	  										<item>-x</item>
+                     											<item>-y</item>
+                     											<item>-z</item>
+             		     										</content>
+	 	 													</object>
+														</object>
+    	  											</object>
+    											</object>
           
-         	    				<object class="sizeritem">
-												<flag>wxEXPAND</flag>
-	      								<object class="wxBoxSizer">  
-      										<orient>wxHORIZONTAL</orient>
-		   										<object class = "sizeritem">
- 	        									<flag>wxALIGN_CENTER</flag>
-														<object class = "wxStaticText" name="Front">
-	   													<label>Front:</label>
+         	    								<object class="sizeritem">
+													<flag>wxEXPAND</flag>
+	      											<object class="wxBoxSizer">  
+      													<orient>wxHORIZONTAL</orient>
+		   												<object class = "sizeritem">
+ 	        												<flag>wxALIGN_CENTER</flag>
+															<object class = "wxStaticText" name="Front">
+	   															<label>Front:</label>
+															</object>
 														</object>
-													</object>
-	        								<object class="sizeritem">
-								  					<flag>wxEXPAND</flag>
-														<option>1</option>
-	 	        								<flag>wxALIGN_CENTER</flag>
-	          								<object class="wxButton" name="FrontViewOptions">
-		    											<label>-y</label>
-	            								<Enable>false</Enable>
-		  											</object>
-													</object>
-	      								</object>
-	    							</object>
+	        											<object class="sizeritem">
+								  							<flag>wxEXPAND</flag>
+															<option>1</option>
+	 	        											<flag>wxALIGN_CENTER</flag>
+	          												<object class="wxButton" name="FrontViewOptions">
+		    													<label>-y</label>
+		  													</object>
+														</object>
+	      											</object>
+	    										</object>
+         									</object>
+       								</object>
+			      					</object>
+       						</object>
 
-         					</object>
-       					</object>
-			        </object>
-       			</object>						
+				              <object class="sizeritem">
+	 	    				    	<flag>wxEXPAND|wxALIGN_CENTRE_VERTICAL</flag>
+    	        					<object class="wxToggleButton" name="TimeEditorToggleButton">
+	          							<label>Time Editor</label>
+  	     					   		</object>
+              				</object>
 
-              	<object class="sizeritem">							
-				    	    <flag>wxEXPAND</flag>		
-    	      			<flag>wxALIGN_CENTER</flag>	
+              				<object class="sizeritem">							
+				    	    		<flag>wxEXPAND</flag>		
+    	      						<flag>wxALIGN_CENTER</flag>	
 									<object class="wxStaticBoxSizer">
 										<orient>wxVERTICAL</orient>
 										<object class="sizeritem">
-		            					    <flag>wxALIGN_LEFT</flag>	
+		           					   	<flag>wxALIGN_LEFT</flag>	
 											<option>1</option>
-	 										<object class= "wxPanel" name="ToolbarPanel">
-
-	  									</object>
+	 										<object class= "wxPanel" name="ToolbarPanel"/>
 										</object>
-	  							</object>
+	  								</object>
 								</object>
 
-					  	  <object class = "sizeritem" >
-          				<flag>wxEXPAND</flag>
-         					<option>1</option>
-				  				<object class= "wxScrolledWindow" name="ToolPanel"/>
-									<style>wxHSCROLL|wxVSCROLL</style>
-						  	</object>	
-						  </object>
-  		 			</object>
+					  	  		<object class = "sizeritem" >
+          							<flag>wxEXPAND</flag>
+         							<option>1</option>
+				  					<object class= "wxScrolledWindow" name="ToolPanel">
+										<style>wxHSCROLL|wxVSCROLL</style>
+								 	</object>	
+					 			</object>	
+					 		</object>
+  		 				</object>
 					</object>
  				</object>	
 
-	  		<object class ="wxPanel">
+	  			<object class ="wxPanel">
 					<object class = "wxBoxSizer">	   
-    	  		<object class="sizeritem">
-						<option>1</option>
-			    	<flag>wxEXPAND</flag>
-	        	<object class ="wxPanel" name="RigthPanel">
-            	<object class = "wxFlexGridSizer" name="AllViewersGrid">
-	      				<cols>2</cols>
-              	<rows>2</rows>
-              	<vgap>1</vgap>
-	      				<hgap>1</hgap>
-              	<growablecols>0,1</growablecols>
-              	<growablerows>0,1</growablerows>
-              	<object class = "sizeritem">
-	        				<option>1</option>
-	        				<flag>wxEXPAND</flag>
-	        				<object class = "wxPanel" name="Panel"/>
-    	      		</object>
-             		<object class = "sizeritem">
-	        				<option>1</option>
-	        				<flag>wxEXPAND</flag>
-	       					<object class = "wxPanel" name="Panel2"/>
-    	     			</object>
-             		<object class = "sizeritem">
-	       					<option>1</option>
-	       					<flag>wxEXPAND</flag>
-	       					<object class = "wxPanel" name="Panel3"/>
-             		</object>
-             	<object class = "sizeritem">
-        				<option>1</option>
-	       				<flag>wxEXPAND</flag>
-	       				<object class= "wxPanel" name="Panel4"/>
-	     				</object>
-	   				</object>
-     			</object>
-			</object>
-    </object>
-  </object>
-</object>
-</object>
-</object>
+    	  				<object class="sizeritem">
+							<option>1</option>
+			   				<flag>wxEXPAND</flag>
+	     					<object class ="wxPanel" name="RigthPanel">
+								<object class = "wxBoxSizer">	
+									<orient>wxVERTICAL</orient>	
+    								<object class="sizeritem">
+										<option>1</option>
+			    						<flag>wxEXPAND</flag>
+   		         						<object class = "wxFlexGridSizer" name="AllViewersGrid">
+	      									<cols>2</cols>
+              							<rows>2</rows>
+      		        						<vgap>1</vgap>
+	      									<hgap>1</hgap>
+              							<growablecols>0,1</growablecols>
+              							<growablerows>0,1</growablerows>
+              							<object class = "sizeritem">
+	        									<option>1</option>
+	        									<flag>wxEXPAND</flag>
+	        									<object class = "wxPanel" name="Panel"/>
+    	      								</object>
+             								<object class = "sizeritem">
+	        									<option>1</option>
+	        									<flag>wxEXPAND</flag>
+	       									<object class = "wxPanel" name="Panel2"/>
+    	     								</object>
+             								<object class = "sizeritem">
+	       									<option>1</option>
+	       									<flag>wxEXPAND</flag>
+	       									<object class = "wxPanel" name="Panel3"/>
+             								</object>
+             								<object class = "sizeritem">
+        										<option>1</option>
+	       									<flag>wxEXPAND</flag>
+	       									<object class= "wxPanel" name="Panel4"/>
+	     									</object>
+	   									</object>
+     								</object>
+
+    	    						<object class="sizeritem">
+	       							<flag>wxEXPAND</flag>
+										<option>0</option>
+										<object class = "wxPanel" name ="TimeEditorPanel">	
+			       					<flag>wxEXPAND</flag>
+										<object class = "wxStaticBoxSizer">	
+											<label>Time Editor</label>
+											<orient>wxVERTICAL</orient>
+
+    	    								<object class="sizeritem">
+	       									<flag>wxEXPAND</flag>
+												<option>0</option>
+												<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+			  			  	    					<object class="sizeritem">
+														<option>1</option>
+	       							    			<flag>wxEXPAND</flag>				
+														<object class = "wxSlider" name = "GraphicsWindowTimeSlider">
+															<label>Time Slider</label>
+															<style>wxSL_AUTOTICKS</style>
+															<size>-1,30</size>
+														</object>
+													</object>
+			    			    					<object class="sizeritem">						
+														<object class = "wxTextCtrl" name = "GraphicsWindowTimeTextCtrl">
+															<style>wxTE_PROCESS_ENTER</style>
+															<value>0.0000</value>
+															<size>60,30</size>
+														</object>
+													</object>
+												</object>
+											</object>
+
+    	    								<object class="sizeritem">
+			       							<flag>wxALIGN_CENTER</flag>
+												<option>0</option>						
+												<object class = "wxBoxSizer">
+													<orient>wxHORIZONTAL</orient>
+			  			  	    					<object class="sizeritem">		
+			       									<flag>wxALIGN_CENTER</flag>
+														<object class = "wxBitmapButton" name = "GraphicsWindowFastBackward">
+															<size>36,37</size>
+														</object>
+													</object>
+			  			  	    					<object class="sizeritem">
+					       							<flag>wxALIGN_CENTER</flag>
+														<object class = "wxBitmapButton" name = "GraphicsWindowBackwardByStep">
+															<size>36,37</size>
+														</object>
+													</object>
+			  			  	    					<object class="sizeritem">	
+						       						<flag>wxALIGN_CENTER</flag>
+														<object class = "wxBitmapButton" name = "GraphicsWindowBackward">
+															<size>34,35</size>
+														</object>
+													</object>
+			  			  	    					<object class="sizeritem">	
+						       						<flag>wxALIGN_CENTER</flag>
+														<object class = "wxBitmapButton" name = "GraphicsWindowStop">
+															<size>92,35</size>
+														</object>
+													</object>
+			  			  	    					<object class="sizeritem">	
+						       						<flag>wxALIGN_CENTER</flag>
+														<object class = "wxBitmapButton" name = "GraphicsWindowForward">
+															<size>34,35</size>
+														</object>
+													</object>
+			  			  	    					<object class="sizeritem">		
+					       							<flag>wxALIGN_CENTER</flag>
+														<object class = "wxBitmapButton" name = "GraphicsWindowForwardByStep">
+															<size>36,37</size>
+														</object>
+													</object>
+			  			  	    					<object class="sizeritem">
+							       					<flag>wxALIGN_CENTER</flag>
+														<object class = "wxBitmapButton" name = "GraphicsWindowFastForward">
+															<size>36,37</size>
+														</object>
+													</object>
+	
+												</object>
+											</object>
+
+										</object>
+										</object>
+									</object>
+
+								</object>
+							</object>
+						</object>
+     				</object>
+    			</object>
+  			</object>
+		</object>
+	</object>
 </object>
 </resource>
 
