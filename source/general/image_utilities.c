@@ -7353,3 +7353,155 @@ that the images be adjoined in the single file.
 
 	return (return_code);
 } /* Cmgui_image_write */
+
+char *Cmgui_image_get_property(struct Cmgui_image *cmgui_image,
+	const char *property)
+/*******************************************************************************
+LAST MODIFIED : 24 October 2007
+
+DESCRIPTION :
+If the <property> is set for <cmgui_image> then this returns an allocated 
+string containing it's value.  Otherwise returns NULL.
+==============================================================================*/
+{
+	const char *value;
+	char *return_value;
+
+	ENTER(Cmgui_image_get_property);
+	if (cmgui_image)
+	{
+#if defined (IMAGEMAGICK)
+		if (value = GetImageProperty(cmgui_image->magick_image, property))
+		{
+			return_value = duplicate_string(value);
+		}
+		else
+		{
+			return_value = (char *)NULL;
+		}
+#else /* defined (IMAGEMAGICK) */
+		return_value = (char *)NULL;
+#endif /* defined (IMAGEMAGICK) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_get_property.  Invalid argument(s)");
+		return_value = (char *)NULL;
+	}
+	LEAVE;
+
+	return (return_value);
+} /* Cmgui_image_get_property */
+
+int Cmgui_image_set_property(struct Cmgui_image *cmgui_image,
+	const char *property, const char *value)
+/*******************************************************************************
+LAST MODIFIED : 24 October 2007
+
+DESCRIPTION :
+Sets the <property> is for <cmgui_image>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmgui_image_set_property);
+	if (cmgui_image)
+	{
+#if defined (IMAGEMAGICK)
+		if (MagickTrue == SetImageProperty(cmgui_image->magick_image,
+			property, value))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+#else /* defined (IMAGEMAGICK) */
+		return_code = 0;
+#endif /* defined (IMAGEMAGICK) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_set_property.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_set_property */
+
+int Cmgui_image_reset_property_iterator(struct Cmgui_image *cmgui_image)
+/*******************************************************************************
+LAST MODIFIED : 24 October 2007
+
+DESCRIPTION :
+When using Cmgui_image_get_next_property, this function resets the iterator
+to the first property.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmgui_image_reset_property_iterator);
+	if (cmgui_image)
+	{
+#if defined (IMAGEMAGICK)
+		ResetImagePropertyIterator(cmgui_image->magick_image);
+		return_code = 1;
+#else /* defined (IMAGEMAGICK) */
+		return_code = 0;
+#endif /* defined (IMAGEMAGICK) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_reset_property_iterator.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_reset_property_iterator */
+
+char *Cmgui_image_get_next_property(struct Cmgui_image *cmgui_image)
+/*******************************************************************************
+LAST MODIFIED : 25 October 2007
+
+DESCRIPTION :
+Returns the next defined property name for this image.  Reset to
+the start of the list with Cmgui_image_reset_property_iterator.
+When the end of the list is reached returns NULL.
+==============================================================================*/
+{
+	const char *value;
+	char *return_value;
+
+	ENTER(Cmgui_image_get_property);
+	if (cmgui_image)
+	{
+#if defined (IMAGEMAGICK)
+		if (value = GetNextImageProperty(cmgui_image->magick_image))
+		{
+			return_value = duplicate_string(value);
+		}
+		else
+		{
+			return_value = (char *)NULL;
+		}
+#else /* defined (IMAGEMAGICK) */
+		return_value = (char *)NULL;
+#endif /* defined (IMAGEMAGICK) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_get_next_property.  Invalid argument(s)");
+		return_value = (char *)NULL;
+	}
+	LEAVE;
+
+	return (return_value);
+} /* Cmgui_image_get_next_property */
+

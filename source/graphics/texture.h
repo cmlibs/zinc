@@ -765,4 +765,13 @@ DESCRIPTION :
 Modifier function to set the texture from a command.
 ==============================================================================*/
 
+int Texture_set_property(struct Texture *texture,
+	const char *property, const char *value);
+/*******************************************************************************
+LAST MODIFIED : 25 October 2007
+
+DESCRIPTION :
+Sets the <property> and <value> string for the <texture>.
+==============================================================================*/
+
 #endif /* !defined (TEXTURE_H) */

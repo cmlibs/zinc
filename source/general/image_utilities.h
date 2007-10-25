@@ -502,4 +502,42 @@ single file, eg. animated GIF, DICOM, in which case a single filename requests
 that the images be adjoined in the single file.
 ==============================================================================*/
 
+char *Cmgui_image_get_property(struct Cmgui_image *cmgui_image,
+	const char *property);
+/*******************************************************************************
+LAST MODIFIED : 24 October 2007
+
+DESCRIPTION :
+If the <property> is set for <cmgui_image> then this returns an allocated 
+string containing it's value.  Otherwise returns NULL.
+==============================================================================*/
+
+int Cmgui_image_set_property(struct Cmgui_image *cmgui_image,
+	const char *property, const char *value);
+/*******************************************************************************
+LAST MODIFIED : 24 October 2007
+
+DESCRIPTION :
+Sets the <property> is for <cmgui_image>.
+==============================================================================*/
+
+int Cmgui_image_reset_property_iterator(struct Cmgui_image *cmgui_image);
+/*******************************************************************************
+LAST MODIFIED : 24 October 2007
+
+DESCRIPTION :
+When using Cmgui_image_get_next_property, this function resets the iterator
+to the first property.
+==============================================================================*/
+
+char *Cmgui_image_get_next_property(struct Cmgui_image *cmgui_image);
+/*******************************************************************************
+LAST MODIFIED : 25 October 2007
+
+DESCRIPTION :
+Returns the next defined property name for this image.  Reset to
+the start of the list with Cmgui_image_reset_property_iterator.
+When the end of the list is reached returns NULL.
+==============================================================================*/
+
 #endif /* !defined (IMAGE_UTILITIES_H) */

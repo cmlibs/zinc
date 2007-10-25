@@ -82,9 +82,28 @@ Module types
 ------------
 */
 
+struct Texture_property
+/*******************************************************************************
+LAST MODIFIED : 25 October 2007
+
+DESCRIPTION :
+Stores a Texture_property, name and value pair.
+==============================================================================*/
+{
+	char *name;
+	char *value;
+	int access_count;
+};
+
+DECLARE_LIST_TYPES(Texture_property);
+
+PROTOTYPE_OBJECT_FUNCTIONS(Texture_property);
+PROTOTYPE_LIST_FUNCTIONS(Texture_property);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Texture_property,name,char *);
+
 struct Texture
 /*******************************************************************************
-LAST MODIFIED : 28 February 2002
+LAST MODIFIED : 25 October 2007
 
 DESCRIPTION :
 The properties of a graphical texture.
@@ -156,6 +175,10 @@ The properties of a graphical texture.
 	int display_list_current;
 	/* the number of structures that point to this texture.  The texture
 		cannot be destroyed while this is greater than 0 */
+
+	/* Store the properties */
+	struct LIST(Texture_property) *property_list;
+
 	int access_count;
 }; /* struct Texture */
 
@@ -164,14 +187,92 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Texture);
 FULL_DECLARE_MANAGER_TYPE(Texture);
 
 /*
-Module variables
-----------------
-*/
-
-/*
 Module functions
 ----------------
 */
+
+static struct Texture_property *CREATE(Texture_property)(char *name, char *value)
+/*******************************************************************************
+LAST MODIFIED : 25 October 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *name_copy, *value_copy;
+	struct Texture_property *property;
+
+	ENTER(CREATE(Texture_property));
+	if (ALLOCATE(property, struct Texture_property, 1) &&
+		(name_copy = duplicate_string(name)) &&
+		(value_copy = duplicate_string(value)))
+	{
+		property->name = name_copy;
+		property->value = value_copy;
+		property->access_count = 0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"CREATE(Texture_property).  "
+			"Unable to allocate memory for property list structure");
+		property = (struct Texture_property *)NULL;
+	}
+	LEAVE;
+	
+	return (property);
+} /* CREATE(Texture_property) */
+
+int DESTROY(Texture_property)(struct Texture_property **property_address)
+/*******************************************************************************
+LAST MODIFIED : 25 October 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Texture_property *property;
+
+	ENTER(DESTROY(Texture_property));
+	if (property_address && (property = *property_address))
+	{
+		if (property->access_count <= 0)
+		{
+			if (property->name)
+			{
+				DEALLOCATE(property->name);
+			}
+			if (property->value)
+			{
+				DEALLOCATE(property->value);
+			}
+			DEALLOCATE(*property_address);
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"DESTROY(Texture_property).  Destroy called when access count > 0.");
+			*property_address = (struct Texture_property *)NULL;
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Texture_property).  Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Texture_property) */
+
+DECLARE_OBJECT_FUNCTIONS(Texture_property)
+FULL_DECLARE_INDEXED_LIST_TYPE(Texture_property);
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Texture_property,name,char *,strcmp)
+DECLARE_INDEXED_LIST_FUNCTIONS(Texture_property)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Texture_property,name,
+	char *, strcmp)
+
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Texture,name,char *,strcmp)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Texture)
@@ -2489,6 +2590,7 @@ of all textures.
 			texture->texture_id = 0;
 #endif /* defined (OPENGL_API) */
 			texture->display_list_current=0;
+			texture->property_list = (struct LIST(Texture_property) *)NULL;
 			texture->access_count=0;
 		}
 		else
@@ -2582,6 +2684,10 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 					DEALLOCATE(texture->file_number_pattern);
 				}
 				DEALLOCATE(texture->image);
+				if (texture->property_list)
+				{
+					DESTROY(LIST(Texture_property))(&texture->property_list);
+				}
 				DEALLOCATE(*texture_address);
 				return_code=1;
 			}
@@ -2783,6 +2889,27 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Texture,name)
 			(destination->combine_colour).green=(source->combine_colour).green;
 			(destination->combine_colour).blue=(source->combine_colour).blue;
 			destination->combine_alpha=source->combine_alpha;
+			if (source->property_list)
+			{
+				if (destination->property_list)
+				{
+					REMOVE_ALL_OBJECTS_FROM_LIST(Texture_property)(
+						destination->property_list);
+				}
+				else
+				{
+					destination->property_list = CREATE(LIST(Texture_property))();
+				}
+				COPY_LIST(Texture_property)(destination->property_list,
+					source->property_list);
+			}
+			else
+			{
+				if (destination->property_list)
+				{
+					DESTROY(LIST(Texture_property))(&destination->property_list);
+				}
+			}
 			/* flag destination display list as no longer current */
 			destination->display_list_current=0;
 		}
@@ -5496,6 +5623,35 @@ I think it is best to write a separate function if you want to write a
 	return (return_code);
 } /* Cmiss_texture_write_to_file */
 
+static int list_Texture_property(struct Texture_property *texture_property,
+	void *dummy)
+/*******************************************************************************
+LAST MODIFIED : 25 October 2007
+
+DESCRIPTION :
+Writes the <texture_property> to the command window.
+==============================================================================*/
+{
+	int return_code;	
+
+	ENTER(list_Texture_property);
+	USE_PARAMETER(dummy);
+	if (texture_property)
+	{
+		return_code=1;
+		display_message(INFORMATION_MESSAGE,"     %s : %s\n",
+			texture_property->name, texture_property->value);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"list_Texture_property.  Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Texture_property */
+
 int list_Texture(struct Texture *texture,void *dummy)
 /*******************************************************************************
 LAST MODIFIED : 8 February 2002
@@ -5626,6 +5782,15 @@ Writes the properties of the <texture> to the command window.
 			(texture->combine_colour).blue);
 		display_message(INFORMATION_MESSAGE,
 			"  alpha = %.3g\n",texture->combine_alpha);
+
+		if (texture->property_list)
+		{
+			/* write the texture properties */
+			display_message(INFORMATION_MESSAGE,
+				"  property list :\n");
+			FOR_EACH_OBJECT_IN_LIST(Texture_property)(
+				list_Texture_property, dummy, texture->property_list);
+		}
 	}
 	else
 	{
@@ -6267,3 +6432,49 @@ Modifier function to set the texture from a command.
 
 	return (return_code);
 } /* set_Texture */
+
+int Texture_set_property(struct Texture *texture,
+	const char *property, const char *value)
+/*******************************************************************************
+LAST MODIFIED : 25 October 2007
+
+DESCRIPTION :
+Sets the <property> and <value> string for the <texture>.
+==============================================================================*/
+{
+	int return_code;
+	struct Texture_property *texture_property;
+
+	ENTER(Texture_set_property);
+	if (texture && property && value)
+	{
+		if (!texture->property_list)
+		{
+			texture->property_list = CREATE(LIST(Texture_property))();
+		}
+		if (texture_property = FIND_BY_IDENTIFIER_IN_LIST(Texture_property,name)(
+			(char *)property, texture->property_list))
+		{
+			DEALLOCATE(texture_property->value);
+			texture_property->value = duplicate_string(value);
+			return_code = 1;
+		}
+		else
+		{
+			texture_property = CREATE(Texture_property)
+				((char *)property, (char *)value);
+			return_code = ADD_OBJECT_TO_LIST(Texture_property)(
+				texture_property, texture->property_list);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_get_physical_size.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_set_property */
+
