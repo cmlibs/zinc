@@ -7364,13 +7364,15 @@ If the <property> is set for <cmgui_image> then this returns an allocated
 string containing it's value.  Otherwise returns NULL.
 ==============================================================================*/
 {
+#if defined (IMAGEMAGICK) && MagickLibVersion >= 0x636
 	const char *value;
+#endif /* defined (IMAGEMAGICK) && MagickLibVersion >= 0x636 */
 	char *return_value;
 
 	ENTER(Cmgui_image_get_property);
 	if (cmgui_image)
 	{
-#if defined (IMAGEMAGICK)
+#if defined (IMAGEMAGICK) && MagickLibVersion >= 0x636
 		if (value = GetImageProperty(cmgui_image->magick_image, property))
 		{
 			return_value = duplicate_string(value);
@@ -7380,6 +7382,7 @@ string containing it's value.  Otherwise returns NULL.
 			return_value = (char *)NULL;
 		}
 #else /* defined (IMAGEMAGICK) */
+		USE_PARAMETER(property);
 		return_value = (char *)NULL;
 #endif /* defined (IMAGEMAGICK) */
 	}
@@ -7408,7 +7411,7 @@ Sets the <property> is for <cmgui_image>.
 	ENTER(Cmgui_image_set_property);
 	if (cmgui_image)
 	{
-#if defined (IMAGEMAGICK)
+#if defined (IMAGEMAGICK) && MagickLibVersion >= 0x636
 		if (MagickTrue == SetImageProperty(cmgui_image->magick_image,
 			property, value))
 		{
@@ -7419,6 +7422,8 @@ Sets the <property> is for <cmgui_image>.
 			return_code = 0;
 		}
 #else /* defined (IMAGEMAGICK) */
+		USE_PARAMETER(property);
+		USE_PARAMETER(value);
 		return_code = 0;
 #endif /* defined (IMAGEMAGICK) */
 	}
@@ -7447,7 +7452,7 @@ to the first property.
 	ENTER(Cmgui_image_reset_property_iterator);
 	if (cmgui_image)
 	{
-#if defined (IMAGEMAGICK)
+#if defined (IMAGEMAGICK) && MagickLibVersion >= 0x636
 		ResetImagePropertyIterator(cmgui_image->magick_image);
 		return_code = 1;
 #else /* defined (IMAGEMAGICK) */
@@ -7475,13 +7480,16 @@ the start of the list with Cmgui_image_reset_property_iterator.
 When the end of the list is reached returns NULL.
 ==============================================================================*/
 {
+#if defined (IMAGEMAGICK) && MagickLibVersion >= 0x636
 	const char *value;
+#endif /* defined (IMAGEMAGICK) && MagickLibVersion >= 0x636 */
 	char *return_value;
 
 	ENTER(Cmgui_image_get_property);
 	if (cmgui_image)
 	{
-#if defined (IMAGEMAGICK)
+#if defined (IMAGEMAGICK) && MagickLibVersion >= 0x636
+
 		if (value = GetNextImageProperty(cmgui_image->magick_image))
 		{
 			return_value = duplicate_string(value);
