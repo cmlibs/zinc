@@ -116,14 +116,8 @@ extern "C" {
 #include "icon/forward.xpm"
 #include "icon/forward_by_frame.xpm"
 #include "icon/stop_button.xpm"
-// #include "icon/backward_selected.xpm"
-// #include "icon/backward_by_frame_selected.xpm"
-// #include "icon/fastbackward_selected.xpm"
-// #include "icon/fastforward_selected.xpm"
-// #include "icon/forward_selected.xpm"
-// #include "icon/forward_by_frame_selected.xpm"
-// #include "icon/stop_button_selected.xpm"
-
+#include "icon/cross.xpm"
+#include "icon/cross_selected.xpm"
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF)
 #include "interaction/interactive_toolbar_widget.h"
@@ -191,32 +185,21 @@ Contains information for a graphics window.
 #elif defined (WIN32_USER_INTERFACE)
 	HWND hWnd;
 #elif defined (WX_USER_INTERFACE)
-	 wxGraphicsWindow *wx_graphics_window;
-	 wxPanel *panel;
-	 wxPanel *panel2;
-	 wxPanel *panel3;
-	 wxPanel *panel4;
-	 wxChoice *up_view_options;
-	 wxButton *front_view_options;
-	 wxScrolledWindow *ToolPanel;
-	 wxPanel *interactive_toolbar_panel;
-	 wxFrame *GraphicsWindowTitle;
 	 Cmiss_region *root_region;
-	 wxScrolledWindow *left_panel;
-	 wxCheckBox *wx_perspective_button;
-	 wxToggleButton *time_editor_togglebutton;
-	 wxGridSizer *grid_field;
-	 wxSlider *time_slider;
-	 wxBitmapButton *fast_backward;
-	 wxBitmapButton *backward_by_frame;
-	 wxBitmapButton *backward;
- 	 wxBitmapButton *stop_button;
-	 wxBitmapButton *forward;
-	 wxBitmapButton *forward_by_frame;
-	 wxBitmapButton *fast_forward;
-	 wxTextCtrl *time_text_ctrl;
 	 double maximum_time, minimum_time, current_time;
-	 
+	 wxBitmapButton *fast_backward, *backward_by_frame, *backward, *stop_button,
+			*forward, *forward_by_frame, *fast_forward, *hide_time_bitmapbutton;
+	 wxButton *front_view_options;
+	 wxCheckBox *wx_perspective_button, *time_play_every_frame_checkbox;
+	 wxChoice *up_view_options;
+	 wxFrame *GraphicsWindowTitle;
+	 wxGraphicsWindow *wx_graphics_window;
+	 wxGridSizer *grid_field;
+	 wxPanel *panel, *panel2, *panel3, *panel4,*interactive_toolbar_panel, *time_editor_panel;
+	 wxScrolledWindow  *left_panel, *ToolPanel;
+	 wxSlider *time_slider;
+	 wxTextCtrl *time_text_ctrl, *time_framerate_text_ctrl, *time_step_size_text_ctrl;
+	 wxToggleButton *time_editor_togglebutton;
 #endif /* defined (GTK_USER_INTERFACE) */
 	/* scene_viewers and their parameters: */
 	enum Graphics_window_layout_mode layout_mode;
@@ -1073,7 +1056,7 @@ Updates the time display of the time_slider
 				printf("Graphics_window_time_keeper_callback.  time \n"
 					 window->curren_time);
 #endif /* defined (DEBUG) */
-				window->time_text_ctrl->SetValue(time_string);
+				window->time_text_ctrl->ChangeValue(time_string);
 				window->time_slider->SetValue(time_slider_index);
 				return_code = 1;
 			} break;
@@ -2759,6 +2742,63 @@ view angle, interest point etc.
 } /* modify_Graphics_window_view */
 
 #if defined (WX_USER_INTERFACE)
+
+int Graphics_window_bring_up_time_editor_wx(Graphics_window *window, void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 26 October 2007
+
+DESCRIPTION :
+Bring up the time editor, WX_USER_INTERFACE only.
+==============================================================================*/
+{
+	 int return_code;
+
+	 ENTER(Graphics_window_set_time_settings_wx);
+	 USE_PARAMETER(dummy_void);
+	 if (window)
+	 {
+			window->time_editor_togglebutton->SetValue(1);
+			window->time_editor_panel->Show(true);
+			return_code = 1;
+	 }
+	 else
+	 {
+			return_code = 0;
+	 }
+
+	 LEAVE;
+	 return (return_code);
+}
+
+int Graphics_window_update_time_settings_wx(Graphics_window *window, void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 26 October 2007
+
+DESCRIPTION :
+Change the values on the wx interface if different.
+==============================================================================*/
+{
+	 int return_code;
+	 double time;
+	 wxString text_entry;
+
+	 ENTER(Graphics_window_set_time_settings_wx);
+	 USE_PARAMETER(dummy_void);
+
+	 return_code = 1;
+	 time=Time_keeper_get_speed(window->time_keeper);
+	 text_entry.Printf(_T("%f"),time);
+	 window->time_framerate_text_ctrl->ChangeValue(text_entry);
+	 time = window->time_step;
+	 text_entry.Printf(_T("%f"),time);
+	 window->time_step_size_text_ctrl->ChangeValue(text_entry);
+	 window->time_play_every_frame_checkbox->SetValue(
+			Time_keeper_get_play_every_frame(window->time_keeper));
+	 LEAVE;
+
+	 return (return_code);
+}
+
 class wxGraphicsWindow : public wxFrame
 {
 	 Graphics_window *graphics_window;
@@ -2949,12 +2989,8 @@ void OnPerspectivePressed(wxCommandEvent& event)
 void OnTimeEditorButtonPressed(wxCommandEvent& event)
 {
 	 ENTER(OnTimeEditorButtonPressed);
-	 
-	 if (time_editor_panel == NULL)
-	 {
-			time_editor_panel = XRCCTRL(*this, "TimeEditorPanel", wxPanel);
-	 }
-	 time_editor_panel->Show(graphics_window->time_editor_togglebutton->GetValue());
+
+	 graphics_window->time_editor_panel->Show(graphics_window->time_editor_togglebutton->GetValue());
 	 if (graphics_window->GraphicsWindowTitle)
 	 {
 			graphics_window->GraphicsWindowTitle->Layout();
@@ -3107,7 +3143,7 @@ void OnTimeSliderChanged( wxScrollEvent& event)
 	 value = graphics_window->time_slider->GetValue();
 	 time = (double)(((graphics_window->maximum_time - graphics_window->minimum_time) * (double)value ) / (double)1000);
 	 time_string.Printf(_T("%f"), time);
-	 graphics_window->time_text_ctrl->SetValue(time_string);
+	 graphics_window->time_text_ctrl->ChangeValue(time_string);
 	 if(graphics_window->time_keeper)
 	 {
 			Time_keeper_request_new_time(graphics_window->time_keeper,
@@ -3207,8 +3243,8 @@ void OnTimeBackwardByStepPressed(wxCommandEvent& event)
 void OnTimeFastForwardPressed(wxCommandEvent& event)
 {
 	 float time;
-	 ENTER(OnTimeFastForwardPressed);
 
+	 ENTER(OnTimeFastForwardPressed);
 	 time = Time_keeper_get_time(graphics_window->time_keeper);
 	 if ((time + 2.0*graphics_window->time_step) < graphics_window->maximum_time)
 	 {
@@ -3227,8 +3263,8 @@ void OnTimeFastForwardPressed(wxCommandEvent& event)
 void OnTimeFastBackwardPressed(wxCommandEvent& event)
 {
 	 float time;
-	 ENTER(OnTimeFastBackwardPressed);
 
+	 ENTER(OnTimeFastBackwardPressed);
 	 time = Time_keeper_get_time(graphics_window->time_keeper);
 	 if ((time - 2.0*graphics_window->time_step) > graphics_window->minimum_time)
 	 {
@@ -3240,7 +3276,67 @@ void OnTimeFastBackwardPressed(wxCommandEvent& event)
 			Time_keeper_request_new_time(graphics_window->time_keeper,
 				 graphics_window->minimum_time);
 	 }
-	 
+ 
+	 LEAVE;
+}
+
+void OnTimeHidePressed(wxCommandEvent& event)
+{
+	 ENTER(OnTimeHidePressed);
+	 graphics_window->time_editor_togglebutton->SetValue(0);
+	 graphics_window->time_editor_panel->Show(false);
+	 if (graphics_window->GraphicsWindowTitle)
+	 {
+			graphics_window->GraphicsWindowTitle->Layout();
+	 }
+
+	 LEAVE;
+}
+
+void OnTimeFramerateTextEntered(wxCommandEvent& event)
+{
+	 char *text_entry;
+	 float time;
+
+	 ENTER(OnTimeFramerateTextEntered);
+	 text_entry = const_cast<char *>(graphics_window->time_framerate_text_ctrl->GetValue().c_str());
+	 if (text_entry)
+	 {
+			sscanf(text_entry, "%g", &time);
+			Time_keeper_set_speed(graphics_window->time_keeper,
+				 time);	
+	 }
+	 Graphics_window_update_time_settings_wx(graphics_window, (void *)NULL);
+}
+
+void OnTimeStepSizeTextEntered(wxCommandEvent& event)
+{
+	 char *text_entry;
+	 float time;
+
+	 ENTER(OnTimeStepSizeTextEntered);
+	 text_entry = const_cast<char *>(graphics_window->time_step_size_text_ctrl->GetValue().c_str());
+	 if (text_entry)
+	 {
+			sscanf(text_entry, "%g", &time);
+			graphics_window->time_step = time;
+	 }
+	 Graphics_window_update_time_settings_wx(graphics_window, (void *)NULL);
+	 LEAVE;
+}
+
+void OnEveryFrameChecked(wxCommandEvent& event)
+{
+	 ENTER(OnEveryFrameChecked);
+	 if (graphics_window->time_play_every_frame_checkbox->GetValue())
+	 {
+			Time_keeper_set_play_every_frame(graphics_window->time_keeper);	
+	 }
+	 else
+	 {
+			Time_keeper_set_play_skip_frames(graphics_window->time_keeper);
+	 }
+	 Graphics_window_update_time_settings_wx(graphics_window, (void *)NULL);
 	 LEAVE;
 }
 
@@ -3265,6 +3361,10 @@ BEGIN_EVENT_TABLE(wxGraphicsWindow, wxFrame)
 	 EVT_BUTTON(XRCID("GraphicsWindowBackwardByStep"), wxGraphicsWindow::OnTimeBackwardByStepPressed)
 	 EVT_BUTTON(XRCID("GraphicsWindowFastForward"), wxGraphicsWindow::OnTimeFastForwardPressed)
 	 EVT_BUTTON(XRCID("GraphicsWindowFastBackward"), wxGraphicsWindow::OnTimeFastBackwardPressed)
+	 EVT_BUTTON(XRCID("GraphicsWindowHideTimeBitmapButton"), wxGraphicsWindow::OnTimeHidePressed)
+	 EVT_TEXT_ENTER(XRCID("GraphicsWindowTimeFramerateTextCtrl"),wxGraphicsWindow::OnTimeFramerateTextEntered)
+	 EVT_TEXT_ENTER(XRCID("GraphicsWindowTimeStepSizeTextCtrl"),wxGraphicsWindow::OnTimeStepSizeTextEntered)
+	 EVT_CHECKBOX(XRCID("GraphcisWindowTimePlayEveryFrameCheckBox"), wxGraphicsWindow::OnEveryFrameChecked)
 END_EVENT_TABLE()
 
 class wxInteractiveToolButton : public wxBitmapButton
@@ -4174,9 +4274,11 @@ it.
 			   (wxWindow *)NULL, _T("CmguiGraphicsWindow"));
 			window->wx_graphics_window->SetIcon(cmiss_icon_xpm);
 			window->grid_field =NULL;
-			window->GraphicsWindowTitle = XRCCTRL(*window->wx_graphics_window, "CmguiGraphicsWindow", wxFrame);
+			window->GraphicsWindowTitle = XRCCTRL(*window->wx_graphics_window, 
+				 "CmguiGraphicsWindow", wxFrame);
 			window->GraphicsWindowTitle->SetTitle(window_title);
-			window->wx_perspective_button = XRCCTRL(*window->wx_graphics_window,"PerspectiveButton", wxCheckBox);
+			window->wx_perspective_button = XRCCTRL(*window->wx_graphics_window,
+				 "PerspectiveButton", wxCheckBox);
 			if (window_title)
 				 DEALLOCATE(window_title);
 			/* The time_slider receives messages from the
@@ -4186,54 +4288,100 @@ it.
 			window->panel2 = XRCCTRL(*window->wx_graphics_window, "Panel2", wxPanel);
 			window->panel3 = XRCCTRL(*window->wx_graphics_window, "Panel3", wxPanel);
 			window->panel4 = XRCCTRL(*window->wx_graphics_window, "Panel4", wxPanel);
-			window->up_view_options = XRCCTRL(*window->wx_graphics_window,"UpViewOptions", wxChoice);
+			window->up_view_options = XRCCTRL(*window->wx_graphics_window,
+				 "UpViewOptions", wxChoice);
 			window->up_view_options->Disable();
-			window->front_view_options = XRCCTRL(*window->wx_graphics_window, "FrontViewOptions", wxButton);
+			window->front_view_options = XRCCTRL(*window->wx_graphics_window, 
+				 "FrontViewOptions", wxButton);
 			window->front_view_options->Disable();
 			window->left_panel =XRCCTRL(*window->wx_graphics_window, "LeftPanel", wxScrolledWindow);
 			window->left_panel->FitInside();
 			window->left_panel->SetMinSize(wxSize(10,10));
-			window->ToolPanel = XRCCTRL(*window->wx_graphics_window, "ToolPanel", wxScrolledWindow);
+			window->ToolPanel = XRCCTRL(*window->wx_graphics_window, 
+				 "ToolPanel", wxScrolledWindow);
 			window->ToolPanel ->Layout();
 			window->interactive_toolbar_panel = NULL;
 
 			/* setting up the time editor */
-			window->time_slider = XRCCTRL(*window->wx_graphics_window, "GraphicsWindowTimeSlider", wxSlider);
+			wxBitmap cross_bmp(cross_xpm);
+			window->hide_time_bitmapbutton = XRCCTRL(*window->wx_graphics_window, 
+				 "GraphicsWindowHideTimeBitmapButton", wxBitmapButton);
+			window->hide_time_bitmapbutton->SetBitmapLabel(cross_bmp);
+			wxBitmap cross_selected_bmp(cross_selected_xpm);
+			window->hide_time_bitmapbutton->SetBitmapFocus(cross_selected_xpm);
+
+			window->time_slider = XRCCTRL(*window->wx_graphics_window, 
+				 "GraphicsWindowTimeSlider", wxSlider);
 			window->time_slider->SetRange(0,1000);
+
 			wxBitmap time_editor_bmp1(fastbackward_xpm);
-			window->fast_backward = XRCCTRL(*window->wx_graphics_window, "GraphicsWindowFastBackward", wxBitmapButton);
+			window->fast_backward = XRCCTRL(*window->wx_graphics_window, 
+				 "GraphicsWindowFastBackward", wxBitmapButton);
 			window->fast_backward->SetBitmapLabel(time_editor_bmp1);
+
 			wxBitmap time_editor_bmp2(backward_by_frame_xpm);
-			window->backward_by_frame = XRCCTRL(*window->wx_graphics_window, "GraphicsWindowBackwardByStep", wxBitmapButton);
+			window->backward_by_frame = XRCCTRL(*window->wx_graphics_window, 
+				 "GraphicsWindowBackwardByStep", wxBitmapButton);
 			window->backward_by_frame->SetBitmapLabel(time_editor_bmp2);
+
 			wxBitmap time_editor_bmp3(backward_xpm);
-			window->backward = XRCCTRL(*window->wx_graphics_window, "GraphicsWindowBackward", wxBitmapButton);
+			window->backward = XRCCTRL(*window->wx_graphics_window, 
+				 "GraphicsWindowBackward", wxBitmapButton);
 			window->backward->SetBitmapLabel(time_editor_bmp3);
+
 			wxBitmap time_editor_bmp4(stop_button_xpm);
-			window->stop_button = XRCCTRL(*window->wx_graphics_window, "GraphicsWindowStop", wxBitmapButton);
+			window->stop_button = XRCCTRL(*window->wx_graphics_window, 
+				 "GraphicsWindowStop", wxBitmapButton);
 			window->stop_button->SetBitmapLabel(time_editor_bmp4);
+
 			wxBitmap time_editor_bmp5(forward_xpm);
-			window->forward = XRCCTRL(*window->wx_graphics_window, "GraphicsWindowForward", wxBitmapButton);
+			window->forward = XRCCTRL(*window->wx_graphics_window, 
+				 "GraphicsWindowForward", wxBitmapButton);
 			window->forward->SetBitmapLabel(time_editor_bmp5);
+
 			wxBitmap time_editor_bmp6(forward_by_frame_xpm);
-			window->forward_by_frame = XRCCTRL(*window->wx_graphics_window, "GraphicsWindowForwardByStep", wxBitmapButton);
+			window->forward_by_frame = XRCCTRL(*window->wx_graphics_window, 
+				 "GraphicsWindowForwardByStep", wxBitmapButton);
 			window->forward_by_frame->SetBitmapLabel(time_editor_bmp6);
+
 			wxBitmap time_editor_bmp7(fastforward_xpm);
-			window->fast_forward = XRCCTRL(*window->wx_graphics_window, "GraphicsWindowFastForward", wxBitmapButton); 
+			window->fast_forward = XRCCTRL(*window->wx_graphics_window, 
+				 "GraphicsWindowFastForward", wxBitmapButton); 
 			window->fast_forward->SetBitmapLabel(time_editor_bmp7);
-			window->time_editor_togglebutton = XRCCTRL(*window->wx_graphics_window,"TimeEditorToggleButton", wxToggleButton);
+
+			window->time_editor_togglebutton = XRCCTRL(*window->wx_graphics_window,
+				 "TimeEditorToggleButton", wxToggleButton);
 			window->time_editor_togglebutton->SetValue(1);		
-			window->time_text_ctrl = XRCCTRL(*window->wx_graphics_window,"GraphicsWindowTimeTextCtrl", wxTextCtrl);
-			window->time_slider = XRCCTRL(*window->wx_graphics_window,"GraphicsWindowTimeSlider", wxSlider);
+
+			window->time_text_ctrl = XRCCTRL(*window->wx_graphics_window,
+				 "GraphicsWindowTimeTextCtrl", wxTextCtrl);
+			window->time_slider = XRCCTRL(*window->wx_graphics_window,
+				 "GraphicsWindowTimeSlider", wxSlider);
+			window->time_editor_panel = XRCCTRL(*window->wx_graphics_window,
+				 "TimeEditorPanel", wxPanel);
+			window->time_framerate_text_ctrl = XRCCTRL(*window->wx_graphics_window,
+				 "GraphicsWindowTimeFramerateTextCtrl", wxTextCtrl);
+			window->time_step_size_text_ctrl = XRCCTRL(*window->wx_graphics_window,
+				 "GraphicsWindowTimeStepSizeTextCtrl", wxTextCtrl);
+			window->time_play_every_frame_checkbox = XRCCTRL(*window->wx_graphics_window,
+				 "GraphcisWindowTimePlayEveryFrameCheckBox", wxCheckBox);
+
+			window->minimum_time = Time_keeper_get_minimum(window->time_keeper);
+			window->maximum_time =  Time_keeper_get_maximum(window->time_keeper);
+			window->time_step = 0.1;
+			if ((window->maximum_time == 0) && (window->minimum_time == 0))
+			{
+				 window->time_editor_panel->Show(0);
+				 window->time_editor_togglebutton->SetValue(0);
+			}
 			Time_keeper_add_callback(window->time_keeper,
 				 Graphics_window_time_keeper_callback,
 				 (void *)window,
 				 (enum Time_keeper_event) (TIME_KEEPER_NEW_TIME | 
 						TIME_KEEPER_NEW_MINIMUM | TIME_KEEPER_NEW_MAXIMUM ));
-			window->minimum_time = Time_keeper_get_minimum(window->time_keeper);
-			window->maximum_time =  Time_keeper_get_maximum(window->time_keeper);
-			window->time_step = 0.1;
-
+			Graphics_window_time_keeper_callback(window->time_keeper, TIME_KEEPER_NEW_TIME,
+				 (void *)window);
+			Graphics_window_update_time_settings_wx(window, (void *)NULL);
 
 			USE_PARAMETER(graphics_buffer);
 			USE_PARAMETER(add_interactive_tool_to_wx_toolbar);

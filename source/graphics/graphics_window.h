@@ -154,6 +154,25 @@ Structure to pass to modify_Graphics_window.
 	struct MANAGER(Texture) *texture_manager;
 }; /* struct Modify_graphics_window_data */
 
+#if defined(WX_USER_INTERFACE)
+int Graphics_window_bring_up_time_editor_wx(struct Graphics_window *window, void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 26 October 2007
+
+DESCRIPTION :
+Bring up the time editor, WX_USER_INTERFACE only.
+==============================================================================*/
+
+int Graphics_window_update_time_settings_wx(struct Graphics_window *window, void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 26 October 2007
+
+DESCRIPTION :
+Change the values on the wx interface if different.
+==============================================================================*/
+
+#endif /* defined(WX_USER_INTERFACE) */
+
 /*
 Global/Public functions
 -----------------------

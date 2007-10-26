@@ -396,7 +396,8 @@ void Terminate(wxCloseEvent& event)
 	 DESTROY(Node_viewer)(node_viewer->node_viewer_address);
 } 
 
-	 void NodeViewerTextEntered(wxTextCtrl *textctrl , Node_viewer *node_viewer,Computed_field *field, int component_number, FE_nodal_value_type type, int version)
+	 void NodeViewerTextEntered(wxTextCtrl *textctrl , Node_viewer *node_viewer,
+			Computed_field *field, int component_number, FE_nodal_value_type type, int version)
 	 {
 			char *value_string, *temp_string;
 			FE_value time;

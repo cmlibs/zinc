@@ -221,87 +221,141 @@
 	       							<flag>wxEXPAND</flag>
 										<option>0</option>
 										<object class = "wxPanel" name ="TimeEditorPanel">	
-			       					<flag>wxEXPAND</flag>
-										<object class = "wxStaticBoxSizer">	
-											<label>Time Editor</label>
-											<orient>wxVERTICAL</orient>
+			       						<flag>wxEXPAND</flag>
+											<object class = "wxStaticBoxSizer">	
+												<label>Time Editor</label>
+												<orient>wxVERTICAL</orient>
 
-    	    								<object class="sizeritem">
-	       									<flag>wxEXPAND</flag>
-												<option>0</option>
-												<object class = "wxBoxSizer">	
-													<orient>wxHORIZONTAL</orient>
-			  			  	    					<object class="sizeritem">
-														<option>1</option>
-	       							    			<flag>wxEXPAND</flag>				
-														<object class = "wxSlider" name = "GraphicsWindowTimeSlider">
-															<label>Time Slider</label>
-															<style>wxSL_AUTOTICKS</style>
-															<size>-1,30</size>
-														</object>
+	    	    								<object class="sizeritem">
+		       									<flag>wxTOP|wxALIGN_RIGHT</flag>
+													<option>0</option>
+													<object class = "wxBoxSizer">	
 													</object>
-			    			    					<object class="sizeritem">						
-														<object class = "wxTextCtrl" name = "GraphicsWindowTimeTextCtrl">
-															<style>wxTE_PROCESS_ENTER</style>
-															<value>0.0000</value>
-															<size>60,30</size>
+												</object>
+
+	    	    								<object class="sizeritem">
+		       									<flag>wxEXPAND</flag>
+													<option>0</option>
+													<object class = "wxBoxSizer">	
+														<orient>wxHORIZONTAL</orient>
+			  				  	    					<object class="sizeritem">
+															<option>1</option>
+	       								    			<flag>wxEXPAND</flag>				
+															<object class = "wxSlider" name = "GraphicsWindowTimeSlider">
+																<label>Time Slider</label>
+																<style>wxSL_AUTOTICKS</style>
+																<size>-1,30</size>
+															</object>
+														</object>
+				    			    					<object class="sizeritem">						
+															<object class = "wxTextCtrl" name = "GraphicsWindowTimeTextCtrl">
+																<style>wxTE_PROCESS_ENTER</style>
+																<value>0.0000</value>
+																<size>70,30</size>
+															</object>
+														</object>
+							  	  	    				<object class="sizeritem">
+															<object class = "wxBitmapButton" name = "GraphicsWindowHideTimeBitmapButton">
+															</object>
 														</object>
 													</object>
 												</object>
-											</object>
-
-    	    								<object class="sizeritem">
-			       							<flag>wxALIGN_CENTER</flag>
-												<option>0</option>						
-												<object class = "wxBoxSizer">
-													<orient>wxHORIZONTAL</orient>
-			  			  	    					<object class="sizeritem">		
-			       									<flag>wxALIGN_CENTER</flag>
-														<object class = "wxBitmapButton" name = "GraphicsWindowFastBackward">
-															<size>36,37</size>
-														</object>
-													</object>
-			  			  	    					<object class="sizeritem">
-					       							<flag>wxALIGN_CENTER</flag>
-														<object class = "wxBitmapButton" name = "GraphicsWindowBackwardByStep">
-															<size>36,37</size>
-														</object>
-													</object>
-			  			  	    					<object class="sizeritem">	
-						       						<flag>wxALIGN_CENTER</flag>
-														<object class = "wxBitmapButton" name = "GraphicsWindowBackward">
-															<size>34,35</size>
-														</object>
-													</object>
-			  			  	    					<object class="sizeritem">	
-						       						<flag>wxALIGN_CENTER</flag>
-														<object class = "wxBitmapButton" name = "GraphicsWindowStop">
-															<size>92,35</size>
-														</object>
-													</object>
-			  			  	    					<object class="sizeritem">	
-						       						<flag>wxALIGN_CENTER</flag>
-														<object class = "wxBitmapButton" name = "GraphicsWindowForward">
-															<size>34,35</size>
-														</object>
-													</object>
-			  			  	    					<object class="sizeritem">		
-					       							<flag>wxALIGN_CENTER</flag>
-														<object class = "wxBitmapButton" name = "GraphicsWindowForwardByStep">
-															<size>36,37</size>
-														</object>
-													</object>
-			  			  	    					<object class="sizeritem">
-							       					<flag>wxALIGN_CENTER</flag>
-														<object class = "wxBitmapButton" name = "GraphicsWindowFastForward">
-															<size>36,37</size>
-														</object>
-													</object>
 	
-												</object>
-											</object>
+  	  		    								<object class="sizeritem">
+					      	 						<flag>wxALIGN_CENTER</flag>				
+													<object class = "wxBoxSizer">
+														<orient>wxHORIZONTAL</orient>
 
-										</object>
+			  						  	    			<object class="sizeritem">		
+			       										<flag>wxALIGN_CENTER</flag>
+															<object class = "wxBitmapButton" name = "GraphicsWindowFastBackward">
+																<size>36,37</size>
+															</object>
+														</object>
+			  	  	    								<object class="sizeritem">
+				       									<flag>wxALIGN_CENTER</flag>
+															<object class = "wxBitmapButton" name = "GraphicsWindowBackwardByStep">
+																<size>36,37</size>
+															</object>
+														</object>
+				  						    			<object class="sizeritem">	
+									      					<flag>wxALIGN_CENTER</flag>
+															<object class = "wxBitmapButton" name = "GraphicsWindowBackward">
+																<size>34,35</size>
+															</object>
+														</object>
+		  				  	    						<object class="sizeritem">	
+					    	   								<flag>wxALIGN_CENTER</flag>
+															<object class = "wxBitmapButton" name = "GraphicsWindowStop">
+																<size>92,35</size>
+															</object>
+														</object>
+					  				  	  				<object class="sizeritem">	
+									     					<flag>wxALIGN_CENTER</flag>
+															<object class = "wxBitmapButton" name = "GraphicsWindowForward">
+																<size>34,35</size>
+															</object>
+														</object>
+				  						    			<object class="sizeritem">		
+						    	   							<flag>wxALIGN_CENTER</flag>
+															<object class = "wxBitmapButton" name = "GraphicsWindowForwardByStep">
+																<size>36,37</size>
+															</object>
+														</object>
+				  		  	    						<object class="sizeritem">
+									       				<flag>wxALIGN_CENTER</flag>
+															<object class = "wxBitmapButton" name = "GraphicsWindowFastForward">
+																<size>36,37</size>
+															</object>
+														</object>
+		
+													</object>
+												</object>
+
+  	  		    								<object class="sizeritem">
+					      	 						<flag>wxALIGN_CENTER</flag>
+													<object class = "wxBoxSizer">
+
+							  	  	    				<object class="sizeritem">
+									       				<flag>wxALIGN_CENTER</flag>
+															<object class = "wxCheckBox" name = "GraphcisWindowTimePlayEveryFrameCheckBox">
+																<label>Play Every Frame</label>
+																<size>-1,30</size>
+															</object>
+														</object>
+							  	  	    				<object class="sizeritem">
+									       				<flag>wxALIGN_CENTER</flag>
+															<object class = "wxStaticText">
+																<label>   Framerate: </label>
+															</object>
+														</object>
+							  	  	    				<object class="sizeritem">
+									       				<flag>wxALIGN_CENTER</flag>
+															<object class = "wxTextCtrl" name ="GraphicsWindowTimeFramerateTextCtrl">
+																<style>wxTE_PROCESS_ENTER</style>
+																<size>70,-1</size>
+																<value>1</value>
+															</object>
+														</object>
+							  	  	    				<object class="sizeritem">
+									       				<flag>wxALIGN_CENTER</flag>
+															<object class = "wxStaticText">
+																<label>   Step Size: </label>
+															</object>
+														</object>
+							  	  	    				<object class="sizeritem">
+									       				<flag>wxALIGN_CENTER</flag>
+															<object class = "wxTextCtrl" name ="GraphicsWindowTimeStepSizeTextCtrl">
+																<style>wxTE_PROCESS_ENTER</style>
+																<size>70,-1</size>
+																<value>1</value>
+															</object>
+														</object>
+
+													</object>
+												</object>
+ 
+											</object>
 										</object>
 									</object>
 

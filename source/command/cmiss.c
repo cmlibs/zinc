@@ -7559,7 +7559,7 @@ Executes a GFX CREATE TEXTURE command.
 	return (return_code);
 } /*gfx_create_texture */
 
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 static int gfx_create_time_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -7598,11 +7598,20 @@ editor at a time.  This implementation may be changed later.
 		{
 			if (command_data=(struct Cmiss_command_data *)command_data_void)
 			{
+#if defined (MOTIF)
 				return_code=bring_up_time_editor_dialog(
 					&(command_data->time_editor_dialog),
 					User_interface_get_application_shell(command_data->user_interface),
 					command_data->default_time_keeper, 
 					command_data->user_interface);
+#elif defined (WX_USER_INTERFACE)
+				if (command_data->graphics_window_manager)
+				{
+					 return_code = FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
+							Graphics_window_bring_up_time_editor_wx,(void *)NULL,
+							command_data->graphics_window_manager);
+				}
+#endif /* switch (USER_INTERFACE) */
 			}
 			else
 			{
@@ -7622,7 +7631,7 @@ editor at a time.  This implementation may be changed later.
 
 	return (return_code);
 } /* gfx_create_graphical_time_editor */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 
 #if defined (MOTIF)
 static int gfx_create_curve_editor(struct Parse_state *state,
@@ -8909,10 +8918,10 @@ Executes a GFX CREATE command.
 					command_data_void,gfx_create_surfaces);
 				Option_table_add_entry(option_table,"texture",NULL, 
 					command_data_void,gfx_create_texture); 
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 				Option_table_add_entry(option_table,"time_editor",NULL,
 					command_data_void,gfx_create_time_editor);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 				Option_table_add_entry(option_table,"window",NULL,
 					command_data_void,gfx_create_window);
@@ -18412,7 +18421,7 @@ Sets the ordering of graphics objects on scene(s) from the command line.
 	return (return_code);
 } /* gfx_set_scene_order */
 
-#if defined (MOTIF)
+#if defined (MOTIF) || (WX_USER_INTERFACE)
 static int gfx_set_time(struct Parse_state *state,void *dummy_to_be_modified,
 	void *command_data_void)
 /*******************************************************************************
@@ -18480,7 +18489,7 @@ Sets the time from the command line.
 
 	return (return_code);
 } /* gfx_set_time */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || (WX_USER_INTERFACE)*/
 
 static int set_transformation_matrix(struct Parse_state *state,
 	void *transformation_matrix_void,void *dummy_user_data)
@@ -18881,10 +18890,10 @@ Executes a GFX SET command.
 				NULL, set_float_positive);
 			Option_table_add_entry(option_table, "transformation", NULL,
 				command_data_void, gfx_set_transformation);
-#if defined (MOTIF)
+#if defined (MOTIF) || (WX_USER_INTERFACE)
 			Option_table_add_entry(option_table, "time", NULL,
 				command_data_void, gfx_set_time);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || (WX_USER_INTERFACE)*/
 			Option_table_add_entry(option_table, "visibility", NULL,
 				command_data_void, gfx_set_visibility);
 			return_code = Option_table_parse(option_table, state);
@@ -19176,6 +19185,14 @@ DESCRIPTION :
 						{
 							Time_keeper_stop(time_keeper);
 						}
+#if defined (WX_USER_INTERFACE)
+						if (command_data->graphics_window_manager)
+						{
+							 FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
+									Graphics_window_update_time_settings_wx,(void *)NULL,
+									command_data->graphics_window_manager);
+						}
+#endif /*defined (WX_USER_INTERFACE)*/
 					}
 				}
 			}
@@ -19197,7 +19214,6 @@ DESCRIPTION :
 
 	return (return_code);
 } /* gfx_timekeeper */
-
 
 static int gfx_transform_tool(struct Parse_state *state,
 	void *dummy_user_data,void *command_data_void)
