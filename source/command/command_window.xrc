@@ -108,10 +108,6 @@
       <object class = "wxMenuItem" name="GraphicsSpectrumeditor">
         <label>Spectrum editor</label>
       </object>
-      <object class = "wxMenuItem" name="GraphicsTimeeditor">
-		 <enabled>0</enabled>
-        <label>Time editor</label>
-      </object>
       <object class = "wxMenuItem" name="GraphicsVolumeeditor">
 		 <enabled>0</enabled>
         <label>Volume editor</label>
@@ -119,6 +115,7 @@
       <object class="separator"/>
       <object class = "wxMenu" name="Graphics2Dprojections">
         <label>2-D projections</label>
+		 <enabled>0</enabled>
         <object class = "wxMenuItem" name="Projectionsxy">
           <label>xy</label>
         </object>          
