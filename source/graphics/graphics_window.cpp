@@ -1051,13 +1051,13 @@ Updates the time display of the time_slider
 				 if (window->maximum_time - window->minimum_time > 0)
 				 {
 						time_slider_index = (int)(window->current_time/(window->maximum_time - window->minimum_time) * 1000 + 0.5);
+						window->time_slider->SetValue(time_slider_index);
 				 }
 #if defined (DEBUG)
 				printf("Graphics_window_time_keeper_callback.  time \n"
 					 window->curren_time);
 #endif /* defined (DEBUG) */
 				window->time_text_ctrl->ChangeValue(time_string);
-				window->time_slider->SetValue(time_slider_index);
 				return_code = 1;
 			} break;
 			case TIME_KEEPER_NEW_MINIMUM:
