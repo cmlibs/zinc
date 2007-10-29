@@ -2848,7 +2848,6 @@ public:
 			int force_onscreen, height, width;
 			struct Cmgui_image *cmgui_image;
 			struct Cmgui_image_information *cmgui_image_information;
-			
 			wxString file_name;
 			wxString filepath;
 			char*  filename;
@@ -2862,33 +2861,39 @@ public:
 				 filename=(char*)filepath.mb_str();
 #if !defined (__WXMSW__)
 				 int filter_index;
-				 filter_index=saveImage->GetFilterIndex();
-				 if (filter_index == 0)
+				 if ((strstr(filename, ".png") == NULL) && (strstr(filename, ".jpg") == NULL) && (strstr(filename, ".sgi") == NULL) &&
+						(strstr(filename, ".tiff")== NULL) && (strstr(filename, ".bmp")== NULL) && (strstr(filename, ".gif") == NULL) && 
+						(strstr(filename, ".PNG") == NULL) && (strstr(filename, ".JPG") == NULL) && (strstr(filename, ".SGI") == NULL) &&
+						(strstr(filename, ".TIFF")== NULL) && (strstr(filename, ".BMP")== NULL) && (strstr(filename, ".GIF") == NULL))
 				 {
-						strcat (filename,".png");
-				 }
-				 else if (filter_index == 1)
-				 {
-						strcat (filename,".jpg");
-				 }
-				 else if (filter_index == 2)
-				 {
-						strcat (filename,".sgi");
-				 }
-				 else if (filter_index == 3)
-				 {
-						strcat (filename,".tiff");
-				 }
-				 else if (filter_index == 4)
-				 {
-						strcat (filename,".bmp");
-				 }
-				 else if (filter_index == 5)
-				 {
-						strcat (filename,".gif");
+						filter_index=saveImage->GetFilterIndex();
+						if (filter_index == 0)
+						{
+							 strcat (filename,".png");
+						}
+						else if (filter_index == 1)
+						{
+							 strcat (filename,".jpg");
+						}
+						else if (filter_index == 2)
+						{
+							 strcat (filename,".sgi");
+						}
+						else if (filter_index == 3)
+						{
+							 strcat (filename,".tiff");
+						}
+						else if (filter_index == 4)
+						{
+							 strcat (filename,".bmp");
+						}
+						else if (filter_index == 5)
+						{
+							 strcat (filename,".gif");
+						}
 				 }
 #endif  /*!defined (__WXMSW__)*/
-
+						
 				 storage = TEXTURE_RGBA;
 				 force_onscreen = 0;
 				 width = 0;
@@ -2993,6 +2998,8 @@ void OnTimeEditorButtonPressed(wxCommandEvent& event)
 	 graphics_window->time_editor_panel->Show(graphics_window->time_editor_togglebutton->GetValue());
 	 if (graphics_window->GraphicsWindowTitle)
 	 {
+			graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()+wxSize(0,1));
+			graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()-wxSize(0,1));
 			graphics_window->GraphicsWindowTitle->Layout();
 	 }
 	 
@@ -3287,6 +3294,8 @@ void OnTimeHidePressed(wxCommandEvent& event)
 	 graphics_window->time_editor_panel->Show(false);
 	 if (graphics_window->GraphicsWindowTitle)
 	 {
+			graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()+wxSize(0,1));
+			graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()-wxSize(0,1));
 			graphics_window->GraphicsWindowTitle->Layout();
 	 }
 
@@ -4389,13 +4398,12 @@ it.
 			/* make sure the first scene_viewer shows */
 			if (window->panel)
 			{
-				 
 				 if (graphics_buffer = create_Graphics_buffer_wx(
 								graphics_buffer_package,
 								window->panel,
 								graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
 								minimum_colour_buffer_depth, minimum_depth_buffer_depth,
-								minimum_accumulation_buffer_depth))
+								minimum_accumulation_buffer_depth)
 				 {
 						/* create one Scene_viewers */
 						window->number_of_scene_viewers = 1;
@@ -6391,7 +6399,7 @@ graphics window on screen.
 				{
 					/* Clear the buffer as we are going to leave a border between panes */
 					glClearColor(0.0,0.0,0.0,0.);
-					glClear(GL_COLOR_BUFFER_BIT);
+					glClear(GL_COLOR_BUFFER_BIT); 
 				}
 #endif /* defined (OPENGL_API) */
 				if ((tiles_across > 1) || (panes_across > 1))
