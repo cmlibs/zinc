@@ -4403,7 +4403,7 @@ it.
 								window->panel,
 								graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
 								minimum_colour_buffer_depth, minimum_depth_buffer_depth,
-								minimum_accumulation_buffer_depth)
+								minimum_accumulation_buffer_depth))
 				 {
 						/* create one Scene_viewers */
 						window->number_of_scene_viewers = 1;
