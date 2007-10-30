@@ -1683,3 +1683,35 @@ x==============================================================================*
 	return (return_code);
 } /* DESTROY(Time_keeper) */
 
+int Time_keeper_has_time_object(struct Time_keeper *time_keeper)
+/*******************************************************************************
+LAST MODIFIED : 31 Oct 2007
+
+DESCRIPTION :
+Check if time keeper has time object
+x==============================================================================*/
+{
+	 int return_code;
+	 
+	 ENTER(Time_object_has_time_object);
+	 if (time_keeper)
+	 {
+			if (time_keeper->time_object_info_list)
+			{
+				 return_code = 1;
+			}
+			else
+			{
+				 return_code = 0;
+			}
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "Time_keeper_set_play_skip_frames. Invalid time object");
+			return_code=0;
+	 }
+	 LEAVE;
+	 
+	return (return_code);
+} /* Time_keeper_has_time_object */

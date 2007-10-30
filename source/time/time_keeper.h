@@ -247,5 +247,14 @@ LAST MODIFIED : 29 September 1998
 DESCRIPTION :
 Destroys a Time_keeper object
 x==============================================================================*/
+
+int Time_keeper_has_time_object(struct Time_keeper *time_keeper);
+/*******************************************************************************
+LAST MODIFIED : 31 Oct 2007
+
+DESCRIPTION :
+Check if time keeper has time object
+x==============================================================================*/
+
 #endif /* !defined (TIME_KEEPER_H) */
 

@@ -4378,7 +4378,7 @@ it.
 			window->minimum_time = Time_keeper_get_minimum(window->time_keeper);
 			window->maximum_time =  Time_keeper_get_maximum(window->time_keeper);
 			window->time_step = 0.1;
-			if ((window->maximum_time == 0) && (window->minimum_time == 0))
+			if (!Time_keeper_has_time_object(window->time_keeper))
 			{
 				 window->time_editor_panel->Show(0);
 				 window->time_editor_togglebutton->SetValue(0);
