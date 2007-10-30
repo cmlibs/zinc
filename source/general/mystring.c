@@ -597,38 +597,38 @@ It is up to the calling function to deallocate the returned string.
 	return (!(*error));
 } /* append_string */
 
-int has_suffix(char *string,char *suffix)
+int has_suffix(char *string)
 /*******************************************************************************
 LAST MODIFIED : 25 November 1999
 
 DESCRIPTION :
-Returns true if <string> ends in <suffix>.
+Returns true if <string> has a suffix present.
 ==============================================================================*/
 {
-	int return_code,string_length,suffix_length;
+	char *ptr;
+	int has_suffix;
 
 	ENTER(has_suffix);
-	if (string&&suffix)
-	{
-		/* 1. string must be at least as long as the suffix */
-		if ((string_length=strlen(string)) >= (suffix_length=strlen(suffix)))
-		{
-			/* 2. string must end in the suffix */
-			return_code = (0==strcmp(string+(string_length-suffix_length),suffix));
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"has_suffix.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+	has_suffix = 0;
+	ptr = string;
 
-	return (return_code);
+	/* Point to last character of the string */
+	while(*ptr)
+		ptr++;
+	ptr--;
+	/*
+	* Step back until either a dot or slash is encountered
+	*/
+	while(*ptr != '.' && *ptr != '/' && *ptr != '\\'  && ptr >= string)
+		ptr--;
+
+	/* if we found a dot before a slash or the beginning of the string
+		there is a suffix present */
+	if(*ptr == '.' && ptr >= string)
+		has_suffix = 1;
+
+	LEAVE;
+	return(has_suffix);
 } /* has_suffix */
 
 int check_suffix(char **string, char *suffix)
@@ -636,24 +636,24 @@ int check_suffix(char **string, char *suffix)
 LAST MODIFIED : 22 April 2004
 
 DESCRIPTION :
-Compares the file extension of the string.  If the string given has the 
-supplied suffix (or the universal suffix .cmiss) then the function returns 
-without changing anything.  Otherwise the string is REALLOCATED and the suffix
-added to the end of the string.
+Checks to see if the filename contains a suffix and if not appends the default
+<suffix>
 ==============================================================================*/
 {
+
 	char *new_string;
 	int return_code;
 
-	ENTER(compare_suffix);
+	ENTER(check_suffix);
 	if (string&&(*string)&&suffix)
 	{
-		if (strchr(*string, '.'))
-		{
-			return_code=1;
+		// check to see if string has a suffix
+		// note we purposely do not check to see if the suffix matches the default
+		if (has_suffix(*string)) {
+			return_code = 1;
 		}
-		else
-		{
+		else {
+			
 			if (REALLOCATE(new_string, *string, char, strlen(*string)
 				+strlen(suffix)+1))
 			{
