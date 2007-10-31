@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : graphics_buffer.c
+FILE : graphics_buffer.cpp
 
 LAST MODIFIED : 19 February 2007
 
@@ -296,6 +296,7 @@ DESCRIPTION :
 #if defined (WX_USER_INTERFACE)
 	wxPanel *parent;
 	wxGraphicsBuffer *canvas;
+	int *attrib_list;
 #endif /* defined (WX_USER_INTERFACE) */
 };
 
@@ -2848,6 +2849,14 @@ DESCRIPTION :
 			/*minimum_colour_buffer_depth*/0, /*minimum_depth_buffer_depth */0,
 			/*minimum_alpha_buffer_depth*/0, /*minimum_accumulation_buffer_depth*/0,
 			buffer_to_match);
+#elif defined (WX_USER_INTERFACE)
+		wxFrame *frame = new wxFrame(NULL, -1, "temporary", wxPoint(-1,-1), wxSize(width+50,height+50));
+		wxPanel *temp = new wxPanel(frame, -1, wxPoint(-1,-1), wxSize(width,height));
+		buffer = create_Graphics_buffer_wx(
+			 buffer_to_match->package,
+			 temp,
+			 GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
+			 0, 0, 0, buffer_to_match);
 #else /* defined (MOTIF) */
 		USE_PARAMETER(width);
 		USE_PARAMETER(height);
@@ -4428,16 +4437,10 @@ public:
 
 	wxGraphicsBuffer(wxPanel *parent, wxGLContext* sharedContext,
 		Graphics_buffer *graphics_buffer
-#if defined (UNIX) && !defined (DARWIN)
-		 , int *attrib_list
-#endif /*!defined (UNIX)*/
-):
-		wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, wxSize(10, 10),
-			wxFULL_REPAINT_ON_RESIZE, "GLCanvas"
-#if defined (UNIX) && !defined (DARWIN)
- , attrib_list
-#endif /*!defined (UNIX)*/
-							 ),
+		 , int *attrib_list):
+	wxGLCanvas(parent, sharedContext, wxID_ANY, wxDefaultPosition, wxSize(10, 10),
+		 wxFULL_REPAINT_ON_RESIZE, "GLCanvas"
+		 , attrib_list),
 		graphics_buffer(graphics_buffer), parent(parent)
 	{
 	};
@@ -4633,181 +4636,207 @@ struct Graphics_buffer *create_Graphics_buffer_wx(
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
-	int minimum_accumulation_buffer_depth)
+	int minimum_accumulation_buffer_depth,
+	struct Graphics_buffer  *buffer_to_match)
 /*******************************************************************************
-LAST MODIFIED : 7 December 2006
+LAST MODIFIED : 16 October  2007
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	struct Graphics_buffer *buffer;
+	int *visual_attributes
 
 	ENTER(create_Graphics_buffer_wx);
-	USE_PARAMETER(buffering_mode);
-	USE_PARAMETER(stereo_mode);
 	wxLogNull logNo;
 	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
 	{	
 		 buffer->type = GRAPHICS_BUFFER_WX_TYPE;		 
 		 buffer->parent = parent;
+		 buffer->attrib_list = NULL;
 #if defined (UNIX) && !defined (DARWIN)
 		 wxGLCanvas *test_canvas;
-		 int *visual_attributes, *attribute_ptr, number_of_visual_attributes,selection_level;
+		 int *attribute_ptr, number_of_visual_attributes, selection_level;
+		 int return_code;
 		 visual_attributes = NULL;
 		 number_of_visual_attributes = 0;
 		 Event_dispatcher_use_wxCmguiApp_OnAssertFailure(1);
 		 number_of_visual_attributes = 21;
-		 test_canvas = new wxTestingBuffer(parent, 
-				graphics_buffer_package->wxSharedContext, buffer
-				,visual_attributes);	
-		 if (REALLOCATE(visual_attributes, visual_attributes, int, number_of_visual_attributes))
+		 return_code = 0;
+		 /* test either there are visual attributes stored in the current
+				buffer or not*/
+		 if (buffer_to_match)
 		 {
-				selection_level = 5;	
-				while ((selection_level > 0) && (test_canvas->m_vi == NULL) || (selection_level == 5))
+				if (buffer_to_match->attrib_list)
 				{
-					 attribute_ptr = visual_attributes;
-					 *attribute_ptr = WX_GL_RGBA;
-					 attribute_ptr++;
-					 *attribute_ptr = WX_GL_MIN_RED;
-					 attribute_ptr++;
-					 *attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-					 attribute_ptr++;
-					 *attribute_ptr = WX_GL_MIN_GREEN;
-					 attribute_ptr++;
-					 *attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-					 attribute_ptr++;
-					 *attribute_ptr = WX_GL_MIN_BLUE;
-					 attribute_ptr++;
-					 *attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-					 attribute_ptr++;
-					 if (selection_level > 3)
-					 {
-							*attribute_ptr = WX_GL_MIN_ALPHA;
-							attribute_ptr++;
-							*attribute_ptr = 1;
-							attribute_ptr++;
-					 }
-					if (minimum_depth_buffer_depth > 0)
-					{
-						 *attribute_ptr = WX_GL_DEPTH_SIZE;
-						 attribute_ptr++;
-						 *attribute_ptr = minimum_depth_buffer_depth;
-						 attribute_ptr++;
-					}
-					else
-					{
-						if (selection_level > 2)
-						{
-							 /* Try to get a depth buffer anyway */
-							 *attribute_ptr = WX_GL_DEPTH_SIZE;
-							 attribute_ptr++;
-							 *attribute_ptr = 16;
-							 attribute_ptr++;
-						}
-					}
-					if (minimum_accumulation_buffer_depth > 0)
-					{
-						 *attribute_ptr = WX_GL_MIN_ACCUM_RED;
-						 attribute_ptr++;
-						 *attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
-						 attribute_ptr++;
-						 *attribute_ptr = WX_GL_MIN_ACCUM_GREEN;
-						 attribute_ptr++;
-						 *attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
-						 attribute_ptr++;
-						 *attribute_ptr = WX_GL_MIN_ACCUM_BLUE;
-						 attribute_ptr++;
-						 *attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
-						 attribute_ptr++;
-					}
-					else
-					{
-						 if (selection_level > 4)
-						 {
-								/* Try to get an accumulation buffer anyway */
-								*attribute_ptr = WX_GL_MIN_ACCUM_RED;
-								attribute_ptr++;
-								*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-								attribute_ptr++;
-								*attribute_ptr = WX_GL_MIN_ACCUM_GREEN;
-								attribute_ptr++;
-								*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-								attribute_ptr++;
-								*attribute_ptr = WX_GL_MIN_ACCUM_BLUE;
-								attribute_ptr++;
-								*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
-								attribute_ptr++;
-						 }
-					}
-					switch (buffering_mode)
-					{
-						 case GRAPHICS_BUFFER_SINGLE_BUFFERING:
-						 case GRAPHICS_BUFFER_DOUBLE_BUFFERING:
-						 {
-								*attribute_ptr = WX_GL_DOUBLEBUFFER;
-								attribute_ptr++;
-						 }break;
-					}
-					switch (stereo_mode)
-					{
-						case GRAPHICS_BUFFER_MONO:
-						case GRAPHICS_BUFFER_STEREO:
-						{
-							 *attribute_ptr = GL_STEREO;
-							 attribute_ptr++;
-						} break;
-						/* default GRAPHICS_BUFFER_ANY_STEREO_MODE*/
-					}
-					*attribute_ptr = 0;
-					attribute_ptr++;
-					if (test_canvas)
-					{
-						 delete test_canvas;
-					}
-					test_canvas = new wxTestingBuffer(parent, 
-						 graphics_buffer_package->wxSharedContext, buffer
-						 ,visual_attributes);	
-					selection_level--;
-					if ((selection_level == 0) && (test_canvas->m_vi == NULL))
-					{
-						 buffer->canvas = new wxGraphicsBuffer(parent, 
-								graphics_buffer_package->wxSharedContext, 
-								buffer, 0);
-						 wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
-						 topsizer->Add(buffer->canvas,
-								wxSizerFlags(1).Align(wxALIGN_CENTER).Expand());
-						 parent->SetSizer(topsizer);
-						 display_message(ERROR_MESSAGE,"create_Graphics_buffer_wx.  "
-								"Unable to create Graphics_buffer with minimum visual_attributes.");
-					}
-					else if(test_canvas->m_vi != NULL)
-					{
-						 buffer->canvas = new wxGraphicsBuffer(parent, 
-								graphics_buffer_package->wxSharedContext, 
-								buffer, visual_attributes);
-						 wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
-						 topsizer->Add(buffer->canvas,
-								wxSizerFlags(1).Align(wxALIGN_CENTER).Expand());
-						 parent->SetSizer(topsizer);
-						 selection_level =0; 
-					}
+					 return_code = 1;
 				}
-				DEALLOCATE( visual_attributes);
-				if (test_canvas)
+		 }
+		 if (!return_code)
+		 {
+				/* if not, test, create a new visual attribute list and create a
+					 new canvas, else use the current visual attribute list*/
+				test_canvas = new wxTestingBuffer(parent, 
+					 graphics_buffer_package->wxSharedContext, buffer
+					 ,visual_attributes);	
+				if (REALLOCATE(visual_attributes, visual_attributes, int, number_of_visual_attributes))
 				{
-					 delete test_canvas;
+					 selection_level = 5;	
+					 while ((selection_level > 0) && (test_canvas->m_vi == NULL) || (selection_level == 5))
+					 {
+							attribute_ptr = visual_attributes;
+							*attribute_ptr = WX_GL_RGBA;
+							attribute_ptr++;
+							*attribute_ptr = WX_GL_MIN_RED;
+							attribute_ptr++;
+							*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
+							attribute_ptr++;
+							*attribute_ptr = WX_GL_MIN_GREEN;
+							attribute_ptr++;
+							*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
+							attribute_ptr++;
+							*attribute_ptr = WX_GL_MIN_BLUE;
+							attribute_ptr++;
+							*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
+							attribute_ptr++;
+							if (selection_level > 3)
+							{
+								 *attribute_ptr = WX_GL_MIN_ALPHA;
+								 attribute_ptr++;
+								 *attribute_ptr = 1;
+								 attribute_ptr++;
+							}
+							if (minimum_depth_buffer_depth > 0)
+							{
+								 *attribute_ptr = WX_GL_DEPTH_SIZE;
+								 attribute_ptr++;
+								 *attribute_ptr = minimum_depth_buffer_depth;
+								 attribute_ptr++;
+							}
+							else
+							{
+								 if (selection_level > 2)
+								 {
+										/* Try to get a depth buffer anyway */
+										*attribute_ptr = WX_GL_DEPTH_SIZE;
+										attribute_ptr++;
+										*attribute_ptr = 16;
+										attribute_ptr++;
+								 }
+							}
+							if (minimum_accumulation_buffer_depth > 0)
+							{
+								 *attribute_ptr = WX_GL_MIN_ACCUM_RED;
+								 attribute_ptr++;
+								 *attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
+								 attribute_ptr++;
+								 *attribute_ptr = WX_GL_MIN_ACCUM_GREEN;
+								 attribute_ptr++;
+								 *attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
+								 attribute_ptr++;
+								 *attribute_ptr = WX_GL_MIN_ACCUM_BLUE;
+								 attribute_ptr++;
+								 *attribute_ptr = (minimum_accumulation_buffer_depth + 2) / 3;
+								 attribute_ptr++;
+							}
+							else
+							{
+								 if (selection_level > 4)
+								 {
+										/* Try to get an accumulation buffer anyway */
+										*attribute_ptr = WX_GL_MIN_ACCUM_RED;
+										attribute_ptr++;
+										*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
+										attribute_ptr++;
+										*attribute_ptr = WX_GL_MIN_ACCUM_GREEN;
+										attribute_ptr++;
+										*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
+										attribute_ptr++;
+										*attribute_ptr = WX_GL_MIN_ACCUM_BLUE;
+										attribute_ptr++;
+										*attribute_ptr = (minimum_colour_buffer_depth + 2) / 3;
+										attribute_ptr++;
+								 }
+							}
+							switch (buffering_mode)
+							{
+								 case GRAPHICS_BUFFER_SINGLE_BUFFERING:
+								 case GRAPHICS_BUFFER_DOUBLE_BUFFERING:
+								 {
+										*attribute_ptr = WX_GL_DOUBLEBUFFER;
+										attribute_ptr++;
+								 }break;
+							}
+							switch (stereo_mode)
+							{
+								 case GRAPHICS_BUFFER_MONO:
+								 case GRAPHICS_BUFFER_STEREO:
+								 {
+										*attribute_ptr = GL_STEREO;
+										attribute_ptr++;
+								 } break;
+								 /* default GRAPHICS_BUFFER_ANY_STEREO_MODE*/
+							}
+							*attribute_ptr = 0;
+							attribute_ptr++;
+							if (test_canvas)
+							{
+								 delete test_canvas;
+							}
+							test_canvas = new wxTestingBuffer(parent, 
+								 graphics_buffer_package->wxSharedContext, buffer
+								 ,visual_attributes);	
+							selection_level--;
+							if ((selection_level == 0) && (test_canvas->m_vi == NULL))
+							{
+ 								 DEALLOCATE(visual_attributes);
+ 								 visual_attributes = NULL;
+								 buffer->attrib_list = visual_attributes;
+							}
+							else if(test_canvas->m_vi != NULL)
+							{
+								 buffer->attrib_list = visual_attributes;
+							}
+					 }
+					 if (test_canvas)
+					 {
+							delete test_canvas;
+					 }
+				}
+		 }
+		 else
+		 {
+				if (buffer_to_match->attrib_list)
+				{
+					 /* if attrib_list is found on the buffer to match, copy it
+							into the new buffer, if not found, that means the
+							current buffer does not have any special attributes
+							setting, thus the new attributes will be default as NULL */
+					 int count;
+					 if (ALLOCATE(buffer->attrib_list, int, number_of_visual_attributes))
+					 {
+							for (count = 0; count < 22; count++)
+							{
+								 attribute_ptr = buffer->attrib_list;
+								 *attribute_ptr = buffer_to_match->attrib_list[count];
+								 attribute_ptr++;
+							}
+					 }
 				}
 		 }
 #else
-		buffer->canvas = new wxGraphicsBuffer(parent, 
-			 graphics_buffer_package->wxSharedContext, buffer);
-		wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
-		
-		topsizer->Add(buffer->canvas,
-			wxSizerFlags(1).Align(wxALIGN_CENTER).Expand());
-
-		parent->SetSizer(topsizer);
+		 /* need to find a way to get the best buffer for other system 
+				too */
+		 visual_attributes = NULL;
+		 buffer->attrib_list = visual_attributes;
 #endif /* defined (UNIX) && !defined (DARWIN) */
+		 buffer->canvas = new wxGraphicsBuffer(parent, 
+				graphics_buffer_package->wxSharedContext, 
+				buffer, buffer->attrib_list);
+		 wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
+		 topsizer->Add(buffer->canvas,
+				wxSizerFlags(1).Align(wxALIGN_CENTER).Expand());
+		 parent->SetSizer(topsizer);
 	}
 	else
 	{
@@ -4887,7 +4916,7 @@ DESCRIPTION :
 				Rect bounds, port_bounds;
 				GetWindowPortBounds(GetWindowFromPort(buffer->port), &bounds);
 
-				GetPortBounds(buffer->port, &port_bounds);
+ 				GetPortBounds(buffer->port, &port_bounds);
 
 				aglSetCurrentContext(buffer->aglContext);
 				
@@ -6634,8 +6663,11 @@ x==============================================================================*
 		{
 			buffer->canvas->ClearGraphicsBufferReference();
 		}
+		if (buffer->attrib_list != NULL)
+		{
+				DEALLOCATE(buffer->attrib_list);
+		}
 #endif /* defined (WX_USER_INTERFACE) */
-
 		DEALLOCATE(*buffer_ptr);
 		*buffer_ptr = (struct Graphics_buffer *)NULL;
 	}

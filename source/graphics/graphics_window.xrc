@@ -181,7 +181,13 @@
     	  				<object class="sizeritem">
 							<option>1</option>
 			   				<flag>wxEXPAND</flag>
-	     					<object class ="wxPanel" name="RigthPanel">
+	     					<object class ="wxPanel" name="RightPanel">
+								<object class = "wxBoxSizer">	
+									<orient>wxVERTICAL</orient>	
+    								<object class="sizeritem">
+										<option>1</option>
+			    						<flag>wxEXPAND</flag>
+	     					<object class ="wxPanel" name="GridPanel">
 								<object class = "wxBoxSizer">	
 									<orient>wxVERTICAL</orient>	
     								<object class="sizeritem">
@@ -213,6 +219,9 @@
         										<option>1</option>
 	       									<flag>wxEXPAND</flag>
 	       									<object class= "wxPanel" name="Panel4"/>
+	     									</object>
+	   									</object>
+     								</object>
 	     									</object>
 	   									</object>
      								</object>

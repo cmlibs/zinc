@@ -4403,7 +4403,7 @@ it.
 								window->panel,
 								graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
 								minimum_colour_buffer_depth, minimum_depth_buffer_depth,
-								minimum_accumulation_buffer_depth))
+								minimum_accumulation_buffer_depth, (Graphics_buffer *)NULL))
 				 {
 						/* create one Scene_viewers */
 						window->number_of_scene_viewers = 1;
@@ -5245,7 +5245,7 @@ Sets the layout mode in effect on the <window>.
 						GRAPHICS_BUFFER_DOUBLE_BUFFERING,
 						GRAPHICS_BUFFER_ANY_STEREO_MODE,
 						/*minimum_colour_buffer_depth*/24, /*minimum_depth_buffer_depth*/16, 
-								/*minimum_accumulation_buffer_depth*/0))
+								/*minimum_accumulation_buffer_depth*/0, (Graphics_buffer *)NULL))
 #endif
 					{
 						Scene_viewer_get_background_colour(first_scene_viewer,&background_colour);
@@ -6354,6 +6354,7 @@ graphics window on screen.
 					return_code=0;
 				} break;
 			}
+#if !defined (WX_USER_INTERFACE)
 			if (pane_width <= PBUFFER_MAX)
 			{
 				tile_width = pane_width;
@@ -6378,12 +6379,49 @@ graphics window on screen.
 				fraction_down = (double)pane_height / (double)tile_height;
 				tiles_down = (int)ceil(fraction_down);
 			}
+#else
+ 			wxPanel *GridPanel;
+			int panel_width, panel_height;
+			GridPanel = XRCCTRL(*window->wx_graphics_window,
+				 "GridPanel", wxPanel);
+			GridPanel->GetSize(&panel_width, &panel_height);
+			if (pane_width <= panel_width)
+			{
+				tile_width = pane_width;
+				fraction_across = 1.0;
+				tiles_across = 1;
+			}
+			else
+			{
+				tile_width = panel_width;
+				fraction_across = (double)pane_width / (double)tile_width;
+				tiles_across = (int)ceil(fraction_across);
+			}
+			if (pane_height <= panel_height)
+			{
+				tile_height = pane_height;
+				fraction_down = 1.0;
+				tiles_down = 1;
+			}
+			else
+			{
+				tile_height = panel_height;
+				fraction_down = (double)pane_height / (double)tile_height;
+				tiles_down = (int)ceil(fraction_down);
+			}
+#endif /* (WX_USER_INTERFACE) */
+			/*offscreen_buffer currently does not work well with offscreen
+				buffer */
+#if !defined (__WXMSW__)
 			if (!(offscreen_buffer = create_Graphics_buffer_offscreen_from_buffer(
 				  tile_width, tile_height, Scene_viewer_get_graphics_buffer(
 				  Graphics_window_get_Scene_viewer(window,/*pane*/0)))))
 			{
 				force_onscreen = 1;
 			}
+#else 
+			force_onscreen = 1;
+#endif /* defined (__WXMSW_)_ */
 		}
 		if (!force_onscreen)
 		{
@@ -6511,6 +6549,7 @@ graphics window on screen.
 					"Graphics_window_get_frame_pixels.  Unable to allocate pixels");
 				return_code=0;
 			}
+
 			DESTROY(Graphics_buffer)(&offscreen_buffer);
 		}
 		else

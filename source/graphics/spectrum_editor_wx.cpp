@@ -2155,7 +2155,7 @@ Creates a spectrum_editor widget.
 										 GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
 										 /*minimum_colour_buffer_depth*/8,
 										 /*minimum_depth_buffer_depth*/8,
-										 /*minimum_accumulation_buffer_depth*/0))
+										 /*minimum_accumulation_buffer_depth*/0, (struct Graphics_buffer *)NULL))
 							{
 								 spectrum_editor->spectrum_editor_scene_viewer = 
 										CREATE(Scene_viewer)(graphics_buffer,

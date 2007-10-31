@@ -316,7 +316,8 @@ struct Graphics_buffer *create_Graphics_buffer_wx(
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
-	int minimum_accumulation_buffer_depth);
+	int minimum_accumulation_buffer_depth,
+	struct Graphics_buffer *buffer_to_match);
 /*******************************************************************************
 LAST MODIFIED : 7 December 2006
 
