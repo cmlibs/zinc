@@ -61,10 +61,8 @@ HISTORY :
 #include "graphics/scene_viewer.h"
 #include "user_interface/message.h"
 
-#if ! defined (WIN32_SYSTEM)
 #define GL_GLEXT_PROTOTYPES
 #define GLX_GLXEXT_PROTOTYPES
-#endif /* ! defined (WIN32_SYSTEM) */
 
 #include "graphics/order_independent_transparency.h"
 
@@ -80,13 +78,11 @@ static char *required_extensions[] = {"GL_ARB_texture_rectangle",
 												  "GL_ARB_fragment_program_shadow",
 												  "GL_ARB_depth_texture",
 												  "GL_ARB_shadow"};
-#if ! defined (WIN32_SYSTEM) && ! defined (AIX)
 #if defined GL_ARB_texture_rectangle && defined GL_ARB_vertex_program \
    && defined GL_ARB_fragment_program && defined  GL_ARB_fragment_program_shadow \
    && defined GL_ARB_depth_texture && defined GL_ARB_shadow
 #define ORDER_INDEPENDENT_CAPABLE
 #endif
-#endif /* ! defined (WIN32_SYSTEM) */
 
 #if defined (ORDER_INDEPENDENT_CAPABLE)
 struct Scene_viewer_order_independent_transparency_data
