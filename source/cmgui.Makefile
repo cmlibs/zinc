@@ -1085,6 +1085,7 @@ GRAPHICS_SRCS = \
 	graphics/render_to_finite_elements.c \
 	graphics/rendervrml.c \
 	graphics/renderwavefront.c \
+	graphics/quaternion.cpp\
 	graphics/selected_graphic.c \
 	graphics/spectrum.cpp \
 	graphics/spectrum_settings.c \
@@ -1798,6 +1799,7 @@ DEPEND_FILES_INCLUDE = $(DEPEND_FILES_OBJECT_FOUND) $(DEPEND_FILES_MISSING)
 
 #Touch a dummy include so that this makefile is reloaded and therefore the new .ds
 $(DEPENDFILE) : $(DEPEND_FILES_INCLUDE)
+#	rm `find $(OBJECT_PATH) -size 0 -name "*.d"`;\
 	touch $(DEPENDFILE)
 
 include $(DEPENDFILE)
