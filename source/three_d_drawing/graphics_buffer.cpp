@@ -1390,7 +1390,7 @@ BEGIN_EVENT_TABLE(wxGraphicsBuffer, wxGLCanvas)
     EVT_MOUSE_EVENTS(wxGraphicsBuffer::OnMouse)
 END_EVENT_TABLE()
 
-#if defined (UNIX)  && !defined (DARWIN)
+//#if defined (UNIX)  && !defined (DARWIN)
 class wxTestingBuffer : public wxGLCanvas
 {
 	Graphics_buffer *graphics_buffer;
@@ -1408,7 +1408,7 @@ public:
 	{
 	};
 };
-#endif /* defined (UNIX) */
+//#endif /* defined (UNIX) */
 
 static void Graphics_buffer_create_buffer_wx(
 	struct Graphics_buffer *buffer,
@@ -1605,10 +1605,17 @@ DESCRIPTION :
 				}
 		 }
 #else
-		 /* need to find a way to get the best buffer for other system 
-				too */
+		 /* need to find a way to get the best buffer for other system,
+				but this default setting should work fine for other systems*/
 		 visual_attributes = NULL;
-		 buffer->attrib_list = visual_attributes;
+		 if (ALLOCATE(buffer->attrib_list, int, 5))
+		 {
+				buffer->attrib_list[0] = WX_GL_DOUBLEBUFFER;
+				buffer->attrib_list[1] = WX_GL_RGBA;
+				buffer->attrib_list[2] = WX_GL_MIN_ALPHA;
+				buffer->attrib_list[3] = 8;
+				buffer->attrib_list[4] = 0;
+		 }
 #endif /* defined (UNIX) && !defined (DARWIN) */
 		 buffer->canvas = new wxGraphicsBuffer(parent, 
 				graphics_buffer_package->wxSharedContext, 
@@ -4868,7 +4875,9 @@ struct Graphics_buffer *create_Graphics_buffer_wx(
 	}
 	else
 	{
-		 buffer = NULL;
+		display_message(ERROR_MESSAGE,"create_Graphics_buffer_wx.  "
+			"Unable to create generic Graphics_buffer.");
+		buffer = (struct Graphics_buffer *)NULL;
 	}
 	LEAVE;
 
