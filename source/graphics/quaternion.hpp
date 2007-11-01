@@ -7,7 +7,7 @@ DESCRIPTION : A class of quaternion operations, any new quaternion
 operations should be added into this class.
 ==============================================================================*/
 #if !defined (QUATERNION_HPP)
-#define QUATERNION_H
+#define QUATERNION_HPP
 
 extern "C" {
 #include <math.h>
