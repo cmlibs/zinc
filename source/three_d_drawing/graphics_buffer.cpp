@@ -1441,7 +1441,7 @@ DESCRIPTION :
 		 visual_attributes = NULL;
 		 number_of_visual_attributes = 0;
 		 Event_dispatcher_use_wxCmguiApp_OnAssertFailure(1);
-		 number_of_visual_attributes = 21;
+		 number_of_visual_attributes = 20;
 		 return_code = 0;
 		 /* test either there are visual attributes stored in the current
 				buffer or not*/
@@ -1459,7 +1459,7 @@ DESCRIPTION :
 				test_canvas = new wxTestingBuffer(parent, 
 					 graphics_buffer_package->wxSharedContext, buffer
 					 ,visual_attributes);	
-				if (REALLOCATE(visual_attributes, visual_attributes, int, number_of_visual_attributes))
+				if (ALLOCATE(visual_attributes, int, number_of_visual_attributes))
 				{
 					 selection_level = 5;	
 					 while ((selection_level > 0) && (test_canvas->m_vi == NULL) || (selection_level == 5))
@@ -1593,9 +1593,9 @@ DESCRIPTION :
 							current buffer does not have any special attributes
 							setting, thus the new attributes will be default as NULL */
 					 int count;
-					 if (ALLOCATE(buffer->attrib_list, int, number_of_visual_attributes))
+					 if (ALLOCATE(buffer->attrib_list,int, number_of_visual_attributes))
 					 {
-							for (count = 0; count < 22; count++)
+							for (count = 0; count < number_of_visual_attributes; count++)
 							{
 								 attribute_ptr = buffer->attrib_list;
 								 *attribute_ptr = buffer_to_match->attrib_list[count];
