@@ -5254,8 +5254,9 @@ appropriateness to curve usage.
 			/* create group managers needed to use import_finite_element functions  */
 			basis_manager = curve->basis_manager;
 			element_shape_list = curve->element_shape_list;
-			if (ALLOCATE(file_name,char,strlen(file_name_stem)+14))
+			if (ALLOCATE(file_name,char,strlen(file_name_stem)+sizeof(".curve.exregion")))
 			{
+				printf("size %d\n", sizeof(".curve.exregion"));
 				cmiss_region = (struct Cmiss_region *)NULL;
 				return_code=1;
 				if (sprintf(file_name,"%s.curve.exnode",file_name_stem) &&
