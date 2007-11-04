@@ -1593,13 +1593,16 @@ DESCRIPTION :
 							current buffer does not have any special attributes
 							setting, thus the new attributes will be default as NULL */
 					 int count;
+					 int *buffer_to_match_attribute_ptr;
 					 if (ALLOCATE(buffer->attrib_list,int, number_of_visual_attributes))
 					 {
+							buffer_to_match_attribute_ptr = buffer_to_match->attrib_list;
+							attribute_ptr = buffer->attrib_list;
 							for (count = 0; count < number_of_visual_attributes; count++)
 							{
-								 attribute_ptr = buffer->attrib_list;
-								 *attribute_ptr = buffer_to_match->attrib_list[count];
+								 *attribute_ptr = *buffer_to_match_attribute_ptr;
 								 attribute_ptr++;
+								 buffer_to_match_attribute_ptr++;
 							}
 					 }
 				}

@@ -5256,7 +5256,7 @@ appropriateness to curve usage.
 			element_shape_list = curve->element_shape_list;
 			if (ALLOCATE(file_name,char,strlen(file_name_stem)+sizeof(".curve.exregion")))
 			{
-				printf("size %d\n", sizeof(".curve.exregion"));
+				 printf("size %d\n", (int)sizeof(".curve.exregion"));
 				cmiss_region = (struct Cmiss_region *)NULL;
 				return_code=1;
 				if (sprintf(file_name,"%s.curve.exnode",file_name_stem) &&
