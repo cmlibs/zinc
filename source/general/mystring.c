@@ -619,12 +619,12 @@ Returns true if <string> has a suffix present.
 	/*
 	* Step back until either a dot or slash is encountered
 	*/
-	while(*ptr != '.' && *ptr != '/' && *ptr != '\\'  && ptr >= string)
+	while(*ptr != '.' && *ptr != '/' && *ptr != '\\'  && ptr > string)
 		ptr--;
 
 	/* if we found a dot before a slash or the beginning of the string
 		there is a suffix present */
-	if(*ptr == '.' && ptr >= string)
+	if(*ptr == '.' && ptr > string)
 		has_suffix = 1;
 
 	LEAVE;
