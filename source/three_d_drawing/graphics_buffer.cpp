@@ -1406,7 +1406,23 @@ public:
 	
 	~wxTestingBuffer()
 	{
+		 if (graphics_buffer)
+		 {
+	      graphics_buffer->canvas = (wxGraphicsBuffer *)NULL;
+	      if ((GetContext() == graphics_buffer->package->wxSharedContext))
+				{
+					 graphics_buffer->package->wxSharedContext = (wxGLContext *)NULL;
+				}
+	    }
 	};
+
+        void SetwxSharedContext()
+	{
+	    if (!graphics_buffer->package->wxSharedContext)
+	    {
+	      graphics_buffer->package->wxSharedContext = GetContext();
+	    }
+	}
 };
 //#endif /* defined (UNIX) */
 
@@ -1425,7 +1441,7 @@ LAST MODIFIED : 16 October  2007
 DESCRIPTION :
 ==============================================================================*/
 {
-	int *visual_attributes
+        int *visual_attributes;
 
 	ENTER(Graphics_buffer_create_buffer_wx);
 	wxLogNull logNo;
@@ -1620,6 +1636,18 @@ DESCRIPTION :
 				buffer->attrib_list[4] = 0;
 		 }
 #endif /* defined (UNIX) && !defined (DARWIN) */
+		 if (!buffer->package->wxSharedContext)
+		 {
+				wxFrame *frame = new wxFrame(NULL, -1, "temporary", wxPoint(-1,-1), wxSize(500,500));
+				wxPanel *temp = new wxPanel(frame, -1, wxPoint(-1,-1), wxSize(450,450));	  
+				wxTestingBuffer *testingbuffer;
+				testingbuffer = new wxTestingBuffer(temp, 
+					 graphics_buffer_package->wxSharedContext, buffer
+					 ,buffer->attrib_list);
+				frame->Show(true);
+				testingbuffer->SetwxSharedContext();
+				frame->Show(false);
+	    }
 		 buffer->canvas = new wxGraphicsBuffer(parent, 
 				graphics_buffer_package->wxSharedContext, 
 				buffer, buffer->attrib_list);
