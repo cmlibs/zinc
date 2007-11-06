@@ -1406,14 +1406,6 @@ public:
 	
 	~wxTestingBuffer()
 	{
-		 if (graphics_buffer)
-		 {
-	      graphics_buffer->canvas = (wxGraphicsBuffer *)NULL;
-	      if ((GetContext() == graphics_buffer->package->wxSharedContext))
-				{
-					 graphics_buffer->package->wxSharedContext = (wxGLContext *)NULL;
-				}
-	    }
 	};
 
         void SetwxSharedContext()
