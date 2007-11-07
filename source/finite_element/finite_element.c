@@ -12054,7 +12054,7 @@ on the boundary of the shape.
 							determinant += shape->face_normals[i * dimension + j] *
 								increment[j];
 						}
-						if (determinant > 0.0)
+						if (determinant > -SMALL_STEP)
 						{
 							/* We are stepping out of the element so this is a boundary */
 							for (j=1;j<dimension;j++)
@@ -25697,7 +25697,9 @@ headers have to change in output files.
 									number_in_scale_factor_set_2++;
 									l--;
 								}
-								if ((*scale_factor_set_identifier_1 ==
+								if (scale_factor_set_identifier_1 &&
+									scale_factor_set_identifier_2 &&
+									(*scale_factor_set_identifier_1 ==
 									*scale_factor_set_identifier_2) &&
 									(*number_in_scale_factor_set_1 ==
 										*number_in_scale_factor_set_2))
