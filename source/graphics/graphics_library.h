@@ -78,6 +78,10 @@ Functions and structures for interfacing with the graphics library.
 #include <gdk/gdkgl.h>
 #endif /* defined (UNIX) */
 #endif /* defined (GTK_USER_INTERFACE) */
+# if defined (WX_USER_INTERFACE)
+#    define GL_GLEXT_PROTOTYPES
+#    include <GL/glext.h>
+#endif /* (WX_USER_INTERFACE) */
 
 struct User_interface;
 
@@ -349,7 +353,9 @@ yet we just don't know.
 #if defined (GL_EXT_texture3D)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_EXT_texture3D);
 #endif /* defined (GL_EXT_texture3D) */
-
+#if defined (GL_EXT_framebuffer_object)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_EXT_framebuffer_object);
+#endif /* (GL_EXT_framebuffer_object) */
 /* Extension function handles */
 #if defined (GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES)
 #  if defined (APIENTRY)
@@ -391,6 +397,30 @@ yet we just don't know.
        GRAPHICS_LIBRARY_EXTERN PFNGLPROGRAMENVPARAMETER4FVARBPROC GLHANDLE(glProgramEnvParameter4fvARB);
 #      define glProgramEnvParameter4fvARB (GLHANDLE(glProgramEnvParameter4fvARB))
 #    endif /* defined (GL_ARB_vertex_program) || defined (GL_ARB_fragment_program) */
+
+#    if defined (GL_EXT_framebuffer_object)
+      GRAPHICS_LIBRARY_EXTERN PFNGLGENFRAMEBUFFERSEXTPROC GLHANDLE(glGenFramebuffersEXT);
+#      define glGenFramebuffersEXT (GLHANDLE(glGenFramebuffersEXT))
+       GRAPHICS_LIBRARY_EXTERN PFNGLBINDFRAMEBUFFEREXTPROC GLHANDLE(glBindFramebufferEXT);
+#      define glBindFramebufferEXT (GLHANDLE(glBindFramebufferEXT))
+       GRAPHICS_LIBRARY_EXTERN PFNGLGENRENDERBUFFERSEXTPROC GLHANDLE(glGenRenderbuffersEXT);
+#      define glGenRenderbuffersEXT (GLHANDLE(glGenRenderbuffersEXT))
+       GRAPHICS_LIBRARY_EXTERN PFNGLBINDRENDERBUFFEREXTPROC GLHANDLE(glBindRenderbufferEXT);
+#      define glBindRenderbufferEXT (GLHANDLE(glBindRenderbufferEXT))
+       GRAPHICS_LIBRARY_EXTERN PFNGLRENDERBUFFERSTORAGEEXTPROC GLHANDLE(glRenderbufferStorageEXT);
+#      define glRenderbufferStorageEXT (GLHANDLE(glRenderbufferStorageEXT))
+       GRAPHICS_LIBRARY_EXTERN PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC GLHANDLE(glFramebufferRenderbufferEXT);
+#      define glFramebufferRenderbufferEXT (GLHANDLE(glFramebufferRenderbufferEXT))
+       GRAPHICS_LIBRARY_EXTERN PFNGLFRAMEBUFFERTEXTURE2DEXTPROC GLHANDLE(glFramebufferTexture2DEXT);
+#      define glFramebufferTexture2DEXT (GLHANDLE(glFramebufferTexture2DEXT))
+       GRAPHICS_LIBRARY_EXTERN PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC GLHANDLE(glCheckFramebufferStatusEXT);
+#      define glCheckFramebufferStatusEXT (GLHANDLE(glCheckFramebufferStatusEXT))
+       GRAPHICS_LIBRARY_EXTERN PFNGLDELETEFRAMEBUFFERSEXTPROC GLHANDLE(glDeleteFramebuffersEXT);
+#      define glDeleteFramebuffersEXT (GLHANDLE(glDeleteFramebuffersEXT))
+       GRAPHICS_LIBRARY_EXTERN PFNGLDELETERENDERBUFFERSEXTPROC GLHANDLE(glDeleteRenderbuffersEXT);
+#      define glDeleteRenderbuffersEXT (GLHANDLE(glDeleteRenderbuffersEXT))
+#    endif /* GL_EXT_framebuffer_object */
+
 #  else  /* defined (APIENTRY) */
      /* We don't have types for the functions so we will not use any extensions */
 #    undef GL_VERSION_1_2

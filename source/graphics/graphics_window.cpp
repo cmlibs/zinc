@@ -5239,13 +5239,15 @@ Sets the layout mode in effect on the <window>.
 							return_code = 0;
 						} break;
 					}
-					// Should be made to use a new function create_Graphics_buffer_wx_from_buffer
+					// create_Graphics_buffer_wx will eventually create a
+					// graphics buffer from another buffer if a buffer_to_match
+					// is passed in.
 					if (graphics_buffer = create_Graphics_buffer_wx(window->graphics_buffer_package,
 						current_panel,
 						GRAPHICS_BUFFER_DOUBLE_BUFFERING,
 						GRAPHICS_BUFFER_ANY_STEREO_MODE,
 						/*minimum_colour_buffer_depth*/24, /*minimum_depth_buffer_depth*/16, 
-								/*minimum_accumulation_buffer_depth*/0, (Graphics_buffer *)NULL))
+								/*minimum_accumulation_buffer_depth*/0, Scene_viewer_get_graphics_buffer(first_scene_viewer)))
 #endif
 					{
 						Scene_viewer_get_background_colour(first_scene_viewer,&background_colour);
@@ -6410,18 +6412,13 @@ graphics window on screen.
 				tiles_down = (int)ceil(fraction_down);
 			}
 #endif /* (WX_USER_INTERFACE) */
-			/*offscreen_buffer currently does not work well with offscreen
-				buffer */
-#if !defined (__WXMSW__)
+			/*offscreen_buffer currently does not work well with Windows */
 			if (!(offscreen_buffer = create_Graphics_buffer_offscreen_from_buffer(
 				  tile_width, tile_height, Scene_viewer_get_graphics_buffer(
 				  Graphics_window_get_Scene_viewer(window,/*pane*/0)))))
 			{
 				force_onscreen = 1;
 			}
-#else 
-			force_onscreen = 1;
-#endif /* defined (__WXMSW_)_ */
 		}
 		if (!force_onscreen)
 		{

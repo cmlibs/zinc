@@ -693,7 +693,8 @@ Finds and loads gl function symbols at runtime.
 	{
 #if defined (OPENGL_API)
 #if defined (WIN32_SYSTEM)
-		function_ptr = (void *) wglGetProcAddress(function_name);
+		 int test_code;
+		 function_ptr = (void *) wglGetProcAddress(function_name);
 #else /* defined (WIN32_SYSTEM) */
 #if defined(GLX_ARB_get_proc_address)
 		/* We don't try and load this here because testing for a GLX extension
@@ -1035,6 +1036,46 @@ appropriately.
 			}
 		}
 #endif /* GL_EXT_texture3D */
+#if defined GL_EXT_framebuffer_object
+		else if (!strcmp(extension_name, "GL_EXT_framebuffer_object"))
+		{
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_EXT_framebuffer_object))
+			{
+				return_code = GLEXTENSIONFLAG(GL_EXT_framebuffer_object);
+			}
+			else
+			{
+				return_code = query_gl_extension(extension_name);
+				if (GLEXTENSION_AVAILABLE == return_code)
+				{
+					if (!((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenFramebuffersEXT, PFNGLGENFRAMEBUFFERSEXTPROC)
+						Graphics_library_get_function_ptr("glGenFramebuffersEXT")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBindFramebufferEXT, PFNGLBINDFRAMEBUFFEREXTPROC)
+						Graphics_library_get_function_ptr("glBindFramebufferEXT")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenRenderbuffersEXT, PFNGLGENRENDERBUFFERSEXTPROC)
+						Graphics_library_get_function_ptr("glGenRenderbuffersEXT")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBindRenderbufferEXT, PFNGLBINDRENDERBUFFEREXTPROC)
+						Graphics_library_get_function_ptr("glBindRenderbufferEXT")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glFramebufferRenderbufferEXT, PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC)
+						Graphics_library_get_function_ptr("glFramebufferRenderbufferEXT")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glFramebufferTexture2DEXT, PFNGLFRAMEBUFFERTEXTURE2DEXTPROC)
+						Graphics_library_get_function_ptr("glFramebufferTexture2DEXT")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDeleteFramebuffersEXT, PFNGLDELETEFRAMEBUFFERSEXTPROC)
+						Graphics_library_get_function_ptr("glDeleteFramebuffersEXT")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDeleteRenderbuffersEXT, PFNGLDELETERENDERBUFFERSEXTPROC)
+						Graphics_library_get_function_ptr("glDeleteRenderbuffersEXT")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glCheckFramebufferStatusEXT, PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC)
+							 Graphics_library_get_function_ptr("glCheckFramebufferStatusEXT")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glRenderbufferStorageEXT, PFNGLRENDERBUFFERSTORAGEEXTPROC)
+						Graphics_library_get_function_ptr("glRenderbufferStorageEXT"))))
+					{
+						return_code = GLEXTENSION_UNAVAILABLE;
+					}
+				}
+				GLEXTENSIONFLAG(GL_EXT_framebuffer_object) = return_code;
+			}
+		}
+#endif /* GL_EXT_FRAMEBUFFER_OBJECT */
 		else
 		{
 			display_message(ERROR_MESSAGE,  "Graphics_library_load_extension.  "
