@@ -693,7 +693,6 @@ Finds and loads gl function symbols at runtime.
 	{
 #if defined (OPENGL_API)
 #if defined (WIN32_SYSTEM)
-		 int test_code;
 		 function_ptr = (void *) wglGetProcAddress(function_name);
 #else /* defined (WIN32_SYSTEM) */
 #if defined(GLX_ARB_get_proc_address)
