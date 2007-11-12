@@ -79,8 +79,10 @@ Functions and structures for interfacing with the graphics library.
 #endif /* defined (UNIX) */
 #endif /* defined (GTK_USER_INTERFACE) */
 # if defined (WX_USER_INTERFACE)
+#if defined (UNIX)
 #    define GL_GLEXT_PROTOTYPES
 #    include <GL/glext.h>
+#endif /* UNIX */
 #endif /* (WX_USER_INTERFACE) */
 
 struct User_interface;
