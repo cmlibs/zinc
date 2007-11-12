@@ -298,6 +298,11 @@ DESCRIPTION :
 	   *order_independent_transparency_data;
 	/* The connection to the systems user interface system */
 	struct User_interface *user_interface;
+#if defined (WIN32_SYSTEM)
+	/* Clear twice, if set then the glClear in the background will be called
+		twice, which appears to work around a rendering bug on ATI windows driver 6.14.0010.6706 */
+	int clear_twice_flag;
+#endif /* defined (WIN32_SYSTEM) */
 }; /* struct Scene_viewer */
 
 DECLARE_LIST_TYPES(Scene_viewer);
@@ -1002,6 +1007,7 @@ DESCRIPTION :
 
 		glPushMatrix();
 
+		glLoadIdentity();
 		glMultMatrixd(rendering_data->scene_viewer->window_projection_matrix);
 		
 		Scene_viewer_call_next_renderer(rendering_data);
@@ -1308,7 +1314,7 @@ DESCRIPTION :
 			to it. Note the scene will have compiled them already. */
 		for_each_Light_in_Scene(scene_viewer->scene,execute_Light,
 			(void *)NULL);
-		
+
 		/* Clip planes */
 		for (i = 0 ; i < MAX_CLIP_PLANES ; i++)
 		{
@@ -1526,6 +1532,29 @@ Renders the background into the scene.
 			(scene_viewer->background_colour).green,
 			(scene_viewer->background_colour).blue,0.);
 		glClearDepth(1.0);
+#if defined (WIN32_SYSTEM)
+		/* Clear twice, if set then the glClear in the background will be called
+			twice, which appears to work around a rendering bug on ATI windows driver 6.14.0010.6706 */
+		if (1 == scene_viewer->clear_twice_flag)
+		{
+			const char *vendor_string = (const char *)glGetString(GL_VENDOR);
+			/* Now that we have a current context check to see what the vendor is */ 
+			if (vendor_string && !strcmp("ATI Technologies Inc.", vendor_string))
+			{
+				/* Don't check again */
+				scene_viewer->clear_twice_flag = 2;
+			}
+			else
+			{
+				/* Don't need work around */
+				scene_viewer->clear_twice_flag = 0;
+			}
+		}
+		if (scene_viewer->clear_twice_flag)
+		{
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		}
+#endif /* defined (WIN32_SYSTEM) */
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		if (scene_viewer->background_texture)
@@ -4748,6 +4777,12 @@ performed in idle time so that multiple redraws are avoided.
 					scene_viewer->clip_planes[i * 4 + 2] = 0.0;
 					scene_viewer->clip_planes[i * 4 + 3] = 0.0;
 				}
+#if defined (WIN32_SYSTEM)
+				/* Clear twice, if set then the glClear in the background will be called
+					twice, which appears to work around a rendering bug on ATI windows driver 6.14.0010.6706 */
+				scene_viewer->clear_twice_flag = 1;
+#endif /* defined (WIN32_SYSTEM) */
+				
 				/* add callbacks to the graphics buffer */
 				Graphics_buffer_add_initialise_callback(graphics_buffer,
 					Scene_viewer_initialise_callback, scene_viewer);
