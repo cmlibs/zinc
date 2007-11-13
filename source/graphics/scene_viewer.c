@@ -1007,7 +1007,6 @@ DESCRIPTION :
 
 		glPushMatrix();
 
-		glLoadIdentity();
 		glMultMatrixd(rendering_data->scene_viewer->window_projection_matrix);
 		
 		Scene_viewer_call_next_renderer(rendering_data);
