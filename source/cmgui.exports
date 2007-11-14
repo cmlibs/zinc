@@ -26,8 +26,6 @@ Cmiss_scene_viewer_set_scene_by_name
 Cmiss_scene_viewer_view_all
 Cmiss_scene_viewer_redraw_now
 Cmiss_scene_viewer_write_image_to_file
-Cmiss_scene_viewer_handle_windows_event
-create_Cmiss_scene_viewer_win32
 Cmiss_scene_viewer_set_background_texture_info
 Cmiss_scene_viewer_get_freespin_tumble_axis
 Cmiss_scene_viewer_start_freespin
@@ -50,7 +48,6 @@ Cmiss_scene_viewer_set_viewing_volume
 Cmiss_scene_viewer_get_viewing_volume
 Cmiss_scene_viewer_add_repaint_required_callback
 Cmiss_scene_viewer_destroy
-Cmiss_scene_viewer_win32_set_window_size
 Cmiss_scene_viewer_get_frame_pixels
 Cmiss_scene_viewer_add_transform_callback
 Cmiss_scene_viewer_remove_transform_callback
@@ -76,6 +73,12 @@ gtk_cmiss_scene_viewer_get_type
 gtk_cmiss_scene_viewer_new
 gtk_cmiss_scene_viewer_get_cmiss_scene_viewer
 #endif /* defined (GTK_USER_INTERFACE) */
+
+#if defined (WIN32_USER_INTERFACE)
+Cmiss_scene_viewer_handle_windows_event
+create_Cmiss_scene_viewer_win32
+Cmiss_scene_viewer_win32_set_window_size
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 create_Cmiss_command_data
 destroy_Cmiss_command_data
