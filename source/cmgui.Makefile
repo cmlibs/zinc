@@ -1509,8 +1509,8 @@ ifeq ($(OPERATING_SYSTEM), win32)
       EXPORTS_FILE = cmgui.exports.def
       SRC_EXPORTS_FILE = cmgui.exports
       EXPORTS_DEPEND = $(OBJECT_PATH)/$(EXPORTS_FILE)
-      EXPORTS_LINK_FLAGS = -Wl,-exports_file,$(EXPORTS_FILE)
-      SO_LIB_EXPORTS_LINK_FLAGS = $(EXPORTS_LINK_FLAGS) -Wl,--entry,_DllMainCRTStartup@12
+      EXPORTS_LINK_FLAGS = 
+      SO_LIB_EXPORTS_LINK_FLAGS = -Wl,-exports_file,$(EXPORTS_FILE) -Wl,--entry,_DllMainCRTStartup@12
       $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
 			$(call BuildExportsFile,$(SRC_EXPORTS_FILE),$(EXPORTS_FILE),)
 
