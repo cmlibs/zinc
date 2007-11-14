@@ -1391,6 +1391,7 @@ ifeq ($(OPERATING_SYSTEM),irix)
       SRC_EXPORTS_FILE = cmgui.exports
       EXPORTS_DEPEND = $(OBJECT_PATH)/$(EXPORTS_FILE)
       EXPORTS_LINK_FLAGS = -Wl,-exports_file,$(EXPORTS_FILE)
+      SO_LIB_EXPORTS_LINK_FLAGS = $(EXPORTS_LINK_FLAGS)
       $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
 			@if [ ! -d $(OBJECT_PATH) ]; then \
 				mkdir -p $(OBJECT_PATH); \
@@ -1404,6 +1405,7 @@ ifeq ($(OPERATING_SYSTEM),irix)
    else # $(EXPORT_EVERYTHING) != true
       EXPORTS_FILE = no.exports
       EXPORTS_LINK_FLAGS = 
+      SO_LIB_EXPORTS_LINK_FLAGS = $(EXPORTS_LINK_FLAGS)
       $(OBJECT_PATH)/$(EXPORTS_FILE) :	
 			touch $(OBJECT_PATH)/$(EXPORTS_FILE)
    endif # $(EXPORT_EVERYTHING) != true
@@ -1424,6 +1426,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
             SRC_EXPORTS_FILE = cmgui.exports
             EXPORTS_DEPEND = $(OBJECT_PATH)/$(EXPORTS_FILE)
             EXPORTS_LINK_FLAGS = -Wl,--export-dynamic,--version-script,$(EXPORTS_FILE)
+            SO_LIB_EXPORTS_LINK_FLAGS = $(EXPORTS_LINK_FLAGS)
             $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
 					@if [ ! -d $(OBJECT_PATH) ]; then \
 						mkdir -p $(OBJECT_PATH); \
@@ -1451,6 +1454,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
             SRC_EXPORTS_FILE = cmgui.exports
             EXPORTS_DEPEND = $(OBJECT_PATH)/$(EXPORTS_FILE)
             EXPORTS_LINK_FLAGS = $(EXPORTS_FILE) -Wl,-soname,$(EXPORTS_SONAME)
+            SO_LIB_EXPORTS_LINK_FLAGS = $(EXPORTS_LINK_FLAGS)
             $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
 					@if [ ! -d $(OBJECT_PATH) ]; then \
 						mkdir -p $(OBJECT_PATH); \
@@ -1474,41 +1478,46 @@ ifeq ($(OPERATING_SYSTEM),linux)
          EXPORTS_FILE = cmgui.dummy
          SRC_EXPORTS_FILE = cmgui.exports
          EXPORTS_LINK_FLAGS = -Wl,-E
+         SO_LIB_EXPORTS_LINK_FLAGS = $(EXPORTS_LINK_FLAGS)
          $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
 		   	touch $(OBJECT_PATH)/$(EXPORTS_FILE)
       endif # $(EXPORT_EVERYTHING) != true
    else # STATIC_LINK) != true 
       EXPORTS_FILE = no.exports
       EXPORTS_LINK_FLAGS = 
+      SO_LIB_EXPORTS_LINK_FLAGS = $(EXPORTS_LINK_FLAGS)
       $(OBJECT_PATH)/$(EXPORTS_FILE) :	
 			touch $(OBJECT_PATH)/$(EXPORTS_FILE)
    endif # STATIC_LINK) != true
 endif # SYSNAME == Linux
 ifeq ($(OPERATING_SYSTEM), win32)
-   #Default to true as I had runtime problems using the resulting dll's in 
-   #zinc with the correct exports, even though everything linked.
-   #Error 1114 loading zinc.dll, which is a dll initialisation error.
-   EXPORT_EVERYTHING=true
    ifneq ($(EXPORT_EVERYTHING),true)
+      define BuildExportsFile
+			@if [ ! -d $(OBJECT_PATH) ]; then \
+				mkdir -p $(OBJECT_PATH); \
+			fi
+			@if [ -f $(OBJECT_PATH)/$(2).c ]; then \
+				rm $(OBJECT_PATH)/$(2).c; \
+			fi
+			cp $(1) $(OBJECT_PATH)/$(2).c
+			cd $(OBJECT_PATH) ; $(CPREPROCESS) $(ALL_DEFINES) $(3) $(2).c -o $(OBJECT_PATH)/$(2).i
+			echo > $(OBJECT_PATH)/$(2)	'EXPORTS'
+			cat $(OBJECT_PATH)/$(2).i >> $(OBJECT_PATH)/$(2)
+      endef
+
       # The .link extension prevents the makefile predecessor cycle 
       EXPORTS_FILE = cmgui.exports.def
       SRC_EXPORTS_FILE = cmgui.exports
       EXPORTS_DEPEND = $(OBJECT_PATH)/$(EXPORTS_FILE)
       EXPORTS_LINK_FLAGS = -Wl,-exports_file,$(EXPORTS_FILE)
+      SO_LIB_EXPORTS_LINK_FLAGS = $(EXPORTS_LINK_FLAGS) -Wl,--entry,_DllMainCRTStartup@12
       $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
-			@if [ ! -d $(OBJECT_PATH) ]; then \
-				mkdir -p $(OBJECT_PATH); \
-			fi
-			@if [ -f $(OBJECT_PATH)/$(EXPORTS_FILE).c ]; then \
-				rm $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
-			fi
-			cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c
-			cd $(OBJECT_PATH) ; $(CPREPROCESS) $(ALL_DEFINES) $(EXPORTS_FILE).c -o $(OBJECT_PATH)/$(EXPORTS_FILE).i
-			echo > $(OBJECT_PATH)/$(EXPORTS_FILE)	'EXPORTS'
-			cat $(OBJECT_PATH)/$(EXPORTS_FILE).i >> $(OBJECT_PATH)/$(EXPORTS_FILE)
+			$(call BuildExportsFile,$(SRC_EXPORTS_FILE),$(EXPORTS_FILE),)
+
    else # $(EXPORT_EVERYTHING) != true
       EXPORTS_FILE = no.exports
       EXPORTS_LINK_FLAGS = -Wl,--export-all-symbols
+      SO_LIB_EXPORTS_LINK_FLAGS = $(EXPORTS_LINK_FLAGS)
       $(OBJECT_PATH)/$(EXPORTS_FILE) :	
 			touch $(OBJECT_PATH)/$(EXPORTS_FILE)
    endif # $(EXPORT_EVERYTHING) != true
@@ -1712,7 +1721,7 @@ ifeq ($(USE_COMPUTED_VARIABLES), true)
 # so_name but that would have to be used by the actual external Cmiss::Perl_cmiss
 # perl and python modules that are supplying us the connections to their interpreters.
 $(SO_LIB_TARGET) : $(REMAINING_LIB_OBJS) $(COMPILED_RESOURCE_FILES) $(OBJECT_PATH)/$(EXPORTS_FILE) $(SO_LIB_COMPUTED_VARIABLE_TARGET) $(SO_LIB_FINITE_ELEMENT_TARGET) $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
-	$(call BuildSharedLibraryTarget,$(SO_LIB_BASE),$(BIN_PATH),$(REMAINING_LIB_OBJS),$(EXPORTS_LINK_FLAGS) $(SO_ALL_LIB) $(COMPILED_RESOURCE_FILES) ,$(SO_LIB_SONAME),$(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_BASE) $(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_BASE) $(BIN_PATH)/$(SO_LIB_FINITE_ELEMENT_BASE) $(BIN_PATH)/$(SO_LIB_GENERAL_BASE))
+	$(call BuildSharedLibraryTarget,$(SO_LIB_BASE),$(BIN_PATH),$(REMAINING_LIB_OBJS),$(SO_LIB_EXPORTS_LINK_FLAGS) $(SO_ALL_LIB) $(COMPILED_RESOURCE_FILES) ,$(SO_LIB_SONAME),$(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_BASE) $(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_BASE) $(BIN_PATH)/$(SO_LIB_FINITE_ELEMENT_BASE) $(BIN_PATH)/$(SO_LIB_GENERAL_BASE))
 
 #Make so_lib to be a shorthand for making all the so_libs
 so_lib : $(SO_LIB_COMPUTED_VARIABLE_TARGET) $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET)
@@ -1726,7 +1735,7 @@ else # USE_COMPUTED)VARIABLES == true
 # so_name but that would have to be used by the actual external Cmiss::Perl_cmiss
 # perl and python modules that are supplying us the connections to their interpreters.
 $(SO_LIB_TARGET) : $(REMAINING_LIB_OBJS) $(COMPILED_RESOURCE_FILES) $(OBJECT_PATH)/$(EXPORTS_FILE) $(SO_LIB_FINITE_ELEMENT_TARGET) $(SO_LIB_GENERAL_TARGET) $(SO_LIB_PASS_THROUGH_TARGET) cmgui.Makefile
-	$(call BuildSharedLibraryTarget,$(SO_LIB_BASE),$(BIN_PATH),$(REMAINING_LIB_OBJS),$(EXPORTS_LINK_FLAGS) $(SO_ALL_LIB) $(COMPILED_RESOURCE_FILES) ,$(SO_LIB_SONAME), $(BIN_PATH)/$(SO_LIB_FINITE_ELEMENT_BASE) $(BIN_PATH)/$(SO_LIB_GENERAL_BASE) $(BIN_PATH)/$(SO_LIB_PASS_THROUGH_BASE))
+	$(call BuildSharedLibraryTarget,$(SO_LIB_BASE),$(BIN_PATH),$(REMAINING_LIB_OBJS),$(SO_LIB_EXPORTS_LINK_FLAGS) $(SO_ALL_LIB) $(COMPILED_RESOURCE_FILES) ,$(SO_LIB_SONAME), $(BIN_PATH)/$(SO_LIB_FINITE_ELEMENT_BASE) $(BIN_PATH)/$(SO_LIB_GENERAL_BASE) $(BIN_PATH)/$(SO_LIB_PASS_THROUGH_BASE))
 endif # USE_COMPUTED)VARIABLES == true
 
 #Make so_lib to be a shorthand for making all the so_libs
