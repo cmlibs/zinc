@@ -1314,10 +1314,11 @@ name the <file_operation> is performed on the file with the <arguments>.
 		 getcwd(old_directory, 4096);
 		 length = strlen(old_directory);
 		 filename = file_open_data->file_name;
-		 if ((ALLOCATE(old_directory_name,char,length+1)) && old_directory !=NULL)
+		 if ((ALLOCATE(old_directory_name,char,length+2)) && old_directory !=NULL)
 		 {
 				strcpy(old_directory_name, old_directory);
 				strcat(old_directory_name,"/");
+				old_directory_name[length+1]='\0';
 		 }
 		 else
 		 {
