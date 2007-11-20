@@ -510,16 +510,17 @@ LAST MODIFIED : 19 November 2007
 DESCRIPTION :
 ==============================================================================*/
 {
-	float nextcutstart, nextcuti, nextcutj, x_range, y_range, z_range,
+	float nextcuti, nextcutj, x_range, y_range, z_range,
 		xi0, xii, xij;
 	int finished, i, index, j, k, l, maximum_points, npts1, npts2,
 		number_of_tiles, index_new, stepindex, 
 		vertex1, vertex2, vertex3, vertex4, vertexstart, vertexi, vertexj,
 		x_tiles, y_tiles, z_tiles;
 	struct GT_surface *current_surface, *new_surface, *return_surface,
-		**surface_tiles, *triangle_lists, **triangle_tiles;
-	Triple texture_centre, *newtexturetri, *normals, *points, *texturepoints,
-		*texturetri;
+		**surface_tiles, **triangle_tiles;
+	Triple texture_centre, *normals, *points, *texturepoints,
+		*texturetri, vertexk;
+;
 
 	ENTER(tile_GT_surface);
 
@@ -565,7 +566,6 @@ DESCRIPTION :
 		texturepoints = surface->texturelist;
 		points = surface->pointlist;
 		normals = surface->normallist;
-		triangle_lists = (struct GT_surface *)NULL;
 		switch (surface->polygon)
 		{
 			case g_QUADRILATERAL:
@@ -698,12 +698,10 @@ DESCRIPTION :
 									maximum_points, 0, /*polygon_size*/3);
 								texturetri = current_surface->texturelist;
 								
-								newtexturetri = new_surface->texturelist;
 								for (l = 0 ; l < current_surface->n_pts1 ; l++)
 								{
 									index = 3 * l;
 
-									Triple vertexk;
 									vertexk[0] = texturetri[index][k] / 
 										texture_tiling->tile_coordinate_range[k];
 									vertexk[1] = texturetri[index+1][k] / 
@@ -733,7 +731,6 @@ DESCRIPTION :
 										}
 									}
 
-									nextcutstart = vertexk[vertexstart];
 									nextcuti = floor(vertexk[vertexstart] + 1);
 									nextcutj = nextcuti;
 									/* Which side did we last step on */
