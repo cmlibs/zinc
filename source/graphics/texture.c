@@ -176,6 +176,9 @@ The properties of a graphical texture.
 	/* the number of structures that point to this texture.  The texture
 		cannot be destroyed while this is greater than 0 */
 
+	/* Texture_tiling */
+	struct Texture_tiling *texture_tiling;
+
 	/* Store the properties */
 	struct LIST(Texture_property) *property_list;
 
@@ -911,28 +914,30 @@ GL_EXT_texture_object extension.
 #endif /* defined (OPENGL_API) */
 
 #if defined (OPENGL_API)
-static int Texture_get_hardware_reduction(struct Texture *texture,
-   int *reductions)
+static int Texture_get_hardware_reduction_or_tiling(struct Texture *texture,
+   int *reductions, struct Texture_tiling **texture_tiling)
 /*******************************************************************************
-LAST MODIFIED : 21 June 2007
+LAST MODIFIED : 19 November 2007
 
 DESCRIPTION :
 Queries the graphics hardware to determine how much the texture size must be
 reduced to fit the available space. Returns the reduction factors <reductions> which must be an array equal in size to the dimension of the texture.
 The function returns 0 if the texture cannot be loaded at all, 1 if no
-reduction is required and 2 if the texture can be loaded if reduced according
-to the <reductions>.
+reduction is required, 2 if the texture can be loaded if reduced according
+to the <reductions> or 3 if the texture can be loaded if broken into multiple
+tiles (and <texture_tiling> wasn't NULL.
 ==============================================================================*/
 {
 #if defined (OPENGL_API)
 	char *cmiss_max_texture_size;
-	int max_texture_size_int, next_reduction, pixel_size, return_code;
+	int i, max_texture_size_int, next_reduction, number_of_tiles, 
+		pixel_size, return_code;
 	GLenum format, type;
 	GLint max_texture_size, number_of_components, test_width, 
 		hardware_texture_format;
 #endif /* defined (OPENGL_API) */
 
-	ENTER(Texture_get_hardware_reduction);
+	ENTER(Texture_get_hardware_reduction_or_tiling);
 	if (texture)
 	{
 #if defined (OPENGL_API)
@@ -955,8 +960,8 @@ to the <reductions>.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Texture_get_hardware_reduction.  "
-						"Unable to parse environment variable: %s",
+						"Texture_get_hardware_reduction_or_tiling.  "
+						"Unable to parse environment variable CMISS_MAX_3D_TEXTURE_SIZE: %s",
 						cmiss_max_texture_size);
 				}
 			}
@@ -976,8 +981,8 @@ to the <reductions>.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Texture_get_hardware_reduction.  "
-						"Unable to parse environment variable: %s",
+						"Texture_get_hardware_reduction_or_tiling.  "
+						"Unable to parse environment variable CMISS_MAX_TEXTURE_SIZE: %s",
 						cmiss_max_texture_size);
 				}
 			}
@@ -1089,7 +1094,7 @@ to the <reductions>.
 						{
 #endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
 							display_message(ERROR_MESSAGE,
-								"Texture_get_hardware_reduction.  "
+								"Texture_get_hardware_reduction_or_tiling.  "
 								"3D textures not supported on this display.");
 							return_code=0;
 #if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
@@ -1099,7 +1104,7 @@ to the <reductions>.
 					default:
 					{
 						display_message(ERROR_MESSAGE,
-							"Texture_get_hardware_reduction.  Invalid texture dimension");
+							"Texture_get_hardware_reduction_or_tiling.  Invalid texture dimension");
 						return_code = 0;
 					} break;
 				}
@@ -1148,31 +1153,93 @@ to the <reductions>.
 				printf("\n");
 			}
 #endif /* defined (DEBUG) */
+#if defined (NEW_CODE)
+			/* Disable as I haven't handled all the cases yet and
+				there are some memory leaks */
+			if ((2 == return_code) && texture_tiling)
+			{
+				/* Tile instead of reduce (initially assume we can load in
+					multiple textures of the proxy size which isn't necessarily
+					true, need to test that too). */
+				return_code = 3;
+				ALLOCATE(*texture_tiling, struct Texture_tiling, 1);
+				ALLOCATE((*texture_tiling)->texture_tiles, int, texture->dimension);
+				ALLOCATE((*texture_tiling)->tile_size, int, texture->dimension);
+				ALLOCATE((*texture_tiling)->tile_coordinate_range, float,
+					texture->dimension);
+				number_of_tiles = 1;
+				for (i = 0 ; i < texture->dimension ; i++)
+				{
+					(*texture_tiling)->texture_tiles[i] = reductions[i];
+					number_of_tiles *= (*texture_tiling)->texture_tiles[i];
+					reductions[i] = 1.0;
+				}
+				(*texture_tiling)->total_tiles = number_of_tiles;
+				if (texture->dimension > 0)
+				{
+					(*texture_tiling)->tile_size[0] = 
+						texture->width_texels/(*texture_tiling)->texture_tiles[0];
+					(*texture_tiling)->tile_coordinate_range[0] = 
+						texture->width /(float)(*texture_tiling)->texture_tiles[0]
+						* ((float)texture->width_texels / (float)texture->original_width_texels);
+				}
+				if (texture->dimension > 1)
+				{
+					(*texture_tiling)->tile_size[1] = 
+						texture->height_texels/(*texture_tiling)->texture_tiles[1];
+					(*texture_tiling)->tile_coordinate_range[1] =
+						texture->height/(float)(*texture_tiling)->texture_tiles[1]
+						* ((float)texture->height_texels / (float)texture->original_height_texels);
+				}
+				if (texture->dimension > 2)
+				{
+					(*texture_tiling)->tile_size[2] = 
+						texture->depth_texels/(*texture_tiling)->texture_tiles[2];
+					(*texture_tiling)->tile_coordinate_range[2] =
+						texture->depth/(float)(*texture_tiling)->texture_tiles[2]
+						* ((float)texture->depth_texels / (float)texture->original_depth_texels);
+				}
+				(*texture_tiling)->tile_display_lists = 0;
+				(*texture_tiling)->dimension = texture->dimension;
+				ALLOCATE((*texture_tiling)->texture_ids, int, number_of_tiles);
+				for (i = 0 ; i < number_of_tiles ; i++)
+				{
+					GLuint gl_texture_id;
+					glGenTextures(1,&(gl_texture_id));
+					(*texture_tiling)->texture_ids[i] = gl_texture_id;
+				}
+				texture->texture_tiling = *texture_tiling;
+			}
+#else /* defined (NEW_CODE) */
+			USE_PARAMETER(number_of_tiles);
+			USE_PARAMETER(i);
+			USE_PARAMETER(texture_tiling);
+#endif /* defined (NEW_CODE) */
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Texture_get_hardware_reduction.  "
+				"Texture_get_hardware_reduction_or_tiling.  "
 				"Maximum texture size less than 1");
 			return_code=0;
 		}
 
 #else /* defined (OPENGL_API) */
 		display_message(ERROR_MESSAGE,
-			"Texture_get_hardware_reduction.  Only implemented for OpenGL");
+			"Texture_get_hardware_reduction_or_tiling.  Only implemented for OpenGL");
 		return_code = 0;
 #endif /* defined (OPENGL_API) */
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Texture_get_hardware_reduction.  Missing texture");
+			"Texture_get_hardware_reduction_or_tiling.  Missing texture");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Texture_get_hardware_reduction */
+} /* Texture_get_hardware_reduction_or_tiling */
 #endif /* defined (OPENGL_API)*/
 
 #if defined (OPENGL_API)
@@ -1539,10 +1606,124 @@ storage to power of two size in each direction.
 #endif /* defined (OPENGL_API)*/
 
 #if defined (OPENGL_API)
-static int direct_render_Texture(struct Texture *texture,
-	struct Graphics_buffer *graphics_buffer)
+static int Texture_get_image_tile(struct Texture *texture,
+	unsigned char **tile_image, struct Texture_tiling *texture_tiling,
+	int tile_number)
 /*******************************************************************************
-LAST MODIFIED : 18 August 2007
+LAST MODIFIED : 19 November 2007
+
+DESCRIPTION :
+Creates a sub_image based on <tile_number> and <texture_tiling> which
+is a part of the total texture.  If <tile_image> initially points at a NULL 
+then it is allocated, otherwise it is assumed large enough for the image tile
+and overwritten. 
+==============================================================================*/
+{
+	int bytes_per_pixel, end_x, end_y, end_z, i,
+		number_of_components, number_of_bytes_per_component,
+		return_code, source_row_width_bytes, tile_row_width_bytes,
+		start_x, start_y, start_z, tile_size, tile_x, tile_y, tile_z, y, z;
+	unsigned char *destination, *source;
+
+	ENTER(Texture_get_image_tile);
+	if (texture && texture_tiling)
+	{
+		return_code = 1;
+		number_of_components =
+			Texture_storage_type_get_number_of_components(texture->storage);
+		number_of_bytes_per_component = texture->number_of_bytes_per_component;
+		bytes_per_pixel = 
+			number_of_bytes_per_component * number_of_components;
+		source_row_width_bytes = 4*((texture->width_texels*bytes_per_pixel + 3)/4);
+		tile_row_width_bytes = 
+			4*((texture_tiling->tile_size[0]*bytes_per_pixel + 3)/4);
+		if (!*tile_image)
+		{
+			tile_size = tile_row_width_bytes;
+			for (i = 1 ; i < texture_tiling->dimension ; i++)
+			{
+				tile_size *= texture_tiling->tile_size[i];
+			}
+			if (!ALLOCATE(*tile_image, unsigned char,
+					tile_size))
+			{
+				display_message(ERROR_MESSAGE,
+					"Texture_get_image_tiling.  Unable to allocate tile memory.");
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
+			tile_x = tile_number % texture_tiling->texture_tiles[0];
+			start_x = tile_x * texture_tiling->tile_size[0];
+			end_x = (tile_x + 1) * texture_tiling->tile_size[0];
+			if (texture_tiling->dimension > 1)
+			{
+				tile_y = (tile_number / texture_tiling->texture_tiles[0])
+					% texture_tiling->texture_tiles[1];
+				start_y = tile_y * texture_tiling->tile_size[1];
+				end_y = (tile_y + 1) * texture_tiling->tile_size[1];
+			}
+			else
+			{
+				tile_y = 0;
+				start_y = 0;
+				end_y = texture->height_texels;
+			}
+			if (texture_tiling->dimension > 2)
+			{
+				tile_z = (tile_number / (texture_tiling->texture_tiles[0] *
+						texture_tiling->texture_tiles[1]))
+					% texture_tiling->texture_tiles[2];
+				start_z = tile_z * texture_tiling->tile_size[2];
+				end_z = (tile_z + 1) * texture_tiling->tile_size[2];
+			}
+			else
+			{
+				tile_z = 0;
+				start_z = 0;
+				end_z = texture->depth_texels;
+			}
+#if defined (DEBUG)
+			printf ("Rendering tile %d, tile_x %d, tile_y %d, tile_z %d\n",
+				tile_number, tile_x, tile_y, tile_z);
+#endif /* defined (DEBUG) */
+		}
+		source = texture->image + source_row_width_bytes *
+			(start_y + start_z * texture->height_texels) +
+			start_x * bytes_per_pixel;
+		destination = *tile_image;
+		for (z = start_z ; z < end_z ; z++)
+		{
+			for (y = start_y ; y < end_y ; y++)
+			{
+				/* Can this creep over the end of the source data??? */
+				memcpy(destination, source, tile_row_width_bytes);
+				source += source_row_width_bytes;
+				destination += tile_row_width_bytes;
+			}
+			source += source_row_width_bytes * (texture->height_texels -
+				texture_tiling->tile_size[1]);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_get_image_tile.  Missing texture or tiling.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_get_image_tile */
+#endif /* defined (OPENGL_API)*/
+
+#if defined (OPENGL_API)
+static int direct_render_Texture(struct Texture *texture,
+	struct Graphics_buffer *graphics_buffer,
+	struct Texture_tiling **texture_tiling)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2007
 
 DESCRIPTION :
 Directly outputs the commands setting up the <texture>.
@@ -1550,8 +1731,9 @@ Directly outputs the commands setting up the <texture>.
 {
 	int  return_code;
 #if defined (OPENGL_API)
-	int hardware_storage_format, number_of_components,
-		reduction_flag,reductions[3];
+	int hardware_storage_format, i, number_of_components, number_of_tiles,
+		reduction_flag,reductions[3],
+		render_tile_width, render_tile_height, render_tile_depth;
 	GLenum format, texture_target, type;
 	GLfloat values[4];
 	unsigned char *reduced_image, *rendered_image;
@@ -1700,141 +1882,295 @@ Directly outputs the commands setting up the <texture>.
 				hardware_storage_format = Texture_get_hardware_storage_format
 					(texture->compression_mode, number_of_components);
 
-				if (0 < (reduction_flag = Texture_get_hardware_reduction(texture,
-					reductions)))
+				if (0 < (reduction_flag = Texture_get_hardware_reduction_or_tiling(texture,
+					 reductions, texture_tiling)))
 				{
 					reduced_image = (unsigned char *)NULL;
-					if (1 < reduction_flag)
+					switch(reduction_flag)
 					{
-						switch (texture->dimension)
+						case 1:
 						{
-							case 1:
-							{
-								texture->rendered_width_texels =
-									texture->width_texels / reductions[0];
-								texture->rendered_height_texels = 1;
-								texture->rendered_depth_texels = 1;
-								display_message(WARNING_MESSAGE,
-									"1-D image %s is too large for this display.  "
-									"Reducing width from %d to %d for display only",
-									texture->name,
-									texture->width_texels,
-									texture->rendered_width_texels); 
-							} break;
-							case 2:
-							{
-								texture->rendered_width_texels =
-									texture->width_texels / reductions[0];
-								texture->rendered_height_texels =
-									texture->height_texels / reductions[1];
-								texture->rendered_depth_texels = 1;
-								display_message(WARNING_MESSAGE,
-									"Image %s is too large for this display.  "
-									"Reducing (%d,%d) to (%d,%d) for display only",
-									texture->name,
-									texture->width_texels, texture->height_texels,
-									texture->rendered_width_texels,
-									texture->rendered_height_texels); 
-							} break;
-							case 3:
-							{
-								texture->rendered_width_texels =
-									texture->width_texels / reductions[0];
-								texture->rendered_height_texels =
-									texture->height_texels / reductions[1];
-								texture->rendered_depth_texels =
-									texture->depth_texels / reductions[2];
-								display_message(WARNING_MESSAGE,
-									"3-D image %s is too large for this display.  "
-									"Reducing (%d,%d,%d) to (%d,%d,%d) for display only",
-									texture->name,
-									texture->width_texels, texture->height_texels,
-									texture->depth_texels,
-									texture->rendered_width_texels, 
-									texture->rendered_height_texels,
-									texture->rendered_depth_texels); 
-							} break;
-							default:
-							{
-								display_message(ERROR_MESSAGE,
-									"direct_render_Texture.  Invalid texture dimension");
-								return_code = 0;
-							}
-						}
-						if (return_code)
+							rendered_image = texture->image;
+							texture->rendered_width_texels = texture->width_texels;
+							texture->rendered_height_texels = texture->height_texels;
+							texture->rendered_depth_texels = texture->depth_texels;
+							render_tile_width = texture->width_texels;
+							render_tile_height = texture->height_texels;
+							render_tile_depth = texture->depth_texels;
+							number_of_tiles = 1;
+						} break;
+						case 2:
 						{
-							if (reduced_image = Texture_get_resized_image(texture,
-								texture->rendered_width_texels, texture->rendered_height_texels,
-								texture->rendered_depth_texels, texture->resize_filter_mode))
+							switch (texture->dimension)
 							{
-								rendered_image = reduced_image;
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE, "direct_render_Texture.  "
-									"Could not reduce texture size for display");
-								return_code = 0;
-							}
-						}
-					}
-					else
-					{
-						rendered_image = texture->image;
-						texture->rendered_width_texels = texture->width_texels;
-						texture->rendered_height_texels = texture->height_texels;
-						texture->rendered_depth_texels = texture->depth_texels;
-					}
-					if (return_code)
-					{
-						switch (texture->dimension)
-						{
-							case 1:
-							{
-								glTexImage1D(GL_TEXTURE_1D, (GLint)0,
-									(GLint)hardware_storage_format,
-									(GLint)texture->rendered_width_texels, (GLint)0,
-									format, type, (GLvoid *)rendered_image);
-							} break;
-							case 2:
-							{
-								glTexImage2D(GL_TEXTURE_2D, (GLint)0,
-									(GLint)hardware_storage_format,
-									(GLint)texture->rendered_width_texels,
-									(GLint)texture->rendered_height_texels, (GLint)0,
-									format, type, (GLvoid *)rendered_image);
-							} break;
-							case 3:
-							{
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-								if (
-#  if defined (GL_VERSION_1_2)
-									Graphics_library_check_extension(GL_VERSION_1_2)
-#    if defined (GL_EXT_texture3D)
-									||
-#    endif /* defined (GL_EXT_texture3D) */
-#  endif /* defined (GL_VERSION_1_2) */
-#  if defined (GL_EXT_texture3D)
-									Graphics_library_check_extension(GL_EXT_texture3D)
-#  endif /* defined (GL_EXT_texture3D) */
-									)
+								case 1:
 								{
-									glTexImage3D(GL_TEXTURE_3D, (GLint)0,
-										(GLint)hardware_storage_format,
-										(GLint)texture->rendered_width_texels,
-										(GLint)texture->rendered_height_texels,
-										(GLint)texture->rendered_depth_texels, (GLint)0,
-										format, type, (GLvoid *)rendered_image);
+									texture->rendered_width_texels =
+										texture->width_texels / reductions[0];
+									texture->rendered_height_texels = 1;
+									texture->rendered_depth_texels = 1;
+									display_message(WARNING_MESSAGE,
+										"1-D image %s is too large for this display.  "
+										"Reducing width from %d to %d for display only",
+										texture->name,
+										texture->width_texels,
+										texture->rendered_width_texels); 
+								} break;
+								case 2:
+								{
+									texture->rendered_width_texels =
+										texture->width_texels / reductions[0];
+									texture->rendered_height_texels =
+										texture->height_texels / reductions[1];
+									texture->rendered_depth_texels = 1;
+									display_message(WARNING_MESSAGE,
+										"Image %s is too large for this display.  "
+										"Reducing (%d,%d) to (%d,%d) for display only",
+										texture->name,
+										texture->width_texels, texture->height_texels,
+										texture->rendered_width_texels,
+										texture->rendered_height_texels); 
+								} break;
+								case 3:
+								{
+									texture->rendered_width_texels =
+										texture->width_texels / reductions[0];
+									texture->rendered_height_texels =
+										texture->height_texels / reductions[1];
+									texture->rendered_depth_texels =
+										texture->depth_texels / reductions[2];
+									display_message(WARNING_MESSAGE,
+										"3-D image %s is too large for this display.  "
+										"Reducing (%d,%d,%d) to (%d,%d,%d) for display only",
+										texture->name,
+										texture->width_texels, texture->height_texels,
+										texture->depth_texels,
+										texture->rendered_width_texels, 
+										texture->rendered_height_texels,
+										texture->rendered_depth_texels); 
+								} break;
+								default:
+								{
+									display_message(ERROR_MESSAGE,
+										"direct_render_Texture.  Invalid texture dimension");
+									return_code = 0;
+								}
+							}
+							if (return_code)
+							{
+								if (reduced_image = Texture_get_resized_image(texture,
+										texture->rendered_width_texels, texture->rendered_height_texels,
+										texture->rendered_depth_texels, texture->resize_filter_mode))
+								{
+									rendered_image = reduced_image;
 								}
 								else
 								{
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-									display_message(ERROR_MESSAGE,"direct_render_Texture.  "
-										"3D textures not supported on this display.");
-									return_code=0;
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+									display_message(ERROR_MESSAGE, "direct_render_Texture.  "
+										"Could not reduce texture size for display");
+									return_code = 0;
 								}
+								render_tile_width = texture->rendered_width_texels;
+								render_tile_height = texture->rendered_height_texels;
+								render_tile_depth = texture->rendered_depth_texels;
+							}
+							number_of_tiles = 1;
+						} break;
+						case 3:
+						{
+							number_of_tiles = 1;
+							for (i = 0 ; i < (*texture_tiling)->dimension ; i++)
+							{
+								number_of_tiles *= (*texture_tiling)->texture_tiles[i];
+							}
+							render_tile_width = (*texture_tiling)->tile_size[0];
+							if (texture->dimension > 1)
+							{
+								render_tile_height = (*texture_tiling)->tile_size[1];
+							}
+							else
+							{
+								render_tile_height = 1;
+							}
+							if (texture->dimension > 2)
+							{
+								render_tile_depth = (*texture_tiling)->tile_size[2];
+							}
+							else
+							{
+								render_tile_depth = 1;
+							}
+						} break;
+					}
+					if (return_code)
+					{
+						for (i = 0 ; return_code && (i < number_of_tiles) ; i++)
+						{
+							if (3 == reduction_flag)
+							{
+								Texture_get_image_tile(texture, &reduced_image,
+									*texture_tiling, /*tile_number*/i);
+								glBindTexture(texture_target,
+									(*texture_tiling)->texture_ids[i]);
+								rendered_image = reduced_image;
+								glEnable(texture_target);
+		switch (texture->wrap_mode)
+		{
+			case TEXTURE_CLAMP_WRAP:
+			{
+				glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_CLAMP);
+				glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_CLAMP);
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+				glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_CLAMP);
 #endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-							} break;
+			} break;
+			case TEXTURE_REPEAT_WRAP:
+			{
+				glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_REPEAT);
+				glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_REPEAT);
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+				glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_REPEAT);
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+			} break;
+			case TEXTURE_CLAMP_EDGE_WRAP:
+			{
+#if defined (GL_VERSION_1_2)
+				if (Graphics_library_check_extension(GL_VERSION_1_2))
+				{
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_CLAMP_TO_EDGE);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "direct_render_Texture.  "
+						"Texture wrap mode %s not supported on this hardware.", 
+						ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
+					return_code = 0;
+				}
+#else /* defined (GL_VERSION_1_2) */
+				display_message(ERROR_MESSAGE, "direct_render_Texture.  "
+					"Texture wrap mode %s was not compiled into this executable.", 
+					ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
+				return_code = 0;
+#endif /* defined (GL_VERSION_1_2) */
+			} break;
+			case TEXTURE_CLAMP_BORDER_WRAP:
+			{
+#if defined (GL_VERSION_1_3)
+				if (Graphics_library_check_extension(GL_VERSION_1_3))
+				{
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_BORDER);
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_BORDER);
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_CLAMP_TO_BORDER);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "direct_render_Texture.  "
+						"Texture wrap mode %s not supported on this hardware.", 
+						ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
+					return_code = 0;
+				}
+#else /* defined (GL_VERSION_1_3) */
+				display_message(ERROR_MESSAGE, "direct_render_Texture.  "
+					"Texture wrap mode %s was not compiled into this executable.", 
+					ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
+				return_code = 0;
+#endif /* defined (GL_VERSION_1_3) */
+			} break;
+			case TEXTURE_MIRRORED_REPEAT_WRAP:
+			{
+#if defined (GL_VERSION_1_4)
+				if (Graphics_library_check_extension(GL_VERSION_1_4))
+				{
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_MIRRORED_REPEAT);
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_MIRRORED_REPEAT);
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_MIRRORED_REPEAT);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "direct_render_Texture.  "
+						"Texture wrap mode %s not supported on this hardware.", 
+						ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
+					return_code = 0;
+				}
+#else /* defined (GL_VERSION_1_4) */
+				display_message(ERROR_MESSAGE, "direct_render_Texture.  "
+					"Texture wrap mode %s was not compiled into this executable.", 
+					ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
+				return_code = 0;
+#endif /* defined (GL_VERSION_1_4) */
+			} break;
+		}
+		switch (texture->filter_mode)
+		{
+			case TEXTURE_LINEAR_FILTER:
+			{
+				glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+				glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+			} break;
+			case TEXTURE_NEAREST_FILTER:
+			{
+				glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+				glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+			} break;
+		}
+		values[0]=(texture->combine_colour).red;
+		values[1]=(texture->combine_colour).green;
+		values[2]=(texture->combine_colour).blue;
+		values[3]=texture->combine_alpha;
+		glTexParameterfv(texture_target,GL_TEXTURE_BORDER_COLOR,values);
+							}
+							switch (texture->dimension)
+							{
+								case 1:
+								{
+									glTexImage1D(GL_TEXTURE_1D, (GLint)0,
+										(GLint)hardware_storage_format,
+										(GLint)render_tile_width, (GLint)0,
+										format, type, (GLvoid *)rendered_image);
+								} break;
+								case 2:
+								{
+									glTexImage2D(GL_TEXTURE_2D, (GLint)0,
+										(GLint)hardware_storage_format,
+										(GLint)render_tile_width,
+										(GLint)render_tile_height, (GLint)0,
+										format, type, (GLvoid *)rendered_image);
+								} break;
+								case 3:
+								{
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+									if (
+#  if defined (GL_VERSION_1_2)
+										Graphics_library_check_extension(GL_VERSION_1_2)
+#    if defined (GL_EXT_texture3D)
+										||
+#    endif /* defined (GL_EXT_texture3D) */
+#  endif /* defined (GL_VERSION_1_2) */
+#  if defined (GL_EXT_texture3D)
+										Graphics_library_check_extension(GL_EXT_texture3D)
+#  endif /* defined (GL_EXT_texture3D) */
+										)
+									{
+										glTexImage3D(GL_TEXTURE_3D, (GLint)0,
+											(GLint)hardware_storage_format,
+											(GLint)render_tile_width,
+											(GLint)render_tile_height,
+											(GLint)render_tile_depth, (GLint)0,
+											format, type, (GLvoid *)rendered_image);
+									}
+									else
+									{
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+										display_message(ERROR_MESSAGE,"direct_render_Texture.  "
+											"3D textures not supported on this display.");
+										return_code=0;
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+									}
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+								} break;
+							}
 						}
 					}
 					if (reduced_image)
@@ -2589,6 +2925,7 @@ of all textures.
 			texture->display_list=0;
 			texture->texture_id = 0;
 #endif /* defined (OPENGL_API) */
+			texture->texture_tiling = (struct Texture_tiling *)NULL;
 			texture->display_list_current=0;
 			texture->property_list = (struct LIST(Texture_property) *)NULL;
 			texture->access_count=0;
@@ -2656,6 +2993,13 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 					display_message(ERROR_MESSAGE,"DESTROY(Texture).  Movie unavailable but movie pointer found");
 					return_code=0;
 #endif /* defined (SGI_MOVIE_FILE) */
+				}
+				if (texture->texture_tiling)
+				{
+					DEALLOCATE(texture->texture_tiling->tile_size);
+					DEALLOCATE(texture->texture_tiling->texture_tiles);
+					DEALLOCATE(texture->texture_tiling->texture_ids);
+					DEALLOCATE(texture->texture_tiling);
 				}
 #if defined (GRAPHICS_BUFFER_USE_BUFFERS)
 				if(texture->graphics_buffer)
@@ -5893,14 +6237,20 @@ The command is started with the string pointed to by <command_prefix>.
 } /* list_Texture_commands */
 
 int compile_Texture(struct Texture *texture,
-	struct Graphics_buffer *graphics_buffer)
+	struct Graphics_buffer *graphics_buffer,
+	struct Texture_tiling **texture_tiling)
 /*******************************************************************************
-LAST MODIFIED : 18 August 2007
+LAST MODIFIED : 19 November 2007
 
 DESCRIPTION :
 Rebuilds the display_list for <texture> if it is not current. If <texture>
 does not have a display list, first attempts to give it one. The display list
 created here may be called using execute_Texture, below.
+If <texture_tiling> is not NULL then if the texture is larger than can be 
+compiled into a single texture on the current graphics hardware,
+then it can be tiled into several textures
+and information about the tile boundaries is returned in Texture_tiling 
+structure and should be used to compile any graphics objects.
 ???RC Textures must be compiled before they are executed since openGL
 cannot start writing to a display list when one is currently being written to.
 ???RC The behaviour of textures is set up to take advantage of pre-computed
@@ -5908,7 +6258,7 @@ display lists. To switch to direct rendering make this routine do nothing and
 execute_Texture should just call direct_render_Texture.
 ==============================================================================*/
 {
-	int return_code;
+	int i, return_code;
 #if defined (OPENGL_API)
 	GLboolean resident;
 	GLenum texture_target;
@@ -5930,6 +6280,10 @@ execute_Texture should just call direct_render_Texture.
 				)
 		{
 			return_code = 1;
+			if (texture_tiling && texture->texture_tiling)
+			{
+				*texture_tiling = texture->texture_tiling;
+			}
 		}
 		else
 		{
@@ -6057,37 +6411,8 @@ execute_Texture should just call direct_render_Texture.
 						default:
 						{
 							glBindTexture(texture_target, texture->texture_id);
-#if defined (EXT_subtexture)
-							Texture_get_type_and_format_from_storage_type(texture->storage,
-								&type, &format);
-							switch (texture->dimension)
-							{
-								case 1:
-								{
-									glTexSubImage1DEXT(texture_target, 0, 0, 0,
-										(GLint)(texture->width_texels),
-										(GLint)(texture->height_texels),
-										format, type, (GLvoid *)(texture->image));
-								} break;
-								case 2:
-								{
-									glTexSubImage2DEXT(texture_target, 0, 0, 0,
-										(GLint)(texture->width_texels),
-										(GLint)(texture->height_texels),
-										format, type, (GLvoid *)(texture->image));
-								} break;
-								case 3:
-								{
-									glTexSubImage3DEXT(texture_target, 0, 0, 0,
-										(GLint)(texture->width_texels),
-										(GLint)(texture->height_texels),
-										(GLint)(texture->depth_texels),
-										format, type, (GLvoid *)(texture->image));
-								} break;
-							}
-#else /* defined (EXT_subtexture) */
-							direct_render_Texture(texture, graphics_buffer);
-#endif /* defined (EXT_subtexture) */
+							direct_render_Texture(texture, graphics_buffer,
+								texture_tiling);
 						} break;
 					}
 				}
@@ -6102,20 +6427,48 @@ execute_Texture should just call direct_render_Texture.
 						texture->storage==TEXTURE_PBUFFER)
 					{
 						Graphics_buffer_make_read_current(texture->graphics_buffer);				
-						direct_render_Texture(texture, graphics_buffer);
+						direct_render_Texture(texture, graphics_buffer,
+							texture_tiling);
 						/* X3dThreeDDrawingRemakeCurrent(); */
 					}
 					else
 					{
-						direct_render_Texture(texture, graphics_buffer);
+						direct_render_Texture(texture, graphics_buffer,
+							texture_tiling);
 					}
-					glNewList(texture->display_list,GL_COMPILE);
-					glBindTexture(texture_target, texture->texture_id);
-					/* As we have bound the texture we only need the 
-						environment in the display list */
-					direct_render_Texture_environment(texture);
-
-					glEndList();
+					if (texture->texture_tiling)
+					{
+						if (!texture->texture_tiling->tile_display_lists)
+						{
+							texture->texture_tiling->tile_display_lists
+								= glGenLists(texture->texture_tiling->total_tiles);
+						}
+						for (i = 0 ; i < texture->texture_tiling->total_tiles ; i++)
+						{
+							glNewList(texture->texture_tiling->tile_display_lists + i,
+								GL_COMPILE);
+							glBindTexture(texture_target, texture->texture_tiling->texture_ids[i]);
+							/* As we have bound the texture we only need the 
+								environment in the display list */
+							//direct_render_Texture_environment(texture);
+							glEndList();
+						}
+						glNewList(texture->display_list,GL_COMPILE);
+						//glBindTexture(texture_target, texture->texture_tiling->texture_ids[0]);
+						/* As we have bound the texture we only need the 
+							environment in the display list */
+						direct_render_Texture_environment(texture);
+						glEndList();
+					}
+					else
+					{
+						glNewList(texture->display_list,GL_COMPILE);
+						glBindTexture(texture_target, texture->texture_id);
+						/* As we have bound the texture we only need the 
+							environment in the display list */
+						direct_render_Texture_environment(texture);
+						glEndList();
+					}
 				}
 
 				texture->display_list_current=1;
@@ -6470,7 +6823,7 @@ Sets the <property> and <value> string for the <texture>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Texture_get_physical_size.  Invalid argument(s)");
+			"Texture_set_property.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -6478,3 +6831,40 @@ Sets the <property> and <value> string for the <texture>.
 	return (return_code);
 } /* Texture_set_property */
 
+char *Texture_get_property(struct Texture *texture,
+	const char *property)
+/*******************************************************************************
+LAST MODIFIED : 25 October 2007
+
+DESCRIPTION :
+If the <property> is defined for the <texture>, then a copy is returned (and
+should be DEALLOCATED when finished with).
+==============================================================================*/
+{
+	char *return_value;
+	struct Texture_property *texture_property;
+
+	ENTER(Texture_get_property);
+	if (texture && property)
+	{
+		if (texture->property_list &&
+			(texture_property = FIND_BY_IDENTIFIER_IN_LIST(Texture_property,name)(
+			(char *)property, texture->property_list)))
+		{
+			return_value = duplicate_string(texture_property->value);
+		}
+		else
+		{
+			return_value = (char *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_get_property.  Invalid argument(s)");
+		return_value = (char *)NULL;
+	}
+	LEAVE;
+
+	return (return_value);
+} /* Texture_get_property */

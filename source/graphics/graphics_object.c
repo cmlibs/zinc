@@ -3209,6 +3209,8 @@ Allocates memory and assigns fields for a graphics surface.
 		surface->n_data_components=n_data_components;
 		surface->data=data;
 		surface->object_name=0;
+		surface->tile_number=0;
+		surface->allocated_size=0;
 		surface->ptrnext=(struct GT_surface *)NULL;
 	}
 	else
@@ -3801,17 +3803,17 @@ supplied <compile_context>.
 				if (graphics_object->default_material)
 				{
 					compile_Graphical_material(graphics_object->default_material,
-						context->graphics_buffer);
+						context->graphics_buffer, &context->texture_tiling);
 				}
 				if (graphics_object->selected_material)
 				{
 					compile_Graphical_material(graphics_object->selected_material,
-						context->graphics_buffer);
+						context->graphics_buffer, (struct Texture_tiling **)NULL);
 				}
 				if (graphics_object->secondary_material)
 				{
 					compile_Graphical_material(graphics_object->secondary_material,
-						context->graphics_buffer);
+						context->graphics_buffer, (struct Texture_tiling **)NULL);
 				}
 				switch (graphics_object->object_type)
 				{
@@ -3911,6 +3913,9 @@ supplied <compile_context>.
 							}
 							render_GT_object_opengl(graphics_object, context);
 						}
+						/* It is expensive to reset the state, especially if
+							we may be going to use the same material again.  
+							Would be good to change how this works. */
 						execute_Graphical_material((struct Graphical_material *)NULL);
 						glEndList();
 					}
@@ -7179,6 +7184,7 @@ Creates a GT_object_compile_context structure.
 		context->ndc_display_list = ndc_display_list;
 		context->end_ndc_display_list = end_ndc_display_list;
 #endif /* defined (OPENGL_API) */
+		context->texture_tiling = (struct Texture_tiling *)NULL;
 	}
 	else
 	{

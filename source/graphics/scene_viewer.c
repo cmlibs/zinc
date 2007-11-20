@@ -582,7 +582,7 @@ DESCRIPTION :
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		compile_Texture(scene_viewer->background_texture,
-			scene_viewer->graphics_buffer);
+			scene_viewer->graphics_buffer, (struct Texture_tiling **)NULL);
 		execute_Texture(scene_viewer->background_texture);
 
 #if defined (OLD_CODE)

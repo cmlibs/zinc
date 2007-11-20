@@ -2659,7 +2659,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 		Spectrum_render_colour_lookup(spectrum);
 		
 		return_code = compile_Texture(spectrum->colour_lookup_texture,
-			graphics_buffer);
+			graphics_buffer, (struct Texture_tiling **)NULL);
 	}
 	else
 	{

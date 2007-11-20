@@ -65,6 +65,8 @@ The data structures used for representing textures.
 	Cmiss_texture_get_number_of_components
 #define Texture_get_number_of_bytes_per_component \
 	Cmiss_texture_get_number_of_bytes_per_component
+#define Texture_get_property Cmiss_texture_get_property
+#define Texture_set_property Cmiss_texture_set_property
 
 /*
 Global types
@@ -187,6 +189,30 @@ The contents of struct Texture are private.
 DECLARE_LIST_TYPES(Texture);
 
 DECLARE_MANAGER_TYPES(Texture);
+
+struct Texture_tiling
+/*******************************************************************************
+LAST MODIFIED : 19 November 2007
+
+DESCRIPTION :
+Information about the tile boundaries when a texture is larger than the
+graphics card can display in a single texture.
+If defined it should be used to compile any graphics objects.
+==============================================================================*/
+{
+	int dimension;
+	/* Array of size dimension recording the number of tiles in each direction */
+	int *texture_tiles;
+	int total_tiles;
+	/* Array of size dimension recording the texel size of a single tile */
+	int *tile_size;
+	/* Array of size dimension recording the texture coordinate size of a single tile */
+	float *tile_coordinate_range;
+	/* Recording the bound texture id for each tile */
+	int *texture_ids;
+	/* Display lists to enable each texture tile */
+	int tile_display_lists;
+};
 
 /*
 Global functions
@@ -718,15 +744,21 @@ The command is started with the string pointed to by <command_prefix>.
 struct Graphics_buffer;
 
 int compile_Texture(struct Texture *texture, 
-	struct Graphics_buffer *graphics_buffer);
+	struct Graphics_buffer *graphics_buffer,
+	struct Texture_tiling **texture_tiling);
 /*******************************************************************************
-LAST MODIFIED : 17 August 2007
+LAST MODIFIED : 19 November 2007
 
 DESCRIPTION :
 Texture list/manager iterator function.
 Rebuilds the display_list for <texture> if it is not current. If <texture>
 does not have a display list, first attempts to give it one. The display list
 created here may be called using execute_Texture, below.
+If <texture_tiling> is not NULL then if the texture is larger than can be 
+compiled into a single texture on the current graphics hardware,
+then it can be tiled into several textures
+and information about the tile boundaries is returned in Texture_tiling 
+structure and should be used to compile any graphics objects.
 ???RC Textures must be compiled before they are executed since openGL
 cannot start writing to a display list when one is currently being written to.
 ???RC The behaviour of textures is set up to take advantage of pre-computed
@@ -771,7 +803,16 @@ int Texture_set_property(struct Texture *texture,
 LAST MODIFIED : 25 October 2007
 
 DESCRIPTION :
-Sets the <property> and <value> string for the <texture>.
+Sets the <property> to <value> for the <texture>.
 ==============================================================================*/
 
+char *Texture_get_property(struct Texture *texture,
+	const char *property);
+/*******************************************************************************
+LAST MODIFIED : 25 October 2007
+
+DESCRIPTION :
+If the <property> is defined for the <texture>, then a copy is returned (and
+should be DEALLOCATED when finished with).
+==============================================================================*/
 #endif /* !defined (TEXTURE_H) */

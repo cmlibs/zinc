@@ -450,15 +450,21 @@ Activates the <material> as part of the rendering loop.
 #endif /* defined (OLD_CODE) */
 
 int compile_Graphical_material(struct Graphical_material *material,
-	struct Graphics_buffer *graphics_buffer);
+	struct Graphics_buffer *graphics_buffer,
+	struct Texture_tiling **texture_tiling);
 /*******************************************************************************
-LAST MODIFIED : 16 August 2007
+LAST MODIFIED : 19 November 2007
 
 DESCRIPTION :
 Graphical_material list/manager iterator function.
 Rebuilds the display_list for <material> if it is not current. If <material>
 does not have a display list, first attempts to give it one. The display list
 created here may be called using execute_Graphical_material, below.
+If <texture_tiling> is not NULL then if the material uses a primary texture
+and this texture is larger than can be compiled into a single texture on
+the current graphics hardware, then it can be tiled into several textures
+and information about the tile boundaries is returned in Texture_tiling 
+structure and should be used to compile any graphics objects.
 ???RC Graphical_materials must be compiled before they are executed since openGL
 cannot start writing to a display list when one is currently being written to.
 ???RC The behaviour of materials is set up to take advantage of pre-computed

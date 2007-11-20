@@ -257,6 +257,8 @@ DESCRIPTION :
 	GTDATA *data;
 	/* store integer object_name eg. element number from which this object came */
 	int object_name;
+	int tile_number;
+	int allocated_size;
 	struct GT_surface *ptrnext;
 }; /* struct GT_surface */
 
@@ -406,7 +408,7 @@ Graphical object data structure.
 
 struct GT_object_compile_context
 /*******************************************************************************
-LAST MODIFIED : 12 October 2005
+LAST MODIFIED : 19 November 2007
 
 DESCRIPTION :
 Data used to control the compilation fo the GT_object.
@@ -422,6 +424,12 @@ Data used to control the compilation fo the GT_object.
 	/* Execute this display list to return to the standard coordinate system */
 	GLuint end_ndc_display_list;
 #endif /* defined (OPENGL_API) */
+
+	/* If <texture_tiling> is not NULL, then the primary texture was too 
+		large for the current hardware and has been tiled into several textures.
+		The information about the tile boundaries is in the <texture_tiling> 
+		structure and should be used to compile any graphics objects. */
+	struct Texture_tiling *texture_tiling;
 };
 
 #endif /* ! defined (GRAPHICS_OBJECT_PRIVATE_H) */
