@@ -191,7 +191,8 @@ Uses gl to draw a sphere with a lighting source.
 		return_code=1;
 		/* make sure the Graphical material display list is up-to-date, which
 			 in turn, requires any textures it uses to be compiled */
-		compile_Graphical_material(material_editor->edit_material,NULL);
+		compile_Graphical_material(material_editor->edit_material,
+			NULL, (struct Texture_tiling *)NULL);
 #if defined (OPENGL_API)
 		width = Graphics_buffer_get_width(material_editor->graphics_buffer);
 		height = Graphics_buffer_get_height(material_editor->graphics_buffer);
