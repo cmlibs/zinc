@@ -6258,8 +6258,9 @@ display lists. To switch to direct rendering make this routine do nothing and
 execute_Texture should just call direct_render_Texture.
 ==============================================================================*/
 {
-	int i, return_code;
+	int return_code;
 #if defined (OPENGL_API)
+	int i;
 	GLboolean resident;
 	GLenum texture_target;
 #endif /* defined (OPENGL_API) */
