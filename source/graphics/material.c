@@ -4167,14 +4167,20 @@ specified name and the default properties.
 } /* file_read_Graphical_material_name */
 
 int compile_Graphical_material(struct Graphical_material *material,
-	struct Graphics_buffer *graphics_buffer)
+	struct Graphics_buffer *graphics_buffer,
+	struct Texture_tiling **texture_tiling)
 /*******************************************************************************
-LAST MODIFIED : 18 August 2007
+LAST MODIFIED : 19 November 2007
 
 DESCRIPTION :
 Rebuilds the display_list for <material> if it is not current. If <material>
 does not have a display list, first attempts to give it one. The display list
 created here may be called using execute_Graphical_material, below.
+If <texture_tiling> is not NULL then if the material uses a primary texture
+and this texture is larger than can be compiled into a single texture on
+the current graphics hardware, then it can be tiled into several textures
+and information about the tile boundaries is returned in Texture_tiling 
+structure and should be used to compile any graphics objects.
 ???RC Graphical_materials must be compiled before they are executed since openGL
 cannot start writing to a display list when one is currently being written to.
 ???RC The behaviour of materials is set up to take advantage of pre-computed
@@ -4193,30 +4199,34 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 			/* must compile texture before opening material display list */
 			if (material->texture)
 			{
-				compile_Texture(material->texture, graphics_buffer);
+				compile_Texture(material->texture, graphics_buffer,
+					texture_tiling);
 			}
 #if defined (GL_VERSION_1_3)
 			if (Graphics_library_check_extension(GL_VERSION_1_3))
 			{
+				/* It probably isn't necessary to activate the texture
+					unit only to compile the texture, but seems a discipline
+					that may help avoid graphics driver problems? */
 				if (material->second_texture)
 				{
 					glActiveTexture(GL_TEXTURE1);
 					compile_Texture(material->second_texture,
-						graphics_buffer);
+						graphics_buffer, (struct Texture_tiling **)NULL);
 					glActiveTexture(GL_TEXTURE0);
 				}
 				if (material->third_texture)
 				{
 					glActiveTexture(GL_TEXTURE2);
 					compile_Texture(material->third_texture,
-						graphics_buffer);
+						graphics_buffer, (struct Texture_tiling **)NULL);
 					glActiveTexture(GL_TEXTURE0);
 				}
 				if (material->fourth_texture)
 				{
 					glActiveTexture(GL_TEXTURE3);
 					compile_Texture(material->fourth_texture,
-						graphics_buffer);
+						graphics_buffer, (struct Texture_tiling **)NULL);
 					glActiveTexture(GL_TEXTURE0);
 				}
 				if (material->spectrum)
@@ -4310,6 +4320,14 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 			if (return_code)
 			{
 				material->compile_status = GRAPHICS_COMPILED;
+			}
+		}
+		else
+		{
+			if (texture_tiling && material->texture)
+			{
+				compile_Texture(material->texture, graphics_buffer,
+					texture_tiling);
 			}
 		}
 	}
