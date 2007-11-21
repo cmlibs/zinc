@@ -514,7 +514,7 @@ static int rendergl_copy_polygon(struct GT_surface *new_surface,
 	}
 }
 
-static inline int rendergl_select_tile_bin(Triple texture_point,
+static int rendergl_select_tile_bin(Triple texture_point,
 	struct Texture_tiling *texture_tiling, Triple overlap_range)
 {
 	int tile, tilex, tiley, tilez;

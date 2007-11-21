@@ -289,6 +289,7 @@ DESCRIPTION :
 	ENTER(DESTROY(Texture_tiling));
 	if (texture_tiling_address && (texture_tiling = *texture_tiling_address))
 	{
+#if defined (OPENGL_API)
 		for (i = 0 ; i < texture_tiling->total_tiles ; i++)
 		{
 			GLuint gl_texture_id;
@@ -297,6 +298,7 @@ DESCRIPTION :
 		}
 		glDeleteLists(texture_tiling->tile_display_lists,
 			texture_tiling->total_tiles);
+#endif /* defined (OPENGL_API) */
 		DEALLOCATE(texture_tiling->tile_size);
 		DEALLOCATE(texture_tiling->texture_tiles);
 		DEALLOCATE(texture_tiling->texture_ids);
