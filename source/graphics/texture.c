@@ -276,6 +276,46 @@ DECLARE_INDEXED_LIST_FUNCTIONS(Texture_property)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Texture_property,name,
 	char *, strcmp)
 
+static int DESTROY(Texture_tiling)(struct Texture_tiling **texture_tiling_address)
+/*******************************************************************************
+LAST MODIFIED : 22 November 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int i, return_code;
+	struct Texture_tiling *texture_tiling;
+
+	ENTER(DESTROY(Texture_tiling));
+	if (texture_tiling_address && (texture_tiling = *texture_tiling_address))
+	{
+		for (i = 0 ; i < texture_tiling->total_tiles ; i++)
+		{
+			GLuint gl_texture_id;
+			gl_texture_id = texture_tiling->texture_ids[i];
+			glDeleteTextures(1,&(gl_texture_id));
+		}
+		glDeleteLists(texture_tiling->tile_display_lists,
+			texture_tiling->total_tiles);
+		DEALLOCATE(texture_tiling->tile_size);
+		DEALLOCATE(texture_tiling->texture_tiles);
+		DEALLOCATE(texture_tiling->texture_ids);
+		DEALLOCATE(texture_tiling->tile_coordinate_range);
+		DEALLOCATE(texture_tiling->coordinate_scaling);
+		DEALLOCATE(*texture_tiling_address);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Texture_tiling).  Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Texture_tiling) */
+
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Texture,name,char *,strcmp)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Texture)
@@ -930,8 +970,7 @@ tiles (and <texture_tiling> wasn't NULL.
 {
 #if defined (OPENGL_API)
 	char *cmiss_max_texture_size;
-	int i, max_texture_size_int, next_reduction, number_of_tiles, 
-		pixel_size, return_code;
+	int max_texture_size_int, next_reduction, pixel_size, return_code;
 	GLenum format, type;
 	GLint max_texture_size, number_of_components, test_width, 
 		hardware_texture_format;
@@ -1158,6 +1197,12 @@ tiles (and <texture_tiling> wasn't NULL.
 				there are some memory leaks */
 			if ((2 == return_code) && texture_tiling)
 			{
+				int i, number_of_tiles;
+
+				if (texture->texture_tiling)
+				{
+					DESTROY(Texture_tiling)(&texture->texture_tiling);
+				}
 				/* Tile instead of reduce (initially assume we can load in
 					multiple textures of the proxy size which isn't necessarily
 					true, need to test that too). */
@@ -1167,21 +1212,40 @@ tiles (and <texture_tiling> wasn't NULL.
 				ALLOCATE((*texture_tiling)->tile_size, int, texture->dimension);
 				ALLOCATE((*texture_tiling)->tile_coordinate_range, float,
 					texture->dimension);
-				number_of_tiles = 1;
+				ALLOCATE((*texture_tiling)->coordinate_scaling, float,
+					texture->dimension);
+				switch (texture->filter_mode)
+				{
+					case TEXTURE_LINEAR_FILTER:
+					{
+						(*texture_tiling)->overlap = 1;
+					} break;
+					default:
+					{
+						(*texture_tiling)->overlap = 0;
+					} break;			
+				}
 				for (i = 0 ; i < texture->dimension ; i++)
 				{
 					(*texture_tiling)->texture_tiles[i] = reductions[i];
-					number_of_tiles *= (*texture_tiling)->texture_tiles[i];
 					reductions[i] = 1.0;
 				}
-				(*texture_tiling)->total_tiles = number_of_tiles;
 				if (texture->dimension > 0)
 				{
 					(*texture_tiling)->tile_size[0] = 
 						texture->width_texels/(*texture_tiling)->texture_tiles[0];
-					(*texture_tiling)->tile_coordinate_range[0] = 
+ 					(*texture_tiling)->tile_coordinate_range[0] = 
 						texture->width /(float)(*texture_tiling)->texture_tiles[0]
-						* ((float)texture->width_texels / (float)texture->original_width_texels);
+						* ((float)texture->width_texels /
+						(float)texture->original_width_texels);
+					(*texture_tiling)->coordinate_scaling[0] = 
+						(*texture_tiling)->texture_tiles[0];
+					if (floor((float)texture->width_texels/
+						((*texture_tiling)->tile_size[0] - (*texture_tiling)->overlap))
+						>= (*texture_tiling)->texture_tiles[0])
+					{
+						(*texture_tiling)->texture_tiles[0]++;
+					}					
 				}
 				if (texture->dimension > 1)
 				{
@@ -1189,7 +1253,16 @@ tiles (and <texture_tiling> wasn't NULL.
 						texture->height_texels/(*texture_tiling)->texture_tiles[1];
 					(*texture_tiling)->tile_coordinate_range[1] =
 						texture->height/(float)(*texture_tiling)->texture_tiles[1]
-						* ((float)texture->height_texels / (float)texture->original_height_texels);
+						* ((float)texture->height_texels /
+						(float)texture->original_height_texels);
+					(*texture_tiling)->coordinate_scaling[1] = 
+						(*texture_tiling)->texture_tiles[1];
+					if (floor((float)texture->height_texels/
+						((*texture_tiling)->tile_size[1] - (*texture_tiling)->overlap))
+						>= (*texture_tiling)->texture_tiles[1])
+					{
+						(*texture_tiling)->texture_tiles[1]++;
+					}
 				}
 				if (texture->dimension > 2)
 				{
@@ -1197,8 +1270,23 @@ tiles (and <texture_tiling> wasn't NULL.
 						texture->depth_texels/(*texture_tiling)->texture_tiles[2];
 					(*texture_tiling)->tile_coordinate_range[2] =
 						texture->depth/(float)(*texture_tiling)->texture_tiles[2]
-						* ((float)texture->depth_texels / (float)texture->original_depth_texels);
+						* ((float)texture->depth_texels /
+						(float)texture->original_depth_texels);
+					(*texture_tiling)->coordinate_scaling[2] = 
+						(*texture_tiling)->texture_tiles[2];
+					if (floor((float)texture->depth_texels/
+						((*texture_tiling)->tile_size[2] - (*texture_tiling)->overlap))
+						>= (*texture_tiling)->texture_tiles[2])
+					{
+						(*texture_tiling)->texture_tiles[2]++;
+					}
 				}
+				number_of_tiles = 1;
+				for (i = 0 ; i < texture->dimension ; i++)
+				{
+					number_of_tiles *= (*texture_tiling)->texture_tiles[i];
+				}
+				(*texture_tiling)->total_tiles = number_of_tiles;
 				(*texture_tiling)->tile_display_lists = 0;
 				(*texture_tiling)->dimension = texture->dimension;
 				ALLOCATE((*texture_tiling)->texture_ids, int, number_of_tiles);
@@ -1211,8 +1299,6 @@ tiles (and <texture_tiling> wasn't NULL.
 				texture->texture_tiling = *texture_tiling;
 			}
 #else /* defined (NEW_CODE) */
-			USE_PARAMETER(number_of_tiles);
-			USE_PARAMETER(i);
 			USE_PARAMETER(texture_tiling);
 #endif /* defined (NEW_CODE) */
 		}
@@ -1619,10 +1705,11 @@ then it is allocated, otherwise it is assumed large enough for the image tile
 and overwritten. 
 ==============================================================================*/
 {
-	int bytes_per_pixel, end_x, end_y, end_z, i,
-		number_of_components, number_of_bytes_per_component,
+	int bytes_per_pixel, copy_row_width_bytes, end_x, end_y, end_z, i,
+		number_of_components, number_of_bytes_per_component, overlap_bytes,
 		return_code, source_row_width_bytes, tile_row_width_bytes,
 		start_x, start_y, start_z, tile_size, tile_x, tile_y, tile_z, y, z;
+	Triple cropped_size;
 	unsigned char *destination, *source;
 
 	ENTER(Texture_get_image_tile);
@@ -1635,6 +1722,14 @@ and overwritten.
 		bytes_per_pixel = 
 			number_of_bytes_per_component * number_of_components;
 		source_row_width_bytes = 4*((texture->width_texels*bytes_per_pixel + 3)/4);
+		cropped_size[0] = texture_tiling->tile_size[0]
+			- texture_tiling->overlap;
+		overlap_bytes = texture_tiling->overlap * bytes_per_pixel;
+		for (i = 1 ; i < texture_tiling->dimension ; i++)
+		{
+			cropped_size[i] = texture_tiling->tile_size[i]
+				- texture_tiling->overlap;
+		}
 		tile_row_width_bytes = 
 			4*((texture_tiling->tile_size[0]*bytes_per_pixel + 3)/4);
 		if (!*tile_image)
@@ -1655,14 +1750,28 @@ and overwritten.
 		if (return_code)
 		{
 			tile_x = tile_number % texture_tiling->texture_tiles[0];
-			start_x = tile_x * texture_tiling->tile_size[0];
-			end_x = (tile_x + 1) * texture_tiling->tile_size[0];
+			start_x = tile_x * cropped_size[0];
+			end_x = start_x + texture_tiling->tile_size[0];
+			if (end_x > texture->width_texels)
+			{
+				end_x = texture->width_texels;
+				copy_row_width_bytes = 
+					4*(((end_x - start_x)*bytes_per_pixel + 3)/4);
+			}
+			else
+			{
+				copy_row_width_bytes = tile_row_width_bytes;
+			}
 			if (texture_tiling->dimension > 1)
 			{
 				tile_y = (tile_number / texture_tiling->texture_tiles[0])
 					% texture_tiling->texture_tiles[1];
-				start_y = tile_y * texture_tiling->tile_size[1];
-				end_y = (tile_y + 1) * texture_tiling->tile_size[1];
+				start_y = tile_y * cropped_size[1];
+				end_y = start_y + texture_tiling->tile_size[1];
+				if (end_y > texture->height_texels)
+				{
+					end_y = texture->height_texels;
+				}
 			}
 			else
 			{
@@ -1675,8 +1784,12 @@ and overwritten.
 				tile_z = (tile_number / (texture_tiling->texture_tiles[0] *
 						texture_tiling->texture_tiles[1]))
 					% texture_tiling->texture_tiles[2];
-				start_z = tile_z * texture_tiling->tile_size[2];
-				end_z = (tile_z + 1) * texture_tiling->tile_size[2];
+				start_z = tile_z * cropped_size[2];
+				end_z = start_z + texture_tiling->tile_size[2];
+				if (end_y > texture->depth_texels)
+				{
+					end_y = texture->depth_texels;
+				}
 			}
 			else
 			{
@@ -1697,8 +1810,14 @@ and overwritten.
 		{
 			for (y = start_y ; y < end_y ; y++)
 			{
-				/* Can this creep over the end of the source data??? */
-				memcpy(destination, source, tile_row_width_bytes);
+				memcpy(destination, source, copy_row_width_bytes);
+				if (copy_row_width_bytes != tile_row_width_bytes)
+				{
+					/* Duplicate an edge which is clamp to edge */
+					memcpy(destination + copy_row_width_bytes,
+						source + copy_row_width_bytes - overlap_bytes,
+						overlap_bytes);					
+				}
 				source += source_row_width_bytes;
 				destination += tile_row_width_bytes;
 			}
@@ -2996,10 +3115,7 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 				}
 				if (texture->texture_tiling)
 				{
-					DEALLOCATE(texture->texture_tiling->tile_size);
-					DEALLOCATE(texture->texture_tiling->texture_tiles);
-					DEALLOCATE(texture->texture_tiling->texture_ids);
-					DEALLOCATE(texture->texture_tiling);
+					DESTROY(Texture_tiling)(&texture->texture_tiling);
 				}
 #if defined (GRAPHICS_BUFFER_USE_BUFFERS)
 				if(texture->graphics_buffer)

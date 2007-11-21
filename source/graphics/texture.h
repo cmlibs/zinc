@@ -208,10 +208,14 @@ If defined it should be used to compile any graphics objects.
 	int *tile_size;
 	/* Array of size dimension recording the texture coordinate size of a single tile */
 	float *tile_coordinate_range;
+	/* Array of size dimension recording the scaling to be applied to each texture coordinate */
+	float *coordinate_scaling;
 	/* Recording the bound texture id for each tile */
 	int *texture_ids;
 	/* Display lists to enable each texture tile */
 	int tile_display_lists;
+	/* Overlap of duplicated pixels on boundaries of tiles to allow filtering */
+	int overlap;
 };
 
 /*

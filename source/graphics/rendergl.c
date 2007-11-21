@@ -302,9 +302,9 @@ static int rendergl_copy_quad_strip_to_dc(struct GT_surface *new_surface,
 	struct Texture_tiling *texture_tiling)
 {
 	int npts1 = surface->n_pts1;
-	float texture_offset, texture_scaling;
+	float overlap_range, texture_offset, texture_scaling;
 	Triple *texturepoints = surface->texturelist;
-	int k;
+	int k, texture_tile;
 
 	if (index + 3 >= new_surface->allocated_size)
 	{
@@ -332,7 +332,7 @@ static int rendergl_copy_quad_strip_to_dc(struct GT_surface *new_surface,
 				surface->normallist[i+1+npts1*j][k];
 			new_surface->normallist[index+3][k] = 
 				surface->normallist[i+npts1*(j+1)][k];
-			new_surface->normallist[index+2][k] = 
+		new_surface->normallist[index+2][k] = 
 				surface->normallist[i+1+npts1*(j+1)][k];
 		}
 	}
@@ -340,12 +340,17 @@ static int rendergl_copy_quad_strip_to_dc(struct GT_surface *new_surface,
 	{
 		if (k < texture_tiling->dimension)
 		{
-			texture_offset =
-				((int)(texturepoints[i+npts1*j][k] / texture_tiling->tile_coordinate_range[k]) %
-					texture_tiling->texture_tiles[k]) *
-				texture_tiling->tile_coordinate_range[k];
+			overlap_range = (float)texture_tiling->overlap * 
+				texture_tiling->tile_coordinate_range[k] /
+				(float)texture_tiling->tile_size[k];
+			texture_tile = (int)((texturepoints[i+npts1*j][k] - 0.5 * overlap_range) /
+				(texture_tiling->tile_coordinate_range[k] - overlap_range));
+			/* Need to handle the boundaries specially */
+			texture_offset = 
+				(texture_tile % texture_tiling->texture_tiles[k]) *
+				(texture_tiling->tile_coordinate_range[k]- overlap_range);
 			texture_scaling = 
-				texture_tiling->texture_tiles[k];
+				texture_tiling->coordinate_scaling[k];
 		}
 		else
 		{
@@ -401,7 +406,8 @@ static int rendergl_copy_polygon(struct GT_surface *new_surface,
 	int index_new, struct GT_surface *surface, int index,
 	struct Texture_tiling *texture_tiling)
 {
-	int i, k2;
+	float overlap_range;
+	int i, k2, texture_tile;
 	Triple *texturetri, *newtexturetri, *pointtri, *newpointtri,
 		*normaltri, *newnormaltri, *tangenttri, *newtangenttri;
 	GTDATA *datatri, *newdatatri;
@@ -441,14 +447,20 @@ static int rendergl_copy_polygon(struct GT_surface *new_surface,
 				texture_average = 0.0;
 				for (i = 0 ; i < surface->n_pts2 ; i++)
 				{
-					texture_average = texturetri[index+i][k2];
+					texture_average += texturetri[index+i][k2];
 				}
+				texture_average /= (float)surface->n_pts2;
+				overlap_range = (float)texture_tiling->overlap * 
+					texture_tiling->tile_coordinate_range[k2] /
+					(float)texture_tiling->tile_size[k2];
+				texture_tile = (int)((texture_average - 0.5 * overlap_range) /
+					(texture_tiling->tile_coordinate_range[k2] - overlap_range));
+				/* Need to handle the boundaries specially */
 				texture_offset =
-					((int)(texture_average / texture_tiling->tile_coordinate_range[k2]) %
-						texture_tiling->texture_tiles[k2]) *
-					texture_tiling->tile_coordinate_range[k2];
+					(texture_tile % texture_tiling->texture_tiles[k2]) *
+					(texture_tiling->tile_coordinate_range[k2] - overlap_range);
 				texture_scaling = 
-					texture_tiling->texture_tiles[k2];
+					texture_tiling->coordinate_scaling[k2];
 			}
 			else
 			{
@@ -502,6 +514,74 @@ static int rendergl_copy_polygon(struct GT_surface *new_surface,
 	}
 }
 
+static inline int rendergl_select_tile_bin(Triple texture_point,
+	struct Texture_tiling *texture_tiling, Triple overlap_range)
+{
+	int tile, tilex, tiley, tilez;
+	switch (texture_tiling->dimension)
+	{
+		case 1:
+		{
+			tilex = (int)floor((texture_point[0] - 0.5 * overlap_range[0]) / 
+				(texture_tiling->tile_coordinate_range[0] - overlap_range[0]));
+			if (tilex < 0)
+			{
+				tilex = 0;
+			}
+			tile = tilex % texture_tiling->texture_tiles[0];
+		} break;
+		case 2:
+		{
+			tilex = (int)floor((texture_point[0] - 0.5 * overlap_range[0]) / 
+				(texture_tiling->tile_coordinate_range[0] - overlap_range[0]));
+			if (tilex < 0)
+			{
+				tilex = 0;
+			}
+			tiley = (int)floor((texture_point[1] - 0.5 * overlap_range[1]) / 
+				(texture_tiling->tile_coordinate_range[1] - overlap_range[1]));
+			if (tiley < 0)
+			{
+				tiley = 0;
+			}
+			tile = tilex % texture_tiling->texture_tiles[0] +
+				texture_tiling->texture_tiles[0] *
+				(tiley % texture_tiling->texture_tiles[1]);
+		} break;
+		case 3:
+		{
+			tilex = (int)floor((texture_point[0] - 0.5 * overlap_range[0]) / 
+				(texture_tiling->tile_coordinate_range[0] - overlap_range[0]));
+			if (tilex < 0)
+			{
+				tilex = 0;
+			}
+			tiley = (int)floor((texture_point[1] - 0.5 * overlap_range[1]) / 
+				(texture_tiling->tile_coordinate_range[1] - overlap_range[1]));
+			if (tiley < 0)
+			{
+				tiley = 0;
+			}
+			tilez = (int)floor((texture_point[2] - 0.5 * overlap_range[2]) / 
+				(texture_tiling->tile_coordinate_range[2] - overlap_range[2]));
+			if (tilez < 0)
+			{
+				tilez = 0;
+			}
+			tile = tilex % texture_tiling->texture_tiles[0] +
+				texture_tiling->texture_tiles[0] *
+				((tiley % texture_tiling->texture_tiles[1]) + 
+				texture_tiling->texture_tiles[1] *
+				(tilez % texture_tiling->texture_tiles[2]));
+		} break;
+		default:
+		{
+			tile = 0;
+		}
+	}
+	return (tile);
+}
+
 static struct GT_surface *tile_GT_surface(struct GT_surface *surface, 
 	struct Texture_tiling *texture_tiling)
 /*******************************************************************************
@@ -518,7 +598,7 @@ DESCRIPTION :
 		x_tiles, y_tiles, z_tiles;
 	struct GT_surface *current_surface, *new_surface, *return_surface,
 		**surface_tiles, **triangle_tiles;
-	Triple texture_centre, *normals, *points, *texturepoints,
+	Triple texture_centre, *normals, overlap_range, *points, *texturepoints,
 		*texturetri, vertexk;
 ;
 
@@ -531,11 +611,17 @@ DESCRIPTION :
 		number_of_tiles = texture_tiling->texture_tiles[0];
 		x_range = texture_tiling->tile_coordinate_range[0];
 		x_tiles = texture_tiling->texture_tiles[0];
+		overlap_range[0] = (float)texture_tiling->overlap * 
+			texture_tiling->tile_coordinate_range[0] /
+			(float)texture_tiling->tile_size[0];
 		if (texture_tiling->dimension > 1)
 		{
 			number_of_tiles *= texture_tiling->texture_tiles[1];
 			y_range = texture_tiling->tile_coordinate_range[1];
 			y_tiles = texture_tiling->texture_tiles[1];
+			overlap_range[1] = (float)texture_tiling->overlap * 
+				texture_tiling->tile_coordinate_range[1] /
+				(float)texture_tiling->tile_size[1];
 		}
 		else
 		{
@@ -547,6 +633,9 @@ DESCRIPTION :
 			number_of_tiles *= texture_tiling->texture_tiles[2];
 			z_range = texture_tiling->tile_coordinate_range[2];
 			z_tiles = texture_tiling->texture_tiles[2];
+			overlap_range[2] = (float)texture_tiling->overlap * 
+				texture_tiling->tile_coordinate_range[2] /
+				(float)texture_tiling->tile_size[2];
 		}
 		else
 		{
@@ -576,18 +665,14 @@ DESCRIPTION :
 					for (j=0;j<npts2-1;j++)
 					{
 						/* Determine which tile each vertex belongs too */
-						vertex1 = ((int)(texturepoints[i+npts1*j][0] / x_range) % x_tiles) +
-							x_tiles * (((int)(texturepoints[i+npts1*j][1] / y_range) % y_tiles) + 
-							y_tiles * ((int)(texturepoints[i+npts1*j][2] / z_range) % z_tiles));
-						vertex2 = ((int)(texturepoints[i+1+npts1*j][0] / x_range) % x_tiles) +
-							x_tiles * (((int)(texturepoints[i+1+npts1*j][1] / y_range) % y_tiles) + 
-							y_tiles * ((int)(texturepoints[i+1+npts1*j][2] / z_range) % z_tiles));
-						vertex3 = ((int)(texturepoints[i+npts1*(j+1)][0] / x_range) % x_tiles) +
-							x_tiles * (((int)(texturepoints[i+npts1*(j+1)][1] / y_range) % y_tiles) + 
-							y_tiles * ((int)(texturepoints[i+npts1*(j+1)][2] / z_range) % z_tiles));
-						vertex4 = ((int)(texturepoints[i+1+npts1*(j+1)][0] / x_range) % x_tiles) +
-							x_tiles * (((int)(texturepoints[i+1+npts1*(j+1)][1] / y_range) % y_tiles) + 
-							y_tiles * ((int)(texturepoints[i+1+npts1*(j+1)][2] / z_range) % z_tiles));
+						vertex1 = rendergl_select_tile_bin(texturepoints[i+npts1*j],
+							texture_tiling, overlap_range);
+						vertex2 = rendergl_select_tile_bin(texturepoints[i+1+npts1*j],
+							texture_tiling, overlap_range);
+						vertex3 = rendergl_select_tile_bin(texturepoints[i+npts1*(j+1)],
+							texture_tiling, overlap_range);
+						vertex4 = rendergl_select_tile_bin(texturepoints[i+1+npts1*(j+1)],
+							texture_tiling, overlap_range);
 						if ((vertex1 == vertex2) &&
 							(vertex1 == vertex3) &&
 							(vertex1 == vertex4))
@@ -702,13 +787,24 @@ DESCRIPTION :
 								{
 									index = 3 * l;
 
-									vertexk[0] = texturetri[index][k] / 
-										texture_tiling->tile_coordinate_range[k];
-									vertexk[1] = texturetri[index+1][k] / 
-										texture_tiling->tile_coordinate_range[k];
-									vertexk[2] = texturetri[index+2][k] / 
-										texture_tiling->tile_coordinate_range[k];
-
+									vertexk[0] = (texturetri[index][k] - 0.5 * overlap_range[k]) / 
+										(texture_tiling->tile_coordinate_range[k] - overlap_range[k]);
+									vertexk[1] = (texturetri[index+1][k] - 0.5 * overlap_range[k]) / 
+										(texture_tiling->tile_coordinate_range[k] - overlap_range[k]);
+									vertexk[2] = (texturetri[index+2][k] - 0.5 * overlap_range[k]) / 
+										(texture_tiling->tile_coordinate_range[k] - overlap_range[k]);
+									if (vertexk[0] < 0)
+									{
+										vertexk[0] = 0.0;
+									}
+									if (vertexk[1] < 0)
+									{
+										vertexk[1] = 0.0;
+									}
+									if (vertexk[2] < 0)
+									{
+										vertexk[2] = 0.0;
+									}
 									if ((vertexk[1] >= vertexk[0]) && (vertexk[2] >= vertexk[0]))
 									{
 										vertexstart = 0;
@@ -882,9 +978,8 @@ DESCRIPTION :
 								texture_centre[2] = (texturetri[index][2]
 									+ texturetri[index+1][2] + 
 									texturetri[index+2][2]) / 3.0;
-								vertex1 = ((int)(texture_centre[0] / x_range) % x_tiles) +
-									x_tiles * (((int)(texture_centre[1] / y_range) % y_tiles) + 
-									y_tiles * ((int)(texture_centre[2] / z_range) % z_tiles));
+								vertex1 = rendergl_select_tile_bin(texture_centre,
+									texture_tiling, overlap_range);
 								if ((vertex1 >= 0) && (vertex1 < number_of_tiles))
 								{
 									if (!triangle_tiles[vertex1])
@@ -1043,8 +1138,6 @@ DESCRIPTION :
 				current_surface = surface_tiles[i];
 				index = current_surface->n_pts1 * current_surface->n_pts2;
 			
-				printf("Surface %d %d\n", i, index);
-
 				if (index < maximum_points)
 				{
 					REALLOCATE(current_surface->pointlist, 
@@ -1081,8 +1174,6 @@ DESCRIPTION :
 				current_surface = triangle_tiles[i];
 				index = current_surface->n_pts1 * current_surface->n_pts2;
 			
-				printf("Triangles %d %d\n", i, index);
-
 				if (index < 10 * maximum_points)
 				{
 					REALLOCATE(current_surface->pointlist, 
@@ -2470,6 +2561,8 @@ polygon is drawn for each of the <npolys>.
 				}				
 				glVertex3fv(*point);
 				point++;
+
+
 			}
 			glEnd();
 		}
@@ -2781,7 +2874,8 @@ The <context> is used to control how the object is compiled.
 	struct GT_point *point;
 	struct GT_pointset *interpolate_point_set,*point_set,*point_set_2;
 	struct GT_polyline *interpolate_line,*line,*line_2;
-	struct GT_surface *interpolate_surface,*surface,*surface_2, *tile_surface;
+	struct GT_surface *interpolate_surface,*surface,*surface_2,*tile_surface,
+		 *tile_surface_2;
 	struct GT_userdef *userdef;
 	struct GT_voltex *voltex;
 	struct Multi_range *selected_name_ranges;
@@ -3396,7 +3490,9 @@ The <context> is used to control how the object is compiled.
 															tile_surface->n_data_components,
 															tile_surface->data,
 															material, spectrum);
+														tile_surface_2 = tile_surface;
 														tile_surface = tile_surface->ptrnext;
+														DESTROY(GT_surface)(&tile_surface_2);
 													}
 												}
 												else
@@ -3442,17 +3538,7 @@ The <context> is used to control how the object is compiled.
 													context->texture_tiling);
 												while(tile_surface)
 												{
-													if ((tile_surface->tile_number >= 0)
-														&& (tile_surface->tile_number < context->texture_tiling->total_tiles))
-													{
-														glCallList(context->texture_tiling->tile_display_lists + tile_surface->tile_number);
-													}
-													else
-													{
-														printf("Invalid %d %d\n",
-															tile_surface->tile_number,
-															context->texture_tiling->total_tiles);
-													}
+													glCallList(context->texture_tiling->tile_display_lists + tile_surface->tile_number);
 													draw_dc_surfaceGL(tile_surface->pointlist,
 														tile_surface->normallist,
 														tile_surface->tangentlist,
@@ -3463,7 +3549,9 @@ The <context> is used to control how the object is compiled.
 														tile_surface->n_data_components,
 														tile_surface->data,
 														material, spectrum);
-														tile_surface = tile_surface->ptrnext;
+													tile_surface_2 = tile_surface;
+													tile_surface = tile_surface->ptrnext;
+													DESTROY(GT_surface)(&tile_surface_2);
 												}
 											}
 											else
