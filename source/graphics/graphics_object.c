@@ -3804,6 +3804,11 @@ supplied <compile_context>.
 				{
 					compile_Graphical_material(graphics_object->default_material,
 						context->graphics_buffer, &context->texture_tiling);
+					if (context->texture_tiling)
+					{
+						/* The geometry may need to be updated */
+						graphics_object->compile_status = GRAPHICS_NOT_COMPILED;
+					}
 				}
 				if (graphics_object->selected_material)
 				{

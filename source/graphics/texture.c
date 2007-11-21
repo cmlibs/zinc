@@ -283,7 +283,10 @@ LAST MODIFIED : 22 November 2007
 DESCRIPTION :
 ==============================================================================*/
 {
-	int i, return_code;
+#if defined (OPENGL_API)
+	int i;
+#endif /* defined (OPENGL_API) */
+	int return_code;
 	struct Texture_tiling *texture_tiling;
 
 	ENTER(DESTROY(Texture_tiling));
@@ -1194,7 +1197,7 @@ tiles (and <texture_tiling> wasn't NULL.
 				printf("\n");
 			}
 #endif /* defined (DEBUG) */
-#if defined (NEW_CODE)
+#if defined (ENABLE_TEXTURE_TILING)
 			/* Disable as I haven't handled all the cases yet and
 				there are some memory leaks */
 			if ((2 == return_code) && texture_tiling)
@@ -1300,9 +1303,9 @@ tiles (and <texture_tiling> wasn't NULL.
 				}
 				texture->texture_tiling = *texture_tiling;
 			}
-#else /* defined (NEW_CODE) */
+#else /* defined (ENABLE_TEXTURE_TILING) */
 			USE_PARAMETER(texture_tiling);
-#endif /* defined (NEW_CODE) */
+#endif /* defined (ENABLE_TEXTURE_TILING) */
 		}
 		else
 		{

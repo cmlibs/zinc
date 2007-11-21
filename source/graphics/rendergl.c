@@ -590,12 +590,10 @@ LAST MODIFIED : 19 November 2007
 DESCRIPTION :
 ==============================================================================*/
 {
-	float nextcuti, nextcutj, x_range, y_range, z_range,
-		xi0, xii, xij;
+	float nextcuti, nextcutj, xi0, xii, xij;
 	int finished, i, index, j, k, l, maximum_points, npts1, npts2,
 		number_of_tiles, index_new, stepindex, 
-		vertex1, vertex2, vertex3, vertex4, vertexstart, vertexi, vertexj,
-		x_tiles, y_tiles, z_tiles;
+		vertex1, vertex2, vertex3, vertex4, vertexstart, vertexi, vertexj;
 	struct GT_surface *current_surface, *new_surface, *return_surface,
 		**surface_tiles, **triangle_tiles;
 	Triple texture_centre, *normals, overlap_range, *points, *texturepoints,
@@ -609,38 +607,22 @@ DESCRIPTION :
 		npts1 = surface->n_pts1;
 		npts2 = surface->n_pts2;
 		number_of_tiles = texture_tiling->texture_tiles[0];
-		x_range = texture_tiling->tile_coordinate_range[0];
-		x_tiles = texture_tiling->texture_tiles[0];
 		overlap_range[0] = (float)texture_tiling->overlap * 
 			texture_tiling->tile_coordinate_range[0] /
 			(float)texture_tiling->tile_size[0];
 		if (texture_tiling->dimension > 1)
 		{
 			number_of_tiles *= texture_tiling->texture_tiles[1];
-			y_range = texture_tiling->tile_coordinate_range[1];
-			y_tiles = texture_tiling->texture_tiles[1];
 			overlap_range[1] = (float)texture_tiling->overlap * 
 				texture_tiling->tile_coordinate_range[1] /
 				(float)texture_tiling->tile_size[1];
 		}
-		else
-		{
-			y_range = 1e10; /*Doesn't really matter as the modulo should go to zero */
-			y_tiles = 1;
-		}
 		if (texture_tiling->dimension > 2)
 		{
 			number_of_tiles *= texture_tiling->texture_tiles[2];
-			z_range = texture_tiling->tile_coordinate_range[2];
-			z_tiles = texture_tiling->texture_tiles[2];
 			overlap_range[2] = (float)texture_tiling->overlap * 
 				texture_tiling->tile_coordinate_range[2] /
 				(float)texture_tiling->tile_size[2];
-		}
-		else
-		{
-			z_range = 1e10;
-			z_tiles = 1;
 		}
 		ALLOCATE(surface_tiles, struct GT_surface *, number_of_tiles);
 		for (i = 0 ; i < number_of_tiles ; i++)
