@@ -1,11 +1,10 @@
 /*******************************************************************************
 FILE : rendergl.c
 
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 23 November 2007
 
 DESCRIPTION :
 GL rendering calls - API specific.
-???DB.  Should this be render.c ?
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -761,6 +760,9 @@ DESCRIPTION :
 							current_surface->n_pts1 = 2;
 							for (k = 0 ; (k < 3) && (k < texture_tiling->dimension) ; k++)
 							{
+#if defined (DEBUG)
+								printf("direction %d\n", k);
+#endif /* defined (DEBUG) */
 								new_surface = rendergl_create_GT_surface(surface,
 									maximum_points, 0, /*polygon_size*/3);
 								texturetri = current_surface->texturelist;
@@ -775,6 +777,12 @@ DESCRIPTION :
 										(texture_tiling->tile_coordinate_range[k] - overlap_range[k]);
 									vertexk[2] = (texturetri[index+2][k] - 0.5 * overlap_range[k]) / 
 										(texture_tiling->tile_coordinate_range[k] - overlap_range[k]);
+#if defined (DEBUG)
+									printf(" tricoordinates %g %g %g\n",
+										texturetri[index][k], texturetri[index+1][k], texturetri[index+2][k]);
+									printf(" vertexk %g %g %g\n",
+										vertexk[0], vertexk[1], vertexk[2]);
+#endif /* defined (DEBUG) */
 									if (vertexk[0] < 0)
 									{
 										vertexk[0] = 0.0;
@@ -809,20 +817,26 @@ DESCRIPTION :
 										}
 									}
 
-									nextcuti = floor(vertexk[vertexstart] + 1);
+#if defined (DEBUG)
+									printf(" vertexstart %d %g %g %g\n",
+										vertexstart, vertexk[vertexstart],
+										vertexk[vertexi], vertexk[vertexj]);
+#endif /* defined (DEBUG) */
+
+									nextcuti = floor(vertexk[vertexstart] + 1.00001);
 									nextcutj = nextcuti;
 									/* Which side did we last step on */
 									stepindex = -1;
 									if (nextcuti > vertexk[vertexi])
 									{
 										nextcuti = vertexk[vertexi];
-										/* Don't step the other side again */
+										/* Don't step the other side */
 										stepindex = 1;
 									}
 									if (nextcutj > vertexk[vertexj])
 									{
 										nextcutj = vertexk[vertexj];
-										/* Don't step the other side again */
+										/* Don't step the other side */
 										stepindex = 0;
 									}
 									/* What was the previous xi on the step side */
@@ -850,6 +864,24 @@ DESCRIPTION :
 											xij = 1.0;
 										}
 
+#if defined (DEBUG)
+										float lastcut;
+										if (stepindex == 0)
+										{
+											lastcut = vertexk[vertexstart] +
+												xi0 * (vertexk[vertexi] - vertexk[vertexstart]);
+										}
+										else
+										{
+											lastcut = vertexk[vertexstart] +
+												xi0 * (vertexk[vertexj] - vertexk[vertexstart]);
+										}
+										printf(" triangle %d (%g %g %g) %g %g %g\n",
+											stepindex, lastcut,
+											nextcuti, nextcutj,
+											vertexk[vertexi], vertexk[vertexj], xi0);
+#endif /* defined (DEBUG) */
+
 										index_new = 3 * new_surface->n_pts1;
 										rendergl_interpolate_triangle(new_surface,
 											index_new, current_surface, index,
@@ -859,10 +891,10 @@ DESCRIPTION :
 
 										/* Test != as initially -1 and either step 
 											would be OK */
- 										if (((stepindex != 0) && (nextcuti < vertexk[vertexi]) ||
-												(stepindex != 1) && (nextcutj < vertexk[vertexj])))
+ 										if (((stepindex != 0) && (nextcuti < vertexk[vertexi]) && (nextcuti <= nextcutj)) ||
+											((stepindex != 1) && (nextcutj < vertexk[vertexj]) && (nextcutj <= nextcuti)))
 										{
-											if ((stepindex != 0) && (nextcuti < vertexk[vertexi]))
+											if ((stepindex != 0) && (nextcuti < vertexk[vertexi]) && (nextcuti <= nextcutj))
 											{
 												nextcuti++;
 												stepindex = 0;
@@ -889,44 +921,25 @@ DESCRIPTION :
 											if ((nextcuti != vertexk[vertexi])
 												|| (nextcutj != vertexk[vertexj]))
 											{
+#if defined (DEBUG)
+												printf("  not finished %g %g  %g %g\n",
+													nextcuti, nextcutj,
+													vertexk[vertexi], vertexk[vertexj]);
+#endif /* defined (DEBUG) */
 												/* Add the remainder to the old list */
 												if (nextcuti < vertexk[vertexi])
 												{
-													nextcuti++;
 													stepindex = 0;
 													xi0 = xii;
-													if (nextcuti > vertexk[vertexi])
-													{
-														nextcuti = vertexk[vertexi];
-													}
-													if (vertexk[vertexi] > vertexk[vertexstart])
-													{
-														xii = (nextcuti - vertexk[vertexstart]) /
-															(vertexk[vertexi] - vertexk[vertexstart]);
-													}
-													else
-													{
-														xii = 1.0;
-													}
+													nextcuti = vertexk[vertexi];
+													xii = 1.0;
 												}
 												else
 												{
-													nextcutj++;
 													stepindex = 1;
 													xi0 = xij;
-													if (nextcutj > vertexk[vertexj])
-													{
-														nextcutj = vertexk[vertexj];
-													}
-													if (vertexk[vertexj] - vertexk[vertexstart])
-													{
-														xij = (nextcutj - vertexk[vertexstart]) /
-															(vertexk[vertexj] - vertexk[vertexstart]);
-													}
-													else
-													{
-														xij = 1.0;
-													}
+													nextcutj = vertexk[vertexj];
+													xij = 1.0;
 												}
 
 												index_new = 3 * current_surface->n_pts1;
@@ -936,6 +949,14 @@ DESCRIPTION :
 													xi0, xii, xij, stepindex);
 												current_surface->n_pts1++;
 											}
+#if defined (DEBUG)
+											else
+											{
+												printf("  finished %g %g  %g %g\n",
+													nextcuti, nextcutj,
+													vertexk[vertexi], vertexk[vertexj]);
+											}
+#endif /* defined (DEBUG) */
 										}
 									}
 
