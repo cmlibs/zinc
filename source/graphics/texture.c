@@ -276,7 +276,43 @@ DECLARE_INDEXED_LIST_FUNCTIONS(Texture_property)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Texture_property,name,
 	char *, strcmp)
 
-static int DESTROY(Texture_tiling)(struct Texture_tiling **texture_tiling_address)
+static struct Texture_tiling *CREATE(Texture_tiling)(int dimension)
+/*******************************************************************************
+LAST MODIFIED : 23 November 2007
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Texture_tiling *texture_tiling;
+
+	ENTER(CREATE(Texture_tiling));
+	if (ALLOCATE(texture_tiling, struct Texture_tiling, 1) &&
+		ALLOCATE(texture_tiling->texture_tiles, int, dimension) &&
+		ALLOCATE(texture_tiling->tile_size, int, dimension) &&
+		ALLOCATE(texture_tiling->tile_coordinate_range, float,
+			dimension) &&
+		ALLOCATE(texture_tiling->coordinate_scaling, float,
+			dimension))
+	{
+		texture_tiling->total_tiles = 0;
+		texture_tiling->tile_display_lists = 0;
+		texture_tiling->dimension = dimension;
+		texture_tiling->texture_ids = (int *)NULL;
+		texture_tiling->overlap = 0;
+		texture_tiling->access_count = 0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"CREATE(Texture_tiling).  "
+			"Unable to allocate memory for texture_tiling list structure");
+		texture_tiling = (struct Texture_tiling *)NULL;
+	}
+	LEAVE;
+	
+	return (texture_tiling);
+} /* CREATE(Texture_tiling) */
+
+int DESTROY(Texture_tiling)(struct Texture_tiling **texture_tiling_address)
 /*******************************************************************************
 LAST MODIFIED : 22 November 2007
 
@@ -293,18 +329,23 @@ DESCRIPTION :
 	if (texture_tiling_address && (texture_tiling = *texture_tiling_address))
 	{
 #if defined (OPENGL_API)
-		for (i = 0 ; i < texture_tiling->total_tiles ; i++)
-		{
-			GLuint gl_texture_id;
-			gl_texture_id = texture_tiling->texture_ids[i];
-			glDeleteTextures(1,&(gl_texture_id));
-		}
 		glDeleteLists(texture_tiling->tile_display_lists,
 			texture_tiling->total_tiles);
 #endif /* defined (OPENGL_API) */
+		if (texture_tiling->texture_ids)
+		{
+#if defined (OPENGL_API)
+			for (i = 0 ; i < texture_tiling->total_tiles ; i++)
+			{
+				GLuint gl_texture_id;
+				gl_texture_id = texture_tiling->texture_ids[i];
+				glDeleteTextures(1,&(gl_texture_id));
+			}
+#endif /* defined (OPENGL_API) */
+			DEALLOCATE(texture_tiling->texture_ids);
+		}
 		DEALLOCATE(texture_tiling->tile_size);
 		DEALLOCATE(texture_tiling->texture_tiles);
-		DEALLOCATE(texture_tiling->texture_ids);
 		DEALLOCATE(texture_tiling->tile_coordinate_range);
 		DEALLOCATE(texture_tiling->coordinate_scaling);
 		DEALLOCATE(*texture_tiling_address);
@@ -320,6 +361,8 @@ DESCRIPTION :
 
 	return (return_code);
 } /* DESTROY(Texture_tiling) */
+
+DECLARE_OBJECT_FUNCTIONS(Texture_tiling)
 
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Texture,name,char *,strcmp)
 
@@ -1198,27 +1241,20 @@ tiles (and <texture_tiling> wasn't NULL.
 			}
 #endif /* defined (DEBUG) */
 #if defined (ENABLE_TEXTURE_TILING)
-			/* Disable as I haven't handled all the cases yet and
-				there are some memory leaks */
+			/* Disable as I haven't handled all the cases yet */
+			if (texture->texture_tiling)
+			{
+				DEACCESS(Texture_tiling)(&texture->texture_tiling);
+			}
 			if ((2 == return_code) && texture_tiling)
 			{
 				int i, number_of_tiles;
 
-				if (texture->texture_tiling)
-				{
-					DESTROY(Texture_tiling)(&texture->texture_tiling);
-				}
 				/* Tile instead of reduce (initially assume we can load in
 					multiple textures of the proxy size which isn't necessarily
 					true, need to test that too). */
 				return_code = 3;
-				ALLOCATE(*texture_tiling, struct Texture_tiling, 1);
-				ALLOCATE((*texture_tiling)->texture_tiles, int, texture->dimension);
-				ALLOCATE((*texture_tiling)->tile_size, int, texture->dimension);
-				ALLOCATE((*texture_tiling)->tile_coordinate_range, float,
-					texture->dimension);
-				ALLOCATE((*texture_tiling)->coordinate_scaling, float,
-					texture->dimension);
+				*texture_tiling = CREATE(Texture_tiling)(texture->dimension);
 				switch (texture->filter_mode)
 				{
 					case TEXTURE_LINEAR_FILTER:
@@ -1292,8 +1328,6 @@ tiles (and <texture_tiling> wasn't NULL.
 					number_of_tiles *= (*texture_tiling)->texture_tiles[i];
 				}
 				(*texture_tiling)->total_tiles = number_of_tiles;
-				(*texture_tiling)->tile_display_lists = 0;
-				(*texture_tiling)->dimension = texture->dimension;
 				ALLOCATE((*texture_tiling)->texture_ids, int, number_of_tiles);
 				for (i = 0 ; i < number_of_tiles ; i++)
 				{
@@ -1301,7 +1335,7 @@ tiles (and <texture_tiling> wasn't NULL.
 					glGenTextures(1,&(gl_texture_id));
 					(*texture_tiling)->texture_ids[i] = gl_texture_id;
 				}
-				texture->texture_tiling = *texture_tiling;
+				texture->texture_tiling = ACCESS(Texture_tiling)(*texture_tiling);
 			}
 #else /* defined (ENABLE_TEXTURE_TILING) */
 			USE_PARAMETER(texture_tiling);
@@ -3120,7 +3154,7 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 				}
 				if (texture->texture_tiling)
 				{
-					DESTROY(Texture_tiling)(&texture->texture_tiling);
+					DEACCESS(Texture_tiling)(&texture->texture_tiling);
 				}
 #if defined (GRAPHICS_BUFFER_USE_BUFFERS)
 				if(texture->graphics_buffer)

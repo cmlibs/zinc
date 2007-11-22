@@ -216,12 +216,15 @@ If defined it should be used to compile any graphics objects.
 	int tile_display_lists;
 	/* Overlap of duplicated pixels on boundaries of tiles to allow filtering */
 	int overlap;
+	int access_count;
 };
 
 /*
 Global functions
 ----------------
 */
+
+PROTOTYPE_OBJECT_FUNCTIONS(Texture_tiling);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Texture_combine_mode);
 

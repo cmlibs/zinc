@@ -390,6 +390,10 @@ Graphical object data structure.
 
 	enum GT_coordinate_system coordinate_system;
 
+	/* If the graphics object was compiled with respect to a texture
+		tiling then this pointer is set to that tiling. */
+	struct Texture_tiling *texture_tiling;
+
 	union GT_primitive_list *primitive_lists;
 #if defined (OPENGL_API)
 	GLuint display_list;

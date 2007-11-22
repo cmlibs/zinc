@@ -3614,6 +3614,7 @@ Allocates memory and assigns fields for a graphics object.
 				(struct Graphics_object_callback_data *)NULL;
 			object->coordinate_system = g_MODEL_COORDINATES;
 			object->glyph_labels_function = (Graphics_object_glyph_labels_function)NULL;
+			object->texture_tiling = (struct Texture_tiling *)NULL;
 			object->access_count = 0;
 			return_code = 1;
 			switch (object_type)
@@ -3750,6 +3751,10 @@ and sets <*object> to NULL.
 				DEALLOCATE(callback_data);
 				callback_data = next;
 			}
+			if (object->texture_tiling)
+			{
+				DEACCESS(Texture_tiling)(&object->texture_tiling);
+			}
 #if defined (OPENGL_API)
 			if (object->display_list)
 			{
@@ -3804,9 +3809,9 @@ supplied <compile_context>.
 				{
 					compile_Graphical_material(graphics_object->default_material,
 						context->graphics_buffer, &context->texture_tiling);
-					if (context->texture_tiling)
+					/* The geometry needs to be updated if these are different. */
+					if (context->texture_tiling || graphics_object->texture_tiling)
 					{
-						/* The geometry may need to be updated */
 						graphics_object->compile_status = GRAPHICS_NOT_COMPILED;
 					}
 				}
@@ -3934,6 +3939,11 @@ supplied <compile_context>.
 				if (return_code)
 				{
 					graphics_object->compile_status = GRAPHICS_COMPILED;
+					if (context->texture_tiling)
+					{
+						REACCESS(Texture_tiling)(&graphics_object->texture_tiling,
+							context->texture_tiling);
+					}
 				}
 			}
 		}
