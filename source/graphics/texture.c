@@ -276,6 +276,7 @@ DECLARE_INDEXED_LIST_FUNCTIONS(Texture_property)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Texture_property,name,
 	char *, strcmp)
 
+#if defined (OPENGL_API)
 static struct Texture_tiling *CREATE(Texture_tiling)(int dimension)
 /*******************************************************************************
 LAST MODIFIED : 23 November 2007
@@ -311,6 +312,7 @@ DESCRIPTION :
 	
 	return (texture_tiling);
 } /* CREATE(Texture_tiling) */
+#endif /* defined (OPENGL_API) */
 
 static int DESTROY(Texture_tiling)(struct Texture_tiling **texture_tiling_address)
 /*******************************************************************************
