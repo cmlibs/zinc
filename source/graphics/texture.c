@@ -312,7 +312,7 @@ DESCRIPTION :
 	return (texture_tiling);
 } /* CREATE(Texture_tiling) */
 
-int DESTROY(Texture_tiling)(struct Texture_tiling **texture_tiling_address)
+static int DESTROY(Texture_tiling)(struct Texture_tiling **texture_tiling_address)
 /*******************************************************************************
 LAST MODIFIED : 22 November 2007
 
@@ -1339,6 +1339,7 @@ tiles (and <texture_tiling> wasn't NULL.
 			}
 #else /* defined (ENABLE_TEXTURE_TILING) */
 			USE_PARAMETER(texture_tiling);
+			USE_PARAMETER(CREATE(Texture_tiling));
 #endif /* defined (ENABLE_TEXTURE_TILING) */
 		}
 		else
