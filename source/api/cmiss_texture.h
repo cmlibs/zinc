@@ -348,4 +348,22 @@ equal to the number_of_components.
 <height>*number_of_components*number_of_bytes_per_component in the image.
 ==============================================================================*/
 
+int Cmiss_texture_set_property(Cmiss_texture_id texture,
+	const char *property, const char *value);
+/*******************************************************************************
+LAST MODIFIED : 25 October 2007
+
+DESCRIPTION :
+Sets the <property> and <value> string for the <texture>.
+==============================================================================*/
+
+char *Cmiss_texture_get_property(Cmiss_texture_id texture,
+	const char *property);
+/*******************************************************************************
+LAST MODIFIED : 25 October 2007
+
+DESCRIPTION :
+If the <property> is defined for the <texture>, then a copy is returned (and
+should be DEALLOCATED when finished with).
+==============================================================================*/
 #endif /* __CMISS_TEXTURE_H__ */
