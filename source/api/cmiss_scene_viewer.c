@@ -1402,3 +1402,112 @@ were active when the event was generated.
 	return (return_code);
 }
 
+int Cmiss_scene_viewer_get_blending_mode(Cmiss_scene_viewer_id scene_viewer,
+	enum Cmiss_scene_viewer_blending_mode *blending_mode)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2007
+
+DESCRIPTION :
+Returns the transparency mode of the Scene_viewer.  See the definition of the
+Cmiss_scene_viewer_blending_mode enumerator.
+==============================================================================*/
+{
+	enum Scene_viewer_blending_mode scene_viewer_blending_mode;
+	int return_code;
+
+	ENTER(Cmiss_scene_viewer_get_blending_mode);
+	if (scene_viewer)
+	{
+		if (return_code = Scene_viewer_get_blending_mode(scene_viewer, 
+				&scene_viewer_blending_mode))
+		{
+			switch(scene_viewer_blending_mode)
+			{
+				case SCENE_VIEWER_BLEND_NORMAL:
+				{
+					*blending_mode = CMISS_SCENE_VIEWER_BLENDING_NORMAL;
+					return_code = 1;
+				} break;
+				case SCENE_VIEWER_BLEND_NONE:
+				{
+					*blending_mode = CMISS_SCENE_VIEWER_BLENDING_NONE;
+					return_code = 1;
+				} break;
+				case SCENE_VIEWER_BLEND_TRUE_ALPHA:
+				{
+					*blending_mode = CMISS_SCENE_VIEWER_BLENDING_TRUE_ALPHA;
+					return_code = 1;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Cmiss_scene_viewer_get_blending_mode.  "
+						"Blending mode not supported in public interface.");
+					return_code = 0;
+				} break;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_get_blending_mode.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_scene_viewer_get_blending_mode */
+
+int Cmiss_scene_viewer_set_blending_mode(Cmiss_scene_viewer_id scene_viewer,
+	enum Cmiss_scene_viewer_blending_mode blending_mode)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2007
+
+DESCRIPTION :
+Sets the transparency mode of the Scene_viewer.  See the definition of the
+Cmiss_scene_viewer_blending_mode enumerator.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_scene_viewer_set_blending_mode);
+	if (scene_viewer)
+	{
+		switch(blending_mode)
+		{
+			case CMISS_SCENE_VIEWER_BLENDING_NORMAL:
+			{
+				return_code = Scene_viewer_set_blending_mode(scene_viewer, 
+					SCENE_VIEWER_BLEND_NORMAL);
+			} break;
+			case CMISS_SCENE_VIEWER_BLENDING_NONE:
+			{
+				return_code = Scene_viewer_set_blending_mode(scene_viewer, 
+					SCENE_VIEWER_BLEND_NONE);
+			} break;
+			case CMISS_SCENE_VIEWER_BLENDING_TRUE_ALPHA:
+			{
+				return_code = Scene_viewer_set_blending_mode(scene_viewer, 
+					SCENE_VIEWER_BLEND_TRUE_ALPHA);
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_scene_viewer_set_blending_mode.  "
+					"Unknown viewport mode.");
+				return_code = 0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_set_blending_mode.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_scene_viewer_set_blending_mode */
+

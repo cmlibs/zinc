@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_scene_viewer.h
 
-LAST MODIFIED : 17 February 2005
+LAST MODIFIED : 7 November 2007
 
 DESCRIPTION :
 The public interface to the Cmiss_scene_viewer object for rendering cmiss
@@ -183,6 +183,23 @@ no materials used in the scene can contain textures.
 	CMISS_SCENE_VIEWER_TRANSPARENCY_SLOW,
 	CMISS_SCENE_VIEWER_TRANSPARENCY_LAYERED,
 	CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT
+};
+
+enum Cmiss_scene_viewer_blending_mode
+/*******************************************************************************
+LAST MODIFIED : 
+
+DESCRIPTION :
+SCENE_VIEWER_BLEND_NORMAL is src=GL_SRC_ALPHA and dest=GL_ONE_MINUS_SRC_ALPHA
+SCENE_VIEWER_BLEND_TRUE_ALPHA is available for OpenGL version 1.4 and above
+and is src=GL_SRC_ALPHA and dest=GL_ONE_MINUS_SRC_ALPHA
+for rgb and src=GL_ONE and dest=GL_ONE_MINUS_SRC_ALPHA for alpha, which 
+results in the correct final alpha value in a saved image.
+==============================================================================*/
+{
+	CMISS_SCENE_VIEWER_BLENDING_NORMAL,
+	CMISS_SCENE_VIEWER_BLENDING_NONE,
+	CMISS_SCENE_VIEWER_BLENDING_TRUE_ALPHA
 };
 
 typedef struct Cmiss_scene_viewer *Cmiss_scene_viewer_id;
@@ -485,6 +502,26 @@ LAST MODIFIED : 13 September 2002
 DESCRIPTION :
 Sets the transparency mode of the Scene_viewer.  See the definition of the
 Cmiss_scene_viewer_transparency_mode enumerator.
+==============================================================================*/
+
+int Cmiss_scene_viewer_get_blending_mode(Cmiss_scene_viewer_id scene_viewer,
+ enum Cmiss_scene_viewer_blending_mode *blending_mode);
+/*******************************************************************************
+LAST MODIFIED : 7 November 2007
+
+DESCRIPTION :
+Returns the blending mode of the Scene_viewer.  See the definition of the
+Cmiss_scene_viewer_blending_mode enumerator.
+==============================================================================*/
+
+int Cmiss_scene_viewer_set_blending_mode(Cmiss_scene_viewer_id scene_viewer,
+	enum Cmiss_scene_viewer_blending_mode blending_mode);
+/*******************************************************************************
+LAST MODIFIED : 7 November 2007
+
+DESCRIPTION :
+Sets the blending mode of the Scene_viewer.  See the definition of the
+Cmiss_scene_viewer_blending_mode enumerator.
 ==============================================================================*/
 
 int Cmiss_scene_viewer_get_transparency_layers(Cmiss_scene_viewer_id scene_viewer,
