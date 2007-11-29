@@ -1104,7 +1104,8 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
 		graphics/light_model.c \
 		graphics/rendergl.c \
 		graphics/scene.c \
-		graphics/scene_viewer.c
+		graphics/scene_viewer.c \
+		graphics/tile_graphics_objects.c
 endif
 GRAPHICS_INTERFACE_SRCS = \
 	graphics/graphical_element_editor.c \

@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : rendergl.h
+FILE : tile_graphics_object.h
 
 LAST MODIFIED : 29 November 2007
 
@@ -41,23 +41,21 @@ Header file for rendergl.c, GL rendering calls (API specific)
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (RENDERGL_H)
-#define RENDERGL_H
+#if !defined (TILE_GRAPHICS_OBJECTS_H)
+#define TILE_GRAPHICS_OBJECTS_H
 
 #include "graphics/graphics_object.h"
 
-/*
-Global functions
-----------------
-*/
-
-int render_GT_object_opengl(gtObject *object, struct GT_object_compile_context *context);
+struct GT_surface *tile_GT_surface(struct GT_surface *surface, 
+	struct Texture_tiling *texture_tiling);
 /*******************************************************************************
-LAST MODIFIED : 22 November 2005
+LAST MODIFIED : 29 November 2007
 
 DESCRIPTION :
-Convert graphical object into API object.
-The <context> is used to control how the object is compiled.
+Split a GT_surface <surface> based on its texture coordinates and 
+<texture_tiling> boundaries.  Returns a surface or linked list of surfaces
+that have equivalent geometry separated into separate surfaces for separate
+tiles.
 ==============================================================================*/
 
-#endif /* !defined (RENDERGL_H) */
+#endif /* !defined (TILE_GRAPHICS_OBJECTS_H) */
