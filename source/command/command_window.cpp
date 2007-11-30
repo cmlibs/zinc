@@ -1681,6 +1681,12 @@ public:
 				 "gfx cre win");
 	 }
 	 
+	 void materialeditor(wxCommandEvent &event)
+	 {
+			SelectedCommand = "gfx create graphical_material_editor";
+			Execute_command_execute_string(command_window->execute_command,
+				 "gfx create graphical_material_editor");
+	 }
 	 void sceneeditorwindow(wxCommandEvent& event)
 	 {
 			SelectedCommand = "gfx edit scene";
@@ -1951,6 +1957,7 @@ BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	 EVT_MENU(XRCID("ModelDataViewer"),wxCommandWindow::dataviewer)	 
 	 EVT_MENU(XRCID("ModelNodeviewer"),wxCommandWindow::nodeviewer)
 	 EVT_MENU(XRCID("ModelElementpointviewer"),wxCommandWindow::elementpointviewer)
+	 EVT_MENU(XRCID("GraphicsMaterialeditor"),wxCommandWindow::materialeditor)
 	 EVT_MENU(XRCID("GraphicsSceneeditor"),wxCommandWindow::sceneeditor)
 	 EVT_MENU(XRCID("GraphicsSpectrumeditor"),wxCommandWindow::spectrumeditor)
 	 EVT_MENU(XRCID("FontCmgui"),wxCommandWindow::OnFormatFont)

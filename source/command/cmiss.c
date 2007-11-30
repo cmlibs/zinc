@@ -211,7 +211,9 @@ Functions for executing cmiss commands.
 #endif /* defined (LINK_CMISS) */
 #if defined (MOTIF)
 #include "material/material_editor_dialog.h"
-#endif /* defined (MOTIF) */
+#elif defined (WX_USER_INTERFACE)
+#include "material/material_editor_dialog_wx.h"
+#endif /* defined (SWITCH_USER_INTERFACE) */
 #include "minimise/minimise.h"
 #include "node/node_operations.h"
 #include "node/node_tool.h"
@@ -355,7 +357,6 @@ DESCRIPTION :
 	struct Node_viewer *data_viewer,*node_viewer;
 	struct Element_point_viewer *element_point_viewer;
 	struct Element_creator *element_creator;
-	struct Material_editor_dialog *material_editor_dialog;
 	struct Time_editor_dialog *time_editor_dialog;
 #endif /* defined (MOTIF) */
 #if defined (WX_USER_INTERFACE)
@@ -363,6 +364,7 @@ DESCRIPTION :
 	struct Element_point_viewer *element_point_viewer;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF) || defined (WX_USER_INTERFACE)
+	struct Material_editor_dialog *material_editor_dialog;
 	struct Scene_editor *scene_editor;
 	struct Spectrum_editor_dialog *spectrum_editor_dialog;
 #endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
@@ -2818,7 +2820,7 @@ Executes a GFX MODIFY FLOW_PARTICLES command.
 	return (return_code);
 } /* gfx_modify_flow_particles */
 
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 static int gfx_create_graphical_material_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -2857,12 +2859,22 @@ editor at a time.  This implementation may be changed later.
 		{
 			if (command_data=(struct Cmiss_command_data *)command_data_void)
 			{
+#if defined (MOTIF)
 				return_code=bring_up_material_editor_dialog(
 					&(command_data->material_editor_dialog),
 					User_interface_get_application_shell(command_data->user_interface),
 					Material_package_get_material_manager(command_data->material_package),
 					command_data->texture_manager,(struct Graphical_material *)NULL,
 					command_data->graphics_buffer_package,command_data->user_interface);
+#elif defined (WX_USER_INTERFACE)
+				return_code=bring_up_material_editor_dialog_wx(
+					&(command_data->material_editor_dialog),
+					Material_package_get_material_manager(command_data->material_package),
+					command_data->texture_manager,(struct Graphical_material *)NULL,
+					command_data->graphics_buffer_package,command_data->user_interface);
+#endif /* defined (SWITCH_USER_INTERFACE) */
+
+
 			}
 			else
 			{
@@ -2882,7 +2894,7 @@ editor at a time.  This implementation may be changed later.
 
 	return (return_code);
 } /* gfx_create_graphical_material_editor */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE)*/
 
 #if defined (MOTIF)
 static int gfx_create_grid_field_calculator(struct Parse_state *state,
@@ -8868,9 +8880,11 @@ Executes a GFX CREATE command.
 #endif /* defined (MOTIF) */
 				Option_table_add_entry(option_table, "flow_particles",
 					/*create_more*/(void *)0, command_data_void, gfx_create_flow_particles);
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 				Option_table_add_entry(option_table,"graphical_material_editor",NULL,
 					command_data_void,gfx_create_graphical_material_editor);
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
+#if defined (MOTIF)
 				Option_table_add_entry(option_table,"grid_field_calculator",NULL,
 					command_data_void,gfx_create_grid_field_calculator);
 #if defined (HAPTIC)
@@ -24205,7 +24219,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->element_point_viewer=(struct Element_point_viewer *)NULL;
 		command_data->prompt_window=(struct Prompt_window *)NULL;
 		command_data->projection_window=(struct Projection_window *)NULL;
-		command_data->material_editor_dialog = (struct Material_editor_dialog *)NULL;
 		/*???RC.  Temporary - should allow more than one */
 		command_data->time_editor_dialog = (struct Time_editor_dialog *)NULL;
 		/*???RC.  Temporary - should allow more than one */
@@ -24216,6 +24229,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->element_point_viewer=(struct Element_point_viewer *)NULL;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF) || defined (WX_USER_INTERFACE)
+		command_data->material_editor_dialog = (struct Material_editor_dialog *)NULL;
 		command_data->scene_editor = (struct Scene_editor *)NULL;
 		command_data->spectrum_editor_dialog = (struct Spectrum_editor_dialog *)NULL;
 #endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
@@ -25344,10 +25358,6 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		{
 			DESTROY(Time_editor_dialog)(&(command_data->time_editor_dialog));
 		}
-		if (command_data->material_editor_dialog)
-		{
-			DESTROY(Material_editor_dialog)(&(command_data->material_editor_dialog));
-		}
 #endif /* defined (MOTIF) */
 #if defined (WX_USER_INTERFACE)
 		/* viewers */
@@ -25365,6 +25375,10 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		}
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF) || defined (WX_USER_INTERFACE)
+		if (command_data->material_editor_dialog)
+		{
+			DESTROY(Material_editor_dialog)(&(command_data->material_editor_dialog));
+		}
 		if (command_data->scene_editor)
 		{
 			DESTROY(Scene_editor)(&(command_data->scene_editor));

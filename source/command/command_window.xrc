@@ -99,7 +99,6 @@
         <label>3-D Window</label>
       </object>
       <object class = "wxMenuItem" name="GraphicsMaterialeditor">
-		 <enabled>0</enabled>
         <label>Material editor</label>
       </object>
       <object class = "wxMenuItem" name="GraphicsSceneeditor">

@@ -867,9 +867,14 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
 	choose/choose_gt_object.c \
 	choose/choose_scene.c
 endif
+ifneq ($(USER_INTERFACE),WX_USER_INTERFACE)
 COLOUR_INTERFACE_SRCS = \
 	colour/colour_editor.c \
 	colour/edit_var.c 
+else
+COLOUR_INTERFACE_SRCS = \
+	colour/colour_editor_wx.cpp
+endif
 COMFILE_SRCS = \
 	comfile/comfile.c 
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
@@ -1118,7 +1123,7 @@ GRAPHICS_SRCS += \
 endif #$(USER_INTERFACE) == WX_USER_INTERFACE
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    GRAPHICS_INTERFACE_SRCS += \
-		graphics/graphics_window.c \
+		graphics/graphics_window.cpp \
 		graphics/scene_editor.cpp \
 		graphics/settings_editor.c \
 		graphics/spectrum_editor.c \
@@ -1170,9 +1175,15 @@ else # LINK_CMISS
 endif # LINK_CMISS
 MATERIAL_INTERFACE_SRCS =
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
+ifneq ($(USER_INTERFACE),WX_USER_INTERFACE)
    MATERIAL_INTERFACE_SRCS +=  \
-		material/material_editor.c \
+		material/material_editor.cpp \
 		material/material_editor_dialog.c
+else
+	MATERIAL_INTERFACE_SRCS += \
+		material/material_editor_dialog_wx.cpp \
+		material/material_editor_wx.cpp
+endif #$(USER_INTERFACE) == WX_USER_INTERFACE
 endif
 MATRIX_SRCS =
 ifeq ($(USE_COMPUTED_VARIABLES), true)
@@ -1314,29 +1325,31 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
 	      $(API_INTERFACE_SRCS) \
 	      $(COMMAND_INTERFACE_SRCS) \
 	      $(COMPUTED_FIELD_INTERFACE_SRCS) \
-	      graphics/graphics_window.c \
+	      graphics/graphics_window.cpp \
 	      gtk/gtk_cmiss_scene_viewer.c
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
       SRCS_2 = \
 	      $(API_INTERFACE_SRCS) \
+	      $(COLOUR_INTERFACE_SRCS)\
 	      $(COMMAND_INTERFACE_SRCS) \
 	      $(COMPUTED_FIELD_INTERFACE_SRCS) \
-	      graphics/graphics_window.c
+	      $(MATERIAL_INTERFACE_SRCS) \
+	      graphics/graphics_window.cpp
 endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 ifeq ($(USER_INTERFACE),CARBON_USER_INTERFACE)
       SRCS_2 = \
 	      $(API_INTERFACE_SRCS) \
 	      $(COMMAND_INTERFACE_SRCS) \
 	      $(COMPUTED_FIELD_INTERFACE_SRCS) \
-	      graphics/graphics_window.c
+	      graphics/graphics_window.cpp
 endif # $(USER_INTERFACE) == CARBON_USER_INTERFACE
 ifeq ($(USER_INTERFACE),WIN32_USER_INTERFACE)
       SRCS_2 = \
 	      $(API_INTERFACE_SRCS) \
 	      $(COMMAND_INTERFACE_SRCS) \
 	      $(COMPUTED_FIELD_INTERFACE_SRCS) \
-	      graphics/graphics_window.c
+	      graphics/graphics_window.cpp
 endif # $(USER_INTERFACE) == WIN32_USER_INTERFACE
 
 SRCS = $(SRCS_1) $(SRCS_2)
