@@ -97,7 +97,7 @@ a complete copy of <Spectrum>.
 {
 	 int return_code, i, number_of_spectrums;
 	 struct Spectrum *temp_spectrum;
-	ENTER(make_currentspectrum);
+	ENTER(make_current_spectrum);
 	if (spectrum_editor)
 	{
 		return_code=1;
@@ -909,19 +909,26 @@ Callback for Spectrum List.
 ==============================================================================*/
 {
 	 struct Spectrum *temp_spectrum;
-	 int selection;
-	 selection = spectrum_editor->spectrum_editor_check_list->GetSelection();
-	 if (temp_spectrum = (struct Spectrum *)spectrum_editor->spectrum_editor_check_list->GetClientData(selection))
+	 int selection, number_of_item;
+	 number_of_item = spectrum_editor->spectrum_editor_check_list->GetCount();
+	 if (number_of_item > 0)
 	 {
-			spectrum_editor->current_spectrum = temp_spectrum;
-			spectrum_editor_wx_set_spectrum(spectrum_editor,
-				 temp_spectrum);
+			selection = spectrum_editor->spectrum_editor_check_list->GetSelection();
+			if (selection >= 0)
+			{
+				 if (temp_spectrum = (struct Spectrum *)spectrum_editor->spectrum_editor_check_list->GetClientData(selection))
+				 {
+						spectrum_editor->current_spectrum = temp_spectrum;
+						spectrum_editor_wx_set_spectrum(spectrum_editor,
+							 temp_spectrum);
+				 }
+				 else
+				 {
+						display_message(ERROR_MESSAGE,
+							 "OnSpectrumListSelect.  Cannot get client data");
+				 } 
+			}
 	 }
-	 else
-	 {
-			display_message(ERROR_MESSAGE,
-				 "OnSpectrumListSelect.  Cannot get client data");
-	 } 
 }
 
 void OnSpectrumSettingsSelected(wxCommandEvent &event)
@@ -1595,6 +1602,77 @@ void OnSpectrumAutorangePressed(wxCommandEvent &event)
 	 LEAVE;
 }
 
+void OnSpectrumEditorCreateNewSpectrum(wxCommandEvent& event)
+{
+	 ENTER(OnMaterialEditorCreateNewMaterial);
+	 Spectrum *spectrum;
+	 char *text;
+	 wxTextEntryDialog *NewSpectrumDialog = new wxTextEntryDialog(this, "Enter name", 
+			"Please Enter Name", "TEMP", wxOK|wxCANCEL|wxCENTRE, wxDefaultPosition);
+	 if (NewSpectrumDialog->ShowModal() == wxID_OK)
+	 {
+			text = (char*)NewSpectrumDialog->GetValue().mb_str(wxConvUTF8);
+
+			if (spectrum = CREATE(Spectrum)(text))
+			{
+				 if(MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
+						(spectrum,spectrum_editor->edit_spectrum))
+				 {
+						ADD_OBJECT_TO_MANAGER(Spectrum)(
+							 spectrum, spectrum_editor->spectrum_manager);
+						spectrum_editor->spectrum_editor_check_list->Clear();
+						FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
+							 spectrum_editor_wx_add_item_to_spectrum_editor_check_list, 
+							 (void *)spectrum_editor, spectrum_editor->spectrum_manager);
+						make_current_spectrum(spectrum_editor, spectrum);
+						spectrum_editor_wx_set_spectrum(spectrum_editor,
+							 spectrum);
+				 }
+			}
+	 }
+	 delete NewSpectrumDialog;
+	 LEAVE;
+}
+
+void OnSpectrumEditorDeleteSpectrum(wxCommandEvent& event)
+{
+	 ENTER(OnSpectrumEditorDeleteSpectrum);
+
+	 REMOVE_OBJECT_FROM_MANAGER(Spectrum)(
+			spectrum_editor->current_spectrum,spectrum_editor->spectrum_manager);
+	 spectrum_editor->current_spectrum = NULL;
+	 spectrum_editor->spectrum_editor_check_list->Clear();
+	 FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
+			spectrum_editor_wx_add_item_to_spectrum_editor_check_list, 
+			(void *)spectrum_editor, spectrum_editor->spectrum_manager);
+	 make_current_spectrum(spectrum_editor, NULL);
+	 spectrum_editor_wx_set_spectrum(spectrum_editor,spectrum_editor->current_spectrum);
+
+	 LEAVE;
+}
+
+void OnSpectrumEditorRenameSpectrum(wxCommandEvent& event)
+{
+	 ENTER(OnSpectrumEditorRenameSpectrum);
+	 int selection;
+	 char *text;
+	 wxTextEntryDialog *NewSpectrumDialog = new wxTextEntryDialog(this, "Enter name", 
+			"Please Enter Name", spectrum_editor->spectrum_editor_check_list->GetStringSelection(),
+			wxOK|wxCANCEL|wxCENTRE, wxDefaultPosition);
+	 if (NewSpectrumDialog->ShowModal() == wxID_OK)
+	 {
+			text = (char*)NewSpectrumDialog->GetValue().mb_str(wxConvUTF8);
+			MANAGER_MODIFY_IDENTIFIER(Spectrum, name)
+				 (spectrum_editor->current_spectrum, text,
+				 spectrum_editor->spectrum_manager);
+			selection = spectrum_editor->spectrum_editor_check_list->GetSelection();
+			spectrum_editor->spectrum_editor_check_list->SetString(selection, text);
+	 }
+	 delete NewSpectrumDialog;
+
+	 LEAVE;
+}
+
 void CloseSpectrumEditor(wxCloseEvent &event)
 {
 	 ENTER(CloseSpectrumEditor);
@@ -1608,6 +1686,9 @@ DECLARE_EVENT_TABLE();
 };
 	 
 BEGIN_EVENT_TABLE(wxSpectrumEditor, wxFrame)
+	 EVT_BUTTON(XRCID("wxSpectrumCreateButton"),wxSpectrumEditor::OnSpectrumEditorCreateNewSpectrum)
+	 EVT_BUTTON(XRCID("wxSpectrumDeleteButton"),wxSpectrumEditor::OnSpectrumEditorDeleteSpectrum)
+	 EVT_BUTTON(XRCID("wxSpectrumRenameButton"),wxSpectrumEditor::OnSpectrumEditorRenameSpectrum)
 	 EVT_LISTBOX(XRCID("SpectrumCheckList"), wxSpectrumEditor::OnSpectrumListSelected)
 	 EVT_CHECKLISTBOX(XRCID("wxSpectrumSettingsCheckList"), wxSpectrumEditor::OnSpectrumSettingsSelected)
 	 EVT_LISTBOX(XRCID("wxSpectrumSettingsCheckList"), wxSpectrumEditor::OnSpectrumSettingsSelected)
@@ -2195,18 +2276,15 @@ Creates a spectrum_editor widget.
 					 FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
 							spectrum_editor_wx_add_item_to_spectrum_editor_check_list, 
 							(void *)spectrum_editor, spectrum_manager);
-					 if (spectrum)
-					 {
-							make_current_spectrum(spectrum_editor, spectrum);
-					 }
-					 else
+					 temp_spectrum = spectrum;
+					 if (!temp_spectrum)
 					 {
 							temp_spectrum=FIRST_OBJECT_IN_MANAGER_THAT(Spectrum)(
 								 (MANAGER_CONDITIONAL_FUNCTION(Spectrum) *)NULL,
 								 (void *)NULL,
 								 spectrum_editor->spectrum_manager);
-							make_current_spectrum(spectrum_editor, spectrum);
 					 }
+					 make_current_spectrum(spectrum_editor, temp_spectrum);
 					 spectrum_editor->wx_spectrum_editor->set_autorange_scene();
 					 spectrum_editor->wx_spectrum_editor->Show();
 				}
@@ -2238,7 +2316,6 @@ Set the <spectrum> to be edited by the <spectrum_editor>.
 ==============================================================================*/
 {
 	int return_code;
-// 	struct Callback_data callback;
 
 	ENTER(spectrum_editor_wx_set_spectrum);
 	if (spectrum_editor)
