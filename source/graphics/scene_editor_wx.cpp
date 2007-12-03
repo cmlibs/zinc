@@ -4183,6 +4183,12 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 			facechoice->Hide();
 		}
 	}
+
+struct Scene *Scene_editor_wx_get_scene_from_scene_chooser()
+{
+	 return scene_chooser->get_object();
+}
+
   DECLARE_DYNAMIC_CLASS(wxSceneEditor);
   DECLARE_EVENT_TABLE();
 };
@@ -4705,8 +4711,7 @@ Returns the root scene of the <scene_editor>.
 	ENTER(Scene_editor_get_scene);
 	if (scene_editor)
 	{
-	//	scene = CHOOSE_OBJECT_GET_OBJECT(Scene)(scene_editor->scene_widget);
-		//scene_editor->wx_scene_editor->Raise();
+		 scene = scene_editor->wx_scene_editor->Scene_editor_wx_get_scene_from_scene_chooser();
 	}
 	else
 	{
