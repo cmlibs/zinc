@@ -283,8 +283,9 @@ fields used here.
 	struct Computed_field **current_field_address, *coordinate_field, *data_field,
 		*label_field, *orientation_scale_field, *required_fields[5],
 		*variable_scale_field;
-	int dimension, i, j, k, number_of_fields, number_of_orientation_scale_components,
-		number_of_variable_scale_components, return_code, values;
+	int dimension, i, j, k, label_defined, number_of_fields,
+		number_of_orientation_scale_components, number_of_variable_scale_components,
+		return_code, values;
 	struct Node_to_glyph_set_data *node_to_glyph_set_data;
 	Triple *axis1, *axis2, *axis3, *point, *scale;
 
@@ -352,7 +353,7 @@ fields used here.
 			coordinates[0] = 0.0;
 			coordinates[1] = 0.0;
 			coordinates[2] = 0.0;
-			int label_defined = label_field && Computed_field_is_defined_at_node(label_field,node);
+			label_defined = label_field && Computed_field_is_defined_at_node(label_field,node);
 			/* label_field allowed to be undefined at individual nodes, so default to NULL label */
 			if (node_to_glyph_set_data->label)
 			{
