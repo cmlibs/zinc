@@ -87,7 +87,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 	Graphics_object_glyph_labels_function glyph_labels_function;
 	GTDATA *datum;
 	int draw_all, i, j, mirror_mode, *name, name_selected, label_bounds_per_glyph,
-		number_of_glyphs, return_code;
+		number_of_glyphs, orig_context_draw_selected, return_code;
 	struct GT_object *temp_glyph;
 	struct Spectrum_render_data *render_data;
 	Triple *axis1, *axis2, *axis3, *point, *scale, temp_axis1, temp_axis2,
@@ -520,9 +520,12 @@ are selected, or all points if <selected_name_ranges> is NULL.
 								}
 								if (glyph_labels_function = Graphics_object_get_glyph_labels_function(glyph))
 								{
+									orig_context_draw_selected = context->draw_selected;
+									context->draw_selected = 0;
 									return_code = (*glyph_labels_function)(*scale,
 										label_bounds_dimension, label_bounds_components, label_bound,
 										material, secondary_material, font, context);
+									context->draw_selected = orig_context_draw_selected;
 								}
 								/* restore the original modelview matrix */
 								glPopMatrix();
@@ -560,9 +563,10 @@ are selected, or all points if <selected_name_ranges> is NULL.
 						datum=data;
 						for (i=0;i<number_of_points;i++)
 						{
-							if (draw_all||((name_selected=Multi_range_is_value_in_range(
-													 selected_name_ranges,*name))&&draw_selected)||
-								((!name_selected)&&(!draw_selected))&&(*label))
+							if ((*label) && (draw_all
+								|| ((name_selected=Multi_range_is_value_in_range(
+									selected_name_ranges,*name)) && draw_selected)
+								|| ((!name_selected)&&(!draw_selected))))
 							{
 								if (names)
 								{
@@ -794,7 +798,10 @@ simultaneously.
 						datum += number_of_data_components;
 					}
 					glRasterPos3f(x,y,z);
-					Graphics_font_rendergl_text(font, *text_string);
+					if (*text_string)
+					{
+						Graphics_font_rendergl_text(font, *text_string);
+					}
 					text_string++;
 				}
 			}
@@ -1679,10 +1686,10 @@ preference to normal materials.
 			{
 				spectrum_end_renderGL(spectrum,render_data);
 			}
-#endif /* defined (OPENGL_API) */
 			return_code=1;
 		}
 		else
+#endif /* defined (OPENGL_API) */
 		{
 			display_message(ERROR_MESSAGE,"draw_voltexGL.  Unable to render data.");
 			return_code=0;

@@ -2349,10 +2349,20 @@ number_of_components.
 		Field_node_location location(node, time);
 		if (return_code=Computed_field_evaluate_cache_at_location(field, &location))
 		{
-			/* copy values from cache to <values> */
-			for (i=0;i<field->number_of_components;i++)
+			if (field->values_valid)
 			{
-				values[i]=field->values[i];
+				/* copy values from cache to <values> */
+				for (i=0;i<field->number_of_components;i++)
+				{
+					values[i]=field->values[i];
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_evaluate_at_node.  Field '%s' has no numerical values",
+					field->name);
+				return_code = 0;
 			}
 		}
 	}

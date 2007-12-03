@@ -262,15 +262,15 @@ Renders the label_bounds as lines and labels.
 			case 0:
 			default:
 			{
-				label_bounds_offset = label_bounds_dimension;
+				label_bounds_offset = label_bounds_components;
 			} break;
 			case 1:
 			{
-				label_bounds_offset = 2 * label_bounds_dimension;
+				label_bounds_offset = 2 * label_bounds_components;
 			} break;
 			case 2:
 			{
-				label_bounds_offset = 4 * label_bounds_dimension;
+				label_bounds_offset = 4 * label_bounds_components;
 			} break;
 		}
 
