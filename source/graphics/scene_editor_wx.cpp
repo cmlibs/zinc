@@ -663,7 +663,6 @@ Callback from wxChooser<Scene> when choice is made.
 		Scene_editor_set_scene(scene_editor, scene);
 		scene_editor->lower_panel->Disable();
 		scene_editor->lower_panel->Hide();
-		//		scene_editor->dummy_panel->Show();
 		wxCheckListBox *checklist = scene_editor->checklistbox;
  		checklist->Clear();
  		for_each_Scene_object_in_Scene(scene,
@@ -4186,7 +4185,21 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 
 struct Scene *Scene_editor_wx_get_scene_from_scene_chooser()
 {
-	 return scene_chooser->get_object();
+	 if (scene_chooser)
+			return scene_chooser->get_object();
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "Scene_editor_wx_get_scene_from_scene_chooser.  scene_chooser not available");
+			return NULL;
+	 }
+}
+
+void CloseSceneEditor(wxCloseEvent &event)
+{
+	 ENTER(CloseSceneEditor);
+	 DESTROY(Scene_editor)(scene_editor->scene_editor_address);
+	 LEAVE;
 }
 
   DECLARE_DYNAMIC_CLASS(wxSceneEditor);
@@ -4244,6 +4257,7 @@ BEGIN_EVENT_TABLE(wxSceneEditor, wxFrame)
 	 EVT_CHECKBOX(XRCID("ExteriorCheckBox"),wxSceneEditor::ExteriorChecked)
 	 EVT_CHECKBOX(XRCID("FaceCheckBox"),wxSceneEditor::FaceChecked)
 	 EVT_CHOICE(XRCID("FaceChoice"),wxSceneEditor::FaceChosen)
+	 EVT_CLOSE(wxSceneEditor::CloseSceneEditor)
 END_EVENT_TABLE()
 
 static int set_general_settings(void *scene_editor_void)
@@ -4559,26 +4573,33 @@ DESCRIPTION :
 			 scene_editor->checklistbox->Clear();
 			 for_each_Scene_object_in_Scene(scene,
 					add_scene_object_to_scene_check_box, (void *)scene_editor);
-			 switch (Scene_object_get_type(Scene_get_scene_object_at_position(scene_editor->scene,1)))
+			 if (scene_editor->checklistbox->GetCount() > 0)
 			 {
-					case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
+					switch (Scene_object_get_type(Scene_get_scene_object_at_position(scene_editor->scene,1)))
 					{
-						 scene_editor->lower_panel->Enable();	
-						 scene_editor->lower_panel->Show();	
-						 //				 scene_editor->dummy_panel->Hide();
-					} break;
-					case SCENE_OBJECT_GRAPHICS_OBJECT:
-					 {
-							scene_editor->lower_panel->Disable();	
-							scene_editor->lower_panel->Hide();		
-							//					scene_editor->dummy_panel->Show();
-							/* nothing to do */
-					 } break;	
-					case SCENE_OBJECT_SCENE:
-					{
-						 scene_editor->lower_panel->Hide();		
-						 /* nothing to do */
-					} break;			
+						 case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
+						 {
+								scene_editor->lower_panel->Enable();	
+								scene_editor->lower_panel->Show();	
+								//				 scene_editor->dummy_panel->Hide();
+						 } break;
+						 case SCENE_OBJECT_GRAPHICS_OBJECT:
+						 {
+								scene_editor->lower_panel->Disable();	
+								scene_editor->lower_panel->Hide();		
+								//					scene_editor->dummy_panel->Show();
+								/* nothing to do */
+						 } break;	
+						 case SCENE_OBJECT_SCENE:
+						 {
+								scene_editor->lower_panel->Hide();		
+								/* nothing to do */
+						 } break;			
+					}
+			 }
+			 else
+			 {
+					scene_editor->lower_panel->Hide();		
 			 }
 			 scene_editor->autocheckbox = 
 					XRCCTRL(*scene_editor->wx_scene_editor, "AutoCheckBox", wxCheckBox);
@@ -4658,6 +4679,7 @@ DESCRIPTION :
 		DEACCESS(GT_element_settings)(&scene_editor->current_settings);
 		delete scene_editor->wx_scene_editor;
 		DEALLOCATE(*scene_editor_address);
+		*scene_editor_address = NULL;
 		return_code = 1;
 	}
 	else
@@ -4709,6 +4731,7 @@ Returns the root scene of the <scene_editor>.
 	struct Scene *scene;
 
 	ENTER(Scene_editor_get_scene);
+	scene = (struct Scene*)NULL;
 	if (scene_editor)
 	{
 		 scene = scene_editor->wx_scene_editor->Scene_editor_wx_get_scene_from_scene_chooser();
@@ -4739,24 +4762,30 @@ Sets the root scene of the <scene_editor>. Updates widgets.
 	ENTER(Scene_editor_set_scene);
 	if (scene_editor && scene)
 	{
-		if (scene == Scene_editor_get_scene(scene_editor))
-		{
-			return_code = 1;
-		}
+		 if (scene == Scene_editor_get_scene(scene_editor))
+		 {
+				return_code = 1;
+		 }
 #if defined (WX_USER_INTERFACE)
-			if (scene_editor->wx_scene_editor)
-			{
-				scene_editor->wx_scene_editor->setSceneObject(scene);
-			}
+		 else 
+		 {
+				if(scene_editor->wx_scene_editor)
+				{
+					 scene_editor->wx_scene_editor->setSceneObject(scene);
+					 return_code = 1;
+				}
 #endif /* defined (WX_USER_INTERFACE) */
-
-	 {
-			{
-				display_message(ERROR_MESSAGE,
-					"Scene_editor_set_scene.  Could not set new scene");
-				return_code = 0;
-			}
-		}
+				else
+				{
+					 display_message(ERROR_MESSAGE,
+							"Scene_editor_set_scene.  Could not set new scene");
+					 return_code = 0;
+				}
+		 }
+		 if (return_code)
+		 {
+				scene_editor->scene = scene;
+		 }
 	}
 	else
 	{
