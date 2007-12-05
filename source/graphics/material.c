@@ -237,7 +237,7 @@ The properties of a material.
 	float lit_volume_normal_scaling[4];
 	/* the graphics state program that represents this material */
 	struct Material_program *program;
-	int access_count;
+	 int access_count, per_pixel_lighting_flag, bump_mapping_flag;
 }; /* struct Graphical_material */
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Graphical_material);
@@ -2030,6 +2030,8 @@ Allocates memory and assigns fields for a material.
 		{
 			strcpy(material->name,name);
 			material->access_count=0;
+			material->per_pixel_lighting_flag = 0;
+			material->bump_mapping_flag = 0;
 			(material->ambient).red=1;
 			(material->ambient).green=1;
 			(material->ambient).blue=1;
@@ -2757,6 +2759,58 @@ Sets the shininess value of the material.
 	return (return_code);
 } /* Graphical_material_set_shininess */
 
+int Graphical_material_get_bump_mapping_flag(struct Graphical_material *material)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2007
+
+DESCRIPTION :
+Returns the flag set for bump_mapping.
+==============================================================================*/
+{
+	 int return_code;
+
+	 ENTER(Graphical_material_get_bump_mapping_flag);
+	 if (material)
+	 {
+			return_code = material->bump_mapping_flag;
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "Graphical_material_get_bump_mapping_flag.  Invalid argument(s)");
+			return_code=0;
+	 }
+	LEAVE;
+
+	return (return_code);
+}
+
+int Graphical_material_get_per_pixel_lighting_flag(struct Graphical_material *material)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2007
+
+DESCRIPTION :
+Returns the flag set for per_pixel_lighting.
+==============================================================================*/
+{
+	 int return_code;
+
+	 ENTER(Graphical_material_get_per_pixel_lighting_flag);
+	 if (material)
+	 {
+			return_code = material->per_pixel_lighting_flag;
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "Graphical_material_get_per_pixel_flag.  Invalid argument(s)");
+			return_code=0;
+	 }
+	LEAVE;
+
+	return (return_code);
+}
+
 struct Texture *Graphical_material_get_texture(
 	struct Graphical_material *material)
 /*******************************************************************************
@@ -2783,6 +2837,87 @@ Returns the texture member of the material.
 
 	return (texture);
 } /* Graphical_material_get_texture */
+
+struct Texture *Graphical_material_get_second_texture(
+	struct Graphical_material *material)
+/*******************************************************************************
+LAST MODIFIED : 5 Dec 2007
+
+DESCRIPTION :
+Returns the second texture of the material.
+==============================================================================*/
+{
+	struct Texture *texture;
+
+	ENTER(Graphical_material_get_second_texture);
+	if (material)
+	{
+		texture=material->second_texture;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_material_get_second_texture.  Missing material");
+		texture=(struct Texture *)NULL;
+	}
+	LEAVE;
+
+	return (texture);
+} /* Graphical_material_get_second_texture */
+
+struct Texture *Graphical_material_get_third_texture(
+	struct Graphical_material *material)
+/*******************************************************************************
+LAST MODIFIED : 5 Dec 2007
+
+DESCRIPTION :
+Returns the third texture of the material.
+==============================================================================*/
+{
+	struct Texture *texture;
+
+	ENTER(Graphical_material_get_third_texture);
+	if (material)
+	{
+		texture=material->third_texture;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_material_get_third_texture.  Missing material");
+		texture=(struct Texture *)NULL;
+	}
+	LEAVE;
+
+	return (texture);
+} /* Graphical_material_get_second_texture */
+
+struct Texture *Graphical_material_get_fourth_texture(
+	struct Graphical_material *material)
+/*******************************************************************************
+LAST MODIFIED : 5 Dec 2007
+
+DESCRIPTION :
+Returns the fourth texture of the material.
+==============================================================================*/
+{
+	struct Texture *texture;
+
+	ENTER(Graphical_material_get_fourth_texture);
+	if (material)
+	{
+		texture=material->fourth_texture;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_material_get_fourth_texture.  Missing material");
+		texture=(struct Texture *)NULL;
+	}
+	LEAVE;
+
+	return (texture);
+} /* Graphical_material_get_fourth_texture */
 
 int Graphical_material_set_colour_lookup_spectrum(struct Graphical_material *material,
 	struct Spectrum *spectrum)
@@ -2858,6 +2993,80 @@ Returns the spectrum member of the material.
 	return (spectrum);
 } /* Graphical_material_get_colour_lookup_spectrum */
 
+enum Texture_order_identifier
+/*******************************************************************************
+LAST MODIFIED : 22 December 2007
+
+DESCRIPTION :
+Contains the four different orders of texture.
+==============================================================================*/
+{
+	 FIRST_TEXTURE,
+	 SECOND_TEXTURE,
+	 THIRD_TEXTURE,
+	 FOURTH_TEXTURE
+}; /* Colour_Editor_mode */
+
+int Graphical_material_set_texture_with_identifier(struct Graphical_material *material,
+	 struct Texture *texture, enum Texture_order_identifier texture_identifier)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2007
+
+DESCRIPTION :
+Sets the texture member of the material.
+==============================================================================*/
+{
+	 ENTER(Graphical_material_set_texture_with_identifier);
+
+	 int return_code;
+
+	 if (texture)
+	 {
+			ACCESS(Texture)(texture);
+	 }
+	 switch (texture_identifier)
+	 {
+			case FIRST_TEXTURE:
+			{
+				 if (material->texture)
+				 {
+						DEACCESS(Texture)(&material->texture);
+				 }
+				 material->texture=texture;
+			}break;
+			case SECOND_TEXTURE:
+			{
+				 if (material->second_texture)
+				 {
+						DEACCESS(Texture)(&material->second_texture);
+				 }
+				 material->second_texture=texture;
+			}break;
+			case THIRD_TEXTURE:
+			{
+				 if (material->third_texture)
+				 {
+						DEACCESS(Texture)(&material->third_texture);
+				 }
+				 material->third_texture=texture;
+			}break;
+			case FOURTH_TEXTURE:
+			{
+				 if (material->fourth_texture)
+				 {
+						DEACCESS(Texture)(&material->fourth_texture);
+				 }
+				 material->fourth_texture=texture;
+			}break;
+	 }
+	 /* display list needs to be compiled again */
+	 material->compile_status = GRAPHICS_NOT_COMPILED;
+	 return_code=1;
+	 LEAVE;
+
+	 return return_code;
+}
+
 int Graphical_material_set_texture(struct Graphical_material *material,
 	struct Texture *texture)
 /*******************************************************************************
@@ -2872,18 +3081,8 @@ Sets the texture member of the material.
 	ENTER(Graphical_material_set_texture);
 	if (material)
 	{
-		if (texture)
-		{
-			ACCESS(Texture)(texture);
-		}
-		if (material->texture)
-		{
-			DEACCESS(Texture)(&material->texture);
-		}
-		material->texture=texture;
-		/* display list needs to be compiled again */
-		material->compile_status = GRAPHICS_NOT_COMPILED;
-		return_code=1;
+		 Graphical_material_set_texture_with_identifier(material,
+				texture, FIRST_TEXTURE);
 	}
 	else
 	{
@@ -2895,6 +3094,90 @@ Sets the texture member of the material.
 
 	return (return_code);
 } /* Graphical_material_set_texture */
+
+int Graphical_material_set_second_texture(struct Graphical_material *material,
+	struct Texture *texture)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2007
+
+DESCRIPTION :
+Sets the second texture member of the material.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Graphical_material_set_second_texture);
+	if (material)
+	{
+		 Graphical_material_set_texture_with_identifier(material,
+				texture, SECOND_TEXTURE);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_material_set_second_texture.  Missing material");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphical_material_set_second_texture */
+
+int Graphical_material_set_third_texture(struct Graphical_material *material,
+	struct Texture *texture)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2007
+
+DESCRIPTION :
+Sets the second texture member of the material.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Graphical_material_set_third_texture);
+	if (material)
+	{
+		 Graphical_material_set_texture_with_identifier(material,
+				texture, THIRD_TEXTURE);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_material_set_third_texture.  Missing material");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphical_material_set_third_texture */
+
+int Graphical_material_set_fourth_texture(struct Graphical_material *material,
+	struct Texture *texture)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2007
+
+DESCRIPTION :
+Sets the second texture member of the material.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Graphical_material_set_fourth_texture);
+	if (material)
+	{
+		 Graphical_material_set_texture_with_identifier(material,
+				texture, FOURTH_TEXTURE);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_material_set_fourth_texture.  Missing material");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphical_material_set_fourth_texture */
 
 int Graphical_material_uses_texture_in_list(struct Graphical_material *material,
 	void *texture_list_void)
@@ -3066,6 +3349,408 @@ If the material already exists, then behaves like gfx modify material.
 	return (return_code);
 } /* gfx_create_material */
 
+int set_material_program_type_texture_mode(struct Graphical_material *material_to_be_modified,  
+	 enum Material_program_type *type, int return_code)
+{
+	 int dimension;
+
+	 ENTER(set_material_program_type_texture_mode);
+	 if (material_to_be_modified->texture)
+	 {
+			Texture_get_dimension(material_to_be_modified->texture, &dimension);
+			switch (dimension)
+			{
+				 case 1:
+				 {
+						*type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1;
+				 } break;
+				 case 2:
+				 {
+						*type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2;
+				 } break;
+				 case 3:
+				 {
+						*type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1 |
+							 MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2;
+				 } break;
+				 default:
+				 {
+						display_message(ERROR_MESSAGE, "Colour texture dimension %d not supported.",  
+							 dimension);
+						return_code = 0;
+				 } break;
+			}
+			switch (Texture_get_number_of_components(material_to_be_modified->texture))
+			{
+				 case 1:
+				 {
+						*type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1;
+				 } break;
+				 case 2:
+				 {
+						*type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2;
+				 } break;
+				 case 3:
+				 {
+						*type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 |
+							 MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2;
+				 } break;
+				 case 4:
+				 {
+						/* Do nothing as zero in these bits indicates rgba */
+				 } break;
+				 default:
+				 {
+						display_message(ERROR_MESSAGE, "Colour texture output dimension not supported.");
+						return_code = 0;
+				 } break;
+			}
+			switch (Texture_get_combine_mode(material_to_be_modified->texture))
+			{
+				 case TEXTURE_DECAL:
+				 {
+						*type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_DECAL;
+				 }
+				 default:
+				 {
+						/* Do nothing as modulate is the default */
+				 }
+			}
+	 }
+	 LEAVE;
+
+	 return return_code;
+}
+
+int set_material_program_type_second_texture(struct Graphical_material *material_to_be_modified,  
+	 enum Material_program_type *type, int return_code)
+/******************************************************************************
+LAST MODIFIED : 4 Dec 2007
+
+DESCRIPTION : Set up the material program second texture type 
+for using the vertex and fragment program. This and following
+functions are orginally from the modify_graphical_materil.
+==============================================================================*/
+{
+	 int dimension;
+
+	 ENTER(set_material_program_type_second_texture);
+	 if (material_to_be_modified->second_texture)
+	 {
+			Texture_get_dimension(material_to_be_modified->second_texture, &dimension);
+			switch (dimension)
+			{
+				 case 1:
+				 {
+						*type |= MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_1;
+				 } break;
+				 case 2:
+				 {
+						*type |= MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_2;
+				 } break;
+				 case 3:
+				 {
+						*type |= MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_1 |
+							 MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_2;
+				 } break;
+				 default:
+				 {
+						display_message(ERROR_MESSAGE, "Second texture dimension %d not supported.",  
+							 dimension);
+						return_code = 0;
+				 } break;
+			}
+	 }
+	 LEAVE;
+	 
+	 return return_code;
+}
+
+int set_material_program_type_bump_mapping(struct Graphical_material *material_to_be_modified,  
+	 enum Material_program_type *type, int return_code)
+/******************************************************************************
+LAST MODIFIED : 4 Dec 2007
+
+DESCRIPTION : Set up the material program bump mapping type 
+for using the vertex and fragment program. This and following
+functions are orginally from the modify_graphical_materil.
+==============================================================================*/
+{	 
+	 ENTER(set_material_program_type_bump_mapping);
+	 if (material_to_be_modified->second_texture)
+	 {
+			*type |= MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP;
+			material_to_be_modified->bump_mapping_flag = 1;
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "Bump mapping requires specification of a second texture containing a normal map.");
+			material_to_be_modified->bump_mapping_flag = 0;
+			return_code = 0;
+	 }
+	 LEAVE;
+	 
+	 return return_code;						
+}
+
+int set_material_program_type_spectrum(struct Graphical_material *material_to_be_modified,  
+	 enum Material_program_type *type, int red_flag, int green_flag, int blue_flag,
+	 int alpha_flag, int return_code)
+/******************************************************************************
+LAST MODIFIED : 4 Dec 2007
+
+DESCRIPTION : Set up the material program spectrum type 
+for using the vertex and fragment program. This and following
+functions are orginally from the modify_graphical_materil.
+==============================================================================*/
+{
+	 enum Spectrum_colour_components spectrum_colour_components;
+	 int number_of_spectrum_components;
+
+	 ENTER(set_material_program_type_spectrum);
+	 if (material_to_be_modified->spectrum)
+	 {
+			/* Cannot just rely on the COPY functions as when 
+				 first created this will be the actual object. */
+			if (material_to_be_modified->package && 
+				 (!material_to_be_modified->spectrum_manager_callback_id))
+			{
+				 material_to_be_modified->spectrum_manager_callback_id=
+						MANAGER_REGISTER(Spectrum)(Graphical_material_Spectrum_change,
+							 (void *)material_to_be_modified, material_to_be_modified->package->spectrum_manager);
+			}
+			
+			/* Specify the input colours */
+			if (red_flag)
+			{
+				 *type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1;
+			}
+			if (green_flag)
+			{
+				 *type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2;
+			}
+			if (blue_flag)
+			{
+				 *type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3;
+			}
+			if (alpha_flag)
+			{
+				 *type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4;
+			}
+			
+			number_of_spectrum_components = 
+				 Spectrum_get_number_of_components(material_to_be_modified->spectrum);
+			if ((alpha_flag + blue_flag +
+						green_flag + red_flag) == 
+				 number_of_spectrum_components)
+			{
+				 spectrum_colour_components = Spectrum_get_colour_components(
+						material_to_be_modified->spectrum);
+				 if (spectrum_colour_components & SPECTRUM_COMPONENT_ALPHA) 
+				 {
+						if (spectrum_colour_components == SPECTRUM_COMPONENT_ALPHA)
+						{
+							 /* Alpha only */
+							 *type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA;
+						}
+						else
+						{
+							 /* Colour and alpha */
+							 *type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR
+									| MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA;
+						}
+				 }
+				 else
+				 {
+						/* Colour only */
+						*type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR;
+				 }
+			}
+			else if (1 == number_of_spectrum_components)
+			{
+				 /* Lookup each component specified in the 1D spectra only */
+				 *type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1D_COMPONENT_LOOKUP;
+			}
+	 }
+	 else
+	 {
+			if (material_to_be_modified->package && 
+				 material_to_be_modified->spectrum_manager_callback_id)
+			{
+				 MANAGER_DEREGISTER(Spectrum)(
+						material_to_be_modified->spectrum_manager_callback_id,
+						material_to_be_modified->package->spectrum_manager);
+				 material_to_be_modified->spectrum_manager_callback_id=NULL;
+			}
+	 }
+	 LEAVE;
+	 
+	 return return_code;	
+}
+
+int material_update_material_program(struct Graphical_material *material_to_be_modified,  
+	 struct Material_package *material_package, enum Material_program_type type, int return_code)
+/******************************************************************************
+LAST MODIFIED : 4 Dec 2007
+
+DESCRIPTION : Check the material program and renew it if necessary.
+==============================================================================*/
+{
+	 ENTER(material_update_material_program);
+	 if (!material_to_be_modified->program ||
+			(material_to_be_modified->program->type != type))
+	 {
+			if (material_to_be_modified->program)
+			{
+				 DEACCESS(Material_program)(&material_to_be_modified->program);
+			}
+			if (material_to_be_modified->program = 
+				 FIND_BY_IDENTIFIER_IN_LIST(Material_program,type)(
+						type, material_package->material_program_list))
+			{
+				 ACCESS(Material_program)(material_to_be_modified->program);
+			}
+			else
+			{
+				 if (material_to_be_modified->program = ACCESS(Material_program)(
+								CREATE(Material_program)(type)))
+				 {
+						ADD_OBJECT_TO_LIST(Material_program)(material_to_be_modified->program,
+							 material_package->material_program_list);
+				 }
+				 else
+				 {
+						return_code = 0;
+				 }
+			}
+	 }
+	 LEAVE;
+
+	 return return_code;
+}
+
+int set_material_program_type(struct Graphical_material *material_to_be_modified,
+	 int bump_mapping_flag, int colour_lookup_red_flag, int colour_lookup_green_flag, 
+	 int colour_lookup_blue_flag,  int colour_lookup_alpha_flag, 
+	 int lit_volume_intensity_normal_texture_flag, int lit_volume_finite_difference_normal_flag, 
+	 int lit_volume_scale_alpha_flag, int return_code)
+/****************************************************************************** 
+LAST MODIFIED : 4 Dec 2007
+
+DESCRIPTION : Set up the material program type for using the vertex
+and fragment program. This and following functions are orginally
+from the modify_graphical_material. 
+NOTE: I use the pointer to the material_package from the material.
+==============================================================================*/
+{
+	 enum Material_program_type type;
+
+	 ENTER(set_material_program_type);
+
+	 type = MATERIAL_PROGRAM_PER_PIXEL_LIGHTING;
+	 material_to_be_modified->per_pixel_lighting_flag = 1;
+	 
+	 return_code = set_material_program_type_texture_mode(material_to_be_modified,
+			&type, return_code);
+	 return_code = set_material_program_type_second_texture(material_to_be_modified, 
+			&type, return_code);
+	 if (bump_mapping_flag)
+	 {
+			return_code = set_material_program_type_bump_mapping(material_to_be_modified,
+				 &type, return_code);
+	 }
+	 else
+	 {
+			material_to_be_modified->bump_mapping_flag = 0;
+	 }
+	 
+	 return_code = set_material_program_type_spectrum(material_to_be_modified,  
+			&type, colour_lookup_red_flag, colour_lookup_green_flag, colour_lookup_blue_flag,
+			colour_lookup_alpha_flag, return_code);
+	 
+	 if (lit_volume_intensity_normal_texture_flag)
+	 {
+			type |= MATERIAL_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE;
+	 }
+	 if (lit_volume_finite_difference_normal_flag)
+	 {
+			type |= MATERIAL_PROGRAM_CLASS_LIT_VOLUME_FINITE_DIFFERENCE_NORMAL;
+	 }
+	 if (lit_volume_scale_alpha_flag)
+	 {
+			type |= MATERIAL_PROGRAM_CLASS_LIT_VOLUME_SCALE_ALPHA;
+	 }
+
+	 material_to_be_modified->compile_status = GRAPHICS_NOT_COMPILED;
+	 
+	 return_code = material_update_material_program(material_to_be_modified,  
+			material_to_be_modified->package, type, return_code);
+
+	 return return_code;
+}
+
+int material_copy_bump_mapping_and_per_pixel_lighting_flag(struct Graphical_material *material,
+	 struct Graphical_material *material_to_be_modified)
+/****************************************************************************** 
+LAST MODIFIED : 5 Dec 2007
+
+DESCRIPTION : This function will set the bump mapping and per
+pixel_lighting_flag of the material_to_be_modified to be the same as
+the one in material, it is used for setting up the GUI.
+==============================================================================*/
+{
+	 int return_code;
+	 if (material && material_to_be_modified)
+	 {
+			material_to_be_modified->bump_mapping_flag = 
+				 material->bump_mapping_flag;
+			material_to_be_modified->per_pixel_lighting_flag = 
+				 material->per_pixel_lighting_flag;
+			return_code = 1;
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "material_deaccess_material_program.  Missing material_program");
+			return_code = 0;
+	 }
+
+	 return return_code;
+}
+
+#if defined (WX_USER_INTERFACE)
+int material_deaccess_material_program(struct Graphical_material *material_to_be_modified)
+/****************************************************************************** 
+LAST MODIFIED : 4 Dec 2007
+
+DESCRIPTION : This function is to allow the material editor to
+deaccess the material program from the material.
+==============================================================================*/
+{
+	 ENTER(material_deaccess_material_program);
+
+	 int return_code;
+	 if (material_to_be_modified->program)
+	 {
+			DEACCESS(Material_program)(&material_to_be_modified->program);
+			material_to_be_modified->compile_status = GRAPHICS_NOT_COMPILED;
+			material_to_be_modified->per_pixel_lighting_flag = 0;
+			material_to_be_modified->bump_mapping_flag = 0;
+			return_code = 1;
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "material_deaccess_material_program.  Missing material_program");
+			return_code = 0;
+	 }
+	 LEAVE;
+
+	 return return_code;
+}
+#endif /* (WX_USER_INTERFACE) */
+
 int modify_Graphical_material(struct Parse_state *state,void *material_void,
 	void *material_package_void)
 /*******************************************************************************
@@ -3079,8 +3764,8 @@ DESCRIPTION :
 		lit_volume_finite_difference_normal_flag,
 		lit_volume_intensity_normal_texture_flag, lit_volume_scale_alpha_flag,
 		normal_mode_flag, per_pixel_mode_flag;
-	enum Spectrum_colour_components spectrum_colour_components;
-	int dimension, lit_volume_normal_scaling_number,
+	/*	enum Spectrum_colour_components spectrum_colour_components; */
+	int /*dimension,*/ lit_volume_normal_scaling_number,
 		number_of_spectrum_components, process, return_code;
 	struct Graphical_material *material_to_be_modified,
 		*material_to_be_modified_copy;
@@ -3431,231 +4116,17 @@ DESCRIPTION :
 							if (material_to_be_modified_copy->program)
 							{
 								DEACCESS(Material_program)(&material_to_be_modified_copy->program);
+								material_to_be_modified->per_pixel_lighting_flag = 0;
+								material_to_be_modified->bump_mapping_flag = 0;
 							}
 						}
 						else if (per_pixel_mode_flag || material_to_be_modified_copy->program)
 						{
-							enum Material_program_type type;
-
-							type = MATERIAL_PROGRAM_PER_PIXEL_LIGHTING;
-
-							if (material_to_be_modified_copy->texture)
-							{
-								Texture_get_dimension(material_to_be_modified_copy->texture, &dimension);
-								switch (dimension)
-								{
-									case 1:
-									{
-										type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1;
-									} break;
-									case 2:
-									{
-										type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2;
-									} break;
-									case 3:
-									{
-										type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1 |
-											MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2;
-									} break;
-									default:
-									{
-										display_message(ERROR_MESSAGE, "Colour texture dimension %d not supported.",  
-											dimension);
-										return_code = 0;
-									} break;
-								}
-								switch (Texture_get_number_of_components(material_to_be_modified_copy->texture))
-								{
-									case 1:
-									{
-										type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1;
-									} break;
-									case 2:
-									{
-										type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2;
-									} break;
-									case 3:
-									{
-										type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 |
-											MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2;
-									} break;
-									case 4:
-									{
-										/* Do nothing as zero in these bits indicates rgba */
-									} break;
-									default:
-									{
-										display_message(ERROR_MESSAGE, "Colour texture output dimension not supported.");
-										return_code = 0;
-									} break;
-								}
-								switch (Texture_get_combine_mode(material_to_be_modified_copy->texture))
-								{
-									case TEXTURE_DECAL:
-									{
-										type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_DECAL;
-									}
-									default:
-									{
-										/* Do nothing as modulate is the default */
-									}
-								}
-							}
-							if (material_to_be_modified_copy->second_texture)
-							{
-								Texture_get_dimension(material_to_be_modified_copy->second_texture, &dimension);
-								switch (dimension)
-								{
-									case 1:
-									{
-										type |= MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_1;
-									} break;
-									case 2:
-									{
-										type |= MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_2;
-									} break;
-									case 3:
-									{
-										type |= MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_1 |
-											MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_2;
-									} break;
-									default:
-									{
-										display_message(ERROR_MESSAGE, "Second texture dimension %d not supported.",  
-											dimension);
-										return_code = 0;
-									} break;
-								}
-							}
-							if (bump_mapping_flag)
-							{
-								if (material_to_be_modified_copy->second_texture)
-								{
-									type |= MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE_BUMPMAP;
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"Bump mapping requires specification of a second texture containing a normal map.");
-									return_code = 0;
-								}
-							}
-							if (material_to_be_modified_copy->spectrum)
-							{
-								/* Cannot just rely on the COPY functions as when 
-									first created this will be the actual object. */
-								if (material_to_be_modified_copy->package && 
-									(!material_to_be_modified_copy->spectrum_manager_callback_id))
-								{
-									material_to_be_modified_copy->spectrum_manager_callback_id=
-										MANAGER_REGISTER(Spectrum)(Graphical_material_Spectrum_change,
-										(void *)material_to_be_modified_copy, material_to_be_modified_copy->package->spectrum_manager);
-								}
-
-								/* Specify the input colours */
-								if (colour_lookup_red_flag)
-								{
-									type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1;
-								}
-								if (colour_lookup_green_flag)
-								{
-									type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2;
-								}
-								if (colour_lookup_blue_flag)
-								{
-									type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3;
-								}
-								if (colour_lookup_alpha_flag)
-								{
-									type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_4;
-								}
-
-								number_of_spectrum_components = 
-									Spectrum_get_number_of_components(material_to_be_modified_copy->spectrum);
-								if ((colour_lookup_alpha_flag + colour_lookup_blue_flag +
-										colour_lookup_green_flag + colour_lookup_red_flag) == 
-									number_of_spectrum_components)
-								{
-									spectrum_colour_components = Spectrum_get_colour_components(
-										material_to_be_modified_copy->spectrum);
-									if (spectrum_colour_components & SPECTRUM_COMPONENT_ALPHA) 
-									{
-										if (spectrum_colour_components == SPECTRUM_COMPONENT_ALPHA)
-										{
-											/* Alpha only */
-											type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA;
-										}
-										else
-										{
-											/* Colour and alpha */
-											type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR
-												| MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_ALPHA;
-										}
-									}
-									else
-									{
-										/* Colour only */
-										type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_COLOUR;
-									}
-								}
-								else if (1 == number_of_spectrum_components)
-								{
-									/* Lookup each component specified in the 1D spectra only */
-									type |= MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1D_COMPONENT_LOOKUP;
-								}
-							}
-							else
-							{
-								if (material_to_be_modified_copy->package && 
-									material_to_be_modified_copy->spectrum_manager_callback_id)
-								{
-									MANAGER_DEREGISTER(Spectrum)(
-										material_to_be_modified_copy->spectrum_manager_callback_id,
-										material_to_be_modified_copy->package->spectrum_manager);
-									material_to_be_modified_copy->spectrum_manager_callback_id=NULL;
-								}
-							}
-
-							if (lit_volume_intensity_normal_texture_flag)
-							{
-								type |= MATERIAL_PROGRAM_CLASS_LIT_VOLUME_INTENSITY_NORMAL_TEXTURE;
-							}
-							if (lit_volume_finite_difference_normal_flag)
-							{
-								type |= MATERIAL_PROGRAM_CLASS_LIT_VOLUME_FINITE_DIFFERENCE_NORMAL;
-							}
-							if (lit_volume_scale_alpha_flag)
-							{
-								type |= MATERIAL_PROGRAM_CLASS_LIT_VOLUME_SCALE_ALPHA;
-							}
-
-							if (!material_to_be_modified_copy->program ||
-								(material_to_be_modified_copy->program->type != type))
-							{
-								if (material_to_be_modified_copy->program)
-								{
-									DEACCESS(Material_program)(&material_to_be_modified_copy->program);
-								}
-								if (material_to_be_modified_copy->program = 
-									FIND_BY_IDENTIFIER_IN_LIST(Material_program,type)(
-									type, material_package->material_program_list))
-								{
-									ACCESS(Material_program)(material_to_be_modified_copy->program);
-								}
-								else
-								{
-									if (material_to_be_modified_copy->program = ACCESS(Material_program)(
-										CREATE(Material_program)(type)))
-									{
-										ADD_OBJECT_TO_LIST(Material_program)(material_to_be_modified_copy->program,
-											material_package->material_program_list);
-									}
-									else
-									{
-										return_code = 0;
-									}
-								}
-							}
+							 set_material_program_type(material_to_be_modified_copy,
+									bump_mapping_flag, colour_lookup_red_flag,colour_lookup_green_flag,
+									colour_lookup_blue_flag, colour_lookup_alpha_flag, 
+									lit_volume_intensity_normal_texture_flag,	lit_volume_finite_difference_normal_flag,
+									lit_volume_scale_alpha_flag,	return_code);
 						}
 						if (return_code)
 						{
@@ -3664,6 +4135,8 @@ DESCRIPTION :
 								MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
 									material_to_be_modified,material_to_be_modified_copy,
 									material_package->material_manager);
+								material_copy_bump_mapping_and_per_pixel_lighting_flag(
+									 material_to_be_modified_copy, material_to_be_modified);
 								DESTROY(Graphical_material)(&material_to_be_modified_copy);
 							}
 							else

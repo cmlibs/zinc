@@ -350,6 +350,51 @@ DESCRIPTION :
 Returns the texture member of the material.
 ==============================================================================*/
 
+struct Texture *Graphical_material_get_second_texture(
+	 struct Graphical_material *material);
+/*******************************************************************************
+LAST MODIFIED : 5 Dec 2007
+
+DESCRIPTION :
+Returns the second texture of the material.
+==============================================================================*/
+
+struct Texture *Graphical_material_get_third_texture(
+	 struct Graphical_material *material);
+/*******************************************************************************
+LAST MODIFIED : 5 Dec 2007
+
+DESCRIPTION :
+Returns the third texture of the material.
+==============================================================================*/
+
+
+struct Texture *Graphical_material_get_fourth_texture(
+	 struct Graphical_material *material);
+/*******************************************************************************
+LAST MODIFIED : 5 Dec 2007
+
+DESCRIPTION :
+Returns the fourth texture of the material.
+==============================================================================*/
+
+
+int Graphical_material_get_bump_mapping_flag(struct Graphical_material *material);
+/*******************************************************************************
+LAST MODIFIED : 5 December 2007
+
+DESCRIPTION :
+Returns the flag set for bump_mapping.
+==============================================================================*/
+
+int Graphical_material_get_per_pixel_lighting_flag(struct Graphical_material *material);
+/*******************************************************************************
+LAST MODIFIED : 5 December 2007
+
+DESCRIPTION :
+Returns the flag set for per_pixel_lighting.
+==============================================================================*/
+
 int Graphical_material_set_texture(struct Graphical_material *material,
 	struct Texture *texture);
 /*******************************************************************************
@@ -357,6 +402,33 @@ LAST MODIFIED : 12 February 1998
 
 DESCRIPTION :
 Sets the texture member of the material.
+==============================================================================*/
+
+int Graphical_material_set_second_texture(struct Graphical_material *material,
+	 struct Texture *texture);
+/*******************************************************************************
+LAST MODIFIED : 5 December 2007
+
+DESCRIPTION :
+Sets the second texture member of the material.
+==============================================================================*/
+
+int Graphical_material_set_third_texture(struct Graphical_material *material,
+	 struct Texture *texture);
+/*******************************************************************************
+LAST MODIFIED : 5 December 2007
+
+DESCRIPTION :
+Sets the third texture member of the material.
+==============================================================================*/
+
+int Graphical_material_set_fourth_texture(struct Graphical_material *material,
+	 struct Texture *texture);
+/*******************************************************************************
+LAST MODIFIED : 5 December 2007
+
+DESCRIPTION :
+Sets the fourth texture member of the material.
 ==============================================================================*/
 
 int Graphical_material_uses_texture_in_list(struct Graphical_material *material,
@@ -438,6 +510,41 @@ Reads a material name from a <file>.  Searchs the list of all materials for one
 with the specified name.  If one is not found a new one is created with the
 specified name and the default properties.
 ==============================================================================*/
+
+int set_material_program_type(struct Graphical_material *material_to_be_modified,
+	 int bump_mapping_flag, int colour_lookup_red_flag, int colour_lookup_green_flag, 
+	 int colour_lookup_blue_flag,  int colour_lookup_alpha_flag, 
+	 int lit_volume_intensity_normal_texture_flag, int lit_volume_finite_difference_normal_flag, 
+	 int lit_volume_scale_alpha_flag, int return_code);
+/****************************************************************************** 
+LAST MODIFIED : 4 Dec 2007
+
+DESCRIPTION : Set up the material program type for using the vertex
+and fragment program. This and following functions are orginally
+from the modify_graphical_material. 
+NOTE: I use the pointer to the material_package from the material.
+==============================================================================*/
+
+int material_copy_bump_mapping_and_per_pixel_lighting_flag(struct Graphical_material *material,
+	 struct Graphical_material *material_to_be_modified);
+/****************************************************************************** 
+LAST MODIFIED : 5 Dec 2007
+
+DESCRIPTION : This function will set the bump mapping and per
+pixel_lighting_flag of the material_to_be_modified to be the same as
+the one in material, it is used for setting up the GUI.
+==============================================================================*/
+
+#if defined (WX_USER_INTERFACE)
+int material_deaccess_material_program(struct Graphical_material *material_to_be_modified);
+/****************************************************************************** 
+LAST MODIFIED : 4 Dec 2007
+
+DESCRIPTION : This function is to allow the material editor to
+deaccess the material program from the material.
+==============================================================================*/
+#endif /*(WX_USER_INTERFACE)*/
+
 
 #if defined (OLD_CODE)
 int activate_Graphical_material(struct Graphical_material *material);
