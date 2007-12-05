@@ -626,6 +626,10 @@ public:
 
 	 ~wxMaterialEditor()
 	 {
+			delete material_editor_texture_chooser;
+			delete material_editor_second_texture_chooser;
+			delete material_editor_third_texture_chooser;
+			delete material_editor_fourth_texture_chooser;
 	 };
 
 int material_editor_texture_callback(Texture *texture)
@@ -1349,6 +1353,7 @@ Destroys the <*material_editor_address> and sets
 	if (material_editor_address &&
 		(material_editor = *material_editor_address))
 	{
+		delete material_editor->wx_material_editor;
 		if (material_editor->edit_material)
 		{
 			DESTROY(Graphical_material)(&(material_editor->edit_material));
@@ -1357,7 +1362,6 @@ Destroys the <*material_editor_address> and sets
 		{
 			DESTROY(Graphics_buffer)(&(material_editor->graphics_buffer));
 		}
-		delete material_editor->wx_material_editor;
 		DEALLOCATE(*material_editor_address);
 		*material_editor_address = (struct Material_editor *)NULL;
 		return_code = 1;

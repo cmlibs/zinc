@@ -2993,22 +2993,22 @@ Returns the spectrum member of the material.
 	return (spectrum);
 } /* Graphical_material_get_colour_lookup_spectrum */
 
-enum Texture_order_identifier
+/* enum Texture_order_identifier */
 /*******************************************************************************
 LAST MODIFIED : 22 December 2007
 
 DESCRIPTION :
 Contains the four different orders of texture.
 ==============================================================================*/
-{
-	 FIRST_TEXTURE,
-	 SECOND_TEXTURE,
-	 THIRD_TEXTURE,
-	 FOURTH_TEXTURE
-}; /* Colour_Editor_mode */
+/* { */
+/* 	 FIRST_TEXTURE, */
+/* 	 SECOND_TEXTURE, */
+/* 	 THIRD_TEXTURE, */
+/* 	 FOURTH_TEXTURE */
+/* }; */
 
-int Graphical_material_set_texture_with_identifier(struct Graphical_material *material,
-	 struct Texture *texture, enum Texture_order_identifier texture_identifier)
+int Graphical_material_set_material_texture_to_texture(struct Graphical_material *material,
+	 struct Texture **material_texture_to_be_modified, struct Texture *texture)
 /*******************************************************************************
 LAST MODIFIED : 5 December 2007
 
@@ -3023,41 +3023,12 @@ Sets the texture member of the material.
 	 {
 			ACCESS(Texture)(texture);
 	 }
-	 switch (texture_identifier)
+	 if (material_texture_to_be_modified)
 	 {
-			case FIRST_TEXTURE:
-			{
-				 if (material->texture)
-				 {
-						DEACCESS(Texture)(&material->texture);
-				 }
-				 material->texture=texture;
-			}break;
-			case SECOND_TEXTURE:
-			{
-				 if (material->second_texture)
-				 {
-						DEACCESS(Texture)(&material->second_texture);
-				 }
-				 material->second_texture=texture;
-			}break;
-			case THIRD_TEXTURE:
-			{
-				 if (material->third_texture)
-				 {
-						DEACCESS(Texture)(&material->third_texture);
-				 }
-				 material->third_texture=texture;
-			}break;
-			case FOURTH_TEXTURE:
-			{
-				 if (material->fourth_texture)
-				 {
-						DEACCESS(Texture)(&material->fourth_texture);
-				 }
-				 material->fourth_texture=texture;
-			}break;
+			DEACCESS(Texture)(material_texture_to_be_modified);
 	 }
+	 *material_texture_to_be_modified = texture;
+
 	 /* display list needs to be compiled again */
 	 material->compile_status = GRAPHICS_NOT_COMPILED;
 	 return_code=1;
@@ -3080,8 +3051,8 @@ Sets the texture member of the material.
 	ENTER(Graphical_material_set_texture);
 	if (material)
 	{
-		 Graphical_material_set_texture_with_identifier(material,
-				texture, FIRST_TEXTURE);
+		 Graphical_material_set_material_texture_to_texture(material, &material->texture,
+				texture);
 	}
 	else
 	{
@@ -3108,8 +3079,8 @@ Sets the second texture member of the material.
 	ENTER(Graphical_material_set_second_texture);
 	if (material)
 	{
-		 Graphical_material_set_texture_with_identifier(material,
-				texture, SECOND_TEXTURE);
+		 Graphical_material_set_material_texture_to_texture(material, &material->second_texture,
+				texture);
 	}
 	else
 	{
@@ -3136,8 +3107,8 @@ Sets the second texture member of the material.
 	ENTER(Graphical_material_set_third_texture);
 	if (material)
 	{
-		 Graphical_material_set_texture_with_identifier(material,
-				texture, THIRD_TEXTURE);
+		 Graphical_material_set_material_texture_to_texture(material, &material->third_texture,
+				texture);
 	}
 	else
 	{
@@ -3164,8 +3135,8 @@ Sets the second texture member of the material.
 	ENTER(Graphical_material_set_fourth_texture);
 	if (material)
 	{
-		 Graphical_material_set_texture_with_identifier(material,
-				texture, FOURTH_TEXTURE);
+		 Graphical_material_set_material_texture_to_texture(material, &material->fourth_texture,
+				texture);
 	}
 	else
 	{
@@ -4121,7 +4092,7 @@ DESCRIPTION :
 						}
 						else if (per_pixel_mode_flag || material_to_be_modified_copy->program)
 						{
-							 set_material_program_type(material_to_be_modified_copy,
+							 return_code = set_material_program_type(material_to_be_modified_copy,
 									bump_mapping_flag, colour_lookup_red_flag,colour_lookup_green_flag,
 									colour_lookup_blue_flag, colour_lookup_alpha_flag, 
 									lit_volume_intensity_normal_texture_flag,	lit_volume_finite_difference_normal_flag,
