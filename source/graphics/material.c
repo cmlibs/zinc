@@ -3016,10 +3016,9 @@ DESCRIPTION :
 Sets the texture member of the material.
 ==============================================================================*/
 {
-	 ENTER(Graphical_material_set_texture_with_identifier);
-
 	 int return_code;
 
+	 ENTER(Graphical_material_set_texture_with_identifier);
 	 if (texture)
 	 {
 			ACCESS(Texture)(texture);
