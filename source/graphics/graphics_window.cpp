@@ -4739,9 +4739,18 @@ Graphics_window_destroy_CB.
 #endif /* switch (USER_INTERFACE) */
 		/* no longer accessing scene */
 		DEACCESS(Scene)(&(window->scene));
+		/* Time keeper callback will be removed throught the destructor of
+			 the wx_graphics_window along with the scene viewer so that
+			 whenever user closes the window, the scene viewer and the
+			 timecallback will be removed immediately and will not cause any
+			 crashes occur as it may before this bug fix. The old behaviour is to wait
+			 till the user terminate the whole program and then destroy all
+			 graphics window component which led to a problem when the
+			 callback try to draw something to the already destroyed
+			 wxGLCanvas in the scene viewer before terminating the program
+			 and have a already closed graphics window. */
 		if(window->time_keeper)
 		{
-
 #if defined (MOTIF)
 			Time_keeper_remove_callback(window->time_keeper,
 				Graphics_window_time_keeper_callback, (void *)window);
