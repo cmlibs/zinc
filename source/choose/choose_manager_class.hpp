@@ -127,18 +127,21 @@ DESCRIPTION :
 ============================================================================*/
 	{
 		int i;
-
-		if (items)
+		
+		if (number_of_items>0)
 		{
-			DEALLOCATE(items);
-		}
-		if (item_names)
-		{
-			for (i=0;i<number_of_items;i++)
-			{
-				DEALLOCATE(item_names[i]);
-			}
-			DEALLOCATE(item_names);
+			 if (items)
+			 {
+					DEALLOCATE(items);
+			 }
+			 if (item_names)
+			 {
+					for (i=0;i<number_of_items;i++)
+					{
+						 DEALLOCATE(item_names[i]);
+					}
+					DEALLOCATE(item_names);
+			 }
 		}
 		if (manager_callback_id)
 		{

@@ -5057,8 +5057,15 @@ DESCRIPTION :
 #if defined (WX_USER_INTERFACE)
 			case GRAPHICS_BUFFER_WX_TYPE:
 			{
-				buffer->canvas->SetCurrent();
-				return_code = 1;
+				 if (buffer->canvas)
+				 {
+						buffer->canvas->SetCurrent();
+						return_code = 1;
+				 }
+				 else
+				 {
+						return_code = 0;
+				 }
 			} break;
 			 case GRAPHICS_BUFFER_WX_OFFSCREEN_TYPE:
 			{

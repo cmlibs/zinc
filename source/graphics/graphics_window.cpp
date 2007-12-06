@@ -1042,48 +1042,51 @@ Updates the time display of the time_slider
 			} break;
 		}
 #elif defined (WX_USER_INTERFACE)
-		switch(event)
+		if (window->time_slider && window->time_text_ctrl)
 		{
-			case TIME_KEEPER_NEW_TIME:
-			{
-				 window->current_time = Time_keeper_get_time(window->time_keeper);
-				 time_string.Printf(_T("%f"),window->current_time);
-				 if (window->maximum_time - window->minimum_time > 0)
-				 {
-						time_slider_index = (int)(window->current_time/(window->maximum_time - window->minimum_time) * 1000 + 0.5);
-						window->time_slider->SetValue(time_slider_index);
-				 }
+			 switch(event)
+			 {
+					case TIME_KEEPER_NEW_TIME:
+					{
+						 window->current_time = Time_keeper_get_time(window->time_keeper);
+						 time_string.Printf(_T("%f"),window->current_time);
+						 if (window->maximum_time - window->minimum_time > 0)
+						 {
+								time_slider_index = (int)(window->current_time/(window->maximum_time - window->minimum_time) * 1000 + 0.5);
+								window->time_slider->SetValue(time_slider_index);
+						 }
 #if defined (DEBUG)
-				printf("Graphics_window_time_keeper_callback.  time \n"
-					 window->curren_time);
+						 printf("Graphics_window_time_keeper_callback.  time \n"
+								window->curren_time);
 #endif /* defined (DEBUG) */
-				window->time_text_ctrl->ChangeValue(time_string);
-				return_code = 1;
-			} break;
-			case TIME_KEEPER_NEW_MINIMUM:
-			{
-				window->minimum_time = Time_keeper_get_minimum(window->time_keeper);			
+						 window->time_text_ctrl->ChangeValue(time_string);
+						 return_code = 1;
+					} break;
+					case TIME_KEEPER_NEW_MINIMUM:
+					{
+						 window->minimum_time = Time_keeper_get_minimum(window->time_keeper);			
 #if defined (DEBUG)
-				printf("Graphics_window_time_keeper_callback.  time \n"
-					 window->minimum_time);
+						 printf("Graphics_window_time_keeper_callback.  time \n"
+								window->minimum_time);
 #endif /* defined (DEBUG) */
-				return_code = 1;
-			} break;
-			case TIME_KEEPER_NEW_MAXIMUM:
-			{
-				window->maximum_time = Time_keeper_get_maximum(window->time_keeper);
+						 return_code = 1;
+					} break;
+					case TIME_KEEPER_NEW_MAXIMUM:
+					{
+						 window->maximum_time = Time_keeper_get_maximum(window->time_keeper);
 #if defined (DEBUG)
-				printf("Graphics_window_time_keeper_callback.  time \n"
-					 window->maximum_time);
+						 printf("Graphics_window_time_keeper_callback.  time \n"
+								window->maximum_time);
 #endif /*defined (DEBUG) */
-				return_code = 1;
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"Graphics_window_time_keeper_callback.  Unknown time_keeper event");
-				return_code = 0;
-			} break;
+						 return_code = 1;
+					} break;
+					default:
+					{
+						 display_message(ERROR_MESSAGE,
+								"Graphics_window_time_keeper_callback.  Unknown time_keeper event");
+						 return_code = 0;
+					} break;
+			 }
 		}
 #endif /*defined (MOTIF) && (WX_USER_INTERFACE)*/
 	}
@@ -2832,6 +2835,20 @@ public:
 	 
 	 ~wxGraphicsWindow()
 	 {
+			int pane_no;
+			if (graphics_window->time_keeper)
+				 Time_keeper_remove_callback(graphics_window->time_keeper,
+						Graphics_window_time_keeper_callback, (void *)graphics_window);
+			if (graphics_window->scene_viewer_array)
+			{
+				 /* close the Scene_viewer(s) */
+				 for (pane_no=0;pane_no<graphics_window->number_of_scene_viewers;pane_no++)
+				 {
+						DESTROY(Scene_viewer)(&(graphics_window->scene_viewer_array[pane_no]));
+				 }
+				 DEALLOCATE(graphics_window->scene_viewer_array);
+				 graphics_window->scene_viewer_array = NULL;
+			}
 	 };
 	 
    void OnViewallpressed(wxCommandEvent& event)
@@ -4724,10 +4741,11 @@ Graphics_window_destroy_CB.
 		DEACCESS(Scene)(&(window->scene));
 		if(window->time_keeper)
 		{
-#if defined (MOTIF) || (WX_USER_INTERFACE)
+
+#if defined (MOTIF)
 			Time_keeper_remove_callback(window->time_keeper,
 				Graphics_window_time_keeper_callback, (void *)window);
-#endif /* defined (MOTIF) || (WX_USER_INTERFACE)*/
+#endif /* defined (MOTIF) */
 			DEACCESS(Time_keeper)(&(window->time_keeper));
 		}
 		DEALLOCATE(window->name);
