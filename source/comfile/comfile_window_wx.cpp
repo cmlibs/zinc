@@ -230,6 +230,11 @@ public:
   {
   };
 
+  ~wxComfileWindow()
+	 {
+			comfile_window->wx_comfile_window = NULL;
+	 }
+
 	 void OnFormatFont(wxCommandEvent& event)
 	 {
 			wxFontData fdata;
@@ -330,8 +335,7 @@ void SelectedClicked(wxCommandEvent &event)
 
 void CloseClicked(wxCommandEvent &event)
 {
-	 this_frame = XRCCTRL(*this, "CmguiComfileWindow", wxFrame);
-	 this_frame->Destroy();
+	 this->Destroy();
 }
 
   DECLARE_DYNAMIC_CLASS(wxComfileWindow);
@@ -435,7 +439,8 @@ Comfile_window_destroy_CB.
 	if (comfile_window_address && (comfile_window = *comfile_window_address))
 	{
 		/* destroy the comfile window widget */
-		 delete comfile_window->wx_comfile_window;
+		 if (comfile_window->wx_comfile_window)
+				delete comfile_window->wx_comfile_window;
 		/* free the memory for the file name */
 		DEALLOCATE(comfile_window->file_name);
 		DEALLOCATE(comfile_window->name);
