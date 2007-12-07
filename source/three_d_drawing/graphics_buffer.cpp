@@ -5754,6 +5754,9 @@ DESCRIPTION :
 #if defined (WIN32_USER_INTERFACE)
 			case GRAPHICS_BUFFER_WIN32_TYPE:
 			{
+				/* Seems to help the OpenGL context get updated to the right place in Vista */
+				SetWindowPos(buffer->hWnd, HWND_TOP, 0, 0, 0, 0, 
+					SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
 				SwapBuffers(buffer->hDC);
 				return_code = 1;
 			} break;
