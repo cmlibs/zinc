@@ -2855,7 +2855,7 @@ editor at a time.  This implementation may be changed later.
 				return_code=1;
 			}
 		}
-		else
+		else 
 		{
 			if (command_data=(struct Cmiss_command_data *)command_data_void)
 			{
@@ -25308,7 +25308,9 @@ Clean up the command_data, deallocating all the associated memory and resources.
 	int status;
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 	struct Cmiss_command_data *command_data;
-
+#if defined (WX_USER_INTERFACE)
+	char *path;
+#endif /* defined (WX_USER_INTERFACE) */
 	ENTER(DESTROY(Cmiss_command_data));
 
 	if (command_data_address && (command_data = *command_data_address))
@@ -25432,7 +25434,6 @@ Clean up the command_data, deallocating all the associated memory and resources.
 			 being destroyed to prevent multiple deallocations of the same
 			 address under DESTROY(Node_tool) which cause segfault in
 			 cmgui-wx since the interactive tools are set up differently*/
-		char *path;
 		path = Node_tool_get_current_region_path(command_data->node_tool);	
 		if (path)
 		{

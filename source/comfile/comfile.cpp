@@ -41,6 +41,7 @@ Commands for comfiles.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -59,6 +60,7 @@ Commands for comfiles.
 #include "user_interface/confirmation.h"
 #include "user_interface/filedir.h"
 #include "user_interface/message.h"
+}
 
 int open_comfile(struct Parse_state *state,void *dummy_to_be_modified,
 	void *open_comfile_data_void)

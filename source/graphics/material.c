@@ -2993,20 +2993,6 @@ Returns the spectrum member of the material.
 	return (spectrum);
 } /* Graphical_material_get_colour_lookup_spectrum */
 
-/* enum Texture_order_identifier */
-/*******************************************************************************
-LAST MODIFIED : 22 December 2007
-
-DESCRIPTION :
-Contains the four different orders of texture.
-==============================================================================*/
-/* { */
-/* 	 FIRST_TEXTURE, */
-/* 	 SECOND_TEXTURE, */
-/* 	 THIRD_TEXTURE, */
-/* 	 FOURTH_TEXTURE */
-/* }; */
-
 int Graphical_material_set_material_texture_to_texture(struct Graphical_material *material,
 	 struct Texture **material_texture_to_be_modified, struct Texture *texture)
 /*******************************************************************************
@@ -3698,9 +3684,9 @@ DESCRIPTION : This function is to allow the material editor to
 deaccess the material program from the material.
 ==============================================================================*/
 {
+	 int return_code;
 	 ENTER(material_deaccess_material_program);
 
-	 int return_code;
 	 if (material_to_be_modified->program)
 	 {
 			DEACCESS(Material_program)(&material_to_be_modified->program);

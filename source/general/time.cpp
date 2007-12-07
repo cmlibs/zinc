@@ -42,10 +42,11 @@ Defines the gettimeofday and relevant structure for UNIX and WIN32_SYSTEM
  *
  * ***** END LICENSE BLOCK ***** */
 #if defined (WIN32_SYSTEM)
+extern "C" {
 #include <windows.h>
 #include "general/time.h"
 #include "general/debug.h"
-
+}
 int gettimeofday(struct timeval *time, void *timezone)
 {
 	USE_PARAMETER(timezone);

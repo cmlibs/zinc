@@ -876,7 +876,7 @@ COLOUR_INTERFACE_SRCS = \
 	colour/colour_editor_wx.cpp
 endif
 COMFILE_SRCS = \
-	comfile/comfile.c 
+	comfile/comfile.cpp
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 COMFILE_SRCS += \
     comfile/comfile_window_wx.cpp
@@ -1063,7 +1063,7 @@ GENERAL_SRCS = \
 	general/mystring.c \
 	general/octree.c \
 	general/statistics.c \
-	general/time.c \
+	general/time.cpp \
 	general/value.c 
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    GENERAL_SRCS += \
