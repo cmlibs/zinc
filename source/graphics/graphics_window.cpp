@@ -4688,12 +4688,16 @@ calling routine. See also Graphics_window_close_CB and
 Graphics_window_destroy_CB.
 ==============================================================================*/
 {
-	int return_code,pane_no;
+	int return_code;
 	struct Graphics_window *window;
 
 	ENTER(DESTROY(graphics_window));
 	if (graphics_window_address&&(window= *graphics_window_address))
 	{
+#if !defined (WX_USER_INTERFACE) 
+		 /* the class wxGraphicsWindow destructor will handle the
+				destruction of the scene viewers. */
+		 int pane_no;
 		if (window->scene_viewer_array)
 		{
 			/* close the Scene_viewer(s) */
@@ -4703,6 +4707,7 @@ Graphics_window_destroy_CB.
 			}
 			DEALLOCATE(window->scene_viewer_array);
 		}
+#endif /* !defined (WX_USER_INTERFACE) */
 		if (window->default_light)
 		{
 			DEACCESS(Light)(&window->default_light);
@@ -4757,6 +4762,7 @@ Graphics_window_destroy_CB.
 #endif /* defined (MOTIF) */
 			DEACCESS(Time_keeper)(&(window->time_keeper));
 		}
+		delete (window->wx_graphics_window);
 		DEALLOCATE(window->name);
 		DEALLOCATE(*graphics_window_address);
 		return_code=1;
