@@ -4762,7 +4762,9 @@ Graphics_window_destroy_CB.
 #endif /* defined (MOTIF) */
 			DEACCESS(Time_keeper)(&(window->time_keeper));
 		}
+#if defined (WX_USER_INTERFACE) 
 		delete (window->wx_graphics_window);
+#endif /* !defined (WX_USER_INTERFACE) */
 		DEALLOCATE(window->name);
 		DEALLOCATE(*graphics_window_address);
 		return_code=1;
