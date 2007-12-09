@@ -334,7 +334,7 @@ ifeq ($(SYSNAME),win32)
       OPTIMISATION_FLAGS = -g
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
       COMPILE_FLAGS =
-      STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Werror -Wdeclaration-after-statement
+      STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Werror
       CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
