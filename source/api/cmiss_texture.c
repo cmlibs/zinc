@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_texture.c
 
-LAST MODIFIED : 24 May 2007
+LAST MODIFIED : 4 December 2007
 
 DESCRIPTION :
 The public interface to the Cmiss_texture object.
@@ -582,14 +582,92 @@ Specfiy how the graphics hardware rasterises the texture onto the screen.
   return (return_code);
 } /* Cmiss_texture_set_filter_mode */
 
-int Cmiss_texture_pixel_dispatch(Cmiss_texture_id texture,
+int Cmiss_texture_set_pixels(Cmiss_texture_id texture,
+	int width, int height, int depth,
+	int number_of_components, int number_of_bytes_per_component,
+	int source_width_bytes, unsigned char *source_pixels)
+/*******************************************************************************
+LAST MODIFIED : 4 December 2007
+
+DESCRIPTION :
+Sets the texture data to the specified <width>, <height> and <depth>, with
+<number_of_components> where 1=luminance, 2=LuminanceA, 3=RGB, 4=RGBA, and
+<number_of_bytes_per_component> which may be 1 or 2.
+Data for the image is taken from <source_pixels> which has <source_width_bytes>
+of at least <width>*<number_of_components>*<number_of_bytes_per_component>.
+The source_pixels are stored in rows from the bottom to top and from left to
+right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
+==============================================================================*/
+{
+	int frame_bytes, i, return_code;
+	struct Cmgui_image *cmgui_image;
+
+	ENTER(Cmiss_texture_set_pixels);
+	if ((0 < width) && (0 < height) &&
+		(1 <= number_of_components) && (number_of_components <= 4) &&
+		((1 == number_of_bytes_per_component) ||
+			(2 == number_of_bytes_per_component)) &&
+		(width*number_of_components*number_of_bytes_per_component <=
+			source_width_bytes) && source_pixels)
+	{
+		return_code = 1;
+		if (cmgui_image = Cmgui_image_constitute(width, height,
+				number_of_components, number_of_bytes_per_component,
+				source_width_bytes, source_pixels))
+		{
+			return_code = Texture_set_image(texture, cmgui_image,
+				"api", "", /*start*/0, /*stop*/0, /*increment*/1,
+				/*crop_left*/0, /*crop_bottom*/0,
+				/*crop_width*/0, /*crop_height*/0);
+			
+			DESTROY(Cmgui_image)(&cmgui_image);
+		}
+		else
+		{
+			return_code = 0;
+		}
+		if (return_code && (depth > 1))
+		{
+			frame_bytes = source_width_bytes * height;
+			for (i = 1 ; return_code && (i < depth) ; i++)
+			{
+				source_pixels += frame_bytes;
+				if (cmgui_image = Cmgui_image_constitute(width, height,
+						number_of_components, number_of_bytes_per_component,
+						source_width_bytes, source_pixels))
+				{
+					return_code = Texture_add_image(texture, cmgui_image,
+						/*crop_left*/0, /*crop_bottom*/0,
+						/*crop_width*/0, /*crop_height*/0);
+					DESTROY(Cmgui_image)(&cmgui_image);
+				}
+				else
+				{
+					return_code = 0;
+				}
+			}
+		}
+		Texture_notify_change(texture);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_texture_set_pixels.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_texture_set_pixels */
+
+int Cmiss_texture_get_pixels(Cmiss_texture_id texture,
 	unsigned int left, unsigned int bottom, unsigned int depth_start,
 	int width, int height, int depth,
 	unsigned int padded_width_bytes, unsigned int number_of_fill_bytes, 
 	unsigned char *fill_bytes,
 	int components, unsigned char *destination_pixels)
 /*******************************************************************************
-LAST MODIFIED : 4 October 2007
+LAST MODIFIED : 4 December 2007
 
 DESCRIPTION :
 Fills <destination_pixels> with all or part of <texture>.
@@ -626,7 +704,7 @@ equal to the number_of_components.
 	unsigned char *frame_pixels;
 	unsigned int bytes_per_pixel, i, frame_bytes, width_bytes;
 
-	ENTER(Cmiss_texture_pixel_dispatch);
+	ENTER(Cmiss_texture_get_pixels);
 	if (texture)
 	{
 		if (cmgui_image = Texture_get_image(texture))
@@ -697,7 +775,7 @@ equal to the number_of_components.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_texture_pixel_dispatch:  "
+					"Cmiss_texture_get_pixels:  "
 					"Invalid depth parameters.");
 				return_code = 0;
 			}
@@ -706,7 +784,7 @@ equal to the number_of_components.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_texture_pixel_dispatch:  "
+				"Cmiss_texture_get_pixels:  "
 				"Could not get image from texture");
 			return_code = 0;
 		}
@@ -714,12 +792,12 @@ equal to the number_of_components.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_texture_pixel_dispatch:  "
+			"Cmiss_texture_get_pixels:  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
   
 	return (return_code);
-} /* Cmiss_texture_pixel_dispatch */
+} /* Cmiss_texture_get_pixels */
 

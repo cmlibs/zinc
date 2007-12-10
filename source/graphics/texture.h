@@ -280,6 +280,15 @@ PROTOTYPE_MANAGER_FUNCTIONS(Texture);
 
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Texture,name,char *);
 
+int Texture_notify_change(struct Texture *texture);
+/*******************************************************************************
+LAST MODIFIED : 11 December 2007
+
+DESCRIPTION :
+Notify the rest of the program that changes have been made to the <texture>.
+Probably need to establish a consistent policy for manager messages.
+==============================================================================*/
+
 int Texture_storage_type_get_number_of_components(
 	enum Texture_storage_type storage);
 /*******************************************************************************
@@ -420,7 +429,7 @@ int Texture_set_image(struct Texture *texture,
 	struct Cmgui_image *cmgui_image,
 	char *image_file_name, char *file_number_pattern,
 	int start_file_number, int stop_file_number, int file_number_increment,
-	int	crop_left, int crop_bottom, int crop_width, int crop_height);
+	int crop_left, int crop_bottom, int crop_width, int crop_height);
 /*******************************************************************************
 LAST MODIFIED : 1 March 2002
 

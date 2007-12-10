@@ -309,14 +309,31 @@ I think it is best to write a separate function if you want to write a
 3D texture to a file sequence rather than handle it with this function.
 ==============================================================================*/
 
-int Cmiss_texture_pixel_dispatch(Cmiss_texture_id texture,
+int Cmiss_texture_set_pixels(Cmiss_texture_id texture,
+	int width, int height, int depth,
+	int number_of_components, int number_of_bytes_per_component,
+	int source_width_bytes, unsigned char *source_pixels);
+/*******************************************************************************
+LAST MODIFIED : 4 December 2007
+
+DESCRIPTION :
+Sets the texture data to the specified <width>, <height> and <depth>, with
+<number_of_components> where 1=luminance, 2=LuminanceA, 3=RGB, 4=RGBA, and
+<number_of_bytes_per_component> which may be 1 or 2.
+Data for the image is taken from <source_pixels> which has <source_width_bytes>
+of at least <width>*<number_of_components>*<number_of_bytes_per_component>.
+The source_pixels are stored in rows from the bottom to top and from left to
+right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
+==============================================================================*/
+
+int Cmiss_texture_get_pixels(Cmiss_texture_id texture,
 	unsigned int left, unsigned int bottom, unsigned int depth_start,
 	int width, int height, int depth,
 	unsigned int padded_width_bytes, unsigned int number_of_fill_bytes, 
 	unsigned char *fill_bytes,
 	int components, unsigned char *destination_pixels);
 /*******************************************************************************
-LAST MODIFIED : 4 October 2007
+LAST MODIFIED : 4 December 2007
 
 DESCRIPTION :
 Fills <destination_pixels> with all or part of <texture>.
