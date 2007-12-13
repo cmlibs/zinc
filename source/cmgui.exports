@@ -156,6 +156,8 @@ Cmiss_texture_get_number_of_components
 Cmiss_texture_get_number_of_bytes_per_component
 Cmiss_texture_get_pixels
 Cmiss_texture_set_pixels
+Cmiss_texture_get_property
+Cmiss_texture_set_property
 
 FE_region_get_basis_manager
 FE_region_get_FE_field_from_name
