@@ -1356,6 +1356,7 @@ the changes are to be applied to all panes.
 			{
 				/* get defaults from scene_viewer for first pane of window */
 				if ((window=(struct Graphics_window *)window_void)&&
+					 (window->scene_viewer_array != NULL) &&
 					(scene_viewer=window->scene_viewer_array[window->current_pane]))
 				{
 					Scene_viewer_get_background_colour(scene_viewer,&background_colour);
@@ -1554,22 +1555,25 @@ a spaceship/submarine, where:
 		{
 			if (state->current_token)
 			{
-				/* get defaults from scene_viewer for first pane of window */
-				if ((window=(struct Graphics_window *)window_void)&&
-					(scene_viewer=window->scene_viewer_array[0]))
-				{
-					if (light_model=Scene_viewer_get_light_model(scene_viewer))
-					{
-						ACCESS(Light_model)(light_model);
-					}
-					scene=ACCESS(Scene)(window->scene);
-				}
-				else
-				{
-					scene=(struct Scene *)NULL;
-					scene_viewer=(struct Scene_viewer *)NULL;
-					light_model=(struct Light_model *)NULL;
-				}
+				 
+				 /* get defaults from scene_viewer for first pane of window */
+				 if ((window=(struct Graphics_window *)window_void) && 
+						(window->scene_viewer_array != NULL) &&
+						(scene_viewer=window->scene_viewer_array[0]))
+				 {
+						if (light_model=Scene_viewer_get_light_model(scene_viewer))
+						{
+							 ACCESS(Light_model)(light_model);
+						}
+						scene=ACCESS(Scene)(window->scene);
+				 }
+				 else
+				 {
+						scene=(struct Scene *)NULL;
+						scene_viewer=(struct Scene_viewer *)NULL;
+						light_model=(struct Light_model *)NULL;
+				 }
+				 
 				light_to_add=(struct Light *)NULL;
 				light_to_remove=(struct Light *)NULL;
 				rotate_command_data.set=0;
@@ -1898,6 +1902,7 @@ Parser commands for modifying the overlay scene of the current pane of the
 			{
 				/* get defaults from scene_viewer for first pane of window */
 				if ((window=(struct Graphics_window *)window_void)&&
+					 (window->scene_viewer_array != NULL) &&
 					(scene_viewer=window->scene_viewer_array[window->current_pane]))
 				{
 					if (overlay_scene=Scene_viewer_get_overlay_scene(scene_viewer))
@@ -2430,9 +2435,10 @@ view angle, interest point etc.
 		if (state->current_token)
 		{
 			/* get defaults from scene_viewer of current pane of window */
-			if ((window=(struct Graphics_window *)window_void)&&
-				(scene_viewer=window->scene_viewer_array[window->current_pane])&&
-				Scene_viewer_get_lookat_parameters(scene_viewer,
+			if ((window=(struct Graphics_window *)window_void)&& 
+				 (window->scene_viewer_array != NULL) &&
+				 (scene_viewer=window->scene_viewer_array[window->current_pane])&&
+				 Scene_viewer_get_lookat_parameters(scene_viewer,
 					&(eye[0]),&(eye[1]),&(eye[2]),
 					&(lookat[0]),&(lookat[1]),&(lookat[2]),&(up[0]),&(up[1]),&(up[2]))&&
 				Scene_viewer_get_viewing_volume(scene_viewer,&left,&right,
@@ -2849,6 +2855,7 @@ public:
 				 DEALLOCATE(graphics_window->scene_viewer_array);
 				 graphics_window->scene_viewer_array = NULL;
 			}
+			graphics_window->wx_graphics_window = NULL;
 	 };
 	 
    void OnViewallpressed(wxCommandEvent& event)
@@ -4763,7 +4770,11 @@ Graphics_window_destroy_CB.
 			DEACCESS(Time_keeper)(&(window->time_keeper));
 		}
 #if defined (WX_USER_INTERFACE) 
-		delete (window->wx_graphics_window);
+		if (window->wx_graphics_window)
+		{
+			 delete (window->wx_graphics_window);
+			 window->wx_graphics_window = NULL;
+		}
 #endif /* !defined (WX_USER_INTERFACE) */
 		DEALLOCATE(window->name);
 		DEALLOCATE(*graphics_window_address);
@@ -5952,7 +5963,8 @@ then set view and other parameters for the scene_viewer directly.
 	struct Scene_viewer *scene_viewer;
 
 	ENTER(Graphics_window_get_Scene_viewer);
-	if (window&&(0<=pane_no)&&(pane_no<window->number_of_panes))
+	if (window&&(0<=pane_no)&&(pane_no<window->number_of_panes) && 
+		 (window->scene_viewer_array!=NULL))
 	{
 		scene_viewer=window->scene_viewer_array[pane_no];
 	}
@@ -7233,7 +7245,7 @@ Writes the properties of the <window> to the command window.
 
 	ENTER(list_Graphics_window);
 	USE_PARAMETER(dummy_void);
-	if (window)
+	if (window && window->scene_viewer_array)
 	{
 		display_message(INFORMATION_MESSAGE,"Graphics window : %s\n",window->name);
 		if (buffering_mode=Scene_viewer_get_buffering_mode(window->scene_viewer_array[0]))
@@ -7531,7 +7543,7 @@ and establishing the views in it to the command window to a com file.
 	struct Texture *texture;
 
 	ENTER(list_Graphics_window);
-	if (window&&ALLOCATE(prefix,char,50+strlen(window->name)))
+	if (window&&window->scene_viewer_array&& ALLOCATE(prefix,char,50+strlen(window->name)))
 	{
 		if (name=duplicate_string(window->name))
 		{
