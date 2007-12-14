@@ -711,7 +711,7 @@ toolbar to match the selection.
 	int pane_no,return_code;
 
 	ENTER(Graphics_window_set_interactive_tool);
-	if (graphics_window)
+	if (graphics_window && graphics_window->scene_viewer_array)
 	{
 #if defined (MOTIF)
 		if (interactive_toolbar_widget_set_current_interactive_tool(
@@ -1356,7 +1356,7 @@ the changes are to be applied to all panes.
 			{
 				/* get defaults from scene_viewer for first pane of window */
 				if ((window=(struct Graphics_window *)window_void)&&
-					 (window->scene_viewer_array != NULL) &&
+					 (window->scene_viewer_array) &&
 					(scene_viewer=window->scene_viewer_array[window->current_pane]))
 				{
 					Scene_viewer_get_background_colour(scene_viewer,&background_colour);
@@ -1558,7 +1558,7 @@ a spaceship/submarine, where:
 				 
 				 /* get defaults from scene_viewer for first pane of window */
 				 if ((window=(struct Graphics_window *)window_void) && 
-						(window->scene_viewer_array != NULL) &&
+						(window->scene_viewer_array) &&
 						(scene_viewer=window->scene_viewer_array[0]))
 				 {
 						if (light_model=Scene_viewer_get_light_model(scene_viewer))
@@ -1902,7 +1902,7 @@ Parser commands for modifying the overlay scene of the current pane of the
 			{
 				/* get defaults from scene_viewer for first pane of window */
 				if ((window=(struct Graphics_window *)window_void)&&
-					 (window->scene_viewer_array != NULL) &&
+					 (window->scene_viewer_array) &&
 					(scene_viewer=window->scene_viewer_array[window->current_pane]))
 				{
 					if (overlay_scene=Scene_viewer_get_overlay_scene(scene_viewer))
@@ -1985,7 +1985,7 @@ certain values are supported 0/1 = off, 2, 4 & 8 are on.
 	int pane_no,return_code;
 
 	ENTER(Graphics_window_set_antialias_mode);
-	if (graphics_window)
+	if (graphics_window && graphics_window->scene_viewer_array)
 	{
 		if (1==antialias_mode)
 		{
@@ -2024,7 +2024,7 @@ DESCRIPTION :
 	int pane_no,return_code;
 
 	ENTER(Graphics_window_set_antialias_mode);
-	if (graphics_window)
+	if (graphics_window && graphics_window->scene_viewer_array)
 	{
 		return_code=1;
 		for (pane_no=0;(pane_no<graphics_window->number_of_scene_viewers)&&return_code;
@@ -2063,7 +2063,7 @@ Sets if the <graphics_window> perturbs lines or not, using <perturb_lines>
 	int pane_no,return_code;
 
 	ENTER(Graphics_window_set_perturb_lines);
-	if (graphics_window)
+	if (graphics_window && graphics_window->scene_viewer_array)
 	{
 		return_code=1;
 		for (pane_no=0;(pane_no<graphics_window->number_of_scene_viewers)&&return_code;
@@ -2099,7 +2099,7 @@ Sets the <blending_mode> used by the <graphics_window>.
 	int pane_no,return_code;
 
 	ENTER(Graphics_window_set_blending_mode);
-	if (graphics_window)
+	if (graphics_window && graphics_window->scene_viewer_array)
 	{
 		return_code=1;
 		for (pane_no=0;(pane_no<graphics_window->number_of_scene_viewers)&&return_code;
@@ -5006,7 +5006,7 @@ Sets the current_pane of the <window> to <pane_no>, from 0 to number_of_panes-1.
 	int return_code;
 
 	ENTER(Graphics_window_set_current_pane);
-	if (window&&(0<=pane_no)&&(pane_no<window->number_of_panes))
+	if (window&&window->scene_viewer_array&&(0<=pane_no)&&(pane_no<window->number_of_panes))
 	{
 		window->current_pane=pane_no;
 		/* make sure the parallel/perspective button is set up for pane */
@@ -5065,7 +5065,7 @@ Sets the <eye_spacing> for the <graphics_window> used for 3-D viewing.
 	int pane_no,return_code;
 
 	ENTER(Graphics_window_set_eye_spacing);
-	if (graphics_window)
+	if (graphics_window && graphics_window->scene_viewer_array)
 	{
 		graphics_window->eye_spacing=eye_spacing;
 		/* Set this on all the scene viewers too */
@@ -5129,7 +5129,7 @@ are SCENE_VIEWER_NO_INPUT, SCENE_VIEWER_SELECT and SCENE_VIEWER_TRANSFORM.
 	int pane_no,return_code;
 
 	ENTER(Graphics_window_set_input_mode);
-	if (window&&((SCENE_VIEWER_NO_INPUT==input_mode)||
+	if (window&&window->scene_viewer_array&&((SCENE_VIEWER_NO_INPUT==input_mode)||
 		(SCENE_VIEWER_SELECT==input_mode)||(SCENE_VIEWER_TRANSFORM==input_mode)))
 	{
 		return_code=1;
@@ -5213,7 +5213,7 @@ Sets the layout mode in effect on the <window>.
 
 
 	ENTER(Graphics_window_set_layout_mode);
-	if (window)
+	if (window&&window->scene_viewer_array)
 	{
 		return_code=1;
 		new_number_of_panes =
@@ -5798,7 +5798,8 @@ Returns the projection mode used by pane <pane_no> of <window>.
 	enum Scene_viewer_projection_mode projection_mode;
 
 	ENTER(Graphics_window_get_projection_mode);
-	if (window&&(0<=pane_no)&&(pane_no<window->number_of_panes)&&
+	if (window&&window->scene_viewer_array&&(0<=pane_no)&&
+		 (pane_no<window->number_of_panes)&&
 		(window->scene_viewer_array[pane_no]))
 	{
 		Scene_viewer_get_projection_mode(window->scene_viewer_array[pane_no],
@@ -5844,8 +5845,9 @@ Must call Graphics_window_view_changed after changing tied pane.
 	int return_code;
 
 	ENTER(Graphics_window_set_projection_mode);
-	if (window&&(0<=pane_no)&&(pane_no<window->number_of_panes)&&
-		(window->scene_viewer_array[pane_no]))
+	if (window&&window->scene_viewer_array&&
+		 (0<=pane_no)&&(pane_no<window->number_of_panes)&&
+		 (window->scene_viewer_array[pane_no]))
 	{
 		if (Graphics_window_layout_mode_is_projection_mode_valid_for_pane(
 			window->layout_mode,pane_no,projection_mode))
@@ -5963,7 +5965,8 @@ then set view and other parameters for the scene_viewer directly.
 	struct Scene_viewer *scene_viewer;
 
 	ENTER(Graphics_window_get_Scene_viewer);
-	if (window&&(0<=pane_no)&&(pane_no<window->number_of_panes) && 
+	if (window&&window->scene_viewer_array&&
+		 (0<=pane_no)&&(pane_no<window->number_of_panes) && 
 		 (window->scene_viewer_array!=NULL))
 	{
 		scene_viewer=window->scene_viewer_array[pane_no];
@@ -6176,7 +6179,7 @@ until an explicit "gfx update" is entered.
 	int return_code,pane_no;
 
 	ENTER(Graphics_window_update);
-	if (graphics_window)
+	if (graphics_window && graphics_window->scene_viewer_array)
 	{
 		for (pane_no=0;pane_no<graphics_window->number_of_panes;pane_no++)
 		{
@@ -6208,7 +6211,7 @@ until an explicit "gfx update" is entered.
 	int return_code,pane_no;
 
 	ENTER(Graphics_window_update_now);
-	if (graphics_window)
+	if (graphics_window && graphics_window->scene_viewer_array)
 	{
 #if defined (NEW_CODE)
 		/* Handle all the X events so that the window resizing gets done */
@@ -6249,7 +6252,7 @@ until an explicit "gfx update" is entered.
 
 	ENTER(Graphics_window_update_now_iterator);
 	USE_PARAMETER(dummy_void);
-	if (graphics_window)
+	if (graphics_window && graphics_window->scene_viewer_array)
 	{
 		for (pane_no=0;pane_no<graphics_window->number_of_panes;pane_no++)
 		{
@@ -6282,7 +6285,7 @@ the pixels out of the backbuffer before the frames are swapped.
 	int return_code,pane_no;
 
 	ENTER(Graphics_window_update_now_without_swapbuffers);
-	if (graphics_window)
+	if (graphics_window && graphics_window->scene)
 	{
 		for (pane_no=0;pane_no<graphics_window->number_of_panes;pane_no++)
 		{
@@ -6758,7 +6761,7 @@ with commands for setting these.
 	double left, right, bottom, top, near_plane, far_plane;
 
 	ENTER(Graphics_window_view_all);
-	if (window)
+	if (window && window->scene_viewer_array)
 	{
 		return_code = 1;
 
@@ -6823,7 +6826,7 @@ current layout_mode, the function adjusts the view in all the panes tied to
 	int pane_no,return_code;
 
 	ENTER(Graphics_window_view_changed);
-	if (window&&(0<=changed_pane)&&(changed_pane<window->number_of_panes)&&
+	if (window&&window->scene_viewer_array&&(0<=changed_pane)&&(changed_pane<window->number_of_panes)&&
 		(window->number_of_scene_viewers <= GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES))
 	{
 		/* 1. get lookat parameters and viewing volume of changed_pane. Also need
