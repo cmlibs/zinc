@@ -18673,6 +18673,15 @@ Sets the transformation for a graphics object from the command line.
 					if (scene_object=Scene_get_Scene_object_by_name(scene,
 						scene_object_name))
 					{
+						 if (command_data->scene_object_transformation_data)
+						 {
+								Time_keeper_remove_callback(command_data->default_time_keeper,
+									 Scene_object_set_transformation_with_time_callback, 
+									 (void *)command_data->scene_object_transformation_data);
+								DEALLOCATE(command_data->scene_object_transformation_data);
+								command_data->scene_object_transformation_data = 
+											(struct Scene_object_transformation_data*)NULL;
+						 }
 						 if (computed_field)
 						 {
 								if (!command_data->scene_object_transformation_data)
@@ -18690,22 +18699,15 @@ Sets the transformation for a graphics object from the command line.
 											Scene_object_set_transformation_with_time_callback,
 											(void *)command_data->scene_object_transformation_data,
 											(enum Time_keeper_event) (TIME_KEEPER_NEW_TIME | 
-												 TIME_KEEPER_NEW_MINIMUM | TIME_KEEPER_NEW_MAXIMUM ));
+												 TIME_KEEPER_NEW_MINIMUM |
+												 TIME_KEEPER_NEW_MAXIMUM ));
+									 DEACCESS(Computed_field)(&computed_field);
 								}
 						 }
 						 else
 						 {
-								if (command_data->scene_object_transformation_data)
-								{
-									 Time_keeper_remove_callback(command_data->default_time_keeper,
-											Scene_object_set_transformation_with_time_callback, 
-											(void *)command_data->scene_object_transformation_data);
-									 DEALLOCATE(command_data->scene_object_transformation_data);
-									 command_data->scene_object_transformation_data = 
-											(struct Scene_object_transformation_data*)NULL;
-								}
 								Scene_object_set_transformation(scene_object,
-									 &transformation_matrix);
+								&transformation_matrix); 
 						 }
 					}
 					else
