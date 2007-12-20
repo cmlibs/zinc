@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : CHANGELOG
 #
-# LAST MODIFIED : 12 September 2006
+# LAST MODIFIED : 20 Dec 2007
 # ==========================================================================
 
 This software is the cmgui part of CMISS.
@@ -9,6 +9,33 @@ It is released under the Mozilla Public License v1.1
 
 Further information, help pages, a tracker and a wiki is available at 
 http://www.cmiss.org/cmgui/
+
+v2.5
+17 Dec 2007
+
+Third release of cmgui-wx.
+
+Fixes:
+Fixed user interface resizing issue.
+Fixed a number of memoryleak.
+Fixed a number of bugs.
+
+Added interface components:
+Element point viewer, Spectrum editor, Time editor, Material editor.
+
+Added functions:
+Time dependent transformation using quaternion.
+Write out a total comfile.
+Save all (reproduce the exnode, exelem and com file).
+List all (List of commands used to construct the current model).
+A number of image filters.
+The ability to specify a sequence of iso values with a number, first and last value.
+Added a new parameter for scaling the lit volume control.
+
+Others:
+cmgui-wx will use the best graphics settings available.
+Offscreen buffering of cmgui-wx.
+Enables order independent transparency in win32.
 
 v2.4
 11 May 2007

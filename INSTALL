@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : INSTALL
 #
-# LAST MODIFIED : 26 August 2005
+# LAST MODIFIED : 20 Dec 2007
 # ==========================================================================
 
 This software is the cmgui part of CMISS.
@@ -19,9 +19,11 @@ OpenMotif implementation.
 OpenGL: The 3D graphics is built on OpenGL.
 
 Cmgui-wx Required:
-WxWidgets: wxWidgets-2.8.4 is required for the current version of cmgui-wx 
+WxWidgets: wxWidgets-2.8.7 is required for the current version of cmgui-wx 
 and can be compiled under different platform such as X, windows and Mac.
 OpenGL: The 3D graphics is built on OpenGL.
+Other libraries are also required please visit http://www.cmiss.org/cmgui/ for
+more information.
 
 Optional but recommended:
 Perl Interpreter: By embedding a perl interpreter, perl commands and control
