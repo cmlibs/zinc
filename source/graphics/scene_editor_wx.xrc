@@ -131,10 +131,9 @@
 												<option>0</option>
 												<object class ="wxStaticBoxSizer">
 													<orient>wxHORIZONTAL</orient>
-													<label>TypeFormChooser</label>
 													<object class ="sizeritem">
 														<flag>wxALIGN_CENTRE</flag>
-														<option>0</option>
+														<option>1</option>
 														<object class = "wxPanel" name="TypeFormChooser">
 															<size>200,30</size>
 														</object>
@@ -164,14 +163,16 @@
 											<object class ="sizeritem">
 												<flag>wxEXPAND</flag>
 												<option>1</option>
-												<object class ="wxStaticBoxSizer">
-													<object class ="sizeritem">
-														<flag>wxEXPAND</flag>
-														<option>1</option>
-														<object class="wxCheckListBox" name="GraphicalItemsListBox">
-															<flag>wxVSCROLL|wxHSCROLL</flag>
-														</object>																					
-													</object>
+												<object class ="wxScrolledWindow" name="SceneEditorGraphicalItemsListPanel">
+													<style>wxVSCROLL|wxHSCROLL</style>
+				   									<object class = "wxBoxSizer">	
+														<object class ="sizeritem">
+															<flag>wxEXPAND</flag>
+															<option>1</option>
+															<object class="wxCheckListBox" name="GraphicalItemsListBox">
+															</object>	
+														</object>			
+													</object>	
 												</object>
 											</object>
 										</object>

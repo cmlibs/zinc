@@ -125,7 +125,7 @@ DESCRIPTION :
 	/* access gt_element_group for current_object if applicable */
 	 struct GT_element_group *gt_element_group, *edit_gt_element_group;
 	Scene *scene;
-	Scene_object *scene_object;
+	 Scene_object *scene_object;
 	/* keep address of pointer to editor so can self-destroy */
 	struct Scene_editor **scene_editor_address;
 	void *scene_manager_callback_id;
@@ -167,6 +167,7 @@ DESCRIPTION :
 	 wxCheckBox *autocheckbox;
 	 wxButton *applybutton;
 	 wxButton *revertbutton;
+	 wxScrolledWindow *graphical_items_list_panel;
 #endif /*defined (WX_USER_INTERFACE)*/
 }; /*struct Scene_editor*/
 
@@ -587,6 +588,7 @@ public:
 	texture_coord_field_chooser = NULL;
 	render_type_chooser = NULL;
 	seed_element_chooser = NULL;
+	graphicalitemschecklist = NULL;
 	wxFrame *frame=XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
 	frame->Fit();
 	Show();
@@ -807,57 +809,68 @@ DESCRIPTION :
 Callback from wxChooser<Scene> when choice is made.
 ==============================================================================*/
 	{
-		GT_element_settings *settings;
-		GT_element_settings *newsettings;
-		int return_code;
+		 int return_code;
 
 		if (scene_editor)
-			{
-				scene_editor->current_settings_type = new_value;
-				settings = first_settings_in_GT_element_group_that(
-					scene_editor->edit_gt_element_group,
-					GT_element_settings_type_matches,
-					(void*)scene_editor->current_settings_type);
-				graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
-				int number= graphicalitemschecklist->GetCount();
-				for (int i=0;number>i;i++) 
+		{
+			 if (scene_editor->current_settings_type != new_value)
+			 {
+					if (!graphicalitemschecklist)
+						 graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
+					int number= graphicalitemschecklist->GetCount();
+					graphicalitemschecklist->SetSelection(wxNOT_FOUND);
+					GT_element_settings *settings = NULL;
+					scene_editor->current_settings_type = new_value;
+					settings = first_settings_in_GT_element_group_that(
+						 scene_editor->edit_gt_element_group,
+						 GT_element_settings_type_matches,
+						 (void*)scene_editor->current_settings_type);
+					if (settings)
 					{
-						newsettings = get_settings_at_position_in_GT_element_group(
-							 scene_editor->edit_gt_element_group, i+1);
-						if (settings == newsettings)
-							{
-								graphicalitemschecklist->SetSelection(i);
-								UpdateGraphicalElementList(newsettings);
-								break;
-							}
-						graphicalitemschecklist->SetSelection(wxNOT_FOUND);
-					}
-				if (settings != scene_editor->current_settings)
-					{
-						if (scene_editor->current_settings)
-							REACCESS(GT_element_settings)(&(scene_editor->current_settings),
-																						settings);
-						if (settings)
-							{
+						 for (int i=0;number>i;i++) 
+						 {
+								GT_element_settings *newsettings;
+								newsettings = get_settings_at_position_in_GT_element_group(
+									 scene_editor->edit_gt_element_group, i+1);
+								if (settings == newsettings)
+								{
+									 graphicalitemschecklist->SetSelection(i);
+									 UpdateGraphicalElementList(newsettings);
+									 break;
+								}
+						 }
+						 if (settings != scene_editor->current_settings)
+						 {
+								if (scene_editor->current_settings)
+									 REACCESS(GT_element_settings)(&(scene_editor->current_settings),
+											settings);
 								/* if settings_type changed, select it in settings_type option menu */
 								GT_element_settings_type settings_type = GT_element_settings_get_settings_type(settings);
 								if (settings_type != scene_editor->current_settings_type)
-									{
-										scene_editor->current_settings_type = settings_type;
-									}
-							}
-						return_code = 1;
+								{
+									 scene_editor->current_settings_type = settings_type;
+								}
+								return_code = 1;
+						 }
 					}
-			}
+					else
+					{
+						 if (scene_editor->current_settings)
+								REACCESS(GT_element_settings)(&(scene_editor->current_settings),
+									 NULL);
+					}
+			 }
+
+		}
 		else
-			{
-				display_message(ERROR_MESSAGE,
-				 "setting type callback.  Invalid argument(s)");
-				return_code =  0;
-			}
+		{
+			 display_message(ERROR_MESSAGE,
+					"setting type callback.  Invalid argument(s)");
+			 return_code =  0;
+		}
 		return (return_code);	
 	}
-
+	 
 	int select_mode_callback(enum Graphics_select_mode select_mode)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2007
@@ -1523,18 +1536,19 @@ Callback from wxChooser<Render Type> when choice is made.
 	return 1;
 }
 
-      void ResetScrolledWindow(wxCollapsiblePaneEvent& event)
-  	{
+	 void ResetScrolledWindow(wxCollapsiblePaneEvent& event)
+	 {
+
 			lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
 			lowersplitter->Layout();	
 			topsplitter=XRCCTRL(*this,"TopSplitter",wxSplitterWindow);
 			topsplitter->Layout();	
 			frame = 
-			  XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
+				 XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
 			frame->Layout();
 			frame->SetMinSize(wxSize(50,100));
 			frame->SetMaxSize(wxSize(2000,2000));
-	}
+	 }
 
 	void AutoApplyorNot(struct GT_element_group  *destination, GT_element_group *source)
 /*******************************************************************************
@@ -1583,18 +1597,26 @@ When changes have been made by the user, renew the label on the list
 
       void ResetWindow(wxSplitterEvent& event)
 	  {
-			sceneediting = 
-				XRCCTRL(*this, "SceneEditing", wxScrolledWindow);
-			sceneediting->Layout();
-			sceneediting->SetScrollbars(10,10,40,40);
-			lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
-			lowersplitter->Layout();	
-			topsplitter=XRCCTRL(*this,"TopSplitter",wxSplitterWindow);
-			topsplitter->Layout();	
 			frame = 
 					XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
 			frame->Layout();
 			frame->SetMinSize(wxSize(50,100));
+			topsplitter=XRCCTRL(*this,"TopSplitter",wxSplitterWindow);
+			topsplitter->Layout();	
+			lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
+			lowersplitter->Layout();
+			sceneediting = 
+				XRCCTRL(*this, "SceneEditing", wxScrolledWindow);
+			sceneediting->Layout();
+			sceneediting->SetScrollbars(10,10,40,40);
+			if (!scene_editor->graphical_items_list_panel)
+			{
+				 scene_editor->graphical_items_list_panel = XRCCTRL(*this,
+						"SceneEditorGraphicalItemsListPanel", wxScrolledWindow);
+			}
+			scene_editor->graphical_items_list_panel->Fit();
+			scene_editor->graphical_items_list_panel->Layout();
+			scene_editor->graphical_items_list_panel->SetScrollbars(10,10,40,40);
 		}
 
 	void ElementDiscretisationUpdate(wxCommandEvent &event)
@@ -1883,6 +1905,7 @@ void 	UpdateGraphicalElementList(GT_element_settings *settings)
 	 wxScrolledWindow *sceneeditingpanel= XRCCTRL(*this, "SceneEditing",wxScrolledWindow);
 	 sceneeditingpanel->Enable();
 	 sceneeditingpanel->Show();
+	 sceneeditingpanel->Freeze();
 	 graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
 	 int selection =	graphicalitemschecklist->GetSelection();
 	 REACCESS(GT_element_settings)(&scene_editor->current_settings, settings);
@@ -1897,8 +1920,9 @@ void 	UpdateGraphicalElementList(GT_element_settings *settings)
 			GT_element_settings_set_visibility(settings, 0);
 	 }
 	 get_and_set_graphical_element_settings((void *)scene_editor);
-	 AutoApplyorNot(scene_editor->gt_element_group,
-			scene_editor->edit_gt_element_group);
+	 scene_editor->graphical_items_list_panel->FitInside();
+	 sceneeditingpanel->Thaw();
+	 sceneeditingpanel->Layout();
 }
 
 void SceneCheckListClicked(wxCommandEvent &event)
@@ -1911,7 +1935,16 @@ void SceneCheckListClicked(wxCommandEvent &event)
 	 lowest_panel = XRCCTRL(*this, "LowestPanel",wxScrolledWindow);
 	 lowest_panel->Fit();	
 	 lowest_panel->Layout();	
-	 lowest_panel->SetScrollbars(10,10,40,40);
+// 	 lowest_panel->SetScrollbars(10,10,40,40);
+	 if (!scene_editor->graphical_items_list_panel)
+	 {
+			scene_editor->graphical_items_list_panel = XRCCTRL(*scene_editor->wx_scene_editor,
+				 "SceneEditorGraphicalItemsListPanel", wxScrolledWindow);
+	 }
+	 scene_editor->graphical_items_list_panel->FitInside();
+	 scene_editor->graphical_items_list_panel->Layout();
+	 scene_editor->graphical_items_list_panel->SetScrollbars(10,10,40,40);
+	 scene_editor->topsplitter->Layout();
 	 sceneediting = 
 			XRCCTRL(*this, "SceneEditing", wxScrolledWindow);
 	 sceneediting->Layout();
@@ -2012,18 +2045,13 @@ void GraphicalItemsListBoxClicked(wxCommandEvent &event)
 {
 	 graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
 	 int selection= graphicalitemschecklist->GetSelection();
-	 sceneediting = 
-			XRCCTRL(*this, "SceneEditing", wxScrolledWindow);
-	 sceneediting->Freeze();
 	 if (-1 != selection)
 	 {
 			UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
 																		scene_editor->edit_gt_element_group, selection+1));
+			AutoApplyorNot(scene_editor->gt_element_group,
+				 scene_editor->edit_gt_element_group);
 	 }
-	 sceneediting->Thaw();
-	 sceneediting = 
-			XRCCTRL(*this, "SceneEditing", wxScrolledWindow);
-	 sceneediting->Layout();
 }
 
 void AddToSettingList(wxCommandEvent &event)
@@ -2204,8 +2232,15 @@ void AddToSettingList(wxCommandEvent &event)
 						for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
 						  Scene_editor_add_element_settings_item, (void *)scene_editor);
 						graphicalitemschecklist->SetSelection((graphicalitemschecklist->GetCount()-1));
+						sceneediting = 
+							 XRCCTRL(*this, "SceneEditing", wxScrolledWindow);
+						sceneediting->Freeze();
 						UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
-							 scene_editor->edit_gt_element_group, graphicalitemschecklist->GetCount()));
+						    scene_editor->edit_gt_element_group, graphicalitemschecklist->GetCount()));
+						AutoApplyorNot(scene_editor->gt_element_group,
+							 scene_editor->edit_gt_element_group);
+						sceneediting->Thaw();
+						sceneediting->Layout();
 					}
 				if (!return_code)
 					{
@@ -2244,6 +2279,8 @@ void RemoveFromSettingList(wxCommandEvent &event)
 							 UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
 																						 scene_editor->edit_gt_element_group, position-1));
 						}
+						AutoApplyorNot(scene_editor->gt_element_group,
+							 scene_editor->edit_gt_element_group);
 				 }
 			}
 			else
@@ -2287,6 +2324,8 @@ void MoveUpInSettingList(wxCommandEvent &event)
 				 graphicalitemschecklist->SetSelection(position-2);
 				 UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
 																			 scene_editor->edit_gt_element_group, position-1));
+				 AutoApplyorNot(scene_editor->gt_element_group,
+						scene_editor->edit_gt_element_group);
 				 /* By default the settings name is the position, so it needs to be updated
 						even though the settings hasn't actually changed */
 				 /* inform the client of the change */
@@ -2326,6 +2365,8 @@ void MoveUpInSettingList(wxCommandEvent &event)
 						graphicalitemschecklist->SetSelection(position);
 						UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
 																					scene_editor->edit_gt_element_group, position+1));
+						AutoApplyorNot(scene_editor->gt_element_group,
+							 scene_editor->edit_gt_element_group);
 			/* By default the settings name is the position, so it needs to be updated
 			 even though the settings hasn't actually changed */
 			/* inform the client of the change */
@@ -4488,6 +4529,16 @@ Iterator function for Graphical_element_editor_update_Settings_item.
 
 #endif /* defined (WX_USER_INTERFACE) */
 
+
+// void scene_editor_wx_scene_object_callback_function(void *scene)
+// {
+// 		display_message(ERROR_MESSAGE,
+// 			"Scene_editor_wx_scene_object_callback_function");
+
+// }
+
+
+
 /*
 Global functions
 ----------------
@@ -4564,6 +4615,7 @@ DESCRIPTION :
 			 scene_editor->render_type =(Render_type)NULL;
 			 scene_editor->fe_element =(FE_element *)NULL;
 			 scene_editor->root_region = root_region;
+			 scene_editor->graphical_items_list_panel = NULL;
 			 scene_editor->wx_scene_editor = (wxSceneEditor *)NULL;
 			 scene_editor->wx_scene_editor = new 
 					wxSceneEditor(scene_editor);
@@ -4614,7 +4666,7 @@ DESCRIPTION :
 					XRCCTRL(*scene_editor->wx_scene_editor, "CmguiSceneEditor", wxFrame);
 			 scene_editor->frame->Layout();
 			 scene_editor->frame->SetMinSize(wxSize(50,100));
-			 scene_editor->frame->SetSize(wxSize(500,800));		 
+			 scene_editor->frame->SetSize(wxSize(600,800));		 
 			 scene_editor->sceneediting = 
 					XRCCTRL(*scene_editor->wx_scene_editor, "SceneEditing", wxScrolledWindow);
 			 scene_editor->sceneediting->Layout();
@@ -4624,7 +4676,15 @@ DESCRIPTION :
 			 scene_editor->lowersplitter->Layout();	
 			 scene_editor->topsplitter=XRCCTRL(*scene_editor->wx_scene_editor,"TopSplitter",wxSplitterWindow);
 			 scene_editor->topsplitter->SetSashPosition(150);
+			 if (!scene_editor->graphical_items_list_panel)
+			 {
+					scene_editor->graphical_items_list_panel = XRCCTRL(*scene_editor->wx_scene_editor,
+						 "SceneEditorGraphicalItemsListPanel", wxScrolledWindow);
+			 }
+			 scene_editor->graphical_items_list_panel->SetScrollbars(10,10,40,40);
+			 scene_editor->graphical_items_list_panel->FitInside();
 			 scene_editor->topsplitter->Layout();
+// 			 MANAGER_CALLBACK_FUNCTION(Scene)(scene_editor_wx_scene_object_callback_function);
 		}
 		else
 		{
