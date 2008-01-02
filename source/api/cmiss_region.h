@@ -79,6 +79,14 @@ Creates a blank Cmiss_region.
 SAB Temporarily mangled from the internal version
 ==============================================================================*/
 
+int Cmiss_region_destroy(Cmiss_region_id *region);
+/*******************************************************************************
+LAST MODIFIED : 3 January 2008
+
+DESCRIPTION :
+Destroys the <region> and sets the pointer to NULL.
+==============================================================================*/
+
 int Cmiss_region_begin_change_API(Cmiss_region_id region);
 /*******************************************************************************
 LAST MODIFIED : 10 November 2004
