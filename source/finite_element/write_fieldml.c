@@ -3367,7 +3367,7 @@ Notes:
 	ENTER(write_Cmiss_region);
 	USE_PARAMETER(force_no_master_region);
 	if (output_file && region && root_region &&
-		((write_path && (!write_region)) || ((!write_path) && write_region)) &&
+		(!(write_path && write_region)) &&
 		(0 <= indent) && write_info_list && path)
 	{
 		return_code = 1;
@@ -3572,14 +3572,15 @@ Global functions
 
 int write_fieldml_file(FILE *output_file,
 	struct Cmiss_region *root_region, char *write_path,
-	int write_elements, int write_nodes, struct FE_field_order_info *field_order_info)
+	int write_elements, int write_nodes,
+	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2002
+LAST MODIFIED : 3 January 2008
 
 DESCRIPTION :
 Writes an exregion file to <output_file> with <root_region> at the top level of
-the file. If <write_region> is supplied, only its contents are written, except
-that all paths from <root_region> to it are complete in the file.
+the file.  Optionally the <write_path> restricts the output to only that part 
+of the hierarchy.
 If the structure of the file permits it to be written in the old exnode/exelem
 format this is done so; this is only possible if the output hierarchy is
 two-deep and the second level contains only regions which use their parent's
