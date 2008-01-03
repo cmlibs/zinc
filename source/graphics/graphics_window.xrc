@@ -19,6 +19,22 @@
 							<option>1</option>
 							<object class = "wxBoxSizer">
 	  							<orient>wxVERTICAL</orient>
+								<object class="sizeritem">
+				   					<object class = "wxBoxSizer">	
+									<orient>wxHORIZONTAL</orient>
+										<object class="sizeritem">
+											<flag>wxALIGN_CENTRE_VERTICAL</flag>
+											<object class	="wxStaticText"> 
+												<label>  Scene:</label>			
+	 										</object>
+										</object>
+										<object class="sizeritem">
+											<object class	="wxPanel" name="GraphicsWindowSceneChooserPanel">
+												<size>100,30</size>
+	 										</object>
+										</object>
+									</object>
+								</object>
 	  							<object class = "sizeritem">
 	 								<flag>wxEXPAND</flag>
    	    							<object class="wxStaticBoxSizer">
@@ -104,7 +120,6 @@
 								  							<flag>wxEXPAND</flag>
 															<option>1</option>
           													<object class="wxChoice" name="UpViewOptions">
-          														<style>wxCB_READONLY</style>
 	    														<selection>2</selection>
                  												<content>
                    												<item>x</item>

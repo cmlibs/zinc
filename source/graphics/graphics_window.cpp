@@ -84,6 +84,7 @@ static char graphics_window_uidh[] =
 #include <wx/tglbtn.h>
 #include <wx/splitter.h>
 #include "wx/xrc/xmlres.h"
+#include "choose/choose_manager_class.hpp"
 #include "graphics/graphics_window.xrch"
 #endif /* defined (WX_USER_INTERFACE)*/
 extern "C" {
@@ -1511,6 +1512,834 @@ the changes are to be applied to all panes.
 	return (return_code);
 } /* modify_Graphics_window_background */
 
+
+#if defined (WX_USER_INTERFACE)
+
+int Graphics_window_bring_up_time_editor_wx(Graphics_window *window, void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 26 October 2007
+
+DESCRIPTION :
+Bring up the time editor, WX_USER_INTERFACE only.
+==============================================================================*/
+{
+	 int return_code;
+
+	 ENTER(Graphics_window_set_time_settings_wx);
+	 USE_PARAMETER(dummy_void);
+	 if (window)
+	 {
+			window->time_editor_togglebutton->SetValue(1);
+			window->time_editor_panel->Show(true);
+			return_code = 1;
+	 }
+	 else
+	 {
+			return_code = 0;
+	 }
+
+	 LEAVE;
+	 return (return_code);
+}
+
+int Graphics_window_update_time_settings_wx(Graphics_window *window, void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 26 October 2007
+
+DESCRIPTION :
+Change the values on the wx interface if different.
+==============================================================================*/
+{
+	 int return_code;
+	 double time;
+	 wxString text_entry;
+
+	 ENTER(Graphics_window_set_time_settings_wx);
+	 USE_PARAMETER(dummy_void);
+
+	 return_code = 1;
+	 time=Time_keeper_get_speed(window->time_keeper);
+	 text_entry.Printf(_T("%f"),time);
+	 window->time_framerate_text_ctrl->ChangeValue(text_entry);
+	 time = window->time_step;
+	 text_entry.Printf(_T("%f"),time);
+	 window->time_step_size_text_ctrl->ChangeValue(text_entry);
+	 window->time_play_every_frame_checkbox->SetValue(
+			Time_keeper_get_play_every_frame(window->time_keeper));
+	 LEAVE;
+
+	 return (return_code);
+}
+
+class wxGraphicsWindow : public wxFrame
+{
+	 Graphics_window *graphics_window;
+	 wxBitmapButton *last_button;
+	 wxChoice *view_options;     
+	 wxFrame *Redrawwindow;
+	 wxChoice *up_view_options;
+	 wxButton *front_view_options;
+	 wxString front_choices;
+	 wxScrolledWindow *leftpanel, *toolscrolledwindow;
+	 wxSplitterWindow *splitterwindow;
+	 int wx_ortho_up_axis;
+	 int wx_ortho_front_axis;
+	 int location;
+	 int up_choices;
+	 int choices;
+	 wxPanel *time_editor_panel;
+	 DEFINE_MANAGER_CLASS(Scene);
+	 Managed_object_chooser<Scene,MANAGER_CLASS(Scene)>
+	 *graphics_window_scene_chooser;
+public:
+	 
+	 wxGraphicsWindow(Graphics_window *graphics_window): 
+			graphics_window(graphics_window)
+	 {
+			wxXmlInit_graphics_window();
+			graphics_window->wx_graphics_window =  (wxGraphicsWindow *)NULL;
+			wxXmlResource::Get()->LoadFrame(this,
+			   (wxWindow *)NULL, _T("CmguiGraphicsWindow"));
+			this->SetIcon(cmiss_icon_xpm);
+			last_button = (wxBitmapButton*)NULL;
+			time_editor_panel = NULL;
+			wxPanel *graphics_window_scene_chooser_panel =
+				 XRCCTRL(*this, "GraphicsWindowSceneChooserPanel", wxPanel);
+			graphics_window_scene_chooser =
+				 new Managed_object_chooser<Scene, MANAGER_CLASS(Scene)>
+				 (graphics_window_scene_chooser_panel, graphics_window->scene,
+						graphics_window->scene_manager,
+						(MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL, (void *)NULL, graphics_window->user_interface);
+			Callback_base< Scene* > *graphics_window_scene_callback = 
+				 new Callback_member_callback< Scene*, 
+				 wxGraphicsWindow, int (wxGraphicsWindow::*)(Scene *) >
+				 (this, &wxGraphicsWindow::graphics_window_scene_callback);
+      graphics_window_scene_chooser->set_callback(graphics_window_scene_callback);
+
+	 };
+	 
+	 wxGraphicsWindow()
+	 {
+	 };
+	 
+	 ~wxGraphicsWindow()
+	 {
+			int pane_no;
+			if (graphics_window->time_keeper)
+				 Time_keeper_remove_callback(graphics_window->time_keeper,
+						Graphics_window_time_keeper_callback, (void *)graphics_window);
+			if (graphics_window->scene_viewer_array)
+			{
+				 /* close the Scene_viewer(s) */
+				 for (pane_no=0;pane_no<graphics_window->number_of_scene_viewers;pane_no++)
+				 {
+						DESTROY(Scene_viewer)(&(graphics_window->scene_viewer_array[pane_no]));
+				 }
+				 DEALLOCATE(graphics_window->scene_viewer_array);
+				 graphics_window->scene_viewer_array = NULL;
+			}
+			graphics_window->wx_graphics_window = NULL;
+			delete graphics_window_scene_chooser;
+	 };
+
+int graphics_window_scene_callback(Scene *scene)
+/*******************************************************************************
+LAST MODIFIED : 9 February 2007
+
+DESCRIPTION :
+Callback from wxChooser<Scene> when choice is made.
+=================================================*/
+{
+	 int pane_no;
+	 struct Scene_viewer *scene_viewer;
+
+	 if ((graphics_window->scene_viewer_array) &&
+			(scene_viewer = graphics_window->scene_viewer_array[0]))
+	 {
+			for (pane_no=0;pane_no<graphics_window->number_of_scene_viewers;
+					 pane_no++)
+			{
+				 scene_viewer=graphics_window->scene_viewer_array[pane_no];
+				 if (scene)
+				 {
+						Scene_viewer_set_scene(scene_viewer,scene);
+						Graphics_window_update_now(graphics_window);
+				 }
+			}
+			return 1;
+	 }
+	 else
+	 {
+			return 0;
+	 }
+}
+
+void graphics_window_set_scene_chooser_selected_item(Scene *scene)
+{
+	 graphics_window_scene_chooser->set_object(scene);
+}
+	 
+   void OnViewallpressed(wxCommandEvent& event)
+	 {    
+			if (Graphics_window_view_all(graphics_window))
+			{
+				 Graphics_window_update(graphics_window);
+			}
+	 }
+	 
+	 void OnSaveaspressed(wxCommandEvent& event)
+	 {
+			enum Texture_storage_type storage;
+			int force_onscreen, height, width;
+			struct Cmgui_image *cmgui_image;
+			struct Cmgui_image_information *cmgui_image_information;
+			wxString file_name;
+			wxString filepath;
+			char*  filename;
+			wxFileDialog *saveImage = new wxFileDialog (this,"Save file","","",
+				 "PNG files (*.png)|*.png|JPEG files (*.jpg)|*.jpg|SGI files (*.sgi)|*.sgi|TIF files (*.tiff)|*.tiff|BMP files (*.bmp)|*.bmp|GIF files (*.gif)|*.gif",wxSAVE,wxDefaultPosition);  
+			
+			if (saveImage->ShowModal() == wxID_OK)
+			{ 
+				 file_name=saveImage->GetFilename();
+				 filepath=saveImage->GetPath();
+				 filename=(char*)filepath.mb_str();
+#if !defined (__WXMSW__)
+				 int filter_index;
+				 if ((strstr(filename, ".png") == NULL) && (strstr(filename, ".jpg") == NULL) && (strstr(filename, ".sgi") == NULL) &&
+						(strstr(filename, ".tiff")== NULL) && (strstr(filename, ".bmp")== NULL) && (strstr(filename, ".gif") == NULL) && 
+						(strstr(filename, ".PNG") == NULL) && (strstr(filename, ".JPG") == NULL) && (strstr(filename, ".SGI") == NULL) &&
+						(strstr(filename, ".TIFF")== NULL) && (strstr(filename, ".BMP")== NULL) && (strstr(filename, ".GIF") == NULL))
+				 {
+						filter_index=saveImage->GetFilterIndex();
+						if (filter_index == 0)
+						{
+							 strcat (filename,".png");
+						}
+						else if (filter_index == 1)
+						{
+							 strcat (filename,".jpg");
+						}
+						else if (filter_index == 2)
+						{
+							 strcat (filename,".sgi");
+						}
+						else if (filter_index == 3)
+						{
+							 strcat (filename,".tiff");
+						}
+						else if (filter_index == 4)
+						{
+							 strcat (filename,".bmp");
+						}
+						else if (filter_index == 5)
+						{
+							 strcat (filename,".gif");
+						}
+				 }
+#endif  /*!defined (__WXMSW__)*/
+						
+				 storage = TEXTURE_RGBA;
+				 force_onscreen = 0;
+				 width = 0;
+				 height = 0;
+				 if(cmgui_image = Graphics_window_get_image(graphics_window,
+							 force_onscreen, width, height, /*preferred_antialias*/8,
+							 /*preferred_transparency_layers*/0, storage))
+				 {
+						cmgui_image_information = CREATE(Cmgui_image_information)();
+						Cmgui_image_information_add_file_name(cmgui_image_information,filename);
+						Cmgui_image_write(cmgui_image, cmgui_image_information);
+						DESTROY(Cmgui_image_information)(&cmgui_image_information);
+						DESTROY(Cmgui_image)(&cmgui_image);
+				 }
+			}
+	 }
+	 
+	 void OnViewOptionspressed(wxCommandEvent& event)
+	 {  
+      view_options = XRCCTRL(*this,"View", wxChoice);
+      up_view_options = XRCCTRL(*this,"UpViewOptions", wxChoice);
+      front_view_options = XRCCTRL(*this,"FrontViewOptions", wxButton);
+      Redrawwindow = XRCCTRL(*this,"CmguiGraphicsWindow", wxFrame);     
+      
+      choices = view_options->GetCurrentSelection();
+      if (choices == 0) 
+			{
+				 front_view_options->Enable();
+				 up_view_options->Enable();
+				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_2D);
+			}
+      else if (choices == 1 )
+			{
+				 front_view_options->Disable();
+				 up_view_options->Disable();
+				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_FREE_ORTHO);
+			}
+      else if (choices == 2)
+			{
+				 front_view_options->Enable();
+				 up_view_options->Enable();
+				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_FRONT_BACK);  
+			}
+      else if (choices == 3)
+			{
+				 front_view_options->Enable();
+				 up_view_options->Enable();
+				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE);
+			}
+      else if (choices == 4)
+			{
+				 front_view_options->Enable();
+				 up_view_options->Enable();
+				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC);
+			}
+      else if (choices == 5)
+			{
+				 front_view_options->Disable();
+				 up_view_options->Disable();
+				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D);  
+			}
+      else if (choices == 6)
+			{
+				 front_view_options->Disable();
+				 up_view_options->Disable();
+				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_TWO_FREE);  
+			}
+      else if (choices == 7)
+			{
+				 front_view_options->Disable();
+				 up_view_options->Disable();
+				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_SIMPLE);
+			}
+      else
+			{
+				 printf("OnViewOptionspressed error. Invalid argument.");
+			}
+			Redrawwindow->SetSize(Redrawwindow->GetSize()+wxSize(0,1));
+			Redrawwindow->SetSize(Redrawwindow->GetSize()-wxSize(0,1));
+	 }
+	 
+void OnPerspectivePressed(wxCommandEvent& event)
+{
+	 enum Scene_viewer_projection_mode projection_mode;
+	 projection_mode = Graphics_window_get_projection_mode(graphics_window, graphics_window->current_pane);
+	 if (SCENE_VIEWER_PERSPECTIVE == projection_mode)
+	 {
+			Graphics_window_set_projection_mode(graphics_window,
+				 graphics_window->current_pane, SCENE_VIEWER_PARALLEL);
+	 }																				 
+	 else
+	 {
+			Graphics_window_set_projection_mode(graphics_window,
+				 graphics_window->current_pane, SCENE_VIEWER_PERSPECTIVE);
+	 }		
+}
+
+void OnTimeEditorButtonPressed(wxCommandEvent& event)
+{
+	 ENTER(OnTimeEditorButtonPressed);
+
+	 graphics_window->time_editor_panel->Show(graphics_window->time_editor_togglebutton->GetValue());
+	 if (graphics_window->GraphicsWindowTitle)
+	 {
+			graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()+wxSize(0,1));
+			graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()-wxSize(0,1));
+			graphics_window->GraphicsWindowTitle->Layout();
+	 }
+	 
+	 LEAVE;
+}
+	 
+	 void OnUpViewOptionspressed(wxCommandEvent& event)
+	 {
+      wxString option[6] = { "x", "y", "z","-x", "-y", "-z"};
+      up_view_options = XRCCTRL(*this,"UpViewOptions", wxChoice);
+      front_view_options = XRCCTRL(*this,"FrontViewOptions", wxButton);
+      up_choices = up_view_options->GetCurrentSelection();
+      front_choices = front_view_options->GetLabel();
+      for (int n=0; n<6; n++)
+			{
+				 if (front_choices == option[n])
+						location = n;
+			}
+      if ((up_choices == location) || (up_choices == ((location+3) % 6)))
+			{     
+				 front_view_options->SetLabel(option[(location+1) % 6]);
+			}
+			
+      front_choices = front_view_options->GetLabel();
+      wx_ortho_up_axis = axis_name_to_axis_number((char*) option[up_choices].mb_str());
+      wx_ortho_front_axis = axis_name_to_axis_number((char*) front_choices.mb_str());
+      Graphics_window_set_orthographic_axes(graphics_window,wx_ortho_up_axis, wx_ortho_front_axis);
+      Graphics_window_set_layout_mode(graphics_window,graphics_window->layout_mode);
+      Graphics_window_update(graphics_window);
+	 }
+	 
+	 void OnFrontViewOptionspressed(wxCommandEvent& event)
+	 {
+      wxString option[6] = { "x", "y", "z","-x", "-y", "-z"};
+      up_view_options = XRCCTRL(*this,"UpViewOptions", wxChoice);
+      front_view_options = XRCCTRL(*this,"FrontViewOptions", wxButton);
+      up_choices = up_view_options->GetCurrentSelection();
+      front_choices = front_view_options->GetLabel();
+      for (int n=0; n<6; n++) {
+				 if (front_choices == option[n])
+						location = n;
+			}
+      {
+				 if ((((location+1) % 6) == up_choices) || (((location+4) % 6) == up_choices))
+						front_view_options->SetLabel(option[(location+2) % 6]);
+				 else
+						front_view_options->SetLabel(option[(location+1) % 6]);
+      }
+			
+      front_choices = front_view_options->GetLabel();
+      wx_ortho_up_axis = axis_name_to_axis_number((char*) option[up_choices].mb_str());
+      wx_ortho_front_axis = axis_name_to_axis_number((char*) front_choices.mb_str());
+      Graphics_window_set_orthographic_axes(graphics_window,wx_ortho_up_axis,wx_ortho_front_axis);
+      Graphics_window_set_layout_mode(graphics_window,graphics_window->layout_mode);
+      Graphics_window_update(graphics_window);
+     }
+
+
+void InteractiveButtonClicked(wxBitmapButton *button, Interactive_tool *tool, Graphics_window *graphics_window)
+{
+	 
+	 char *test_string;
+	 
+	 if (last_button != button)
+	 {
+			test_string=const_cast<char *>(button->GetLabel().c_str());
+			if (strcmp("Transform tool", test_string) == 0)
+			{
+				 wxBitmap interactive_clicked_bmp(Transform_tool_clicked_xpm);
+				 button->SetBitmapLabel(interactive_clicked_bmp);
+			}
+			else if (strcmp("Node tool", test_string) == 0)
+			{
+				 wxBitmap interactive_clicked_bmp(Node_tool_clicked_xpm);
+				 button->SetBitmapLabel(interactive_clicked_bmp);
+			}
+			else if (strcmp("Data tool", test_string) == 0)
+			{
+				 wxBitmap interactive_clicked_bmp(Data_tool_clicked_xpm);
+				 button->SetBitmapLabel(interactive_clicked_bmp);
+			}
+			else if (strcmp("Element tool", test_string) == 0)
+			{
+				 wxBitmap interactive_clicked_bmp(Element_tool_clicked_xpm);
+				 button->SetBitmapLabel(interactive_clicked_bmp);
+			}
+			else if (strcmp("Element point tool", test_string) == 0)
+			{
+				 wxBitmap interactive_clicked_bmp(Element_point_tool_clicked_xpm);
+				 button->SetBitmapLabel(interactive_clicked_bmp);
+			}
+			wxWindowList child_list = graphics_window->ToolPanel->GetChildren();
+			wxWindowListNode *child = child_list.GetFirst();
+			while (child)
+			{
+				 child->GetData()->Hide();
+				 child = child->GetNext();
+			}
+			if (last_button)
+			{
+				 test_string=const_cast<char *>(last_button->GetLabel().c_str());
+				 if (strcmp("Transform tool", test_string) == 0)
+				 {
+						wxBitmap interactive_unclicked_bmp(Transform_tool_unclicked_xpm);
+						last_button->SetBitmapLabel(interactive_unclicked_bmp);
+				 }
+				 if (strcmp("Node tool", test_string) == 0)
+				 {
+						wxBitmap interactive_unclicked_bmp(Node_tool_unclicked_xpm);
+						last_button->SetBitmapLabel(interactive_unclicked_bmp);
+				 }
+				 else if (strcmp("Data tool", test_string) == 0)
+				 {
+						wxBitmap interactive_unclicked_bmp(Data_tool_unclicked_xpm);
+						last_button->SetBitmapLabel(interactive_unclicked_bmp);
+				 }
+				 else if (strcmp("Element tool", test_string) == 0)
+				 {
+						wxBitmap interactive_unclicked_bmp(Element_tool_unclicked_xpm);
+						last_button->SetBitmapLabel(interactive_unclicked_bmp);
+				 }
+				 else if (strcmp("Element point tool", test_string) == 0)
+				 {
+						wxBitmap interactive_unclicked_bmp(Element_point_tool_unclicked_xpm);
+						last_button->SetBitmapLabel(interactive_unclicked_bmp);
+				 }
+			}
+			last_button = button;
+			Interactive_tool_bring_up_dialog(tool,graphics_window);
+			Graphics_window_set_interactive_tool(graphics_window, tool);    
+	 }
+}
+
+void OnSplitterPositionChanged(wxSplitterEvent &event)
+{
+	 toolscrolledwindow =XRCCTRL(*this, "ToolPanel", wxScrolledWindow);
+	 toolscrolledwindow->SetSize(toolscrolledwindow->GetSize()+wxSize(0,1));
+	 toolscrolledwindow->SetSize(toolscrolledwindow->GetSize()-wxSize(0,1));
+}
+
+void OnTimeSliderChanged( wxScrollEvent& event)	 
+{
+	 int value;
+	 double time;
+	 wxString time_string;
+	 ENTER(OnTimeSliderChanged);
+
+	 value = graphics_window->time_slider->GetValue();
+	 time = (double)(((graphics_window->maximum_time - graphics_window->minimum_time) * (double)value ) / (double)1000);
+	 time_string.Printf(_T("%f"), time);
+	 graphics_window->time_text_ctrl->ChangeValue(time_string);
+	 if(graphics_window->time_keeper)
+	 {
+			Time_keeper_request_new_time(graphics_window->time_keeper,
+				 time);
+	 }
+
+	 LEAVE;
+}
+
+void OnTimeTextEntered(wxCommandEvent& event)
+{
+	 
+	 char *text_entry;
+	 float time;
+	 ENTER(OnTimeTextEntered);
+
+	 text_entry = const_cast<char *>(graphics_window->time_text_ctrl->GetValue().c_str());
+	 if (text_entry)
+	 {
+			sscanf(text_entry, "%g", &time);
+			Time_keeper_request_new_time(graphics_window->time_keeper,
+				 time);	
+	 }
+	 Graphics_window_time_keeper_callback(graphics_window->time_keeper,
+			TIME_KEEPER_NEW_TIME,(void *)graphics_window);
+
+	 LEAVE;
+}
+
+void OnTimeForwardPressed(wxCommandEvent& event)
+{
+	 ENTER(OnTimeForwardPressed);
+
+	 Time_keeper_play(graphics_window->time_keeper,TIME_KEEPER_PLAY_FORWARD);
+	 
+	 LEAVE;
+}
+
+void OnTimeStopPressed(wxCommandEvent& event)
+{
+	 ENTER(OnTimeStopPressed);
+
+	 Time_keeper_stop(graphics_window->time_keeper);
+	 
+	 LEAVE;
+}
+
+void OnTimeBackwardPressed(wxCommandEvent& event)
+{
+	 ENTER(OnTimeBackwardPressed);
+
+	 Time_keeper_play(graphics_window->time_keeper, TIME_KEEPER_PLAY_BACKWARD);
+	 
+	 LEAVE;
+}
+
+void OnTimeForwardByStepPressed(wxCommandEvent& event)
+{
+	 float time;
+	 ENTER(OnTimeForwardByStepPressed);
+
+	 time = Time_keeper_get_time(graphics_window->time_keeper);
+	 if ((time + graphics_window->time_step) < graphics_window->maximum_time)
+	 {
+			Time_keeper_request_new_time(graphics_window->time_keeper,
+				 time + graphics_window->time_step);
+	 }
+	 else
+	 {
+			Time_keeper_request_new_time(graphics_window->time_keeper,
+				 graphics_window->maximum_time);
+	 }
+	 
+	 LEAVE;
+}
+
+void OnTimeBackwardByStepPressed(wxCommandEvent& event)
+{
+	 float time;
+	 ENTER(OnTimeBackwardByStepPressed);
+
+	 time = Time_keeper_get_time(graphics_window->time_keeper);
+	 if ((time - graphics_window->time_step) > graphics_window->minimum_time)
+	 {
+			Time_keeper_request_new_time(graphics_window->time_keeper,
+				 time - graphics_window->time_step);
+	 }
+	 else
+	 {
+			Time_keeper_request_new_time(graphics_window->time_keeper,
+				 graphics_window->minimum_time);
+	 }
+
+	 LEAVE;
+}
+
+void OnTimeFastForwardPressed(wxCommandEvent& event)
+{
+	 float time;
+
+	 ENTER(OnTimeFastForwardPressed);
+	 time = Time_keeper_get_time(graphics_window->time_keeper);
+	 if ((time + 2.0*graphics_window->time_step) < graphics_window->maximum_time)
+	 {
+			Time_keeper_request_new_time(graphics_window->time_keeper,
+				 time + 2.0*graphics_window->time_step);
+	 }
+	 else
+	 {
+			Time_keeper_request_new_time(graphics_window->time_keeper,
+				 graphics_window->maximum_time);
+	 }
+	 
+	 LEAVE;
+}
+
+void OnTimeFastBackwardPressed(wxCommandEvent& event)
+{
+	 float time;
+
+	 ENTER(OnTimeFastBackwardPressed);
+	 time = Time_keeper_get_time(graphics_window->time_keeper);
+	 if ((time - 2.0*graphics_window->time_step) > graphics_window->minimum_time)
+	 {
+			Time_keeper_request_new_time(graphics_window->time_keeper,
+				 time - 2.0*graphics_window->time_step);
+	 }
+	 else
+	 {
+			Time_keeper_request_new_time(graphics_window->time_keeper,
+				 graphics_window->minimum_time);
+	 }
+ 
+	 LEAVE;
+}
+
+void OnTimeHidePressed(wxCommandEvent& event)
+{
+	 ENTER(OnTimeHidePressed);
+	 graphics_window->time_editor_togglebutton->SetValue(0);
+	 graphics_window->time_editor_panel->Show(false);
+	 if (graphics_window->GraphicsWindowTitle)
+	 {
+			graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()+wxSize(0,1));
+			graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()-wxSize(0,1));
+			graphics_window->GraphicsWindowTitle->Layout();
+	 }
+
+	 LEAVE;
+}
+
+void OnTimeFramerateTextEntered(wxCommandEvent& event)
+{
+	 char *text_entry;
+	 float time;
+
+	 ENTER(OnTimeFramerateTextEntered);
+	 text_entry = const_cast<char *>(graphics_window->time_framerate_text_ctrl->GetValue().c_str());
+	 if (text_entry)
+	 {
+			sscanf(text_entry, "%g", &time);
+			Time_keeper_set_speed(graphics_window->time_keeper,
+				 time);	
+	 }
+	 Graphics_window_update_time_settings_wx(graphics_window, (void *)NULL);
+}
+
+void OnTimeStepSizeTextEntered(wxCommandEvent& event)
+{
+	 char *text_entry;
+	 float time;
+
+	 ENTER(OnTimeStepSizeTextEntered);
+	 text_entry = const_cast<char *>(graphics_window->time_step_size_text_ctrl->GetValue().c_str());
+	 if (text_entry)
+	 {
+			sscanf(text_entry, "%g", &time);
+			graphics_window->time_step = time;
+	 }
+	 Graphics_window_update_time_settings_wx(graphics_window, (void *)NULL);
+	 LEAVE;
+}
+
+void OnEveryFrameChecked(wxCommandEvent& event)
+{
+	 ENTER(OnEveryFrameChecked);
+	 if (graphics_window->time_play_every_frame_checkbox->GetValue())
+	 {
+			Time_keeper_set_play_every_frame(graphics_window->time_keeper);	
+	 }
+	 else
+	 {
+			Time_keeper_set_play_skip_frames(graphics_window->time_keeper);
+	 }
+	 Graphics_window_update_time_settings_wx(graphics_window, (void *)NULL);
+	 LEAVE;
+}
+
+ DECLARE_EVENT_TABLE();
+};
+
+BEGIN_EVENT_TABLE(wxGraphicsWindow, wxFrame)
+	 EVT_BUTTON(XRCID("Button1"),wxGraphicsWindow::OnViewallpressed)
+	 EVT_BUTTON(XRCID("Button2"),wxGraphicsWindow::OnSaveaspressed)
+	 EVT_CHECKBOX(XRCID("PerspectiveButton"), wxGraphicsWindow::OnPerspectivePressed)
+	 EVT_TOGGLEBUTTON(XRCID("TimeEditorToggleButton"), wxGraphicsWindow::OnTimeEditorButtonPressed)
+	 EVT_CHOICE(XRCID("View"),wxGraphicsWindow::OnViewOptionspressed)
+	 EVT_CHOICE(XRCID("UpViewOptions"),wxGraphicsWindow::OnUpViewOptionspressed)
+	 EVT_BUTTON(XRCID("FrontViewOptions"),wxGraphicsWindow::OnFrontViewOptionspressed)
+	 EVT_SPLITTER_SASH_POS_CHANGED(XRCID("Splitter"),wxGraphicsWindow::OnSplitterPositionChanged)
+	 EVT_COMMAND_SCROLL(XRCID("GraphicsWindowTimeSlider"),wxGraphicsWindow::OnTimeSliderChanged)
+	 EVT_TEXT_ENTER(XRCID("GraphicsWindowTimeTextCtrl"),wxGraphicsWindow::OnTimeTextEntered)
+	 EVT_BUTTON(XRCID("GraphicsWindowForward"), wxGraphicsWindow::OnTimeForwardPressed)
+	 EVT_BUTTON(XRCID("GraphicsWindowStop"), wxGraphicsWindow::OnTimeStopPressed)
+	 EVT_BUTTON(XRCID("GraphicsWindowBackward"), wxGraphicsWindow::OnTimeBackwardPressed)
+	 EVT_BUTTON(XRCID("GraphicsWindowForwardByStep"), wxGraphicsWindow::OnTimeForwardByStepPressed)
+	 EVT_BUTTON(XRCID("GraphicsWindowBackwardByStep"), wxGraphicsWindow::OnTimeBackwardByStepPressed)
+	 EVT_BUTTON(XRCID("GraphicsWindowFastForward"), wxGraphicsWindow::OnTimeFastForwardPressed)
+	 EVT_BUTTON(XRCID("GraphicsWindowFastBackward"), wxGraphicsWindow::OnTimeFastBackwardPressed)
+	 EVT_BUTTON(XRCID("GraphicsWindowHideTimeBitmapButton"), wxGraphicsWindow::OnTimeHidePressed)
+	 EVT_TEXT_ENTER(XRCID("GraphicsWindowTimeFramerateTextCtrl"),wxGraphicsWindow::OnTimeFramerateTextEntered)
+	 EVT_TEXT_ENTER(XRCID("GraphicsWindowTimeStepSizeTextCtrl"),wxGraphicsWindow::OnTimeStepSizeTextEntered)
+	 EVT_CHECKBOX(XRCID("GraphcisWindowTimePlayEveryFrameCheckBox"), wxGraphicsWindow::OnEveryFrameChecked)
+END_EVENT_TABLE()
+
+class wxInteractiveToolButton : public wxBitmapButton
+{
+  Interactive_tool *tool;
+  Graphics_window *graphics_window;
+  
+public:
+
+  wxInteractiveToolButton(Interactive_tool *tool, Graphics_window *graphics_window) :
+    tool(tool), graphics_window(graphics_window)
+  {
+  };
+
+	 wxInteractiveToolButton()
+	 {
+	 };
+
+  ~wxInteractiveToolButton()
+  {
+  };
+
+  void OnInteractiveButtonPressed(wxCommandEvent& Event)
+  {
+    graphics_window->wx_graphics_window->InteractiveButtonClicked
+      (this, tool,graphics_window);
+   }
+
+};
+
+static int add_interactive_tool_to_wx_toolbar(struct Interactive_tool *interactive_tool,
+					      void *graphics_window_void)
+{
+	 Graphics_window *window = static_cast<Graphics_window*>(graphics_window_void);
+	 wxPanel *panel = window->interactive_toolbar_panel;
+	 //	 wxSizer *sizer = panel->GetSizer();
+	 wxInteractiveToolButton *button = new wxInteractiveToolButton(interactive_tool, window);
+	 char *interactive_tool_name = Interactive_tool_get_display_name(interactive_tool);
+	 int return_int = 0;
+
+	 if (window->grid_field == NULL)
+	 {
+			window->grid_field = new wxGridSizer(0,3,1,1);
+	 }
+	 if (strcmp("Transform tool", interactive_tool_name) == 0)
+	 {
+			wxBitmap interactive_unclicked_bmp(Transform_tool_unclicked_xpm);
+			button->Create(panel, /*id*/-1, interactive_unclicked_bmp);
+			button->SetLabel("Transform tool");
+			window->grid_field->Add(button);
+			return_int = 1;
+	 }
+	 else if (strcmp("Node tool", interactive_tool_name) == 0)
+	 {
+			wxBitmap interactive_unclicked_bmp(Node_tool_unclicked_xpm);
+			button->Create(panel, /*id*/-1, interactive_unclicked_bmp);
+			button->SetLabel("Node tool");
+			window->grid_field->Add(button);
+			return_int = 1;
+	 }
+	 else if (strcmp("Data tool", interactive_tool_name) == 0)
+	 {
+			wxBitmap interactive_unclicked_bmp(Data_tool_unclicked_xpm);
+			button->Create(panel, /*id*/-1, interactive_unclicked_bmp);
+			button->SetLabel("Data tool");
+			window->grid_field->Add(button);
+			return_int = 1;
+	 }
+	 else if (strcmp("Element tool", interactive_tool_name) == 0)
+	 {
+			wxBitmap interactive_unclicked_bmp(Element_tool_unclicked_xpm);
+			button->Create(panel, /*id*/-1, interactive_unclicked_bmp);
+			button->SetLabel("Element tool");
+			window->grid_field->Add(button);
+			return_int = 1;
+	 }
+	 else if (strcmp("Element point tool", interactive_tool_name) == 0)
+	 {
+			wxBitmap interactive_unclicked_bmp(Element_point_tool_unclicked_xpm);
+			button->Create(panel, /*id*/-1, interactive_unclicked_bmp);
+			button->SetLabel("Element point tool");
+			window->grid_field->Add(button);
+			return_int = 1;
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "add_interactive_tool_to_wx_toolbar.  Could not find bitmap for the interactive tool");
+			return_int = 0;
+	 }
+	 if (window->grid_field != NULL)
+	 {
+			panel->SetSizer(window->grid_field);
+			window->grid_field->SetSizeHints(panel);
+			window->grid_field->Layout();
+			panel->Layout();
+	 }
+	 if (return_int ==1)
+	 {
+			DEALLOCATE(interactive_tool_name);
+			
+			if (Interactive_tool_is_Transform_tool(interactive_tool))
+			{
+				 wxBitmap interactive_clicked_bmp(Transform_tool_clicked_xpm);
+				 button->SetBitmapLabel(interactive_clicked_bmp);
+				 window->wx_graphics_window->InteractiveButtonClicked
+						(button, interactive_tool, window);
+			}
+			button->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
+				 wxCommandEventHandler(wxInteractiveToolButton::OnInteractiveButtonPressed));
+			return (1);
+	 }
+	 else
+	 {
+			return (0);
+	 }
+}
+
+#endif /* defined (WX_USER_INTERFACE) */
+
+
 static int modify_Graphics_window_image(struct Parse_state *state,
 	void *window_void,void *modify_graphics_window_data_void)
 /*******************************************************************************
@@ -1653,6 +2482,10 @@ a spaceship/submarine, where:
 							if (scene)
 							{
 								Scene_viewer_set_scene(scene_viewer,scene);
+#if defined (WX_USER_INTERFACE)
+								window->wx_graphics_window->
+									 graphics_window_set_scene_chooser_selected_item(scene);
+#endif
 							}
 						}
 						if (scene)
@@ -2750,774 +3583,6 @@ view angle, interest point etc.
 	return (return_code);
 } /* modify_Graphics_window_view */
 
-#if defined (WX_USER_INTERFACE)
-
-int Graphics_window_bring_up_time_editor_wx(Graphics_window *window, void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 26 October 2007
-
-DESCRIPTION :
-Bring up the time editor, WX_USER_INTERFACE only.
-==============================================================================*/
-{
-	 int return_code;
-
-	 ENTER(Graphics_window_set_time_settings_wx);
-	 USE_PARAMETER(dummy_void);
-	 if (window)
-	 {
-			window->time_editor_togglebutton->SetValue(1);
-			window->time_editor_panel->Show(true);
-			return_code = 1;
-	 }
-	 else
-	 {
-			return_code = 0;
-	 }
-
-	 LEAVE;
-	 return (return_code);
-}
-
-int Graphics_window_update_time_settings_wx(Graphics_window *window, void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 26 October 2007
-
-DESCRIPTION :
-Change the values on the wx interface if different.
-==============================================================================*/
-{
-	 int return_code;
-	 double time;
-	 wxString text_entry;
-
-	 ENTER(Graphics_window_set_time_settings_wx);
-	 USE_PARAMETER(dummy_void);
-
-	 return_code = 1;
-	 time=Time_keeper_get_speed(window->time_keeper);
-	 text_entry.Printf(_T("%f"),time);
-	 window->time_framerate_text_ctrl->ChangeValue(text_entry);
-	 time = window->time_step;
-	 text_entry.Printf(_T("%f"),time);
-	 window->time_step_size_text_ctrl->ChangeValue(text_entry);
-	 window->time_play_every_frame_checkbox->SetValue(
-			Time_keeper_get_play_every_frame(window->time_keeper));
-	 LEAVE;
-
-	 return (return_code);
-}
-
-class wxGraphicsWindow : public wxFrame
-{
-	 Graphics_window *graphics_window;
-	 wxBitmapButton *last_button;
-	 wxChoice *view_options;     
-	 wxFrame *Redrawwindow;
-	 wxChoice *up_view_options;
-	 wxButton *front_view_options;
-	 wxString front_choices;
-	 wxScrolledWindow *leftpanel, *toolscrolledwindow;
-	 wxSplitterWindow *splitterwindow;
-	 int wx_ortho_up_axis;
-	 int wx_ortho_front_axis;
-	 int location;
-	 int up_choices;
-	 int choices;
-	 wxPanel *time_editor_panel;
-
-public:
-	 
-	 wxGraphicsWindow(Graphics_window *graphics_window): 
-			graphics_window(graphics_window)
-	 {
-			last_button = (wxBitmapButton*)NULL;
-			time_editor_panel = NULL;
-	 };
-	 
-	 wxGraphicsWindow()
-	 {
-	 };
-	 
-	 ~wxGraphicsWindow()
-	 {
-			int pane_no;
-			if (graphics_window->time_keeper)
-				 Time_keeper_remove_callback(graphics_window->time_keeper,
-						Graphics_window_time_keeper_callback, (void *)graphics_window);
-			if (graphics_window->scene_viewer_array)
-			{
-				 /* close the Scene_viewer(s) */
-				 for (pane_no=0;pane_no<graphics_window->number_of_scene_viewers;pane_no++)
-				 {
-						DESTROY(Scene_viewer)(&(graphics_window->scene_viewer_array[pane_no]));
-				 }
-				 DEALLOCATE(graphics_window->scene_viewer_array);
-				 graphics_window->scene_viewer_array = NULL;
-			}
-			graphics_window->wx_graphics_window = NULL;
-	 };
-	 
-   void OnViewallpressed(wxCommandEvent& event)
-	 {    
-			if (Graphics_window_view_all(graphics_window))
-			{
-				 Graphics_window_update(graphics_window);
-			}
-	 }
-	 
-	 void OnSaveaspressed(wxCommandEvent& event)
-	 {
-			enum Texture_storage_type storage;
-			int force_onscreen, height, width;
-			struct Cmgui_image *cmgui_image;
-			struct Cmgui_image_information *cmgui_image_information;
-			wxString file_name;
-			wxString filepath;
-			char*  filename;
-			wxFileDialog *saveImage = new wxFileDialog (this,"Save file","","",
-				 "PNG files (*.png)|*.png|JPEG files (*.jpg)|*.jpg|SGI files (*.sgi)|*.sgi|TIF files (*.tiff)|*.tiff|BMP files (*.bmp)|*.bmp|GIF files (*.gif)|*.gif",wxSAVE,wxDefaultPosition);  
-			
-			if (saveImage->ShowModal() == wxID_OK)
-			{ 
-				 file_name=saveImage->GetFilename();
-				 filepath=saveImage->GetPath();
-				 filename=(char*)filepath.mb_str();
-#if !defined (__WXMSW__)
-				 int filter_index;
-				 if ((strstr(filename, ".png") == NULL) && (strstr(filename, ".jpg") == NULL) && (strstr(filename, ".sgi") == NULL) &&
-						(strstr(filename, ".tiff")== NULL) && (strstr(filename, ".bmp")== NULL) && (strstr(filename, ".gif") == NULL) && 
-						(strstr(filename, ".PNG") == NULL) && (strstr(filename, ".JPG") == NULL) && (strstr(filename, ".SGI") == NULL) &&
-						(strstr(filename, ".TIFF")== NULL) && (strstr(filename, ".BMP")== NULL) && (strstr(filename, ".GIF") == NULL))
-				 {
-						filter_index=saveImage->GetFilterIndex();
-						if (filter_index == 0)
-						{
-							 strcat (filename,".png");
-						}
-						else if (filter_index == 1)
-						{
-							 strcat (filename,".jpg");
-						}
-						else if (filter_index == 2)
-						{
-							 strcat (filename,".sgi");
-						}
-						else if (filter_index == 3)
-						{
-							 strcat (filename,".tiff");
-						}
-						else if (filter_index == 4)
-						{
-							 strcat (filename,".bmp");
-						}
-						else if (filter_index == 5)
-						{
-							 strcat (filename,".gif");
-						}
-				 }
-#endif  /*!defined (__WXMSW__)*/
-						
-				 storage = TEXTURE_RGBA;
-				 force_onscreen = 0;
-				 width = 0;
-				 height = 0;
-				 if(cmgui_image = Graphics_window_get_image(graphics_window,
-							 force_onscreen, width, height, /*preferred_antialias*/8,
-							 /*preferred_transparency_layers*/0, storage))
-				 {
-						cmgui_image_information = CREATE(Cmgui_image_information)();
-						Cmgui_image_information_add_file_name(cmgui_image_information,filename);
-						Cmgui_image_write(cmgui_image, cmgui_image_information);
-						DESTROY(Cmgui_image_information)(&cmgui_image_information);
-						DESTROY(Cmgui_image)(&cmgui_image);
-				 }
-			}
-	 }
-	 
-	 void OnViewOptionspressed(wxCommandEvent& event)
-	 {  
-      view_options = XRCCTRL(*this,"View", wxChoice);
-      up_view_options = XRCCTRL(*this,"UpViewOptions", wxChoice);
-      front_view_options = XRCCTRL(*this,"FrontViewOptions", wxButton);
-      Redrawwindow = XRCCTRL(*this,"CmguiGraphicsWindow", wxFrame);     
-      
-      choices = view_options->GetCurrentSelection();
-      if (choices == 0) 
-			{
-				 front_view_options->Enable();
-				 up_view_options->Enable();
-				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_2D);
-			}
-      else if (choices == 1 )
-			{
-				 front_view_options->Disable();
-				 up_view_options->Disable();
-				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_FREE_ORTHO);
-			}
-      else if (choices == 2)
-			{
-				 front_view_options->Enable();
-				 up_view_options->Enable();
-				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_FRONT_BACK);  
-			}
-      else if (choices == 3)
-			{
-				 front_view_options->Enable();
-				 up_view_options->Enable();
-				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE);
-			}
-      else if (choices == 4)
-			{
-				 front_view_options->Enable();
-				 up_view_options->Enable();
-				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC);
-			}
-      else if (choices == 5)
-			{
-				 front_view_options->Disable();
-				 up_view_options->Disable();
-				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D);  
-			}
-      else if (choices == 6)
-			{
-				 front_view_options->Disable();
-				 up_view_options->Disable();
-				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_TWO_FREE);  
-			}
-      else if (choices == 7)
-			{
-				 front_view_options->Disable();
-				 up_view_options->Disable();
-				 Graphics_window_set_layout_mode(graphics_window,GRAPHICS_WINDOW_LAYOUT_SIMPLE);
-			}
-      else
-			{
-				 printf("OnViewOptionspressed error. Invalid argument.");
-			}
-			Redrawwindow->SetSize(Redrawwindow->GetSize()+wxSize(0,1));
-			Redrawwindow->SetSize(Redrawwindow->GetSize()-wxSize(0,1));
-	 }
-	 
-void OnPerspectivePressed(wxCommandEvent& event)
-{
-	 enum Scene_viewer_projection_mode projection_mode;
-	 projection_mode = Graphics_window_get_projection_mode(graphics_window, graphics_window->current_pane);
-	 if (SCENE_VIEWER_PERSPECTIVE == projection_mode)
-	 {
-			Graphics_window_set_projection_mode(graphics_window,
-				 graphics_window->current_pane, SCENE_VIEWER_PARALLEL);
-	 }																				 
-	 else
-	 {
-			Graphics_window_set_projection_mode(graphics_window,
-				 graphics_window->current_pane, SCENE_VIEWER_PERSPECTIVE);
-	 }		
-}
-
-void OnTimeEditorButtonPressed(wxCommandEvent& event)
-{
-	 ENTER(OnTimeEditorButtonPressed);
-
-	 graphics_window->time_editor_panel->Show(graphics_window->time_editor_togglebutton->GetValue());
-	 if (graphics_window->GraphicsWindowTitle)
-	 {
-			graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()+wxSize(0,1));
-			graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()-wxSize(0,1));
-			graphics_window->GraphicsWindowTitle->Layout();
-	 }
-	 
-	 LEAVE;
-}
-	 
-	 void OnUpViewOptionspressed(wxCommandEvent& event)
-	 {
-      wxString option[6] = { "x", "y", "z","-x", "-y", "-z"};
-      up_view_options = XRCCTRL(*this,"UpViewOptions", wxChoice);
-      front_view_options = XRCCTRL(*this,"FrontViewOptions", wxButton);
-      up_choices = up_view_options->GetCurrentSelection();
-      front_choices = front_view_options->GetLabel();
-      for (int n=0; n<6; n++)
-			{
-				 if (front_choices == option[n])
-						location = n;
-			}
-      if ((up_choices == location) || (up_choices == ((location+3) % 6)))
-			{     
-				 front_view_options->SetLabel(option[(location+1) % 6]);
-			}
-			
-      front_choices = front_view_options->GetLabel();
-      wx_ortho_up_axis = axis_name_to_axis_number((char*) option[up_choices].mb_str());
-      wx_ortho_front_axis = axis_name_to_axis_number((char*) front_choices.mb_str());
-      Graphics_window_set_orthographic_axes(graphics_window,wx_ortho_up_axis, wx_ortho_front_axis);
-      Graphics_window_set_layout_mode(graphics_window,graphics_window->layout_mode);
-      Graphics_window_update(graphics_window);
-	 }
-	 
-	 void OnFrontViewOptionspressed(wxCommandEvent& event)
-	 {
-      wxString option[6] = { "x", "y", "z","-x", "-y", "-z"};
-      up_view_options = XRCCTRL(*this,"UpViewOptions", wxChoice);
-      front_view_options = XRCCTRL(*this,"FrontViewOptions", wxButton);
-      up_choices = up_view_options->GetCurrentSelection();
-      front_choices = front_view_options->GetLabel();
-      for (int n=0; n<6; n++) {
-				 if (front_choices == option[n])
-						location = n;
-			}
-      {
-				 if ((((location+1) % 6) == up_choices) || (((location+4) % 6) == up_choices))
-						front_view_options->SetLabel(option[(location+2) % 6]);
-				 else
-						front_view_options->SetLabel(option[(location+1) % 6]);
-      }
-			
-      front_choices = front_view_options->GetLabel();
-      wx_ortho_up_axis = axis_name_to_axis_number((char*) option[up_choices].mb_str());
-      wx_ortho_front_axis = axis_name_to_axis_number((char*) front_choices.mb_str());
-      Graphics_window_set_orthographic_axes(graphics_window,wx_ortho_up_axis,wx_ortho_front_axis);
-      Graphics_window_set_layout_mode(graphics_window,graphics_window->layout_mode);
-      Graphics_window_update(graphics_window);
-     }
-
-
-void InteractiveButtonClicked(wxBitmapButton *button, Interactive_tool *tool, Graphics_window *graphics_window)
-{
-	 
-	 char *test_string;
-	 
-	 if (last_button != button)
-	 {
-			test_string=const_cast<char *>(button->GetLabel().c_str());
-			if (strcmp("Transform tool", test_string) == 0)
-			{
-				 wxBitmap interactive_clicked_bmp(Transform_tool_clicked_xpm);
-				 button->SetBitmapLabel(interactive_clicked_bmp);
-			}
-			else if (strcmp("Node tool", test_string) == 0)
-			{
-				 wxBitmap interactive_clicked_bmp(Node_tool_clicked_xpm);
-				 button->SetBitmapLabel(interactive_clicked_bmp);
-			}
-			else if (strcmp("Data tool", test_string) == 0)
-			{
-				 wxBitmap interactive_clicked_bmp(Data_tool_clicked_xpm);
-				 button->SetBitmapLabel(interactive_clicked_bmp);
-			}
-			else if (strcmp("Element tool", test_string) == 0)
-			{
-				 wxBitmap interactive_clicked_bmp(Element_tool_clicked_xpm);
-				 button->SetBitmapLabel(interactive_clicked_bmp);
-			}
-			else if (strcmp("Element point tool", test_string) == 0)
-			{
-				 wxBitmap interactive_clicked_bmp(Element_point_tool_clicked_xpm);
-				 button->SetBitmapLabel(interactive_clicked_bmp);
-			}
-			wxWindowList child_list = graphics_window->ToolPanel->GetChildren();
-			wxWindowListNode *child = child_list.GetFirst();
-			while (child)
-			{
-				 child->GetData()->Hide();
-				 child = child->GetNext();
-			}
-			if (last_button)
-			{
-				 test_string=const_cast<char *>(last_button->GetLabel().c_str());
-				 if (strcmp("Transform tool", test_string) == 0)
-				 {
-						wxBitmap interactive_unclicked_bmp(Transform_tool_unclicked_xpm);
-						last_button->SetBitmapLabel(interactive_unclicked_bmp);
-				 }
-				 if (strcmp("Node tool", test_string) == 0)
-				 {
-						wxBitmap interactive_unclicked_bmp(Node_tool_unclicked_xpm);
-						last_button->SetBitmapLabel(interactive_unclicked_bmp);
-				 }
-				 else if (strcmp("Data tool", test_string) == 0)
-				 {
-						wxBitmap interactive_unclicked_bmp(Data_tool_unclicked_xpm);
-						last_button->SetBitmapLabel(interactive_unclicked_bmp);
-				 }
-				 else if (strcmp("Element tool", test_string) == 0)
-				 {
-						wxBitmap interactive_unclicked_bmp(Element_tool_unclicked_xpm);
-						last_button->SetBitmapLabel(interactive_unclicked_bmp);
-				 }
-				 else if (strcmp("Element point tool", test_string) == 0)
-				 {
-						wxBitmap interactive_unclicked_bmp(Element_point_tool_unclicked_xpm);
-						last_button->SetBitmapLabel(interactive_unclicked_bmp);
-				 }
-			}
-			last_button = button;
-			Interactive_tool_bring_up_dialog(tool,graphics_window);
-			Graphics_window_set_interactive_tool(graphics_window, tool);    
-	 }
-}
-
-void OnSplitterPositionChanged(wxSplitterEvent &event)
-{
-	 toolscrolledwindow =XRCCTRL(*this, "ToolPanel", wxScrolledWindow);
-	 toolscrolledwindow->SetSize(toolscrolledwindow->GetSize()+wxSize(0,1));
-	 toolscrolledwindow->SetSize(toolscrolledwindow->GetSize()-wxSize(0,1));
-}
-
-void OnTimeSliderChanged( wxScrollEvent& event)	 
-{
-	 int value;
-	 double time;
-	 wxString time_string;
-	 ENTER(OnTimeSliderChanged);
-
-	 value = graphics_window->time_slider->GetValue();
-	 time = (double)(((graphics_window->maximum_time - graphics_window->minimum_time) * (double)value ) / (double)1000);
-	 time_string.Printf(_T("%f"), time);
-	 graphics_window->time_text_ctrl->ChangeValue(time_string);
-	 if(graphics_window->time_keeper)
-	 {
-			Time_keeper_request_new_time(graphics_window->time_keeper,
-				 time);
-	 }
-
-	 LEAVE;
-}
-
-void OnTimeTextEntered(wxCommandEvent& event)
-{
-	 
-	 char *text_entry;
-	 float time;
-	 ENTER(OnTimeTextEntered);
-
-	 text_entry = const_cast<char *>(graphics_window->time_text_ctrl->GetValue().c_str());
-	 if (text_entry)
-	 {
-			sscanf(text_entry, "%g", &time);
-			Time_keeper_request_new_time(graphics_window->time_keeper,
-				 time);	
-	 }
-	 Graphics_window_time_keeper_callback(graphics_window->time_keeper,
-			TIME_KEEPER_NEW_TIME,(void *)graphics_window);
-
-	 LEAVE;
-}
-
-void OnTimeForwardPressed(wxCommandEvent& event)
-{
-	 ENTER(OnTimeForwardPressed);
-
-	 Time_keeper_play(graphics_window->time_keeper,TIME_KEEPER_PLAY_FORWARD);
-	 
-	 LEAVE;
-}
-
-void OnTimeStopPressed(wxCommandEvent& event)
-{
-	 ENTER(OnTimeStopPressed);
-
-	 Time_keeper_stop(graphics_window->time_keeper);
-	 
-	 LEAVE;
-}
-
-void OnTimeBackwardPressed(wxCommandEvent& event)
-{
-	 ENTER(OnTimeBackwardPressed);
-
-	 Time_keeper_play(graphics_window->time_keeper, TIME_KEEPER_PLAY_BACKWARD);
-	 
-	 LEAVE;
-}
-
-void OnTimeForwardByStepPressed(wxCommandEvent& event)
-{
-	 float time;
-	 ENTER(OnTimeForwardByStepPressed);
-
-	 time = Time_keeper_get_time(graphics_window->time_keeper);
-	 if ((time + graphics_window->time_step) < graphics_window->maximum_time)
-	 {
-			Time_keeper_request_new_time(graphics_window->time_keeper,
-				 time + graphics_window->time_step);
-	 }
-	 else
-	 {
-			Time_keeper_request_new_time(graphics_window->time_keeper,
-				 graphics_window->maximum_time);
-	 }
-	 
-	 LEAVE;
-}
-
-void OnTimeBackwardByStepPressed(wxCommandEvent& event)
-{
-	 float time;
-	 ENTER(OnTimeBackwardByStepPressed);
-
-	 time = Time_keeper_get_time(graphics_window->time_keeper);
-	 if ((time - graphics_window->time_step) > graphics_window->minimum_time)
-	 {
-			Time_keeper_request_new_time(graphics_window->time_keeper,
-				 time - graphics_window->time_step);
-	 }
-	 else
-	 {
-			Time_keeper_request_new_time(graphics_window->time_keeper,
-				 graphics_window->minimum_time);
-	 }
-
-	 LEAVE;
-}
-
-void OnTimeFastForwardPressed(wxCommandEvent& event)
-{
-	 float time;
-
-	 ENTER(OnTimeFastForwardPressed);
-	 time = Time_keeper_get_time(graphics_window->time_keeper);
-	 if ((time + 2.0*graphics_window->time_step) < graphics_window->maximum_time)
-	 {
-			Time_keeper_request_new_time(graphics_window->time_keeper,
-				 time + 2.0*graphics_window->time_step);
-	 }
-	 else
-	 {
-			Time_keeper_request_new_time(graphics_window->time_keeper,
-				 graphics_window->maximum_time);
-	 }
-	 
-	 LEAVE;
-}
-
-void OnTimeFastBackwardPressed(wxCommandEvent& event)
-{
-	 float time;
-
-	 ENTER(OnTimeFastBackwardPressed);
-	 time = Time_keeper_get_time(graphics_window->time_keeper);
-	 if ((time - 2.0*graphics_window->time_step) > graphics_window->minimum_time)
-	 {
-			Time_keeper_request_new_time(graphics_window->time_keeper,
-				 time - 2.0*graphics_window->time_step);
-	 }
-	 else
-	 {
-			Time_keeper_request_new_time(graphics_window->time_keeper,
-				 graphics_window->minimum_time);
-	 }
- 
-	 LEAVE;
-}
-
-void OnTimeHidePressed(wxCommandEvent& event)
-{
-	 ENTER(OnTimeHidePressed);
-	 graphics_window->time_editor_togglebutton->SetValue(0);
-	 graphics_window->time_editor_panel->Show(false);
-	 if (graphics_window->GraphicsWindowTitle)
-	 {
-			graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()+wxSize(0,1));
-			graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()-wxSize(0,1));
-			graphics_window->GraphicsWindowTitle->Layout();
-	 }
-
-	 LEAVE;
-}
-
-void OnTimeFramerateTextEntered(wxCommandEvent& event)
-{
-	 char *text_entry;
-	 float time;
-
-	 ENTER(OnTimeFramerateTextEntered);
-	 text_entry = const_cast<char *>(graphics_window->time_framerate_text_ctrl->GetValue().c_str());
-	 if (text_entry)
-	 {
-			sscanf(text_entry, "%g", &time);
-			Time_keeper_set_speed(graphics_window->time_keeper,
-				 time);	
-	 }
-	 Graphics_window_update_time_settings_wx(graphics_window, (void *)NULL);
-}
-
-void OnTimeStepSizeTextEntered(wxCommandEvent& event)
-{
-	 char *text_entry;
-	 float time;
-
-	 ENTER(OnTimeStepSizeTextEntered);
-	 text_entry = const_cast<char *>(graphics_window->time_step_size_text_ctrl->GetValue().c_str());
-	 if (text_entry)
-	 {
-			sscanf(text_entry, "%g", &time);
-			graphics_window->time_step = time;
-	 }
-	 Graphics_window_update_time_settings_wx(graphics_window, (void *)NULL);
-	 LEAVE;
-}
-
-void OnEveryFrameChecked(wxCommandEvent& event)
-{
-	 ENTER(OnEveryFrameChecked);
-	 if (graphics_window->time_play_every_frame_checkbox->GetValue())
-	 {
-			Time_keeper_set_play_every_frame(graphics_window->time_keeper);	
-	 }
-	 else
-	 {
-			Time_keeper_set_play_skip_frames(graphics_window->time_keeper);
-	 }
-	 Graphics_window_update_time_settings_wx(graphics_window, (void *)NULL);
-	 LEAVE;
-}
-
- DECLARE_EVENT_TABLE();
-};
-
-BEGIN_EVENT_TABLE(wxGraphicsWindow, wxFrame)
-	 EVT_BUTTON(XRCID("Button1"),wxGraphicsWindow::OnViewallpressed)
-	 EVT_BUTTON(XRCID("Button2"),wxGraphicsWindow::OnSaveaspressed)
-	 EVT_CHECKBOX(XRCID("PerspectiveButton"), wxGraphicsWindow::OnPerspectivePressed)
-	 EVT_TOGGLEBUTTON(XRCID("TimeEditorToggleButton"), wxGraphicsWindow::OnTimeEditorButtonPressed)
-	 EVT_CHOICE(XRCID("View"),wxGraphicsWindow::OnViewOptionspressed)
-	 EVT_CHOICE(XRCID("UpViewOptions"),wxGraphicsWindow::OnUpViewOptionspressed)
-	 EVT_BUTTON(XRCID("FrontViewOptions"),wxGraphicsWindow::OnFrontViewOptionspressed)
-	 EVT_SPLITTER_SASH_POS_CHANGED(XRCID("Splitter"),wxGraphicsWindow::OnSplitterPositionChanged)
-	 EVT_COMMAND_SCROLL(XRCID("GraphicsWindowTimeSlider"),wxGraphicsWindow::OnTimeSliderChanged)
-	 EVT_TEXT_ENTER(XRCID("GraphicsWindowTimeTextCtrl"),wxGraphicsWindow::OnTimeTextEntered)
-	 EVT_BUTTON(XRCID("GraphicsWindowForward"), wxGraphicsWindow::OnTimeForwardPressed)
-	 EVT_BUTTON(XRCID("GraphicsWindowStop"), wxGraphicsWindow::OnTimeStopPressed)
-	 EVT_BUTTON(XRCID("GraphicsWindowBackward"), wxGraphicsWindow::OnTimeBackwardPressed)
-	 EVT_BUTTON(XRCID("GraphicsWindowForwardByStep"), wxGraphicsWindow::OnTimeForwardByStepPressed)
-	 EVT_BUTTON(XRCID("GraphicsWindowBackwardByStep"), wxGraphicsWindow::OnTimeBackwardByStepPressed)
-	 EVT_BUTTON(XRCID("GraphicsWindowFastForward"), wxGraphicsWindow::OnTimeFastForwardPressed)
-	 EVT_BUTTON(XRCID("GraphicsWindowFastBackward"), wxGraphicsWindow::OnTimeFastBackwardPressed)
-	 EVT_BUTTON(XRCID("GraphicsWindowHideTimeBitmapButton"), wxGraphicsWindow::OnTimeHidePressed)
-	 EVT_TEXT_ENTER(XRCID("GraphicsWindowTimeFramerateTextCtrl"),wxGraphicsWindow::OnTimeFramerateTextEntered)
-	 EVT_TEXT_ENTER(XRCID("GraphicsWindowTimeStepSizeTextCtrl"),wxGraphicsWindow::OnTimeStepSizeTextEntered)
-	 EVT_CHECKBOX(XRCID("GraphcisWindowTimePlayEveryFrameCheckBox"), wxGraphicsWindow::OnEveryFrameChecked)
-END_EVENT_TABLE()
-
-class wxInteractiveToolButton : public wxBitmapButton
-{
-  Interactive_tool *tool;
-  Graphics_window *graphics_window;
-  
-public:
-
-  wxInteractiveToolButton(Interactive_tool *tool, Graphics_window *graphics_window) :
-    tool(tool), graphics_window(graphics_window)
-  {
-  };
-
-	 wxInteractiveToolButton()
-	 {
-	 };
-
-  ~wxInteractiveToolButton()
-  {
-  };
-
-  void OnInteractiveButtonPressed(wxCommandEvent& Event)
-  {
-    graphics_window->wx_graphics_window->InteractiveButtonClicked
-      (this, tool,graphics_window);
-   }
-
-};
-
-static int add_interactive_tool_to_wx_toolbar(struct Interactive_tool *interactive_tool,
-					      void *graphics_window_void)
-{
-	 Graphics_window *window = static_cast<Graphics_window*>(graphics_window_void);
-	 wxPanel *panel = window->interactive_toolbar_panel;
-	 //	 wxSizer *sizer = panel->GetSizer();
-	 wxInteractiveToolButton *button = new wxInteractiveToolButton(interactive_tool, window);
-	 char *interactive_tool_name = Interactive_tool_get_display_name(interactive_tool);
-	 int return_int = 0;
-
-	 if (window->grid_field == NULL)
-	 {
-			window->grid_field = new wxGridSizer(0,3,1,1);
-	 }
-	 if (strcmp("Transform tool", interactive_tool_name) == 0)
-	 {
-			wxBitmap interactive_unclicked_bmp(Transform_tool_unclicked_xpm);
-			button->Create(panel, /*id*/-1, interactive_unclicked_bmp);
-			button->SetLabel("Transform tool");
-			window->grid_field->Add(button);
-			return_int = 1;
-	 }
-	 else if (strcmp("Node tool", interactive_tool_name) == 0)
-	 {
-			wxBitmap interactive_unclicked_bmp(Node_tool_unclicked_xpm);
-			button->Create(panel, /*id*/-1, interactive_unclicked_bmp);
-			button->SetLabel("Node tool");
-			window->grid_field->Add(button);
-			return_int = 1;
-	 }
-	 else if (strcmp("Data tool", interactive_tool_name) == 0)
-	 {
-			wxBitmap interactive_unclicked_bmp(Data_tool_unclicked_xpm);
-			button->Create(panel, /*id*/-1, interactive_unclicked_bmp);
-			button->SetLabel("Data tool");
-			window->grid_field->Add(button);
-			return_int = 1;
-	 }
-	 else if (strcmp("Element tool", interactive_tool_name) == 0)
-	 {
-			wxBitmap interactive_unclicked_bmp(Element_tool_unclicked_xpm);
-			button->Create(panel, /*id*/-1, interactive_unclicked_bmp);
-			button->SetLabel("Element tool");
-			window->grid_field->Add(button);
-			return_int = 1;
-	 }
-	 else if (strcmp("Element point tool", interactive_tool_name) == 0)
-	 {
-			wxBitmap interactive_unclicked_bmp(Element_point_tool_unclicked_xpm);
-			button->Create(panel, /*id*/-1, interactive_unclicked_bmp);
-			button->SetLabel("Element point tool");
-			window->grid_field->Add(button);
-			return_int = 1;
-	 }
-	 else
-	 {
-			display_message(ERROR_MESSAGE,
-				 "add_interactive_tool_to_wx_toolbar.  Could not find bitmap for the interactive tool");
-			return_int = 0;
-	 }
-	 if (window->grid_field != NULL)
-	 {
-			panel->SetSizer(window->grid_field);
-			window->grid_field->SetSizeHints(panel);
-			window->grid_field->Layout();
-			panel->Layout();
-	 }
-	 if (return_int ==1)
-	 {
-			DEALLOCATE(interactive_tool_name);
-			
-			if (Interactive_tool_is_Transform_tool(interactive_tool))
-			{
-				 wxBitmap interactive_clicked_bmp(Transform_tool_clicked_xpm);
-				 button->SetBitmapLabel(interactive_clicked_bmp);
-				 window->wx_graphics_window->InteractiveButtonClicked
-						(button, interactive_tool, window);
-			}
-			button->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
-				 wxCommandEventHandler(wxInteractiveToolButton::OnInteractiveButtonPressed));
-			return (1);
-	 }
-	 else
-	 {
-			return (0);
-	 }
-}
-
-#endif /* defined (WX_USER_INTERFACE) */
-
 /*
 Global functions
 ----------------
@@ -4299,13 +4364,9 @@ it.
 			
 			window->root_region = (struct Cmiss_region *)NULL;
 			window->root_region = ACCESS(Cmiss_region)(CREATE(Cmiss_region)());
-		  wxLogNull logNo;
-			wxXmlInit_graphics_window();
-			window->wx_graphics_window = new 
+			wxLogNull logNo;
+ 			window->wx_graphics_window = new 
 				 wxGraphicsWindow(window);
-			wxXmlResource::Get()->LoadFrame(window->wx_graphics_window,
-			   (wxWindow *)NULL, _T("CmguiGraphicsWindow"));
-			window->wx_graphics_window->SetIcon(cmiss_icon_xpm);
 			window->grid_field =NULL;
 			window->GraphicsWindowTitle = XRCCTRL(*window->wx_graphics_window, 
 				 "CmguiGraphicsWindow", wxFrame);
