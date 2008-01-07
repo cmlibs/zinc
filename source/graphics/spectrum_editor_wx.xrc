@@ -33,8 +33,7 @@
 
          <object class ="sizeritem">
 		     <flag>wxEXPAND</flag>
-            <object class="wxListBox" name="SpectrumCheckList">
-               <style>wxLB_SINGLE</style>
+            <object class="wxPanel" name="SpectrumListPanel">
             </object>
          </object>
 

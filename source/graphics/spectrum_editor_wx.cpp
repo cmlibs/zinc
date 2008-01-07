@@ -22,7 +22,6 @@ extern "C" {
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
-
 /* SAB Trying to hide the guts of GT_object and its primitives,
 	however the spectrum editor is modifying it's primitives quite a bit . */
 #include "graphics/graphics_object_private.h"
@@ -31,6 +30,7 @@ extern "C" {
 #include <wx/splitter.h>
 #include "wx/xrc/xmlres.h"
 #include "choose/choose_manager_class.hpp"
+#include "choose/choose_manager_listbox_class.hpp"
 #include "graphics/spectrum_editor_wx.xrch"
 #include "icon/cmiss_icon.xpm"
 
@@ -57,16 +57,13 @@ Contains all the information carried by the graphical element editor widget.
 	 struct MANAGER(Spectrum) *spectrum_manager;
 	 struct User_interface *user_interface;
 	 struct Spectrum_editor_dialog **spectrum_editor_dialog_address;
-	 void *material_manager_callback_id;
-	 void *spectrum_manager_callback_id;
 	 struct Scene *spectrum_editor_scene, *autorange_scene;
 	 struct Scene_viewer *spectrum_editor_scene_viewer;
 	 struct GT_object *graphics_object, *tick_lines_graphics_object,
 			*tick_labels_graphics_object;
 	 int viewer_type;
 	 wxSpectrumEditor *wx_spectrum_editor;
-	 wxPanel *spectrum_panel;
-	 wxListBox *spectrum_editor_check_list;
+	 wxPanel *spectrum_panel, *spectrum_listbox_panel;
 	 wxFrame *spectrum_editor_frame;
 	 wxTextCtrl *spectrum_range_min_text, *spectrum_range_max_text, 
 			*spectrum_exaggeration_text, *spectrum_data_component_text,
@@ -82,66 +79,22 @@ Contains all the information carried by the graphical element editor widget.
 	 wxChoice *spectrum_colour_mapping_choice, *spectrum_type_choice;
 	 wxRadioBox *spectrum_left_right_radio_box;
 	 wxScrolledWindow *spectrum_higher_panel, *spectrum_lower_panel;
+ 	 void *material_manager_callback_id;
+ 	 void *spectrum_manager_callback_id;
 }; /* spectrum_editor */
 
+
+/* prototype */
 static int make_current_spectrum(
 	struct Spectrum_editor *spectrum_editor,
-	struct Spectrum *spectrum)
-/*******************************************************************************
-LAST MODIFIED : 10 March 1998
+	struct Spectrum *spectrum);
+/******************************************************************************
+LAST MODIFIED : 7 January 2008
 
 DESCRIPTION :
 Destroys the edit_spectrum member of <spectrum_editor> and rebuilds it as
 a complete copy of <Spectrum>.
 ==============================================================================*/
-{
-	 int return_code, i, number_of_spectrums;
-	 struct Spectrum *temp_spectrum;
-	ENTER(make_current_spectrum);
-	if (spectrum_editor)
-	{
-		return_code=1;
-		if (spectrum)
-		{
-			if (!IS_MANAGED(Spectrum)(spectrum,
-				spectrum_editor->spectrum_manager))
-			{
-				display_message(ERROR_MESSAGE,
-					"spectrum_editor_dialog_set_spectrum.  Spectrum not managed");
-				spectrum=(struct Spectrum *)NULL;
-				return_code=0;
-			}
-		}
-		if (!spectrum)
-		{
-			spectrum=FIRST_OBJECT_IN_MANAGER_THAT(Spectrum)(
-				(MANAGER_CONDITIONAL_FUNCTION(Spectrum) *)NULL,
-				(void *)NULL,
-				spectrum_editor->spectrum_manager);
-		}
-		number_of_spectrums = 
-			 spectrum_editor->spectrum_editor_check_list->GetCount();
-		for (i=0; i < number_of_spectrums ; i++ )
-		{
-			 temp_spectrum= (struct Spectrum *)(spectrum_editor->spectrum_editor_check_list->GetClientData(i));
-			 if (temp_spectrum == spectrum)
-			 {
-					spectrum_editor->spectrum_editor_check_list->SetSelection(i);
-			 }
-		}
-		spectrum_editor->current_spectrum=spectrum;
-		spectrum_editor_wx_set_spectrum(
-			 spectrum_editor, spectrum_editor->current_spectrum);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"spectrum_editor_dialog_set_spectrum.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* make_current_spectrum */
 
 static int make_edit_spectrum(
 	struct Spectrum_editor *spectrum_editor,
@@ -851,6 +804,9 @@ class wxSpectrumEditor : public wxFrame
 	 DEFINE_MANAGER_CLASS(Scene);
 	 Managed_object_chooser<Scene,MANAGER_CLASS(Scene)>
 	 *spectrum_scene_chooser;
+	 DEFINE_MANAGER_CLASS(Spectrum);
+	 Managed_object_listbox<Spectrum, MANAGER_CLASS(Spectrum)>
+	 *spectrum_object_listbox;
 public:
 
 	 wxSpectrumEditor(Spectrum_editor *spectrum_editor):
@@ -860,6 +816,21 @@ public:
 			wxXmlResource::Get()->LoadFrame(this,
 				 (wxWindow *)NULL, _T("CmguiSpectrumEditor"));
 			this->SetIcon(cmiss_icon_xpm);
+			spectrum_editor->spectrum_listbox_panel = 
+				 XRCCTRL(*this, "SpectrumListPanel", wxPanel);
+			spectrum_editor->spectrum_listbox_panel->SetSize(wxDefaultCoord,wxDefaultCoord,
+				400, 100);
+			spectrum_editor->spectrum_listbox_panel->SetMinSize(wxSize(-1,100));
+			spectrum_object_listbox =
+				 new Managed_object_listbox<Spectrum, MANAGER_CLASS(Spectrum)>
+				 (spectrum_editor->spectrum_listbox_panel, (struct Spectrum*)NULL, spectrum_editor->spectrum_manager,
+						(MANAGER_CONDITIONAL_FUNCTION(Spectrum) *)NULL, (void *)NULL, spectrum_editor->user_interface);
+			Callback_base<Spectrum* > *spectrum_editor_spectrum_list_callback = 
+				 new Callback_member_callback< Spectrum*,
+				 wxSpectrumEditor, int (wxSpectrumEditor::*)(Spectrum *) >
+				 (this, &wxSpectrumEditor::spectrum_editor_spectrum_list_callback);
+			spectrum_object_listbox->set_callback(spectrum_editor_spectrum_list_callback);
+
 			wxPanel *spectrum_scene_chooser_panel = 
 				 XRCCTRL(*this, "wxSpectrumSceneChooserPanel", wxPanel);
 			spectrum_scene_chooser = 
@@ -879,8 +850,49 @@ public:
 
 	 ~wxSpectrumEditor()
 	 {
+			delete spectrum_object_listbox;
 			delete spectrum_scene_chooser;
 	 };
+
+ int spectrum_editor_spectrum_list_callback(Spectrum *spectrum)
+/*******************************************************************************
+LAST MODIFIED : 7 January 2008
+
+DESCRIPTION :
+Callback from wxObjectListBox<Spectrum> when choice is made.
+==============================================================================*/
+{
+	 ENTER(material_editor_graphical_material_callback);
+	 if (spectrum != NULL)
+	 {
+			spectrum_editor->current_spectrum = spectrum;
+			spectrum_editor_wx_set_spectrum(spectrum_editor,
+				 spectrum);
+	 }
+	 return 1;
+}
+
+void spectrum_editor_spectrum_list_set_selected(Spectrum *spectrum)
+{
+	 ENTER(material_editor_graphical_material_list_set_selected);
+	 if (spectrum_object_listbox)
+	 {
+			spectrum_object_listbox->set_object(spectrum);
+	 }
+	 LEAVE;
+}
+
+struct Spectrum *spectrum_editor_spectrum_list_get_selected()
+{
+	 if (spectrum_object_listbox)
+	 {
+			return(spectrum_object_listbox->get_object());
+	 }
+	 else
+	 {
+			return ((Spectrum *)NULL);
+	 }
+}
 
 int spectrum_scene_chooser_callback(Scene *scene)
 /*******************************************************************************
@@ -898,37 +910,6 @@ int set_autorange_scene()
 {
 	 spectrum_editor->autorange_scene = spectrum_scene_chooser->get_object();
 	 return 1;
-}
-
-void OnSpectrumListSelected(wxCommandEvent &event)
-/*******************************************************************************
-LAST MODIFIED : 29 August 2007
-
-DESCRIPTION :
-Callback for Spectrum List.
-==============================================================================*/
-{
-	 struct Spectrum *temp_spectrum;
-	 int selection, number_of_item;
-	 number_of_item = spectrum_editor->spectrum_editor_check_list->GetCount();
-	 if (number_of_item > 0)
-	 {
-			selection = spectrum_editor->spectrum_editor_check_list->GetSelection();
-			if (selection >= 0)
-			{
-				 if (temp_spectrum = (struct Spectrum *)spectrum_editor->spectrum_editor_check_list->GetClientData(selection))
-				 {
-						spectrum_editor->current_spectrum = temp_spectrum;
-						spectrum_editor_wx_set_spectrum(spectrum_editor,
-							 temp_spectrum);
-				 }
-				 else
-				 {
-						display_message(ERROR_MESSAGE,
-							 "OnSpectrumListSelect.  Cannot get client data");
-				 } 
-			}
-	 }
 }
 
 void OnSpectrumSettingsSelected(wxCommandEvent &event)
@@ -1620,10 +1601,6 @@ void OnSpectrumEditorCreateNewSpectrum(wxCommandEvent& event)
 				 {
 						ADD_OBJECT_TO_MANAGER(Spectrum)(
 							 spectrum, spectrum_editor->spectrum_manager);
-						spectrum_editor->spectrum_editor_check_list->Clear();
-						FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
-							 spectrum_editor_wx_add_item_to_spectrum_editor_check_list, 
-							 (void *)spectrum_editor, spectrum_editor->spectrum_manager);
 						make_current_spectrum(spectrum_editor, spectrum);
 						spectrum_editor_wx_set_spectrum(spectrum_editor,
 							 spectrum);
@@ -1641,10 +1618,6 @@ void OnSpectrumEditorDeleteSpectrum(wxCommandEvent& event)
 	 REMOVE_OBJECT_FROM_MANAGER(Spectrum)(
 			spectrum_editor->current_spectrum,spectrum_editor->spectrum_manager);
 	 spectrum_editor->current_spectrum = NULL;
-	 spectrum_editor->spectrum_editor_check_list->Clear();
-	 FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
-			spectrum_editor_wx_add_item_to_spectrum_editor_check_list, 
-			(void *)spectrum_editor, spectrum_editor->spectrum_manager);
 	 make_current_spectrum(spectrum_editor, NULL);
 	 spectrum_editor_wx_set_spectrum(spectrum_editor,spectrum_editor->current_spectrum);
 
@@ -1654,10 +1627,9 @@ void OnSpectrumEditorDeleteSpectrum(wxCommandEvent& event)
 void OnSpectrumEditorRenameSpectrum(wxCommandEvent& event)
 {
 	 ENTER(OnSpectrumEditorRenameSpectrum);
-	 int selection;
 	 char *text;
 	 wxTextEntryDialog *NewSpectrumDialog = new wxTextEntryDialog(this, "Enter name", 
-			"Please Enter Name", spectrum_editor->spectrum_editor_check_list->GetStringSelection(),
+			"Please Enter Name", spectrum_object_listbox->get_string_selection(),
 			wxOK|wxCANCEL|wxCENTRE, wxDefaultPosition);
 	 if (NewSpectrumDialog->ShowModal() == wxID_OK)
 	 {
@@ -1665,8 +1637,6 @@ void OnSpectrumEditorRenameSpectrum(wxCommandEvent& event)
 			MANAGER_MODIFY_IDENTIFIER(Spectrum, name)
 				 (spectrum_editor->current_spectrum, text,
 				 spectrum_editor->spectrum_manager);
-			selection = spectrum_editor->spectrum_editor_check_list->GetSelection();
-			spectrum_editor->spectrum_editor_check_list->SetString(selection, text);
 	 }
 	 delete NewSpectrumDialog;
 
@@ -1689,7 +1659,6 @@ BEGIN_EVENT_TABLE(wxSpectrumEditor, wxFrame)
 	 EVT_BUTTON(XRCID("wxSpectrumCreateButton"),wxSpectrumEditor::OnSpectrumEditorCreateNewSpectrum)
 	 EVT_BUTTON(XRCID("wxSpectrumDeleteButton"),wxSpectrumEditor::OnSpectrumEditorDeleteSpectrum)
 	 EVT_BUTTON(XRCID("wxSpectrumRenameButton"),wxSpectrumEditor::OnSpectrumEditorRenameSpectrum)
-	 EVT_LISTBOX(XRCID("SpectrumCheckList"), wxSpectrumEditor::OnSpectrumListSelected)
 	 EVT_CHECKLISTBOX(XRCID("wxSpectrumSettingsCheckList"), wxSpectrumEditor::OnSpectrumSettingsSelected)
 	 EVT_LISTBOX(XRCID("wxSpectrumSettingsCheckList"), wxSpectrumEditor::OnSpectrumSettingsSelected)
 	 EVT_BUTTON(XRCID("wxSpectrumSettingsAdd"),wxSpectrumEditor::OnSpectrumSettingListAddPressed)
@@ -1720,6 +1689,59 @@ BEGIN_EVENT_TABLE(wxSpectrumEditor, wxFrame)
 	 EVT_BUTTON(XRCID("wxSpectrumAutorangeButton"),wxSpectrumEditor::OnSpectrumAutorangePressed)
 	 EVT_CLOSE(wxSpectrumEditor::CloseSpectrumEditor)
 END_EVENT_TABLE()
+
+static int make_current_spectrum(
+	struct Spectrum_editor *spectrum_editor,
+	struct Spectrum *spectrum)
+/*******************************************************************************
+LAST MODIFIED : 7 January 2008
+
+DESCRIPTION :
+Destroys the edit_spectrum member of <spectrum_editor> and rebuilds it as
+a complete copy of <Spectrum>.
+==============================================================================*/
+{
+	 int return_code;
+
+	ENTER(make_current_spectrum);
+	if (spectrum_editor)
+	{
+		return_code=1;
+		if (spectrum)
+		{
+			if (!IS_MANAGED(Spectrum)(spectrum,
+				spectrum_editor->spectrum_manager))
+			{
+#if defined (TEST_CODE)
+				display_message(ERROR_MESSAGE,
+					"spectrum_editor_dialog_set_spectrum.  Spectrum not managed");
+#endif /* defined (TEST_CODE) */
+				spectrum=(struct Spectrum *)NULL;
+				return_code=0;
+			}
+		}
+		if (!spectrum)
+		{
+			spectrum=FIRST_OBJECT_IN_MANAGER_THAT(Spectrum)(
+				(MANAGER_CONDITIONAL_FUNCTION(Spectrum) *)NULL,
+				(void *)NULL,
+				spectrum_editor->spectrum_manager);
+		}
+ 		spectrum_editor->wx_spectrum_editor->spectrum_editor_spectrum_list_set_selected(
+			 spectrum);
+		spectrum_editor->current_spectrum=spectrum;
+		spectrum_editor_wx_set_spectrum(
+			 spectrum_editor, spectrum_editor->current_spectrum);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"spectrum_editor_dialog_set_spectrum.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* make_current_spectrum */
 
 static int spectrum_editor_wx_update_scene_viewer(
 	struct Spectrum_editor *spectrum_editor)
@@ -1918,6 +1940,40 @@ Callback for when input is received by the scene_viewer.
 	return(return_code);
 } /* spectrum_editor_viewer_input_CB */
 
+void Spectrum_editor_spectrum_change(
+	 struct MANAGER_MESSAGE(Spectrum) *message, void *spectrum_editor_void)
+/*******************************************************************************
+LAST MODIFIED : 7 January 2008
+
+DESCRIPTION :
+Something has changed globally in the spectrum manager. Update the
+current spectrum.
+==============================================================================*/
+{
+	struct Spectrum_editor *spectrum_editor;
+
+	ENTER(Spectrum_editor_spectrum_change);
+	if (message && (spectrum_editor = (struct Spectrum_editor *)spectrum_editor_void))
+	{
+		switch (message->change)
+		{
+			 case MANAGER_CHANGE_REMOVE(Spectrum):
+			 {
+					spectrum_editor->current_spectrum = 
+						 FIRST_OBJECT_IN_MANAGER_THAT(Spectrum)(
+								NULL,(void *)NULL,	spectrum_editor->spectrum_manager);
+					spectrum_editor_wx_set_spectrum(spectrum_editor,spectrum_editor->current_spectrum);
+			 } break;
+		} 
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Materia_editor_materia_change.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Materia_editor_materia_change */
+
 struct Spectrum_editor *CREATE(Spectrum_editor)(
 	 struct Spectrum_editor_dialog **spectrum_editor_dialog_address,
 	 struct Spectrum *spectrum,
@@ -2014,11 +2070,6 @@ Creates a spectrum_editor widget.
 				spectrum_editor->spectrum_panel->SetSize(wxDefaultCoord,wxDefaultCoord,
 					 400, 150);
 				spectrum_editor->spectrum_panel->SetMinSize(wxSize(-1,150));
-				spectrum_editor->spectrum_editor_check_list = XRCCTRL(*spectrum_editor->wx_spectrum_editor
-					 , "SpectrumCheckList", wxListBox);
-				spectrum_editor->spectrum_editor_check_list->SetSize(wxDefaultCoord,wxDefaultCoord,
-					 400, 100);
-				spectrum_editor->spectrum_editor_check_list->SetMinSize(wxSize(-1,100));
 				spectrum_editor->spectrum_editor_frame = XRCCTRL(*spectrum_editor->wx_spectrum_editor
 					 , "CmguiSpectrumEditor", wxFrame);
 				spectrum_editor->spectrum_editor_frame->SetSize(wxDefaultCoord,wxDefaultCoord,
@@ -2273,9 +2324,6 @@ Creates a spectrum_editor widget.
 										spectrum_editor->spectrum_editor_scene_viewer);
 							}
 					 }
-					 FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
-							spectrum_editor_wx_add_item_to_spectrum_editor_check_list, 
-							(void *)spectrum_editor, spectrum_manager);
 					 temp_spectrum = spectrum;
 					 if (!temp_spectrum)
 					 {
@@ -2287,6 +2335,10 @@ Creates a spectrum_editor widget.
 					 make_current_spectrum(spectrum_editor, temp_spectrum);
 					 spectrum_editor->wx_spectrum_editor->set_autorange_scene();
 					 spectrum_editor->wx_spectrum_editor->Show();
+					 spectrum_editor->spectrum_manager_callback_id = 
+							MANAGER_REGISTER(Spectrum)(
+								 Spectrum_editor_spectrum_change, (void *)spectrum_editor, 
+								 spectrum_editor->spectrum_manager);
 				}
 			}
 			else
@@ -2344,6 +2396,7 @@ Set the <spectrum> to be edited by the <spectrum_editor>.
 			if (spectrum_editor->edit_spectrum)
 			{
 				DESTROY(Spectrum)(&(spectrum_editor->edit_spectrum));
+				spectrum_editor->edit_spectrum = (struct Spectrum *)NULL;
 			}
 		}
 		spectrum_editor_wx_update_scene_viewer(spectrum_editor);
@@ -2359,44 +2412,6 @@ Set the <spectrum> to be edited by the <spectrum_editor>.
 
 	return (return_code);
 } /* spectrum_editor_set_spectrum */
-
-int spectrum_editor_wx_add_item_to_spectrum_editor_check_list(struct Spectrum *spectrum, void *spectrum_editor_void)
-/*******************************************************************************
-LAST MODIFIED : 28 August 2007
-
-DESCRIPTION :
-Add spectrum item to the spectrum_editor.
-==============================================================================*/
-{
-	 char *spectrum_name;
-	 struct Spectrum_editor *spectrum_editor;
-	 int number_of_spectrums, return_code;
-
-	 ENTER(Spectrum_editor_wx_add_item_to_spectrum_editor_check_list);
-	 if ((spectrum_editor = (struct Spectrum_editor *)spectrum_editor_void) &&
-			(spectrum_editor->spectrum_editor_check_list) &&
-			(spectrum_name =  Spectrum_get_name(spectrum)))
-	 {
-				 spectrum_editor->spectrum_editor_check_list->Append(spectrum_name);
-				 number_of_spectrums = spectrum_editor->spectrum_editor_check_list->GetCount();
-				 spectrum_editor->spectrum_editor_check_list->SetClientData(number_of_spectrums - 1,
-						(void *)spectrum);
-				 if (spectrum_editor->edit_spectrum == spectrum)
-				 {
-						spectrum_editor->spectrum_editor_check_list->SetSelection(number_of_spectrums - 1);
-				 }
-				 return_code = 1;
-	 }
-	 else
-	 {
-		display_message(ERROR_MESSAGE,
-			"Spectrum_editor_wx_add_item_to_spectrum_editor_check_list.  Invalid argument(s)");
-		return_code = 0;
-	 }
-	 LEAVE;
-
-	 return (return_code);
-} /* spectrum_editor_wx_add_item_to_spectrum_editor_check_list */
 
 int DESTROY(Spectrum_editor)(struct Spectrum_editor **spectrum_editor_address)
 /*******************************************************************************
@@ -2440,7 +2455,13 @@ Destroys the <*spectrum_editor_address> and sets
 			DEACCESS(Spectrum)(
 				&(spectrum_editor->edit_spectrum));
 		}
-
+		if (spectrum_editor->spectrum_manager_callback_id)
+		{
+			 MANAGER_DEREGISTER(Spectrum)(
+					spectrum_editor->spectrum_manager_callback_id,
+					spectrum_editor->spectrum_manager);
+			 spectrum_editor->spectrum_manager_callback_id = (void *)NULL;
+		}
 		DEALLOCATE(*spectrum_editor_address);
 		*spectrum_editor_address = (struct Spectrum_editor *)NULL;
 	}
