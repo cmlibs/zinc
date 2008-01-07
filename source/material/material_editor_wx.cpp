@@ -60,9 +60,10 @@ extern "C" {
 #include "wx/wx.h"
 #include "wx/xrc/xmlres.h"
 #include "choose/choose_manager_class.hpp"
+#include "choose/choose_manager_listbox_class.hpp"
+#include "colour/colour_editor_wx.hpp"
 #include "icon/cmiss_icon.xpm"
 #include "material/material_editor_wx.xrch"
-#include "colour/colour_editor_wx.hpp"
 
 class wxMaterialEditor;
 
@@ -81,7 +82,6 @@ Note that we just hold a pointer to the material_editor, and must access and
 deaccess it.
 ==============================================================================*/
 {
-	 /* void *manager_callback_id; */
 	 int background;
 	 /* edit_material is always a local copy of what is passed to the editor */
 	 struct Graphical_material *edit_material, *current_material;
@@ -91,7 +91,7 @@ deaccess it.
 	 struct Material_editor_dialog **material_editor_dialog_address;
 	 struct User_interface *user_interface;
 	 wxMaterialEditor *wx_material_editor;
-	 wxListBox *material_editor_list_box;
+	 //wxListBox *material_editor_list_box;
 	 wxCheckBox *material_editor_texture_check_box, *material_editor_second_texture_check_box,
 			*material_editor_third_texture_check_box, *material_editor_fourth_texture_check_box,
 			*material_editor_per_pixel_checkbox, *material_editor_bump_mapping_checkbox;
@@ -100,11 +100,12 @@ deaccess it.
 			*material_editor_sample_panel, *material_editor_texture_chooser_panel,
 			*material_editor_second_texture_chooser_panel,
 			*material_editor_third_texture_chooser_panel,
-			*material_editor_fourth_texture_chooser_panel;
+			*material_editor_fourth_texture_chooser_panel, *test_list_panel;
 	 wxSlider *material_editor_alpha_slider, *material_editor_shininess_slider;
 	 wxTextCtrl *material_editor_alpha_text_ctrl, *material_editor_shininess_text_ctrl;
 	 Colour_editor *ambient_colour_editor, *diffuse_colour_editor, *emitted_colour_editor,
 			*specular_colour_editor;
+ 	 void *material_manager_callback_id;
 }; /* Material_editor */
 
 /*
@@ -112,103 +113,11 @@ Global functions
 ----------------
 */
 
-static int make_current_material(
-	struct Material_editor *material_editor,
-	struct Graphical_material *material)
-/*******************************************************************************
-LAST MODIFIED : 10 March 1998
-
-DESCRIPTION :
-Destroys the current material member of <material_editor> and rebuilds it as
-a complete copy of <Material>.
+/******************************************************************************
+ prototype
 ==============================================================================*/
-{
-	 int return_code, i, number_of_materials;
-	 struct Graphical_material *temp_material;
-	ENTER(make_current_material);
-	if (material_editor)
-	{
-		return_code=1;
-		if (material)
-		{
-			if (!IS_MANAGED(Graphical_material)(material,
-				material_editor->graphical_material_manager))
-			{
-				display_message(ERROR_MESSAGE,
-					"make_current_material.  Material not managed");
-				material=(struct Graphical_material *)NULL;
-				return_code=0;
-			}
-		}
-		if (!material)
-		{
-			material=FIRST_OBJECT_IN_MANAGER_THAT(Graphical_material)(
-				(MANAGER_CONDITIONAL_FUNCTION(Graphical_material) *)NULL,
-				(void *)NULL,
-				material_editor->graphical_material_manager);
-		}
-		number_of_materials = 
-			 material_editor->material_editor_list_box->GetCount();
-		for (i=0; i < number_of_materials ; i++ )
-		{
-			 temp_material= (struct Graphical_material *)(
-					material_editor->material_editor_list_box->GetClientData(i));
-			 if (temp_material == material)
-			 {
-					material_editor->material_editor_list_box->SetSelection(i);
-					break;
-			 }
-		}
-		material_editor->current_material=material;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"material_editor_dialog_set_material.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-int material_editor_wx_add_item_to_material_editor_list_box(struct Graphical_material *material,
-	  void *material_editor_void)
-/*******************************************************************************
-LAST MODIFIED : 6 November 2007
-
-DESCRIPTION :
-Add material to the material_editor.
-==============================================================================*/
-{
-	 char *material_name;
-	 struct Material_editor *material_editor;
-	 int number_of_materials, return_code;
-
-	 ENTER(Material_editor_wx_add_item_to_material_editor_check_list);
-	 if ((material_editor = (struct Material_editor *)material_editor_void) &&
-			(material_editor->material_editor_list_box) &&
-			(material_name = Graphical_material_name(material)))
-	 {
-				 material_editor->material_editor_list_box->Append(material_name);
-				 number_of_materials = material_editor->material_editor_list_box->GetCount();
-				 material_editor->material_editor_list_box->SetClientData(number_of_materials - 1,
-						(void *)material);
-				 if (material_editor->edit_material == material)
-				 {
-						material_editor->material_editor_list_box->SetSelection(number_of_materials - 1);
-				 }
-				 return_code = 1;
-	 }
-	 else
-	 {
-		display_message(ERROR_MESSAGE,
-			"Material_editor_wx_add_item_to_material_editor_check_list.  Invalid argument(s)");
-		return_code = 0;
-	 }
-	 LEAVE;
-
-	 return (return_code);
-} /* material_editor_wx_add_item_to_material_editor_check_list */
+static int make_current_material(struct Material_editor *material_editor,
+	 struct Graphical_material *material);
 
 static int material_editor_draw_sphere(struct Material_editor *material_editor)
 /*******************************************************************************
@@ -557,6 +466,9 @@ class wxMaterialEditor : public wxFrame
 	 *material_editor_third_texture_chooser;
 	 Managed_object_chooser<Texture, MANAGER_CLASS(Cmiss_texture)>
 	 *material_editor_fourth_texture_chooser;
+	 DEFINE_MANAGER_CLASS(Graphical_material);
+	 Managed_object_listbox<Graphical_material, MANAGER_CLASS(Graphical_material)>
+	 *graphical_material_object_listbox;
 
 public:
 
@@ -567,6 +479,23 @@ public:
 			wxXmlResource::Get()->LoadFrame(this,
 				 (wxWindow *)NULL, _T("CmguiMaterialEditor"));
 			this->SetIcon(cmiss_icon_xpm);
+
+
+			material_editor->test_list_panel = XRCCTRL(*this,
+				 "TestListPanel", wxPanel);
+			material_editor->test_list_panel->SetSize(wxDefaultCoord,wxDefaultCoord,
+				 400, 200);
+			material_editor->test_list_panel->SetMinSize(wxSize(-1,100));
+
+			graphical_material_object_listbox =
+				 new Managed_object_listbox<Graphical_material, MANAGER_CLASS(Graphical_material)>
+				 (material_editor->test_list_panel, (struct Graphical_material*)NULL, material_editor->graphical_material_manager,
+						(MANAGER_CONDITIONAL_FUNCTION(Graphical_material) *)NULL, (void *)NULL, material_editor->user_interface);
+			Callback_base<Graphical_material* > *material_editor_graphical_material_list_callback = 
+				 new Callback_member_callback< Graphical_material*,
+				 wxMaterialEditor, int (wxMaterialEditor::*)(Graphical_material *) >
+				 (this, &wxMaterialEditor::material_editor_graphical_material_list_callback);
+			graphical_material_object_listbox->set_callback(material_editor_graphical_material_list_callback);
 
 			material_editor->material_editor_texture_chooser_panel = 
 				 XRCCTRL(*this, "MaterialEditorTextureChooserPanel", wxPanel);
@@ -626,11 +555,47 @@ public:
 
 	 ~wxMaterialEditor()
 	 {
+			delete graphical_material_object_listbox;
 			delete material_editor_texture_chooser;
 			delete material_editor_second_texture_chooser;
 			delete material_editor_third_texture_chooser;
 			delete material_editor_fourth_texture_chooser;
 	 };
+
+int material_editor_graphical_material_list_callback(Graphical_material *material)
+{
+	 ENTER(material_editor_graphical_material_callback);
+	 if (!((graphical_material_object_listbox->get_number_of_object() > 0) && (material == NULL)))
+	 {
+			material_editor->current_material = material;
+			material_editor_wx_set_material(material_editor,material);
+	 }
+	 LEAVE;
+	 
+	 return 1;
+}
+
+void material_editor_graphical_material_list_set_selected(Graphical_material *material)
+{
+	 ENTER(material_editor_graphical_material_list_set_selected);
+	 if (graphical_material_object_listbox)
+	 {
+			graphical_material_object_listbox->set_object(material);
+	 }
+	 LEAVE;
+}
+
+struct Graphical_material *material_editor_graphical_material_list_get_selected()
+{
+	 if (graphical_material_object_listbox)
+	 {
+			return(graphical_material_object_listbox->get_object());
+	 }
+	 else
+	 {
+			return ((Graphical_material *)NULL);
+	 }
+}
 
 int material_editor_texture_callback(Texture *texture)
 /*******************************************************************************
@@ -995,26 +960,7 @@ Callback for the texture check box
 	 LEAVE;
 }
 
-void OnMaterialEditorListBoxSelected(wxCommandEvent& event)
-{
-	 ENTER(OnMaterialListBoxSelected);
-
-	 Graphical_material *material;
-	 if (material_editor->material_editor_list_box)
-	 {
-			int selection;
-			selection = material_editor->material_editor_list_box->GetSelection();
-			if (selection >= 0)
-			{
-				 material = (Graphical_material *)(material_editor->material_editor_list_box->GetClientData(selection));
-				 material_editor->current_material = material;
-				 material_editor_wx_set_material(material_editor,material);
-			}
-	 }
-	 LEAVE;
-}
-
-void OnMateruialEditorApplyButtonPressed(wxCommandEvent& event)
+void OnMaterialEditorApplyButtonPressed(wxCommandEvent& event)
 {
 	 ENTER(OnMateruialEditorApplyButtonPressed)
 	 if (material_editor->current_material && material_editor->edit_material)
@@ -1027,7 +973,7 @@ void OnMateruialEditorApplyButtonPressed(wxCommandEvent& event)
 	 }
 	 LEAVE;
 }
-void OnMateruialEditorOKButtonPressed(wxCommandEvent& event)
+void OnMaterialEditorOKButtonPressed(wxCommandEvent& event)
 {
 	 ENTER(OnMateruialEditorOKButtonPressed)
 	 if (material_editor->current_material && material_editor->edit_material)
@@ -1041,13 +987,13 @@ void OnMateruialEditorOKButtonPressed(wxCommandEvent& event)
 	 DESTROY(Material_editor_dialog)(material_editor->material_editor_dialog_address);
 	 LEAVE;
 }
-void OnMateruialEditorRevertButtonPressed(wxCommandEvent& event)
+void OnMaterialEditorRevertButtonPressed(wxCommandEvent& event)
 {
 	 ENTER(MateruialEditorRevertButtonPressed)
 	 material_editor_wx_set_material(material_editor, material_editor->current_material);
 	 LEAVE;
 }
-void OnMateruialEditorCancelButtonPressed(wxCommandEvent& event)
+void OnMaterialEditorCancelButtonPressed(wxCommandEvent& event)
 {
 	 ENTER(OnMateruialEditorCancelButtonPressed)
 	 material_editor_wx_set_material(material_editor, material_editor->current_material);
@@ -1075,10 +1021,6 @@ void OnMaterialEditorCreateNewMaterial(wxCommandEvent& event)
 							 material);
 						ADD_OBJECT_TO_MANAGER(Graphical_material)(
 							 material, material_editor->graphical_material_manager);
-						material_editor->material_editor_list_box->Clear();
-						FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
-							 material_editor_wx_add_item_to_material_editor_list_box, 
-							 (void *)material_editor, material_editor->graphical_material_manager);
 						make_current_material(material_editor, material);
 						material_editor_wx_set_material(material_editor,material);
 				 }
@@ -1095,10 +1037,6 @@ void OnMaterialEditorDeleteMaterial(wxCommandEvent& event)
 	 REMOVE_OBJECT_FROM_MANAGER(Graphical_material)(
 			material_editor->current_material,material_editor->graphical_material_manager);
 	 material_editor->current_material = NULL;
-	 material_editor->material_editor_list_box->Clear();
-	 FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
-			material_editor_wx_add_item_to_material_editor_list_box, 
-			(void *)material_editor, material_editor->graphical_material_manager);
 	 make_current_material(material_editor, NULL);
 	 material_editor_wx_set_material(material_editor,material_editor->current_material);
 
@@ -1108,10 +1046,10 @@ void OnMaterialEditorDeleteMaterial(wxCommandEvent& event)
 void OnMaterialEditorRenameMaterial(wxCommandEvent& event)
 {
 	 ENTER(OnMaterialEditorRenameMaterial);
-	 int selection;
+	 //int selection;
 	 char *text;
 	 wxTextEntryDialog *NewMaterialDialog = new wxTextEntryDialog(this, "Enter name", 
-			"Please Enter Name", material_editor->material_editor_list_box->GetStringSelection(),
+			"Please Enter Name", graphical_material_object_listbox->get_string_selection(),
 			wxOK|wxCANCEL|wxCENTRE, wxDefaultPosition);
 	 if (NewMaterialDialog->ShowModal() == wxID_OK)
 	 {
@@ -1119,8 +1057,6 @@ void OnMaterialEditorRenameMaterial(wxCommandEvent& event)
 			MANAGER_MODIFY_IDENTIFIER(Graphical_material, name)
 				 (material_editor->current_material, text,
 				 material_editor->graphical_material_manager);
-			selection = material_editor->material_editor_list_box->GetSelection();
-			material_editor->material_editor_list_box->SetString(selection, text);
 	 }
 	 delete NewMaterialDialog;
 
@@ -1172,7 +1108,6 @@ BEGIN_EVENT_TABLE(wxMaterialEditor, wxFrame)
 	 EVT_BUTTON(XRCID("MaterialDeleteButton"), wxMaterialEditor::OnMaterialEditorDeleteMaterial)
 	 EVT_BUTTON(XRCID("MaterialRenameButton"), wxMaterialEditor::OnMaterialEditorRenameMaterial)
 	 EVT_BUTTON(XRCID("MaterialCreateButton"), wxMaterialEditor::OnMaterialEditorCreateNewMaterial)
-	 EVT_LISTBOX(XRCID("MaterialListBox"), wxMaterialEditor::OnMaterialEditorListBoxSelected)
 	 EVT_TEXT_ENTER(XRCID("MaterialEditorAlphaTextCtrl"),wxMaterialEditor::OnMaterialEditorAlphaTextEntered)
 	 EVT_TEXT_ENTER(XRCID("MaterialEditorShininessTextCtrl"),wxMaterialEditor::OnMaterialEditorShininessTextEntered)
 	 EVT_COMMAND_SCROLL(XRCID("MaterialEditorAlphaSlider"),wxMaterialEditor::OnMaterialEditorAlphaSliderChanged)
@@ -1183,12 +1118,96 @@ BEGIN_EVENT_TABLE(wxMaterialEditor, wxFrame)
 	 EVT_CHECKBOX(XRCID("MaterialEditorFourthTextureCheckBox"), wxMaterialEditor::OnMaterialEditorFourthTextureCheckBoxChecked)
 	 EVT_CHECKBOX(XRCID("MaterialEditorPerPixelLightingCheckBox"), wxMaterialEditor::OnMaterialEditorAdvancedSettingsChanged)
 	 EVT_CHECKBOX(XRCID("MaterialEditorBumpMappingCheckBox"), wxMaterialEditor::OnMaterialEditorAdvancedSettingsChanged)
-	 EVT_BUTTON(XRCID("wxMaterialApplyButton"),wxMaterialEditor::OnMateruialEditorApplyButtonPressed)
-	 EVT_BUTTON(XRCID("wxMaterialOKButton"),wxMaterialEditor::OnMateruialEditorOKButtonPressed)
-	 EVT_BUTTON(XRCID("wxMaterialRevertButton"),wxMaterialEditor::OnMateruialEditorRevertButtonPressed)
-	 EVT_BUTTON(XRCID("wxMaterialCancelButton"),wxMaterialEditor::OnMateruialEditorCancelButtonPressed)
+	 EVT_BUTTON(XRCID("wxMaterialApplyButton"),wxMaterialEditor::OnMaterialEditorApplyButtonPressed)
+	 EVT_BUTTON(XRCID("wxMaterialOKButton"),wxMaterialEditor::OnMaterialEditorOKButtonPressed)
+	 EVT_BUTTON(XRCID("wxMaterialRevertButton"),wxMaterialEditor::OnMaterialEditorRevertButtonPressed)
+	 EVT_BUTTON(XRCID("wxMaterialCancelButton"),wxMaterialEditor::OnMaterialEditorCancelButtonPressed)
 	 EVT_CLOSE(wxMaterialEditor::CloseMaterialEditor)
 END_EVENT_TABLE()
+
+static int make_current_material(
+	struct Material_editor *material_editor,
+	struct Graphical_material *material)
+/*******************************************************************************
+LAST MODIFIED : 10 March 1998
+
+DESCRIPTION :
+Destroys the current material member of <material_editor> and rebuilds it as
+a complete copy of <Material>.
+==============================================================================*/
+{
+	 int return_code;
+	ENTER(make_current_material);
+	if (material_editor)
+	{
+		return_code=1;
+		if (material)
+		{
+			if (!IS_MANAGED(Graphical_material)(material,
+				material_editor->graphical_material_manager))
+			{
+#if defined (TEST_CODE)
+				display_message(ERROR_MESSAGE,
+					"make_current_material.  Material not managed");
+#endif /* defined (TEST_CODE) */
+				material=(struct Graphical_material *)NULL;
+				return_code=0;
+			}
+		}
+		if (!material)
+		{
+			material=FIRST_OBJECT_IN_MANAGER_THAT(Graphical_material)(
+				(MANAGER_CONDITIONAL_FUNCTION(Graphical_material) *)NULL,
+				(void *)NULL,
+				material_editor->graphical_material_manager);
+		}
+		material_editor->wx_material_editor->material_editor_graphical_material_list_set_selected(
+			 material);
+		material_editor->current_material=material;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"material_editor_dialog_set_material.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+void Material_editor_material_change(
+	 struct MANAGER_MESSAGE(Graphical_material) *message, void *material_editor_void)
+/*******************************************************************************
+LAST MODIFIED : 7 January 2008
+
+DESCRIPTION :
+Something has changed globally in the material manager. Update the
+current material.
+==============================================================================*/
+{
+	struct Material_editor *material_editor;
+
+	ENTER(Materia_editor_material_change);
+	if (message && (material_editor = (struct Material_editor *)material_editor_void))
+	{
+		switch (message->change)
+		{
+			 case MANAGER_CHANGE_REMOVE(Graphical_material):
+			 {
+					material_editor->current_material = 
+						 FIRST_OBJECT_IN_MANAGER_THAT(Graphical_material)(
+								NULL,(void *)NULL,	material_editor->graphical_material_manager);
+					material_editor_wx_set_material(material_editor,material_editor->current_material);
+			 } break;
+		} 
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Materia_editor_materia_change.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Materia_editor_materia_change */
 
 struct Material_editor *CREATE(Material_editor)(
 	 struct Material_editor_dialog **material_editor_dialog_address,
@@ -1216,7 +1235,7 @@ Creates a Material_editor.
 			if (ALLOCATE(material_editor, struct Material_editor, 1))
 			{
 				/* initialise the structure */
-				/* material_editor->manager_callback_id=(void *)NULL; */
+				material_editor->material_manager_callback_id=(void *)NULL;
 				material_editor->background=0; /* tri-colour */
 				material_editor->material_editor_dialog_address = material_editor_dialog_address;
 				material_editor->texture_manager=texture_manager;
@@ -1227,11 +1246,6 @@ Creates a Material_editor.
 				material_editor->user_interface = user_interface;
 				material_editor->wx_material_editor = (wxMaterialEditor *)NULL;
 				material_editor->wx_material_editor = new wxMaterialEditor(material_editor);
-				material_editor->material_editor_list_box = XRCCTRL(*material_editor->wx_material_editor
-					 , "MaterialListBox", wxListBox);
-				material_editor->material_editor_list_box->SetSize(wxDefaultCoord,wxDefaultCoord,
-					 400, 200);
-				material_editor->material_editor_list_box->SetMinSize(wxSize(-1,100));
 				material_editor->material_editor_ambient_colour_panel = XRCCTRL(
 					 *material_editor->wx_material_editor, "MaterialEditorPanel1", wxPanel);
 				material_editor->ambient_colour_editor = new Colour_editor(
@@ -1274,12 +1288,6 @@ Creates a Material_editor.
 					 , "MaterialEditorPerPixelLightingCheckBox", wxCheckBox);
 				material_editor->material_editor_bump_mapping_checkbox = XRCCTRL(*material_editor->wx_material_editor
 					 , "MaterialEditorBumpMappingCheckBox", wxCheckBox);
-				if (material_editor->wx_material_editor !=NULL)
-				{
-					 FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
-							material_editor_wx_add_item_to_material_editor_list_box, 
-							(void *)material_editor, graphical_material_manager);
-				}
 				temp_material = material;
 				if (!temp_material)
 				{
@@ -1288,7 +1296,10 @@ Creates a Material_editor.
 							material_editor->graphical_material_manager);
 				}
 				make_current_material(material_editor, temp_material);
-
+				material_editor->material_manager_callback_id = 
+					 MANAGER_REGISTER(Graphical_material)(
+					 Material_editor_material_change, (void *)material_editor, 
+					 material_editor->graphical_material_manager);
 				/* now bring up a 3d drawing widget */
 				init_widgets = 1;
 				if (!(material_editor->graphics_buffer=
@@ -1361,6 +1372,14 @@ Destroys the <*material_editor_address> and sets
 		if (material_editor->graphics_buffer)
 		{
 			DESTROY(Graphics_buffer)(&(material_editor->graphics_buffer));
+		}
+		if (material_editor->material_manager_callback_id)
+		{
+			 MANAGER_DEREGISTER(Graphical_material)(
+					material_editor->material_manager_callback_id,
+					material_editor->graphical_material_manager);
+			 material_editor->material_manager_callback_id = (void *)NULL;
+
 		}
 		DEALLOCATE(*material_editor_address);
 		*material_editor_address = (struct Material_editor *)NULL;
@@ -1564,6 +1583,8 @@ Update the material colour and settings in the material editor .
 	 ENTER(material_editor_update_colour);
 
 	 Material_editor *material_editor;
+	 Colour temp_colour;
+
 	 if (material_editor=(struct Material_editor *)material_editor_void)
 	 {
 			Graphical_material_set_ambient(material_editor->edit_material,

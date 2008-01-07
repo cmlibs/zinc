@@ -46,12 +46,12 @@
 						<sashpos>115</sashpos>
 
 						<object class ="wxPanel">
-			 				<object class = "wxStaticBoxSizer">	
+			 				<object class = "wxStaticBoxSizer">
+								<orient>wxVERTICAL</orient>
          						<object class ="sizeritem">
 		     						<flag>wxEXPAND</flag>
 									<option>1</option>
-            						<object class="wxListBox" name="MaterialListBox">
-              						<style>wxLB_SINGLE</style>
+            						<object class="wxPanel" name="TestListPanel">
             						</object>
          						</object>
         					</object>
