@@ -769,7 +769,7 @@ void Colour_editor::colour_editor_wx_update_panel_colour()
 	 LEAVE;
 }
 
-Colour *Colour_editor::colour_editor_wx_get_colour()
+Colour Colour_editor::colour_editor_wx_get_colour()
 /*******************************************************************************
 LAST MODIFIED : 30 November 2007
 
@@ -777,7 +777,12 @@ DESCRIPTION :
 Get current colour.
 ==============================================================================*/
 {
-	 return &current;
+	 Colour temp_colour;
+
+	 colour_editor_wx_conversion(current_mode,COLOUR_EDITOR_RGB,
+			&current, &temp_colour);
+
+	 return (temp_colour);
 }
 
 int Colour_editor::colour_editor_wx_set_colour(struct Colour *colour)

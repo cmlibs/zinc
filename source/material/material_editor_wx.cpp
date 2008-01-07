@@ -1587,14 +1587,14 @@ Update the material colour and settings in the material editor .
 
 	 if (material_editor=(struct Material_editor *)material_editor_void)
 	 {
-			Graphical_material_set_ambient(material_editor->edit_material,
-				 material_editor->ambient_colour_editor->colour_editor_wx_get_colour());
-			Graphical_material_set_diffuse(material_editor->edit_material,
-				 material_editor->diffuse_colour_editor->colour_editor_wx_get_colour());
-			Graphical_material_set_emission(material_editor->edit_material,
-				 material_editor->emitted_colour_editor->colour_editor_wx_get_colour());
-			Graphical_material_set_specular(material_editor->edit_material,
-				 material_editor->specular_colour_editor->colour_editor_wx_get_colour());
+			temp_colour = material_editor->ambient_colour_editor->colour_editor_wx_get_colour();
+			Graphical_material_set_ambient(material_editor->edit_material, &temp_colour);
+			temp_colour = material_editor->diffuse_colour_editor->colour_editor_wx_get_colour();
+			Graphical_material_set_diffuse(material_editor->edit_material, &temp_colour);
+			temp_colour = material_editor->emitted_colour_editor->colour_editor_wx_get_colour();
+			Graphical_material_set_emission(material_editor->edit_material, &temp_colour);
+			temp_colour = material_editor->specular_colour_editor->colour_editor_wx_get_colour();
+			Graphical_material_set_specular(material_editor->edit_material, &temp_colour);
 			material_editor_update_picture(material_editor);
 	 }
 	 else

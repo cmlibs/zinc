@@ -76,7 +76,7 @@ public:
 	 Colour_editor(wxPanel *parent, const char *panel_name, enum Colour_editor_mode mode, struct Colour *colour, 
 			void *material_editor_temp);
 	 int colour_editor_wx_set_colour(struct Colour *colour);
-	 Colour *colour_editor_wx_get_colour();
+	 Colour colour_editor_wx_get_colour();
 	 void colour_editor_wx_get_colour_from_interface_textctrl(struct Colour *colour);
 	 void colour_editor_wx_get_colour_from_interface_slider(struct Colour *colour);
 	 void colour_editor_wx_change_mode_from_choice();
