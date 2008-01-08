@@ -1563,12 +1563,12 @@ void OnSpectrumAutorangePressed(wxCommandEvent &event)
 	 {
 			range_set = 0;
 			Scene_get_data_range_for_spectrum(spectrum_editor->autorange_scene,
-				 spectrum_editor->edit_spectrum,
+				 spectrum_editor->current_spectrum,
 				 &minimum, &maximum, &range_set);
 			if ( range_set )
 			{
 				 Spectrum_set_minimum_and_maximum(
-						spectrum_editor->current_spectrum,
+						spectrum_editor->edit_spectrum,
 						minimum, maximum );
 				 spectrum_editor_wx_set_settings(spectrum_editor);
 				 spectrum_editor_wx_make_settings_list(spectrum_editor);
