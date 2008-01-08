@@ -1261,17 +1261,18 @@ name the <file_operation> is performed on the file with the <arguments>.
 				{
 					 if (ALLOCATE(temp_directory_name,char,lastlength+1))
 					 {
-							strncpy(temp_directory_name,filename,lastlength);
+							strncpy(temp_directory_name,filename,lastlength-1);
+							strcat(temp_directory_name, "\'");
 							temp_directory_name[lastlength]='\0';
 							if (ALLOCATE(directory_name,char,lastlength-length+2))
 							{
 								 directory_name = &temp_directory_name[length-1];
-								 directory_name[lastlength-length+1]='\0';			
-								 if (ALLOCATE(temp_string,char,lastlength-length+10))
+								 directory_name[lastlength-length+1]='\0';
+								 if (ALLOCATE(temp_string,char,lastlength-length+11))
 								 {
-										strcpy(temp_string, "set dir ");
+										strcpy(temp_string, "set dir \'");
 										strcat(temp_string, directory_name);
-										temp_string[lastlength-length+9]='\0';
+										temp_string[lastlength-length+10]='\0';
 										Execute_command_execute_string(file_open_data->execute_command,temp_string);
 										temp_name=&filename[lastlength];
 										if (file_open_data->operation)
@@ -1892,17 +1893,18 @@ wxFileDialog *SaveData = new wxFileDialog ((wxWindow *)NULL,shell_title,"","",
 				{
 					 if (ALLOCATE(temp_directory_name,char,lastlength+1))
 					 {
-							strncpy(temp_directory_name,filename,lastlength);
+							strncpy(temp_directory_name,filename,lastlength-1);
+							strcat(temp_directory_name, "\'");
 							temp_directory_name[lastlength]='\0';
 							if (ALLOCATE(directory_name,char,lastlength-length+2))
 							{
 								 directory_name = &temp_directory_name[length-1];
 								 directory_name[lastlength-length+1]='\0';			
-								 if (ALLOCATE(temp_string,char,lastlength-length+10))
+								 if (ALLOCATE(temp_string,char,lastlength-length+11))
 								 {
-										strcpy(temp_string, "set dir ");
+										strcpy(temp_string, "set dir \'");
 										strcat(temp_string, directory_name);
-										temp_string[lastlength-length+9]='\0';
+										temp_string[lastlength-length+10]='\0';
 										Execute_command_execute_string(file_open_data->execute_command,temp_string);
 										temp_name=&filename[lastlength];
 										if (file_open_data->operation)
@@ -1919,7 +1921,6 @@ wxFileDialog *SaveData = new wxFileDialog ((wxWindow *)NULL,shell_title,"","",
 										}
 										DEALLOCATE(temp_string);
 								 }
-								 DEALLOCATE(directory_name);
 							}
 							DEALLOCATE(temp_directory_name);
 					 }

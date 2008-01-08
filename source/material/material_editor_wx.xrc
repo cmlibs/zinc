@@ -51,7 +51,7 @@
          						<object class ="sizeritem">
 		     						<flag>wxEXPAND</flag>
 									<option>1</option>
-            						<object class="wxPanel" name="TestListPanel">
+            						<object class="wxPanel" name="MaterialListPanel">
             						</object>
          						</object>
         					</object>

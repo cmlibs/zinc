@@ -750,6 +750,7 @@ Since both nodes and data can depend on embedded fields, the
 				{
 					 node_viewer->template_node = (struct FE_node *)NULL;
 				}
+				wxLogNull logNo;
 				node_viewer->wx_node_viewer = new wxNodeViewer(node_viewer);
 				node_viewer->collpane = 
 					 XRCCTRL(*node_viewer->wx_node_viewer, "VariableViewerPanel", wxScrolledWindow);

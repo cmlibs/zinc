@@ -396,6 +396,7 @@ resource manager hierarchy.
 			 /* create the window shell */
 #if defined (WX_USER_INTERFACE)
 			 comfile_window->wx_comfile_window = (wxComfileWindow *)NULL;
+			 wxLogNull logNo;
 			 comfile_window->wx_comfile_window = new 
 					wxComfileWindow(comfile_window);
 #endif /* defined (WX_USER_INTERFACE) */

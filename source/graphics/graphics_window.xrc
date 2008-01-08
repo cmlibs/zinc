@@ -30,8 +30,8 @@
 										</object>
 										<object class="sizeritem">
 											<object class	="wxPanel" name="GraphicsWindowSceneChooserPanel">
-												<size>100,30</size>
-	 										</object>
+	 											<size>150,30</size>
+											</object>
 										</object>
 									</object>
 								</object>

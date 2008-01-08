@@ -2316,23 +2316,19 @@ fields.
 				element_point_viewer->frame_height = 0;
 				element_point_viewer->init_width = 0;
 				element_point_viewer->init_height=0;
+				wxLogNull logNo;
 				element_point_viewer->wx_element_point_viewer = new wxElementPointViewer(element_point_viewer);
 				Element_point_viewer_refresh_grid_value_text(element_point_viewer);	
 				element_point_viewer->collpane =
 					 XRCCTRL(*element_point_viewer->wx_element_point_viewer,"ElementVariableViewerPanel", wxScrolledWindow);
-// 				element_point_viewer->sizer_1 = new wxBoxSizer(wxVERTICAL);
 				element_point_viewer->element_point_win=NULL;
 				element_point_viewer->paneSz = NULL;
-// 				element_point_viewer->collpane = NULL;
 				wxBoxSizer *Collpane_sizer = new wxBoxSizer( wxVERTICAL );
 				element_point_viewer->collpane->SetSizer(Collpane_sizer);
 				FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
 					 element_point_viewer_add_collpane,
 					 (void *)element_point_viewer,
 					 computed_field_manager);
-// 				element_point_viewer->variable_viewer_panel->SetAutoLayout(true);
-// 				element_point_viewer->variable_viewer_panel->SetSizer(element_point_viewer->sizer_1);
-// 				element_point_viewer->sizer_1->Fit(element_point_viewer->variable_viewer_panel);
 				element_point_viewer->frame=
 					 XRCCTRL(*element_point_viewer->wx_element_point_viewer, 
 							"CmguiElementPointViewer", wxFrame);

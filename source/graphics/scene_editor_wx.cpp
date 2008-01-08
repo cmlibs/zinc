@@ -4617,6 +4617,7 @@ DESCRIPTION :
 			 scene_editor->root_region = root_region;
 			 scene_editor->graphical_items_list_panel = NULL;
 			 scene_editor->wx_scene_editor = (wxSceneEditor *)NULL;
+			 wxLogNull logNo;
 			 scene_editor->wx_scene_editor = new 
 					wxSceneEditor(scene_editor);
 			 scene_editor->lower_panel=
@@ -4684,7 +4685,6 @@ DESCRIPTION :
 			 scene_editor->graphical_items_list_panel->SetScrollbars(10,10,40,40);
 			 scene_editor->graphical_items_list_panel->FitInside();
 			 scene_editor->topsplitter->Layout();
-// 			 MANAGER_CALLBACK_FUNCTION(Scene)(scene_editor_wx_scene_object_callback_function);
 		}
 		else
 		{

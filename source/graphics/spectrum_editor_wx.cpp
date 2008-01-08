@@ -2064,6 +2064,7 @@ Creates a spectrum_editor widget.
 				spectrum_editor->spectrum_lower_panel = NULL;
 				// User_Interface
 				spectrum_editor->wx_spectrum_editor = (wxSpectrumEditor *)NULL;
+				wxLogNull logNo;
 				spectrum_editor->wx_spectrum_editor = new wxSpectrumEditor(spectrum_editor);
 				spectrum_editor->spectrum_panel = XRCCTRL(*spectrum_editor->wx_spectrum_editor
 					 , "SpectrumPanel", wxPanel);

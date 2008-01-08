@@ -100,7 +100,7 @@ deaccess it.
 			*material_editor_sample_panel, *material_editor_texture_chooser_panel,
 			*material_editor_second_texture_chooser_panel,
 			*material_editor_third_texture_chooser_panel,
-			*material_editor_fourth_texture_chooser_panel, *test_list_panel;
+			*material_editor_fourth_texture_chooser_panel, *material_list_panel;
 	 wxSlider *material_editor_alpha_slider, *material_editor_shininess_slider;
 	 wxTextCtrl *material_editor_alpha_text_ctrl, *material_editor_shininess_text_ctrl;
 	 Colour_editor *ambient_colour_editor, *diffuse_colour_editor, *emitted_colour_editor,
@@ -481,15 +481,15 @@ public:
 			this->SetIcon(cmiss_icon_xpm);
 
 
-			material_editor->test_list_panel = XRCCTRL(*this,
-				 "TestListPanel", wxPanel);
-			material_editor->test_list_panel->SetSize(wxDefaultCoord,wxDefaultCoord,
+			material_editor->material_list_panel = XRCCTRL(*this,
+				 "MaterialListPanel", wxPanel);
+			material_editor->material_list_panel->SetSize(wxDefaultCoord,wxDefaultCoord,
 				 400, 200);
-			material_editor->test_list_panel->SetMinSize(wxSize(-1,100));
+			material_editor->material_list_panel->SetMinSize(wxSize(-1,100));
 
 			graphical_material_object_listbox =
 				 new Managed_object_listbox<Graphical_material, MANAGER_CLASS(Graphical_material)>
-				 (material_editor->test_list_panel, (struct Graphical_material*)NULL, material_editor->graphical_material_manager,
+				 (material_editor->material_list_panel, (struct Graphical_material*)NULL, material_editor->graphical_material_manager,
 						(MANAGER_CONDITIONAL_FUNCTION(Graphical_material) *)NULL, (void *)NULL, material_editor->user_interface);
 			Callback_base<Graphical_material* > *material_editor_graphical_material_list_callback = 
 				 new Callback_member_callback< Graphical_material*,
@@ -1245,6 +1245,7 @@ Creates a Material_editor.
 				material_editor->edit_material=(struct Graphical_material *)NULL;
 				material_editor->user_interface = user_interface;
 				material_editor->wx_material_editor = (wxMaterialEditor *)NULL;
+				wxLogNull logNo;	
 				material_editor->wx_material_editor = new wxMaterialEditor(material_editor);
 				material_editor->material_editor_ambient_colour_panel = XRCCTRL(
 					 *material_editor->wx_material_editor, "MaterialEditorPanel1", wxPanel);
@@ -1379,7 +1380,6 @@ Destroys the <*material_editor_address> and sets
 					material_editor->material_manager_callback_id,
 					material_editor->graphical_material_manager);
 			 material_editor->material_manager_callback_id = (void *)NULL;
-
 		}
 		DEALLOCATE(*material_editor_address);
 		*material_editor_address = (struct Material_editor *)NULL;
