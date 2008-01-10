@@ -65,6 +65,14 @@ DESCRIPTION :
 Creates a Material_editor.
 ==============================================================================*/
 
+void material_editor_bring_up_editor(struct Material_editor *material_editor);
+/*******************************************************************************
+LAST MODIFIED : 10 Jan 2008
+
+DESCRIPTION :
+bring the material editor to the front.
+==============================================================================*/
+
 int DESTROY(Material_editor)(struct Material_editor **material_editor_address);
 /*******************************************************************************
 LAST MODIFIED : 12 August 2002

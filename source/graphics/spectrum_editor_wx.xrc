@@ -69,6 +69,13 @@
       	        </object>
             </object>
 
+      	     <object class ="sizeritem">
+              <object class="wxCheckBox" name="wxSpectrumClearColourCheckBox">
+					<label>Clear colour before settings</label>
+					<size>-1,30</size>
+				</object>
+      	     </object>
+
             <object class ="sizeritem">
 	 	        <flag>wxEXPAND</flag>
                <object class="wxPanel" name="SpectrumPanel">

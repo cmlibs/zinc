@@ -1606,24 +1606,24 @@ functions are in one place and the iterator can have local scope.
 
 		if ( data->first )
 		{
-			if (!fixed_minimum && !fixed_maximum)
-			{
+// 			if (!fixed_minimum && !fixed_maximum)
+// 			{
 				data->min = min;
 				data->max = max;
 				data->first = 0;
-			}
-			else if (!fixed_minimum)
-			{
-				data->min = min;
-				data->max = min;
-				data->first = 0;
-			}
-			else if (!fixed_maximum)
-			{
-				data->min = max;
-				data->max = max;
-				data->first = 0;
-			}
+// 			}
+// 			else if (!fixed_minimum)
+// 			{
+// 				data->min = min;
+// 				data->max = min;
+// 				data->first = 0;
+// 			}
+// 			else if (!fixed_maximum)
+// 			{
+// 				data->min = max;
+// 				data->max = max;
+// 				data->first = 0;
+// 			}
 		}
 		else
 		{

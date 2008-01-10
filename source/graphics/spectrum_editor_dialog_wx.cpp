@@ -139,8 +139,10 @@ the spectrums contained in the global list.
 											"Could not create spectrum editor");
 									 init_widgets = 0;
 				}
-					 spectrum_editor_dialog_set_spectrum(
-							spectrum_editor_dialog,init_data);
+#if defined (OLD_CODE)
+				spectrum_editor_dialog_set_spectrum(
+					 spectrum_editor_dialog,init_data);
+#endif /* defined (OLD_CODE) */
 			}
 			else
 			{
@@ -189,6 +191,7 @@ Returns the spectrum edited by the <spectrum_editor_dialog>.
 	return (spectrum);
 } /* spectrum_editor_dialog_get_spectrum */
 
+#if defined (OLD_CODE)
 int spectrum_editor_dialog_set_spectrum(
 	struct Spectrum_editor_dialog *spectrum_editor_dialog,
 	struct Spectrum *spectrum)
@@ -226,9 +229,7 @@ Set the <spectrum> for the <spectrum_editor_dialog>.
 				spectrum_editor_dialog->spectrum_manager);
 		}
 		spectrum_editor_dialog->current_value=spectrum;
-		spectrum_editor_wx_set_spectrum(
-			 spectrum_editor_dialog->spectrum_editor,
-			 spectrum_editor_dialog->current_value);
+		spectrum_editor_wx_bring_up_editor(spectrum_editor_dialog->spectrum_editor);
 	}
 	else
 	{
@@ -240,6 +241,7 @@ Set the <spectrum> for the <spectrum_editor_dialog>.
 
 	return (return_code);
 } /* spectrum_editor_dialog_set_spectrum */
+#endif /* defined (OLD_CODE) */
 
 int bring_up_spectrum_editor_dialog(
 	struct Spectrum_editor_dialog **spectrum_editor_dialog_address,
@@ -267,8 +269,8 @@ bring it to the front, otherwise create a new one.
 	if (spectrum_editor_dialog_address)
 	{
 		if (spectrum_editor_dialog = *spectrum_editor_dialog_address)
-		{
-			spectrum_editor_dialog_set_spectrum(spectrum_editor_dialog, spectrum);
+		{		
+			spectrum_editor_wx_bring_up_editor(spectrum_editor_dialog->spectrum_editor);
 			return_code = 1;
 		}
 		else

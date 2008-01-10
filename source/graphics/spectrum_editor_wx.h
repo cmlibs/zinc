@@ -95,6 +95,15 @@ DESCRIPTION :
 Add spectrum item to the spectrum_editor.
 ==============================================================================*/
 
+void spectrum_editor_wx_bring_up_editor(struct Spectrum_editor *spectrum_editor);
+/*******************************************************************************
+LAST MODIFIED : 10 Jan 2008
+
+DESCRIPTION :
+bring the spectrum editor to the front.
+==============================================================================*/
+
+
 int DESTROY(Spectrum_editor)(struct Spectrum_editor **spectrum_editor_address);
 /*******************************************************************************
 LAST MODIFIED : 12 August 2002

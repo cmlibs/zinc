@@ -237,7 +237,9 @@ else create a new one.
 		{
 // 			material_editor_dialog_set_material(material_editor_dialog, material);
 // 			XtPopup(material_editor_dialog->dialog, XtGrabNone);
-// 			XtVaSetValues(material_editor_dialog->dialog, XmNiconic, False, NULL);
+// 			XtVaSetValues(material_editor_dialog->dialog, XmNiconic,
+// 			False, NULL);
+			 material_editor_bring_up_editor(material_editor_dialog->material_editor);
 			return_code = 1;
 		}
 		else

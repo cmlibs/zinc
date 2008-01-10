@@ -1604,3 +1604,22 @@ Update the material colour and settings in the material editor .
 	 }
 	 LEAVE;
 }
+
+void material_editor_bring_up_editor(struct Material_editor *material_editor)
+/*******************************************************************************
+LAST MODIFIED : 10 Jan 2008
+
+DESCRIPTION :
+bring the material editor to the front.
+==============================================================================*/
+{
+	 if (material_editor->wx_material_editor)
+	 {
+			material_editor->wx_material_editor->Raise();
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "material_editor_bring_up_editor.  Invalid argument(s)");
+	 }
+}

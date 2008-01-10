@@ -73,7 +73,7 @@ Contains all the information carried by the graphical element editor widget.
 	 wxCheckListBox *spectrum_settings_checklist;
 	 wxButton *spectrum_settings_add_button, *spectrum_settings_del_button, 
 			*spectrum_settings_up_button, *spectrum_settings_dn_button;
-	 wxCheckBox *spectrum_reverse_checkbox, *spectrum_extend_below_check,
+	 wxCheckBox *spectrum_clear_colour_checkbox, *spectrum_reverse_checkbox, *spectrum_extend_below_check,
 			*spectrum_extend_above_check, *spectrum_fix_minimum_check,
 			*spectrum_fix_maximum_check;
 	 wxChoice *spectrum_colour_mapping_choice, *spectrum_type_choice;
@@ -124,6 +124,10 @@ a complete copy of <Spectrum>.
 			/* copy general settings into new object */
 			MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
 				(spectrum_editor->edit_spectrum,spectrum);
+			
+			
+			spectrum_editor->spectrum_clear_colour_checkbox->SetValue(
+				 Spectrum_get_opaque_colour_flag(spectrum_editor->edit_spectrum));
 
 			set_GT_object_Spectrum(spectrum_editor->graphics_object,
 				(void *)spectrum_editor->edit_spectrum);
@@ -830,7 +834,6 @@ public:
 				 wxSpectrumEditor, int (wxSpectrumEditor::*)(Spectrum *) >
 				 (this, &wxSpectrumEditor::spectrum_editor_spectrum_list_callback);
 			spectrum_object_listbox->set_callback(spectrum_editor_spectrum_list_callback);
-
 			wxPanel *spectrum_scene_chooser_panel = 
 				 XRCCTRL(*this, "wxSpectrumSceneChooserPanel", wxPanel);
 			spectrum_scene_chooser = 
@@ -910,6 +913,22 @@ int set_autorange_scene()
 {
 	 spectrum_editor->autorange_scene = spectrum_scene_chooser->get_object();
 	 return 1;
+}
+
+void OnSpectrumClearColourChecked(wxCommandEvent &event)
+/*******************************************************************************
+LAST MODIFIED : 10 Jan 2008
+
+DESCRIPTION :
+Callback for Spectrum clear colour checkbox changed.
+==============================================================================*/
+{
+	 if (spectrum_editor->spectrum_clear_colour_checkbox->GetValue() != 
+			Spectrum_get_opaque_colour_flag(spectrum_editor->edit_spectrum))
+	 {
+			Spectrum_set_opaque_colour_flag(spectrum_editor->edit_spectrum,
+				 spectrum_editor->spectrum_clear_colour_checkbox->GetValue());
+	 }
 }
 
 void OnSpectrumSettingsSelected(wxCommandEvent &event)
@@ -1011,7 +1030,7 @@ Callback for the range text widgets.
 						sscanf(text,"%f",&new_parameter);
 						if(new_parameter !=
 							 Spectrum_settings_get_range_minimum(settings))
-						{
+ 						{
 							 Spectrum_settings_set_range_minimum(settings, new_parameter);
 						}
 				 }
@@ -1659,6 +1678,7 @@ BEGIN_EVENT_TABLE(wxSpectrumEditor, wxFrame)
 	 EVT_BUTTON(XRCID("wxSpectrumCreateButton"),wxSpectrumEditor::OnSpectrumEditorCreateNewSpectrum)
 	 EVT_BUTTON(XRCID("wxSpectrumDeleteButton"),wxSpectrumEditor::OnSpectrumEditorDeleteSpectrum)
 	 EVT_BUTTON(XRCID("wxSpectrumRenameButton"),wxSpectrumEditor::OnSpectrumEditorRenameSpectrum)
+	 EVT_CHECKBOX(XRCID("wxSpectrumClearColourCheckBox"),wxSpectrumEditor::OnSpectrumClearColourChecked)
 	 EVT_CHECKLISTBOX(XRCID("wxSpectrumSettingsCheckList"), wxSpectrumEditor::OnSpectrumSettingsSelected)
 	 EVT_LISTBOX(XRCID("wxSpectrumSettingsCheckList"), wxSpectrumEditor::OnSpectrumSettingsSelected)
 	 EVT_BUTTON(XRCID("wxSpectrumSettingsAdd"),wxSpectrumEditor::OnSpectrumSettingListAddPressed)
@@ -2071,6 +2091,8 @@ Creates a spectrum_editor widget.
 				spectrum_editor->spectrum_panel->SetSize(wxDefaultCoord,wxDefaultCoord,
 					 400, 150);
 				spectrum_editor->spectrum_panel->SetMinSize(wxSize(-1,150));
+				spectrum_editor->spectrum_clear_colour_checkbox = XRCCTRL(*spectrum_editor->wx_spectrum_editor,
+					 "wxSpectrumClearColourCheckBox", wxCheckBox);
 				spectrum_editor->spectrum_editor_frame = XRCCTRL(*spectrum_editor->wx_spectrum_editor
 					 , "CmguiSpectrumEditor", wxFrame);
 				spectrum_editor->spectrum_editor_frame->SetSize(wxDefaultCoord,wxDefaultCoord,
@@ -2414,9 +2436,28 @@ Set the <spectrum> to be edited by the <spectrum_editor>.
 	return (return_code);
 } /* spectrum_editor_set_spectrum */
 
+void spectrum_editor_wx_bring_up_editor(struct Spectrum_editor *spectrum_editor)
+/*******************************************************************************
+LAST MODIFIED : 10 Jan 2008
+
+DESCRIPTION :
+bring the spectrum editor to the front.
+==============================================================================*/
+{
+	 if (spectrum_editor->wx_spectrum_editor)
+	 {
+			spectrum_editor->wx_spectrum_editor->Raise();
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "spectrum_editor_bring_up_editor.  Invalid argument(s)");
+	 }
+}
+
 int DESTROY(Spectrum_editor)(struct Spectrum_editor **spectrum_editor_address)
 /*******************************************************************************
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 10 Jan 2008
 
 DESCRIPTION :
 Destroys the <*spectrum_editor_address> and sets
