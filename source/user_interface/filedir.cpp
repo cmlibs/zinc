@@ -1261,17 +1261,16 @@ name the <file_operation> is performed on the file with the <arguments>.
 				{
 					 if (ALLOCATE(temp_directory_name,char,lastlength+1))
 					 {
-							strncpy(temp_directory_name,filename,lastlength-1);
-							strcat(temp_directory_name, "\'");
-							temp_directory_name[lastlength]='\0';
-							if (ALLOCATE(directory_name,char,lastlength-length+2))
+							strncpy(temp_directory_name,filename,lastlength);
+							if (ALLOCATE(directory_name,char,lastlength-length+1))
 							{
 								 directory_name = &temp_directory_name[length-1];
-								 directory_name[lastlength-length+1]='\0';
+								 directory_name[lastlength-length] = '\0';
 								 if (ALLOCATE(temp_string,char,lastlength-length+11))
 								 {
 										strcpy(temp_string, "set dir \'");
 										strcat(temp_string, directory_name);
+										strcat(temp_string, "\'");
 										temp_string[lastlength-length+10]='\0';
 										Execute_command_execute_string(file_open_data->execute_command,temp_string);
 										temp_name=&filename[lastlength];
@@ -1893,17 +1892,16 @@ wxFileDialog *SaveData = new wxFileDialog ((wxWindow *)NULL,shell_title,"","",
 				{
 					 if (ALLOCATE(temp_directory_name,char,lastlength+1))
 					 {
-							strncpy(temp_directory_name,filename,lastlength-1);
-							strcat(temp_directory_name, "\'");
-							temp_directory_name[lastlength]='\0';
-							if (ALLOCATE(directory_name,char,lastlength-length+2))
+							strncpy(temp_directory_name,filename,lastlength);
+							if (ALLOCATE(directory_name,char,lastlength-length+1))
 							{
 								 directory_name = &temp_directory_name[length-1];
-								 directory_name[lastlength-length+1]='\0';			
+								 directory_name[lastlength-length]='\0';			
 								 if (ALLOCATE(temp_string,char,lastlength-length+11))
 								 {
 										strcpy(temp_string, "set dir \'");
 										strcat(temp_string, directory_name);
+										strcat(temp_string, "\'");
 										temp_string[lastlength-length+10]='\0';
 										Execute_command_execute_string(file_open_data->execute_command,temp_string);
 										temp_name=&filename[lastlength];
