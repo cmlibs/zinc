@@ -5204,10 +5204,16 @@ Returns the depth of the colour buffer used by the graphics buffer.
 #if defined (WX_USER_INTERFACE)
 			 case GRAPHICS_BUFFER_WX_TYPE:
 			{
-				 display_message(ERROR_MESSAGE,"Graphics_buffer_get_colour_buffer_depth.  "
-			"Not yet implemented in the cmgui-wx.");
-				 *colour_buffer_depth = 0;
-				 return_code = 0;
+				 GLint colour_buffer_bits;
+				 glGetIntegerv(GL_RED_BITS, &colour_buffer_bits);
+				 *colour_buffer_depth = colour_buffer_bits;
+				 glGetIntegerv(GL_BLUE_BITS, &colour_buffer_bits);
+				 *colour_buffer_depth += colour_buffer_bits;
+				 glGetIntegerv(GL_GREEN_BITS, &colour_buffer_bits);
+				 *colour_buffer_depth += colour_buffer_bits;
+				 glGetIntegerv(GL_ALPHA_BITS, &colour_buffer_bits);
+				 *colour_buffer_depth += colour_buffer_bits;
+				 return_code = 1;
 			} break;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
@@ -5286,10 +5292,10 @@ Returns the depth of the depth buffer used by the graphics buffer.
 #if defined (WX_USER_INTERFACE)
 			 case GRAPHICS_BUFFER_WX_TYPE:
 			{
-				 display_message(ERROR_MESSAGE,"Graphics_buffer_get_depth_buffer_depth.  "
-			"Not yet implemented in the cmgui-wx.");
-				 *depth_buffer_depth = 0;
-				 return_code = 0;
+				 GLint depth_bits;
+				 glGetIntegerv(GL_DEPTH_BITS, &depth_bits);	 
+				 *depth_buffer_depth = depth_bits;
+				 return_code = 1;
 			} break;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
@@ -5379,10 +5385,16 @@ Returns the depth of the accumulation buffer used by the graphics buffer.
 #if defined (WX_USER_INTERFACE)
 			 case GRAPHICS_BUFFER_WX_TYPE:
 			{
-				 display_message(ERROR_MESSAGE,"Graphics_buffer_get_accumulation_buffer_depth.  "
-			"Not yet implemented in the cmgui-wx.");
-				 *accumulation_buffer_depth = 0;
-				 return_code = 0;
+				 GLint accumulation_buffer_bits;
+				 glGetIntegerv(GL_ACCUM_RED_BITS, &accumulation_buffer_bits);
+				 *accumulation_buffer_depth = accumulation_buffer_bits;
+				 glGetIntegerv(GL_ACCUM_BLUE_BITS, &accumulation_buffer_bits);
+				 *accumulation_buffer_depth += accumulation_buffer_bits;
+				 glGetIntegerv(GL_ACCUM_GREEN_BITS, &accumulation_buffer_bits);
+				 *accumulation_buffer_depth += accumulation_buffer_bits;
+				 glGetIntegerv(GL_ACCUM_ALPHA_BITS, &accumulation_buffer_bits);
+				 *accumulation_buffer_depth += accumulation_buffer_bits;
+				 return_code = 1;
 			} break;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
