@@ -1609,7 +1609,8 @@ public:
 				 new Managed_object_chooser<Scene, MANAGER_CLASS(Scene)>
 				 (graphics_window_scene_chooser_panel, graphics_window->scene,
 						graphics_window->scene_manager,
-						(MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL, (void *)NULL, graphics_window->user_interface);
+						(MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL, (void *)NULL, 
+						graphics_window->user_interface);
 			Callback_base< Scene* > *graphics_window_scene_callback = 
 				 new Callback_member_callback< Scene*, 
 				 wxGraphicsWindow, int (wxGraphicsWindow::*)(Scene *) >
@@ -2205,7 +2206,7 @@ BEGIN_EVENT_TABLE(wxGraphicsWindow, wxFrame)
 	 EVT_CHOICE(XRCID("View"),wxGraphicsWindow::OnViewOptionspressed)
 	 EVT_CHOICE(XRCID("UpViewOptions"),wxGraphicsWindow::OnUpViewOptionspressed)
 	 EVT_BUTTON(XRCID("FrontViewOptions"),wxGraphicsWindow::OnFrontViewOptionspressed)
-	 EVT_SPLITTER_SASH_POS_CHANGED(XRCID("Splitter"),wxGraphicsWindow::OnSplitterPositionChanged)
+	 EVT_SPLITTER_SASH_POS_CHANGED(XRCID("GraphicsWindowSplitter"),wxGraphicsWindow::OnSplitterPositionChanged)
 	 EVT_COMMAND_SCROLL(XRCID("GraphicsWindowTimeSlider"),wxGraphicsWindow::OnTimeSliderChanged)
 	 EVT_TEXT_ENTER(XRCID("GraphicsWindowTimeTextCtrl"),wxGraphicsWindow::OnTimeTextEntered)
 	 EVT_BUTTON(XRCID("GraphicsWindowForward"), wxGraphicsWindow::OnTimeForwardPressed)
@@ -4388,8 +4389,8 @@ it.
 			window->front_view_options = XRCCTRL(*window->wx_graphics_window, 
 				 "FrontViewOptions", wxButton);
 			window->front_view_options->Disable();
-			window->left_panel =XRCCTRL(*window->wx_graphics_window, "LeftPanel", wxScrolledWindow);
-			window->left_panel->FitInside();
+			window->left_panel =XRCCTRL(*window->wx_graphics_window, "GraphicsLeftPanel", wxScrolledWindow);
+ 			window->left_panel->FitInside();
 			window->left_panel->SetMinSize(wxSize(10,10));
 			window->ToolPanel = XRCCTRL(*window->wx_graphics_window, 
 				 "ToolPanel", wxScrolledWindow);
@@ -4558,14 +4559,13 @@ it.
 									Graphics_window_set_layout_mode(window,
 										 GRAPHICS_WINDOW_LAYOUT_SIMPLE);
 									/* give the window its default size */
+									window->left_panel->SetSize(-1, -1, 200, -1);
 									Graphics_window_set_viewing_area_size(window,
 										 window->default_viewing_width,
 										 window->default_viewing_height);
 									/* initial view is of all of the current scene */
 									Graphics_window_view_all(window);
-									
-									window->wx_graphics_window->Show();
-									
+									window->wx_graphics_window->Show();		
 									return_code = 1;
 							 }
 							 else
@@ -6145,7 +6145,8 @@ separated by 2 pixel borders within the viewing area.
 		*viewing_height = window->shell_window->allocation.height;
 #endif /* GTK_MAJOR_VERSION >= 2 */
 #elif defined (WX_USER_INTERFACE)
-		window->panel->GetClientSize(viewing_width, viewing_height);
+		XRCCTRL(*window->wx_graphics_window,"GridPanel", wxPanel)
+			 ->GetClientSize(viewing_width, viewing_height);
 #endif /* defined (USER_INTERFACE) */
 		return_code=1;
 	}
@@ -6206,12 +6207,40 @@ separated by 2 pixel borders within the viewing area.
 		gtk_widget_set_usize(window->shell_window, viewing_width, viewing_height);
 #endif /* GTK_MAJOR_VERSION >= 2 */
 #elif defined (WX_USER_INTERFACE)
-		window->panel->GetContainingSizer()->SetMinSize(viewing_width, viewing_height);
-		window->panel->GetContainingSizer()->SetDimension(-1, -1, viewing_width, viewing_height);
-		window->wx_graphics_window->GetSizer()->SetSizeHints(window->wx_graphics_window);
-		window->wx_graphics_window->Fit();
-		window->panel->GetContainingSizer()->SetMinSize(10, 10);
-		window->wx_graphics_window->GetSizer()->SetSizeHints(window->wx_graphics_window);
+		int temp_height, temp_width;
+		wxPanel *graphics_grid_panel = XRCCTRL(
+			 *window->wx_graphics_window,"GridPanel", wxPanel);
+		graphics_grid_panel->GetSize(&temp_width, &temp_height);
+		if ((temp_width != viewing_width) || (temp_height != viewing_height))
+		{
+			 window->left_panel->GetSize(&temp_width, &temp_height);
+
+			 /* the following part is to fix problem found before the
+					graphics window is initialised. It is all hardcode, should
+					modify it*/
+			 if (temp_width == 14)
+			 {
+					temp_width=200;
+			 }
+			 if (temp_width == 8)
+			 {
+					temp_width=198;
+			 }
+			 /*end*/
+
+			 temp_height = 0;
+			 if (window->time_editor_panel->IsShown())
+			 {
+					int temp;
+					window->time_editor_panel->GetSize(&temp, &temp_height);
+			 }
+			 graphics_grid_panel->GetContainingSizer()->SetMinSize(viewing_width+temp_width-10, viewing_height+temp_height);
+			 graphics_grid_panel->GetContainingSizer()->SetDimension(-1, -1, viewing_width+temp_width-10, viewing_height+temp_height);
+			 window->wx_graphics_window->GetSizer()->SetSizeHints(window->wx_graphics_window);
+			 window->wx_graphics_window->Fit();	
+			 graphics_grid_panel->GetContainingSizer()->SetMinSize(10,10);
+			 window->wx_graphics_window->Update();
+		}
 #endif /* switch (USER_INTERFACE) */
 
 		return_code=1;

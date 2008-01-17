@@ -7,12 +7,12 @@
 		<object class ="sizeritem">
 	 		<flag>wxEXPAND</flag>
 			<option>1</option>
-        	<object class ="wxSplitterWindow" name="Splitter">
+        	<object class ="wxSplitterWindow" name="GraphicsWindowSplitter">
 				<style>wxSP_3D</style>
 				<orientation>vertical</orientation>
 				<minsize>1</minsize>
 				<sashpos>200</sashpos>
-				<object class ="wxScrolledWindow" name="LeftPanel">
+				<object class ="wxScrolledWindow" name="GraphicsLeftPanel">
 			 		<object class = "wxBoxSizer">	
 						<object class="sizeritem">
 	 						<flag>wxEXPAND</flag>
@@ -196,7 +196,7 @@
     	  				<object class="sizeritem">
 							<option>1</option>
 			   				<flag>wxEXPAND</flag>
-	     					<object class ="wxPanel" name="RightPanel">
+	     					<object class ="wxPanel" name="GraphicsRightPanel">
 								<object class = "wxBoxSizer">	
 									<orient>wxVERTICAL</orient>	
     								<object class="sizeritem">
