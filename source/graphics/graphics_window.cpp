@@ -1581,7 +1581,6 @@ class wxGraphicsWindow : public wxFrame
 	 wxButton *front_view_options;
 	 wxString front_choices;
 	 wxScrolledWindow *leftpanel, *toolscrolledwindow;
-	 wxSplitterWindow *splitterwindow;
 	 int wx_ortho_up_axis;
 	 int wx_ortho_front_axis;
 	 int location;
@@ -4559,7 +4558,12 @@ it.
 									Graphics_window_set_layout_mode(window,
 										 GRAPHICS_WINDOW_LAYOUT_SIMPLE);
 									/* give the window its default size */
-									window->left_panel->SetSize(-1, -1, 200, -1);
+									int temp_width, temp_height;
+									window->wx_graphics_window->GetSize(&temp_width, &temp_height);
+									XRCCTRL(*window->wx_graphics_window,"GraphicsWindowSplitter", wxSplitterWindow)
+										 ->SetSize(temp_width, temp_height);
+									XRCCTRL(*window->wx_graphics_window,"GraphicsWindowSplitter", wxSplitterWindow)
+										 ->SetSashPosition(200);
 									Graphics_window_set_viewing_area_size(window,
 										 window->default_viewing_width,
 										 window->default_viewing_height);
@@ -6214,32 +6218,25 @@ separated by 2 pixel borders within the viewing area.
 		if ((temp_width != viewing_width) || (temp_height != viewing_height))
 		{
 			 window->left_panel->GetSize(&temp_width, &temp_height);
-
 			 /* the following part is to fix problem found before the
 					graphics window is initialised. It is all hardcode, should
 					modify it*/
-			 if (temp_width == 14)
-			 {
-					temp_width=200;
-			 }
-			 if (temp_width == 8)
-			 {
-					temp_width=198;
-			 }
+			temp_height = 0;
+			if (window->time_editor_panel->IsShown())
+			{
+				 int temp;
+				 window->time_editor_panel->GetSize(&temp, &temp_height);
+			}
 			 /*end*/
-
-			 temp_height = 0;
-			 if (window->time_editor_panel->IsShown())
-			 {
-					int temp;
-					window->time_editor_panel->GetSize(&temp, &temp_height);
-			 }
-			 graphics_grid_panel->GetContainingSizer()->SetMinSize(viewing_width+temp_width-10, viewing_height+temp_height);
-			 graphics_grid_panel->GetContainingSizer()->SetDimension(-1, -1, viewing_width+temp_width-10, viewing_height+temp_height);
+			graphics_grid_panel->GetContainingSizer()->SetMinSize(viewing_width+temp_width-10, viewing_height+temp_height);
+			graphics_grid_panel->GetContainingSizer()->SetDimension(-1,
+				 -1, viewing_width+temp_width-10, viewing_height+temp_height);
 			 window->wx_graphics_window->GetSizer()->SetSizeHints(window->wx_graphics_window);
-			 window->wx_graphics_window->Fit();	
-			 graphics_grid_panel->GetContainingSizer()->SetMinSize(10,10);
-			 window->wx_graphics_window->Update();
+			 window->GraphicsWindowTitle->Fit();
+			 graphics_grid_panel->SetMinSize(wxSize(10,10));
+			 window->GraphicsWindowTitle->SetSize(window->GraphicsWindowTitle->GetSize()+wxSize(0,1));
+			 window->GraphicsWindowTitle->SetSize(window->GraphicsWindowTitle->GetSize()-wxSize(0,1));
+			 window->GraphicsWindowTitle->Layout();
 		}
 #endif /* switch (USER_INTERFACE) */
 
