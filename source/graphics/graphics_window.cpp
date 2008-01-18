@@ -2977,7 +2977,11 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 	struct Interactive_tool *interactive_tool;
 	struct Modify_graphics_window_data *modify_graphics_window_data;
 	struct Option_table *antialias_option_table,*option_table,
-		*transparency_option_table;
+		 *transparency_option_table;
+#if defined (WX_USER_INTERFACE)
+	char hide_time_editor_flag, show_time_editor_flag;
+	struct Option_table *time_editor_option_table;
+#endif /* defined (WX_USER_INTERFACE) */
 
 	ENTER(modify_Graphics_window_set);
 	if (state)
@@ -3016,7 +3020,10 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 				slow_transparency_flag=0;
 				layered_transparency = 0;
 				order_independent_transparency = 0;
-
+#if defined (WX_USER_INTERFACE)
+				hide_time_editor_flag=0;
+				show_time_editor_flag=0;
+#endif /* defined (WX_USER_INTERFACE) */
 				option_table=CREATE(Option_table)();
 				/* antialias/no_antialias */
 				antialias_option_table=CREATE(Option_table)();
@@ -3059,6 +3066,14 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 				/* std_view_angle */
 				Option_table_add_entry(option_table,"std_view_angle",
 					&std_view_angle,(void *)NULL,set_double);
+#if defined (WX_USER_INTERFACE)
+				time_editor_option_table = CREATE(Option_table)();
+				Option_table_add_entry(time_editor_option_table,"show_time_editor",
+					 &show_time_editor_flag,(void *)NULL,set_char_flag);
+				Option_table_add_entry(time_editor_option_table,"hide_time_editor",
+					 &hide_time_editor_flag,(void *)NULL,set_char_flag);
+				Option_table_add_suboption_table(option_table, time_editor_option_table);
+#endif /* defined (WX_USER_INTERFACE) */
 				/* fast_transparency|slow_transparency */
 				transparency_option_table=CREATE(Option_table)();
 				Option_table_add_entry(transparency_option_table,"fast_transparency",
@@ -3081,6 +3096,14 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 							graphics_window->number_of_panes);
 						return_code = 0;
 					}
+#if defined (WX_USER_INTERFACE)
+					if (show_time_editor_flag + hide_time_editor_flag > 1)
+					{
+						display_message(ERROR_MESSAGE,"Only one of "
+							"show_time_editor/hide_time_editor");
+						return_code = 0;
+					}
+#endif /* defined (WX_USER_INTERFACE) */
 					if ((fast_transparency_flag+slow_transparency_flag+
 						 (0 < layered_transparency)+(0 < order_independent_transparency)) > 1)
 					{
@@ -3132,6 +3155,21 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 							Graphics_window_set_perturb_lines(graphics_window,perturb_lines);
 							redraw=1;
 						}
+#if defined (WX_USER_INTERFACE)
+						if (show_time_editor_flag || hide_time_editor_flag)
+						{
+							 if (graphics_window->time_editor_panel)
+							 {
+									graphics_window->time_editor_panel->Show(show_time_editor_flag);
+							 }
+							 if (graphics_window->GraphicsWindowTitle)
+							 {
+									graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()+wxSize(0,1));
+									graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()-wxSize(0,1));
+									graphics_window->GraphicsWindowTitle->Layout();
+							 }
+						}
+#endif /* defined (WX_USER_INTERFACE) */
 						if (fast_transparency_flag||slow_transparency_flag||
 							layered_transparency||order_independent_transparency)
 						{
