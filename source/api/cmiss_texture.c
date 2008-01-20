@@ -599,8 +599,8 @@ The source_pixels are stored in rows from the bottom to top and from left to
 right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 ==============================================================================*/
 {
-	int frame_bytes, i, return_code;
-	struct Cmgui_image *cmgui_image;
+	enum Texture_storage_type storage;
+	int depth_plane, frame_bytes, return_code;
 
 	ENTER(Cmiss_texture_set_pixels);
 	if ((0 < width) && (0 < height) &&
@@ -611,42 +611,58 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 			source_width_bytes) && source_pixels)
 	{
 		return_code = 1;
-		if (cmgui_image = Cmgui_image_constitute(width, height,
-				number_of_components, number_of_bytes_per_component,
-				source_width_bytes, source_pixels))
+
+		switch (number_of_components)
 		{
-			return_code = Texture_set_image(texture, cmgui_image,
-				"api", "", /*start*/0, /*stop*/0, /*increment*/1,
-				/*crop_left*/0, /*crop_bottom*/0,
-				/*crop_width*/0, /*crop_height*/0);
-			
-			DESTROY(Cmgui_image)(&cmgui_image);
-		}
-		else
-		{
-			return_code = 0;
-		}
-		if (return_code && (depth > 1))
-		{
-			frame_bytes = source_width_bytes * height;
-			for (i = 1 ; return_code && (i < depth) ; i++)
+			case 1:
 			{
-				source_pixels += frame_bytes;
-				if (cmgui_image = Cmgui_image_constitute(width, height,
-						number_of_components, number_of_bytes_per_component,
-						source_width_bytes, source_pixels))
-				{
-					return_code = Texture_add_image(texture, cmgui_image,
-						/*crop_left*/0, /*crop_bottom*/0,
-						/*crop_width*/0, /*crop_height*/0);
-					DESTROY(Cmgui_image)(&cmgui_image);
-				}
-				else
-				{
-					return_code = 0;
-				}
+				storage = TEXTURE_LUMINANCE;
+			} break;
+			case 2:
+			{
+				storage = TEXTURE_LUMINANCE_ALPHA;
+			} break;
+			case 3:
+			{
+				storage = TEXTURE_RGB;
+			} break;
+			case 4:
+			{
+				storage = TEXTURE_RGBA;
+			} break;
+			case 5:
+			{
+				storage = TEXTURE_ABGR;
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_texture_set_pixels.  Invalid number of components");
+				return_code = 0;
 			}
 		}
+
+		if (return_code)
+		{
+			return_code = Texture_allocate_image(texture, width, height, depth,
+				storage, number_of_bytes_per_component,
+				"api_data");
+		}
+
+
+		if (return_code)
+		{
+			frame_bytes = source_width_bytes * height * number_of_components
+				* number_of_bytes_per_component;
+			for (depth_plane = 0 ; depth_plane < depth ; depth_plane++)
+			{
+				Texture_set_image_block(texture,
+					/*left*/0, /*bottom*/0, width, height, depth_plane,
+					source_width_bytes, source_pixels);
+				source_pixels += frame_bytes;
+			}
+		}
+
 		Texture_notify_change(texture);
 	}
 	else
