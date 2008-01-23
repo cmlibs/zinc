@@ -228,9 +228,11 @@ specified on the command line, a file selection box is presented to the user.
 					 strcpy(old_directory_name, old_directory);
 							strcat(old_directory_name,"/");
 							old_directory_name[length+1]='\0';
-					 }
+				}
 			 
 					 /* Set the current directory to that of filename */
+				if (!(0 < open_comfile_data->execute_count))
+				{
 					 last = strrchr(filename, '/');
 					 if (last != NULL)
 					 {
@@ -256,6 +258,7 @@ specified on the command line, a file selection box is presented to the user.
 								 }
 							}
 					 }
+				}
 #endif /*defined (__WIN32__) */
 #endif /*defined (WX_USER_INTERFACE) */
 			}
