@@ -652,8 +652,7 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 
 		if (return_code)
 		{
-			frame_bytes = source_width_bytes * height * number_of_components
-				* number_of_bytes_per_component;
+			frame_bytes = source_width_bytes * height;
 			for (depth_plane = 0 ; depth_plane < depth ; depth_plane++)
 			{
 				Texture_set_image_block(texture,
