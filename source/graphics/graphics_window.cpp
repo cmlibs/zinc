@@ -3161,8 +3161,9 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 							 if (graphics_window->time_editor_panel)
 							 {
 									graphics_window->time_editor_panel->Show(show_time_editor_flag);
+									graphics_window->time_editor_togglebutton->SetValue(show_time_editor_flag);	
 							 }
-							 if (graphics_window->GraphicsWindowTitle)
+							 if (show_time_editor_flag && graphics_window->GraphicsWindowTitle)
 							 {
 									graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()+wxSize(0,1));
 									graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()-wxSize(0,1));
@@ -4483,7 +4484,7 @@ it.
 
 			window->time_editor_togglebutton = XRCCTRL(*window->wx_graphics_window,
 				 "TimeEditorToggleButton", wxToggleButton);
-			window->time_editor_togglebutton->SetValue(1);		
+			window->time_editor_togglebutton->SetValue(0);		
 
 			window->time_text_ctrl = XRCCTRL(*window->wx_graphics_window,
 				 "GraphicsWindowTimeTextCtrl", wxTextCtrl);
@@ -4501,10 +4502,10 @@ it.
 			window->minimum_time = Time_keeper_get_minimum(window->time_keeper);
 			window->maximum_time =  Time_keeper_get_maximum(window->time_keeper);
 			window->time_step = 0.1;
-			if (!Time_keeper_has_time_object(window->time_keeper))
+			if (Time_keeper_has_time_object(window->time_keeper))
 			{
-				 window->time_editor_panel->Show(0);
-				 window->time_editor_togglebutton->SetValue(0);
+				 window->time_editor_panel->Show(1);
+				 window->time_editor_togglebutton->SetValue(1);
 			}
 			Time_keeper_add_callback(window->time_keeper,
 				 Graphics_window_time_keeper_callback,

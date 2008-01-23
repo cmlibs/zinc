@@ -246,6 +246,7 @@
 										<option>0</option>
 										<object class = "wxPanel" name ="TimeEditorPanel">	
 			       						<flag>wxEXPAND</flag>
+											<hidden>1</hidden>
 											<object class = "wxStaticBoxSizer">	
 												<label>Time Editor</label>
 												<orient>wxVERTICAL</orient>
