@@ -2585,7 +2585,7 @@ public:
 	  region_chooser->set_callback(region_callback);
 	  if (node_tool->current_region_path != NULL)
 	  {
-			region_chooser->set_path(node_tool->current_region_path);
+			wx_Node_tool_set_region_path(node_tool->current_region_path);
 	  }
 		nodecommandfieldcheckbox = XRCCTRL(*this, "NodeCommandFieldCheckBox",wxCheckBox);
 		node_command_field_chooser_panel = XRCCTRL(*this, "NodeCommandFieldChooserPanel", wxPanel);
@@ -2624,9 +2624,9 @@ public:
 
   ~wxNodeTool()
   {
-		 //		 delete computed_field_chooser;
-		 // delete region_chooser;
-		 // delete node_command_field_chooser;
+		 delete computed_field_chooser;
+		 delete region_chooser;
+		 delete node_command_field_chooser;
   }
 
 	int coordinate_field_callback(Computed_field *field)
@@ -2866,7 +2866,7 @@ void NodeToolInterfaceRenew(Node_tool *destination_node_tool)
 	computed_field_chooser->set_object(destination_node_tool->coordinate_field);
 	if (destination_node_tool->current_region_path != NULL)
 	{
-		region_chooser->set_path(destination_node_tool->current_region_path);
+		wx_Node_tool_set_region_path(destination_node_tool->current_region_path);
 	}
 	Node_tool_set_element_dimension(destination_node_tool,destination_node_tool->element_dimension);
 	create_elements_checkbox->SetValue(destination_node_tool->element_create_enabled);
@@ -2933,10 +2933,46 @@ int wx_Node_tool_get_region_path(char **path_address)
 
 void wx_Node_tool_set_region_path(char *path)
 {
-	 if (region_chooser == NULL)
+	 int first_location, length;
+	 char *first=NULL;
+	 length = strlen(path);
+	 first = strchr(path, '/');
+	 first_location = 1;
+	 if (first !=NULL)
+	 {
+			first_location = first - path +1;
+	 }
+	 else
+	 {
+			first_location = length;
+	 }
+	 if ((first_location == length) || (first == NULL))
+	 {
+			char *temp = NULL;
+			if (ALLOCATE(temp,char,length+2))
+			{
+				 {
+						strcpy(temp, "/");
+						strcat(temp, path);
+						temp_string[length+2]='\0';
+				 }
+				 if (region_chooser != NULL)
+				 {
+						region_chooser->set_path(temp);
+				 }
+				 DEALLOCATE(temp);
+			}
+			else
+			{
+				 display_message(ERROR_MESSAGE,
+						"wx_Node_tool_set_region_path.  Insufficient memory");
+			}
+	 }
+	 else
 	 {
 			region_chooser->set_path(path);
 	 }
+
 }
 
 struct  Cmiss_region *wx_Node_tool_get_region()
@@ -3487,6 +3523,10 @@ structure itself.
 		{
 			DEACCESS(Time_keeper)(&(node_tool->time_keeper));
 		}
+#if defined (WX_USER_INTERFACE)
+		if (node_tool->wx_node_tool)
+			 node_tool->wx_node_tool->Destroy();
+#endif /*(WX_USER_INTERFACE)*/
 #if defined (MOTIF)
 		if (node_tool->window_shell)
 		{
@@ -3500,10 +3540,6 @@ structure itself.
 			 DEALLOCATE(node_tool->current_region_path);
 		}
 #endif /* defined (MOTIF) */
-#if defined (WX_USER_INTERFACE)
-		if (node_tool->wx_node_tool)
-			 node_tool->wx_node_tool->Destroy();
-#endif /*(WX_USER_INTERFACE)*/
 		DEALLOCATE(*node_tool_address);
 		return_code=1;
 	}
