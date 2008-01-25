@@ -147,6 +147,7 @@ DESCRIPTION :
 		if (manager_callback_id)
 		{
 			manager->deregister_callback(manager_callback_id);
+			manager_callback_id = NULL;
 		}
 		delete manager;
 

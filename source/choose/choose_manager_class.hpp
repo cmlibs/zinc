@@ -128,7 +128,7 @@ DESCRIPTION :
 	{
 		int i;
 		
-		if (number_of_items>0)
+		if (number_of_items>=0)
 		{
 			 if (items)
 			 {

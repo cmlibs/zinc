@@ -2570,7 +2570,7 @@ public:
 		  wxNodeTool, int (wxNodeTool::*)(Computed_field *) >
 		  (this, &wxNodeTool::coordinate_field_callback);
 	  computed_field_chooser->set_callback(coordinate_field_callback);
-		computed_field_chooser->set_object(node_tool->coordinate_field);
+
 	  wxPanel *region_chooser_panel = 
 		 XRCCTRL(*this, "RegionChooserPanel", wxPanel);
 	  char *initial_path;
@@ -2587,6 +2587,7 @@ public:
 	  {
 			wx_Node_tool_set_region_path(node_tool->current_region_path);
 	  }
+
 		nodecommandfieldcheckbox = XRCCTRL(*this, "NodeCommandFieldCheckBox",wxCheckBox);
 		node_command_field_chooser_panel = XRCCTRL(*this, "NodeCommandFieldChooserPanel", wxPanel);
 		node_command_field_chooser =
@@ -2601,7 +2602,6 @@ public:
 		if (node_tool != NULL)
 		{
 			 command_field = Node_tool_get_command_field(node_tool);
-			 node_command_field_chooser->set_object(command_field);
 			 if (command_field == NULL)
 			 {
 					nodecommandfieldcheckbox->SetValue(0);
@@ -2624,9 +2624,12 @@ public:
 
   ~wxNodeTool()
   {
-		 delete computed_field_chooser;
-		 delete region_chooser;
-		 delete node_command_field_chooser;
+		 if (computed_field_chooser)
+				delete computed_field_chooser;
+		 if (region_chooser)
+				delete region_chooser;
+		 if (node_command_field_chooser)
+				delete node_command_field_chooser;
   }
 
 	int coordinate_field_callback(Computed_field *field)
