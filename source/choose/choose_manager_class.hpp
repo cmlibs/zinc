@@ -349,6 +349,8 @@ Updates the arrays of all the choosable objects and their names.
 		Managed_object **new_items;
 
 		return_code=0;
+		new_items = (Managed_object **)NULL;
+		new_item_names = (char **)NULL;
 
 		max_number_of_objects= manager->number_in_manager();
 		if ((0==max_number_of_objects) ||

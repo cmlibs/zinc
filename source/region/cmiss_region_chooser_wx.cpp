@@ -226,7 +226,10 @@ Sets <path> of chosen region in the <chooser>.
 
 	if (region_chooser = static_cast<wxRegionChooser *>(region_chooser_void))
 	{
-		region_chooser->build_main_menu(root_region, region_chooser->get_path());
+		 char *temp;
+		 temp = region_chooser->get_path();
+		region_chooser->build_main_menu(root_region, temp);
+		DEALLOCATE(temp);
 	}
 }
 
