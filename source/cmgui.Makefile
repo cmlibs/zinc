@@ -1545,7 +1545,8 @@ ifeq ($(USER_INTERFACE),WIN32_USER_INTERFACE)
 endif # $(USER_INTERFACE) == WIN32_USER_INTERFACE
 ifeq ($(SYSNAME),win32)
 	ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
-		RESOURCE_FILES += command/command_window_wx.rc
+   		RESOURCE_FILES += icon/wxmsw_icon.rc
+   		COMPILED_RESOURCE_FILES += $(RESOURCE_FILES:.rc=.res)
 	endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 endif # $(SYSNAME) == win32
 

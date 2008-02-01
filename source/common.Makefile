@@ -514,6 +514,14 @@ WX_COMPILER = $(shell $(WX_DIR)wx-config --utility=wxrc)
 	fi
 	set -x ; \
 	$(WX_COMPILER) --cpp-code --verbose $*.xrc --function="wxXmlInit_$(*F)" --output=$(XRCH_PATH)/$*.xrch
+ifeq ($(SYSNAME),win32)
+.rc.res:
+	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
+		mkdir -p $(OBJECT_PATH)/$(*D); \
+	fi
+	set -x ; \
+   windres -o $(OBJECT_PATH)/$*.res -O coff $*.rc
+endif # $(SYSNAME) == win32
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
 ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
