@@ -73,11 +73,11 @@ Contains all the information carried by the graphical element editor widget.
 	 wxCheckListBox *spectrum_settings_checklist;
 	 wxButton *spectrum_settings_add_button, *spectrum_settings_del_button, 
 			*spectrum_settings_up_button, *spectrum_settings_dn_button;
-	 wxCheckBox *spectrum_clear_colour_checkbox, *spectrum_reverse_checkbox, *spectrum_extend_below_check,
+	 wxCheckBox *spectrum_reverse_checkbox, *spectrum_extend_below_check,
 			*spectrum_extend_above_check, *spectrum_fix_minimum_check,
 			*spectrum_fix_maximum_check;
 	 wxChoice *spectrum_colour_mapping_choice, *spectrum_type_choice;
-	 wxRadioBox *spectrum_left_right_radio_box;
+	 wxRadioBox *spectrum_overwrite_colour_radiobox, *spectrum_left_right_radio_box;
 	 wxScrolledWindow *spectrum_higher_panel, *spectrum_lower_panel;
  	 void *material_manager_callback_id;
  	 void *spectrum_manager_callback_id;
@@ -124,11 +124,9 @@ a complete copy of <Spectrum>.
 			/* copy general settings into new object */
 			MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
 				(spectrum_editor->edit_spectrum,spectrum);
-			
-			
-			spectrum_editor->spectrum_clear_colour_checkbox->SetValue(
+						
+			spectrum_editor->spectrum_overwrite_colour_radiobox->SetSelection(
 				 Spectrum_get_opaque_colour_flag(spectrum_editor->edit_spectrum));
-
 			set_GT_object_Spectrum(spectrum_editor->graphics_object,
 				(void *)spectrum_editor->edit_spectrum);
 
@@ -915,7 +913,7 @@ int set_autorange_scene()
 	 return 1;
 }
 
-void OnSpectrumClearColourChecked(wxCommandEvent &event)
+void OnSpectrumOverwriteColourChecked(wxCommandEvent &event)
 /*******************************************************************************
 LAST MODIFIED : 10 Jan 2008
 
@@ -923,11 +921,11 @@ DESCRIPTION :
 Callback for Spectrum clear colour checkbox changed.
 ==============================================================================*/
 {
-	 if (spectrum_editor->spectrum_clear_colour_checkbox->GetValue() != 
+	 if (spectrum_editor->spectrum_overwrite_colour_radiobox->GetSelection() != 
 			Spectrum_get_opaque_colour_flag(spectrum_editor->edit_spectrum))
 	 {
 			Spectrum_set_opaque_colour_flag(spectrum_editor->edit_spectrum,
-				 spectrum_editor->spectrum_clear_colour_checkbox->GetValue());
+				 spectrum_editor->spectrum_overwrite_colour_radiobox->GetSelection());
 	 }
 }
 
@@ -1678,7 +1676,7 @@ BEGIN_EVENT_TABLE(wxSpectrumEditor, wxFrame)
 	 EVT_BUTTON(XRCID("wxSpectrumCreateButton"),wxSpectrumEditor::OnSpectrumEditorCreateNewSpectrum)
 	 EVT_BUTTON(XRCID("wxSpectrumDeleteButton"),wxSpectrumEditor::OnSpectrumEditorDeleteSpectrum)
 	 EVT_BUTTON(XRCID("wxSpectrumRenameButton"),wxSpectrumEditor::OnSpectrumEditorRenameSpectrum)
-	 EVT_CHECKBOX(XRCID("wxSpectrumClearColourCheckBox"),wxSpectrumEditor::OnSpectrumClearColourChecked)
+	 EVT_RADIOBOX(XRCID("wxSpectrumOverwriteColourRadioBox"),wxSpectrumEditor::OnSpectrumOverwriteColourChecked)
 	 EVT_CHECKLISTBOX(XRCID("wxSpectrumSettingsCheckList"), wxSpectrumEditor::OnSpectrumSettingsSelected)
 	 EVT_LISTBOX(XRCID("wxSpectrumSettingsCheckList"), wxSpectrumEditor::OnSpectrumSettingsSelected)
 	 EVT_BUTTON(XRCID("wxSpectrumSettingsAdd"),wxSpectrumEditor::OnSpectrumSettingListAddPressed)
@@ -2091,8 +2089,8 @@ Creates a spectrum_editor widget.
 				spectrum_editor->spectrum_panel->SetSize(wxDefaultCoord,wxDefaultCoord,
 					 400, 150);
 				spectrum_editor->spectrum_panel->SetMinSize(wxSize(-1,150));
-				spectrum_editor->spectrum_clear_colour_checkbox = XRCCTRL(*spectrum_editor->wx_spectrum_editor,
-					 "wxSpectrumClearColourCheckBox", wxCheckBox);
+				spectrum_editor->spectrum_overwrite_colour_radiobox = XRCCTRL(*spectrum_editor->wx_spectrum_editor,
+					 "wxSpectrumOverwriteColourRadioBox", wxRadioBox);
 				spectrum_editor->spectrum_editor_frame = XRCCTRL(*spectrum_editor->wx_spectrum_editor
 					 , "CmguiSpectrumEditor", wxFrame);
 				spectrum_editor->spectrum_editor_frame->SetSize(wxDefaultCoord,wxDefaultCoord,
@@ -2490,7 +2488,6 @@ Destroys the <*spectrum_editor_address> and sets
 			 down the linked list chain */
 		DEACCESS(GT_object)(&spectrum_editor->graphics_object);
 		DESTROY(Scene_viewer)(&spectrum_editor->spectrum_editor_scene_viewer);
-		delete spectrum_editor->wx_spectrum_editor;
 		/* destroy edit_spectrum */
 		if (spectrum_editor->edit_spectrum)
 		{
@@ -2504,6 +2501,7 @@ Destroys the <*spectrum_editor_address> and sets
 					spectrum_editor->spectrum_manager);
 			 spectrum_editor->spectrum_manager_callback_id = (void *)NULL;
 		}
+		delete spectrum_editor->wx_spectrum_editor;
 		DEALLOCATE(*spectrum_editor_address);
 		*spectrum_editor_address = (struct Spectrum_editor *)NULL;
 	}
