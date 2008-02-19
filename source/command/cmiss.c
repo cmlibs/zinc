@@ -6138,7 +6138,8 @@ static int set_Texture_image_from_field(struct Texture *texture,
 	struct Cmiss_region *region,
 	int element_dimension,
 	enum Texture_storage_type storage,
-	int image_width, int image_height, int image_depth,
+	int image_width, int image_height, int image_depth, 
+	int number_of_bytes_per_component,
 	struct Graphics_buffer_package *graphics_buffer_package,
 	struct Graphical_material *fail_material)
 /*******************************************************************************
@@ -6154,15 +6155,16 @@ value searches just elements of that dimension.
 ==============================================================================*/
 {
 	char *field_name;
-	unsigned char *image_plane, *ptr;
+	unsigned short *image_plane, *ptr;
 	FE_value *data_values, values[3], xi[3];
 	float hint_minimums[3] = {0.0, 0.0, 0.0};
 	float hint_maximums[3];
 	float hint_resolution[3];
+	float multiplier;
 	float	rgba[4], fail_alpha, texture_depth, texture_height,
 		texture_width;
 	int bytes_per_pixel, dimension, i, image_width_bytes, j, k,
-		number_of_bytes_per_component, number_of_components,
+	  number_of_components,
 		number_of_data_components, return_code, source_dimension,
 		*source_sizes, tex_number_of_components, use_pixel_location;
 	unsigned long field_evaluate_error_count, find_element_xi_error_count,
@@ -6258,7 +6260,10 @@ value searches just elements of that dimension.
 	}
 	if (return_code)
 	{
-		number_of_bytes_per_component = 1;
+		if (number_of_bytes_per_component < 0)
+		{
+			 number_of_bytes_per_component = 1;
+		}
 		/* allocate the texture image */
 		field_name = (char *)NULL;
 		use_pixel_location = 1;
@@ -6274,7 +6279,7 @@ value searches just elements of that dimension.
 			/* allocate space for a single image plane */
 			bytes_per_pixel = number_of_components*number_of_bytes_per_component;
 			image_width_bytes = image_width*bytes_per_pixel;
-			ALLOCATE(image_plane, unsigned char, image_height*image_width_bytes);
+			ALLOCATE(image_plane, unsigned short, image_height*image_width_bytes);
 			ALLOCATE(data_values, FE_value,
 				Computed_field_get_number_of_components(field));
 			for (i = 0; (Computed_field_get_number_of_components(field) >i);  i++)
@@ -6302,7 +6307,7 @@ value searches just elements of that dimension.
 					{
 						printf("Evaluating image plane %d of %d\n", i+1, image_depth);
 					}
-					ptr = (unsigned char *)image_plane;
+					ptr = (unsigned short *)image_plane;
 					values[2] = texture_depth * ((float)i + 0.5) / (float)image_depth;
 					for (j = 0; (j < image_height) && return_code; j++)
 					{
@@ -6416,49 +6421,57 @@ value searches just elements of that dimension.
 								printf("  RGBA = %10g %10g %10g %10g\n", rgba[0], rgba[1], rgba[2], rgba[3]);
 							}
 #endif /* defined (DEBUG) */
+							if (number_of_bytes_per_component > 1)
+							{
+								 multiplier = pow(255.0,number_of_bytes_per_component) - 1.0;
+							}
+							else
+							{
+								 multiplier = 255.0;
+							}
 							switch (storage)
 							{
 								case TEXTURE_LUMINANCE:
 								{
-									*ptr = (unsigned char)((rgba[0] + rgba[1] + rgba[2]) * 255.0 / 3.0);
+									 *ptr = (unsigned short)((rgba[0] + rgba[1] + rgba[2]) * multiplier/ 3.0);
 									ptr++;
 								} break;
 								case TEXTURE_LUMINANCE_ALPHA:
 								{
-									*ptr = (unsigned char)((rgba[0] + rgba[1] + rgba[2]) * 255.0 / 3.0);
+									*ptr = (unsigned short)((rgba[0] + rgba[1] + rgba[2]) * multiplier / 3.0);
 									ptr++;
-									*ptr = (unsigned char)(rgba[3] * 255.0);
+									*ptr = (unsigned short)(rgba[3] * multiplier);
 									ptr++;
 								} break;
 								case TEXTURE_RGB:
 								{
-									*ptr = (unsigned char)(rgba[0] * 255.0);
+									*ptr = (unsigned short)(rgba[0] * multiplier);
 									ptr++;
-									*ptr = (unsigned char)(rgba[1] * 255.0);
+									*ptr = (unsigned short)(rgba[1] * multiplier);
 									ptr++;
-									*ptr = (unsigned char)(rgba[2] * 255.0);
+									*ptr = (unsigned short)(rgba[2] * multiplier);
 									ptr++;
 								} break;
 								case TEXTURE_RGBA:
 								{
-									*ptr = (unsigned char)(rgba[0] * 255.0);
+									*ptr = (unsigned short)(rgba[0] * multiplier);
 									ptr++;
-									*ptr = (unsigned char)(rgba[1] * 255.0);
+									*ptr = (unsigned short)(rgba[1] * multiplier);
 									ptr++;
-									*ptr = (unsigned char)(rgba[2] * 255.0);
+									*ptr = (unsigned short)(rgba[2] * multiplier);
 									ptr++;
-									*ptr = (unsigned char)(rgba[3] * 255.0);
+									*ptr = (unsigned short)(rgba[3] * multiplier);
 									ptr++;
 								} break;
 								case TEXTURE_ABGR:
 								{
-									*ptr = (unsigned char)(rgba[3] * 255.0);
+									*ptr = (unsigned short)(rgba[3] * multiplier);
 									ptr++;
-									*ptr = (unsigned char)(rgba[2] * 255.0);
+									*ptr = (unsigned short)(rgba[2] * multiplier);
 									ptr++;
-									*ptr = (unsigned char)(rgba[1] * 255.0);
+									*ptr = (unsigned short)(rgba[1] * multiplier);
 									ptr++;
-									*ptr = (unsigned char)(rgba[0] * 255.0);
+									*ptr = (unsigned short)(rgba[0] * multiplier);
 									ptr++;
 								} break;
 								default:
@@ -6472,7 +6485,7 @@ value searches just elements of that dimension.
 					}
 					if (!Texture_set_image_block(texture,
 						/*left*/0, /*bottom*/0, image_width, image_height, /*depth_plane*/i,
-						image_width_bytes, image_plane))
+						image_width_bytes, (unsigned char *)image_plane))
 					{
 						display_message(ERROR_MESSAGE,
 							"set_Texture_image_from_field.  Could not set texture block");
@@ -7387,6 +7400,7 @@ Modifies the properties of a texture.
 								evaluate_data.element_dimension,
 								specify_format, specify_width, 
 								specify_height, specify_depth,
+								specify_number_of_bytes_per_component,
 								command_data->graphics_buffer_package,
 								evaluate_data.fail_material);
 
