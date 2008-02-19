@@ -6423,7 +6423,7 @@ value searches just elements of that dimension.
 #endif /* defined (DEBUG) */
 							if (number_of_bytes_per_component > 1)
 							{
-								 multiplier = pow(255.0,number_of_bytes_per_component) - 1.0;
+								 multiplier = pow(256.0,number_of_bytes_per_component) - 1.0;
 							}
 							else
 							{
