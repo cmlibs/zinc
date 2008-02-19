@@ -186,7 +186,6 @@ Contains information for a graphics window.
 #elif defined (WIN32_USER_INTERFACE)
 	HWND hWnd;
 #elif defined (WX_USER_INTERFACE)
-	 Cmiss_region *root_region;
 	 double maximum_time, minimum_time, current_time;
 	 wxBitmapButton *fast_backward, *backward_by_frame, *backward, *stop_button,
 			*forward, *forward_by_frame, *fast_forward, *hide_time_bitmapbutton;
@@ -4448,8 +4447,6 @@ it.
  			USE_PARAMETER(minimum_accumulation_buffer_depth);
  			USE_PARAMETER(Graphics_window_Scene_viewer_view_changed);
 			
-			window->root_region = (struct Cmiss_region *)NULL;
-			window->root_region = ACCESS(Cmiss_region)(CREATE(Cmiss_region)());
 			wxLogNull logNo;
  			window->wx_graphics_window = new 
 				 wxGraphicsWindow(window);
@@ -4879,10 +4876,6 @@ Graphics_window_destroy_CB.
 		if (window->interactive_tool_manager)
 		{
 			 DESTROY(MANAGER(Interactive_tool))(&window->interactive_tool_manager);
-		}
-		if	(window->root_region)
-		{
-			 DEACCESS(Cmiss_region)(&window->root_region);
 		}
 #endif /* (WX_USER_INTERFACE) */
 #if defined (MOTIF) /* switch (USER_INTERFACE) */
@@ -8011,7 +8004,7 @@ and establishing the views in it to the command window to a com file.
 static int modify_Graphics_window_node_tool(struct Parse_state *state,
 	 void *window_void, void *modify_graphics_window_data_void)
 /*******************************************************************************
-LAST MODIFIED : 13 April 2007
+LAST MODIFIED : 18 February 2008
 
 DESCRIPTION :
 Executes a GFX NODE_TOOL or GFX_DATA_TOOL command. If <data_tool_flag> is set,
@@ -8027,33 +8020,23 @@ Which tool that is being modified is passed in <node_tool_void>.
 #if defined (WX_USER_INTERFACE)
 	int element_dimension, element_create_enabled;
 #endif /*(WX_USER_INTERFACE)*/
-	Cmiss_region *root_region;
-	Computed_field *coordinate_field, *command_field;
+	Computed_field *coordinate_field, *command_field, *element_xi_field;
 	Graphics_window *window;
 	Interactive_tool *interactive_tool;
 	Modify_graphics_window_data *modify_graphics_window_data;
 	Node_tool *node_tool;
 	Option_table *option_table;
 	Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_command_field_data;
+		set_command_field_data, set_element_xi_field_data;
 
 	ENTER(execute_command_gfx_node_tool);
 	if (state && (modify_graphics_window_data=(Modify_graphics_window_data *)
 	  modify_graphics_window_data_void) && (window = (Graphics_window *)window_void))
 	{
 		 int data_tool_flag = 0;
-		 //		if (data_tool_flag)
-		 //{
-		 //node_tool = command_data->data_tool;
-		 //root_region = command_data->data_root_region;
-			//}
-			//e/lse
-			//{
 		 if (interactive_tool = FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)("node_tool", window->interactive_tool_manager))
 		 {
 				node_tool = static_cast<Node_tool *>(Interactive_tool_get_tool_data(interactive_tool));
-				root_region = window->root_region;
-				//}
 				/* initialize defaults */
 				coordinate_field=(struct Computed_field *)NULL;
 				create_enabled=0;
@@ -8064,6 +8047,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 				streaming_create_enabled = 0;
 				constrain_to_surface = 0;
 				command_field=(struct Computed_field *)NULL;
+				element_xi_field=(struct Computed_field *)NULL;
 				region_path = (char *)NULL;
 				if (!data_tool_flag)
 				{
@@ -8083,6 +8067,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 					 constrain_to_surface =
 							Node_tool_get_constrain_to_surface(node_tool);
 					 command_field=Node_tool_get_command_field(node_tool);
+					 element_xi_field=Node_tool_get_element_xi_field(node_tool);
 					 Node_tool_get_region_path(node_tool, &region_path);
 					 if (!data_tool_flag)
 					 {
@@ -8098,6 +8083,10 @@ Which tool that is being modified is passed in <node_tool_void>.
 				if (command_field)
 				{
 					 ACCESS(Computed_field)(command_field);
+				}
+				if (element_xi_field)
+				{
+					 ACCESS(Computed_field)(element_xi_field);
 				}
 				
 				option_table=CREATE(Option_table)();
@@ -8125,11 +8114,20 @@ Which tool that is being modified is passed in <node_tool_void>.
 					 Option_table_add_entry(option_table,"element_dimension",
 							&element_dimension,NULL,set_int_non_negative);
 				}
+				/* element_xi_field */
+				set_element_xi_field_data.computed_field_manager=
+					 Computed_field_package_get_computed_field_manager(
+							modify_graphics_window_data->computed_field_package);
+				set_element_xi_field_data.conditional_function =
+					 Computed_field_has_element_xi_fe_field;
+				set_element_xi_field_data.conditional_function_user_data=(void *)NULL;
+				Option_table_add_entry(option_table,"element_xi_field",&element_xi_field,
+					 &set_element_xi_field_data,set_Computed_field_conditional);
 				/* edit/no_edit */
 				Option_table_add_switch(option_table,"edit","no_edit",&edit_enabled);
 				/* group */
 				Option_table_add_entry(option_table, "group", &region_path,
-					 root_region, set_Cmiss_region_path);
+						modify_graphics_window_data->root_region, set_Cmiss_region_path);
 				/* motion_update/no_motion_update */
 				Option_table_add_switch(option_table,"motion_update","no_motion_update",
 					 &motion_update_enabled);
@@ -8172,6 +8170,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 							Node_tool_set_define_enabled(node_tool,define_enabled);
 							Node_tool_set_create_enabled(node_tool,create_enabled);
 							Node_tool_set_constrain_to_surface(node_tool,constrain_to_surface);
+							Node_tool_set_element_xi_field(node_tool,element_xi_field);
 							Node_tool_set_motion_update_enabled(node_tool,motion_update_enabled);
 							if (!data_tool_flag)
 							{
@@ -8203,6 +8202,10 @@ Which tool that is being modified is passed in <node_tool_void>.
 				if (coordinate_field)
 				{
 					 DEACCESS(Computed_field)(&coordinate_field);
+				}
+				if (element_xi_field)
+				{
+					 DEACCESS(Computed_field)(&element_xi_field);
 				}
 		 }
 	}

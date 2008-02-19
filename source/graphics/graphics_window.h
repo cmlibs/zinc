@@ -152,6 +152,7 @@ Structure to pass to modify_Graphics_window.
 	struct MANAGER(Light_model) *light_model_manager;
 	struct MANAGER(Scene) *scene_manager;
 	struct MANAGER(Texture) *texture_manager;
+	struct Cmiss_region *root_region;
 }; /* struct Modify_graphics_window_data */
 
 #if defined(WX_USER_INTERFACE)

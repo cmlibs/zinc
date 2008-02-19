@@ -53,14 +53,6 @@
 	   <label>Streaming create</label>
 	</object>
       </object>	
-
-      <object class = "sizeritem">
-	<object class = "wxCheckBox" name="ButtonConstrain">
-	   				<flag>wxEXPAND</flag>
-				<option>1</option>>
-	   <label>Constrain to surfaces</label>
-	</object>
-      </object>	
 	
       <object class = "sizeritem">
 	   <flag>wxEXPAND</flag>
@@ -104,6 +96,31 @@
 		 </object>
       </object>	
 
+      <object class = "sizeritem">
+	<object class = "wxCheckBox" name="ButtonConstrain">
+	   				<flag>wxEXPAND</flag>
+				<option>1</option>>
+	   <label>Constrain to surfaces</label>
+	</object>
+      </object>	
+
+		<object class="sizeritem">
+			<object class = "wxBoxSizer">	
+				<orient>wxHORIZONTAL</orient>
+				<object class="sizeritem">
+					<flag>wxALIGN_CENTER</flag>
+					<object class	="wxCheckBox" name="ElementXiFieldCheckBox">
+						<label>Define element.xi:</label> 
+					</object>
+				</object>	
+				<object class="sizeritem">
+					<object class	="wxPanel"  name="ElementXiFieldChooserPanel">
+						<size>120,30</size>
+					</object>
+				</object>	
+			</object>
+		</object>
+
 		<object class="sizeritem">
 			<object class = "wxBoxSizer">	
 				<orient>wxHORIZONTAL</orient>
@@ -120,7 +137,6 @@
 				</object>	
 			</object>
 		</object>
-
 
      	<object class = "sizeritem">
       		<object class ="wxStaticBoxSizer">

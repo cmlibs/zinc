@@ -6059,7 +6059,7 @@ appropriately.
 #if !defined (WINDOWS_DEV_FLAG)
 static int list_FE_node_field(struct FE_node_field *node_field,void *node_void)
 /*******************************************************************************
-LAST MODIFIED : 6 May 2003
+LAST MODIFIED : 14 February 2008
 
 DESCRIPTION :
 Outputs the information contained by the node field.
@@ -6070,6 +6070,7 @@ Outputs the information contained by the node field.
 	FE_value time;
 	int i,version,k,number_of_components,number_of_times,number_of_versions,
 		return_code,time_index,xi_dimension,xi_index;
+	struct FE_element *embedding_element;
 	struct FE_field *field;
 	struct FE_node *node;
 	struct FE_node_field_component *node_field_component;
@@ -6282,16 +6283,24 @@ Outputs the information contained by the node field.
 											} break;
 											case ELEMENT_XI_VALUE:
 											{
-												xi_dimension=(*((struct FE_element **)values_storage))->
-													shape->dimension;
-												display_message(INFORMATION_MESSAGE,"element %d xi",
-													(*((struct FE_element **)values_storage))->cm.number);
-												value=values_storage+sizeof(struct FE_element *);
-												for (xi_index=0;xi_index<xi_dimension;xi_index++)
+												embedding_element = *((struct FE_element **)values_storage);
+												if (embedding_element)
 												{
-													display_message(INFORMATION_MESSAGE," %g",
-														*((FE_value *)value));
-													value += sizeof(FE_value);
+													display_message(INFORMATION_MESSAGE,"%s %d xi",
+															CM_element_type_string(embedding_element->cm.type),
+															embedding_element->cm.number);
+													xi_dimension=embedding_element->shape->dimension;
+													value=values_storage+sizeof(struct FE_element *);
+													for (xi_index=0;xi_index<xi_dimension;xi_index++)
+													{
+														display_message(INFORMATION_MESSAGE," %g",
+															*((FE_value *)value));
+														value += sizeof(FE_value);
+													}
+												}
+												else
+												{
+													display_message(INFORMATION_MESSAGE,"UNDEFINED");
 												}
 											} break;	
 											case INT_VALUE:

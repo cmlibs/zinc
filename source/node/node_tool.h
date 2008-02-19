@@ -322,6 +322,26 @@ Sets flag controlling, if create_enabled, whether new nodes will be created
 on the closest surface element or just halfway between near and far.
 ==============================================================================*/
 
+struct Computed_field *Node_tool_get_element_xi_field(
+	struct Node_tool *node_tool);
+/*******************************************************************************
+LAST MODIFIED : 18 February 2008
+
+DESCRIPTION :
+Returns the elementxi_field to define when the node is created in the <node_tool>
+and node is constrained to surface.
+==============================================================================*/
+
+int Node_tool_set_element_xi_field(struct Node_tool *node_tool,
+	struct Computed_field *element_xi_field);
+/*******************************************************************************
+LAST MODIFIED : 18 February 2008
+
+DESCRIPTION :
+Sets the elementxi_field to define when the node is created in the <node_tool>
+and node is constrained to surface.
+==============================================================================*/
+
 struct Computed_field *Node_tool_get_command_field(
 	struct Node_tool *node_tool);
 /*******************************************************************************

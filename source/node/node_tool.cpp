@@ -156,8 +156,7 @@ changes in node position and derivatives etc.
 		rather than between near and far */
 	int constrain_to_surface;
 	enum Node_tool_edit_mode edit_mode;
-	struct Computed_field *coordinate_field, *command_field;
-	struct FE_node *template_node;
+	struct Computed_field *coordinate_field, *command_field, *element_xi_field;
 	/* information about picked nodes the editor knows about */
 	struct Scene_picked_object *scene_picked_object;
 	struct FE_node *last_picked_node;
@@ -203,7 +202,7 @@ changes in node position and derivatives etc.
 
 struct FE_node_edit_information
 /*******************************************************************************
-LAST MODIFIED : 20 November 2000
+LAST MODIFIED : 19 February 2008
 
 DESCRIPTION :
 Describes how to move a node in space. The node will move on the plane normal
@@ -245,11 +244,13 @@ to its position between these two planes.
 	int constrain_to_surface;
 	struct FE_element *nearest_element;
 	struct Computed_field *nearest_element_coordinate_field;
+	struct Computed_field *element_xi_field;
 }; /* struct FE_node_edit_information */
 
 struct Node_tool_element_constraint_function_data
 {
-	struct FE_element *element;
+	struct FE_element *element, *found_element;
+	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct Computed_field *coordinate_field;
 }; /* struct Node_tool_element_constraint_function_data */
 
@@ -367,82 +368,55 @@ Defines the appropriate FE_field upon which the <coordinate_field> depends in
 	return (return_code);
 } /* Node_tool_define_field_at_node */
 
-static int Node_tool_create_template_node(struct Node_tool *node_tool)
+static int FE_node_define_and_set_element_xi(struct FE_node *node,
+		struct Computed_field *element_xi_field,
+		struct FE_element *element, FE_value *xi)
 /*******************************************************************************
-LAST MODIFIED : 12 September 2000
+LAST MODIFIED : 19 February 2008
 
 DESCRIPTION :
-Ensures there is a template node defined with the coordinate_field in the
-<node_tool> for creating new nodes as copies of.
+Defines element_xi_field at node if not already defined. Sets value.
 ==============================================================================*/
 {
 	int return_code;
+	struct FE_field *fe_field;
+	struct FE_node_field_creator *node_field_creator;
 
-	ENTER(Node_tool_create_template_node);
-	if (node_tool)
+	ENTER(FE_node_define_and_set_element_xi);
+	return_code = 0;
+	if (node && element_xi_field && element && xi)
 	{
-		if (!node_tool->template_node)
+		fe_field = (struct FE_field *)NULL;
+		if (Computed_field_get_type_finite_element(element_xi_field, &fe_field))
 		{
-			if (node_tool->coordinate_field)
+			if (!FE_field_is_defined_at_node(fe_field,node))
 			{
-				if (node_tool->fe_region)
+				if (node_field_creator =
+					CREATE(FE_node_field_creator)(/*number_of_components*/1))
 				{
-					if (node_tool->template_node=CREATE(FE_node)(
-						/*node_number*/0, node_tool->fe_region,
-						/*template*/(struct FE_node *)NULL))
-					{
-						if (Node_tool_define_field_at_node(node_tool,
-							node_tool->template_node))
-						{
-							ACCESS(FE_node)(node_tool->template_node);
-							return_code=1;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Node_tool_create_template_node.  "
-								"Could not define coordinate field in template_node");
-							DESTROY(FE_node)(&(node_tool->template_node));
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Node_tool_create_template_node.  "
-							"Could not create template node");
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Node_tool_create_template_node.  Must specify a node group first");
-					return_code=0;
+					define_FE_field_at_node(node, fe_field,
+						(struct FE_time_sequence *)NULL, node_field_creator);
+					DESTROY(FE_node_field_creator)(&node_field_creator);
 				}
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Node_tool_create_template_node.  No field to define");
-				return_code=0;
-			}
+			return_code = set_FE_nodal_element_xi_value(node,fe_field,/*component_number*/0,
+				/*version*/0,FE_NODAL_VALUE,element,xi);
 		}
-		else
+		if (!return_code)
 		{
-			/* already have a template node */
-			return_code=1;
+			display_message(ERROR_MESSAGE,
+				"FE_node_define_and_set_element_xi.  Failed");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Node_tool_create_template_node.  Invalid argument(s)");
-		return_code=0;
+			"FE_node_define_and_set_element_xi.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Node_tool_create_template_node */
+} /* FE_node_define_and_set_element_xi */
 
 static int model_to_world_coordinates(FE_value coordinates[3],
 	double *transformation_matrix)
@@ -545,26 +519,24 @@ error is reported.
 static int Node_tool_element_constraint_function(FE_value *point,
 	void *void_data)
 /*******************************************************************************
-LAST MODIFIED : 21 March 2005
+LAST MODIFIED : 14 February 2008
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	FE_value xi[2];
 	int return_code;
-	struct FE_element *found_element;
 	struct Node_tool_element_constraint_function_data *data;
 
 	ENTER(Node_tool_element_constraint_function_data);
 	if (point && (data = (struct Node_tool_element_constraint_function_data *)void_data))
 	{
-		found_element = data->element;
+		data->found_element = data->element;
 		return_code = Computed_field_find_element_xi(data->coordinate_field,
-			point, /*number_of_values*/3, &found_element, 
-			xi, /*element_dimension*/2, 
+			point, /*number_of_values*/3, &(data->found_element), 
+			data->xi, /*element_dimension*/2, 
 			(struct Cmiss_region *)NULL, /*propagate_field*/0, /*find_nearest_location*/1);
 		Computed_field_evaluate_in_element(data->coordinate_field,
-			found_element, xi, /*time*/0.0, (struct FE_element *)NULL,
+			data->found_element, data->xi, /*time*/0.0, (struct FE_element *)NULL,
 			point, (FE_value *)NULL);
 	}
 	else
@@ -591,7 +563,7 @@ applied to multiple nodes.
 {
 	double model_coordinates[3],normalised_coordinates[3],placement_coordinates[3];
 	FE_value coordinates[3], initial_coordinates[3], final_coordinates[3];
-	int return_code;
+	int i, return_code;
 	struct FE_node_edit_information *edit_info;
 	struct Node_tool_element_constraint_function_data constraint_data;
 
@@ -623,7 +595,12 @@ applied to multiple nodes.
 					 edit_info->nearest_element_coordinate_field)
 				{
 					constraint_data.element = edit_info->nearest_element;
+					constraint_data.found_element = edit_info->nearest_element;
 					constraint_data.coordinate_field = edit_info->nearest_element_coordinate_field;
+					for (i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
+					{
+						constraint_data.xi[i] = 0.5;
+					}
 					Interaction_volume_get_placement_point(edit_info->final_interaction_volume,
 						placement_coordinates, Node_tool_element_constraint_function,
 						&constraint_data);
@@ -682,6 +659,14 @@ applied to multiple nodes.
 					return_code=Computed_field_set_values_at_node(
 						edit_info->rc_coordinate_field,node,edit_info->time,
 						coordinates);
+				}
+				/* may be some application for not editing element_xi field value */
+				if (return_code && edit_info->nearest_element &&
+					constraint_data.found_element && edit_info->element_xi_field)
+				{
+					return_code = FE_node_define_and_set_element_xi(node,
+						edit_info->element_xi_field, constraint_data.found_element,
+						constraint_data.xi);
 				}
 			}
 		}
@@ -1185,9 +1170,9 @@ object's coordinate field.
 static struct FE_node *Node_tool_create_node_at_interaction_volume(
 	struct Node_tool *node_tool,struct Scene *scene,
 	struct Interaction_volume *interaction_volume,
-	struct FE_element *nearest_element, struct Computed_field *coordinate_field)
+	struct FE_element *nearest_element, struct Computed_field *element_coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 21 March 2005
+LAST MODIFIED : 14 February 2008
 
 DESCRIPTION :
 Returns a new node in the position indicated by <interaction_volume>, in the
@@ -1217,9 +1202,24 @@ try to enforce that the node is created on that element.
 	scene_picked_object=(struct Scene_picked_object *)NULL;
 	gt_element_group=(struct GT_element_group *)NULL;
 	gt_element_settings=(struct GT_element_settings *)NULL;
-	if (node_tool&&interaction_volume)
+	if (!node_tool || !interaction_volume)
 	{
-		if (Node_tool_create_template_node(node_tool))
+		display_message(ERROR_MESSAGE,
+			"Node_tool_create_node_at_interaction_volume.  Invalid argument(s)");
+	}
+	else
+	{
+		if (!node_tool->coordinate_field)
+		{
+			display_message(ERROR_MESSAGE,
+				"Node_tool_create_node_at_interaction_volume.  No coordinate field to define");
+		}
+		else if (!node_tool->fe_region)
+		{
+			display_message(ERROR_MESSAGE,
+				"Node_tool_create_node_at_interaction_volume.  No region chosen for new node");
+		}
+		else
 		{
 			node_tool_coordinate_field=node_tool->coordinate_field;
 			if (node_tool->use_data)
@@ -1259,10 +1259,15 @@ try to enforce that the node is created on that element.
 					node_tool->fe_region, /*start*/1);
 
 				/* get new node coordinates from interaction_volume */
-				if (nearest_element && coordinate_field)
+				if (nearest_element && element_coordinate_field)
 				{
 					constraint_data.element = nearest_element;
-					constraint_data.coordinate_field = coordinate_field;
+					constraint_data.found_element = nearest_element;
+					constraint_data.coordinate_field = element_coordinate_field;
+					for (i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
+					{
+						constraint_data.xi[i] = 0.5;
+					}
 					Interaction_volume_get_placement_point(interaction_volume,
 						node_coordinates, Node_tool_element_constraint_function,
 						&constraint_data);
@@ -1287,17 +1292,26 @@ try to enforce that the node is created on that element.
 					world_to_model_coordinates(coordinates,
 						LU_transformation_matrix,LU_indx);
 				}
-				if (node = CREATE(FE_node)(node_number, (struct FE_region *)NULL,
-					node_tool->template_node))
+				node = CREATE(FE_node)(node_number, node_tool->fe_region, /*template*/(struct FE_node *)NULL);
+				if (!node)
+				{
+					display_message(ERROR_MESSAGE,
+						"Node_tool_create_node_at_interaction_volume.  Could not create node");
+				}
+				else
 				{
 					ACCESS(FE_node)(node);
-					if (!(Computed_field_set_values_at_node(rc_coordinate_field, node,
-							/*time*/0, coordinates) && (merged_node =
+					if (!Node_tool_define_field_at_node(node_tool,node) ||
+						!Computed_field_set_values_at_node(rc_coordinate_field, node,
+							/*time*/0, coordinates) ||
+						(nearest_element && constraint_data.found_element && node_tool->element_xi_field &&
+							!FE_node_define_and_set_element_xi(node, node_tool->element_xi_field,
+								constraint_data.found_element, constraint_data.xi)) ||
+						(NULL == (merged_node =
 							FE_region_merge_FE_node(node_tool->fe_region, node))))
 					{
 						display_message(ERROR_MESSAGE,
-							"Node_tool_create_node_at_interaction_volume.  "
-							"Could not create node");
+							"Node_tool_create_node_at_interaction_volume.  Could not define and set fields");
 					}
 					DEACCESS(FE_node)(&node);
 				}
@@ -1305,18 +1319,6 @@ try to enforce that the node is created on that element.
 				Computed_field_end_wrap(&rc_coordinate_field);
 			}
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Node_tool_create_node_at_interaction_volume.  "
-				"Could not create template node");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_create_node_at_interaction_volume.  "
-			"Invalid argument(s)");
 	}
 	if (node_tool)
 	{
@@ -1358,10 +1360,6 @@ Sets the <region> used by <node_tool>.
 		return_code=1;
 		if (region != node_tool->region)
 		{
-			if (node_tool->template_node)
-			{
-				DEACCESS(FE_node)(&(node_tool->template_node));
-			}
 			node_tool->region = region;
 			if (region)
 			{
@@ -1866,7 +1864,7 @@ static void Node_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *node_tool_void,
 	struct Graphics_buffer *graphics_buffer)
 /*******************************************************************************
-LAST MODIFIED : 18 November 2005
+LAST MODIFIED : 13 February 2008
 
 DESCRIPTION :
 Input handler for input from devices. <device_id> is a unique address enabling
@@ -2127,6 +2125,7 @@ release.
 								edit_info.time=Time_keeper_get_time(
 									node_tool->time_keeper);
 								edit_info.constrain_to_surface = node_tool->constrain_to_surface;
+								edit_info.element_xi_field = node_tool->element_xi_field;
 								edit_info.nearest_element = nearest_element;
 								edit_info.nearest_element_coordinate_field = 
 									nearest_element_coordinate_field;
@@ -2150,7 +2149,16 @@ release.
 								edit_info.orientation_scale_field=(struct Computed_field *)NULL;
 								edit_info.wrapper_orientation_scale_field=
 									(struct Computed_field *)NULL;
-								if (GT_element_settings_get_glyph_parameters(
+								if (!node_tool->gt_element_settings)
+								{
+									edit_info.glyph_centre[0] = 0.0;
+									edit_info.glyph_centre[1] = 0.0;
+									edit_info.glyph_centre[2] = 0.0;
+									edit_info.glyph_size[0] = 1.0;
+									edit_info.glyph_size[1] = 1.0;
+									edit_info.glyph_size[2] = 1.0;
+								}
+								else if (GT_element_settings_get_glyph_parameters(
 									node_tool->gt_element_settings, &glyph, &glyph_scaling_mode,
 									edit_info.glyph_centre,edit_info.glyph_size,
 									&(edit_info.orientation_scale_field),
@@ -2170,7 +2178,13 @@ release.
 									return_code=0;
 								}
 								/* work out scene_object transformation information */
-								if (!(Scene_picked_object_get_total_transformation_matrix(
+								if (!node_tool->scene_picked_object)
+								{
+									/* best we can do is use world coordinates;
+									 * will look wrong if nodes drawn with a transformation */
+									edit_info.transformation_required=0;
+								}
+								else if (!(Scene_picked_object_get_total_transformation_matrix(
 									node_tool->scene_picked_object,
 									&(edit_info.transformation_required),
 									edit_info.transformation_matrix)&&
@@ -2477,8 +2491,10 @@ class wxNodeTool : public wxPanel
 	 wxButton *button_undefine;
 	 wxWindow *Title;
 	 wxRegionChooser *region_chooser;
-	 wxCheckBox *nodecommandfieldcheckbox;
+	 wxCheckBox *node_command_field_checkbox;
 	 wxPanel *node_command_field_chooser_panel;
+	 wxCheckBox *element_xi_field_checkbox;
+	 wxPanel *element_xi_field_chooser_panel;
 	 wxPanel *cmgui_node_tool;
 	 wxButton *clear_button;
 	 wxCheckBox *create_elements_checkbox;
@@ -2487,18 +2503,20 @@ class wxNodeTool : public wxPanel
 	 wxStaticText *new_element_statictext, *dimension_statictext;
 	 wxWindow *first_element_staticbox,*second_element_staticbox;
 	 char temp_string[20];
-	struct Computed_field *command_field;
 	 DEFINE_MANAGER_CLASS(Computed_field);
 	 Managed_object_chooser<Computed_field, MANAGER_CLASS(Computed_field)>
 	 *computed_field_chooser;
 	 Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-	 *node_command_field_chooser;
+	 	*node_command_field_chooser;
+	 Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+	 	*element_xi_field_chooser;
 
 public:
 
   wxNodeTool(Node_tool *node_tool, wxPanel *parent): 
     node_tool(node_tool)
   {
+  	struct Computed_field *command_field, *element_xi_field;
 	  { // Suppress the error message if we have already initialised this xrc
 		  wxLogNull logNo;
 		  wxXmlInit_node_tool();
@@ -2588,31 +2606,52 @@ public:
 			wx_Node_tool_set_region_path(node_tool->current_region_path);
 	  }
 
-		nodecommandfieldcheckbox = XRCCTRL(*this, "NodeCommandFieldCheckBox",wxCheckBox);
+		node_command_field_checkbox = XRCCTRL(*this, "NodeCommandFieldCheckBox",wxCheckBox);
 		node_command_field_chooser_panel = XRCCTRL(*this, "NodeCommandFieldChooserPanel", wxPanel);
+		command_field = Node_tool_get_command_field(node_tool);
 		node_command_field_chooser =
 			 new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
-			 (node_command_field_chooser_panel, node_tool->command_field, node_tool->computed_field_manager,
+			 (node_command_field_chooser_panel, command_field, node_tool->computed_field_manager,
 					Computed_field_has_string_value_type, (void *)NULL, node_tool->user_interface);
 		Callback_base< Computed_field* > *node_command_field_callback = 
 			 new Callback_member_callback< Computed_field*, 
 				wxNodeTool, int (wxNodeTool::*)(Computed_field *) >
 			 (this, &wxNodeTool::node_command_field_callback);
 		node_command_field_chooser->set_callback(node_command_field_callback);
-		if (node_tool != NULL)
+		if (command_field == NULL)
 		{
-			 command_field = Node_tool_get_command_field(node_tool);
-			 if (command_field == NULL)
-			 {
-					nodecommandfieldcheckbox->SetValue(0);
-					node_command_field_chooser_panel->Disable();
-			 }
-			 else
-			 {
-					nodecommandfieldcheckbox->SetValue(1);
-					node_command_field_chooser_panel->Enable();
-			 }
+			node_command_field_checkbox->SetValue(0);
+			node_command_field_chooser_panel->Disable();
 		}
+		else
+		{
+			node_command_field_checkbox->SetValue(1);
+			node_command_field_chooser_panel->Enable();
+		}
+
+		element_xi_field_checkbox = XRCCTRL(*this, "ElementXiFieldCheckBox",wxCheckBox);
+		element_xi_field_chooser_panel = XRCCTRL(*this, "ElementXiFieldChooserPanel", wxPanel);
+		element_xi_field = Node_tool_get_element_xi_field(node_tool);
+		element_xi_field_chooser =
+			 new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+			 (element_xi_field_chooser_panel, element_xi_field, node_tool->computed_field_manager,
+					 Computed_field_has_element_xi_fe_field, (void *)NULL, node_tool->user_interface);
+		Callback_base< Computed_field* > *element_xi_field_callback = 
+			 new Callback_member_callback< Computed_field*, 
+				wxNodeTool, int (wxNodeTool::*)(Computed_field *) >
+			 (this, &wxNodeTool::element_xi_field_callback);
+		element_xi_field_chooser->set_callback(element_xi_field_callback);
+		if (element_xi_field == NULL)
+		{
+			element_xi_field_checkbox->SetValue(0);
+			element_xi_field_chooser_panel->Disable();
+		}
+		else
+		{
+			element_xi_field_checkbox->SetValue(1);
+			element_xi_field_chooser_panel->Enable();
+		}
+
 		cmgui_node_tool = XRCCTRL(*this, "CmguiNodeTool", wxPanel);
 		cmgui_node_tool->SetScrollbar(wxVERTICAL,0,-1,-1);
 		cmgui_node_tool -> Layout();
@@ -2630,6 +2669,8 @@ public:
 				delete region_chooser;
 		 if (node_command_field_chooser)
 				delete node_command_field_chooser;
+		 if (element_xi_field_chooser)
+				delete element_xi_field_chooser;
   }
 
 	int coordinate_field_callback(Computed_field *field)
@@ -2673,6 +2714,12 @@ Set the selected option in the Coordinate Field chooser.
 			Node_tool_set_command_field(node_tool, command_field);
 			return 1;
 	 }
+
+	int element_xi_field_callback(Computed_field *element_xi_field)
+	{
+		Node_tool_set_element_xi_field(node_tool, element_xi_field);
+		return 1;
+	}
 
 	void OnButtonSelectpressed(wxCommandEvent& event)
 	{    
@@ -2848,6 +2895,22 @@ void OnDimensionEntered(wxCommandEvent &event)
 		}
  }
 
+
+void NodeToolInterfaceRenew_element_xi_field(Node_tool *node_tool)
+{
+	struct Computed_field *element_xi_field = Node_tool_get_element_xi_field(node_tool);
+	element_xi_field_checkbox->SetValue(element_xi_field != 0);
+	if (element_xi_field)
+	{
+		element_xi_field_chooser->set_object(element_xi_field);
+		element_xi_field_chooser_panel->Enable();
+	}
+	else
+	{
+		element_xi_field_chooser_panel->Disable();
+	}
+}
+
 void NodeToolInterfaceRenew(Node_tool *destination_node_tool)
 {
 	button_select = XRCCTRL(*this, "ButtonSelect", wxCheckBox);
@@ -2865,7 +2928,8 @@ void NodeToolInterfaceRenew(Node_tool *destination_node_tool)
 	button_define->SetValue(destination_node_tool->define_enabled);
 	button_create->SetValue(destination_node_tool->create_enabled);
 	button_streaming->SetValue(destination_node_tool->streaming_create_enabled);
-	button_constrain ->SetValue(destination_node_tool->constrain_to_surface);
+	button_constrain->SetValue(destination_node_tool->constrain_to_surface);
+	NodeToolInterfaceRenew_element_xi_field(destination_node_tool);
 	computed_field_chooser->set_object(destination_node_tool->coordinate_field);
 	if (destination_node_tool->current_region_path != NULL)
 	{
@@ -2877,48 +2941,34 @@ void NodeToolInterfaceRenew(Node_tool *destination_node_tool)
 
 void NodeCommandFieldChecked(wxCommandEvent &event)
 {
-	 struct Computed_field *command_field;
-	 nodecommandfieldcheckbox = XRCCTRL(*this, "NodeCommandFieldCheckBox",wxCheckBox);
-	 node_command_field_chooser_panel = XRCCTRL(*this, "NodeCommandFieldChooserPanel", wxPanel);
-	 if (nodecommandfieldcheckbox->IsChecked())
-	 {
-			if (node_tool)
-			{
-				 if (Node_tool_get_command_field(node_tool))
-				 {
-						Node_tool_set_command_field(node_tool, (struct Computed_field *)NULL);
-						node_command_field_chooser_panel->Enable();
-				 }
-				 else
-				 {
-						/* get label field from widget */
-						if (node_command_field_chooser->get_number_of_object() > 0)
-						{
-							 command_field = node_command_field_chooser->get_object();
-							 if (command_field)
-							 {
-									Node_tool_set_command_field(node_tool, command_field);
-							 }
-						}
-						else
-						{
-							 nodecommandfieldcheckbox->SetValue(0);
-							 node_command_field_chooser_panel->Disable();
-						}
-				 }
-			}
-			else
-			{
-				 display_message(ERROR_MESSAGE,
-						"Node_tool_command_field_button_CB.  Invalid argument(s)");
-			}
-	 }
-	 else
-	 {
-		  Node_tool_set_command_field(node_tool, (struct Computed_field *)NULL);
-			nodecommandfieldcheckbox->SetValue(0);
-			node_command_field_chooser_panel->Disable();
-	 }
+	struct Computed_field *command_field = (struct Computed_field *)NULL;
+	if (node_command_field_checkbox->IsChecked() &&
+		(command_field = node_command_field_chooser->get_object()))
+	{
+		node_command_field_chooser_panel->Enable();
+	}
+	else
+	{
+		node_command_field_checkbox->SetValue(0);
+		node_command_field_chooser_panel->Disable();
+	}
+	Node_tool_set_command_field(node_tool, command_field);
+}
+
+void ElementXiFieldChecked(wxCommandEvent &event)
+{
+	struct Computed_field *element_xi_field = (struct Computed_field *)NULL;
+	if (element_xi_field_checkbox->IsChecked() &&
+		(element_xi_field = element_xi_field_chooser->get_object()))
+	{
+		element_xi_field_chooser_panel->Enable();
+	}
+	else
+	{
+		element_xi_field_checkbox->SetValue(0);
+		element_xi_field_chooser_panel->Disable();
+	}
+	Node_tool_set_element_xi_field(node_tool, element_xi_field);
 }
 
 int wx_Node_tool_get_region_path(char **path_address)
@@ -2936,51 +2986,35 @@ int wx_Node_tool_get_region_path(char **path_address)
 
 void wx_Node_tool_set_region_path(char *path)
 {
-	 int first_location, length;
-	 char *first=NULL;
-	 length = strlen(path);
-	 first = strchr(path, '/');
-	 first_location = 1;
-	 if (first !=NULL)
-	 {
-			first_location = first - path +1;
-	 }
-	 else
-	 {
-			first_location = length;
-	 }
-	 if ((first_location == length) || (first == NULL))
-	 {
+	if (path && (region_chooser != NULL))
+	{
+		/* path must start with '/' to match items in chooser */
+		if (path[0] != '/')
+		{
 			char *temp = NULL;
-			if (ALLOCATE(temp,char,length+2))
+			if (ALLOCATE(temp,char,strlen(path)+2))
 			{
-				 {
-						strcpy(temp, "/");
-						strcat(temp, path);
-						temp_string[length+2]='\0';
-				 }
-				 if (region_chooser != NULL)
-				 {
-						region_chooser->set_path(temp);
-				 }
-				 DEALLOCATE(temp);
+				strcpy(temp, "/");
+				strcat(temp, path);
+				region_chooser->set_path(temp);
+				DEALLOCATE(temp);
 			}
 			else
 			{
-				 display_message(ERROR_MESSAGE,
-						"wx_Node_tool_set_region_path.  Insufficient memory");
+				display_message(ERROR_MESSAGE,
+					"wx_Node_tool_set_region_path.  Insufficient memory");
 			}
-	 }
-	 else
-	 {
+		}
+		else
+		{
 			region_chooser->set_path(path);
-	 }
-
+		}
+	}
 }
 
 struct  Cmiss_region *wx_Node_tool_get_region()
 {
-	 if (region_chooser == NULL)
+	 if (region_chooser)
 	 {
 			return (region_chooser->get_region());
 	 }
@@ -2989,6 +3023,7 @@ struct  Cmiss_region *wx_Node_tool_get_region()
 			return (node_tool->root_region);
 	 }
 }
+
   DECLARE_DYNAMIC_CLASS(wxNodeTool);
   DECLARE_EVENT_TABLE();
 };
@@ -3003,6 +3038,7 @@ BEGIN_EVENT_TABLE(wxNodeTool, wxPanel)
 	 EVT_CHECKBOX(XRCID("ButtonCreate"),wxNodeTool::OnButtonCreatepressed)
 	 EVT_CHECKBOX(XRCID("ButtonStreaming"),wxNodeTool::OnButtonStreamingpressed)
 	 EVT_CHECKBOX(XRCID("ButtonConstrain"),wxNodeTool::OnButtonConstrainpressed)
+	 EVT_CHECKBOX(XRCID("ElementXiFieldCheckBox"),wxNodeTool::ElementXiFieldChecked)
 	 EVT_CHECKBOX(XRCID("NodeCommandFieldCheckBox"),wxNodeTool::NodeCommandFieldChecked)
 	 EVT_BUTTON(XRCID("ButtonDestroy"),wxNodeTool::OnButtonDestroypressed)
 	 EVT_BUTTON(XRCID("ButtonUndefine"),wxNodeTool::OnButtonUndefinepressed)
@@ -3083,6 +3119,7 @@ Copies the state of one node tool to another.
 			destination_node_tool->streaming_create_enabled = source_node_tool->streaming_create_enabled;
 			destination_node_tool->constrain_to_surface= source_node_tool->constrain_to_surface;
 			destination_node_tool->command_field = source_node_tool->command_field;
+			destination_node_tool->element_xi_field = source_node_tool->element_xi_field;
 #if ! defined (MOTIF)
 			destination_node_tool->current_region_path= source_node_tool->current_region_path;	
 #endif /* ! defined (MOTIF) */
@@ -3245,7 +3282,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 					Computed_field_has_up_to_3_numerical_components, (void *)NULL,
 					computed_field_manager);
 			node_tool->command_field = (struct Computed_field *)NULL;
-			node_tool->template_node=(struct FE_node *)NULL;
+			node_tool->element_xi_field = (struct Computed_field *)NULL;
 			/* interactive_tool */
 			if (use_data)
 			{
@@ -3521,7 +3558,6 @@ structure itself.
 			(struct Interaction_volume *)NULL);
 		REACCESS(GT_object)(&(node_tool->rubber_band),(struct GT_object *)NULL);
 		DEACCESS(Graphical_material)(&(node_tool->rubber_band_material));
-		REACCESS(FE_node)(&(node_tool->template_node),(struct FE_node *)NULL);
 		if (node_tool->time_keeper)
 		{
 			DEACCESS(Time_keeper)(&(node_tool->time_keeper));
@@ -3685,8 +3721,6 @@ are on.
 		if (coordinate_field != node_tool->coordinate_field)
 		{
 			node_tool->coordinate_field=coordinate_field;
-			/* lose the current template node, if any */
-			REACCESS(FE_node)(&(node_tool->template_node),(struct FE_node *)NULL);
 #if defined (MOTIF)
 			/* make sure the current field is shown on the widget */
 			CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
@@ -4515,6 +4549,67 @@ on the closest surface element or just halfway between near and far.
 	return (return_code);
 } /* Node_tool_set_constrain_to_surface */
 
+struct Computed_field *Node_tool_get_element_xi_field(
+	struct Node_tool *node_tool)
+/*******************************************************************************
+LAST MODIFIED : 18 February 2008
+
+DESCRIPTION :
+Returns the element_xi_field to define when the node is created in the <node_tool>
+and node is constrained to surface.
+==============================================================================*/
+{
+	struct Computed_field *element_xi_field;
+
+	ENTER(Node_tool_get_element_xi_field);
+	if (node_tool)
+	{
+		element_xi_field=node_tool->element_xi_field;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_get_element_xi_field.  Invalid argument(s)");
+		element_xi_field=(struct Computed_field *)NULL;
+	}
+	LEAVE;
+
+	return (element_xi_field);
+} /* Node_tool_get_element_xi_field */
+
+int Node_tool_set_element_xi_field(struct Node_tool *node_tool,
+	struct Computed_field *element_xi_field)
+/*******************************************************************************
+LAST MODIFIED : 19 February 2008
+
+DESCRIPTION :
+Sets the element_xi_field to define when the node is created in the <node_tool>
+and node is constrained to surface.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Node_tool_set_element_xi_field);
+	if (node_tool && ((!element_xi_field) ||
+		Computed_field_has_element_xi_fe_field(element_xi_field, (void *)NULL)))
+	{
+		if (element_xi_field != node_tool->element_xi_field)
+		{
+			node_tool->element_xi_field = element_xi_field;
+		}	
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_set_element_xi_field.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Node_tool_set_element_xi_field */
+
 struct Computed_field *Node_tool_get_command_field(
 	struct Node_tool *node_tool)
 /*******************************************************************************
@@ -4614,98 +4709,6 @@ Returns the generic interactive_tool the represents the <node_tool>.
 
 	return (interactive_tool);
 } /* Node_tool_get_interactive_tool */
-
-#if defined (WX_USER_INTERFACE)
-static int Node_tool_make_template_node(
-	 struct Node_tool *node_tool)
-/*******************************************************************************
-LAST MODIFIED : 11 April 2007
-
-DESCRIPTION :
-Ensures there is a template node defined with the coordinate_field in the
-<element_creator> for creating new nodes as copies of.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_node_field_creator *node_field_creator;
-	struct FE_field *fe_field;
-	struct LIST(FE_field) *fe_field_list;
-
-	fe_field_list=Computed_field_get_defining_FE_field_list(node_tool->coordinate_field);
-
-	ENTER(Node_tool_make_template_node);
-	if (node_tool)
-	{
-		if (node_tool->coordinate_field)
-		{
-			if (node_tool->fe_region)
-			{
-				return_code = 1;
-				if (!node_tool->template_node)
-				{
-					if ((node_field_creator = CREATE(FE_node_field_creator)(
-						/*number_of_components*/3))&&
-						(node_tool->template_node = CREATE(FE_node)(/*node_number*/0,
-							node_tool->fe_region, (struct FE_node *)NULL)))
-					{
-						/* template_node is accessed by node_tool but not managed */
-						ACCESS(FE_node)(node_tool->template_node);
-						if ((1==NUMBER_IN_LIST(FE_field)(fe_field_list))&&
-							 (fe_field=FIRST_OBJECT_IN_LIST_THAT(FE_field)(
-									 (LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL,
-									 fe_field_list)) && (3 >= get_FE_field_number_of_components(
-																					fe_field)) && (FE_VALUE_VALUE == get_FE_field_value_type(fe_field)))
-						{
-
-							 if (!define_FE_field_at_node(node_tool->template_node,
-										 fe_field,
-										 (struct FE_time_sequence *)NULL, node_field_creator))
-							 {
-									display_message(ERROR_MESSAGE,
-										 "node_tool_make_template_node.  "
-									"Could not define coordinate field in template_node");
-									DEACCESS(FE_node)(&(node_tool->template_node));
-									return_code=0;
-							 }
-						}
-						DESTROY(FE_node_field_creator)(&(node_field_creator));
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"node_tool_make_template_node.  "
-							"Could not create template node");
-						return_code=0;
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"node_tool_make_template_node.  "
-					"Must specify a region first");
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"node_tool_make_template_node.  No coordinate_field specified");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"node_tool_make_template_node.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* node_tool_make_template_node */
-#endif /* defined (WX_USER_INTERFACE)*/
-
 
 #if defined (WX_USER_INTERFACE)
 static int Node_tool_end_element_creation(
@@ -4828,51 +4831,43 @@ Callback for change in the global node selection.
 					element_identifier.type = CM_ELEMENT;
 					element_identifier.number = FE_region_get_next_FE_element_identifier(
 						node_tool->fe_region, CM_ELEMENT, 1);
-					if (node_tool->template_node ||
-						Node_tool_make_template_node(node_tool))
+					if (node_tool->coordinate_field && (fe_field_list=
+						 Computed_field_get_defining_FE_field_list(node_tool->coordinate_field)))
 					{
-						 if (node_tool->coordinate_field && (fe_field_list=
-									 Computed_field_get_defining_FE_field_list(node_tool->coordinate_field)))
-						 {
-								if ((1==NUMBER_IN_LIST(FE_field)(fe_field_list))&&
-									 (fe_field=FIRST_OBJECT_IN_LIST_THAT(FE_field)(
-											 (LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL,
-											 fe_field_list)) && (3 >= get_FE_field_number_of_components(
-																							fe_field)) && (FE_VALUE_VALUE == get_FE_field_value_type(fe_field)))
-								{ 
-									 if (node_tool->template_element ||
-											(((node_tool->template_element = create_FE_element_with_line_shape(
-														/*identifier*/1,node_tool->fe_region, node_tool->element_dimension)) &&
-												 FE_element_define_tensor_product_basis(node_tool->template_element,
-														node_tool->element_dimension,/*basis_type*/LINEAR_LAGRANGE,
-														fe_field))
-												 && ACCESS(FE_element)(node_tool->template_element)))
-									 {
-											if (node_tool->element = CREATE(FE_element)(&element_identifier,
-														(struct FE_element_shape *)NULL, (struct FE_region *)NULL,
-														node_tool->template_element))
-											{
-												 ACCESS(FE_element)(node_tool->element);
-												 node_tool->number_of_clicked_nodes=0;
-											}
-											else
-											{
- 												 display_message(ERROR_MESSAGE,
- 														"node_tool_node_selection_change.  Could not create element");
-											}
-									 }
+						if ((1==NUMBER_IN_LIST(FE_field)(fe_field_list)) &&
+							(fe_field=FIRST_OBJECT_IN_LIST_THAT(FE_field)(
+								(LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL,
+								fe_field_list)) &&
+							(3 >= get_FE_field_number_of_components(fe_field)) &&
+							(FE_VALUE_VALUE == get_FE_field_value_type(fe_field)))
+						{ 
+							if (node_tool->template_element ||
+								(((node_tool->template_element = create_FE_element_with_line_shape(
+									/*identifier*/1,node_tool->fe_region, node_tool->element_dimension)) &&
+								FE_element_define_tensor_product_basis(node_tool->template_element,
+									node_tool->element_dimension,/*basis_type*/LINEAR_LAGRANGE,
+									fe_field)) &&
+								ACCESS(FE_element)(node_tool->template_element)))
+							{
+								if (node_tool->element = CREATE(FE_element)(&element_identifier,
+									(struct FE_element_shape *)NULL, (struct FE_region *)NULL,
+									node_tool->template_element))
+								{
+									ACCESS(FE_element)(node_tool->element);
+									node_tool->number_of_clicked_nodes=0;
 								}
-						 }
-						 else
-						 {
-								display_message(ERROR_MESSAGE,
-								"node_tool_node_selection_change.  Could not create template element");
-						 }
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"node_tool_node_selection_change.  Could not create element");
+								}
+							}
+						}
 					}
 					else
 					{
-						 display_message(ERROR_MESSAGE,"node_tool_node_selection_change.  "
-								"Could not make template node");
+						display_message(ERROR_MESSAGE,
+								"node_tool_node_selection_change.  Could not create template element");
 					}
 				}
 				if (node_tool->element)
@@ -5011,8 +5006,6 @@ Sets the <element_dimension> of elements to be created by <node_tool>.
 				/* lose the current template element and node, if any */
 				REACCESS(FE_element)(&(node_tool->template_element),
 					(struct FE_element *)NULL);
-				REACCESS(FE_node)(&(node_tool->template_node),
-					(struct FE_node *)NULL);
 			}
 			if (node_tool->wx_node_tool != NULL)
 			{

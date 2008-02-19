@@ -15642,6 +15642,7 @@ Executes a GFX MODIFY command.
 				modify_graphics_window_data.scene_manager=command_data->scene_manager;
 				modify_graphics_window_data.texture_manager=
 					command_data->texture_manager;
+				modify_graphics_window_data.root_region=command_data->root_region;
 				Option_table_add_entry(option_table,"window",NULL, 
 					(void *)(&modify_graphics_window_data), modify_Graphics_window);
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
@@ -16056,7 +16057,7 @@ movie is being created.
 static int execute_command_gfx_node_tool(struct Parse_state *state,
 	void *data_tool_flag, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 6 March 2003
+LAST MODIFIED : 19 February 2008
 
 DESCRIPTION :
 Executes a GFX NODE_TOOL or GFX_DATA_TOOL command. If <data_tool_flag> is set,
@@ -16074,11 +16075,11 @@ Which tool that is being modified is passed in <node_tool_void>.
 #endif /*(WX_USER_INTERFACE)*/
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *root_region;
-	struct Computed_field *coordinate_field, *command_field;
+	struct Computed_field *coordinate_field, *command_field, *element_xi_field;
 	struct Node_tool *node_tool;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_command_field_data;
+		set_command_field_data, set_element_xi_field_data;
 
 	ENTER(execute_command_gfx_node_tool);
 	if (state && (command_data=(struct Cmiss_command_data *)command_data_void))
@@ -16103,6 +16104,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 		streaming_create_enabled = 0;
 		constrain_to_surface = 0;
 		command_field=(struct Computed_field *)NULL;
+		element_xi_field=(struct Computed_field *)NULL;
 		region_path = (char *)NULL;
 #if defined (WX_USER_INTERFACE)
 		if (!data_tool_flag)
@@ -16124,6 +16126,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 			constrain_to_surface =
 				 Node_tool_get_constrain_to_surface(node_tool);
 			command_field=Node_tool_get_command_field(node_tool);
+			element_xi_field=Node_tool_get_element_xi_field(node_tool);
 			Node_tool_get_region_path(node_tool, &region_path);
 #if defined (WX_USER_INTERFACE)
 		if (!data_tool_flag)
@@ -16141,6 +16144,10 @@ Which tool that is being modified is passed in <node_tool_void>.
 		if (command_field)
 		{
 			ACCESS(Computed_field)(command_field);
+		}
+		if (element_xi_field)
+		{
+			 ACCESS(Computed_field)(element_xi_field);
 		}
 
 		option_table=CREATE(Option_table)();
@@ -16172,6 +16179,15 @@ Which tool that is being modified is passed in <node_tool_void>.
 #endif /*(WX_USER_INTERFACE)*/
 		/* edit/no_edit */
 		Option_table_add_switch(option_table,"edit","no_edit",&edit_enabled);
+		/* element_xi_field */
+		set_element_xi_field_data.computed_field_manager=
+			 Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
+		set_element_xi_field_data.conditional_function =
+			 Computed_field_has_element_xi_fe_field;
+		set_element_xi_field_data.conditional_function_user_data=(void *)NULL;
+		Option_table_add_entry(option_table,"element_xi_field",&element_xi_field,
+			 &set_element_xi_field_data,set_Computed_field_conditional);
 		/* group */
 		Option_table_add_entry(option_table, "group", &region_path,
 			root_region, set_Cmiss_region_path);
@@ -16217,6 +16233,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 				Node_tool_set_define_enabled(node_tool,define_enabled);
 				Node_tool_set_create_enabled(node_tool,create_enabled);
 				Node_tool_set_constrain_to_surface(node_tool,constrain_to_surface);
+				Node_tool_set_element_xi_field(node_tool,element_xi_field);
 				Node_tool_set_motion_update_enabled(node_tool,motion_update_enabled);
 #if defined (WX_USER_INTERFACE)
 		if (!data_tool_flag)
@@ -16265,6 +16282,10 @@ Which tool that is being modified is passed in <node_tool_void>.
 		if (coordinate_field)
 		{
 			DEACCESS(Computed_field)(&coordinate_field);
+		}
+		if (element_xi_field)
+		{
+			 DEACCESS(Computed_field)(&element_xi_field);
 		}
 	}
 	else
