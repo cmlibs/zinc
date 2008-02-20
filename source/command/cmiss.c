@@ -6260,7 +6260,7 @@ value searches just elements of that dimension.
 	}
 	if (return_code)
 	{
-		if (number_of_bytes_per_component < 0)
+		if (number_of_bytes_per_component <= 0)
 		{
 			 number_of_bytes_per_component = 1;
 		}

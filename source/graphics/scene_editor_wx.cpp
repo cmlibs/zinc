@@ -4733,9 +4733,12 @@ DESCRIPTION :
 				scene_editor->scene_manager);
 			scene_editor->scene_manager_callback_id = (void *)NULL;
 		}
- 		GT_element_group_remove_callback(scene_editor->gt_element_group,
- 			 Scene_editor_wx_graphical_element_change, (void
- 			 *)scene_editor);
+		if (scene_editor->gt_element_group)
+		{
+			 GT_element_group_remove_callback(scene_editor->gt_element_group,
+					Scene_editor_wx_graphical_element_change, (void
+						 *)scene_editor);
+		}
 		DEACCESS(GT_element_group)(&scene_editor->edit_gt_element_group);
 		DEACCESS(GT_element_group)(&scene_editor->gt_element_group);	
 		DEACCESS(GT_element_settings)(&scene_editor->current_settings);
