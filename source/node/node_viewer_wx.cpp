@@ -1167,7 +1167,7 @@ Give the textctrl a value.
 									strcat(temp_value_string, xi_string);
 							 }
 							 new_value_string = duplicate_string(temp_value_string);
-						}
+						}break;
 						case FE_VALUE_VALUE:
 						{
 							 FE_value fe_value_value;
@@ -1228,6 +1228,10 @@ Give the textctrl a value.
 				 }		
 				 new_value_string = duplicate_string(temp_value_string);
 			}
+	 }
+	 if (values)
+	 {
+			DEALLOCATE(values);
 	 }
 	 return(new_value_string);
 	 LEAVE;
