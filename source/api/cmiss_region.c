@@ -264,10 +264,28 @@ Returns element with <name> in <region> if it exists.
 	{
 		if (fe_region=Cmiss_region_get_FE_region(region))
 		{
-			identifier.type = CM_ELEMENT;
-			if ((1==sscanf(name," %d %n",&(identifier.number),&name_length))&&
-				((unsigned int)name_length==strlen(name)))
+			if (((1==sscanf(name," %d %n",&(identifier.number),&name_length))
+				||(1==sscanf(name," E%d %n",&(identifier.number),&name_length))
+				||(1==sscanf(name," Element%d %n",&(identifier.number),&name_length)))
+				&&((unsigned int)name_length==strlen(name)))
 			{
+				identifier.type = CM_ELEMENT;
+				return_element = FE_region_get_FE_element_from_identifier(fe_region,
+					&identifier);
+			}
+			else if (((1==sscanf(name," F%d %n",&(identifier.number),&name_length))
+				||(1==sscanf(name," Face%d %n",&(identifier.number),&name_length)))
+				&&((unsigned int)name_length==strlen(name)))
+			{
+				identifier.type = CM_FACE;
+				return_element = FE_region_get_FE_element_from_identifier(fe_region,
+					&identifier);
+			}
+			else if (((1==sscanf(name," L%d %n",&(identifier.number),&name_length))
+				||(1==sscanf(name," Line%d %n",&(identifier.number),&name_length)))
+				&&((unsigned int)name_length==strlen(name)))
+			{
+				identifier.type = CM_LINE;
 				return_element = FE_region_get_FE_element_from_identifier(fe_region,
 					&identifier);
 			}
