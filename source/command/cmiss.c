@@ -6155,7 +6155,8 @@ value searches just elements of that dimension.
 ==============================================================================*/
 {
 	char *field_name;
-	unsigned short *image_plane, *ptr;
+	unsigned char *image_plane, *ptr;
+	unsigned short *two_bytes_image_plane, *two_bytes_ptr;
 	FE_value *data_values, values[3], xi[3];
 	float hint_minimums[3] = {0.0, 0.0, 0.0};
 	float hint_maximums[3];
@@ -6279,7 +6280,16 @@ value searches just elements of that dimension.
 			/* allocate space for a single image plane */
 			bytes_per_pixel = number_of_components*number_of_bytes_per_component;
 			image_width_bytes = image_width*bytes_per_pixel;
-			ALLOCATE(image_plane, unsigned short, image_height*image_width_bytes);
+			if (number_of_bytes_per_component == 2)
+			{
+				 image_plane = (unsigned char *)NULL;
+				 ALLOCATE(two_bytes_image_plane, unsigned short, image_height*image_width_bytes);
+			}
+			else
+			{
+				 two_bytes_image_plane = (unsigned short *)NULL;
+				 ALLOCATE(image_plane, unsigned char, image_height*image_width_bytes);
+			}
 			ALLOCATE(data_values, FE_value,
 				Computed_field_get_number_of_components(field));
 			for (i = 0; (Computed_field_get_number_of_components(field) >i);  i++)
@@ -6288,7 +6298,7 @@ value searches just elements of that dimension.
 			}
 			Graphical_material_get_diffuse(fail_material, &fail_colour);
 			Graphical_material_get_alpha(fail_material, &fail_alpha);
-			if (image_plane && data_values)
+			if ((image_plane || two_bytes_image_plane) && data_values)
 			{
 				hint_resolution[0] = image_width;
 				hint_resolution[1] = image_height;
@@ -6307,7 +6317,14 @@ value searches just elements of that dimension.
 					{
 						printf("Evaluating image plane %d of %d\n", i+1, image_depth);
 					}
-					ptr = (unsigned short *)image_plane;
+					if (number_of_bytes_per_component == 2)
+					{
+						 two_bytes_ptr = (unsigned short *)two_bytes_image_plane;
+					}
+					else
+					{
+						 ptr = (unsigned char *)image_plane;
+					}
 					values[2] = texture_depth * ((float)i + 0.5) / (float)image_depth;
 					for (j = 0; (j < image_height) && return_code; j++)
 					{
@@ -6421,75 +6438,141 @@ value searches just elements of that dimension.
 								printf("  RGBA = %10g %10g %10g %10g\n", rgba[0], rgba[1], rgba[2], rgba[3]);
 							}
 #endif /* defined (DEBUG) */
-							if (number_of_bytes_per_component > 1)
+							if (number_of_bytes_per_component == 2)
 							{
 								 multiplier = pow(256.0,number_of_bytes_per_component) - 1.0;
+								 switch (storage)
+								 {
+										case TEXTURE_LUMINANCE:
+										{
+											 *two_bytes_ptr = (unsigned short)((rgba[0] + rgba[1] + rgba[2]) * multiplier/ 3.0);
+											 two_bytes_ptr++;
+										} break;
+										case TEXTURE_LUMINANCE_ALPHA:
+										{
+											 *two_bytes_ptr = (unsigned short)((rgba[0] + rgba[1] + rgba[2]) * multiplier / 3.0);
+											 two_bytes_ptr++;
+											 *two_bytes_ptr = (unsigned short)(rgba[3] * multiplier);
+											 two_bytes_ptr++;
+										} break;
+										case TEXTURE_RGB:
+										{
+											 *two_bytes_ptr = (unsigned short)(rgba[0] * multiplier);
+											 two_bytes_ptr++;
+											 *two_bytes_ptr = (unsigned short)(rgba[1] * multiplier);
+											 two_bytes_ptr++;
+											 *two_bytes_ptr = (unsigned short)(rgba[2] * multiplier);
+											 two_bytes_ptr++;
+										} break;
+										case TEXTURE_RGBA:
+										{
+											 *two_bytes_ptr = (unsigned short)(rgba[0] * multiplier);
+											 two_bytes_ptr++;
+											 *two_bytes_ptr = (unsigned short)(rgba[1] * multiplier);
+											 two_bytes_ptr++;
+											 *two_bytes_ptr = (unsigned short)(rgba[2] * multiplier);
+											 two_bytes_ptr++;
+											 *two_bytes_ptr = (unsigned short)(rgba[3] * multiplier);
+											 two_bytes_ptr++;
+										} break;
+										case TEXTURE_ABGR:
+										{
+											 *two_bytes_ptr = (unsigned short)(rgba[3] * multiplier);
+											 two_bytes_ptr++;
+											 *two_bytes_ptr = (unsigned short)(rgba[2] * multiplier);
+											 two_bytes_ptr++;
+											 *two_bytes_ptr = (unsigned short)(rgba[1] * multiplier);
+											 two_bytes_ptr++;
+											 *two_bytes_ptr = (unsigned short)(rgba[0] * multiplier);
+											 two_bytes_ptr++;
+										} break;
+										default:
+										{
+											 display_message(ERROR_MESSAGE,
+													"set_Texture_image_from_field.  Unsupported storage type");
+											 return_code = 0;
+										} break;
+								 }
 							}
 							else
 							{
 								 multiplier = 255.0;
-							}
-							switch (storage)
-							{
-								case TEXTURE_LUMINANCE:
-								{
-									 *ptr = (unsigned short)((rgba[0] + rgba[1] + rgba[2]) * multiplier/ 3.0);
-									ptr++;
-								} break;
-								case TEXTURE_LUMINANCE_ALPHA:
-								{
-									*ptr = (unsigned short)((rgba[0] + rgba[1] + rgba[2]) * multiplier / 3.0);
-									ptr++;
-									*ptr = (unsigned short)(rgba[3] * multiplier);
-									ptr++;
-								} break;
-								case TEXTURE_RGB:
-								{
-									*ptr = (unsigned short)(rgba[0] * multiplier);
-									ptr++;
-									*ptr = (unsigned short)(rgba[1] * multiplier);
-									ptr++;
-									*ptr = (unsigned short)(rgba[2] * multiplier);
-									ptr++;
-								} break;
-								case TEXTURE_RGBA:
-								{
-									*ptr = (unsigned short)(rgba[0] * multiplier);
-									ptr++;
-									*ptr = (unsigned short)(rgba[1] * multiplier);
-									ptr++;
-									*ptr = (unsigned short)(rgba[2] * multiplier);
-									ptr++;
-									*ptr = (unsigned short)(rgba[3] * multiplier);
-									ptr++;
-								} break;
-								case TEXTURE_ABGR:
-								{
-									*ptr = (unsigned short)(rgba[3] * multiplier);
-									ptr++;
-									*ptr = (unsigned short)(rgba[2] * multiplier);
-									ptr++;
-									*ptr = (unsigned short)(rgba[1] * multiplier);
-									ptr++;
-									*ptr = (unsigned short)(rgba[0] * multiplier);
-									ptr++;
-								} break;
-								default:
-								{
-									display_message(ERROR_MESSAGE,
-										"set_Texture_image_from_field.  Unsupported storage type");
-									return_code = 0;
-								} break;
+								 switch (storage)
+								 {
+										case TEXTURE_LUMINANCE:
+										{
+											 *ptr = (unsigned char)((rgba[0] + rgba[1] + rgba[2]) * multiplier/ 3.0);
+											 ptr++;
+										} break;
+										case TEXTURE_LUMINANCE_ALPHA:
+										{
+											 *ptr = (unsigned char)((rgba[0] + rgba[1] + rgba[2]) * multiplier / 3.0);
+											 ptr++;
+											 *ptr = (unsigned char)(rgba[3] * multiplier);
+											 ptr++;
+										} break;
+										case TEXTURE_RGB:
+										{
+											 *ptr = (unsigned char)(rgba[0] * multiplier);
+											 ptr++;
+											 *ptr = (unsigned char)(rgba[1] * multiplier);
+											 ptr++;
+											 *ptr = (unsigned char)(rgba[2] * multiplier);
+											 ptr++;
+										} break;
+										case TEXTURE_RGBA:
+										{
+											 *ptr = (unsigned char)(rgba[0] * multiplier);
+											 ptr++;
+											 *ptr = (unsigned char)(rgba[1] * multiplier);
+											 ptr++;
+											 *ptr = (unsigned char)(rgba[2] * multiplier);
+											 ptr++;
+											 *ptr = (unsigned char)(rgba[3] * multiplier);
+											 ptr++;
+										} break;
+										case TEXTURE_ABGR:
+										{
+											 *ptr = (unsigned char)(rgba[3] * multiplier);
+											 ptr++;
+											 *ptr = (unsigned char)(rgba[2] * multiplier);
+											 ptr++;
+											 *ptr = (unsigned char)(rgba[1] * multiplier);
+											 ptr++;
+											 *ptr = (unsigned char)(rgba[0] * multiplier);
+											 ptr++;
+										} break;
+										default:
+										{
+											 display_message(ERROR_MESSAGE,
+													"set_Texture_image_from_field.  Unsupported storage type");
+											 return_code = 0;
+										} break;
+								 }
 							}
 						}
 					}
-					if (!Texture_set_image_block(texture,
-						/*left*/0, /*bottom*/0, image_width, image_height, /*depth_plane*/i,
-						image_width_bytes, (unsigned char *)image_plane))
+					if (number_of_bytes_per_component == 2)
 					{
-						display_message(ERROR_MESSAGE,
-							"set_Texture_image_from_field.  Could not set texture block");
-						return_code = 0;
+						 if (!Texture_set_image_block(texture,
+									 /*left*/0, /*bottom*/0, image_width, image_height, /*depth_plane*/i,
+									 image_width_bytes, (unsigned char *)two_bytes_image_plane))
+						 {
+								display_message(ERROR_MESSAGE,
+									 "set_Texture_image_from_field.  Could not set texture block");
+								return_code = 0;
+						 }
+					}
+					else
+					{
+						 if (!Texture_set_image_block(texture,
+									 /*left*/0, /*bottom*/0, image_width, image_height, /*depth_plane*/i,
+									 image_width_bytes, image_plane))
+						 {
+								display_message(ERROR_MESSAGE,
+									 "set_Texture_image_from_field.  Could not set texture block");
+								return_code = 0;
+						 }
 					}
 				}
 				Computed_field_clear_cache(field);
@@ -6521,7 +6604,10 @@ value searches just elements of that dimension.
 				return_code = 0;
 			}
 			DEALLOCATE(data_values);
-			DEALLOCATE(image_plane);
+			if (image_plane)
+				 DEALLOCATE(image_plane);
+			if (two_bytes_image_plane)
+				 DEALLOCATE(two_bytes_image_plane);
 			if (cache)
 			{
 				DESTROY(Computed_field_find_element_xi_cache)(&cache);
