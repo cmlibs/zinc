@@ -359,8 +359,8 @@ LAST MODIFIED : 9 Oct 2007
 DESCRIPTION :
 ==============================================================================*/
 
-struct FE_time_sequence *Computed_field_get_FE_node_field_FE_time_sequence(struct FE_node *node,
-	 struct Computed_field *computed_field);
+struct FE_time_sequence *Computed_field_get_FE_node_field_FE_time_sequence(
+	 struct Computed_field *computed_field, struct FE_node *node);
 /*******************************************************************************
 LAST MODIFIED : 9 Oct 2007
 

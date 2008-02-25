@@ -3222,33 +3222,33 @@ components - useful for selecting vector/coordinate fields.
 	return (return_code);
 } /* Computed_field_has_4_components */
 
-int Computed_field_has_7_components(struct Computed_field *field,
+int Computed_field_has_16_components(struct Computed_field *field,
 	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 21 February 2008
 
 DESCRIPTION :
-Iterator/conditional function returning true if <field> has exactly four
-components - useful for selecting vector/coordinate fields.
+Iterator/conditional function returning true if <field> has exactly sixteen
+components - useful for selecting transformation matrix.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Computed_field_has_7_components);
+	ENTER(Computed_field_has_16_components);
 	USE_PARAMETER(dummy_void);
 	if (field)
 	{
-		return_code=(7 == field->number_of_components);
+		return_code=(16 == field->number_of_components);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_has_7_components.  Missing field");
+			"Computed_field_has_16_components.  Missing field");
 		return_code=0;
 	}
 
 	return (return_code);
-} /* Computed_field_has_4_components */
+} /* Computed_field_has_16_components */
 
 int Computed_field_has_n_components(struct Computed_field *field,
 	void *components_ptr_void)

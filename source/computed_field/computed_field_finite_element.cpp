@@ -5928,31 +5928,53 @@ perform interpolation, etc.
 	return (return_code);
 } /* Computed_field_is_scalar_integer_grid_in_element */
 
-struct FE_time_sequence *Computed_field_get_FE_node_field_FE_time_sequence(struct FE_node *node,
-	struct Computed_field *field)
+struct FE_time_sequence *Computed_field_get_FE_node_field_FE_time_sequence(
+	 struct Computed_field *field, struct FE_node *node)
 /*******************************************************************************
-LAST MODIFIED : 15 November 2004
+LAST MODIFIED : 22 Feb 2008
 
 DESCRIPTION :
 Returns the <fe_time_sequence> corresponding to the <node> and <field>.  If the
 <node> and <field> have no time dependence then the function will return NULL.
 ==============================================================================*/
 {
-	 Computed_field_finite_element* core;
+	 //	 Computed_field_finite_element* core;
 	 FE_time_sequence *time_sequence;
+	 FE_field *fe_field;
+	 struct LIST(FE_field) *fe_field_list;
 
-	ENTER(Computed_field_get_FE_node_field_FE_time_sequence);
-	if (field)
-	{
-		if (core=dynamic_cast<Computed_field_finite_element*>(field->core))
-		{
-			 time_sequence = get_FE_node_field_FE_time_sequence(node,
-					core->fe_field);
-		}
-		else
-		{
-			 time_sequence = (FE_time_sequence *)NULL;
-		}
+	 ENTER(Computed_field_get_FE_node_field_FE_time_sequence);
+	 time_sequence = (FE_time_sequence *)NULL;
+	 if (field)
+	 {
+			fe_field_list = Computed_field_get_defining_FE_field_list(field);
+			if (fe_field_list)
+			{
+				 if (NUMBER_IN_LIST(FE_field)(fe_field_list) == 1)
+				 {
+						fe_field = FIRST_OBJECT_IN_LIST_THAT(FE_field)(
+							 (LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL, (void *)NULL,
+							 fe_field_list);
+						time_sequence = get_FE_node_field_FE_time_sequence(node,
+							 fe_field);
+						DESTROY(LIST(FE_field))(&fe_field_list);
+				 }
+				 else
+				 {
+						display_message(ERROR_MESSAGE,
+							 "Computed_field_get_FE_node_field_FE_time_sequence. None or"
+							 "more than one FE element field is used to define this" 
+							 "computed field, this function expects only one finite element"
+							 "field at the corresponding node otherwise it may contain more than"
+							 "one time keeper. /n");
+				 }
+			}
+			else
+			{
+						display_message(ERROR_MESSAGE,
+							 "Computed_field_get_FE_node_field_FE_time_sequence. Cannot get the"
+							 "FE field list /n");
+			}
 	}
 	else
 	{

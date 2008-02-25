@@ -605,13 +605,14 @@ DESCRIPTION :
 Conditional function returning true if <field> has exactly four components.
 ==============================================================================*/
 
-int Computed_field_has_7_components(struct Computed_field *field,
+int Computed_field_has_16_components(struct Computed_field *field,
 	void *dummy_void);
 /*******************************************************************************
-LAST MODIFIED : 10 March 1999
+LAST MODIFIED : 21 February 2008
 
 DESCRIPTION :
-Conditional function returning true if <field> has exactly four components.
+Iterator/conditional function returning true if <field> has exactly sixteen
+components - useful for selecting transformation matrix.
 ==============================================================================*/
 
 int Computed_field_has_up_to_4_numerical_components(
