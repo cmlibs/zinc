@@ -467,8 +467,9 @@ Evaluate the fields cache at the location
 
 				/* 1. Precalculate any source fields that this field depends on,
 					we always want the derivatives */
-				if (Computed_field_evaluate_source_fields_cache_at_location(field, 
-						&location_with_derivatives) && field->derivatives_valid)
+				if (Computed_field_evaluate_cache_at_location(
+						 field->source_fields[0], &location_with_derivatives) && 
+					field->source_fields[0]->derivatives_valid)
 				{
 					return_code = 1;
 					/* 2. Calculate the field */

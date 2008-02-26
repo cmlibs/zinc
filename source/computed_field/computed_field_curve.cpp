@@ -229,10 +229,12 @@ Evaluate the fields cache at the location
 			if (number_of_derivatives)
 			{
 				jacobian = field->derivatives;
+				field->derivatives_valid = 1;
 			}
 			else
 			{
 				jacobian = (FE_value *)NULL;
+				field->derivatives_valid = 0;
 			}
 			/* only slightly dodgy - stores derivatives of curve in start
 				 of derivatives space - must be at least big enough */
