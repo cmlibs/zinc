@@ -5938,7 +5938,6 @@ Returns the <fe_time_sequence> corresponding to the <node> and <field>.  If the
 <node> and <field> have no time dependence then the function will return NULL.
 ==============================================================================*/
 {
-	 //	 Computed_field_finite_element* core;
 	 FE_time_sequence *time_sequence;
 	 FE_field *fe_field;
 	 struct LIST(FE_field) *fe_field_list;
@@ -5957,7 +5956,6 @@ Returns the <fe_time_sequence> corresponding to the <node> and <field>.  If the
 							 fe_field_list);
 						time_sequence = get_FE_node_field_FE_time_sequence(node,
 							 fe_field);
-						DESTROY(LIST(FE_field))(&fe_field_list);
 				 }
 				 else
 				 {
@@ -5966,8 +5964,9 @@ Returns the <fe_time_sequence> corresponding to the <node> and <field>.  If the
 							 "more than one FE element field is used to define this" 
 							 "computed field, this function expects only one finite element"
 							 "field at the corresponding node otherwise it may contain more than"
-							 "one time keeper. /n");
+							 "one time sequence./n");
 				 }
+				 DESTROY(LIST(FE_field))(&fe_field_list);
 			}
 			else
 			{
