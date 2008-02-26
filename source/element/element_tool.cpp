@@ -1152,6 +1152,7 @@ Selects elements in <element_selection> in response to interactive_events.
 				(Interactive_event_handler*)NULL,
 				Element_tool_get_icon,
 				(Interactive_tool_bring_up_dialog_function*)NULL,
+				(Interactive_tool_reset_function*)NULL,				
 				(Interactive_tool_destroy_tool_data_function *)NULL,
 				Element_tool_copy_function,
 				(void *)element_tool);
