@@ -62,7 +62,7 @@ Module types
 
 struct Interactive_tool
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 25 February 2008
 
 DESCRIPTION :
 Structure describing an interactive event (eg. button press at point in space).
@@ -76,6 +76,7 @@ ACCESS this object for as long as you need to keep it; it is not modifiable.
 	Interactive_event_handler *interactive_event_handler;
 	Interactive_tool_get_icon_function *get_icon_function;
 	Interactive_tool_bring_up_dialog_function *bring_up_dialog_function;
+	Interactive_tool_reset_function *reset_function;
 	Interactive_tool_destroy_tool_data_function *destroy_tool_data_function;
 	Interactive_tool_copy_function *copy_function;
 	/* data for the actual tool receiving the events */
@@ -103,11 +104,12 @@ struct Interactive_tool *CREATE(Interactive_tool)(char *name,char *display_name,
 	Interactive_event_handler *interactive_event_handler,
 	Interactive_tool_get_icon_function *get_icon_function,
 	Interactive_tool_bring_up_dialog_function *bring_up_dialog_function,
+	Interactive_tool_reset_function *reset_function,
 	Interactive_tool_destroy_tool_data_function *destroy_tool_data_function,
 	Interactive_tool_copy_function *copy_function,	
 	void *tool_data)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 25 February 2008
 
 DESCRIPTION :
 Creates an Interactive_tool with the given <name> and <icon>. If an
@@ -132,6 +134,7 @@ type.
 			interactive_tool->tool_type_name=tool_type_name;
 			interactive_tool->get_icon_function=get_icon_function;
 			interactive_tool->bring_up_dialog_function=bring_up_dialog_function;
+			interactive_tool->reset_function=reset_function;
 			interactive_tool->interactive_event_handler=interactive_event_handler;
 			interactive_tool->destroy_tool_data_function=destroy_tool_data_function;
 			interactive_tool->tool_data=tool_data;
@@ -605,6 +608,31 @@ bring up the dialog for changing its settings.
 	LEAVE;
 
 	return (return_code);
+} /* Interactive_tool_bring_up_dialog */
+
+void Interactive_tool_reset(struct Interactive_tool *interactive_tool)
+/*******************************************************************************
+LAST MODIFIED : 25 February 2008
+
+DESCRIPTION :
+Resets any current edits in the tool.
+Call on old tool when a new tool is activated, esp. on asynchronous tool change.
+==============================================================================*/
+{
+	ENTER(Interactive_tool_reset);
+	if (interactive_tool)
+	{
+		if (interactive_tool->reset_function)
+		{
+			(interactive_tool->reset_function)(interactive_tool->tool_data);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Interactive_tool_bring_up_dialog.  Invalid argument(s)");
+	}
+	LEAVE;
 } /* Interactive_tool_bring_up_dialog */
 
 int Interactive_tool_name_to_array(

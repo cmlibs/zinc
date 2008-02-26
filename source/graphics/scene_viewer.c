@@ -8646,7 +8646,7 @@ The interactive_tool may be NULL, indicating that no overlay is in use.
 int Scene_viewer_set_interactive_tool(struct Scene_viewer *scene_viewer,
 	struct Interactive_tool *interactive_tool)
 /*******************************************************************************
-LAST MODIFIED : 26 April 2000
+LAST MODIFIED : 25 February 2008
 
 DESCRIPTION :
 Sets the interactive tool that will receive input if the Scene_viewer is in
@@ -8658,6 +8658,11 @@ SCENE_VIEWER_SELECT mode. A NULL value indicates no tool.
 	ENTER(Scene_viewer_set_interactive_tool);
 	if (scene_viewer)
 	{
+		if (scene_viewer->interactive_tool &&
+			(scene_viewer->interactive_tool != interactive_tool))
+		{
+			Interactive_tool_reset(scene_viewer->interactive_tool);
+		}
 		scene_viewer->interactive_tool=interactive_tool;
 		return_code=1;
 	}

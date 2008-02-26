@@ -589,6 +589,7 @@ scene_viewers.
 				Transform_tool_get_icon,
 				//(Interactive_tool_bring_up_dialog_function *)NULL,
 				Transform_tool_bring_up_interactive_tool_dialog,
+				(Interactive_tool_reset_function *)NULL,
 				destroy_Interactive_tool_transform_tool_data,
 				Transform_tool_copy_function,
 				(void *)transform_tool);

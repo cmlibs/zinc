@@ -79,6 +79,7 @@ typedef void Interactive_event_handler(void *device_id,
 	struct Graphics_buffer *graphics_buffer);
 typedef int Interactive_tool_bring_up_dialog_function(void *user_data,
 	struct Graphics_window *graphics_window);
+typedef void Interactive_tool_reset_function(void *user_data);
 typedef struct Cmgui_image *Interactive_tool_get_icon_function(
 	struct Colour *foreground, struct Colour *background, void *user_data);
 typedef int Interactive_tool_destroy_tool_data_function(
@@ -100,11 +101,12 @@ struct Interactive_tool *CREATE(Interactive_tool)(char *name,char *display_name,
 	Interactive_event_handler *interactive_event_handler,
 	Interactive_tool_get_icon_function *get_icon_function,
 	Interactive_tool_bring_up_dialog_function *bring_up_dialog_function,
+	Interactive_tool_reset_function* reset_function,
    Interactive_tool_destroy_tool_data_function *destroy_tool_data_function,
    Interactive_tool_copy_function *copy_tool_function,
 	void *tool_data);
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 25 February 2008
 
 DESCRIPTION :
 Creates an Interactive_tool with the given <name> and <icon>. If an
@@ -204,6 +206,15 @@ LAST MODIFIED : 18 July 2000
 DESCRIPTION :
 If the bring_up_dialog function is defined for <interactive_tool> calls it to
 bring up the dialog for changing its settings.
+==============================================================================*/
+
+void Interactive_tool_reset(struct Interactive_tool *interactive_tool);
+/*******************************************************************************
+LAST MODIFIED : 25 February 2008
+
+DESCRIPTION :
+Resets any current edits in the tool.
+Call on old tool when a new tool is activated, esp. on asynchronous tool change.
 ==============================================================================*/
 
 char **interactive_tool_manager_get_tool_names(

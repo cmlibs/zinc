@@ -1860,6 +1860,38 @@ Attempts to undefine all the nodes currently in the global selection.
 } /* Node_tool_undefine_selected_CB */
 #endif /* defined (MOTIF) */
 
+static void Node_tool_reset(void *node_tool_void)
+/*******************************************************************************
+LAST MODIFIED : 25 February 2008
+
+DESCRIPTION :
+Resets current edit. Called on button release or when tool deactivated.
+==============================================================================*/
+{
+	struct Node_tool *node_tool;
+
+	ENTER(Node_tool_reset);
+	if (node_tool = (struct Node_tool *)node_tool_void)
+	{
+		REACCESS(FE_node)(&(node_tool->last_picked_node),
+			(struct FE_node *)NULL);
+		REACCESS(Interaction_volume)(
+			&(node_tool->last_interaction_volume),
+			(struct Interaction_volume *)NULL);
+		REACCESS(Scene_picked_object)(&(node_tool->scene_picked_object),
+			(struct Scene_picked_object *)NULL);
+		REACCESS(GT_element_group)(&(node_tool->gt_element_group),
+			(struct GT_element_group *)NULL);
+		REACCESS(GT_element_settings)(&(node_tool->gt_element_settings),
+			(struct GT_element_settings *)NULL);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Node_tool_reset.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Node_tool_reset */
+
 static void Node_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *node_tool_void,
 	struct Graphics_buffer *graphics_buffer)
@@ -1911,6 +1943,8 @@ release.
 					/* interaction only works with first mouse button */
 					if (1==Interactive_event_get_button_number(event))
 					{
+						REACCESS(Interaction_volume)(&(node_tool->last_interaction_volume),
+							interaction_volume);
 						if (scene_picked_object_list=
 							Scene_pick_objects(scene,interaction_volume,graphics_buffer))
 						{
@@ -1942,30 +1976,6 @@ release.
 							}
 							if (picked_node)
 							{
-								/* Execute command_field of picked_node */
-								if (node_tool->command_field)
-								{
-									if (Computed_field_is_defined_at_node(node_tool->command_field,
-										picked_node))
-									{
-										if (node_tool->time_keeper)
-										{
-											time = Time_keeper_get_time(node_tool->time_keeper);
-										}
-										else
-										{
-											time = 0;
-										}
-										if (command_string = Computed_field_evaluate_as_string_at_node(
-											node_tool->command_field, /*component_number*/-1,
-											picked_node, time))
-										{
-											Execute_command_execute_string(node_tool->execute_command,
-												command_string);
-											DEALLOCATE(command_string);
-										}
-									}
-								}
 								node_tool->picked_node_was_unselected=
 									!FE_node_selection_is_node_selected(node_tool->node_selection,
 										picked_node);
@@ -2028,6 +2038,11 @@ release.
 								}
 							}
 							REACCESS(FE_node)(&(node_tool->last_picked_node),picked_node);
+							DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
+							/*
+							 * NOTE: make selection the last step so node_tool is in good state before
+							 * receiving code gets to run: consider it capable of changing the current tool!
+							 */
 							if (clear_selection = !shift_pressed)
 #if defined (OLD_CODE)
 								&&((!picked_node)||(node_tool->picked_node_was_unselected))))
@@ -2045,10 +2060,7 @@ release.
 							{
 								FE_node_selection_end_cache(node_tool->node_selection);
 							}
-							DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
 						}
-						REACCESS(Interaction_volume)(&(node_tool->last_interaction_volume),
-							interaction_volume);
 					}
 					node_tool->motion_detected=0;
 				} break;
@@ -2315,18 +2327,30 @@ release.
 						}
 						if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
 						{
-							/* deaccess following as only kept for one input movement */
-							REACCESS(FE_node)(&(node_tool->last_picked_node),
-								(struct FE_node *)NULL);
-							REACCESS(Interaction_volume)(
-								&(node_tool->last_interaction_volume),
-								(struct Interaction_volume *)NULL);
-							REACCESS(Scene_picked_object)(&(node_tool->scene_picked_object),
-								(struct Scene_picked_object *)NULL);
-							REACCESS(GT_element_group)(&(node_tool->gt_element_group),
-								(struct GT_element_group *)NULL);
-							REACCESS(GT_element_settings)(&(node_tool->gt_element_settings),
-								(struct GT_element_settings *)NULL);
+							/* Execute command_field of last_picked_node as last step of button release as code
+							 * invoked by it may modify this tool, or change to another tool before returning */
+							if (node_tool->last_picked_node && node_tool->command_field &&
+								Computed_field_is_defined_at_node(node_tool->command_field,
+									node_tool->last_picked_node))
+							{
+								if (node_tool->time_keeper)
+								{
+									time = Time_keeper_get_time(node_tool->time_keeper);
+								}
+								else
+								{
+									time = 0;
+								}
+								if (command_string = Computed_field_evaluate_as_string_at_node(
+									node_tool->command_field, /*component_number*/-1,
+									node_tool->last_picked_node, time))
+								{
+									Execute_command_execute_string(node_tool->execute_command,
+										command_string);
+									DEALLOCATE(command_string);
+								}
+							}
+							Node_tool_reset((void *)node_tool);
 						}
 						else if (node_tool->last_picked_node&&
 							node_tool->motion_update_enabled)
@@ -3310,6 +3334,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				Node_tool_interactive_event_handler,
 				Node_tool_get_icon,
 				Node_tool_bring_up_interactive_tool_dialog,
+				Node_tool_reset,
 #if defined (WX_USER_INTERFACE)
  				Node_tool_destroy_node_tool,
 #else
@@ -3541,21 +3566,7 @@ structure itself.
 			node_tool->interactive_tool,
 			node_tool->interactive_tool_manager);
 #endif /* defined (MOTIF) */
-		if (node_tool->last_picked_node)
-		{
-			DEACCESS(FE_node)(&(node_tool->last_picked_node));
-		}
-		if (node_tool->scene_picked_object)
-		{
-			DEACCESS(Scene_picked_object)(
-				&(node_tool->scene_picked_object));
-			DEACCESS(GT_element_group)(&(node_tool->gt_element_group));
-			DEACCESS(GT_element_settings)(
-				&(node_tool->gt_element_settings));
-		}
-		REACCESS(Interaction_volume)(
-			&(node_tool->last_interaction_volume),
-			(struct Interaction_volume *)NULL);
+		Node_tool_reset((void *)node_tool);
 		REACCESS(GT_object)(&(node_tool->rubber_band),(struct GT_object *)NULL);
 		DEACCESS(Graphical_material)(&(node_tool->rubber_band_material));
 		if (node_tool->time_keeper)
@@ -4270,12 +4281,14 @@ Sets the <path> to the region/FE_region where nodes created by
 		region = (struct Cmiss_region *)NULL;
 		if (node_tool->wx_node_tool)
 		{
-			 node_tool->wx_node_tool->wx_Node_tool_set_region_path(path);
-			 region = node_tool->wx_node_tool->wx_Node_tool_get_region();
+			node_tool->wx_node_tool->wx_Node_tool_set_region_path(path);
+			region = node_tool->wx_node_tool->wx_Node_tool_get_region();
 		}
 		else
 		{
-			 region=node_tool->root_region;
+			region=node_tool->root_region;
+			Cmiss_region_get_region_from_path(node_tool->root_region,
+				path, &region);
 		}
 		return_code = Node_tool_set_Cmiss_region(node_tool, region);
 #else /* defined (MOTIF) */

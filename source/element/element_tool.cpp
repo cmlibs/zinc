@@ -399,6 +399,32 @@ need other safeguard controls before allowing this.
 } /* Element_tool_destroy_selected_CB */
 #endif /* defined (MOTIF) */
 
+static void Element_tool_reset(void *element_tool_void)
+/*******************************************************************************
+LAST MODIFIED : 25 February 2008
+
+DESCRIPTION :
+Resets current edit. Called on button release or when tool deactivated.
+==============================================================================*/
+{
+	struct Element_tool *element_tool;
+
+	ENTER(Element_tool_reset);
+	if (element_tool = (struct Element_tool *)element_tool_void)
+	{
+		REACCESS(FE_element)(&(element_tool->last_picked_element),
+			(struct FE_element *)NULL);
+		REACCESS(Interaction_volume)(
+			&(element_tool->last_interaction_volume),
+			(struct Interaction_volume *)NULL);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Element_tool_reset.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_tool_reset */
+
 #if defined (OPENGL_API)
 static void Element_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *element_tool_void,
@@ -621,11 +647,7 @@ release.
 						}
 						if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
 						{
-							REACCESS(FE_element)(&(element_tool->last_picked_element),
-								(struct FE_element *)NULL);
-							REACCESS(Interaction_volume)(
-								&(element_tool->last_interaction_volume),
-								(struct Interaction_volume *)NULL);
+							Element_tool_reset((void *)element_tool);
 						}
 					}
 				} break;
@@ -1115,6 +1137,7 @@ Selects elements in <element_selection> in response to interactive_events.
 				Element_tool_interactive_event_handler,
 				Element_tool_get_icon,
 				Element_tool_bring_up_interactive_tool_dialog,
+				Element_tool_reset,
 #if defined (WX_USER_INTERFACE)
  				Element_tool_destroy_element_tool,
 #else

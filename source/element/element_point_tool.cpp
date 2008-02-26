@@ -260,6 +260,33 @@ Callback for change of command_field.
 } /* Element_point_tool_update_command_field */
 #endif /* defined (MOTIF) */
 
+static void Element_point_tool_reset(void *element_point_tool_void)
+/*******************************************************************************
+LAST MODIFIED : 25 February 2008
+
+DESCRIPTION :
+Resets current edit. Called on button release or when tool deactivated.
+==============================================================================*/
+{
+	struct Element_point_tool *element_point_tool;
+
+	ENTER(Element_point_tool_reset);
+	if (element_point_tool = (struct Element_point_tool *)element_point_tool_void)
+	{
+		REACCESS(Element_point_ranges)(
+			&(element_point_tool->last_picked_element_point),
+			(struct Element_point_ranges *)NULL);
+		REACCESS(Interaction_volume)(
+			&(element_point_tool->last_interaction_volume),
+			(struct Interaction_volume *)NULL);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Node_tool_reset.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_point_tool_reset */
+
 static void Element_point_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *element_point_tool_void,
 	struct Graphics_buffer *graphics_buffer)
@@ -486,12 +513,7 @@ release.
 						}
 						if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
 						{
-							REACCESS(Element_point_ranges)(
-								&(element_point_tool->last_picked_element_point),
-								(struct Element_point_ranges *)NULL);
-							REACCESS(Interaction_volume)(
-								&(element_point_tool->last_interaction_volume),
-								(struct Interaction_volume *)NULL);
+							Element_point_tool_reset((void *)element_point_tool);
 						}
 					}
 				} break;
@@ -869,6 +891,7 @@ Creates an Element_point_tool with Interactive_tool in
 				Element_point_tool_interactive_event_handler,
 				Element_point_tool_get_icon,
 				Element_point_tool_bring_up_interactive_tool_dialog,
+				Element_point_tool_reset,
 #if defined (WX_USER_INTERFACE)
  				Element_point_tool_destroy_element_point_tool,
 #else
