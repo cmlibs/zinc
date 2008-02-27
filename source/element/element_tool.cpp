@@ -399,7 +399,7 @@ need other safeguard controls before allowing this.
 } /* Element_tool_destroy_selected_CB */
 #endif /* defined (MOTIF) */
 
-#if defined (OPEN_API)
+#if defined (OPENGL_API)
 static void Element_tool_reset(void *element_tool_void)
 /*******************************************************************************
 LAST MODIFIED : 25 February 2008
