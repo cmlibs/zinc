@@ -1558,15 +1558,20 @@ Change the values on the wx interface if different.
 	 ENTER(Graphics_window_set_time_settings_wx);
 	 USE_PARAMETER(dummy_void);
 
-	 return_code = 1;
-	 time=Time_keeper_get_speed(window->time_keeper);
-	 text_entry.Printf(_T("%f"),time);
-	 window->time_framerate_text_ctrl->ChangeValue(text_entry);
-	 time = window->time_step;
-	 text_entry.Printf(_T("%f"),time);
-	 window->time_step_size_text_ctrl->ChangeValue(text_entry);
-	 window->time_play_every_frame_checkbox->SetValue(
-			Time_keeper_get_play_every_frame(window->time_keeper));
+	 if (window->wx_graphics_window)
+	 {
+			return_code = 1;
+			time=Time_keeper_get_speed(window->time_keeper);
+			text_entry.Printf(_T("%f"),time);
+			window->time_framerate_text_ctrl->ChangeValue(text_entry);
+	 
+			time = window->time_step;
+			text_entry.Printf(_T("%f"),time);
+			
+			window->time_step_size_text_ctrl->ChangeValue(text_entry);
+			window->time_play_every_frame_checkbox->SetValue(
+				 Time_keeper_get_play_every_frame(window->time_keeper));
+	 }
 	 LEAVE;
 
 	 return (return_code);
