@@ -399,6 +399,7 @@ need other safeguard controls before allowing this.
 } /* Element_tool_destroy_selected_CB */
 #endif /* defined (MOTIF) */
 
+#if defined (OPEN_API)
 static void Element_tool_reset(void *element_tool_void)
 /*******************************************************************************
 LAST MODIFIED : 25 February 2008
@@ -424,6 +425,7 @@ Resets current edit. Called on button release or when tool deactivated.
 	}
 	LEAVE;
 } /* Element_tool_reset */
+#endif /* defined (OPENGL_API) */
 
 #if defined (OPENGL_API)
 static void Element_tool_interactive_event_handler(void *device_id,
