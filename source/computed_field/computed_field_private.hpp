@@ -441,7 +441,7 @@ Calculates the values of <field> at <location>.
 Upon successful return the node values of the <field> are stored in its cache.
 ==============================================================================*/
 {
-	int return_code;
+	 int i, return_code;
 
 	ENTER(Computed_field_evaluate_cache_at_location);
 #if ! defined (OPTIMISED)
@@ -463,6 +463,13 @@ Upon successful return the node values of the <field> are stored in its cache.
 					DEALLOCATE(field->values);
 				}
 				return_code=0;
+			}
+			if (field->values && return_code)
+			{
+				 for (i=0;i<(field->number_of_components);i++)
+				 {
+						field->values[i]=0;
+				 }
 			}
 		}
 		
