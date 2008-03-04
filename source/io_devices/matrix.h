@@ -49,6 +49,7 @@ Most uses of this module will be for either 3 or 4 element matrices.
 #if !defined (MATRIX_H)
 #define MATRIX_H
 
+#include "io_devices/conversion.h"
 
 /*
 Module Constants
@@ -175,5 +176,27 @@ LAST MODIFIED : 18 July 1994
 
 DESCRIPTION :
 Rotates in a right hand sense about the axis.
+==============================================================================*/
+
+void matrix_euler(Gmatrix *direction,struct Dof3_data *euler);
+/*******************************************************************************
+LAST MODIFIED : 3 March 2008
+
+DESCRIPTION :
+***Moved from coord_trans.h to matrix.h so it can be used by non-motif cmgui.
+Takes a direction cosine matrix and returns the equivalent euler angles in degrees.
+Note that when the x axis is aligned with the z axis, then the distribution
+between azimuth and roll is arbitrary, so we will say that it is solely made
+up of roll.  Inverse formulae are taken from the Polhemus manual, page 156.
+==============================================================================*/
+
+void euler_matrix(struct Dof3_data *euler,Gmatrix *direction);
+/*******************************************************************************
+LAST MODIFIED : 3 March 2008
+
+DESCRIPTION :
+***Moved from coord_trans.h to matrix.h so it can be used by non-motif cmgui.
+Returns the equivalent direction cosine matrix of the passed euler values.
+Formulae are taken from the Polhemus manual, page 156.
 ==============================================================================*/
 #endif

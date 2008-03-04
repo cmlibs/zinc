@@ -385,3 +385,105 @@ Rotates in a right hand sense about the axis.
 	matrix_premult(current,&temp);
 	LEAVE;
 } /* matrix_rotate */
+
+void matrix_euler(Gmatrix *direction,struct Dof3_data *euler)
+/*******************************************************************************
+LAST MODIFIED : 3 March 2008
+
+DESCRIPTION :
+***Moved from coord_trans.c to matrix.c so it can be used by non-motif cmgui.
+In translating formulae just think data[across][down].  All other routines
+use data[down][across]
+Takes a direction cosine matrix and returns the equivalent euler angles in
+degrees.
+Note that when the x axis is aligned with the z axis, then the distribution
+between azimuth and roll is arbitrary, so we will say that it is solely made
+up of roll.  Inverse formulae are taken from the Polhemus manual, page 156.
+==============================================================================*/
+{
+	int i;
+
+	ENTER(matrix_euler);
+	if ((fabs(direction->data[0][0])>1.0E-12) &&
+		(fabs(direction->data[0][1])>1.0E-12))
+	{
+		euler->data[0] = atan2(direction->data[0][1],direction->data[0][0]);
+		euler->data[2] = atan2(direction->data[1][2],direction->data[2][2]);
+		euler->data[1] = atan2(-direction->data[0][2],direction->data[0][0]/
+			cos(euler->data[0]));
+	}
+	else
+	{
+		if (fabs(direction->data[0][0])>1.0E-12)
+		{
+			euler->data[0] = atan2(direction->data[0][1],direction->data[0][0]);
+			euler->data[2] = atan2(direction->data[1][2],direction->data[2][2]);
+			euler->data[1] = atan2(-direction->data[0][2],direction->data[0][0]/
+				cos(euler->data[0]));
+		}
+		else
+		{
+			if (fabs(direction->data[0][1])>1.0E-12)
+			{
+				euler->data[0] = atan2(direction->data[0][1],direction->data[0][0]);
+				euler->data[2] = atan2(direction->data[1][2],direction->data[2][2]);
+				euler->data[1] = atan2(-direction->data[0][2],direction->data[0][1]/
+					sin(euler->data[0]));
+			}
+			else
+			{
+				euler->data[1] = atan2(-direction->data[0][2],0); /* get +/-1 */
+				euler->data[0] = 0;
+				euler->data[2] = atan2(-direction->data[2][1],
+					-direction->data[2][0]*direction->data[0][2]);
+			}
+		}
+	}
+	for(i=0;i<3;i++)
+		euler->data[i] /= PI_180;
+	LEAVE;
+} /* matrix_euler */
+
+void euler_matrix(struct Dof3_data *euler,Gmatrix *direction)
+/*******************************************************************************
+LAST MODIFIED : 3 March 2008
+
+DESCRIPTION :
+***Moved from coord_trans.c to matrix.c so it can be used by non-motif cmgui.
+In translating formulae just think data[across][down].  All other routines
+use data[down][across]
+Returns the equivalent direction cosine matrix of the passed euler values.
+Formulae are taken from the Polhemus manual, page 156.
+==============================================================================*/
+{
+	int i;
+	struct Dof3_data euler_degree;
+	double cos_azimuth,cos_elevation,cos_roll,sin_azimuth,sin_elevation,
+		sin_roll;
+
+	ENTER(euler_matrix);
+	for(i=0;i<3;i++)
+	{
+		euler_degree.data[i] = euler->data[i]*PI_180;
+	}
+	cos_azimuth = cos(euler_degree.data[0]);
+	sin_azimuth = sin(euler_degree.data[0]);
+	cos_elevation = cos(euler_degree.data[1]);
+	sin_elevation = sin(euler_degree.data[1]);
+	cos_roll = cos(euler_degree.data[2]);
+	sin_roll = sin(euler_degree.data[2]);
+	direction->data[0][0] = cos_azimuth*cos_elevation;
+	direction->data[0][1] = sin_azimuth*cos_elevation;
+	direction->data[0][2] = -sin_elevation;
+	direction->data[1][0] = cos_azimuth*sin_elevation*sin_roll-
+		sin_azimuth*cos_roll;
+	direction->data[1][1] = sin_azimuth*sin_elevation*sin_roll+
+		cos_azimuth*cos_roll;
+	direction->data[1][2] = cos_elevation*sin_roll;
+	direction->data[2][0] = cos_azimuth*sin_elevation*cos_roll+
+		sin_azimuth*sin_roll;
+	direction->data[2][1] = sin_azimuth*sin_elevation*cos_roll-
+		cos_azimuth*sin_roll;
+	direction->data[2][2] = cos_elevation*cos_roll;
+	LEAVE;
+} /* euler_matrix */
