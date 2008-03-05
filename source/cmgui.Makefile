@@ -1242,8 +1242,13 @@ TIME_SRCS = \
 TIME_INTERFACE_SRCS = \
 	time/time_editor.c \
 	time/time_editor_dialog.c
-TRANSFORMATION_INTERFACE_SRCS = \
-	transformation/transformation_editor.c
+ifneq ($(USER_INTERFACE),WX_USER_INTERFACE)
+	TRANSFORMATION_INTERFACE_SRCS = \
+		transformation/transformation_editor.c
+else
+	TRANSFORMATION_INTERFACE_SRCS = \
+		transformation/transformation_editor_wx.cpp
+endif
 USER_INTERFACE_SRCS = \
 	user_interface/confirmation.cpp \
 	user_interface/event_dispatcher.c \
@@ -1335,6 +1340,7 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 	      $(COMMAND_INTERFACE_SRCS) \
 	      $(COMPUTED_FIELD_INTERFACE_SRCS) \
 	      $(MATERIAL_INTERFACE_SRCS) \
+	   		$(TRANSFORMATION_INTERFACE_SRCS) \
 	      graphics/graphics_window.cpp
 endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 ifeq ($(USER_INTERFACE),CARBON_USER_INTERFACE)

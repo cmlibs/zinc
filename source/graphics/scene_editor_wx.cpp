@@ -50,6 +50,7 @@ extern "C" {
 #include "general/object.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
+#include "graphics/scene.h"
 #include "user_interface/message.h"
 }
 #if defined (WX_USER_INTERFACE)
@@ -60,6 +61,7 @@ extern "C" {
 #include "choose/choose_enumerator_class.hpp"
 #include "choose/choose_list_class.hpp"
 #include "choose/text_choose_from_fe_element.hpp"
+#include "transformation/transformation_editor_wx.hpp"
 #include <wx/collpane.h>
 #include <wx/splitter.h>
 #include "icon/cmiss_icon.xpm"
@@ -155,9 +157,9 @@ DESCRIPTION :
 	 enum Render_type render_type;
 	 struct FE_element *fe_element;
 #if defined (WX_USER_INTERFACE)
+	 Transformation_editor *transformation_editor;
 	 wxSceneEditor *wx_scene_editor;
-	 wxPanel *lower_panel;
-	 //	 wxPanel *dummy_panel;
+	 wxPanel *top_collpane_panel;
 	 wxScrolledWindow *sceneediting;
 	 wxFrame *frame;
 	 wxCheckListBox *checklistbox;
@@ -168,17 +170,11 @@ DESCRIPTION :
 	 wxButton *applybutton;
 	 wxButton *revertbutton;
 	 wxScrolledWindow *graphical_items_list_panel;
+	 wxCollapsiblePane *collpane;
+	 wxCollapsiblePane *top_collpane;
 #endif /*defined (WX_USER_INTERFACE)*/
 }; /*struct Scene_editor*/
 
-// int DESTROY(Scene_editor_object)(
-// 	struct Scene_editor_object **scene_editor_object_address);
-// /*******************************************************************************
-// LAST MODIFIED : 31 October 2001
-
-// DESCRIPTION :
-// Prototype.
-// ==============================================================================*/
 static int set_general_settings(void *scene_editor_void);
 /*******************************************************************************
 LAST MODIFIED : 16 Match 2007
@@ -215,10 +211,29 @@ Prototype.
 
 static int Scene_editor_add_element_settings_item(
 																									struct GT_element_settings *settings, void *scene_editor_void);
+
+
+void Scene_editor_wx_transformation_change(struct Scene_object *scene_object,
+	 gtMatrix *transformation_matrix, void *scene_editor_void);
+
 /*
 Module functions
 ----------------
 */
+
+
+void Scene_editor_wx_transformation_change(struct Scene_object *scene_object,
+	 gtMatrix *transformation_matrix, void *scene_editor_void)
+{
+	 struct Scene_editor *scene_editor;
+
+	 if ((transformation_matrix) && 
+			(scene_editor = (struct Scene_editor *)scene_editor_void))
+	 {
+			scene_editor->transformation_editor->
+				 transformation_editor_wx_set_transformation(transformation_matrix);
+	 }
+}
 
 struct Scene_editor_object *Scene_editor_get_first_object(
 	struct Scene_editor *scene_editor)
@@ -407,19 +422,16 @@ public:
 		  (this, &wxSceneEditor::scene_object_callback);
       scene_chooser->set_callback(scene_object_callback);
  /* Set the collapsible pane in the secne editor */
-  wxCollapsiblePane *collpane = XRCCTRL(*this, "CollapsiblePane", wxCollapsiblePane);
+  scene_editor->collpane = XRCCTRL(*this, "CollapsiblePane", wxCollapsiblePane);
   wxPanel *GeneralSettingPanel = new wxPanel;
-  wxWindow *win = collpane->GetPane();
+  wxWindow *win = scene_editor->collpane->GetPane();
   wxXmlResource::Get()->LoadPanel(GeneralSettingPanel,
-	 win, _T("CmguiSceneEditorGeneralSettings"));
+	  win, _T("CmguiSceneEditorGeneralSettings"));
   wxSizer *paneSz = new wxBoxSizer(wxVERTICAL);
   paneSz->Add(GeneralSettingPanel, 1, wxEXPAND|wxALL, 2);
   win->SetSizer(paneSz);
   paneSz->SetSizeHints(win);
-  collpane->Collapse(1);
-  wxFrame *lowestpanel = 
-	 XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
-  lowestpanel->Fit();
+  scene_editor->collpane->Collapse(1);
 
 	/* Set the default_coordinate_field_chooser_panel*/
 	if (scene_editor->edit_gt_element_group != NULL)
@@ -663,34 +675,54 @@ LAST MODIFIED : 9 February 2007
 DESCRIPTION :
 Callback from wxChooser<Scene> when choice is made.
 ==============================================================================*/
-	{
+	 {
+			gtMatrix transformation_matrix;
 		Scene_editor_set_scene(scene_editor, scene);
-		scene_editor->lower_panel->Disable();
-		scene_editor->lower_panel->Hide();
+		scene_editor->collpane->Disable();
+		scene_editor->collpane->Hide();
+		scene_editor->lowersplitter->Disable();
+		scene_editor->lowersplitter->Hide();
 		wxCheckListBox *checklist = scene_editor->checklistbox;
  		checklist->Clear();
  		for_each_Scene_object_in_Scene(scene,
  																	 add_scene_object_to_scene_check_box, (void *)scene_editor);
-		switch (Scene_object_get_type(Scene_get_scene_object_at_position(scene_editor->scene,1)))
+	 Scene_object_remove_transformation_callback(scene_editor->scene_object,
+				 Scene_editor_wx_transformation_change, (void *)scene_editor);
+		scene_editor->scene_object = Scene_get_scene_object_at_position(scene_editor->scene,1);
+		if (scene_editor->scene_object)
+		{
+			 Scene_object_get_transformation(scene_editor->scene_object,
+					&transformation_matrix);
+			 scene_editor->transformation_editor->transformation_editor_wx_set_transformation(
+					&transformation_matrix);
+			 Scene_object_add_transformation_callback(scene_editor->scene_object,
+					Scene_editor_wx_transformation_change, (void *)scene_editor);
+			 scene_editor->transformation_editor->transformation_editor_wx_set_current_object(
+					scene_editor->scene_object);
+		}
+		switch (Scene_object_get_type(scene_editor->scene_object))
 		{
 			 case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 			 {
-					scene_editor->lower_panel->Enable();	
-					scene_editor->lower_panel->Show();
-					//					scene_editor->dummy_panel->Hide();
+					scene_editor->collpane->Enable();
+					scene_editor->collpane->Show();
+					scene_editor->lowersplitter->Enable();
+					scene_editor->lowersplitter->Show();
 			 } break;
 			 case SCENE_OBJECT_GRAPHICS_OBJECT:
 			 {
-					scene_editor->lower_panel->Disable();
-					scene_editor->lower_panel->Hide();
-					//			scene_editor->dummy_panel->Show();
+					scene_editor->collpane->Disable();
+					scene_editor->collpane->Hide();
+					scene_editor->lowersplitter->Disable();
+					scene_editor->lowersplitter->Hide();
 					/* nothing to do */
 			 } break;	
 			 case SCENE_OBJECT_SCENE:
 			 {
-					scene_editor->lower_panel->Disable();
-					scene_editor->lower_panel->Hide();		
-					//					scene_editor->dummy_panel->Show();
+					scene_editor->collpane->Disable();
+					scene_editor->collpane->Hide();
+					scene_editor->lowersplitter->Disable();
+					scene_editor->lowersplitter->Hide();
 					/* nothing to do */
 			 } break;			
 		}
@@ -1540,7 +1572,6 @@ Callback from wxChooser<Render Type> when choice is made.
 
 	 void ResetScrolledWindow(wxCollapsiblePaneEvent& event)
 	 {
-
 			lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
 			lowersplitter->Layout();	
 			topsplitter=XRCCTRL(*this,"TopSplitter",wxSplitterWindow);
@@ -1552,29 +1583,41 @@ Callback from wxChooser<Render Type> when choice is made.
 			frame->SetMaxSize(wxSize(2000,2000));
 	 }
 
-	void AutoApplyorNot(struct GT_element_group  *destination, GT_element_group *source)
+	 void ResetTopWindow(wxCollapsiblePaneEvent& event)
+	 {
+			lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
+			lowersplitter->Layout();	
+			topsplitter=XRCCTRL(*this,"TopSplitter",wxSplitterWindow);
+			topsplitter->Layout();	
+			frame = 
+				 XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
+			frame->Layout();
+			frame->SetMinSize(wxSize(50,100));
+			frame->SetMaxSize(wxSize(2000,2000));
+	 }
+
+void AutoApplyorNot(struct GT_element_group  *destination, GT_element_group *source)
 /*******************************************************************************
 LAST MODIFIED : 20 March 2007
 
 DESCRIPTION :
 Check if the auto apply clicked or not, if clicked, apply the current changes
 ==============================================================================*/
-	{
-		autocheckbox = XRCCTRL(*this, "AutoCheckBox", wxCheckBox);
-		if(autocheckbox->IsChecked())
-		{
-			 if (!GT_element_group_modify(destination,source))
-			 {
-					display_message(ERROR_MESSAGE, "wxSceneEditor::UpdateGraphicalElementList.  "
-						 "Could not modify graphical element");
-			 }
-		}
-		else
-		{
-			 applybutton->Enable();
-			 revertbutton->Enable();
-		}
-	}
+{
+	 if(scene_editor->auto_apply)
+	 {
+			if (!GT_element_group_modify(destination,source))
+			{
+				 display_message(ERROR_MESSAGE, "wxSceneEditor::UpdateGraphicalElementList.  "
+						"Could not modify graphical element");
+			}
+	 }
+	 else
+	 {
+			applybutton->Enable();
+			revertbutton->Enable();
+	 }
+}
 
 void RenewLabelonList(GT_element_settings *settings)
 /*******************************************************************************
@@ -1597,29 +1640,29 @@ When changes have been made by the user, renew the label on the list
 	DEALLOCATE(settings_string);
 }
 
-      void ResetWindow(wxSplitterEvent& event)
-	  {
-			frame = 
-					XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
-			frame->Layout();
-			frame->SetMinSize(wxSize(50,100));
-			topsplitter=XRCCTRL(*this,"TopSplitter",wxSplitterWindow);
-			topsplitter->Layout();	
-			lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
-			lowersplitter->Layout();
-			sceneediting = 
-				XRCCTRL(*this, "SceneEditing", wxScrolledWindow);
-			sceneediting->Layout();
-			sceneediting->SetScrollbars(10,10,40,40);
-			if (!scene_editor->graphical_items_list_panel)
-			{
-				 scene_editor->graphical_items_list_panel = XRCCTRL(*this,
-						"SceneEditorGraphicalItemsListPanel", wxScrolledWindow);
-			}
-			scene_editor->graphical_items_list_panel->Fit();
-			scene_editor->graphical_items_list_panel->Layout();
-			scene_editor->graphical_items_list_panel->SetScrollbars(10,10,40,40);
-		}
+void ResetWindow(wxSplitterEvent& event)
+{
+	 frame = 
+			XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
+	 frame->Layout();
+	 frame->SetMinSize(wxSize(50,100));
+	 topsplitter=XRCCTRL(*this,"TopSplitter",wxSplitterWindow);
+	 topsplitter->Layout();	
+	 lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
+	 lowersplitter->Layout();
+	 sceneediting = 
+			XRCCTRL(*this, "SceneEditing", wxScrolledWindow);
+	 sceneediting->Layout();
+	 sceneediting->SetScrollbars(10,10,40,40);
+	 if (!scene_editor->graphical_items_list_panel)
+	 {
+			scene_editor->graphical_items_list_panel = XRCCTRL(*this,
+				 "SceneEditorGraphicalItemsListPanel", wxScrolledWindow);
+	 }
+	 scene_editor->graphical_items_list_panel->Fit();
+	 scene_editor->graphical_items_list_panel->Layout();
+	 scene_editor->graphical_items_list_panel->SetScrollbars(10,10,40,40);
+}
 
 	void ElementDiscretisationUpdate(wxCommandEvent &event)
 	{
@@ -1700,23 +1743,26 @@ When changes have been made by the user, renew the label on the list
 		applybutton = XRCCTRL(*this, "ApplyButton", wxButton);
 		revertbutton = XRCCTRL(*this,"RevertButton", wxButton);
 		if(autocheckbox->IsChecked())
-			{
-				applybutton->Disable();
-		       revertbutton->Disable();
-					 AutoApplyorNot(scene_editor->gt_element_group,
-								 scene_editor->edit_gt_element_group);
-			}
+		{
+			 applybutton->Disable();
+			 revertbutton->Disable();
+			 scene_editor->auto_apply = 1;
+			 AutoApplyorNot(scene_editor->gt_element_group,
+					scene_editor->edit_gt_element_group);
+		}
 		else
-			{
-				applybutton->Disable();
-		       revertbutton->Disable();
-			}
+		{
+			 applybutton->Disable();
+			 revertbutton->Disable();
+			 scene_editor->auto_apply = 0;
+		}
 	}
 
 	void RevertClicked(wxCommandEvent &event)
 	{
 		 int return_code;
 		 struct GT_element_group *gt_element_group;
+		 gtMatrix transformation_matrix;
 		 if (scene_editor && scene_editor->scene_object)
 		 {
 				return_code = 1;
@@ -1735,8 +1781,8 @@ When changes have been made by the user, renew the label on the list
 								 scene_editor->edit_gt_element_group =
 										create_editor_copy_GT_element_group(gt_element_group);
 								 graphicalitemschecklist->SetSelection(selection);
-								 scene_editor->lower_panel->Show();
-								 //				 scene_editor->dummy_panel->Hide();
+								 scene_editor->collpane->Show();
+								 scene_editor->lowersplitter->Show();
 								 set_general_settings((void *)scene_editor);
 								 UpdateGraphicalElementList(get_settings_at_position_in_GT_element_group(
 									 scene_editor->edit_gt_element_group, selection+1));
@@ -1762,6 +1808,14 @@ When changes have been made by the user, renew the label on the list
 					 applybutton->Disable();
 					 revertbutton->Disable();
 				}
+				if (scene_editor->transformation_editor)
+				{
+					 Scene_object_get_transformation(scene_editor->scene_object,
+							&transformation_matrix);
+					 scene_editor->transformation_editor->transformation_editor_wx_set_transformation(
+							&transformation_matrix);
+				}
+
 		 }
 		 else
 		 {
@@ -1773,40 +1827,44 @@ When changes have been made by the user, renew the label on the list
 
 	void ApplyClicked(wxCommandEvent &event)
 	{
- 				if (!GT_element_group_modify(scene_editor->gt_element_group,
-																	scene_editor->edit_gt_element_group))
-					{
-						display_message(ERROR_MESSAGE, "wxSceneEditor::UpdateGraphicalElementList.  "
+		 if (!GT_element_group_modify(scene_editor->gt_element_group,
+					 scene_editor->edit_gt_element_group))
+		 {
+				display_message(ERROR_MESSAGE, "wxSceneEditor::UpdateGraphicalElementList.  "
 														"Could not modify graphical element");
-					}
+		 }
+		 if (scene_editor->transformation_editor)
+		 {
+				scene_editor->transformation_editor->ApplyTransformation();
+		 }
 	}
 
-	void CircleDiscretisationUpdate(wxCommandEvent &event)
-	{
-		int circle_discretization;
-		circlediscretisationpanel =	 XRCCTRL(*this, "CircleDiscretisationPanel",wxTextCtrl);
-		TempText = circlediscretisationpanel->GetValue();
-		if (TempText)
-		{
+void CircleDiscretisationUpdate(wxCommandEvent &event)
+{
+	 int circle_discretization;
+	 circlediscretisationpanel =	 XRCCTRL(*this, "CircleDiscretisationPanel",wxTextCtrl);
+	 TempText = circlediscretisationpanel->GetValue();
+	 if (TempText)
+	 {
 			circle_discretization = atoi(const_cast<char *>(TempText.c_str()));
 			if ((circle_discretization != GT_element_group_get_circle_discretization(
-				scene_editor->edit_gt_element_group)) &&
-				GT_element_group_set_circle_discretization(
-					scene_editor->edit_gt_element_group, circle_discretization))
-				{
-				}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"graphical_element_editor_circle_disc_text_CB.  Missing text");
-		}
-		/* always redisplay discretization to show assumed values */
-		set_general_settings((void *)scene_editor);
-
-	AutoApplyorNot(scene_editor->gt_element_group,
-								 scene_editor->edit_gt_element_group);
+							scene_editor->edit_gt_element_group)) &&
+				 GT_element_group_set_circle_discretization(
+						scene_editor->edit_gt_element_group, circle_discretization))
+			{
+			}
 	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "graphical_element_editor_circle_disc_text_CB.  Missing text");
+	 }
+	 /* always redisplay discretization to show assumed values */
+	 set_general_settings((void *)scene_editor);
+	 
+	 AutoApplyorNot(scene_editor->gt_element_group,
+			scene_editor->edit_gt_element_group);
+}
 
 void SetGraphicalElementGroup(GT_element_group *gt_element_group)
 {
@@ -1836,9 +1894,10 @@ void SetGraphicalElementGroup(GT_element_group *gt_element_group)
 	 {
 			for_each_settings_in_GT_element_group(edit_gt_element_group,
 				 Scene_editor_add_element_settings_item, (void *)scene_editor);
-			scene_editor->lower_panel->Enable();
-			scene_editor->lower_panel->Show();
-			//			scene_editor->dummy_panel->Hide();
+			scene_editor->collpane->Enable();
+			scene_editor->collpane->Show();
+			scene_editor->lowersplitter->Enable();
+			scene_editor->lowersplitter->Show();
 			set_general_settings((void *)scene_editor);
 			get_and_set_graphical_element_settings((void *)scene_editor);
 	 }
@@ -1847,7 +1906,11 @@ void SetGraphicalElementGroup(GT_element_group *gt_element_group)
 void UpdateSceneObjectList(Scene_object *scene_object)
 {
 	 GT_element_group *gt_element_group;
-	 REACCESS(Scene_object)(&scene_editor->scene_object, scene_object);
+	 //REACCESS(Scene_object)(&scene_editor->scene_object, scene_object);
+	 gtMatrix transformation_matrix;
+	 Scene_object_remove_transformation_callback(scene_editor->scene_object,
+			Scene_editor_wx_transformation_change, (void *)scene_editor);
+	 scene_editor->scene_object = scene_object;
 	 scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
 	 int selection =	scenechecklist->GetSelection();
 	 if(scenechecklist->IsChecked(selection))
@@ -1858,7 +1921,17 @@ void UpdateSceneObjectList(Scene_object *scene_object)
 	 {
 			Scene_object_set_visibility(scene_object, g_INVISIBLE);
 	 }
-	 
+	 if (scene_editor->scene_object)
+	 {
+			Scene_object_get_transformation(scene_editor->scene_object,
+				 &transformation_matrix);
+			scene_editor->transformation_editor->transformation_editor_wx_set_transformation(
+				 &transformation_matrix);
+			Scene_object_add_transformation_callback(scene_editor->scene_object,
+				 Scene_editor_wx_transformation_change, (void *)scene_editor);
+			scene_editor->transformation_editor->transformation_editor_wx_set_current_object(
+				 scene_editor->scene_object);
+	 }
 	 switch (Scene_object_get_type(scene_object))
 	 {
 			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
@@ -1885,9 +1958,11 @@ void UpdateSceneObjectList(Scene_object *scene_object)
 				 if (!scene_editor->graphicalitemslistbox)
 						scene_editor->graphicalitemslistbox = XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
 				 scene_editor->graphicalitemslistbox->Clear();
-				 scene_editor->lower_panel->Disable();
-				 scene_editor->lower_panel->Hide();
-				 //		scene_editor->dummy_panel->Show();
+				 scene_editor->collpane->Disable();
+				 scene_editor->collpane->Hide();
+				 scene_editor->lowersplitter->Disable();
+				 scene_editor->lowersplitter->Hide();
+
 				 /* nothing to do */
 			} break;
 	 }
@@ -1981,29 +2056,32 @@ void  SceneObjectUpClicked(wxCommandEvent &event)
 			{
 				 case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 				 {
-						scene_editor->lower_panel->Enable();
-						scene_editor->lower_panel->Show();
-						//				scene_editor->dummy_panel->Hide();
+						scene_editor->collpane->Enable();
+						scene_editor->collpane->Show();
+						scene_editor->lowersplitter->Enable();
+						scene_editor->lowersplitter->Show();
 				 } break;
 				 case SCENE_OBJECT_GRAPHICS_OBJECT:
-				 {
-						scene_editor->lower_panel->Disable();
-						scene_editor->lower_panel->Hide();	
-						//						scene_editor->dummy_panel->Show();
+				 {	
+						scene_editor->collpane->Disable();
+						scene_editor->collpane->Hide();
+						scene_editor->lowersplitter->Disable();
+						scene_editor->lowersplitter->Hide();
 						/* nothing to do */
 				 } break;	
 				 case SCENE_OBJECT_SCENE:
 				 {
-						scene_editor->lower_panel->Disable();
-						scene_editor->lower_panel->Hide();	
-						//			scene_editor->dummy_panel->Show();
+						scene_editor->collpane->Disable();
+						scene_editor->collpane->Hide();
+						scene_editor->lowersplitter->Disable();
+						scene_editor->lowersplitter->Hide();
 						/* nothing to do */
 				 } break;			
 			}
 	 }
 }
 
-void  SceneObjectDownClicked(wxCommandEvent &event)
+void SceneObjectDownClicked(wxCommandEvent &event)
 {
 	 scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
 	 int selection = scenechecklist->GetSelection();
@@ -2023,22 +2101,25 @@ void  SceneObjectDownClicked(wxCommandEvent &event)
 			{
 				 case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 				 {
-						scene_editor->lower_panel->Enable();
-						scene_editor->lower_panel->Show();
-						//			scene_editor->dummy_panel->Hide();
+						scene_editor->collpane->Enable();
+						scene_editor->collpane->Show();
+						scene_editor->lowersplitter->Enable();
+						scene_editor->lowersplitter->Show();
 				 } break;
 				 case SCENE_OBJECT_GRAPHICS_OBJECT:
 				 {
-						scene_editor->lower_panel->Disable();
-						scene_editor->lower_panel->Hide();	
-						//					scene_editor->dummy_panel->Show();
+						scene_editor->collpane->Disable();
+						scene_editor->collpane->Hide();
+						scene_editor->lowersplitter->Disable();
+						scene_editor->lowersplitter->Hide();
 						/* nothing to do */
 				 } break;	
 				 case SCENE_OBJECT_SCENE:
 				 {
-						scene_editor->lower_panel->Disable();
-						scene_editor->lower_panel->Hide();	
-						//					scene_editor->dummy_panel->Show();
+						scene_editor->collpane->Disable();
+						scene_editor->collpane->Hide();
+						scene_editor->lowersplitter->Disable();
+						scene_editor->lowersplitter->Hide();
 						/* nothing to do */
 				 } break;			
 			}
@@ -4256,6 +4337,7 @@ IMPLEMENT_DYNAMIC_CLASS(wxSceneEditor, wxFrame)
 BEGIN_EVENT_TABLE(wxSceneEditor, wxFrame)
 	 EVT_SPLITTER_SASH_POS_CHANGED(XRCID("LowerSplitter"),wxSceneEditor::ResetWindow)
 	 EVT_COLLAPSIBLEPANE_CHANGED(XRCID("CollapsiblePane"), wxSceneEditor::ResetScrolledWindow)
+	 EVT_COLLAPSIBLEPANE_CHANGED(XRCID("SceneEditorTopCollapsiblePane"), wxSceneEditor::ResetTopWindow)
 	 EVT_TEXT_ENTER(XRCID("CircleDiscretisationPanel"), wxSceneEditor::CircleDiscretisationUpdate)
 	 EVT_TEXT_ENTER(XRCID("ElementDiscretisationPanel"), wxSceneEditor::ElementDiscretisationUpdate)
 	 EVT_CHECKBOX(XRCID("NativeDiscretisationFieldCheckBox"),wxSceneEditor::NativeDiscretisationFieldChecked)
@@ -4473,8 +4555,8 @@ Add scene_object as checklistbox item into the box
 					{
 						 for_each_settings_in_GT_element_group(edit_gt_element_group,
 								Scene_editor_add_element_settings_item, (void *)scene_editor);
-						 scene_editor->lower_panel->Show();
-						 //					 scene_editor->dummy_panel->Hide();
+						 scene_editor->collpane->Show();
+						 scene_editor->lowersplitter->Show();
 						 set_general_settings((void *)scene_editor);
 						 get_and_set_graphical_element_settings((void *)scene_editor);
 					}
@@ -4620,40 +4702,74 @@ DESCRIPTION :
 			 wxLogNull logNo;
 			 scene_editor->wx_scene_editor = new 
 					wxSceneEditor(scene_editor);
-			 scene_editor->lower_panel=
-					XRCCTRL(*scene_editor->wx_scene_editor, "LowerPanel", wxPanel);
-			 scene_editor->checklistbox = XRCCTRL(*scene_editor->wx_scene_editor, "SceneCheckList", wxCheckListBox);
+			 scene_editor->checklistbox = XRCCTRL(*scene_editor->wx_scene_editor, "SceneCheckList", wxCheckListBox);;	
 			 scene_editor->checklistbox->Clear();
+			 scene_editor->lowersplitter=XRCCTRL(*scene_editor->wx_scene_editor,"LowerSplitter",wxSplitterWindow);
+			 scene_editor->lowersplitter->SetSashPosition(160);
+			 scene_editor->lowersplitter->Layout();
 			 for_each_Scene_object_in_Scene(scene,
 					add_scene_object_to_scene_check_box, (void *)scene_editor);
+// 			 REACCESS(Scene_object)(&scene_editor->scene_object,
+// 					Scene_get_scene_object_at_position(scene_editor->scene, 1));
+			 scene_editor->scene_object=Scene_get_scene_object_at_position(scene_editor->scene, 1);
 			 if (scene_editor->checklistbox->GetCount() > 0)
 			 {
-					switch (Scene_object_get_type(Scene_get_scene_object_at_position(scene_editor->scene,1)))
+					switch (Scene_object_get_type(scene_editor->scene_object))
 					{
 						 case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 						 {
-								scene_editor->lower_panel->Enable();	
-								scene_editor->lower_panel->Show();	
+								scene_editor->collpane->Enable();
+								scene_editor->collpane->Show();
+								scene_editor->lowersplitter->Enable();
+								scene_editor->lowersplitter->Show();
 								//				 scene_editor->dummy_panel->Hide();
 						 } break;
 						 case SCENE_OBJECT_GRAPHICS_OBJECT:
 						 {
-								scene_editor->lower_panel->Disable();	
-								scene_editor->lower_panel->Hide();		
+								scene_editor->collpane->Disable();
+								scene_editor->collpane->Hide();
+								scene_editor->lowersplitter->Disable();
+								scene_editor->lowersplitter->Hide();
 								//					scene_editor->dummy_panel->Show();
 								/* nothing to do */
 						 } break;	
 						 case SCENE_OBJECT_SCENE:
 						 {
-								scene_editor->lower_panel->Hide();		
+								scene_editor->collpane->Hide();
+								scene_editor->lowersplitter->Hide();
 								/* nothing to do */
 						 } break;			
 					}
 			 }
 			 else
 			 {
-					scene_editor->lower_panel->Hide();		
+					scene_editor->collpane->Hide();
+					scene_editor->lowersplitter->Hide();
 			 }
+			 scene_editor->top_collpane = XRCCTRL(*scene_editor->wx_scene_editor, 
+					"SceneEditorTopCollapsiblePane", wxCollapsiblePane);
+			 wxWindow *top_collpane_win = scene_editor->top_collpane->GetPane();
+			 scene_editor->top_collpane_panel = new wxPanel(top_collpane_win);
+ 			 scene_editor->transformation_editor = new Transformation_editor(
+ 					scene_editor->top_collpane_panel, "transformation_editor", scene_editor->scene_object,
+					&scene_editor->auto_apply);
+			 wxSizer *top_collpane_sizer = new wxBoxSizer(wxVERTICAL);
+			 top_collpane_sizer->Add(scene_editor->top_collpane_panel, 1, wxEXPAND|wxALL, 2);
+			 top_collpane_win->SetSizer(top_collpane_sizer);
+			 top_collpane_sizer->SetSizeHints(top_collpane_win);
+			 top_collpane_sizer->Layout();
+			 top_collpane_win->Layout();
+			 gtMatrix transformation_matrix;
+			 if (scene_editor->scene_object)
+			 {
+					Scene_object_get_transformation(scene_editor->scene_object,
+						 &transformation_matrix);
+					scene_editor->transformation_editor->transformation_editor_wx_set_transformation(
+						 &transformation_matrix);
+					Scene_object_add_transformation_callback(scene_editor->scene_object,
+						 Scene_editor_wx_transformation_change, (void *)scene_editor);
+			 }
+			 scene_editor->top_collpane->Collapse(1);
 			 scene_editor->autocheckbox = 
 					XRCCTRL(*scene_editor->wx_scene_editor, "AutoCheckBox", wxCheckBox);
 			 scene_editor->autocheckbox->SetValue(true);
@@ -4667,16 +4783,14 @@ DESCRIPTION :
 					XRCCTRL(*scene_editor->wx_scene_editor, "CmguiSceneEditor", wxFrame);
 			 scene_editor->frame->Layout();
 			 scene_editor->frame->SetMinSize(wxSize(50,100));
-			 scene_editor->frame->SetSize(wxSize(600,800));		 
+			 scene_editor->frame->SetSize(wxSize(600,800));
+			 scene_editor->frame->SetMaxSize(wxSize(2000,2000));
 			 scene_editor->sceneediting = 
 					XRCCTRL(*scene_editor->wx_scene_editor, "SceneEditing", wxScrolledWindow);
 			 scene_editor->graphicalitemslistbox =
 					XRCCTRL(*scene_editor->wx_scene_editor, "GraphicalItemsListBox",wxCheckListBox);
 			 scene_editor->sceneediting->Layout();
 			 scene_editor->sceneediting->SetScrollbars(10,10,40,40);
-			 scene_editor->lowersplitter=XRCCTRL(*scene_editor->wx_scene_editor,"LowerSplitter",wxSplitterWindow);
-			 scene_editor->lowersplitter->SetSashPosition(160);
-			 scene_editor->lowersplitter->Layout();	
 			 scene_editor->topsplitter=XRCCTRL(*scene_editor->wx_scene_editor,"TopSplitter",wxSplitterWindow);
 			 scene_editor->topsplitter->SetSashPosition(150);
 			 if (!scene_editor->graphical_items_list_panel)
