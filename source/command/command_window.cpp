@@ -2532,7 +2532,9 @@ DESCRIPTION:
 		{
 			fclose(command_window->out_file);
 		}
-#if defined (MOTIF) /* switch (USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+		delete command_window->wx_command_window;
+#elif defined (MOTIF) /* switch (USER_INTERFACE) */
 		set_property_notify_callback(command_window->user_interface,
 			(Property_notify_callback)NULL, (void *)NULL, (Widget)NULL);
 		destroy_Shell_list_item_from_shell(&(command_window->shell),
@@ -2550,8 +2552,6 @@ DESCRIPTION:
 			command_window->close_handler_id);
 #endif /* GTK_MAJOR_VERSION >= 2 */
 		gtk_widget_destroy (command_window->shell);
-#elif (WX_USER_INTERFACE)
-		delete command_window->wx_command_window;
 #endif /* (WX_USER_INTERFACE) */
 		DEALLOCATE(*command_window_pointer);
 		return_code = 1;

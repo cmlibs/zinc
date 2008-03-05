@@ -416,11 +416,11 @@ public:
   new Managed_object_chooser<Scene,MANAGER_CLASS(Scene)>
 	  (scene_object_chooser_panel, scene_editor->scene, scene_editor->scene_manager,
 	  (MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL, (void *)NULL, scene_editor->user_interface);
-	  Callback_base< Scene* > *scene_object_callback = 
+	  Callback_base< Scene* > *scene_callback = 
 		  new Callback_member_callback< Scene*, 
 		  wxSceneEditor, int (wxSceneEditor::*)(Scene *) >
-		  (this, &wxSceneEditor::scene_object_callback);
-      scene_chooser->set_callback(scene_object_callback);
+		  (this, &wxSceneEditor::scene_callback);
+      scene_chooser->set_callback(scene_callback);
  /* Set the collapsible pane in the secne editor */
   scene_editor->collpane = XRCCTRL(*this, "CollapsiblePane", wxCollapsiblePane);
   wxPanel *GeneralSettingPanel = new wxPanel;
@@ -667,8 +667,8 @@ public:
 			if (seed_element_chooser)
 				 delete seed_element_chooser;
 	 }
-	 
-	 int scene_object_callback(Scene *scene)
+
+	 int scene_callback(Scene *scene)
 /*******************************************************************************
 LAST MODIFIED : 9 February 2007
 
@@ -676,7 +676,7 @@ DESCRIPTION :
 Callback from wxChooser<Scene> when choice is made.
 ==============================================================================*/
 	 {
-			gtMatrix transformation_matrix;
+		gtMatrix transformation_matrix;
 		Scene_editor_set_scene(scene_editor, scene);
 		scene_editor->collpane->Disable();
 		scene_editor->collpane->Hide();
@@ -685,10 +685,13 @@ Callback from wxChooser<Scene> when choice is made.
 		wxCheckListBox *checklist = scene_editor->checklistbox;
  		checklist->Clear();
  		for_each_Scene_object_in_Scene(scene,
- 																	 add_scene_object_to_scene_check_box, (void *)scene_editor);
-	 Scene_object_remove_transformation_callback(scene_editor->scene_object,
-				 Scene_editor_wx_transformation_change, (void *)scene_editor);
-		scene_editor->scene_object = Scene_get_scene_object_at_position(scene_editor->scene,1);
+			 add_scene_object_to_scene_check_box, (void *)scene_editor);
+		if (scene_editor->scene_object) {
+			 Scene_object_remove_transformation_callback(scene_editor->scene_object,
+					Scene_editor_wx_transformation_change, (void *)scene_editor);
+		}
+	  REACCESS(Scene_object)(&scene_editor->scene_object,
+			 Scene_get_scene_object_at_position(scene_editor->scene, 1));
 		if (scene_editor->scene_object)
 		{
 			 Scene_object_get_transformation(scene_editor->scene_object,
@@ -699,32 +702,39 @@ Callback from wxChooser<Scene> when choice is made.
 					Scene_editor_wx_transformation_change, (void *)scene_editor);
 			 scene_editor->transformation_editor->transformation_editor_wx_set_current_object(
 					scene_editor->scene_object);
+			 switch (Scene_object_get_type(scene_editor->scene_object))
+			 {
+					case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
+					{
+						 scene_editor->collpane->Enable();
+						 scene_editor->collpane->Show();
+						 scene_editor->lowersplitter->Enable();
+						 scene_editor->lowersplitter->Show();
+					} break;
+					case SCENE_OBJECT_GRAPHICS_OBJECT:
+					{
+						 scene_editor->collpane->Disable();
+						 scene_editor->collpane->Hide();
+						 scene_editor->lowersplitter->Disable();
+						 scene_editor->lowersplitter->Hide();
+						 /* nothing to do */
+					} break;	
+					case SCENE_OBJECT_SCENE:
+					{
+						 scene_editor->collpane->Disable();
+						 scene_editor->collpane->Hide();
+						 scene_editor->lowersplitter->Disable();
+						 scene_editor->lowersplitter->Hide();
+						 /* nothing to do */
+					} break;			
+			 }
 		}
-		switch (Scene_object_get_type(scene_editor->scene_object))
+		else
 		{
-			 case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
-			 {
-					scene_editor->collpane->Enable();
-					scene_editor->collpane->Show();
-					scene_editor->lowersplitter->Enable();
-					scene_editor->lowersplitter->Show();
-			 } break;
-			 case SCENE_OBJECT_GRAPHICS_OBJECT:
-			 {
-					scene_editor->collpane->Disable();
-					scene_editor->collpane->Hide();
-					scene_editor->lowersplitter->Disable();
-					scene_editor->lowersplitter->Hide();
-					/* nothing to do */
-			 } break;	
-			 case SCENE_OBJECT_SCENE:
-			 {
-					scene_editor->collpane->Disable();
-					scene_editor->collpane->Hide();
-					scene_editor->lowersplitter->Disable();
-					scene_editor->lowersplitter->Hide();
-					/* nothing to do */
-			 } break;			
+			 scene_editor->collpane->Disable();
+			 scene_editor->collpane->Hide();
+			 scene_editor->lowersplitter->Disable();
+			 scene_editor->lowersplitter->Hide();
 		}
 		return 1;
 	}
@@ -1906,23 +1916,24 @@ void SetGraphicalElementGroup(GT_element_group *gt_element_group)
 void UpdateSceneObjectList(Scene_object *scene_object)
 {
 	 GT_element_group *gt_element_group;
-	 //REACCESS(Scene_object)(&scene_editor->scene_object, scene_object);
+	 if (scene_editor->scene_object) {
+			Scene_object_remove_transformation_callback(scene_editor->scene_object,
+				 Scene_editor_wx_transformation_change, (void *)scene_editor);
+	 }
+	 REACCESS(Scene_object)(&scene_editor->scene_object, scene_object);
 	 gtMatrix transformation_matrix;
-	 Scene_object_remove_transformation_callback(scene_editor->scene_object,
-			Scene_editor_wx_transformation_change, (void *)scene_editor);
-	 scene_editor->scene_object = scene_object;
 	 scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
 	 int selection =	scenechecklist->GetSelection();
-	 if(scenechecklist->IsChecked(selection))
+	 if (scene_object)
 	 {
-			Scene_object_set_visibility(scene_object, g_VISIBLE);
-	 }
-	 else
-	 {
-			Scene_object_set_visibility(scene_object, g_INVISIBLE);
-	 }
-	 if (scene_editor->scene_object)
-	 {
+			if(scenechecklist->IsChecked(selection))
+			{
+				 Scene_object_set_visibility(scene_object, g_VISIBLE);
+			}
+			else
+			{
+				 Scene_object_set_visibility(scene_object, g_INVISIBLE);
+			}
 			Scene_object_get_transformation(scene_editor->scene_object,
 				 &transformation_matrix);
 			scene_editor->transformation_editor->transformation_editor_wx_set_transformation(
@@ -1931,40 +1942,55 @@ void UpdateSceneObjectList(Scene_object *scene_object)
 				 Scene_editor_wx_transformation_change, (void *)scene_editor);
 			scene_editor->transformation_editor->transformation_editor_wx_set_current_object(
 				 scene_editor->scene_object);
-	 }
-	 switch (Scene_object_get_type(scene_object))
-	 {
-			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
+	 
+			switch (Scene_object_get_type(scene_object))
 			{
-				 if (scene_editor->gt_element_group)
+				 case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 				 {
-						GT_element_group_remove_callback(scene_editor->gt_element_group,
+						if (scene_editor->gt_element_group)
+						{
+							 GT_element_group_remove_callback(scene_editor->gt_element_group,
+									Scene_editor_wx_graphical_element_change, (void *)scene_editor);
+						}
+						gt_element_group = Scene_object_get_graphical_element_group(
+							 scene_object);
+						REACCESS(GT_element_group)(&scene_editor->gt_element_group, gt_element_group);
+						GT_element_group_add_callback(scene_editor->gt_element_group,
 							 Scene_editor_wx_graphical_element_change, (void *)scene_editor);
-				 }
-				 gt_element_group = Scene_object_get_graphical_element_group(
-						scene_object);
-				 REACCESS(GT_element_group)(&scene_editor->gt_element_group, gt_element_group);
-				 GT_element_group_add_callback(scene_editor->gt_element_group,
-						Scene_editor_wx_graphical_element_change, (void *)scene_editor);
-				 if (scene_editor->gt_element_group != NULL)
+						if (scene_editor->gt_element_group != NULL)
+						{
+							 computed_field_chooser->set_object(
+									GT_element_group_get_default_coordinate_field(
+										 scene_editor->gt_element_group));
+						}
+						SetGraphicalElementGroup(gt_element_group);
+				 } break;
+				 case SCENE_OBJECT_GRAPHICS_OBJECT:
+				 case SCENE_OBJECT_SCENE:
 				 {
-						computed_field_chooser->set_object(GT_element_group_get_default_coordinate_field(scene_editor->gt_element_group));
-				 }
-				 SetGraphicalElementGroup(gt_element_group);
-			} break;
-			case SCENE_OBJECT_GRAPHICS_OBJECT:
-			case SCENE_OBJECT_SCENE:
-			{
-				 if (!scene_editor->graphicalitemslistbox)
-						scene_editor->graphicalitemslistbox = XRCCTRL(*this, "GraphicalItemsListBox",wxCheckListBox);
-				 scene_editor->graphicalitemslistbox->Clear();
-				 scene_editor->collpane->Disable();
-				 scene_editor->collpane->Hide();
-				 scene_editor->lowersplitter->Disable();
-				 scene_editor->lowersplitter->Hide();
+						if (!scene_editor->graphicalitemslistbox)
+							 scene_editor->graphicalitemslistbox = XRCCTRL(
+									*this, "GraphicalItemsListBox",wxCheckListBox);
+						scene_editor->graphicalitemslistbox->Clear();
+						scene_editor->collpane->Disable();
+						scene_editor->collpane->Hide();
+						scene_editor->lowersplitter->Disable();
+						scene_editor->lowersplitter->Hide();
+						/* nothing to do */
+				 } break;
+			}
+	 }
+	 else
+	 {
+			if (!scene_editor->graphicalitemslistbox)
+				 scene_editor->graphicalitemslistbox = XRCCTRL(
+						*this, "GraphicalItemsListBox",wxCheckListBox);
+			scene_editor->graphicalitemslistbox->Clear();
+			scene_editor->collpane->Disable();
+			scene_editor->collpane->Hide();
+			scene_editor->lowersplitter->Disable();
+			scene_editor->lowersplitter->Hide();
 
-				 /* nothing to do */
-			} break;
 	 }
 }
 
@@ -4709,9 +4735,8 @@ DESCRIPTION :
 			 scene_editor->lowersplitter->Layout();
 			 for_each_Scene_object_in_Scene(scene,
 					add_scene_object_to_scene_check_box, (void *)scene_editor);
-// 			 REACCESS(Scene_object)(&scene_editor->scene_object,
-// 					Scene_get_scene_object_at_position(scene_editor->scene, 1));
-			 scene_editor->scene_object=Scene_get_scene_object_at_position(scene_editor->scene, 1);
+ 			 REACCESS(Scene_object)(&scene_editor->scene_object,
+ 					Scene_get_scene_object_at_position(scene_editor->scene, 1));
 			 if (scene_editor->checklistbox->GetCount() > 0)
 			 {
 					switch (Scene_object_get_type(scene_editor->scene_object))
@@ -4856,6 +4881,13 @@ DESCRIPTION :
 		DEACCESS(GT_element_group)(&scene_editor->edit_gt_element_group);
 		DEACCESS(GT_element_group)(&scene_editor->gt_element_group);	
 		DEACCESS(GT_element_settings)(&scene_editor->current_settings);
+		if (scene_editor->scene_object)
+		{
+			 Scene_object_remove_transformation_callback(scene_editor->scene_object,
+					Scene_editor_wx_transformation_change, (void *)scene_editor);
+			 DEACCESS(Scene_object)(&scene_editor->scene_object);
+		}
+		delete scene_editor->transformation_editor;
 		delete scene_editor->wx_scene_editor;
 		DEALLOCATE(*scene_editor_address);
 		*scene_editor_address = NULL;
