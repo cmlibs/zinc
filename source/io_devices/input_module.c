@@ -123,7 +123,7 @@ Global Variables
 ----------------
 */
 #define INPUT_UPDATE_BUFFER_SIZE (1000)
-#define PI (3.14159)
+#define LOCAL_PI (3.14159)
 
 struct Input_module_data_struct *input_module_data = NULL;
 
@@ -1445,12 +1445,12 @@ Forces the input_module to see if there are any periodic updates
 					message->data[0] = faro_position_current[0];
 					message->data[1] = faro_position_current[1];
 					message->data[2] = faro_position_current[2];
-					sinA = sin(faro_angle_current[0] * PI / 180.0);
-					sinB = sin(faro_angle_current[1] * PI / 180.0);
-					sinC = sin(faro_angle_current[2] * PI / 180.0);
-					cosA = cos(faro_angle_current[0] * PI / 180.0);
-					cosB = cos(faro_angle_current[1] * PI / 180.0);
-					cosC = cos(faro_angle_current[2] * PI / 180.0);
+					sinA = sin(faro_angle_current[0] * LOCAL_PI / 180.0);
+					sinB = sin(faro_angle_current[1] * LOCAL_PI / 180.0);
+					sinC = sin(faro_angle_current[2] * LOCAL_PI / 180.0);
+					cosA = cos(faro_angle_current[0] * LOCAL_PI / 180.0);
+					cosB = cos(faro_angle_current[1] * LOCAL_PI / 180.0);
+					cosC = cos(faro_angle_current[2] * LOCAL_PI / 180.0);
 					/* tangent */
 					message->data[3] = sinA * sinB;
 					message->data[4] = -cosA * sinB;
