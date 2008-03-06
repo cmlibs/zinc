@@ -164,6 +164,7 @@ FE_region_get_FE_field_from_name
 FE_region_get_FE_node_from_identifier
 FE_region_get_FE_element_from_identifier
 Cmiss_region_get_node
+Cmiss_region_get_element
 
 get_name_FE_field
 get_FE_field_number_of_components
