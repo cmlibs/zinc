@@ -1616,6 +1616,9 @@ Check if the auto apply clicked or not, if clicked, apply the current changes
 {
 	 if(scene_editor->auto_apply)
 	 {
+			if (scene_editor->transformation_editor) {
+				 scene_editor->transformation_editor->ApplyTransformation();
+			}
 			if (!GT_element_group_modify(destination,source))
 			{
 				 display_message(ERROR_MESSAGE, "wxSceneEditor::UpdateGraphicalElementList.  "

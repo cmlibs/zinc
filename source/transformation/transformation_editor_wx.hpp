@@ -55,6 +55,7 @@ extern "C"{
 #include "io_devices/conversion.h"
 #include "graphics/graphics_library.h"
 #include "graphics/scene.h"
+#include "graphics/quaternion.hpp"
 }
 
 class Transformation_editor : public wxPanel
@@ -67,6 +68,14 @@ public:
 	 int transformation_editor_wx_set_transformation(gtMatrix *transformation_matrix);
 	 void transformation_editor_wx_set_current_object(struct Scene_object *scene_object);
 	 void ApplyTransformation();
+	 
+	 ~Transformation_editor()
+	 {
+			if (global_quat)
+			{
+				 DEALLOCATE(global_quat);
+			}
+	 }
 
 private:
 
@@ -83,13 +92,18 @@ private:
 	 void OnTransformationEditor_spin_button_up(wxCommandEvent& event);
 	 void OnTransformationEditor_spin_button_down(wxCommandEvent& event);
 	 void transformation_editor_wx_spin_button_change_value(wxSpinButton *temp_object, int flag);
+	 void transformation_editor_wx_direction_system_choice_changed();
+	 void OnTransformationEditorDirectionSystemChoice(wxCommandEvent& event);
+	 void transformation_editor_quaternion_to_gtmatrix();
 
 protected:
- 	 int *auto_apply_flag;
+ 	 int *auto_apply_flag, direction_system_index;
 	 struct Scene_object *current_object;
 	 gtMatrix transformation_editor_transformation_matrix;
 	 int rate_of_change;
 	 struct Dof3_data global_direction, global_position;
+	 Quaternion *transformation_editor_quaternion;
+	 float *global_quat;
 	 wxPanel *transformation_editor_panel;
 	 wxStaticLine *Transformation_editor_wx_staticline;
 	 wxStaticBox* direction_sizer_8_staticbox;
@@ -98,6 +112,7 @@ protected:
 	 wxStaticBox* position_sizer_8_staticbox;
 	 wxStaticBox* position_sizer_7_staticbox;
 	 wxStaticBox* position_sizer_6_staticbox;
+	 wxStaticBox* direction_sizer_13_staticbox;
 	 wxStaticBox* Transformation_editor_wx_position_staticbox;
 	 wxStaticBox* Transformation_editor_wx_direction_staticbox;
 	 wxChoice* Transformation_editor_wx_global_choice;
@@ -118,7 +133,6 @@ protected:
 	 wxStaticText* Transformation_editor_wx_position_label_5;
 	 wxTextCtrl* Transformation_editor_wx_position_text_ctrl_3;
 	 wxSpinButton *Transformation_editor_wx_position_spin_button_3;
-	 wxSlider* Transformation_editor_wx_position_slider_2;
 	 wxButton* Transformation_editor_wx_direction_save_button;
 	 wxButton* Transformation_editor_wx_direction_reset_button;
 	 wxToggleButton* Transformation_editor_wx_direction_lock_data_toggle_button;
@@ -134,6 +148,9 @@ protected:
 	 wxStaticText* Transformation_editor_wx_direction_label_5;
 	 wxTextCtrl* Transformation_editor_wx_direction_text_ctrl_3;
 	 wxSpinButton *Transformation_editor_wx_direction_spin_button_3;
-	 wxSlider* Transformation_editor_wx_direction_slider_2;
+	 wxStaticText* Transformation_editor_wx_direction_label_6;
+	 wxTextCtrl* Transformation_editor_wx_direction_text_ctrl_4;
+	 wxSpinButton *Transformation_editor_wx_direction_spin_button_4;
+	 wxString transformation_editor_direction_text[2][3];
 };
 #endif /* !defined (TRANSFORMATION_EDITOR_WX_HPP) */
