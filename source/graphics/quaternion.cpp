@@ -201,7 +201,7 @@ Convert the matrix to a quaternion, the argument values must be allocated before
 		int return_code;
 		float trace, s;
 
-		ENTER(Quaternion::quaternion_to_matrix);
+		ENTER(Quaternion::matrix_to_quaternion);
 		return_code = 0;
 		trace = source[0] + source[5] + source[10] + 1;
 		if (trace > 0)

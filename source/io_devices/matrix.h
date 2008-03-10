@@ -50,6 +50,7 @@ Most uses of this module will be for either 3 or 4 element matrices.
 #define MATRIX_H
 
 #include "io_devices/conversion.h"
+#include "graphics/auxiliary_graphics_types.h"
 
 /*
 Module Constants
@@ -199,4 +200,13 @@ DESCRIPTION :
 Returns the equivalent direction cosine matrix of the passed euler values.
 Formulae are taken from the Polhemus manual, page 156.
 ==============================================================================*/
+
+void matrix_scalefactor(Gmatrix *matrix, Triple scale_factor);
+/*******************************************************************************
+LAST MODIFIED : 10 March 2008
+
+DESCRIPTION :
+***Returns the equivalent scale factor of the matrix.
+==============================================================================*/
+
 #endif

@@ -66,7 +66,9 @@ public:
 			set(1, 0, 0, 0);
 	 };
 
-	 ~Quaternion();
+	 ~Quaternion()
+	 {
+	 }
 
 	 void set(const double quat_w, const double quat_x, const double quat_y, const double quat_z);
 

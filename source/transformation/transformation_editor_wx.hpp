@@ -75,6 +75,7 @@ public:
 			{
 				 DEALLOCATE(global_quat);
 			}
+			delete transformation_editor_quaternion;
 	 }
 
 private:
@@ -95,6 +96,8 @@ private:
 	 void transformation_editor_wx_direction_system_choice_changed();
 	 void OnTransformationEditorDirectionSystemChoice(wxCommandEvent& event);
 	 void transformation_editor_quaternion_to_gtmatrix();
+	 int scale_factor_to_transformation_matrix(Triple scale_factor,
+			gtMatrix *transformation_editor_transformation_matrix);
 
 protected:
  	 int *auto_apply_flag, direction_system_index;
@@ -109,10 +112,11 @@ protected:
 	 wxStaticBox* direction_sizer_8_staticbox;
 	 wxStaticBox* direction_sizer_7_staticbox;
 	 wxStaticBox* direction_sizer_6_staticbox;
+	 wxStaticBox* direction_sizer_13_staticbox;
 	 wxStaticBox* position_sizer_8_staticbox;
 	 wxStaticBox* position_sizer_7_staticbox;
 	 wxStaticBox* position_sizer_6_staticbox;
-	 wxStaticBox* direction_sizer_13_staticbox;
+	 wxStaticBox* position_sizer_13_staticbox;
 	 wxStaticBox* Transformation_editor_wx_position_staticbox;
 	 wxStaticBox* Transformation_editor_wx_direction_staticbox;
 	 wxChoice* Transformation_editor_wx_global_choice;
@@ -133,6 +137,9 @@ protected:
 	 wxStaticText* Transformation_editor_wx_position_label_5;
 	 wxTextCtrl* Transformation_editor_wx_position_text_ctrl_3;
 	 wxSpinButton *Transformation_editor_wx_position_spin_button_3;
+	 wxStaticText* Transformation_editor_wx_position_label_6;
+	 wxTextCtrl* Transformation_editor_wx_position_text_ctrl_4;
+	 wxSpinButton *Transformation_editor_wx_position_spin_button_4;
 	 wxButton* Transformation_editor_wx_direction_save_button;
 	 wxButton* Transformation_editor_wx_direction_reset_button;
 	 wxToggleButton* Transformation_editor_wx_direction_lock_data_toggle_button;
@@ -152,5 +159,6 @@ protected:
 	 wxTextCtrl* Transformation_editor_wx_direction_text_ctrl_4;
 	 wxSpinButton *Transformation_editor_wx_direction_spin_button_4;
 	 wxString transformation_editor_direction_text[2][3];
+	 Triple global_scale_factor;
 };
 #endif /* !defined (TRANSFORMATION_EDITOR_WX_HPP) */

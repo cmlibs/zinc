@@ -487,3 +487,29 @@ Formulae are taken from the Polhemus manual, page 156.
 	direction->data[2][2] = cos_elevation*cos_roll;
 	LEAVE;
 } /* euler_matrix */
+
+void matrix_scalefactor(Gmatrix *matrix, Triple scale_factor)
+/*******************************************************************************
+LAST MODIFIED : 10 March 2008
+
+DESCRIPTION :
+***Returns the equivalent scale factor of the matrix.
+==============================================================================*/
+{
+	 int i,j;	
+	 float sum;
+
+	ENTER(matrix_scalefactor);
+
+	for (i=0; i<3;i++)
+	{
+		 sum = 0.0;
+		 for (j=0; j<3;j++)
+		 {
+				sum += pow((float)matrix->data[i][j],2);
+		 }
+		 scale_factor[i] = (float)sqrt(sum);
+	}
+
+	LEAVE;
+}
