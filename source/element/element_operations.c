@@ -75,98 +75,98 @@ DESCRIPTION :
 static int FE_element_add_if_selection_ranges_condition(struct FE_element *element,
 	void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 15 May 2006
+LAST MODIFIED : 10 March 2008
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code, selected;
-	struct CM_element_type_Multi_range_data element_data;
+	struct CM_element_information identifier;
 	struct FE_element_fe_region_selection_ranges_condition_data *data;
 
-	ENTER(FE_element_fe_region_ranges_condition);
+	ENTER(FE_element_add_if_selection_ranges_condition);
 	if (element && 
 		(data = (struct FE_element_fe_region_selection_ranges_condition_data *)data_void))
 	{
-		return_code = 1;
-		selected = 1;
-		if (selected && data->selected_flag)
+		return_code = get_FE_element_identifier(element, &identifier);
+		if (identifier.type == data->cm_element_type)
 		{
-			selected = IS_OBJECT_IN_LIST(FE_element)(element, data->element_selection_list);
-		}
-		if (selected && data->element_ranges)
-		{
-			element_data.cm_element_type = data->cm_element_type;
-			element_data.multi_range = data->element_ranges;
-			selected = FE_element_of_CM_element_type_is_in_Multi_range(element,
-				(void *)&element_data);
-		}
-		if (selected && data->conditional_field)
-		{
-			selected = Computed_field_is_true_in_element(data->conditional_field,
-				element, data->conditional_field_time);
-		}
-		if (selected)
-		{
-			return_code = ADD_OBJECT_TO_LIST(FE_element)(element, data->element_list);
+			selected = 1;
+			if (selected && data->selected_flag)
+			{
+				selected = IS_OBJECT_IN_LIST(FE_element)(element, data->element_selection_list);
+			}
+			if (selected && data->element_ranges)
+			{
+				selected = Multi_range_is_value_in_range(data->element_ranges, identifier.number);
+			}
+			if (selected && data->conditional_field)
+			{
+				selected = Computed_field_is_true_in_element(data->conditional_field,
+					element, data->conditional_field_time);
+			}
+			if (selected)
+			{
+				return_code = ADD_OBJECT_TO_LIST(FE_element)(element, data->element_list);
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_set_FE_element_field_info.  Invalid argument(s)");
+			"FE_element_add_if_selection_ranges_condition.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_element_set_FE_element_field_info */
+} /* FE_element_add_if_selection_ranges_condition */
 
 static int FE_element_add_if_fe_region_ranges_condition(struct FE_element *element,
 	void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 15 May 2006
+LAST MODIFIED : 10 March 2008
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code, selected;
-	struct CM_element_type_Multi_range_data element_data;
+	struct CM_element_information identifier;
 	struct FE_element_fe_region_selection_ranges_condition_data *data;
 
-	ENTER(FE_element_fe_region_ranges_condition);
+	ENTER(FE_element_add_if_fe_region_ranges_condition);
 	if (element && 
 		(data = (struct FE_element_fe_region_selection_ranges_condition_data *)data_void))
 	{
-		return_code = 1;
-		selected = FE_region_contains_FE_element(data->fe_region, element);
-		if (selected && data->element_ranges)
+		return_code = get_FE_element_identifier(element, &identifier);
+		if (identifier.type == data->cm_element_type)
 		{
-			element_data.cm_element_type = data->cm_element_type;
-			element_data.multi_range = data->element_ranges;
-			selected = FE_element_of_CM_element_type_is_in_Multi_range(element,
-				(void *)&element_data);
-		}
-		if (selected && data->conditional_field)
-		{
-			selected = Computed_field_is_true_in_element(data->conditional_field,
-				element, data->conditional_field_time);
-		}
-		if (selected)
-		{
-			return_code = ADD_OBJECT_TO_LIST(FE_element)(element, data->element_list);
+			selected = FE_region_contains_FE_element(data->fe_region, element);
+			if (selected && data->element_ranges)
+			{
+				selected = Multi_range_is_value_in_range(data->element_ranges, identifier.number);
+			}
+			if (selected && data->conditional_field)
+			{
+				selected = Computed_field_is_true_in_element(data->conditional_field,
+						element, data->conditional_field_time);
+			}
+			if (selected)
+			{
+				return_code = ADD_OBJECT_TO_LIST(FE_element)(element, data->element_list);
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_set_FE_element_field_info.  Invalid argument(s)");
+			"FE_element_add_if_fe_region_ranges_condition.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_element_set_FE_element_field_info */
+} /* FE_element_add_if_fe_region_ranges_condition */
 
 struct LIST(FE_element) *
 	FE_element_list_from_fe_region_selection_ranges_condition(
@@ -301,97 +301,6 @@ Up to the calling function to destroy the returned element list.
 
 	return (data.element_list);
 } /* FE_element_list_from_fe_region_selection_ranges_condition */
-
-#if defined (OLD_CODE)
-struct LIST(FE_element) *
-	FE_element_list_from_fe_region_selection_ranges_condition(
-		struct FE_region *fe_region, enum CM_element_type cm_element_type,
-		struct FE_element_selection *element_selection, int selected_flag,
-		struct Multi_range *element_ranges,
-		struct Computed_field *conditional_field, FE_value time)
-/*******************************************************************************
-LAST MODIFIED : 3 March 2003
-
-DESCRIPTION :
-Creates and returns an element list that is the intersection of:
-- all the elements in <fe_region>;
-- all elements in the <element_selection> if <selected_flag> is set;
-- all elements in the given <element_ranges>, if any.
-- all elements for which the <conditional_field> evaluates as "true"
-  in its centre at the specified <time>
-Up to the calling function to destroy the returned element list.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field_conditional_data conditional_data;
-	struct CM_element_type_Multi_range_data element_type_ranges_data;
-	struct FE_element_list_CM_element_type_data element_list_type_data;
-	struct LIST(FE_element) *element_list;
-
-	ENTER(FE_element_list_from_fe_region_selection_ranges_condition);
-	element_list = (struct LIST(FE_element) *)NULL;
-	if (fe_region && ((!selected_flag) || element_selection))
-	{
-		if (element_list = CREATE(LIST(FE_element))())
-		{
-			/* start with list of the elements of cm_element_type from fe_region */
-			element_list_type_data.cm_element_type = cm_element_type;
-			element_list_type_data.element_list = element_list;
-			if (return_code = FE_region_for_each_FE_element(fe_region,
-				add_FE_element_of_CM_element_type_to_list,
-				(void *)&element_list_type_data))
-			{
-				if (selected_flag)
-				{
-					return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
-						FE_element_is_not_in_list,
-						(void *)FE_element_selection_get_element_list(element_selection),
-						element_list);
-				}
-				if (element_ranges &&
-					(0 < Multi_range_get_number_of_ranges(element_ranges)))
-				{
-					element_type_ranges_data.cm_element_type = cm_element_type;
-					element_type_ranges_data.multi_range = element_ranges;
-					return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
-						FE_element_of_CM_element_type_is_not_in_Multi_range,
-						(void *)&element_type_ranges_data, element_list);
-				}
-				if (conditional_field)
-				{
-					conditional_data.conditional_field = conditional_field;
-					conditional_data.time = time;
-					return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
-						FE_element_Computed_field_is_not_true_iterator, 
-						(void *)&conditional_data, element_list);
-				}
-			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_list_from_fe_region_selection_ranges_condition.  "
-					"Error building list");
-				DESTROY(LIST(FE_element))(&element_list);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_list_from_fe_region_selection_ranges_condition.  "
-				"Could not create list");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_list_from_fe_region_selection_ranges_condition.  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (element_list);
-} /* FE_element_list_from_fe_region_selection_ranges_condition */
-#endif /* defined (OLD_CODE) */
 
 struct FE_element_values_number
 /*******************************************************************************
