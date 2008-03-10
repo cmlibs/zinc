@@ -310,6 +310,9 @@ DESCRIPTION :
 	HBITMAP device_independent_bitmap;
 	HDC device_independent_bitmap_hdc;
 	void *device_independent_bitmap_pixels;
+	/* Hidden window used to get connection to independent driver OpenGL */
+	HWND hidden_accelerated_window;
+	Graphics_buffer *hidden_graphics_buffer;
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (CARBON_USER_INTERFACE)
 	CGrafPtr port;
@@ -456,6 +459,8 @@ contained in the this module only.
 		 buffer->device_independent_bitmap = (HBITMAP)NULL;
 		 buffer->device_independent_bitmap_hdc = (HDC)NULL;
 		 buffer->device_independent_bitmap_pixels = NULL;
+		 buffer->hidden_accelerated_window = (HWND)NULL;
+		 buffer->hidden_graphics_buffer = (Graphics_buffer *)NULL;
 #endif // defined (WIN32_USER_INTERFACE)
 
 #if defined (CARBON_USER_INTERFACE)
@@ -3945,55 +3950,57 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 
 #if defined (WGL_ARB_pixel_format) && (WGL_ARB_pbuffer)
 			{
-				/* Can reuse this hidden window, need to destroy it on closing.
-				 Must create and select the offscreen buffer before testing extensions 
+				/* Must create and select the offscreen buffer before testing extensions 
 				 otherwise default windows implementation will just respond unavailable. */
-				BOOL win32_return_code;
-				static char *class_name="Hidden window";
-				WNDCLASS class_information;
-				
-				/* check if the class is registered */
-				win32_return_code=GetClassInfo(User_interface_get_instance(
-															 buffer->package->user_interface),
-					class_name,&class_information);
-				
-				if (win32_return_code==FALSE)
+				if (!buffer->hidden_graphics_buffer)
 				{
-					/* register class */
-					class_information.cbClsExtra=0;
-					class_information.cbWndExtra=sizeof(struct Graphics_window *);
-					class_information.hbrBackground=(HBRUSH)(COLOR_WINDOW+1);
-					class_information.hCursor=LoadCursor(NULL,IDC_ARROW);
-					class_information.hIcon=LoadIcon(
-						User_interface_get_instance(buffer->package->user_interface),
-						"Command_window_icon");
-					class_information.hInstance=User_interface_get_instance(
-						buffer->package->user_interface);
-					class_information.lpfnWndProc=DefWindowProc;
-					class_information.lpszClassName=class_name;
-					class_information.style=CS_OWNDC;
-					class_information.lpszMenuName=NULL;
-					if (RegisterClass(&class_information))
+					BOOL win32_return_code;
+					static char *class_name="Hidden window";
+					WNDCLASS class_information;
+				
+					/* check if the class is registered */
+					win32_return_code=GetClassInfo(User_interface_get_instance(
+																 buffer->package->user_interface),
+						class_name,&class_information);
+				
+					if (win32_return_code==FALSE)
 					{
-						win32_return_code=TRUE;
+						/* register class */
+						class_information.cbClsExtra=0;
+						class_information.cbWndExtra=sizeof(struct Graphics_window *);
+						class_information.hbrBackground=(HBRUSH)(COLOR_WINDOW+1);
+						class_information.hCursor=LoadCursor(NULL,IDC_ARROW);
+						class_information.hIcon=LoadIcon(
+							User_interface_get_instance(buffer->package->user_interface),
+							"Command_window_icon");
+						class_information.hInstance=User_interface_get_instance(
+							buffer->package->user_interface);
+						class_information.lpfnWndProc=DefWindowProc;
+						class_information.lpszClassName=class_name;
+						class_information.style=CS_OWNDC;
+						class_information.lpszMenuName=NULL;
+						if (RegisterClass(&class_information))
+						{
+							win32_return_code=TRUE;
+						}
 					}
+
+					/* Need to get an accelerated rendering context before
+						we can try these functions!!! */
+					buffer->hidden_accelerated_window =CreateWindow(class_name, "Hidden",
+						WS_CAPTION | WS_POPUPWINDOW | WS_SIZEBOX,
+						0, 0, 100, 100,
+						NULL, NULL, User_interface_get_instance(buffer->package->user_interface), NULL);
+
+					buffer->hidden_graphics_buffer = create_Graphics_buffer_win32(
+						buffer->package,
+						buffer->hidden_accelerated_window, (HDC)NULL,
+						GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
+						buffer->minimum_colour_buffer_depth, buffer->minimum_depth_buffer_depth,
+						buffer->minimum_accumulation_buffer_depth);
 				}
 
-				/* Need to get an accelerated rendering context before
-					we can try these functions!!! */
-				HWND accelerated_window =CreateWindow(class_name, "Hidden",
-					WS_CAPTION | WS_POPUPWINDOW | WS_VISIBLE | WS_SIZEBOX,
-					0, 0, 100, 100,
-					NULL, NULL, User_interface_get_instance(buffer->package->user_interface), NULL);
-
-				Graphics_buffer *hidden_graphics_buffer = create_Graphics_buffer_win32(
-					buffer->package,
-					accelerated_window, (HDC)NULL,
-					GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
-					buffer->minimum_colour_buffer_depth, buffer->minimum_depth_buffer_depth,
-					buffer->minimum_accumulation_buffer_depth);
-
-				Graphics_buffer_make_current(hidden_graphics_buffer);
+				Graphics_buffer_make_current(buffer->hidden_graphics_buffer);
 
 #if defined (DEBUG)
 				printf("Made hidden window current\n");
@@ -4033,14 +4040,14 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 #endif /* defined (DEBUG) */
 
 					/* Only get the first valid format */
-					if(wglChoosePixelFormatARB(hidden_graphics_buffer->hDC, 
+					if(wglChoosePixelFormatARB(buffer->hidden_graphics_buffer->hDC, 
 							pbuffer_attributes, float_pbuffer_attributes, 1,
 							&pixel_format, &number_of_formats))
 					{
 						const int pbuffer_attrib[] = {0};
 
 						if (buffer->pbuffer=wglCreatePbufferARB(
-								 hidden_graphics_buffer->hDC, pixel_format, 
+								 buffer->hidden_graphics_buffer->hDC, pixel_format, 
 								 required_width, required_height, pbuffer_attrib))
 						{
 							if (buffer->hDC = wglGetPbufferDCARB(buffer->pbuffer))
@@ -7213,6 +7220,14 @@ x==============================================================================*
 					DeleteDC(buffer->device_independent_bitmap_hdc);
 				}
 			} break;
+		}
+		if (buffer->hidden_accelerated_window)
+		{
+			DestroyWindow(buffer->hidden_accelerated_window);
+		}
+		if (buffer->hidden_graphics_buffer)
+		{
+			DESTROY(Graphics_buffer)(&buffer->hidden_graphics_buffer);
 		}
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (CARBON_USER_INTERFACE)
