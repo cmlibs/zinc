@@ -75,6 +75,10 @@ enum Graphics_buffer_type
 	GRAPHICS_BUFFER_GTKGLAREA_TYPE,
 	GRAPHICS_BUFFER_GTKGLEXT_TYPE,
 	GRAPHICS_BUFFER_WIN32_TYPE,
+	GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE, /* Accelerated offscreen rendering,
+															  automatically copied on to screen. */
+	GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE, /* Non accelerated offscreen rendering,
+															 automatically copied on to screen. */
 	GRAPHICS_BUFFER_WX_TYPE,
 	GRAPHICS_BUFFER_WX_OFFSCREEN_TYPE,
 	GRAPHICS_BUFFER_CARBON_TYPE,

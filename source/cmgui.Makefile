@@ -1231,7 +1231,8 @@ SELECTION_SRCS = \
 THREE_D_DRAWING_SRCS =
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
 	THREE_D_DRAWING_SRCS += \
-		three_d_drawing/graphics_buffer.c
+		three_d_drawing/graphics_buffer.c \
+	   three_d_drawing/window_system_extensions.cpp
 endif
 THREE_D_DRAWING_INTERFACE_SRCS = \
 	three_d_drawing/movie_extensions.c \
@@ -1551,8 +1552,8 @@ ifeq ($(USER_INTERFACE),WIN32_USER_INTERFACE)
 endif # $(USER_INTERFACE) == WIN32_USER_INTERFACE
 ifeq ($(SYSNAME),win32)
 	ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
-   		RESOURCE_FILES += icon/wxmsw_icon.rc
-   		COMPILED_RESOURCE_FILES += $(RESOURCE_FILES:.rc=.res)
+      RESOURCE_FILES += icon/wxmsw_icon.rc
+      COMPILED_RESOURCE_FILES += $(RESOURCE_FILES:.rc=.res)
 	endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 endif # $(SYSNAME) == win32
 
@@ -1574,7 +1575,7 @@ ifeq ($(SYSNAME),win32)
    SO_LIB_SUFFIX = .dll
    SO_LIB_IMPORT_LIB_SUFFIX = .dll.a
 endif # $(SYSNAME) == win32 else
- 
+
 SO_LIB_GENERAL = cmgui_general
 SO_LIB_GENERAL_BASE = lib$(SO_LIB_GENERAL)
 SO_LIB_GENERAL_SONAME = lib$(SO_LIB_GENERAL)$(SO_LIB_SUFFIX)
