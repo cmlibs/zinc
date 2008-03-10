@@ -3164,9 +3164,7 @@ if there are no more expose events pending.
 			if (scene_viewer->idle_update_callback_id)
 			{
 				Scene_viewer_redraw_now(scene_viewer);
-				Event_dispatcher_remove_idle_callback(User_interface_get_event_dispatcher(
-					scene_viewer->user_interface), scene_viewer->idle_update_callback_id);
-				scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
+				/* Redraw_now clears the idle_update_callback */
 			}
 		}
 	}
