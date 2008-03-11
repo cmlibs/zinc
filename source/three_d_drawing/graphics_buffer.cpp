@@ -4133,6 +4133,10 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 			{
 				buffer->offscreen_width = required_width;
 				buffer->offscreen_height = required_height;
+
+ 				/* Tell the scene viewer that it needs to repaint. */
+				CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+					buffer->expose_callback_list, buffer, NULL);
 			}		
 		}
 		else
@@ -4569,18 +4573,20 @@ mode with zinc.  Requiring development.
 		  RECT * drc = (RECT *)second_message;
 
 #if defined (DEBUG)
-		  printf ("Graphics_buffer_handle_windows_event WMPAINT %ld %ld %ld %ld\n",
-			  drc->left, drc->right, drc->top, drc->bottom);
+		  printf ("Graphics_buffer_handle_windows_event WMPAINT\nhdc %p left %ld right %ld top %ld bottom %ld\n",
+			  hdc, drc->left, drc->right, drc->top, drc->bottom);
 #endif /* defined (DEBUG) */
 
 		  Graphics_buffer_win32_reallocate_offscreen_size(buffer, hdc);
 
-		  Graphics_buffer_expose_data expose_data;
-
 		  wglMakeCurrent( buffer->hDC, buffer->hRC );
 
+#if defined (OLD_CODE)
+		  Graphics_buffer_expose_data expose_data;
+		  /* The expose data tells the clients that we need to be up to date now */
 		  CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
-			  buffer->expose_callback_list, buffer, &expose_data);
+		  	  buffer->expose_callback_list, buffer, &expose_data);
+#endif // defined (OLD_CODE)
 
 		  {
  			  int x = drc->left;
@@ -4589,14 +4595,14 @@ mode with zinc.  Requiring development.
 			  x -= buffer->x;
 			  y -= buffer->y;
 
-			  if (x < buffer->x)
-			  {
-				  x = buffer->x;
-			  }
-			  if (y < buffer->y)
-			  {
-				  y = buffer->y;
-			  }
+ 			  if (x < buffer->x)
+ 			  {
+ 				  x = buffer->x;
+ 			  }
+ 			  if (y < buffer->y)
+ 			  {
+ 				  y = buffer->y;
+ 			  }
 
 			  int right = drc->right;
 			  int bottom = drc->bottom;
@@ -4604,13 +4610,13 @@ mode with zinc.  Requiring development.
 			  right -= buffer->x;
 			  bottom -= buffer->y;
 
-			  if (right > buffer->width)
+			  if (right > buffer->width + buffer->x)
 			  {
-				  right = buffer->width;
+				  right = buffer->width + buffer->x;
 			  }
-			  if (bottom > buffer->height)
+			  if (bottom > buffer->height + buffer->y)
 			  {
-				  bottom = buffer->height;
+				  bottom = buffer->height + buffer->y;
 			  }
 			  
 			  int width = right - x;
@@ -4630,18 +4636,25 @@ mode with zinc.  Requiring development.
 					  3 * buffer->offscreen_width * (buffer->offscreen_height - height));
 				  glPixelStorei(GL_PACK_ROW_LENGTH, 0);
 
+
 #if defined (DEBUG)
+				  //memset(buffer->device_independent_bitmap_pixels, 128,
+				  //	 3 * buffer->offscreen_width * buffer->offscreen_height);
+
 				  printf ("Copied pixels %d %d %d %d (rgb0 %d %d %d)\n",
 					  x - buffer->x, y - buffer->y,
 					  width, height,
-					  ((unsigned char *)buffer->device_independent_bitmap_pixels)[0],
-					  ((unsigned char *)buffer->device_independent_bitmap_pixels)[1],
-					  ((unsigned char *)buffer->device_independent_bitmap_pixels)[2]);
+					  ((unsigned char *)buffer->device_independent_bitmap_pixels)
+					  [3 * buffer->offscreen_width * (buffer->offscreen_height - height)],
+					  ((unsigned char *)buffer->device_independent_bitmap_pixels)
+					  [3 * buffer->offscreen_width * (buffer->offscreen_height - height) + 1],
+					  ((unsigned char *)buffer->device_independent_bitmap_pixels)
+					  [3 * buffer->offscreen_width * (buffer->offscreen_height - height) + 2]);
 				  printf ("Going to blt %ld %d %d %ld %d %d\n",
 					  drc->left, buffer->x, buffer->width, 
 					  drc->top, buffer->y, buffer->height );
 #endif /* defined (DEBUG) */
-
+				  
 				  BitBlt(hdc, x, y, width, height,
 					  buffer->device_independent_bitmap_hdc, 0, 0,
 					  SRCCOPY);
@@ -4654,7 +4667,7 @@ mode with zinc.  Requiring development.
 #if defined (DEBUG)
 			  else
 			  {
-				  printf ("Nothing to render %d %d\n", width, height);
+				  printf ("Nothing to render %d %d, %d %d %d %d\n", width, height, x, y, right, bottom);
 				  fflush(stdout);
 			  }
 #endif /* defined (DEBUG) */
