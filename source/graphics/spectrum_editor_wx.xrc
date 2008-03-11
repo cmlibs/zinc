@@ -16,16 +16,19 @@
  		     		<object class ="sizeritem">
                      <object class="wxButton" name="wxSpectrumCreateButton">
 				    	   <label>Create</label>
+								 <size>-1,26</size>
 				       </object>
 		           </object>
  		           <object class ="sizeritem">
                      <object class="wxButton" name="wxSpectrumDeleteButton">
                         <label>Delete</label>
+								 				<size>-1,26</size>
 				       </object>
 		           </object>
  		           <object class ="sizeritem">
                      <object class="wxButton" name="wxSpectrumRenameButton">
 				          <label>Rename</label>
+								 	<size>-1,26</size>
 				       </object>
 		           </object>
                </object>
@@ -52,6 +55,7 @@
       	           <object class ="sizeritem">
                      <object class="wxButton" name="wxSpectrumAutorangeButton">
 				          <label>Autorange</label>
+								  <size>-1,26</size>
 				       </object>
       	           </object>
       	           <object class ="sizeritem">
@@ -62,7 +66,7 @@
       	           </object>
       	           <object class ="sizeritem">
                      <object class="wxPanel" name="wxSpectrumSceneChooserPanel">
-                        <size>200,30</size>
+                        <size>200,26</size>
 				       </object>
       	           </object>
 
@@ -96,21 +100,25 @@
             <object class ="sizeritem">
                <object class="wxButton" name="wxSpectrumSettingsAdd">
                   <label>Add</label>
+								 <size>-1,26</size>
 				 </object>
       	     </object>
             <object class ="sizeritem">
                <object class="wxButton" name="wxSpectrumSettingsDel">
                   <label>Del</label>
+								 <size>-1,26</size>
 				 </object>
       	     </object>
             <object class ="sizeritem">
                <object class="wxButton" name="wxSpectrumSettingsUp">
                   <label>Up</label>
+								 <size>-1,26</size>
 				 </object>
       	     </object>
             <object class ="sizeritem">
                <object class="wxButton" name="wxSpectrumSettingsDn">
                   <label>Down</label>
+								 <size>-1,26</size>
 				 </object>
       	     </object>
 
@@ -452,21 +460,25 @@
  		     <object class ="sizeritem">
                <object class="wxButton" name="wxSpectrumOKButton">
 				    <label>OK</label>
+					  <size>-1,26</size>
 				 </object>
 		     </object>
  		     <object class ="sizeritem">
                <object class="wxButton" name="wxSpectrumApplyButton">
                   <label>Apply</label>
+								 <size>-1,26</size>
 		        </object>
 		     </object>
  		     <object class ="sizeritem">
                <object class="wxButton" name="wxSpectrumRevertButton">
 		           <label>Revert</label>
+								 <size>-1,26</size>
    				 </object>
 		     </object>
  		     <object class ="sizeritem">
                <object class="wxButton" name="wxSpectrumCancelButton">
 				    <label>Cancel</label>
+						<size>-1,26</size>
 				 </object>
 		     </object>
          </object>

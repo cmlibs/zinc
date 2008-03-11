@@ -93,7 +93,10 @@ transformation_editor;
 	 transformation_editor_direction_text[1][0] = wxT("   X");
 	 transformation_editor_direction_text[1][1] = wxT("   Y");
 	 transformation_editor_direction_text[1][2] = wxT("   Z");
-	 
+
+	 global_scale_factor[0] = 1.0;
+	 global_scale_factor[1] = 1.0;
+	 global_scale_factor[2] = 1.0;
 	 Transformation_editor_wx_position_staticbox = new wxStaticBox(transformation_editor_panel, -1, wxT("Position"));
 	 Transformation_editor_wx_direction_staticbox = new wxStaticBox(transformation_editor_panel, -1, wxT("Direction"));
 	 const wxString Transformation_editor_wx_global_choice_choices[] = {
@@ -112,9 +115,9 @@ transformation_editor;
 			 wxT("Cylindrical Polar"),
 			 wxT("Spherical Polar")
     };
-    Transformation_editor_wx_position_coord_system_choice = new wxChoice(transformation_editor_panel, wxID_ANY, wxPoint(-1,-1), wxSize(-1,25), 3, Transformation_editor_wx_position_coord_system_choice_choices, 0);
+    Transformation_editor_wx_position_coord_system_choice = new wxChoice(transformation_editor_panel, wxID_ANY, wxPoint(-1,-1), wxSize(-1,26), 3, Transformation_editor_wx_position_coord_system_choice_choices, 0);
     Transformation_editor_wx_position_label_2 = new wxStaticText(transformation_editor_panel, wxID_ANY, wxT("Rate_of_change:"), wxPoint(-1,-1), wxSize(-1,30));
-    Transformation_editor_wx_position_slider_1 = new wxSlider(transformation_editor_panel, wxID_ANY, 0, -10, 10,  wxPoint(-1,-1), wxSize(-1,30), wxSL_HORIZONTAL|wxSL_LABELS);
+    Transformation_editor_wx_position_slider_1 = new wxSlider(transformation_editor_panel, wxID_ANY, 0, -10, 10,  wxPoint(-1,-1), wxSize(-1,40), wxSL_HORIZONTAL|wxSL_LABELS);
     Transformation_editor_wx_position_label_3 = new wxStaticText(transformation_editor_panel, wxID_ANY, wxT("  X Axis"), wxPoint(-1,-1), wxSize(-1,20));
     Transformation_editor_wx_position_text_ctrl_1 = new wxTextCtrl(transformation_editor_panel, wxID_ANY, wxEmptyString, wxPoint(-1,-1), wxSize(-1,20), wxTE_PROCESS_ENTER);
 		Transformation_editor_wx_position_spin_button_1 = new wxSpinButton(transformation_editor_panel, wxID_ANY, wxPoint(-1,-1), wxSize(-1,20), wxSP_ARROW_KEYS);
@@ -682,6 +685,11 @@ transformation encoded in 4x4 <transformation_matrix>.
 			&position, &direction,&(transformation_editor_transformation_matrix));
 	 scale_factor_to_transformation_matrix(scale_factor,
 			&(transformation_editor_transformation_matrix));
+	 if (gtMatrix_is_identity(&(transformation_editor_transformation_matrix)))
+	 {
+			transformation_editor_wx_set_transformation(&(transformation_editor_transformation_matrix));
+			
+	 }
 	 if (temp_state)
 			destroy_Parse_state(&temp_state);
 	 ApplyTransformation();
@@ -821,23 +829,6 @@ Must only call this function from OnTransformationEditor_spin_button_up function
 				 }
 			}
 			matrix_euler(&gmatrix, &global_direction);
-// 			if (temp_object == Transformation_editor_wx_direction_spin_button_1)
-// 			{
-// 				 global_quat[1]+= increment;
-// 			}
-// 			else if (temp_object == Transformation_editor_wx_direction_spin_button_2)
-// 			{
-// 				 global_quat[2]+= increment;
-// 			}
-// 			else if (temp_object == Transformation_editor_wx_direction_spin_button_3)
-// 			{
-// 				 global_quat[3]+= increment;
-// 			}
-// 			else if (temp_object == Transformation_editor_wx_direction_spin_button_4)
-// 			{
-// 				 global_quat[0] += increment;
-// 			}
-// 			transformation_editor_quaternion_to_gtmatrix();
 	 }
 
 	 position_direction_to_transformation_matrix(

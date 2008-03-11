@@ -20,18 +20,21 @@
                         <flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
                      	<object class="wxButton" name="MaterialCreateButton">
 				    	   		<label>Create</label>
+ 				    	   		<size>-1,26</size>
 				       	</object>
 		           	</object>
  		           	<object class ="sizeritem">
                         <option>1</option>
                      	<object class="wxButton" name="MaterialDeleteButton">
                         		<label>Delete</label>
+ 				    	   		<size>-1,26</size>
 				       	</object>
 		           	</object>
  		           	<object class ="sizeritem">
                         <option>1</option>
                      	<object class="wxButton" name="MaterialRenameButton">
 				          		<label>Rename</label>
+ 				    	   		<size>-1,26</size>
 				       	</object>
 		           	</object>
                	</object>	
@@ -292,24 +295,28 @@
               	<option>1</option>
               	<object class="wxButton" name="wxMaterialOKButton">
 				    	<label>OK</label>
+ 				    	<size>-1,26</size>
 				 	</object>
 		        </object>
  		        <object class ="sizeritem">
                   <option>1</option>
                   <object class="wxButton" name="wxMaterialApplyButton">
                   	<label>Apply</label>
+ 				    	   		<size>-1,26</size>
 				    </object>
 		        </object>
  		        <object class ="sizeritem">
                	<option>1</option>
                 	<object class="wxButton" name="wxMaterialRevertButton">
 				    	<label>Revert</label>
+ 				    	   		<size>-1,26</size>
 				  	</object>
 		        </object>
  		        <object class ="sizeritem">
                	<option>1</option>
                 	<object class="wxButton" name="wxMaterialCancelButton">
 				    	<label>Cancel</label>
+ 				    	   		<size>-1,26</size>
 				  	</object>
 		        </object>
            </object>	

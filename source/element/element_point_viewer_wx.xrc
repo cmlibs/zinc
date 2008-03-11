@@ -29,7 +29,7 @@
 		  			</object>				
     	  			<object class ="sizeritem">
 	 					<object class = "wxPanel" name="ElementTextPanel">
-							<size>100,30</size>
+							<size>100,26</size>
 						</object>
 		  			</object>
 				</object>
@@ -61,7 +61,7 @@
 		  			</object>	
     	  			<object class ="sizeritem">
 	 					<object class = "wxPanel" name="XiDiscretizationModePanel">
-							<size>200,30</size>
+							<size>200,26</size>
 						</object>
 		  		  </object>
 		  	  </object>
@@ -78,7 +78,7 @@
 				   <object class="sizeritem">
 					   <object class	="wxTextCtrl" name="DiscretizationTextCtrl">
 						   <style>wxTE_PROCESS_ENTER</style>
-		  				   <size>200,-1</size>
+		  				   <size>200,26</size>
 	 				   </object>
 				  </object>
 			  </object>
@@ -95,7 +95,7 @@
 				   <object class="sizeritem">
 					   <object class	="wxTextCtrl" name="PointTextCtrl">
 						   <style>wxTE_PROCESS_ENTER|wxTE_READONLY</style>
-		  				   <size>200,-1</size>
+		  				   <size>200,26</size>
 	 				   </object>
 				  </object>
 			  </object>
@@ -113,7 +113,7 @@
 					   <object class	="wxTextCtrl" name="XiTextCtrl">
 						   <style>wxTE_PROCESS_ENTER</style>
 					   	   <value>NULL</value>
-		  				   <size>200,-1</size>
+		  				   <size>200,26</size>
 	 				   </object>
 				  </object>
 			  </object>
@@ -135,7 +135,7 @@
 		  			</object>	
     	  			<object class ="sizeritem">
 	 					<object class = "wxPanel" name="GridFieldPanel">
-							<size>200,30</size>
+							<size>200,26</size>
 						</object>
 		  		  </object>
 		  	  </object>
@@ -152,7 +152,7 @@
     	  			<object class ="sizeritem">
 	 					<object class = "wxTextCtrl" name="GridValueTextCtrl">
 							<style>wxTE_PROCESS_ENTER</style>
-							<size>200,-1</size>
+							<size>200,26</size>
 						</object>
 		  		  </object>
 		  	  </object>
@@ -178,21 +178,25 @@
 				  <object class ="sizeritem">
 					  <object class = "wxButton"  name = "ApplyButton">
 					     <label>Apply</label>
+							 <size>-1,26</size>
 					  </object>
 				  </object>
 				  <object class ="sizeritem">
 					  <object class = "wxButton"  name = "ApplyAllButton">
 					     <label>Apply All</label>
+							 <size>-1,26</size>
 					  </object>
 				  </object>
 				  <object class ="sizeritem">
 					  <object class = "wxButton"  name = "RevertButton">
 					     <label>Revert</label>
+							 <size>-1,26</size>
 					  </object>
 				  </object>
 				  <object class ="sizeritem">
 					  <object class = "wxButton"  name = "CancelButton">
 					     <label>Cancel</label>
+							 <size>-1,26</size>
 					  </object>
 				  </object>
 			  </object>

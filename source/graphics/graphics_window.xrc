@@ -30,7 +30,7 @@
 										</object>
 										<object class="sizeritem">
 											<object class	="wxPanel" name="GraphicsWindowSceneChooserPanel">
-	 											<size>150,30</size>
+	 											<size>150,26</size>
 											</object>
 										</object>
 									</object>
@@ -45,18 +45,21 @@
  	        								<flag>wxALIGN_CENTER</flag>
                 							<object class="wxButton" name="Button1">
 	          									<label>View All</label>
+	 														<size>-1,26</size>
 	        								</object>
               						</object>             
               						<object class="sizeritem">
 	        								<flag>wxEXPAND</flag>
 	 	        							<flag>wxALIGN_CENTER</flag>
     	        							<object class="wxButton" name="Button2">
-	          									<label>Save as...</label> 	
+	          									<label>Save as...</label> 
+		 													<size>-1,26</size>
   	        								</object>
               						</object>
               						<object class="sizeritem">
     	        							<object class="wxCheckBox" name="PerspectiveButton">
-	          									<label>Perspective</label> 			 
+	          									<label>Perspective</label> 	
+		 	 												<size>-1,26</size>
   	        								</object>
               						</object>
            						</object>
@@ -89,8 +92,9 @@
 															<option>1</option>
 	 	        											<flag>wxALIGN_CENTER</flag>
 	       												<object class="wxChoice" name="View">
-		 														<selection>7</selection>
-                 												<content>
+	 																<size>-1,26</size>
+		 															<selection>7</selection>
+                 									<content>
                   												<item>2d</item>
                    												<item>free_ortho</item>
                    												<item>front_back</item>
@@ -120,6 +124,7 @@
 								  							<flag>wxEXPAND</flag>
 															<option>1</option>
           													<object class="wxChoice" name="UpViewOptions">
+	 																<size>-1,26</size>
 	    														<selection>2</selection>
                  												<content>
                    												<item>x</item>
@@ -149,6 +154,7 @@
 															<option>1</option>
 	 	        											<flag>wxALIGN_CENTER</flag>
 	          												<object class="wxButton" name="FrontViewOptions">
+	 																		<size>-1,26</size>
 		    													<label>-y</label>
 		  													</object>
 														</object>
@@ -163,6 +169,7 @@
 	 	    				    	<flag>wxEXPAND|wxALIGN_CENTRE_VERTICAL</flag>
     	        					<object class="wxToggleButton" name="TimeEditorToggleButton">
 	          							<label>Time Editor</label>
+	 												<size>-1,26</size>
   	     					   		</object>
               				</object>
 

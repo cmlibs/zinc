@@ -128,21 +128,21 @@ Colour_editor::Colour_editor(wxPanel* parent, const char *panel_name, enum Colou
 	 colour_text_choice[2][2] = wxT("Yellow");
 
     colour_mode_choice = new wxChoice(colour_editor_panel, 
-			 -1, wxDefaultPosition, wxDefaultSize, 3, colour_mode_choices, 0);
+			 -1, wxDefaultPosition, wxSize(-1,26), 3, colour_mode_choices, 0);
     colour_mode_choice->SetSelection(0);
     colour_palette_panel = new wxPanel(colour_editor_panel, -1);
     colour_editor_colour_text_1 = new wxStaticText(colour_editor_panel, -1, colour_text_choice[0][0],wxPoint(-1,-1),wxSize(-1,20));
     colour_editor_text_ctrl_1 = new wxTextCtrl(colour_editor_panel, -1, wxT("0.0000"),wxPoint(-1,-1),wxSize(-1,20), wxTE_PROCESS_ENTER);
     colour_editor_slider_1 = new wxSlider(colour_editor_panel, -1, 0, 0, 100, wxDefaultPosition, 
-			 wxDefaultSize, wxSL_HORIZONTAL|wxSL_AUTOTICKS);
+			 wxSize(-1,20), wxSL_HORIZONTAL);
     colour_editor_colour_text_2 = new wxStaticText(colour_editor_panel, -1, colour_text_choice[0][1],wxPoint(-1,-1),wxSize(-1,20));
     colour_editor_text_ctrl_2 = new wxTextCtrl(colour_editor_panel, -1, wxT("0.0000"),wxPoint(-1,-1),wxSize(-1,20), wxTE_PROCESS_ENTER);
     colour_editor_slider_2 = new wxSlider(colour_editor_panel, -1, 0, 0, 100, wxDefaultPosition, 
-			 wxDefaultSize, wxSL_HORIZONTAL|wxSL_AUTOTICKS);
+			 wxSize(-1,20), wxSL_HORIZONTAL);
     colour_editor_colour_text_3 = new wxStaticText(colour_editor_panel, -1, colour_text_choice[0][2],wxPoint(-1,-1),wxSize(-1,20));
     colour_editor_text_ctrl_3 = new wxTextCtrl(colour_editor_panel, -1, wxT("0.0000"),wxPoint(-1,-1),wxSize(-1,20), wxTE_PROCESS_ENTER);
     colour_editor_slider_3 = new wxSlider(colour_editor_panel, -1, 0, 0, 100, wxDefaultPosition, 
-			 wxDefaultSize, wxSL_HORIZONTAL|wxSL_AUTOTICKS);
+			 wxSize(-1,20), wxSL_HORIZONTAL);
     colour_editor_staticbox = new wxStaticBox(colour_editor_panel, -1, wxT(""));
 	 current.red = 0;
 	 current.green = 0;

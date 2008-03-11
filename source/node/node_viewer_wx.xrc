@@ -8,7 +8,7 @@
     	  <object class ="sizeritem">
 				<flag>wxEXPAND</flag>	
 	 			<object class = "wxPanel" name="NodeTextPanel">
-					<size>-1,30</size>
+					<size>-1,26</size>
 				</object>
 		  </object>
 		  <object class ="sizeritem">
@@ -26,21 +26,25 @@
 				  <object class ="sizeritem">
 					  <object class = "wxButton"  name = "OKButton">
 					     <label>OK</label>
+							 <size>-1,26</size>
 					  </object>
 				  </object>
 				  <object class ="sizeritem">
 					  <object class = "wxButton"  name = "ApplyButton">
 					     <label>Apply</label>
+							 <size>-1,26</size>
 					  </object>
 				  </object>
 				  <object class ="sizeritem">
 					  <object class = "wxButton"  name = "RevertButton">
 					     <label>Revert</label>
+							 <size>-1,26</size>
 					  </object>
 				  </object>
 				  <object class ="sizeritem">
 					  <object class = "wxButton"  name = "CancelButton">
 					     <label>Cancel</label>
+							 <size>-1,26</size>
 					  </object>
 				  </object>
 			  </object>

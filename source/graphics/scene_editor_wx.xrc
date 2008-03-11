@@ -28,16 +28,14 @@
 					<object class ="sizeritem">
 						<flag>wxALIGN_CENTER_VERTICAL|wxALIGN_LEFT</flag>
 						<object class = "wxStaticText">
-						<option>0</option>
+							<option>0</option>
 							<label>   Current Object:</label>
-							<size>-1,26</size>
 						</object>
 					</object>
 					<object class ="sizeritem">
 						<flag>wxALIGN_CENTRE</flag>
 						<option>0</option>
 						<object class = "wxStaticText" name="CurrentSceneObjectText">
-							<size>-1,26</size>
 						</object>
 					</object>
 					<object class ="sizeritem">
@@ -71,9 +69,9 @@
 							<orient>wxVERTICAL</orient>
 				  			<object class="sizeritem">
 	 				  			<flag>wxEXPAND</flag>
-								<option>1</option>
-								<object class="wxStaticBoxSizer">
-									<style>wxSUNKEN_BORDER</style>
+									<option>1</option>
+									<object class="wxStaticBoxSizer">
+										<style>wxSUNKEN_BORDER</style>
 							   		<object class="sizeritem">
  				  			    	<flag>wxEXPAND</flag>
 						  			  <option>1</option>
@@ -142,6 +140,7 @@
 			 	 						<orientation>horizontal</orientation>
 										<object class ="wxScrolledWindow" name="LowestPanel">
 											<flag>wxEXPAND</flag>
+											<option>0</option>
 				   						<object class = "wxBoxSizer">	
 												<orient>wxVERTICAL</orient>
 												<object class="sizeritem">
@@ -948,7 +947,7 @@
 						<flag>wxEXPAND|wxALIGN_CENTRE</flag>					
 						<option>1</option>
 						<object class = "wxPanel" name="DefaultCoordinateFieldChooser">
-							<size>200,30</size>
+							<size>200,26</size>
 						</object>
 					</object>	
 				</object>													
@@ -966,6 +965,7 @@
 					  <flag>wxALIGN_CENTRE</flag>
 		 			  <object class = "wxTextCtrl" name="ElementDiscretisationPanel">
           		<style>wxTE_PROCESS_ENTER</style>
+							<size>-1,26</size>
 						  <option>1</option>
 					  </object>
 				  </object>	
@@ -986,7 +986,7 @@
 						<flag>wxALIGN_CENTER</flag>
 						<object class = "wxTextCtrl" name="CircleDiscretisationPanel">
           					<style>wxTE_PROCESS_ENTER</style>
-							<size>200,30</size>
+							<size>200,26</size>
 							<option>1</option>
 						</object>
 					</object>
@@ -1003,13 +1003,14 @@
 						<option>0</option>
 						<object class = "wxCheckBox" name="NativeDiscretisationFieldCheckBox">
    						<label>Native discretisation field:</label>
+							<size>-1,26</size>
 						</object>	
 					</object>	
 					<object class="sizeritem">
 						<flag>wxEXPAND|wxALIGN_CENTER</flag>
 	          <option>1</option>
 						<object class = "wxPanel" name="NativeDiscretisationFieldChooser">
-							<size>200,30</size>
+							<size>200,26</size>
 							<option>1</option>
 						</object>
 					</object>	
