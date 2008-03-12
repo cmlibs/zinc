@@ -687,8 +687,10 @@ transformation encoded in 4x4 <transformation_matrix>.
 			&(transformation_editor_transformation_matrix));
 	 if (gtMatrix_is_identity(&(transformation_editor_transformation_matrix)))
 	 {
+			global_scale_factor[0] = scale_factor[0];
+			global_scale_factor[1] = scale_factor[1];
+			global_scale_factor[2] = scale_factor[2];
 			transformation_editor_wx_set_transformation(&(transformation_editor_transformation_matrix));
-			
 	 }
 	 if (temp_state)
 			destroy_Parse_state(&temp_state);
