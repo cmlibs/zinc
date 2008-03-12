@@ -9151,7 +9151,7 @@ Executes a GFX DEFINE FACES command.
 static int gfx_define_font(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 11 April 2007
+LAST MODIFIED : 12 March 2008
 
 DESCRIPTION :
 Executes a GFX DEFINE FONT command.
@@ -9188,7 +9188,19 @@ Executes a GFX DEFINE FONT command.
 			else
 			{
 				display_message(INFORMATION_MESSAGE,
-					" FONT_NAME FONT_STRING");
+					" FONT_NAME FONT_STRING\n");
+#if defined (WX_USER_INTERFACE)
+				display_message(INFORMATION_MESSAGE,
+					"To setup a new font in cmgui-wx, user is required to enter "
+					"[FONT STRING] in the following format (including the \"): \n"
+					"\"[font size] [font family] [font style] [font weight]\" \n"
+					"available font families are: default, decorative, roman, script,"
+					"swiss, modern and teletype.\n"
+					"available font style are: normal, slant and italic. \n"
+					 "available font weight are: normal, light and bold. \n"
+					"example: gfx define font new_font \"12 roman italic bold\" \n"
+					"Note that user must follow the order of descrption otherwise it will not work");
+#endif /*defined (WX_USER_INTERFACE)*/
 				return_code = 0;
 			}
 		}

@@ -4382,7 +4382,8 @@ settings describe EXACTLY the same geometry.
 					second_settings->orientation_scale_field)&&
 				(settings->variable_scale_field==
 					second_settings->variable_scale_field)&&
-				(settings->label_field==second_settings->label_field);
+				(settings->label_field==second_settings->label_field)&&
+				 (settings->font==second_settings->font);
 		}
 		/* for element_points and iso_surfaces */
 		if (return_code&&

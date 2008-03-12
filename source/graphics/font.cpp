@@ -75,6 +75,7 @@ extern "C" {
 #include <wx/bitmap.h>
 #include <wx/image.h>
 #include <wx/dcmemory.h>
+#include <wx/font.h>
 #endif /* defined (WX_USER_INTERFACE) */
 /*
 Module types
@@ -121,7 +122,11 @@ DESCRIPTION :
 
 	int offset_x, offset_y;
 
-	int access_count;
+	 int access_count;
+
+#if defined (WX_USER_INTERFACE)
+	 wxFont *font_settings;
+#endif /* defined (WX_USER_INTERFACE) */
 };
 
 FULL_DECLARE_LIST_TYPE(Graphics_font);
@@ -488,6 +493,67 @@ DESCRIPTION :
 
 		font->access_count = 0;
 
+#if defined (WX_USER_INTERFACE)
+		font->font_settings = NULL;
+		struct Parse_state *state;
+		char *current_token;
+		if (strcmp(font->font_string,"default"))
+		{
+			 if (state=create_Parse_state(font->font_string))
+			 {
+					int size = 8;
+					
+					enum wxFontFamily font_family = wxFONTFAMILY_DEFAULT;
+					enum wxFontWeight font_weight = wxFONTWEIGHT_NORMAL;
+					enum wxFontStyle font_style = wxFONTSTYLE_NORMAL;
+					if (current_token = state->current_token)
+					{
+						 sscanf(current_token,"%u",&size);
+						 if (shift_Parse_state(state,1)&&
+						 (current_token=state->current_token))
+						 {
+								if (!strcmp(current_token, "roman"))
+									 font_family=wxFONTFAMILY_ROMAN;
+								else if (!strcmp(current_token, "decorative"))
+									 font_family=wxFONTFAMILY_DECORATIVE;
+								else if (!strcmp(current_token, "script"))
+									 font_family=wxFONTFAMILY_SCRIPT;								
+								else if (!strcmp(current_token, "swiss"))
+									 font_family=wxFONTFAMILY_SWISS;
+								else if (!strcmp(current_token, "modern"))
+									 font_family=wxFONTFAMILY_MODERN;
+								else if (!strcmp(current_token, "teletype"))
+									 font_family=wxFONTFAMILY_TELETYPE;
+								if (shift_Parse_state(state,1)&&
+									 (current_token=state->current_token))
+								{
+									 if (!strcmp(current_token, "italic"))
+											font_style = wxFONTSTYLE_ITALIC;
+									 else if (!strcmp(current_token, "slant"))
+											font_style = wxFONTSTYLE_SLANT;
+									 if (shift_Parse_state(state,1)&&
+											(current_token=state->current_token))
+									 {
+											if (!strcmp(current_token, "light"))
+												 font_weight=wxFONTWEIGHT_LIGHT;
+											else if (!strcmp(current_token, "bold"))
+												 font_weight=wxFONTWEIGHT_BOLD;
+									 }
+								}
+						 }
+					}
+					font->font_settings = new wxFont(size, font_family, 
+						 font_style, font_weight);
+					destroy_Parse_state(&state);
+			 }
+			 else
+			 {
+					display_message(ERROR_MESSAGE,"CREATE(Graphics_font). Cannot parse the statement. "
+						 "Default font settings will be used instead. \n"
+						 "Use the command gfx define font ? for more information.\n");
+			 }
+		}
+#endif /* (WX_USER_INTERFACE) */
 	}
 	else
 	{
@@ -544,7 +610,7 @@ DESCRIPTION :
 int Graphics_font_compile(struct Graphics_font *font,
 	struct Graphics_buffer *buffer)
 /*******************************************************************************
-LAST MODIFIED : 17 November 2005
+LAST MODIFIED : 12 March 2008
 
 DESCRIPTION :
 Compiles the specified <font> so it can be used by the graphics.  The 
@@ -792,7 +858,14 @@ Compiles the specified <font> so it can be used by the graphics.  The
 							dc.SetBrush(*wxWHITE_BRUSH);
 							dc.SetPen(*wxWHITE_PEN);
 						}
-
+						if (!strcmp(font->font_string,"default"))
+						{
+							 dc.SetFont(*wxNORMAL_FONT);
+						}
+						else if (font->font_settings)
+						{
+							 dc.SetFont(*(font->font_settings)); 
+						}
 						dc.DrawText(wxstring, 0, 0);
 
 						wxImage image = bitmap->ConvertToImage();
