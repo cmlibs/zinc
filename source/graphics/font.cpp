@@ -397,6 +397,11 @@ Defines an <alias_name> in the <font_package> which refers to the font
 			{
 				return_code = MANAGER_MODIFY_NOT_IDENTIFIER(Graphics_font,name)(existing_font,
 					font, font_package->font_manager);
+#if defined (WX_USER_INTERFACE)
+				/* MANAGER_MODIFY_NOT_IDENTIFIER does not copy the font settings in cmgui-wx.
+					 therefore I will copy it manually instead */
+				*(existing_font->font_settings) = *(font->font_settings);
+#endif /* (WX_USER_INTERFACE) */
 				DESTROY(Graphics_font)(&font);
 			}
 			else
@@ -591,6 +596,10 @@ DESCRIPTION :
 			glDeleteLists(font->display_list_offset, font->number_of_bitmaps);
 		}
 
+#if defined (WX_USER_INTERFACE)
+		if (font->font_settings)
+			 delete font->font_settings;
+#endif /* defined (WX_USER_INTERFACE) */
 		DEALLOCATE(*font_address);
 		*font_address = (struct Graphics_font *)NULL;
 

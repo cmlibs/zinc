@@ -492,9 +492,13 @@ transformation encoded in 4x4 <transformation_matrix>.
 			if (position_direction_to_transformation_matrix(
 						 &global_position, &global_direction, &resolved_transformation_matrix) &&
 				 gtMatrix_match_with_tolerance(transformation_matrix,
-						&resolved_transformation_matrix, /*tolerance*/1.0E-6))
+						&resolved_transformation_matrix, /*tolerance*/1.0E-6) && 
+				 gtMatrix_is_identity(&(resolved_transformation_matrix)))
 			{
 				 Transformation_editor_wx_position_text_ctrl_4->SetValue(wxT("1*1*1"));
+				 global_scale_factor[0] = 1;
+				 global_scale_factor[1] = 1;
+				 global_scale_factor[2] = 1;
 			}
 			else
 			{
@@ -687,9 +691,9 @@ transformation encoded in 4x4 <transformation_matrix>.
 			&(transformation_editor_transformation_matrix));
 	 if (gtMatrix_is_identity(&(transformation_editor_transformation_matrix)))
 	 {
-			global_scale_factor[0] = scale_factor[0];
-			global_scale_factor[1] = scale_factor[1];
-			global_scale_factor[2] = scale_factor[2];
+			global_scale_factor[0] = 1;
+			global_scale_factor[1] = 1;
+			global_scale_factor[2] = 1;
 			transformation_editor_wx_set_transformation(&(transformation_editor_transformation_matrix));
 	 }
 	 if (temp_state)

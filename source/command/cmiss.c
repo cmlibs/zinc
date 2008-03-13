@@ -9199,7 +9199,7 @@ Executes a GFX DEFINE FONT command.
 					"available font style are: normal, slant and italic. \n"
 					 "available font weight are: normal, light and bold. \n"
 					"example: gfx define font new_font \"12 roman italic bold\" \n"
-					"Note that user must follow the order of descrption otherwise it will not work");
+					"Note that user must follow the order as described otherwise it will not work");
 #endif /*defined (WX_USER_INTERFACE)*/
 				return_code = 0;
 			}

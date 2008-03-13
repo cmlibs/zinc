@@ -6319,6 +6319,7 @@ separated by 2 pixel borders within the viewing area.
 			 graphics_grid_panel->SetMinSize(wxSize(10,10));
 			 window->GraphicsWindowTitle->SetSize(window->GraphicsWindowTitle->GetSize()+wxSize(0,1));
 			 window->GraphicsWindowTitle->SetSize(window->GraphicsWindowTitle->GetSize()-wxSize(0,1));
+			 window->GraphicsWindowTitle->SetMinSize(wxSize(20,20));
 			 window->GraphicsWindowTitle->Layout();
 		}
 #endif /* switch (USER_INTERFACE) */
