@@ -655,7 +655,7 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
       endif # $(STATIC_LINK) != true
    else # $(OPERATING_SYSTEM) == linux
       ifeq ($(OPERATING_SYSTEM),win32)
-         USER_INTERFACE_LIB += -lcomctl32 -lctl3d32 -lwxexpat-2.8-i386-mingw32msvc
+         USER_INTERFACE_LIB += -lcomctl32 -lctl3d32 -L$(shell $(WX_DIR)wx-config --prefix)/lib -lwxexpat-2.8-i386-mingw32msvc
       else # $(OPERATING_SYSTEM) == win32
          ifeq ($(OPERATING_SYSTEM),darwin)
             USER_INTERFACE_LIB += -L$(shell $(WX_DIR)wx-config --prefix)/lib -framework QuickTime -framework IOKit -framework Carbon -framework Cocoa -framework System -framework WebKit -lwxexpat-2.8
@@ -726,7 +726,7 @@ ifeq ($(SYSNAME),AIX)
    LIB = -lm -ldl -lSM -lICE -lpthread -lcrypt -lbsd -lld -lC128
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
-   LIB = -lws2_32 -lgdi32 -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32 -lstdc++
+   LIB = -lws2_32 -lgdi32 -lmsimg32 -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32 -lstdc++
 	ifeq ($(USE_COMPUTED_VARIABLES),true)
 		LIB += -lg2c
 	endif # USE_COMPTED_VARAIABLES == true

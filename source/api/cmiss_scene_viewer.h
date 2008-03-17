@@ -68,7 +68,7 @@ struct Cmiss_scene_viewer_package;
 
 enum Cmiss_scene_viewer_buffering_mode
 /*******************************************************************************
-LAST MODIFIED : 16 September 2002
+LAST MODIFIED : 13 March 2008
 
 DESCRIPTION :
 Describes the buffering mode of the scene viewer.  A DOUBLE_BUFFER allows the
@@ -77,11 +77,21 @@ apparent flicker.  A SINGLE_BUFFER may allow you a greater colour depth or
 other features unavailable on a single buffer scene_viewer.  Secifying
 ANY_BUFFER_MODE will mean that with SINGLE_BUFFER or DOUBLE_BUFFER mode may
 be selected depending on the other requirements of the scene_viewer.
+The special modes RENDER_OFFSCREEN_AND_COPY and RENDER_OFFSCREEN_AND_BLEND
+are used when an OpenGL context cannot be activated directly on the supplied
+window, such as when the graphics are to be composited by an external program.
+These are currently only implemeneted for winapi.
+The graphics will be drawn offscreen and only rendered on screen when requested,
+such as with the Cmiss_scene_viewer_handle_windows_event.  The COPY version will
+overwrite any existing pixels when drawing and the BLEND version will use the 
+alpha channel of the rendered scene to blend itself with the existing pixels.
 ==============================================================================*/
 {
 	CMISS_SCENE_VIEWER_BUFFERING_ANY_MODE,
 	CMISS_SCENE_VIEWER_BUFFERING_SINGLE,
-	CMISS_SCENE_VIEWER_BUFFERING_DOUBLE
+	CMISS_SCENE_VIEWER_BUFFERING_DOUBLE,
+	CMISS_SCENE_VIEWER_BUFFERING_RENDER_OFFSCREEN_AND_COPY,
+	CMISS_SCENE_VIEWER_BUFFERING_RENDER_OFFSCREEN_AND_BLEND
 };
 
 enum Cmiss_scene_viewer_interact_mode

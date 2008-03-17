@@ -70,6 +70,13 @@ extern "C" {
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
+#if defined (__CYGWIN__) || defined (__MINGW32__)
+/* cygwin/mingw win32 header definitions, so we can tell what version
+   we have and to get WINVER defines */
+#include <w32api.h>
+/* Minimum supported version to allow use of AlphaBlend function */
+#define WINVER Windows98
+#endif /* defined (__CYGWIN__) || defined (__MINGW32__) */
 #include <GL/gl.h>
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -313,6 +320,8 @@ DESCRIPTION :
 	/* Hidden window used to get connection to independent driver OpenGL */
 	HWND hidden_accelerated_window;
 	Graphics_buffer *hidden_graphics_buffer;
+	/* So we know how to composite we need to keep the buffering mode */
+	enum Graphics_buffer_buffering_mode buffering_mode;
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (CARBON_USER_INTERFACE)
 	CGrafPtr port;
@@ -453,6 +462,7 @@ contained in the this module only.
 #ifdef WGL_ARB_pbuffer
 		 buffer->pbuffer = (HPBUFFERARB)NULL;
 #endif /* defined (WGL_ARB_pbuffer) */
+	    buffer->buffering_mode = GRAPHICS_BUFFER_ANY_BUFFERING_MODE;
 		 buffer->minimum_colour_buffer_depth = 0;
 		 buffer->minimum_depth_buffer_depth = 0;
 		 buffer->minimum_accumulation_buffer_depth = 0;
@@ -4073,7 +4083,8 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 				}
 				else
 				{
-					return_code = 0;
+					/* Try non accelerated bitmap OpenGL instead */
+					return_code = 1;
 				}
 			}
 #endif /* defined (WGL_ARB_pixel_format) && (WGL_ARB_pbuffer) */
@@ -4095,8 +4106,29 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 				bmi.bmiHeader.biWidth = required_width;
 				bmi.bmiHeader.biHeight= required_height;
 				bmi.bmiHeader.biPlanes = 1;
-				bmi.bmiHeader.biBitCount = 24;
-				//bmi.bmiHeader.biBitCount = GetDeviceCaps(onscreen_hdc, BITSPIXEL);
+				if (GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND == buffer->buffering_mode)
+				{
+					bmi.bmiHeader.biBitCount = 32;
+				}
+				else
+				{
+					bmi.bmiHeader.biBitCount = 24;
+				}
+				if (GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE == buffer->type)
+				{
+					/* If the onscreen size is 32 then the setpixelformat seems to
+						want this even if rendering without alpha */
+					int onscreen_bits = GetDeviceCaps(onscreen_hdc, BITSPIXEL);
+					if (bmi.bmiHeader.biBitCount < onscreen_bits)
+					{
+						bmi.bmiHeader.biBitCount = onscreen_bits;
+					}
+				}
+
+#if defined (DEBUG)
+				printf("Bitmap bit count %d\n", bmi.bmiHeader.biBitCount);
+#endif /* defined (DEBUG) */
+
 				bmi.bmiHeader.biCompression = BI_RGB;
 				bmi.bmiHeader.biSizeImage = 0;
 				bmi.bmiHeader.biXPelsPerMeter = 0;
@@ -4120,23 +4152,37 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 				printf ("Made dib\n");
 #endif /* defined (DEBUG) */
 
+				return_code = 1;
+
 				if (buffer->type != GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE)
 				{
 					buffer->type = GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE;
 					/* We use the bitmap directly as the OpenGL rendering surface */
 					buffer->hDC = buffer->device_independent_bitmap_hdc;
+
+					PIXELFORMATDESCRIPTOR pfd;
+					SetPixelFormat( buffer->hDC, buffer->pixel_format, &pfd );
+					buffer->hRC = wglCreateContext( buffer->hDC );
+					if(!wglMakeCurrent(buffer->hDC,buffer->hRC))
+					{
+						return_code = 0;
+						printf ("Bitmap make current failed\n");
+					}
 				}
 
-				return_code = 1;
 			}
 			if (return_code)
 			{
 				buffer->offscreen_width = required_width;
 				buffer->offscreen_height = required_height;
 
- 				/* Tell the scene viewer that it needs to repaint. */
+				/* This tells the scene_viewer that it needs to repaint */
 				CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
 					buffer->expose_callback_list, buffer, NULL);
+				/* The expose data tells the clients that we need to be up to date now */
+				Graphics_buffer_expose_data expose_data;
+				CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+					buffer->expose_callback_list, buffer, &expose_data);
 			}		
 		}
 		else
@@ -4206,11 +4252,18 @@ are performed but the graphics window will render into the supplied device conte
 				buffer->hDC=GetDC(hWnd);
 			}
 		}
-		else
+		else if ((GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_COPY == buffering_mode) ||
+			(GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND == buffering_mode))
 		{
 			buffer->minimum_colour_buffer_depth = minimum_colour_buffer_depth;
 			buffer->minimum_depth_buffer_depth = minimum_depth_buffer_depth;
 			buffer->minimum_accumulation_buffer_depth = minimum_accumulation_buffer_depth;
+
+			buffer->buffering_mode = buffering_mode;
+
+			/* If we don't use the pbuffer below we need a SINGLE BUFFERING OpenGL 
+				when we search pixel formats */
+			buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING; 
 			if (Graphics_buffer_win32_reallocate_offscreen_size(buffer, hDC))
 			{
 				if (GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE == buffer->type)
@@ -4219,6 +4272,11 @@ are performed but the graphics window will render into the supplied device conte
 					printf("Using pbuffer\n");
 #endif /* defined (DEBUG) */
 					use_pbuffer = 1;
+				}
+				else
+				{
+					/* Try to get some alpha planes although I think they don't work anyway */
+					minimum_alpha_buffer_depth = 1;
 				}
 			}
 			else
@@ -4544,7 +4602,18 @@ are performed but the graphics window will render into the supplied device conte
 } /* create_Graphics_buffer_win32 */
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (WIN32_USER_INTERFACE)
+#if defined (WIN32_USER_INTERFACE) && (defined (__CYGWIN__) || defined (__MINGW__)) \
+	&& ((__W32API_MAJOR_VERSION < 3) || (__W32API_MAJOR_VERSION == 3) && (__W32API_MINOR_VERSION < 7))
+/* This is a relatively recent addition (version 3.7 2006-04-07) to the free W32API headers
+   so declaring here if the headers are too old,
+   however the actual function and dll was available in windows 98 */
+extern "C" {
+	bob
+  WINGDIAPI BOOL  WINAPI AlphaBlend(HDC,int,int,int,int,HDC,int,int,int,int,BLENDFUNCTION);
+}
+#endif /* defined (WIN32_USER_INTERFACE) && (defined (__CYGWIN__) || defined (__MINGW__)) */
+
+#if defined (WIN32_USER_INTERFACE) 
 int Graphics_buffer_handle_windows_event(struct Graphics_buffer *buffer,
 	UINT message_identifier,WPARAM first_message,LPARAM second_message)
 /*******************************************************************************
@@ -4619,6 +4688,11 @@ mode with zinc.  Requiring development.
 				  bottom = buffer->height + buffer->y;
 			  }
 			  
+			  x = buffer->x;
+			  y = buffer->y;
+			  right = buffer->width + buffer->x;
+			  bottom = buffer->height + buffer->y;
+
 			  int width = right - x;
 			  int height = bottom - y;
 
@@ -4628,36 +4702,127 @@ mode with zinc.  Requiring development.
 				  const char *vendor_string = (const char *)glGetString(GL_VENDOR);
 				  printf ("Rendering with %s\n", vendor_string);
 #endif /* defined (DEBUG) */
-				  glPixelStorei(GL_PACK_ROW_LENGTH, buffer->offscreen_width);
-				  glReadPixels(x - buffer->x, buffer->height - height - y + buffer->y,
-					  width, height, GL_BGR,
-					  GL_UNSIGNED_BYTE, 
-					  (unsigned char *)buffer->device_independent_bitmap_pixels + 
-					  3 * buffer->offscreen_width * (buffer->offscreen_height - height));
-				  glPixelStorei(GL_PACK_ROW_LENGTH, 0);
 
+				  switch (buffer->type)
+				  {
+					  case GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE:
+					  {
+						  if (GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND == buffer->buffering_mode)
+						  {
+#if defined (DEBUG)
+							  printf ("Going to blend %d %d %d %d (rgba %d %d %d %d)\n",
+								  x - buffer->x, buffer->offscreen_height - height - y + buffer->y,
+								  width, height,
+								  ((unsigned char *)buffer->device_independent_bitmap_pixels)
+								  [4 * buffer->offscreen_width * (buffer->offscreen_height - height - y + buffer->y)],
+								  ((unsigned char *)buffer->device_independent_bitmap_pixels)
+								  [4 * buffer->offscreen_width * (buffer->offscreen_height - height - y + buffer->y) + 1],
+								  ((unsigned char *)buffer->device_independent_bitmap_pixels)
+								  [4 * buffer->offscreen_width * (buffer->offscreen_height - height - y + buffer->y) + 2],
+								  ((unsigned char *)buffer->device_independent_bitmap_pixels)
+								  [4 * buffer->offscreen_width * (buffer->offscreen_height - height - y + buffer->y) + 3]);
+#endif /* defined (DEBUG) */
+
+							  BLENDFUNCTION blendfunction = 
+								  {
+									  AC_SRC_OVER,
+									  0,
+									  255,
+									  AC_SRC_ALPHA
+								  };
+
+							  AlphaBlend(hdc, x, y, width, height,
+								  buffer->hDC, x - buffer->x,
+								  buffer->offscreen_height - height - y + buffer->y, width, height,
+								  blendfunction);
+						  }
+						  else
+						  {
+							  BitBlt(hdc, x, y, width, height,
+								  buffer->hDC, x - buffer->x,
+								  buffer->offscreen_height - height - y + buffer->y,
+								  SRCCOPY);
+						  }
+					  } break;
+					  case GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE:
+					  {
+						  glPixelStorei(GL_PACK_ROW_LENGTH, buffer->offscreen_width);
+						  if (GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND == buffer->buffering_mode)
+						  {
+							  glReadPixels(x - buffer->x, buffer->height - height - y + buffer->y,
+								  width, height, GL_BGRA,
+								  GL_UNSIGNED_BYTE, 
+								  (unsigned char *)buffer->device_independent_bitmap_pixels + 
+								  4 * buffer->offscreen_width * (buffer->offscreen_height - height));
+
+							  BLENDFUNCTION blendfunction = 
+								  {
+									  AC_SRC_OVER,
+									  0,
+									  255,
+									  AC_SRC_ALPHA
+								  };
 
 #if defined (DEBUG)
-				  //memset(buffer->device_independent_bitmap_pixels, 128,
-				  //	 3 * buffer->offscreen_width * buffer->offscreen_height);
-
-				  printf ("Copied pixels %d %d %d %d (rgb0 %d %d %d)\n",
-					  x - buffer->x, y - buffer->y,
-					  width, height,
-					  ((unsigned char *)buffer->device_independent_bitmap_pixels)
-					  [3 * buffer->offscreen_width * (buffer->offscreen_height - height)],
-					  ((unsigned char *)buffer->device_independent_bitmap_pixels)
-					  [3 * buffer->offscreen_width * (buffer->offscreen_height - height) + 1],
-					  ((unsigned char *)buffer->device_independent_bitmap_pixels)
-					  [3 * buffer->offscreen_width * (buffer->offscreen_height - height) + 2]);
-				  printf ("Going to blt %ld %d %d %ld %d %d\n",
-					  drc->left, buffer->x, buffer->width, 
-					  drc->top, buffer->y, buffer->height );
+							  printf ("Copied pixels %d %d %d %d (rgba %d %d %d %d)\n",
+								  x - buffer->x, y - buffer->y,
+								  width, height,
+								  ((unsigned char *)buffer->device_independent_bitmap_pixels)
+								  [4 * buffer->offscreen_width * (buffer->offscreen_height - height)],
+								  ((unsigned char *)buffer->device_independent_bitmap_pixels)
+								  [4 * buffer->offscreen_width * (buffer->offscreen_height - height) + 1],
+								  ((unsigned char *)buffer->device_independent_bitmap_pixels)
+								  [4 * buffer->offscreen_width * (buffer->offscreen_height - height) + 2],
+								  ((unsigned char *)buffer->device_independent_bitmap_pixels)
+								  [4 * buffer->offscreen_width * (buffer->offscreen_height - height) + 3]);
+							  printf ("Going to alpha blend %ld %d %d %ld %d %d\n",
+								  drc->left, buffer->x, buffer->width, 
+								  drc->top, buffer->y, buffer->height );
 #endif /* defined (DEBUG) */
-				  
-				  BitBlt(hdc, x, y, width, height,
-					  buffer->device_independent_bitmap_hdc, 0, 0,
-					  SRCCOPY);
+
+							  AlphaBlend(hdc, x, y, width, height,
+								  buffer->device_independent_bitmap_hdc, 0, 0, width, height,
+								  blendfunction);
+						  }
+						  else
+						  {
+							  glReadPixels(x - buffer->x, buffer->height - height - y + buffer->y,
+								  width, height, GL_BGR,
+								  GL_UNSIGNED_BYTE, 
+								  (unsigned char *)buffer->device_independent_bitmap_pixels + 
+								  3 * buffer->offscreen_width * (buffer->offscreen_height - height));
+
+#if defined (DEBUG)
+							  //memset(buffer->device_independent_bitmap_pixels, 128,
+							  //	 3 * buffer->offscreen_width * buffer->offscreen_height);
+					  
+							  printf ("Copied pixels %d %d %d %d (rgb %d %d %d)\n",
+								  x - buffer->x, y - buffer->y,
+								  width, height,
+								  ((unsigned char *)buffer->device_independent_bitmap_pixels)
+								  [3 * buffer->offscreen_width * (buffer->offscreen_height - height)],
+								  ((unsigned char *)buffer->device_independent_bitmap_pixels)
+								  [3 * buffer->offscreen_width * (buffer->offscreen_height - height) + 1],
+								  ((unsigned char *)buffer->device_independent_bitmap_pixels)
+								  [3 * buffer->offscreen_width * (buffer->offscreen_height - height) + 2]);
+							  printf ("Going to blt %ld %d %d %ld %d %d\n",
+								  drc->left, buffer->x, buffer->width, 
+								  drc->top, buffer->y, buffer->height );
+#endif /* defined (DEBUG) */
+					  
+							  BitBlt(hdc, x, y, width, height,
+								  buffer->device_independent_bitmap_hdc, 0, 0,
+								  SRCCOPY);
+						  }
+						  glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+					  } break;
+					  default:
+					  {
+						  display_message(ERROR_MESSAGE,"Graphics_buffer_handle_windows_event.  "
+							  "Unsupported buffer type.");
+						  return_code = 0;
+					  }
+				  }
 
 #if defined (DEBUG)
 				  printf ("BitBlt %d %d %d %d\n", x, y, width, height);
@@ -4755,6 +4920,10 @@ will be requested with handle_windows_event.
 		buffer->height = height;
 		buffer->x = x;
 		buffer->y = y;
+#if defined (DEBUG)
+		printf("Graphics_buffer_win32_set_window_size width %d height %d x %d y %d\n",
+			width, height, x, y);
+#endif /* defined (DEBUG) */
 	}
 	else
 	{

@@ -256,6 +256,14 @@ chosen.
 		{
 			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
 		}
+		else if (CMISS_SCENE_VIEWER_BUFFERING_RENDER_OFFSCREEN_AND_COPY==buffer_mode)
+		{
+			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_COPY;
+		}
+		else if (CMISS_SCENE_VIEWER_BUFFERING_RENDER_OFFSCREEN_AND_BLEND==buffer_mode)
+		{
+			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND;
+		}
 		else
 		{
 			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
