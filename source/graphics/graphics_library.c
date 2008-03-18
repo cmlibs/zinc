@@ -471,9 +471,6 @@ initialiased.
 ==============================================================================*/
 {
 	char *end, *p;
-#if defined (DEBUG)
-	char *glu, *vendor, *version;
-#endif /* defined (DEBUG) */
 	int extNameLen, n, return_code;
 
 	/* check arguments */
@@ -482,6 +479,7 @@ initialiased.
 		extNameLen=strlen(extName);
 
 		p=(char *)glGetString(GL_EXTENSIONS);
+#define DEBUG
 #if defined (DEBUG)
 		/* For debugging */
 		{
@@ -731,6 +729,68 @@ Finds and loads gl function symbols at runtime.
 
 	return (function_ptr);
 } /* Graphics_library_get_function_ptr */
+
+enum Graphics_library_vendor_id Graphics_library_get_vendor_id()
+/*******************************************************************************
+LAST MODIFIED : 18 March 2008
+
+DESCRIPTION :
+Returns an enumeration which can be used to select for a particular vendor
+implementation which is valid for the current OpenGL context.
+==============================================================================*/
+{
+	const char *vendor = (const char *)glGetString(GL_VENDOR);
+	enum Graphics_library_vendor_id vendor_id;
+
+	ENTER(Graphics_library_get_vendor_id);
+
+	vendor_id = Graphics_library_vendor_unknown;
+	if (vendor)
+	{
+		switch (vendor[0])
+		{
+			case 'A':
+			{
+				if (!strcmp(vendor, "ATI Technologies Inc."))
+				{
+					vendor_id = Graphics_library_vendor_ati;
+				}
+			} break;
+			case 'B':
+			{
+				if (!strcmp(vendor, "Brian Paul"))
+				{
+					vendor_id = Graphics_library_vendor_mesa;
+				}
+			} break;
+			case 'I':
+			{
+				if (!strcmp(vendor, "Intel"))
+				{
+					vendor_id = Graphics_library_vendor_intel;
+				}
+			} break;
+			case 'M':
+			{
+				if (!strcmp(vendor, "Microsoft Corporation"))
+				{
+					vendor_id = Graphics_library_vendor_microsoft;
+				}
+			} break;
+			case 'N':
+			{
+				if (!strcmp(vendor, "Nvidia"))
+				{
+					vendor_id = Graphics_library_vendor_nvidia;
+				}
+			} break;
+		}
+	}
+
+	LEAVE;
+
+	return (vendor_id);
+} /* Graphics_library_get_vendor_id */
 
 int Graphics_library_load_extension(char *extension_name)
 /*******************************************************************************

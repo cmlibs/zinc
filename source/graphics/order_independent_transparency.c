@@ -72,12 +72,16 @@ HISTORY :
 #   endif /* defined GL_EXT_texture_rectangle */
 #endif /* ! defined GL_ARB_texture_rectangle */
 
-static char *required_extensions[] = {"GL_ARB_texture_rectangle",
+static char *required_extensions_default[] = {"GL_ARB_texture_rectangle",
 												  "GL_ARB_vertex_program",
 												  "GL_ARB_fragment_program",
 												  "GL_ARB_fragment_program_shadow",
 												  "GL_ARB_depth_texture",
 												  "GL_ARB_shadow"};
+static char *required_extensions_mesa[] = {"GL_ARB_texture_rectangle",
+												  "GL_ARB_vertex_program",
+												  "GL_ARB_fragment_program",
+												  "GL_ARB_depth_texture"};
 #if defined GL_ARB_texture_rectangle && defined GL_ARB_vertex_program \
    && defined GL_ARB_fragment_program && defined  GL_ARB_fragment_program_shadow \
    && defined GL_ARB_depth_texture && defined GL_ARB_shadow
@@ -107,6 +111,8 @@ The private user data for this order independent transparency rendering pass.
 	GLuint *zbuffer;	
 
 	GLenum depth_format;
+
+	enum Graphics_library_vendor_id vendor_id;
 
 	struct Scene_viewer *scene_viewer;
 };
@@ -206,8 +212,15 @@ Initialises the order independent transparency extension.
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_COMPARE_MODE_ARB, GL_COMPARE_R_TO_TEXTURE_ARB);
-		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_COMPARE_FUNC_ARB, GL_GREATER);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+		if (Graphics_library_vendor_mesa == data->vendor_id)
+		{
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+		}
+		else
+		{
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_COMPARE_FUNC, GL_GREATER);
+		}
 #if defined (REPORT_GL_ERRORS)
 		{
 			char message[200];
@@ -346,12 +359,51 @@ Draws one peeled layer of the scene.
 	if(layer > 0)
 	{
 		glActiveTexture(GL_TEXTURE3);
-		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_NONE);
 		glEnable(GL_TEXTURE_RECTANGLE_ARB);
 
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, data->ztex_texture_id);
-		
+		if (Graphics_library_vendor_ati == data->vendor_id)
+		{
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_COMPARE_FUNC, GL_GREATER);
+		}
+		else if (Graphics_library_vendor_mesa == data->vendor_id)
+		{
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+		}
+		else
+		{
+			glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_NONE);
+		}
+
 	}	
+#if defined (DEBUG)
+	else
+	{
+		/* So we can depth test even on the first path when debugging */
+		glActiveTexture(GL_TEXTURE3);
+		glEnable(GL_TEXTURE_RECTANGLE_ARB);
+
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, data->ztex_texture_id);
+		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE);
+		memset(data->zbuffer, 0, sizeof(GLuint) * data->viewport_width * data->viewport_height);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, data->depth_format, 
+			data->viewport_width, data->viewport_height, 0, 
+			GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, data->zbuffer);
+
+	}
+#endif /* defined (DEBUG) */
 
 	glMatrixMode(GL_TEXTURE);
 	glLoadIdentity();
@@ -407,6 +459,9 @@ Draw a textured quad for each layer and blend them all together correctly.
 	glDisable(GL_VERTEX_PROGRAM_ARB);
 	glDisable(GL_FRAGMENT_PROGRAM_ARB);
 
+	glActiveTexture(GL_TEXTURE3);
+	glDisable(GL_TEXTURE_RECTANGLE_ARB);
+
 	glActiveTexture(GL_TEXTURE0);
 
 	glDisable(GL_ALPHA_TEST);
@@ -452,6 +507,7 @@ Draw a textured quad for each layer and blend them all together correctly.
 		}
 
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, data->rgba_layer_texture_id[i]);
+		glEnable(GL_TEXTURE_RECTANGLE_ARB);
 		
 		glBegin(GL_QUADS);
 		glTexCoord2f(0, 0);
@@ -492,13 +548,24 @@ Returns true if the current display is capable of order independent transparency
 #if defined (ORDER_INDEPENDENT_CAPABLE)
 	GLint alpha_bits, depth_bits;
 #endif /* defined (ORDER_INDEPENDENT_CAPABLE) */
+	char **required_extensions;
 	int return_code;
-	unsigned int i;
+	unsigned int i, number_of_required_extensions;
 	ENTER(order_independent_capable);
 
+	if (Graphics_library_vendor_mesa == Graphics_library_get_vendor_id())
+	{
+		required_extensions = required_extensions_mesa;
+		number_of_required_extensions = (sizeof(required_extensions_mesa) / sizeof (char *));
+	}
+	else
+	{
+		required_extensions = required_extensions_default;
+		number_of_required_extensions = (sizeof(required_extensions_default) / sizeof (char *));
+	}
 #if defined (ORDER_INDEPENDENT_CAPABLE)
 	return_code = 1;
-	for (i = 0 ; (i < (sizeof(required_extensions) / sizeof (char *))) ; i++)
+	for (i = 0 ; i < number_of_required_extensions ; i++)
 	{
 		if (!Graphics_library_load_extension(required_extensions[i]))
 		{
@@ -519,11 +586,18 @@ Returns true if the current display is capable of order independent transparency
 	{
 		display_message(ERROR_MESSAGE,
 			"Order independent transparency not supported on this display\n"
-			"It requries at least 8 alpha bits, 16 or 24 bit depth buffer and "
-			"these OpenGL extensions: ");
-		for (i = 0 ; (i < (sizeof(required_extensions) / sizeof (char *))) ; i++)
+			"It requries at least 8 alpha bits (detected %d), 16 or 24 bit depth buffer (detected %d) and "
+			"these OpenGL extensions: ", alpha_bits, depth_bits);
+		for (i = 0 ; i < number_of_required_extensions ; i++)
 		{
-			display_message(ERROR_MESSAGE,"%s ", required_extensions[i]);
+			if (Graphics_library_load_extension(required_extensions[i]))
+			{
+				display_message(ERROR_MESSAGE,"%s: Available", required_extensions[i]);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"%s: Not Available", required_extensions[i]);
+			}
 		}
 	}
 #else /* defined (ORDER_INDEPENDENT_CAPABLE) */
@@ -579,6 +653,8 @@ Initialises the order independent transparency extension.
 
 		data->scene_viewer = scene_viewer;
 
+		data->vendor_id = Graphics_library_get_vendor_id();
+
 		glGetIntegerv(GL_DEPTH_BITS, &depth_bits);
 		glGetIntegerv(GL_ALPHA_BITS, &alpha_bits);
 		
@@ -613,8 +689,10 @@ Initialises the order independent transparency extension.
 			DEALLOCATE(data);
 			data = (struct Scene_viewer_order_independent_transparency_data *)NULL;
 		}
-
-		order_independent_init_opengl(data);
+		else
+		{
+			order_independent_init_opengl(data);
+		}
 	}
 	else
 	{
@@ -667,10 +745,12 @@ Initialises per rendering parts of this extension.
 			glGenTextures(1, &data->ztex_texture_id);
 		}
 
+		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, data->ztex_texture_id);
 		
 		if (REALLOCATE(data->zbuffer, data->zbuffer, GLuint, width * height))
 		{
+			memset(data->zbuffer, 0, sizeof(GLuint) * width * height);
 			data->viewport_width = width;
 			data->viewport_height = height;
 			glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, data->depth_format, 
@@ -683,6 +763,7 @@ Initialises per rendering parts of this extension.
 				"Unable to allocate ztex buffer\n");
 			return_code = 0;
 		}
+		glActiveTexture(GL_TEXTURE0);
 
 		if (return_code && (!data->rgba_layer_texture_id ||
 			(layers > data->maximum_number_of_layers)))
@@ -803,6 +884,7 @@ Actually preforms the rendering pass.
 #if defined (DEBUG)
 	{
 		FILE *out;
+		printf("Writing depth.raw -geometry %dx%d -depth 32\n", data->viewport_width, data->viewport_height);
 		glReadPixels(0, 0, data->viewport_width, data->viewport_height, GL_DEPTH_COMPONENT,
 			GL_UNSIGNED_INT, data->zbuffer);
 		out = fopen("depth.raw", "w");

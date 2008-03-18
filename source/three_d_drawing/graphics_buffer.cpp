@@ -4114,7 +4114,7 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 				{
 					bmi.bmiHeader.biBitCount = 24;
 				}
-				if (GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE == buffer->type)
+				if (GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE != buffer->type)
 				{
 					/* If the onscreen size is 32 then the setpixelformat seems to
 						want this even if rendering without alpha */
@@ -4230,7 +4230,7 @@ are performed but the graphics window will render into the supplied device conte
 	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
 	{
 		/* Hardcode this for the meantime so as not to change function interface */
-		int minimum_alpha_buffer_depth = 0;
+		int minimum_alpha_buffer_depth = 8;
 
 		use_pbuffer = 0;
 
@@ -4461,7 +4461,7 @@ are performed but the graphics window will render into the supplied device conte
 						best_selection_level = selection_level;
 					}
 				}
-				
+
 				if (format)
 				{
 #if defined (DEBUG)

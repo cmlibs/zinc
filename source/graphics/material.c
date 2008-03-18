@@ -41,7 +41,7 @@ return to direct rendering, as described with these routines.
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
- * Shane Blackett (s.blackett at auckland.ac.nz)
+ * Shane Blackett (shane at blackett.co.nz)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -393,11 +393,17 @@ be shared by multiple materials using the same program.
 			if (Graphics_library_check_extension(GL_ARB_vertex_program) &&
 				Graphics_library_check_extension(GL_ARB_fragment_program))
 			{
+#if defined DEBUG
+				printf ("Compiling program type:%x\n", material_program->type);
+#endif /* defined DEBUG */
+
 #if ! defined (TESTING_PROGRAM_STRINGS)
 				char *components_string, *fragment_program_string, *vertex_program_string;
+				enum Graphics_library_vendor_id vendor_id;
 				int colour_texture_dimension, components_error, number_of_inputs,
 					error;
 				
+				vendor_id = Graphics_library_get_vendor_id();
 				error = 0;
 				if (MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING & material_program->type)
 				{
@@ -511,14 +517,17 @@ be shared by multiple materials using the same program.
 					fragment_program_string = duplicate_string("!!ARBfp1.0\n");
 					if (MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER & material_program->type)
 					{
+						if (Graphics_library_vendor_mesa != vendor_id)
+						{
+							append_string(&fragment_program_string, 
+								"OPTION ARB_fragment_program_shadow;\n"
+								, &error);
+						}
 						append_string(&fragment_program_string, 
-							"OPTION ARB_fragment_program_shadow;\n"
 							"PARAM texturesize = program.env[0];\n"
-
 							"TEMP tex4, kill, tex4coord;\n"
 							"PARAM two = {2.0, 2.0, 2.0, 2.0};\n"
 							"PARAM one = {1.0, 1.0, 1.0, 1.0};\n"
-							"#PARAM minus_one = {-1.0, -1.0, -1.0, -1.0};\n"
 							, &error);
 					}
 
@@ -534,34 +543,51 @@ be shared by multiple materials using the same program.
 						
 					if (MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER & material_program->type)
 					{
-						append_string(&fragment_program_string,
-							"#MOV      tex4coord, one;\n"
-							"MOV      tex4coord, eyespaceCoord.xyzx;\n"
-							"MUL      tex4coord, tex4coord, texturesize;\n"
-							"#MUL      tex4coord, eyespaceCoord, two;\n"
-							"#MAD      tex4coord, eyespaceCoord, point_five, point_five;\n"
-							"\n"
-							"MOV      tex4.x, eyespaceCoord.zzzz;\n"
-							"TEX		tex4.x, tex4coord, texture[3], SHADOWRECT;\n"
-							"\n"
-							"#SUB      kill, eyespaceCoord.zzzz, tex4.rrrr;\n"
-							"#CMP      kill, kill, minus_one, one;\n"
-							"#MUL      kill, kill, small;\n"
-							"#MOV      kill, eyespaceCoord.zzzz;\n"
-							"\n"
-							"ADD      kill.x, tex4.x, -0.5;\n"
-							"KIL      kill.x;\n"
-							, &error);
+						if (Graphics_library_vendor_mesa == vendor_id)
+						{
+							append_string(&fragment_program_string,
+								"MOV     tex4coord.z, fragment.position.z;\n"
+								"TEX		tex4.x, tex4coord, texture[3], RECT;\n"
+								"MOV     kill, tex4.xxxx;\n"
+								"KIL     -kill;\n"
+								, &error);
+						}
+						else
+						{
+							if (Graphics_library_vendor_ati == vendor_id)
+							{
+								append_string(&fragment_program_string,
+									"MOV      tex4coord, eyespaceCoord.xyzx;\n"
+									"MUL      tex4coord, tex4coord, texturesize;\n"
+									"\n"
+									"MOV     tex4coord.z, fragment.position.z;\n"
+									"ADD     tex4coord.z, tex4coord.z, -0.0001;\n" 
+									, &error);
+							}
+							else
+							{
+								/* Default is what we used to have which is for Nvidia */
+								append_string(&fragment_program_string,
+									"MOV      tex4coord, eyespaceCoord.xyzx;\n"
+									"MUL      tex4coord, tex4coord, texturesize;\n"
+									"\n"
+									"MOV      tex4.x, eyespaceCoord.zzzz;\n"
+									, &error);
+							}
+							append_string(&fragment_program_string,
+								"TEX		tex4.x, tex4coord, texture[3], SHADOWRECT;\n"
+								"ADD      kill.x, tex4.x, -0.5;\n"
+								"KIL      kill.x;\n"
+								, &error);
+						}
 					}
 
 					append_string(&fragment_program_string, 
 						"MOV      result.color.xyzw, fragment.color.rgba;\n"
 						"MOV		 result.depth.z, eyespaceCoord.z;\n"
 						"\n"
-						"#MOV      result.color.xyz, tex4coord.zzzz;\n"
-						"#MOV      result.color.xyz, tex4.xxxx;\n"
-						"\n"
-						"END\n", &error);
+						"END\n"
+						, &error);
 				}
 				else if (MATERIAL_PROGRAM_CLASS_PER_PIXEL_LIGHTING & material_program->type)
 				{
@@ -1253,7 +1279,7 @@ be shared by multiple materials using the same program.
 				{
 					fprintf(program_file, "%s", vertex_program_string);
 					fclose (program_file);
-				}				
+				}
 #endif /* defined (WRITE_STRING) */
 				DEALLOCATE(vertex_program_string);
 				

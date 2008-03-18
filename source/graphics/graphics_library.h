@@ -94,6 +94,16 @@ Global types
 
 typedef float gtMatrix[4][4];
 
+enum Graphics_library_vendor_id
+{
+	Graphics_library_vendor_unknown,
+	Graphics_library_vendor_ati,
+	Graphics_library_vendor_nvidia,
+	Graphics_library_vendor_mesa,
+	Graphics_library_vendor_microsoft,
+	Graphics_library_vendor_intel
+};
+
 /*
 Global variables
 ----------------
@@ -225,6 +235,15 @@ and <height> according to the storage type.  'MakeCurrent' the desired source
 before calling this routine.  If <front_buffer> is 1 then pixels will be read
 from the front buffer, otherwise they will be read from the back buffer in a
 double buffered context.
+==============================================================================*/
+
+enum Graphics_library_vendor_id Graphics_library_get_vendor_id(void);
+/*******************************************************************************
+LAST MODIFIED : 18 March 2008
+
+DESCRIPTION :
+Returns an enumeration which can be used to select for a particular vendor
+implementation which is valid for the current OpenGL context.
 ==============================================================================*/
 
 int Graphics_library_load_extension(char *extension_name);
