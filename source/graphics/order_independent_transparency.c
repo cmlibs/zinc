@@ -555,11 +555,12 @@ Returns true if the current display is capable of order independent transparency
 	GLint alpha_bits, depth_bits;
 #endif /* defined (ORDER_INDEPENDENT_CAPABLE) */
 	char **required_extensions;
+	enum Graphics_library_vendor_id vendor_id;
 	int return_code;
 	unsigned int i, number_of_required_extensions;
 	ENTER(order_independent_capable);
 
-	enum Graphics_library_vendor_id vendor_id = Graphics_library_get_vendor_id();
+	vendor_id = Graphics_library_get_vendor_id();
 	if ((Graphics_library_vendor_mesa == vendor_id) ||
 		(Graphics_library_vendor_ati == vendor_id))
 	{
