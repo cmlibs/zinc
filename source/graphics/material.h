@@ -107,6 +107,7 @@ Data for compiling materials specially for order independent transparency.
 ==============================================================================*/
 {
 	int layer;
+	struct Graphics_buffer *graphics_buffer;
 }; /* struct Material_order_independent_transparency */
 
 /*

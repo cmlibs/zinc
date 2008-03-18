@@ -779,7 +779,7 @@ implementation which is valid for the current OpenGL context.
 			} break;
 			case 'N':
 			{
-				if (!strcmp(vendor, "Nvidia"))
+				if (!strcmp(vendor, "NVIDIA Corporation"))
 				{
 					vendor_id = Graphics_library_vendor_nvidia;
 				}

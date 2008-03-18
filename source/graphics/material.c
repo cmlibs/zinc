@@ -417,7 +417,17 @@ be shared by multiple materials using the same program.
 						"PARAM eyeLightPos = state.light[0].position;\n"
 						"PARAM two = {2.0, 2.0, 2.0, 2.0};\n"
 						"PARAM m_one = {-1.0, -1.0, -1.0, -1.0};\n"
-						"\n"
+						);
+					
+					if ((MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE | MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE)
+						& material_program->type)
+					{
+						append_string(&vertex_program_string, 
+							"PARAM texture_scaling = program.env[0];\n"
+							, &error);
+					}
+					
+					append_string(&vertex_program_string, 
 						"TEMP eyeVertex;\n"
 						"TEMP eyeNormal;\n"
 						"TEMP temp_col;\n"
@@ -498,6 +508,17 @@ be shared by multiple materials using the same program.
 						"#new_code\n"
 						"MOV finalCol.w, temp_col.w;\n"
 						"\n"
+						, &error);
+					
+					if ((MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE | MATERIAL_PROGRAM_CLASS_SECOND_TEXTURE)
+						& material_program->type)
+					{
+						append_string(&vertex_program_string, 
+							"MUL result.texcoord[0], texture_scaling, vertex.texcoord[0];\n"
+							, &error);
+					}
+					
+					append_string(&vertex_program_string, 
 						"DP4 result.texcoord[1].x, c0[0], position;\n"
 						"DP4 result.texcoord[1].y, c0[1], position;\n"
 						"DP4 result.texcoord[1].z, c0[2], position;\n"
@@ -512,7 +533,8 @@ be shared by multiple materials using the same program.
 						"DP4 result.position.z, c0[2], position;\n"
 						"DP4 result.position.w, c0[3], position;\n"
 						"\n"
-						"END\n");
+						"END\n"
+						, &error);
 
 					fragment_program_string = duplicate_string("!!ARBfp1.0\n");
 					if (MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER & material_program->type)
@@ -524,10 +546,8 @@ be shared by multiple materials using the same program.
 								, &error);
 						}
 						append_string(&fragment_program_string, 
-							"PARAM texturesize = program.env[0];\n"
+							"PARAM texturesize = program.env[1];\n"
 							"TEMP tex4, kill, tex4coord;\n"
-							"PARAM two = {2.0, 2.0, 2.0, 2.0};\n"
-							"PARAM one = {1.0, 1.0, 1.0, 1.0};\n"
 							, &error);
 					}
 
@@ -539,6 +559,7 @@ be shared by multiple materials using the same program.
 							"RCP      perspective.w, eyespaceCoord.w;\n"
 							"MUL      eyespaceCoord, eyespaceCoord, perspective.w;\n"
 							"MAD      eyespaceCoord, eyespaceCoord, point_five, point_five;\n"
+							"MOV      eyespaceCoord.w, 1.0;\n"
 							, &error);
 						
 					if (MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER & material_program->type)
@@ -582,8 +603,129 @@ be shared by multiple materials using the same program.
 						}
 					}
 
+					if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE & material_program->type)
+					{
+						char tex_string[100];
+						/* Load the colour texture */
+						if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1 & material_program->type)
+						{
+							if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2 & material_program->type)
+							{
+								colour_texture_dimension = 3;
+							}
+							else
+							{
+								colour_texture_dimension = 1;
+							}								
+						}
+						else
+						{
+							colour_texture_dimension = 2;
+						}
+						sprintf(tex_string,
+							"TEMP		tex;\n"
+							"TEX		tex, fragment.texcoord[0], texture[0], %dD;\n",
+							colour_texture_dimension);
+						append_string(&fragment_program_string, 
+							tex_string, &error);
+					}
+					else
+					{
+						colour_texture_dimension = 0;
+					}
+
+					if (!(MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE & material_program->type))
+					{
+						/* Normal lighting, just use the fragment colour */
+						append_string(&fragment_program_string, 
+							"MOV      result.color.xyzw, fragment.color.rgba;\n"
+							, &error);
+					}
+					else
+					{
+						if (!(MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_DECAL & material_program->type))
+						{
+							/* Modulate */
+							if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 & material_program->type)
+							{
+								if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & material_program->type)
+								{
+									/* RGB texture */
+									append_string(&fragment_program_string, 
+										"MUL		result.color.xyz, fragment.color, tex;\n"
+										, &error);
+								}
+								else
+								{
+									/* grayscale texture */
+									append_string(&fragment_program_string, 
+										"MUL		result.color.xyz, fragment.color.xyz, tex.x;\n"
+										, &error);
+								}
+							}
+							else
+							{
+								if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & material_program->type)
+								{
+									/* grayscale alpha texture */
+									append_string(&fragment_program_string, 
+										"MUL		result.color.xyz, fragment.color.xyz, tex.x;\n"
+										"MUL		result.color.w, fragment.color.w, tex.y;\n"
+										, &error);
+								}
+								else
+								{
+									/* RGBA texture */
+									append_string(&fragment_program_string, 
+										"MUL		result.color, fragment.color, tex;\n"
+										, &error);
+								}
+							}
+						}
+						else
+						{
+							if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 & material_program->type)
+							{
+								if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & material_program->type)
+								{
+									/* RGB texture */
+									append_string(&fragment_program_string, 
+										"MOV		result.color.xyz, tex;\n"
+										, &error);
+								}
+								else
+								{
+									/* grayscale texture */
+									append_string(&fragment_program_string, 
+										"MOV		result.color.xyz, tex.x;\n"
+										, &error);
+								}
+								append_string(&fragment_program_string, 
+									"MOV		result.color.w, state.material.diffuse.w;\n"
+									, &error);
+							}
+							else
+							{
+								if (MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2 & material_program->type)
+								{
+									/* grayscale alpha texture */
+									append_string(&fragment_program_string, 
+										"MOV		result.color.xyz, tex.x;\n"
+										"MOV		result.color.w, tex.y;\n"
+										, &error);
+								}
+								else
+								{
+									/* RGBA texture */
+									append_string(&fragment_program_string, 
+										"MOV		result.color, tex;\n"
+										, &error);
+								}
+							}
+						}
+					}
+					
 					append_string(&fragment_program_string, 
-						"MOV      result.color.xyzw, fragment.color.rgba;\n"
 						"MOV		 result.depth.z, eyespaceCoord.z;\n"
 						"\n"
 						"END\n"
@@ -1580,7 +1722,7 @@ material results.
 				glActiveTexture(GL_TEXTURE0);
 			}
 			else
-			{
+			{	
 				glActiveTexture(GL_TEXTURE3);
 				glDisable(GL_TEXTURE_1D);
 				glDisable(GL_TEXTURE_2D);
@@ -4828,6 +4970,7 @@ will work with order_independent_transparency.
 	int return_code;
 #if defined (OPENGL_API)
 	enum Material_program_type modified_type;
+	int dimension;
 	struct Material_order_independent_transparency *data;
 	struct Material_package *material_package;
 	struct Material_program *unmodified_program;
@@ -4854,7 +4997,77 @@ will work with order_independent_transparency.
 			else
 			{
 				modified_type = MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING;
+				if (material->texture)
+				{
+					/* Texture should have already been compiled when the
+						scene was compiled before rendering */
+					if (material->texture)
+					{
+						compile_Texture(material->texture, data->graphics_buffer,
+							(struct Texture_tiling **)NULL);
+					}
+					Texture_get_dimension(material->texture, &dimension);
+					switch (dimension)
+					{
+						case 1:
+						{
+							modified_type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1;
+						} break;
+						case 2:
+						{
+							modified_type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2;
+						} break;
+						case 3:
+						{
+							modified_type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_1 |
+								MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_2;
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE, "Colour texture dimension %d not supported.",  
+								dimension);
+							return_code = 0;
+						} break;
+					}
+					switch (Texture_get_number_of_components(material->texture))
+					{
+						case 1:
+						{
+							modified_type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1;
+						} break;
+						case 2:
+						{
+							modified_type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2;
+						} break;
+						case 3:
+						{
+							modified_type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_1 |
+								MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_OUTPUT_2;
+						} break;
+						case 4:
+						{
+							/* Do nothing as zero in these bits indicates rgba */
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE, "Colour texture output dimension not supported.");
+							return_code = 0;
+						} break;
+					}
+					switch (Texture_get_combine_mode(material->texture))
+					{
+						case TEXTURE_DECAL:
+						{
+							modified_type |= MATERIAL_PROGRAM_CLASS_COLOUR_TEXTURE_DECAL;
+						}
+						default:
+						{
+							/* Do nothing as modulate is the default */
+						}
+					}
+				}
 			}
+
 			if (data->layer == 1)
 			{
 				/* The first layer does not peel */
@@ -4898,6 +5111,10 @@ will work with order_independent_transparency.
 			}
 
 			glNewList(material->display_list,GL_COMPILE);
+			if (material->texture)
+			{
+				Texture_execute_vertex_program_environment(material->texture);
+			}
 			direct_render_Graphical_material(material);
 			glEndList();
 

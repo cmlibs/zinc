@@ -1,12 +1,12 @@
 /*******************************************************************************
 FILE : order_independent_transparency.c
 
-LAST MODIFIED : 2 May 2005
+LAST MODIFIED : 19 March 2008
 
 DESCRIPTION :
-Implements in NVIDIA hardware a depth sorting algorithm where each depth
-layer is peeled off and then composited back together from back to front
-at the end.  
+Implements in NVIDIA and ATI hardware and Mesa software a depth sorting
+algorithm where each depth layer is peeled off and then composited back
+together from back to front at the end.  
 
 HISTORY :
   Based on algorithm from NVIDIA using SGIS_shadow and NV_texture_shader to
@@ -15,6 +15,7 @@ HISTORY :
   correctly.
   Cass Everitt 3-28-01
   SAB. I got rid of the glh, c++ and nv_parse stuff.
+  Uses ARB vertex and fragment programs.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -78,7 +79,10 @@ static char *required_extensions_default[] = {"GL_ARB_texture_rectangle",
 												  "GL_ARB_fragment_program_shadow",
 												  "GL_ARB_depth_texture",
 												  "GL_ARB_shadow"};
-static char *required_extensions_mesa[] = {"GL_ARB_texture_rectangle",
+/* Mesa actually does the shadow test automatically but does not expose
+the extension, and ATI on Linux has the extension but does not list it
+in the extensions string. */
+static char *required_extensions_mesa_ati[] = {"GL_ARB_texture_rectangle",
 												  "GL_ARB_vertex_program",
 												  "GL_ARB_fragment_program",
 												  "GL_ARB_depth_texture"};
@@ -353,7 +357,7 @@ Draws one peeled layer of the scene.
 
 #endif /* defined (OLD_CODE) */
 
-	glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 0,
+	glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 1,
 		data->viewport_width, data->viewport_height, 1.0, 1.0);
 
 	if(layer > 0)
@@ -408,6 +412,8 @@ Draws one peeled layer of the scene.
 	glMatrixMode(GL_TEXTURE);
 	glLoadIdentity();
 	glActiveTexture(GL_TEXTURE0);
+
+	glDisable(GL_TEXTURE_RECTANGLE_ARB);
 
 	glEnable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
 
@@ -553,10 +559,12 @@ Returns true if the current display is capable of order independent transparency
 	unsigned int i, number_of_required_extensions;
 	ENTER(order_independent_capable);
 
-	if (Graphics_library_vendor_mesa == Graphics_library_get_vendor_id())
+	enum Graphics_library_vendor_id vendor_id = Graphics_library_get_vendor_id();
+	if ((Graphics_library_vendor_mesa == vendor_id) ||
+		(Graphics_library_vendor_ati == vendor_id))
 	{
-		required_extensions = required_extensions_mesa;
-		number_of_required_extensions = (sizeof(required_extensions_mesa) / sizeof (char *));
+		required_extensions = required_extensions_mesa_ati;
+		number_of_required_extensions = (sizeof(required_extensions_mesa_ati) / sizeof (char *));
 	}
 	else
 	{
@@ -858,6 +866,8 @@ Actually preforms the rendering pass.
 			struct Material_order_independent_transparency material_data;
 			
 			material_data.layer = layer + 1;
+			material_data.graphics_buffer = 
+				Scene_viewer_get_graphics_buffer(data->scene_viewer);
 			
 			Scene_for_each_material(Scene_viewer_get_scene(data->scene_viewer),
 				compile_Graphical_material_for_order_independent_transparency,
