@@ -4165,8 +4165,9 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 					buffer->hRC = wglCreateContext( buffer->hDC );
 					if(!wglMakeCurrent(buffer->hDC,buffer->hRC))
 					{
+						display_message(ERROR_MESSAGE,"Graphics_buffer_win32_reallocate_pbuffer_size.  "
+							"Bitmap make current failed");
 						return_code = 0;
-						printf ("Bitmap make current failed\n");
 					}
 				}
 
