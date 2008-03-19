@@ -614,7 +614,7 @@ Returns true if the current display is capable of order independent transparency
 		"Order independent transparency not compiled into this executable.  \n"
 		"It requries at least 8 alpha bits, 16 or 24 bit depth buffer and "
 		"these OpenGL extensions: ");
-	for (i = 0 ; (i < (sizeof(required_extensions) / sizeof (char *))) ; i++)
+	for (i = 0 ; i < number_of_required_extensions ; i++)
 	{
 		display_message(ERROR_MESSAGE,"%s ", required_extensions[i]);
 	}
