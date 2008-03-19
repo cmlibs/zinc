@@ -479,7 +479,6 @@ initialiased.
 		extNameLen=strlen(extName);
 
 		p=(char *)glGetString(GL_EXTENSIONS);
-#define DEBUG
 #if defined (DEBUG)
 		/* For debugging */
 		{
