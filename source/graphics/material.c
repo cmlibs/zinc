@@ -552,21 +552,23 @@ be shared by multiple materials using the same program.
 					}
 
 					append_string(&fragment_program_string, 
-							"TEMP eyespaceCoord, perspective;\n"
-							"PARAM point_five = {0.5, 0.5, 0.5, 0.5};\n"
-
-							"MOV      eyespaceCoord, fragment.texcoord[1];\n"
-							"RCP      perspective.w, eyespaceCoord.w;\n"
-							"MUL      eyespaceCoord, eyespaceCoord, perspective.w;\n"
-							"MAD      eyespaceCoord, eyespaceCoord, point_five, point_five;\n"
-							"MOV      eyespaceCoord.w, 1.0;\n"
-							, &error);
+						"TEMP eyespaceCoord, perspective;\n"
+						"PARAM point_five = {0.5, 0.5, 0.5, 0.5};\n"
 						
+						"MOV      eyespaceCoord, fragment.texcoord[1];\n"
+						"RCP      perspective.w, eyespaceCoord.w;\n"
+						"MUL      eyespaceCoord, eyespaceCoord, perspective.w;\n"
+						"MAD      eyespaceCoord, eyespaceCoord, point_five, point_five;\n"
+						"MOV      eyespaceCoord.w, 1.0;\n"
+ 						, &error);
+
 					if (MATERIAL_PROGRAM_CLASS_ORDER_INDEPENDENT_PEEL_LAYER & material_program->type)
 					{
 						if (Graphics_library_vendor_mesa == vendor_id)
 						{
 							append_string(&fragment_program_string,
+								"MOV      tex4coord, eyespaceCoord.xyzx;\n"
+								"MUL      tex4coord, tex4coord, texturesize;\n"
 								"MOV     tex4coord.z, fragment.position.z;\n"
 								"TEX		tex4.x, tex4coord, texture[3], RECT;\n"
 								"MOV     kill, tex4.xxxx;\n"
@@ -726,10 +728,10 @@ be shared by multiple materials using the same program.
 					}
 					
 					append_string(&fragment_program_string, 
-						"MOV		 result.depth.z, eyespaceCoord.z;\n"
+						"MOV		 result.depth.z, fragment.position.z;\n"
 						"\n"
 						"END\n"
-						, &error);
+ 						, &error);
 				}
 				else if (MATERIAL_PROGRAM_CLASS_PER_PIXEL_LIGHTING & material_program->type)
 				{
