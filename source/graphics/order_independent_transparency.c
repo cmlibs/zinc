@@ -895,10 +895,10 @@ Actually preforms the rendering pass.
 #if defined (DEBUG)
 	{
 		FILE *out;
-		printf("Writing depth.raw -geometry %dx%d -depth 32\n", data->viewport_width, data->viewport_height);
+		printf("Writing depth.rgba display -size %dx%d -depth 8 depth.rgba\n", data->viewport_width, data->viewport_height);
 		glReadPixels(0, 0, data->viewport_width, data->viewport_height, GL_DEPTH_COMPONENT,
 			GL_UNSIGNED_INT, data->zbuffer);
-		out = fopen("depth.raw", "w");
+		out = fopen("depth.rgba", "w");
 		fwrite(data->zbuffer, sizeof(GLuint), data->viewport_width * data->viewport_height,
 			out);
 		fclose(out);
