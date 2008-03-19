@@ -75,7 +75,9 @@
 							   		<object class="sizeritem">
  				  			    	<flag>wxEXPAND</flag>
 						  			  <option>1</option>
-										  <object class = "wxCheckListBox" name="SceneCheckList"/>
+										  <object class = "wxCheckListBox" name="SceneCheckList">
+												<style>wxLB_HSCROLL</style>
+											</object>
 								   	</object>
 								 </object>
 							 </object>
@@ -138,11 +140,13 @@
 										<style>wxSP_3D</style>
 										<minsize>100</minsize>
 			 	 						<orientation>horizontal</orientation>
-										<object class ="wxScrolledWindow" name="LowestPanel">
+
+										<object class ="wxPanel" name="LowestPanel">
 											<flag>wxEXPAND</flag>
-											<option>0</option>
+											<option>1</option>
 				   						<object class = "wxBoxSizer">	
 												<orient>wxVERTICAL</orient>
+
 												<object class="sizeritem">
 													<flag>wxEXPAND</flag>
 													<option>0</option>
@@ -180,21 +184,17 @@
 														</object>
 													</object>
 												</object>
+
+
 												<object class ="sizeritem">
 													<flag>wxEXPAND</flag>
 													<option>1</option>
-													<object class ="wxScrolledWindow" name="SceneEditorGraphicalItemsListPanel">
-														<style>wxVSCROLL|wxHSCROLL</style>
-				   										<object class = "wxBoxSizer">	
-															<object class ="sizeritem">
-																<flag>wxEXPAND</flag>
-																<option>1</option>
-																<object class="wxCheckListBox" name="GraphicalItemsListBox">
-																</object>	
-															</object>			
-														</object>	
+													<object class="wxCheckListBox" name="GraphicalItemsListBox">
+														<style>wxLB_HSCROLL</style>
 													</object>
 												</object>
+
+
 											</object>
 										</object>
 
@@ -319,7 +319,7 @@
 													</object>	
 													<object class="sizeritem">
 														<object class	="wxPanel"  name="RadiusScalarChooserPanel">
-															<size>200,30</size>
+															<size>300,30</size>
 														</object>
 													</object>	
 												</object>
@@ -354,7 +354,7 @@
 													</object>
 													<object class="sizeritem">
 														<object class	="wxPanel" name="IsoScalarChooserPanel">
-															<size>200,30</size>
+															<size>300,30</size>
 	 													</object>
 													</object>
 												</object>
@@ -493,7 +493,7 @@
 													</object>
 													<object class="sizeritem">
 														<object class	="wxPanel" name="StreamVectorChooserPanel">
-															<size>200,30</size>
+															<size>300,30</size>
 	 													</object>
 													</object>
 													<object class="sizeritem">
@@ -567,7 +567,7 @@
 													</object>
 													<object class="sizeritem">
 														<object class	="wxPanel" name="NativeDiscretizationFieldChooserPanel">
-															<size>200,30</size>
+															<size>300,30</size>
 	 													</object>
 													</object>
 												</object>
@@ -584,7 +584,7 @@
 													</object>
 													<object class="sizeritem">
 														<object class	="wxPanel" name="DensityFieldChooserPanel">
-															<size>200,30</size>
+															<size>300,30</size>
 	 													</object>
 													</object>
 												</object>
@@ -673,7 +673,7 @@
 															</object>	
 															<object class="sizeritem">
 																<object class	="wxPanel"  name="OrientationScaleChooserPanel">
-																	<size>200,30</size>
+																	<size>300,30</size>
 																</object>
 															</object>	
 														</object>
@@ -707,7 +707,7 @@
 															</object>	
 															<object class="sizeritem">
 																<object class	="wxPanel"  name="VariableScaleChooserPanel">
-																	<size>200,30</size>
+																	<size>300,30</size>
 																</object>
 															</object>	
 														</object>
@@ -727,7 +727,7 @@
 													</object>
 													<object class="sizeritem">
 														<object class	="wxPanel" name="LabelChooserPanel">
-															<size>200,30</size>
+															<size>300,30</size>
  														</object>
 													</object>
  												</object>
@@ -786,7 +786,7 @@
 													</object>
 													<object class="sizeritem">
 														<object class	="wxPanel" name="GraphicalMaterialChooserPanel">
-															<size>200,30</size>
+															<size>300,30</size>
 	 													</object>
 													</object>
 												</object>
@@ -838,7 +838,7 @@
 													</object>
 													<object class="sizeritem">
 														<object class	="wxPanel" name="TextrueCoordinatesChooserPanel">
-															<size>200,30</size>
+															<size>300,30</size>
 	 													</object>
 													</object>
 												</object>
@@ -855,7 +855,7 @@
 													</object>
 													<object class="sizeritem">
 														<object class	="wxPanel" name="StreamlineDataTypeChooserPanel">
-															<size>200,30</size>
+															<size>300,30</size>
 	 													</object>
 													</object>
 												</object>
@@ -872,7 +872,7 @@
 													</object>
 													<object class="sizeritem">
 														<object class	="wxPanel" name="DataChooserPanel">
-															<size>200,30</size>
+															<size>300,30</size>
 	 													</object>
 													</object>
 												</object>

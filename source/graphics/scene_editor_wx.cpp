@@ -169,7 +169,6 @@ DESCRIPTION :
 	 wxCheckBox *autocheckbox;
 	 wxButton *applybutton;
 	 wxButton *revertbutton;
-	 wxScrolledWindow *graphical_items_list_panel;
 	 wxCollapsiblePane *collpane;
 	 wxCollapsiblePane *top_collpane;
 #endif /*defined (WX_USER_INTERFACE)*/
@@ -421,6 +420,7 @@ public:
 		  wxSceneEditor, int (wxSceneEditor::*)(Scene *) >
 		  (this, &wxSceneEditor::scene_callback);
       scene_chooser->set_callback(scene_callback);
+			scene_object_chooser_panel->Fit();
  /* Set the collapsible pane in the secne editor */
   scene_editor->collpane = XRCCTRL(*this, "CollapsiblePane", wxCollapsiblePane);
   wxPanel *GeneralSettingPanel = new wxPanel;
@@ -450,7 +450,7 @@ public:
 				wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
 		 (this, &wxSceneEditor::default_coordinate_field_callback);
 	computed_field_chooser->set_callback(default_coordinate_field_callback);
-	
+	default_coordinate_field_chooser_panel->Fit();
 	/* Set the native_discretisation_chooser_panel*/
 	if (scene_editor->edit_gt_element_group != NULL)
 	{
@@ -467,7 +467,7 @@ public:
 				wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
 		 (this, &wxSceneEditor::native_discretization_field_callback);
 	FE_field_chooser->set_callback(native_discretization_field_callback);
-	
+	FE_chooser_panel->Fit();
 	/* Set the coordinate_field_chooser_panel*/
 	if (scene_editor->current_settings != NULL)
 	{
@@ -485,7 +485,7 @@ public:
 				wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
 		 (this, &wxSceneEditor::coordinate_field_callback);
 	coordinate_field_chooser->set_callback(coordinate_field_callback);
-	
+	coordinate_field_chooser_panel->Fit();
 	/* Set the graphical_material_chooser_panel*/
 	wxPanel *graphical_material_chooser_panel =
 		 XRCCTRL(*this, "GraphicalMaterialChooserPanel",wxPanel);
@@ -498,7 +498,7 @@ public:
 				wxSceneEditor, int (wxSceneEditor::*)(Graphical_material *) >
 		 (this, &wxSceneEditor::graphical_material_callback);
 	graphical_material_chooser->set_callback(graphical_material_callback);
-	
+	graphical_material_chooser_panel->Fit();
 	/* Set the selected_material_chooser_panel*/
 	wxPanel *selected_material_chooser_panel =
 		 XRCCTRL(*this, "SelectedMaterialChooserPanel",wxPanel);
@@ -511,7 +511,7 @@ public:
 				wxSceneEditor, int (wxSceneEditor::*)(Graphical_material *) >
 		 (this, &wxSceneEditor::selected_material_callback);
 	selected_material_chooser->set_callback(selected_material_callback);
-
+	selected_material_chooser_panel->Fit();
 	/* Graphical element settings type chooser */
 	wxPanel *settings_type_chooser_panel = 
 		 XRCCTRL(*this, "TypeFormChooser", wxPanel);
@@ -569,7 +569,7 @@ public:
 				wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
 		 (this, &wxSceneEditor::data_field_callback);
 	data_field_chooser->set_callback(data_field_callback);
-
+	data_chooser_panel->Fit();
 	/* Set the spectrum_chooser*/
 	wxPanel *spectrum_chooser_panel =
 		 XRCCTRL(*this,"SpectrumChooserPanel", wxPanel);
@@ -582,7 +582,7 @@ public:
 				wxSceneEditor, int (wxSceneEditor::*)(Spectrum *) >
 		 (this, &wxSceneEditor::spectrum_callback);
 	spectrum_chooser->set_callback(spectrum_callback);
-			 
+	spectrum_chooser_panel->Fit();
 	radius_scalar_chooser = NULL;	
 	iso_scalar_chooser = NULL;
 	glyph_chooser = NULL;
@@ -676,6 +676,7 @@ DESCRIPTION :
 Callback from wxChooser<Scene> when choice is made.
 ==============================================================================*/
 	 {
+		int width, height;
 		gtMatrix transformation_matrix;
 		Scene_editor_set_scene(scene_editor, scene);
 		scene_editor->collpane->Disable();
@@ -736,6 +737,18 @@ Callback from wxChooser<Scene> when choice is made.
 			 scene_editor->lowersplitter->Disable();
 			 scene_editor->lowersplitter->Hide();
 		}
+		scene_editor->lowersplitter->GetSize(&width, &height);
+		scene_editor->lowersplitter->SetSize(width-1, height-1);
+		scene_editor->lowersplitter->SetSize(width+1, height+1);
+		scene_editor->lowersplitter->Fit();
+		lowest_panel = XRCCTRL(*this, "LowestPanel",wxScrolledWindow);
+		if (lowest_panel)
+		{
+			 lowest_panel->GetSize(&width, &height);
+			 lowest_panel->SetSize(width-1, height-1);
+			 lowest_panel->SetSize(width+1, height+1);
+		}
+
 		return 1;
 	}
 
@@ -939,8 +952,15 @@ DESCRIPTION :
 Set the selected option in the Scene Object chooser.
 ==============================================================================*/
 	{
-		scene_chooser->set_object(scene);
-		return 1;
+		 scene_chooser->set_object(scene);
+		 if (scene_editor->lowersplitter)
+		 {
+				int width, height;
+				scene_editor->lowersplitter->GetSize(&width, &height);
+				scene_editor->lowersplitter->SetSize(width-1, height-1);
+				scene_editor->lowersplitter->SetSize(width+1, height+1);
+		 }
+		 return 1;
 	}
 int radius_scalar_callback(Computed_field *radius_scalar_field)
 /*******************************************************************************
@@ -1667,14 +1687,6 @@ void ResetWindow(wxSplitterEvent& event)
 			XRCCTRL(*this, "SceneEditing", wxScrolledWindow);
 	 sceneediting->Layout();
 	 sceneediting->SetScrollbars(10,10,40,40);
-	 if (!scene_editor->graphical_items_list_panel)
-	 {
-			scene_editor->graphical_items_list_panel = XRCCTRL(*this,
-				 "SceneEditorGraphicalItemsListPanel", wxScrolledWindow);
-	 }
-	 scene_editor->graphical_items_list_panel->Fit();
-	 scene_editor->graphical_items_list_panel->Layout();
-	 scene_editor->graphical_items_list_panel->SetScrollbars(10,10,40,40);
 }
 
 	void ElementDiscretisationUpdate(wxCommandEvent &event)
@@ -2028,42 +2040,51 @@ void 	UpdateGraphicalElementList(GT_element_settings *settings)
 			GT_element_settings_set_visibility(settings, 0);
 	 }
 	 get_and_set_graphical_element_settings((void *)scene_editor);
-	 scene_editor->graphical_items_list_panel->FitInside();
 	 sceneeditingpanel->Thaw();
 	 sceneeditingpanel->Layout();
+	 if (scene_editor->lowersplitter)
+	 {
+			int width, height;
+			scene_editor->lowersplitter->GetSize(&width, &height);
+			scene_editor->lowersplitter->SetSize(width-1, height-1);
+				 scene_editor->lowersplitter->SetSize(width+1, height+1);
+	 }
 }
 
 void SceneCheckListClicked(wxCommandEvent &event)
 {
+	 int width, height;
 	 currentsceneobjecttext=XRCCTRL(*this,"CurrentSceneObjectText",wxStaticText);
 	 scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
 	 currentsceneobjecttext->SetLabel(scenechecklist->GetStringSelection());
 	 int selection=scenechecklist->GetSelection();
 	 UpdateSceneObjectList(Scene_get_scene_object_at_position(scene_editor->scene,selection+1));
-	 lowest_panel = XRCCTRL(*this, "LowestPanel",wxScrolledWindow);
-	 lowest_panel->Fit();	
-	 lowest_panel->Layout();	
+// 	 lowest_panel->Fit();	
+// 	 lowest_panel->Layout();	
 // 	 lowest_panel->SetScrollbars(10,10,40,40);
-	 if (!scene_editor->graphical_items_list_panel)
+// 	 scene_editor->topsplitter->Layout();
+// 	 sceneediting = 
+// 			XRCCTRL(*this, "SceneEditing", wxScrolledWindow);
+// 	 sceneediting->Layout();
+// 	 sceneediting->SetScrollbars(10,10,40,40);
+// 	 topsplitter=XRCCTRL(*this,"TopSplitter",wxSplitterWindow);
+// 	 topsplitter->Layout();	
+// 	 frame = 
+// 			 XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
+// 	 frame->Layout();
+	 if (scene_editor->lowersplitter)
 	 {
-			scene_editor->graphical_items_list_panel = XRCCTRL(*scene_editor->wx_scene_editor,
-				 "SceneEditorGraphicalItemsListPanel", wxScrolledWindow);
+			scene_editor->lowersplitter->GetSize(&width, &height);
+			scene_editor->lowersplitter->SetSize(width-1, height-1);
+			scene_editor->lowersplitter->SetSize(width+1, height+1);
 	 }
-	 scene_editor->graphical_items_list_panel->FitInside();
-	 scene_editor->graphical_items_list_panel->Layout();
-	 scene_editor->graphical_items_list_panel->SetScrollbars(10,10,40,40);
-	 scene_editor->topsplitter->Layout();
-	 sceneediting = 
-			XRCCTRL(*this, "SceneEditing", wxScrolledWindow);
-	 sceneediting->Layout();
-	 sceneediting->SetScrollbars(10,10,40,40);
-	 lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
-	 lowersplitter->Layout();	
-	 topsplitter=XRCCTRL(*this,"TopSplitter",wxSplitterWindow);
-	 topsplitter->Layout();	
-	 frame = 
-			 XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
-	 frame->Layout();
+	 lowest_panel = XRCCTRL(*this, "LowestPanel",wxScrolledWindow);
+	 if (lowest_panel)
+	 {
+			lowest_panel->GetSize(&width, &height);
+			lowest_panel->SetSize(width-1, height-1);
+			lowest_panel->SetSize(width+1, height+1);
+	 }
 }
 
 void  SceneObjectUpClicked(wxCommandEvent &event)
@@ -3492,6 +3513,7 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 							wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
 							(this, &wxSceneEditor::radius_scalar_callback);
 					 radius_scalar_chooser->set_callback(radius_scalar_callback);
+					 radius_scalar_chooser_panel->Fit();
 				}
 				if ((struct Computed_field *)NULL!=radius_scalar_field)
 				{
@@ -3554,6 +3576,7 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 							wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
 							(this, &wxSceneEditor::iso_scalar_callback);
 					 iso_scalar_chooser->set_callback(iso_scalar_callback);
+					 iso_scalar_chooser_panel->Fit();
 				}
 				if (iso_values)
 				{
@@ -3649,6 +3672,7 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 							wxSceneEditor, int (wxSceneEditor::*)(GT_object *) >
 							(this, &wxSceneEditor::glyph_callback);
 					 glyph_chooser->set_callback(glyph_callback);	
+					 glyph_chooser_panel->Fit();
 				}
 				if (orientation_scale_field_chooser == NULL)
 				{
@@ -3662,6 +3686,7 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 							wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
 							(this, &wxSceneEditor::orientation_scale_callback);
 					 orientation_scale_field_chooser->set_callback(orientation_scale_callback);
+					 orientation_scale_field_chooser_panel->Fit();
 				}
 				if (variable_scale_field_chooser  ==NULL)
 				{
@@ -3675,6 +3700,7 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 							wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
 							(this, &wxSceneEditor::variable_scale_callback);
 					 variable_scale_field_chooser->set_callback(variable_scale_callback);
+					 variable_scale_field_chooser_panel->Fit();
 				}
 
 				if (glyph != NULL)
@@ -3760,6 +3786,7 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 							 wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
 							 (this, &wxSceneEditor::label_callback);
 						label_field_chooser->set_callback(label_callback);
+						label_chooser_panel->Fit();
 				 }
 				 if (font_chooser == NULL)
 				 {
@@ -3773,6 +3800,7 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 							 wxSceneEditor, int (wxSceneEditor::*)(Graphics_font *) >
 							 (this, &wxSceneEditor::font_callback);
 						font_chooser->set_callback(font_callback);
+						font_chooser_panel->Fit();
 				 }
 				 labelcheckbox->Show();
 				 label_chooser_panel->Show();
@@ -3893,6 +3921,7 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 						 wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
 						 (this, &wxSceneEditor::native_discretization_callback);
 					native_discretization_field_chooser->set_callback(native_discretization_callback);
+					native_discretization_field_chooser_panel->Fit();
 			 }
 			 nativediscretizationfieldcheckbox->Show();
 			 native_discretization_field_chooser_panel->Show();
@@ -3923,6 +3952,7 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 						 wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
 						 (this, &wxSceneEditor::xi_point_density_callback);
 					xi_point_density_field_chooser->set_callback(xi_point_density_callback);
+					density_field_chooser_panel->Fit();
 			 }
 			 densityfieldtext->Show();
 			 density_field_chooser_panel->Show();
@@ -3993,6 +4023,7 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 						wxSceneEditor, int (wxSceneEditor::*)(FE_element *) >
 						(this, &wxSceneEditor::seed_element_callback);
 				 seed_element_chooser->set_callback(seed_element_callback);
+				 seed_element_panel->Fit();
 			}
 			if (NULL != seed_element)
 			{
@@ -4104,6 +4135,7 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 							wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
 							(this, &wxSceneEditor::stream_vector_callback);
 					 stream_vector_chooser->set_callback(stream_vector_callback);
+					 stream_vector_chooser_panel->Fit();
 				}
 				stream_vector_chooser ->set_object(stream_vector_field);
 				reversecheckbox->SetValue(reverse_track);
@@ -4164,6 +4196,7 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 							wxSceneEditor, int (wxSceneEditor::*)(enum Streamline_data_type) >
 							(this, &wxSceneEditor::streamline_data_type_callback);
 					 streamline_data_type_chooser->set_callback(streamline_data_type_callback);
+					 streamline_data_type_chooser_panel->Fit();
 				}
 				if ((struct Computed_field *)NULL != data_field)
 				{
@@ -4228,6 +4261,7 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 					wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
 						(this, &wxSceneEditor::texture_coord_field_callback);
 				 texture_coord_field_chooser->set_callback(texture_coord_field_callback);
+				 texture_coordinates_chooser_panel->Fit();
 			}
 			if ((struct Computed_field *)NULL != texture_coord_field)
 			{
@@ -4725,7 +4759,6 @@ DESCRIPTION :
 			 scene_editor->render_type =(Render_type)NULL;
 			 scene_editor->fe_element =(FE_element *)NULL;
 			 scene_editor->root_region = root_region;
-			 scene_editor->graphical_items_list_panel = NULL;
 			 scene_editor->wx_scene_editor = (wxSceneEditor *)NULL;
 			 scene_editor->graphicalitemslistbox = 	 (wxCheckListBox *)NULL;
 			 wxLogNull logNo;
@@ -4734,8 +4767,6 @@ DESCRIPTION :
 			 scene_editor->checklistbox = XRCCTRL(*scene_editor->wx_scene_editor, "SceneCheckList", wxCheckListBox);;	
 			 scene_editor->checklistbox->Clear();
 			 scene_editor->lowersplitter=XRCCTRL(*scene_editor->wx_scene_editor,"LowerSplitter",wxSplitterWindow);
-			 scene_editor->lowersplitter->SetSashPosition(160);
-			 scene_editor->lowersplitter->Layout();
 			 for_each_Scene_object_in_Scene(scene,
 					add_scene_object_to_scene_check_box, (void *)scene_editor);
  			 REACCESS(Scene_object)(&scene_editor->scene_object,
@@ -4821,13 +4852,8 @@ DESCRIPTION :
 			 scene_editor->sceneediting->SetScrollbars(10,10,40,40);
 			 scene_editor->topsplitter=XRCCTRL(*scene_editor->wx_scene_editor,"TopSplitter",wxSplitterWindow);
 			 scene_editor->topsplitter->SetSashPosition(150);
-			 if (!scene_editor->graphical_items_list_panel)
-			 {
-					scene_editor->graphical_items_list_panel = XRCCTRL(*scene_editor->wx_scene_editor,
-						 "SceneEditorGraphicalItemsListPanel", wxScrolledWindow);
-			 }
-			 scene_editor->graphical_items_list_panel->SetScrollbars(10,10,40,40);
-			 scene_editor->graphical_items_list_panel->FitInside();
+			 scene_editor->lowersplitter->SetSashPosition(160);
+			 scene_editor->lowersplitter->Layout();
 			 scene_editor->topsplitter->Layout();
 		}
 		else
