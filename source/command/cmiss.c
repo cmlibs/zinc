@@ -7403,6 +7403,9 @@ Modifies the properties of a texture.
 										file_number_series_data.increment,
 										image_data.crop_left_margin, image_data.crop_bottom_margin,
 										image_data.crop_width, image_data.crop_height);
+									/* Calling get_proprety with wildcard ensures they
+										will be available to the iterator, as well as
+										any other properties */
 									Cmgui_image_get_property(cmgui_image,"exif:*");
 									Cmgui_image_reset_property_iterator(cmgui_image);
 									while ((property = Cmgui_image_get_next_property(
