@@ -189,6 +189,21 @@ Returns true if <field> can be calculated at <node>. If the field depends on
 any other fields, this function is recursively called for them.
 ==============================================================================*/
 
+int Cmiss_computed_field_evaluate_at_field_coordinates(
+	struct Computed_field *field,
+	struct Computed_field *reference_field, int number_of_input_values,
+	float *input_values, float time, float *values);
+/*******************************************************************************
+LAST MODIFIED : 25 March 2008
+
+DESCRIPTION :
+Returns the <values> of <field> at the location of <input_values>
+with respect to the <reference_field> if it is defined there.
+
+The <values> array must be large enough to store as many FE_values as there are
+number_of_components.
+==============================================================================*/
+
 int Cmiss_computed_field_is_type_finite_element(Cmiss_computed_field_id field);
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000

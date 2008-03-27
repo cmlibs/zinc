@@ -265,3 +265,39 @@ any other fields, this function is recursively called for them.
 
 	return (return_code);
 } /* Cmiss_computed_field_is_defined_at_node */
+
+int Cmiss_computed_field_evaluate_at_field_coordinates(
+	struct Computed_field *field,
+	struct Computed_field *reference_field, int number_of_input_values,
+	FE_value *input_values, FE_value time, FE_value *values)
+/*******************************************************************************
+LAST MODIFIED : 25 March 2008
+
+DESCRIPTION :
+Returns the <values> of <field> at the location of <input_values>
+with respect to the <reference_field> if it is defined there.
+
+The <values> array must be large enough to store as many FE_values as there are
+number_of_components.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_computed_field_evaluate_at_field_coordinates);
+	if (field&&reference_field&&number_of_input_values&&input_values&&values)
+	{
+		return_code = Computed_field_evaluate_at_field_coordinates(field,
+			reference_field, number_of_input_values, input_values,
+			time, values);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_computed_field_evaluate_at_field_coordinates.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_computed_field_evaluate_at_field_coordinates */
