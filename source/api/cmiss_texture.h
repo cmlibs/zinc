@@ -93,15 +93,18 @@ are explictly requested from the hardware.
 
 enum Cmiss_texture_filter_mode
 /*******************************************************************************
-LAST MODIFIED : 25 May 2007
+LAST MODIFIED : 28 March 2008
 
 DESCRIPTION :
 Specfiy how the graphics hardware rasterises the texture onto the screen.
 ==============================================================================*/
 {
 	CMISS_TEXTURE_FILTER_NEAREST,
-	CMISS_TEXTURE_FILTER_LINEAR
-}; /* enum Texture_filter_mode */
+	CMISS_TEXTURE_FILTER_LINEAR,
+	CMISS_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST,
+	CMISS_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST,
+	CMISS_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR
+}; /* enum Cmiss_texture_filter_mode */
 
 enum Cmiss_texture_storage_type
 /*******************************************************************************

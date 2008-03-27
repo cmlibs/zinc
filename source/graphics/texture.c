@@ -1260,6 +1260,8 @@ tiles (and <texture_tiling> wasn't NULL.
 				switch (texture->filter_mode)
 				{
 					case TEXTURE_LINEAR_FILTER:
+					case TEXTURE_LINEAR_MIPMAP_NEAREST_FILTER:
+					case TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER:
 					{
 						(*texture_tiling)->overlap = 1;
 					} break;
@@ -1880,6 +1882,213 @@ and overwritten.
 #endif /* defined (OPENGL_API)*/
 
 #if defined (OPENGL_API)
+static int Texture_activate_texture_target_environment(struct Texture *texture,
+	GLenum texture_target)
+/*******************************************************************************
+LAST MODIFIED : 28 March 2008
+
+DESCRIPTION :
+Separating this out so we can set it for each activated tile.
+==============================================================================*/
+{
+	int return_code;
+	GLfloat values[4];
+
+	ENTER(Texture_activate_texture_target_environment);
+	return_code = 1;
+	if (texture)
+	{
+		switch (texture->wrap_mode)
+		{
+			case TEXTURE_CLAMP_WRAP:
+			{
+				glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_CLAMP);
+				glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_CLAMP);
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+				glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_CLAMP);
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+			} break;
+			case TEXTURE_REPEAT_WRAP:
+			{
+				glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_REPEAT);
+				glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_REPEAT);
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+				glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_REPEAT);
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+			} break;
+			case TEXTURE_CLAMP_EDGE_WRAP:
+			{
+#if defined (GL_VERSION_1_2)
+				if (Graphics_library_check_extension(GL_VERSION_1_2))
+				{
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_CLAMP_TO_EDGE);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
+						"Texture wrap mode %s not supported on this hardware.", 
+						ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
+					return_code = 0;
+				}
+#else /* defined (GL_VERSION_1_2) */
+				display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
+					"Texture wrap mode %s was not compiled into this executable.", 
+					ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
+				return_code = 0;
+#endif /* defined (GL_VERSION_1_2) */
+			} break;
+			case TEXTURE_CLAMP_BORDER_WRAP:
+			{
+#if defined (GL_VERSION_1_3)
+				if (Graphics_library_check_extension(GL_VERSION_1_3))
+				{
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_BORDER);
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_BORDER);
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_CLAMP_TO_BORDER);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
+						"Texture wrap mode %s not supported on this hardware.", 
+						ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
+					return_code = 0;
+				}
+#else /* defined (GL_VERSION_1_3) */
+				display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
+					"Texture wrap mode %s was not compiled into this executable.", 
+					ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
+				return_code = 0;
+#endif /* defined (GL_VERSION_1_3) */
+			} break;
+			case TEXTURE_MIRRORED_REPEAT_WRAP:
+			{
+#if defined (GL_VERSION_1_4)
+				if (Graphics_library_check_extension(GL_VERSION_1_4))
+				{
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_MIRRORED_REPEAT);
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_MIRRORED_REPEAT);
+					glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_MIRRORED_REPEAT);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
+						"Texture wrap mode %s not supported on this hardware.", 
+						ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
+					return_code = 0;
+				}
+#else /* defined (GL_VERSION_1_4) */
+				display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
+					"Texture wrap mode %s was not compiled into this executable.", 
+					ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
+				return_code = 0;
+#endif /* defined (GL_VERSION_1_4) */
+			} break;
+		}
+		switch (texture->filter_mode)
+		{
+			case TEXTURE_LINEAR_FILTER:
+			{
+				glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+				glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+			} break;
+			case TEXTURE_NEAREST_FILTER:
+			{
+				glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+				glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+			} break;
+			case TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER:
+			{
+#if defined (GL_VERSION_1_4)
+				if (Graphics_library_check_extension(GL_VERSION_1_4))
+				{
+					glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+					glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,
+						GL_LINEAR_MIPMAP_LINEAR);
+					glTexParameteri(texture_target,GL_GENERATE_MIPMAP,GL_TRUE);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
+						"Texture filter mode %s not supported on this hardware.", 
+						ENUMERATOR_STRING(Texture_filter_mode)(texture->filter_mode));
+					return_code = 0;
+				}
+#else /* defined (GL_VERSION_1_4) */
+				display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
+					"Texture filter mode %s was not compiled into this executable.", 
+					ENUMERATOR_STRING(Texture_filter_mode)(texture->filter_mode));
+				return_code = 0;
+#endif /* defined (GL_VERSION_1_4) */
+			} break;
+			case TEXTURE_LINEAR_MIPMAP_NEAREST_FILTER:
+			{
+#if defined (GL_VERSION_1_4)
+				if (Graphics_library_check_extension(GL_VERSION_1_4))
+				{
+					glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+					glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,
+						GL_LINEAR_MIPMAP_NEAREST);
+					glTexParameteri(texture_target,GL_GENERATE_MIPMAP,GL_TRUE);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
+						"Texture filter mode %s not supported on this hardware.", 
+						ENUMERATOR_STRING(Texture_filter_mode)(texture->filter_mode));
+					return_code = 0;
+				}
+#else /* defined (GL_VERSION_1_4) */
+				display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
+					"Texture filter mode %s was not compiled into this executable.", 
+					ENUMERATOR_STRING(Texture_filter_mode)(texture->filter_mode));
+				return_code = 0;
+#endif /* defined (GL_VERSION_1_4) */
+			} break;
+			case TEXTURE_NEAREST_MIPMAP_NEAREST_FILTER:
+			{
+#if defined (GL_VERSION_1_4)
+				if (Graphics_library_check_extension(GL_VERSION_1_4))
+				{
+					glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+					glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,
+						GL_NEAREST_MIPMAP_NEAREST);
+					glTexParameteri(texture_target,GL_GENERATE_MIPMAP,GL_TRUE);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
+						"Texture filter mode %s not supported on this hardware.", 
+						ENUMERATOR_STRING(Texture_filter_mode)(texture->filter_mode));
+					return_code = 0;
+				}
+#else /* defined (GL_VERSION_1_4) */
+				display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
+					"Texture filter mode %s was not compiled into this executable.", 
+					ENUMERATOR_STRING(Texture_filter_mode)(texture->filter_mode));
+				return_code = 0;
+#endif /* defined (GL_VERSION_1_4) */
+			} break;
+ 		}
+		values[0]=(texture->combine_colour).red;
+		values[1]=(texture->combine_colour).green;
+		values[2]=(texture->combine_colour).blue;
+		values[3]=texture->combine_alpha;
+		glTexParameterfv(texture_target,GL_TEXTURE_BORDER_COLOR,values);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Texture_activate_texture_target_environment.  Missing texture");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_activate_texture_target_environment */
+#endif /* defined (OPENGL_API) */
+
+#if defined (OPENGL_API)
 static int direct_render_Texture(struct Texture *texture,
 	struct Graphics_buffer *graphics_buffer,
 	struct Texture_tiling **texture_tiling)
@@ -1891,21 +2100,17 @@ Directly outputs the commands setting up the <texture>.
 ==============================================================================*/
 {
 	int  return_code;
-#if defined (OPENGL_API)
 	int hardware_storage_format, i, number_of_components, number_of_tiles,
 		reduction_flag,reductions[3],
 		render_tile_width, render_tile_height, render_tile_depth;
 	GLenum format, texture_target, type;
-	GLfloat values[4];
 	unsigned char *reduced_image, *rendered_image;
-#endif /* defined (OPENGL_API) */
 
 	ENTER(direct_render_Texture);
 	return_code = 1;
 	USE_PARAMETER(graphics_buffer);
 	if (texture)
 	{
-#if defined (OPENGL_API)
 		rendered_image = (unsigned char *)NULL;
 		switch (texture->dimension)
 		{
@@ -2175,112 +2380,9 @@ Directly outputs the commands setting up the <texture>.
 									(*texture_tiling)->texture_ids[i]);
 								rendered_image = reduced_image;
 								glEnable(texture_target);
-		switch (texture->wrap_mode)
-		{
-			case TEXTURE_CLAMP_WRAP:
-			{
-				glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_CLAMP);
-				glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_CLAMP);
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-				glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_CLAMP);
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-			} break;
-			case TEXTURE_REPEAT_WRAP:
-			{
-				glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_REPEAT);
-				glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_REPEAT);
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-				glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_REPEAT);
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-			} break;
-			case TEXTURE_CLAMP_EDGE_WRAP:
-			{
-#if defined (GL_VERSION_1_2)
-				if (Graphics_library_check_extension(GL_VERSION_1_2))
-				{
-					glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
-					glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
-					glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_CLAMP_TO_EDGE);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "direct_render_Texture.  "
-						"Texture wrap mode %s not supported on this hardware.", 
-						ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
-					return_code = 0;
-				}
-#else /* defined (GL_VERSION_1_2) */
-				display_message(ERROR_MESSAGE, "direct_render_Texture.  "
-					"Texture wrap mode %s was not compiled into this executable.", 
-					ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
-				return_code = 0;
-#endif /* defined (GL_VERSION_1_2) */
-			} break;
-			case TEXTURE_CLAMP_BORDER_WRAP:
-			{
-#if defined (GL_VERSION_1_3)
-				if (Graphics_library_check_extension(GL_VERSION_1_3))
-				{
-					glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_BORDER);
-					glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_BORDER);
-					glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_CLAMP_TO_BORDER);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "direct_render_Texture.  "
-						"Texture wrap mode %s not supported on this hardware.", 
-						ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
-					return_code = 0;
-				}
-#else /* defined (GL_VERSION_1_3) */
-				display_message(ERROR_MESSAGE, "direct_render_Texture.  "
-					"Texture wrap mode %s was not compiled into this executable.", 
-					ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
-				return_code = 0;
-#endif /* defined (GL_VERSION_1_3) */
-			} break;
-			case TEXTURE_MIRRORED_REPEAT_WRAP:
-			{
-#if defined (GL_VERSION_1_4)
-				if (Graphics_library_check_extension(GL_VERSION_1_4))
-				{
-					glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_MIRRORED_REPEAT);
-					glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_MIRRORED_REPEAT);
-					glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_MIRRORED_REPEAT);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "direct_render_Texture.  "
-						"Texture wrap mode %s not supported on this hardware.", 
-						ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
-					return_code = 0;
-				}
-#else /* defined (GL_VERSION_1_4) */
-				display_message(ERROR_MESSAGE, "direct_render_Texture.  "
-					"Texture wrap mode %s was not compiled into this executable.", 
-					ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
-				return_code = 0;
-#endif /* defined (GL_VERSION_1_4) */
-			} break;
-		}
-		switch (texture->filter_mode)
-		{
-			case TEXTURE_LINEAR_FILTER:
-			{
-				glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-				glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-			} break;
-			case TEXTURE_NEAREST_FILTER:
-			{
-				glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-				glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-			} break;
-		}
-		values[0]=(texture->combine_colour).red;
-		values[1]=(texture->combine_colour).green;
-		values[2]=(texture->combine_colour).blue;
-		values[3]=texture->combine_alpha;
-		glTexParameterfv(texture_target,GL_TEXTURE_BORDER_COLOR,values);
+
+								Texture_activate_texture_target_environment(texture,
+									texture_target);
 							}
 							switch (texture->dimension)
 							{
@@ -2348,114 +2450,8 @@ Directly outputs the commands setting up the <texture>.
 				}
 			} break;
 		}
-		switch (texture->wrap_mode)
-		{
-			case TEXTURE_CLAMP_WRAP:
-			{
-				glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_CLAMP);
-				glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_CLAMP);
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-				glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_CLAMP);
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-			} break;
-			case TEXTURE_REPEAT_WRAP:
-			{
-				glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_REPEAT);
-				glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_REPEAT);
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-				glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_REPEAT);
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-			} break;
-			case TEXTURE_CLAMP_EDGE_WRAP:
-			{
-#if defined (GL_VERSION_1_2)
-				if (Graphics_library_check_extension(GL_VERSION_1_2))
-				{
-					glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
-					glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
-					glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_CLAMP_TO_EDGE);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "direct_render_Texture.  "
-						"Texture wrap mode %s not supported on this hardware.", 
-						ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
-					return_code = 0;
-				}
-#else /* defined (GL_VERSION_1_2) */
-				display_message(ERROR_MESSAGE, "direct_render_Texture.  "
-					"Texture wrap mode %s was not compiled into this executable.", 
-					ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
-				return_code = 0;
-#endif /* defined (GL_VERSION_1_2) */
-			} break;
-			case TEXTURE_CLAMP_BORDER_WRAP:
-			{
-#if defined (GL_VERSION_1_3)
-				if (Graphics_library_check_extension(GL_VERSION_1_3))
-				{
-					glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_BORDER);
-					glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_BORDER);
-					glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_CLAMP_TO_BORDER);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "direct_render_Texture.  "
-						"Texture wrap mode %s not supported on this hardware.", 
-						ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
-					return_code = 0;
-				}
-#else /* defined (GL_VERSION_1_3) */
-				display_message(ERROR_MESSAGE, "direct_render_Texture.  "
-					"Texture wrap mode %s was not compiled into this executable.", 
-					ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
-				return_code = 0;
-#endif /* defined (GL_VERSION_1_3) */
-			} break;
-			case TEXTURE_MIRRORED_REPEAT_WRAP:
-			{
-#if defined (GL_VERSION_1_4)
-				if (Graphics_library_check_extension(GL_VERSION_1_4))
-				{
-					glTexParameteri(texture_target,GL_TEXTURE_WRAP_S,GL_MIRRORED_REPEAT);
-					glTexParameteri(texture_target,GL_TEXTURE_WRAP_T,GL_MIRRORED_REPEAT);
-					glTexParameteri(texture_target,GL_TEXTURE_WRAP_R,GL_MIRRORED_REPEAT);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "direct_render_Texture.  "
-						"Texture wrap mode %s not supported on this hardware.", 
-						ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
-					return_code = 0;
-				}
-#else /* defined (GL_VERSION_1_4) */
-				display_message(ERROR_MESSAGE, "direct_render_Texture.  "
-					"Texture wrap mode %s was not compiled into this executable.", 
-					ENUMERATOR_STRING(Texture_wrap_mode)(texture->wrap_mode));
-				return_code = 0;
-#endif /* defined (GL_VERSION_1_4) */
-			} break;
-		}
-		switch (texture->filter_mode)
-		{
-			case TEXTURE_LINEAR_FILTER:
-			{
-				glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-				glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-			} break;
-			case TEXTURE_NEAREST_FILTER:
-			{
-				glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-				glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-			} break;
-		}
-		values[0]=(texture->combine_colour).red;
-		values[1]=(texture->combine_colour).green;
-		values[2]=(texture->combine_colour).blue;
-		values[3]=texture->combine_alpha;
-		glTexParameterfv(texture_target,GL_TEXTURE_BORDER_COLOR,values);
-
-#endif /* defined (OPENGL_API) */
+		Texture_activate_texture_target_environment(texture,
+			texture_target);
 	}
 	else
 	{
@@ -2849,6 +2845,21 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_filter_mode)
 		case TEXTURE_NEAREST_FILTER:
 		{
 			enumerator_string = "nearest_filter";
+		} break;
+		/* Need to prepend these strings with something
+			so that they don't conflict with abbreviations of
+			the old values above */
+		case TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER:
+		{
+			enumerator_string = "image_linear_mipmap_linear_filter";
+		} break;
+		case TEXTURE_LINEAR_MIPMAP_NEAREST_FILTER:
+		{
+			enumerator_string = "image_linear_mipmap_nearest_filter";
+		} break;
+		case TEXTURE_NEAREST_MIPMAP_NEAREST_FILTER:
+		{
+			enumerator_string = "image_nearest_mipmap_nearest_filter";
 		} break;
 		default:
 		{
@@ -3834,18 +3845,44 @@ DESCRIPTION :
 Sets the texture filter: linear or nearest.
 ==============================================================================*/
 {
+	char *type_string;
 	int return_code;
 
 	ENTER(Texture_set_filter_mode);
-	if (texture&&((TEXTURE_LINEAR_FILTER==filter_mode)||
-		(TEXTURE_NEAREST_FILTER==filter_mode)))
+	if (texture)
 	{
-		if (filter_mode != texture->filter_mode)
+		if ((TEXTURE_LINEAR_FILTER==filter_mode)||
+			(TEXTURE_NEAREST_FILTER==filter_mode)
+#if defined (GL_VERSION_1_4)
+			/* Cannot do the runtime test here as the graphics may not be 
+				initialised yet or we may just want to evaluate the texture as a field */
+			|| (TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER==filter_mode)
+			|| (TEXTURE_LINEAR_MIPMAP_NEAREST_FILTER==filter_mode)
+			|| (TEXTURE_NEAREST_MIPMAP_NEAREST_FILTER==filter_mode)
+#endif /* defined (GL_VERSION_1_4) */
+			 )
 		{
-			texture->filter_mode = filter_mode;
-			Texture_notify_change(texture);
+			if (filter_mode != texture->filter_mode)
+			{
+				texture->filter_mode = filter_mode;
+				Texture_notify_change(texture);
+			}
+			return_code=1;
 		}
-		return_code=1;
+		else
+		{
+			if (type_string = ENUMERATOR_STRING(Texture_filter_mode)(filter_mode))
+			{
+				display_message(ERROR_MESSAGE,  "Texture_set_filter_mode.  "
+					"Texture filter mode %s was not compiled into this executable.", type_string);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Texture_set_filter_mode.  Invalid filter type.");
+			}
+			return_code=0;
+		}
 	}
 	else
 	{
@@ -4983,6 +5020,8 @@ is constant from the half texel location to the edge.
 			switch (texture->filter_mode)
 			{
 				case TEXTURE_LINEAR_FILTER:
+				case TEXTURE_LINEAR_MIPMAP_NEAREST_FILTER:
+				case TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER:
 				{
 					dimension = texture->dimension;
 					pos[0] = x;
@@ -5176,6 +5215,7 @@ is constant from the half texel location to the edge.
 					}
 				} break;
 				case TEXTURE_NEAREST_FILTER:
+				case TEXTURE_NEAREST_MIPMAP_NEAREST_FILTER:
 				{
 					x_i = (int)x;
 					y_i = (int)y;

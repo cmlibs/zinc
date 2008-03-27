@@ -515,6 +515,18 @@ DESCRIPTION :
 			{
 				filter_mode = CMISS_TEXTURE_FILTER_NEAREST;
 			} break;
+			case TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER:
+			{
+				filter_mode = CMISS_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR;
+			} break;
+			case TEXTURE_LINEAR_MIPMAP_NEAREST_FILTER:
+			{
+				filter_mode = CMISS_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST;
+			} break;
+			case TEXTURE_NEAREST_MIPMAP_NEAREST_FILTER:
+			{
+				filter_mode = CMISS_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST;
+			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
@@ -561,6 +573,21 @@ Specfiy how the graphics hardware rasterises the texture onto the screen.
 		  {
 			  return_code = Texture_set_filter_mode(texture, 
 				  TEXTURE_LINEAR_FILTER);
+		  } break;
+		  case CMISS_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST:
+		  {
+			  return_code = Texture_set_filter_mode(texture, 
+				  TEXTURE_NEAREST_MIPMAP_NEAREST_FILTER);
+		  } break;
+		  case CMISS_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST:
+		  {
+			  return_code = Texture_set_filter_mode(texture, 
+				  TEXTURE_LINEAR_MIPMAP_NEAREST_FILTER);
+		  } break;
+		  case CMISS_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR:
+		  {
+			  return_code = Texture_set_filter_mode(texture, 
+				  TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER);
 		  } break;
 		  default:
 		  {

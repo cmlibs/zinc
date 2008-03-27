@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.h
 
-LAST MODIFIED : 15 March 2002
+LAST MODIFIED : 28 March 2008
 
 DESCRIPTION :
 The data structures used for representing textures.
@@ -112,14 +112,17 @@ are explictly requested from the hardware.
 
 enum Texture_filter_mode
 /*******************************************************************************
-LAST MODIFIED : 28 February 2002
+LAST MODIFIED : 28 March 2008
 
 DESCRIPTION :
 What happens to when the screen and texture are at different resolutions.
 ==============================================================================*/
 {
 	TEXTURE_LINEAR_FILTER,
-	TEXTURE_NEAREST_FILTER
+	TEXTURE_NEAREST_FILTER,
+	TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER,
+	TEXTURE_LINEAR_MIPMAP_NEAREST_FILTER,
+	TEXTURE_NEAREST_MIPMAP_NEAREST_FILTER
 }; /* enum Texture_filter_mode */
 
 enum Texture_resize_filter_mode
