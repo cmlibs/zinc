@@ -308,8 +308,7 @@ a vector of integers of dimension specified by the <source_field> dimension.
 	struct Computed_field **source_fields;
 
 	ENTER(Computed_field_set_type_mean_image_filter);
-	if (field && source_field &&
-		Computed_field_is_scalar(source_field, (void *)NULL))
+	if (field && source_field)
 	{
 		return_code = 1;
 		/* 1. make dynamic allocations for any new type-specific data */
@@ -529,7 +528,7 @@ already) and allows its contents to be modified.
 					/* field */
 					set_source_field_data.computed_field_manager =
 						computed_field_simple_package->get_computed_field_manager();
-					set_source_field_data.conditional_function = Computed_field_is_scalar;
+					set_source_field_data.conditional_function = Computed_field_has_numerical_components;
 					set_source_field_data.conditional_function_user_data = (void *)NULL;
 					Option_table_add_entry(option_table, "field", &source_field,
 						&set_source_field_data, set_Computed_field_conditional);
