@@ -145,12 +145,9 @@ private:
 
 	char* get_command_string();
 
-#if !defined (DONOTUSE_TEMPLATETEMPLATES)
-	/* This is the normal implementation */
 	template < class ComputedFieldFilter >
 	int create_histogram_filters_multicomponent_multidimensions(
 		ComputedFieldFilter* filter);
-#endif // !defined (DONOTUSE_TEMPLATETEMPLATES)
 
 };
 
@@ -790,14 +787,9 @@ Create the computed_field representation of the RescaleIntensityImageFilter.
 		}
 	}
 
-#if defined DONOTUSE_TEMPLATETEMPLATES
-	create_filters_singlecomponent_multidimensions(
-		Computed_field_histogram_image_filter_Functor, this);
-#else
 	create_histogram_filters_multicomponent_multidimensions
 		< Computed_field_histogram_image_filter >
 		(this);
-#endif
 }
 
 } //namespace
