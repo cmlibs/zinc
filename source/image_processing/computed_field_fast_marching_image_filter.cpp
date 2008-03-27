@@ -86,15 +86,15 @@ public:
 		// delete memory used by arrays
 
 		if (seed_points) {
-			delete seed_points;
+			delete [] seed_points;
 		}
 
 		if (seed_values) {
-			delete seed_values;
+			delete [] seed_values;
 		}
 
 		if (output_size) {
-			delete output_size;
+			delete [] output_size;
 		}				
 
 	}
@@ -616,7 +616,7 @@ already) and allows its contents to be modified.
 	int *output_size;
 	int length_seed_points;
 	int return_code;
-	int previous_state_index, expected_parameters;
+	int previous_state_index;
 	int i;
 
 	struct Computed_field *field, *source_field;
@@ -682,7 +682,7 @@ already) and allows its contents to be modified.
 				set_source_field_data.conditional_function = Computed_field_is_scalar;
 				set_source_field_data.conditional_function_user_data = (void *)NULL;
 				Option_table_add_entry(option_table, "field", &source_field,
-															 &set_source_field_data, set_Computed_field_conditional);
+					&set_source_field_data, set_Computed_field_conditional);
 				/* stopping_value */
 				Option_table_add_double_entry(option_table, "stopping_value",
 																			&stopping_value);
@@ -764,20 +764,20 @@ already) and allows its contents to be modified.
 															 &set_source_field_data, set_Computed_field_conditional);
 				/* stopping_value */
 				Option_table_add_double_entry(option_table, "stopping_value",
-																			&stopping_value);
-				expected_parameters = 1;
+					&stopping_value);
+				int num_seed_points_expected_parameters = 1;
 				Option_table_add_ignore_token_entry(option_table, "num_seed_points", 
-																						&expected_parameters);
-				expected_parameters = 1;
+					&num_seed_points_expected_parameters);
+				int dimension_expected_parameters = 1;
 				Option_table_add_ignore_token_entry(option_table, "dimension", 
-																						&expected_parameters);
+					&dimension_expected_parameters);
 				Option_table_add_double_vector_entry(option_table, "seed_points", 
-																						 seed_points, &length_seed_points);
+					seed_points, &length_seed_points);
 				Option_table_add_double_vector_entry(option_table, "seed_values", 
-																						 seed_values, &num_seed_points);
+					seed_values, &num_seed_points);
 				Option_table_add_int_vector_entry(option_table, "output_size", 
-																						 output_size, &dimension);
-
+					output_size, &dimension);
+				
 				return_code=Option_table_multi_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
 			
