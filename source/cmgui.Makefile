@@ -332,7 +332,7 @@ ifeq ($(USE_ITK),true)
    ITK_DEFINES = -DUSE_ITK
    ITK_SRCDIR = $(CMISS_ROOT)/itk/src
    ITK_BINDIR = $(CMISS_ROOT)/itk/lib/$(LIB_ARCH_DIR)
-   ITK_INC = -I$(ITK_BINDIR) -I$(ITK_SRCDIR)/Code/Algorithms -I$(ITK_SRCDIR)/Code/BasicFilters -I$(ITK_SRCDIR)/Code/Common -I$(ITK_SRCDIR)/Utilities/vxl/vcl -I$(ITK_SRCDIR)/Utilities/vxl/core -I$(ITK_BINDIR)/Utilities/vxl/vcl -I$(ITK_BINDIR)/Utilities/vxl/core/
+   ITK_INC = -I$(ITK_BINDIR) -I$(ITK_SRCDIR)/Code/Algorithms -I$(ITK_SRCDIR)/Code/BasicFilters -I$(ITK_SRCDIR)/Code/Common -I$(ITK_SRCDIR)/Code/Numerics/Statistics -I$(ITK_SRCDIR)/Utilities/vxl/vcl -I$(ITK_SRCDIR)/Utilities/vxl/core -I$(ITK_BINDIR)/Utilities/vxl/vcl -I$(ITK_BINDIR)/Utilities/vxl/core/
    ITK_LIB = -L$(ITK_BINDIR)/bin -lITKAlgorithms -lITKStatistics -lITKBasicFilters  -lITKCommon -litkvnl -litkvnl_algo -litkvnl -litknetlib -litksys -lITKDICOMParser -litkzlib -litkzlib -litktiff -litkjpeg12 -litkjpeg16 -lITKNrrdIO 
 else # $(USE_ITK) == true
    ITK_DEFINES =
@@ -1148,6 +1148,7 @@ ifeq ($(USE_ITK),true)
 	   image_processing/computed_field_fast_marching_image_filter.cpp \
 	   image_processing/computed_field_binary_dilate_image_filter.cpp \
 	   image_processing/computed_field_binary_erode_image_filter.cpp \
+	   image_processing/computed_field_histogram_image_filter.cpp \
 	   image_processing/computed_field_ImageFilter.cpp
 endif # $(USE_ITK) == true
 INTERACTION_SRCS = \

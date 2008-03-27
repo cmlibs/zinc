@@ -55,6 +55,7 @@ extern "C" {
 #include "itkImage.h"
 #include "itkVector.h"
 #include "itkImageRegionIteratorWithIndex.h"
+#include "itkImportImageFilter.h"
 
 #if defined (SGI)
 /* The IRIX compiler 7.3.1.3m does not seem to support templates of templates so
@@ -127,6 +128,9 @@ public:
 	template < class PixelType >
 	inline void assign_field_values( PixelType pixel );
 
+	template < class PixelType >
+	inline void setPixelValues( PixelType& pixel, float *values );
+
 protected:
 
 	int clear_cache()
@@ -160,6 +164,11 @@ protected:
 #endif /* !defined (DONOTUSE_TEMPLATETEMPLATES) */
 
 public:
+	template <class ImageType >
+	int create_input_image(Field_location* location, 
+		typename ImageType::Pointer &inputImage,
+		ImageType *dummytemplarg1);
+
 	template <class ImageType, class FilterType >
 	int update_output_image(Field_location* location, 
 		typename FilterType::Pointer filter,
@@ -823,7 +832,7 @@ Evaluate the templated version of this filter
 {
 	int i, return_code;
 
-	ENTER(Computed_field_ImageFilter::evaluate_filter);
+	ENTER(Computed_field_ImageFilter::evaluate_output_image);
 	if (field && location)
 	{
 		Field_element_xi_location* element_xi_location;
@@ -833,7 +842,7 @@ Evaluate the templated version of this filter
 		if (element_xi_location = 
 			dynamic_cast<Field_element_xi_location*>(location))
 		{
-			xi  = element_xi_location->get_xi();
+			xi = element_xi_location->get_xi();
 		}
 		else if (coordinate_location = 
 			dynamic_cast<Field_coordinate_location*>(location))
@@ -870,14 +879,14 @@ Evaluate the templated version of this filter
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_ImageFilter::evaluate_filter.  "
+			"Computed_field_ImageFilter::evaluate_output_image.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_ImageFilter::evaluate_filter */
+} /* Computed_field_ImageFilter::evaluate_output_image */
 
 template < class ImageType >
 class Computed_field_ImageFilter_FunctorTmpl :
@@ -938,15 +947,46 @@ location.
 
 };
 
-template <class ImageType, class FilterType >
-int Computed_field_ImageFilter::update_output_image(Field_location* location, 
-	typename FilterType::Pointer filter, typename ImageType::Pointer &outputImage,
-	ImageType *dummytemplarg1, FilterType *dummytemplarg2)
+template < >
+inline void Computed_field_ImageFilter::setPixelValues( float& pixel, float *values )
+{
+	pixel = values[0];
+}
+
+template < >
+inline void Computed_field_ImageFilter::setPixelValues( itk::Vector< float, 2 >& pixel, float *values )
+{
+	pixel[0] = values[0];
+	pixel[1] = values[1];
+}
+
+template < >
+inline void Computed_field_ImageFilter::setPixelValues( itk::Vector< float, 3 >& pixel, float *values )
+{
+	pixel[0] = values[0];
+	pixel[1] = values[1];
+	pixel[2] = values[2];
+}
+
+template < >
+inline void Computed_field_ImageFilter::setPixelValues( itk::Vector< float, 4 >& pixel, float *values )
+{
+	pixel[0] = values[0];
+	pixel[1] = values[1];
+	pixel[2] = values[2];
+	pixel[3] = values[3];
+}
+
+template <class ImageType >
+int Computed_field_ImageFilter::create_input_image(Field_location* location, 
+	typename ImageType::Pointer &inputImage,
+	ImageType *dummytemplarg1)
 /*******************************************************************************
-LAST MODIFIED : 4 September 2006
+LAST MODIFIED : 25 March 2008
 
 DESCRIPTION :
-Evaluate the templated version of this filter
+Sets the input filter.  The reference to the created <inputImage> is available
+for subsequent operations.
 ==============================================================================*/
 {
 	int return_code;
@@ -954,13 +994,11 @@ Evaluate the templated version of this filter
 	Computed_field_ImageFilter *input_field_image_filter;
 	Computed_field_ImageFilter_FunctorTmpl< ImageType > *input_field_image_functor;
 
-	ENTER(Computed_field_ImageFilter::evaluate_filter);
+	ENTER(Computed_field_ImageFilter::create_input_image);
 	if (field && location)
 	{
 		Field_element_xi_location* element_xi_location = NULL;
 		Field_coordinate_location* coordinate_location = NULL;
-
-		typename ImageType::Pointer inputImage;
 
 		if ((element_xi_location = 
 				dynamic_cast<Field_element_xi_location*>(location))
@@ -980,7 +1018,7 @@ Evaluate the templated version of this filter
 				Computed_field_evaluate_cache_at_location(
 					field->source_fields[0], location);
 
-				filter->SetInput(input_field_image_functor->get_output_image());
+				inputImage = input_field_image_functor->get_output_image();
 			}
 			else
 			{
@@ -1002,66 +1040,245 @@ Evaluate the templated version of this filter
 				inputImage->SetRegions(region);
 				inputImage->Allocate();
 			
-				/* around this part of the function,
-					 instead of creating an input image we can try just grabbing the output image from the input field
-
-					 To do this try dynamic casting the inpt field core to see if it is of the correct type.
-					 If it is the wrong type the dynamic cast will return null.
-
-					 If the field can be cast into a ComputedFieldImageType then we fetch its output image
-					 to use as the input image into this filter
-				*/
-
-				itk::ImageRegionIteratorWithIndex< ImageType >
-					generateInput( inputImage, region );
-				for ( generateInput.GoToBegin(); !generateInput.IsAtEnd(); ++generateInput)
-				{
-					typename ImageType::IndexType idx = generateInput.GetIndex();
+				float pixel_xi[3];
 				
-					/* Find element xi for idx, 
-						 assuming xi field for now. */
-					float pixel_xi[3];
+				for (i = 0 ; i < 3 ; i++)
+				{
+					pixel_xi[i] = 0.0;
+				}
+
+				if(element_xi_location)
+				{
+					FE_element* element = element_xi_location->get_element();
+					FE_value time = element_xi_location->get_time();
+
+					itk::ImageRegionIteratorWithIndex< ImageType >
+						generateInput( inputImage, region );
+					for ( generateInput.GoToBegin(); !generateInput.IsAtEnd();
+						++generateInput)
+					{
+						typename ImageType::IndexType idx = generateInput.GetIndex();
+				
+						/* Find element xi for idx, assuming xi field for now. */
+						for (i = 0 ; i < dimension ; i++)
+						{
+							pixel_xi[i] = ((float)idx[i] + 0.5) / (float)sizes[i];
+						}
+
+						Field_element_xi_location pixel_location(element, pixel_xi, 
+							time, /*top_level_element*/(struct FE_element *)NULL);
+						
+						Computed_field_evaluate_cache_at_location(
+							field->source_fields[0], &pixel_location);
+				
+						generateInput.Set( field->source_fields[0]->values[0] );
+					}
+				}
+				else if (coordinate_location)
+				{
+					Computed_field* reference_field = 
+						coordinate_location->get_reference_field();
+					FE_value time = coordinate_location->get_time();
+					itk::ImageRegionIteratorWithIndex< ImageType >
+						generateInput( inputImage, region );
+					Field_coordinate_location pixel_location(reference_field, 
+						dimension, pixel_xi, time);
+
+					for ( generateInput.GoToBegin(); !generateInput.IsAtEnd(); ++generateInput)
+					{
+						typename ImageType::IndexType idx = generateInput.GetIndex();
+				
+						/* Find element xi for idx, assuming xi field for now. */
+						for (i = 0 ; i < dimension ; i++)
+						{
+							pixel_xi[i] = ((float)idx[i] + 0.5) / (float)sizes[i];
+						}
+						pixel_location.set_values(dimension, pixel_xi);
+
+						Computed_field_evaluate_cache_at_location(
+							field->source_fields[0], &pixel_location);
+				
+						generateInput.Set( field->source_fields[0]->values[0] );
+					}
+				}
+#if defined (NEW_CODE)
+				typedef itk::ImportImageFilter<
+				   typename ImageType::PixelType, ImageType::ImageDimension >
+					ImportFilterType;
+				typename ImportFilterType::Pointer importFilter = 
+					ImportFilterType::New();
+
+				printf("ImportImageFilter %d\n", ImageType::ImageDimension); 
+
+				typename ImportFilterType::IndexType start;
+				for (i = 0 ; i < dimension ; i++)
+				{
+					start[i] = 0; // first index on X
+				}
+				typename ImportFilterType::SizeType size;
+				for (i = 0 ; i < dimension ; i++)
+				{
+					size[i] = sizes[i];
+				}
+				typename ImportFilterType::RegionType region;
+				region.SetSize( size );
+				region.SetIndex( start );
+			
+				importFilter->SetRegion(region);
+
+				unsigned int totalSize = sizes[0];
+				for (i = 1 ; i < dimension ; i++)
+				{
+					totalSize *= sizes[i];
+				}
+				typename ImageType::PixelType * localBuffer =
+					new typename ImageType::PixelType[ totalSize ];
+			
+				float pixel_xi[3];
+				
+				for (i = 0 ; i < dimension ; i++)
+				{
+					pixel_xi[i] = 0.5 / (float)sizes[i];
+				}
+				for ( ; i < 3 ; i++)
+				{
+					pixel_xi[i] = 0.0;
+				}
+
+				typename ImageType::IndexType idx;
+				for (i = 0 ; i < dimension ; i++)
+				{
+					idx[i] = 0;
+				}
+
+				if(element_xi_location)
+				{
+					unsigned int count = 0;
+					FE_element* element = element_xi_location->get_element();
+					FE_value time = element_xi_location->get_time();
+					typename ImageType::PixelType *buffer_ptr = localBuffer;
+
+					/* Find element xi for idx, assuming xi field for now. */
 					for (i = 0 ; i < dimension ; i++)
 					{
 						pixel_xi[i] = ((float)idx[i] + 0.5) / (float)sizes[i];
 					}
-					for (; i < 3 ; i++)
+					while (count < totalSize)
 					{
-						pixel_xi[i] = 0.0;
-					}
-
-					if (element_xi_location)
-					{
-						FE_element* element = element_xi_location->get_element();
-						FE_value time = element_xi_location->get_time();
-					
 						Field_element_xi_location pixel_location(element, pixel_xi, 
 							time, /*top_level_element*/(struct FE_element *)NULL);
+						
+						Computed_field_evaluate_cache_at_location(
+							field->source_fields[0], &pixel_location);
+				
+						setPixelValues( *buffer_ptr, 
+							field->source_fields[0]->values );
+
+						buffer_ptr++;
+						count++;
+						idx[0]++;
+						pixel_xi[0] = ((float)idx[0] + 0.5) / (float)sizes[0];
+						for (i = 1 ; (i < dimension) && (idx[i-1] >= sizes[i-1]) ; i++)
+						{
+							idx[i-1] = 0;
+							pixel_xi[i-1] = ((float)idx[i-1] + 0.5) / (float)sizes[i-1];
+							idx[i]++;
+							pixel_xi[i] = ((float)idx[i] + 0.5) / (float)sizes[i];
+						}
+					}
+				}
+				else if (coordinate_location)
+				{
+					unsigned int count = 0;
+					Computed_field* reference_field = 
+						coordinate_location->get_reference_field();
+					FE_value time = coordinate_location->get_time();
+					Field_coordinate_location pixel_location(reference_field, 
+						dimension, pixel_xi, time);
+					typename ImageType::PixelType *buffer_ptr = localBuffer;
+
+					/* Find element xi for idx, assuming xi field for now. */
+					for (i = 0 ; i < dimension ; i++)
+					{
+						pixel_xi[i] = ((float)idx[i] + 0.5) / (float)sizes[i];
+					}
+					while (count < totalSize)
+					{
+						pixel_location.set_values(dimension, pixel_xi);
 
 						Computed_field_evaluate_cache_at_location(
 							field->source_fields[0], &pixel_location);
-					}
-					else if (coordinate_location)
-					{
-						Computed_field *reference_field = 
-							coordinate_location->get_reference_field();
-						FE_value time = coordinate_location->get_time();
-					
-						Field_coordinate_location pixel_location(reference_field, 
-							dimension, pixel_xi, time);
-
-						Computed_field_evaluate_cache_at_location(
-							field->source_fields[0], &pixel_location);	
-					}
 				
-					generateInput.Set( field->source_fields[0]->values[0] );
+						setPixelValues( *buffer_ptr, 
+							field->source_fields[0]->values );
+
+						buffer_ptr++;
+						count++;
+						idx[0]++;
+						pixel_xi[0] = ((float)idx[0] + 0.5) / (float)sizes[0];
+						for (i = 1 ; (i < dimension) && (idx[i-1] >= sizes[i-1]) ; i++)
+						{
+							idx[i-1] = 0;
+							pixel_xi[i-1] = ((float)idx[i-1] + 0.5) / (float)sizes[i-1];
+							idx[i]++;
+							pixel_xi[i] = ((float)idx[i] + 0.5) / (float)sizes[i];
+						}
+					}
+
 				}
-			
-				filter->SetInput( inputImage );
+
+				importFilter->SetImportPointer( localBuffer, totalSize,
+					/*importImageFilterWillOwnTheBuffer*/true );
+				importFilter->Update();
+
+				inputImage = importFilter->GetOutput();
+#endif // defined (NEW_CODE)
+
 			}
 
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_ImageFilter::create_input_image.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_ImageFilter::create_input_image */
+
+template <class ImageType, class FilterType >
+int Computed_field_ImageFilter::update_output_image(Field_location* location, 
+	typename FilterType::Pointer filter, typename ImageType::Pointer &outputImage,
+	ImageType *dummytemplarg1, FilterType *dummytemplarg2)
+/*******************************************************************************
+LAST MODIFIED : 27 March 2008
+
+DESCRIPTION :
+Evaluate the templated version of this filter
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_ImageFilter::update_output_image);
+	if (field && location)
+	{
+		typename ImageType::Pointer inputImage;
+
+		if (create_input_image(location, inputImage, dummytemplarg1))
+		{
 			try
 			{
+				filter->SetInput( inputImage );
+
 				filter->Update();
 				
 				outputImage = filter->GetOutput();
@@ -1091,14 +1308,14 @@ Evaluate the templated version of this filter
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_ImageFilter::update_output.  "
+			"Computed_field_ImageFilter::update_output_image.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_ImageFilter::evaluate_filter */
+} /* Computed_field_ImageFilter::update_output_image */
 
 } //CMISS namespace
 

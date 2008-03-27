@@ -189,6 +189,7 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_rescaleIntensityImageFilter.h"
 #include "image_processing/computed_field_connected_threshold_image_filter.h"
 #include "image_processing/computed_field_gradient_magnitude_recursive_gaussian_image_filter.h"
+#include "image_processing/computed_field_histogram_image_filter.h"
 #include "image_processing/computed_field_fast_marching_image_filter.h"
 #include "image_processing/computed_field_binary_dilate_image_filter.h"
 #include "image_processing/computed_field_binary_erode_image_filter.h"
@@ -25001,6 +25002,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			Computed_field_register_types_sigmoid_image_filter(
 				command_data->computed_field_package);
 			Computed_field_register_types_discrete_gaussian_image_filter(
+				command_data->computed_field_package);
+			Computed_field_register_types_histogram_image_filter(
 				command_data->computed_field_package);
 			Computed_field_register_types_curvature_anisotropic_diffusion_image_filter(
 				command_data->computed_field_package);
