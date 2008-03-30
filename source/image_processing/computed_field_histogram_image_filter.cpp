@@ -115,6 +115,7 @@ private:
 				(*native_sizes)[i] = numberOfBins[i];
 			}
 			*native_texture_coordinate_field = texture_coordinate_field;
+			return_code = 1;
 		}
 		else
 		{
@@ -953,7 +954,7 @@ already) and allows its contents to be modified.
 				Option_table_add_entry(option_table, "field", &source_field,
 					&set_source_field_data, set_Computed_field_conditional);
 				/* numberOfBins */
-				int dummyNumberOfBins = 255;
+				int dummyNumberOfBins = 64;
 				Option_table_add_int_positive_entry(option_table, "number_of_bins",
 					&dummyNumberOfBins);
 				/* marginalScale */
