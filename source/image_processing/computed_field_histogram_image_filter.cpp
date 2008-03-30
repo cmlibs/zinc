@@ -1040,6 +1040,10 @@ already) and allows its contents to be modified.
 			{
 				DEACCESS(Computed_field)(&source_field);
 			}
+			if (numberOfBins)
+			{
+				DEALLOCATE(numberOfBins);
+			}
 		}
 	}
 	else
