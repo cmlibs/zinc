@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.c
 
-LAST MODIFIED : 21 June 2007
+LAST MODIFIED : 31 March 2008
 
 DESCRIPTION :
 The functions for manipulating graphical textures.
@@ -2851,15 +2851,15 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_filter_mode)
 			the old values above */
 		case TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER:
 		{
-			enumerator_string = "image_linear_mipmap_linear_filter";
+			enumerator_string = "filter_linear_mipmap_linear";
 		} break;
 		case TEXTURE_LINEAR_MIPMAP_NEAREST_FILTER:
 		{
-			enumerator_string = "image_linear_mipmap_nearest_filter";
+			enumerator_string = "filter_linear_mipmap_nearest";
 		} break;
 		case TEXTURE_NEAREST_MIPMAP_NEAREST_FILTER:
 		{
-			enumerator_string = "image_nearest_mipmap_nearest_filter";
+			enumerator_string = "filter_nearest_mipmap_nearest";
 		} break;
 		default:
 		{
