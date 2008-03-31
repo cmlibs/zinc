@@ -332,7 +332,6 @@ DESCRIPTION :
 	struct Scene *default_scene;
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct MANAGER(VT_volume_texture) *volume_texture_manager;
-	struct Scene_object_transformation_data *scene_object_transformation_data;
 #if defined (MOTIF)
 	struct Prompt_window *prompt_window;
 	struct Projection_window *projection_window;
@@ -18823,36 +18822,11 @@ Sets the transformation for a graphics object from the command line.
 					if (scene_object=Scene_get_Scene_object_by_name(scene,
 						scene_object_name))
 					{
-						 if (command_data->scene_object_transformation_data)
-						 {
-								Time_keeper_remove_callback(command_data->default_time_keeper,
-									 Scene_object_set_transformation_with_time_callback, 
-									 (void *)command_data->scene_object_transformation_data);
-								DEALLOCATE(command_data->scene_object_transformation_data);
-								command_data->scene_object_transformation_data = 
-											(struct Scene_object_transformation_data*)NULL;
-						 }
 						 if (computed_field)
 						 {
-								if (!command_data->scene_object_transformation_data)
-								{
-									 ALLOCATE(command_data->scene_object_transformation_data,
-											struct Scene_object_transformation_data,1);
-								}
-								if (command_data->scene_object_transformation_data)
-								{
-									 command_data->scene_object_transformation_data->scene_object = 
-											scene_object;
-									 command_data->scene_object_transformation_data->computed_field = 
-											computed_field;
-									 Time_keeper_add_callback(command_data->default_time_keeper,
-											Scene_object_set_transformation_with_time_callback,
-											(void *)command_data->scene_object_transformation_data,
-											(enum Time_keeper_event) (TIME_KEEPER_NEW_TIME | 
-												 TIME_KEEPER_NEW_MINIMUM |
-												 TIME_KEEPER_NEW_MAXIMUM ));
-									 DEACCESS(Computed_field)(&computed_field);
-								}
+								Scene_object_set_transformation_with_time_callback(scene_object,
+									 computed_field);
+								DEACCESS(Computed_field)(&computed_field);
 						 }
 						 else
 						 {
@@ -24461,8 +24435,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->foreground_colour.blue=(float)1;
 		command_data->help_directory=(char *)NULL;
 		command_data->help_url=(char *)NULL;
-		command_data->scene_object_transformation_data = 
-			 (struct Scene_object_transformation_data*)NULL;
 #if defined (PERL_INTERPRETER)
 		command_data->interpreter = (struct Interpreter *)NULL;
 #endif /* defined (PERL_INTERPRETER) */
@@ -25653,10 +25625,6 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		DESTROY(MANAGER(Light_model))(&command_data->light_model_manager);
 		DEACCESS(Light)(&(command_data->default_light));
 		DESTROY(MANAGER(Light))(&command_data->light_manager);
-		if (command_data->scene_object_transformation_data)
-		{
-			 DEALLOCATE(command_data->scene_object_transformation_data);
-		}
 #if defined (MOTIF) || (WX_USER_INTERFACE)
 		DESTROY(MANAGER(Comfile_window))(&command_data->comfile_window_manager);
 #endif /* defined (MOTIF) || (WX_USER_INTERFACE) */

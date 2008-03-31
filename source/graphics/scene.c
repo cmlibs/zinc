@@ -147,6 +147,9 @@ graphics object may have different visibility on different scenes.
 	struct LIST(CMISS_CALLBACK_ITEM(Scene_object_transformation)) *transformation_callback_list;
 	/* the optional global object which this Scene_object represents */
 	struct Any_object *represented_object;
+	/* transformaiton field for time dependent transformation */
+	struct Computed_field *transformation_field;
+	int transformation_time_callback_flag;
 	int access_count;
 }; /* struct Scene_object */
 
@@ -267,6 +270,12 @@ DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Scene_object_transformation, void)
 
 DEFINE_CMISS_CALLBACK_FUNCTIONS(Scene_object_transformation, \
 	struct Scene_object *, gtMatrix *)
+
+
+/* prototype */
+static int Scene_object_set_time_dependent_transformation(struct Time_object *time_object,
+	 double current_time, void *scene_object_void);
+
 
 static int execute_child_Scene(struct Scene *scene)
 /*******************************************************************************
@@ -1085,6 +1094,8 @@ and is visible.
 			scene_object->scene_manager = (struct MANAGER(Scene) *)NULL;
 			scene_object->scene_manager_callback_id = NULL;
 			scene_object->represented_object = (struct Any_object *)NULL;
+			scene_object->transformation_field = (struct Computed_field *)NULL;
+		  scene_object->transformation_time_callback_flag = 0;
 			scene_object->access_count=0;
 		}
 		else
@@ -1279,6 +1290,11 @@ DEACCESSes the member GT_object and removes any other dynamic fields.
 				}
 				if(scene_object->time_object)
 				{
+				  if (scene_object->transformation_time_callback_flag)
+				  {
+					  Time_object_remove_callback(scene_object->time_object,
+						  Scene_object_set_time_dependent_transformation, scene_object);
+					}
 					Time_object_remove_callback(scene_object->time_object, 
 						Scene_object_time_update_callback, scene_object);
 					if (scene_object->scene)
@@ -1299,6 +1315,10 @@ DEACCESSes the member GT_object and removes any other dynamic fields.
 				if (scene_object->represented_object)
 				{
 					DEACCESS(Any_object)(&scene_object->represented_object);
+				}
+				if (scene_object->transformation_field)
+				{
+					 DEACCESS(Computed_field)(&(scene_object->transformation_field));
 				}
 				DEALLOCATE(*scene_object_ptr);
 			}
@@ -3410,33 +3430,32 @@ Sets the transformation of <scene_object>.
 	return (return_code);
 } /* Scene_object_set_transformation */
 
-int Scene_object_set_transformation_with_time_callback(struct Time_keeper *time_keeper,
-	 enum Time_keeper_event event, void *scene_object_transformation_data_void)
+static int Scene_object_set_time_dependent_transformation(struct Time_object *time_object,
+	double current_time, void *scene_object_void)
 /*******************************************************************************
-LAST MODIFIED : 17 October 2007
+LAST MODIFIED : 31 March 2008
 
 DESCRIPTION :
-
+Transform a scene object with the values of a computed field 
+at the provided time.
 ==============================================================================*/
 {
+	 int return_code, i, j, k;
+	 struct Scene_object *scene_object;
 	 FE_value *values;
 	 gtMatrix transformation_matrix;
-	 int return_code, i, j, k;
-	 struct Computed_field *computed_field;
-	 struct Scene_object *scene_object;
-	 struct Scene_object_transformation_data *data;
 
-	 ENTER(Scene_object_set_transformation_with_time_callback);
-	 USE_PARAMETER(event);
-	 return_code = 0;
-	 if (data = (struct Scene_object_transformation_data *)scene_object_transformation_data_void)
+	 ENTER(Scene_object_set_time_dependent_transformation);
+	 USE_PARAMETER(time_object);
+
+	 if (scene_object = (struct Scene_object *)scene_object_void)
 	 {
-			if ((scene_object = data->scene_object) && (computed_field = data->computed_field))
+			if (scene_object->transformation_field)
 			{
 				 if (ALLOCATE(values, FE_value, 16))
 				 {
-						Computed_field_evaluate_without_node(computed_field, 
-							 Time_keeper_get_time(time_keeper), values);
+						Computed_field_evaluate_without_node(scene_object->transformation_field, 
+							 current_time, values);
 						k = 0;
 						for (i = 0;i < 4; i++)
 						{
@@ -3446,14 +3465,14 @@ DESCRIPTION :
 									k++;
 							 }
 						}
-						DEALLOCATE(values);
 						return_code = Scene_object_set_transformation(scene_object,
 							 &transformation_matrix);
+						DEALLOCATE(values);
 				 }
 				 else
 				 {
 						display_message(ERROR_MESSAGE,
-							 "Scene_object_set_transformation_with_time_callback.  "
+							 "Scene_object_set_time_dependent_transformation.  "
 							 "Unable to allocate values.");
 						return_code=0;
 				 }
@@ -3461,14 +3480,76 @@ DESCRIPTION :
 			else
 			{
 				 display_message(ERROR_MESSAGE,
-						"Scene_object_set_transformation_with_time_callback.  Invalid argument(s)");
-			}	
+						"Scene_object_set_time_dependent_transformation.  "
+						"Missing transformation field.");
+				 return_code=0;
+			}
 	 }
 	 else
 	 {
 			display_message(ERROR_MESSAGE,
-				 "Scene_object_set_transformation_with_time_callback.  Invalid argument(s)");
+				 "Scene_object_set_time_dependent_transformation.  "
+				 "invalid argument.");
+			return_code=0;
 	 }
+	 LEAVE;
+
+	 return (return_code);
+}
+
+int Scene_object_set_transformation_with_time_callback(struct Scene_object *scene_object,
+	 struct Computed_field *transformation_field)
+/*******************************************************************************
+LAST MODIFIED : 31 March 2008
+
+DESCRIPTION :
+Setup the callback for time dependent transformation.
+==============================================================================*/
+{
+	 int return_code;
+
+	 ENTER(Scene_object_set_transformation_with_time_callback);
+
+	 return_code = 0;
+	 if (scene_object && transformation_field)
+	 {
+			if (scene_object->time_object)
+			{
+				 if (scene_object->transformation_time_callback_flag)
+				 {
+						Time_object_remove_callback(scene_object->time_object,
+							 Scene_object_set_time_dependent_transformation, scene_object);
+						DEACCESS(Computed_field)(&(scene_object->transformation_field));
+						scene_object->transformation_field = NULL;
+						scene_object->transformation_time_callback_flag = 0;
+				 }
+				 scene_object->transformation_field=
+						ACCESS(Computed_field)(transformation_field);
+				 Scene_object_set_time_dependent_transformation(scene_object->time_object,
+						Time_object_get_current_time(scene_object->time_object),
+						(void *)scene_object);
+				 Time_object_add_callback(scene_object->time_object,
+						Scene_object_set_time_dependent_transformation, scene_object);
+				 scene_object->transformation_time_callback_flag = 1;
+				 return_code = 1;
+			}
+			else
+			{
+				 display_message(ERROR_MESSAGE,
+						"Scene_object_set_transformation_with_time_callback.  "
+						"Missing time object.");
+				 return_code=0;
+			}
+			return_code = scene_object->transformation_time_callback_flag;
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "Scene_object_set_transformation_with_time_callback.  "
+				 "Invalid argument(s).");
+			return_code=0;
+	 }
+
 	 LEAVE;	
 
 	 return (return_code);
