@@ -3430,6 +3430,28 @@ Sets the transformation of <scene_object>.
 	return (return_code);
 } /* Scene_object_set_transformation */
 
+void Scene_object_remove_time_dependent_transformation(struct Scene_object *scene_object)
+/*******************************************************************************
+LAST MODIFIED : 31 March 2008
+
+DESCRIPTION :
+Remove the time dependent transformation of <scene_object> if it currently exists.
+==============================================================================*/
+{
+	ENTER(Scene_object_remove_time_dependent_transformation);
+
+	if (scene_object->transformation_time_callback_flag)
+	{
+		 Time_object_remove_callback(scene_object->time_object,
+				Scene_object_set_time_dependent_transformation, scene_object);
+		 DEACCESS(Computed_field)(&(scene_object->transformation_field));
+		 scene_object->transformation_field = NULL;
+			 scene_object->transformation_time_callback_flag = 0;
+	}
+
+	LEAVE;
+}
+
 static int Scene_object_set_time_dependent_transformation(struct Time_object *time_object,
 	double current_time, void *scene_object_void)
 /*******************************************************************************
@@ -3515,14 +3537,7 @@ Setup the callback for time dependent transformation.
 	 {
 			if (scene_object->time_object)
 			{
-				 if (scene_object->transformation_time_callback_flag)
-				 {
-						Time_object_remove_callback(scene_object->time_object,
-							 Scene_object_set_time_dependent_transformation, scene_object);
-						DEACCESS(Computed_field)(&(scene_object->transformation_field));
-						scene_object->transformation_field = NULL;
-						scene_object->transformation_time_callback_flag = 0;
-				 }
+				 Scene_object_remove_time_dependent_transformation(scene_object);
 				 scene_object->transformation_field=
 						ACCESS(Computed_field)(transformation_field);
 				 Scene_object_set_time_dependent_transformation(scene_object->time_object,

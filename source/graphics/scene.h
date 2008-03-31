@@ -345,6 +345,15 @@ DESCRIPTION :
 Sets the transformation of <scene_object>.
 ==============================================================================*/
 
+void Scene_object_remove_time_dependent_transformation(
+	 struct Scene_object *scene_object);
+/*******************************************************************************
+LAST MODIFIED : 31 March 2008
+
+DESCRIPTION :
+Remove the time dependent transformation of <scene_object> if it currently exists.
+==============================================================================*/
+
 int Scene_object_set_transformation_with_time_callback(struct Scene_object *scene_object,
 	 struct Computed_field *transformation_field);
 /*(struct Time_keeper *time_keeper,

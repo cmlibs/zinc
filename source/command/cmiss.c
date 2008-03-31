@@ -18830,8 +18830,9 @@ Sets the transformation for a graphics object from the command line.
 						 }
 						 else
 						 {
+								Scene_object_remove_time_dependent_transformation(scene_object);
 								Scene_object_set_transformation(scene_object,
-								&transformation_matrix); 
+									&transformation_matrix); 
 						 }
 					}
 					else
