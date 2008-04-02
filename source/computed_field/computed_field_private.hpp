@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_private.hpp
 
-LAST MODIFIED : 24 January 2007
+LAST MODIFIED : 31 March 2008
 
 DESCRIPTION :
 ==============================================================================*/
@@ -429,6 +429,24 @@ LAST MODIFIED : 3 July 2000
 
 DESCRIPTION :
 Sets the coordinate system of the <field> to match that of it's sources.
+==============================================================================*/
+
+int Computed_field_broadcast_field_components(
+	struct Computed_field **field_one, struct Computed_field **field_two);
+/*******************************************************************************
+LAST MODIFIED : 31 March 2008
+
+DESCRIPTION :
+Takes two ACCESSED fields <field_one> and <field_two> and compares their number
+of components.  If they are equal then the function just returns.  If one
+is a scalar field and the is not then the scalar is wrapped in a composite field
+which repeats the scalar to match the non scalar number of components.  The
+wrapped field will be DEACCESSED by the function but now will be accessed by
+the wrapping field and an ACCESSED pointer to the wrapper field is returned
+replacing the wrapped field.
+If the two fields are non scalar and have different numbers of components then
+nothing is done, although other shape broadcast operations could be proposed
+for matrix operations.
 ==============================================================================*/
 
 inline int Computed_field_evaluate_cache_at_location(
