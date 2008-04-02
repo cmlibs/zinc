@@ -396,6 +396,8 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
+					Computed_field_broadcast_field_components(
+						&source_fields[0], &source_fields[1]);
 					return_code = Computed_field_set_type_power(field,
 						source_fields[0], source_fields[1]);
 				}
@@ -771,6 +773,8 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
+					Computed_field_broadcast_field_components(
+						&source_fields[0], &source_fields[1]);
 					return_code = Computed_field_set_type_multiply_components(field,
 						source_fields[0], source_fields[1]);
 				}
@@ -1144,6 +1148,8 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
+					Computed_field_broadcast_field_components(
+						&source_fields[0], &source_fields[1]);
 					return_code = Computed_field_set_type_divide_components(field,
 						source_fields[0], source_fields[1]);
 				}
@@ -1543,6 +1549,8 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
+					Computed_field_broadcast_field_components(
+						&source_fields[0], &source_fields[1]);
 					return_code = Computed_field_set_type_add(field,
 						source_fields[0], scale_factors[0],
 						source_fields[1], scale_factors[1]);
