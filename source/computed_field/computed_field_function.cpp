@@ -137,10 +137,9 @@ Compare the type specific data
 ==============================================================================*/
 {
 	int return_code;
-	Computed_field_function* other;
 
 	ENTER(Computed_field_function::compare);
-	if (field && (other = dynamic_cast<Computed_field_function*>(other_core)))
+	if (field && dynamic_cast<Computed_field_function*>(other_core))
 	{
 		return_code = 1;
 	}
@@ -474,10 +473,9 @@ internally used path.
 ==============================================================================*/
 {
 	int return_code;
-	Computed_field_function* function_core;
 
 	ENTER(Computed_field_get_type_function);
-	if (field && (function_core = dynamic_cast<Computed_field_function*>(field->core)) &&
+	if (field && dynamic_cast<Computed_field_function*>(field->core) &&
 		source_field && result_field && reference_field)
 	{
 		*source_field = field->source_fields[0];
