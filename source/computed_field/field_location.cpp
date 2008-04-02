@@ -216,3 +216,23 @@ int Field_coordinate_location::update_cache_for_location(Computed_field *field)
 	return (return_code);
 }
 
+int Field_coordinate_location::set_values_for_location(Computed_field *field,
+	FE_value *values_in)
+{
+	int return_code;
+	if ((field == reference_field) &&
+		(number_of_values == field->number_of_components))
+	{
+		int i;
+		for (i = 0 ; (i < number_of_values) ; i++)
+		{
+			values[i] = values_in[i];
+		}
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	return (return_code);
+}

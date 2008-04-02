@@ -83,6 +83,13 @@ public:
 		/* Don't need to do anything */
 		return 1;
 	}
+
+	virtual int set_values_for_location(Computed_field *field,
+		FE_value *values)
+	{
+		/* Default is that the location can't set the values */
+		return 0;
+	}
 };
 
 class Field_element_xi_location : public Field_location
@@ -185,6 +192,10 @@ public:
 	int check_cache_for_location(Computed_field *field);
 
 	int update_cache_for_location(Computed_field *field);
+
+	int set_values_for_location(Computed_field *field,
+		FE_value *values);
+
 };
 
 #endif /* !defined (__FIELD_LOCATION_HPP__) */
