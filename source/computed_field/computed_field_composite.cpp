@@ -109,7 +109,7 @@ public:
 			source_field_numbers[i] = source_field_numbers_in[i];
 			source_value_numbers[i] = source_value_numbers_in[i];
 		}
-	};
+	}
 
 	~Computed_field_composite();
 
