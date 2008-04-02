@@ -954,15 +954,16 @@ Module variables
 */
 
 /* blending matricies for the monomial basis */
+
 static FE_value linear_lagrange_blending_matrix[]=
 {
-	1,-1,
-	0, 1
+	1,-1, /* phi1 = 1 - x */
+	0, 1  /* phi2 = x     */
 };
 
 static FE_value quadratic_lagrange_blending_matrix[]=
 {
-	1,-3, 2,
+	1,-3, 2, /* phi1 = 1 - 3x + 2xx */
 	0, 4,-4,
 	0,-1, 2
 };
@@ -1000,14 +1001,16 @@ static FE_value hermite_lagrange_blending_matrix[]=
 /*???DB.  Start by blending to full monomial.  Think about reduced later */
 static FE_value linear_simplex_2d_blending_matrix[]=
 {
-	1,-1,-1, 0,
+	/* coefficients of 1 x y xy; all cooefficients of xy are zero, so can be "reduced" */
+	1,-1,-1, 0, /* phi1 = 1 - x - y */
 	0, 1, 0, 0,
 	0, 0, 1, 0
 };
 
 static FE_value quadratic_simplex_2d_blending_matrix[]=
 {
-	1,-3, 2,-3, 4, 0, 2, 0, 0,
+	/* coefficients of 1 x  xx y xy xxy yy xyy xxyy; starting to be wasteful with lots of zero terms */
+	1,-3, 2,-3, 4, 0, 2, 0, 0, /* phi1 = 1 - 3x + 2xx - 3y + 4xy + 2yy */
 	0, 4,-4, 0,-4, 0, 0, 0, 0,
 	0,-1, 2, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 4,-4, 0,-4, 0, 0,
@@ -1017,14 +1020,39 @@ static FE_value quadratic_simplex_2d_blending_matrix[]=
 
 static FE_value linear_simplex_3d_blending_matrix[]=
 {
-	1,-1,-1, 0,-1, 0, 0, 0,
+	1,-1,-1, 0,-1, 0, 0, 0, /* i.e. phi(0) = 1 - xi1 - xi2 - xi3; no quadratic or cubic (xi1*xi2*xi3) terms */
 	0, 1, 0, 0, 0, 0, 0, 0,
 	0, 0, 1, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 1, 0, 0, 0
 };
 
+static FE_value quadratic_simplex_3d_blending_matrix[]=
+{
+	/* Very wasteful! 27 standard basis functions with as few as 1 non-zero coefficient!
+	   Intend to use simplex basis functions directly once testing examples running.
+	   coefficients of monomial set, with x=xi1 y=xi2 z=xi3
+		 1  x   xx   y   xy   xxy   yy   xyy   xxyy
+	 	 z  xz  xxz  yz  xyz  xxyz  yyz  xyyz  xxyyz
+	 	 zz xzz xxzz yzz xyzz xxyzz yyzz xyyzz xxyyzz */
+	1,-3, 2,-3, 4,  0,  2,  0,0, -3, 4,  0,  4,  0,0,0,0,0,  2,  0,0,0,0,0,0,0,0,
+	0, 4,-4, 0,-4,  0,  0,  0,0,  0,-4,  0,  0,  0,0,0,0,0,  0,  0,0,0,0,0,0,0,0,
+	0,-1, 2, 0, 0,  0,  0,  0,0,  0, 0,  0,  0,  0,0,0,0,0,  0,  0,0,0,0,0,0,0,0,
+	0, 0, 0, 4,-4,  0, -4,  0,0,  0, 0,  0, -4,  0,0,0,0,0,  0,  0,0,0,0,0,0,0,0,
+	0, 0, 0, 0, 4,  0,  0,  0,0,  0, 0,  0,  0,  0,0,0,0,0,  0,  0,0,0,0,0,0,0,0,
+	0, 0, 0,-1, 0,  0,  2,  0,0,  0, 0,  0,  0,  0,0,0,0,0,  0,  0,0,0,0,0,0,0,0,
+	0, 0, 0, 0, 0,  0,  0,  0,0,  4,-4,  0, -4,  0,0,0,0,0, -4,  0,0,0,0,0,0,0,0,
+	0, 0, 0, 0, 0,  0,  0,  0,0,  0, 4,  0,  0,  0,0,0,0,0,  0,  0,0,0,0,0,0,0,0,
+	0, 0, 0, 0, 0,  0,  0,  0,0,  0, 0,  0,  4,  0,0,0,0,0,  0,  0,0,0,0,0,0,0,0,
+	0, 0, 0, 0, 0,  0,  0,  0,0, -1, 0,  0,  0,  0,0,0,0,0,  2,  0,0,0,0,0,0,0,0
+};
+
+
+
 #if defined (NEW_NEW_CODE)
 /*???DB.  For reduced monomial */
+/* simplex elements have zero coefficients for most/all higher order monomial terms, e.g. xi1*xi1 or xi1*xi2*xi2, so
+ * in theory these could be removed from the monomial basis. Similarly for serendipity element bases which
+ * are like Lagrangian elements but omitting certain interior or midface nodes associated with higher order monomial terms */ 
 static FE_value linear_simplex_2d_blending_matrix[]=
 {
 	1,-1,-1,
@@ -1039,7 +1067,7 @@ static FE_value quadratic_simplex_2d_blending_matrix[]=
 	0,-1, 2, 0, 0, 0,
 	0, 0, 0, 4,-4,-4,
 	0, 0, 0, 0, 4, 0,
-	0, 0, 0, 2, 0,-2
+	0, 0, 0,-1, 0, 2
 };
 
 static FE_value linear_simplex_3d_blending_matrix[]=
@@ -21961,7 +21989,7 @@ Returns true if <node_group> contains any nodes in <node_list>.
 
 struct FE_basis *CREATE(FE_basis)(int *type)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2001
+LAST MODIFIED : 02 April 2008
 
 DESCRIPTION :
 A basis is created with the specified <type> (duplicated).  The basis is
@@ -21972,7 +22000,8 @@ returned.
 	FE_value *blending_matrix,*polygon_blending_matrix,*reorder_1,*reorder_2,
 		*temp_matrix;
 	int *argument,*arguments,*basis_function_number,*basis_function_numbers,
-		*basis_type,i,j,k,l,need_reorder,number_of_basis_functions,
+		*basis_type,fn,i,j,k,l,need_reorder,new_func_count,new_std_func_count,
+		number_of_basis_functions,
 		number_of_polygon_verticies,number_of_standard_basis_functions,
 		number_of_xi_coordinates,offset_1,offset_2,polygon_offset,*reorder_offsets,
 		*reorder_xi,*reorder_xi_entry,simplex_dimension,simplex_offset,simplex_order,
@@ -22714,8 +22743,7 @@ returned.
 															basis_function_numbers,temp_int_1*sizeof(int));
 														basis_function_number=basis_function_numbers+
 															(temp_int_1+2*xi_coordinate);
-														temp_int_2=2*temp_int_1+
-															2*(*(reorder_xi_entry-1)-xi_coordinate);
+														temp_int_2=2*(*(reorder_xi_entry-1)-xi_coordinate);
 														for (i=number_of_basis_functions;i>0;i--)
 														{
 															*basis_function_number=1;
@@ -22738,6 +22766,80 @@ returned.
 														}
 														number_of_basis_functions *= 6;
 														number_of_standard_basis_functions *= 9;
+													}
+													else
+													{
+														valid_type=0;
+													}
+												}
+												else
+												{
+													valid_type=0;
+												}
+											} break;
+											case 3:
+											{
+												new_func_count = 10;
+												new_std_func_count = 27;
+												if (temp_matrix=tensor_product(new_func_count,new_std_func_count,
+													quadratic_simplex_3d_blending_matrix,
+													number_of_basis_functions,
+													number_of_standard_basis_functions,blending_matrix))
+												{
+													DEALLOCATE(blending_matrix);
+													blending_matrix=temp_matrix;
+													temp_int_1=number_of_basis_functions*
+														2*(number_of_xi_coordinates+1);
+													if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,
+														int,new_func_count*temp_int_1))
+													{
+														basis_function_numbers=temp_int_ptr_1;
+														for (fn=1; fn<new_func_count; ++fn)
+														{
+															memcpy(basis_function_numbers+(fn*temp_int_1),
+																basis_function_numbers,temp_int_1*sizeof(int));
+														}
+														basis_function_number=basis_function_numbers+
+															(temp_int_1+2*xi_coordinate);
+														temp_int_2=2*(*(reorder_xi_entry-2)-xi_coordinate);
+														temp_int_3=2*(*(reorder_xi_entry-1)-xi_coordinate);
+														for (i=number_of_basis_functions;i>0;i--)
+														{
+															*basis_function_number=1;
+															basis_function_number[1]=0;
+															basis_function_number[temp_int_1]=2;
+															basis_function_number[temp_int_1+1]=0;
+															basis_function_number[2*temp_int_1+temp_int_2]=1;
+															basis_function_number[2*temp_int_1+temp_int_2+1]=0;
+															
+															basis_function_number[3*temp_int_1]=1;
+															basis_function_number[3*temp_int_1+1]=0;
+															basis_function_number[3*temp_int_1+temp_int_2]=1;
+															basis_function_number[3*temp_int_1+temp_int_2+1]=0;
+
+															basis_function_number[4*temp_int_1+temp_int_2]=2;
+															basis_function_number[4*temp_int_1+temp_int_2+1]=0;
+
+															basis_function_number[5*temp_int_1+temp_int_3]=1;
+															basis_function_number[5*temp_int_1+temp_int_3+1]=0;
+															
+															basis_function_number[6*temp_int_1]=1;
+															basis_function_number[6*temp_int_1+1]=0;
+															basis_function_number[6*temp_int_1+temp_int_3]=1;
+															basis_function_number[6*temp_int_1+temp_int_3+1]=0;
+															
+															basis_function_number[7*temp_int_1+temp_int_2]=1;
+															basis_function_number[7*temp_int_1+temp_int_2+1]=0;
+															basis_function_number[7*temp_int_1+temp_int_3]=1;
+															basis_function_number[7*temp_int_1+temp_int_3+1]=0;
+															
+															basis_function_number[8*temp_int_1+temp_int_3]=2;
+															basis_function_number[8*temp_int_1+temp_int_3+1]=0;
+															
+															basis_function_number += 2*(number_of_xi_coordinates+1);
+														}
+														number_of_basis_functions *= new_func_count;
+														number_of_standard_basis_functions *= new_std_func_count;
 													}
 													else
 													{
@@ -25706,12 +25808,14 @@ headers have to change in output files.
 									number_in_scale_factor_set_2++;
 									l--;
 								}
-								if (scale_factor_set_identifier_1 &&
-									scale_factor_set_identifier_2 &&
-									(*scale_factor_set_identifier_1 ==
-									*scale_factor_set_identifier_2) &&
-									(*number_in_scale_factor_set_1 ==
-										*number_in_scale_factor_set_2))
+								if ((!scale_factor_set_identifier_1 &&
+									!scale_factor_set_identifier_2) ||
+									(scale_factor_set_identifier_1 &&
+										scale_factor_set_identifier_2 &&
+										(*scale_factor_set_identifier_1 ==
+										*scale_factor_set_identifier_2) &&
+										(*number_in_scale_factor_set_1 ==
+											*number_in_scale_factor_set_2)))
 								{
 									while (return_code && (k > 0) &&
 										(*value_index_1 == *value_index_2) &&
@@ -26572,15 +26676,15 @@ headers have to change in output files.
 static int list_FE_element_field(struct FE_element_field *element_field,
 	void *dummy_user_data)
 /*******************************************************************************
-LAST MODIFIED : 12 September 2001
+LAST MODIFIED : 01 April 2008
 
 DESCRIPTION :
 Outputs the information contained by the element field.
 ==============================================================================*/
 {
-	char *component_name,line[81],*type_string;
-	int *basis_type,i,j,k,line_length,*nodal_value_index,*number_in_xi,
-		number_of_characters,number_of_components,number_of_nodal_values,
+	char *component_name,*type_string;
+	int *basis_type,i,j,k,*nodal_value_index,*number_in_xi,
+		number_of_components,number_of_nodal_values,
 		number_of_xi_coordinates,return_code,*scale_factor_index;
 	struct FE_element_field_component **element_field_component;
 	struct FE_field *field;
@@ -26667,6 +26771,14 @@ Outputs the information contained by the element field.
 									{
 										display_message(INFORMATION_MESSAGE,"Hermite Lagrange");
 									} break;
+									case LINEAR_SIMPLEX:
+									{
+										display_message(INFORMATION_MESSAGE,"linear Simplex");
+									} break;
+									case QUADRATIC_SIMPLEX:
+									{
+										display_message(INFORMATION_MESSAGE,"quadratic Simplex");
+									} break;
 								}
 								if (j>1)
 								{
@@ -26700,38 +26812,28 @@ Outputs the information contained by the element field.
 										{
 											number_of_nodal_values=(*node_to_element_map)->
 												number_of_nodal_values;
-											sprintf(line,"      %d.  #Values=%d\n",
+											display_message(INFORMATION_MESSAGE,"      %d.  #Values=%d\n",
 												(*node_to_element_map)->node_index,
 												number_of_nodal_values);
-											display_message(INFORMATION_MESSAGE,line);
-											if (nodal_value_index=(*node_to_element_map)->
-												nodal_value_indices)
+											if (nodal_value_index=(*node_to_element_map)->nodal_value_indices)
 											{
-												sprintf(line,"        Value indices:%n",&line_length);
+												display_message(INFORMATION_MESSAGE,"        Value indices:");
 												for (k=number_of_nodal_values;k>0;k--)
 												{
-													sprintf(line+line_length," %d%n",*nodal_value_index,
-														&number_of_characters);
-													line_length += number_of_characters;
+													display_message(INFORMATION_MESSAGE," %d",*nodal_value_index);
 													nodal_value_index++;
 												}
-												sprintf(line+line_length,"\n");
-												display_message(INFORMATION_MESSAGE,line);
+												display_message(INFORMATION_MESSAGE,"\n");
 											}
-											if (scale_factor_index=(*node_to_element_map)->
-												scale_factor_indices)
+											if (scale_factor_index=(*node_to_element_map)->scale_factor_indices)
 											{
-												sprintf(line,"        Scale factor indices:%n",
-													&line_length);
+												display_message(INFORMATION_MESSAGE,"        Scale factor indices:");
 												for (k=number_of_nodal_values;k>0;k--)
 												{
-													sprintf(line+line_length," %d%n",*scale_factor_index,
-														&number_of_characters);
-													line_length += number_of_characters;
+													display_message(INFORMATION_MESSAGE," %d",*scale_factor_index);
 													scale_factor_index++;
 												}
-												sprintf(line+line_length,"\n");
-												display_message(INFORMATION_MESSAGE,line);
+												display_message(INFORMATION_MESSAGE,"\n");
 											}
 										}
 										j--;
@@ -26754,20 +26856,16 @@ Outputs the information contained by the element field.
 									number_in_xi;
 								number_of_xi_coordinates=
 									((*element_field_component)->basis->type)[0];
-								sprintf(line,"      %n",&line_length);
+								display_message(INFORMATION_MESSAGE,"      ");
 								for (j=0;j<number_of_xi_coordinates;j++)
 								{
 									if (j>0)
 									{
-										sprintf(line+line_length,", ");
-										line_length += 2;
+										display_message(INFORMATION_MESSAGE,", ");
 									}
-									sprintf(line+line_length,"#xi%d=%d%n",j+1,number_in_xi[j],
-										&number_of_characters);
-									line_length += number_of_characters;
+									display_message(INFORMATION_MESSAGE,"#xi%d=%d",j+1,number_in_xi[j]);
 								}
-								sprintf(line+line_length,"\n");
-								display_message(INFORMATION_MESSAGE,line);
+								display_message(INFORMATION_MESSAGE,"\n");
 							} break;
 							default:
 							{
@@ -40258,15 +40356,15 @@ Outputs the name of the element as element/face/line #.
 
 int list_FE_element(struct FE_element *element,void *dummy)
 /*******************************************************************************
-LAST MODIFIED : 30 July 2001
+LAST MODIFIED : 01 April 2008
 
 DESCRIPTION :
 Outputs the information contained at the element.
 ==============================================================================*/
 {
-	char line[91];
+	char line[93];
 	FE_value *scale_factor;
-	int i,line_length,number_of_characters,return_code;
+	int i,return_code;
 	struct FE_element **face;
 #if defined (DEBUG)
 	/*???debug*/
@@ -40279,47 +40377,30 @@ Outputs the information contained at the element.
 	{
 		return_code=1;
 		/* write the identifier */
-		sprintf(line,"element : %d \n",element->cm.number);
-		display_message(INFORMATION_MESSAGE,line);
-		sprintf(line,"  access count=%d\n",element->access_count);
-		display_message(INFORMATION_MESSAGE,line);
+		display_message(INFORMATION_MESSAGE,"element : %d \n",element->cm.number);
+		display_message(INFORMATION_MESSAGE,"  access count=%d\n",element->access_count);
 		if (element->shape)
 		{
-			sprintf(line,"  dimension=%d\n",element->shape->dimension);
-			display_message(INFORMATION_MESSAGE,line);
+			display_message(INFORMATION_MESSAGE,"  dimension=%d\n",element->shape->dimension);
 			/* write the faces */
 			if ((face=element->faces)&&
 				(0<(i=element->shape->number_of_faces)))
 			{
-				sprintf(line,"  #faces=%d\n",i);
-				display_message(INFORMATION_MESSAGE,line);
-				line_length=0;
+				display_message(INFORMATION_MESSAGE,"  #faces=%d\n",i);
 				while (i>0)
 				{
 					if (*face)
 					{
-						sprintf(line+line_length," (%d)%n",
-							(*face)->cm.number,&number_of_characters);
+						display_message(INFORMATION_MESSAGE," (%d)",(*face)->cm.number);
 					}
 					else
 					{
-						sprintf(line+line_length," (0 0 0)%n", &number_of_characters);
-					}
-					line_length += number_of_characters;
-					if (70<=line_length)
-					{
-						sprintf(line+line_length,"\n");
-						display_message(INFORMATION_MESSAGE,line);
-						line_length=0;
+						display_message(INFORMATION_MESSAGE," (0 0 0)");
 					}
 					face++;
 					i--;
 				}
-				if (1<line_length)
-				{
-					sprintf(line+line_length,"\n");
-					display_message(INFORMATION_MESSAGE,line);
-				}
+				display_message(INFORMATION_MESSAGE,"\n");
 			}
 			else
 			{
@@ -40355,28 +40436,19 @@ Outputs the information contained at the element.
 						if ((scale_factor = element->information->scale_factors)&&
 							(i=element->information->number_of_scale_factors))
 						{
-							sprintf(line,"  #Scale factors=%d\n",i);
-							display_message(INFORMATION_MESSAGE,line);
-							sprintf(line,"    %n",&line_length);
+							display_message(INFORMATION_MESSAGE,"  #Scale factors=%d\n",i);
+							strcpy(line,"    ");
 							while (i>0)
 							{
-								sprintf(line+line_length,"%13g %n",*scale_factor,
-									&number_of_characters);
-								line_length += number_of_characters;
-								if (line_length>=70)
+								sprintf(line+strlen(line),"%13g ",*scale_factor);
+								if ((1==i) || (strlen(line)>=70))
 								{
-									sprintf(line+line_length,"\n");
+									strcat(line,"\n");
 									display_message(INFORMATION_MESSAGE,line);
-									number_of_characters=0;
-									sprintf(line,"    %n",&line_length);
+									strcpy(line,"    ");
 								}
 								i--;
 								scale_factor++;
-							}
-							if (number_of_characters>0)
-							{
-								sprintf(line+line_length,"\n");
-								display_message(INFORMATION_MESSAGE,line);
 							}
 						}
 					}
@@ -40387,7 +40459,6 @@ Outputs the information contained at the element.
 				display_message(ERROR_MESSAGE,"list_FE_element.  Missing field info");
 				return_code = 0;
 			}
-
 			/*???debug */
 			{
 				int i,number_of_nodes;
