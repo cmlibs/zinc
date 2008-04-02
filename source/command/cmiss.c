@@ -81,6 +81,7 @@ Functions for executing cmiss commands.
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_fibres.h"
+#include "computed_field/computed_field_function.h"
 #include "computed_field/computed_field_integration.h"
 #include "computed_field/computed_field_logical_operators.h"
 #include "computed_field/computed_field_lookup.h"
@@ -24893,6 +24894,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->computed_field_package);
 			Computed_field_register_types_fibres(
 				command_data->computed_field_package);
+			Computed_field_register_types_function(
+					command_data->computed_field_package);
 			Computed_field_register_types_logical_operators(
 				command_data->computed_field_package);
 			if (command_data->root_region)

@@ -910,6 +910,7 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_fibres.cpp \
 	computed_field/computed_field_find_xi.cpp \
 	computed_field/computed_field_finite_element.cpp \
+	computed_field/computed_field_function.cpp \
 	computed_field/computed_field_integration.cpp \
 	computed_field/computed_field_logical_operators.cpp \
 	computed_field/computed_field_lookup.cpp \
