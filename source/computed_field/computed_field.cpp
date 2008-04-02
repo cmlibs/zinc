@@ -4718,7 +4718,10 @@ for matrix operations.
 
 			if (field_to_wrap)
 			{
-				broadcast_wrapper = CREATE(Computed_field)("broadcast_wrapper");
+				/* The name of the wrapper should be the same as the wrapped
+					field so the list commands still reference the original field,
+					and as this field does not go into the MANAGER it can be the same. */
+				broadcast_wrapper = CREATE(Computed_field)((**field_to_wrap)->name);
 				ALLOCATE(source_field_numbers, int, number_of_components);
 				ALLOCATE(source_value_numbers, int, number_of_components);
 				for (i = 0 ; i < number_of_components ; i++)
