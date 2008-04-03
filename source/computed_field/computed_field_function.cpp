@@ -192,17 +192,28 @@ Evaluate the fields cache at the location
 			{
 				/* Apply the scalar function operation to each source
 					field component */
+				return_code = 1;
+
+				/* Make all the locations before evaluating any of the 
+					result field values in case the result_field from 
+					reference_field calcualtion also involves the source field
+					and the subsequent evaluations would overwrite the current values. */
+				Field_coordinate_location *locations[field->number_of_components];
 				for (i = 0 ; i < field->number_of_components ; i++)
 				{
-					Field_coordinate_location coordinate_location(
+					locations[i] = new Field_coordinate_location(
 						field->source_fields[2],
 						1, field->source_fields[0]->values +i,
 						location->get_time());
+				}
+				for (i = 0 ; return_code && (i < field->number_of_components) ; i++)
+				{
 					if (return_code=Computed_field_evaluate_cache_at_location(
-						field->source_fields[1], &coordinate_location))
+						field->source_fields[1], locations[i]))
 					{
 						field->values[i]=field->source_fields[1]->values[0];
 					}
+					delete locations[i];
 				}
 			}
 			field->derivatives_valid = 0;
@@ -232,49 +243,42 @@ DESCRIPTION :
 	int i, return_code;
 	
 	ENTER(Computed_field_function::set_values_at_location);
-	if (field && location && values)
+	if (field && location && values && 
+		ALLOCATE(temp_values, FE_value, field->number_of_components))
 	{
 		if ((field->source_fields[0]->number_of_components ==
 			field->source_fields[2]->number_of_components))
 		{
 			Field_coordinate_location coordinate_location(field->source_fields[2],
-				field->source_fields[0]->number_of_components,
-				field->source_fields[0]->values, location->get_time());
-			if (return_code=Computed_field_set_values_at_location(
-					 field->source_fields[1], &coordinate_location, values))
-			{
-				return_code = 
-					Computed_field_set_values_at_location(field->source_fields[0],
-						location, field->source_fields[2]->values);
-			}
+				field->number_of_components,
+				temp_values, location->get_time());
+			return_code=Computed_field_set_values_at_location(
+				field->source_fields[1], &coordinate_location, values);
 		}
 		else
 		{
-			ALLOCATE(temp_values, FE_value, field->number_of_components);
-			for (i = 0 ; i < field->number_of_components ; i++)
+			return_code = 1;
+			for (i = 0 ; return_code && (i < field->number_of_components) ; i++)
 			{
 				Field_coordinate_location coordinate_location(
 					field->source_fields[2],
 					1, temp_values + i, location->get_time());
-				if (return_code=Computed_field_set_values_at_location(
-					field->source_fields[1], &coordinate_location, values + i))
-				{
-					temp_values[i] = field->source_fields[2]->values[0];
-				}
+				return_code=Computed_field_set_values_at_location(
+					field->source_fields[1], &coordinate_location, values + i);
 			}
-			if (return_code)
-			{
-				return_code = 
-					Computed_field_set_values_at_location(field->source_fields[0],
-						location, temp_values);
-			}
-			DEALLOCATE(temp_values);
+		}
+		if (return_code)
+		{
+			return_code = 
+				Computed_field_set_values_at_location(field->source_fields[0],
+				location, temp_values);
 		}
 		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_function::set_values_at_location.  Failed");
 		}
+		DEALLOCATE(temp_values);
 	}
 	else
 	{
