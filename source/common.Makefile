@@ -148,7 +148,7 @@ ifeq ($(SYSNAME:IRIX%=),)
    endif # ABI != 64
    CC = cc -c
    CPP = CC -c
-   CPP_FLAGS = -LANG:std -no_auto_include
+   CPP_FLAGS = -LANG:std -LANG:vla=ON -no_auto_include
    FORTRAN = f77 -c
    MAKEDEPEND = makedepend -f- -Y --
    CPREPROCESS = cc -P
