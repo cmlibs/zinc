@@ -34971,9 +34971,9 @@ must have already been calculated.  Currently only implemented for monomials.
 		*orders, power, return_code;
 
 	ENTER(FE_element_field_values_differentiate);
-	return_code=0;
 	if (element_field_values && element_field_values->derivatives_calculated)
 	{
+		return_code = 1;
 		element_dimension=element_field_values->element->shape->dimension;
 		for (k = 0 ; k < element_field_values->number_of_components ; k++)
 		{
@@ -35023,19 +35023,25 @@ must have already been calculated.  Currently only implemented for monomials.
 					offset *= (order+1);
 				}
 			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_field_values_differentiate.  Unsupported basis type");
+				return_code=0;
+				break;
+			}
 		}
-		return_code=1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"clear_FE_element_field_values.  Invalid argument");
+			"FE_element_field_values_differentiate.  Invalid argument");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* clear_FE_element_field_values */
+} /* FE_element_field_values_differentiate */
 
 int clear_FE_element_field_values(
 	struct FE_element_field_values *element_field_values)
