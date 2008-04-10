@@ -30430,7 +30430,7 @@ int calculate_FE_element_field_values(struct FE_element *element,
 	struct FE_element_field_values *element_field_values,
 	struct FE_element *top_level_element)
 /*******************************************************************************
-LAST MODIFIED : 1 May 2003
+LAST MODIFIED : 10 April 2008
 
 DESCRIPTION :
 If <field> is NULL, element values are calculated for the coordinate field.  The
@@ -30769,11 +30769,6 @@ The optional <top_level_element> forces inheritance from it as needed.
 							element_field_values->time = time;
 							element_field_values->derivatives_calculated=
 								calculate_derivatives;
-							/*???RC arguments should always be destroyed for monomial basis
-								functions, it seems, and for polygons only if there is a
-								coordinate transformation - hence see later */
-							element_field_values->destroy_standard_basis_arguments=1;
-#if defined (OLD_CODE)
 							if (coordinate_transformation)
 							{
 								element_field_values->destroy_standard_basis_arguments=1;
@@ -30782,7 +30777,6 @@ The optional <top_level_element> forces inheritance from it as needed.
 							{
 								element_field_values->destroy_standard_basis_arguments=0;
 							}
-#endif /* defined (OLD_CODE) */
 							element_field_values->number_of_components=number_of_components;
 							element_field_values->component_number_of_values=
 								number_of_values_address;
@@ -30861,21 +30855,49 @@ The optional <top_level_element> forces inheritance from it as needed.
 											{
 												/* SAB We don't want to keep the old one */
 												DEALLOCATE(blending_matrix);
+												blending_matrix=NULL;
 											}
 											*standard_basis_address=previous_basis->standard_basis;
-											return_code=calculate_standard_basis_transformation(
-												previous_basis,coordinate_transformation,
-												element_dimension,standard_basis_arguments_address,
-												&number_of_inherited_values,standard_basis_address,
-												&blending_matrix);
+											if (coordinate_transformation)
+											{
+												return_code=calculate_standard_basis_transformation(
+													previous_basis,coordinate_transformation,
+													element_dimension,standard_basis_arguments_address,
+													&number_of_inherited_values,standard_basis_address,
+													&blending_matrix);
+											}
+											else
+											{
+												/* standard basis transformation is just a big identity matrix, so don't compute */
+												/* also use the real basis arguments */
+												*standard_basis_arguments_address=(int*)(previous_basis->arguments);
+											}
 										}
 										if (return_code)
 										{
-											/* project the element values onto the element using the
-												 affine transformation */
-											if ((monomial_basis_functions== *standard_basis_address)||
+											if (!coordinate_transformation)
+											{
+												/* values already correct regardless of basis, but must make space for derivatives if needed */
+												if (calculate_derivatives)
+												{
+													if (REALLOCATE(inherited_values,*values_address,FE_value,
+														(element_dimension+1)*(*number_of_values_address)))
+													{
+														*values_address=inherited_values;
+													}
+													else
+													{
+														display_message(ERROR_MESSAGE,
+															"calculate_FE_element_field_values.  Could not reallocate values");
+														return_code=0;
+													}
+												}
+											}
+											else if ((monomial_basis_functions== *standard_basis_address)||
 												(polygon_basis_functions== *standard_basis_address))
 											{
+												/* project the field_element values onto the lower-dimension element
+													 using the affine transformation */
 												/* allocate memory for the element values */
 												if (calculate_derivatives)
 												{
