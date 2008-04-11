@@ -329,6 +329,9 @@ list.
 		for example a non-polynomial basis, this may be NULL, which indicates the
 		identity matrix */
 	FE_value *blending_matrix;
+	/* this array gives the row number of the last non-zero value for each of the
+		number_of_standard_basis_functions columns in blending_matrix, if exists */
+	int *blending_matrix_column_size;
 	/* to calculate the values of the "standard" basis functions */
 	int number_of_standard_basis_functions;
 	void *arguments;
@@ -7210,7 +7213,7 @@ printf("\n");*/
 								sum=0;
 								element_value=element_values;
 								blending_matrix=(basis->blending_matrix)+i;
-								for (j=number_of_element_values;j>0;j--)
+								for (j=basis->blending_matrix_column_size[i];j>0;j--)
 								{
 #if defined (DOUBLE_FOR_DOT_PRODUCT)
 									sum += (double)(*blending_matrix)*(double)(*element_value);
@@ -19990,6 +19993,8 @@ returned.
 				if (ALLOCATE(basis,struct FE_basis,1)&&ALLOCATE(basis_type,int,
 					1+number_of_xi_coordinates*(number_of_xi_coordinates+1)/2)&&
 					ALLOCATE(basis->blending_matrix,FE_value,number_of_basis_functions*
+					number_of_standard_basis_functions)&&
+					ALLOCATE(basis->blending_matrix_column_size,int,
 					number_of_standard_basis_functions))
 				{
 					/* reorder the xi coordinates */
@@ -20119,10 +20124,12 @@ returned.
 						{
 							display_message(ERROR_MESSAGE,
 							"CREATE(FE_basis).  Could not allocate memory for reordering xi");
-							DEALLOCATE(basis);
+							DEALLOCATE(basis->blending_matrix_column_size);
 							DEALLOCATE(basis->blending_matrix);
 							DEALLOCATE(basis_type);
 							DEALLOCATE(arguments);
+							DEALLOCATE(basis);
+							basis=NULL;
 						}
 						DEALLOCATE(reorder_offsets);
 						DEALLOCATE(temp_int_ptr_1);
@@ -20166,6 +20173,19 @@ returned.
 								reorder_2++;
 							}
 							basis_function_number += 2*(number_of_xi_coordinates+1);
+						}
+						/* calculate the size of column containing non-zero entries, to reduce
+						 	dot product calculation in global_to_element_map_values() */
+						for (j=0;j<number_of_standard_basis_functions;j++)
+						{
+							reorder_1 = basis->blending_matrix + number_of_basis_functions*number_of_standard_basis_functions + j;
+							for (i=number_of_basis_functions;i>0;i--)
+							{
+								reorder_1 -= number_of_standard_basis_functions;
+								if (*reorder_1 != 0.0)
+									break;
+							}
+							basis->blending_matrix_column_size[j] = i;
 						}
 /*???debug */
 /*{
@@ -20272,6 +20292,7 @@ Frees the memory for the basis and sets <*basis_address> to NULL.
 		{
 			DEALLOCATE(basis->type);
 			DEALLOCATE(basis->blending_matrix);
+			DEALLOCATE(basis->blending_matrix_column_size);
 			DEALLOCATE(basis->arguments);
 			DEALLOCATE(*basis_address);
 			return_code=1;
