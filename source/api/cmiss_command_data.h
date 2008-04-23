@@ -110,15 +110,6 @@ DESCRIPTION :
 Returns the root region from the <command_data>.
 ==============================================================================*/
 
-struct Cmiss_computed_field_manager *Cmiss_command_data_get_computed_field_manager(
-	struct Cmiss_command_data *command_data);
-/*******************************************************************************
-LAST MODIFIED : 31 March 2004
-
-DESCRIPTION :
-Returns the computed_field manager from the <command_data>.
-==============================================================================*/
-
 int Cmiss_command_data_main_loop(struct Cmiss_command_data *command_data);
 /*******************************************************************************
 LAST MODIFIED : 19 December 2002

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_computed_field.c
 
-LAST MODIFIED : 29 March 2004
+LAST MODIFIED : 18 April 2008
 
 DESCRIPTION :
 The public interface to the Cmiss computed_fields.
@@ -42,6 +42,7 @@ The public interface to the Cmiss computed_fields.
  *
  * ***** END LICENSE BLOCK ***** */
 #include <stdlib.h>
+#include <stdio.h>
 #include "api/cmiss_computed_field.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element_region.h"
@@ -53,33 +54,142 @@ Global functions
 ----------------
 */
 
-struct Cmiss_computed_field *Cmiss_computed_field_manager_get_field(
-	struct Cmiss_computed_field_manager *manager, const char *field_name)
+Cmiss_computed_field_id Cmiss_region_create_field(Cmiss_region_id region)
 /*******************************************************************************
-LAST MODIFIED : 29 March 2004
+LAST MODIFIED : 21 April 2008
 
 DESCRIPTION :
-Returns the computed_field of <field_name> from the <manager> if it is defined.
+Creates a new field in <region>.
 ==============================================================================*/
 {
 	struct Cmiss_computed_field *computed_field;
+	struct MANAGER(Computed_field) *manager;
 
-	ENTER(Cmiss_computed_field_manager_get_field);
-	if (manager && field_name)
+	ENTER(Cmiss_region_create_field);
+	if (region && 
+		(manager = Cmiss_region_get_Computed_field_manager(region)))
 	{
-		computed_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-			(char *)field_name, manager);
+		char name[100];
+		int number = NUMBER_IN_MANAGER(Computed_field)(manager);
+
+		/* Make a 'unique' name based on the number_of_objects in the manager */
+		sprintf(name, "temp%d", number);
+		while(FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+					name, manager))
+		{
+			number++;
+			sprintf(name, "temp%d", number);
+		}
+		computed_field = CREATE(Computed_field)(name);
+		if (ADD_OBJECT_TO_MANAGER(Computed_field)(
+			computed_field, manager))
+		{
+			ACCESS(Computed_field)(computed_field);
+			/* We assume by default that fields made this way are
+				intermediaries which will get destroyed when only
+				the manager is referencing them.
+				This flag is cleared when they are given an explicit name. */ 
+			Computed_field_set_intermediary_managed_field_flag(
+				computed_field, 1);
+		}
+		else
+		{
+			DESTROY(Computed_field)(&computed_field);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_computed_field_manager_get_field.  Invalid argument(s)");
+			"Cmiss_region_create_field.  Invalid argument(s)");
 		computed_field = (struct Cmiss_computed_field *)NULL;
 	}
 	LEAVE;
 
 	return (computed_field);
-} /* Cmiss_computed_field_manager_get_field */
+} /* Cmiss_region_create_field */
+
+Cmiss_computed_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
+	const char *field_name)
+/*******************************************************************************
+LAST MODIFIED : 21 April 2008
+
+DESCRIPTION :
+Returns the computed_field of <field_name> from <region> if it is defined.
+==============================================================================*/
+{
+	struct Cmiss_computed_field *computed_field;
+	struct MANAGER(Computed_field) *manager;
+
+	ENTER(Cmiss_region_find_field_by_name);
+	if (region && field_name && 
+		(manager = Cmiss_region_get_Computed_field_manager(region)))
+	{
+		computed_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+			(char *)field_name, manager);
+		if (computed_field)
+		{
+			ACCESS(Computed_field)(computed_field);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_region_find_field_by_name.  Invalid argument(s)");
+		computed_field = (struct Cmiss_computed_field *)NULL;
+	}
+	LEAVE;
+
+	return (computed_field);
+} /* Cmiss_region_find_field_by_name */
+
+int Cmiss_region_is_field_defined(Cmiss_region_id region, 
+	const char *field_name)
+/*******************************************************************************
+LAST MODIFIED : 21 April 2008
+
+DESCRIPTION :
+Returns the computed_field of <field_name> from <region> if it is defined.
+==============================================================================*/
+{
+	int return_code;
+	struct MANAGER(Computed_field) *manager;
+
+	ENTER(Cmiss_region_is_field_defined);
+	if (region && field_name && 
+		(manager = Cmiss_region_get_Computed_field_manager(region)))
+	{
+		if(FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+				(char *)field_name, manager))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_region_is_field_defined.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_region_is_field_defined */
+
+int Cmiss_computed_field_destroy(Cmiss_computed_field_id *field)
+/*******************************************************************************
+LAST MODIFIED : 22 April 2008
+
+DESCRIPTION :
+Destroys this reference to the field (and sets it to NULL).
+Internally this just decrements the reference count.
+==============================================================================*/
+{
+	return (DEACCESS(Computed_field)(field));
+} /* Cmiss_computed_field_destroy */
 
 int Cmiss_computed_field_evaluate_at_node(struct Cmiss_computed_field *field,
 	struct Cmiss_node *node, float time, int number_of_values, float *values)
@@ -301,3 +411,44 @@ number_of_components.
 
 	return (return_code);
 } /* Cmiss_computed_field_evaluate_at_field_coordinates */
+
+int Cmiss_computed_field_get_name(Cmiss_computed_field_id field,
+	char **name)
+/*******************************************************************************
+LAST MODIFIED : 21 April 2008
+
+DESCRIPTION :
+Get the name of a field.
+==============================================================================*/
+{
+	return GET_NAME(Computed_field)(field, name);
+}
+
+int Cmiss_computed_field_set_name(struct Computed_field *field,
+	const char *name)
+/*******************************************************************************
+LAST MODIFIED : 18 January 2007
+
+DESCRIPTION :
+Change the name of a field.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_computed_field_set_name);
+	if (field && name)
+	{
+		Computed_field_set_intermediary_managed_field_flag(field, /*false*/0);
+		return_code = Computed_field_set_name(field, name);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_computed_field_set_name.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_computed_field_set_name */
+
