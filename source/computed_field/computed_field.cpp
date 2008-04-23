@@ -1,7 +1,7 @@
 /*******************************************************************************
-FILE : computed_field.c
+FILE : computed_field.cpp
 
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 16 April 2008
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -173,15 +173,19 @@ extern "C" {
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_discretization.h"
+#include "general/any_object_definition.h"
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/geometry.h"
 #include "general/indexed_list_private.h"
 #include "general/list_private.h"
+#include "general/manager.h"
 #include "general/manager_private.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "general/value.h"
+#include "general/any_object_private.h"
+#include "region/cmiss_region_private.h"
 #include "user_interface/message.h"
 }
 #include <typeinfo>
@@ -498,6 +502,9 @@ COMPUTED_FIELD_INVALID with no components.
 			field->number_of_source_values = 0;
 
 			field->access_count = 0;
+
+			field->manager = (struct MANAGER(Computed_field) *)NULL;
+			field->intermediary_managed_field = 0;
 		}
 		else
 		{
@@ -569,7 +576,74 @@ Frees memory/deaccess objects in computed_field at <*field_address>.
 	return (return_code);
 } /* DESTROY(Computed_field) */
 
-DECLARE_OBJECT_FUNCTIONS(Computed_field)
+DECLARE_ACCESS_OBJECT_FUNCTION(Computed_field)
+
+PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Computed_field)
+{
+	int return_code;
+	struct Computed_field *object;
+
+	ENTER(DEACCESS(Computed_field));
+	if (object_address && (object = *object_address))
+	{
+		(object->access_count)--;
+		if (object->access_count <= 0)
+		{
+			return_code = DESTROY(Computed_field)(object_address);
+		}
+		else if ((1 == object->access_count) &&
+			object->intermediary_managed_field && object->manager)
+		{
+			return_code = REMOVE_OBJECT_FROM_MANAGER(Computed_field)
+				(object, object->manager);
+		}
+		else
+		{
+			return_code = 1;
+		}
+		*object_address = (struct Computed_field *)NULL;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DEACCESS(Computed_field) */
+
+PROTOTYPE_REACCESS_OBJECT_FUNCTION(Computed_field)
+{
+	int return_code;
+	struct Computed_field *current_object;
+
+	ENTER(REACCESS(Computed_field));
+	if (object_address)
+	{
+		return_code = 1;
+		if (new_object)
+		{
+			/* access the new object */
+			(new_object->access_count)++;
+		}
+		if (current_object = *object_address)
+		{
+			/* deaccess the current object */
+			DEACCESS(Computed_field)(object_address);
+		}
+		/* point to the new object */
+		*object_address = new_object;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"REACCESS(Computed_field).  Invalid argument");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* REACCESS(Computed_field) */
 
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Computed_field)
 /*****************************************************************************
@@ -884,7 +958,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Computed_field,name,char *)
 	return (return_code);
 } /* MANAGER_COPY_IDENTIFIER(Computed_field,name) */
 
-DECLARE_MANAGER_FUNCTIONS(Computed_field)
+DECLARE_OBJECT_WITH_MANAGER_MANAGER_FUNCTIONS(Computed_field, manager)
 
 PROTOTYPE_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Computed_field)
 /*******************************************************************************
@@ -912,7 +986,7 @@ function and bases its result on that.
 						IS_OBJECT_IN_LIST(Computed_field)(object,
 							manager->message->changed_object_list)))
 				{
-					return_code = object->core->not_in_use();
+					return_code = object->core ? object->core->not_in_use() : 1;
 				}
 			}
 			else
@@ -937,7 +1011,7 @@ function and bases its result on that.
 	return (return_code);
 } /* MANAGED_OBJECT_NOT_IN_USE(Computed_field) */
 
-DECLARE_ADD_OBJECT_TO_MANAGER_FUNCTION(Computed_field,name)
+DECLARE_ADD_OBJECT_WITH_MANAGER_TO_MANAGER_FUNCTION(Computed_field,name,manager)
 
 PROTOTYPE_MANAGER_MODIFY_FUNCTION(Computed_field, name)
 /*******************************************************************************
@@ -4754,4 +4828,206 @@ for matrix operations.
 
 	return (return_code);
 } /* Computed_field_broadcast_field_components */
+
+int Computed_field_set_intermediary_managed_field_flag(
+	struct Computed_field *field, int intermediary_managed_field_flag)
+/*******************************************************************************
+LAST MODIFIED : 17 April 2008
+
+DESCRIPTION :
+If this flag is set then when the ACCESS count gets to 1 a managed field
+will automatically remove itself from the manager and be destroyed.
+When the flag is not set, the field will only be destroyed when given a 
+specific command to destroy or as the program ends.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_set_intermediary_managed_field_flag);
+	if (field)
+	{
+		field->intermediary_managed_field = intermediary_managed_field_flag;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Computed_field_set_intermediary_managed_field_flag.  "
+			"Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_set_intermediary_managed_field_flag */
+
+int Computed_field_set_name(
+	struct Computed_field *field, const char *name)
+/*******************************************************************************
+LAST MODIFIED : 18 April 2008
+
+DESCRIPTION :
+Changes the name of a field.
+==============================================================================*/
+{
+	char *new_name;
+	int return_code;
+	LIST_IDENTIFIER_CHANGE_DATA(Computed_field, name) *identifier_change_data;
+
+	ENTER(Computed_field_set_name);
+	if (field && name)
+	{
+		if (ALLOCATE(new_name, char, strlen(name)+1))
+		{
+			return_code = 1;
+			if (field->manager)
+			{
+				if (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(
+						 const_cast<char *>(name), field->manager))
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_set_name.  "
+						"Field named \"%s\" already exists in this field manager.",
+						name);
+					return_code = 0;
+				}
+				if (return_code)
+				{
+					/* must perform IDENTIFIER_CHANGE stuff between BEGIN_CHANGE and
+						END_CHANGE calls; manager message must not be sent while object
+						is part changed and/or temporarily out of the manager! */
+					MANAGER_BEGIN_CHANGE(Computed_field)(field->manager,
+						MANAGER_CHANGE_OBJECT(Computed_field), field);
+				}
+			}
+			if (!(identifier_change_data =
+					LIST_BEGIN_IDENTIFIER_CHANGE(Computed_field, name)(field)))
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_set_name.  "
+					"Could not safely change identifier in indexed lists");
+				return_code = 0;
+			}
+				
+			/* Actually do the change */
+			if (return_code)
+			{
+				/* If this has previously been allocated separately destroy it */
+				if (field->command_string != field->name)
+				{
+					DEALLOCATE(field->command_string);
+				}
+				DEALLOCATE(field->name);
+				field->name = new_name;
+				strcpy(field->name, name);
+				/* Now make them point to the same memory */
+				field->command_string = field->name;
+			}
+			
+			if (!LIST_END_IDENTIFIER_CHANGE(Computed_field,
+					name)(&identifier_change_data))
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_set_name  "
+					"Could not restore object to all indexed lists");
+			}
+			if (field->manager)
+			{
+				MANAGER_END_CHANGE(Computed_field)(field->manager);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Computed_field_set_name.  "
+				"Unable to ALLOCATE memory");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Computed_field_set_name.  "
+			"Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_set_name */
+
+PROTOTYPE_ANY_OBJECT(MANAGER(Computed_field));
+
+DEFINE_ANY_OBJECT(MANAGER(Computed_field))
+
+int Cmiss_region_attach_Computed_field_manager(
+	struct Cmiss_region *cmiss_region,
+	struct MANAGER(Computed_field) *field_manager)
+/*******************************************************************************
+LAST MODIFIED : 21 April 2008
+
+DESCRIPTION :
+Adds <field_manager> to the list of objects attached to <cmiss_region>.
+==============================================================================*/
+{
+	int return_code;
+	struct Any_object *any_object;
+
+	ENTER(Cmiss_region_attach_Computed_field_manager);
+	return_code = 0;
+	if (cmiss_region && field_manager)
+	{
+		if (Cmiss_region_get_Computed_field_manager(cmiss_region))
+		{
+			display_message(ERROR_MESSAGE, "Cmiss_region_attach_Computed_field_manager.  "
+				"Cmiss_region already has an Computed_field_manager");
+		}
+		else
+		{
+			if ((any_object = CREATE(ANY_OBJECT(manager_Computed_field))(field_manager)) &&
+				Cmiss_region_private_attach_any_object(cmiss_region, any_object))
+			{
+				return_code = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_region_attach_Computed_field_manager.  Could not attach object");
+				DESTROY(Any_object)(&any_object);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_region_attach_Computed_field_manager.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_region_attach_Computed_field_manager */
+
+struct MANAGER(Computed_field) *Cmiss_region_get_Computed_field_manager(
+	struct Cmiss_region *cmiss_region)
+/*******************************************************************************
+LAST MODIFIED : 21 April 2008
+
+DESCRIPTION :
+Currently, a Cmiss_region may have at most one Computed_field_manager.
+This function returns it, or NULL if no Computed_field_manager found.
+==============================================================================*/
+{
+	struct MANAGER(Computed_field) *field_manager;
+
+	ENTER(Cmiss_region_get_Computed_field_manager);
+	field_manager = (struct MANAGER(Computed_field) *)NULL;
+	if (cmiss_region)
+	{
+		field_manager = FIRST_OBJECT_IN_LIST_THAT(ANY_OBJECT(manager_Computed_field))(
+			(ANY_OBJECT_CONDITIONAL_FUNCTION(manager_Computed_field) *)NULL, (void *)NULL,
+			Cmiss_region_private_get_any_object_list(cmiss_region));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_region_get_Computed_field_manager.  Missing Cmiss_region");
+	}
+	LEAVE;
+
+	return (field_manager);
+} /* Cmiss_region_get_Computed_field_manager */
 

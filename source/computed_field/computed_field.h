@@ -422,7 +422,7 @@ number_of_components.
 ==============================================================================*/
 
 int Computed_field_evaluate_without_node(struct Computed_field *field,
-	 FE_value time, FE_value *values);
+	FE_value time, FE_value *values);
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -976,6 +976,47 @@ DESCRIPTION :
 Returns true if the <field> is only accessed once - assumed by its manager. If
 it is of type COMPUTED_FIELD_FINITE_ELEMENT further tests that its fe_field can
 be destroyed, assuming it is only accessed by this field and its manager.
+==============================================================================*/
+
+int Computed_field_set_intermediary_managed_field_flag(
+	struct Computed_field *field, int intermediary_managed_field_flag);
+/*******************************************************************************
+LAST MODIFIED : 17 April 2008
+
+DESCRIPTION :
+If this flag is set then when the ACCESS count gets to 1 a managed field
+will automatically remove itself from the manager and be destroyed.
+When the flag is not set, the field will only be destroyed when given a 
+specific command to destroy or as the program ends.
+==============================================================================*/
+
+int Computed_field_set_name(struct Computed_field *field,
+	const char *name);
+/*******************************************************************************
+LAST MODIFIED : 18 January 2007
+
+DESCRIPTION :
+Change the name of a field.
+==============================================================================*/
+
+int Cmiss_region_attach_Computed_field_manager(
+	struct Cmiss_region *cmiss_region,
+	struct MANAGER(Computed_field) *field_manager);
+/*******************************************************************************
+LAST MODIFIED : 21 April 2008
+
+DESCRIPTION :
+Adds <field_manager> to the list of objects attached to <cmiss_region>.
+==============================================================================*/
+
+struct MANAGER(Computed_field) *Cmiss_region_get_Computed_field_manager(
+	struct Cmiss_region *cmiss_region);
+/*******************************************************************************
+LAST MODIFIED : 21 April 2008
+
+DESCRIPTION :
+Currently, a Cmiss_region may have at most one Computed_field_manager.
+This function returns it, or NULL if no Computed_field_manager found.
 ==============================================================================*/
 
 #ifdef __cplusplus
