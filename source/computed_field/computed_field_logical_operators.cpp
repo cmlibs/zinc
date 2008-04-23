@@ -167,7 +167,14 @@ although its cache may be lost.
 	struct Computed_field **source_fields;
 
 	ENTER(Computed_field_set_type_or);
-	if (field&&source_field_one&&source_field_two&&
+	if (field&&
+		/* Access and broadcast before checking components match,
+			the source_field_one and source_field_two will get replaced
+			if necessary. */
+		ACCESS(Computed_field)(source_field_one) &&
+		ACCESS(Computed_field)(source_field_two) &&
+		Computed_field_broadcast_field_components(
+			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
@@ -191,6 +198,8 @@ although its cache may be lost.
 			DEALLOCATE(source_fields);
 			return_code = 0;
 		}
+		DEACCESS(Computed_field)(&source_field_one);
+		DEACCESS(Computed_field)(&source_field_two);
 	}
 	else
 	{
@@ -448,7 +457,14 @@ although its cache may be lost.
 	struct Computed_field **source_fields;
 
 	ENTER(Computed_field_set_type_and);
-	if (field&&source_field_one&&source_field_two&&
+	if (field&&
+		/* Access and broadcast before checking components match,
+			the source_field_one and source_field_two will get replaced
+			if necessary. */
+		ACCESS(Computed_field)(source_field_one) &&
+		ACCESS(Computed_field)(source_field_two) &&
+		Computed_field_broadcast_field_components(
+			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
@@ -472,6 +488,8 @@ although its cache may be lost.
 			DEALLOCATE(source_fields);
 			return_code = 0;
 		}
+		DEACCESS(Computed_field)(&source_field_one);
+		DEACCESS(Computed_field)(&source_field_two);
 	}
 	else
 	{
@@ -734,7 +752,14 @@ although its cache may be lost.
 	struct Computed_field **source_fields;
 
 	ENTER(Computed_field_set_type_xor);
-	if (field&&source_field_one&&source_field_two&&
+	if (field&&
+		/* Access and broadcast before checking components match,
+			the source_field_one and source_field_two will get replaced
+			if necessary. */
+		ACCESS(Computed_field)(source_field_one) &&
+		ACCESS(Computed_field)(source_field_two) &&
+		Computed_field_broadcast_field_components(
+			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
@@ -758,6 +783,8 @@ although its cache may be lost.
 			DEALLOCATE(source_fields);
 			return_code = 0;
 		}
+		DEACCESS(Computed_field)(&source_field_one);
+		DEACCESS(Computed_field)(&source_field_two);
 	}
 	else
 	{
@@ -1045,7 +1072,14 @@ although its cache may be lost.
 	struct Computed_field **source_fields;
 
 	ENTER(Computed_field_set_type_equal_to);
-	if (field&&source_field_one&&source_field_two&&
+	if (field&&
+		/* Access and broadcast before checking components match,
+			the source_field_one and source_field_two will get replaced
+			if necessary. */
+		ACCESS(Computed_field)(source_field_one) &&
+		ACCESS(Computed_field)(source_field_two) &&
+		Computed_field_broadcast_field_components(
+			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
@@ -1069,6 +1103,8 @@ although its cache may be lost.
 			DEALLOCATE(source_fields);
 			return_code = 0;
 		}
+		DEACCESS(Computed_field)(&source_field_one);
+		DEACCESS(Computed_field)(&source_field_two);
 	}
 	else
 	{
@@ -1327,7 +1363,14 @@ although its cache may be lost.
 	struct Computed_field **source_fields;
 
 	ENTER(Computed_field_set_type_less_than);
-	if (field&&source_field_one&&source_field_two&&
+	if (field&&
+		/* Access and broadcast before checking components match,
+			the source_field_one and source_field_two will get replaced
+			if necessary. */
+		ACCESS(Computed_field)(source_field_one) &&
+		ACCESS(Computed_field)(source_field_two) &&
+		Computed_field_broadcast_field_components(
+			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
@@ -1351,6 +1394,8 @@ although its cache may be lost.
 			DEALLOCATE(source_fields);
 			return_code = 0;
 		}
+		DEACCESS(Computed_field)(&source_field_one);
+		DEACCESS(Computed_field)(&source_field_two);
 	}
 	else
 	{
@@ -1608,7 +1653,14 @@ although its cache may be lost.
 	struct Computed_field **source_fields;
 
 	ENTER(Computed_field_set_type_greater_than);
-	if (field&&source_field_one&&source_field_two&&
+	if (field&&
+		/* Access and broadcast before checking components match,
+			the source_field_one and source_field_two will get replaced
+			if necessary. */
+		ACCESS(Computed_field)(source_field_one) &&
+		ACCESS(Computed_field)(source_field_two) &&
+		Computed_field_broadcast_field_components(
+			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
@@ -1632,6 +1684,8 @@ although its cache may be lost.
 			DEALLOCATE(source_fields);
 			return_code = 0;
 		}
+		DEACCESS(Computed_field)(&source_field_one);
+		DEACCESS(Computed_field)(&source_field_two);
 	}
 	else
 	{

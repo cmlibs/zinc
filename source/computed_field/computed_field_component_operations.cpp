@@ -265,7 +265,14 @@ although its cache may be lost.
 	struct Computed_field **source_fields;
 
 	ENTER(Computed_field_set_type_power);
-	if (field&&source_field_one&&source_field_two&&
+	if (field&&
+		/* Access and broadcast before checking components match,
+			the local source_field_one and source_field_two will 
+			get replaced if necessary. */
+		ACCESS(Computed_field)(source_field_one) &&
+		ACCESS(Computed_field)(source_field_two) &&
+		Computed_field_broadcast_field_components(
+			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
@@ -289,6 +296,8 @@ although its cache may be lost.
 			DEALLOCATE(source_fields);
 			return_code = 0;
 		}
+		DEACCESS(Computed_field)(&source_field_one);
+		DEACCESS(Computed_field)(&source_field_two);
 	}
 	else
 	{
@@ -396,8 +405,6 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					Computed_field_broadcast_field_components(
-						&source_fields[0], &source_fields[1]);
 					return_code = Computed_field_set_type_power(field,
 						source_fields[0], source_fields[1]);
 				}
@@ -643,7 +650,14 @@ although its cache may be lost.
 	struct Computed_field **source_fields;
 
 	ENTER(Computed_field_set_type_multiply_components);
-	if (field&&source_field_one&&source_field_two&&
+	if (field&&
+		/* Access and broadcast before checking components match,
+			the source_field_one and source_field_two will get replaced
+			if necessary. */
+		ACCESS(Computed_field)(source_field_one) &&
+		ACCESS(Computed_field)(source_field_two) &&
+		Computed_field_broadcast_field_components(
+			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
@@ -667,6 +681,8 @@ although its cache may be lost.
 			DEALLOCATE(source_fields);
 			return_code = 0;
 		}
+		DEACCESS(Computed_field)(&source_field_one);
+		DEACCESS(Computed_field)(&source_field_two);
 	}
 	else
 	{
@@ -773,8 +789,6 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					Computed_field_broadcast_field_components(
-						&source_fields[0], &source_fields[1]);
 					return_code = Computed_field_set_type_multiply_components(field,
 						source_fields[0], source_fields[1]);
 				}
@@ -1018,7 +1032,14 @@ although its cache may be lost.
 	struct Computed_field **source_fields;
 
 	ENTER(Computed_field_set_type_divide_components);
-	if (field&&source_field_one&&source_field_two&&
+	if (field&&
+		/* Access and broadcast before checking components match,
+			the source_field_one and source_field_two will get replaced
+			if necessary. */
+		ACCESS(Computed_field)(source_field_one) &&
+		ACCESS(Computed_field)(source_field_two) &&
+		Computed_field_broadcast_field_components(
+			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
@@ -1042,6 +1063,8 @@ although its cache may be lost.
 			DEALLOCATE(source_fields);
 			return_code = 0;
 		}
+		DEACCESS(Computed_field)(&source_field_one);
+		DEACCESS(Computed_field)(&source_field_two);
 	}
 	else
 	{
@@ -1148,8 +1171,6 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					Computed_field_broadcast_field_components(
-						&source_fields[0], &source_fields[1]);
 					return_code = Computed_field_set_type_divide_components(field,
 						source_fields[0], source_fields[1]);
 				}
@@ -1383,11 +1404,11 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_add(struct Computed_field *field,
-	struct Computed_field *source_field_one, FE_value scale_factor1,
-	struct Computed_field *source_field_two, FE_value scale_factor2)
+int Computed_field_set_type_weighted_add(struct Computed_field *field,
+	struct Computed_field *source_field_one, double scale_factor1,
+	struct Computed_field *source_field_two, double scale_factor2)
 /*******************************************************************************
-LAST MODIFIED : 24 August 2006
+LAST MODIFIED : 21 April 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_ADD with the supplied
@@ -1401,10 +1422,17 @@ although its cache may be lost.
 	int number_of_source_fields,number_of_source_values,return_code;
 	struct Computed_field **source_fields;
 
-	ENTER(Computed_field_set_type_add);
-	if (field&&source_field_one&&source_field_two&&
+	ENTER(Computed_field_set_type_weighted_add);
+	if (field&&
+		/* Access and broadcast before checking components match,
+			the source_field_one and source_field_two will get replaced
+			if necessary. */
+		ACCESS(Computed_field)(source_field_one) &&
+		ACCESS(Computed_field)(source_field_two) &&
+		Computed_field_broadcast_field_components(
+			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
-			source_field_two->number_of_components))
+		source_field_two->number_of_components))
 	{
 		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
@@ -1432,17 +1460,55 @@ although its cache may be lost.
 			DEALLOCATE(source_fields);
 			return_code = 0;
 		}
+		DEACCESS(Computed_field)(&source_field_one);
+		DEACCESS(Computed_field)(&source_field_two);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_add.  Invalid argument(s)");
+			"Computed_field_set_type_weighted_add.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
+} /* Computed_field_set_type_weighted_add */
+ 
+int Computed_field_set_type_add(struct Computed_field *field,
+	struct Computed_field *source_field_one,
+	struct Computed_field *source_field_two)
+/*******************************************************************************
+LAST MODIFIED : 21 April 2008
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_ADD with the supplied
+fields, <source_field_one> and <source_field_two>.  Sets the number of 
+components equal to the source_fields.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	return(Computed_field_set_type_weighted_add(field,
+		source_field_one, 1.0, source_field_two, 1.0));
 } /* Computed_field_set_type_add */
+
+int Computed_field_set_type_subtract(struct Computed_field *field,
+	struct Computed_field *source_field_one,
+	struct Computed_field *source_field_two)
+/*******************************************************************************
+LAST MODIFIED : 21 April 2008
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_ADD with the supplied
+fields, <source_field_one> and <source_field_two>.  Sets the number of 
+components equal to the source_fields.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	return(Computed_field_set_type_weighted_add(field,
+		source_field_one, 1.0, source_field_two, -1.0));
+} /* Computed_field_set_type_subtract */
 
 int Computed_field_get_type_add(struct Computed_field *field,
 	struct Computed_field **source_field_one, FE_value *scale_factor1,
@@ -1549,9 +1615,7 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					Computed_field_broadcast_field_components(
-						&source_fields[0], &source_fields[1]);
-					return_code = Computed_field_set_type_add(field,
+					return_code = Computed_field_set_type_weighted_add(field,
 						source_fields[0], scale_factors[0],
 						source_fields[1], scale_factors[1]);
 				}
