@@ -1436,7 +1436,7 @@ endif # SYSNAME == IRIX%=
 ifeq ($(OPERATING_SYSTEM),linux)
    ifneq ($(STATIC_LINK),true)
       ifneq ($(EXPORT_EVERYTHING),true)
-         LD_VERSION := $(shell ld -v | grep "version \([3-9]\.\|2\.[2-9]\d\|2\.1[2-9]\)")
+         LD_VERSION := $(shell ld -v | grep "\s\([3-9]\.\|2\.[2-9]\d\|2\.1[2-9]\)")
          NEW_BINUTILS := $(if $(LD_VERSION),true)
          ifdef NEW_BINUTILS
             # In Linux this requires an ld from binutils 2.12 or later 
@@ -1449,7 +1449,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
             SRC_EXPORTS_FILE = cmgui.exports
             EXPORTS_DEPEND = $(OBJECT_PATH)/$(EXPORTS_FILE)
             EXPORTS_LINK_FLAGS = -Wl,--export-dynamic,--version-script,$(EXPORTS_FILE)
-            SO_LIB_EXPORTS_LINK_FLAGS = $(EXPORTS_LINK_FLAGS)
+            SO_LIB_EXPORTS_LINK_FLAGS = -Wl,--version-script,$(EXPORTS_FILE)
             $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
 					@if [ ! -d $(OBJECT_PATH) ]; then \
 						mkdir -p $(OBJECT_PATH); \
