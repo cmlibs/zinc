@@ -24865,6 +24865,12 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		computed_field_manager=Computed_field_package_get_computed_field_manager(
 			command_data->computed_field_package);
 
+		/* Even though we currently still have a single Computed_field_manager,
+			attach this to the root region, so we can use a region like
+			interface to get fields in the api. */
+		Cmiss_region_attach_Computed_field_manager(command_data->root_region,
+			computed_field_manager);
+
 		/* Add Computed_fields to the Computed_field_package */
 		if (command_data->computed_field_package)
 		{
