@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_composite.c
 
-LAST MODIFIED : 24 August 2006
+LAST MODIFIED : 21 April 2008
 
 DESCRIPTION :
 Implements a "composite" computed_field which converts fields, field components
@@ -1719,6 +1719,57 @@ tries to find one in the manager that does this, otherwise makes one of name
 
 	return (component_field);
 } /* Computed_field_manager_get_component_wrapper */
+
+int Computed_field_set_type_identity(struct Computed_field *field,
+	struct Computed_field *source_field)
+/*******************************************************************************
+LAST MODIFIED : 21 April 2008
+
+DESCRIPTION :
+Changes <field> into type composite with one input field, the <source_field>.
+==============================================================================*/
+{
+	int i, number_of_values, return_code, *source_field_numbers,
+		*source_value_numbers;
+
+	ENTER(Computed_field_set_type_identity);
+	if (field && source_field)
+	{
+		number_of_values = source_field->number_of_components;
+		ALLOCATE(source_field_numbers, int, number_of_values);
+		ALLOCATE(source_value_numbers, int, number_of_values);
+		if (source_field_numbers && source_value_numbers)
+		{
+			for (i = 0; i < number_of_values; i++)
+			{
+				source_field_numbers[i] = 0;
+				source_value_numbers[i] = i;
+			}
+			return_code = Computed_field_set_type_composite(field,
+				/*number_of_components*/number_of_values,
+				/*number_of_source_fields*/1, /*source_fields*/&source_field,
+				/*number_of_source_values*/0, /*source_values*/(FE_value *)NULL,
+				source_field_numbers, source_value_numbers);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_set_type_identity.  Not enough memory");
+			return_code = 0;
+		}
+		DEALLOCATE(source_field_numbers);
+		DEALLOCATE(source_value_numbers);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_identity.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_identity */
 
 int Computed_field_register_types_composite(
 	struct Computed_field_package *computed_field_package)

@@ -285,6 +285,15 @@ DESCRIPTION :
 
 	int access_count;
 	
+	/* Keep a reference to the objects manager */
+	struct MANAGER(Computed_field) *manager;
+
+	/* This flag indicates that when the ACCESS count reaches 1 then
+		the field should automatically be removed from the MANAGER,
+		indicating intermediary fields.  They need to be in the manager
+		in case they are modified through API calls. */
+	int intermediary_managed_field;
+
 }; /* struct Computed_field */
 
 /*

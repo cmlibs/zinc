@@ -52,6 +52,15 @@ Implements a number of basic component wise operations on computed fields.
 	Cmiss_computed_field_set_type_sum_components
 #define Computed_field_get_type_sum_components \
 	Cmiss_computed_field_get_type_sum_components
+#define Computed_field_set_type_add Cmiss_computed_field_set_type_add
+#define Computed_field_set_type_subtract Cmiss_computed_field_set_type_subtract
+#define Computed_field_set_type_weighted_add Cmiss_computed_field_set_type_weighted_add
+#define Computed_field_set_type_multiply_components Cmiss_computed_field_set_type_multiply
+#define Computed_field_set_type_divide_components Cmiss_computed_field_set_type_divide
+#define Computed_field_set_type_exp Cmiss_computed_field_set_type_exp
+#define Computed_field_set_type_log Cmiss_computed_field_set_type_log
+#define Computed_field_set_type_power Cmiss_computed_field_set_type_power
+#define Computed_field_set_type_sqrt Cmiss_computed_field_set_type_sqrt
 
 int Computed_field_register_types_component_operations(
 	struct Computed_field_package *computed_field_package);
@@ -62,17 +71,39 @@ DESCRIPTION :
 ==============================================================================*/
 
 int Computed_field_set_type_add(struct Computed_field *field,
-	struct Computed_field *source_field_one, FE_value scale_factor1,
-	struct Computed_field *source_field_two, FE_value scale_factor2);
+	struct Computed_field *source_field_one,
+	struct Computed_field *source_field_two);
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 21 April 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_ADD with the supplied
 fields, <source_field_one> and <source_field_two>.  Sets the number of 
 components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
+==============================================================================*/
+
+int Computed_field_set_type_subtract(struct Computed_field *field,
+	struct Computed_field *source_field_one,
+	struct Computed_field *source_field_two);
+/*******************************************************************************
+LAST MODIFIED : 21 April 2008
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_ADD (with a -1 weighting for the
+second field) with the supplied fields, <source_field_one> and 
+<source_field_two>.  Sets the number of components equal to the source_fields.
+==============================================================================*/
+
+int Computed_field_set_type_weighted_add(struct Computed_field *field,
+	struct Computed_field *source_field_one, double scale_factor1,
+	struct Computed_field *source_field_two, double scale_factor2);
+/*******************************************************************************
+LAST MODIFIED : 21 April 2008
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_ADD with the supplied
+fields, <source_field_one> and <source_field_two>.  Sets the number of 
+components equal to the source_fields.
 ==============================================================================*/
 
 int Computed_field_set_type_divide_components(struct Computed_field *field,
@@ -85,8 +116,6 @@ DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_DIVIDE_COMPONENTS with the supplied
 fields, <source_field_one> and <source_field_two>.  Sets the number of 
 components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
 ==============================================================================*/
 
 int Computed_field_set_type_offset(struct Computed_field *field,
@@ -99,8 +128,6 @@ Converts <field> to type COMPUTED_FIELD_OFFSET which returns the values of the
 <source_field> plus the <offsets>.
 The <offsets> array must therefore contain as many FE_values as there are
 components in <source_field>; this is the number of components in the field.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
 ==============================================================================*/
 
 int Computed_field_get_type_sum_components(struct Computed_field *field,
@@ -123,7 +150,73 @@ Converts <field> to type COMPUTED_FIELD_SUM_COMPONENTS with the supplied which
 returns a scalar weighted sum of the components of <source_field>.
 The <weights> array must therefore contain as many FE_values as there are
 components in <source_field>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
+==============================================================================*/
+
+int Computed_field_set_type_multiply_components(struct Computed_field *field,
+	struct Computed_field *source_field_one,
+	struct Computed_field *source_field_two);
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_MULTIPLY_COMPONENTS with the supplied
+fields, <source_field_one> and <source_field_two>.  Sets the number of 
+components equal to the source_fields.
+==============================================================================*/
+
+int Computed_field_set_type_divide_components(struct Computed_field *field,
+	struct Computed_field *source_field_one,
+	struct Computed_field *source_field_two);
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_DIVIDE_COMPONENTS with the supplied
+fields, <source_field_one> and <source_field_two>.  Sets the number of 
+components equal to the source_fields.
+==============================================================================*/
+
+int Computed_field_set_type_exp(struct Computed_field *field,
+	struct Computed_field *source_field);
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_EXP with the supplied
+field, <source_field_one>.  Sets the number of components equal to the source_fields.
+==============================================================================*/
+
+int Computed_field_set_type_log(struct Computed_field *field,
+	struct Computed_field *source_field);
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_LOG with the supplied
+field, <source_field_one>.  Sets the number of components equal to the source_fields.
+==============================================================================*/
+
+int Computed_field_set_type_power(struct Computed_field *field,
+	struct Computed_field *source_field_one,
+	struct Computed_field *source_field_two);
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_POWER with the supplied
+fields, <source_field_one> and <source_field_two>.  Sets the number of 
+components equal to the source_fields.
+For each component the result is source_field_one to the power of 
+source_field_two.
+==============================================================================*/
+
+int Computed_field_set_type_sqrt(struct Computed_field *field,
+	struct Computed_field *source_field);
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_SQRT with the supplied
+field, <source_field_one>.  Sets the number of components equal to the source_fields.
 ==============================================================================*/
 #endif /* !defined (COMPUTED_FIELD_COMPONENT_OPERATIONS_H) */

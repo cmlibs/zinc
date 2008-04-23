@@ -88,8 +88,6 @@ public:
 
 	enum Computed_field_window_projection_type projection_type;
 
-	struct MANAGER(Computed_field) *computed_field_manager;
-
 	/* This flag indicates if the field has registered for callbacks with the
 		scene_viewer */
 	int scene_viewer_callback_flag;
@@ -99,12 +97,11 @@ public:
 	Computed_field_window_projection(Computed_field *field, 
 		char *graphics_window_name, int pane_number, 
 		Scene_viewer *scene_viewer, 
-		enum Computed_field_window_projection_type projection_type,
-		struct MANAGER(Computed_field) *computed_field_manager) : 
+		enum Computed_field_window_projection_type projection_type) : 
 		Computed_field_core(field), 
 		graphics_window_name(duplicate_string(graphics_window_name)),
 		pane_number(pane_number), scene_viewer(scene_viewer),
-		projection_type(projection_type), computed_field_manager(computed_field_manager)
+		projection_type(projection_type)
 	{
 		scene_viewer_callback_flag = 0;
 		projection_matrix = (double*)NULL;
@@ -119,8 +116,7 @@ private:
 	Computed_field_core *copy(Computed_field* new_parent)
 	{
 		return new Computed_field_window_projection(new_parent,
-			graphics_window_name, pane_number, scene_viewer, projection_type,
-			computed_field_manager);
+			graphics_window_name, pane_number, scene_viewer, projection_type);
 	}
 
 	char *get_type_string()
@@ -1055,7 +1051,10 @@ that the computed field has changed.
 			DEALLOCATE(core->projection_matrix);
 			core->projection_matrix = (double *)NULL;
 		}
-		Computed_field_changed(field, core->computed_field_manager);
+		if (field->manager)
+		{
+			Computed_field_changed(field, field->manager);
+		}
 	}
 	else
 	{
@@ -1096,7 +1095,10 @@ Clear the scene viewer reference when it is no longer valid.
 		}
 		core->pane_number = 0;
 		core->scene_viewer = (struct Scene_viewer *)NULL;
-		Computed_field_changed(field, core->computed_field_manager);
+		if (field->manager)
+		{
+			Computed_field_changed(field, field->manager);
+		}
 	}
 	else
 	{
@@ -1112,17 +1114,16 @@ Clear the scene viewer reference when it is no longer valid.
 int Computed_field_set_type_window_projection(struct Computed_field *field,
 	struct Computed_field *source_field, struct Scene_viewer *scene_viewer,
 	char *graphics_window_name, int pane_number,
-	enum Computed_field_window_projection_type projection_type,
-	struct MANAGER(Computed_field) *computed_field_manager)
+	enum Computed_field_window_projection_type projection_type)
 /*******************************************************************************
-LAST MODIFIED : 25 August 2006
+LAST MODIFIED : 21 April 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_WINDOW_PROJECTION, returning the 
 <source_field> with each component multiplied by the perspective transformation
 of the <scene_viewer>.  The <graphics_window_name> and <pane_number> are stored
 so that the command to reproduce this field can be written out.
-The <computed_field_manager> is notified by the <field> if the <scene_viewer> closes.
+The manager of <field> is notified if the <scene_viewer> closes.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
@@ -1148,7 +1149,7 @@ although its cache may be lost.
 			field->number_of_source_fields=number_of_source_fields;			
 			field->core = new Computed_field_window_projection(field,
 				graphics_window_name, pane_number, scene_viewer,
-				projection_type, computed_field_manager);
+				projection_type);
 		}
 		else
 		{
@@ -1341,7 +1342,7 @@ already) and allows its contents to be modified.
 				GET_NAME(Graphics_window)(graphics_window, &graphics_window_name);
 				return_code = Computed_field_set_type_window_projection(field,
 					source_field, scene_viewer, graphics_window_name, pane_number,
-					projection_type, computed_field_window_projection_package->computed_field_manager);
+					projection_type);
 				DEALLOCATE(graphics_window_name);
 			}
 			if (!return_code)

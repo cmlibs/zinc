@@ -45,6 +45,9 @@ and real values in any order into a single vector field.
 #if !defined (COMPUTED_FIELD_COMPOSITE_H)
 #define COMPUTED_FIELD_COMPOSITE_H
 
+#define Computed_field_set_type_constant Cmiss_computed_field_set_type_constant
+#define Computed_field_set_type_identity Cmiss_computed_field_set_type_identity
+
 int Computed_field_set_type_constant(struct Computed_field *field,
 	int number_of_values, FE_value *values);
 /*******************************************************************************
@@ -90,6 +93,15 @@ DESCRIPTION :
 Returns a composite field that computes <component_number> of <field>. First
 tries to find one in the manager that does this, otherwise makes one of name
 'field.component_name', adds it to the manager and returns it.
+==============================================================================*/
+
+int Computed_field_set_type_identity(struct Computed_field *field,
+	struct Computed_field *source_field);
+/*******************************************************************************
+LAST MODIFIED : 21 April 2008
+
+DESCRIPTION :
+Changes <field> into type composite with one input field, the <source_field>.
 ==============================================================================*/
 
 int Computed_field_register_types_composite(

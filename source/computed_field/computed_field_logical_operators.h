@@ -44,6 +44,33 @@ Implements logical operations on computed fields.
 #if !defined (COMPUTED_FIELD_LOGICAL_OPERATORS_H)
 #define COMPUTED_FIELD_LOGICAL_OPERATORS_H
 
+#define Computed_field_set_type_greater_than Cmiss_computed_field_set_type_greater_than
+#define Computed_field_set_type_less_than Cmiss_computed_field_set_type_less_than
+
+int Computed_field_set_type_less_than(struct Computed_field *field,
+	struct Computed_field *source_field_one,
+	struct Computed_field *source_field_two);
+/*******************************************************************************
+LAST MODIFIED : 25 August 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_LESS_THAN with the supplied
+field, <source_field> .  Sets the number of 
+components equal to the source_fields.
+==============================================================================*/
+
+int Computed_field_set_type_greater_than(struct Computed_field *field,
+	struct Computed_field *source_field_one,
+	struct Computed_field *source_field_two);
+/*******************************************************************************
+LAST MODIFIED : 25 August 2006
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_GREATER_THAN with the supplied
+field, <source_field> .  Sets the number of 
+components equal to the source_fields.
+==============================================================================*/
+
 int Computed_field_register_types_logical_operators(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************

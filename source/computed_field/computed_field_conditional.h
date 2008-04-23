@@ -47,6 +47,24 @@ Implements computed fields which conditionally calculate their inputs.
 #include "general/value.h"
 #include "api/cmiss_computed_field.h"
 
+#define Computed_field_set_type_if Cmiss_computed_field_set_type_if
+
+int Computed_field_set_type_if(struct Computed_field *field,
+	struct Computed_field *source_field_one,
+	struct Computed_field *source_field_two,
+	struct Computed_field *source_field_three);
+/*******************************************************************************
+LAST MODIFIED : 27 July 2007
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_IF with the supplied
+fields, <source_field_one>, <source_field_two> and <source_field_three>.
+Sets the number of components equal to the source_fields.
+For each component, if the value of source_field_one is TRUE (non-zero) then
+the result will be the value of source_field_two, otherwise the result will
+be source_field_three.
+==============================================================================*/
+
 int Computed_field_register_types_conditional(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
