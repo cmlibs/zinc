@@ -1137,5 +1137,11 @@ Removes the callback calling <function> with <user_data> from
 <scene_viewer>.
 ==============================================================================*/
 
+unsigned int Cmiss_scene_viewer_get_frame_count(Cmiss_scene_viewer_id scene_viewer);
+/*******************************************************************************
+LAST MODIFIED : 24 April 2008
 
+DESCRIPTION :
+Returns a count of the number of scene viewer redraws.
+==============================================================================*/
 #endif /* __CMISS_SCENE_VIEWER_H__ */

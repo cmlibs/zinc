@@ -140,6 +140,7 @@ and the functions given their public names.
 #define Scene_viewer_remove_input_callback Cmiss_scene_viewer_remove_input_callback
 #define Scene_viewer_add_repaint_required_callback Cmiss_scene_viewer_add_repaint_required_callback
 #define Scene_viewer_remove_repaint_required_callback Cmiss_scene_viewer_remove_repaint_required_callback
+#define Scene_viewer_get_frame_count Cmiss_scene_viewer_get_frame_count
 
 /*
 Global types
@@ -1623,5 +1624,13 @@ Sets the maximum extent of the graphics window within which individual paints
 will be requested with handle_windows_event.
 ==============================================================================*/
 #endif /* defined (WIN32_USER_INTERFACE) */
+
+unsigned int Scene_viewer_get_frame_count(struct Scene_viewer *scene_viewer);
+/*******************************************************************************
+LAST MODIFIED : 24 April 2008
+
+DESCRIPTION :
+Returns a count of the number of scene viewer redraws.
+==============================================================================*/
 
 #endif /* !defined (SCENE_VIEWER_H) */

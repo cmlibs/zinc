@@ -7605,6 +7605,10 @@ Writes the properties of the <window> to the command window.
 			{
 				display_message(INFORMATION_MESSAGE,"none\n");
 			}
+			/* frame count */
+			display_message(INFORMATION_MESSAGE,
+				"    Rendered frame count: %d\n",
+				Scene_viewer_get_frame_count(scene_viewer));
 		}
 		/* settings */
 		if (GET_NAME(Interactive_tool)(window->interactive_tool,&name))

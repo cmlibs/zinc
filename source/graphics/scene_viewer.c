@@ -303,6 +303,8 @@ DESCRIPTION :
 		twice, which appears to work around a rendering bug on ATI windows driver 6.14.0010.6706 */
 	int clear_twice_flag;
 #endif /* defined (WIN32_SYSTEM) */
+	/* Keeps a counter of the frame redraws */
+	unsigned int frame_count;
 }; /* struct Scene_viewer */
 
 DECLARE_LIST_TYPES(Scene_viewer);
@@ -1529,7 +1531,7 @@ Renders the background into the scene.
 		/* clear the screen: colour buffer and depth buffer */
 		glClearColor((scene_viewer->background_colour).red,
 			(scene_viewer->background_colour).green,
-			(scene_viewer->background_colour).blue,0.);
+			(scene_viewer->background_colour).blue,0.0);
 		glClearDepth(1.0);
 #if defined (WIN32_SYSTEM)
 		/* Clear twice, if set then the glClear in the background will be called
@@ -2770,6 +2772,7 @@ access this function.
 			DESTROY(LIST(Scene_viewer_render_object))(&rendering_data.render_callstack);
 		}
 		scene_viewer->fast_changing=1;
+		scene_viewer->frame_count++;
 	}
 	else
 	{
@@ -4779,6 +4782,7 @@ performed in idle time so that multiple redraws are avoided.
 					twice, which appears to work around a rendering bug on ATI windows driver 6.14.0010.6706 */
 				scene_viewer->clear_twice_flag = 1;
 #endif /* defined (WIN32_SYSTEM) */
+				scene_viewer->frame_count = 0;
 				
 				/* add callbacks to the graphics buffer */
 				Graphics_buffer_add_initialise_callback(graphics_buffer,
@@ -9426,3 +9430,30 @@ will be requested with handle_windows_event.
 	return (return_code);
 } /* Cmiss_scene_viewer_win32_set_window_size */
 #endif /* defined (WIN32_USER_INTERFACE) */
+
+unsigned int Scene_viewer_get_frame_count(struct Scene_viewer *scene_viewer)
+/*******************************************************************************
+LAST MODIFIED : 24 April 2008
+
+DESCRIPTION :
+Returns a count of the number of scene viewer redraws.
+==============================================================================*/
+{
+	unsigned int frame_count;
+
+	ENTER(Scene_viewer_get_frame_count);
+	if (scene_viewer)
+	{
+		frame_count = scene_viewer->frame_count;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_frame_count.  Invalid argument(s)");
+		frame_count = 0;
+	}
+	LEAVE;
+
+	return (frame_count);
+} /* Scene_viewer_get_frame_count */
+
