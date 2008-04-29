@@ -299,7 +299,7 @@ void AllClicked(wxCommandEvent &event)
 	 int i,number_of_selected_commands;
 	 comfile_listbox = XRCCTRL(*this, "ComfileListBox", wxListBox);
 	 /* get the number of selected commands and their positions */
-	 if (number_of_selected_commands = comfile_listbox->GetCount());
+	 if (number_of_selected_commands = comfile_listbox->GetCount())
 	 {
 			/* execute the selected commands */
 			for (i=0;i<number_of_selected_commands-1;i++)

@@ -110,10 +110,10 @@ graphics_objects that don't come from finite_elements?
 		scaled_axis,scaled_front,scaled_side;
 
 	ENTER(create_Spectrum_colour_bar);
-	if (graphics_object_address&&name&&spectrum&&centre&&bar_axis&&side_axis&&
+	if (graphics_object_address&&name&&spectrum&&bar_axis&&side_axis&&
 		(0.0<bar_length)&&(0.0<bar_radius)&&(0.0<=extend_length)&&
 		(0<tick_divisions)&&(100>=tick_divisions)&&(0.0<=tick_length)&&
-		number_format&&number_string&&bar_material&&tick_label_material)
+		number_format&&bar_material&&tick_label_material)
 	{
 		return_code=1;
 		/* add all graphics objects at time 0.0 */
