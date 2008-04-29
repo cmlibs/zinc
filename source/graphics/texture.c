@@ -1285,9 +1285,10 @@ tiles (and <texture_tiling> wasn't NULL.
 						(float)texture->original_width_texels);
 					(*texture_tiling)->coordinate_scaling[0] = 
 						(*texture_tiling)->texture_tiles[0];
-					if (floor((float)texture->width_texels/
+					if (((*texture_tiling)->texture_tiles[0] > 1) &&
+						(floor((float)texture->width_texels/
 						((*texture_tiling)->tile_size[0] - (*texture_tiling)->overlap))
-						>= (*texture_tiling)->texture_tiles[0])
+						>= (*texture_tiling)->texture_tiles[0]))
 					{
 						(*texture_tiling)->texture_tiles[0]++;
 					}					
@@ -1302,9 +1303,10 @@ tiles (and <texture_tiling> wasn't NULL.
 						(float)texture->original_height_texels);
 					(*texture_tiling)->coordinate_scaling[1] = 
 						(*texture_tiling)->texture_tiles[1];
-					if (floor((float)texture->height_texels/
+					if (((*texture_tiling)->texture_tiles[1] > 1) &&
+						(floor((float)texture->height_texels/
 						((*texture_tiling)->tile_size[1] - (*texture_tiling)->overlap))
-						>= (*texture_tiling)->texture_tiles[1])
+						>= (*texture_tiling)->texture_tiles[1]))
 					{
 						(*texture_tiling)->texture_tiles[1]++;
 					}
@@ -1319,9 +1321,10 @@ tiles (and <texture_tiling> wasn't NULL.
 						(float)texture->original_depth_texels);
 					(*texture_tiling)->coordinate_scaling[2] = 
 						(*texture_tiling)->texture_tiles[2];
-					if (floor((float)texture->depth_texels/
+					if (((*texture_tiling)->texture_tiles[2] > 1) &&
+						(floor((float)texture->depth_texels/
 						((*texture_tiling)->tile_size[2] - (*texture_tiling)->overlap))
-						>= (*texture_tiling)->texture_tiles[2])
+						>= (*texture_tiling)->texture_tiles[2]))
 					{
 						(*texture_tiling)->texture_tiles[2]++;
 					}
@@ -1830,9 +1833,9 @@ and overwritten.
 					% texture_tiling->texture_tiles[2];
 				start_z = tile_z * cropped_size[2];
 				end_z = start_z + texture_tiling->tile_size[2];
-				if (end_y > texture->depth_texels)
+				if (end_z > texture->depth_texels)
 				{
-					end_y = texture->depth_texels;
+					end_z = texture->depth_texels;
 				}
 			}
 			else
@@ -7014,7 +7017,7 @@ Sets the <property> and <value> string for the <texture>.
 		else
 		{
 			texture_property = CREATE(Texture_property)
-				((char *)property, (char *)value);
+				(property, value);
 			return_code = ADD_OBJECT_TO_LIST(Texture_property)(
 				texture_property, texture->property_list);
 		}
