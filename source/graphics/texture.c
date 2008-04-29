@@ -194,7 +194,8 @@ Module functions
 ----------------
 */
 
-static struct Texture_property *CREATE(Texture_property)(char *name, char *value)
+static struct Texture_property *CREATE(Texture_property)(
+	const char *name, const char *value)
 /*******************************************************************************
 LAST MODIFIED : 25 October 2007
 
