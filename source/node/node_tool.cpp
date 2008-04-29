@@ -2901,7 +2901,7 @@ void OnDimensionEntered(wxCommandEvent &event)
 		dimension_textctrl = XRCCTRL(*this, "DimensionTextCtrl", wxTextCtrl);
 		if (node_tool)
 		{
-			 if (value_string=const_cast<char *>((dimension_textctrl->GetValue()).c_str()));
+			 if (value_string=const_cast<char *>((dimension_textctrl->GetValue()).c_str()))
 			 {
 					if (1==sscanf(value_string,"%d",&element_dimension))
 					{
