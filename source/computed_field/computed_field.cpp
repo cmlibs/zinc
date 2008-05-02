@@ -615,7 +615,6 @@ PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Computed_field)
 PROTOTYPE_REACCESS_OBJECT_FUNCTION(Computed_field)
 {
 	int return_code;
-	struct Computed_field *current_object;
 
 	ENTER(REACCESS(Computed_field));
 	if (object_address)
@@ -626,7 +625,7 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(Computed_field)
 			/* access the new object */
 			(new_object->access_count)++;
 		}
-		if (current_object = *object_address)
+		if (*object_address)
 		{
 			/* deaccess the current object */
 			DEACCESS(Computed_field)(object_address);
