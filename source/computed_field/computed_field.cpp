@@ -4699,7 +4699,7 @@ Default initialisation of computed field core.
 	field = parent;
 	field->core = this;
 	return 1;
-};
+} /* Computed_field_core::set_field_and_initialise */
 
 int Computed_field_core::list()
 /*******************************************************************************
