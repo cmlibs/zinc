@@ -1,10 +1,10 @@
 /*******************************************************************************
-FILE : cmiss_computed_field.h
+FILE : cmiss_field.h
 
-LAST MODIFIED : 21 April 2008
+LAST MODIFIED : 8 May 2008
 
 DESCRIPTION :
-The public interface to the Cmiss computed_fields.
+The public interface to the Cmiss fields.
 
 Preferable to base new projects on the cmiss_function.h and 
 cmiss_function_finite_element.h interface as this functionality should replace
@@ -45,8 +45,8 @@ computed fields.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_COMPUTED_FIELD_H__
-#define __CMISS_COMPUTED_FIELD_H__
+#ifndef __CMISS_FIELD_H__
+#define __CMISS_FIELD_H__
 
 #include "api/cmiss_node.h"
 #include "api/cmiss_element.h"
@@ -71,12 +71,23 @@ DESCRIPTION :
 #endif /* CMISS_REGION_ID_DEFINED */
 
 /* SAB Temporary until we decide how to fix things up internally instead of externally.*/
-#define Cmiss_computed_field Computed_field
+#define Cmiss_field Computed_field
 
-struct Cmiss_computed_field;
-typedef struct Cmiss_computed_field *Cmiss_computed_field_id;
+struct Cmiss_field;
+typedef struct Cmiss_field *Cmiss_field_id;
 /*******************************************************************************
 LAST MODIFIED : 31 March 2004
+
+DESCRIPTION :
+==============================================================================*/
+
+/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
+#define Cmiss_field_type_object Computed_field_type_object
+
+struct Cmiss_field_type_object;
+typedef struct Cmiss_field_type_object *Cmiss_field_type_object_id;
+/*******************************************************************************
+LAST MODIFIED : 9 May 2008
 
 DESCRIPTION :
 ==============================================================================*/
@@ -90,21 +101,32 @@ struct Cmiss_node_field_creator;
 
 /* Global Functions */
 
-Cmiss_computed_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
+Cmiss_field_id Cmiss_field_create(Cmiss_region_id region,
+	Cmiss_field_type_object_id field_type);
+/*******************************************************************************
+LAST MODIFIED : 21 April 2008
+
+DESCRIPTION :
+Creates a new field in <region> of type <field_type>.
+==============================================================================*/
+
+int Cmiss_field_set_type(Cmiss_field_id field,
+	Cmiss_field_type_object_id field_type);
+/*******************************************************************************
+LAST MODIFIED : 21 April 2008
+
+DESCRIPTION :
+If possible, replaces the the type and parameters of <field> with those
+of <field_type>.
+==============================================================================*/
+
+Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
 	const char *field_name);
 /*******************************************************************************
 LAST MODIFIED : 21 April 2008
 
 DESCRIPTION :
-Returns the computed_field of <field_name> from the <region> if it is defined.
-==============================================================================*/
-
-Cmiss_computed_field_id Cmiss_region_create_field(Cmiss_region_id region);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2008
-
-DESCRIPTION :
-Creates a new field in <region>.
+Returns the field of <field_name> from the <region> if it is defined.
 ==============================================================================*/
 
 int Cmiss_region_is_field_defined(Cmiss_region_id region,
@@ -116,14 +138,14 @@ DESCRIPTION :
 Tests if a field named <field_name> exists in <region>.
 ==============================================================================*/
 
-int Cmiss_computed_field_get_number_of_components(Cmiss_computed_field_id field);
+int Cmiss_field_get_number_of_components(Cmiss_field_id field);
 /*******************************************************************************
 LAST MODIFIED : 23 December 1998
 
 DESCRIPTION :
 ==============================================================================*/
 
-int Cmiss_computed_field_destroy(Cmiss_computed_field_id *field);
+int Cmiss_field_destroy(Cmiss_field_id *field);
 /*******************************************************************************
 LAST MODIFIED : 22 April 2008
 
@@ -132,7 +154,7 @@ Destroys this reference to the field (and sets it to NULL).
 Internally this just decrements the reference count.
 ==============================================================================*/
 
-int Cmiss_computed_field_evaluate_at_node(struct Cmiss_computed_field *field,
+int Cmiss_field_evaluate_at_node(struct Cmiss_field *field,
 	struct Cmiss_node *node, float time, int number_of_values, float *values);
 /*******************************************************************************
 LAST MODIFIED : 29 March 2004
@@ -145,7 +167,7 @@ number_of_components, the function checks that <number_of_values> is
 greater than or equal to the number of components.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_values_at_node(struct Cmiss_computed_field *field,
+int Cmiss_field_set_values_at_node(struct Cmiss_field *field,
 	struct Cmiss_node *node, float time, int number_of_values, float *values);
 /*******************************************************************************
 LAST MODIFIED : 21 April 2005
@@ -163,7 +185,7 @@ continues until the actual FE_field values at the node are changed or a field
 is reached for which its calculation is not reversible, or is not supported yet.
 ==============================================================================*/
 
-int Cmiss_computed_field_evaluate_in_element(struct Cmiss_computed_field *field,
+int Cmiss_field_evaluate_in_element(struct Cmiss_field *field,
 	struct Cmiss_element *element, float *xi, float time, 
 	struct Cmiss_element *top_level_element, int number_of_values,
 	float *values, int number_of_derivatives, float *derivatives);
@@ -190,8 +212,8 @@ number_of_components in size, derivatives has the element dimension times the
 number_of_components
 ==============================================================================*/
 
-char *Cmiss_computed_field_evaluate_as_string_at_node(
-	struct Cmiss_computed_field *field, struct Cmiss_node *node, float time);
+char *Cmiss_field_evaluate_as_string_at_node(
+	struct Cmiss_field *field, struct Cmiss_node *node, float time);
 /*******************************************************************************
 LAST MODIFIED : 17 January 2007
 
@@ -199,7 +221,7 @@ DESCRIPTION :
 Returns a string describing the value/s of the <field> at the <node>. If the
 field is based on an FE_field but not returning FE_values, it is asked to supply
 the string. Otherwise, a string built up of comma separated values evaluated
-for the field in Computed_field_evaluate_cache_at_node. The FE_value exception
+for the field in field_evaluate_cache_at_node. The FE_value exception
 is used since it is likely the values are already in the cache in most cases,
 or can be used by other fields again if calculated now.
 Creates a string which represents all the components.
@@ -207,7 +229,7 @@ Some basic field types such as CMISS_NUMBER have special uses in this function.
 It is up to the calling function to DEALLOCATE the returned string.
 ==============================================================================*/
 
-int Cmiss_computed_field_is_defined_at_node(Cmiss_computed_field_id field,
+int Cmiss_field_is_defined_at_node(Cmiss_field_id field,
 	struct Cmiss_node *node);
 /*******************************************************************************
 LAST MODIFIED : 17 January 2007
@@ -217,9 +239,9 @@ Returns true if <field> can be calculated at <node>. If the field depends on
 any other fields, this function is recursively called for them.
 ==============================================================================*/
 
-int Cmiss_computed_field_evaluate_at_field_coordinates(
-	Cmiss_computed_field_id field,
-	Cmiss_computed_field_id reference_field, int number_of_input_values,
+int Cmiss_field_evaluate_at_field_coordinates(
+	Cmiss_field_id field,
+	Cmiss_field_id reference_field, int number_of_input_values,
 	float *input_values, float time, float *values);
 /*******************************************************************************
 LAST MODIFIED : 25 March 2008
@@ -232,14 +254,14 @@ The <values> array must be large enough to store as many FE_values as there are
 number_of_components.
 ==============================================================================*/
 
-int Cmiss_computed_field_is_type_finite_element(Cmiss_computed_field_id field);
+int Cmiss_field_is_type_finite_element(Cmiss_field_id field);
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
 
-int Cmiss_computed_field_get_name(Cmiss_computed_field_id field,
+int Cmiss_field_get_name(Cmiss_field_id field,
 	char **name);
 /*******************************************************************************
 LAST MODIFIED : 21 April 2008
@@ -248,7 +270,7 @@ DESCRIPTION :
 Get the name of a field.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_name(Cmiss_computed_field_id field,
+int Cmiss_field_set_name(Cmiss_field_id field,
 	const char *name);
 /*******************************************************************************
 LAST MODIFIED : 17 April 2008
@@ -257,26 +279,26 @@ DESCRIPTION :
 Change the name of a field.
 ==============================================================================*/
 
-int Cmiss_computed_field_finite_element_set_string_at_node(
-	Cmiss_computed_field_id field, int component_number, Cmiss_node_id node, 
+int Cmiss_field_finite_element_set_string_at_node(
+	Cmiss_field_id field, int component_number, Cmiss_node_id node, 
 	float time, const char *string);
 /*******************************************************************************
 LAST MODIFIED : 24 May 2006
 
 DESCRIPTION :
-Special function for Computed_field_finite_element fields only.
+Special function for field_finite_element fields only.
 Allows the setting of a string if that is the type of field represented.
 ==============================================================================*/
 
-int Cmiss_computed_field_finite_element_define_at_node(
-	Cmiss_computed_field_id field, Cmiss_node_id node,
+int Cmiss_field_finite_element_define_at_node(
+	Cmiss_field_id field, Cmiss_node_id node,
 	struct Cmiss_time_sequence *time_sequence,
 	struct Cmiss_node_field_creator *node_field_creator);
 /*******************************************************************************
 LAST MODIFIED : 25 May 2006
 
 DESCRIPTION :
-Special function for Computed_field_finite_element fields only.
+Special function for field_finite_element fields only.
 Defines the field at the specified node.
 <fe_time_sequence> optionally defines multiple times for the <field>.  If it is
 NULL then the field will be defined as constant for all times.
@@ -284,290 +306,290 @@ NULL then the field will be defined as constant for all times.
 If it is NULL then a single nodal value for each component will be defined.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_binary_threshold_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id source_field,
+int Cmiss_field_set_type_binary_threshold_image_filter(Cmiss_field_id field,
+	Cmiss_field_id source_field,
 	double lower_threshold, double upper_threshold);
 /*******************************************************************************
 LAST MODIFIED : 9 September 2006
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_BINARYTHRESHOLDFILTER, returning the value of
+Converts <field> to type FIELD_BINARYTHRESHOLDFILTER, returning the value of
 <binary_threshold_image_filter> at the time/parameter value given by scalar <source_field>.
 Sets number of components to same number as <source_field>.
 ==============================================================================*/
 
 
-int Cmiss_computed_field_get_type_binary_dilate_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id *source_field,
+int Cmiss_field_get_type_binary_dilate_image_filter(Cmiss_field_id field,
+	Cmiss_field_id *source_field,
 	int *radius, double *dilate_value);
 /*******************************************************************************
 LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_BINARYDILATEFILTER, the source_field and binary_dilate_image_filter
+If the field is of type FIELD_BINARYDILATEFILTER, the source_field and binary_dilate_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_binary_dilate_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id source_field,
+int Cmiss_field_set_type_binary_dilate_image_filter(Cmiss_field_id field,
+	Cmiss_field_id source_field,
 	int radius, double dilate_value);
 /*******************************************************************************
 LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_BINARYDILATEFILTER, returning the value of
+Converts <field> to type FIELD_BINARYDILATEFILTER, returning the value of
 <binary_dilate_image_filter> at the time/parameter value given by scalar <source_field>.
 Sets number of components to same number as <source_field>.
 ==============================================================================*/
 
-int Cmiss_computed_field_get_type_binary_erode_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id *source_field,
+int Cmiss_field_get_type_binary_erode_image_filter(Cmiss_field_id field,
+	Cmiss_field_id *source_field,
 	int *radius, double *erode_value);
 /*******************************************************************************
 LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_BINARYERODEFILTER, the source_field and binary_erode_image_filter
+If the field is of type FIELD_BINARYERODEFILTER, the source_field and binary_erode_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_binary_erode_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id source_field,
+int Cmiss_field_set_type_binary_erode_image_filter(Cmiss_field_id field,
+	Cmiss_field_id source_field,
 	int radius, double erode_value);
 /*******************************************************************************
 LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_BINARYERODEFILTER, returning the value of
+Converts <field> to type FIELD_BINARYERODEFILTER, returning the value of
 <binary_erode_image_filter> at the time/parameter value given by scalar <source_field>.
 Sets number of components to same number as <source_field>.
 ==============================================================================*/
 
-int Cmiss_computed_field_get_type_binary_threshold_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id *source_field,
+int Cmiss_field_get_type_binary_threshold_image_filter(Cmiss_field_id field,
+	Cmiss_field_id *source_field,
 	double *lower_threshold, double *upper_threshold);
 /*******************************************************************************
 LAST MODIFIED : 9 September 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_BINARYTHRESHOLDFILTER, the source_field and binary_threshold_image_filter
+If the field is of type FIELD_BINARYTHRESHOLDFILTER, the source_field and binary_threshold_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_canny_edge_detection_image_filter(Cmiss_computed_field_id field,
-         Cmiss_computed_field_id source_field, double variance, double maximumError,
+int Cmiss_field_set_type_canny_edge_detection_image_filter(Cmiss_field_id field,
+         Cmiss_field_id source_field, double variance, double maximumError,
          double upperThreshold, double lowerThreshold);
 /*******************************************************************************
 LAST MODIFIED : 9 September 2006
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER, returning the value of
+Converts <field> to type FIELD_CANNYEDGEDETECTIONFILTER, returning the value of
 <canny_edge_detection_image_filter> at the time/parameter value given by scalar <source_field>.
 Sets number of components to same number as <source_field>.
 ==============================================================================*/
 
-int Cmiss_computed_field_get_type_canny_edge_detection_image_filter(Cmiss_computed_field_id field,
-         Cmiss_computed_field_id *source_field, double *variance, double *maximumError,
+int Cmiss_field_get_type_canny_edge_detection_image_filter(Cmiss_field_id field,
+         Cmiss_field_id *source_field, double *variance, double *maximumError,
          double *upperThreshold, double *lowerThreshold);
 /*******************************************************************************
 LAST MODIFIED : 9 September 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER, the source_field and canny_edge_detection_image_filter
+If the field is of type FIELD_CANNYEDGEDETECTIONFILTER, the source_field and canny_edge_detection_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_connected_threshold_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id source_field,
+int Cmiss_field_set_type_connected_threshold_image_filter(Cmiss_field_id field,
+	Cmiss_field_id source_field,
   double lower_threshold, double upper_threshold, double replace_value, 
   int num_seed_points, int dimension, double *seed_points);
 /*******************************************************************************
 LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER, returning the value of
+Converts <field> to type FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER, returning the value of
 <connected_threshold_image_filter> at the time/parameter value given by scalar <source_field>.
 ==============================================================================*/
 
-int Cmiss_computed_field_get_type_connected_threshold_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id *source_field,
+int Cmiss_field_get_type_connected_threshold_image_filter(Cmiss_field_id field,
+	Cmiss_field_id *source_field,
   double *lower_threshold, double *upper_threshold, double *replace_value,
   int *num_seed_points, int *dimension, double **seed_points);
 /*******************************************************************************
 LAST MODIFIED : 16 July 2007
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER, the source_field and connected_threshold_image_filter
+If the field is of type FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER, the source_field and connected_threshold_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_curvature_anisotropic_diffusion_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id source_field, double timeStep, double conductance, int numIterations);
+int Cmiss_field_set_type_curvature_anisotropic_diffusion_image_filter(Cmiss_field_id field,
+	Cmiss_field_id source_field, double timeStep, double conductance, int numIterations);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CURVATUREANISOTROPICDIFFUSIONIMAGEFILTER, returning the value of
+Converts <field> to type FIELD_CURVATUREANISOTROPICDIFFUSIONIMAGEFILTER, returning the value of
 <curvature_anisotropic_diffusion_image_filter> at the time/parameter value given by scalar <source_field>.
 Sets number of components to same number as <source_field>.
 ==============================================================================*/
 
-int Cmiss_computed_field_get_type_curvature_anisotropic_diffusion_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id *source_field, double *timeStep, double *conductance, int *numIterations);
+int Cmiss_field_get_type_curvature_anisotropic_diffusion_image_filter(Cmiss_field_id field,
+	Cmiss_field_id *source_field, double *timeStep, double *conductance, int *numIterations);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_CURVATUREANISOTROPICDIFFUSIONIMAGEFILTER, the source_field and curvature_anisotropic_diffusion_image_filter
+If the field is of type FIELD_CURVATUREANISOTROPICDIFFUSIONIMAGEFILTER, the source_field and curvature_anisotropic_diffusion_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_derivative_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id source_field, int order, int direction);
+int Cmiss_field_set_type_derivative_image_filter(Cmiss_field_id field,
+	Cmiss_field_id source_field, int order, int direction);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_DERIVATIVEIMAGEFILTER, returning the value of
+Converts <field> to type FIELD_DERIVATIVEIMAGEFILTER, returning the value of
 <derivative_image_filter> at the time/parameter value given by scalar <source_field>.
 Sets number of components to same number as <source_field>.
 =============================================================================*/
 
-int Cmiss_computed_field_get_type_derivative_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id *source_field, int *order, int *direction);
+int Cmiss_field_get_type_derivative_image_filter(Cmiss_field_id field,
+	Cmiss_field_id *source_field, int *order, int *direction);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_DERIVATIVEIMAGEFILTER, the source_field and derivative_image_filter
+If the field is of type FIELD_DERIVATIVEIMAGEFILTER, the source_field and derivative_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
 
-int Cmiss_computed_field_set_type_discrete_gaussian_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id source_field, double variance, int maxKernelWidth);
+int Cmiss_field_set_type_discrete_gaussian_image_filter(Cmiss_field_id field,
+	Cmiss_field_id source_field, double variance, int maxKernelWidth);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_DISCRETEGAUSSIANIMAGEFILTER, returning the value of
+Converts <field> to type FIELD_DISCRETEGAUSSIANIMAGEFILTER, returning the value of
 <discrete_gaussian_image_filter> at the time/parameter value given by scalar <source_field>.
 Sets number of components to same number as <source_field>.
 ==============================================================================*/
 
-int Cmiss_computed_field_get_type_discrete_gaussian_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id *source_field, double *variance, int *maxKernelWidth);
+int Cmiss_field_get_type_discrete_gaussian_image_filter(Cmiss_field_id field,
+	Cmiss_field_id *source_field, double *variance, int *maxKernelWidth);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_DISCRETEGAUSSIANIMAGEFILTER_H, the source_field and discrete_gaussian_image_filter
+If the field is of type FIELD_DISCRETEGAUSSIANIMAGEFILTER_H, the source_field and discrete_gaussian_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_gradient_magnitude_recursive_gaussian_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id source_field, double sigma);
+int Cmiss_field_set_type_gradient_magnitude_recursive_gaussian_image_filter(Cmiss_field_id field,
+	Cmiss_field_id source_field, double sigma);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_GRADIENT_MAGNITUDE_RECURSIVE_GAUSSIAN_IMAGE_FILTER, returning the value of
+Converts <field> to type FIELD_GRADIENT_MAGNITUDE_RECURSIVE_GAUSSIAN_IMAGE_FILTER, returning the value of
 <discrete_gaussian_image_filter> at the time/parameter value given by scalar <source_field>.
 Sets number of components to same number as <source_field>.
 ==============================================================================*/
 
-int Cmiss_computed_field_get_type_gradient_magnitude_recursvie_gaussian_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id *source_field, double *sigma);
+int Cmiss_field_get_type_gradient_magnitude_recursvie_gaussian_image_filter(Cmiss_field_id field,
+	Cmiss_field_id *source_field, double *sigma);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_GRADIENT_MAGNITUDE_RECURSIVE_GAUSSIAN_IMAGE_FILTER, 
+If the field is of type FIELD_GRADIENT_MAGNITUDE_RECURSIVE_GAUSSIAN_IMAGE_FILTER, 
 the source_field and discrete_gaussian_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_mean_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id source_field, int *radius_sizes);
+int Cmiss_field_set_type_mean_image_filter(Cmiss_field_id field,
+	Cmiss_field_id source_field, int *radius_sizes);
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_MEANIMAGEFILTER, returning the value of
+Converts <field> to type FIELD_MEANIMAGEFILTER, returning the value of
 <mean_image_filter> at the time/parameter value given by scalar <source_field>.
 Sets number of components to same number as <source_field>.
 ==============================================================================*/
 
-int Cmiss_computed_field_get_type_mean_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id *source_field, int **radius_sizes);
+int Cmiss_field_get_type_mean_image_filter(Cmiss_field_id field,
+	Cmiss_field_id *source_field, int **radius_sizes);
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_MEANIMAGEFILTER, the source_field and mean_image_filter
+If the field is of type FIELD_MEANIMAGEFILTER, the source_field and mean_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_rescale_intensity_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id source_field, double outputMin, double outputMax);
+int Cmiss_field_set_type_rescale_intensity_image_filter(Cmiss_field_id field,
+	Cmiss_field_id source_field, double outputMin, double outputMax);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_RESCALEINTENSITYIMAGEFILTER, returning the value of
+Converts <field> to type FIELD_RESCALEINTENSITYIMAGEFILTER, returning the value of
 <rescale_intensity_image_filter> at the time/parameter value given by scalar <source_field>.
 Sets number of components to same number as <source_field>.
 ==============================================================================*/
 
-int Cmiss_computed_field_get_type_rescale_intensity_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id *source_field, double *outputMin, double *outputMax);
+int Cmiss_field_get_type_rescale_intensity_image_filter(Cmiss_field_id field,
+	Cmiss_field_id *source_field, double *outputMin, double *outputMax);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_RESCALEINTENSITYIMAGEFILTER, the source_field and rescale_intensity_image_filter
+If the field is of type FIELD_RESCALEINTENSITYIMAGEFILTER, the source_field and rescale_intensity_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
 
-int Cmiss_computed_field_set_type_sigmoid_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id source_field, double min, double max, double alpha, double beta);
+int Cmiss_field_set_type_sigmoid_image_filter(Cmiss_field_id field,
+	Cmiss_field_id source_field, double min, double max, double alpha, double beta);
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_SIGMOIDIMAGEFILTER, returning the value of
+Converts <field> to type FIELD_SIGMOIDIMAGEFILTER, returning the value of
 <sigmoid_image_filter> at the time/parameter value given by scalar <source_field>.
 Sets number of components to same number as <source_field>.
 ==============================================================================*/
 
-int Cmiss_computed_field_get_type_sigmoid_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id *source_field, double *min, double *max, double *alpha, double *beta);
+int Cmiss_field_get_type_sigmoid_image_filter(Cmiss_field_id field,
+	Cmiss_field_id *source_field, double *min, double *max, double *alpha, double *beta);
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_SIGMOIDIMAGEFILTER, the source_field and sigmoid_image_filter
+If the field is of type FIELD_SIGMOIDIMAGEFILTER, the source_field and sigmoid_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
-int Cmiss_computed_field_get_type_sum_components(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id *source_field, FE_value **weights);
+int Cmiss_field_get_type_sum_components(Cmiss_field_id field,
+	Cmiss_field_id *source_field, FE_value **weights);
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_SUM_COMPONENTS, the 
+If the field is of type FIELD_SUM_COMPONENTS, the 
 <source_field> and <weights> used by it are returned.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_sum_components(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id source_field, FE_value *weights);
+int Cmiss_field_set_type_sum_components(Cmiss_field_id field,
+	Cmiss_field_id source_field, FE_value *weights);
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_SUM_COMPONENTS with the supplied which
+Converts <field> to type FIELD_SUM_COMPONENTS with the supplied which
 returns a scalar weighted sum of the components of <source_field>.
 The <weights> array must therefore contain as many FE_values as there are
 components in <source_field>.
@@ -576,31 +598,31 @@ although its cache may be lost.
 ==============================================================================*/
 
 /**
-int Cmiss_computed_field_set_type_threshold_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id source_field, 
+int Cmiss_field_set_type_threshold_image_filter(Cmiss_field_id field,
+	Cmiss_field_id source_field, 
 	enum General_threshold_filter_mode threshold_mode, 
 	double outside_value, double below_value, double above_value); **/
 /*******************************************************************************
 LAST MODIFIED : 8 December 2006
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_THRESHOLDFILTER, returning the value of
+Converts <field> to type FIELD_THRESHOLDFILTER, returning the value of
 <threshold_image_filter> at the time/parameter value given by scalar <source_field>.
 ==============================================================================*/
 
-/**int Cmiss_computed_field_get_type_threshold_image_filter(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id *source_field, 
+/**int Cmiss_field_get_type_threshold_image_filter(Cmiss_field_id field,
+	Cmiss_field_id *source_field, 
 	enum General_threshold_filter_mode *threshold_mode, 
 	double *outside_value, double *below_value,double *above_value); **/
 /*******************************************************************************
 LAST MODIFIED : 8 December 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_THRESHOLDFILTER, the source_field and threshold_image_filter
+If the field is of type FIELD_THRESHOLDFILTER, the source_field and threshold_image_filter
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_constant(Cmiss_computed_field_id field,
+int Cmiss_field_set_type_constant(Cmiss_field_id field,
 	int number_of_values, FE_value *values);
 /*******************************************************************************
 LAST MODIFIED : 21 April 2008
@@ -610,68 +632,68 @@ Changes <field> into type composite with <number_of_values> values listed in
 the <values> array.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_add(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id source_field_one,
-	Cmiss_computed_field_id source_field_two);
+Cmiss_field_type_object_id Cmiss_field_type_create_add(
+	Cmiss_field_id source_field_one,
+	Cmiss_field_id source_field_two);
 /*******************************************************************************
-LAST MODIFIED : 21 April 2008
+LAST MODIFIED : 9 May 2008
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_ADD with the supplied
-fields, <source_field_one> and <source_field_two>.  Sets the number of 
-components equal to the source_fields.
+Creates a <field_type> COMPUTED_FIELD_ADD with the supplied
+fields, <source_field_one> and <source_field_two>.  The number of 
+components will equal to the source_fields.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_subtract(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id source_field_one,
-	Cmiss_computed_field_id source_field_two);
+int Cmiss_field_set_type_subtract(Cmiss_field_id field,
+	Cmiss_field_id source_field_one,
+	Cmiss_field_id source_field_two);
 /*******************************************************************************
 LAST MODIFIED : 21 April 2008
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_ADD (with a -1 weighting for the
+Converts <field> to type FIELD_ADD (with a -1 weighting for the
 second field) with the supplied fields, <source_field_one> and 
 <source_field_two>.  Sets the number of components equal to the source_fields.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_weighted_add(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id source_field_one, double scale_factor1,
-	Cmiss_computed_field_id source_field_two, double scale_factor2);
+int Cmiss_field_set_type_weighted_add(Cmiss_field_id field,
+	Cmiss_field_id source_field_one, double scale_factor1,
+	Cmiss_field_id source_field_two, double scale_factor2);
 /*******************************************************************************
 LAST MODIFIED : 21 April 2008
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_ADD with the supplied
+Converts <field> to type FIELD_ADD with the supplied
 fields, <source_field_one> and <source_field_two>.  Sets the number of 
 components equal to the source_fields.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_multiply(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id source_field_one,
-	Cmiss_computed_field_id source_field_two);
+int Cmiss_field_set_type_multiply(Cmiss_field_id field,
+	Cmiss_field_id source_field_one,
+	Cmiss_field_id source_field_two);
 /*******************************************************************************
 LAST MODIFIED : 21 April 2008
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_MULTIPLY with the supplied
+Converts <field> to type FIELD_MULTIPLY with the supplied
 fields, <source_field_one> and <source_field_two>.  Sets the number of 
 components equal to the source_fields.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_divide(Cmiss_computed_field_id field,
-	Cmiss_computed_field_id source_field_one,
-	Cmiss_computed_field_id source_field_two);
+int Cmiss_field_set_type_divide(Cmiss_field_id field,
+	Cmiss_field_id source_field_one,
+	Cmiss_field_id source_field_two);
 /*******************************************************************************
 LAST MODIFIED : 21 April 2008
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_DIVIDE with the supplied fields,
+Converts <field> to type FIELD_DIVIDE with the supplied fields,
 <source_field_one> and <source_field_two>.
 Sets the number of components equal to the source_fields.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_identity(struct Computed_field *field,
-	struct Computed_field *source_field);
+int Cmiss_field_set_type_identity(Cmiss_field_id field,
+	Cmiss_field_id source_field);
 /*******************************************************************************
 LAST MODIFIED : 21 April 2008
 
@@ -679,83 +701,83 @@ DESCRIPTION :
 Changes <field> into type composite with one input field, the <source_field>.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_exp(struct Computed_field *field,
-	struct Computed_field *source_field);
+int Cmiss_field_set_type_exp(Cmiss_field_id field,
+	Cmiss_field_id source_field);
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_EXP with the supplied
+Converts <field> to type FIELD_EXP with the supplied
 field, <source_field_one>.  Sets the number of components equal to the source_fields.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_log(struct Computed_field *field,
-	struct Computed_field *source_field);
+int Cmiss_field_set_type_log(Cmiss_field_id field,
+	Cmiss_field_id source_field);
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_LOG with the supplied
+Converts <field> to type FIELD_LOG with the supplied
 field, <source_field_one>.  Sets the number of components equal to the source_fields.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_power(struct Computed_field *field,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two);
+int Cmiss_field_set_type_power(Cmiss_field_id field,
+	Cmiss_field_id source_field_one,
+	Cmiss_field_id source_field_two);
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_POWER with the supplied
+Converts <field> to type FIELD_POWER with the supplied
 fields, <source_field_one> and <source_field_two>.  Sets the number of 
 components equal to the source_fields.
 For each component the result is source_field_one to the power of 
 source_field_two.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_sqrt(struct Computed_field *field,
-	struct Computed_field *source_field);
+int Cmiss_field_set_type_sqrt(Cmiss_field_id field,
+	Cmiss_field_id source_field);
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_SQRT with the supplied
+Converts <field> to type FIELD_SQRT with the supplied
 field, <source_field_one>.  Sets the number of components equal to the source_fields.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_less_than(struct Computed_field *field,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two);
+int Cmiss_field_set_type_less_than(Cmiss_field_id field,
+	Cmiss_field_id source_field_one,
+	Cmiss_field_id source_field_two);
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_LESS_THAN with the supplied
+Converts <field> to type FIELD_LESS_THAN with the supplied
 field, <source_field> .  Sets the number of 
 components equal to the source_fields.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_greater_than(struct Computed_field *field,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two);
+int Cmiss_field_set_type_greater_than(Cmiss_field_id field,
+	Cmiss_field_id source_field_one,
+	Cmiss_field_id source_field_two);
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_GREATER_THAN with the supplied
+Converts <field> to type FIELD_GREATER_THAN with the supplied
 field, <source_field> .  Sets the number of 
 components equal to the source_fields.
 ==============================================================================*/
 
-int Cmiss_computed_field_set_type_if(struct Computed_field *field,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two,
-	struct Computed_field *source_field_three);
+int Cmiss_field_set_type_if(Cmiss_field_id field,
+	Cmiss_field_id source_field_one,
+	Cmiss_field_id source_field_two,
+	Cmiss_field_id source_field_three);
 /*******************************************************************************
 LAST MODIFIED : 27 July 2007
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_IF with the supplied
+Converts <field> to type FIELD_IF with the supplied
 fields, <source_field_one>, <source_field_two> and <source_field_three>.
 Sets the number of components equal to the source_fields.
 For each component, if the value of source_field_one is TRUE (non-zero) then
@@ -763,4 +785,4 @@ the result will be the value of source_field_two, otherwise the result will
 be source_field_three.
 ==============================================================================*/
 
-#endif /* __CMISS_COMPUTED_FIELD_H__ */
+#endif /* __CMISS_FIELD_H__ */

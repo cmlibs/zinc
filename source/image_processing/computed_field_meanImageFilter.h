@@ -43,13 +43,13 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_MEANIMAGEFILTER_H)
 #define COMPUTED_FIELD_MEANIMAGEFILTER_H
 
-#include "api/cmiss_computed_field.h"
+#include "api/cmiss_field.h"
 
 /* API functions are prefixed with Cmiss */
 #define Computed_field_set_type_mean_image_filter \
-	Cmiss_computed_field_set_type_mean_image_filter
+	Cmiss_field_set_type_mean_image_filter
 #define Computed_field_get_type_mean_image_filter \
-	Cmiss_computed_field_get_type_mean_image_filter
+	Cmiss_field_get_type_mean_image_filter
 
 int Computed_field_register_types_mean_image_filter(
 	struct Computed_field_package *computed_field_package);

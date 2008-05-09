@@ -44,13 +44,13 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_GRADIENT_MAGNITUDE_RECURSIVE_GAUSSIAN_IMAGE_FILTER_H)
 #define COMPUTED_FIELD_GRADIENT_MAGNITUDE_RECURSIVE_GAUSSIAN_IMAGE_FILTER_H
 
-#include "api/cmiss_computed_field.h"
+#include "api/cmiss_field.h"
 
 /* API functions are prefixed with Cmiss */
 #define Computed_field_set_type_gradient_magnitude_recursive_gaussian_image_filter \
-	Cmiss_computed_field_set_type_gradient_magnitude_recursive_gaussian_image_filter
+	Cmiss_field_set_type_gradient_magnitude_recursive_gaussian_image_filter
 #define Computed_field_get_type_gradient_magnitude_recursive_gaussian_image_filter \
-	Cmiss_computed_field_get_type_gradient_magnitude_recursive_gaussian_image_filter
+	Cmiss_field_get_type_gradient_magnitude_recursive_gaussian_image_filter
 
 int Computed_field_register_types_gradient_magnitude_recursive_gaussian_image_filter(
 	struct Computed_field_package *computed_field_package);

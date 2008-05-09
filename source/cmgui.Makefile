@@ -785,7 +785,7 @@ ALL_LIB = $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 
 API_SRCS = \
 	api/cmiss_command_data.c \
-	api/cmiss_computed_field.c \
+	api/cmiss_field.c \
 	api/cmiss_core.c \
 	api/cmiss_element.c \
 	api/cmiss_node.c \
@@ -1832,8 +1832,8 @@ DEPEND_FILES_INCLUDE = $(DEPEND_FILES_OBJECT_FOUND) $(DEPEND_FILES_MISSING)
 
 #Touch a dummy include so that this makefile is reloaded and therefore the new .ds
 $(DEPENDFILE) : $(DEPEND_FILES_INCLUDE)
-#	rm `find $(OBJECT_PATH) -size 0 -name "*.d"`;\
 	touch $(DEPENDFILE)
+#	rm `find $(OBJECT_PATH) -size 0 -name "*.d"`;\
 
 include $(DEPENDFILE)
 include $(DEPEND_FILES_INCLUDE)

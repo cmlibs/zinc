@@ -18,13 +18,11 @@ our @ISA = qw(Exporter);
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
-	new
 ) ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw(
-	new
 );
 
 our $VERSION = '0.01';

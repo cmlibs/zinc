@@ -2,10 +2,10 @@
 #include "perl.h"
 #include "XSUB.h"
 
-#include <api/cmiss_command_data.h>
-#include <api/cmiss_scene_viewer.h>
-#include <perl/Cmiss/typemap.h>
-#include <perl/Cmiss/Scene_viewer/typemap.h>
+#include "api/cmiss_command_data.h"
+#include "api/cmiss_scene_viewer.h"
+#include "perl/Cmiss/typemap.h"
+#include "perl/Cmiss/Scene_viewer/typemap.h"
 
 static double
 constant(char *name, int len, int arg)
@@ -16,6 +16,7 @@ constant(char *name, int len, int arg)
 
 MODULE = Cmiss::Graphics_window		PACKAGE = Cmiss::Graphics_window		PREFIX = Cmiss_graphics_window_
 
+PROTOTYPES: DISABLE
 
 double
 constant(sv,arg)

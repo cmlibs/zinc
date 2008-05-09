@@ -40,7 +40,7 @@ WriteMakefile(
   #          
   #Only install a subset of "released modules" at the moment
 	 'DIR'   =>  [ 'Graphics_window', 'Scene_viewer', 'Perl_cmiss', 'Cmgui_command_data',
-						'Example_path', 'Element', 'Node', 'Region', 'Computed_field'  ],
+						'Example_path', 'Element', 'Node', 'Region', 'Field'  ],
 
   #Add the perl version into the site library
     'INSTALLSITELIB'   =>  "\$(PREFIX)/lib/$Config{version}",
@@ -50,7 +50,7 @@ WriteMakefile(
     'PREREQ_PM'    => {}, # e.g., Module::Name => 1.1
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM => 'Cmiss.pm', # retrieve abstract from module
-       AUTHOR     => '"Shane Blackett <s.blackett@auckland.ac.nz>"') : ()),
+       AUTHOR     => '"Shane Blackett <shane@blackett.co.nz>"') : ()),
     'LIBS'    => [''], # e.g., '-lm'
     # 'DEFINE'    => '-DFULL_NAMES', # e.g., '-DHAVE_SOMETHING'
   # Insert -I. if you add *.h files later:

@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include "api/cmiss_region.h"
+#include "api/cmiss_field.h"
 #include "region/cmiss_region.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
@@ -272,4 +273,13 @@ merge_Cmiss_element_xs(Cmiss::Region region, Cmiss::Element element)
 		}
 	OUTPUT:
 		RETVAL
+
+Cmiss::Field
+Cmiss_region_find_field_by_name(Cmiss::Region region, char *name)
+   POSTCALL:
+	if (!RETVAL)
+		XSRETURN_UNDEF;
+
+int
+Cmiss_region_is_field_defined(Cmiss::Region region, char *name)
 

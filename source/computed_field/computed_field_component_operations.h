@@ -45,22 +45,22 @@ Implements a number of basic component wise operations on computed fields.
 #define COMPUTED_FIELD_COMPONENT_OPERATIONS_H
 
 #include "general/value.h"
-#include "api/cmiss_computed_field.h"
+#include "api/cmiss_field.h"
 
 /* API functions are prefixed with Cmiss */
 #define Computed_field_set_type_sum_components \
-	Cmiss_computed_field_set_type_sum_components
+	Cmiss_field_set_type_sum_components
 #define Computed_field_get_type_sum_components \
-	Cmiss_computed_field_get_type_sum_components
-#define Computed_field_set_type_add Cmiss_computed_field_set_type_add
-#define Computed_field_set_type_subtract Cmiss_computed_field_set_type_subtract
-#define Computed_field_set_type_weighted_add Cmiss_computed_field_set_type_weighted_add
-#define Computed_field_set_type_multiply_components Cmiss_computed_field_set_type_multiply
-#define Computed_field_set_type_divide_components Cmiss_computed_field_set_type_divide
-#define Computed_field_set_type_exp Cmiss_computed_field_set_type_exp
-#define Computed_field_set_type_log Cmiss_computed_field_set_type_log
-#define Computed_field_set_type_power Cmiss_computed_field_set_type_power
-#define Computed_field_set_type_sqrt Cmiss_computed_field_set_type_sqrt
+	Cmiss_field_get_type_sum_components
+#define Computed_field_type_create_add Cmiss_field_type_create_add
+#define Computed_field_set_type_subtract Cmiss_field_set_type_subtract
+#define Computed_field_set_type_weighted_add Cmiss_field_set_type_weighted_add
+#define Computed_field_set_type_multiply_components Cmiss_field_set_type_multiply
+#define Computed_field_set_type_divide_components Cmiss_field_set_type_divide
+#define Computed_field_set_type_exp Cmiss_field_set_type_exp
+#define Computed_field_set_type_log Cmiss_field_set_type_log
+#define Computed_field_set_type_power Cmiss_field_set_type_power
+#define Computed_field_set_type_sqrt Cmiss_field_set_type_sqrt
 
 int Computed_field_register_types_component_operations(
 	struct Computed_field_package *computed_field_package);
@@ -80,6 +80,18 @@ DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_ADD with the supplied
 fields, <source_field_one> and <source_field_two>.  Sets the number of 
 components equal to the source_fields.
+==============================================================================*/
+
+struct Computed_field_type_object *Computed_field_type_create_add(
+	struct Computed_field *source_field_one,
+	struct Computed_field *source_field_two);
+/*******************************************************************************
+LAST MODIFIED : 7 May 2008
+
+DESCRIPTION :
+Creates a <field_type> COMPUTED_FIELD_ADD with the supplied
+fields, <source_field_one> and <source_field_two>.  The number of 
+components will equal to the source_fields.
 ==============================================================================*/
 
 int Computed_field_set_type_subtract(struct Computed_field *field,

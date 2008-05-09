@@ -1222,14 +1222,14 @@ char computed_field_add_type_string[] = "add";
 class Computed_field_add : public Computed_field_core
 {
 public:
-	Computed_field_add(Computed_field *field) : Computed_field_core(field)
+	Computed_field_add() : Computed_field_core()
 	{
 	};
 
 private:
 	Computed_field_core *copy(Computed_field* new_parent)
 	{
-		return new Computed_field_add(new_parent);
+		return new Computed_field_add();
 	}
 
 	char *get_type_string()
@@ -1453,7 +1453,8 @@ although its cache may be lost.
 			source_values[1]=scale_factor2;
 			field->source_values=source_values;
 			field->number_of_source_values=number_of_source_values;
-			field->core = new Computed_field_add(field);
+			Computed_field_core* core = new Computed_field_add();
+			core->set_field_and_initialise(field);
 		}
 		else
 		{
@@ -1491,6 +1492,86 @@ although its cache may be lost.
 	return(Computed_field_set_type_weighted_add(field,
 		source_field_one, 1.0, source_field_two, 1.0));
 } /* Computed_field_set_type_add */
+
+struct Computed_field_type_object *Computed_field_type_create_weighted_add(
+	struct Computed_field *source_field_one, double scale_factor1,
+	struct Computed_field *source_field_two, double scale_factor2)
+/*******************************************************************************
+LAST MODIFIED : 7 May 2008
+
+DESCRIPTION :
+Creates a <field_type> COMPUTED_FIELD_ADD with the supplied
+fields, <source_field_one> and <source_field_two>.  The number of 
+components will equal to the source_fields.
+==============================================================================*/
+{
+	struct Computed_field_type_object *field_type;
+
+	ENTER(Computed_field_set_type_weighted_add);
+	if (/* Access and broadcast before checking components match,
+			the source_field_one and source_field_two will get replaced
+			if necessary. */
+		ACCESS(Computed_field)(source_field_one) &&
+		ACCESS(Computed_field)(source_field_two) &&
+		Computed_field_broadcast_field_components(
+			&source_field_one, &source_field_two) &&
+		(source_field_one->number_of_components ==
+		source_field_two->number_of_components))
+	{
+		field_type = CREATE(Computed_field_type_object)(
+			new Computed_field_add(), source_field_one->number_of_components);
+		Computed_field_type_object_add_source_field(field_type,
+			source_field_one);
+		Computed_field_type_object_add_source_field(field_type,
+			source_field_two);
+		Computed_field_type_object_add_source_value(field_type, scale_factor1);
+		Computed_field_type_object_add_source_value(field_type, scale_factor2);
+
+		DEACCESS(Computed_field)(&source_field_one);
+		DEACCESS(Computed_field)(&source_field_two);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_weighted_add.  Invalid argument(s)");
+		field_type = (Computed_field_type_object *)NULL;
+	}
+	LEAVE;
+
+	return (field_type);
+} /* Computed_field_set_type_weighted_add */
+ 
+struct Computed_field_type_object *Computed_field_type_create_add(
+	struct Computed_field *source_field_one,
+	struct Computed_field *source_field_two)
+/*******************************************************************************
+LAST MODIFIED : 7 May 2008
+
+DESCRIPTION :
+Creates a <field_type> COMPUTED_FIELD_ADD with the supplied
+fields, <source_field_one> and <source_field_two>.  The number of 
+components will equal to the source_fields.
+==============================================================================*/
+{
+	return(Computed_field_type_create_weighted_add(
+		source_field_one, 1.0, source_field_two, 1.0));
+} /* Computed_field_type_create_add */
+
+struct Computed_field_type_object *Computed_field_type_create_subtract(
+	struct Computed_field *source_field_one,
+	struct Computed_field *source_field_two)
+/*******************************************************************************
+LAST MODIFIED : 7 May 2008
+
+DESCRIPTION :
+Creates a <field_type> COMPUTED_FIELD_ADD with the supplied
+fields, <source_field_one> and <source_field_two>.  The number of 
+components will equal to the source_fields.
+==============================================================================*/
+{
+	return(Computed_field_type_create_weighted_add(
+		source_field_one, 1.0, source_field_two, -1.0));
+} /* Computed_field_type_create_subtract */
 
 int Computed_field_set_type_subtract(struct Computed_field *field,
 	struct Computed_field *source_field_one,

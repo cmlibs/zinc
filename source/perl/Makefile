@@ -1,7 +1,7 @@
 CMGUI_DEV_SOURCE=$(PWD)/..
 PERL_INSTALL=$(CMISS_ROOT)/cmiss_perl
 VPATH=$(CMGUI_DEV_SOURCE)
-BUILDER="Shane Blackett <s.blackett@auckland.ac.nz>"
+BUILDER="Shane Blackett <shane@blackett.co.nz>"
 #perl Makefile.PL PREFIX=/home/blackett/cmiss_perl OPTIMIZE="-g -W -Wall -Wno-parentheses -Wno-switch -Wno-format -Wno-unused -Werror"
 
 ifndef SYSNAME

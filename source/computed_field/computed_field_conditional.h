@@ -45,9 +45,9 @@ Implements computed fields which conditionally calculate their inputs.
 #define COMPUTED_FIELD_CONDITIONAL_H
 
 #include "general/value.h"
-#include "api/cmiss_computed_field.h"
+#include "api/cmiss_field.h"
 
-#define Computed_field_set_type_if Cmiss_computed_field_set_type_if
+#define Computed_field_set_type_if Cmiss_field_set_type_if
 
 int Computed_field_set_type_if(struct Computed_field *field,
 	struct Computed_field *source_field_one,

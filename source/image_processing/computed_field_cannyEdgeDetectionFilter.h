@@ -43,13 +43,13 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER_H)
 #define COMPUTED_FIELD_CANNYEDGEDETECTIONFILTER_H
 
-#include "api/cmiss_computed_field.h"
+#include "api/cmiss_field.h"
 
 /* API functions are prefixed with Cmiss */
 #define Computed_field_set_type_canny_edge_detection_image_filter \
-	Cmiss_computed_field_set_type_canny_edge_detection_image_filter
+	Cmiss_field_set_type_canny_edge_detection_image_filter
 #define Computed_field_get_type_canny_edge_detection_image_filter \
-	Cmiss_computed_field_get_type_canny_edge_detection_image_filter
+	Cmiss_field_get_type_canny_edge_detection_image_filter
 
 int Computed_field_register_types_canny_edge_detection_image_filter(
 	struct Computed_field_package *computed_field_package);

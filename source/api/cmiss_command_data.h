@@ -44,7 +44,7 @@ The public interface to the some of the internal functions of cmiss.
 #ifndef __CMISS_COMMAND_H__
 #define __CMISS_COMMAND_H__
 
-#include "api/cmiss_computed_field.h"
+#include "api/cmiss_field.h"
 /* If this is going to be in the API then it needs to have an interface there */
 #include "general/object.h"
 #if defined (WIN32_USER_INTERFACE)

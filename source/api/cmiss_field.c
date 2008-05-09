@@ -1,10 +1,10 @@
 /*******************************************************************************
-FILE : cmiss_computed_field.c
+FILE : cmiss_field.c
 
 LAST MODIFIED : 18 April 2008
 
 DESCRIPTION :
-The public interface to the Cmiss computed_fields.
+The public interface to the Cmiss fields.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -43,7 +43,7 @@ The public interface to the Cmiss computed_fields.
  * ***** END LICENSE BLOCK ***** */
 #include <stdlib.h>
 #include <stdio.h>
-#include "api/cmiss_computed_field.h"
+#include "api/cmiss_field.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
@@ -54,7 +54,8 @@ Global functions
 ----------------
 */
 
-Cmiss_computed_field_id Cmiss_region_create_field(Cmiss_region_id region)
+Cmiss_field_id Cmiss_field_create(Cmiss_region_id region,
+	Cmiss_field_type_object_id field_type)
 /*******************************************************************************
 LAST MODIFIED : 21 April 2008
 
@@ -62,12 +63,13 @@ DESCRIPTION :
 Creates a new field in <region>.
 ==============================================================================*/
 {
-	struct Cmiss_computed_field *computed_field;
+	struct Cmiss_field *field;
 	struct MANAGER(Computed_field) *manager;
 
 	ENTER(Cmiss_region_create_field);
 	if (region && 
-		(manager = Cmiss_region_get_Computed_field_manager(region)))
+		(manager = Cmiss_region_get_Computed_field_manager(region))
+		&& field_type)
 	{
 		char name[100];
 		int number = NUMBER_IN_MANAGER(Computed_field)(manager);
@@ -80,66 +82,76 @@ Creates a new field in <region>.
 			number++;
 			sprintf(name, "temp%d", number);
 		}
-		computed_field = CREATE(Computed_field)(name);
-		if (ADD_OBJECT_TO_MANAGER(Computed_field)(
-			computed_field, manager))
+		field = CREATE(Computed_field)(name);
+
+		if (Cmiss_field_set_type(field, field_type))
 		{
-			ACCESS(Computed_field)(computed_field);
-			/* We assume by default that fields made this way are
-				intermediaries which will get destroyed when only
-				the manager is referencing them.
-				This flag is cleared when they are given an explicit name. */ 
-			Computed_field_set_intermediary_managed_field_flag(
-				computed_field, 1);
+			if (ADD_OBJECT_TO_MANAGER(Computed_field)(
+					 field, manager))
+			{
+				ACCESS(Computed_field)(field);
+				/* We assume by default that fields made this way are
+					intermediaries which will get destroyed when only
+					the manager is referencing them.
+					This flag is cleared when they are given an explicit name. */ 
+				Computed_field_set_intermediary_managed_field_flag(
+					field, 1);
+			}
+			else
+			{
+				DESTROY(Computed_field)(&field);
+			}
 		}
 		else
 		{
-			DESTROY(Computed_field)(&computed_field);
+			display_message(ERROR_MESSAGE,
+				"Cmiss_field_create.  Invalid argument(s)");
+			DESTROY(Computed_field)(&field);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_region_create_field.  Invalid argument(s)");
-		computed_field = (struct Cmiss_computed_field *)NULL;
+			"Cmiss_field_create.  Invalid argument(s)");
+		field = (struct Cmiss_field *)NULL;
 	}
 	LEAVE;
 
-	return (computed_field);
-} /* Cmiss_region_create_field */
+	return (field);
+} /* Cmiss_field_create */
 
-Cmiss_computed_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
+Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
 	const char *field_name)
 /*******************************************************************************
 LAST MODIFIED : 21 April 2008
 
 DESCRIPTION :
-Returns the computed_field of <field_name> from <region> if it is defined.
+Returns the field of <field_name> from <region> if it is defined.
 ==============================================================================*/
 {
-	struct Cmiss_computed_field *computed_field;
+	struct Cmiss_field *field;
 	struct MANAGER(Computed_field) *manager;
 
 	ENTER(Cmiss_region_find_field_by_name);
 	if (region && field_name && 
 		(manager = Cmiss_region_get_Computed_field_manager(region)))
 	{
-		computed_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+		field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 			(char *)field_name, manager);
-		if (computed_field)
+		if (field)
 		{
-			ACCESS(Computed_field)(computed_field);
+			ACCESS(Computed_field)(field);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmiss_region_find_field_by_name.  Invalid argument(s)");
-		computed_field = (struct Cmiss_computed_field *)NULL;
+		field = (struct Cmiss_field *)NULL;
 	}
 	LEAVE;
 
-	return (computed_field);
+	return (field);
 } /* Cmiss_region_find_field_by_name */
 
 int Cmiss_region_is_field_defined(Cmiss_region_id region, 
@@ -148,7 +160,7 @@ int Cmiss_region_is_field_defined(Cmiss_region_id region,
 LAST MODIFIED : 21 April 2008
 
 DESCRIPTION :
-Returns the computed_field of <field_name> from <region> if it is defined.
+Returns the field of <field_name> from <region> if it is defined.
 ==============================================================================*/
 {
 	int return_code;
@@ -179,7 +191,7 @@ Returns the computed_field of <field_name> from <region> if it is defined.
 	return (return_code);
 } /* Cmiss_region_is_field_defined */
 
-int Cmiss_computed_field_destroy(Cmiss_computed_field_id *field)
+int Cmiss_field_destroy(Cmiss_field_id *field)
 /*******************************************************************************
 LAST MODIFIED : 22 April 2008
 
@@ -189,9 +201,9 @@ Internally this just decrements the reference count.
 ==============================================================================*/
 {
 	return (DEACCESS(Computed_field)(field));
-} /* Cmiss_computed_field_destroy */
+} /* Cmiss_field_destroy */
 
-int Cmiss_computed_field_evaluate_at_node(struct Cmiss_computed_field *field,
+int Cmiss_field_evaluate_at_node(struct Cmiss_field *field,
 	struct Cmiss_node *node, float time, int number_of_values, float *values)
 /*******************************************************************************
 LAST MODIFIED : 29 March 2004
@@ -206,7 +218,7 @@ greater than or equal to the number of components.
 {
 	int return_code;
 
-	ENTER(Cmiss_computed_field_set_values_at_node);
+	ENTER(Cmiss_field_set_values_at_node);
 	if (field && node && values &&
 		(number_of_values >= Computed_field_get_number_of_components(field)))
 	{
@@ -216,15 +228,15 @@ greater than or equal to the number of components.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_computed_field_set_values_at_node.  Invalid argument(s)");
+			"Cmiss_field_set_values_at_node.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_computed_field_set_values_at_node */
+} /* Cmiss_field_set_values_at_node */
 
-int Cmiss_computed_field_set_values_at_node(struct Cmiss_computed_field *field,
+int Cmiss_field_set_values_at_node(struct Cmiss_field *field,
 	struct Cmiss_node *node, float time, int number_of_values, float *values)
 /*******************************************************************************
 LAST MODIFIED : 21 April 2005
@@ -244,7 +256,7 @@ is reached for which its calculation is not reversible, or is not supported yet.
 {
 	int return_code;
 
-	ENTER(Cmiss_computed_field_set_values_at_node);
+	ENTER(Cmiss_field_set_values_at_node);
 	if (field && node && values &&
 		(number_of_values >= Computed_field_get_number_of_components(field)))
 	{
@@ -253,15 +265,15 @@ is reached for which its calculation is not reversible, or is not supported yet.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_computed_field_set_values_at_node.  Invalid argument(s)");
+			"Cmiss_field_set_values_at_node.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_computed_field_set_values_at_node */
+} /* Cmiss_field_set_values_at_node */
 
-int Cmiss_computed_field_evaluate_in_element(struct Cmiss_computed_field *field,
+int Cmiss_field_evaluate_in_element(struct Cmiss_field *field,
 	struct Cmiss_element *element, float *xi, float time, 
 	struct Cmiss_element *top_level_element, int number_of_values,
 	float *values, int number_of_derivatives, float *derivatives)
@@ -290,7 +302,7 @@ number_of_components
 {
 	int return_code;
 
-	ENTER(Cmiss_computed_field_evaluate_in_element);
+	ENTER(Cmiss_field_evaluate_in_element);
 	if (field && element && xi && values &&
 		(number_of_values >= Computed_field_get_number_of_components(field))
 		&& (!derivatives || (number_of_derivatives >= 
@@ -303,16 +315,16 @@ number_of_components
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_computed_field_evaluate_in_element.  Invalid argument(s)");
+			"Cmiss_field_evaluate_in_element.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_computed_field_evaluate_in_element */
+} /* Cmiss_field_evaluate_in_element */
 
-char *Cmiss_computed_field_evaluate_as_string_at_node(
-	struct Cmiss_computed_field *field, struct Cmiss_node *node, float time)
+char *Cmiss_field_evaluate_as_string_at_node(
+	struct Cmiss_field *field, struct Cmiss_node *node, float time)
 /*******************************************************************************
 LAST MODIFIED : 17 January 2007
 
@@ -320,7 +332,7 @@ DESCRIPTION :
 Returns a string describing the value/s of the <field> at the <node>. If the
 field is based on an FE_field but not returning FE_values, it is asked to supply
 the string. Otherwise, a string built up of comma separated values evaluated
-for the field in Computed_field_evaluate_cache_at_node. The FE_value exception
+for the field in field_evaluate_cache_at_node. The FE_value exception
 is used since it is likely the values are already in the cache in most cases,
 or can be used by other fields again if calculated now.
 Creates a string which represents all the components.
@@ -330,7 +342,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 {
 	char *return_code;
 
-	ENTER(Cmiss_computed_field_evaluate_as_string_at_node);
+	ENTER(Cmiss_field_evaluate_as_string_at_node);
 	if (field && node)
 	{
 		return_code = Computed_field_evaluate_as_string_at_node(field,
@@ -340,15 +352,15 @@ It is up to the calling function to DEALLOCATE the returned string.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_computed_field_evaluate_as_string_at_node.  Invalid argument(s)");
+			"Cmiss_field_evaluate_as_string_at_node.  Invalid argument(s)");
 		return_code=NULL;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_computed_field_evaluate_as_string_at_node */
+} /* Cmiss_field_evaluate_as_string_at_node */
 
-int Cmiss_computed_field_is_defined_at_node(struct Computed_field *field,
+int Cmiss_field_is_defined_at_node(Cmiss_field_id field,
 	struct Cmiss_node *node)
 /*******************************************************************************
 LAST MODIFIED : 17 January 2007
@@ -360,7 +372,7 @@ any other fields, this function is recursively called for them.
 {
 	int return_code;
 
-	ENTER(Cmiss_computed_field_is_defined_at_node);
+	ENTER(Cmiss_field_is_defined_at_node);
 	if (field && node)
 	{
 		return_code = Computed_field_is_defined_at_node(field, node);
@@ -368,17 +380,17 @@ any other fields, this function is recursively called for them.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_computed_field_is_defined_at_node.  Invalid argument(s)");
+			"Cmiss_field_is_defined_at_node.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_computed_field_is_defined_at_node */
+} /* Cmiss_field_is_defined_at_node */
 
-int Cmiss_computed_field_evaluate_at_field_coordinates(
-	struct Computed_field *field,
-	struct Computed_field *reference_field, int number_of_input_values,
+int Cmiss_field_evaluate_at_field_coordinates(
+	Cmiss_field_id field,
+	Cmiss_field_id reference_field, int number_of_input_values,
 	FE_value *input_values, FE_value time, FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 25 March 2008
@@ -393,7 +405,7 @@ number_of_components.
 {
 	int return_code;
 
-	ENTER(Cmiss_computed_field_evaluate_at_field_coordinates);
+	ENTER(Cmiss_field_evaluate_at_field_coordinates);
 	if (field&&reference_field&&number_of_input_values&&input_values&&values)
 	{
 		return_code = Computed_field_evaluate_at_field_coordinates(field,
@@ -403,16 +415,16 @@ number_of_components.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_computed_field_evaluate_at_field_coordinates.  "
+			"Cmiss_field_evaluate_at_field_coordinates.  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_computed_field_evaluate_at_field_coordinates */
+} /* Cmiss_field_evaluate_at_field_coordinates */
 
-int Cmiss_computed_field_get_name(Cmiss_computed_field_id field,
+int Cmiss_field_get_name(Cmiss_field_id field,
 	char **name)
 /*******************************************************************************
 LAST MODIFIED : 21 April 2008
@@ -424,8 +436,7 @@ Get the name of a field.
 	return GET_NAME(Computed_field)(field, name);
 }
 
-int Cmiss_computed_field_set_name(struct Computed_field *field,
-	const char *name)
+int Cmiss_field_set_name(Cmiss_field_id field, const char *name)
 /*******************************************************************************
 LAST MODIFIED : 18 January 2007
 
@@ -435,7 +446,7 @@ Change the name of a field.
 {
 	int return_code;
 
-	ENTER(Cmiss_computed_field_set_name);
+	ENTER(Cmiss_field_set_name);
 	if (field && name)
 	{
 		Computed_field_set_intermediary_managed_field_flag(field, /*false*/0);
@@ -444,11 +455,11 @@ Change the name of a field.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_computed_field_set_name.  Invalid argument(s)");
+			"Cmiss_field_set_name.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_computed_field_set_name */
+} /* Cmiss_field_set_name */
 

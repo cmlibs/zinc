@@ -139,7 +139,8 @@ protected:
 	struct Computed_field *field;
 
 public:
-	Computed_field_core(Computed_field *new_parent): field(new_parent)
+	Computed_field_core(Computed_field *parent = (Computed_field*)NULL)
+		: field(parent)
 	{
 	};
 
@@ -147,7 +148,9 @@ public:
 	{
 	};
 
-	virtual Computed_field_core *copy(Computed_field* new_parent) = 0;
+	virtual int set_field_and_initialise(Computed_field *parent);
+
+	virtual Computed_field_core *copy(Computed_field* parent) = 0;
 
 	virtual char *get_type_string() = 0;
 
@@ -301,6 +304,43 @@ Computed field functions
 ------------------------
 Functions used only internally to computed fields
 */
+
+struct Computed_field_type_object *CREATE(Computed_field_type_object)
+	(Computed_field_core *core, int number_of_components);
+/*******************************************************************************
+LAST MODIFIED : 9 May 2008
+
+DESCRIPTION :
+Creates a structure representing a type of computed field.
+==============================================================================*/
+
+int DESTROY(Computed_field_type_object)
+	(struct Computed_field_type_object **type_address);
+/*******************************************************************************
+LAST MODIFIED : 9 May 2008
+
+DESCRIPTION :
+Frees memory/deaccess data at <*type_address>.
+==============================================================================*/
+
+int Computed_field_type_object_add_source_field(
+	struct Computed_field_type_object *field_type,
+	struct Computed_field *source_field);
+/*******************************************************************************
+LAST MODIFIED : 9 May 2008
+
+DESCRIPTION :
+Add the <source_field> to the list of fields referenced by <field_type>.
+==============================================================================*/
+
+int Computed_field_type_object_add_source_value(
+	struct Computed_field_type_object *field_type, FE_value source_value);
+/*******************************************************************************
+LAST MODIFIED : 9 May 2008
+
+DESCRIPTION :
+Add the <value> to the list of values referenced by <field_type>.
+==============================================================================*/
 
 int Computed_field_changed(struct Computed_field *field,
 	struct MANAGER(Computed_field) *computed_field_manager);

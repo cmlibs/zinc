@@ -54,7 +54,7 @@ static int XS_Cmiss_Cmgui_command_data_add_node_to_list(struct FE_node *node,
 	return(1);
 }
 
-MODULE = Cmiss::Cmgui_command_data		PACKAGE = Cmiss::Cmgui_command_data		PREFIX = Cmiss_cmgui_command_data_
+MODULE = Cmiss::Cmgui_command_data		PACKAGE = Cmiss::Cmgui_command_data		PREFIX = Cmiss_command_data_
 
 PROTOTYPES: DISABLE
 
@@ -108,26 +108,15 @@ execute_command(Cmiss::Cmgui_command_data cmgui_command_data, char *name)
 	RETVAL
 
 Cmiss::Region
-command_data_get_root_region(Cmiss::Cmgui_command_data cmgui_command_data)
-	CODE:
-		if (RETVAL=Cmiss_command_data_get_root_region(cmgui_command_data))
+Cmiss_command_data_get_root_region(Cmiss::Cmgui_command_data cmgui_command_data)
+	POSTCALL:
+		if (RETVAL)
 		{
 			ACCESS(Cmiss_region)(RETVAL);
 		}
-	OUTPUT:
-		RETVAL
-
-Cmiss::Computed_field
-get_computed_field_by_name(Cmiss::Cmgui_command_data cmgui_command_data, char *name)
-	CODE:
-		struct MANAGER(Computed_field)* computed_field_manager = 
-			Cmiss_command_data_get_computed_field_manager(cmgui_command_data);
-		RETVAL=Cmiss_computed_field_manager_get_field(computed_field_manager, name);
-	OUTPUT:
-		RETVAL
 
 void
-command_data_get_element_selection(Cmiss::Cmgui_command_data cmgui_command_data)
+Cmiss_command_data_get_element_selection(Cmiss::Cmgui_command_data cmgui_command_data)
 	PPCODE:
 		int i;
 		struct FE_element_selection *element_selection;
@@ -154,7 +143,7 @@ command_data_get_element_selection(Cmiss::Cmgui_command_data cmgui_command_data)
 		}
 
 void
-command_data_get_node_selection(Cmiss::Cmgui_command_data cmgui_command_data)
+Cmiss_command_data_get_node_selection(Cmiss::Cmgui_command_data cmgui_command_data)
 	PPCODE:
 		int i;
 		struct FE_node_selection *node_selection;

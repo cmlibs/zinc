@@ -1,1 +1,2 @@
 float T_FLOAT
+Cmiss::Field_type_object T_PTROBJ

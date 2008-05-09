@@ -232,6 +232,25 @@ wrappers need to be automatically created for each FE_field.
 	Computed_field_simple_package *simple_package;
 }; /* struct Computed_field_package */
 
+struct Computed_field_type_object
+/*******************************************************************************
+LAST MODIFIED : 9 May 2008
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int number_of_components;
+	Computed_field_core* core;
+	/* array of computed fields this field is calculated from */
+	int number_of_source_fields;
+	struct Computed_field **source_fields;
+	/* array of constant values this field is calculated from */
+	int number_of_source_values;
+	FE_value *source_values;
+
+	int access_count;
+}; /* struct Computed_field_type_object */
+
 /*
 Module functions
 ----------------
@@ -240,6 +259,238 @@ Module functions
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Computed_field,name,char *,strcmp)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Computed_field)
+
+struct Computed_field_type_object *CREATE(Computed_field_type_object)
+	(Computed_field_core *core, int number_of_components)
+/*******************************************************************************
+LAST MODIFIED : 9 May 2008
+
+DESCRIPTION :
+Creates a structure representing a type of computed field.  The values
+passed in are referenced.
+==============================================================================*/
+{
+	struct Computed_field_type_object *type_object;
+
+	ENTER(CREATE(Computed_field_type_object));
+	
+	if (core)
+	{
+		if (ALLOCATE(type_object,struct Computed_field_type_object,1))
+		{
+			type_object->number_of_components = number_of_components;
+			type_object->core = core;
+			type_object->number_of_source_fields = 0;
+			type_object->source_fields = (struct Computed_field **)NULL;
+			type_object->number_of_source_values = 0;
+			type_object->source_values = (FE_value *)NULL;			
+			type_object->access_count = 0;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"CREATE(Computed_field_type_object).  Not enough memory");
+			type_object = (struct Computed_field_type_object *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CREATE(Computed_field_type_object).  Invalid arguments");
+		type_object = (struct Computed_field_type_object *)NULL;
+	}
+	LEAVE;
+
+	return (type_object);
+} /* CREATE(Computed_field_type_object) */
+
+int DESTROY(Computed_field_type_object)
+	(struct Computed_field_type_object **type_address)
+/*******************************************************************************
+LAST MODIFIED : 9 May 2008
+
+DESCRIPTION :
+Frees memory/deaccess data at <*type_address>.
+==============================================================================*/
+{
+	int i, return_code;
+	Computed_field_type_object *type_object;
+
+	ENTER(DESTROY(Computed_field_type_object));
+	if (type_address&&(type_object = *type_address))
+	{
+		if (0 >= type_object->access_count)
+		{
+			if (type_object->source_fields)
+			{
+				for (i = 0 ; i < type_object->number_of_source_fields ; i++)
+				{
+					DEACCESS(Computed_field)(type_object->source_fields + i);
+				}
+				DEALLOCATE(type_object->source_fields);
+			}
+			if (type_object->source_values)
+			{
+				DEALLOCATE(type_object->source_values);
+			}
+			if (type_object->core)
+			{
+				delete type_object->core;
+			}
+			DEALLOCATE(*type_address);
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"DESTROY(Computed_field_type_object).  Positive access_count");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Computed_field_type_object).  Missing mapping");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Computed_field_type_object) */
+
+DECLARE_OBJECT_FUNCTIONS(Computed_field_type_object)
+
+int Computed_field_type_object_add_source_field(
+	struct Computed_field_type_object *field_type,
+	struct Computed_field *source_field)
+/*******************************************************************************
+LAST MODIFIED : 9 May 2008
+
+DESCRIPTION :
+Add the <source_field> to the list of fields referenced by <field_type>.
+==============================================================================*/
+{
+	int return_code;
+	Computed_field **new_source_fields;
+
+	ENTER(Computed_field_type_object_add_source_field);
+	if (field_type && source_field)
+	{
+		if (REALLOCATE(new_source_fields, field_type->source_fields,
+			Computed_field *, field_type->number_of_source_fields + 1))
+		{
+			field_type->source_fields = new_source_fields;
+			field_type->source_fields[field_type->number_of_source_fields]
+				= ACCESS(Computed_field)(source_field);
+			field_type->number_of_source_fields++;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_type_object_add_source_field.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_type_object_add_source_field */
+
+int Computed_field_type_object_add_source_value(
+	struct Computed_field_type_object *field_type, FE_value source_value)
+/*******************************************************************************
+LAST MODIFIED : 9 May 2008
+
+DESCRIPTION :
+Add the <value> to the list of values referenced by <field_type>.
+==============================================================================*/
+{
+	int return_code;
+	FE_value *new_source_values;
+
+	ENTER(Computed_field_type_object_add_source_field);
+	if (field_type && source_value)
+	{
+		if (REALLOCATE(new_source_values, field_type->source_values,
+			FE_value, field_type->number_of_source_values + 1))
+		{
+			field_type->source_values = new_source_values;
+			field_type->source_values[field_type->number_of_source_values]
+				= source_value;
+			field_type->number_of_source_values++;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_type_object_add_source_value.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_type_object_add_source_value */
+
+int Computed_field_set_type(struct Computed_field *field,
+	struct Computed_field_type_object *field_type)
+/*******************************************************************************
+LAST MODIFIED : 9 May 2008
+
+DESCRIPTION :
+If possible, replaces the the type and parameters of <field> with those
+of <field_type>.  The field_type object is emptied out and no longer contains
+the type information.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_set_type);
+	if (field)
+	{
+		if (!field->manager
+			|| (field->number_of_components == field_type->number_of_components)
+			|| MANAGED_OBJECT_NOT_IN_USE(Computed_field)(field, field->manager))
+		{
+			Computed_field_clear_type(field);
+
+			field->number_of_components = field_type->number_of_components;
+			field->number_of_source_fields = field_type->number_of_source_fields;
+			field->source_fields = field_type->source_fields;
+			field->number_of_source_values = field_type->number_of_source_values;
+			field->source_values = field_type->source_values;
+
+			field_type->core->set_field_and_initialise(field);
+
+			/* Clear out the field type object */
+			field_type->core = (Computed_field_core *)NULL;
+			field_type->number_of_source_fields = 0;
+			field_type->source_fields = (struct Computed_field **)NULL;
+			field_type->number_of_source_values = 0;
+			field_type->source_values = (FE_value *)NULL;			
+
+			if (field->manager)
+			{
+				Computed_field_changed(field, field->manager);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_set_type.  "
+				"Managed field is in use so number of components cannot be changed.");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type */
 
 struct Computed_field_type_data *CREATE(Computed_field_type_data)
    (char *name, Define_Computed_field_type_function 
@@ -4436,6 +4687,19 @@ its name matches the contents of the <other_computed_field_void>.
 
 	return (return_code);
 } /* Computed_field_contents_match */
+
+int Computed_field_core::set_field_and_initialise(Computed_field *parent)
+/*******************************************************************************
+LAST MODIFIED : 9 May 2008
+
+DESCRIPTION :
+Default initialisation of computed field core.
+==============================================================================*/
+{
+	field = parent;
+	field->core = this;
+	return 1;
+};
 
 int Computed_field_core::list()
 /*******************************************************************************

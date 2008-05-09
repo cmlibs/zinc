@@ -3,5 +3,5 @@ manifest
 readme
 typemap
 typemap.h
-Computed_field.pm
-Computed_field.xs
+Field.pm
+Field.xs

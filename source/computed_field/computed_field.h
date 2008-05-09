@@ -66,6 +66,7 @@ if a value is already known.
 #if !defined (COMPUTED_FIELD_H)
 #define COMPUTED_FIELD_H
 
+#include "api/cmiss_field.h"
 #include "command/parser.h"
 #include "finite_element/finite_element.h"
 #include "general/geometry.h"
@@ -85,7 +86,8 @@ functions are given their public names.
 
 /* Convert the functions that have identical interfaces */
 #define Computed_field_get_number_of_components \
-	Cmiss_computed_field_get_number_of_components
+	Cmiss_field_get_number_of_components
+#define Computed_field_set_type Cmiss_field_set_type
 
 /*
 Global types
@@ -97,7 +99,6 @@ struct Computed_field;
 LAST MODIFIED : 24 December 1998
 
 DESCRIPTION :
-struct Computed_field is private.
 ==============================================================================*/
 
 DECLARE_LIST_TYPES(Computed_field);
@@ -113,6 +114,13 @@ Contains all information for editing and maintaining Computed_fields, including
 the MANAGER(Computed_field).
 struct Computed_field_package is private.
 ???RC Make macro PACKAGE(Computed_field) etc.?
+==============================================================================*/
+
+struct Computed_field_type_object;
+/*******************************************************************************
+LAST MODIFIED : 9 May 2008
+
+DESCRIPTION :
 ==============================================================================*/
 
 struct List_Computed_field_commands_data
@@ -154,9 +162,22 @@ DESCRIPTION :
 Frees memory/deaccess objects in computed_field at <*field_address>.
 ==============================================================================*/
 
+int Computed_field_set_type(struct Computed_field *field,
+	struct Computed_field_type_object *field_type);
+/*******************************************************************************
+LAST MODIFIED : 9 May 2008
+
+DESCRIPTION :
+If possible, replaces the the type and parameters of <field> with those
+of <field_type>.  The field_type object is emptied out and no longer contains
+the type information.
+==============================================================================*/
+
 PROTOTYPE_OBJECT_FUNCTIONS(Computed_field);
 /*PROTOTYPE_COPY_OBJECT_FUNCTION(Computed_field);*/
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Computed_field);
+
+PROTOTYPE_OBJECT_FUNCTIONS(Computed_field_type_object);
 
 PROTOTYPE_LIST_FUNCTIONS(Computed_field);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Computed_field,name,char *);

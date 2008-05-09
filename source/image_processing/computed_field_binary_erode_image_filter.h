@@ -43,7 +43,7 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_BINARYERODEFILTER_H)
 #define COMPUTED_FIELD_BINARYERODEFILTER_H
 
-#include "api/cmiss_computed_field.h"
+#include "api/cmiss_field.h"
 
 /* API functions are prefixed with Cmiss */
 #define Computed_field_set_type_binary_erode_image_filter \

@@ -1,6 +1,6 @@
 
 Cmiss::Cmgui_command_data T_PTROBJ
-Cmiss::Computed_field T_PTROBJ
+Cmiss::Field T_PTROBJ
 Cmiss::Element T_PTROBJ
 Cmiss::Node T_PTROBJ
 Cmiss::Node_field_creator T_PTROBJ

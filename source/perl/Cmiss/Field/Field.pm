@@ -1,4 +1,4 @@
-package Cmiss::Computed_field;
+package Cmiss::Field;
 
 use 5.006;
 use strict;
@@ -14,11 +14,10 @@ our @ISA = qw(Exporter);
 # names by default without a very good reason. Use EXPORT_OK instead.
 # Do not simply export all your public functions/methods/constants.
 
-# This allows declaration	use Cmiss::Computed_field ':all';
+# This allows declaration	use Cmiss::Field ':all';
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
-	new
 ) ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
@@ -36,7 +35,7 @@ sub AUTOLOAD {
     my $constname;
     our $AUTOLOAD;
     ($constname = $AUTOLOAD) =~ s/.*:://;
-    croak "&Cmiss::Computed_field::constant not defined" if $constname eq 'constant';
+    croak "&Cmiss::Field::constant not defined" if $constname eq 'constant';
     my ($error, $val) = constant($constname);
     if ($error) { croak $error; }
     {
@@ -53,14 +52,17 @@ sub AUTOLOAD {
 }
 
 use Cmiss;
+use Cmiss::Cmgui_command_data;
 Cmiss::require_library('cmgui_finite_element');
+
+package Cmiss::Field;
 
 sub new
 {
-	my ($class) = @_;
+	my ($class, $region, $type) = @_;
 	my $objref;
 
-	$objref=create();
+	$objref=create($region, $type);
 	if ($objref)
 	{
 		bless $objref,$class;
@@ -71,9 +73,40 @@ sub new
 	}
 }
 
+sub add
+{
+  my ($self, $addand) = @_;
+
+  print("Cmiss::Field::add " . (ref $self) . " + " . (ref $addand) . "\n");
+
+  if (ref $addand)
+  {
+	 if (UNIVERSAL::isa($addand, ref $self))
+	 {
+		print("Command data " . $Cmiss::Cmgui_command_data . "\n");
+
+		#Should get the region from the $self field instead I think.
+		return (new Cmiss::Field(
+			$Cmiss::Cmgui_command_data->get_root_region(),
+			Cmiss::Field::type_create_add($self, $addand)));
+	 }
+	 else
+	 {
+      croak "Can't add a ", ref $addand, " to a ", ref $self;
+    }
+  }
+  else
+  {
+	 croak "Can't add $addand to ", ref $self;
+  }
+}
+
+use overload
+  '+' => 'add',
+  fallback => 1;
 
 require XSLoader;
-XSLoader::load('Cmiss::Computed_field', $VERSION);
+XSLoader::load('Cmiss::Field', $VERSION);
 
 # Preloaded methods go here.
 
@@ -85,22 +118,22 @@ __END__
 
 =head1 NAME
 
-Cmiss::Computed_field - Perl extension for Cmiss regions
+Cmiss::Field - Perl extension for Cmiss regions
 
 =head1 SYNOPSIS
 
-  use Cmiss::Computed_field;
+  use Cmiss::Field;
 
 =head1 ABSTRACT
 
-  This should be the abstract for Cmiss::Computed_field.
+  This should be the abstract for Cmiss::Field.
   The abstract is used when making PPD (Perl Package Description) files.
   If you don't want an ABSTRACT you should also edit Makefile.PL to
   remove the ABSTRACT_FROM option.
 
 =head1 DESCRIPTION
 
-Stub documentation for Cmiss::Computed_field, created by h2xs. It looks like the
+Stub documentation for Cmiss::Field, created by h2xs. It looks like the
 author of the extension was negligent enough to leave the stub
 unedited.
 
@@ -115,7 +148,7 @@ None by default.
 
 =head1 AUTHOR
 
-Shane Blackett, <s.blackett@auckland.ac.nz>
+Shane Blackett, <shane@blackett.co.nz>
 
 =head1 COPYRIGHT AND LICENSE
 
