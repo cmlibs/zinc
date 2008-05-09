@@ -129,6 +129,10 @@ DESCRIPTION :
 	{
 		int i;
 
+		if (object_listbox)
+		{
+			object_listbox->set_callback((Callback_base<Managed_object*> *)NULL);
+		}
 		if (number_of_items>0)
 		{
 			 if (items)
