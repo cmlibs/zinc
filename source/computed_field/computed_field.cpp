@@ -1093,8 +1093,7 @@ functions to check if read_only flag is set.
 
 				if (core = source->core->copy(destination))
 				{
-					destination->core = core;
-					return_code=1;
+					return_code = core->set_field_and_initialise(destination);
 				}
 				else
 				{
