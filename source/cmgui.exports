@@ -139,7 +139,9 @@ Cmiss_field_get_type_sum_components
 Cmiss_field_set_type_sum_components
 Cmiss_field_get_type_threshold_image_filter
 Cmiss_field_set_type_threshold_image_filter
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
 Computed_field_set_type_window_projection
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
 Cmiss_field_set_type_if
 Cmiss_field_set_type_less_than
 Cmiss_field_set_type_greater_than
