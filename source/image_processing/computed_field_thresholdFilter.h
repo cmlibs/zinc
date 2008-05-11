@@ -44,14 +44,13 @@ Wraps itk::ThresholdImageFilter
 #if !defined (COMPUTED_FIELD_THRESHOLDFILTER_H)
 #define COMPUTED_FIELD_THRESHOLDFILTER_H
 
-#include "general/enumerator.h"
-//#include "api/cmiss_computed_field.h"
+#include "api/cmiss_field.h"
 
 /* API functions are prefixed with Cmiss */
 #define Computed_field_set_type_threshold_image_filter \
-	Cmiss_computed_field_set_type_threshold_image_filter
+	Cmiss_field_set_type_threshold_image_filter
 #define Computed_field_get_type_threshold_image_filter \
-	Cmiss_computed_field_get_type_threshold_image_filter
+	Cmiss_field_get_type_threshold_image_filter
 
 enum General_threshold_filter_mode
 /*******************************************************************************

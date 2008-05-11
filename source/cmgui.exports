@@ -152,7 +152,6 @@ Cmiss_field_set_type_divide
 Cmiss_field_set_type_multiply
 Cmiss_field_set_type_weighted_add
 Cmiss_field_set_type_subtract
-Cmiss_field_set_type_add
 Cmiss_field_set_type_constant
 
 Cmiss_texture_manager_get_texture
@@ -183,7 +182,6 @@ FE_region_get_FE_node_from_identifier
 FE_region_get_FE_element_from_identifier
 Cmiss_region_get_node
 Cmiss_region_get_element
-Cmiss_region_create_field
 Cmiss_region_is_field_defined
 Cmiss_region_find_field_by_name
 

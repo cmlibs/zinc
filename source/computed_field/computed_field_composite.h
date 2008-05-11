@@ -45,8 +45,10 @@ and real values in any order into a single vector field.
 #if !defined (COMPUTED_FIELD_COMPOSITE_H)
 #define COMPUTED_FIELD_COMPOSITE_H
 
-#define Computed_field_set_type_constant Cmiss_computed_field_set_type_constant
-#define Computed_field_set_type_identity Cmiss_computed_field_set_type_identity
+#include "api/cmiss_field.h"
+
+#define Computed_field_set_type_constant Cmiss_field_set_type_constant
+#define Computed_field_set_type_identity Cmiss_field_set_type_identity
 
 int Computed_field_set_type_constant(struct Computed_field *field,
 	int number_of_values, FE_value *values);

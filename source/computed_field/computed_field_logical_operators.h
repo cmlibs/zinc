@@ -44,8 +44,10 @@ Implements logical operations on computed fields.
 #if !defined (COMPUTED_FIELD_LOGICAL_OPERATORS_H)
 #define COMPUTED_FIELD_LOGICAL_OPERATORS_H
 
-#define Computed_field_set_type_greater_than Cmiss_computed_field_set_type_greater_than
-#define Computed_field_set_type_less_than Cmiss_computed_field_set_type_less_than
+#include "api/cmiss_field.h"
+
+#define Computed_field_set_type_greater_than Cmiss_field_set_type_greater_than
+#define Computed_field_set_type_less_than Cmiss_field_set_type_less_than
 
 int Computed_field_set_type_less_than(struct Computed_field *field,
 	struct Computed_field *source_field_one,

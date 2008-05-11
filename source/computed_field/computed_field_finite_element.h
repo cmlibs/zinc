@@ -44,6 +44,8 @@ Implements computed fields which interface to finite element fields.
 #if !defined (COMPUTED_FIELD_FINITE_ELEMENT_H)
 #define COMPUTED_FIELD_FINITE_ELEMENT_H
 
+#include "api/cmiss_field.h"
+
 /*
 Global types
 ------------
@@ -67,11 +69,11 @@ functions are given their public names.
 
 /* Convert the functions that have identical interfaces */
 #define Computed_field_is_type_finite_element \
-	Cmiss_computed_field_is_type_finite_element
+	Cmiss_field_is_type_finite_element
 #define Computed_field_finite_element_define_at_node \
-	Cmiss_computed_field_finite_element_define_at_node
+	Cmiss_field_finite_element_define_at_node
 #define Computed_field_finite_element_set_string_at_node \
-	Cmiss_computed_field_finite_element_set_string_at_node
+	Cmiss_field_finite_element_set_string_at_node
 
 /*
 Global functions
