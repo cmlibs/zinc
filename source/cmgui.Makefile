@@ -1436,7 +1436,7 @@ endif # SYSNAME == IRIX%=
 ifeq ($(OPERATING_SYSTEM),linux)
    ifneq ($(STATIC_LINK),true)
       ifneq ($(EXPORT_EVERYTHING),true)
-         LD_VERSION := $(shell ld -v | grep "\s\([3-9]\.\|2\.[2-9]\d\|2\.1[2-9]\)")
+         LD_VERSION := $(shell ld -v | grep " \([3-9]\.\|2\.[2-9][0-9]\|2\.1[2-9]\) ")
          NEW_BINUTILS := $(if $(LD_VERSION),true)
          ifdef NEW_BINUTILS
             # In Linux this requires an ld from binutils 2.12 or later 
