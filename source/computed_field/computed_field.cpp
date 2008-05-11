@@ -1091,6 +1091,9 @@ functions to check if read_only flag is set.
 				}
 				destination->source_values=source_values;
 
+				/* SAB.  Once all the type initialisation is shifted to the 
+					set_field_and_initialise method then the destination
+					parameter should not be passed here. */
 				if (core = source->core->copy(destination))
 				{
 					return_code = core->set_field_and_initialise(destination);
