@@ -32,6 +32,7 @@ Cmiss_field_get_number_of_components(Cmiss::Field field)
 void
 Cmiss_field_evaluate_at_node(Cmiss::Field field, Cmiss::Node node, float time)
 	PPCODE:
+	{
 		int i, number_of_values;
 		float *values;
 
@@ -47,6 +48,7 @@ Cmiss_field_evaluate_at_node(Cmiss::Field field, Cmiss::Node node, float time)
 			}
 			free(values);
 		}
+	}
 
 NO_OUTPUT int
 Cmiss_field_get_name(IN Cmiss::Field field, \

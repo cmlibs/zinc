@@ -118,6 +118,7 @@ Cmiss_command_data_get_root_region(Cmiss::Cmgui_command_data cmgui_command_data)
 void
 Cmiss_command_data_get_element_selection(Cmiss::Cmgui_command_data cmgui_command_data)
 	PPCODE:
+	{
 		int i;
 		struct FE_element_selection *element_selection;
 		struct LIST(FE_element) *selected_element_list;
@@ -141,10 +142,12 @@ Cmiss_command_data_get_element_selection(Cmiss::Cmgui_command_data cmgui_command
 			}
 			free(data.list);
 		}
+	}
 
 void
 Cmiss_command_data_get_node_selection(Cmiss::Cmgui_command_data cmgui_command_data)
 	PPCODE:
+	{
 		int i;
 		struct FE_node_selection *node_selection;
 		struct LIST(FE_node) *selected_node_list;
@@ -168,3 +171,4 @@ Cmiss_command_data_get_node_selection(Cmiss::Cmgui_command_data cmgui_command_da
 			}
 			free(data.list);
 		}
+	}
