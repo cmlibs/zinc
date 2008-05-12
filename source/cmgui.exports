@@ -112,7 +112,7 @@ Cmiss_field_evaluate_at_field_coordinates
 Cmiss_field_set_name
 Cmiss_field_get_name
 
-Cmiss_field_type_create_add
+Cmiss_field_constructor_create_add
 
 Cmiss_field_set_type_binary_threshold_image_filter
 Cmiss_field_get_type_binary_threshold_image_filter

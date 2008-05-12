@@ -632,7 +632,7 @@ Changes <field> into type composite with <number_of_values> values listed in
 the <values> array.
 ==============================================================================*/
 
-Cmiss_field_constructor_id Cmiss_field_type_create_add(
+Cmiss_field_constructor_id Cmiss_field_constructor_create_add(
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 /*******************************************************************************

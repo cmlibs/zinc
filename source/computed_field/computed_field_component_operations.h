@@ -52,7 +52,7 @@ Implements a number of basic component wise operations on computed fields.
 	Cmiss_field_set_type_sum_components
 #define Computed_field_get_type_sum_components \
 	Cmiss_field_get_type_sum_components
-#define Computed_field_type_create_add Cmiss_field_type_create_add
+#define Computed_field_type_create_add Cmiss_field_constructor_create_add
 #define Computed_field_set_type_subtract Cmiss_field_set_type_subtract
 #define Computed_field_set_type_weighted_add Cmiss_field_set_type_weighted_add
 #define Computed_field_set_type_multiply_components Cmiss_field_set_type_multiply
