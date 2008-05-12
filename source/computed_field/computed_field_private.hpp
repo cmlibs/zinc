@@ -305,7 +305,7 @@ Computed field functions
 Functions used only internally to computed fields
 */
 
-struct Computed_field_type_object *CREATE(Computed_field_type_object)
+struct Computed_field_constructor *CREATE(Computed_field_constructor)
 	(Computed_field_core *core, int number_of_components);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2008
@@ -314,8 +314,8 @@ DESCRIPTION :
 Creates a structure representing a type of computed field.
 ==============================================================================*/
 
-int DESTROY(Computed_field_type_object)
-	(struct Computed_field_type_object **type_address);
+int DESTROY(Computed_field_constructor)
+	(struct Computed_field_constructor **type_address);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2008
 
@@ -323,8 +323,8 @@ DESCRIPTION :
 Frees memory/deaccess data at <*type_address>.
 ==============================================================================*/
 
-int Computed_field_type_object_add_source_field(
-	struct Computed_field_type_object *field_type,
+int Computed_field_constructor_add_source_field(
+	struct Computed_field_constructor *field_type,
 	struct Computed_field *source_field);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2008
@@ -333,8 +333,8 @@ DESCRIPTION :
 Add the <source_field> to the list of fields referenced by <field_type>.
 ==============================================================================*/
 
-int Computed_field_type_object_add_source_value(
-	struct Computed_field_type_object *field_type, FE_value source_value);
+int Computed_field_constructor_add_source_value(
+	struct Computed_field_constructor *field_type, FE_value source_value);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2008
 

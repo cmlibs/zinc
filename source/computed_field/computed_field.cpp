@@ -232,7 +232,7 @@ wrappers need to be automatically created for each FE_field.
 	Computed_field_simple_package *simple_package;
 }; /* struct Computed_field_package */
 
-struct Computed_field_type_object
+struct Computed_field_constructor
 /*******************************************************************************
 LAST MODIFIED : 9 May 2008
 
@@ -249,7 +249,7 @@ DESCRIPTION :
 	FE_value *source_values;
 
 	int access_count;
-}; /* struct Computed_field_type_object */
+}; /* struct Computed_field_constructor */
 
 /*
 Module functions
@@ -260,7 +260,7 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Computed_field,name,char *,strcmp)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Computed_field)
 
-struct Computed_field_type_object *CREATE(Computed_field_type_object)
+struct Computed_field_constructor *CREATE(Computed_field_constructor)
 	(Computed_field_core *core, int number_of_components)
 /*******************************************************************************
 LAST MODIFIED : 9 May 2008
@@ -270,13 +270,13 @@ Creates a structure representing a type of computed field.  The values
 passed in are referenced.
 ==============================================================================*/
 {
-	struct Computed_field_type_object *type_object;
+	struct Computed_field_constructor *type_object;
 
-	ENTER(CREATE(Computed_field_type_object));
+	ENTER(CREATE(Computed_field_constructor));
 	
 	if (core)
 	{
-		if (ALLOCATE(type_object,struct Computed_field_type_object,1))
+		if (ALLOCATE(type_object,struct Computed_field_constructor,1))
 		{
 			type_object->number_of_components = number_of_components;
 			type_object->core = core;
@@ -289,23 +289,23 @@ passed in are referenced.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"CREATE(Computed_field_type_object).  Not enough memory");
-			type_object = (struct Computed_field_type_object *)NULL;
+				"CREATE(Computed_field_constructor).  Not enough memory");
+			type_object = (struct Computed_field_constructor *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(Computed_field_type_object).  Invalid arguments");
-		type_object = (struct Computed_field_type_object *)NULL;
+			"CREATE(Computed_field_constructor).  Invalid arguments");
+		type_object = (struct Computed_field_constructor *)NULL;
 	}
 	LEAVE;
 
 	return (type_object);
-} /* CREATE(Computed_field_type_object) */
+} /* CREATE(Computed_field_constructor) */
 
-int DESTROY(Computed_field_type_object)
-	(struct Computed_field_type_object **type_address)
+int DESTROY(Computed_field_constructor)
+	(struct Computed_field_constructor **type_address)
 /*******************************************************************************
 LAST MODIFIED : 9 May 2008
 
@@ -314,9 +314,9 @@ Frees memory/deaccess data at <*type_address>.
 ==============================================================================*/
 {
 	int i, return_code;
-	Computed_field_type_object *type_object;
+	Computed_field_constructor *type_object;
 
-	ENTER(DESTROY(Computed_field_type_object));
+	ENTER(DESTROY(Computed_field_constructor));
 	if (type_address&&(type_object = *type_address))
 	{
 		if (0 >= type_object->access_count)
@@ -343,25 +343,25 @@ Frees memory/deaccess data at <*type_address>.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"DESTROY(Computed_field_type_object).  Positive access_count");
+				"DESTROY(Computed_field_constructor).  Positive access_count");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"DESTROY(Computed_field_type_object).  Missing mapping");
+			"DESTROY(Computed_field_constructor).  Missing mapping");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* DESTROY(Computed_field_type_object) */
+} /* DESTROY(Computed_field_constructor) */
 
-DECLARE_OBJECT_FUNCTIONS(Computed_field_type_object)
+DECLARE_OBJECT_FUNCTIONS(Computed_field_constructor)
 
-int Computed_field_type_object_add_source_field(
-	struct Computed_field_type_object *field_type,
+int Computed_field_constructor_add_source_field(
+	struct Computed_field_constructor *field_type,
 	struct Computed_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 9 May 2008
@@ -373,7 +373,7 @@ Add the <source_field> to the list of fields referenced by <field_type>.
 	int return_code;
 	Computed_field **new_source_fields;
 
-	ENTER(Computed_field_type_object_add_source_field);
+	ENTER(Computed_field_constructor_add_source_field);
 	if (field_type && source_field)
 	{
 		if (REALLOCATE(new_source_fields, field_type->source_fields,
@@ -388,16 +388,16 @@ Add the <source_field> to the list of fields referenced by <field_type>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_type_object_add_source_field.  Invalid argument(s)");
+			"Computed_field_constructor_add_source_field.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_type_object_add_source_field */
+} /* Computed_field_constructor_add_source_field */
 
-int Computed_field_type_object_add_source_value(
-	struct Computed_field_type_object *field_type, FE_value source_value)
+int Computed_field_constructor_add_source_value(
+	struct Computed_field_constructor *field_type, FE_value source_value)
 /*******************************************************************************
 LAST MODIFIED : 9 May 2008
 
@@ -408,7 +408,7 @@ Add the <value> to the list of values referenced by <field_type>.
 	int return_code;
 	FE_value *new_source_values;
 
-	ENTER(Computed_field_type_object_add_source_field);
+	ENTER(Computed_field_constructor_add_source_field);
 	if (field_type && source_value)
 	{
 		if (REALLOCATE(new_source_values, field_type->source_values,
@@ -423,16 +423,16 @@ Add the <value> to the list of values referenced by <field_type>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_type_object_add_source_value.  Invalid argument(s)");
+			"Computed_field_constructor_add_source_value.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_type_object_add_source_value */
+} /* Computed_field_constructor_add_source_value */
 
 int Computed_field_set_type(struct Computed_field *field,
-	struct Computed_field_type_object *field_type)
+	struct Computed_field_constructor *field_type)
 /*******************************************************************************
 LAST MODIFIED : 9 May 2008
 

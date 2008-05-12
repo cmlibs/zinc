@@ -55,7 +55,7 @@ Global functions
 */
 
 Cmiss_field_id Cmiss_field_create(Cmiss_region_id region,
-	Cmiss_field_type_object_id field_type)
+	Cmiss_field_constructor_id field_type)
 /*******************************************************************************
 LAST MODIFIED : 21 April 2008
 

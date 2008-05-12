@@ -1493,7 +1493,7 @@ although its cache may be lost.
 		source_field_one, 1.0, source_field_two, 1.0));
 } /* Computed_field_set_type_add */
 
-struct Computed_field_type_object *Computed_field_type_create_weighted_add(
+struct Computed_field_constructor *Computed_field_type_create_weighted_add(
 	struct Computed_field *source_field_one, double scale_factor1,
 	struct Computed_field *source_field_two, double scale_factor2)
 /*******************************************************************************
@@ -1505,7 +1505,7 @@ fields, <source_field_one> and <source_field_two>.  The number of
 components will equal to the source_fields.
 ==============================================================================*/
 {
-	struct Computed_field_type_object *field_type;
+	struct Computed_field_constructor *field_type;
 
 	ENTER(Computed_field_set_type_weighted_add);
 	if (/* Access and broadcast before checking components match,
@@ -1518,14 +1518,14 @@ components will equal to the source_fields.
 		(source_field_one->number_of_components ==
 		source_field_two->number_of_components))
 	{
-		field_type = CREATE(Computed_field_type_object)(
+		field_type = CREATE(Computed_field_constructor)(
 			new Computed_field_add(), source_field_one->number_of_components);
-		Computed_field_type_object_add_source_field(field_type,
+		Computed_field_constructor_add_source_field(field_type,
 			source_field_one);
-		Computed_field_type_object_add_source_field(field_type,
+		Computed_field_constructor_add_source_field(field_type,
 			source_field_two);
-		Computed_field_type_object_add_source_value(field_type, scale_factor1);
-		Computed_field_type_object_add_source_value(field_type, scale_factor2);
+		Computed_field_constructor_add_source_value(field_type, scale_factor1);
+		Computed_field_constructor_add_source_value(field_type, scale_factor2);
 
 		DEACCESS(Computed_field)(&source_field_one);
 		DEACCESS(Computed_field)(&source_field_two);
@@ -1534,14 +1534,14 @@ components will equal to the source_fields.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_set_type_weighted_add.  Invalid argument(s)");
-		field_type = (Computed_field_type_object *)NULL;
+		field_type = (Computed_field_constructor *)NULL;
 	}
 	LEAVE;
 
 	return (field_type);
 } /* Computed_field_set_type_weighted_add */
  
-struct Computed_field_type_object *Computed_field_type_create_add(
+struct Computed_field_constructor *Computed_field_type_create_add(
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************
@@ -1557,7 +1557,7 @@ components will equal to the source_fields.
 		source_field_one, 1.0, source_field_two, 1.0));
 } /* Computed_field_type_create_add */
 
-struct Computed_field_type_object *Computed_field_type_create_subtract(
+struct Computed_field_constructor *Computed_field_type_create_subtract(
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************

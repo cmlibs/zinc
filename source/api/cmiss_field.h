@@ -82,10 +82,10 @@ DESCRIPTION :
 ==============================================================================*/
 
 /* SAB Temporary until we decide how to fix things up internally instead of externally.*/
-#define Cmiss_field_type_object Computed_field_type_object
+#define Cmiss_field_constructor Computed_field_constructor
 
-struct Cmiss_field_type_object;
-typedef struct Cmiss_field_type_object *Cmiss_field_type_object_id;
+struct Cmiss_field_constructor;
+typedef struct Cmiss_field_constructor *Cmiss_field_constructor_id;
 /*******************************************************************************
 LAST MODIFIED : 9 May 2008
 
@@ -102,7 +102,7 @@ struct Cmiss_node_field_creator;
 /* Global Functions */
 
 Cmiss_field_id Cmiss_field_create(Cmiss_region_id region,
-	Cmiss_field_type_object_id field_type);
+	Cmiss_field_constructor_id field_type);
 /*******************************************************************************
 LAST MODIFIED : 21 April 2008
 
@@ -111,7 +111,7 @@ Creates a new field in <region> of type <field_type>.
 ==============================================================================*/
 
 int Cmiss_field_set_type(Cmiss_field_id field,
-	Cmiss_field_type_object_id field_type);
+	Cmiss_field_constructor_id field_type);
 /*******************************************************************************
 LAST MODIFIED : 21 April 2008
 
@@ -632,7 +632,7 @@ Changes <field> into type composite with <number_of_values> values listed in
 the <values> array.
 ==============================================================================*/
 
-Cmiss_field_type_object_id Cmiss_field_type_create_add(
+Cmiss_field_constructor_id Cmiss_field_type_create_add(
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 /*******************************************************************************

@@ -116,7 +116,7 @@ struct Computed_field_package is private.
 ???RC Make macro PACKAGE(Computed_field) etc.?
 ==============================================================================*/
 
-struct Computed_field_type_object;
+struct Computed_field_constructor;
 /*******************************************************************************
 LAST MODIFIED : 9 May 2008
 
@@ -163,7 +163,7 @@ Frees memory/deaccess objects in computed_field at <*field_address>.
 ==============================================================================*/
 
 int Computed_field_set_type(struct Computed_field *field,
-	struct Computed_field_type_object *field_type);
+	struct Computed_field_constructor *field_type);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2008
 
@@ -177,7 +177,7 @@ PROTOTYPE_OBJECT_FUNCTIONS(Computed_field);
 /*PROTOTYPE_COPY_OBJECT_FUNCTION(Computed_field);*/
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Computed_field);
 
-PROTOTYPE_OBJECT_FUNCTIONS(Computed_field_type_object);
+PROTOTYPE_OBJECT_FUNCTIONS(Computed_field_constructor);
 
 PROTOTYPE_LIST_FUNCTIONS(Computed_field);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Computed_field,name,char *);

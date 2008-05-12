@@ -82,7 +82,7 @@ fields, <source_field_one> and <source_field_two>.  Sets the number of
 components equal to the source_fields.
 ==============================================================================*/
 
-struct Computed_field_type_object *Computed_field_type_create_add(
+struct Computed_field_constructor *Computed_field_type_create_add(
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 /*******************************************************************************

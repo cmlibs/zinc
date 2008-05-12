@@ -12,7 +12,7 @@ MODULE = Cmiss::Field		PACKAGE = Cmiss::Field		PREFIX = Cmiss_field_
 PROTOTYPES: DISABLE
 
 Cmiss::Field
-Cmiss_field_create(Cmiss::Region region, Cmiss::Field_type_object type)
+Cmiss_field_create(Cmiss::Region region, Cmiss::Field_constructor type)
 
 int
 DESTROY(Cmiss::Field field)
@@ -63,9 +63,9 @@ Cmiss_field_set_name(IN Cmiss::Field field, \
 
 int
 Cmiss_field_set_type(Cmiss::Field field, \
-   Cmiss::Field_type_object field_type)
+   Cmiss::Field_constructor field_type)
 
-Cmiss::Field_type_object
+Cmiss::Field_constructor
 Cmiss_field_type_create_add( \
    Cmiss::Field source_field_one, Cmiss::Field source_field_two)
 
