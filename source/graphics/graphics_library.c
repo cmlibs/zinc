@@ -889,6 +889,58 @@ appropriately.
 			}
 		}
 #endif /* GL_VERSION_1_4 */
+#if defined GL_VERSION_2_0
+		else if (!strcmp(extension_name, "GL_VERSION_2_0"))
+		{
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_VERSION_2_0))
+			{
+				return_code = GLEXTENSIONFLAG(GL_VERSION_2_0);
+			}
+			else
+			{
+				return_code = query_gl_version(2, 0);
+				if (GLEXTENSION_AVAILABLE == return_code)
+				{
+					 if (!((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glAttachShader, PFNGLATTACHSHADERPROC)
+										Graphics_library_get_function_ptr("glAttachShader")) &&
+								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glCompileShader, PFNGLCOMPILESHADERPROC)
+										Graphics_library_get_function_ptr("glCompileShader")) &&
+								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glCreateProgram, PFNGLCREATEPROGRAMPROC)
+										Graphics_library_get_function_ptr("glCreateProgram")) &&
+								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glCreateShader, PFNGLCREATESHADERPROC)
+										Graphics_library_get_function_ptr("glCreateShader")) &&
+								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDeleteProgram,PFNGLDELETEPROGRAMPROC)
+										Graphics_library_get_function_ptr("glDeleteProgram")) &&
+								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDeleteShader,PFNGLDELETESHADERPROC)
+										Graphics_library_get_function_ptr("glDeleteShader")) &&
+								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGetShaderiv, PFNGLGETSHADERIVPROC)
+										Graphics_library_get_function_ptr("glGetShaderiv")) &&
+								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGetShaderInfoLog, PFNGLGETSHADERINFOLOGPROC)
+										Graphics_library_get_function_ptr("glGetShaderInfoLog")) &&
+								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGetShaderSource, PFNGLGETSHADERSOURCEPROC)
+										Graphics_library_get_function_ptr("glGetShaderSource")) &&
+								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGetUniformLocation, PFNGLGETUNIFORMLOCATIONPROC)
+										Graphics_library_get_function_ptr("glGetUniformLocation")) &&
+								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE( glIsProgram, PFNGLISPROGRAMPROC)
+										Graphics_library_get_function_ptr("glIsProgram")) &&
+								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glLinkProgram, PFNGLLINKPROGRAMPROC)
+										Graphics_library_get_function_ptr("glLinkProgram")) &&
+								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glShaderSource, PFNGLSHADERSOURCEPROC)
+										Graphics_library_get_function_ptr("glShaderSource")) &&
+								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glUseProgram, PFNGLUSEPROGRAMPROC)
+										Graphics_library_get_function_ptr("glUseProgram")) &&
+								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glUniform4f, PFNGLUNIFORM4FPROC)
+										Graphics_library_get_function_ptr("glUniform4f")) &&
+								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glUniform1i, PFNGLUNIFORM1IPROC)
+										Graphics_library_get_function_ptr("glUniform1i"))))
+ 					{
+						return_code = GLEXTENSION_UNAVAILABLE;
+					}
+				}
+				GLEXTENSIONFLAG(GL_VERSION_2_0) = return_code;
+			}
+		}
+#endif /* GL_VERSION_2_0 */
 #if defined GL_ARB_depth_texture
 		else if (!strcmp(extension_name, "GL_ARB_depth_texture"))
 		{

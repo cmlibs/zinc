@@ -344,6 +344,12 @@ yet we just don't know.
 #if defined (GL_VERSION_1_4)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_VERSION_1_4);
 #endif /* defined (GL_VERSION_1_4) */
+#if defined (GL_VERSION_1_5)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_VERSION_1_5);
+#endif /* defined (GL_VERSION_1_4) */
+#if defined (GL_VERSION_2_0)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_VERSION_2_0);
+#endif /* defined (GL_VERSION_1_4) */
 #if defined (GL_ARB_depth_texture)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_depth_texture);
 #endif /* defined (GL_ARB_depth_texture) */
@@ -404,6 +410,41 @@ yet we just don't know.
 #      define glBlendFuncSeparate (GLHANDLE(glBlendFuncSeparate))
 #    endif /* defined (GL_VERSION_1_4) */
 
+#    if defined (GL_VERSION_2_0)
+       GRAPHICS_LIBRARY_EXTERN PFNGLATTACHSHADERPROC GLHANDLE(glAttachShader);
+#      define glAttachShader (GLHANDLE(glAttachShader))
+       GRAPHICS_LIBRARY_EXTERN PFNGLCOMPILESHADERPROC GLHANDLE(glCompileShader);
+#      define glCompileShader (GLHANDLE(glCompileShader))
+       GRAPHICS_LIBRARY_EXTERN PFNGLCREATEPROGRAMPROC GLHANDLE(glCreateProgram);
+#      define glCreateProgram (GLHANDLE(glCreateProgram))
+       GRAPHICS_LIBRARY_EXTERN PFNGLCREATESHADERPROC GLHANDLE(glCreateShader);
+#      define glCreateShader (GLHANDLE(glCreateShader))
+       GRAPHICS_LIBRARY_EXTERN PFNGLDELETEPROGRAMPROC GLHANDLE(glDeleteProgram);
+#      define glDeleteProgram (GLHANDLE(glDeleteProgram))
+       GRAPHICS_LIBRARY_EXTERN PFNGLDELETESHADERPROC GLHANDLE(glDeleteShader);
+#      define glDeleteShader (GLHANDLE(glDeleteShader))
+       GRAPHICS_LIBRARY_EXTERN PFNGLGETSHADERIVPROC  GLHANDLE(glGetShaderiv);
+#      define glGetShaderiv (GLHANDLE(glGetShaderiv))
+       GRAPHICS_LIBRARY_EXTERN PFNGLGETSHADERINFOLOGPROC GLHANDLE(glGetShaderInfoLog);
+#      define glGetShaderInfoLog (GLHANDLE(glGetShaderInfoLog))
+       GRAPHICS_LIBRARY_EXTERN PFNGLGETSHADERSOURCEPROC GLHANDLE(glGetShaderSource);
+#      define glGetShaderSource (GLHANDLE(glGetShaderSource))
+       GRAPHICS_LIBRARY_EXTERN PFNGLGETUNIFORMLOCATIONPROC GLHANDLE(glGetUniformLocation);
+#      define glGetUniformLocation (GLHANDLE(glGetUniformLocation))
+       GRAPHICS_LIBRARY_EXTERN PFNGLISPROGRAMPROC GLHANDLE(glIsProgram);
+#      define glIsProgram (GLHANDLE(glIsProgram))
+       GRAPHICS_LIBRARY_EXTERN PFNGLLINKPROGRAMPROC GLHANDLE(glLinkProgram);
+#      define glLinkProgram (GLHANDLE(glLinkProgram))
+       GRAPHICS_LIBRARY_EXTERN PFNGLSHADERSOURCEPROC GLHANDLE(glShaderSource);
+#      define glShaderSource  (GLHANDLE(glShaderSource))
+       GRAPHICS_LIBRARY_EXTERN PFNGLUSEPROGRAMPROC GLHANDLE(glUseProgram);
+#      define glUseProgram (GLHANDLE(glUseProgram))   
+       GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM4FPROC GLHANDLE(glUniform4f);
+#      define glUniform4f  (GLHANDLE(glUniform4f))
+       GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM1IPROC GLHANDLE(glUniform1i);
+#      define glUniform1i  (GLHANDLE(glUniform1i))
+#    endif /* defined (GL_VERSION_2_0) */
+
 #    if defined (GL_ARB_vertex_program) || defined (GL_ARB_fragment_program)
        GRAPHICS_LIBRARY_EXTERN PFNGLGENPROGRAMSARBPROC GLHANDLE(glGenProgramsARB);
 #      define glGenProgramsARB (GLHANDLE(glGenProgramsARB))
@@ -447,6 +488,8 @@ yet we just don't know.
 #    undef GL_VERSION_1_2
 #    undef GL_VERSION_1_3
 #    undef GL_VERSION_1_4
+#    undef GL_VERSION_1_5
+#    undef GL_VERSION_2_0
 #    undef GL_EXT_texture3D
 #    undef GL_ARB_vertex_program
 #    undef GL_ARB_fragment_program
