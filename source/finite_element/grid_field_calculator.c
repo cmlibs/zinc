@@ -603,7 +603,7 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 ==============================================================================*/
 {
 	char *curve_name,*field_name;
-	FE_value value;
+	double value;
 	int axis, integration_magnitude_coordinates, return_code;
 	struct Computed_field *coordinate_field, *grid_field, *integration_integrand,
 		*integration_coordinate_field;
@@ -642,10 +642,13 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 			value = 1.0;
 			if (!integration_integrand)
 			{
-				integration_integrand = CREATE(Computed_field)("constant_1.0");
-				Computed_field_set_type_constant(integration_integrand,1,&value);
+				integration_integrand = Computed_field_create_constant(1,&value);
+				Computed_field_set_name(integration_integrand, "constant_1.0");
 			}
-			ACCESS(Computed_field)(integration_integrand);
+			else
+			{
+				ACCESS(Computed_field)(integration_integrand);
+			}
 			if (seed_element=TEXT_CHOOSE_FROM_FE_REGION_GET_OBJECT(FE_element)(
 				grid_calc->seed_element_widget))
 			{
@@ -813,7 +816,7 @@ Callback for change of seed_element.
 ==============================================================================*/
 {
 	int integration_magnitude_coordinates;
-	FE_value value;
+	double value;
 	struct Computed_field *coordinate_field,*integration_integrand,
 		*integration_coordinate_field,*temp_field;
 	struct FE_element *seed_element;
@@ -832,17 +835,18 @@ Callback for change of seed_element.
 				Computed_field_get_type_integration(coordinate_field,
 					&seed_element,&integration_integrand,
 					&integration_magnitude_coordinates,&integration_coordinate_field);
+				ACCESS(Computed_field)(integration_integrand);
 			}
 			else
 			{
 				integration_coordinate_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)
 					("xi", Computed_field_package_get_computed_field_manager(
 							grid_calc->computed_field_package));
-				integration_integrand = CREATE(Computed_field)("constant_1.0");
-				Computed_field_set_type_constant(integration_integrand,1,&value);				
+				value = 1.0;
+				integration_integrand = Computed_field_create_constant(1,&value);
+				Computed_field_set_name(integration_integrand,"constant_1.0");
 				integration_magnitude_coordinates = 0;
 			}
-			ACCESS(Computed_field)(integration_integrand);
 			/* this is very inefficient - creates xi mapping twice per element! */
 			if (temp_field=CREATE(Computed_field)("temp"))
 			{
