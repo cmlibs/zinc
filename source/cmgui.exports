@@ -101,10 +101,8 @@ FE_node_selection_get_node_list
 FE_node_selection_add_callback
 FE_node_selection_remove_callback
 
-Cmiss_field_create
 Cmiss_field_access
 Cmiss_field_destroy
-Cmiss_field_set_type
 Cmiss_field_get_number_of_components
 Cmiss_field_evaluate_at_node
 Cmiss_field_evaluate_as_string_at_node
@@ -157,25 +155,11 @@ Cmiss_field_finite_element_define_at_node
 Cmiss_field_evaluate_in_element
 Cmiss_field_get_type_connected_threshold_image_filter
 Cmiss_field_set_type_connected_threshold_image_filter
-Cmiss_field_get_type_sum_components
-Cmiss_field_set_type_sum_components
 Cmiss_field_get_type_threshold_image_filter
 Cmiss_field_set_type_threshold_image_filter
 #if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
 Computed_field_set_type_window_projection
 #endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
-Cmiss_field_set_type_if
-Cmiss_field_set_type_less_than
-Cmiss_field_set_type_greater_than
-Cmiss_field_set_type_sqrt
-Cmiss_field_set_type_power
-Cmiss_field_set_type_log
-Cmiss_field_set_type_exp
-Cmiss_field_set_type_identity
-Cmiss_field_set_type_divide
-Cmiss_field_set_type_multiply
-Cmiss_field_set_type_weighted_add
-Cmiss_field_set_type_subtract
 
 Cmiss_texture_manager_get_texture
 Cmiss_texture_manager_create_texture_from_file
