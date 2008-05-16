@@ -74,6 +74,8 @@ extern "C" {
 
 using namespace CMISS;
 
+PROTOTYPE_ENUMERATOR_FUNCTIONS(General_threshold_filter_mode);
+
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(General_threshold_filter_mode)
 {
 	char *enumerator_string;

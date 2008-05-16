@@ -69,7 +69,7 @@ wrapper for field and add it to the manager.
 	char *command_string, *current_token, *field_component_name, *temp_name;
 	int component_no, i, error, finished, index, number_of_components,
 		number_of_values, return_code;
-	FE_value *values;
+	double *values;
 	struct Computed_field **field_address, *selected_field;
 	struct Set_Computed_field_conditional_data *set_field_data;
 
@@ -104,17 +104,17 @@ wrapper for field and add it to the manager.
 						/* Dont examine the '[' */
 						current_token += 1;
 
-						ALLOCATE(values, FE_value, 1);
+						ALLOCATE(values, double, 1);
 						/* This is a constant array, make a new field not in the manager */
 						finished = 0;
 						while (!finished)
 						{
 							while (current_token &&
-								(1 == sscanf(current_token, "%f%n",
+								(1 == sscanf(current_token, "%lf%n",
 								values + number_of_values, &index)))
 							{
 								number_of_values++;
-								REALLOCATE(values, values, FE_value, number_of_values + 1);
+								REALLOCATE(values, values, double, number_of_values + 1);
 								current_token += index;
 							}
 							if (strchr(current_token,']') ||
@@ -132,7 +132,9 @@ wrapper for field and add it to the manager.
 						selected_field = CREATE(Computed_field)("constants");
 						Computed_field_set_command_string(selected_field, 
 							command_string);
-						Computed_field_set_type_constant(selected_field, number_of_values, values);
+						Computed_field_copy_type_specific_and_deaccess(selected_field, 
+							Computed_field_create_constant(
+							number_of_values, values));
 						DEALLOCATE(values);
 						DEALLOCATE(command_string);
 					}

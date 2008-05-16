@@ -47,6 +47,7 @@ The public interface to the Cmiss_regions.
 #include "general/object.h"
 #include "api/cmiss_node.h"
 #include "api/cmiss_element.h"
+#include "api/cmiss_field.h"
 
 /*
 Global types
@@ -70,13 +71,12 @@ Global functions
 ----------------
 */
 
-Cmiss_region_id CREATE(Cmiss_region_API)(void);
+Cmiss_region_id Cmiss_region_create(void);
 /*******************************************************************************
-LAST MODIFIED : 19 August 2003
+LAST MODIFIED : 21 April 2008
 
 DESCRIPTION :
 Creates a blank Cmiss_region.
-SAB Temporarily mangled from the internal version
 ==============================================================================*/
 
 int Cmiss_region_destroy(Cmiss_region_id *region);
@@ -218,4 +218,33 @@ Ensures:
 - <child_region> is not already in <region>;
 - <child_region> is not the same as or contains <region>;
 ==============================================================================*/
+
+Cmiss_field_id Cmiss_region_add_field(Cmiss_region_id region, 
+	Cmiss_field_id field);
+/*******************************************************************************
+LAST MODIFIED : 21 April 2008
+
+DESCRIPTION :
+Adds <field> to <region>, and as a convenience returns the field id if
+successful.
+==============================================================================*/
+
+Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
+	const char *field_name);
+/*******************************************************************************
+LAST MODIFIED : 21 April 2008
+
+DESCRIPTION :
+Returns the field of <field_name> from the <region> if it is defined.
+==============================================================================*/
+
+int Cmiss_region_is_field_defined(Cmiss_region_id region,
+	const char *field_name);
+/*******************************************************************************
+LAST MODIFIED : 21 April 2008
+
+DESCRIPTION :
+Tests if a field named <field_name> exists in <region>.
+==============================================================================*/
+
 #endif /* __CMISS_REGION_H__ */

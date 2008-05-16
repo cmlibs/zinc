@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_logical_operators.c
 
-LAST MODIFIED : 25 August 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Implements a number of logical operations on computed fields.
@@ -149,11 +149,11 @@ Evaluate the fields cache at the element.
 
 } //namespace
 
-int Computed_field_set_type_or(struct Computed_field *field,
+Computed_field *Computed_field_create_or(
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 25 August 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_XYZ with the supplied
@@ -163,11 +163,11 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
+	int number_of_source_fields;
+	Computed_field *field, **source_fields;
 
-	ENTER(Computed_field_set_type_or);
-	if (field&&
+	ENTER(Computed_field_create_or);
+	if (
 		/* Access and broadcast before checking components match,
 			the source_field_one and source_field_two will get replaced
 			if necessary. */
@@ -178,13 +178,12 @@ although its cache may be lost.
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=2;
 		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
+			/* 2. create new field */
+			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
 			/* 3. establish the new type */
 			field->number_of_components = source_field_one->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field_one);
@@ -196,7 +195,7 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code = 0;
+			field = (Computed_field *)NULL;
 		}
 		DEACCESS(Computed_field)(&source_field_one);
 		DEACCESS(Computed_field)(&source_field_two);
@@ -204,13 +203,13 @@ although its cache may be lost.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_or.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_or.  Invalid argument(s)");
+		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_or */
+	return (field);
+} /* Computed_field_create_or */
 
 int Computed_field_get_type_or(struct Computed_field *field,
 	struct Computed_field **source_field_one,
@@ -305,8 +304,8 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_set_type_or(field,
-						source_fields[0], source_fields[1]);
+					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_or(
+						source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
 				{
@@ -439,11 +438,11 @@ Evaluate the fields cache at the element.
 
 } //namespace
 
-int Computed_field_set_type_and(struct Computed_field *field,
+Computed_field *Computed_field_create_and(
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 25 August 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_AND with the supplied
@@ -453,11 +452,11 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
+	int number_of_source_fields;
+	Computed_field *field, **source_fields;
 
-	ENTER(Computed_field_set_type_and);
-	if (field&&
+	ENTER(Computed_field_create_and);
+	if (
 		/* Access and broadcast before checking components match,
 			the source_field_one and source_field_two will get replaced
 			if necessary. */
@@ -468,13 +467,12 @@ although its cache may be lost.
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=2;
 		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
+			/* 2. create new field */
+			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
 			/* 3. establish the new type */
 			field->number_of_components = source_field_one->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field_one);
@@ -486,7 +484,7 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code = 0;
+			field = (Computed_field *)NULL;
 		}
 		DEACCESS(Computed_field)(&source_field_one);
 		DEACCESS(Computed_field)(&source_field_two);
@@ -494,13 +492,13 @@ although its cache may be lost.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_and.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_and.  Invalid argument(s)");
+		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_and */
+	return (field);
+} /* Computed_field_create_and */
 
 int Computed_field_get_type_and(struct Computed_field *field,
 	struct Computed_field **source_field_one,
@@ -595,8 +593,8 @@ already) and allows its contents to be modified.
 				/* no errands,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_set_type_and(field,
-						source_fields[0], source_fields[1]);
+					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_and(
+						source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
 				{
@@ -734,11 +732,11 @@ Evaluate the fields cache at the element.
 
 } //namespace
 
-int Computed_field_set_type_xor(struct Computed_field *field,
+Computed_field *Computed_field_create_xor(
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 25 August 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_XOR with the supplied
@@ -748,11 +746,11 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
+	int number_of_source_fields;
+	Computed_field *field, **source_fields;
 
-	ENTER(Computed_field_set_type_xor);
-	if (field&&
+	ENTER(Computed_field_create_xor);
+	if (
 		/* Access and broadcast before checking components match,
 			the source_field_one and source_field_two will get replaced
 			if necessary. */
@@ -763,13 +761,12 @@ although its cache may be lost.
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=2;
 		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
+			/* 2. create new field */
+			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
 			/* 3. establish the new type */
 			field->number_of_components = source_field_one->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field_one);
@@ -781,7 +778,7 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code = 0;
+			field = (Computed_field *)NULL;
 		}
 		DEACCESS(Computed_field)(&source_field_one);
 		DEACCESS(Computed_field)(&source_field_two);
@@ -789,13 +786,13 @@ although its cache may be lost.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_xor.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_xor.  Invalid argument(s)");
+		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_xor */
+	return (field);
+} /* Computed_field_create_xor */
 
 int Computed_field_get_type_xor(struct Computed_field *field,
 	struct Computed_field **source_field_one,
@@ -890,8 +887,8 @@ already) and allows its contents to be modified.
 				/* no errxors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_set_type_xor(field,
-						source_fields[0], source_fields[1]);
+					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_xor(
+						source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
 				{
@@ -1054,11 +1051,11 @@ Evaluate the fields cache at the element.
 
 } //namespace
 
-int Computed_field_set_type_equal_to(struct Computed_field *field,
+Computed_field *Computed_field_create_equal_to(
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 25 August 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_EQUAL_TO with the supplied
@@ -1068,11 +1065,11 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
+	int number_of_source_fields;
+	Computed_field *field, **source_fields;
 
-	ENTER(Computed_field_set_type_equal_to);
-	if (field&&
+	ENTER(Computed_field_create_equal_to);
+	if (
 		/* Access and broadcast before checking components match,
 			the source_field_one and source_field_two will get replaced
 			if necessary. */
@@ -1083,13 +1080,12 @@ although its cache may be lost.
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=2;
 		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
+			/* 2. create new field */
+			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
 			/* 3. establish the new type */
 			field->number_of_components = source_field_one->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field_one);
@@ -1101,7 +1097,7 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code = 0;
+			field = (Computed_field *)NULL;
 		}
 		DEACCESS(Computed_field)(&source_field_one);
 		DEACCESS(Computed_field)(&source_field_two);
@@ -1109,13 +1105,13 @@ although its cache may be lost.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_equal_to.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_equal_to.  Invalid argument(s)");
+		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_equal_to */
+	return (field);
+} /* Computed_field_create_equal_to */
 
 int Computed_field_get_type_equal_to(struct Computed_field *field,
 	struct Computed_field **source_field_one,
@@ -1211,8 +1207,8 @@ already) and allows its contents to be modified.
 				/* no errequal_tos,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_set_type_equal_to(field,
-						source_fields[0], source_fields[1]);
+					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_equal_to(
+						source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
 				{
@@ -1345,11 +1341,11 @@ Evaluate the fields cache at the element.
 
 } //namespace
 
-int Computed_field_set_type_less_than(struct Computed_field *field,
+Computed_field *Computed_field_create_less_than(
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 25 August 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_LESS_THAN with the supplied
@@ -1359,11 +1355,11 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
+	int number_of_source_fields;
+	Computed_field *field, **source_fields;
 
-	ENTER(Computed_field_set_type_less_than);
-	if (field&&
+	ENTER(Computed_field_create_less_than);
+	if (
 		/* Access and broadcast before checking components match,
 			the source_field_one and source_field_two will get replaced
 			if necessary. */
@@ -1374,13 +1370,12 @@ although its cache may be lost.
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=2;
 		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
+			/* 2. create new field */
+			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
 			/* 3. establish the new type */
 			field->number_of_components = source_field_one->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field_one);
@@ -1392,7 +1387,7 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code = 0;
+			field = (Computed_field *)NULL;
 		}
 		DEACCESS(Computed_field)(&source_field_one);
 		DEACCESS(Computed_field)(&source_field_two);
@@ -1400,13 +1395,13 @@ although its cache may be lost.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_less_than.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_less_than.  Invalid argument(s)");
+		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_less_than */
+	return (field);
+} /* Computed_field_create_less_than */
 
 int Computed_field_get_type_less_than(struct Computed_field *field,
 	struct Computed_field **source_field_one,
@@ -1501,8 +1496,8 @@ already) and allows its contents to be modified.
 				/* no errless_thans,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_set_type_less_than(field,
-						source_fields[0], source_fields[1]);
+					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_less_than(
+						source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
 				{
@@ -1635,11 +1630,11 @@ Evaluate the fields cache at the element.
 
 } //namespace
 
-int Computed_field_set_type_greater_than(struct Computed_field *field,
+Computed_field *Computed_field_create_greater_than(
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 25 August 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_GREATER_THAN with the supplied
@@ -1649,11 +1644,11 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
+	int number_of_source_fields;
+	Computed_field *field, **source_fields;
 
-	ENTER(Computed_field_set_type_greater_than);
-	if (field&&
+	ENTER(Computed_field_create_greater_than);
+	if (
 		/* Access and broadcast before checking components match,
 			the source_field_one and source_field_two will get replaced
 			if necessary. */
@@ -1664,13 +1659,12 @@ although its cache may be lost.
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=2;
 		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
+			/* 2. create new field */
+			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
 			/* 3. establish the new type */
 			field->number_of_components = source_field_one->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field_one);
@@ -1682,7 +1676,7 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code = 0;
+			field = (Computed_field *)NULL;
 		}
 		DEACCESS(Computed_field)(&source_field_one);
 		DEACCESS(Computed_field)(&source_field_two);
@@ -1690,13 +1684,13 @@ although its cache may be lost.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_greater_than.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_greater_than.  Invalid argument(s)");
+		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_greater_than */
+	return (field);
+} /* Computed_field_create_greater_than */
 
 int Computed_field_get_type_greater_than(struct Computed_field *field,
 	struct Computed_field **source_field_one,
@@ -1791,8 +1785,8 @@ already) and allows its contents to be modified.
 				/* no errgreater_thans,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_set_type_greater_than(field,
-						source_fields[0], source_fields[1]);
+					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_greater_than(
+						source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
 				{
@@ -1936,29 +1930,28 @@ Evaluate the fields cache at the element.
 
 } //namespace
 
-int Computed_field_set_type_is_defined(struct Computed_field *field,
+Computed_field *Computed_field_create_is_defined(
 	struct Computed_field *source_field)
 /*******************************************************************************
-LAST MODIFIED : 25 August 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_IS_DEFINED with the supplied
 field, <source_field> .  Number of components is one.
 ==============================================================================*/
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
+	int number_of_source_fields;
+	Computed_field *field, **source_fields;
 
-	ENTER(Computed_field_set_type_is_defined);
-	if (field&&source_field)
+	ENTER(Computed_field_create_is_defined);
+	if (source_field)
 	{
-		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=1;
 		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
+			/* 2. create new field */
+			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
 			/* 3. establish the new type */
 			field->number_of_components = 1;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
@@ -1969,19 +1962,19 @@ field, <source_field> .  Number of components is one.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code = 0;
+			field = (Computed_field *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_is_defined.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_is_defined.  Invalid argument(s)");
+		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_is_defined */
+	return (field);
+} /* Computed_field_create_is_defined */
 
 int Computed_field_get_type_is_defined(struct Computed_field *field,
 	struct Computed_field **source_field)
@@ -2062,8 +2055,8 @@ already) and allows its contents to be modified.
 			/* no erris_defineds,not asking for help */
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_is_defined(field,
-					source_field);
+				return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_is_defined(
+					source_field));
 			}
 			if (!return_code)
 			{

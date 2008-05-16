@@ -283,3 +283,12 @@ Cmiss_region_find_field_by_name(Cmiss::Region region, char *name)
 int
 Cmiss_region_is_field_defined(Cmiss::Region region, char *name)
 
+Cmiss::Field
+Cmiss_region_add_field(Cmiss::Region region, Cmiss::Field field)
+   POSTCALL:
+	if (RETVAL)
+		/* Add the reference as Cmiss_region_add_field does not */
+		Cmiss_field_access(RETVAL);
+   else
+		XSRETURN_UNDEF;
+

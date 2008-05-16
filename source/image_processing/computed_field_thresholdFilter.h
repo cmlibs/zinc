@@ -64,8 +64,6 @@ DESCRIPTION :
 	OUTSIDE
 }; /* enum General_threshold_filter_mode */
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(General_threshold_filter_mode);
-
 int Computed_field_register_types_threshold_image_filter(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************

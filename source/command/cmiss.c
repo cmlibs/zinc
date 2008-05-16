@@ -70,7 +70,7 @@ Functions for executing cmiss commands.
 #include "command/example_path.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
-#include "computed_field/computed_field_component_operations.h"
+#include "computed_field/computed_field_arithmetic_operators.h"
 #include "computed_field/computed_field_compose.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_conditional.h"
@@ -24876,7 +24876,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		{
 			Computed_field_register_types_coordinate(
 				command_data->computed_field_package);
-			Computed_field_register_types_component_operations(
+			Computed_field_register_types_arithmetic_operators(
 				command_data->computed_field_package);
 			Computed_field_register_types_trigonometry(
 				command_data->computed_field_package);

@@ -102,6 +102,7 @@ FE_node_selection_add_callback
 FE_node_selection_remove_callback
 
 Cmiss_field_create
+Cmiss_field_access
 Cmiss_field_destroy
 Cmiss_field_set_type
 Cmiss_field_get_number_of_components
@@ -112,7 +113,28 @@ Cmiss_field_evaluate_at_field_coordinates
 Cmiss_field_set_name
 Cmiss_field_get_name
 
-Cmiss_field_constructor_create_add
+/* api/cmiss_field_arithmetic_operators.h */
+Cmiss_field_create_power
+Cmiss_field_create_multiply
+Cmiss_field_create_divide
+Cmiss_field_create_weighted_add
+Cmiss_field_create_add
+Cmiss_field_create_subtract
+Cmiss_field_create_sum_components
+Cmiss_field_create_log
+Cmiss_field_create_sqrt
+Cmiss_field_create_exp
+
+/* api/cmiss_field_composite.h */
+Cmiss_field_create_constant
+Cmiss_field_create_identity
+
+/* api/cmiss_field_conditional.h */
+Cmiss_field_create_if
+
+/* api/cmiss_field_logical_operators.h */
+Cmiss_field_create_less_than
+Cmiss_field_create_greater_than
 
 Cmiss_field_set_type_binary_threshold_image_filter
 Cmiss_field_get_type_binary_threshold_image_filter
@@ -154,7 +176,6 @@ Cmiss_field_set_type_divide
 Cmiss_field_set_type_multiply
 Cmiss_field_set_type_weighted_add
 Cmiss_field_set_type_subtract
-Cmiss_field_set_type_constant
 
 Cmiss_texture_manager_get_texture
 Cmiss_texture_manager_create_texture_from_file
@@ -186,6 +207,7 @@ Cmiss_region_get_node
 Cmiss_region_get_element
 Cmiss_region_is_field_defined
 Cmiss_region_find_field_by_name
+Cmiss_region_add_field
 
 get_name_FE_field
 get_FE_field_number_of_components

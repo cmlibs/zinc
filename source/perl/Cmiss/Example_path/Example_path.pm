@@ -18,6 +18,7 @@ our @ISA = qw(Exporter);
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
 	$example
+	$TESTING
 ) ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
@@ -34,6 +35,7 @@ our $VERSION = '0.01';
 
 use Cmiss::Cmgui_command_data;
 our $example = $cmiss::example;
+our $TESTING = $cmiss::TESTING;
 
 1;
 __END__

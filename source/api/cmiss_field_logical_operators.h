@@ -1,10 +1,10 @@
 /*******************************************************************************
-FILE : computed_field_conditional.h
+FILE : cmiss_field_logical_operators.h
 
-LAST MODIFIED : 27 July 2007
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
-Implements computed fields which conditionally calculate their inputs.
+The public interface to the Cmiss_fields that perform arithmetic operations.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -23,10 +23,11 @@ Implements computed fields which conditionally calculate their inputs.
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2008
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
+ * Shane Blackett (shane at blackett.co.nz)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -41,37 +42,33 @@ Implements computed fields which conditionally calculate their inputs.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_CONDITIONAL_H)
-#define COMPUTED_FIELD_CONDITIONAL_H
+#ifndef __CMISS_FIELD_LOGICAL_OPERATORS_H__
+#define __CMISS_FIELD_LOGICAL_OPERATORS_H__
 
-#include "general/value.h"
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_conditional.h"
-
-#define Computed_field_create_if Cmiss_field_create_if
-
-struct Computed_field *Computed_field_create_if(
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two,
-	struct Computed_field *source_field_three);
+Cmiss_field_id Cmiss_field_create_less_than(
+	Cmiss_field_id source_field_one,
+	Cmiss_field_id source_field_two);
 /*******************************************************************************
 LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_IF with the supplied
-fields, <source_field_one>, <source_field_two> and <source_field_three>.
-Sets the number of components equal to the source_fields.
-For each component, if the value of source_field_one is TRUE (non-zero) then
-the result will be the value of source_field_two, otherwise the result will
-be source_field_three.
+Converts <field> to type COMPUTED_FIELD_LESS_THAN with the supplied
+field, <source_field> .  Sets the number of 
+components equal to the source_fields.
+Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
 
-int Computed_field_register_types_conditional(
-	struct Computed_field_package *computed_field_package);
+Cmiss_field_id Cmiss_field_create_greater_than(
+	Cmiss_field_id source_field_one,
+	Cmiss_field_id source_field_two);
 /*******************************************************************************
-LAST MODIFIED : 27 July 2007
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_GREATER_THAN with the supplied
+field, <source_field> .  Sets the number of 
+components equal to the source_fields.
+Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
 
-#endif /* !defined (COMPUTED_FIELD_CONDITIONAL_H) */
+#endif /* __CMISS_FIELD_LOGICAL_OPERATORS_H__ */

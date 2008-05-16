@@ -28,28 +28,6 @@ our @EXPORT = qw(
 
 our $VERSION = '0.01';
 
-sub AUTOLOAD {
-    # This AUTOLOAD is used to 'autoload' constants from the constant()
-    # XS function.
-
-    my $constname;
-    our $AUTOLOAD;
-    ($constname = $AUTOLOAD) =~ s/.*:://;
-    croak "&Cmiss::Field::constant not defined" if $constname eq 'constant';
-    my ($error, $val) = constant($constname);
-    if ($error) { croak $error; }
-    {
-	no strict 'refs';
-	# Fixed between 5.005_53 and 5.005_61
-#XXX	if ($] >= 5.00561) {
-#XXX	    *$AUTOLOAD = sub () { $val };
-#XXX	}
-#XXX	else {
-	    *$AUTOLOAD = sub { $val };
-#XXX	}
-    }
-    goto &$AUTOLOAD;
-}
 
 use Cmiss;
 use Cmiss::Cmgui_command_data;
@@ -57,52 +35,198 @@ Cmiss::require_library('cmgui_finite_element');
 
 package Cmiss::Field;
 
-sub new
+sub wrap_numbers_in_field
 {
-	my ($class, $region, $type) = @_;
-	my $objref;
+  my ($field) = @_;
 
-	$objref=create($region, $type);
-	if ($objref)
-	{
-		bless $objref,$class;
-	}
-	else
-	{
-		croak "Could not create $class";
-	}
+  if ($field =~ m/^([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?$/)
+  {
+	 my $region =   $Cmiss::Cmgui_command_data->get_root_region();
+	 $field = $region->add_field(
+			Cmiss::Field::create_constant([$field]));
+  }
+  elsif ("ARRAY" eq ref $field)
+  {
+	 my $region =   $Cmiss::Cmgui_command_data->get_root_region();
+	 $field = $region->add_field(
+			Cmiss::Field::create_constant($field));
+  }
+
+  if ("Cmiss::Field" ne ref $field)
+  {
+	 croak "Can't create Cmiss::Field from $field";
+  }
+
+  return $field;
+}
+
+sub constant
+{
+  my ($values) = @_;
+
+  my $field = wrap_numbers_in_field($values);
+
+  return($field);
 }
 
 sub add
 {
-  my ($self, $addand) = @_;
+  my ($source_one, $source_two) = @_;
 
-  print("Cmiss::Field::add " . (ref $self) . " + " . (ref $addand) . "\n");
+  $source_one = wrap_numbers_in_field($source_one);
+  $source_two = wrap_numbers_in_field($source_two);
 
-  if (ref $addand)
+  #Should get the region from the $source_one field instead I think.
+  my $region = $Cmiss::Cmgui_command_data->get_root_region();
+  return ($region->add_field(
+	  Cmiss::Field::create_add($source_one, $source_two)));
+}
+
+sub subtract
+{
+  my ($source_one, $source_two, $swap) = @_;
+
+  #If $swap is undef then this will be false so works for two parameters.
+  if ($swap)
   {
-	 if (UNIVERSAL::isa($addand, ref $self))
-	 {
-		print("Command data " . $Cmiss::Cmgui_command_data . "\n");
+	 ($source_one, $source_two) = ($source_two, $source_one);
+  }
+  $source_one = wrap_numbers_in_field($source_one);
+  $source_two = wrap_numbers_in_field($source_two);
 
-		#Should get the region from the $self field instead I think.
-		return (new Cmiss::Field(
-			$Cmiss::Cmgui_command_data->get_root_region(),
-			Cmiss::Field::type_create_add($self, $addand)));
-	 }
-	 else
-	 {
-      croak "Can't add a ", ref $addand, " to a ", ref $self;
-    }
-  }
-  else
+  #Should get the region from the $source_one field instead I think.
+  my $region = $Cmiss::Cmgui_command_data->get_root_region();
+  return ($region->add_field(
+	  Cmiss::Field::create_subtract($source_one, $source_two)));
+}
+
+sub multiply
+{
+  my ($source_one, $source_two) = @_;
+
+  $source_one = wrap_numbers_in_field($source_one);
+  $source_two = wrap_numbers_in_field($source_two);
+
+  #Should get the region from the $source_one field instead I think.
+  my $region =   $Cmiss::Cmgui_command_data->get_root_region();
+  return ($region->add_field(
+	  Cmiss::Field::create_multiply($source_one, $source_two)));
+}
+
+sub divide
+{
+  my ($source_one, $source_two, $swap) = @_;
+
+  #If $swap is undef then this will be false so works for two parameters.
+  if ($swap)
   {
-	 croak "Can't add $addand to ", ref $self;
+	 ($source_one, $source_two) = ($source_two, $source_one);
   }
+  $source_one = wrap_numbers_in_field($source_one);
+  $source_two = wrap_numbers_in_field($source_two);
+
+  #Should get the region from the $source_one field instead I think.
+  my $region = $Cmiss::Cmgui_command_data->get_root_region();
+  return ($region->add_field(
+	 Cmiss::Field::create_divide($source_one, $source_two)));
+}
+
+sub less_than
+{
+  my ($source_one, $source_two, $swap) = @_;
+
+  #If $swap is undef then this will be false so works for two parameters.
+  if ($swap)
+  {
+	 ($source_one, $source_two) = ($source_two, $source_one);
+  }
+  $source_one = wrap_numbers_in_field($source_one);
+  $source_two = wrap_numbers_in_field($source_two);
+
+  #Should get the region from the $source_one field instead I think.
+  my $region = $Cmiss::Cmgui_command_data->get_root_region();
+  return ($region->add_field(
+	 Cmiss::Field::create_less_than($source_one, $source_two)));
+}
+
+sub greater_than
+{
+  my ($source_one, $source_two, $swap) = @_;
+
+  #If $swap is undef then this will be false so works for two parameters.
+  if ($swap)
+  {
+	 ($source_one, $source_two) = ($source_two, $source_one);
+  }
+  $source_one = wrap_numbers_in_field($source_one);
+  $source_two = wrap_numbers_in_field($source_two);
+
+  #Should get the region from the $source_one field instead I think.
+  my $region = $Cmiss::Cmgui_command_data->get_root_region();
+  return ($region->add_field(
+	 Cmiss::Field::create_greater_than($source_one, $source_two)));
+}
+
+sub sqrt
+{
+  my ($source) = @_;
+
+  $source = wrap_numbers_in_field($source);
+
+  #Should get the region from the $source_one field instead I think.
+  my $region = $Cmiss::Cmgui_command_data->get_root_region();
+  return ($region->add_field(
+	  Cmiss::Field::create_sqrt($source)));
+}
+
+sub log
+{
+  my ($source) = @_;
+
+  $source = wrap_numbers_in_field($source);
+
+  #Should get the region from the $source_one field instead I think.
+  my $region = $Cmiss::Cmgui_command_data->get_root_region();
+  return ($region->add_field(
+	  Cmiss::Field::create_log($source)));
+}
+
+sub exp
+{
+  my ($source) = @_;
+
+  $source = wrap_numbers_in_field($source);
+
+  #Should get the region from the $source_one field instead I think.
+  my $region = $Cmiss::Cmgui_command_data->get_root_region();
+  return ($region->add_field(
+	  Cmiss::Field::create_exp($source)));
+}
+
+sub if
+{
+  my ($source_one, $source_two, $source_three) = @_;
+
+  $source_one = wrap_numbers_in_field($source_one);
+  $source_two = wrap_numbers_in_field($source_two);
+  $source_three = wrap_numbers_in_field($source_three);
+
+  #Should get the region from the $source_one field instead I think.
+  my $region = $Cmiss::Cmgui_command_data->get_root_region();
+  return ($region->add_field(
+	 Cmiss::Field::create_if($source_one, $source_two, $source_three)));
 }
 
 use overload
   '+' => 'add',
+  '-' => 'subtract',
+  '*' => 'multiply',
+  '/' => 'divide',
+  '<' => 'less_than',
+  '>' => 'greater_than',
+  'sqrt' => 'sqrt',
+  'log' => 'log',
+  'exp' => 'exp',
   fallback => 1;
 
 require XSLoader;

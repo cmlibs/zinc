@@ -1789,25 +1789,35 @@ Should only be declared with manager functions. \
 				ALLOCATE(identifier_change_data->lists_containing_object, \
 					struct LIST(object_type) *, NUMBER_OF_DEFINED_LISTS(object_type))) \
 			{ \
-				identifier_change_data->object = ACCESS(object_type)(object); \
-				j = 0; \
-				for (i = 0; i < NUMBER_OF_DEFINED_LISTS(object_type); i++) \
-				{ \
-					/* note must also compare pointer as different object with same \
-						 identifier may be returned by */ \
-					if ((object_in_list = \
-						FIND_BY_IDENTIFIER_IN_LIST(object_type,identifier)( \
-						object->identifier, DEFINED_LISTS(object_type)[i])) && \
-						(object_in_list == object)) \
-					{ \
-						identifier_change_data->lists_containing_object[j] = \
-							DEFINED_LISTS(object_type)[i]; \
-						REMOVE_OBJECT_FROM_LIST(object_type)(object, \
-							DEFINED_LISTS(object_type)[i]); \
-						j++; \
-					} \
+            /* If the access_count is zero then there is nothing to do \
+               and accessing and deaccessing would destroy the object so \
+               we avoid this */ \
+            if (0 < object->access_count) \
+            { \
+				   identifier_change_data->object = ACCESS(object_type)(object); \
+				   j = 0; \
+				   for (i = 0; i < NUMBER_OF_DEFINED_LISTS(object_type); i++) \
+				   { \
+					   /* note must also compare pointer as different object with same \
+						   identifier may be returned by */ \
+					   if ((object_in_list = \
+						   FIND_BY_IDENTIFIER_IN_LIST(object_type,identifier)( \
+						   object->identifier, DEFINED_LISTS(object_type)[i])) && \
+						   (object_in_list == object)) \
+					   { \
+					   	identifier_change_data->lists_containing_object[j] = \
+					   		DEFINED_LISTS(object_type)[i]; \
+					   	REMOVE_OBJECT_FROM_LIST(object_type)(object, \
+					   		DEFINED_LISTS(object_type)[i]); \
+					   	j++; \
+					   } \
+				   } \
+				   identifier_change_data->number_of_lists_containing_object = j; \
 				} \
-				identifier_change_data->number_of_lists_containing_object = j; \
+				else \
+				{ \
+					identifier_change_data->object = (struct object_type *)NULL; \
+				} \
 			} \
 			else \
 			{ \
@@ -1880,28 +1890,32 @@ Should only be declared with manager functions. \
 \
 	ENTER(LIST_END_IDENTIFIER_CHANGE(object_type,identifier)); \
 	if (identifier_change_data_address && \
-		(identifier_change_data = *identifier_change_data_address) && \
-		(object = identifier_change_data->object)) \
+		(identifier_change_data = *identifier_change_data_address)) \
 	{ \
 		if (0 == ITERATION_COUNT(object_type)) \
 		{ \
 			return_code = 1; \
-			for (i = 0; \
-				i < identifier_change_data->number_of_lists_containing_object; i++) \
+			if (object = identifier_change_data->object) \
 			{ \
-				if (!ADD_OBJECT_TO_LIST(object_type)(object, \
-					identifier_change_data->lists_containing_object[i])) \
+				for (i = 0; \
+				   i < identifier_change_data->number_of_lists_containing_object; i++) \
 				{ \
-					return_code = 0; \
-				} \
+				   if (!ADD_OBJECT_TO_LIST(object_type)(object, \
+					   identifier_change_data->lists_containing_object[i])) \
+				   { \
+					   return_code = 0; \
+				   } \
+			   } \
+			   if (!return_code) \
+			   { \
+				   display_message(ERROR_MESSAGE, \
+					   "LIST_END_IDENTIFIER_CHANGE(" #object_type "," #identifier \
+					   ").  Failed: object may be missing from lists"); \
+				   DEALLOCATE(identifier_change_data); \
+			   } \
+				DEACCESS(object_type)(&(identifier_change_data->object)); \
 			} \
-			if (!return_code) \
-			{ \
-				display_message(ERROR_MESSAGE, \
-					"LIST_END_IDENTIFIER_CHANGE(" #object_type "," #identifier \
-					").  Failed: object may be missing from lists"); \
-				DEALLOCATE(identifier_change_data); \
-			} \
+			/* else nothing to do */ \
 		} \
 		else \
 		{ \
@@ -1910,7 +1924,6 @@ Should only be declared with manager functions. \
 				").  Not allowed during list iteration"); \
 			return_code = 0; \
 		} \
-		DEACCESS(object_type)(&(identifier_change_data->object)); \
 		DEALLOCATE(identifier_change_data->lists_containing_object); \
 		DEALLOCATE(*identifier_change_data_address); \
 		*identifier_change_data_address = (struct \

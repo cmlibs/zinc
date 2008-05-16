@@ -4,15 +4,16 @@
 
 #include <stdio.h>
 #include "api/cmiss_field.h"
+#include "api/cmiss_field_arithmetic_operators.h"
+#include "api/cmiss_field_composite.h"
+#include "api/cmiss_field_conditional.h"
+#include "api/cmiss_field_logical_operators.h"
 #include "general/io_stream.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Field		PACKAGE = Cmiss::Field		PREFIX = Cmiss_field_
 
 PROTOTYPES: DISABLE
-
-Cmiss::Field
-Cmiss_field_create(Cmiss::Region region, Cmiss::Field_constructor type)
 
 int
 DESTROY(Cmiss::Field field)
@@ -61,11 +62,70 @@ int
 Cmiss_field_set_name(IN Cmiss::Field field, \
 	char *name)
 
-int
-Cmiss_field_set_type(Cmiss::Field field, \
-   Cmiss::Field_constructor field_type)
-
-Cmiss::Field_constructor
-Cmiss_field_type_create_add( \
+Cmiss::Field
+Cmiss_field_create_multiply( \
    Cmiss::Field source_field_one, Cmiss::Field source_field_two)
+
+Cmiss::Field
+Cmiss_field_create_add( \
+   Cmiss::Field source_field_one, Cmiss::Field source_field_two)
+
+Cmiss::Field
+Cmiss_field_create_subtract( \
+   Cmiss::Field source_field_one, Cmiss::Field source_field_two)
+
+Cmiss::Field
+Cmiss_field_create_divide( \
+   Cmiss::Field source_field_one, Cmiss::Field source_field_two)
+
+Cmiss::Field
+Cmiss_field_create_sqrt(Cmiss::Field source_field)
+
+Cmiss::Field
+Cmiss_field_create_log(Cmiss::Field source_field)
+
+Cmiss::Field
+Cmiss_field_create_exp(Cmiss::Field source_field)
+
+Cmiss::Field
+Cmiss_field_create_less_than( \
+   Cmiss::Field source_field_one, Cmiss::Field source_field_two)
+
+Cmiss::Field
+Cmiss_field_create_greater_than( \
+   Cmiss::Field source_field_one, Cmiss::Field source_field_two)
+
+Cmiss::Field
+Cmiss_field_create_if( \
+   Cmiss::Field source_field_one, Cmiss::Field source_field_two, \
+	Cmiss::Field source_field_three)
+
+Cmiss::Field
+Cmiss_field_create_constant(AV *values_array)
+	CODE:
+	{
+		double *value, *values;
+		int j, number_of_values;
+
+		RETVAL = (struct Cmiss_field *)NULL;
+		number_of_values = 1 + av_len(values_array);
+		if (values=(double *)malloc(number_of_values*sizeof(double)))
+		{
+			value=values;
+			for (j=0;j<number_of_values;j++)
+			{
+				*value=(double)SvNV(AvARRAY(values_array)[j]);
+				value++;
+			}
+			RETVAL = Cmiss_field_create_constant(number_of_values,
+				values);
+			free(values);
+		}
+		if (!RETVAL)
+		{
+			XSRETURN_UNDEF;
+		}
+	}
+	OUTPUT:
+		RETVAL
 

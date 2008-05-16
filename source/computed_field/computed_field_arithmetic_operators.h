@@ -1,10 +1,10 @@
 /*******************************************************************************
-FILE : computed_field_arithmetic_operations.h
+FILE : computed_field_arithmetic_operators.h
 
 LAST MODIFIED : 13 July 2000
 
 DESCRIPTION :
-Implements a number of basic component wise operations on computed fields.
+Implements a number of basic component wise operators on computed fields.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -41,12 +41,12 @@ Implements a number of basic component wise operations on computed fields.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_ARITHMETIC_OPERATIONS_H)
-#define COMPUTED_FIELD_ARITHMETIC_OPERATIONS_H
+#if !defined (COMPUTED_FIELD_ARITHMETIC_OPERATORS_H)
+#define COMPUTED_FIELD_ARITHMETIC_OPERATORS_H
 
 #include "general/value.h"
 #include "api/cmiss_field.h"
-#include "api/cmiss_field_arithmetic_operations.h"
+#include "api/cmiss_field_arithmetic_operators.h"
 
 /* API functions are prefixed with Cmiss */
 #define Computed_field_create_sum_components Cmiss_field_create_sum_components
@@ -60,7 +60,7 @@ Implements a number of basic component wise operations on computed fields.
 #define Computed_field_create_power Cmiss_field_create_power
 #define Computed_field_create_sqrt Cmiss_field_create_sqrt
 
-int Computed_field_register_types_arithmetic_operations(
+int Computed_field_register_types_arithmetic_operators(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
 LAST MODIFIED : 13 July 2000
@@ -188,4 +188,4 @@ DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_EXP with the supplied
 field, <source_field_one>.  Sets the number of components equal to the source_fields.
 ==============================================================================*/
-#endif /* !defined (COMPUTED_FIELD_ARITHMETIC_OPERATIONS_H) */
+#endif /* !defined (COMPUTED_FIELD_ARITHMETIC_OPERATORS_H) */

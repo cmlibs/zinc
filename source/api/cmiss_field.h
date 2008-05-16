@@ -5,10 +5,6 @@ LAST MODIFIED : 8 May 2008
 
 DESCRIPTION :
 The public interface to the Cmiss fields.
-
-Preferable to base new projects on the cmiss_function.h and 
-cmiss_function_finite_element.h interface as this functionality should replace
-computed fields.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -31,6 +27,7 @@ computed fields.
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
+ * Shane Blackett (shane at blackett.co.nz)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -52,6 +49,18 @@ computed fields.
 #include "api/cmiss_element.h"
 #include "general/object.h"
 #include "general/value.h"
+
+/*******************************************************************************
+ Automatic scalar broadcast
+
+For Field_constructor_create functions which specify that they apply
+automatic scalar broadcast for their source fields arguments,
+if the one of the source fields has multiple components and the
+other is a scalar, then the scalar will be automatically replicated so that
+it matches the number of components in the multiple component field.
+For example the result of
+ADD(CONSTANT([1 2 3 4], CONSTANT([10]) is [11 12 13 14].
+==============================================================================*/
 
 /*
 Global types
@@ -81,17 +90,6 @@ LAST MODIFIED : 31 March 2004
 DESCRIPTION :
 ==============================================================================*/
 
-/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
-#define Cmiss_field_constructor Computed_field_constructor
-
-struct Cmiss_field_constructor;
-typedef struct Cmiss_field_constructor *Cmiss_field_constructor_id;
-/*******************************************************************************
-LAST MODIFIED : 9 May 2008
-
-DESCRIPTION :
-==============================================================================*/
-
 /* Forward declared types */
 /* SAB Temporary until we decide how to fix things up internally instead of externally.*/
 #define Cmiss_time_sequence FE_time_sequence
@@ -100,43 +98,6 @@ struct Cmiss_time_sequence;
 struct Cmiss_node_field_creator;
 
 /* Global Functions */
-
-Cmiss_field_id Cmiss_field_create(Cmiss_region_id region,
-	Cmiss_field_constructor_id field_type);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2008
-
-DESCRIPTION :
-Creates a new field in <region> of type <field_type>.
-==============================================================================*/
-
-int Cmiss_field_set_type(Cmiss_field_id field,
-	Cmiss_field_constructor_id field_type);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2008
-
-DESCRIPTION :
-If possible, replaces the the type and parameters of <field> with those
-of <field_type>.
-==============================================================================*/
-
-Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
-	const char *field_name);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2008
-
-DESCRIPTION :
-Returns the field of <field_name> from the <region> if it is defined.
-==============================================================================*/
-
-int Cmiss_region_is_field_defined(Cmiss_region_id region,
-	const char *field_name);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2008
-
-DESCRIPTION :
-Tests if a field named <field_name> exists in <region>.
-==============================================================================*/
 
 int Cmiss_field_get_number_of_components(Cmiss_field_id field);
 /*******************************************************************************
@@ -152,6 +113,17 @@ LAST MODIFIED : 22 April 2008
 DESCRIPTION :
 Destroys this reference to the field (and sets it to NULL).
 Internally this just decrements the reference count.
+==============================================================================*/
+
+int Cmiss_field_access(Cmiss_field_id field);
+/*******************************************************************************
+LAST MODIFIED : 15 May 2008
+
+DESCRIPTION :
+Increments the reference count.  Added to the API so that automatic pointer
+handling routines can add references to C functions that don't already
+add references to returned pointers, such as Cmiss_region_add_field.
+See http://www.cmiss.org/cmgui/tracker/657
 ==============================================================================*/
 
 int Cmiss_field_evaluate_at_node(struct Cmiss_field *field,
@@ -622,28 +594,6 @@ If the field is of type FIELD_THRESHOLDFILTER, the source_field and threshold_im
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
-int Cmiss_field_set_type_constant(Cmiss_field_id field,
-	int number_of_values, FE_value *values);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2008
-
-DESCRIPTION :
-Changes <field> into type composite with <number_of_values> values listed in
-the <values> array.
-==============================================================================*/
-
-Cmiss_field_constructor_id Cmiss_field_constructor_create_add(
-	Cmiss_field_id source_field_one,
-	Cmiss_field_id source_field_two);
-/*******************************************************************************
-LAST MODIFIED : 9 May 2008
-
-DESCRIPTION :
-Creates a <field_type> COMPUTED_FIELD_ADD with the supplied
-fields, <source_field_one> and <source_field_two>.  The number of 
-components will equal to the source_fields.
-==============================================================================*/
-
 int Cmiss_field_set_type_subtract(Cmiss_field_id field,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
@@ -664,18 +614,6 @@ LAST MODIFIED : 21 April 2008
 
 DESCRIPTION :
 Converts <field> to type FIELD_ADD with the supplied
-fields, <source_field_one> and <source_field_two>.  Sets the number of 
-components equal to the source_fields.
-==============================================================================*/
-
-int Cmiss_field_set_type_multiply(Cmiss_field_id field,
-	Cmiss_field_id source_field_one,
-	Cmiss_field_id source_field_two);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2008
-
-DESCRIPTION :
-Converts <field> to type FIELD_MULTIPLY with the supplied
 fields, <source_field_one> and <source_field_two>.  Sets the number of 
 components equal to the source_fields.
 ==============================================================================*/

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_conditional.cpp
 
-LAST MODIFIED : 27 July 2007
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -272,12 +272,12 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_if(struct Computed_field *field,
+Computed_field *Computed_field_create_if(
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two,
 	struct Computed_field *source_field_three)
 /*******************************************************************************
-LAST MODIFIED : 27 July 2007
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_IF with the supplied
@@ -287,23 +287,22 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
+	int number_of_source_fields;
+	Computed_field *field, **source_fields;
 
-	ENTER(Computed_field_set_type_if);
-	if (field&&source_field_one&&source_field_two&&source_field_three&&
+	ENTER(Computed_field_create_if);
+	if (source_field_one&&source_field_two&&source_field_three&&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components)&&
 		(source_field_one->number_of_components ==
 			source_field_three->number_of_components))
 	{
-		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=3;
 		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
+			/* 2. create new field */
+			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
 			/* 3. establish the new type */
 			field->number_of_components = source_field_one->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field_one);
@@ -316,19 +315,19 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code = 0;
+			field = (Computed_field *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_if.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_if.  Invalid argument(s)");
+		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_if */
+	return (field);
+} /* Computed_field_create_if */
 
 int Computed_field_get_type_if(struct Computed_field *field,
 	struct Computed_field **source_field_one,
@@ -441,8 +440,8 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_set_type_if(field,
-						source_fields[0], source_fields[1], source_fields[2]);
+					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_if(
+						source_fields[0], source_fields[1], source_fields[2]));
 				}
 				if (!return_code)
 				{

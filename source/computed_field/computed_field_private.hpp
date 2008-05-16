@@ -148,8 +148,6 @@ public:
 	{
 	};
 
-	virtual int set_field_and_initialise(Computed_field *parent);
-
 	virtual Computed_field_core *copy(Computed_field* parent) = 0;
 
 	virtual char *get_type_string() = 0;
@@ -431,6 +429,17 @@ LAST MODIFIED : 22 January 1999
 DESCRIPTION :
 Iterator/conditional function returning true if contents of <field> other than
 its name matches the contents of the <other_computed_field_void>.
+==============================================================================*/
+
+int Computed_field_copy_type_specific_and_deaccess(
+	struct Computed_field *destination, struct Computed_field *source);
+/*******************************************************************************
+LAST MODIFIED : 13 May 2008
+
+DESCRIPTION :
+Copy the type specific parts of <source> field to <destination>,
+namely the number_of_components, the source_fields, the soure_values
+and the core.  The <source> field is then DEACCESSED.
 ==============================================================================*/
 
 int Computed_field_default_clear_type_specific(struct Computed_field *field);

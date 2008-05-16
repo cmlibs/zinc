@@ -900,7 +900,7 @@ COMPUTED_FIELD_SRCS = \
 	minimise/minimise.cpp \
 	computed_field/computed_field.cpp \
 	computed_field/field_location.cpp \
-	computed_field/computed_field_component_operations.cpp \
+	computed_field/computed_field_arithmetic_operators.cpp \
 	computed_field/computed_field_compose.cpp \
 	computed_field/computed_field_composite.cpp \
 	computed_field/computed_field_conditional.cpp \
@@ -1612,7 +1612,6 @@ SO_LIB_FINITE_ELEMENT_EXTRA_ARGS = $(XML2_LIB) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARC
 LIB_FINITE_ELEMENT_SRCS = \
 	api/cmiss_element.c \
 	api/cmiss_node.c \
-	api/cmiss_region.c \
 	api/cmiss_time_sequence.c \
 	finite_element/export_finite_element.c \
 	finite_element/finite_element.c \

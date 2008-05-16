@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_logical_operators.h
 
-LAST MODIFIED : 30 August 2005
+LAST MODIFIED : 15 May 2008
 
 DESCRIPTION :
 Implements logical operations on computed fields.
@@ -45,38 +45,41 @@ Implements logical operations on computed fields.
 #define COMPUTED_FIELD_LOGICAL_OPERATORS_H
 
 #include "api/cmiss_field.h"
+#include "api/cmiss_field_logical_operators.h"
 
-#define Computed_field_set_type_greater_than Cmiss_field_set_type_greater_than
-#define Computed_field_set_type_less_than Cmiss_field_set_type_less_than
+#define Computed_field_create_greater_than Cmiss_field_create_greater_than
+#define Computed_field_create_less_than Cmiss_field_create_less_than
 
-int Computed_field_set_type_less_than(struct Computed_field *field,
+struct Computed_field *Computed_field_create_less_than(
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 /*******************************************************************************
-LAST MODIFIED : 25 August 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_LESS_THAN with the supplied
 field, <source_field> .  Sets the number of 
 components equal to the source_fields.
+Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
 
-int Computed_field_set_type_greater_than(struct Computed_field *field,
+struct Computed_field *Computed_field_create_greater_than(
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 /*******************************************************************************
-LAST MODIFIED : 25 August 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_GREATER_THAN with the supplied
 field, <source_field> .  Sets the number of 
 components equal to the source_fields.
+Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
 
 int Computed_field_register_types_logical_operators(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
-LAST MODIFIED : 30 August 2005
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 ==============================================================================*/
