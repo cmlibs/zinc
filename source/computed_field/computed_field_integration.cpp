@@ -2215,7 +2215,7 @@ and allows its contents to be modified.
 	Cmiss_region *region;
 	Computed_field *coordinate_field, *field, *integrand;
 	Computed_field_integration_package *computed_field_integration_package;
-	FE_value value;
+	double value;
 	FE_element *seed_element;	
 	float time_update;
 	int expected_parameters, magnitude_coordinates, previous_state_index, 
@@ -2257,7 +2257,8 @@ and allows its contents to be modified.
 				/* Make a default integrand of one */
 				value = 1.0;
 				if (!((integrand = ACCESS(Computed_field)(CREATE(Computed_field)("constant_1.0"))) &&
-						Computed_field_set_type_constant(integrand,1,&value)))
+				   Computed_field_copy_type_specific_and_deaccess(integrand,
+					Computed_field_create_constant(1,&value))))
 				{
 					display_message(ERROR_MESSAGE,
 						"define_Computed_field_type_xi_texture_coordinates.  Unable to create constant field");
@@ -2464,7 +2465,7 @@ and allows its contents to be modified.
 {
 	char* region_path;
 	Cmiss_region* region;
-	FE_value value;
+	double value;
 	int expected_parameters, previous_state_index, return_code;
 	Computed_field *coordinate_field, *field, *integrand;
 	Computed_field_integration_package *computed_field_integration_package;
@@ -2492,7 +2493,8 @@ and allows its contents to be modified.
 		}
 		value = 1.0;
 		if (!((integrand = ACCESS(Computed_field)(CREATE(Computed_field)("constant_1.0"))) &&
-		  Computed_field_set_type_constant(integrand,1,&value)))
+			Computed_field_copy_type_specific_and_deaccess(integrand,
+			Computed_field_create_constant(1,&value))))
 		{
 			display_message(ERROR_MESSAGE,
 				"define_Computed_field_type_xi_texture_coordinates.  Unable to create constant field");
