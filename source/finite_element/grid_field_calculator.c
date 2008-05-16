@@ -603,7 +603,8 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 ==============================================================================*/
 {
 	char *curve_name,*field_name;
-	double value;
+	double double_value;
+	FE_value value;
 	int axis, integration_magnitude_coordinates, return_code;
 	struct Computed_field *coordinate_field, *grid_field, *integration_integrand,
 		*integration_coordinate_field;
@@ -639,10 +640,10 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 				integration_coordinate_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)
 					("xi", computed_field_manager);
 			}
-			value = 1.0;
+			double_value = 1.0;
 			if (!integration_integrand)
 			{
-				integration_integrand = Computed_field_create_constant(1,&value);
+				integration_integrand = Computed_field_create_constant(1,&double_value);
 				Computed_field_set_name(integration_integrand, "constant_1.0");
 			}
 			else
