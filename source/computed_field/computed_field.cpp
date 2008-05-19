@@ -4908,6 +4908,8 @@ for matrix operations.
 
 				DEACCESS(Computed_field)(*field_to_wrap);
 				*(*field_to_wrap) = broadcast_wrapper;
+
+				return_code = 1;
 			}
 		}
 	}
