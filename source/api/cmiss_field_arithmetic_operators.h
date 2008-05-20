@@ -84,19 +84,6 @@ components equal to the source_fields.
 Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
 
-Cmiss_field_id Cmiss_field_create_weighted_add(
-	Cmiss_field_id source_field_one, double scale_factor1,
-	Cmiss_field_id source_field_two, double scale_factor2);
-/*******************************************************************************
-LAST MODIFIED : 15 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_ADD with the supplied
-fields, <source_field_one> and <source_field_two>.  Sets the number of 
-components equal to the source_fields.
-Automatic scalar broadcast will apply, see cmiss_field.h.
-==============================================================================*/
-
 Cmiss_field_id Cmiss_field_create_add(
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);

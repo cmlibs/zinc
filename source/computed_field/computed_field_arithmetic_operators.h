@@ -52,7 +52,6 @@ Implements a number of basic component wise operators on computed fields.
 #define Computed_field_create_sum_components Cmiss_field_create_sum_components
 #define Computed_field_create_add Cmiss_field_create_add
 #define Computed_field_create_subtract Cmiss_field_create_subtract
-#define Computed_field_create_weighted_add Cmiss_field_create_weighted_add
 #define Computed_field_create_multiply Cmiss_field_create_multiply
 #define Computed_field_create_divide Cmiss_field_create_divide
 #define Computed_field_create_exp Cmiss_field_create_exp

@@ -115,7 +115,6 @@ Cmiss_field_get_name
 Cmiss_field_create_power
 Cmiss_field_create_multiply
 Cmiss_field_create_divide
-Cmiss_field_create_weighted_add
 Cmiss_field_create_add
 Cmiss_field_create_subtract
 Cmiss_field_create_sum_components
