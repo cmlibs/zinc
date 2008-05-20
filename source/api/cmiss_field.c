@@ -327,6 +327,11 @@ Change the name of a field.
 	ENTER(Cmiss_field_set_name);
 	if (field && name)
 	{
+		/* Setting a name has the side-effect of assuming that
+			you want it to persist in the manager and so clears this
+			flag.  See also  Cmiss_region_add_field. */
+		Computed_field_set_intermediary_managed_field_flag(
+			field, 0);
 		return_code = Computed_field_set_name(field, name);
 	}
 	else
