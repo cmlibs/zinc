@@ -115,7 +115,7 @@ Destroys this reference to the field (and sets it to NULL).
 Internally this just decrements the reference count.
 ==============================================================================*/
 
-int Cmiss_field_access(Cmiss_field_id field);
+Cmiss_field_id Cmiss_field_access(Cmiss_field_id field);
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -123,6 +123,7 @@ DESCRIPTION :
 Increments the reference count.  Added to the API so that automatic pointer
 handling routines can add references to C functions that don't already
 add references to returned pointers, such as Cmiss_region_add_field.
+Returns the <field> value as a convenience.
 See http://www.cmiss.org/cmgui/tracker/657
 ==============================================================================*/
 
