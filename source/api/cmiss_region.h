@@ -235,16 +235,8 @@ Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region,
 LAST MODIFIED : 21 April 2008
 
 DESCRIPTION :
-Returns the field of <field_name> from the <region> if it is defined.
-==============================================================================*/
-
-int Cmiss_region_is_field_defined(Cmiss_region_id region,
-	const char *field_name);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2008
-
-DESCRIPTION :
-Tests if a field named <field_name> exists in <region>.
+Returns the field of <field_name> from the <region> if it is defined,
+NULL otherwise.
 ==============================================================================*/
 
 #endif /* __CMISS_REGION_H__ */
