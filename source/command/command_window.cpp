@@ -153,6 +153,34 @@ so that the bits can operate as independent flags.
 
 #if defined (WX_USER_INTERFACE)
 class wxCommandWindow;
+class wxCommandLineTextCtrl : public wxTextCtrl
+{
+	 Command_window *command_window;
+public:
+	 wxCommandLineTextCtrl(Command_window *command_window, wxPanel *parent) :
+			wxTextCtrl(parent, -1, "",wxPoint(0,0), wxSize(-1,24), wxTE_PROCESS_ENTER),
+			command_window(command_window)
+    {
+			 wxBoxSizer *sizer = new wxBoxSizer( wxHORIZONTAL );
+			 sizer->Add(this,
+					wxSizerFlags(1).Align(wxALIGN_CENTER).Expand());
+			 parent->SetSizer(sizer);
+			 Show();
+    };
+
+	 wxCommandLineTextCtrl()
+	 {
+	 };
+
+	 ~wxCommandLineTextCtrl()
+	 {
+	 };
+
+    void OnKeyDown(wxKeyEvent& event);
+    void OnCommandEntered(wxCommandEvent& event);
+
+    DECLARE_EVENT_TABLE()
+};
 #endif
 
 struct Command_window
@@ -197,6 +225,7 @@ DESCRIPTION :
 		file */
 #if defined (WX_USER_INTERFACE)
 	 wxCommandWindow *wx_command_window;
+	 wxCommandLineTextCtrl *wx_command_line_text_ctrl;
 	 wxFrame *frame;
 	 wxPanel *lower_panel;
 	 wxTextCtrl *output_window;
@@ -1606,7 +1635,6 @@ class wxCommandWindow : public wxFrame
 {
 	 Command_window *command_window;
 	wxListBox *history_list;
-	wxTextCtrl *command_line;
 	wxString SelectedCommand;
 	wxString command;
 	wxString blank;
@@ -1627,16 +1655,7 @@ public:
 
   ~wxCommandWindow()
   {
-  };
-
-	 void CommandEntered(wxCommandEvent& event)
-	 {
-			command_line = XRCCTRL(*this, "CommandLine", wxTextCtrl);
-			command = command_line->GetValue();
-			Execute_command_execute_string(command_window->execute_command,
-				const_cast<char *>(command.c_str()));
-			command_line -> Clear();
-	 }      
+  };  
                  
 	 void wx_Add_to_command_list(wxString command)
 	 {
@@ -1655,21 +1674,19 @@ public:
 	 void SingleClick(wxCommandEvent& event)
 	 {
 			history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
-			command_line = XRCCTRL(*this, "CommandLine", wxTextCtrl);
 			SelectedCommand = history_list->GetStringSelection();
-			command_line -> Clear();
-			command_line -> WriteText(SelectedCommand);
+			command_window->wx_command_line_text_ctrl->Clear();
+ 			command_window->wx_command_line_text_ctrl->WriteText(SelectedCommand);
 	 }
 	 
 	 void DoubleClick(wxCommandEvent& event)
 	 {
 			history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
-			command_line = XRCCTRL(*this, "CommandLine", wxTextCtrl);
 			SelectedCommand = history_list->GetStringSelection();  
 			number = history_list->GetCount();
 			Execute_command_execute_string(command_window->execute_command,
 				 const_cast<char *>(SelectedCommand.c_str()));
-			command_line->Clear();
+			command_window->wx_command_line_text_ctrl->Clear();
 			history_list->SetSelection ( history_list->GetCount() - 1 ); 	 
 			history_list->Deselect( history_list->GetCount() - 1 );
 	 }
@@ -1801,7 +1818,6 @@ public:
 			wxFontData fdata;
 			wxFont font;
 			wxColour colour;
-			command_line = XRCCTRL(*this, "CommandLine", wxTextCtrl);
 			output_list = XRCCTRL(*this,"OutputWindow", wxTextCtrl);
 			history_list = XRCCTRL(*this,"CommandHistory", wxListBox);
 			font = history_list->GetFont();
@@ -1815,10 +1831,10 @@ public:
 				 fdata = FontDlg->GetFontData();
 				 font = fdata.GetChosenFont();
 				 output_list->SetFont(font);
-				 command_line->SetFont(font);
+				 command_window->wx_command_line_text_ctrl->SetFont(font);
 				 history_list->SetFont(font);
 				 output_list->SetForegroundColour(fdata.GetColour()); 
-				 command_line->SetForegroundColour(fdata.GetColour()); 
+				 command_window->wx_command_line_text_ctrl->SetForegroundColour(fdata.GetColour()); 
 				 history_list->SetForegroundColour(fdata.GetColour()); 
 			}
 	 } 
@@ -1846,73 +1862,13 @@ void Terminate(wxCloseEvent& event)
 	 dlg->Destroy();
 } 
 
-	 void Exit(wxCommandEvent& event)
-	 {
-			wxMessageDialog *dlg = new wxMessageDialog(NULL,"Are you sure you want to quit cmgui?", 
-				 "Exit Confirmation", wxYES_NO|wxICON_QUESTION|wxSTAY_ON_TOP);
-			if ( dlg->ShowModal() == wxID_YES)
-					 Execute_command_execute_string(command_window->execute_command, "QUIT");
-			dlg->Destroy();
-	 } 
-	 
-void keydown(wxKeyEvent& event)
+void Exit(wxCommandEvent& event)
 {
-	 command_line = XRCCTRL(*this, "CommandLine", wxTextCtrl);
-	 history_list = XRCCTRL(*this,"CommandHistory", wxListBox);
-	 int selection = history_list->GetSelection();
-	 int number_of_items = history_list->GetCount();
-	 int key_code = event.GetKeyCode();
-	 
-	 switch (key_code)
-	 {
-			case WXK_DOWN:
-				 if (selection == wxNOT_FOUND)
-				 {
-						history_list->SetSelection(number_of_items - 1);
-				 }
-				 else if (number_of_items>selection+1)
-				 {
-						history_list->SetSelection(selection+1);
-				 }
-				 history_list->SetFocus();
-				 SelectedCommand = history_list->GetStringSelection();
-				 command_line -> Clear();
-				 command_line -> WriteText(SelectedCommand);
-				 event.Skip(); 
-				 break;
-			case WXK_UP:
-				 if (selection == wxNOT_FOUND)
-				 {
-						history_list->SetSelection(number_of_items - 2);
-						
-				 }
-				 else if (selection-1>=0)
-				 {
-						history_list->SetSelection(selection-1);
-				 }
-				 history_list->SetFocus();
-				 SelectedCommand = history_list->GetStringSelection();
-				 command_line -> Clear();
-				 command_line -> WriteText(SelectedCommand);
-				 event.Skip();
-				 break;
-			case WXK_LEFT: case WXK_RIGHT:
-				 command_line->SetFocus();
-				 event.Skip();
-				 break;
-			default:
-				 if  (key_code>31 && key_code<127)
-				 {
-						command_line->SetFocus();
-						command_line -> AppendText("");
-						event.Skip(); 
-				 }
-				 else
-				 {
-						event.Skip(); 
-				 }
-				 break;
-	 }
+	 wxMessageDialog *dlg = new wxMessageDialog(NULL,"Are you sure you want to quit cmgui?", 
+			"Exit Confirmation", wxYES_NO|wxICON_QUESTION|wxSTAY_ON_TOP);
+	 if ( dlg->ShowModal() == wxID_YES)
+			Execute_command_execute_string(command_window->execute_command, "QUIT");
+	 dlg->Destroy();
 } 
 
 	 void wx_Display_on_command_list(char *command_string)
@@ -1923,14 +1879,13 @@ DESCRIPTION:
 Display the command onto the list
 ==============================================================================*/
 {
-	 command_line = XRCCTRL(*this, "CommandLine", wxTextCtrl);
 	 if (command_string != (char)NULL)
 	 {
-			command_line -> WriteText(command_string);
+			command_window->wx_command_line_text_ctrl->WriteText(command_string);
 	 }
 	 else
 	 {
-			command_line -> Clear();
+			command_window->wx_command_line_text_ctrl->Clear();
 	 }
 }	 
 	 
@@ -1939,7 +1894,7 @@ Display the command onto the list
 };
 
 BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
-	 EVT_TEXT_ENTER(XRCID("CommandLine"), wxCommandWindow::CommandEntered)
+//	 EVT_TEXT_ENTER(XRCID("CommandLine"), wxCommandWindow::CommandEntered)
 	 EVT_LISTBOX(XRCID("CommandHistory"),wxCommandWindow::SingleClick)
 	 EVT_LISTBOX_DCLICK(XRCID("CommandHistory"),wxCommandWindow::DoubleClick)
 	 EVT_MENU(XRCID("GraphicsthreeDWindow"),wxCommandWindow::threeDwindow)
@@ -1954,7 +1909,7 @@ BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	 EVT_MENU(XRCID("WriteData"),wxCommandWindow::writedata)
 	 EVT_MENU(XRCID("WriteElements"),wxCommandWindow::writeelements)
 	 EVT_MENU(XRCID("WriteNode"),wxCommandWindow::writenodes)
-	 EVT_MENU(XRCID("ModelDataViewer"),wxCommandWindow::dataviewer)	 
+	 EVT_MENU(XRCID("ModelDataViewer"),wxCommandWindow::dataviewer)
 	 EVT_MENU(XRCID("ModelNodeviewer"),wxCommandWindow::nodeviewer)
 	 EVT_MENU(XRCID("ModelElementpointviewer"),wxCommandWindow::elementpointviewer)
 	 EVT_MENU(XRCID("GraphicsMaterialeditor"),wxCommandWindow::materialeditor)
@@ -1964,9 +1919,69 @@ BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	 EVT_MENU(XRCID("AboutCmgui"),wxCommandWindow::ShowSimpleAboutDialog)
 	 EVT_CLOSE(wxCommandWindow::Terminate)
 	 EVT_MENU(XRCID("MenuExit"),wxCommandWindow::Exit)
-	 EVT_KEY_DOWN(wxCommandWindow::keydown)
 END_EVENT_TABLE()
 
+void wxCommandLineTextCtrl::OnKeyDown(wxKeyEvent& event)
+{
+	 wxString SelectedCommand;
+	 wxListBox *history_list = XRCCTRL(*command_window->wx_command_window,
+			"CommandHistory", wxListBox);
+	 int selection = history_list->GetSelection();
+	 int number_of_items = history_list->GetCount();
+	 int key_code = event.GetKeyCode();
+	 switch (key_code)
+	 {
+			case WXK_DOWN:
+				 if (selection == wxNOT_FOUND)
+				 {
+						history_list->SetSelection(number_of_items - 1);
+				 }
+				 else if (number_of_items>selection+1)
+				 {
+						history_list->SetSelection(selection+1);
+				 }
+				 SelectedCommand = history_list->GetStringSelection();
+				 this -> Clear();
+				 this -> WriteText(SelectedCommand);
+				 history_list->SetFocus();
+				 this->SetFocus();
+				 this->SetInsertionPointEnd(); 
+				 break;
+			case WXK_UP:
+				 if (selection == wxNOT_FOUND)
+				 {
+						history_list->SetSelection(number_of_items - 2);						
+				 }
+				 else if (selection-1>=0)
+				 {
+						history_list->SetSelection(selection-1);
+				 }
+				 SelectedCommand = history_list->GetStringSelection();
+				 this -> Clear();
+				 this -> WriteText(SelectedCommand);
+				 history_list->SetFocus();
+				 this->SetFocus();
+				 this->SetInsertionPointEnd();
+				 break;
+			default:
+				 event.Skip();
+	 }
+	 
+}
+
+void wxCommandLineTextCtrl::OnCommandEntered(wxCommandEvent& event)
+{
+	 wxString command = this->GetValue();
+	 Execute_command_execute_string(command_window->execute_command,
+			const_cast<char *>(command.c_str()));
+	 this->Clear();
+}
+
+
+BEGIN_EVENT_TABLE(wxCommandLineTextCtrl, wxTextCtrl)
+	 EVT_KEY_DOWN(wxCommandLineTextCtrl::OnKeyDown)
+	 EVT_TEXT_ENTER(wxID_ANY, wxCommandLineTextCtrl::OnCommandEntered)
+END_EVENT_TABLE()
 #endif /* defined (WX_USER_INTERFACE) */
 
 /*
@@ -2495,8 +2510,10 @@ Create the structures and retrieve the command window from the uil file.
 				 XRCCTRL(*command_window->wx_command_window, "CommandSplitterWindow", 
 						wxSplitterWindow);
 			splitter_window->SetSashPosition(220);
-			wxTextCtrl *command_line = XRCCTRL(*command_window->wx_command_window, "CommandLine", wxTextCtrl);
-			command_line->SetFocus();
+			wxPanel *new_panel = XRCCTRL(*command_window->wx_command_window, "CommandLinePanel", wxPanel);
+			command_window->wx_command_line_text_ctrl = new wxCommandLineTextCtrl(command_window, new_panel);
+			command_window->wx_command_line_text_ctrl->SetFocus();
+			new_panel->SetSize(600,25);
 #endif /* switch (USER_INTERFACE) */
 		}
 		else

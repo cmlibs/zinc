@@ -152,7 +152,7 @@
 			 	    <object class = "wxBoxSizer">	
       				<orient>wxVERTICAL</orient>
 						
-					<object class="sizeritem">
+							<object class="sizeritem">
 	 							<flag>wxEXPAND</flag>
 								<option>1</option>
         				<object class="wxListBox" name="CommandHistory">
@@ -161,13 +161,13 @@
         				<border>10</border>
       				</object>
       				<object class="sizeritem">
-        				<object class="wxTextCtrl" name="CommandLine">
-          				<style>wxTE_PROCESS_ENTER</style>
-          				<value></value>
+        				<object class="wxPanel" name="CommandLinePanel">
+									<size>-1,25</size>
         				</object>
 								<flag>wxEXPAND|wxALL</flag>
-        				<border>10</border>
+        				<border>6</border>
       				</object>
+
       			</object>
       		</object>
 
