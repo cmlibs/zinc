@@ -224,9 +224,8 @@ Functions for executing cmiss commands.
 #endif /* defined (MOTIF) */
 #if defined (WX_USER_INTERFACE)
 #include "node/node_viewer_wx.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (WX_USER_INTERFACE) */
 #include "region/cmiss_region.h"
-#include "region/cmiss_region_private.h" /* for data_hack */
 #include "selection/any_object_selection.h"
 #if defined (MOTIF)
 #include "three_d_drawing/movie_extensions.h"
@@ -24758,9 +24757,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->root_region = Cmiss_region_create();
 
 		/* data_hack begin - temporary until data is eliminated */
-		command_data->data_root_region = CREATE(Cmiss_region)();
-		Cmiss_region_attach_fields(command_data->data_root_region,
-			command_data->root_region, CMISS_REGION_SHARE_FIELDS_DATA_HACK);
+		command_data->data_root_region = Cmiss_region_create_data_hack(command_data->root_region);
 		/* add callbacks so root_region and data_root_region keep their children
 			 synchronised */
 		Cmiss_region_add_callback(command_data->root_region,

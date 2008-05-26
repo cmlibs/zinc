@@ -125,10 +125,22 @@ struct Cmiss_region *Cmiss_region_create_group(
 LAST MODIFIED : 23 May 2008
 
 DESCRIPTION :
-Creates an empty Cmiss_region that shares the fields with master_region but
+Creates a Cmiss_region that shares the fields with master_region but
 uses a subset of its nodes and element (i.e. a group).
 Region is created with an access_count of 1; DEACCESS to destroy.
 Consider as private: NOT approved for exposing in API.
+==============================================================================*/
+
+struct Cmiss_region *Cmiss_region_create_data_hack(
+	struct Cmiss_region *master_region);
+/*******************************************************************************
+LAST MODIFIED : 26 May 2008
+
+DESCRIPTION :
+Creates a Cmiss_region that shares the fields and elements of
+master_region but has its own nodes.
+Region is created with an access_count of 1; DEACCESS to destroy.
+Consider as temporary and private: NOT approved for exposing in API.
 ==============================================================================*/
 
 struct Cmiss_region *Cmiss_region_create_share_globals(
