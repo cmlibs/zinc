@@ -73,9 +73,6 @@ extern "C" {
 Module types
 ------------
 */
-static void Computed_field_FE_region_change(struct FE_region *fe_region,
-	struct FE_region_changes *changes,
-	void *computed_field_finite_element_package_void);
 
 class Computed_field_finite_element_package : public Computed_field_type_package
 /*******************************************************************************
@@ -92,8 +89,6 @@ public:
 protected:
 	~Computed_field_finite_element_package()
 	{
-		FE_region_remove_callback(fe_region, Computed_field_FE_region_change, 
-			(void *)this);
 		DEACCESS(FE_region)(&fe_region);
 		DEACCESS(Cmiss_region)(&cmiss_region);
 	}
@@ -5182,32 +5177,26 @@ function.
 } /* FE_field_to_Computed_field_change */
 
 static void Computed_field_FE_region_change(struct FE_region *fe_region,
-	struct FE_region_changes *changes,
-	void *computed_field_finite_element_package_void)
+	struct FE_region_changes *changes, void *computed_field_manager_void)
 /*******************************************************************************
-LAST MODIFIED : 24 August 2006
+LAST MODIFIED : 22 May 2008
 
 DESCRIPTION :
 Updates definitions of Computed_field wrappers for changed FE_fields in the
 manager by calling FE_field_to_Computed_field_change for every FE_field in the
 changed_object_list. Caches computed_field_manager to consolidate messages
 that may result from this process.
-???RC Review Manager Messages Here
 ==============================================================================*/
 {
 	enum CHANGE_LOG_CHANGE(FE_field) change_summary;
-	Computed_field_finite_element_package
-		*computed_field_finite_element_package;
 	struct FE_field_to_Computed_field_change_data field_change_data;
+	struct MANAGER(Computed_field) *computed_field_manager;
 
 	ENTER(Computed_field_FE_region_change);
-	if (changes && (computed_field_finite_element_package=
-		(Computed_field_finite_element_package *)
-		computed_field_finite_element_package_void) &&
-		(fe_region == computed_field_finite_element_package->fe_region))
+	if (fe_region && changes && (computed_field_manager =
+		(struct MANAGER(Computed_field) *)computed_field_manager_void))
 	{
-		field_change_data.computed_field_manager = 
-			computed_field_finite_element_package->computed_field_manager;
+		field_change_data.computed_field_manager =  computed_field_manager;
 		field_change_data.changes = changes;
 		field_change_data.fe_region = fe_region;
 		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_field)(changes->fe_field_changes,
@@ -5218,13 +5207,11 @@ that may result from this process.
 		{
 			/* have begin/end cache because more than one field may have been added
 				 or modified */
-			MANAGER_BEGIN_CACHE(Computed_field)(
-				computed_field_finite_element_package->computed_field_manager);
+			MANAGER_BEGIN_CACHE(Computed_field)(computed_field_manager);
 			/* Ensure there is an updated Computed_field for each FE_field */
 			FE_region_for_each_FE_field(field_change_data.fe_region,
 				FE_field_to_Computed_field_change, (void *)&field_change_data);
-			MANAGER_END_CACHE(Computed_field)(
-				computed_field_finite_element_package->computed_field_manager);
+			MANAGER_END_CACHE(Computed_field)(computed_field_manager);
 		}
 		if (change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_field))
 		{
@@ -5240,6 +5227,66 @@ that may result from this process.
 	}
 	LEAVE;
 } /* Computed_field_FE_region_change */
+
+int Computed_field_manager_begin_autowrap_FE_fields(
+	struct MANAGER(Computed_field) *computed_field_manager,
+	struct FE_region *fe_region)
+/*******************************************************************************
+LAST MODIFIED : 22 May 2008
+
+DESCRIPTION :
+Establishes callbacks to automatically wrap FE_fields from <fe_region> in
+finite element computed fields in <computed_field_manager>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_manager_begin_autowrap_FE_fields);
+	if (computed_field_manager && fe_region)
+	{
+		return_code = FE_region_add_callback(fe_region,
+			Computed_field_FE_region_change, (void *)computed_field_manager);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_manager_begin_autowrap_FE_fields.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_manager_begin_autowrap_FE_fields */
+
+int Computed_field_manager_end_autowrap_FE_fields(
+	struct MANAGER(Computed_field) *computed_field_manager,
+	struct FE_region *fe_region)
+/*******************************************************************************
+LAST MODIFIED : 22 May 2008
+
+DESCRIPTION :
+Ends automatically wrapping of FE_fields from <fe_region> in
+finite element computed fields in <computed_field_manager>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_manager_end_autowrap_FE_fields);
+	if (computed_field_manager && fe_region)
+	{
+		return_code = FE_region_remove_callback(fe_region,
+			Computed_field_FE_region_change, (void *)computed_field_manager);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_manager_end_autowrap_FE_fields.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_manager_end_autowrap_FE_fields */
 
 int Computed_field_contains_changed_FE_field(
 	struct Computed_field *field, void *fe_field_change_log_void)
@@ -5859,15 +5906,6 @@ automatically wrapped in corresponding computed_fields.
 			computed_field_basis_derivative_type_string,
 			define_Computed_field_type_basis_derivative,
 			computed_field_finite_element_package);
-		if (FE_region_add_callback(fe_region, Computed_field_FE_region_change, 
-			(void *)computed_field_finite_element_package))
-		{
-			return_ptr = computed_field_finite_element_package;
-		}
-		else
-		{
-			return_ptr = (Computed_field_finite_element_package *)NULL;
-		}
 	}
 	else
 	{

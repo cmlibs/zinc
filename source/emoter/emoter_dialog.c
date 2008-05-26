@@ -332,11 +332,10 @@ Updates the node locations for the <emoter_slider>
 					if ((input_file = CREATE(IO_stream)(shared_data->io_stream_package))
 						&& (IO_stream_open_for_read(input_file, input_filename)))
 					{
-						if (input_sequence=read_exregion_file(input_file,shared_data->basis_manager,
-							FE_region_get_FE_element_shape_list(fe_region),
+						input_sequence = Cmiss_region_create_share_globals(shared_data->region);
+						if (read_exregion_file(input_sequence, input_file,
 							(struct FE_import_time_index *)NULL))
 						{
-							ACCESS(Cmiss_region)(input_sequence);
 							if (Cmiss_regions_FE_regions_can_be_merged(
 								shared_data->region, input_sequence))
 							{
@@ -355,7 +354,6 @@ Updates the node locations for the <emoter_slider>
 									input_filename);
 								return_code = 0;
 							}
-							DEACCESS(Cmiss_region)(&input_sequence);
 						}
 						else
 						{
@@ -363,6 +361,7 @@ Updates the node locations for the <emoter_slider>
 								"Unable to parse node file %s", input_filename);
 							return_code=0;							
 						}
+						DEACCESS(Cmiss_region)(&input_sequence);
 						IO_stream_close(input_file);
 						DESTROY(IO_stream)(&input_file);
 					}
@@ -4417,13 +4416,12 @@ DESCRIPTION :
 			}
 			else
 			{
-				if ((emoter_dialog->minimum_region = CREATE(Cmiss_region)())&&
-					(minimum_fe_region = CREATE(FE_region)(root_fe_region,
-					emoter_dialog->shared->basis_manager,
-					FE_region_get_FE_element_shape_list(Cmiss_region_get_FE_region(
-					emoter_dialog->shared->region))))&&
+				if ((emoter_dialog->minimum_region =
+						Cmiss_region_create_group(emoter_dialog->shared->region)) &&
+					(minimum_fe_region =
+						Cmiss_region_get_FE_region(emoter_dialog->minimum_region)) &&
 					Cmiss_region_add_child_region(emoter_dialog->shared->region,
-					emoter_dialog->minimum_region, "minimum_set", /*position*/-1))
+						emoter_dialog->minimum_region, "minimum_set", /*position*/-1))
 				{
 					FE_region_begin_change(minimum_fe_region);
 				}

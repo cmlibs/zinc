@@ -49,6 +49,7 @@ to regions, but hiding their details from the core Cmiss_region object.
 #define CMISS_REGION_H
 
 #include "command/parser.h"
+#include "computed_field/computed_field.h"
 #include "general/callback.h"
 #include "general/object.h"
 
@@ -109,20 +110,46 @@ Global functions
 
 PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_region);
 
-struct Cmiss_region *CREATE(Cmiss_region)(void);
+struct Cmiss_region *Cmiss_region_create(void);
 /*******************************************************************************
-LAST MODIFIED : 10 September 2002
+LAST MODIFIED : 23 May 2008
 
 DESCRIPTION :
-Creates a blank Cmiss_region.
+Creates a full Cmiss_region, able to have its own fields.
+Region is created with an access_count of 1; DEACCESS to destroy.
 ==============================================================================*/
 
-int DESTROY(Cmiss_region)(struct Cmiss_region **region_address);
+struct Cmiss_region *Cmiss_region_create_group(
+		struct Cmiss_region *master_region);
 /*******************************************************************************
-LAST MODIFIED : 11 September 2002
+LAST MODIFIED : 23 May 2008
 
 DESCRIPTION :
-Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
+Creates an empty Cmiss_region that shares the fields with master_region but
+uses a subset of its nodes and element (i.e. a group).
+Region is created with an access_count of 1; DEACCESS to destroy.
+Consider as private: NOT approved for exposing in API.
+==============================================================================*/
+
+struct Cmiss_region *Cmiss_region_create_share_globals(
+		struct Cmiss_region *source_region);
+/*******************************************************************************
+LAST MODIFIED : 23 May 2008
+
+DESCRIPTION :
+Equivalent to Cmiss_region_create(), except the new region uses
+global basis_manager and shape_list from <source_region>.
+Region is created with an access_count of 1; DEACCESS to destroy.
+Consider as private: NOT approved for exposing in API.
+==============================================================================*/
+
+struct MANAGER(Computed_field) *Cmiss_region_get_Computed_field_manager(
+	struct Cmiss_region *cmiss_region);
+/*******************************************************************************
+LAST MODIFIED : 20 May 2008
+
+DESCRIPTION :
+Returns the field manager containing all the fields for this region.
 ==============================================================================*/
 
 int set_Cmiss_region_path(struct Parse_state *state, void *path_address_void,
@@ -313,15 +340,14 @@ DESCRIPTION :
 Gets the number of child regions in <region>.
 ==============================================================================*/
 
-int Cmiss_region_get_child_region(struct Cmiss_region *region,
-	int child_number, struct Cmiss_region **child_region_address);
+struct Cmiss_region *Cmiss_region_get_child_region(struct Cmiss_region *region,
+	int child_number);
 /*******************************************************************************
-LAST MODIFIED : 7 November 2002
+LAST MODIFIED : 26 May 2008
 
 DESCRIPTION :
-Returns at <child_region_address> child region <child_number> of <region>.
-<child_number> ranges from 0 to one less than number_of_child_regions.
-For safety, returns NULL in <child_region_address> on any error.
+Returns the child <child_number> of <region> if within the range from 0 to
+one less than number_of_child_regions, otherwise NULL.
 ==============================================================================*/
 
 int Cmiss_region_get_child_region_name(struct Cmiss_region *region,

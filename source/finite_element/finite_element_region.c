@@ -6440,6 +6440,7 @@ Returns in <cmiss_region_address> either the owning <cmiss_region> for
 	return (return_code);
 } /* FE_region_get_Cmiss_region */
 
+#if defined (OLD_CODE)
 struct FE_region *Cmiss_region_get_or_create_child_FE_region(
 	struct Cmiss_region *parent_cmiss_region, char *child_name,
 	struct FE_region *master_fe_region, struct MANAGER(FE_basis) *basis_manager,
@@ -6530,6 +6531,7 @@ This function is atomic.
 
 	return (child_fe_region);
 } /* Cmiss_region_get_or_create_child_FE_region */
+#endif /* defined (OLD_CODE) */
 
 int FE_regions_can_be_merged(struct FE_region *global_fe_region,
 	struct FE_region *fe_region)
@@ -7749,7 +7751,8 @@ Assumes all master_fe_regions are in parents of the owning cmiss_region.
 			{
 				for (i = 0; (i < number_of_children) && return_code; i++)
 				{
-					if (Cmiss_region_get_child_region(region, i, &child_region) &&
+					child_region = Cmiss_region_get_child_region(region, i);
+					if ((child_region != NULL) &&
 						Cmiss_region_get_child_region_name(region, i, &child_region_name))
 					{
 						if (global_child_region = Cmiss_region_get_child_region_from_name(
@@ -7894,8 +7897,7 @@ Assumes all master_fe_regions are in parents of the owning cmiss_region.
 	struct Cmiss_region *child_region, *global_child_region,
 		*global_master_region, *master_region, *merged_global_region,
 		**matching_regions;
-	struct FE_region *fe_region, *global_fe_region, *global_master_fe_region,
-		*master_fe_region;
+	struct FE_region *fe_region, *global_fe_region, *master_fe_region;
 
 	ENTER(Cmiss_regions_merge_FE_regions_private);
 	if (global_region && region && matching_regions_address &&
@@ -7953,20 +7955,16 @@ Assumes all master_fe_regions are in parents of the owning cmiss_region.
 								/* master region merged: merge now */
 								/* get global_master */
 								global_master_region = *(matching_regions + 1);
-								global_master_fe_region =
-									Cmiss_region_get_FE_region(global_master_region);
 								if (!global_fe_region)
 								{
-									global_fe_region = CREATE(FE_region)(global_master_fe_region,
-										(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL);
-									if (!Cmiss_region_attach_FE_region(global_region,
-										global_fe_region))
+									Cmiss_region_attach_fields(global_region,
+										global_master_region, CMISS_REGION_SHARE_FIELDS_GROUP);
+									global_fe_region = Cmiss_region_get_FE_region(global_region); 
+									if (!global_fe_region)
 									{
 										display_message(ERROR_MESSAGE,
 											"Cmiss_regions_merge_FE_regions_private.  "
-											"Could not attach FE_region with master");
-										DESTROY(FE_region)(&global_fe_region);
-										global_fe_region = (struct FE_region *)NULL;
+											"Could not create fields for group");
 										return_code = 0;
 									}
 								}
@@ -8033,13 +8031,17 @@ Assumes all master_fe_regions are in parents of the owning cmiss_region.
 			{
 				for (i = 0; (i < number_of_children) && return_code; i++)
 				{
-					if (Cmiss_region_get_child_region(region, i, &child_region) &&
+					child_region = Cmiss_region_get_child_region(region, i);
+					if ((child_region != NULL) &&
 						Cmiss_region_get_child_region_name(region, i, &child_region_name))
 					{
 						/* get global child of same name */
-						global_child_region = Cmiss_region_get_child_region_from_name(
-							global_region, child_region_name);
-						if ((!global_child_region) && (!match_only_existing_regions))
+						global_child_region = Cmiss_region_get_child_region_from_name(global_region, child_region_name);
+						if (global_child_region)
+						{
+							ACCESS(Cmiss_region)(global_child_region);
+						}
+						else if (!match_only_existing_regions)
 						{
 							/* see if there is a merged equivalent for this child */
 							matching_regions = *matching_regions_address;
@@ -8051,10 +8053,11 @@ Assumes all master_fe_regions are in parents of the owning cmiss_region.
 							}
 							if (j)
 							{
-								global_child_region = *(matching_regions + 1);
+								global_child_region = ACCESS(Cmiss_region)(*(matching_regions + 1));
 							}
 							else
 							{
+								/* create region without fields; these are added later */
 								global_child_region = CREATE(Cmiss_region)();
 							}
 							if (!Cmiss_region_add_child_region(global_region,
@@ -8063,10 +8066,6 @@ Assumes all master_fe_regions are in parents of the owning cmiss_region.
 								display_message(ERROR_MESSAGE,
 									"Cmiss_regions_merge_FE_regions_private.  "
 									"Could not add child region \"%s\"", child_region_name);
-								/* use REACCESS to clean up global_child_region */
-								REACCESS(Cmiss_region)(&global_child_region,
-									(struct Cmiss_region *)NULL);
-								global_child_region = (struct Cmiss_region *)NULL;
 								return_code = 0;
 							}
 						}
@@ -8083,6 +8082,7 @@ Assumes all master_fe_regions are in parents of the owning cmiss_region.
 								return_code = 0;
 							}
 						}
+						REACCESS(Cmiss_region)(&global_child_region,NULL);
 						DEALLOCATE(child_region_name);
 					}
 					else
@@ -8218,7 +8218,6 @@ having children added or removed.
 	char *child_name;
 	int i, j, number_of_child_regions1, number_of_child_regions2, return_code;
 	struct Cmiss_region *child_region, *region2;
-	struct FE_region *fe_region, *master_fe_region;
 
 	ENTER(Cmiss_region_synchronise_children_with_FE_region);
 	if (region1 && region_changes &&
@@ -8267,16 +8266,13 @@ having children added or removed.
 						else
 						{
 							/* create and add a new child region with child_name to region2 */
-							if (!((child_region = CREATE(Cmiss_region)()) &&
-								(master_fe_region = Cmiss_region_get_FE_region(region2)) &&
-								(fe_region = CREATE(FE_region)(master_fe_region,
-								(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL)) &&
-								Cmiss_region_attach_FE_region(child_region, fe_region) &&
-								Cmiss_region_add_child_region(region2, child_region, child_name,
-								/*child_position*/i)))
+							child_region = Cmiss_region_create_group(region2);
+							if (!Cmiss_region_add_child_region(region2, child_region, child_name,
+									/*child_position*/i))
 							{
 								return_code = 0;
 							}
+							DEACCESS(Cmiss_region)(&child_region);
 						}
 						DEALLOCATE(child_name);
 					}
@@ -8307,16 +8303,13 @@ having children added or removed.
 							else
 							{
 								/* create and add a new child region with child_name to region2 */
-								if (!((child_region = CREATE(Cmiss_region)()) &&
-									(master_fe_region = Cmiss_region_get_FE_region(region2)) &&
-									(fe_region = CREATE(FE_region)(master_fe_region,
-									(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL)) &&
-									Cmiss_region_attach_FE_region(child_region, fe_region) &&
-									Cmiss_region_add_child_region(region2, child_region, child_name,
-									/*child_position*/i)))
+								child_region = Cmiss_region_create_group(region2);
+								if (!Cmiss_region_add_child_region(region2, child_region, child_name,
+									/*child_position*/i))
 								{
 									return_code = 0;
 								}
+								DEACCESS(Cmiss_region)(&child_region);
 							}
 							DEALLOCATE(child_name);
 						}
@@ -8332,9 +8325,10 @@ having children added or removed.
 						for (i = (number_of_child_regions2 - number_of_child_regions1);
 							  (0 < i) && return_code; i--)
 						{
-							if (!(Cmiss_region_get_child_region(region2,
-										/*child_number*/number_of_child_regions1, &child_region) &&
-									 Cmiss_region_remove_child_region(region2, child_region)))
+							child_region = Cmiss_region_get_child_region(region2,
+								/*child_number*/number_of_child_regions1);
+							if (!((child_region != NULL) &&
+								 Cmiss_region_remove_child_region(region2, child_region)))
 							{
 								return_code = 0;
 							}

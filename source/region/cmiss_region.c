@@ -45,11 +45,14 @@ to regions, but hiding their details from the core Cmiss_region object.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "general/callback_private.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "region/cmiss_region.h"
 #include "region/cmiss_region_private.h"
+#include "finite_element/finite_element_region.h"
 #include "user_interface/message.h"
 
 /*
@@ -73,9 +76,24 @@ Stores the name that this child is known by to this parent.
 FULL_DECLARE_CMISS_CALLBACK_TYPES(Cmiss_region_change, \
 	struct Cmiss_region *, struct Cmiss_region_changes *);
 
+struct Cmiss_region_fields
+/*******************************************************************************
+LAST MODIFIED : 23 May 2008
+
+DESCRIPTION :
+Sharable object for holding fields owned by a region together with the
+FE_region whose FE_fields are automatically wrapped.
+'group' regions ACCESS the same Cmiss_region_fields as the full region.
+==============================================================================*/
+{
+	struct MANAGER(Computed_field) *field_manager;
+	struct FE_region *fe_region;
+	int access_count;
+};
+
 struct Cmiss_region
 /*******************************************************************************
-LAST MODIFIED : 4 December 2003
+LAST MODIFIED : 19 May 2008
 
 DESCRIPTION :
 Object responsible for building directed acyclic graph hierarchies in Cmiss.
@@ -85,6 +103,8 @@ Implements advanced hierarchical functionality through context objects stored
 within it. Type and role of context objects are not known to the Cmiss_region.
 ==============================================================================*/
 {
+	/* fields owned by this region (or master) */
+	struct Cmiss_region_fields *fields;
 	/* list of objects attached to region */
 	struct LIST(Any_object) *any_object_list;
 	/* ordered list of child regions 0..number_of_child_regions-1 */
@@ -192,6 +212,155 @@ DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Cmiss_region_change, void)
 DEFINE_CMISS_CALLBACK_FUNCTIONS(Cmiss_region_change, \
 	struct Cmiss_region *, struct Cmiss_region_changes *)
 
+PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_region_fields);
+
+struct Cmiss_region_fields *CREATE(Cmiss_region_fields)(
+	struct MANAGER(FE_basis) *basis_manager,
+	struct LIST(FE_element_shape) *element_shape_list)
+/*******************************************************************************
+LAST MODIFIED : 26 May 2008
+
+DESCRIPTION :
+Creates a field manager and FE_region for defining finite_element fields with.
+This object is sharable between all regions using the same ultimate "master"
+FE_region, i.e. the true region and subgroups of it. 
+If <basis_manager> and <element_shape_list> are supplied they are reused,
+otherwise new local manager & list are created.
+Created with access_count of 1 so call DEACCESS to clean up.
+==============================================================================*/
+{
+	struct Cmiss_region_fields *region_fields;
+
+	ENTER(CREATE(Cmiss_region_fields));
+	ALLOCATE(region_fields, struct Cmiss_region_fields, 1);
+	if (region_fields)
+	{
+		region_fields->field_manager = CREATE(MANAGER(Computed_field))();
+		region_fields->fe_region = CREATE(FE_region)(
+			/*master_fe_region*/(struct FE_region *)NULL,
+			basis_manager, element_shape_list);
+		ACCESS(FE_region)(region_fields->fe_region);
+		region_fields->access_count = 1;
+		if (!(region_fields->field_manager &&
+			region_fields->fe_region &&
+			Computed_field_manager_begin_autowrap_FE_fields(
+				region_fields->field_manager, region_fields->fe_region)))
+		{
+			DEACCESS(Cmiss_region_fields)(&region_fields);
+		}
+	}
+	if (!region_fields)
+	{
+		display_message(ERROR_MESSAGE,
+			"CREATE(Cmiss_region_fields).  Failed to construct");
+	}
+	LEAVE;
+	
+	return region_fields;
+} /* CREATE(Cmiss_region_fields) */
+
+int DESTROY(Cmiss_region_fields)(struct Cmiss_region_fields **region_fields_address)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2008
+
+DESCRIPTION :
+Frees the memory for the Cmiss_region_fields and sets
+<*cmiss_region_field_address> to NULL.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmiss_region_fields *region_fields;
+
+	ENTER(DESTROY(Cmiss_region_fields));
+	if (region_fields_address && (region_fields = *region_fields_address))
+	{
+		if (0 == region_fields->access_count)
+		{
+			Computed_field_manager_end_autowrap_FE_fields(
+				region_fields->field_manager, region_fields->fe_region);
+			DEACCESS(FE_region)(&region_fields->fe_region);
+			DESTROY(MANAGER(Computed_field))(&(region_fields->field_manager));
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"DESTROY(Cmiss_region_fields).  Non-zero access count");
+			return_code = 0;
+		}
+		*region_fields_address = (struct Cmiss_region_fields *)NULL;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Cmiss_region_fields).  Missing Cmiss_region_fields");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Cmiss_region_fields) */
+
+int Cmiss_region_fields_begin_change(struct Cmiss_region *region)
+/*******************************************************************************
+LAST MODIFIED : 26 May 2008
+
+DESCRIPTION :
+Forwards begin change cache to region fields.
+Note Cmiss_region is passed in rather than Cmiss_region_fields because currently
+the non-master FE_region is attached in the region's any_object_list.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_region_fields_begin_change);
+	if (region && region->fields)
+	{
+		FE_region_begin_change(Cmiss_region_get_FE_region(region));
+		MANAGER_BEGIN_CACHE(Computed_field)(region->fields->field_manager);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Cmiss_region_fields_begin_change.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_region_fields_begin_change */
+
+int Cmiss_region_fields_end_change(struct Cmiss_region *region)
+/*******************************************************************************
+LAST MODIFIED : 26 May 2008
+
+DESCRIPTION :
+Forwards end change cache to region fields.
+Note Cmiss_region is passed in rather than Cmiss_region_fields because currently
+the non-master FE_region is attached in the region's any_object_list.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_region_fields_end_change);
+	if (region && region->fields)
+	{
+		FE_region_end_change(Cmiss_region_get_FE_region(region));
+		MANAGER_END_CACHE(Computed_field)(region->fields->field_manager);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Cmiss_region_fields_end_change.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_region_fields_end_change */
+
+DECLARE_OBJECT_FUNCTIONS(Cmiss_region_fields)
+	
 static int Cmiss_region_update(struct Cmiss_region *region)
 /*******************************************************************************
 LAST MODIFIED : 4 December 2003
@@ -249,14 +418,14 @@ Global functions
 ----------------
 */
 
-DECLARE_OBJECT_FUNCTIONS(Cmiss_region)
-
-struct Cmiss_region *CREATE(Cmiss_region)(void)
+struct Cmiss_region *CREATE(Cmiss_region)()
 /*******************************************************************************
-LAST MODIFIED : 4 December 2003
+LAST MODIFIED : 23 May 2008
 
 DESCRIPTION :
-Creates an empty Cmiss_region.
+Private, partial constructor. Creates an empty Cmiss_region WITHOUT fields.
+The region is not fully constructed until Cmiss_region_attach_fields is called.
+Region is created with an access_count of 1; DEACCESS to destroy.
 ==============================================================================*/
 {
 	struct Cmiss_region *region;
@@ -264,6 +433,7 @@ Creates an empty Cmiss_region.
 	ENTER(CREATE(Cmiss_region));
 	if (ALLOCATE(region, struct Cmiss_region, 1))
 	{
+		region->fields = NULL;
 		region->any_object_list = CREATE(LIST(Any_object))();
 		region->number_of_child_regions = 0;
 		region->child = (struct Cmiss_region_child **)NULL;
@@ -275,13 +445,12 @@ Creates an empty Cmiss_region.
 		region->change = 0;
 		region->change_callback_list =
 			CREATE(LIST(CMISS_CALLBACK_ITEM(Cmiss_region_change)))();
-		region->access_count = 0;
+		region->access_count = 1;
 		if (!(region->any_object_list && region->change_callback_list))
 		{
 			display_message(ERROR_MESSAGE,
 				"CREATE(Cmiss_region).  Could not build region");
-			DESTROY(Cmiss_region)(&region);
-			region = (struct Cmiss_region *)NULL;
+			DEACCESS(Cmiss_region)(&region);
 		}
 	}
 	else
@@ -294,7 +463,108 @@ Creates an empty Cmiss_region.
 	return (region);
 } /* CREATE(Cmiss_region) */
 
-int DESTROY(Cmiss_region)(struct Cmiss_region **region_address)
+int Cmiss_region_attach_fields(struct Cmiss_region *region,
+	struct Cmiss_region *master_region,
+	enum Cmiss_region_attach_fields_variant variant)
+/*******************************************************************************
+LAST MODIFIED : 26 May 2008
+
+DESCRIPTION :
+Adds field-capability to <region> created with private constructor.
+If <master_region> is not supplied, region is created with its own fields, nodes
+and elements. 
+If <master_region> is supplied; then behaviour depends on the <variant>; see
+cases in code.
+==============================================================================*/
+{
+	int i, return_code;
+	struct FE_region *fe_region;
+
+	ENTER(Cmiss_region_attach_fields);
+	return_code = 0;
+	if (region && (!master_region ||
+		(master_region->fields && master_region->fields->fe_region))) 
+	{
+		if (region->fields || (NULL != Cmiss_region_get_FE_region(region)))
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmiss_region_attach_fields.  Region already has fields");
+		}
+		else
+		{
+			return_code = 1;
+			fe_region = (struct FE_region *)NULL;
+			if (master_region)
+			{
+				switch (variant)
+				{
+				case CMISS_REGION_SHARE_FIELDS_GROUP:
+					{
+						/* region shares master's fields but uses a subset of nodes and elements */
+						region->fields = ACCESS(Cmiss_region_fields)(master_region->fields);
+						fe_region = CREATE(FE_region)(master_region->fields->fe_region,
+							(struct MANAGER(FE_basis) *)NULL,
+							(struct LIST(FE_element_shape) *)NULL);
+					} break;
+				case CMISS_REGION_SHARE_FIELDS_DATA_HACK:
+					{
+						/* temporary: region shares master's fields but has its own nodes */
+						region->fields = ACCESS(Cmiss_region_fields)(master_region->fields);
+						fe_region = create_data_hack_FE_region(master_region->fields->fe_region);
+					} break;
+				case CMISS_REGION_SHARE_BASES_SHAPES:
+				default:
+					{
+						/* creates a full region sharing the basis manager and shape list from
+						 * the master region */
+						region->fields = CREATE(Cmiss_region_fields)(
+							FE_region_get_basis_manager(master_region->fields->fe_region),
+							FE_region_get_FE_element_shape_list(master_region->fields->fe_region));
+						if (region->fields)
+						{
+							fe_region = region->fields->fe_region;
+						}
+					} break;
+				}
+			}
+			else
+			{
+				region->fields = CREATE(Cmiss_region_fields)(
+					(struct MANAGER(FE_basis) *)NULL,
+					(struct LIST(FE_element_shape) *)NULL);
+				if (region->fields)
+				{
+					fe_region = region->fields->fe_region;
+				}
+			}
+			ACCESS(FE_region)(fe_region);
+			if (region->fields && Cmiss_region_attach_FE_region(region, fe_region))
+			{
+				/* must catch up to region change counter */
+				for (i = 0; i < region->change; i++)
+				{
+					Cmiss_region_fields_begin_change(region);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"Cmiss_region_attach_fields.  Failed");
+				return_code = 0;
+			}
+			DEACCESS(FE_region)(&fe_region);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_region_attach_fields.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_region_attach_fields */
+
+static int DESTROY(Cmiss_region)(struct Cmiss_region **region_address)
 /*******************************************************************************
 LAST MODIFIED : 4 December 2003
 
@@ -330,6 +600,7 @@ Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
 			}
 			DESTROY(LIST(CMISS_CALLBACK_ITEM(Cmiss_region_change)))(
 				&(region->change_callback_list));
+			DEACCESS(Cmiss_region_fields)(&region->fields);
 			DEALLOCATE(*region_address);
 			return_code = 1;
 		}
@@ -351,6 +622,128 @@ Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
 
 	return (return_code);
 } /* DESTROY(Cmiss_region) */
+
+DECLARE_OBJECT_FUNCTIONS(Cmiss_region)
+
+struct Cmiss_region *Cmiss_region_create(void)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2008
+
+DESCRIPTION :
+Creates a full Cmiss_region, able to have its own fields.
+Region is created with an access_count of 1; DEACCESS to destroy.
+==============================================================================*/
+{
+	struct Cmiss_region *region;
+
+	ENTER(Cmiss_region_create);
+	region = CREATE(Cmiss_region)();
+	if (!region || !Cmiss_region_attach_fields(region,/*master_region*/NULL,
+		CMISS_REGION_SHARE_BASES_SHAPES))
+	{
+		DEACCESS(Cmiss_region)(&region);
+	}
+	LEAVE;
+
+	return (region);
+} /* Cmiss_region_create */
+
+struct Cmiss_region *Cmiss_region_create_group(
+	struct Cmiss_region *master_region)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2008
+
+DESCRIPTION :
+Creates an empty Cmiss_region that shares the fields with master_region but
+uses a subset of its nodes and element (i.e. a group).
+Region is created with an access_count of 1; DEACCESS to destroy.
+Consider as private: NOT approved for exposing in API.
+==============================================================================*/
+{
+	struct Cmiss_region *region;
+
+	ENTER(Cmiss_region_create_group);
+	region = (struct Cmiss_region *)NULL;
+	if (master_region)
+	{
+		region = CREATE(Cmiss_region)();
+		if (!region || !Cmiss_region_attach_fields(region, master_region,
+			CMISS_REGION_SHARE_FIELDS_GROUP))
+		{
+			DEACCESS(Cmiss_region)(&region);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_region_create_group.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (region);
+} /* Cmiss_region_create_group */
+
+struct Cmiss_region *Cmiss_region_create_share_globals(
+		struct Cmiss_region *source_region)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2008
+
+DESCRIPTION :
+Equivalent to Cmiss_region_create(), except the new region uses
+global basis_manager and shape_list from <source_region>.
+Region is created with an access_count of 1; DEACCESS to destroy.
+Consider as private: NOT approved for exposing in API.
+==============================================================================*/
+{
+	struct Cmiss_region *region;
+
+	ENTER(Cmiss_region_create_share_globals);
+	region = (struct Cmiss_region *)NULL;
+	if (source_region)
+	{
+		region = CREATE(Cmiss_region)();
+		if (!region || !Cmiss_region_attach_fields(region, source_region,
+			CMISS_REGION_SHARE_BASES_SHAPES))
+		{
+			DEACCESS(Cmiss_region)(&region);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_region_create_share_globals.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (region);
+} /* Cmiss_region_create_share_globals */
+
+struct MANAGER(Computed_field) *Cmiss_region_get_Computed_field_manager(
+	struct Cmiss_region *cmiss_region)
+/*******************************************************************************
+LAST MODIFIED : 20 May 2008
+
+DESCRIPTION :
+Returns the field manager containing all the fields for this region.
+==============================================================================*/
+{
+	struct MANAGER(Computed_field) *field_manager;
+
+	ENTER(Cmiss_region_get_Computed_field_manager);
+	if (cmiss_region && cmiss_region->fields)
+	{
+		field_manager = cmiss_region->fields->field_manager;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_region_get_Computed_field_manager.  Invalid argument(s)");
+		field_manager = (struct MANAGER(Computed_field) *)NULL;
+	}
+	LEAVE;
+
+	return (field_manager);
+} /* Cmiss_region_get_Computed_field_manager */
 
 int set_Cmiss_region_path(struct Parse_state *state, void *path_address_void,
 	void *root_region_void)
@@ -468,14 +861,14 @@ region path in <path_address> relative to the <root_region>.
 
 int Cmiss_region_begin_change(struct Cmiss_region *region)
 /*******************************************************************************
-LAST MODIFIED : 10 December 2002
+LAST MODIFIED : 26 May 2008
 
 DESCRIPTION :
 Increments the change counter in <region>. No update callbacks will occur until
 change counter is restored to zero by calls to Cmiss_region_end_change.
-???RC Make recursive/hierarchical?
-???RC Difficult to make recursive/hierarchical since if new children are
-added they would not be included!
+Also begins caching of changes to fields in <region>, which also begins
+automatically when fields are added during a change. 
+Note this is NOT Hierarchical: child region change caching is not affected. 
 ==============================================================================*/
 {
 	int return_code;
@@ -484,6 +877,10 @@ added they would not be included!
 	if (region)
 	{
 		region->change++;
+		if (region->fields)
+		{
+			Cmiss_region_fields_begin_change(region);
+		}
 		return_code = 1;
 	}
 	else
@@ -499,14 +896,14 @@ added they would not be included!
 
 int Cmiss_region_end_change(struct Cmiss_region *region)
 /*******************************************************************************
-LAST MODIFIED : 10 December 2002
+LAST MODIFIED : 26 May 2008
 
 DESCRIPTION :
 Decrements the change counter in <region>. No update callbacks occur until the
 change counter is restored to zero by this function.
-???RC Make recursive/hierarchical?
-???RC Difficult to make recursive/hierarchical since if new children are
-added they would not be included!
+Also ends caching of changes to fields in <region>, which also ends
+automatically when fields are removed during a change. 
+Note this is NOT Hierarchical: child region change caching is not affected. 
 ==============================================================================*/
 {
 	int return_code;
@@ -516,6 +913,10 @@ added they would not be included!
 	{
 		if (0 < region->change)
 		{
+			if (region->fields)
+			{
+				Cmiss_region_fields_end_change(region);
+			}
 			region->change--;
 			if (0 == region->change)
 			{
@@ -1170,39 +1571,35 @@ Gets the number of child regions in <region>.
 	return (return_code);
 } /* Cmiss_region_get_number_of_child_regions */
 
-int Cmiss_region_get_child_region(struct Cmiss_region *region,
-	int child_number, struct Cmiss_region **child_region_address)
+struct Cmiss_region *Cmiss_region_get_child_region(struct Cmiss_region *region,
+	int child_number)
 /*******************************************************************************
-LAST MODIFIED : 7 November 2002
+LAST MODIFIED : 26 May 2008
 
 DESCRIPTION :
-Returns at <child_region_address> child region <child_number> of <region>.
-<child_number> ranges from 0 to one less than number_of_child_regions.
-For safety, returns NULL in <child_region_address> on any error.
+Returns the child <child_number> of <region> if within the range from 0 to
+one less than number_of_child_regions, otherwise NULL.
 ==============================================================================*/
 {
-	int return_code;
+	struct Cmiss_region *child_region;
 
 	ENTER(Cmiss_region_get_child_region);
-	if (region && (0 <= child_number) &&
-		(child_number < region->number_of_child_regions) && child_region_address)
+	child_region = (struct Cmiss_region *)NULL;
+	if (region)
 	{
-		*child_region_address = (region->child[child_number])->region;
-		return_code = 1;
+		if ((0 <= child_number) && (child_number < region->number_of_child_regions))
+		{
+			child_region = (region->child[child_number])->region;
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmiss_region_get_child_region.  Invalid argument(s)");
-		return_code = 0;
-		if (child_region_address)
-		{
-			*child_region_address = (struct Cmiss_region *)NULL;
-		}
 	}
 	LEAVE;
 
-	return (return_code);
+	return (child_region);
 } /* Cmiss_region_get_child_region */
 
 int Cmiss_region_get_child_region_name(struct Cmiss_region *region,

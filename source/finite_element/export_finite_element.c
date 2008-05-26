@@ -2928,8 +2928,8 @@ Notes:
 			{
 				for (i = 0; (i < number_of_children) && return_code; i++)
 				{
-					if (return_code =
-						Cmiss_region_get_child_region(region, i, &child_region) &&
+					child_region = Cmiss_region_get_child_region(region, i);
+					if (return_code = (NULL != child_region) &&
 						Cmiss_region_get_child_region_name(region, i, &child_region_name))
 					{
 						/* determine if child_region is to be written */
@@ -3164,11 +3164,11 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 			for (i = 0; (i < number_of_children) && (!region_format) && return_code;
 				i++)
 			{
-				if ((return_code =
-					Cmiss_region_get_child_region(root_region, i, &child_region)) &&
+				child_region = Cmiss_region_get_child_region(root_region, i);
+				if (return_code = (NULL != child_region) &&
 					((!write_region) || (write_region == child_region)) &&
-					(return_code = Cmiss_region_get_number_of_child_regions(child_region,
-						&child_number_of_children)))
+					Cmiss_region_get_number_of_child_regions(child_region,
+						&child_number_of_children))
 				{
 					if (0 < child_number_of_children)
 					{
@@ -3200,12 +3200,12 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 			{
 				for (i = 0; (i < number_of_children) && return_code; i++)
 				{
-					if ((return_code = Cmiss_region_get_child_region(root_region, i,
-						&child_region)) &&
+					child_region = Cmiss_region_get_child_region(root_region, i);
+					if (return_code = (child_region != NULL) &&
 						((!write_region) || (write_region == root_region) ||
 							(child_region == write_region)) &&
-						(return_code = Cmiss_region_get_child_region_name(root_region,
-							i, &child_region_name)))
+						Cmiss_region_get_child_region_name(root_region,
+							i, &child_region_name))
 					{
 						fprintf(output_file, " Group name: %s\n", child_region_name);
 						if (fe_region = Cmiss_region_get_FE_region(child_region))

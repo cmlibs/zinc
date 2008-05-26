@@ -52,6 +52,37 @@ Global functions
 ----------------
 */
 
+struct Cmiss_region *CREATE(Cmiss_region)();
+/*******************************************************************************
+LAST MODIFIED : 22 May 2008
+
+DESCRIPTION :
+Partial constructor. Creates an empty Cmiss_region WITHOUT fields.
+The region is not fully constructed until Cmiss_region_attach_fields is called.
+Region is created with an access_count of 1; DEACCESS to destroy.
+==============================================================================*/
+
+enum Cmiss_region_attach_fields_variant
+{
+	CMISS_REGION_SHARE_BASES_SHAPES,
+	CMISS_REGION_SHARE_FIELDS_GROUP,
+	CMISS_REGION_SHARE_FIELDS_DATA_HACK
+};
+
+int Cmiss_region_attach_fields(struct Cmiss_region *region,
+	struct Cmiss_region *master_region,
+	enum Cmiss_region_attach_fields_variant variant);
+/*******************************************************************************
+LAST MODIFIED : 23 May 2008
+
+DESCRIPTION :
+Adds field-capability to <region> created with private constructor.
+If <master_region> is not supplied, region is created with its own fields, nodes
+and elements. 
+If <master_region> is supplied; then behaviour depends on the <variant>; see
+cases in code.
+==============================================================================*/
+
 int Cmiss_region_private_attach_any_object(struct Cmiss_region *region,
 	struct Any_object *any_object);
 /*******************************************************************************

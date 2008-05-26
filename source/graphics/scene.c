@@ -1802,8 +1802,9 @@ associated data_Cmiss_region.
 			&number_of_child_regions);
 		for (i = 0; i < number_of_child_regions; i++)
 		{
-			if (Cmiss_region_get_child_region(scene->root_region, /*child_number*/i,
-				&child_region) &&
+			child_region = Cmiss_region_get_child_region(
+				scene->root_region, /*child_number*/i);
+			if ((NULL != child_region) &&
 				Cmiss_region_get_child_region_name(scene->root_region,
 					/*child_number*/i, &child_region_name))
 			{
@@ -1820,6 +1821,7 @@ associated data_Cmiss_region.
 			}
 		}
 		Scene_end_cache(scene);
+		return_code = 1;
 	}
 	else
 	{

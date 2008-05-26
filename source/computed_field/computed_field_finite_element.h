@@ -368,6 +368,29 @@ LAST MODIFIED : 9 Oct 2007
 
 DESCRIPTION :
 ==============================================================================*/
+
+int Computed_field_manager_begin_autowrap_FE_fields(
+	struct MANAGER(Computed_field) *computed_field_manager,
+	struct FE_region *fe_region);
+/*******************************************************************************
+LAST MODIFIED : 22 May 2008
+
+DESCRIPTION :
+Establishes callbacks to automatically wrap FE_fields from <fe_region> in
+finite element computed fields in <computed_field_manager>.
+==============================================================================*/
+
+int Computed_field_manager_end_autowrap_FE_fields(
+	struct MANAGER(Computed_field) *computed_field_manager,
+	struct FE_region *fe_region);
+/*******************************************************************************
+LAST MODIFIED : 22 May 2008
+
+DESCRIPTION :
+Ends automatically wrapping of FE_fields from <fe_region> in
+finite element computed fields in <computed_field_manager>.
+==============================================================================*/
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

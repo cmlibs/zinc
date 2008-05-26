@@ -56,50 +56,6 @@ Global functions
 ----------------
 */
 
-struct Cmiss_region *Cmiss_region_create(void)
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-Creates an empty Cmiss_region.
-==============================================================================*/
-{
-	struct Cmiss_region *region;
-	struct FE_region *fe_region;
-	struct LIST(FE_element_shape) *element_shape_list;
-	struct MANAGER(FE_basis) *basis_manager;
-
-	ENTER(Cmiss_region_create);
-	if (region = CREATE(Cmiss_region)())
-	{
-		ACCESS(Cmiss_region)(region);
-		if ((basis_manager=CREATE_MANAGER(FE_basis)()) && 
-			(element_shape_list=CREATE(LIST(FE_element_shape))()))
-		{
-			if (fe_region=CREATE(FE_region)((struct FE_region *)NULL,basis_manager,
-					 element_shape_list))
-			{
-				if (!Cmiss_region_attach_FE_region(region,fe_region))
-				{
-					DEACCESS(Cmiss_region)(&region);
-				}
-			}
-			else
-			{
-				DEACCESS(Cmiss_region)(&region);
-			}
-		}
-		else
-		{
-			DEACCESS(Cmiss_region)(&region);
-		}
-
-	}
-	LEAVE;
-
-	return (region);
-} /* Cmiss_region_create */
-
 int Cmiss_region_destroy(Cmiss_region_id *region)
 /*******************************************************************************
 LAST MODIFIED : 3 January 2008
@@ -181,35 +137,29 @@ efficiently, resulting in only one update of the dependent objects.
 
 int Cmiss_region_read_file(struct Cmiss_region *region, char *file_name)
 /*******************************************************************************
-LAST MODIFIED : 13 August 2002
+LAST MODIFIED : 23 May 2008
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
 	struct Cmiss_region *temp_region;
-	struct FE_region *fe_region;
 	struct IO_stream_package *io_stream_package;
-	struct LIST(FE_element_shape) *element_shape_list;
-	struct MANAGER(FE_basis) *basis_manager;
 
 	ENTER(Cmiss_region_read_file);
 	return_code = 0;
-	if (region&&file_name&&(fe_region=Cmiss_region_get_FE_region(region))&&
-		(basis_manager=FE_region_get_basis_manager(fe_region))&&
-		(element_shape_list=FE_region_get_FE_element_shape_list(fe_region)) && 
-		(io_stream_package=CREATE(IO_stream_package)()))
+	if (region && file_name && (io_stream_package=CREATE(IO_stream_package)()))
 	{
-		if (temp_region=read_exregion_file_of_name(file_name,io_stream_package,
-			basis_manager,element_shape_list,(struct FE_import_time_index *)NULL))
+		temp_region = Cmiss_region_create_share_globals(region);
+		if (read_exregion_file_of_name(temp_region,file_name,io_stream_package,
+			(struct FE_import_time_index *)NULL))
 		{
-			ACCESS(Cmiss_region)(temp_region);
 			if (Cmiss_regions_FE_regions_can_be_merged(region,temp_region))
 			{
 				return_code=Cmiss_regions_merge_FE_regions(region,temp_region);
 			}
-			DEACCESS(Cmiss_region)(&temp_region);
 		}
+		DEACCESS(Cmiss_region)(&temp_region);
 		DESTROY(IO_stream_package)(&io_stream_package);
 	}
 	LEAVE;

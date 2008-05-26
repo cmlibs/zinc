@@ -184,8 +184,6 @@ extern "C" {
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "general/value.h"
-#include "general/any_object_private.h"
-#include "region/cmiss_region_private.h"
 #include "user_interface/message.h"
 }
 #include <typeinfo>
@@ -4626,35 +4624,44 @@ Default listing of source fields and source values.
 	return (command_string);
 } /* Computed_field_core::get_command_string */
 
-struct Computed_field_package *CREATE(Computed_field_package)(void)
+struct Computed_field_package *CREATE(Computed_field_package)(
+	struct MANAGER(Computed_field) *computed_field_manager)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 20 May 2008
 
 DESCRIPTION :
 Creates a Computed_field_package which is used by the rest of the program to
-access everything to do with computed fields. The computed_field_manager is
-created as part of the package.
+access everything to do with computed fields.
+The root_region's computed_field_manager is passed in to support old code that
+expects it to be in the package. This is temporary until all code gets the true
+manager from the respective Cmiss_region.
 ==============================================================================*/
 {
-	struct Computed_field_package *computed_field_package;
+	struct Computed_field_package *computed_field_package = NULL;
 
 	ENTER(CREATE(Computed_field_package));
-	if (ALLOCATE(computed_field_package,struct Computed_field_package,1)&&
-		(computed_field_package->computed_field_manager=
-			CREATE(MANAGER(Computed_field))()))
+	if (computed_field_manager)
 	{
-		computed_field_package->computed_field_type_list =
-			CREATE(LIST(Computed_field_type_data))();
-		computed_field_package->simple_package =
-			new Computed_field_simple_package(
-				computed_field_package->computed_field_manager);
-		computed_field_package->simple_package->addref();
+		if (ALLOCATE(computed_field_package,struct Computed_field_package,1))
+		{
+			computed_field_package->computed_field_manager=computed_field_manager;
+			computed_field_package->computed_field_type_list =
+				CREATE(LIST(Computed_field_type_data))();
+			computed_field_package->simple_package =
+				new Computed_field_simple_package(
+					computed_field_package->computed_field_manager);
+			computed_field_package->simple_package->addref();
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"CREATE(Computed_field_package).  Not enough memory");
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(Computed_field_package).  Not enough memory");
-		DEALLOCATE(computed_field_package);
+			"CREATE(Computed_field_package).  Invalid argument(s)");
 	}
 	LEAVE;
 
@@ -4677,7 +4684,7 @@ Cancels any further messages from managers.
 	ENTER(DESTROY(Computed_field_package));
 	if (package_address&&(computed_field_package= *package_address))
 	{
-		DESTROY(MANAGER(Computed_field))(&computed_field_package->computed_field_manager);
+		/* not destroying field manager as not owned by package */
 		DESTROY(LIST(Computed_field_type_data))(
 			&computed_field_package->computed_field_type_list);
 		computed_field_package->simple_package->removeref();
@@ -5044,85 +5051,3 @@ Changes the name of a field.
 
 	return (return_code);
 } /* Computed_field_set_name */
-
-PROTOTYPE_ANY_OBJECT(MANAGER(Computed_field));
-
-DEFINE_ANY_OBJECT(MANAGER(Computed_field))
-
-int Cmiss_region_attach_Computed_field_manager(
-	struct Cmiss_region *cmiss_region,
-	struct MANAGER(Computed_field) *field_manager)
-/*******************************************************************************
-LAST MODIFIED : 21 April 2008
-
-DESCRIPTION :
-Adds <field_manager> to the list of objects attached to <cmiss_region>.
-==============================================================================*/
-{
-	int return_code;
-	struct Any_object *any_object;
-
-	ENTER(Cmiss_region_attach_Computed_field_manager);
-	return_code = 0;
-	if (cmiss_region && field_manager)
-	{
-		if (Cmiss_region_get_Computed_field_manager(cmiss_region))
-		{
-			display_message(ERROR_MESSAGE, "Cmiss_region_attach_Computed_field_manager.  "
-				"Cmiss_region already has an Computed_field_manager");
-		}
-		else
-		{
-			if ((any_object = CREATE(ANY_OBJECT(manager_Computed_field))(field_manager)) &&
-				Cmiss_region_private_attach_any_object(cmiss_region, any_object))
-			{
-				return_code = 1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Cmiss_region_attach_Computed_field_manager.  Could not attach object");
-				DESTROY(Any_object)(&any_object);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_region_attach_Computed_field_manager.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_region_attach_Computed_field_manager */
-
-struct MANAGER(Computed_field) *Cmiss_region_get_Computed_field_manager(
-	struct Cmiss_region *cmiss_region)
-/*******************************************************************************
-LAST MODIFIED : 21 April 2008
-
-DESCRIPTION :
-Currently, a Cmiss_region may have at most one Computed_field_manager.
-This function returns it, or NULL if no Computed_field_manager found.
-==============================================================================*/
-{
-	struct MANAGER(Computed_field) *field_manager;
-
-	ENTER(Cmiss_region_get_Computed_field_manager);
-	field_manager = (struct MANAGER(Computed_field) *)NULL;
-	if (cmiss_region)
-	{
-		field_manager = FIRST_OBJECT_IN_LIST_THAT(ANY_OBJECT(manager_Computed_field))(
-			(ANY_OBJECT_CONDITIONAL_FUNCTION(manager_Computed_field) *)NULL, (void *)NULL,
-			Cmiss_region_private_get_any_object_list(cmiss_region));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_region_get_Computed_field_manager.  Missing Cmiss_region");
-	}
-	LEAVE;
-
-	return (field_manager);
-} /* Cmiss_region_get_Computed_field_manager */
-

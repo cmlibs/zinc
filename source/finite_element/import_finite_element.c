@@ -3405,19 +3405,18 @@ Global functions
 ----------------
 */
 
-struct Cmiss_region *read_exregion_file(struct IO_stream *input_file,
-	struct MANAGER(FE_basis) *basis_manager,
-	struct LIST(FE_element_shape) *element_shape_list,
-	struct FE_import_time_index *time_index)
+int read_exregion_file(struct Cmiss_region *region,
+	struct IO_stream *input_file, struct FE_import_time_index *time_index)
 /*******************************************************************************
-LAST MODIFIED : 23 August 2004
+LAST MODIFIED : 23 May 2008
 
 DESCRIPTION :
-Reads finite element groups in exnode/exelem format from <input_file>.
-If successful, a Cmiss_region structure is returned which contains all the
-groups as its named children. The fields, nodes and elements in each child
-region are independent of one another; it is up to the calling function to
-merge, clean up or otherwise deal with the returned Cmiss_region.
+Reads finite element groups in exnode/exelem format from <input_file> into
+<region>. Groups in the file are created as child group regions of <region>,
+sharing its definitions of fields, nodes and elements.
+It is good practice to read the file into a newly created region and check it
+can be merged into the global region before doing so, otherwise failure to
+merge incompatible data will leave the global region in a compromised state.
 If the <time_index> is non NULL then the values in this read are assumed
 to belong to the specified time.  This means that the nodal values will be read
 into an array and the correct index put into the corresponding time array.
@@ -3433,45 +3432,26 @@ If objects are repeated in the file, they are merged correctly.
 		*temp_string, test_string[5];
 	int input_result, return_code;
 	struct CM_element_information element_identifier;
-	struct Cmiss_region *root_region, *region;
-	struct FE_region *root_fe_region, *fe_region;
+	struct Cmiss_region *child_region;
+	struct FE_region *fe_region;
 	struct FE_element *element, *template_element;
 	struct FE_element_shape *element_shape;
 	struct FE_field_order_info *field_order_info;
 	struct FE_node *node, *template_node;
 
 	ENTER(read_exregion_file);
-	root_region = (struct Cmiss_region *)NULL;
-	if (input_file && basis_manager)
+	return_code = 0;
+	if (region && input_file)
 	{
-		root_fe_region = (struct FE_region *)NULL;
-		/* create the top-level region for reading groups into */
-		if ((root_region = CREATE(Cmiss_region)()) &&
-			(root_fe_region = CREATE(FE_region)((struct FE_region *)NULL,
-				basis_manager, element_shape_list)) &&
-			Cmiss_region_attach_FE_region(root_region, root_fe_region))
-		{
-			Cmiss_region_begin_change(root_region);
-			FE_region_begin_change(root_fe_region);
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"read_exregion_file.  Could not create top-level region");
-			if (root_fe_region)
-			{
-				DESTROY(FE_region)(&root_fe_region);
-			}
-			return_code = 0;
-		}
+		Cmiss_region_begin_change(region);
 		field_order_info = (struct FE_field_order_info *)NULL;
 		template_node = (struct FE_node *)NULL;
 		template_element = (struct FE_element *)NULL;
 		element_shape = (struct FE_element_shape *)NULL;
-		region = (struct Cmiss_region *)NULL;
+		child_region = (struct Cmiss_region *)NULL;
 		fe_region = (struct FE_region *)NULL;
 		input_result = 1;
+		return_code = 1;
 		while (return_code && (1 == input_result))
 		{
 			/* get first character in next token */
@@ -3485,15 +3465,11 @@ If objects are repeated in the file, they are merged correctly.
 				{
 					case 'G':
 					{
-						if (fe_region)
+						if (child_region)
 						{
-							FE_region_end_change(fe_region);
+							Cmiss_region_end_change(child_region);
+							DEACCESS(Cmiss_region)(&child_region);
 						}
-						if (region)
-						{
-							Cmiss_region_end_change(region);
-						}
-						region = (struct Cmiss_region *)NULL;
 						fe_region = (struct FE_region *)NULL;
 						/* Use a %1[:] so that a successful read will return 1 */
 						if (1 != IO_stream_scan(input_file,"roup name %1[:] ", test_string))
@@ -3523,44 +3499,34 @@ If objects are repeated in the file, they are merged correctly.
 							DEALLOCATE(location);
 							return_code = 0;
 						}
-						/* make sure we have a child region of that name */
+						/* make sure we have a child child_region of that name */
 						if (return_code)
 						{
-							if (!(region = Cmiss_region_get_child_region_from_name(
-								root_region, group_name)))
+							if (child_region = Cmiss_region_get_child_region_from_name(
+								region, group_name))
 							{
-								region = CREATE(Cmiss_region)();
-								if (!Cmiss_region_add_child_region(root_region,
-									region, group_name, /*child_position*/-1))
+								ACCESS(Cmiss_region)(child_region);
+							}
+							else
+							{
+								child_region = Cmiss_region_create_group(region);
+								if (!Cmiss_region_add_child_region(region,
+									child_region, group_name, /*child_position*/-1))
 								{
 									location = IO_stream_get_location_string(input_file);
 									display_message(ERROR_MESSAGE,
 										"read_exregion_file.  Could not add child region");
-									DESTROY(Cmiss_region)(&region);
-									region = (struct Cmiss_region *)NULL;
 									DEALLOCATE(location);
 									return_code = 0;
 								}
 							}
-							if (region)
+							if (!(fe_region = Cmiss_region_get_FE_region(child_region)))
 							{
-								if (!(fe_region = Cmiss_region_get_FE_region(region)))
-								{
-									/*???RC Later allow separate namespace for group,
-										Use "Region name : NAME" token instead? */
-									fe_region = CREATE(FE_region)(root_fe_region, basis_manager,
-										element_shape_list);
-									if (!Cmiss_region_attach_FE_region(region, fe_region))
-									{
-										location = IO_stream_get_location_string(input_file);
-										display_message(ERROR_MESSAGE, "read_exregion_file.  "
-											"Could not attach finite element region");
-										DESTROY(FE_region)(&fe_region);
-										fe_region = (struct FE_region *)NULL;
-										DEALLOCATE(location);
-										return_code = 0;
-									}
-								}
+								location = IO_stream_get_location_string(input_file);
+								display_message(ERROR_MESSAGE, "read_exregion_file.  "
+									"Could not get finite element region");
+								DEALLOCATE(location);
+								return_code = 0;
 							}
 						}
 						if (group_name)
@@ -3580,13 +3546,12 @@ If objects are repeated in the file, they are merged correctly.
 						{
 							DEACCESS(FE_element_shape)(&element_shape);
 						}
-						if (region)
+						if (child_region)
 						{
-							Cmiss_region_begin_change(region);
+							Cmiss_region_begin_change(child_region);
 						}
 						if (fe_region)
 						{
-							FE_region_begin_change(fe_region);
 							/* create the initial template node for no fields */
 							template_node =
 								CREATE(FE_node)(1, fe_region, (struct FE_node *)NULL);
@@ -3731,7 +3696,7 @@ If objects are repeated in the file, they are merged correctly.
 							{	
 								/* read node */
 								if (node = read_FE_node(input_file, template_node, fe_region,
-									root_region, field_order_info, time_index))
+									region, field_order_info, time_index))
 								{
 									ACCESS(FE_node)(node);
 									if (!FE_region_merge_FE_node(fe_region, node))
@@ -3821,7 +3786,7 @@ If objects are repeated in the file, they are merged correctly.
 						/* read in field values */
 						if ((template_node || template_element) && field_order_info)
 						{
-							if (!read_FE_field_values(input_file, fe_region, root_region,
+							if (!read_FE_field_values(input_file, fe_region, region,
 								field_order_info))
 							{
 								location = IO_stream_get_location_string(input_file);
@@ -3867,18 +3832,10 @@ If objects are repeated in the file, they are merged correctly.
 				} /* switch (first_character_in_token) */
 			} /* if (1 == input_result) */
 		} /* while (return_code && (1 == input_result)) */
-		if (fe_region)
+		if (child_region)
 		{
-			FE_region_end_change(fe_region);
-		}
-		if (region)
-		{
-			Cmiss_region_end_change(region);
-		}
-		if (root_region && root_fe_region)
-		{
-			FE_region_end_change(root_fe_region);
-			Cmiss_region_end_change(root_region);
+			Cmiss_region_end_change(child_region);
+			DEACCESS(Cmiss_region)(&child_region);
 		}
 		if (template_node)
 		{
@@ -3896,51 +3853,42 @@ If objects are repeated in the file, they are merged correctly.
 		{
 			DESTROY(FE_field_order_info)(&field_order_info);
 		}
-		if (!return_code)
-		{
-			if (root_region)
-			{
-				DESTROY(Cmiss_region)(&root_region);
-				root_region = (struct Cmiss_region *)NULL;
-			}
-		}
+		Cmiss_region_end_change(region);
 	}
 	else
 	{
-					location = IO_stream_get_location_string(input_file);
+		location = IO_stream_get_location_string(input_file);
 		display_message(ERROR_MESSAGE, "read_exregion_file.  Invalid argument(s)");
 		DEALLOCATE(location);
 		return_code = 0;
 	}
 	LEAVE;
 
-	return (root_region);
+	return (return_code);
 } /* read_exregion_file */
 
-struct Cmiss_region *read_exregion_file_of_name(char *file_name,
+int read_exregion_file_of_name(struct Cmiss_region *region, char *file_name,
 	struct IO_stream_package *io_stream_package,
-	struct MANAGER(FE_basis) *basis_manager,
-	struct LIST(FE_element_shape) *element_shape_list,
 	struct FE_import_time_index *time_index)
 /*******************************************************************************
-LAST MODIFIED : 3 Septemeber 2004
+LAST MODIFIED : 23 May 2008
 
 DESCRIPTION :
 Version of read_exregion_file that opens and closes file <file_name>.
-Up to the calling function to merge the returned cmiss_region.
+Up to the calling function to check and merge the returned cmiss_region.
 ==============================================================================*/
 {
+	int return_code;
 	struct IO_stream *input_file;
-	struct Cmiss_region *root_region;
 
 	ENTER(read_exregion_file_of_name);
-	root_region = (struct Cmiss_region *)NULL;
-	if (file_name)
+	return_code = 0;
+	if (region && file_name)
 	{
 		if ((input_file = CREATE(IO_stream)(io_stream_package))
 			&& (IO_stream_open_for_read(input_file, file_name)))
 		{
-			root_region = read_exregion_file(input_file, basis_manager, element_shape_list, time_index);
+			return_code = read_exregion_file(region, input_file, time_index);
 			IO_stream_close(input_file);
 			DESTROY(IO_stream)(&input_file);
 		}
@@ -3957,5 +3905,5 @@ Up to the calling function to merge the returned cmiss_region.
 	}
 	LEAVE;
 
-	return (root_region);
+	return (return_code);
 } /* read_exregion_file_of_name */

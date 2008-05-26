@@ -3422,8 +3422,8 @@ Notes:
 			{
 				for (i = 0; (i < number_of_children) && return_code; i++)
 				{
-					if (return_code =
-						Cmiss_region_get_child_region(root_region, i, &child_region) &&
+					child_region = Cmiss_region_get_child_region(root_region, i);
+					if (return_code = (child_region != NULL) &&
 						Cmiss_region_get_child_region_name(region, i, &child_region_name))
 					{
 						/* determine if child_region is to be written */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : read_fieldml.h
 
-LAST MODIFIED : 15 May 2003
+LAST MODIFIED : 23 May 2008
 
 DESCRIPTION :
 ==============================================================================*/
@@ -43,17 +43,15 @@ DESCRIPTION :
 #if !defined (READ_FIELDML_H)
 #define READ_FIELDML_H
 
-struct Cmiss_region *parse_fieldml_file(char *filename,
-	struct MANAGER(FE_basis) *basis_manager,
-	struct LIST(FE_element_shape) *element_shape_list);
+int parse_fieldml_file(struct Cmiss_region *region, char *filename);
 /*******************************************************************************
-LAST MODIFIED : 15 May 2003
+LAST MODIFIED : 23 May 2008
 
 DESCRIPTION :
-Reads fieldml file <filename> and returns a Cmiss_region containing its
-contents. A NULL object return indicates an error.
-Up to the calling function to check, merge and destroy the returned
-Cmiss_region.
+Reads fieldml file <filename> into <region>.
+It is good practice to read the file into a newly created region and check it
+can be merged into the global region before doing so, otherwise failure to
+merge incompatible data will leave the global region in a compromised state.
 ==============================================================================*/
 #endif /* !defined (READ_FIELDML_H) */
 

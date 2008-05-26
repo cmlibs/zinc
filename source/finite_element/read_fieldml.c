@@ -153,7 +153,7 @@ FULL_DECLARE_LIST_TYPE(Fieldml_label_name);
 
 struct Fieldml_sax_data
 /*******************************************************************************
-LAST MODIFIED : 17 February 2003
+LAST MODIFIED : 23 May 2008
 
 DESCRIPTION :
 ==============================================================================*/
@@ -165,8 +165,6 @@ DESCRIPTION :
 								 parsing again when we end */
 	struct Cmiss_region *root_region;
 	struct FE_region *current_fe_region, *root_fe_region;
-	struct MANAGER(FE_basis) *basis_manager;
-	struct LIST(FE_element_shape) *element_shape_list;
 	struct LIST(Fieldml_label_name) *label_templates;
 	struct LIST(Fieldml_label_name) *basis_mappings;
 	struct LIST(Fieldml_label_name) *element_interpolations;
@@ -4923,41 +4921,28 @@ DESCRIPTION :
 	}
 	if (name)
 	{
-		if (!(region = Cmiss_region_get_child_region_from_name(
-					fieldml_data->root_region, name)))
+		if (region = Cmiss_region_get_child_region_from_name(
+			fieldml_data->root_region, name))
 		{
-			region = CREATE(Cmiss_region)();
+			ACCESS(Cmiss_region)(region);
+		}
+		else
+		{
+			region = Cmiss_region_create_group(fieldml_data->root_region);
 			if (!Cmiss_region_add_child_region(fieldml_data->root_region,
 					 region, name, /*child_position*/-1))
 			{
 				display_message(ERROR_MESSAGE,
 					"fieldml_start_group.  Could not add child region");
-				DESTROY(Cmiss_region)(&region);
-				region = (struct Cmiss_region *)NULL;
+				DEACCESS(Cmiss_region)(&region);
 			}
 		}
-		if (region)
-		{
-			if (!(fe_region = Cmiss_region_get_FE_region(region)))
-			{
-				/*???RC Later allow separate namespace for group,
-				  Use "Region name : NAME" token instead? */
-				fe_region = CREATE(FE_region)(fieldml_data->root_fe_region, 
-					fieldml_data->basis_manager, fieldml_data->element_shape_list);
-				if (!Cmiss_region_attach_FE_region(region, fe_region))
-				{
-					display_message(ERROR_MESSAGE, "fieldml_start_group.  "
-						"Could not attach finite element region");
-					DESTROY(FE_region)(&fe_region);
-					fe_region = (struct FE_region *)NULL;
-				}
-			}
-		}
-		if (region && fe_region)
+		if (region && (fe_region = Cmiss_region_get_FE_region(region)))
 		{
 			fieldml_data->current_fe_region = fe_region;
 			FE_region_begin_change(fieldml_data->current_fe_region);
 		}
+		DEACCESS(Cmiss_region)(&region);
 	}
 	else
 	{
@@ -5322,40 +5307,31 @@ DESCRIPTION :
 } /* specialXmlSAXParseFile */
 #endif /* defined (OLD_CODE) */
 
-struct Cmiss_region *parse_fieldml_file(char *filename,
-	struct MANAGER(FE_basis) *basis_manager,
-	struct LIST(FE_element_shape) *element_shape_list)
+int parse_fieldml_file(struct Cmiss_region *region, char *filename)
 /*******************************************************************************
-LAST MODIFIED : 19 April 2007
+LAST MODIFIED : 23 May 2008
 
 DESCRIPTION :
-Reads fieldml file <filename> and returns a Cmiss_region containing its
-contents. A NULL object return indicates an error.
-Up to the calling function to check, merge and destroy the returned
-Cmiss_region.
+Reads fieldml file <filename> into <region>.
+It is good practice to read the file into a newly created region and check it
+can be merged into the global region before doing so, otherwise failure to
+merge incompatible data will leave the global region in a compromised state.
 ==============================================================================*/
 {
 	int return_code;
 	static xmlSAXHandler fieldml_handler;
-	struct Cmiss_region *root_region;
 	struct Fieldml_sax_data fieldml_data;
 
 	ENTER(parse_fieldml_file);
-	root_region = (struct Cmiss_region *)NULL;
-	if (filename && basis_manager)
+	return_code = 0;
+	if (region && filename)
 	{
-		root_region = CREATE(Cmiss_region)();
 		fieldml_data.unknown_depth = 0;
 		fieldml_data.return_val = 0;
 		fieldml_data.fieldml_version = -1; /* Not in fieldml yet */
 		fieldml_data.fieldml_subversion = -1; /* Not in fieldml yet */
-		fieldml_data.basis_manager = basis_manager;
-		fieldml_data.element_shape_list = element_shape_list;
-		fieldml_data.root_region = root_region;
-		fieldml_data.root_fe_region =
-			CREATE(FE_region)((struct FE_region *)NULL, basis_manager, element_shape_list);
-		Cmiss_region_attach_FE_region(fieldml_data.root_region,
-			fieldml_data.root_fe_region);
+		fieldml_data.root_region = region;
+		fieldml_data.root_fe_region = Cmiss_region_get_FE_region(region);
 
 		Cmiss_region_begin_change(fieldml_data.root_region);
 		FE_region_begin_change(fieldml_data.root_fe_region);
@@ -5436,11 +5412,6 @@ Cmiss_region.
 			filename);
 		FE_region_end_change(fieldml_data.root_fe_region);
 		Cmiss_region_end_change(fieldml_data.root_region);
-		if (return_code != 0)
-		{
-			DESTROY(Cmiss_region)(&root_region);
-			root_region = (struct Cmiss_region *)NULL;
-		}
 
 		/* Clean up */
 		DESTROY(LIST(Fieldml_label_name))(&fieldml_data.label_templates);
@@ -5455,6 +5426,6 @@ Cmiss_region.
 	}
 	LEAVE;
 
-	return (root_region);
+	return (return_code);
 } /* parse_fieldml_file */
 #endif /* defined (HAVE_XML2) */

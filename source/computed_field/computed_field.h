@@ -73,7 +73,6 @@ if a value is already known.
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
-#include "region/cmiss_region.h"
 #include "user_interface/message.h"
 
 /* 
@@ -928,14 +927,17 @@ Lists a single line about a computed field including just name, number of
 components, coordinate system and type.
 ==============================================================================*/
 
-struct Computed_field_package *CREATE(Computed_field_package)(void);
+struct Computed_field_package *CREATE(Computed_field_package)(
+	struct MANAGER(Computed_field) *computed_field_manager);
 /*******************************************************************************
-LAST MODIFIED : 7 March 2003
+LAST MODIFIED : 20 May 2008
 
 DESCRIPTION :
 Creates a Computed_field_package which is used by the rest of the program to
-access everything to do with computed fields. The computed_field_manager is
-created as part of the package.
+access everything to do with computed fields.
+The root_region's computed_field_manager is passed in to support old code that
+expects it to be in the package. This is temporary until all code gets the true
+manager from the respective Cmiss_region.
 ==============================================================================*/
 
 int DESTROY(Computed_field_package)(
@@ -998,26 +1000,6 @@ LAST MODIFIED : 18 January 2007
 
 DESCRIPTION :
 Change the name of a field.
-==============================================================================*/
-
-int Cmiss_region_attach_Computed_field_manager(
-	struct Cmiss_region *cmiss_region,
-	struct MANAGER(Computed_field) *field_manager);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2008
-
-DESCRIPTION :
-Adds <field_manager> to the list of objects attached to <cmiss_region>.
-==============================================================================*/
-
-struct MANAGER(Computed_field) *Cmiss_region_get_Computed_field_manager(
-	struct Cmiss_region *cmiss_region);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2008
-
-DESCRIPTION :
-Currently, a Cmiss_region may have at most one Computed_field_manager.
-This function returns it, or NULL if no Computed_field_manager found.
 ==============================================================================*/
 
 #ifdef __cplusplus

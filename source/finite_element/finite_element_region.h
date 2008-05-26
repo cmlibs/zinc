@@ -1117,23 +1117,6 @@ Returns in <cmiss_region_address> either the owning <cmiss_region> for
 <fe_region> or NULL if none/error.
 ==============================================================================*/
 
-struct FE_region *Cmiss_region_get_or_create_child_FE_region(
-	struct Cmiss_region *parent_cmiss_region, char *child_name,
-	struct FE_region *master_fe_region, struct MANAGER(FE_basis) *basis_manager,
-	struct LIST(FE_element_shape) *element_shape_list);
-/*******************************************************************************
-LAST MODIFIED : 7 July 2003
-
-DESCRIPTION :
-Finds or creates a child of <parent_region> with the <child_region_name>.
-Within it it finds or creates and adds an FE_region with the given
-<master_fe_region> or <basis_manager>; this is returned.
-It is an error if the existing FE_region is not already using the supplied
-<master_fe_region> or <basis_manager>, only one of which may be supplied.
-Any new child Cmiss_region is add to the end of the parent_cmiss_region's list.
-This function is atomic.
-==============================================================================*/
-
 int FE_regions_can_be_merged(struct FE_region *global_fe_region,
 	struct FE_region *fe_region);
 /*******************************************************************************

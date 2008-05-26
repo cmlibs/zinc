@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_finite_element.h
 
-LAST MODIFIED : 3 September 2004
+LAST MODIFIED : 23 May 2008
 
 DESCRIPTION :
 Functions for importing finite element data from a file into the graphical
@@ -72,20 +72,19 @@ Global functions
 ----------------
 */
 
-struct Cmiss_region *read_exregion_file(struct IO_stream *input_file,
-	struct MANAGER(FE_basis) *basis_manager,
-	struct LIST(FE_element_shape) *element_shape_list,
-	struct FE_import_time_index *time_index);
+int read_exregion_file(struct Cmiss_region *region,
+	struct IO_stream *input_file, struct FE_import_time_index *time_index);
 /*******************************************************************************
-LAST MODIFIED : 23 August 2004
+LAST MODIFIED : 23 May 2008
 
 DESCRIPTION :
-Reads finite element groups in exnode/exelem format from <input_file>.
-If successful, a Cmiss_region structure is returned which contains all the
-groups as its named children. The fields, nodes and elements in each child
-region are independent of one another; it is up to the calling function to
-check and merge, clean up or otherwise deal with the returned Cmiss_region.
-If the <node_time_index> is non NULL then the values in this read are assumed
+Reads finite element groups in exnode/exelem format from <input_file> into
+<region>. Groups in the file are created as child group regions of <region>,
+sharing its definitions of fields, nodes and elements.
+It is good practice to read the file into a newly created region and check it
+can be merged into the global region before doing so, otherwise failure to
+merge incompatible data will leave the global region in a compromised state.
+If the <time_index> is non NULL then the values in this read are assumed
 to belong to the specified time.  This means that the nodal values will be read
 into an array and the correct index put into the corresponding time array.
 Where objects not within the file are referred to, such as nodes in a pure
@@ -96,13 +95,11 @@ in the file; if no path is supplied they are placed in the root region.
 If objects are repeated in the file, they are merged correctly.
 ==============================================================================*/
 
-struct Cmiss_region *read_exregion_file_of_name(char *file_name,
+int read_exregion_file_of_name(struct Cmiss_region *region, char *file_name,
 	struct IO_stream_package *io_stream_package,
-	struct MANAGER(FE_basis) *basis_manager,
-	struct LIST(FE_element_shape) *element_shape_list,
 	struct FE_import_time_index *time_index);
 /*******************************************************************************
-LAST MODIFIED : 3 September 2004
+LAST MODIFIED : 23 May 2008
 
 DESCRIPTION :
 Version of read_exregion_file that opens and closes file <file_name>.

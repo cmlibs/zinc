@@ -226,6 +226,7 @@ Functions for executing cmiss commands.
 #include "node/node_viewer_wx.h"
 #endif /* defined (MOTIF) */
 #include "region/cmiss_region.h"
+#include "region/cmiss_region_private.h" /* for data_hack */
 #include "selection/any_object_selection.h"
 #if defined (MOTIF)
 #include "three_d_drawing/movie_extensions.h"
@@ -2277,12 +2278,9 @@ Executes a GFX CREATE GROUP command.
 				{
 					Cmiss_region_get_region_from_path(root_region, region_path,
 						&base_region);
-					region = CREATE(Cmiss_region)();
-					ACCESS(Cmiss_region)(region);
-					fe_region = CREATE(FE_region)(/*master_fe_region*/
-						Cmiss_region_get_FE_region(base_region),
-						(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL);
-					ACCESS(FE_region)(fe_region);
+					region = Cmiss_region_create_group(base_region);
+					fe_region = Cmiss_region_get_FE_region(region);
+					FE_region_begin_change(fe_region);
 					if (0 < Multi_range_get_number_of_ranges(add_ranges))
 					{
 						if (Cmiss_region_get_region_from_path(root_region, from_region_path,
@@ -2315,11 +2313,10 @@ Executes a GFX CREATE GROUP command.
 							return_code = 0;
 						}
 					}
+					FE_region_end_change(fe_region);
 					return_code = return_code &&
-						Cmiss_region_attach_FE_region(region, fe_region) &&
 						Cmiss_region_add_child_region(base_region, region, name,
 							/*child_position*/-1);
-					DEACCESS(FE_region)(&fe_region);
 					DEACCESS(Cmiss_region)(&region);
 				}
 				DESTROY(Option_table)(&option_table);
@@ -4685,7 +4682,6 @@ Executes a GFX CREATE REGION command.
 	char *name;
 	int return_code;
 	struct Cmiss_region *region, *root_region;
-	struct FE_region *fe_region;
 
 	ENTER(gfx_create_region);
 	USE_PARAMETER(dummy);
@@ -4708,25 +4704,11 @@ Executes a GFX CREATE REGION command.
 				}
 				if (return_code)
 				{
-					if (region = CREATE(Cmiss_region)())
-					{
-						ACCESS(Cmiss_region)(region);
-						if (fe_region = CREATE(FE_region)(
-							/*master_fe_region*/(struct FE_region *)NULL,
-							/*the region should have it's own independent basis manager
-							  and fe_shape_list */
-							(struct MANAGER(FE_basis) *)NULL,
-							(struct LIST(FE_element_shape) *)NULL))
-						{
-							ACCESS(FE_region)(fe_region);
-							return_code = return_code &&
-								Cmiss_region_attach_FE_region(region, fe_region) &&
-								Cmiss_region_add_child_region(root_region, region, name,
-									/*child_position*/-1);
-							DEACCESS(FE_region)(&fe_region);
-						}
-						DEACCESS(Cmiss_region)(&region);
-					}
+					region = Cmiss_region_create_share_globals(root_region);
+					return_code = (NULL != region) &&
+						Cmiss_region_add_child_region(root_region, region, name,
+							/*child_position*/-1);
+					DEACCESS(Cmiss_region)(&region);
 				}
 			}
 		}
@@ -16769,46 +16751,30 @@ user, otherwise the elements file is read.
 					return_code = 0;
 				}
 			}
+			top_region = (struct Cmiss_region *)NULL;
 			if (region_path)
 			{
-				if (!(Cmiss_region_get_region_from_path(command_data->root_region,
-					region_path, &top_region) && top_region))
+				if (Cmiss_region_get_region_from_path(command_data->root_region,
+					region_path, &top_region) && top_region)
 				{
-					if (top_region = CREATE(Cmiss_region)())
+					ACCESS(Cmiss_region)(top_region);
+				}
+				else
+				{
+					top_region = Cmiss_region_create_share_globals(command_data->root_region);
+					if (!top_region || !Cmiss_region_add_child_region(
+						command_data->root_region,top_region, region_path,
+						/*child_position*/-1))
 					{
-						if (fe_region=CREATE(FE_region)((struct FE_region *)NULL,
-							(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL))
-						{
-							if (Cmiss_region_attach_FE_region(top_region,fe_region))
-							{
-								Cmiss_region_add_child_region(command_data->root_region, top_region, region_path,
-									/*child_position*/-1);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE, "gfx_read_nodes.  "
-									"Unable to attach new region.");
-								return_code = 0;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE, "gfx_read_nodes.  "
-								"Unable to make new finite element region.");
-							return_code = 0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE, "gfx_read_nodes.  "
-							"Unable to make new region, basis_manager or element_shape_list.");
+						display_message(ERROR_MESSAGE, "gfx_read_elements.  "
+							"Unable to create child region.");
 						return_code = 0;
 					}
 				}
 			}
 			else
 			{
-				top_region = command_data->root_region;
+				top_region = ACCESS(Cmiss_region)(command_data->root_region);
 			}
 			if (return_code)
 			{
@@ -16816,8 +16782,8 @@ user, otherwise the elements file is read.
 				if ((input_file = CREATE(IO_stream)(command_data->io_stream_package))
 					&& (IO_stream_open_for_read(input_file, file_name)))
 				{
-					if (region = read_exregion_file(input_file,
-						command_data->basis_manager, command_data->element_shape_list,
+					region = Cmiss_region_create_share_globals(command_data->root_region);
+					if (read_exregion_file(region, input_file,
 						(struct FE_import_time_index *)NULL))
 					{
 						if (element_flag || face_flag || line_flag || node_flag)
@@ -16874,7 +16840,6 @@ user, otherwise the elements file is read.
 						}
 						if (return_code)
 						{
-							ACCESS(Cmiss_region)(region);
 							if (generate_faces_and_lines_flag)
 							{
 								fe_region = Cmiss_region_get_FE_region(top_region);
@@ -16902,7 +16867,6 @@ user, otherwise the elements file is read.
 							{
 								FE_region_end_define_faces(fe_region);
 							}
-							DEACCESS(Cmiss_region)(&region);
 						}
 					}
 					else
@@ -16911,6 +16875,7 @@ user, otherwise the elements file is read.
 							"Error reading element file: %s", file_name);
 						return_code = 0;
 					}
+					DEACCESS(Cmiss_region)(&region);
 					IO_stream_close(input_file);
 					DESTROY(IO_stream)(&input_file);
 				}
@@ -16921,6 +16886,7 @@ user, otherwise the elements file is read.
 					return_code = 0;
 				}
 			}
+			DEACCESS(Cmiss_region)(&top_region);
 		}
 		DESTROY(Option_table)(&option_table);
 #if defined (WX_USER_INTERFACE)
@@ -17062,39 +17028,23 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 					{
 						return_code = check_suffix(&file_name,".exnode");
 					}
+					top_region = (struct Cmiss_region *)NULL;
 					if (region_path)
 					{
-						if (!(Cmiss_region_get_region_from_path(command_data->root_region,
-							region_path, &top_region) && top_region))
+						if (Cmiss_region_get_region_from_path(command_data->root_region,
+							region_path, &top_region) && top_region)
 						{
-							if (top_region = CREATE(Cmiss_region)())
-							{
-								if (fe_region=CREATE(FE_region)((struct FE_region *)NULL,
-									(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL))
-								{
-									if (Cmiss_region_attach_FE_region(top_region,fe_region))
-									{
-										Cmiss_region_add_child_region(command_data->root_region, top_region, region_path,
-											/*child_position*/-1);
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE, "gfx_read_nodes.  "
-											"Unable to attach new region.");
-										return_code = 0;
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE, "gfx_read_nodes.  "
-										"Unable to make new finite element region.");
-									return_code = 0;
-								}
-							}
-							else
+							ACCESS(Cmiss_region)(top_region);
+						}
+						else
+						{
+							top_region = Cmiss_region_create_share_globals(command_data->root_region);
+							if (!top_region || !Cmiss_region_add_child_region(
+								command_data->root_region,top_region, region_path,
+								/*child_position*/-1))
 							{
 								display_message(ERROR_MESSAGE, "gfx_read_nodes.  "
-									"Unable to make new region, basis_manager or element_shape_list.");
+									"Unable to create child region.");
 								return_code = 0;
 							}
 						}
@@ -17109,14 +17059,15 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 						{
 							top_region = command_data->root_region;
 						}
+						ACCESS(Cmiss_region)(top_region);
 					}
 					if (return_code)
 					{
 						if ((input_file = CREATE(IO_stream)(command_data->io_stream_package))
 							&& (IO_stream_open_for_read(input_file, file_name)))
 						{
-							if (region = read_exregion_file(input_file,
-								command_data->basis_manager, command_data->element_shape_list,
+							region = Cmiss_region_create_share_globals(command_data->root_region);
+							if (read_exregion_file(region, input_file,
 								node_time_index))
 							{
 								if (node_offset_flag)
@@ -17142,7 +17093,6 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 										return_code = 0;
 									}
 								}
-								ACCESS(Cmiss_region)(region);
 								if (Cmiss_regions_FE_regions_can_be_merged(
 									top_region, region))
 								{
@@ -17169,7 +17119,6 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 										file_name);
 									return_code = 0;
 								}
-								DEACCESS(Cmiss_region)(&region);
 							}
 							else
 							{
@@ -17177,6 +17126,7 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 									"Error reading node file: %s", file_name);
 								return_code = 0;
 							}
+							DEACCESS(Cmiss_region)(&region);
 							IO_stream_close(input_file);
 							DESTROY(IO_stream)(&input_file);
 							input_file =NULL;
@@ -17188,6 +17138,7 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 							return_code = 0;
 						}
 					}
+					DEACCESS(Cmiss_region)(&top_region);
 					if (return_code && time_set_flag)
 					{
 						/* Increase the range of the default time keepeer and set the
@@ -17381,10 +17332,9 @@ If <use_data> is set, writing data, otherwise writing nodes.
 			}
 			if (return_code)
 			{
-				if (region = parse_fieldml_file(file_name, command_data->basis_manager,
-					command_data->element_shape_list))
+				region = Cmiss_region_create_share_globals(command_data->root_region);
+				if (parse_fieldml_file(region, file_name))
 				{
-					ACCESS(Cmiss_region)(region);
 					if (Cmiss_regions_FE_regions_can_be_merged(
 						command_data->root_region, region))
 					{
@@ -17403,7 +17353,6 @@ If <use_data> is set, writing data, otherwise writing nodes.
 							file_name);
 						return_code = 0;
 					}
-					DEACCESS(Cmiss_region)(&region);
 				}
 				else
 				{
@@ -17411,6 +17360,7 @@ If <use_data> is set, writing data, otherwise writing nodes.
 						"Error reading region file: %s", file_name);
 					return_code = 0;
 				}
+				DEACCESS(Cmiss_region)(&region);
 			}
 		}
 		DESTROY(Option_table)(&option_table);
@@ -24309,7 +24259,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 	struct Command_window *command_window;
 #endif /* defined(USE_CMGUI_COMMAND_WINDOW) */
 	struct Coordinate_system rect_coord_system;
-	struct FE_region *data_root_fe_region, *root_fe_region;
 	struct Graphical_material *material;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Option_table *option_table;
@@ -24806,24 +24755,12 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 
 		command_data->basis_manager=CREATE(MANAGER(FE_basis))();
 
-		command_data->root_region = ACCESS(Cmiss_region)(CREATE(Cmiss_region)());
-		/* add FE_region to root_region */
-		if (root_fe_region = CREATE(FE_region)((struct FE_region *)NULL,
-			command_data->basis_manager, command_data->element_shape_list))
-		{
-			 Cmiss_region_attach_FE_region(command_data->root_region, root_fe_region);
-		}
-		
-		command_data->data_root_region =
-			ACCESS(Cmiss_region)(CREATE(Cmiss_region)());
-		/* add FE_region to data_root_region but make it use fields and elements
-			 from the root_region with the data_hack! */
-		if (data_root_fe_region = create_data_hack_FE_region(root_fe_region))
-		{
-			Cmiss_region_attach_FE_region(command_data->data_root_region,
-				data_root_fe_region);
-		}
+		command_data->root_region = Cmiss_region_create();
 
+		/* data_hack begin - temporary until data is eliminated */
+		command_data->data_root_region = CREATE(Cmiss_region)();
+		Cmiss_region_attach_fields(command_data->data_root_region,
+			command_data->root_region, CMISS_REGION_SHARE_FIELDS_DATA_HACK);
 		/* add callbacks so root_region and data_root_region keep their children
 			 synchronised */
 		Cmiss_region_add_callback(command_data->root_region,
@@ -24832,6 +24769,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		Cmiss_region_add_callback(command_data->data_root_region,
 			Cmiss_region_synchronise_children_with_FE_region,
 			(void *)(command_data->root_region));
+		/* data_hack end */
 
 		/* create graphics object list */
 		/*???RC.  Eventually want graphics object manager */
@@ -24849,11 +24787,12 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->any_object_selection=CREATE(Any_object_selection)();
 		command_data->element_point_ranges_selection=
 			CREATE(Element_point_ranges_selection)(/*root_fe_region*/);
-		command_data->element_selection =
-			CREATE(FE_element_selection)(root_fe_region);
-		command_data->node_selection = CREATE(FE_node_selection)(root_fe_region);
-		command_data->data_selection =
-			 CREATE(FE_node_selection)(data_root_fe_region);	
+		command_data->element_selection = CREATE(FE_element_selection)(
+			Cmiss_region_get_FE_region(command_data->root_region));
+		command_data->node_selection = CREATE(FE_node_selection)(
+			Cmiss_region_get_FE_region(command_data->root_region));
+		command_data->data_selection = CREATE(FE_node_selection)(
+			Cmiss_region_get_FE_region(command_data->data_root_region));	
 
 		/* interactive_tool manager */
 		command_data->interactive_tool_manager=CREATE(MANAGER(Interactive_tool))();
@@ -24861,15 +24800,13 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			default_coordinate, etc. */
 		/*???RC should the default computed fields be established in
 		  CREATE(Computed_field_package)? */
-		command_data->computed_field_package=CREATE(Computed_field_package)();
-		computed_field_manager=Computed_field_package_get_computed_field_manager(
-			command_data->computed_field_package);
-
-		/* Even though we currently still have a single Computed_field_manager,
-			attach this to the root region, so we can use a region like
-			interface to get fields in the api. */
-		Cmiss_region_attach_Computed_field_manager(command_data->root_region,
-			computed_field_manager);
+		computed_field_manager=
+			Cmiss_region_get_Computed_field_manager(command_data->root_region);
+		/*???GRC will eventually remove manager from field package so it is
+		  purely type-specific data. Field manager is now owned by region.
+		  Temporarily passing it to package to keep existing code running */
+		command_data->computed_field_package=
+			CREATE(Computed_field_package)(computed_field_manager);
 
 		/* Add Computed_fields to the Computed_field_package */
 		if (command_data->computed_field_package)

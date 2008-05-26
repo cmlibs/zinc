@@ -61,6 +61,7 @@ quadratic Lagrange, cubic Lagrange.
 #include "general/indexed_list_private.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"
+#include "region/cmiss_region.h"
 #include "user_interface/message.h"
 
 /*
@@ -89,9 +90,8 @@ It is designed to be flexible rather than fast.
 	enum Curve_type type;
 	int value_nodes_per_element,value_derivatives_per_node;
 
-	/* each Curve is like an FE_region with its own name space */
-	struct MANAGER(FE_basis) *basis_manager;
-	struct LIST(FE_element_shape) *element_shape_list;
+	/* each Curve is represented by fields in a private region */
+	struct Cmiss_region *region;
 	struct FE_region *fe_region;
 	struct FE_field *parameter_field,*value_field;
 	struct FE_node *template_node;
@@ -403,8 +403,7 @@ Used for copy operations and as part of the DESTROY function.
 		DEACCESS(FE_field)(&curve->parameter_field);
 		DEACCESS(FE_field)(&curve->value_field);
 		DEACCESS(FE_region)(&curve->fe_region);
-		DESTROY(MANAGER(FE_basis))(&curve->basis_manager);
-		DESTROY(LIST(FE_element_shape))(&curve->element_shape_list);
+		DEACCESS(Cmiss_region)(&curve->region);
 
 		DEALLOCATE(curve->min_value);
 		DEALLOCATE(curve->max_value);
@@ -425,7 +424,7 @@ Used for copy operations and as part of the DESTROY function.
 
 static struct Curve *cc_create_blank(char *name)
 /*******************************************************************************
-LAST MODIFIED : 26 November 1999
+LAST MODIFIED : 23 May 2008
 
 DESCRIPTION :
 Creates a blank Curve with the given <name>, but no fe_basis_type, no
@@ -451,11 +450,8 @@ but it is at least destroyable when returned from this function.
 			curve->value_nodes_per_element=0;
 			curve->value_derivatives_per_node=0;
 
-			curve->basis_manager=CREATE(MANAGER(FE_basis))();
-			curve->element_shape_list=CREATE(LIST(FE_element_shape))();
-			curve->fe_region=ACCESS(FE_region)(CREATE(FE_region)
-				(/*master_fe_region*/(struct FE_region *)NULL, curve->basis_manager,
-				curve->element_shape_list));
+			curve->region=Cmiss_region_create();
+			curve->fe_region=ACCESS(FE_region)(Cmiss_region_get_FE_region(curve->region));
 			curve->parameter_field=(struct FE_field *)NULL;
 			curve->value_field=(struct FE_field *)NULL;
 			curve->template_node=(struct FE_node *)NULL;
@@ -471,10 +467,10 @@ but it is at least destroyable when returned from this function.
 
 			curve->access_count=0;
 
-			if (!(curve->name&&curve->basis_manager&&curve->element_shape_list&&curve->fe_region))
+			if (!(curve->name && curve->region && curve->fe_region))
 			{
 				display_message(ERROR_MESSAGE,
-					"cc_create_blank.  Could not create basis manager, element shape list and region");
+					"cc_create_blank.  Could not create curve region");
 				DESTROY(Curve)(&curve);
 			}
 		}
@@ -956,8 +952,7 @@ Works even when <destination> and <source> are the same.
 					temp_curve->value_nodes_per_element;
 				destination->value_derivatives_per_node=
 					temp_curve->value_derivatives_per_node;
-				destination->basis_manager=temp_curve->basis_manager;
-				destination->element_shape_list=temp_curve->element_shape_list;
+				destination->region = temp_curve->region;
 				destination->fe_region = temp_curve->fe_region;
 				destination->parameter_field=temp_curve->parameter_field;
 				destination->value_field=temp_curve->value_field;
@@ -1370,9 +1365,8 @@ value will be zero in its initial state.
 							/* create bases for parameter and value fields */
 							basis_type[0]=1;
 							basis_type[1]=(int)(LINEAR_LAGRANGE);
-							parameter_basis=ACCESS(FE_basis)(CREATE(FE_basis)(basis_type));
-							ADD_OBJECT_TO_MANAGER(FE_basis)(parameter_basis,
-								curve->basis_manager);
+							parameter_basis = ACCESS(FE_basis)(
+								FE_region_get_FE_basis_matching_basis_type(curve->fe_region, basis_type));
 							if (LINEAR_LAGRANGE == curve->fe_basis_type)
 							{
 								value_basis=ACCESS(FE_basis)(parameter_basis);
@@ -1381,9 +1375,8 @@ value will be zero in its initial state.
 							{
 								basis_type[0]=1;
 								basis_type[1]=(int)(curve->fe_basis_type);
-								value_basis=ACCESS(FE_basis)(CREATE(FE_basis)(basis_type));
-								ADD_OBJECT_TO_MANAGER(FE_basis)(value_basis,
-									curve->basis_manager);
+								value_basis = ACCESS(FE_basis)(
+									FE_region_get_FE_basis_matching_basis_type(curve->fe_region, basis_type));
 							}
 							/* only use scale factors with cubic Hermite derivatives */
 							if (CUBIC_HERMITE==curve->fe_basis_type)
@@ -5135,7 +5128,7 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 	char *file_name;
 	FILE *out_file;
 	int comp_no,return_code;
-	struct Cmiss_region *child_cmiss_region, *root_cmiss_region;
+	struct Cmiss_region *temp_parent_region;
 
 	ENTER(write_Curve);
 	USE_PARAMETER(dummy_void);
@@ -5171,22 +5164,20 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 			{
 				return_code=0;
 			}
-			/* current export code expects the FE_region to be in a child region */
-			if ((root_cmiss_region = CREATE(Cmiss_region)()) &&
-				(child_cmiss_region = CREATE(Cmiss_region)()) &&
-				Cmiss_region_add_child_region(root_cmiss_region, child_cmiss_region,
-					/*child_name*/curve->name, /*child_position*/0) &&
-				Cmiss_region_attach_FE_region(child_cmiss_region, curve->fe_region))
+			/* current export code exports only child regions, so make a temporary parent region */
+			temp_parent_region = Cmiss_region_create_share_globals(curve->region);
+			if (Cmiss_region_add_child_region(temp_parent_region, curve->region,
+				/*child_name*/curve->name, /*child_position*/0))
 			{
 				sprintf(file_name,"%s.curve.exnode",curve->name);
-				if (!write_exregion_file_of_name(file_name, root_cmiss_region,
+				if (!write_exregion_file_of_name(file_name, temp_parent_region,
 					(char *)NULL, /*write_elements*/0, /*write_nodes*/1,
 				  FE_WRITE_COMPLETE_GROUP, (struct FE_field_order_info *)NULL))
 				{
 					return_code = 0;
 				}
 				sprintf(file_name,"%s.curve.exelem",curve->name);
-				if (!write_exregion_file_of_name(file_name, root_cmiss_region,
+				if (!write_exregion_file_of_name(file_name, temp_parent_region,
 					(char *)NULL, /*write_elements*/1, /*write_nodes*/0,
 				  FE_WRITE_COMPLETE_GROUP, (struct FE_field_order_info *)NULL))
 				{
@@ -5197,10 +5188,7 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 			{
 				return_code=0;
 			}
-			if (root_cmiss_region)
-			{
-				DESTROY(Cmiss_region)(&root_cmiss_region);
-			}
+			DEACCESS(Cmiss_region)(&temp_parent_region);
 		}
 		else
 		{
@@ -5224,7 +5212,7 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 struct Curve *create_Curve_from_file(char *curve_name,
 	char *file_name_stem, struct IO_stream_package *io_stream_package)
 /*******************************************************************************
-LAST MODIFIED : 3 September 2004
+LAST MODIFIED : 23 May 2008
 
 DESCRIPTION :
 Appends extension '.curve.exnode' on to <file_name_stem> and reads in nodes from
@@ -5237,13 +5225,10 @@ appropriateness to curve usage.
 	char *file_name;
 	enum FE_basis_type fe_basis_type;
 	int number_of_components,return_code;
-	struct Cmiss_region *child_cmiss_region, *cmiss_region, *element_region;
+	struct Cmiss_region *child_region;
 	struct Curve *curve;
 	struct FE_basis *fe_basis;
-	struct FE_region *fe_region;
 	struct IO_stream *element_file,*node_file, *region_file;
-	struct LIST(FE_element_shape) *element_shape_list;
-	struct MANAGER(FE_basis) *basis_manager;
 
 	ENTER(create_Curve_from_file);
 	curve=(struct Curve *)NULL;
@@ -5251,12 +5236,8 @@ appropriateness to curve usage.
 	{
 		if (curve=cc_create_blank(curve_name))
 		{
-			/* create group managers needed to use import_finite_element functions  */
-			basis_manager = curve->basis_manager;
-			element_shape_list = curve->element_shape_list;
 			if (ALLOCATE(file_name,char,strlen(file_name_stem)+sizeof(".curve.exregion")))
 			{
-				cmiss_region = (struct Cmiss_region *)NULL;
 				return_code=1;
 				if (sprintf(file_name,"%s.curve.exnode",file_name_stem) &&
 					(node_file=CREATE(IO_stream)(io_stream_package)) &&
@@ -5265,29 +5246,12 @@ appropriateness to curve usage.
 					(element_file=CREATE(IO_stream)(io_stream_package)) &&
 					(IO_stream_open_for_read(element_file, file_name)))
 				{
-					element_region = (struct Cmiss_region *)NULL;
-					if ((cmiss_region = read_exregion_file(node_file,
-						basis_manager, element_shape_list, (struct FE_import_time_index *)NULL)) &&
-						(element_region = read_exregion_file(element_file,
-							basis_manager, element_shape_list, (struct FE_import_time_index *)NULL)) &&
-						Cmiss_regions_FE_regions_can_be_merged(cmiss_region, element_region)
- 						&&
-						Cmiss_regions_merge_FE_regions(cmiss_region, element_region) &&
-						Cmiss_region_get_child_region(cmiss_region, /*child_number*/0,
-							&child_cmiss_region))
-					{
-						if (!(fe_region = Cmiss_region_get_FE_region(child_cmiss_region)))
-						{
-							return_code = 0;
-						}
-					}
-					else
+					if (!(read_exregion_file(curve->region, node_file,
+						(struct FE_import_time_index *)NULL) &&
+						read_exregion_file(curve->region, element_file,
+							(struct FE_import_time_index *)NULL)))
 					{
 						return_code = 0;
-					}
-					if (element_region)
-					{
-						DESTROY(Cmiss_region)(&element_region);
 					}
 					IO_stream_close(node_file);
 					DESTROY(IO_stream)(&node_file);
@@ -5296,21 +5260,12 @@ appropriateness to curve usage.
 				}
 				else
 				{
-					/*???RC don't wish to use combined node & element files yet --
-						format not agreed; better to wait for FieldML */
 					if (sprintf(file_name,"%s.curve.exregion",file_name_stem) &&
 						(region_file=CREATE(IO_stream)(io_stream_package)) &&
 						(IO_stream_open_for_read(region_file, file_name)))
 					{
-						if (cmiss_region = read_exregion_file(region_file,
-							basis_manager, element_shape_list, (struct FE_import_time_index *)NULL))
-						{
-							if (!(fe_region = Cmiss_region_get_FE_region(cmiss_region)))
-							{
-								return_code = 0;
-							}
-						}
-						else
+						if (!read_exregion_file(curve->region, region_file,
+							(struct FE_import_time_index *)NULL))
 						{
 							return_code = 0;
 						}
@@ -5327,9 +5282,15 @@ appropriateness to curve usage.
 				}
 				if (return_code)
 				{
-					REACCESS(FE_region)(&(curve->fe_region), fe_region);
+					/* remove child groups */
+					while ((NULL != (child_region =
+							Cmiss_region_get_child_region(curve->region,/*child_number*/0))) &&
+						Cmiss_region_remove_child_region(curve->region,child_region))
+					{
+						/* do nothing more */
+					}
 					/* now check mesh is appropriate for a Curve */
-					if (curve->template_element=FE_region_get_first_FE_element_that(fe_region,
+					if (curve->template_element=FE_region_get_first_FE_element_that(curve->fe_region,
 						(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL,(void *)NULL))
 					{
 						ACCESS(FE_element)(curve->template_element);
@@ -5344,13 +5305,13 @@ appropriateness to curve usage.
 							return_code=0;
 						}
 						if (!((curve->parameter_field=ACCESS(FE_field)(
-							FE_region_get_FE_field_from_name(fe_region, "parameter")))&&
+							FE_region_get_FE_field_from_name(curve->fe_region, "parameter")))&&
 							(1==get_FE_field_number_of_components(curve->parameter_field))))
 						{
 							return_code=0;
 						}
 						if (!((curve->value_field=ACCESS(FE_field)(
-							FE_region_get_FE_field_from_name(fe_region, "value")))&&
+							FE_region_get_FE_field_from_name(curve->fe_region, "value")))&&
 							(0<(number_of_components=
 							get_FE_field_number_of_components(curve->value_field)))))
 						{
@@ -5391,10 +5352,6 @@ appropriateness to curve usage.
 						/* nothing in the mesh - leave behaviour to calling function */
 						return_code=0;
 					}
-				}
-				if (cmiss_region)
-				{
-					DESTROY(Cmiss_region)(&cmiss_region);
 				}
 			}
 			else

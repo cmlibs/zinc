@@ -172,7 +172,7 @@ Sets <path> of chosen region in the <chooser>.
 		}
 
 		//Recurse
-		Cmiss_region_get_child_region(current_region, i, &child_region);		
+		child_region = Cmiss_region_get_child_region(current_region, i);
 		append_children(child_region, child_path, initial_path);
 
 		DEALLOCATE(child_name);
