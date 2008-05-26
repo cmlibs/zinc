@@ -280,6 +280,7 @@ Frees the memory for the Cmiss_region_fields and sets
 				region_fields->field_manager, region_fields->fe_region);
 			DEACCESS(FE_region)(&region_fields->fe_region);
 			DESTROY(MANAGER(Computed_field))(&(region_fields->field_manager));
+			DEALLOCATE(*region_fields_address);
 			return_code = 1;
 		}
 		else
