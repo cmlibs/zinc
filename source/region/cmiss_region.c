@@ -503,7 +503,7 @@ cases in code.
 					{
 						/* region shares master's fields but uses a subset of nodes and elements */
 						region->fields = ACCESS(Cmiss_region_fields)(master_region->fields);
-						fe_region = CREATE(FE_region)(master_region->fields->fe_region,
+						fe_region = CREATE(FE_region)(Cmiss_region_get_FE_region(master_region),
 							(struct MANAGER(FE_basis) *)NULL,
 							(struct LIST(FE_element_shape) *)NULL);
 					} break;

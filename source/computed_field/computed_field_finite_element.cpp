@@ -5093,23 +5093,25 @@ function.
 					}
 
 					/* For ELEMENT_XI_VALUE also make a default embedded coordinate field */
+					/* ???GRC this should probably be removed */ 
 					value_type = get_FE_field_value_type(fe_field);
 					switch(value_type)
 					{
 						case ELEMENT_XI_VALUE:
 						{
-							if (ALLOCATE(extra_field_name, char, strlen(field_name) + 15))
-							{
-								sprintf(extra_field_name, "%s_coordinate", field_name);
-								/* establish up-to-date wrapper for the fe_field */
-								if (wrapper = CREATE(Computed_field)(extra_field_name))
+							/* can only do this if there exists a coordinate field */
+							if ((default_coordinate_field =
+								FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+									Computed_field_has_coordinate_fe_field,
+									(void *)NULL, field_change_data->computed_field_manager)))
+							{							
+								if (ALLOCATE(extra_field_name, char, strlen(field_name) + 15))
 								{
-									ACCESS(Computed_field)(wrapper);
-									if ((default_coordinate_field =
-										FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-											Computed_field_has_coordinate_fe_field,
-											(void *)NULL, field_change_data->computed_field_manager)))
+									sprintf(extra_field_name, "%s_coordinate", field_name);
+									/* establish up-to-date wrapper for the fe_field */
+									if (wrapper = CREATE(Computed_field)(extra_field_name))
 									{
+										ACCESS(Computed_field)(wrapper);
 										if (Computed_field_set_coordinate_system(wrapper,
 											Computed_field_get_coordinate_system(
 												default_coordinate_field)) &&
@@ -5128,22 +5130,18 @@ function.
 										{
 											return_code = 0;
 										}
+										DEACCESS(Computed_field)(&wrapper);
 									}
 									else
 									{
 										return_code = 0;
 									}
-									DEACCESS(Computed_field)(&wrapper);
+									DEALLOCATE(extra_field_name);
 								}
 								else
 								{
 									return_code = 0;
 								}
-								DEALLOCATE(extra_field_name);
-							}
-							else
-							{
-								return_code = 0;
 							}
 						} break;
 					}
