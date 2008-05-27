@@ -6440,99 +6440,6 @@ Returns in <cmiss_region_address> either the owning <cmiss_region> for
 	return (return_code);
 } /* FE_region_get_Cmiss_region */
 
-#if defined (OLD_CODE)
-struct FE_region *Cmiss_region_get_or_create_child_FE_region(
-	struct Cmiss_region *parent_cmiss_region, char *child_name,
-	struct FE_region *master_fe_region, struct MANAGER(FE_basis) *basis_manager,
-	struct LIST(FE_element_shape) *element_shape_list)
-/*******************************************************************************
-LAST MODIFIED : 12 May 2003
-
-DESCRIPTION :
-Finds or creates a child of <parent_region> with the <child_region_name>.
-Within it it finds or creates and adds an FE_region with the given
-<master_fe_region> or <basis_manager>; this is returned.
-It is an error if the existing FE_region is not already using the supplied
-<master_fe_region> or <basis_manager>, only one of which may be supplied.
-Any new child Cmiss_region is add to the end of the parent_cmiss_region's list.
-This function is atomic.
-==============================================================================*/
-{
-	int return_code;
-	struct Cmiss_region *child_cmiss_region, *existing_child_cmiss_region;
-	struct FE_region *child_fe_region, *temp_child_fe_region,
-		*temp_master_fe_region;
-
-	ENTER(Cmiss_region_get_or_create_child_FE_region);
-	child_fe_region = (struct FE_region *)NULL;
-	if (parent_cmiss_region && child_name && ((!master_fe_region) ||
-		(Cmiss_region_get_FE_region(parent_cmiss_region) == master_fe_region)))
-	{
-		return_code = 1;
-		if (existing_child_cmiss_region = Cmiss_region_get_child_region_from_name(
-			parent_cmiss_region, child_name))
-		{
-			if (child_fe_region =
-				Cmiss_region_get_FE_region(existing_child_cmiss_region))
-			{
-				if (!(FE_region_get_immediate_master_FE_region(child_fe_region,
-					&temp_master_fe_region) &&
-					(temp_master_fe_region == master_fe_region) &&
-					(FE_region_get_basis_manager(child_fe_region) == basis_manager)))
-				{
-					display_message(ERROR_MESSAGE,
-						"Cmiss_region_get_or_create_child_FE_region.  Existing FE_region "
-						"has different master_fe_region or basis_manager");
-					return_code = 0;
-				}
-			}
-		}
-		if (return_code && (!child_fe_region))
-		{
-			if (child_fe_region = CREATE(FE_region)(master_fe_region, basis_manager,
-				element_shape_list))
-			{
-				temp_child_fe_region = ACCESS(FE_region)(child_fe_region);
-				if ((child_cmiss_region = existing_child_cmiss_region) ||
-					(child_cmiss_region = CREATE(Cmiss_region)()))
-				{
-					ACCESS(Cmiss_region)(child_cmiss_region);
-					if (!(Cmiss_region_attach_FE_region(child_cmiss_region,
-						child_fe_region) && (existing_child_cmiss_region ||
-							Cmiss_region_add_child_region(parent_cmiss_region,
-								child_cmiss_region, child_name, /*child_position*/-1))))
-					{
-						return_code = 0;
-					}
-					DEACCESS(Cmiss_region)(&child_cmiss_region);
-				}
-				else
-				{
-					return_code = 0;
-				}
-				if (!return_code)
-				{
-					child_fe_region = (struct FE_region *)NULL;
-				}
-				DEACCESS(FE_region)(&temp_child_fe_region);
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_region_get_or_create_child_FE_region.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (child_fe_region);
-} /* Cmiss_region_get_or_create_child_FE_region */
-#endif /* defined (OLD_CODE) */
-
 int FE_regions_can_be_merged(struct FE_region *global_fe_region,
 	struct FE_region *fe_region)
 /*******************************************************************************
@@ -7993,27 +7900,19 @@ Assumes all master_fe_regions are in parents of the owning cmiss_region.
 					}
 					else
 					{
-						if (global_fe_region)
+						if (!global_fe_region)
 						{
-							if (!FE_regions_merge(global_fe_region, fe_region,
-								embedding_data))
-							{
-								display_message(ERROR_MESSAGE,
-									"Cmiss_regions_merge_FE_regions_private.  "
-									"Could not merge FE_regions");
-								return_code = 0;
-							}
+							/* ???GRC Future optimisation is to just ACCESS the incoming region,
+							 * but may need to handle others regions' groups being children */
+							Cmiss_region_attach_fields(global_region, region, CMISS_REGION_SHARE_BASES_SHAPES);
+							global_fe_region = Cmiss_region_get_FE_region(global_region);
 						}
-						else
+						if (!FE_regions_merge(global_fe_region, fe_region, embedding_data))
 						{
-							/* attach fe_region to global_region */
-							if (!Cmiss_region_attach_FE_region(global_region, fe_region))
-							{
-								display_message(ERROR_MESSAGE,
-									"Cmiss_regions_merge_FE_regions_private.  "
-									"Could not attach FE_region");
-								return_code = 0;
-							}
+							display_message(ERROR_MESSAGE,
+								"Cmiss_regions_merge_FE_regions_private.  "
+								"Could not merge FE_regions");
+							return_code = 0;
 						}
 					}
 				}
