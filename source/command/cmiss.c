@@ -25541,8 +25541,6 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		DESTROY(LIST(GT_object))(&command_data->graphics_object_list);
 		DESTROY(LIST(GT_object))(&command_data->glyph_list);
 
-		DESTROY(MANAGER(Curve))(&command_data->curve_manager);
-
 		/* remove callbacks synchronising root_region and data_root_region since
 			 they were established by the Command_data -- this must be done before
 			 the regions are destroyed */
@@ -25557,6 +25555,10 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		DEACCESS(Cmiss_region)(&(command_data->root_region));
 		DESTROY(MANAGER(FE_basis))(&command_data->basis_manager);
 		DESTROY(LIST(FE_element_shape))(&command_data->element_shape_list);
+
+		/* some fields register for changes with the following managers,
+			 hence must destroy after regions and their fields */
+		DESTROY(MANAGER(Curve))(&command_data->curve_manager);
 		DEACCESS(Spectrum)(&(command_data->default_spectrum));
 		DESTROY(MANAGER(Spectrum))(&command_data->spectrum_manager);
 		DEACCESS(Material_package)(&command_data->material_package);
