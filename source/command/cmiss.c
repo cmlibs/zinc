@@ -255,6 +255,8 @@ Functions for executing cmiss commands.
 #include "user_interface/idle.h"
 #include "user_interface/timer.h"
 #include "command/cmiss.h"
+/* following is temporary until circular references are removed for Cmiss_region - see DESTROY(Cmiss_command_data) */
+#include "region/cmiss_region_private.h"
 
 /*
 Module types
@@ -25552,7 +25554,12 @@ Clean up the command_data, deallocating all the associated memory and resources.
 			(void *)(command_data->root_region));
 
 		DEACCESS(Cmiss_region)(&(command_data->data_root_region));
+#if defined (FUTURE_CODE)
+		/* can't do this yet due to cirular reference; when removed also remove #include "region/cmiss_region_private.h" */
 		DEACCESS(Cmiss_region)(&(command_data->root_region));
+#else
+		DESTROY(Cmiss_region)(&(command_data->root_region));
+#endif
 		DESTROY(MANAGER(FE_basis))(&command_data->basis_manager);
 		DESTROY(LIST(FE_element_shape))(&command_data->element_shape_list);
 

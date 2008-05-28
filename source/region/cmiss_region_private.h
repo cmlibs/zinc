@@ -62,6 +62,16 @@ The region is not fully constructed until Cmiss_region_attach_fields is called.
 Region is created with an access_count of 1; DEACCESS to destroy.
 ==============================================================================*/
 
+int DESTROY(Cmiss_region)(struct Cmiss_region **region_address);
+/*******************************************************************************
+LAST MODIFIED : 28 May 2008
+
+DESCRIPTION :
+Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
+Following is temporarily exposed so DESTROY(Cmiss_command_data) can 
+clean up circular references, e.g. fields accessing regions.
+==============================================================================*/
+
 enum Cmiss_region_attach_fields_variant
 {
 	CMISS_REGION_SHARE_BASES_SHAPES,

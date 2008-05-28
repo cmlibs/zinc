@@ -565,9 +565,9 @@ cases in code.
 	return (return_code);
 } /* Cmiss_region_attach_fields */
 
-static int DESTROY(Cmiss_region)(struct Cmiss_region **region_address)
+int DESTROY(Cmiss_region)(struct Cmiss_region **region_address)
 /*******************************************************************************
-LAST MODIFIED : 4 December 2003
+LAST MODIFIED : 28 May 2008
 
 DESCRIPTION :
 Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
@@ -579,8 +579,10 @@ Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
 	ENTER(DESTROY(Cmiss_region));
 	if (region_address && (region = *region_address))
 	{
+#if defined (NEW_CODE)
 		if (0 == region->access_count)
 		{
+#endif /* defined (NEW_CODE) */
 			DESTROY(LIST(Any_object))(&(region->any_object_list));
 			/* clean up child array. Note array may still be allocated even if
 				 number_of_child_regions has returned to zero */
@@ -604,6 +606,7 @@ Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
 			DEACCESS(Cmiss_region_fields)(&region->fields);
 			DEALLOCATE(*region_address);
 			return_code = 1;
+#if defined (NEW_CODE)
 		}
 		else
 		{
@@ -611,6 +614,7 @@ Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
 				"DESTROY(Cmiss_region).  Non-zero access count");
 			return_code = 0;
 		}
+#endif /* defined (NEW_CODE) */
 		*region_address = (struct Cmiss_region *)NULL;
 	}
 	else
