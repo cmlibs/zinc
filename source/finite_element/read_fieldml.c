@@ -5309,7 +5309,7 @@ DESCRIPTION :
 
 int parse_fieldml_file(struct Cmiss_region *region, char *filename)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2008
+LAST MODIFIED : 29 May 2008
 
 DESCRIPTION :
 Reads fieldml file <filename> into <region>.
@@ -5318,7 +5318,7 @@ can be merged into the global region before doing so, otherwise failure to
 merge incompatible data will leave the global region in a compromised state.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code, sax_result;
 	static xmlSAXHandler fieldml_handler;
 	struct Fieldml_sax_data fieldml_data;
 
@@ -5408,8 +5408,9 @@ merge incompatible data will leave the global region in a compromised state.
 		fieldml_handler.error = fieldml_sax_error;
 		fieldml_handler.fatalError = fieldml_sax_fatalError;
 	
-		return_code = xmlSAXUserParseFile(&fieldml_handler, &fieldml_data,
+		sax_result = xmlSAXUserParseFile(&fieldml_handler, &fieldml_data,
 			filename);
+		return_code = !sax_result; /* SAX returns 0 for success */
 		FE_region_end_change(fieldml_data.root_fe_region);
 		Cmiss_region_end_change(fieldml_data.root_region);
 
