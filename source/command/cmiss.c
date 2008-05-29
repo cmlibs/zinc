@@ -25553,13 +25553,13 @@ Clean up the command_data, deallocating all the associated memory and resources.
 			Cmiss_region_synchronise_children_with_FE_region,
 			(void *)(command_data->root_region));
 
+		/* need the following due to cirular reference where field owned by region references region itself;
+		 * when following removed also remove #include "region/cmiss_region_private.h" */
+		Cmiss_region_detach_fields_hierarchical(command_data->data_root_region); /* probably not needed */
+		Cmiss_region_detach_fields_hierarchical(command_data->root_region);
+		
 		DEACCESS(Cmiss_region)(&(command_data->data_root_region));
-#if defined (FUTURE_CODE)
-		/* can't do this yet due to cirular reference; when removed also remove #include "region/cmiss_region_private.h" */
 		DEACCESS(Cmiss_region)(&(command_data->root_region));
-#else
-		DESTROY(Cmiss_region)(&(command_data->root_region));
-#endif
 		DESTROY(MANAGER(FE_basis))(&command_data->basis_manager);
 		DESTROY(LIST(FE_element_shape))(&command_data->element_shape_list);
 
