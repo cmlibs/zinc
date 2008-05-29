@@ -156,11 +156,13 @@ class wxCommandWindow;
 class wxCommandLineTextCtrl : public wxTextCtrl
 {
 	 Command_window *command_window;
+	 int gfx_used_flag;
 public:
 	 wxCommandLineTextCtrl(Command_window *command_window, wxPanel *parent) :
 			wxTextCtrl(parent, -1, "",wxPoint(0,0), wxSize(-1,24), wxTE_PROCESS_ENTER),
 			command_window(command_window)
     {
+			 gfx_used_flag = 0;
 			 wxBoxSizer *sizer = new wxBoxSizer( wxHORIZONTAL );
 			 sizer->Add(this,
 					wxSizerFlags(1).Align(wxALIGN_CENTER).Expand());
@@ -176,8 +178,9 @@ public:
 	 {
 	 };
 
-    void OnKeyDown(wxKeyEvent& event);
-    void OnCommandEntered(wxCommandEvent& event);
+	 void OnKeyDown(wxKeyEvent& event);
+	 void OnCommandEntered(wxCommandEvent& event);
+	 void CustomClear();
 
     DECLARE_EVENT_TABLE()
 };
@@ -1686,7 +1689,7 @@ public:
 			number = history_list->GetCount();
 			Execute_command_execute_string(command_window->execute_command,
 				 const_cast<char *>(SelectedCommand.c_str()));
-			command_window->wx_command_line_text_ctrl->Clear();
+			command_window->wx_command_line_text_ctrl->CustomClear();
 			history_list->SetSelection ( history_list->GetCount() - 1 ); 	 
 			history_list->Deselect( history_list->GetCount() - 1 );
 	 }
@@ -1885,7 +1888,7 @@ Display the command onto the list
 	 }
 	 else
 	 {
-			command_window->wx_command_line_text_ctrl->Clear();
+			command_window->wx_command_line_text_ctrl->CustomClear();
 	 }
 }	 
 	 
@@ -1894,7 +1897,6 @@ Display the command onto the list
 };
 
 BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
-//	 EVT_TEXT_ENTER(XRCID("CommandLine"), wxCommandWindow::CommandEntered)
 	 EVT_LISTBOX(XRCID("CommandHistory"),wxCommandWindow::SingleClick)
 	 EVT_LISTBOX_DCLICK(XRCID("CommandHistory"),wxCommandWindow::DoubleClick)
 	 EVT_MENU(XRCID("GraphicsthreeDWindow"),wxCommandWindow::threeDwindow)
@@ -1921,6 +1923,20 @@ BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	 EVT_MENU(XRCID("MenuExit"),wxCommandWindow::Exit)
 END_EVENT_TABLE()
 
+void wxCommandLineTextCtrl::CustomClear()
+{
+	 if (gfx_used_flag == 1)
+	 {
+			this->ChangeValue("gfx ");
+
+	 }
+	 else
+	 {
+			this->Clear();
+	 }
+	 this->SetInsertionPointEnd(); 
+}
+
 void wxCommandLineTextCtrl::OnKeyDown(wxKeyEvent& event)
 {
 	 wxString SelectedCommand;
@@ -1935,33 +1951,62 @@ void wxCommandLineTextCtrl::OnKeyDown(wxKeyEvent& event)
 				 if (selection == wxNOT_FOUND)
 				 {
 						history_list->SetSelection(number_of_items - 1);
+						this->CustomClear();
 				 }
-				 else if (number_of_items>selection+1)
+				 else if (number_of_items>selection+2)
 				 {
 						history_list->SetSelection(selection+1);
+						SelectedCommand = history_list->GetStringSelection();
+						this->ChangeValue(SelectedCommand);
 				 }
-				 SelectedCommand = history_list->GetStringSelection();
-				 this -> Clear();
-				 this -> WriteText(SelectedCommand);
+				 else if (number_of_items == selection+2)
+				 {
+						history_list->SetSelection(selection+1);
+						this->CustomClear();
+				 }
 				 history_list->SetFocus();
 				 this->SetFocus();
-				 this->SetInsertionPointEnd(); 
+				 this->SetInsertionPointEnd();
 				 break;
 			case WXK_UP:
 				 if (selection == wxNOT_FOUND)
 				 {
-						history_list->SetSelection(number_of_items - 2);						
+						history_list->SetSelection(number_of_items - 2);
 				 }
 				 else if (selection-1>=0)
 				 {
 						history_list->SetSelection(selection-1);
 				 }
 				 SelectedCommand = history_list->GetStringSelection();
-				 this -> Clear();
-				 this -> WriteText(SelectedCommand);
 				 history_list->SetFocus();
+				 this->ChangeValue(SelectedCommand);
 				 this->SetFocus();
 				 this->SetInsertionPointEnd();
+				 break;
+			case WXK_HOME:
+				 if (event.ControlDown())
+				 {
+						history_list->SetFocus();
+						history_list->SetSelection(0);	
+						SelectedCommand = history_list->GetStringSelection();
+						this->ChangeValue(SelectedCommand);
+						this->SetFocus();
+						this->SetInsertionPointEnd();
+				 }
+				 else
+						event.Skip();
+				 break;
+			case WXK_END:
+				 if (event.ControlDown())
+				 {
+						history_list->SetFocus();
+						history_list->SetSelection(number_of_items-1);
+						this->CustomClear();
+						this->SetFocus();
+						this->SetInsertionPointEnd();
+				 }
+				 else
+						event.Skip();
 				 break;
 			default:
 				 event.Skip();
@@ -1972,11 +2017,21 @@ void wxCommandLineTextCtrl::OnKeyDown(wxKeyEvent& event)
 void wxCommandLineTextCtrl::OnCommandEntered(wxCommandEvent& event)
 {
 	 wxString command = this->GetValue();
+	 char *new_string = const_cast<char *>(command.c_str());
 	 Execute_command_execute_string(command_window->execute_command,
-			const_cast<char *>(command.c_str()));
-	 this->Clear();
+			new_string);
+	 if (gfx_used_flag == 0)
+	 {
+			if (new_string)
+			{
+				 if (!strncmp(new_string, "gfx", 3))
+				 {
+						gfx_used_flag = 1;
+				 }
+			}
+	 }
+	 this->CustomClear();
 }
-
 
 BEGIN_EVENT_TABLE(wxCommandLineTextCtrl, wxTextCtrl)
 	 EVT_KEY_DOWN(wxCommandLineTextCtrl::OnKeyDown)
@@ -2955,6 +3010,7 @@ Writes the <message> to the <command_window>.
 		if (command_window->output_window)
 		{
 			 command_window->output_window->AppendText(message);
+			 command_window->output_window->SetInsertionPointEnd();
 			 return_code = 1;
 		}
 #endif /* switch (USER_INTERFACE) */
