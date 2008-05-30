@@ -626,7 +626,7 @@ Changes the command prompt provided to the user.
 	ENTER(set_command_prompt);
 	if (prompt && command_data)
 	{
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 		if (command_data->command_window)
 		{
 			return_code = Command_window_set_command_prompt(command_data->command_window,
@@ -23538,7 +23538,7 @@ and then executes the returned strings
 		interpret_command(command_data->interpreter, command_string, (void *)command_data, 
 		  &quit, &execute_command, &return_code);
 
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 		if (command_data->command_window)
 		{
 			reset_command_box(command_data->command_window);
@@ -23677,7 +23677,7 @@ Execute a <command_string>. If there is a command
 					DESTROY(Option_table)(&option_table);
 				}
 			}
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 			if (command_data->command_window)
 			{
 				reset_command_box(command_data->command_window);
@@ -23714,26 +23714,26 @@ for editing and entering. If there is no command_window, does nothing.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 	struct Cmiss_command_data *command_data;
 #endif /* defined (MOTIF) */
 
 	ENTER(cmiss_set_command);
 	if (command_string
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 		&& (command_data=(struct Cmiss_command_data *)command_data_void)
 #endif /* defined (MOTIF) */
 			)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 		if (command_data->command_window)
 		{
 			return_code=Command_window_set_command_string(
 				command_data->command_window,command_string);
 		}
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 		USE_PARAMETER(command_data_void);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 		return_code=1;
 	}
 	else

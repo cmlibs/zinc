@@ -240,7 +240,6 @@ public:
 			wxFontData fdata;
 			wxFont font;
 			wxColour colour;
-			comfile_listbox = XRCCTRL(*this, "ComfileListBox", wxListBox);
 			font = comfile_listbox->GetFont();
 			fdata.SetInitialFont(font);
 			colour = comfile_listbox->GetForegroundColour();
@@ -260,17 +259,17 @@ public:
 
 void SingleClickedOnList(wxCommandEvent &event)
 	 {		
-			int i,number_of_selected_commands;
+			int number_of_selected_commands;
 			wxArrayInt selected_commands;
-			comfile_listbox = XRCCTRL(*this, "ComfileListBox", wxListBox);
 			if (number_of_selected_commands = comfile_listbox->GetSelections(selected_commands))
 			{
 				 /* execute the selected commands */
-				 for (i=0;i<number_of_selected_commands;i++)
+				 if (number_of_selected_commands>0)
 				 {
 						/* retrieve the command string */
-						selectedcommand = comfile_listbox->GetString(selected_commands[i]);
-// 						wx_Display_on_command_list(const_cast<char *>(selectedcommand.c_str()));
+						selectedcommand = comfile_listbox->GetString(selected_commands[0]);
+						Execute_command_execute_string(comfile_window->set_command,
+							 const_cast<char *>(selectedcommand.c_str()));
 				 }
 			}
 	 }
@@ -279,7 +278,6 @@ void DoubleClickedOnList(wxCommandEvent &event)
 	 {
 			int i,number_of_selected_commands;
 			wxArrayInt selected_commands;
-			comfile_listbox = XRCCTRL(*this, "ComfileListBox", wxListBox);
 			if (number_of_selected_commands = comfile_listbox->GetSelections(selected_commands))
 			{
 				 /* execute the selected commands */
@@ -291,13 +289,11 @@ void DoubleClickedOnList(wxCommandEvent &event)
 							 const_cast<char *>(selectedcommand.c_str())) ;
 				 }
 			}
-// 			wx_Display_on_command_list((char)NULL);
 	 }
 
 void AllClicked(wxCommandEvent &event)
 {
 	 int i,number_of_selected_commands;
-	 comfile_listbox = XRCCTRL(*this, "ComfileListBox", wxListBox);
 	 /* get the number of selected commands and their positions */
 	 if (number_of_selected_commands = comfile_listbox->GetCount())
 	 {
@@ -317,7 +313,6 @@ void SelectedClicked(wxCommandEvent &event)
 {
 	 wxArrayInt selected_commands;
 	 int i,number_of_selected_commands;
-	 comfile_listbox = XRCCTRL(*this, "ComfileListBox", wxListBox);
 	 /* get the number of selected commands and their positions */
 	 if (number_of_selected_commands = comfile_listbox->GetSelections(selected_commands))
 	 {

@@ -156,13 +156,11 @@ class wxCommandWindow;
 class wxCommandLineTextCtrl : public wxTextCtrl
 {
 	 Command_window *command_window;
-	 int gfx_used_flag;
 public:
 	 wxCommandLineTextCtrl(Command_window *command_window, wxPanel *parent) :
 			wxTextCtrl(parent, -1, "",wxPoint(0,0), wxSize(-1,24), wxTE_PROCESS_ENTER),
 			command_window(command_window)
     {
-			 gfx_used_flag = 0;
 			 wxBoxSizer *sizer = new wxBoxSizer( wxHORIZONTAL );
 			 sizer->Add(this,
 					wxSizerFlags(1).Align(wxALIGN_CENTER).Expand());
@@ -177,10 +175,11 @@ public:
 	 ~wxCommandLineTextCtrl()
 	 {
 	 };
+	 void Reset(char *command_prompt);
 
+private:
 	 void OnKeyDown(wxKeyEvent& event);
 	 void OnCommandEntered(wxCommandEvent& event);
-	 void CustomClear();
 
     DECLARE_EVENT_TABLE()
 };
@@ -233,6 +232,7 @@ DESCRIPTION :
 	 wxPanel *lower_panel;
 	 wxTextCtrl *output_window;
 	 wxListBox *history_window;
+	 char *command_prompt;
 // #if defined(__WIN32__)
 // 	 wxIcon icon("/cmgui_windows_icon.ico");
 // #endif
@@ -1672,7 +1672,9 @@ public:
 			// make item visible
 			history_list->SetSelection(history_list->GetCount()-1);
 			history_list->Thaw(); 
-	 }	 
+	 }
+
+private:
 	 
 	 void SingleClick(wxCommandEvent& event)
 	 {
@@ -1689,7 +1691,6 @@ public:
 			number = history_list->GetCount();
 			Execute_command_execute_string(command_window->execute_command,
 				 const_cast<char *>(SelectedCommand.c_str()));
-			command_window->wx_command_line_text_ctrl->CustomClear();
 			history_list->SetSelection ( history_list->GetCount() - 1 ); 	 
 			history_list->Deselect( history_list->GetCount() - 1 );
 	 }
@@ -1874,25 +1875,6 @@ void Exit(wxCommandEvent& event)
 	 dlg->Destroy();
 } 
 
-	 void wx_Display_on_command_list(char *command_string)
-/*******************************************************************************
-LAST MODIFIED : 5 April 2007
-
-DESCRIPTION:
-Display the command onto the list
-==============================================================================*/
-{
-	 if (command_string != (char)NULL)
-	 {
-			command_window->wx_command_line_text_ctrl->WriteText(command_string);
-	 }
-	 else
-	 {
-			command_window->wx_command_line_text_ctrl->CustomClear();
-	 }
-}	 
-	 
-
    DECLARE_EVENT_TABLE();
 };
 
@@ -1923,17 +1905,9 @@ BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	 EVT_MENU(XRCID("MenuExit"),wxCommandWindow::Exit)
 END_EVENT_TABLE()
 
-void wxCommandLineTextCtrl::CustomClear()
+void wxCommandLineTextCtrl::Reset(char *command_prompt)
 {
-	 if (gfx_used_flag == 1)
-	 {
-			this->ChangeValue("gfx ");
-
-	 }
-	 else
-	 {
-			this->Clear();
-	 }
+	 this->ChangeValue(command_prompt);
 	 this->SetInsertionPointEnd(); 
 }
 
@@ -1951,18 +1925,13 @@ void wxCommandLineTextCtrl::OnKeyDown(wxKeyEvent& event)
 				 if (selection == wxNOT_FOUND)
 				 {
 						history_list->SetSelection(number_of_items - 1);
-						this->CustomClear();
+						this->Clear();
 				 }
-				 else if (number_of_items>selection+2)
+				 else if (number_of_items>selection+1)
 				 {
 						history_list->SetSelection(selection+1);
 						SelectedCommand = history_list->GetStringSelection();
 						this->ChangeValue(SelectedCommand);
-				 }
-				 else if (number_of_items == selection+2)
-				 {
-						history_list->SetSelection(selection+1);
-						this->CustomClear();
 				 }
 				 history_list->SetFocus();
 				 this->SetFocus();
@@ -2001,7 +1970,7 @@ void wxCommandLineTextCtrl::OnKeyDown(wxKeyEvent& event)
 				 {
 						history_list->SetFocus();
 						history_list->SetSelection(number_of_items-1);
-						this->CustomClear();
+						this->Clear();
 						this->SetFocus();
 						this->SetInsertionPointEnd();
 				 }
@@ -2020,17 +1989,6 @@ void wxCommandLineTextCtrl::OnCommandEntered(wxCommandEvent& event)
 	 char *new_string = const_cast<char *>(command.c_str());
 	 Execute_command_execute_string(command_window->execute_command,
 			new_string);
-	 if (gfx_used_flag == 0)
-	 {
-			if (new_string)
-			{
-				 if (!strncmp(new_string, "gfx", 3))
-				 {
-						gfx_used_flag = 1;
-				 }
-			}
-	 }
-	 this->CustomClear();
 }
 
 BEGIN_EVENT_TABLE(wxCommandLineTextCtrl, wxTextCtrl)
@@ -2546,6 +2504,15 @@ Create the structures and retrieve the command window from the uil file.
 #if defined (__WXMSW__)
 			USE_PARAMETER(cmiss_icon_xpm);
 #endif
+			if (ALLOCATE(command_window->command_prompt, char , 1))
+			{
+				 *command_window->command_prompt = 0;
+			}
+			else
+			{
+				 display_message(ERROR_MESSAGE,
+						"CREATE(Command_window).  Insufficient memory for command_window prompt");		 
+			}
 			command_window->wx_command_window->Show();
 			command_window->output_window = 
 			  XRCCTRL(*command_window->wx_command_window, "OutputWindow", wxTextCtrl);
@@ -2606,6 +2573,8 @@ DESCRIPTION:
 		}
 #if defined (WX_USER_INTERFACE)
 		delete command_window->wx_command_window;
+		if (command_window->command_prompt)
+			 DEALLOCATE(command_window->command_prompt);
 #elif defined (MOTIF) /* switch (USER_INTERFACE) */
 		set_property_notify_callback(command_window->user_interface,
 			(Property_notify_callback)NULL, (void *)NULL, (Widget)NULL);
@@ -2773,7 +2742,7 @@ Sets the value of the <prompt> for the <command_window>.
 		{
 			command_window->command_prompt=XmStringCreateSimple("");
 		}
-#elif defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#elif defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)/* switch (USER_INTERFACE) */
 		if (command_window->command_prompt)
 		{
 			DEALLOCATE(command_window->command_prompt);
@@ -2854,6 +2823,9 @@ Resets all functions of the command box widget.
 		gtk_entry_set_text(GTK_ENTRY(command_window->entry),
 			command_window->command_prompt);
 		gtk_editable_set_position(GTK_EDITABLE(command_window->entry), -1);
+#elif defined (WX_USER_INTERFACE)
+		if (command_window->wx_command_line_text_ctrl)
+			 command_window->wx_command_line_text_ctrl->Reset(command_window->command_prompt);
 #endif /* defined (GTK_USER_INTERFACE) */
 
 		return_code=1;
@@ -2888,6 +2860,12 @@ Does not override the command prompt.
 #if defined (MOTIF)
 		XtVaSetValues(command_window->command_entry,
 			XmNvalue,(XtPointer)command_string,NULL);
+#elif defined (WX_USER_INTERFACE)
+		if (command_window->wx_command_line_text_ctrl)
+		{
+			 
+			 command_window->wx_command_line_text_ctrl->Reset(command_string);
+		}
 #endif /* defined (MOTIF) */
 		return_code=1;
 	}

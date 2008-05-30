@@ -29,18 +29,21 @@
 
 				  <object class = "sizeritem">
 					  <object class = "wxButton" name = "AllButton">
+	 						<size>-1,26</size>
 						  <label>All</label>
 					  </object>
 				 </object>
 
 				  <object class = "sizeritem">
 				  	  <object class = "wxButton" name = "SelectedButton">
+	 							<size>-1,26</size>
 					     <label>Selected</label>
 					  </object>
 				  </object>	
 
 				  <object class = "sizeritem">
 				      <object class = "wxButton" name = "CloseButton">
+	 							<size>-1,26</size>
 					      <label>Close</label>
 				  	  </object>
 			  	  </object>	
