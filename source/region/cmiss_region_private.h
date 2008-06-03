@@ -52,7 +52,7 @@ Global functions
 ----------------
 */
 
-struct Cmiss_region *CREATE(Cmiss_region)();
+struct Cmiss_region *CREATE(Cmiss_region)(void);
 /*******************************************************************************
 LAST MODIFIED : 22 May 2008
 
