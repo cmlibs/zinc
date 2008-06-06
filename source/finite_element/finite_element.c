@@ -22826,34 +22826,48 @@ headers have to change in output files.
 								l = info_1->number_of_scale_factor_sets;
 								number_in_scale_factor_set_1 =
 									info_1->numbers_in_scale_factor_sets;
-								scale_factor_set_identifier_1 =
-									info_1->scale_factor_set_identifiers;
-								while ((l > 0) && (*scale_factor_index_1 >=
-									start_scale_factor_set_1 +
-									(*number_in_scale_factor_set_1)))
+								if (*scale_factor_index_1 < 0)
 								{
-									start_scale_factor_set_1 +=
-										*number_in_scale_factor_set_1;
-									scale_factor_set_identifier_1++;
-									number_in_scale_factor_set_1++;
-									l--;
+									scale_factor_set_identifier_1 = NULL;
+								}
+								else
+								{
+									scale_factor_set_identifier_1 =
+										info_1->scale_factor_set_identifiers;
+									while ((l > 0) && (*scale_factor_index_1 >=
+										start_scale_factor_set_1 +
+										(*number_in_scale_factor_set_1)))
+									{
+										start_scale_factor_set_1 +=
+											*number_in_scale_factor_set_1;
+										scale_factor_set_identifier_1++;
+										number_in_scale_factor_set_1++;
+										l--;
+									}
 								}
 								/* determine the new scale factor set */
 								start_scale_factor_set_2 = 0;
 								l = info_2->number_of_scale_factor_sets;
 								number_in_scale_factor_set_2 =
 									info_2->numbers_in_scale_factor_sets;
-								scale_factor_set_identifier_2 =
-									info_2->scale_factor_set_identifiers;
-								while ((l > 0) && (*scale_factor_index_2 >=
-									start_scale_factor_set_2 +
-									(*number_in_scale_factor_set_2)))
+								if (*scale_factor_index_2 < 0)
 								{
-									start_scale_factor_set_2 +=
-										*number_in_scale_factor_set_2;
-									scale_factor_set_identifier_2++;
-									number_in_scale_factor_set_2++;
-									l--;
+									scale_factor_set_identifier_2 = NULL;
+								}
+								else
+								{
+									scale_factor_set_identifier_2 =
+										info_2->scale_factor_set_identifiers;
+									while ((l > 0) && (*scale_factor_index_2 >=
+										start_scale_factor_set_2 +
+										(*number_in_scale_factor_set_2)))
+									{
+										start_scale_factor_set_2 +=
+											*number_in_scale_factor_set_2;
+										scale_factor_set_identifier_2++;
+										number_in_scale_factor_set_2++;
+										l--;
+									}
 								}
 								if ((!scale_factor_set_identifier_1 &&
 									!scale_factor_set_identifier_2) ||
@@ -24213,7 +24227,7 @@ local to this module.
 static int merge_FE_element_field_into_list(
 	struct FE_element_field *new_element_field, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 24 March 2003
+LAST MODIFIED : 6 June 2008
 
 DESCRIPTION :
 Merges the <new_element_field> into the <list>. The <new_element_field>
@@ -24230,10 +24244,10 @@ constructed for it.
 No values_storage arrays are allocated or copied by this function.
 ==============================================================================*/
 {
-	int i, j, k, l, m, *new_number_in_scale_factor_set, *new_number_in_xi,
+	int i, j, k, l, lm, ls, m, *new_number_in_scale_factor_set, *new_number_in_xi,
 		*new_scale_factor_index, *new_value_index,new_values_storage_size,
 		node_index, *number_in_scale_factor_set, *number_in_xi, number_of_values,
-		return_code, *scale_factor_index, start_new_scale_factor_set,
+		return_code, *scale_factor_index, start_diff, start_new_scale_factor_set,
 		start_scale_factor_set, *value_index;
 	struct FE_element_field *element_field;
 	struct FE_element_field_component **component, **new_component;
@@ -24375,39 +24389,51 @@ No values_storage arrays are allocated or copied by this function.
 														}
 														/* determine the new scale factor set */
 														start_new_scale_factor_set = 0;
-														l = source_info->number_of_scale_factor_sets;
+														ls = source_info->number_of_scale_factor_sets;
 														new_number_in_scale_factor_set =
 															source_info->numbers_in_scale_factor_sets;
-														new_scale_factor_set_identifier =
-															source_info->scale_factor_set_identifiers;
-														while ((l > 0) && (*new_scale_factor_index >=
-															start_new_scale_factor_set +
-															(*new_number_in_scale_factor_set)))
+														if (*new_scale_factor_index < 0)
 														{
-															start_new_scale_factor_set +=
-																*new_number_in_scale_factor_set;
-															new_scale_factor_set_identifier++;
-															new_number_in_scale_factor_set++;
-															l--;
+															new_scale_factor_set_identifier = NULL;
+														}
+														else
+														{
+															new_scale_factor_set_identifier =
+																source_info->scale_factor_set_identifiers;
+															while ((ls > 0) && (*new_scale_factor_index >=
+																start_new_scale_factor_set +
+																(*new_number_in_scale_factor_set)))
+															{
+																start_new_scale_factor_set +=
+																	*new_number_in_scale_factor_set;
+																new_scale_factor_set_identifier++;
+																new_number_in_scale_factor_set++;
+																ls--;
+															}
 														}
 														/* determine the merge scale factor set */
 														start_scale_factor_set = 0;
-														l = merge_info->number_of_scale_factor_sets;
+														lm = merge_info->number_of_scale_factor_sets;
 														number_in_scale_factor_set =
 															merge_info->numbers_in_scale_factor_sets;
-														scale_factor_set_identifier =
-															merge_info->scale_factor_set_identifiers;
-														while ((l > 0) && (*scale_factor_set_identifier !=
-															*new_scale_factor_set_identifier))
+														if (new_scale_factor_set_identifier)
 														{
-															start_scale_factor_set +=
-																*number_in_scale_factor_set;
-															scale_factor_set_identifier++;
-															number_in_scale_factor_set++;
-															l--;
+															scale_factor_set_identifier =
+																merge_info->scale_factor_set_identifiers;
+															while ((lm > 0) && (*scale_factor_set_identifier !=
+																*new_scale_factor_set_identifier))
+															{
+																start_scale_factor_set +=
+																	*number_in_scale_factor_set;
+																scale_factor_set_identifier++;
+																number_in_scale_factor_set++;
+																lm--;
+															}
 														}
 														if ((*node == new_node) &&
-															((!number_in_scale_factor_set) || (
+															((NULL == new_scale_factor_set_identifier) || (
+																new_scale_factor_set_identifier &&
+																scale_factor_set_identifier &&
 																(*scale_factor_set_identifier ==
 																	*new_scale_factor_set_identifier) &&
 																(*number_in_scale_factor_set ==
@@ -24420,13 +24446,17 @@ No values_storage arrays are allocated or copied by this function.
 																(*standard_node_map)->nodal_value_indices;
 															scale_factor_index =
 																(*standard_node_map)->scale_factor_indices;
-															l = start_scale_factor_set -
+															start_diff = start_scale_factor_set -
 																start_new_scale_factor_set;
 															while (k > 0)
 															{
 																*value_index = *new_value_index;
-																*scale_factor_index =
-																	(*new_scale_factor_index) + l;
+																if (NULL != new_scale_factor_set_identifier)
+																{
+																	*scale_factor_index =
+																		(*new_scale_factor_index) + start_diff;
+																}
+																/* else default = -1 =  unit scale factor */
 																value_index++;
 																new_value_index++;
 																scale_factor_index++;
