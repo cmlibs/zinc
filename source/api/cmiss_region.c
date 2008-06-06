@@ -77,64 +77,6 @@ Destroys the <region> and sets the pointer to NULL.
 	return (return_code);
 } /* Cmiss_region_destroy */
 
-int Cmiss_region_begin_change_API(Cmiss_region_id region)
-/*******************************************************************************
-LAST MODIFIED : 10 November 2004
-
-DESCRIPTION :
-Changes made to the <region> between Cmiss_region_begin_change and
-Cmiss_region_end_change do not generate events in the rest of cmgui until
-the change count returns to zero.  This allows many changes to be made 
-efficiently, resulting in only one update of the dependent objects.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_region *fe_region;
-
-	ENTER(Cmiss_region_begin_change_API);
-	return_code = 0;
-	if (region)
-	{
-		Cmiss_region_begin_change(region);
-		if (fe_region=Cmiss_region_get_FE_region(region))
-		{
-			return_code = FE_region_begin_change(fe_region);
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_region_begin_change_API */
-
-int Cmiss_region_end_change_API(Cmiss_region_id region)
-/*******************************************************************************
-LAST MODIFIED : 10 November 2004
-
-DESCRIPTION :
-Changes made to the <region> between Cmiss_region_begin_change and
-Cmiss_region_end_change do not generate events in the rest of cmgui until
-the change count returns to zero.  This allows many changes to be made 
-efficiently, resulting in only one update of the dependent objects.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_region *fe_region;
-
-	ENTER(Cmiss_region_end_change_API);
-	return_code = 0;
-	if (region)
-	{
-		Cmiss_region_end_change(region);
-		if (fe_region=Cmiss_region_get_FE_region(region))
-		{
-			return_code = FE_region_end_change(fe_region);
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_region_end_change_API */
-
 int Cmiss_region_read_file(struct Cmiss_region *region, char *file_name)
 /*******************************************************************************
 LAST MODIFIED : 23 May 2008

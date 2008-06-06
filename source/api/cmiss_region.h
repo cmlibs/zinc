@@ -87,9 +87,9 @@ DESCRIPTION :
 Destroys the <region> and sets the pointer to NULL.
 ==============================================================================*/
 
-int Cmiss_region_begin_change_API(Cmiss_region_id region);
+int Cmiss_region_begin_change(Cmiss_region_id region);
 /*******************************************************************************
-LAST MODIFIED : 10 November 2004
+LAST MODIFIED : 6 June 2008
 
 DESCRIPTION :
 Changes made to the <region> between Cmiss_region_begin_change and
@@ -98,9 +98,9 @@ the change count returns to zero.  This allows many changes to be made
 efficiently, resulting in only one update of the dependent objects.
 ==============================================================================*/
 
-int Cmiss_region_end_change_API(Cmiss_region_id region);
+int Cmiss_region_end_change(Cmiss_region_id region);
 /*******************************************************************************
-LAST MODIFIED : 10 November 2004
+LAST MODIFIED : 6 June 2008
 
 DESCRIPTION :
 Changes made to the <region> between Cmiss_region_begin_change and
