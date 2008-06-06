@@ -19,40 +19,13 @@ PROTOTYPES: DISABLE
 
 Cmiss::Region
 create()
-	PREINIT:
-		struct FE_region *fe_region;
-		struct LIST(FE_element_shape) *element_shape_list;
-		struct MANAGER(FE_basis) *basis_manager;
 	CODE:
 		/* the result, in Perl, is a reference to a stash (which is a pointer to the
 			Cmiss_region structure).  This means that don't need to worry about
 			ACCESSing for Perl assignment/copy, $cmiss_region_2=$cmiss_region_1,
 			because this increments the reference count for the stash (DESTROY is
 			called when the stash reference count gets to zero) */
-		if (RETVAL=CREATE(Cmiss_region)())
-		{
-			ACCESS(Cmiss_region)(RETVAL);
-			if ((basis_manager=CREATE_MANAGER(FE_basis)()) && 
-				(element_shape_list=CREATE(LIST(FE_element_shape))()))
-			{
-				if (fe_region=CREATE(FE_region)((struct FE_region *)NULL,basis_manager,
-					element_shape_list))
-				{
-					if (!Cmiss_region_attach_FE_region(RETVAL,fe_region))
-					{
-						DEACCESS(Cmiss_region)(&RETVAL);
-					}
-				}
-				else
-				{
-					DEACCESS(Cmiss_region)(&RETVAL);
-				}
-			}
-			else
-			{
-				DEACCESS(Cmiss_region)(&RETVAL);
-			}
-		}
+		RETVAL=Cmiss_region_create();
 	OUTPUT:
 		RETVAL
 
@@ -230,7 +203,7 @@ begin_change(Cmiss::Region region)
 		RETVAL=0;
 		if (region)
 		{
-			RETVAL=Cmiss_region_begin_change_API(region);
+			RETVAL=Cmiss_region_begin_change(region);
 		}
 	OUTPUT:
 		RETVAL
@@ -241,7 +214,7 @@ end_change(Cmiss::Region region)
 		RETVAL=0;
 		if (region)
 		{
-			RETVAL=Cmiss_region_end_change_API(region);
+			RETVAL=Cmiss_region_end_change(region);
 		}
 	OUTPUT:
 		RETVAL

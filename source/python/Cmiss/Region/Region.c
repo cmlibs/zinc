@@ -280,38 +280,12 @@ static PyObject*
 CmissRegion_new(PyObject* self, PyObject* args)
 {
 	CmissRegionObject *cmiss_region;
-	struct FE_region *fe_region;
-	struct LIST(FE_element_shape) *element_shape_list;
-	struct MANAGER(FE_basis) *basis_manager;
 
 	if (!PyArg_ParseTuple(args,":new", NULL)) 
 		return NULL;
 
 	cmiss_region = PyObject_New(CmissRegionObject, &CmissRegionType);
-	if (cmiss_region->region = CREATE(Cmiss_region)())
-	{
-		ACCESS(Cmiss_region)(cmiss_region->region);
-		if ((basis_manager=CREATE_MANAGER(FE_basis)()) &&
-			(element_shape_list = CREATE(LIST(FE_element_shape))()))
-		{
-			if (fe_region=CREATE(FE_region)((struct FE_region *)NULL,basis_manager,
-				element_shape_list))
-			{
-				if (!Cmiss_region_attach_FE_region(cmiss_region->region, fe_region))
-				{
-					DEACCESS(Cmiss_region)(&cmiss_region->region);
-				}
-			}
-			else
-			{
-				DEACCESS(Cmiss_region)(&cmiss_region->region);
-			}
-		}
-		else
-		{
-			DEACCESS(Cmiss_region)(&cmiss_region->region);
-		}
-	}
+	cmiss_region->region = Cmiss_region_create();
 
 	return (PyObject*)cmiss_region;
 }
