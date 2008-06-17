@@ -79,6 +79,7 @@ Functions for executing cmiss commands.
 #include "computed_field/computed_field_deformation.h"
 #include "computed_field/computed_field_derivatives.h"
 #include "computed_field/computed_field_find_xi.h"
+#include "computed_field/computed_field_find_xi_graphics.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_fibres.h"
 #include "computed_field/computed_field_function.h"
