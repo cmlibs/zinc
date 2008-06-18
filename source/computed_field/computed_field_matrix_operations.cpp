@@ -53,6 +53,7 @@ extern "C" {
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
+#include "graphics/quaternion.hpp"
 }
 
 class Computed_field_matrix_operations_package : public Computed_field_type_package
@@ -3017,6 +3018,702 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_transpose */
 
+
+namespace {
+
+char computed_field_quaternion_to_matrix_type_string[] = "quaternion_to_matrix";
+
+class Computed_field_quaternion_to_matrix : public Computed_field_core
+{
+public:
+
+	 Computed_field_quaternion_to_matrix(Computed_field *field) : 
+			Computed_field_core(field)
+	 {
+	 };
+	 
+	 ~Computed_field_quaternion_to_matrix()
+	 {
+	 };
+	 
+private:
+	 Computed_field_core *copy(Computed_field* new_parent)
+	 {
+			return new Computed_field_quaternion_to_matrix(new_parent);
+	 }
+
+	 char *get_type_string()
+	 {
+			return(computed_field_quaternion_to_matrix_type_string);
+	 }
+	 
+	 int compare(Computed_field_core* other_field)
+	 {
+			if (dynamic_cast<Computed_field_quaternion_to_matrix*>(other_field))
+			{
+				 return 1;
+			}
+			else
+			{
+				 return 0;
+			}			
+	 }
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
+};
+
+int Computed_field_quaternion_to_matrix::evaluate_cache_at_location(
+	 Field_location* location)
+/*******************************************************************************
+LAST MODIFIED : 18 Jun 2008
+
+DESCRIPTION :
+Evaluate the fields cache at the location
+==============================================================================*/
+{
+	 int return_code;
+	 double time, w, x, y, z;
+
+	 ENTER(Computed_field_quaternion_to_matrix::evaluate_cache_at_location);
+	 return_code = 0;
+	 if (field && location && field->number_of_components == 16 &&
+			field->source_fields[0]->number_of_components == 4)
+	 {
+			time = location->get_time();
+			if (Computed_field_evaluate_source_fields_cache_at_location(field, location))
+			{
+				 w = (double)(field->source_fields[0]->values[0]);
+				 x = (double)(field->source_fields[0]->values[1]);
+				 y = (double)(field->source_fields[0]->values[2]);
+				 z = (double)(field->source_fields[0]->values[3]);
+				 Quaternion *quad = new Quaternion(w, x, y, z);
+				 return_code = quad->quaternion_to_matrix(field->values);
+			}
+			else
+			{
+				 display_message(ERROR_MESSAGE,
+						"Computed_field_quaternion_to_matrix::evaluate_cache_at_location.  "
+						"Cannot evaluate source fields cache at location.");
+			}
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "Computed_field_quaternion_to_matrix::evaluate_cache_at_location.  "
+				 "Invalid argument(s)");
+	 }
+	 
+	 return (return_code);
+} /* Computed_field_quaternion_to_matrix::evaluate_cache_at_location */
+
+int Computed_field_quaternion_to_matrix::list()
+/*******************************************************************************
+LAST MODIFIED: 18 Jun 2008
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(List_Computed_field_quaternion_to_matrix);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,
+			"    field : %s\n",field->source_fields[0]->name);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_quaternion_to_matrix.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_quaternion_to_matrix */
+
+char *Computed_field_quaternion_to_matrix::get_command_string()
+/*******************************************************************************
+LAST MODIFIED : 18 Jun 2008
+
+DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
+==============================================================================*/
+{
+	char *command_string, *field_name;
+	int error;
+
+	ENTER(Computed_field_quaternion_to_matrix::get_command_string);
+	command_string = (char *)NULL;
+	if (field)
+	{
+		error = 0;
+		append_string(&command_string,
+			computed_field_quaternion_to_matrix_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_quaternion_to_matrix::get_command_string.  "
+			"Invalid field");
+	}
+	LEAVE;
+
+	return (command_string);
+} /* Computed_field_quaternion_to_matrix::get_command_string
+		 */
+} //namespace
+
+int Computed_field_set_type_quaternion_to_matrix(struct Computed_field *field,
+	 struct Computed_field *source_field) 
+/*******************************************************************************
+LAST MODIFIED : 18 Jun 2008
+
+DESCRIPTION :
+Converts a 'quaternion' to a transformation matrix, where
+<source_field> must have 4 components.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	 int number_of_source_fields, return_code;
+	struct Computed_field **source_fields;
+
+	ENTER(Computed_field_set_type_quaternion_to_matrix);
+	if (field && source_field)
+	{
+		 return_code=1;
+		 /* 1. make dynamic allocations for any new type-specific data */
+		 if (source_field->number_of_components == 4)
+		 {
+				/* 1. make dynamic allocations for any new type-specific data */
+				number_of_source_fields = 1;
+				if (ALLOCATE(source_fields,struct Computed_field *,
+							number_of_source_fields))
+				{
+					 /* 2. free current type-specific data */
+					 Computed_field_clear_type(field);
+					 /* 3. establish the new type */
+					 field->number_of_components = 16;
+					 source_fields[0] = ACCESS(Computed_field)(source_field);
+					 field->source_fields = source_fields;
+					 field->number_of_source_fields = number_of_source_fields;
+					 field->core = new Computed_field_quaternion_to_matrix(field);
+					 return_code=1;
+				}
+				else
+				{
+					 display_message(ERROR_MESSAGE,
+							"Computed_field_set_type_quaternion_to_matrix.  Not enough memory");
+					 DEALLOCATE(source_fields);
+					 return_code=0;
+				}
+		 }
+		 else
+		 {
+				display_message(ERROR_MESSAGE,"Computed_field_set_type_quaternion_to_matrix.  "
+					 "Field %s does not have 4 components",source_field->name);
+				return_code = 0;
+		 }
+	}
+	else
+	{
+		 display_message(ERROR_MESSAGE,
+				"Computed_field_set_type_quaternion_to_matrix.  Invalid argument(s)");
+		 return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_quaternion_to_matrix */
+
+int Computed_field_get_type_quaternion_to_matrix(struct Computed_field *field,
+	struct Computed_field **quaternion_to_matrix_field)
+/*******************************************************************************
+LAST MODIFIED : 18 Jun 2008
+
+DESCRIPTION :
+If the field is of type 'transformation', the <source_field> it calculates the
+transformation of is returned.
+==============================================================================*/
+{
+	 Computed_field_quaternion_to_matrix* core;
+	 int return_code;
+
+	ENTER(Computed_field_get_type_quatenions_to_transformation);
+	if (field && (core = dynamic_cast<Computed_field_quaternion_to_matrix*>(field->core)))
+	{
+		*quaternion_to_matrix_field = field->source_fields[0];
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_quaternion_to_matrix.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_quaternion */
+
+int define_Computed_field_type_quaternion_to_matrix(struct Parse_state *state,
+	void *field_void, void *computed_field_matrix_operations_package_void)
+/*******************************************************************************
+LAST MODIFIED : 18 Jun 2008
+
+DESCRIPTION :
+Converts a "quaternion" to a transformation matrix.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *field, **source_fields;
+	Computed_field_matrix_operations_package *computed_field_matrix_operations_package;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_source_field_data;
+
+	ENTER(define_Computed_field_type_quaternion_to_matrix);
+	if (state && (field = (struct Computed_field *)field_void) &&
+		(computed_field_matrix_operations_package=
+			(Computed_field_matrix_operations_package *)
+			computed_field_matrix_operations_package_void))
+	{
+		return_code=1;
+		source_fields = (struct Computed_field **)NULL;
+		if (ALLOCATE(source_fields, struct Computed_field *, 1))
+		{
+			 source_fields[0] = (struct Computed_field *)NULL;
+			 if (computed_field_quaternion_to_matrix_type_string ==
+					Computed_field_get_type_string(field))
+			 {
+					return_code = Computed_field_get_type_quaternion_to_matrix(field, 
+						 source_fields);
+			 }
+			 if (return_code)
+			 {
+					if (source_fields[0])
+					{
+						 ACCESS(Computed_field)(source_fields[0]);
+					}
+					option_table = CREATE(Option_table)();
+					Option_table_add_help(option_table,
+						 "A computed field to convert a quaternion (w,x,y,z) to a 4x4 matrix,");
+					set_source_field_data.computed_field_manager =
+						 computed_field_matrix_operations_package->computed_field_manager;
+					set_source_field_data.conditional_function =
+						 Computed_field_has_4_components;
+					set_source_field_data.conditional_function_user_data = (void *)NULL;
+					Option_table_add_entry(option_table, "field", &source_fields[0],
+						 &set_source_field_data, set_Computed_field_conditional);
+					/* process the option table */
+					return_code = Option_table_multi_parse(option_table, state);
+					/* no errors, not asking for help */
+					if (return_code)
+					{
+					  return_code = Computed_field_set_type_quaternion_to_matrix(
+						  field, source_fields[0]);
+					}
+					else
+					{
+						 if ((!state->current_token)||
+								(strcmp(PARSER_HELP_STRING,state->current_token)&&
+									 strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+						 {
+								/* error */
+								display_message(ERROR_MESSAGE,
+									 "define_Computed_field_type_quaternion_to_matrix.  Failed");
+						 }
+					}
+					if (source_fields[0])
+					{
+						 DEACCESS(Computed_field)(&source_fields[0]);
+					}
+					DESTROY(Option_table)(&option_table);
+			 }
+			 DEALLOCATE(source_fields);
+		}
+		else
+		{
+			 display_message(ERROR_MESSAGE,
+					"define_Computed_field_type_quaternion_to_matrix. Not enought memory");
+			 return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_quaternion_to_matrix. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_quaternion_to_matrix */
+
+
+namespace {
+
+char computed_field_matrix_to_quaternion_type_string[] = "matrix_to_quaternion";
+
+class Computed_field_matrix_to_quaternion : public Computed_field_core
+{
+public:
+
+	 Computed_field_matrix_to_quaternion(Computed_field *field) : 
+			Computed_field_core(field)
+	 {
+	 };
+	 
+	 ~Computed_field_matrix_to_quaternion()
+	 {
+	 };
+	 
+private:
+	 Computed_field_core *copy(Computed_field* new_parent)
+	 {
+			return new Computed_field_matrix_to_quaternion(new_parent);
+	 }
+
+	 char *get_type_string()
+	 {
+			return(computed_field_matrix_to_quaternion_type_string);
+	 }
+	 
+	int compare(Computed_field_core* other_field)
+	 {
+			if (dynamic_cast<Computed_field_matrix_to_quaternion*>(other_field))
+			{
+				 return 1;
+			}
+			else
+			{
+				 return 0;
+			}
+	 }
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
+};
+
+int Computed_field_matrix_to_quaternion::evaluate_cache_at_location(
+	 Field_location* location)
+/*******************************************************************************
+LAST MODIFIED : 22 February 2008
+
+DESCRIPTION :
+Evaluate the fields cache at the location
+==============================================================================*/
+{
+	 int return_code, i;
+	 float values[16];
+	 double time;
+
+	 ENTER(Computed_field_matrix_to_quaternion::evaluate_cache_at_location);
+	 return_code = 0;
+	 if (field && location && field->number_of_components == 4 &&
+			field->source_fields[0]->number_of_components == 16)
+	 {
+			time = location->get_time();
+			if (Computed_field_evaluate_source_fields_cache_at_location(field, location))
+			{
+				 for (i = 0; i<17; i++)
+				 {
+						values[i] = (float)(field->source_fields[0]->values[i]);
+				 }
+				 Quaternion *quad = new Quaternion();
+				 return_code = quad->matrix_to_quaternion(values, field->values);
+			}
+			else
+			{
+				 display_message(ERROR_MESSAGE,
+						"Computed_field_matrix_to_quaternion::evaluate_cache_at_location.  "
+						"Cannot evaluate source fields cache at location");
+			}			
+	 }
+	 else
+	 {
+			display_message(ERROR_MESSAGE,
+				 "Computed_field_matrix_to_quaternion::evaluate_cache_at_location.  "
+				 "Invalid argument(s)");
+	 }
+
+	 
+	 return (return_code);
+} /* Computed_field_matrix_to_quaternion::evaluate_cache_at_location */
+
+int Computed_field_matrix_to_quaternion::list()
+/*******************************************************************************
+LAST MODIFIED : 18 Jun 2008
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(List_Computed_field_matrix_to_quaternion);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,
+			"    field : %s\n",field->source_fields[0]->name);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_matrix_to_quaternion.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_matrix_to_quaternion */
+
+char *Computed_field_matrix_to_quaternion::get_command_string()
+/*******************************************************************************
+LAST MODIFIED : 18 Jun 2008
+
+DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
+==============================================================================*/
+{
+	char *command_string, *field_name;
+	int error;
+
+	ENTER(Computed_field_matrix_to_quaternion::get_command_string);
+	command_string = (char *)NULL;
+	if (field)
+	{
+		error = 0;
+		append_string(&command_string,
+			computed_field_matrix_to_quaternion_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_matrix_to_quaternion::get_command_string.  "
+			"Invalid field");
+	}
+	LEAVE;
+
+	return (command_string);
+} /* Computed_field_matrix_to_quaternion::get_command_string
+		 */
+
+} //namespace
+
+int Computed_field_set_type_matrix_to_quaternion(struct Computed_field *field,
+	 struct Computed_field *source_field) 
+/*******************************************************************************
+LAST MODIFIED : 18 Jun 2008
+
+DESCRIPTION :
+Converts a quaternion to a transformation matrix, where
+<source_field> must have 16 components.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int number_of_source_fields, return_code;
+	struct Computed_field **source_fields;
+
+	ENTER(Computed_field_set_type_matrix_to_quaternion);
+	if (field && source_field)
+	{
+		 return_code=1;
+		 /* 1. make dynamic allocations for any new type-specific data */
+		 if (source_field->number_of_components == 16)
+		 {
+				/* 1. make dynamic allocations for any new type-specific data */
+				number_of_source_fields = 1;
+				if (ALLOCATE(source_fields,struct Computed_field *,
+							number_of_source_fields))
+				{
+					 /* 2. free current type-specific data */
+					 Computed_field_clear_type(field);
+					 /* 3. establish the new type */
+					 field->number_of_components = 4;
+					 source_fields[0] = ACCESS(Computed_field)(source_field);
+					 field->source_fields = source_fields;
+					 field->number_of_source_fields = number_of_source_fields;
+					 field->core = new Computed_field_matrix_to_quaternion(field);
+					 return_code=1;
+				}
+				else
+				{
+					 display_message(ERROR_MESSAGE,
+							"Computed_field_set_type_matrix_to_quaternion.  Not enough memory");
+					 DEALLOCATE(source_fields);
+					 return_code=0;
+				}
+		 }
+		 else
+		 {
+				display_message(ERROR_MESSAGE,"Computed_field_set_type_matrix_to_quaternion.  "
+					 "Field %s does not have 16 components",source_field->name);
+				return_code = 0;
+		 }
+	}
+	else
+	{
+		 display_message(ERROR_MESSAGE,
+				"Computed_field_set_type_matrix_to_quaternion.  Invalid argument(s)");
+		 return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_matrix_to_quaternion */
+
+int Computed_field_get_type_matrix_to_quaternion(struct Computed_field *field,
+	struct Computed_field **matrix_to_quaternion_field)
+/*******************************************************************************
+LAST MODIFIED : 18 Jun 2008
+
+DESCRIPTION :
+If the field is of type 'transformation', the <source_field> it calculates the
+transformation of is returned.
+==============================================================================*/
+{
+	 Computed_field_matrix_to_quaternion* core;
+	 int return_code;
+
+	ENTER(Computed_field_get_type_quatenions_to_transformation);
+	if (field && (core = dynamic_cast<Computed_field_matrix_to_quaternion*>(field->core)))
+	{
+		 *matrix_to_quaternion_field = field->source_fields[0];
+		 return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_matrix_to_quaternion.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_quaternion */
+
+int define_Computed_field_type_matrix_to_quaternion(struct Parse_state *state,
+	void *field_void, void *computed_field_matrix_operations_package_void)
+/*******************************************************************************
+LAST MODIFIED : 18 Jun 2008
+
+DESCRIPTION :
+Converts a transformation matrix to  a "quaternion".
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *field, **source_fields;
+	Computed_field_matrix_operations_package *computed_field_matrix_operations_package;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_source_field_data;
+
+	ENTER(define_Computed_field_type_matrix_to_quaternion);
+	if (state && (field = (struct Computed_field *)field_void) &&
+		(computed_field_matrix_operations_package=
+			(Computed_field_matrix_operations_package *)
+			computed_field_matrix_operations_package_void))
+	{
+		return_code=1;
+		source_fields = (struct Computed_field **)NULL;
+		if (ALLOCATE(source_fields, struct Computed_field *, 1))
+		{
+			 source_fields[0] = (struct Computed_field *)NULL;
+			 if (computed_field_matrix_to_quaternion_type_string ==
+					Computed_field_get_type_string(field))
+			 {
+					return_code = Computed_field_get_type_matrix_to_quaternion(field, 
+						 source_fields);
+			 }
+			 if (return_code)
+			 {
+					if (source_fields[0])
+					{
+						 ACCESS(Computed_field)(source_fields[0]);
+					}
+					option_table = CREATE(Option_table)();
+					Option_table_add_help(option_table,
+						 "A computed field to convert a 4x4 matrix to a quaternion.  "
+						 "components of the matrix should be read in as follow       "
+						 "    0   1   2   3                                          " 
+						 "    4   5   6   7                                          "
+						 "    8   9   10  11                                         "
+						 "    12  13  14  15                                         \n");
+					set_source_field_data.computed_field_manager =
+						 computed_field_matrix_operations_package->computed_field_manager;
+					set_source_field_data.conditional_function =
+						 Computed_field_has_16_components;
+					set_source_field_data.conditional_function_user_data = (void *)NULL;
+					Option_table_add_entry(option_table, "field", &source_fields[0],
+						 &set_source_field_data, set_Computed_field_conditional);
+					/* process the option table */
+					return_code = Option_table_multi_parse(option_table, state);
+					if (return_code)
+					{
+					  return_code = Computed_field_set_type_matrix_to_quaternion(
+							field, source_fields[0]);
+					}
+					else
+					{
+						 if ((!state->current_token)||
+								(strcmp(PARSER_HELP_STRING,state->current_token)&&
+									 strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+						 {
+								/* error */
+								display_message(ERROR_MESSAGE,
+									 "define_Computed_field_type_matrix_to_quaternion.  Failed");
+						 }
+					}
+					/* no errors, not asking for help */
+					if (source_fields[0])
+					{
+						 DEACCESS(Computed_field)(&source_fields[0]);
+					}
+					DESTROY(Option_table)(&option_table);
+			 }
+			 DEALLOCATE(source_fields);
+		}
+		else
+		{
+			 display_message(ERROR_MESSAGE,
+					"define_Computed_field_type_matrix_to_quaternion. Not enought memory");
+			 return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_matrix_to_quaternion. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_matrix_to_quaternion */
+
 int Computed_field_register_types_matrix_operations(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
@@ -3067,6 +3764,16 @@ DESCRIPTION :
 				computed_field_transpose_type_string,
 				define_Computed_field_type_transpose,
 				computed_field_matrix_operations_package);
+		return_code = 
+			Computed_field_package_add_type(computed_field_package,
+			computed_field_quaternion_to_matrix_type_string,
+			define_Computed_field_type_quaternion_to_matrix,
+			computed_field_matrix_operations_package);
+		return_code = 
+			Computed_field_package_add_type(computed_field_package,
+			computed_field_matrix_to_quaternion_type_string,
+			define_Computed_field_type_matrix_to_quaternion,
+			computed_field_matrix_operations_package);
 	}
 	else
 	{
