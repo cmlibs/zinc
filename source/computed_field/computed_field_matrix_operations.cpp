@@ -3076,14 +3076,13 @@ Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	 int return_code;
-	 double time, w, x, y, z;
+	 double w, x, y, z;
 
 	 ENTER(Computed_field_quaternion_to_matrix::evaluate_cache_at_location);
 	 return_code = 0;
 	 if (field && location && field->number_of_components == 16 &&
 			field->source_fields[0]->number_of_components == 4)
 	 {
-			time = location->get_time();
 			if (Computed_field_evaluate_source_fields_cache_at_location(field, location))
 			{
 				 w = (double)(field->source_fields[0]->values[0]);
@@ -3249,11 +3248,10 @@ If the field is of type 'transformation', the <source_field> it calculates the
 transformation of is returned.
 ==============================================================================*/
 {
-	 Computed_field_quaternion_to_matrix* core;
 	 int return_code;
 
 	ENTER(Computed_field_get_type_quatenions_to_transformation);
-	if (field && (core = dynamic_cast<Computed_field_quaternion_to_matrix*>(field->core)))
+	if (field && (dynamic_cast<Computed_field_quaternion_to_matrix*>(field->core)))
 	{
 		*quaternion_to_matrix_field = field->source_fields[0];
 		return_code = 1;
@@ -3421,14 +3419,12 @@ Evaluate the fields cache at the location
 {
 	 int return_code, i;
 	 float values[16];
-	 double time;
 
 	 ENTER(Computed_field_matrix_to_quaternion::evaluate_cache_at_location);
 	 return_code = 0;
 	 if (field && location && field->number_of_components == 4 &&
 			field->source_fields[0]->number_of_components == 16)
 	 {
-			time = location->get_time();
 			if (Computed_field_evaluate_source_fields_cache_at_location(field, location))
 			{
 				 for (i = 0; i<17; i++)
@@ -3596,11 +3592,10 @@ If the field is of type 'transformation', the <source_field> it calculates the
 transformation of is returned.
 ==============================================================================*/
 {
-	 Computed_field_matrix_to_quaternion* core;
 	 int return_code;
 
 	ENTER(Computed_field_get_type_quatenions_to_transformation);
-	if (field && (core = dynamic_cast<Computed_field_matrix_to_quaternion*>(field->core)))
+	if (field && (dynamic_cast<Computed_field_matrix_to_quaternion*>(field->core)))
 	{
 		 *matrix_to_quaternion_field = field->source_fields[0];
 		 return_code = 1;
