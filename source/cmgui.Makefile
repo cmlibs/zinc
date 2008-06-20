@@ -896,20 +896,26 @@ COMMAND_SRCS += \
 endif
 COMMAND_INTERFACE_SRCS = \
 	command/command_window.cpp
-COMPUTED_FIELD_SRCS = \
-	minimise/minimise.cpp \
+COMPUTED_FIELD_CORE_SRCS =\
 	computed_field/computed_field.cpp \
-	computed_field/field_location.cpp \
 	computed_field/computed_field_arithmetic_operators.cpp \
-	computed_field/computed_field_compose.cpp \
 	computed_field/computed_field_composite.cpp \
 	computed_field/computed_field_conditional.cpp \
+	computed_field/computed_field_find_xi.cpp \
+	computed_field/computed_field_finite_element.cpp \
+	computed_field/computed_field_set.cpp \
+	computed_field/field_location.cpp
+COMPUTED_FIELD_GRAPHICS_SRCS = \
+	computed_field/computed_field_find_xi_graphics.cpp
+COMPUTED_FIELD_SRCS = \
+	$(COMPUTED_FIELD_CORE_SRCS) \
+	$(COMPUTED_FIELD_GRAPHICS_SRCS) \
+	minimise/minimise.cpp \
+	computed_field/computed_field_compose.cpp \
 	computed_field/computed_field_curve.cpp \
 	computed_field/computed_field_coordinate.cpp \
 	computed_field/computed_field_deformation.cpp \
 	computed_field/computed_field_fibres.cpp \
-	computed_field/computed_field_find_xi.cpp \
-	computed_field/computed_field_finite_element.cpp \
 	computed_field/computed_field_function.cpp \
 	computed_field/computed_field_integration.cpp \
 	computed_field/computed_field_logical_operators.cpp \
@@ -917,7 +923,6 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_matrix_operations.cpp \
 	computed_field/computed_field_region_operations.cpp \
 	computed_field/computed_field_sample_texture.cpp \
-	computed_field/computed_field_set.cpp \
 	computed_field/computed_field_string_constant.cpp \
 	computed_field/computed_field_time.cpp \
 	computed_field/computed_field_trigonometry.cpp \
@@ -925,8 +930,6 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_value_index_ranges.cpp \
 	computed_field/computed_field_vector_operations.cpp \
 	computed_field/computed_field_wrappers.cpp
-COMPUTED_FIELD_GRAPHICS_SRCS = \
-	computed_field/computed_field_find_xi_graphics.cpp
 COMPUTED_FIELD_INTERFACE_SRCS = \
 	computed_field/computed_field_window_projection.cpp
 ifeq ($(USE_ITK),true)
@@ -1027,20 +1030,24 @@ endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 EMOTER_SRCS = \
 	emoter/em_cmgui.c \
 	emoter/emoter_dialog.c
-FINITE_ELEMENT_SRCS = \
-	finite_element/export_cm_files.c \
+FINITE_ELEMENT_CORE_SRCS = \
 	finite_element/export_finite_element.c \
 	finite_element/finite_element.c \
-	finite_element/finite_element_adjacent_elements.c \
-	finite_element/finite_element_conversion.c \
 	finite_element/finite_element_discretization.c \
 	finite_element/finite_element_region.c \
 	finite_element/finite_element_time.c \
+	finite_element/import_finite_element.c
+FINITE_ELEMENT_GRAPHICS_SRCS = \
 	finite_element/finite_element_to_graphics_object.c \
-	finite_element/finite_element_to_iges.c \
 	finite_element/finite_element_to_iso_lines.c \
-	finite_element/finite_element_to_streamlines.c \
-	finite_element/import_finite_element.c \
+	finite_element/finite_element_to_streamlines.c
+FINITE_ELEMENT_SRCS = \
+	$(FINITE_ELEMENT_CORE_SRCS) \
+	$(FINITE_ELEMENT_GRAPHICS_SRCS) \
+	finite_element/export_cm_files.c \
+	finite_element/finite_element_adjacent_elements.c \
+	finite_element/finite_element_conversion.c \
+	finite_element/finite_element_to_iges.c \
 	finite_element/read_fieldml.c \
 	finite_element/snake.c \
 	finite_element/write_fieldml.c
@@ -1281,7 +1288,6 @@ SRCS_1 = \
 	$(COMMAND_SRCS) \
 	$(COMPUTED_VARIABLE_SRCS) \
 	$(COMPUTED_FIELD_SRCS) \
-	$(COMPUTED_FIELD_GRAPHICS_SRCS) \
 	$(CURVE_SRCS) \
 	$(ELEMENT_SRCS) \
 	$(EMOTER_SRCS) \
@@ -1606,31 +1612,26 @@ LIB_GENERAL_OBJS = $(addsuffix .o,$(basename $(LIB_GENERAL_SRCS)))
 $(SO_LIB_GENERAL_TARGET) : $(LIB_GENERAL_OBJS) cmgui.Makefile
 	$(call BuildSharedLibraryTarget,$(SO_LIB_GENERAL_BASE),$(BIN_PATH),$(LIB_GENERAL_OBJS),$(ALL_SO_LINK_FLAGS) $(SO_LIB_GENERAL_EXTRA_ARGS) $(SOLIB_LIB),$(SO_LIB_GENERAL_SONAME))
 
-SO_LIB_REGION_FIELD = cmgui_region_field
-SO_LIB_REGION_FIELD_BASE = lib$(SO_LIB_REGION_FIELD)
-SO_LIB_REGION_FIELD_SONAME = lib$(SO_LIB_REGION_FIELD)$(SO_LIB_SUFFIX)
-SO_LIB_REGION_FIELD_TARGET = lib$(SO_LIB_REGION_FIELD)$(SO_LIB_SUFFIX)
-SO_LIB_REGION_FIELD_EXTRA_ARGS = $(XML2_LIB) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a
+SO_LIB_CORE_FIELDS = cmgui_core_fields
+SO_LIB_CORE_FIELDS_BASE = lib$(SO_LIB_CORE_FIELDS)
+SO_LIB_CORE_FIELDS_SONAME = lib$(SO_LIB_CORE_FIELDS)$(SO_LIB_SUFFIX)
+SO_LIB_CORE_FIELDS_TARGET = lib$(SO_LIB_CORE_FIELDS)$(SO_LIB_SUFFIX)
+SO_LIB_CORE_FIELDS_EXTRA_ARGS = $(XML2_LIB) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a
 
-LIB_REGION_FIELD_SRCS = \
+LIB_CORE_FIELDS_SRCS = \
 	api/cmiss_element.c \
 	api/cmiss_node.c \
 	api/cmiss_time_sequence.c \
-	finite_element/export_finite_element.c \
-	finite_element/finite_element.c \
-	finite_element/finite_element_region.c \
-	finite_element/finite_element_time.c \
-	finite_element/import_finite_element.c \
-	finite_element/read_fieldml.c \
-	finite_element/write_fieldml.c \
 	general/io_stream.c \
-	$(COMPUTED_FIELD_SRCS) \
+	general/statistics.c \
+	$(FINITE_ELEMENT_CORE_SRCS) \
+	$(COMPUTED_FIELD_CORE_SRCS) \
 	$(REGION_SRCS)
 
-LIB_REGION_FIELD_OBJS = $(addsuffix .o,$(basename $(LIB_REGION_FIELD_SRCS)))
+LIB_CORE_FIELDS_OBJS = $(addsuffix .o,$(basename $(LIB_CORE_FIELDS_SRCS)))
 
-$(SO_LIB_REGION_FIELD_TARGET) : $(LIB_REGION_FIELD_OBJS) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
-	$(call BuildSharedLibraryTarget,$(SO_LIB_REGION_FIELD_BASE),$(BIN_PATH),$(LIB_REGION_FIELD_OBJS),$(ALL_SO_LINK_FLAGS) $(SO_LIB_REGION_FIELD_EXTRA_ARGS) $(SOLIB_LIB),$(SO_LIB_REGION_FIELD_SONAME),$(BIN_PATH)/$(SO_LIB_GENERAL_BASE))
+$(SO_LIB_CORE_FIELDS_TARGET) : $(LIB_CORE_FIELDS_OBJS) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
+	$(call BuildSharedLibraryTarget,$(SO_LIB_CORE_FIELDS_BASE),$(BIN_PATH),$(LIB_CORE_FIELDS_OBJS),$(ALL_SO_LINK_FLAGS) $(SO_LIB_CORE_FIELDS_EXTRA_ARGS) $(SOLIB_LIB),$(SO_LIB_CORE_FIELDS_SONAME),$(BIN_PATH)/$(SO_LIB_GENERAL_BASE))
 
 ifeq ($(USE_COMPUTED_VARIABLES), true)
    SO_LIB_COMPUTED_VARIABLE = cmgui_computed_variable
@@ -1706,8 +1707,8 @@ $(SO_LIB_COMPUTED_VARIABLE_TARGET) : $(LIB_COMPUTED_VARIABLE_OBJS) $(SO_LIB_GENE
 
 LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS = $(addsuffix .o,$(basename $(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SRCS)))
 
-$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET) : $(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS) $(SO_LIB_COMPUTED_VARIABLE_TARGET) $(SO_LIB_REGION_FIELD_TARGET) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
-	$(call BuildSharedLibraryTarget,$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_BASE),$(BIN_PATH),$(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS),$(ALL_SO_LINK_FLAGS) $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_EXTRA_FLAGS),$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SONAME), $(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_BASE) $(BIN_PATH)/$(SO_LIB_REGION_FIELD_BASE) $(BIN_PATH)/$(SO_LIB_GENERAL_BASE))
+$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET) : $(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS) $(SO_LIB_COMPUTED_VARIABLE_TARGET) $(SO_LIB_CORE_FIELDS_TARGET) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
+	$(call BuildSharedLibraryTarget,$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_BASE),$(BIN_PATH),$(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS),$(ALL_SO_LINK_FLAGS) $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_EXTRA_FLAGS),$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SONAME), $(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_BASE) $(BIN_PATH)/$(SO_LIB_CORE_FIELDS_BASE) $(BIN_PATH)/$(SO_LIB_GENERAL_BASE))
 endif # USE_COMPUTED_VARIABLES == true
 
 LIB_PASS_THROUGH_SRCS = \
@@ -1740,33 +1741,33 @@ SO_LIB_SONAME = lib$(TARGET_EXECUTABLE_BASENAME)$(SO_LIB_SUFFIX)
 
 ifeq ($(USE_COMPUTED_VARIABLES), true)
   REMAINING_LIB_SRCS = \
-	$(filter-out $(LIB_GENERAL_SRCS) $(LIB_REGION_FIELD_SRCS) $(LIB_COMPUTED_VARIABLE_SRCS) $(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SRCS), $(SRCS))
+	$(filter-out $(LIB_GENERAL_SRCS) $(LIB_CORE_FIELDS_SRCS) $(LIB_COMPUTED_VARIABLE_SRCS) $(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SRCS), $(SRCS))
 
   REMAINING_LIB_OBJS = $(addsuffix .o,$(basename $(REMAINING_LIB_SRCS)))
 # SAB We are not resolving everything here (i.e. $(ALL_SO_LINK_FLAGS)) as we want to bind
 # to the appropriate interpreter at runtime.  We could settle on a standard interpreter
 # so_name but that would have to be used by the actual external Cmiss::Perl_cmiss
 # perl and python modules that are supplying us the connections to their interpreters.
-$(SO_LIB_TARGET) : $(REMAINING_LIB_OBJS) $(COMPILED_RESOURCE_FILES) $(OBJECT_PATH)/$(EXPORTS_FILE) $(SO_LIB_COMPUTED_VARIABLE_TARGET) $(SO_LIB_REGION_FIELD_TARGET) $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
-	$(call BuildSharedLibraryTarget,$(SO_LIB_BASE),$(BIN_PATH),$(REMAINING_LIB_OBJS),$(SO_LIB_EXPORTS_LINK_FLAGS) $(SO_ALL_LIB) $(COMPILED_RESOURCE_FILES) ,$(SO_LIB_SONAME),$(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_BASE) $(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_BASE) $(BIN_PATH)/$(SO_LIB_REGION_FIELD_BASE) $(BIN_PATH)/$(SO_LIB_GENERAL_BASE))
+$(SO_LIB_TARGET) : $(REMAINING_LIB_OBJS) $(COMPILED_RESOURCE_FILES) $(OBJECT_PATH)/$(EXPORTS_FILE) $(SO_LIB_COMPUTED_VARIABLE_TARGET) $(SO_LIB_CORE_FIELDS_TARGET) $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
+	$(call BuildSharedLibraryTarget,$(SO_LIB_BASE),$(BIN_PATH),$(REMAINING_LIB_OBJS),$(SO_LIB_EXPORTS_LINK_FLAGS) $(SO_ALL_LIB) $(COMPILED_RESOURCE_FILES) ,$(SO_LIB_SONAME),$(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_BASE) $(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_BASE) $(BIN_PATH)/$(SO_LIB_CORE_FIELDS_BASE) $(BIN_PATH)/$(SO_LIB_GENERAL_BASE))
 
 #Make so_lib to be a shorthand for making all the so_libs
 so_lib : $(SO_LIB_COMPUTED_VARIABLE_TARGET) $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET)
 else # USE_COMPUTED)VARIABLES == true
   REMAINING_LIB_SRCS = \
-	$(filter-out $(LIB_GENERAL_SRCS) $(LIB_REGION_FIELD_SRCS), $(SRCS))
+	$(filter-out $(LIB_GENERAL_SRCS) $(LIB_CORE_FIELDS_SRCS), $(SRCS))
 
   REMAINING_LIB_OBJS = $(addsuffix .o,$(basename $(REMAINING_LIB_SRCS)))
 # SAB We are not resolving everything here (i.e. $(ALL_SO_LINK_FLAGS)) as we want to bind
 # to the appropriate interpreter at runtime.  We could settle on a standard interpreter
 # so_name but that would have to be used by the actual external Cmiss::Perl_cmiss
 # perl and python modules that are supplying us the connections to their interpreters.
-$(SO_LIB_TARGET) : $(REMAINING_LIB_OBJS) $(COMPILED_RESOURCE_FILES) $(OBJECT_PATH)/$(EXPORTS_FILE) $(SO_LIB_REGION_FIELD_TARGET) $(SO_LIB_GENERAL_TARGET) $(SO_LIB_PASS_THROUGH_TARGET) cmgui.Makefile
-	$(call BuildSharedLibraryTarget,$(SO_LIB_BASE),$(BIN_PATH),$(REMAINING_LIB_OBJS),$(SO_LIB_EXPORTS_LINK_FLAGS) $(SO_ALL_LIB) $(COMPILED_RESOURCE_FILES) ,$(SO_LIB_SONAME), $(BIN_PATH)/$(SO_LIB_REGION_FIELD_BASE) $(BIN_PATH)/$(SO_LIB_GENERAL_BASE) $(BIN_PATH)/$(SO_LIB_PASS_THROUGH_BASE))
+$(SO_LIB_TARGET) : $(REMAINING_LIB_OBJS) $(COMPILED_RESOURCE_FILES) $(OBJECT_PATH)/$(EXPORTS_FILE) $(SO_LIB_CORE_FIELDS_TARGET) $(SO_LIB_GENERAL_TARGET) $(SO_LIB_PASS_THROUGH_TARGET) cmgui.Makefile
+	$(call BuildSharedLibraryTarget,$(SO_LIB_BASE),$(BIN_PATH),$(REMAINING_LIB_OBJS),$(SO_LIB_EXPORTS_LINK_FLAGS) $(SO_ALL_LIB) $(COMPILED_RESOURCE_FILES) ,$(SO_LIB_SONAME), $(BIN_PATH)/$(SO_LIB_CORE_FIELDS_BASE) $(BIN_PATH)/$(SO_LIB_GENERAL_BASE) $(BIN_PATH)/$(SO_LIB_PASS_THROUGH_BASE))
 endif # USE_COMPUTED)VARIABLES == true
 
 #Make so_lib to be a shorthand for making all the so_libs
-so_lib : $(SO_LIB_GENERAL_TARGET) $(SO_LIB_REGION_FIELD_TARGET) $(SO_LIB_TARGET) $(SO_LIB_PASS_THROUGH_TARGET)
+so_lib : $(SO_LIB_GENERAL_TARGET) $(SO_LIB_CORE_FIELDS_TARGET) $(SO_LIB_TARGET) $(SO_LIB_PASS_THROUGH_TARGET)
 
 STATIC_LIB_TARGET = lib$(TARGET_EXECUTABLE_BASENAME)$(STATIC_LIB_SUFFIX)
 
