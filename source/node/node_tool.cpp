@@ -2594,7 +2594,7 @@ public:
 			 dimension_statictext->Show();
 			 create_elements_checkbox->SetValue(node_tool->element_create_enabled);
 			 sprintf(temp_string,"%d",node_tool->element_dimension);
-			 dimension_textctrl->SetValue(temp_string);
+			 dimension_textctrl->ChangeValue(temp_string);
 			 first_element_staticbox->Show();
 			 second_element_staticbox->Show();
 		}
@@ -5069,7 +5069,7 @@ Updates what is shown on the dimension text field.
 			 if (strcmp(temp_string,value_string))
 			 {
 					wxString string(temp_string, wxConvUTF8);
-					dimension_textctrl->SetValue(string);
+					dimension_textctrl->ChangeValue(string);
 			 }
 		}
 	}
