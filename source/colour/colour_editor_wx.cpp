@@ -165,20 +165,27 @@ Colour_editor::Colour_editor(wxPanel* parent, const char *panel_name, enum Colou
 	 colour_editor_slider_1->SetClientData((void *)this);
 	 colour_editor_slider_1->Connect(wxEVT_SCROLL_THUMBTRACK, 
 			wxCommandEventHandler(Colour_editor::OnColourEditorSliderChanged));
-	 colour_editor_slider_1->Connect(wxEVT_SCROLL_THUMBRELEASE, 
+	 colour_editor_slider_1->Connect(wxEVT_SCROLL_PAGEDOWN, 
+			wxCommandEventHandler(Colour_editor::OnColourEditorSliderChanged));
+	 colour_editor_slider_1->Connect(wxEVT_SCROLL_PAGEUP, 
 			wxCommandEventHandler(Colour_editor::OnColourEditorSliderChanged));
 
 	 colour_editor_slider_2->SetClientData((void *)this);
 	 colour_editor_slider_2->Connect(wxEVT_SCROLL_THUMBTRACK,
 			wxCommandEventHandler(Colour_editor::OnColourEditorSliderChanged));
-	 colour_editor_slider_2->Connect(wxEVT_SCROLL_THUMBRELEASE, 
+	 colour_editor_slider_2->Connect(wxEVT_SCROLL_PAGEDOWN, 
+			wxCommandEventHandler(Colour_editor::OnColourEditorSliderChanged));
+	 colour_editor_slider_2->Connect(wxEVT_SCROLL_PAGEUP, 
 			wxCommandEventHandler(Colour_editor::OnColourEditorSliderChanged));
 
 	 colour_editor_slider_3->SetClientData((void *)this);
 	 colour_editor_slider_3->Connect(wxEVT_SCROLL_THUMBTRACK, 
 			wxCommandEventHandler(Colour_editor::OnColourEditorSliderChanged));
-	 colour_editor_slider_3->Connect(wxEVT_SCROLL_THUMBRELEASE, 
+	 colour_editor_slider_3->Connect(wxEVT_SCROLL_PAGEDOWN, 
 			wxCommandEventHandler(Colour_editor::OnColourEditorSliderChanged));
+	 colour_editor_slider_3->Connect(wxEVT_SCROLL_PAGEUP, 
+			wxCommandEventHandler(Colour_editor::OnColourEditorSliderChanged));
+
 
 	 colour_mode_choice->SetClientData((void *)this);
 	 colour_mode_choice->Connect(wxEVT_COMMAND_CHOICE_SELECTED,
