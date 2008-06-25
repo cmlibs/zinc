@@ -7062,9 +7062,15 @@ and other parameters for formats that require them.
 					}
 					if (cmgui_image_information->memory_block)
 					{
+#if MagickLibVersion >= 0x636
+						/* This was not available in previous versions and so
+						 * you will need to set a filename to indicate the blob
+						 * format if you are using an old version.
+						 */
 						SetImageInfoBlob(magick_image_info,
 							cmgui_image_information->memory_block,
 							cmgui_image_information->memory_block_length);
+#endif
 						SetImageInfo(magick_image_info, MagickFalse, &magick_exception);
 
 						magick_image = BlobToImage(magick_image_info,
