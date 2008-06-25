@@ -129,6 +129,20 @@ Cmiss_field_create_identity
 /* api/cmiss_field_conditional.h */
 Cmiss_field_create_if
 
+/* api/cmiss_field_image.h */
+Cmiss_field_create_image
+Cmiss_field_image_cast
+Cmiss_field_image_read
+Cmiss_field_image_write
+Cmiss_field_image_read_file
+Cmiss_field_image_write_file
+Cmiss_field_image_storage_information_create
+Cmiss_field_image_storage_information_add_file_name
+Cmiss_field_image_storage_information_set_memory_block
+Cmiss_field_image_storage_information_set_write_to_memory_block
+Cmiss_field_image_storage_information_get_memory_block
+Cmiss_field_image_storage_information_destroy
+
 /* api/cmiss_field_logical_operators.h */
 Cmiss_field_create_less_than
 Cmiss_field_create_greater_than

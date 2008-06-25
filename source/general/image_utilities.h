@@ -79,11 +79,14 @@ Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 ==============================================================================*/
 {
 	BMP_FILE_FORMAT,
+	DICOM_FILE_FORMAT,
 	JPG_FILE_FORMAT,
 	GIF_FILE_FORMAT,
 	POSTSCRIPT_FILE_FORMAT,
+	PNG_FILE_FORMAT,
 	RAW_FILE_FORMAT,  /* otherwise known as the true RGB format */
-	RGB_FILE_FORMAT,  /* denotes the SGI RGB format */
+	SGI_FILE_FORMAT,
+	RGB_FILE_FORMAT = SGI_FILE_FORMAT,  /* denotes the SGI RGB format */
 	TIFF_FILE_FORMAT,
 	YUV_FILE_FORMAT,
 	/* following used to indicate that the format has not been specified */
@@ -102,6 +105,26 @@ enum Raw_image_storage
 	RAW_INTERLEAVED_RGB,  /* RGBRGBRGBRGBRGBRGBRGBRGB */
 	RAW_PLANAR_RGB        /* RRRRRR...GGGGGG...BBBBBB */
 }; /* enum Raw_image_storage */
+
+/*****************************************************************************//**
+Describes the type of image compression for storage.
+Whether a particular image compression is actually available depends on whether
+it is compatible with a particular format type and whether support for that combination
+has been included when the program was built.
+*/
+enum Image_storage_compression
+{
+	IMAGE_STORAGE_COMPRESSION_UNSPECIFIED,
+	IMAGE_STORAGE_COMPRESSION_NONE,
+	IMAGE_STORAGE_COMPRESSION_BZIP,
+	IMAGE_STORAGE_COMPRESSION_FAX,
+	IMAGE_STORAGE_COMPRESSION_JPEG,
+	IMAGE_STORAGE_COMPRESSION_JPEG2000,
+	IMAGE_STORAGE_COMPRESSION_LOSSLESS_JPEG,
+	IMAGE_STORAGE_COMPRESSION_LZW,
+	IMAGE_STORAGE_COMPRESSION_RLE,
+	IMAGE_STORAGE_COMPRESSION_ZIP
+}; /* enum Image_storage_compression */
 
 struct Cmgui_image_information;
 /*******************************************************************************
@@ -318,16 +341,21 @@ DESCRIPTION :
 Sets the <raw_image_storage> of <cmgui_image>.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Sets the <width> recorded with the <cmgui_image_information>.
+ * Used to specify the width for raw file formats read with Cmgui_image_read.
+ * Clears 'valid' flag of cmgui_image_information if not correctly set.
+ */
 int Cmgui_image_information_set_width(
 	struct Cmgui_image_information *cmgui_image_information, int width);
-/*******************************************************************************
-LAST MODIFIED : 26 February 2002
 
-DESCRIPTION :
-Sets the <width> recorded with the <cmgui_image_information>.
-Used to specify the width for raw file formats read with Cmgui_image_read.
-Clears 'valid' flag of cmgui_image_information if not correctly set.
-==============================================================================*/
+/***************************************************************************//**
+ * Sets the specific type of binary data compression to be used when 
+ * associated with the cmgui_image_information.
+ */
+int Cmgui_image_information_set_storage_compression(
+	struct Cmgui_image_information *cmgui_image_information,
+	enum Image_storage_compression compression);
 
 struct IO_stream_package;
 
@@ -342,6 +370,56 @@ Sets the <io_stream_package> recorded with the <cmgui_image_information>.
 Used to specify the io_stream_package for raw file formats read with Cmgui_image_read.
 Clears 'valid' flag of cmgui_image_information if not correctly set.
 ==============================================================================*/
+
+/*****************************************************************************//**
+Sets the quality for lossy compression in cmgui_image_information.
+@param cmgui_image_information  The information object.
+@param quality 0.0 is the least quality with greatest lossy compression and 
+1.0 is the greatest quality which is the minimum lossy compression.
+*/
+int Cmgui_image_information_set_quality(
+	struct Cmgui_image_information *cmgui_image_information,
+	double quality);
+
+/*****************************************************************************//**
+ * Specifies that this storage_information will read from a memory_block
+ * instead of reading from a file.
+ * 
+ * @param storage_information  The storage information object.
+ * @param memory_block  A pointer to memory_block information.
+ * @param memory_block_length  The length of this memory_block.
+ * @return Returns 1 if the operation is successful, 0 if it is not.
+ */
+int Cmgui_image_information_set_memory_block(
+	struct Cmgui_image_information *storage_information,
+	void *memory_block, unsigned int memory_block_length);
+
+/*****************************************************************************//**
+ * Specifies that this storage_information will write to a memory_block
+ * instead of writing to file.  Once read the new memory block can be
+ * retrieved with #Cmgui_image_information_get_memory_block.
+ * 
+ * @param storage_information  The storage information object.
+ * @return Returns 1 if the operation is successful, 0 if it is not.
+ */
+int Cmgui_image_information_set_write_to_memory_block(
+	struct Cmgui_image_information *storage_information);
+
+/*****************************************************************************//**
+ * Retrieve a memory block that has been written to when the storage_information
+ * specified #Cmgui_image_information_set_write_to_memory_block.
+ * 
+ * @param storage_information  The storage information object.
+ * @param memory_block_reference  Will be set to point to the allocated
+ * memory block.  When no longer required the memory block should be
+ * released with #Cmiss_deallocate.
+ * @param memory_block_length_reference  Will be set to the length of
+ * the returned memory block.
+ * @return Returns 1 if the operation is successful, 0 if it is not.
+ */
+int Cmgui_image_information_get_memory_block(
+	struct Cmgui_image_information *storage_information,
+	void **memory_block, unsigned int *memory_block_length);
 
 int DESTROY(Cmgui_image)(struct Cmgui_image **cmgui_image_address);
 /*******************************************************************************

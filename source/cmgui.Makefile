@@ -186,7 +186,7 @@ Building $(BIN_TARGET) for $(LIB_ARCH_DIR)
 
    endef
 endif
-$(warning $(BUILDING_MESSAGE))
+#$(warning $(BUILDING_MESSAGE))
 
 VPATH=$(BIN_PATH):$(UTILITIES_PATH):$(OBJECT_PATH):$(UIDH_PATH):$(XRCH_PATH)
 
@@ -917,12 +917,12 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_deformation.cpp \
 	computed_field/computed_field_fibres.cpp \
 	computed_field/computed_field_function.cpp \
+	computed_field/computed_field_image.cpp \
 	computed_field/computed_field_integration.cpp \
 	computed_field/computed_field_logical_operators.cpp \
 	computed_field/computed_field_lookup.cpp \
 	computed_field/computed_field_matrix_operations.cpp \
 	computed_field/computed_field_region_operations.cpp \
-	computed_field/computed_field_sample_texture.cpp \
 	computed_field/computed_field_string_constant.cpp \
 	computed_field/computed_field_time.cpp \
 	computed_field/computed_field_trigonometry.cpp \

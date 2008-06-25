@@ -834,4 +834,5 @@ DESCRIPTION :
 If the <property> is defined for the <texture>, then a copy is returned (and
 should be DEALLOCATED when finished with).
 ==============================================================================*/
+
 #endif /* !defined (TEXTURE_H) */

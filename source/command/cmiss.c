@@ -83,12 +83,12 @@ Functions for executing cmiss commands.
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_fibres.h"
 #include "computed_field/computed_field_function.h"
+#include "computed_field/computed_field_image.h"
 #include "computed_field/computed_field_integration.h"
 #include "computed_field/computed_field_logical_operators.h"
 #include "computed_field/computed_field_lookup.h"
 #include "computed_field/computed_field_matrix_operations.h"
 #include "computed_field/computed_field_region_operations.h"
-#include "computed_field/computed_field_sample_texture.h"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_string_constant.h"
 #include "computed_field/computed_field_time.h"
@@ -24867,7 +24867,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 			if (command_data->texture_manager)
 			{
-				Computed_field_register_type_sample_texture(
+				Computed_field_register_type_image(
 					command_data->computed_field_package, 
 					command_data->texture_manager);
 			}

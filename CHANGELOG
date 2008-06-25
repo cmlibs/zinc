@@ -10,6 +10,14 @@ It is released under the Mozilla Public License v1.1
 Further information, help pages, a tracker and a wiki is available at 
 http://www.cmiss.org/cmgui/
 
+25 June 2008
+API changes:
+cmiss_scene_viewer.h
+Cmiss_scene_viewer_get_frame_pixels now takes a 
+   enum Cmiss_field_image_storage_pixel_format storage
+   rather than a Texture_format enumerator.
+cmiss_field_image.h New interface.
+
 v2.5
 17 Dec 2007
 

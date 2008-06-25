@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : computed_field_sample_texture.h
+FILE : computed_field_image.h
 
 LAST MODIFIED : 4 July 2000
 
@@ -43,7 +43,21 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_SAMPLE_TEXTURE_H)
 #define COMPUTED_FIELD_SAMPLE_TEXTURE_H
 
-int Computed_field_register_type_sample_texture(
+#include "api/cmiss_field_image.h"
+
+#define Computed_field_create_image Cmiss_field_create_image
+
+/*****************************************************************************//**
+ * Creates a new image based field.  This constructor does not define the
+ * actual image data, which should then be set using a Cmiss_field_image_set_*
+ * function.
+ * 
+ * @param domain_field  The field in which the image data will be embedded.
+ * @return Newly created field
+*/
+struct Computed_field *Computed_field_create_image(struct Computed_field *domain_field);
+
+int Computed_field_register_type_image(
 	struct Computed_field_package *computed_field_package, 
 	struct MANAGER(Texture) *texture_manager);
 /*******************************************************************************

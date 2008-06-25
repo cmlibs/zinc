@@ -144,6 +144,12 @@ parameters are used to set the image dimensions and colour depth.
 	int background_number_of_fill_bytes;
 	unsigned char *background_fill_bytes;
 	struct IO_stream_package *io_stream_package;
+	double quality;
+	/** A flag to indicate that a Cmgui_image_write will write to the memory_block. */
+	int write_to_memory_block;
+	void *memory_block;
+	unsigned int memory_block_length;
+	enum Image_storage_compression compression;
 };
 
 struct Cmgui_image
@@ -5211,6 +5217,12 @@ To create an image need to specify most dimension arguments.
 		cmgui_image_information->background_number_of_fill_bytes = 0;
 		cmgui_image_information->background_fill_bytes = (unsigned char *)NULL;
 		cmgui_image_information->io_stream_package = (struct IO_stream_package *)NULL;
+		cmgui_image_information->quality = 0;
+		cmgui_image_information->compression =
+			IMAGE_STORAGE_COMPRESSION_UNSPECIFIED;
+		cmgui_image_information->memory_block = NULL;
+		cmgui_image_information->memory_block_length = 0;
+		cmgui_image_information->write_to_memory_block = 0;
 	}
 	else
 	{
@@ -5739,6 +5751,29 @@ Clears 'valid' flag of cmgui_image_information if not correctly set.
 	return (return_code);
 } /* Cmgui_image_information_set_width */
 
+int Cmgui_image_information_set_storage_compression(
+	struct Cmgui_image_information *cmgui_image_information,
+	enum Image_storage_compression compression)
+{
+	int return_code;
+
+	ENTER(Cmgui_image_information_set_storage_compression);
+	if (cmgui_image_information)
+	{
+		cmgui_image_information->compression = compression;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_information_set_storage_compression.  Missing information");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_information_set_storage_compression */
+
 int Cmgui_image_information_set_io_stream_package(
 	struct Cmgui_image_information *cmgui_image_information,
 	struct IO_stream_package *io_stream_package)
@@ -5768,6 +5803,102 @@ Clears 'valid' flag of cmgui_image_information if not correctly set.
 
 	return (return_code);
 } /* Cmgui_image_information_set_io_stream_package */
+
+int Cmgui_image_information_set_quality(
+	struct Cmgui_image_information *cmgui_image_information,
+	double quality)
+{
+	int return_code;
+
+	ENTER(Cmgui_image_information_set_io_stream_package);
+	if (cmgui_image_information && (quality <= 0.0) && (quality <= 1.0))
+	{
+		cmgui_image_information->quality = quality;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_information_set_quality.  Missing information");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_information_set_quality */
+
+int Cmgui_image_information_set_memory_block(
+	struct Cmgui_image_information *cmgui_image_information,
+	void *memory_block, unsigned int memory_block_length)
+{
+	int return_code;
+
+	ENTER(Cmgui_image_information_set_memory_block);
+	if (cmgui_image_information && memory_block)
+	{
+		cmgui_image_information->memory_block = memory_block;
+		cmgui_image_information->memory_block_length = memory_block_length;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_information_set_memory_block.  Missing information");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_information_set_memory_block */
+
+int Cmgui_image_information_set_write_to_memory_block(
+	struct Cmgui_image_information *cmgui_image_information)
+{
+	int return_code;
+
+	ENTER(Cmgui_image_information_set_write_to_memory_block);
+	if (cmgui_image_information)
+	{
+		cmgui_image_information->write_to_memory_block = 1;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_information_set_write_to_memory_block.  Missing information");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_information_set_write_to_memory_block */
+
+int Cmgui_image_information_get_memory_block(
+	struct Cmgui_image_information *cmgui_image_information,
+	void **memory_block, unsigned int *memory_block_length)
+{
+	int return_code;
+
+	ENTER(Cmgui_image_information_set_memory_block);
+	if (cmgui_image_information && memory_block)
+	{
+		*memory_block = cmgui_image_information->memory_block;
+		*memory_block_length = cmgui_image_information->memory_block_length;
+		
+		cmgui_image_information->memory_block = NULL;
+		cmgui_image_information->memory_block_length = 0;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_information_set_memory_block.  Missing information");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_information_set_memory_block */
 
 #if defined (IMAGEMAGICK)
 static int get_magick_image_parameters(Image *magick_image, int *width,
@@ -6810,7 +6941,7 @@ and other parameters for formats that require them.
 	struct Cmgui_image *cmgui_image;
 #if defined (IMAGEMAGICK)
 	char *file_name_prefix, *old_magick_size, magick_size[41];
-	int image_data_length, length;
+	int image_data_length, length, number_of_files;
 	Image *magick_image, *temp_magick_image;
 	ImageInfo *magick_image_info;
 	ExceptionInfo magick_exception;
@@ -6820,14 +6951,15 @@ and other parameters for formats that require them.
 	void *image_data;
 #else /* defined (IMAGEMAGICK) */
 	enum Image_file_format image_file_format;
-	int number_of_bytes_per_component, number_of_components;
+	int number_of_bytes_per_component, number_of_components, number_of_files;
 #endif /* defined (IMAGEMAGICK) */
 
 	ENTER(Cmgui_image_read);
 	cmgui_image = (struct Cmgui_image *)NULL;
 	magick_image = (Image *)NULL;
 	if (cmgui_image_information && cmgui_image_information->valid &&
-		cmgui_image_information->file_names)
+		(cmgui_image_information->file_names ||
+		cmgui_image_information->memory_block))
 	{
 		if (cmgui_image = CREATE(Cmgui_image)())
 		{
@@ -6841,12 +6973,27 @@ and other parameters for formats that require them.
 #if defined (DEBUG)
 				magick_image_info->verbose = 1;
 #endif /* defined (DEBUG) */
-				for (i = 0; (i < cmgui_image_information->number_of_file_names) &&
-					return_code; i++)
+				if (cmgui_image_information->memory_block)
+				{
+					number_of_files = 1;
+				}
+				else
+				{
+					number_of_files = cmgui_image_information->number_of_file_names;
+				}
+				for (i = 0; (i < number_of_files) && return_code; i++)
 				{
 					width = cmgui_image_information->width;
 					height = cmgui_image_information->height;
-					file_name = cmgui_image_information->file_names[i];
+					if (cmgui_image_information->file_names)
+					{
+						file_name = cmgui_image_information->file_names[i];
+					}
+					else
+					{
+						/* Just use a dummy file_name */
+						file_name = "memory";
+					}
 					length = strlen(file_name);
 					file_name_prefix = "";
 					if (!strchr(file_name, ':'))
@@ -6913,7 +7060,19 @@ and other parameters for formats that require them.
 							magick_image_info->interlace = PlaneInterlace;
 						} break;
 					}
-					if (IO_stream_uri_is_native_imagemagick(magick_image_info->filename))
+					if (cmgui_image_information->memory_block)
+					{
+						SetImageInfoBlob(magick_image_info,
+							cmgui_image_information->memory_block,
+							cmgui_image_information->memory_block_length);
+						SetImageInfo(magick_image_info, MagickFalse, &magick_exception);
+
+						magick_image = BlobToImage(magick_image_info,
+							cmgui_image_information->memory_block,
+							cmgui_image_information->memory_block_length,
+							&magick_exception);
+					}
+					else if (IO_stream_uri_is_native_imagemagick(magick_image_info->filename))
 					{
 						magick_image = ReadImage(magick_image_info, &magick_exception);
 					}
@@ -7158,6 +7317,7 @@ that the images be adjoined in the single file.
 	char *file_name;
 	int i, number_of_file_names, return_code;
 #if defined (IMAGEMAGICK)
+	ExceptionInfo magick_exception;
 	Image *magick_image, *temp_next, *temp_previous;
 	ImageInfo *magick_image_info;
 #else /* defined (IMAGEMAGICK) */
@@ -7174,6 +7334,7 @@ that the images be adjoined in the single file.
 	{
 		return_code = 1;
 #if defined (IMAGEMAGICK)
+		GetExceptionInfo(&magick_exception);
 		if (magick_image_info = CloneImageInfo((ImageInfo *) NULL))
 		{
 			magick_image = cmgui_image->magick_image;
@@ -7249,11 +7410,26 @@ that the images be adjoined in the single file.
 					temp_next = magick_image->next;
 					magick_image->next = (Image *)NULL;
 				}
-				if (!WriteImage(magick_image_info, magick_image))
+				if (cmgui_image_information->write_to_memory_block)
 				{
-					display_message(ERROR_MESSAGE,
-						"Could not write image \"%s\"", file_name);
-					return_code = 0;
+					if (!(cmgui_image_information->memory_block = 
+						ImagesToBlob(magick_image_info, magick_image,
+        				&cmgui_image_information->memory_block_length,
+						&magick_exception)))
+					{
+						display_message(ERROR_MESSAGE,
+							"Could not write image to memory ");
+						return_code = 0;
+					}				
+				}
+				else
+				{
+					if (!WriteImage(magick_image_info, magick_image))
+					{
+						display_message(ERROR_MESSAGE,
+							"Could not write image \"%s\"", file_name);
+						return_code = 0;
+					}
 				}
 				if (temp_previous || temp_next)
 				{

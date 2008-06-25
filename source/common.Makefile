@@ -140,6 +140,8 @@ else # ABI
    LIB_ARCH_DIR = $(INSTRUCTION)-$(OPERATING_SYSTEM)
 endif # ABI
 
+OBJ_SUFFIX = o
+
 ifeq ($(SYSNAME:IRIX%=),)
    ifneq ($(ABI),64)
       UIL = uil
@@ -210,8 +212,8 @@ ifeq ($(SYSNAME),Linux)
       CC = gcc -c -std=gnu99
       CPP = g++ -c
       ifeq ($(PROFILE),true)
-        CC += -pg
-        CPP += -pg
+        CC += -g -pg
+        CPP += -g -pg
       endif	
       CPP_FLAGS =
       FORTRAN = g77 -c -fno-second-underscore
@@ -227,7 +229,7 @@ ifeq ($(SYSNAME),Linux)
       LINK += -pg
    endif
    ifneq ($(DEBUG),true)
-      OPTIMISATION_FLAGS = -O
+      OPTIMISATION_FLAGS = -O3
       COMPILE_DEFINES = -DOPTIMISED
       COMPILE_FLAGS = -fPIC
       STRICT_FLAGS = -Werror
@@ -247,7 +249,7 @@ ifeq ($(SYSNAME),Linux)
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
       COMPILE_FLAGS = -fPIC
       STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Werror
-      CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
+      CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Wno-write-strings -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
       STRIP =
@@ -430,7 +432,7 @@ ifeq ($(SYSNAME),win32)
 .SUFFIXES : .res .rc
 endif # SYSNAME == win32
 
-%.o: %.c %.d 
+%.o: %.c %.d
 	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi

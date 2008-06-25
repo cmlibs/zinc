@@ -6715,9 +6715,11 @@ direct_render_Texture.
 ==============================================================================*/
 {
 	int return_code;
+#if defined (OLD_CODE)
 #if defined (OPENGL_API)
 	GLboolean resident;
 #endif /* defined (OPENGL_API) */
+#endif /* defined (OLD_CODE) */
 
 	ENTER(execute_Texture);
 	return_code=0;
@@ -6727,12 +6729,12 @@ direct_render_Texture.
 		{
 #if defined (OPENGL_API)
 			glCallList(texture->display_list);
+#if defined (OLD_CODE)
 			/* SAB There seems to be some problem with losing a bound texture,
 				this tries to correct this */
 			/* If using texture_objects then we need to check that the texture
 				is still resident */
 			glAreTexturesResident(1, &texture->texture_id, &resident);
-#if defined (OLD_CODE)
 			if (GL_TRUE != resident)
 			{
 				/* Reload the texture */
@@ -7071,3 +7073,4 @@ should be DEALLOCATED when finished with).
 
 	return (return_value);
 } /* Texture_get_property */
+

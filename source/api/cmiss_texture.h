@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_texture.h
 
-LAST MODIFIED : 24 May 2007
+LAST MODIFIED : 23 June 2008
 
 DESCRIPTION :
 The public interface to the Cmiss_texture object for rendering cmiss
@@ -106,21 +106,6 @@ Specfiy how the graphics hardware rasterises the texture onto the screen.
 	CMISS_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR
 }; /* enum Cmiss_texture_filter_mode */
 
-enum Cmiss_texture_storage_type
-/*******************************************************************************
-LAST MODIFIED : 6 August 2007
-
-DESCRIPTION :
-==============================================================================*/
-{
-	CMISS_TEXTURE_LUMINANCE,
-	CMISS_TEXTURE_LUMINANCE_ALPHA,
-	CMISS_TEXTURE_RGB,
-	CMISS_TEXTURE_RGBA,
-	CMISS_TEXTURE_ABGR,
-	CMISS_TEXTURE_BGR
-}; /* enum Cmiss_texture_storage_type */
-
 typedef struct Cmiss_texture *Cmiss_texture_id;
 
 #define Cmiss_texture_manager manager_Cmiss_texture
@@ -134,14 +119,11 @@ Global functions
 ----------------
 */
 
+/***************************************************************************//**
+ * Returns the texture named name from the manager if it is defined.
+ */
 Cmiss_texture_id Cmiss_texture_manager_get_texture(
 	struct Cmiss_texture_manager *manager, const char *name);
-/*******************************************************************************
-LAST MODIFIED : 24 May 2007
-
-DESCRIPTION :
-Returns the texture of <name> from the <manager> if it is defined.
-==============================================================================*/
 
 Cmiss_texture_id Cmiss_texture_manager_create_texture_from_file(
 	struct Cmiss_texture_manager *manager, const char *name,
@@ -284,13 +266,15 @@ left of the texture and
 the top right of the texture.
 ==============================================================================*/
 
-int Cmiss_texture_get_number_of_components(Cmiss_texture_id texture);
-/*******************************************************************************
-LAST MODIFIED : 1 August 2007
+/*****************************************************************************//**
+@date LAST MODIFIED : 1 August 2007
 
-DESCRIPTION :
-Returns the number of components used per texel in the texture: 1, 2, 3 or 4.
-==============================================================================*/
+Gets the number of components used per texel in the texture.
+
+@param texture The texture object. 
+@return Number of components used per texel, 1, 2, 3 or 4.
+*//*==============================================================================*/
+int Cmiss_texture_get_number_of_components(Cmiss_texture_id texture);
 
 int Cmiss_texture_get_number_of_bytes_per_component(Cmiss_texture_id texture);
 /*******************************************************************************
@@ -386,4 +370,5 @@ DESCRIPTION :
 If the <property> is defined for the <texture>, then a copy is returned (and
 should be DEALLOCATED when finished with).
 ==============================================================================*/
+
 #endif /* __CMISS_TEXTURE_H__ */
