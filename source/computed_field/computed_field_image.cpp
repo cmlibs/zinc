@@ -177,6 +177,9 @@ Copy the type specific data used by this type.
 	if (new_parent)
 	{
 		core = new Computed_field_image(new_parent);
+		core->set_texture(texture);
+		core->set_native_texture_flag(native_texture);
+		core->set_output_range(minimum, maximum);
 	}
 	else
 	{
