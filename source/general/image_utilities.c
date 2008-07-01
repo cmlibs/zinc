@@ -348,7 +348,7 @@ the original values are not modified.
 	if (least_to_most)
 #endif /* (1234==BYTE_ORDER) */
 	{
-		/* we must copy the bytes before reordering so as not to mess up the 
+		/* we must copy the bytes before reordering so as not to mess up the
 			original data */
 		if (ALLOCATE(temp_byte_array,unsigned char,value_size*number_of_values))
 		{
@@ -894,7 +894,7 @@ but extra characters may follow. This is especially true for .tif/.tiff and
 
 	ENTER(Image_file_format_extension);
 	switch (image_file_format)
-	{	
+	{
 		case BMP_FILE_FORMAT:
 		{
 			file_format_extension = "bmp";
@@ -1099,7 +1099,7 @@ LAST MODIFIED : 4 March 2002
 
 DESCRIPTION :
 Writes an image in SGI rgb file format.
-<row_padding> indicates a number of bytes that is padding on each row of data 
+<row_padding> indicates a number of bytes that is padding on each row of data
 (textures are required to be in multiples of two).
 ==============================================================================*/
 {
@@ -1320,7 +1320,7 @@ LAST MODIFIED : 4 March 2002
 DESCRIPTION :
 Writes an image in Postscript file format.
 ???DB.  Currently only outputs RGBA images
-<row_padding> indicates a number of bytes that is padding on each row of data 
+<row_padding> indicates a number of bytes that is padding on each row of data
 since textures are required to be in powers of two.
 ==============================================================================*/
 {
@@ -1361,7 +1361,7 @@ since textures are required to be in powers of two.
 						image_width=(float)number_of_columns*pixel_aspect_ratio;
 					} break;
 				}
-				/* following six constants used to be read in from defaults in 
+				/* following six constants used to be read in from defaults in
 					 user_interface/printer.c */
 				page_width_mm = 210;
 				page_height_mm = 297;
@@ -1955,7 +1955,7 @@ LAST MODIFIED : 4 March 2002
 
 DESCRIPTION :
 Writes an <image> in TIFF file format using <compression>.
-<row_padding> indicates a number of bytes that is padding on each row of data 
+<row_padding> indicates a number of bytes that is padding on each row of data
 (textures are required to be in multiples of two).
 
 Not working for 64 bit as assumes a long is 4 bytes!
@@ -2866,7 +2866,7 @@ number_of_components=4, RGBA
 							{
 								/* find the maximum row size */
 								row_size_char=row_sizes_char;
-								row_size = ((long)row_size_char[3]) + 
+								row_size = ((long)row_size_char[3]) +
 									(((long)row_size_char[2]) << 8) +
 									(((long)row_size_char[1]) << 16) +
 									(((long)row_size_char[0]) << 24);
@@ -2874,7 +2874,7 @@ number_of_components=4, RGBA
 								for (i=number_of_rows-1;i>0;i--)
 								{
 									row_size_char += 4;
-									row_size = ((long)row_size_char[3]) + 
+									row_size = ((long)row_size_char[3]) +
 										(((long)row_size_char[2]) << 8) +
 										(((long)row_size_char[1]) << 16) +
 										(((long)row_size_char[0]) << 24);
@@ -2896,11 +2896,11 @@ number_of_components=4, RGBA
 										j=height;
 										while (return_code&&(j>0))
 										{
-											row_start = ((long)row_start_char[3]) + 
+											row_start = ((long)row_start_char[3]) +
 												(((long)row_start_char[2]) << 8) +
 												(((long)row_start_char[1]) << 16) +
 												(((long)row_start_char[0]) << 24);
-											row_size = ((long)row_size_char[3]) + 
+											row_size = ((long)row_size_char[3]) +
 												(((long)row_size_char[2]) << 8) +
 												(((long)row_size_char[1]) << 16) +
 												(((long)row_size_char[0]) << 24);
@@ -3010,7 +3010,7 @@ number_of_components=4, RGBA
 													return_code=0;
 												} break;
 											}
-													
+
 										}
 										i++;
 									}
@@ -4493,7 +4493,7 @@ If just the width is specified, the height is computed from the file size.
 									r = 104635*v;
 									g = -25690*u - 53294*v;
 									b = 132278*u;
-									
+
 									y1 *= 76310;
 									y2 *= 76310;
 #if defined (SAVE_CODE)
@@ -4600,7 +4600,7 @@ be specified in the <width> and <height> arguments.
 	struct stat buf;
 	unsigned char *image_char;
 	void *image_data;
-	
+
 	ENTER(read_image_file);
 	if (filename && number_of_components && height && width && image)
 	{
@@ -4618,7 +4618,7 @@ be specified in the <width> and <height> arguments.
 				 do something tricky */
 				length = strlen(filename);
 				/* Test to see if a file with suffix rgb is an sgi rgb file */
-				if ((length > 4) && 
+				if ((length > 4) &&
 					fuzzy_string_compare_same_length((filename + length - 4), ".rgb"))
 				{
 					sprintf(magick_image_info->filename, "sgi:%s", filename);
@@ -4635,7 +4635,7 @@ be specified in the <width> and <height> arguments.
 						get_yuv_resolution_from_file_size(file_size, width, height))
 					{
 						sprintf(magick_image_info->filename, "uyvy:%s", filename);
-					}					
+					}
 				}
 			}
 			if (*width && *height)
@@ -5884,7 +5884,7 @@ int Cmgui_image_information_get_memory_block(
 	{
 		*memory_block = cmgui_image_information->memory_block;
 		*memory_block_length = cmgui_image_information->memory_block_length;
-		
+
 		cmgui_image_information->memory_block = NULL;
 		cmgui_image_information->memory_block_length = 0;
 		return_code = 1;
@@ -5984,7 +5984,7 @@ Only these parameters matter to Cmgui_image for consistency.
 {
 	Image *temp_magick_image;
 	int number_of_images, return_code;
-	
+
 	ENTER(get_magick_image_number_of_consistent_images);
 	if (magick_image)
 	{
@@ -6543,7 +6543,7 @@ The <left>, <bottom>, <width> and <height> specify the part of <cmgui_image>
 output and must be wholly within its bounds.
 Image data is ordered from the bottom row to the top, and within each row from
 the left to the right.
-If <components> is > 0, the specified components are output at each pixel, 
+If <components> is > 0, the specified components are output at each pixel,
 otherwise all the number_of_components components of the image are output at each pixel.
 Pixel values relate to components by:
   1 -> I    = Intensity;
@@ -6572,7 +6572,7 @@ equal to the number_of_components.
 - different colour spaces output;
 ==============================================================================*/
 {
-        int bytes_per_pixel, fill_byte_number, i, number_of_components, 
+        int bytes_per_pixel, fill_byte_number, i, number_of_components,
             padding_bytes, return_code, width_bytes, y, y_limit;
 	unsigned char *destination;
 #if defined (IMAGEMAGICK)
@@ -6592,7 +6592,7 @@ equal to the number_of_components.
 	  number_of_components = cmgui_image->number_of_components;
 	  components = cmgui_image->number_of_components;
 	}else if(components <= 4){
-	  number_of_components = components; 
+	  number_of_components = components;
 	}else if(components == 5){
 	  number_of_components = 3;
 	}
@@ -6885,7 +6885,7 @@ int Cmgui_image_convert_format(struct Cmgui_image *cmgui_image, enum Cmgui_image
 LAST MODIFIED : 31 October 2006
 
 DESCRIPTION :
-Sets the magick image type and updates the cmgui_image to the format specified by 
+Sets the magick image type and updates the cmgui_image to the format specified by
 the <format>
 ==============================================================================*/
 {
@@ -6897,7 +6897,7 @@ the <format>
 	  {
 	    case CMGUI_IMAGE_RGB:
 	    {
-              TransformRGBImage(cmgui_image->magick_image, RGBColorspace);		
+              TransformRGBImage(cmgui_image->magick_image, RGBColorspace);
 	      get_magick_image_parameters(cmgui_image->magick_image,
 					  &cmgui_image->width, &cmgui_image->height,
 					  &cmgui_image->number_of_components,
@@ -7030,7 +7030,7 @@ and other parameters for formats that require them.
 						sprintf(magick_size, "%dx%d", width, height);
 						magick_image_info->size = magick_size;
 					}
-					if ((1 == cmgui_image_information->number_of_components) || 
+					if ((1 == cmgui_image_information->number_of_components) ||
 						(2 == cmgui_image_information->number_of_components))
 					{
 						magick_image_info->colorspace = GRAYColorspace;
@@ -7090,13 +7090,13 @@ and other parameters for formats that require them.
 							{
 								if (IO_stream_read_to_memory(image_file, &image_data, &image_data_length))
 								{
-									/* strip off "memory:" prefix from filename in case a second prefix has 
+									/* strip off "memory:" prefix from filename in case a second prefix has
 										been used to specify the image format */
 									if ( 0 == strncmp(magick_image_info->filename, "memory:",7))
 									{
 										strcpy(magick_image_info->filename, magick_image_info->filename + 7);
-									} 
-									
+									}
+
 									/* set the "magick" variable which specifies the image format based on prefix
 										if present, or the suffix, or an attempt to read the file */
 									SetImageInfo(magick_image_info, MagickFalse, &magick_exception);
@@ -7324,7 +7324,7 @@ that the images be adjoined in the single file.
 	int i, number_of_file_names, return_code;
 #if defined (IMAGEMAGICK)
 	ExceptionInfo magick_exception;
-	Image *magick_image, *temp_next, *temp_previous;
+	Image *local_magick_image, *magick_image, *temp_next, *temp_previous;
 	ImageInfo *magick_image_info;
 #else /* defined (IMAGEMAGICK) */
 	enum Image_file_format image_file_format;
@@ -7341,6 +7341,7 @@ that the images be adjoined in the single file.
 		return_code = 1;
 #if defined (IMAGEMAGICK)
 		GetExceptionInfo(&magick_exception);
+		local_magick_image = (Image *)NULL;
 		if (magick_image_info = CloneImageInfo((ImageInfo *) NULL))
 		{
 			magick_image = cmgui_image->magick_image;
@@ -7388,15 +7389,35 @@ that the images be adjoined in the single file.
 						magick_image_info->interlace = PlaneInterlace;
 					} break;
 				}
-#if defined (OLD_CODE)
-				if (3 <= cmgui_image->number_of_components)
+				if ((cmgui_image_information->width > 0) ||
+					(cmgui_image_information->height > 0))
 				{
-					/* image magick will reduce RGB to monochrome if all R, G and B
-						 values are the same. The resulting images cannot be re-read!
-						 If the image info type is set to TrueColorType, this is avoided */
-					magick_image_info->type = TrueColorType;
+					unsigned long magick_width, magick_height;
+					if (cmgui_image_information->width > 0)
+					{
+						magick_width = cmgui_image_information->width;
+						if (cmgui_image_information->height > 0)
+						{
+							magick_height = cmgui_image_information->height;
+						}
+						else
+						{
+							magick_height = (magick_image->rows *
+								magick_width) / magick_image->columns;
+						}
+					}
+					else
+					{
+						magick_height = cmgui_image_information->height;
+						magick_width = (magick_image->columns *
+							magick_height) / magick_image->rows;
+					}
+					local_magick_image = ResizeImage(magick_image,
+						magick_width, magick_height,
+						/*Default filters*/UndefinedFilter, /*blur*/1.0,
+						&magick_exception);
+					magick_image = local_magick_image;
 				}
-#endif /* defined (OLD_CODE) */
 #if defined (DEBUG)
 				magick_image_info->verbose = 1;
 #endif /* defined (DEBUG) */
@@ -7418,7 +7439,7 @@ that the images be adjoined in the single file.
 				}
 				if (cmgui_image_information->write_to_memory_block)
 				{
-					if (!(cmgui_image_information->memory_block = 
+					if (!(cmgui_image_information->memory_block =
 						ImagesToBlob(magick_image_info, magick_image,
         				&cmgui_image_information->memory_block_length,
 						&magick_exception)))
@@ -7426,7 +7447,7 @@ that the images be adjoined in the single file.
 						display_message(ERROR_MESSAGE,
 							"Could not write image to memory ");
 						return_code = 0;
-					}				
+					}
 				}
 				else
 				{
@@ -7446,6 +7467,10 @@ that the images be adjoined in the single file.
 				magick_image = magick_image->next;
 			}
 			DestroyImageInfo(magick_image_info);
+			if (local_magick_image)
+			{
+				DestroyImage(local_magick_image);
+			}
 		}
 		else
 		{
@@ -7471,17 +7496,17 @@ that the images be adjoined in the single file.
 							return_code = write_rgb_image_file(file_name,
 								cmgui_image->number_of_components,
 								cmgui_image->number_of_bytes_per_component,
-								cmgui_image->width, 
+								cmgui_image->width,
 								cmgui_image->height,
 								/*row_padding*/0,
 								(unsigned long *)cmgui_image->image_arrays[i]);
 						} break;
 						case TIFF_FILE_FORMAT:
 						{
-							return_code = write_tiff_image_file(file_name, 
+							return_code = write_tiff_image_file(file_name,
 								cmgui_image->number_of_components,
 								cmgui_image->number_of_bytes_per_component,
-								cmgui_image->width, 
+								cmgui_image->width,
 								cmgui_image->height,
 								/*row_padding*/0,
 								TIFF_PACK_BITS_COMPRESSION,
@@ -7492,7 +7517,7 @@ that the images be adjoined in the single file.
 							return_code = write_postscript_image_file(file_name,
 								cmgui_image->number_of_components,
 								cmgui_image->number_of_bytes_per_component,
-								cmgui_image->width, 
+								cmgui_image->width,
 								cmgui_image->height,
 								/*row_padding*/0,
 								/*pixel_aspect_ratio*/1.0,
@@ -7542,7 +7567,7 @@ char *Cmgui_image_get_property(struct Cmgui_image *cmgui_image,
 LAST MODIFIED : 24 October 2007
 
 DESCRIPTION :
-If the <property> is set for <cmgui_image> then this returns an allocated 
+If the <property> is set for <cmgui_image> then this returns an allocated
 string containing it's value.  Otherwise returns NULL.
 ==============================================================================*/
 {

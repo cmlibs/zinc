@@ -83,7 +83,7 @@ public:
 	};
 
 	~Computed_field_image()
-	{	
+	{
 		if (texture)
 		{
 			DEACCESS(Texture)(&(texture));
@@ -123,7 +123,7 @@ public:
 		maximum = maximum_in;
 		return (1);
 	}
-	
+
 	int set_native_texture_flag(int native_texture_flag_in)
 	{
 		native_texture = native_texture_flag_in;
@@ -147,7 +147,7 @@ private:
 	char* get_command_string();
 
 	int get_native_resolution(int *dimension,
-		int **sizes, Computed_field **texture_coordinate_field);	
+		int **sizes, Computed_field **texture_coordinate_field);
 };
 
 inline Computed_field *Computed_field_cast(
@@ -160,7 +160,7 @@ inline Computed_field_image *Computed_field_image_core_cast(
 	Cmiss_field_image *image_field)
 {
 	return (static_cast<Computed_field_image*>(
-		reinterpret_cast<Computed_field*>(image_field)->core));	
+		reinterpret_cast<Computed_field*>(image_field)->core));
 }
 
 Computed_field_core* Computed_field_image::copy(Computed_field* new_parent)
@@ -244,7 +244,7 @@ Evaluate the fields cache at the location
 	if (field && location)
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
+		if (return_code =
 			Computed_field_evaluate_source_fields_cache_at_location(field, location))
 		{
 			/* 2. Calculate the field */
@@ -253,7 +253,7 @@ Evaluate the fields cache at the location
 			texture_coordinate[2] = 0.0;
 			for (i = 0; i < field->source_fields[0]->number_of_components; i++)
 			{
-				texture_coordinate[i] = field->source_fields[0]->values[i];				
+				texture_coordinate[i] = field->source_fields[0]->values[i];
 			}
 			Texture_get_pixel_values(texture,
 				texture_coordinate[0], texture_coordinate[1], texture_coordinate[2],
@@ -310,10 +310,10 @@ Gets the <dimension>, <sizes>, <minimums>, <maximums> and <texture_coordinate_fi
 the <field>. These parameters will be used in image processing.
 
 ==============================================================================*/
-{       
+{
 	int return_code;
 	int w, h, d;
-	
+
 	ENTER(Computed_field_image::get_native_resolution);
 	if (field)
 	{
@@ -535,8 +535,8 @@ int Computed_field_get_type_image(struct Computed_field *field,
 LAST MODIFIED : 5 September 2007
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_SAMPLE_TEXTURE, the 
-<texture_coordinate_field>, <texture>, <minimum> and <maximum> used by it are 
+If the field is of type COMPUTED_FIELD_SAMPLE_TEXTURE, the
+<texture_coordinate_field>, <texture>, <minimum> and <maximum> used by it are
 returned.
 ==============================================================================*/
 {
@@ -571,7 +571,7 @@ int define_Computed_field_type_sample_texture(struct Parse_state *state,
 LAST MODIFIED : 25 August 2006
 
 DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_IMAGE (if it is not 
+Converts <field> into type COMPUTED_FIELD_IMAGE (if it is not
 already) and allows its contents to be modified.
 Maintains legacy version that is set with a texture.
 ==============================================================================*/
@@ -580,7 +580,7 @@ Maintains legacy version that is set with a texture.
 	float minimum, maximum;
 	int native_texture, return_code;
 	struct Computed_field *field,*texture_coordinate_field;
-	Computed_field_image_package 
+	Computed_field_image_package
 		*computed_field_image_package;
 	struct Texture *texture;
 	struct Option_table *option_table;
@@ -673,7 +673,7 @@ Maintains legacy version that is set with a texture.
 					display_message(ERROR_MESSAGE,
 						"define_Computed_field_type_image.  "
 						"You cannot specify native_texture and not_native_texture.");
- 					return_code = 0;					
+ 					return_code = 0;
 				}
 				if (native_texture_flag)
 				{
@@ -705,7 +705,7 @@ Maintains legacy version that is set with a texture.
 			}
 			if (return_code)
 			{
-				Computed_field_image *image_field_core = 
+				Computed_field_image *image_field_core =
 					dynamic_cast<Computed_field_image*>(field->core);
 				image_field_core->set_texture(texture);
 				image_field_core->set_output_range(minimum, maximum);
@@ -745,7 +745,7 @@ Maintains legacy version that is set with a texture.
 } /* define_Computed_field_type_image */
 
 int Computed_field_register_type_image(
-	struct Computed_field_package *computed_field_package, 
+	struct Computed_field_package *computed_field_package,
 	struct MANAGER(Texture) *texture_manager)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
@@ -767,11 +767,11 @@ DESCRIPTION :
 		computed_field_image_package->texture_manager =
 			texture_manager;
 		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_image_type_string, 
+			computed_field_image_type_string,
 			define_Computed_field_type_sample_texture,
 			computed_field_image_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
-			"sample_texture", 
+			"sample_texture",
 			define_Computed_field_type_sample_texture,
 			computed_field_image_package);
 	}
@@ -861,41 +861,41 @@ int Cmiss_field_image_storage_information_add_file_name(
 		(char *)file_name));
 }
 
-int Cmiss_field_image_storage_information_set_format(
+int Cmiss_field_image_storage_information_set_file_format(
 	Cmiss_field_image_storage_information_id storage_information,
-	enum Cmiss_field_image_storage_format format)
+	enum Cmiss_field_image_storage_file_format format)
 {
 	enum Image_file_format cmgui_file_format;
 	int return_code;
-	
+
 	return_code = 1;
 	switch (format)
 	{
-		case CMISS_FIELD_IMAGE_STORAGE_FORMAT_BMP:
+		case CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_BMP:
 		{
 			cmgui_file_format = BMP_FILE_FORMAT;
 		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_FORMAT_DICOM:
+		case CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_DICOM:
 		{
 			cmgui_file_format = DICOM_FILE_FORMAT;
 		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_FORMAT_JPG:
+		case CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_JPG:
 		{
 			cmgui_file_format = JPG_FILE_FORMAT;
 		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_FORMAT_GIF:
+		case CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_GIF:
 		{
 			cmgui_file_format = GIF_FILE_FORMAT;
 		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_FORMAT_PNG:
+		case CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_PNG:
 		{
 			cmgui_file_format = PNG_FILE_FORMAT;
 		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_FORMAT_SGI:
+		case CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_SGI:
 		{
 			cmgui_file_format = SGI_FILE_FORMAT;
 		} break;
-		case CMISS_FIELD_IMAGE_STORAGE_FORMAT_TIFF:
+		case CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_TIFF:
 		{
 			cmgui_file_format = TIFF_FILE_FORMAT;
 		} break;
@@ -1002,7 +1002,7 @@ int Cmiss_field_image_storage_information_set_compression(
 {
 	enum Image_storage_compression image_compression;
 	int return_code;
-	
+
 	return_code = 1;
 	switch(compression)
 	{
@@ -1061,7 +1061,7 @@ int Cmiss_field_image_storage_information_set_compression(
 	}
 	return (return_code);
 }
-	
+
 int Cmiss_field_image_storage_information_set_quality(
 	Cmiss_field_image_storage_information_id storage_information,
 	double quality)
@@ -1110,7 +1110,7 @@ int Cmiss_field_image_read(Cmiss_field_image_id image_field,
 		Computed_field *field = Computed_field_cast(image_field);
 		Computed_field_image *image_core =
 			Computed_field_image_core_cast(image_field);
-		
+
 		if (cmgui_image = Cmgui_image_read(cmgui_image_information))
 		{
 			char *property, *value;
@@ -1132,7 +1132,7 @@ int Cmiss_field_image_read(Cmiss_field_image_id image_field,
 				Cmgui_image_get_property(cmgui_image,"exif:*");
 				Cmgui_image_reset_property_iterator(cmgui_image);
 				while ((property = Cmgui_image_get_next_property(
-					cmgui_image)) && 
+					cmgui_image)) &&
 					(value = Cmgui_image_get_property(cmgui_image,
 					property)))
 				{
@@ -1141,7 +1141,7 @@ int Cmiss_field_image_read(Cmiss_field_image_id image_field,
 					DEALLOCATE(value);
 				}
 				DESTROY(Cmgui_image)(&cmgui_image);
-				return_code = 1;		
+				return_code = 1;
 			}
 			else
 			{
@@ -1220,13 +1220,13 @@ int Cmiss_field_image_read_file(Cmiss_field_image_id image_field,
 {
 	Cmiss_field_image_storage_information_id storage_information;
 	int return_code;
-	
+
 	storage_information = Cmiss_field_image_storage_information_create();
 	Cmiss_field_image_storage_information_add_file_name(
 		storage_information, file_name);
 	return_code = Cmiss_field_image_read(image_field, storage_information);
 	Cmiss_field_image_storage_information_destroy(&storage_information);
-	
+
 	return (return_code);
 } /* Cmiss_field_image_read_file */
 
@@ -1235,7 +1235,7 @@ int Cmiss_field_image_write_file(Cmiss_field_image_id image_field,
 {
 	Cmiss_field_image_storage_information_id storage_information;
 	int return_code;
-	
+
 	storage_information = Cmiss_field_image_storage_information_create();
 	Cmiss_field_image_storage_information_add_file_name(
 		storage_information, file_name);

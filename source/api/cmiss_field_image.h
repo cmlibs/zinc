@@ -68,27 +68,27 @@ enum Cmiss_field_image_storage_pixel_format
 /*****************************************************************************//**
  * Describes the format for storage.
  * Whether a particular format is actually available depends on whether
- * it is compatible with a particular format type when used with 
+ * it is compatible with a particular format type when used with
  * #Cmiss_field_image_get_formatted_image_data and whether support for that combination
  * has been included when the program was built.
  * This is a small subset of formats available, more can be selected by specifying
  * the appropriate format_string for a Cmiss_field_image_storage_information.
  */
-enum Cmiss_field_image_storage_format
+enum Cmiss_field_image_storage_file_format
 {
-	CMISS_FIELD_IMAGE_STORAGE_FORMAT_BMP,
-	CMISS_FIELD_IMAGE_STORAGE_FORMAT_DICOM,
-	CMISS_FIELD_IMAGE_STORAGE_FORMAT_JPG,
-	CMISS_FIELD_IMAGE_STORAGE_FORMAT_GIF,
-	CMISS_FIELD_IMAGE_STORAGE_FORMAT_PNG,
-	CMISS_FIELD_IMAGE_STORAGE_FORMAT_SGI,
-	CMISS_FIELD_IMAGE_STORAGE_FORMAT_TIFF
+	CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_BMP,
+	CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_DICOM,
+	CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_JPG,
+	CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_GIF,
+	CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_PNG,
+	CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_SGI,
+	CMISS_FIELD_IMAGE_STORAGE_FILE_FORMAT_TIFF
 };
 
 /*****************************************************************************//**
  * Describes the type of image compression for storage.
  * Whether a particular image compression is actually available depends on whether
- * it is compatible with a particular format type when used with 
+ * it is compatible with a particular format type when used with
  * #Cmiss_field_image_get_formatted_image_data and whether support for that combination
  * has been included when the program was built.
  */
@@ -119,7 +119,7 @@ typedef struct Cmiss_field_image_storage_information *Cmiss_field_image_storage_
  * Creates a new image based field.  This constructor does not define the
  * actual image data, which should then be set using a Cmiss_field_image_set_*
  * function.
- * 
+ *
  * @param domain_field  The field in which the image data will be embedded.
  * @return Newly created field
 */
@@ -128,7 +128,7 @@ Cmiss_field_id Cmiss_field_create_image(Cmiss_field_id domain_field);
 /*****************************************************************************//**
  * If the image_field is of type image field then this function returns
  * the image_field specific representation, otherwise returns NULL.
- * 
+ *
  * @param image_field  The image field to be cast.
  * @return  Image field specific representation if the input is the correct
  * field type, otherwise returns NULL.
@@ -139,11 +139,11 @@ Cmiss_field_image_id Cmiss_field_image_cast(Cmiss_field_id image_field);
  * Reads image data into the field.
  * The storage_information may specify a filename, series of filenames or
  * a memory block reference to read from.
- * If the format specified in the storage_information 
+ * If the format specified in the storage_information
  * is a "raw" format (such as rgb or gray) which does not embed
  * information about the pixel storage then the data size is expected to be
  * supplied in the storage_information parameter.
- * 
+ *
  * @param image_field The image field.
  * @param storage_information  Information about the supplied formatted image data.
  * At a minimum it should specify either a filename or a memory block
@@ -159,14 +159,14 @@ int Cmiss_field_image_read(Cmiss_field_image_id image_field,
  * If a memory block reference has been specified to the storage_information
  * then this will be allocated and set and the corresponding memory block
  * length set.
- * Otherwise the routine will try to write to the filename set on the 
+ * Otherwise the routine will try to write to the filename set on the
  * storage information.
  * The routine should fail if the values specified in the storage_information
  * cannot be respected.
  * If one or two of the size parameters are set on the storage_information
  * then other dimensions will be adjusted to maintain aspect ratio and then the image is
  * resized just for this output.
- * 
+ *
  * @param image_field The image field.
  * @param storage_information  Information specifying the required format
  * for the returned formatted image data.
@@ -179,7 +179,7 @@ int Cmiss_field_image_write(Cmiss_field_image_id image_field,
 
 /*****************************************************************************//**
  * A simple image read function that reads from a single filename.
- * 
+ *
  * @param image_field The image field.
  * @param storage_information  The file to read from.  The format is normally
  * determined from the extension but can be specified with a colon separated prefix.
@@ -190,7 +190,7 @@ int Cmiss_field_image_read_file(Cmiss_field_image_id image_field,
 
 /*****************************************************************************//**
  * A simple image write function that writes to a single filename.
- * 
+ *
  * @param image_field The image field.
  * @param file_name  The file to write out to.  The format is normally
  * determined from the extension but can be specified with a colon separated prefix.
@@ -218,7 +218,7 @@ int Cmiss_field_image_storage_information_destroy(
  * Adds a file name to the list that will be read from or written to when
  * this storage_information is used with #Cmiss_field_image_read and
  * #Cmiss_field_image_write.
- * 
+ *
  * @param storage_information  The storage information object.
  * @param file_name  A file name for reading from or writing to.
  * If the format_string has a prefix, like "jpg:fred" then this prefix is used to
@@ -237,21 +237,21 @@ int Cmiss_field_image_storage_information_add_file_name(
 	const char *file_name);
 
 /*****************************************************************************//**
- * Specifies the format for binary data with this storage information using a 
+ * Specifies the format for binary data with this storage information using a
  * enumerated type.  Only a subset of available types can be specified with this
  * function, more are available using #Cmiss_field_image_storage_information_set_format_string.
- * 
+ *
  * @param storage_information  The storage information object.
- * @param format  The image format.
+ * @param file_format  The image file format.
  * @return Returns 1 if the operation is successful, 0 if it is not.
  */
-int Cmiss_field_image_storage_information_set_format(
+int Cmiss_field_image_storage_information_set_file_format(
 	Cmiss_field_image_storage_information_id storage_information,
-	enum Cmiss_field_image_storage_format format);
+	enum Cmiss_field_image_storage_file_format file_format);
 
 /*****************************************************************************//**
  * Specifies the pixel width for binary data using this storage_information.
- * 
+ *
  * @param storage_information  The storage information object.
  * @param width  The width of the formatted data in pixels.
  * @return Returns 1 if the operation is successful, 0 if it is not.
@@ -262,7 +262,7 @@ int Cmiss_field_image_storage_information_set_width(
 
 /*****************************************************************************//**
  * Specifies the pixel height for binary data using this storage_information.
- * 
+ *
  * @param storage_information  The storage information object.
  * @param height  The height of the formatted data in pixels.
  * @return Returns 1 if the operation is successful, 0 if it is not.
@@ -272,9 +272,9 @@ int Cmiss_field_image_storage_information_set_height(
 	unsigned int height);
 
 /*****************************************************************************//**
- * Specifies the pixel depth (the 3D size in pixels) for binary data using this 
+ * Specifies the pixel depth (the 3D size in pixels) for binary data using this
  * storage_information.
- * 
+ *
  * @param storage_information  The storage information object.
  * @param depth  The depth of the formatted data in pixels.
  * @return Returns 1 if the operation is successful, 0 if it is not.
@@ -285,7 +285,7 @@ int Cmiss_field_image_storage_information_set_height(
 
 /*****************************************************************************//**
  * Specifies the pixel format for binary data using this storage_information.
- * 
+ *
  * @param storage_information  The storage information object.
  * @param pixel_format  The pixel_format of the formatted data.
  * @return Returns 1 if the operation is successful, 0 if it is not.
@@ -297,7 +297,7 @@ int Cmiss_field_image_storage_information_set_pixel_format(
 /*****************************************************************************//**
  * Specifies the number of bytes per component for binary data using this
  * storage_information.
- * 
+ *
  * @param storage_information  The storage information object.
  * @param number_of_bytes_per_component  The number of bytes per pixel component
  * of the formatted data.
@@ -309,7 +309,7 @@ int Cmiss_field_image_storage_information_set_number_of_bytes_per_component(
 
 /*****************************************************************************//**
  * Specifies the compression type for binary data using this storage_information.
- * 
+ *
  * @param storage_information  The storage information object.
  * @param compression  The type of compression applied.  Various combinations of image
  * format, compression and quality may or may not work together.
@@ -318,10 +318,10 @@ int Cmiss_field_image_storage_information_set_number_of_bytes_per_component(
 int Cmiss_field_image_storage_information_set_compression(
 	Cmiss_field_image_storage_information_id storage_information,
 	enum Cmiss_field_image_storage_compression compression);
-	
+
 /*****************************************************************************//**
  * Specifies the quality for binary data using this storage_information.
- * 
+ *
  * @param storage_information  The storage information object.
  * @param quality  This parameter controls compression for compressed lossy formats,
  * where a quality of 1.0 specifies the least lossy output for a given format and a
@@ -335,7 +335,7 @@ int Cmiss_field_image_storage_information_set_quality(
 /*****************************************************************************//**
  * Specifies that this storage_information will read from a memory_block
  * instead of reading from a file.
- * 
+ *
  * @param storage_information  The storage information object.
  * @param memory_block  A pointer to memory_block information.
  * @param memory_block_length  The length of this memory_block.
@@ -349,7 +349,7 @@ int Cmiss_field_image_storage_information_set_memory_block(
  * Specifies that this storage_information will write to a memory_block
  * instead of writing to file.  Once read the new memory block can be
  * retrieved with #Cmiss_field_image_storage_information_set_memory_block.
- * 
+ *
  * @param storage_information  The storage information object.
  * @return Returns 1 if the operation is successful, 0 if it is not.
  */
@@ -359,7 +359,7 @@ int Cmiss_field_image_storage_information_set_write_to_memory_block(
 /*****************************************************************************//**
  * Retrieve a memory block that has been written to when the storage_information
  * specified #Cmiss_field_image_storage_information_set_write_to_memory_block.
- * 
+ *
  * @param storage_information  The storage information object.
  * @param memory_block_reference  Will be set to point to the allocated
  * memory block.  When no longer required the memory block should be
