@@ -7439,10 +7439,17 @@ that the images be adjoined in the single file.
 				}
 				if (cmgui_image_information->write_to_memory_block)
 				{
-					if (!(cmgui_image_information->memory_block =
+					/* Need to use the correct pointer type for the API */
+					size_t magick_memory_block_length;
+					if (cmgui_image_information->memory_block =
 						ImagesToBlob(magick_image_info, magick_image,
-        				&cmgui_image_information->memory_block_length,
-						&magick_exception)))
+        				&magick_memory_block_length,
+						&magick_exception))
+					{
+						cmgui_image_information->memory_block_length
+							= magick_memory_block_length;
+					}
+					else
 					{
 						display_message(ERROR_MESSAGE,
 							"Could not write image to memory ");
