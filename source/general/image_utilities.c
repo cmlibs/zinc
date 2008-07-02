@@ -5902,8 +5902,7 @@ int Cmgui_image_information_get_memory_block(
 
 #if defined (IMAGEMAGICK)
 static int get_magick_image_parameters(Image *magick_image, int *width,
-	int *height, int *number_of_components, int *number_of_bytes_per_component,
-	int do_IsGrey_test, ExceptionInfo magick_exception)
+	int *height, int *number_of_components, int *number_of_bytes_per_component, int do_IsGrey_test)
 /*******************************************************************************
 LAST MODIFIED : 19 February 2002
 
@@ -5911,12 +5910,14 @@ DESCRIPTION :
 Extracts parameters from <magick_image> that matter for a Cmgui_image
 ==============================================================================*/
 {
+	ExceptionInfo magick_exception;
 	int return_code;
 
 	ENTER(get_magick_image_parameters);
 	if (magick_image && width && height && number_of_components &&
 		number_of_bytes_per_component)
 	{
+		GetExceptionInfo(&magick_exception);
 		*width = (int)magick_image->columns;
 		*height = (int)magick_image->rows;
 		if (magick_image->matte)
@@ -6896,14 +6897,11 @@ the <format>
 	  {
 	    case CMGUI_IMAGE_RGB:
 	    {
-	    	ExceptionInfo magick_exception;
-	    	GetExceptionInfo(&magick_exception);
-            TransformRGBImage(cmgui_image->magick_image, RGBColorspace);
-	      	get_magick_image_parameters(cmgui_image->magick_image,
+              TransformRGBImage(cmgui_image->magick_image, RGBColorspace);
+	      get_magick_image_parameters(cmgui_image->magick_image,
 					  &cmgui_image->width, &cmgui_image->height,
 					  &cmgui_image->number_of_components,
-					  &cmgui_image->number_of_bytes_per_component, 0,
-					  magick_exception);
+					  &cmgui_image->number_of_bytes_per_component, 0);
 	    } break;
 	    default:
 	    {
@@ -7167,8 +7165,7 @@ and other parameters for formats that require them.
 						get_magick_image_parameters(cmgui_image->magick_image,
 							&cmgui_image->width, &cmgui_image->height,
 							&cmgui_image->number_of_components,
-							&cmgui_image->number_of_bytes_per_component, 1,
-							magick_exception);
+							&cmgui_image->number_of_bytes_per_component, 1);
 					}
 					else
 					{
