@@ -217,7 +217,7 @@ public:
 	 * @param v2 coordinates of second vertex
 	 * @param v3 coordinates of third vertex
 	 */
-	void Stl_context::write_triangle(
+	void write_triangle(
 		const Triple& v1, const Triple& v2, const Triple& v3)
 	{
 		double tv1[3], tv2[3], tv3[3];
