@@ -152,6 +152,7 @@ Functions for executing cmiss commands.
 #endif /* defined (NEW_ALIAS) */
 #endif /* defined (MOTIF) */
 #include "graphics/render_to_finite_elements.h"
+#include "graphics/renderstl.h"
 #include "graphics/rendervrml.h"
 #include "graphics/renderwavefront.h"
 #include "graphics/scene.h"
@@ -11845,6 +11846,75 @@ Executes a GFX EXPORT IGES command.
 	return (return_code);
 } /* gfx_export_iges */
 
+static int gfx_export_stl(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2008
+
+DESCRIPTION :
+Executes a GFX EXPORT STL command.
+==============================================================================*/
+{
+	char *file_name;
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Option_table *option_table;
+	struct Scene *scene;
+
+	ENTER(gfx_export_stl);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		{
+			file_name = (char *)NULL;
+			scene = ACCESS(Scene)(command_data->default_scene);
+
+			option_table = CREATE(Option_table)();
+			/* file */
+			Option_table_add_entry(option_table, "file", &file_name,
+				(void *)1, set_name);
+			/* scene */
+			Option_table_add_entry(option_table, "scene", &scene,
+				command_data->scene_manager, set_Scene_including_sub_objects);
+			if (return_code = Option_table_multi_parse(option_table,state))
+			{
+				if (file_name)
+				{
+					return_code =
+						export_to_stl(file_name, scene, (struct Scene_object *)NULL);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx export stl.  Must specify file name");
+					return_code = 0;
+				}
+			}
+			DESTROY(Option_table)(&option_table);
+			DEACCESS(Scene)(&scene);
+			if (file_name)
+			{
+				DEALLOCATE(file_name);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"gfx_export_stl.  Invalid argument(s)");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"gfx_export_stl.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_export_stl */
+
 static int gfx_export_vrml(struct Parse_state *state,void *dummy_to_be_modified,
 	void *command_data_void)
 /*******************************************************************************
@@ -12070,6 +12140,8 @@ Executes a GFX EXPORT command.
 		Option_table_add_entry(option_table,"node",NULL,
 			command_data_void, gfx_export_node);
 #endif /* defined (OLD_CODE) */
+		Option_table_add_entry(option_table,"stl",NULL,
+			command_data_void, gfx_export_stl);
 		Option_table_add_entry(option_table,"vrml",NULL,
 			command_data_void, gfx_export_vrml);
 		Option_table_add_entry(option_table,"wavefront",NULL,

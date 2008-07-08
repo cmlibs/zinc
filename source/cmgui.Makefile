@@ -1098,6 +1098,7 @@ GRAPHICS_SRCS = \
 	graphics/mcubes.c \
 	graphics/order_independent_transparency.c \
 	graphics/render_to_finite_elements.c \
+	graphics/renderstl.cpp \
 	graphics/rendervrml.c \
 	graphics/renderwavefront.c \
 	graphics/quaternion.cpp\
