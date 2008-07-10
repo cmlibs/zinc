@@ -130,7 +130,6 @@ DESCRIPTION :
 	 Scene_object *scene_object;
 	/* keep address of pointer to editor so can self-destroy */
 	struct Scene_editor **scene_editor_address;
-	void *scene_manager_callback_id;
 	 struct MANAGER(Graphical_material) *graphical_material_manager;
 	 struct Graphical_material *default_material, *selected_material;
 	 struct Graphics_font *default_font;
@@ -4889,16 +4888,6 @@ DESCRIPTION :
 	if (scene_editor_address && (scene_editor = *scene_editor_address) &&
 		(scene_editor->scene_editor_address == scene_editor_address))	
 	{
-		/* must unset the current_object, if any, to remove callbacks */
-		//Scene_editor_set_current_object(scene_editor,
-		//	(struct Scene_editor_object *)NULL);
-		if (scene_editor->scene_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(Scene)(
-				scene_editor->scene_manager_callback_id,
-				scene_editor->scene_manager);
-			scene_editor->scene_manager_callback_id = (void *)NULL;
-		}
 		if (scene_editor->gt_element_group)
 		{
 			 GT_element_group_remove_callback(scene_editor->gt_element_group,
