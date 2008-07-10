@@ -187,12 +187,37 @@ Changes the conditional_function and user_data limiting the available \
 selection of objects. Also allows new_object to be set simultaneously. \
 ============================================================================*/
 
+#if ! defined (SHORT_NAMES)
+#define CHOOSE_OBJECT_CHANGE_MANAGER_( object_type ) \
+	choose_object_change_manager_ ## object_type
+#else
+#define CHOOSE_OBJECT_CHANGE_MANAGER_( object_type ) \
+	coccf ## object_type
+#endif
+#define CHOOSE_OBJECT_CHANGE_MANAGER( object_type ) \
+	CHOOSE_OBJECT_CHANGE_MANAGER_(object_type)
+
+#define PROTOTYPE_CHOOSE_OBJECT_CHANGE_MANAGER_FUNCTION( \
+	object_type ) \
+int CHOOSE_OBJECT_CHANGE_MANAGER(object_type)( \
+	Widget choose_object_widget, \
+	struct MANAGER(object_type) *object_manager,	\
+	struct object_type *new_object) \
+/***************************************************************************** \
+LAST MODIFIED : 17 June 2008 \
+\
+DESCRIPTION : \
+Changes the manager of the chooser and limiting the available object. \
+Also allows new_object to be set simultaneously.											\
+============================================================================*/
+
+
 #define PROTOTYPE_CHOOSE_OBJECT_GLOBAL_FUNCTIONS( object_type) \
 PROTOTYPE_CREATE_CHOOSE_OBJECT_WIDGET_FUNCTION(object_type); \
 PROTOTYPE_CHOOSE_OBJECT_GET_CALLBACK_FUNCTION(object_type); \
 PROTOTYPE_CHOOSE_OBJECT_SET_CALLBACK_FUNCTION(object_type); \
 PROTOTYPE_CHOOSE_OBJECT_GET_OBJECT_FUNCTION(object_type); \
 PROTOTYPE_CHOOSE_OBJECT_SET_OBJECT_FUNCTION(object_type); \
-PROTOTYPE_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_FUNCTION(object_type)
-
+PROTOTYPE_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_FUNCTION(object_type); \
+PROTOTYPE_CHOOSE_OBJECT_CHANGE_MANAGER_FUNCTION(object_type);
 #endif /* !defined (CHOOSE_OBJECT_H) */

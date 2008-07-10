@@ -171,6 +171,40 @@ Called by the
 		return (return_code);
 	} /* Managed_object_chooser::get_callback */
 
+	 int set_manager(typename Manager::Manager_type *new_manager)
+/***************************************************************************//**
+* Set the chooser manager to the one in the argument if appropriate. 
+* 
+* @param new_manager object manager to be used in this chooser
+*/
+	 {
+			int return_code = 1;
+			
+			Manager *temp_manager(new Manager(new_manager));
+			if (temp_manager != manager)
+			{
+				 manager->deregister_callback(manager_callback_id);
+				 manager = temp_manager;
+				 if (build_items())
+				 {
+						return_code=chooser->build_main_menu(
+							 number_of_items, items, item_names, (Managed_object *)NULL);
+						return_code = 1;
+						manager_callback_id =
+							 manager->register_callback(global_object_change, this);
+				 }
+				 else
+				 {
+						display_message(ERROR_MESSAGE,
+							 "Managed_object_chooser::set_manager.   "
+							 " Could not update menu");
+						return_code = 0;
+				 }
+			}
+			
+			return (return_code);
+	 }
+
 	Callback_base<Managed_object*> *get_callback()
 /*****************************************************************************
 LAST MODIFIED : 8 February 2007

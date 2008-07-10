@@ -886,6 +886,73 @@ selection of objects. Also allows new_object to be set simultaneously. \
 	return (return_code); \
 } /* CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(object_type) */
 
+#define DECLARE_CHOOSE_OBJECT_CHANGE_MANAGER_FUNCTION(	\
+	object_type ) \
+PROTOTYPE_CHOOSE_OBJECT_CHANGE_MANAGER_FUNCTION(object_type) \
+/***************************************************************************** \
+LAST MODIFIED : 17 June 2008 \
+\
+DESCRIPTION : \
+AW: Changes the manager and user_data limiting the available \
+selection of objects. Also allows new_object to be set simultaneously. \
+============================================================================*/ \
+{ \
+	int return_code; \
+	struct CHOOSE_OBJECT(object_type) *choose_object; \
+\
+	ENTER(CHOOSE_OBJECT_CHANGE_MANAGER(object_type)); \
+	if (choose_object_widget) \
+	{ \
+		choose_object=(struct CHOOSE_OBJECT(object_type) *)NULL; \
+		/* Get the pointer to the data for the choose_object dialog */ \
+		XtVaGetValues(choose_object_widget,XmNuserData,&choose_object,NULL); \
+		if (choose_object) \
+		{ \
+			if (choose_object->object_manager != object_manager) \
+			{ \
+			  choose_object->object_manager=object_manager; \
+				if (CHOOSE_OBJECT_BUILD_ITEMS(object_type)(choose_object)) \
+				{ \
+				 	return_code=Chooser_build_main_menu(choose_object->chooser, \
+				 		 choose_object->number_of_items,choose_object->items, \
+					 	 choose_object->item_names,(void *)new_object); \
+				} \
+				else	\
+				{ \
+				 	return_code=0; \
+				} \
+			} \
+			else	\
+			{ \
+			 	return_code=1; \
+			} \
+			if (!return_code)												\
+			{ \
+				display_message(ERROR_MESSAGE, \
+					"CHOOSE_OBJECT_CHANGE_MANAGER(" #object_type \
+					").  Could not update menu"); \
+			} \
+		} \
+		else \
+		{ \
+			display_message(ERROR_MESSAGE, \
+				"CHOOSE_OBJECT_CHANGE_MANAGER(" #object_type \
+				").  Missing widget data"); \
+			return_code=0; \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"CHOOSE_OBJECT_CHANGE_MANAGER(" #object_type \
+			").  Missing widget"); \
+		return_code=0; \
+	} \
+	LEAVE; \
+\
+	return (return_code); \
+} /* CHOOSE_OBJECT_CHANGE_MANAGER_FUNCTION(object_type) */
+
 #define DECLARE_CHOOSE_OBJECT_MODULE_FUNCTIONS( object_type ) \
 DECLARE_CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER_FUNCTION(object_type) \
 DECLARE_CHOOSE_OBJECT_UPDATE_FUNCTION(object_type) \
@@ -903,6 +970,6 @@ DECLARE_CHOOSE_OBJECT_GET_CALLBACK_FUNCTION(object_type) \
 DECLARE_CHOOSE_OBJECT_SET_CALLBACK_FUNCTION(object_type) \
 DECLARE_CHOOSE_OBJECT_GET_OBJECT_FUNCTION(object_type) \
 DECLARE_CHOOSE_OBJECT_SET_OBJECT_FUNCTION(object_type) \
-DECLARE_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_FUNCTION(object_type)
-
+DECLARE_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_FUNCTION(object_type)\
+DECLARE_CHOOSE_OBJECT_CHANGE_MANAGER_FUNCTION(object_type)
 #endif /* !defined (CHOOSE_OBJECT_PRIVATE_H) */
