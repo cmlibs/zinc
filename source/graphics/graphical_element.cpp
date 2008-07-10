@@ -714,7 +714,6 @@ DECLARE_OBJECT_FUNCTIONS(GT_element_group)
 struct GT_element_group *CREATE(GT_element_group)(
 	struct Cmiss_region *cmiss_region,
 	struct Cmiss_region *data_cmiss_region,
-	struct MANAGER(Computed_field) *computed_field_manager,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
@@ -770,7 +769,8 @@ If supplied, callbacks are requested from the <element_selection> and
 				gt_element_group->update_callback_list=
 					(struct GT_element_group_callback_data *)NULL;
 				/* managers and callback ids */
-				gt_element_group->computed_field_manager=computed_field_manager;
+				gt_element_group->computed_field_manager=Cmiss_region_get_Computed_field_manager(
+					 cmiss_region);
 				gt_element_group->computed_field_manager_callback_id=(void *)NULL;
 				/* request callbacks from FE_regions */
 				FE_region_add_callback(fe_region,
@@ -781,7 +781,7 @@ If supplied, callbacks are requested from the <element_selection> and
 						GT_element_group_data_FE_region_change, (void *)gt_element_group);
 				}
 				/* request callbacks from any managers supplied */
-				if (computed_field_manager)
+				if (gt_element_group->computed_field_manager)
 				{
 					gt_element_group->computed_field_manager_callback_id=
 						MANAGER_REGISTER(Computed_field)(
@@ -876,7 +876,6 @@ WITHOUT copying graphics objects, and WITHOUT manager and selection callbacks.
 		if (gt_element_group = CREATE(GT_element_group)(
 			existing_gt_element_group->cmiss_region,
 			existing_gt_element_group->data_cmiss_region,
-			(struct MANAGER(Computed_field) *)NULL,
 			(struct Element_point_ranges_selection *)NULL,
 			(struct FE_element_selection *)NULL,
 			(struct FE_node_selection *)NULL,

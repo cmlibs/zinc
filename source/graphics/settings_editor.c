@@ -3656,7 +3656,7 @@ Creates a settings_editor widget.
 								if (settings)
 								{
 									settings_editor_set_settings(
-										settings_editor->widget, settings);
+										 settings_editor->widget, settings, /*MANAGER(Computed_field)*/NULL);
 								}
 								return_widget=settings_editor->widget;
 							}
@@ -3837,8 +3837,106 @@ Returns the currently chosen settings.
 	return (return_address);
 } /* settings_editor_get_settings */
 
+int settings_editor_set_chooser_manager(Widget settings_editor_widget, 
+	 struct MANAGER(Computed_field) *field_manager)
+/***************************************************************************//**
+* Change  manager of the chooser object to field manager.
+* 
+* @param settings_editor_widget widget to be updated.
+* @param field_manager object manager to be set in the chooser
+* @return 1 on success, 0 on failure
+*/
+{
+	struct Settings_editor *settings_editor;
+	ENTER(settings_editor_set_chooser_manager);
+	int return_code = 0;
+	
+	if (settings_editor_widget && field_manager)
+	{
+		XtVaGetValues(settings_editor_widget,XmNuserData,
+			&settings_editor,NULL);
+		if (settings_editor)
+		{
+	    if (settings_editor->coordinate_field_widget)
+		  {
+			  CHOOSE_OBJECT_CHANGE_MANAGER(Computed_field)(
+				  settings_editor->coordinate_field_widget,
+				  field_manager, NULL);
+		  }
+		  if (settings_editor->radius_scalar_field_widget)
+		  {
+			  CHOOSE_OBJECT_CHANGE_MANAGER(Computed_field)(
+				  settings_editor->radius_scalar_field_widget,
+				  field_manager, NULL);
+		  }
+		  if (settings_editor->iso_scalar_field_widget)
+		  {
+			  CHOOSE_OBJECT_CHANGE_MANAGER(Computed_field)(
+				  settings_editor->iso_scalar_field_widget,
+				  field_manager, NULL);
+		  }
+		  if (settings_editor->glyph_orientation_scale_field_widget)
+		  {
+			  CHOOSE_OBJECT_CHANGE_MANAGER(Computed_field)(
+				  settings_editor->glyph_orientation_scale_field_widget,
+				  field_manager, NULL);
+		  }
+		  if (settings_editor->glyph_variable_scale_field_widget)
+		  {
+			  CHOOSE_OBJECT_CHANGE_MANAGER(Computed_field)(
+				  settings_editor->glyph_variable_scale_field_widget,
+				  field_manager, NULL);
+		  }
+		  if (settings_editor->label_field_widget)
+		  {
+			  CHOOSE_OBJECT_CHANGE_MANAGER(Computed_field)(
+				  settings_editor->label_field_widget,
+				  field_manager, NULL);
+		  }
+		  if(settings_editor->xi_point_density_field_widget)
+		  {
+			  CHOOSE_OBJECT_CHANGE_MANAGER(Computed_field)(
+				  settings_editor->xi_point_density_field_widget,
+				  field_manager, NULL);
+		  }
+		  if(settings_editor->stream_vector_field_widget)
+		  {
+			  CHOOSE_OBJECT_CHANGE_MANAGER(Computed_field)(
+				  settings_editor->stream_vector_field_widget,
+				  field_manager, NULL);
+		  }
+		  if (settings_editor->texture_coord_field_widget)
+		  {
+			  CHOOSE_OBJECT_CHANGE_MANAGER(Computed_field)(
+				  settings_editor->texture_coord_field_widget,
+				  field_manager, NULL);
+		  }
+		  if (settings_editor->data_field_widget)
+		  {
+			  CHOOSE_OBJECT_CHANGE_MANAGER(Computed_field)(
+				  settings_editor->data_field_widget,
+				  field_manager, NULL);
+		  }
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"settings_editor_set_chooser_manager.  Missing widget data");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"settings_editor_set_chooser_manager.  Missing widget");
+	}
+	return (return_code);
+}
+
+
 int settings_editor_set_settings(Widget settings_editor_widget,
-	struct GT_element_settings *new_settings)
+	 struct GT_element_settings *new_settings, 
+	 struct MANAGER(Computed_field) *field_manager)
 /*******************************************************************************
 LAST MODIFIED : 2 April 2003
 
@@ -3872,6 +3970,11 @@ Changes the currently chosen settings.
 	ENTER(settings_editor_set_settings);
 	if (settings_editor_widget)
 	{
+		if (field_manager)
+		{
+			 settings_editor_set_chooser_manager(
+					settings_editor_widget, field_manager);
+		}
 		/* Get the pointer to the data for the choose_settings dialog */
 		XtVaGetValues(settings_editor_widget,XmNuserData,
 			&settings_editor,NULL);

@@ -102,7 +102,8 @@ Returns the current settings.
 ==============================================================================*/
 
 int settings_editor_set_settings(Widget settings_editor_widget,
-	struct GT_element_settings *new_settings);
+	 struct GT_element_settings *new_settings, 
+	 struct MANAGER(Computed_field) *field_manager);
 /*******************************************************************************
 LAST MODIFIED : 4 November 1997
 

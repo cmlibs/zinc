@@ -7841,7 +7841,6 @@ GT_element_group and therefore have the same rendition.
 					/* Make a new GT_element_group */
 					if (gt_element_group = CREATE(GT_element_group)(
 						cmiss_region, data_cmiss_region,
-						scene->computed_field_manager,
 						scene->element_point_ranges_selection,
 						scene->element_selection,
 						scene->node_selection,

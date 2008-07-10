@@ -14627,9 +14627,8 @@ Parameter <help_mode> should be NULL when calling this function.
 					command_data->graphics_font_package;
 				g_element_command_data.default_font = command_data->default_font;
 				g_element_command_data.glyph_list = command_data->glyph_list;
-				g_element_command_data.computed_field_manager =
-					Computed_field_package_get_computed_field_manager(
-						command_data->computed_field_package);
+				g_element_command_data.computed_field_manager = 
+					 Cmiss_region_get_Computed_field_manager(region);
 				g_element_command_data.region = region;
 				g_element_command_data.root_region = command_data->root_region;
 				g_element_command_data.graphical_material_manager =

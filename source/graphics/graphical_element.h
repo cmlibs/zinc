@@ -93,7 +93,6 @@ PROTOTYPE_OBJECT_FUNCTIONS(GT_element_group);
 struct GT_element_group *CREATE(GT_element_group)(
 	struct Cmiss_region *cmiss_region,
 	struct Cmiss_region *data_cmiss_region,
-	struct MANAGER(Computed_field) *computed_field_manager,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,

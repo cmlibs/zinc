@@ -430,7 +430,8 @@ Sets the current_settings in the <gelem_editor> for editing. Updates widgets.
 {
 	enum GT_element_settings_type settings_type;
 	int have_settings, return_code;
-
+	struct MANAGER(Computed_field) *field_manager;
+	
 	ENTER(Graphical_element_editor_set_current_settings);
 	if (gelem_editor)
 	{
@@ -464,8 +465,18 @@ Sets the current_settings in the <gelem_editor> for editing. Updates widgets.
 			XtSetSensitive(gelem_editor->up_button, have_settings);
 			XtSetSensitive(gelem_editor->down_button, have_settings);
 			/* send selected object to settings editor */
+			if (gelem_editor->edit_gt_element_group)
+			{
+				 field_manager = Cmiss_region_get_Computed_field_manager(
+					 GT_element_group_get_Cmiss_region(
+						 gelem_editor->edit_gt_element_group));;
+			}
+			else
+			{
+				 field_manager = NULL;
+			}
 			settings_editor_set_settings(gelem_editor->settings_widget,
-				gelem_editor->current_settings);
+				 gelem_editor->current_settings, field_manager);
 		}
 		return_code = 1;
 	}
@@ -1025,15 +1036,19 @@ controls graying out widgets not currently in use.
 	struct Element_discretization element_discretization;
 	struct FE_field *native_discretization_field;
 	struct GT_element_group *gt_element_group;
+	struct MANAGER(Computed_field) *field_manager;
 
 	ENTER(gelem_editor_set_general_settings);
 	if (gelem_editor&&(gt_element_group=gelem_editor->edit_gt_element_group))
 	{
 		/* default_coordinate_field */
+		field_manager = Cmiss_region_get_Computed_field_manager(
+			GT_element_group_get_Cmiss_region(gt_element_group));
 		default_coordinate_field=
 			GT_element_group_get_default_coordinate_field(gt_element_group);
-		CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
-			gelem_editor->default_coordinate_field_widget,default_coordinate_field);
+		CHOOSE_OBJECT_CHANGE_MANAGER(Computed_field)(
+			gelem_editor->default_coordinate_field_widget, field_manager
+			,default_coordinate_field);
 		/* circle_discretization */
 		circle_discretization=GT_element_group_get_circle_discretization(
 			gelem_editor->edit_gt_element_group);
@@ -1651,7 +1666,10 @@ Up button press: decrease position of current_settings by 1.
 			/* By default the settings name is the position, so it needs to be updated
 			 even though the settings hasn't actually changed */
 			settings_editor_set_settings(gelem_editor->settings_widget,
-				gelem_editor->current_settings);
+				 gelem_editor->current_settings, 
+				 Cmiss_region_get_Computed_field_manager(
+						GT_element_group_get_Cmiss_region(
+							 gelem_editor->edit_gt_element_group)));
 			/* inform the client of the change */
 			graphical_element_editor_update(gelem_editor);
 		}
@@ -1699,7 +1717,10 @@ Down button press: increase position of current_settings by 1.
 			/* By default the settings name is the position, so it needs to be updated
 			 even though the settings hasn't actually changed */
 			settings_editor_set_settings(gelem_editor->settings_widget,
-				gelem_editor->current_settings);
+				 gelem_editor->current_settings,
+				 Cmiss_region_get_Computed_field_manager(
+						GT_element_group_get_Cmiss_region(
+							 gelem_editor->edit_gt_element_group)));
 			/* inform the client of the change */
 			graphical_element_editor_update(gelem_editor);
 		}
