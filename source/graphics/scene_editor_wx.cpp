@@ -599,12 +599,12 @@ public:
 				 delete seed_element_chooser;
 	 }
 
-void Scene_editor_wx_set_manager_in_field_choosers(struct Scene_editor *scene_editor)
 /***************************************************************************//**
 * Set manager in different field manager object choosers.
 * 
 * @param scene_editor scene editor to be modify
 */
+void Scene_editor_wx_set_manager_in_field_choosers(struct Scene_editor *scene_editor)
 {
 	 if (default_coordinate_field_chooser != NULL)
 			default_coordinate_field_chooser->set_manager(scene_editor->field_manager);
@@ -4413,8 +4413,6 @@ BEGIN_EVENT_TABLE(wxSceneEditor, wxFrame)
 	 EVT_CLOSE(wxSceneEditor::CloseSceneEditor)
 END_EVENT_TABLE()
 
-void scene_editor_set_active_graphical_element_group_from_scene_object(
-	 struct Scene_editor *scene_editor, struct Scene_object *scene_object)
 /***************************************************************************//**
 *AW: Reaccess both pointers of scene_editor->gt_element_group and 
 *scene_editor->edit_gt_element_group to gt_element_group if scene object is 
@@ -4424,6 +4422,8 @@ void scene_editor_set_active_graphical_element_group_from_scene_object(
 * @param scene_editor scene editor to be modified
 * @param scene_object Currently active object 
 */
+void scene_editor_set_active_graphical_element_group_from_scene_object(
+	 struct Scene_editor *scene_editor, struct Scene_object *scene_object)
 {
 	 if (scene_editor && scene_object)
 	 {
@@ -5025,12 +5025,12 @@ Sets the root scene of the <scene_editor>. Updates widgets.
 	return (return_code);
 } /* Scene_editor_set_scene */
 
-void Scene_editor_set_settings_widgets_for_scene_object(Scene_editor *scene_editor)
 /***************************************************************************//**
 * Setup the settings widgets if scene object is type graphical element group.
 * 
 * @param scene_editor scene editor to be be modified
 */
+void Scene_editor_set_settings_widgets_for_scene_object(Scene_editor *scene_editor)
 {
 	 ENTER(Scene_editor_set_settings_widgets_for_scene_object);
 	 if (scene_editor && scene_editor->scene_object)

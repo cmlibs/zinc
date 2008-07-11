@@ -171,12 +171,12 @@ Called by the
 		return (return_code);
 	} /* Managed_object_chooser::get_callback */
 
-	 int set_manager(typename Manager::Manager_type *new_manager)
 /***************************************************************************//**
 * Set the chooser manager to the one in the argument if appropriate. 
 * 
 * @param new_manager object manager to be used in this chooser
 */
+	 int set_manager(typename Manager::Manager_type *new_manager)
 	 {
 			int return_code = 1;
 			

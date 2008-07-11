@@ -3837,8 +3837,6 @@ Returns the currently chosen settings.
 	return (return_address);
 } /* settings_editor_get_settings */
 
-int settings_editor_set_chooser_manager(Widget settings_editor_widget, 
-	 struct MANAGER(Computed_field) *field_manager)
 /***************************************************************************//**
 * Change  manager of the chooser object to field manager.
 * 
@@ -3846,10 +3844,12 @@ int settings_editor_set_chooser_manager(Widget settings_editor_widget,
 * @param field_manager object manager to be set in the chooser
 * @return 1 on success, 0 on failure
 */
+int settings_editor_set_chooser_manager(Widget settings_editor_widget, 
+	 struct MANAGER(Computed_field) *field_manager)
 {
 	struct Settings_editor *settings_editor;
-	ENTER(settings_editor_set_chooser_manager);
 	int return_code = 0;
+	ENTER(settings_editor_set_chooser_manager);
 	
 	if (settings_editor_widget && field_manager)
 	{

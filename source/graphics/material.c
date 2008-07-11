@@ -4441,6 +4441,14 @@ DESCRIPTION :
 							}
 						}
 					}
+					if (vertex_program_string)
+					{
+						DEALLOCATE(vertex_program_string);
+					}
+					if (fragment_program_string)
+					{
+						DEALLOCATE(fragment_program_string);
+					}
 					DESTROY(Option_table)(&option_table);
 				}
 			}
