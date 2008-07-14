@@ -839,6 +839,10 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Image_file_format)
 		{
 			enumerator_string = "bmp";
 		} break;
+		case DICOM_FILE_FORMAT:
+		{
+			enumerator_string = "dcm";
+		} break;
 		case JPG_FILE_FORMAT:
 		{
 			enumerator_string = "jpg";
@@ -850,6 +854,10 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Image_file_format)
 		case POSTSCRIPT_FILE_FORMAT:
 		{
 			enumerator_string = "postscript";
+		} break;
+		case PNG_FILE_FORMAT:
+		{
+			enumerator_string = "png";
 		} break;
 		case RAW_FILE_FORMAT:
 		{
