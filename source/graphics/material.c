@@ -330,6 +330,9 @@ static struct Material_program *Material_program_create_from_program_strings(
 			duplicate_string(vertex_program_string);
 		material_program->fragment_program_string =
 			duplicate_string(fragment_program_string);
+#else /* defined (OPENGL_API) */
+		USE_PARAMETER(vertex_program_string);
+		USE_PARAMETER(fragment_program_string);
 #endif /* defined (OPENGL_API) */
 	}
 	else
