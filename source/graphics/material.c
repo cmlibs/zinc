@@ -325,10 +325,12 @@ static struct Material_program *Material_program_create_from_program_strings(
 
 	if (material_program = CREATE(Material_program)(MATERIAL_PROGRAM_SPECIFIED_STRINGS))
 	{
+#if defined (OPENGL_API)
 		material_program->vertex_program_string =
 			duplicate_string(vertex_program_string);
 		material_program->fragment_program_string =
 			duplicate_string(fragment_program_string);
+#endif /* defined (OPENGL_API) */
 	}
 	else
 	{
@@ -372,7 +374,6 @@ Frees the memory for the material_program.
 			{
 				glDeleteLists(material_program->display_list, 1);
 			}
-#endif /* defined (OPENGL_API) */
 			if (material_program->vertex_program_string)
 			{
 				DEALLOCATE(material_program->vertex_program_string);
@@ -381,6 +382,7 @@ Frees the memory for the material_program.
 			{
 				DEALLOCATE(material_program->fragment_program_string);
 			}
+#endif /* defined (OPENGL_API) */
 			DEALLOCATE(*material_program_address);
 			return_code=1;
 		}
@@ -3942,6 +3944,7 @@ int Material_set_material_program_strings(struct Graphical_material *material_to
 
 	if (old_program = material_to_be_modified->program)
 	{
+#if defined (OPENGL_API)
 		if (!vertex_program_string)
 		{
 			vertex_program_string = old_program->vertex_program_string;
@@ -3950,6 +3953,7 @@ int Material_set_material_program_strings(struct Graphical_material *material_to
 		{
 			fragment_program_string = old_program->fragment_program_string;
 		}
+#endif /* defined (OPENGL_API) */
 	}
 	if (material_to_be_modified->program = ACCESS(Material_program)(
 		Material_program_create_from_program_strings(
