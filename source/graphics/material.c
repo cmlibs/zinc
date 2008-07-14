@@ -86,6 +86,10 @@ enum Material_program_type
 Enumerates the main different types of vertex/fragment program for materials
 ==============================================================================*/
 {
+	/* This type is for Material_programs which have arbitrary specified strings
+	 * rather than the program being generated based on this type value.
+	 */
+	MATERIAL_PROGRAM_SPECIFIED_STRINGS = 0,
 	/* This first one is a standard Gouraud Shaded material, included here so
 		that it can be peeled in order independent transparency */
 	MATERIAL_PROGRAM_GOURAUD_SHADING = 1,
@@ -319,7 +323,7 @@ static struct Material_program *Material_program_create_from_program_strings(
 
 	ENTER(Material_program_create_from_program_strings);
 
-	if (material_program = CREATE(Material_program)(0))
+	if (material_program = CREATE(Material_program)(MATERIAL_PROGRAM_SPECIFIED_STRINGS))
 	{
 		material_program->vertex_program_string =
 			duplicate_string(vertex_program_string);
