@@ -1178,6 +1178,7 @@ int Cmiss_field_image_write(Cmiss_field_image_id image_field,
 	struct Cmgui_image *cmgui_image;
 
 	ENTER(Cmiss_field_image_write);
+	return_code = 1;
 	if (image_field && (cmgui_image_information =
 		(struct Cmgui_image_information *)storage_information))
 	{
