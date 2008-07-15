@@ -7331,6 +7331,7 @@ that the images be adjoined in the single file.
 	char *file_name;
 	int i, number_of_file_names, return_code;
 #if defined (IMAGEMAGICK)
+	char *magick_file_name;
 	ExceptionInfo magick_exception;
 	Image *local_magick_image, *magick_image, *temp_next, *temp_previous;
 	ImageInfo *magick_image_info;
@@ -7356,24 +7357,35 @@ that the images be adjoined in the single file.
 			for (i = 0; (i < number_of_file_names) && return_code; i++)
 			{
 				file_name = cmgui_image_information->file_names[i];
+				/* If we are writing to memory then we need to set the filename
+				 * in the image_info, otherwise we set it in the image itself.
+				 */
+				if (cmgui_image_information->write_to_memory_block)
+				{
+					magick_file_name = magick_image_info->filename;
+				}
+				else
+				{
+					magick_file_name = magick_image->filename;
+				}
 				if ((!strchr(file_name, ':')) && (UNKNOWN_IMAGE_FILE_FORMAT !=
 					cmgui_image_information->image_file_format))
 				{
 					if (RGB_FILE_FORMAT == cmgui_image_information->image_file_format)
 					{
 						/* rgb is used in cmgui to denote the sgi rgb format */
-						sprintf(magick_image->filename, "sgi:%s", file_name);
+						sprintf(magick_file_name, "sgi:%s", file_name);
 					}
 					else
 					{
-						sprintf(magick_image->filename, "%s:%s",
+						sprintf(magick_file_name, "%s:%s",
 							Image_file_format_extension(
 								cmgui_image_information->image_file_format), file_name);
 					}
 				}
 				else
 				{
-					strcpy(magick_image->filename, file_name);
+					strcpy(magick_file_name, file_name);
 				}
 				/* image magick seems to use 16-bit components internally so assume
 					 we have to force output to be 8 bits if only 8-bits used */
@@ -7447,6 +7459,8 @@ that the images be adjoined in the single file.
 				}
 				if (cmgui_image_information->write_to_memory_block)
 				{
+					SetImageInfo(magick_image_info, MagickFalse, &magick_exception);
+
 					/* Need to use the correct pointer type for the API */
 					size_t magick_memory_block_length;
 					if (cmgui_image_information->memory_block =
