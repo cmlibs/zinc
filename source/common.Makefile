@@ -141,8 +141,8 @@ else # ABI
 endif # ABI
 
 OBJ_SUFFIX = o
-CCOFLAG = "-o "
-LINKOFLAG = "-o "
+CCOFLAG = -o 
+LINKOFLAG = -o 
 
 ifeq ($(SYSNAME:IRIX%=),)
    ifneq ($(ABI),64)
