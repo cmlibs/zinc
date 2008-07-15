@@ -45,7 +45,9 @@ extern "C" {
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#if !defined (WIN32_SYSTEM)
 #include <unistd.h>
+#endif /* !defined (WIN32_SYSTEM) */
 #include "general/debug.h"
 #include "comfile/comfile.h"
 #if defined (MOTIF)

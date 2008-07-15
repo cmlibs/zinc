@@ -77,6 +77,8 @@ return to direct rendering, as described with these routines.
 #include "three_d_drawing/movie_extensions.h"
 #include "user_interface/message.h"
 
+#define ENABLE_TEXTURE_TILING
+
 /*
 Module types
 ------------

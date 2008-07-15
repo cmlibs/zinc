@@ -50,8 +50,14 @@ streams.
 #include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
+#if defined (IMAGEMAGICK)
+/* Should probably separate the inclusion of these libraries from the 
+   rest of Imagemagick, do this internally but could put that up to makefile */
+#define HAVE_ZLIB
 #include <zlib.h>
+#define HAVE_BZLIB
 #include <bzlib.h>
+#endif /* defined (IMAGEMAGICK) */
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/debug.h"
@@ -146,19 +152,25 @@ DESCRIPTION :
 	/* IO_STREAM_FILE_TYPE */
 	FILE *file_handle;
 
+#if defined (HAVE_ZLIB)
 	/* IO_STREAM_GZIP_FILE_TYPE */
 	gzFile *gzip_file_handle;
+#endif /* defined (HAVE_ZLIB) */
 
+#if defined (HAVE_BZLIB)
 	/* IO_STREAM_BZ2_FILE_TYPE */
 	BZFILE *bz2_file_handle;
+#endif /* defined (HAVE_BZLIB) */
 
 	/* IO_STREAM_MEMORY_TYPE */
 	struct IO_memory_block *memory_block;
 	int memory_block_index;
 
-	/* IO_STREAM_BZ2_FILE_TYPE */
+#if defined (HAVE_BZLIB)
+	/* IO_STREAM_BZ2_MEMORY_TYPE */
 	bz_stream *bz2_memory_stream;
 	int last_bz2_return;
+#endif /* defined (HAVE_BZLIB) */
 
 }; /* struct IO_stream */
 
@@ -451,19 +463,25 @@ DESCRIPTION :
 			/* IO_STREAM_FILE_TYPE */
 			io_stream->file_handle = (FILE *)NULL;
 			
+#if defined (HAVE_ZLIB)
 			/* IO_STREAM_GZIP_FILE_TYPE */
 			io_stream->gzip_file_handle = (gzFile *)NULL;
+#endif /* defined (HAVE_ZLIB) */
 
+#if defined (HAVE_BZLIB)
 			/* IO_STREAM_BZ2_FILE_TYPE */
 			io_stream->bz2_file_handle = (BZFILE *)NULL;
+#endif /* defined (HAVE_BZLIB) */
 
 			/* IO_STREAM_MEMORY_TYPE */
 			io_stream->memory_block = (struct IO_memory_block *)NULL;
 			io_stream->memory_block_index = 0;
 
+#if defined (HAVE_BZLIB)
 			/* IO_STREAM_BZ2_MEMORY_TYPE */
 			io_stream->bz2_memory_stream = (bz_stream *)NULL;
 			io_stream->last_bz2_return = BZ_OK;
+#endif /* defined (HAVE_BZLIB) */
 		}
 		else
 		{
@@ -512,6 +530,7 @@ DESCRIPTION :
 				}
 				else if (!strncmp(".bz2", stream_uri + strlen(stream_uri) - 4, 4))
 				{
+#if defined (HAVE_BZLIB)
 					stream->type = IO_STREAM_BZ2_MEMORY_TYPE;
 					ALLOCATE(stream->bz2_memory_stream, bz_stream, 1);
 					stream->bz2_memory_stream->next_in = (char *)NULL;
@@ -530,9 +549,14 @@ DESCRIPTION :
 							/*debug*/0, /*small_memory*/0))
 					{
 						display_message(ERROR_MESSAGE,
-							"IO_stream_open. Error initialiseing bz2 memory stream.");
+							"IO_stream_open. Error initialising bz2 memory stream.");
 						return_code = 0;
 					}
+#else /* defined (HAVE_BZLIB) */
+				        display_message(ERROR_MESSAGE,
+							"IO_stream_open. Support for bz2 memory stream not compiled in.");
+					return_code = 0;
+#endif /* defined (HAVE_BZLIB) */
 				}
 				else
 				{
@@ -568,6 +592,7 @@ DESCRIPTION :
 				{
 					filename = stream_uri;
 				}
+#if defined (HAVE_ZLIB)
 				if (!strncmp(".gz", filename + strlen(filename) - 3, 3))
 				{
 					if (stream->gzip_file_handle = gzopen(filename, "rb"))
@@ -581,7 +606,10 @@ DESCRIPTION :
 						return_code = 1;
 					}
 				}
-				else if (!strncmp(".bz2", stream_uri + strlen(stream_uri) - 4, 4))
+				else 
+#endif /* defined (HAVE_ZLIB) */
+#if defined (HAVE_BZLIB)
+                                    if (!strncmp(".bz2", stream_uri + strlen(stream_uri) - 4, 4))
 				{
 					if (stream->bz2_file_handle = BZ2_bzopen(filename, "rb"))
 					{
@@ -595,6 +623,7 @@ DESCRIPTION :
 					}
 				}
 				else
+#endif /* defined (HAVE_BZLIB) */
 				{
 					if (stream->file_handle = fopen(filename, "r"))
 					{
@@ -689,17 +718,21 @@ DESCRIPTION :
 
 				switch (stream->type)
 				{		
+#if defined (HAVE_ZLIB)
 					case IO_STREAM_GZIP_FILE_TYPE:
 					{
 						read_characters = gzread(stream->gzip_file_handle, stream->buffer + stream->buffer_valid_index,
 							stream->buffer_chunk_size);
 					} break;
+#endif /* defined (HAVE_ZLIB) */
+#if defined (HAVE_BZLIB)
 					case IO_STREAM_BZ2_FILE_TYPE:
 					{
 						read_characters = BZ2_bzread(stream->bz2_file_handle, stream->buffer + stream->buffer_valid_index,
 							stream->buffer_chunk_size);
 				
 					} break;
+#endif /* defined (HAVE_BZLIB) */
 #if defined (IO_STREAM_SPEED_UP_SSCANF)
 					case IO_STREAM_MEMORY_TYPE:
 					{
@@ -723,6 +756,7 @@ DESCRIPTION :
 						stream->memory_block_index += read_characters;
 					} break;
 #endif /* defined (IO_STREAM_SPEED_UP_SSCANF) */
+#if defined (HAVE_BZLIB)
 					case IO_STREAM_BZ2_MEMORY_TYPE:
 					{
 						if (stream->last_bz2_return == BZ_STREAM_END)
@@ -755,6 +789,7 @@ DESCRIPTION :
 							}
 						}
 					} break;
+#endif /* defined (HAVE_BZLIB) */
 					default:
 					{
 						display_message(ERROR_MESSAGE,
@@ -1456,11 +1491,14 @@ DESCRIPTION :
 								bytes_read = fread(stream->data + total_read, 1, read_to_memory_chunk,
 									stream->file_handle);
 							} break;
+#if defined (HAVE_ZLIB)
 							case IO_STREAM_GZIP_FILE_TYPE:
 							{
 								bytes_read = gzread(stream->gzip_file_handle, stream->data + total_read,
 									read_to_memory_chunk);
 							} break;
+#endif /* defined (HAVE_ZLIB) */
+#if defined (HAVE_BZLIB)
 							case IO_STREAM_BZ2_FILE_TYPE:
 							{
 								bytes_read = BZ2_bzread(stream->bz2_file_handle, stream->data + total_read,
@@ -1484,6 +1522,7 @@ DESCRIPTION :
 								stream->memory_block_index += stream->memory_block->data_length - 
 									stream->bz2_memory_stream->avail_in;
 							} break;
+#endif /* defined (HAVE_BZLIB) */
 						}
 						total_read += bytes_read;
 					}
@@ -1599,11 +1638,13 @@ Implements the stdio function fseek on stream where possible.
 				return_code = !fseek(stream->file_handle, offset, whence);
 				stream->buffer_valid_index = 0;
 			} break;
+#if defined (HAS_ZLIB)
 			case IO_STREAM_GZIP_FILE_TYPE:
 			{
 				return_code = !gzseek(stream->file_handle, offset, whence);
 				stream->buffer_valid_index = 0;
 			} break;
+#endif /* defined (HAS_ZLIB) */
 			case IO_STREAM_BZ2_FILE_TYPE:
 			{
 				display_message(ERROR_MESSAGE, "IO_stream_seek. "
@@ -1690,16 +1731,20 @@ DESCRIPTION :
 				fclose(stream->file_handle);
 				stream->type = IO_STREAM_UNKNOWN_TYPE;
 			} break;
+#if defined (HAVE_ZLIB)
 			case IO_STREAM_GZIP_FILE_TYPE:
 			{
 				gzclose(stream->gzip_file_handle);
 				stream->type = IO_STREAM_UNKNOWN_TYPE;
 			} break;
+#endif /* defined (HAVE_ZLIB) */
+#if defined (HAVE_BZLIB)
 			case IO_STREAM_BZ2_FILE_TYPE:
 			{
 				BZ2_bzclose(stream->bz2_file_handle);
 				stream->type = IO_STREAM_UNKNOWN_TYPE;
 			} break;
+#endif /* defined (HAVE_BZLIB) */
 			case IO_STREAM_MEMORY_TYPE:
 			{
 				if (stream->memory_block)
@@ -1708,6 +1753,7 @@ DESCRIPTION :
 				}
 				stream->type = IO_STREAM_UNKNOWN_TYPE;
 			} break;
+#if defined (HAVE_BZLIB)
 			case IO_STREAM_BZ2_MEMORY_TYPE:
 			{
 				if (stream->memory_block)
@@ -1721,6 +1767,7 @@ DESCRIPTION :
 				}
 				stream->type = IO_STREAM_UNKNOWN_TYPE;
 			} break;
+#endif /* defined (HAVE_BZLIB) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,

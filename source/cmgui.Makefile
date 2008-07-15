@@ -100,6 +100,11 @@ ifeq ($(USER_INTERFACE), CARBON_USER_INTERFACE)
    TARGET_USER_INTERFACE_SUFFIX := -carbon
 endif # $(USER_INTERFACE) == CARBON_USER_INTERFACE
 
+TARGET_COMPILER_SUFFIX :=
+ifeq ($(COMPILER), msvc)
+   TARGET_COMPILER_SUFFIX := -msvc
+endif
+
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    TARGET_GRAPHICS_API_SUFFIX =
 endif # $(GRAPHICS_API) == OPENGL_GRAPHICS
@@ -159,9 +164,9 @@ ifeq ($(SYSNAME),CYGWIN%=)
    TARGET_FILETYPE_SUFFIX = .exe
 endif # SYSNAME == CYGWIN%=
 
-TARGET_SUFFIX = $(TARGET_ABI_SUFFIX)$(TARGET_GRAPHICS_API_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(UNEMAP_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_STATIC_LINK_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_PROFILE_SUFFIX)$(TARGET_MEMORYCHECK_SUFFIX)
+TARGET_SUFFIX = $(TARGET_ABI_SUFFIX)$(TARGET_GRAPHICS_API_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(TARGET_COMPILER_SUFFIX)$(UNEMAP_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_STATIC_LINK_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_PROFILE_SUFFIX)$(TARGET_MEMORYCHECK_SUFFIX)
 BIN_TARGET = $(TARGET_EXECUTABLE_BASENAME)$(TARGET_SUFFIX)$(TARGET_FILETYPE_SUFFIX)
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)$(TARGET_GRAPHICS_API_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(UNEMAP_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_PROFILE_SUFFIX)
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)$(TARGET_GRAPHICS_API_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(TARGET_COMPILER_SUFFIX)$(UNEMAP_SUFFIX)$(MAINLOOP_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_PROFILE_SUFFIX)
 ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
    XRCH_PATH=$(CMGUI_DEV_ROOT)/xrch/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)
 endif # $(USER_INTERFACE) == WX_USER_INTERFACE
@@ -289,7 +294,11 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
       endif # $(USER_INTERFACE) != MOTIF_USER_INTERFACE
     endif # $(OPERATING_SYSTEM) == darwin
     ifeq ($(OPERATING_SYSTEM),win32)
-      GRAPHICS_LIB += -lopengl32 -lglu32
+      ifeq ($(COMPILER),msvc)
+        GRAPHICS_LIB += opengl32.lib glu32.lib
+      else
+        GRAPHICS_LIB += -lopengl32 -lglu32
+      endif
     else # $(OPERATING_SYSTEM) == win32
       GRAPHICS_LIB += -lGL -lGLU
     endif # $(OPERATING_SYSTEM) == win32 
@@ -309,7 +318,7 @@ else # LINK_CMISS
    WORMHOLE_LIB = -L${WORMHOLE_PATH}/lib/$(LIB_ARCH_DIR) -lwormhole
 endif # LINK_CMISS
 
-ifndef IMAGEMAGICK
+ifneq ($(IMAGEMAGICK),true)
    IMAGEMAGICK_DEFINES =
    IMAGEMAGICK_LIB = 
 else # ! IMAGEMAGICK
@@ -324,7 +333,7 @@ else # ! IMAGEMAGICK
       #When this first appeared it seemed to be configured for most versions, now it seems to be configured for very few.  Assume we need it only if it is found.
       IMAGEMAGICK_LIB += $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libltdl.a
    endif
-ifdef USE_XML2
+ifeq ($(USE_XML2),true)
    IMAGEMAGICK_LIB += $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libxml2.a
 endif # USE_XML2
 
@@ -348,7 +357,7 @@ else # $(USE_ITK) == true
 endif # $(USE_ITK) == true
 
 
-ifndef PERL_INTERPRETER
+ifneq ($(PERL_INTERPRETER),true)
    INTERPRETER_INC =
    INTERPRETER_DEFINES = 
    INTERPRETER_SRCS =
@@ -490,7 +499,7 @@ else # ! CELL
    XML_INC = -I$(XML_PATH)/include
 endif # ! CELL
 
-ifndef USE_XML2
+ifneq ($(USE_XML2),true)
    XML2_PATH =
    XML2_DEFINES =
    XML2_INC =
@@ -731,10 +740,14 @@ ifeq ($(SYSNAME),AIX)
    LIB = -lm -ldl -lSM -lICE -lpthread -lcrypt -lbsd -lld -lC128
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
-   LIB = -lws2_32 -lgdi32 -lmsimg32 -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32 -lstdc++
-	ifeq ($(USE_COMPUTED_VARIABLES),true)
-		LIB += -lg2c
-	endif # USE_COMPTED_VARAIABLES == true
+   ifeq ($(COMPILER),msvc)
+     LIB = /link /libpath:"C:\Program Files\\Microsoft SDKs\Windows\v6.0A\lib" /libpath:"C:\Program Files\\Microsoft Visual Studio 9.0\VC\lib" ws2_32.lib gdi32.lib msimg32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib netapi32.lib uuid.lib wsock32.lib mpr.lib winmm.lib version.lib odbc32.lib user32.lib
+   else
+     LIB = -lws2_32 -lgdi32 -lmsimg32 -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32 -lstdc++
+   endif
+   ifeq ($(USE_COMPUTED_VARIABLES),true)
+       LIB += -lg2c
+   endif # USE_COMPTED_VARAIABLES == true
 endif # SYSNAME == win32
 ifeq ($(SYSNAME),Darwin)
       # The lib -lSystemStubs is used to resolve some linking differences between some code
@@ -1379,21 +1392,21 @@ endif # $(USER_INTERFACE) == WIN32_USER_INTERFACE
 SRCS = $(SRCS_1) $(SRCS_2)
 
 ifneq ($(MEMORYCHECK),true)
-   OBJSA = $(SRCS:.c=.o)
-   OBJSB = $(OBJSA:.cpp=.o)
-   OBJS = $(OBJSB:.f=.o)
+   OBJSA = $(SRCS:.c=.$(OBJ_SUFFIX))
+   OBJSB = $(OBJSA:.cpp=.$(OBJ_SUFFIX))
+   OBJS = $(OBJSB:.f=.$(OBJ_SUFFIX))
 else # $(MEMORYCHECK) != true
-   OBJSA = $(SRCS:.c=.o)
-   OBJSB = $(OBJSA:.cpp=.o)
+   OBJSA = $(SRCS:.c=.$(OBJ_SUFFIX))
+   OBJSB = $(OBJSA:.cpp=.$(OBJ_SUFFIX))
    # Override the one changed file in the source list 
-   OBJSC = $(OBJSB:general/debug.o=general/debug_memory_check.o)
-   OBJS = $(OBJSC:.f=.o)
+   OBJSC = $(OBJSB:general/debug.$(OBJ_SUFFIX)=general/debug_memory_check.$(OBJ_SUFFIX))
+   OBJS = $(OBJSC:.f=.$(OBJ_SUFFIX))
 endif # $(MEMORYCHECK) != true
 
-UNEMAP_OBJS = $(UNEMAP_SRCS:.c=.o)
+UNEMAP_OBJS = $(UNEMAP_SRCS:.c=.$(OBJ_SUFFIX))
 
 MAIN_SRC = cmgui.c
-MAIN_OBJ = $(MAIN_SRC:.c=.o)
+MAIN_OBJ = $(MAIN_SRC:.c=.$(OBJ_SUFFIX))
 
 clean :
 	-rm -r $(OBJECT_PATH)
@@ -1407,18 +1420,18 @@ endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 clobber : clean
 	-rm $(BIN_PATH)/$(BIN_TARGET)
 
-$(OBJECT_PATH)/version.o.h : $(OBJS) $(UNEMAP_OBJS) cmgui.Makefile
+$(OBJECT_PATH)/version.$(OBJ_SUFFIX).h : $(OBJS) $(UNEMAP_OBJS) cmgui.Makefile
 	if [ ! -d $(OBJECT_PATH) ]; then \
 		mkdir -p $(OBJECT_PATH); \
 	fi	
-	echo '/* This is a generated file.  Do not edit.  Edit cmgui.c or cmgui.imake instead */' > $(OBJECT_PATH)/version.o.h;	  
+	echo '/* This is a generated file.  Do not edit.  Edit cmgui.c or cmgui.imake instead */' > $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h;	  
 	date > date.h
-	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 2.5.0  &/;s/.$$/&\\nCopyright 1996-2007, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
+	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 2.5.0  &/;s/.$$/&\\nCopyright 1996-2007, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h
 
-$(MAIN_OBJ) : $(MAIN_SRC) $(OBJECT_PATH)/version.o.h $(INTERPRETER_LIB)
+$(MAIN_OBJ) : $(MAIN_SRC) $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h $(INTERPRETER_LIB)
 	@set -x; \
-	cat $(OBJECT_PATH)/version.o.h $*.c > $(OBJECT_PATH)/$*.o.c ;
-	$(CC) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(OBJECT_PATH)/$*.o.c;
+	cat $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h $*.c > $(OBJECT_PATH)/$*.$(OBJ_SUFFIX).c ;
+	$(CC) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(OBJECT_PATH)/$*.$(OBJ_SUFFIX).c;
 
 # We want to limit the dynamic symbols in the final executable so that
 # dlopen routines can't access symbols we don't want them to */
@@ -1529,6 +1542,38 @@ ifeq ($(OPERATING_SYSTEM),linux)
    endif # STATIC_LINK) != true
 endif # SYSNAME == Linux
 ifeq ($(OPERATING_SYSTEM), win32)
+   ifeq ($(COMPILER),msvc)
+   ifneq ($(EXPORT_EVERYTHING),true)
+      define BuildExportsFile
+			@if [ ! -d $(OBJECT_PATH) ]; then \
+				mkdir -p $(OBJECT_PATH); \
+			fi
+			@if [ -f $(OBJECT_PATH)/$(2).c ]; then \
+				rm $(OBJECT_PATH)/$(2).c; \
+			fi
+			cp $(1) $(OBJECT_PATH)/$(2).c
+			cd $(OBJECT_PATH) ; $(CPREPROCESS) $(ALL_DEFINES) $(3) $(2).c -o $(OBJECT_PATH)/$(2).i
+			echo > $(OBJECT_PATH)/$(2)	'EXPORTS'
+			cat $(OBJECT_PATH)/$(2).i >> $(OBJECT_PATH)/$(2)
+      endef
+
+      # The .link extension prevents the makefile predecessor cycle 
+      EXPORTS_FILE = cmgui.exports.def
+      SRC_EXPORTS_FILE = cmgui.exports
+      EXPORTS_DEPEND = $(OBJECT_PATH)/$(EXPORTS_FILE)
+      EXPORTS_LINK_FLAGS = 
+      SO_LIB_EXPORTS_LINK_FLAGS = 
+      $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
+			$(call BuildExportsFile,$(SRC_EXPORTS_FILE),$(EXPORTS_FILE),)
+
+   else # $(EXPORT_EVERYTHING) != true
+      EXPORTS_FILE = no.exports
+      EXPORTS_LINK_FLAGS = -Wl,--export-all-symbols
+      SO_LIB_EXPORTS_LINK_FLAGS = $(EXPORTS_LINK_FLAGS)
+      $(OBJECT_PATH)/$(EXPORTS_FILE) :	
+			touch $(OBJECT_PATH)/$(EXPORTS_FILE)
+   endif # $(EXPORT_EVERYTHING) != true
+   else
    ifneq ($(EXPORT_EVERYTHING),true)
       define BuildExportsFile
 			@if [ ! -d $(OBJECT_PATH) ]; then \
@@ -1559,6 +1604,7 @@ ifeq ($(OPERATING_SYSTEM), win32)
       $(OBJECT_PATH)/$(EXPORTS_FILE) :	
 			touch $(OBJECT_PATH)/$(EXPORTS_FILE)
    endif # $(EXPORT_EVERYTHING) != true
+   endif # $(COMPILER) == msvc
 endif # OPERATING_SYSTEM == win32
 
 RESOURCE_FILES = 
@@ -1614,7 +1660,7 @@ LIB_GENERAL_SRCS = \
 	general/value.c \
 	user_interface/message.c
 
-LIB_GENERAL_OBJS = $(addsuffix .o,$(basename $(LIB_GENERAL_SRCS)))
+LIB_GENERAL_OBJS = $(addsuffix .$(OBJ_SUFFIX),$(basename $(LIB_GENERAL_SRCS)))
 $(SO_LIB_GENERAL_TARGET) : $(LIB_GENERAL_OBJS) cmgui.Makefile
 	$(call BuildSharedLibraryTarget,$(SO_LIB_GENERAL_BASE),$(BIN_PATH),$(LIB_GENERAL_OBJS),$(ALL_SO_LINK_FLAGS) $(SO_LIB_GENERAL_EXTRA_ARGS) $(SOLIB_LIB),$(SO_LIB_GENERAL_SONAME))
 
@@ -1634,7 +1680,7 @@ LIB_CORE_FIELDS_SRCS = \
 	$(COMPUTED_FIELD_CORE_SRCS) \
 	$(REGION_SRCS)
 
-LIB_CORE_FIELDS_OBJS = $(addsuffix .o,$(basename $(LIB_CORE_FIELDS_SRCS)))
+LIB_CORE_FIELDS_OBJS = $(addsuffix .$(OBJ_SUFFIX),$(basename $(LIB_CORE_FIELDS_SRCS)))
 
 $(SO_LIB_CORE_FIELDS_TARGET) : $(LIB_CORE_FIELDS_OBJS) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
 	$(call BuildSharedLibraryTarget,$(SO_LIB_CORE_FIELDS_BASE),$(BIN_PATH),$(LIB_CORE_FIELDS_OBJS),$(ALL_SO_LINK_FLAGS) $(SO_LIB_CORE_FIELDS_EXTRA_ARGS) $(SOLIB_LIB),$(SO_LIB_CORE_FIELDS_SONAME),$(BIN_PATH)/$(SO_LIB_GENERAL_BASE))
@@ -1691,7 +1737,7 @@ ifeq ($(USE_COMPUTED_VARIABLES), true)
 	api/cmiss_variable_coordinates.c \
 	api/cmiss_variable_derivative.c \
 	api/cmiss_variable_identity.c	
-LIB_COMPUTED_VARIABLE_OBJS = $(addsuffix .o,$(basename $(LIB_COMPUTED_VARIABLE_SRCS)))
+LIB_COMPUTED_VARIABLE_OBJS = $(addsuffix .$(OBJ_SUFFIX),$(basename $(LIB_COMPUTED_VARIABLE_SRCS)))
 $(SO_LIB_COMPUTED_VARIABLE_TARGET) : $(LIB_COMPUTED_VARIABLE_OBJS) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
 	$(call BuildSharedLibraryTarget,$(SO_LIB_COMPUTED_VARIABLE_BASE),$(BIN_PATH),$(LIB_COMPUTED_VARIABLE_OBJS),$(ALL_SO_LINK_FLAGS) $(SO_LIB_COMPUTED_VARIABLE_EXTRA_ARGS) $(SOLIB_LIB),$(SO_LIB_COMPUTED_VARIABLE_SONAME),$(BIN_PATH)/$(SO_LIB_GENERAL_BASE))
 
@@ -1711,7 +1757,7 @@ $(SO_LIB_COMPUTED_VARIABLE_TARGET) : $(LIB_COMPUTED_VARIABLE_OBJS) $(SO_LIB_GENE
 	api/cmiss_variable_new_finite_element.cpp \
 	computed_variable/function_integral.cpp
 
-LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS = $(addsuffix .o,$(basename $(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SRCS)))
+LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS = $(addsuffix .$(OBJ_SUFFIX),$(basename $(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SRCS)))
 
 $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET) : $(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS) $(SO_LIB_COMPUTED_VARIABLE_TARGET) $(SO_LIB_CORE_FIELDS_TARGET) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
 	$(call BuildSharedLibraryTarget,$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_BASE),$(BIN_PATH),$(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS),$(ALL_SO_LINK_FLAGS) $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_EXTRA_FLAGS),$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SONAME), $(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_BASE) $(BIN_PATH)/$(SO_LIB_CORE_FIELDS_BASE) $(BIN_PATH)/$(SO_LIB_GENERAL_BASE))
@@ -1720,7 +1766,7 @@ endif # USE_COMPUTED_VARIABLES == true
 LIB_PASS_THROUGH_SRCS = \
 	command/pass_through_interpreter.c
 
-LIB_PASS_THROUGH_OBJS = $(addsuffix .o,$(basename $(LIB_PASS_THROUGH_SRCS)))
+LIB_PASS_THROUGH_OBJS = $(addsuffix .$(OBJ_SUFFIX),$(basename $(LIB_PASS_THROUGH_SRCS)))
 PASS_THROUGH_INTERPRETER_LIB_TARGET = libpassthroughinterpreter$(STATIC_LIB_SUFFIX)
 $(PASS_THROUGH_INTERPRETER_LIB_TARGET) : $(LIB_PASS_THROUGH_OBJS)
 	$(call BuildStaticLibraryTarget,$(PASS_THROUGH_INTERPRETER_LIB_TARGET),$(BIN_PATH),$(LIB_PASS_THROUGH_OBJS) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libpcre.a)
@@ -1749,7 +1795,7 @@ ifeq ($(USE_COMPUTED_VARIABLES), true)
   REMAINING_LIB_SRCS = \
 	$(filter-out $(LIB_GENERAL_SRCS) $(LIB_CORE_FIELDS_SRCS) $(LIB_COMPUTED_VARIABLE_SRCS) $(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SRCS), $(SRCS))
 
-  REMAINING_LIB_OBJS = $(addsuffix .o,$(basename $(REMAINING_LIB_SRCS)))
+  REMAINING_LIB_OBJS = $(addsuffix .$(OBJ_SUFFIX),$(basename $(REMAINING_LIB_SRCS)))
 # SAB We are not resolving everything here (i.e. $(ALL_SO_LINK_FLAGS)) as we want to bind
 # to the appropriate interpreter at runtime.  We could settle on a standard interpreter
 # so_name but that would have to be used by the actual external Cmiss::Perl_cmiss
@@ -1763,7 +1809,7 @@ else # USE_COMPUTED)VARIABLES == true
   REMAINING_LIB_SRCS = \
 	$(filter-out $(LIB_GENERAL_SRCS) $(LIB_CORE_FIELDS_SRCS), $(SRCS))
 
-  REMAINING_LIB_OBJS = $(addsuffix .o,$(basename $(REMAINING_LIB_SRCS)))
+  REMAINING_LIB_OBJS = $(addsuffix .$(OBJ_SUFFIX),$(basename $(REMAINING_LIB_SRCS)))
 # SAB We are not resolving everything here (i.e. $(ALL_SO_LINK_FLAGS)) as we want to bind
 # to the appropriate interpreter at runtime.  We could settle on a standard interpreter
 # so_name but that would have to be used by the actual external Cmiss::Perl_cmiss
@@ -1791,18 +1837,18 @@ force :
 ifeq ($(MEMORYCHECK),true)
    # Specify rule for making a memory checking object with the normal c file 
    # This allows us to make a memory checking version without creating a new extension
-   general/debug_memory_check.o: general/debug.c general/debug.h
+   general/debug_memory_check.$(OBJ_SUFFIX): general/debug.c general/debug.h
 		if [ ! -d $(OBJECT_PATH)/general ]; then \
 			mkdir -p $(OBJECT_PATH)/general; \
 		fi
-		$(CC) -o $(OBJECT_PATH)/general/debug_memory_check.o $(ALL_FLAGS) -DMEMORY_CHECKING general/debug.c;
+		$(CC) -o $(OBJECT_PATH)/general/debug_memory_check.$(OBJ_SUFFIX) $(ALL_FLAGS) -DMEMORY_CHECKING general/debug.c;
 
    general/debug_memory_check.d : general/debug.c general/debug.h
 		@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
 			mkdir -p $(OBJECT_PATH)/$(*D); \
 		fi
 		@set -x ; $(MAKEDEPEND) $(ALL_FLAGS) $(STRICT_FLAGS) $<  | \
-		sed -e 's%^.*\.o%$*.o $(OBJECT_PATH)/$*.d%;s%$(SOURCE_PATH)/%%g;s%$(PRODUCT_SOURCE_PATH)/%%g' > $(OBJECT_PATH)/$*.d ;
+		sed -e 's%^.*\.o%$*.$(OBJ_SUFFIX) $(OBJECT_PATH)/$*.d%;s%$(SOURCE_PATH)/%%g;s%$(PRODUCT_SOURCE_PATH)/%%g' > $(OBJECT_PATH)/$*.d ;
 endif # $(MEMORYCHECK) == true
 
 utilities : SpacesToTabs TabsToSpaces
@@ -1810,9 +1856,9 @@ utilities : SpacesToTabs TabsToSpaces
 SPACES_TO_TABS_SRCS = \
 	utilities/spaces_to_tabs.c
 
-SPACES_TO_TABS_OBJSA = $(SPACES_TO_TABS_SRCS:.c=.o)
-SPACES_TO_TABS_OBJSB = $(SPACES_TO_TABS_OBJSA:.cpp=.o)
-SPACES_TO_TABS_OBJS = $(SPACES_TO_TABS_OBJSB:.f=.o)
+SPACES_TO_TABS_OBJSA = $(SPACES_TO_TABS_SRCS:.c=.$(OBJ_SUFFIX))
+SPACES_TO_TABS_OBJSB = $(SPACES_TO_TABS_OBJSA:.cpp=.$(OBJ_SUFFIX))
+SPACES_TO_TABS_OBJS = $(SPACES_TO_TABS_OBJSB:.f=.$(OBJ_SUFFIX))
 BUILD_SPACES_TO_TABS = $(call BuildNormalTarget,SpacesToTabs,$(UTILITIES_PATH),$(SPACES_TO_TABS_OBJS),-lm) 
 
 SpacesToTabs: $(SPACES_TO_TABS_OBJS)
@@ -1821,9 +1867,9 @@ SpacesToTabs: $(SPACES_TO_TABS_OBJS)
 TABS_TO_SPACES_SRCS = \
 	utilities/tabs_to_spaces.c
 
-TABS_TO_SPACES_OBJSA = $(TABS_TO_SPACES_SRCS:.c=.o)
-TABS_TO_SPACES_OBJSB = $(TABS_TO_SPACES_OBJSA:.cpp=.o)
-TABS_TO_SPACES_OBJS = $(TABS_TO_SPACES_OBJSB:.f=.o)
+TABS_TO_SPACES_OBJSA = $(TABS_TO_SPACES_SRCS:.c=.$(OBJ_SUFFIX))
+TABS_TO_SPACES_OBJSB = $(TABS_TO_SPACES_OBJSA:.cpp=.$(OBJ_SUFFIX))
+TABS_TO_SPACES_OBJS = $(TABS_TO_SPACES_OBJSB:.f=.$(OBJ_SUFFIX))
 BUILD_TABS_TO_SPACES = $(call BuildNormalTarget,TabsToSpaces,$(UTILITIES_PATH),$(TABS_TO_SPACES_OBJS),-lm) 
 
 TabsToSpaces: $(TABS_TO_SPACES_OBJS)
@@ -1831,7 +1877,7 @@ TabsToSpaces: $(TABS_TO_SPACES_OBJS)
 
 DEPENDFILE = $(OBJECT_PATH)/$(BIN_TARGET).depend
 
-DEPEND_FILES = $(OBJS:%.o=%.d) $(UNEMAP_OBJS:%.o=%.d) $(MAIN_OBJ:%.o=%.d) $(SPACES_TO_TABS_OBJS:%.o=%.d) $(TABS_TO_SPACES_OBJS:%.o=%.d) $(LIB_PASS_THROUGH_OBJS:%.o=%.d)
+DEPEND_FILES = $(OBJS:%.$(OBJ_SUFFIX)=%.d) $(UNEMAP_OBJS:%.$(OBJ_SUFFIX)=%.d) $(MAIN_OBJ:%.$(OBJ_SUFFIX)=%.d) $(SPACES_TO_TABS_OBJS:%.$(OBJ_SUFFIX)=%.d) $(TABS_TO_SPACES_OBJS:%.$(OBJ_SUFFIX)=%.d) $(LIB_PASS_THROUGH_OBJS:%.$(OBJ_SUFFIX)=%.d)
 #Look in the OBJECT_PATH
 DEPEND_FILES_OBJECT_PATH = $(DEPEND_FILES:%.d=$(OBJECT_PATH)/%.d)
 DEPEND_FILES_OBJECT_FOUND = $(wildcard $(DEPEND_FILES_OBJECT_PATH))

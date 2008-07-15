@@ -46,7 +46,9 @@ Functions for executing cmiss commands.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if !defined (WIN32_SYSTEM)
 #include <unistd.h>
+#endif /* !defined (WIN32_SYSTEM) */
 #include <math.h>
 #include <time.h>
 #if defined (MOTIF)
@@ -542,7 +544,7 @@ to change the interactive tool settings.
 }
 #endif /*(WX_USER_INTERFACE)*/
 
-#if defined (WX_USER_INTERFACE) && (__WIN32__)
+#if defined (WX_USER_INTERFACE) && defined (__WIN32__)
 char *CMISS_set_directory_and_filename_WIN32(char *file_name,
 	struct Cmiss_command_data *command_data)
 /*******************************************************************************
@@ -2176,13 +2178,16 @@ Executes a GFX CREATE ELEMENT_SELECTION_CALLBACK command.
 		perl_action = (char *)NULL;
 		
 		option_table=CREATE(Option_table)();
+#if defined (PERL_INTERPRETER)
 		/* perl_action */
 		Option_table_add_entry(option_table,"perl_action", &perl_action, (void *)1,
 			set_name);
+#endif /* defined (PERL_INTERPRETER) */
 		return_code = Option_table_multi_parse(option_table,state);
 		DESTROY(Option_table)(&option_table);
 		if (return_code)
 		{
+#if defined (PERL_INTERPRETER)
 			if (!perl_action)
 			{
 				display_message(ERROR_MESSAGE,
@@ -2213,6 +2218,7 @@ Executes a GFX CREATE ELEMENT_SELECTION_CALLBACK command.
 					return_code=0;
 				}
 			}
+#endif /* defined (PERL_INTERPRETER) */
 		}
 		if (perl_action)
 		{
@@ -4026,13 +4032,16 @@ Executes a GFX CREATE NODE_SELECTION_CALLBACK command.
 		perl_action = (char *)NULL;
 		
 		option_table=CREATE(Option_table)();
+#if defined (PERL_INTERPRETER)
 		/* perl_action */
 		Option_table_add_entry(option_table,"perl_action", &perl_action, (void *)1,
 			set_name);
+#endif /* defined (PERL_INTERPRETER) */
 		return_code = Option_table_multi_parse(option_table,state);
 		DESTROY(Option_table)(&option_table);
 		if (return_code)
 		{
+#if defined (PERL_INTERPRETER)
 			if (!perl_action)
 			{
 				display_message(ERROR_MESSAGE,
@@ -4063,6 +4072,7 @@ Executes a GFX CREATE NODE_SELECTION_CALLBACK command.
 					return_code=0;
 				}
 			}
+#endif /* defined (PERL_INTERPRETER) */
 		}
 		if (perl_action)
 		{
@@ -16697,7 +16707,7 @@ instruction to read in the mesh.
 						return_code = 0;
 					}
 				}
-#if defined (WX_USER_INTERFACE) &&  (__WIN32__)
+#if defined (WX_USER_INTERFACE) && defined (__WIN32__)
 			if (file_name)
 			{
 				 file_name = CMISS_set_directory_and_filename_WIN32(file_name, 
@@ -16809,7 +16819,7 @@ user, otherwise the elements file is read.
 					return_code = 0;
 				}
 			}
-#if defined (WX_USER_INTERFACE) &&  (__WIN32__)
+#if defined (WX_USER_INTERFACE) && defined (__WIN32__)
 			if (file_name)
 			{
 				 file_name = CMISS_set_directory_and_filename_WIN32(file_name,
@@ -17085,7 +17095,7 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 				}
 				if (return_code)
 				{
-#if defined (WX_USER_INTERFACE) &&  (__WIN32__)
+#if defined (WX_USER_INTERFACE) && defined (__WIN32__)
 			if (file_name)
 			{
 				 file_name = CMISS_set_directory_and_filename_WIN32(file_name,
@@ -20172,7 +20182,7 @@ Can also write individual element groups with the <group> option.
 					return_code = 0;
 				}
 			}
-#if defined (WX_USER_INTERFACE) && (__WIN32__)
+#if defined (WX_USER_INTERFACE) && defined (__WIN32__)
 			if (file_name)
 			{
 				 file_name = CMISS_set_directory_and_filename_WIN32(file_name,
@@ -20305,13 +20315,13 @@ If <use_data> is set, writing data, otherwise writing nodes.
 					return_code = 0;
 				}
 			}
-#if defined (WX_USER_INTERFACE) && (__WIN32__)
+#if defined (WX_USER_INTERFACE) && defined (__WIN32__)
 			if (file_name)
 			{
 				 file_name = CMISS_set_directory_and_filename_WIN32(file_name,
 						command_data); 
 			}
-#endif /* defined (WX_USER_INTERFACE) && (__WIN32__) */
+#endif /* defined (WX_USER_INTERFACE) && defined (__WIN32__) */
 			if (return_code)
 			{
 				/* open the file */
@@ -20401,13 +20411,13 @@ If <use_data> is set, writing data, otherwise writing nodes.
 					return_code = 0;
 				}
 			}
-#if defined (WX_USER_INTERFACE) && (__WIN32__)
+#if defined (WX_USER_INTERFACE) && defined (__WIN32__)
 			if (file_name)
 			{
 				 file_name = CMISS_set_directory_and_filename_WIN32(file_name,
 						command_data); 
 			}
-#endif /* defined (WX_USER_INTERFACE) && (__WIN32__) */
+#endif /* defined (WX_USER_INTERFACE) && defined (__WIN32__) */
 			if (return_code)
 			{
 				/* open the file */
@@ -21382,13 +21392,13 @@ Executes a CELL WRITE IPCELL command.
               return_code = 0;
             }
           }
-#if defined (WX_USER_INTERFACE) && (__WIN32__)
+#if defined (WX_USER_INTERFACE) && defined (__WIN32__)
 			if (file_name)
 			{
 				 file_name = CMISS_set_directory_and_filename_WIN32(file_name,
 						command_data); 
 			}
-#endif /* defined (WX_USER_INTERFACE) && (__WIN32__) */
+#endif /* defined (WX_USER_INTERFACE) && defined (__WIN32__) */
           if (file_name)
           {
             if (check_suffix(&file_name,".ipcell"))
@@ -24904,8 +24914,10 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->computed_field_package, 
 					command_data->curve_manager);
 			}
+#if defined (USE_ITK)
 			Computed_field_register_types_derivatives(
 				command_data->computed_field_package);
+#endif /* defined (USE_ITK) */
 			Computed_field_register_types_fibres(
 				command_data->computed_field_package);
 			Computed_field_register_types_function(

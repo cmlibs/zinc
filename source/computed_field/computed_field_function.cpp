@@ -198,7 +198,7 @@ Evaluate the fields cache at the location
 					result field values in case the result_field from 
 					reference_field calcualtion also involves the source field
 					and the subsequent evaluations would overwrite the current values. */
-				Field_coordinate_location *locations[field->number_of_components];
+				Field_coordinate_location **locations = new Field_coordinate_location*[field->number_of_components];
 				for (i = 0 ; i < field->number_of_components ; i++)
 				{
 					locations[i] = new Field_coordinate_location(
@@ -215,6 +215,7 @@ Evaluate the fields cache at the location
 					}
 					delete locations[i];
 				}
+				delete [] locations;
 			}
 			field->derivatives_valid = 0;
 		}

@@ -6903,6 +6903,7 @@ the <format>
 	{
 	  switch (format)
 	  {
+#if defined (IMAGEMAGICK)
 	    case CMGUI_IMAGE_RGB:
 	    {
               TransformRGBImage(cmgui_image->magick_image, RGBColorspace);
@@ -6911,6 +6912,7 @@ the <format>
 					  &cmgui_image->number_of_components,
 					  &cmgui_image->number_of_bytes_per_component, 0);
 	    } break;
+#endif /* defined (IMAGEMAGICK) */
 	    default:
 	    {
 	      display_message(ERROR_MESSAGE, "Cmgui_image_convert_format.  Format conversion not implemented");
@@ -6964,7 +6966,9 @@ and other parameters for formats that require them.
 
 	ENTER(Cmgui_image_read);
 	cmgui_image = (struct Cmgui_image *)NULL;
+#if defined (IMAGEMAGICK)
 	magick_image = (Image *)NULL;
+#endif /* defined (IMAGEMAGICK) */
 	if (cmgui_image_information && cmgui_image_information->valid &&
 		(cmgui_image_information->file_names ||
 		cmgui_image_information->memory_block))

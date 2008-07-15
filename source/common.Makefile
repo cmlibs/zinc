@@ -141,6 +141,8 @@ else # ABI
 endif # ABI
 
 OBJ_SUFFIX = o
+CCOFLAG = "-o "
+LINKOFLAG = "-o "
 
 ifeq ($(SYSNAME:IRIX%=),)
    ifneq ($(ABI),64)
@@ -307,44 +309,85 @@ ifeq ($(SYSNAME),AIX)
    endif # ABI == 64
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
-   UIL = uil
-   # CC = gcc -c -mno-cygwin -fnative-struct */
-   CC = gcc -c -mno-cygwin -mms-bitfields
-   # CC = gcc -c -mno-cygwin -mms-bitfields -D_LIB -D_MT -D_FILE_OFFSET_BITS=64
-   CPP = g++ -c -mno-cygwin -mms-bitfields
-   CPP_FLAGS =
-   FORTRAN = f77 -c -mno-cygwin -mms-bitfields
-   MAKEDEPEND = gcc -MM -MG -mno-cygwin
-   CPREPROCESS = gcc -E -P -mno-cygwin
-   LINK = g++ -mno-cygwin -fnative-struct -mms-bitfields
-   ifeq ($(filter-out CONSOLE_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
-      LINK += -mconsole 
-   else # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE || $(USER_INTERFACE) == GTK_USER_INTERFACE
-      LINK += -mwindows
-   endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE || $(USER_INTERFACE) == GTK_USER_INTERFACE
-   ifneq ($(DEBUG),true)
-      OPTIMISATION_FLAGS = -O2
-      COMPILE_DEFINES = -DOPTIMISED
-      COMPILE_FLAGS =
-      STRICT_FLAGS = -Werror
-      CPP_STRICT_FLAGS = -Werror
-      DIGITAL_MEDIA_NON_STRICT_FLAGS = 
-      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-      STRIP = strip --strip-unneeded
-      STRIP_SHARED = strip --strip-unneeded
-   else # DEBUG != true
-      OPTIMISATION_FLAGS = -g
-      COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
-      COMPILE_FLAGS =
-      STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Werror
-      CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
-      DIGITAL_MEDIA_NON_STRICT_FLAGS = 
-      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
-      STRIP =
-      STRIP_SHARED =
-   endif # DEBUG != true
-   TARGET_TYPE_FLAGS =
-   TARGET_TYPE_DEFINES =
+   ifeq ($(COMPILER),msvc)
+      CYGWIN_WRAPPER = ./cygwin-wrapper
+      CC = $(CYGWIN_WRAPPER) cl.exe -c
+      CPP = $(CYGWIN_WRAPPER) cl.exe -c
+      OBJ_SUFFIX = obj
+      CCOFLAG = -Fo
+      LINKOFLAG = -Fe
+      CPP_FLAGS =
+      MAKEDEPEND = gcc -MM -MG -mno-cygwin
+      CPREPROCESS = $(CYGWIN_WRAPPER) cl.exe /P
+      LINK = $(CYGWIN_WRAPPER) cl.exe
+      ifeq ($(filter-out CONSOLE_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
+         LINK +=  
+      else # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE || $(USER_INTERFACE) == GTK_USER_INTERFACE
+         LINK += 
+      endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE || $(USER_INTERFACE) == GTK_USER_INTERFACE
+      ifneq ($(DEBUG),true)
+         OPTIMISATION_FLAGS = 
+         COMPILE_DEFINES = -DOPTIMISED
+         COMPILE_FLAGS =
+         STRICT_FLAGS = -Werror
+         CPP_STRICT_FLAGS = -Werror
+         DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+         DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+         STRIP = 
+         STRIP_SHARED = 
+      else # DEBUG != true
+         OPTIMISATION_FLAGS = /DEBUG
+         COMPILE_DEFINES =
+         COMPILE_FLAGS =
+         STRICT_FLAGS =
+         CPP_STRICT_FLAGS =
+         DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+         DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+         STRIP =
+         STRIP_SHARED =
+      endif # DEBUG != true
+      TARGET_TYPE_FLAGS =
+      TARGET_TYPE_DEFINES =
+   else # COMPILER = msvc
+      UIL = uil
+      # CC = gcc -c -mno-cygwin -fnative-struct */
+      CC = gcc -c -mno-cygwin -mms-bitfields
+      # CC = gcc -c -mno-cygwin -mms-bitfields -D_LIB -D_MT -D_FILE_OFFSET_BITS=64
+      CPP = g++ -c -mno-cygwin -mms-bitfields
+      CPP_FLAGS =
+      FORTRAN = f77 -c -mno-cygwin -mms-bitfields
+      MAKEDEPEND = gcc -MM -MG -mno-cygwin
+      CPREPROCESS = gcc -E -P -mno-cygwin
+      LINK = g++ -mno-cygwin -fnative-struct -mms-bitfields
+      ifeq ($(filter-out CONSOLE_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
+         LINK += -mconsole 
+      else # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE || $(USER_INTERFACE) == GTK_USER_INTERFACE
+         LINK += -mwindows
+      endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE || $(USER_INTERFACE) == GTK_USER_INTERFACE
+      ifneq ($(DEBUG),true)
+         OPTIMISATION_FLAGS = -O2
+         COMPILE_DEFINES = -DOPTIMISED
+         COMPILE_FLAGS =
+         STRICT_FLAGS = -Werror
+         CPP_STRICT_FLAGS = -Werror
+         DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+         DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+         STRIP = strip --strip-unneeded
+         STRIP_SHARED = strip --strip-unneeded
+      else # DEBUG != true
+         OPTIMISATION_FLAGS = -g
+         COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
+         COMPILE_FLAGS =
+         STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Werror
+         CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
+         DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+         DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+         STRIP =
+         STRIP_SHARED =
+      endif # DEBUG != true
+      TARGET_TYPE_FLAGS =
+      TARGET_TYPE_DEFINES =
+   endif # COMPILER == msvc
 endif # SYSNAME == win32
 ifeq ($(SYSNAME),Darwin)
    OPENMOTIF_DIR = /usr/OpenMotif-2.1.31-22i
@@ -421,7 +464,7 @@ DSO_LINK = $(LINK) $(ALL_FLAGS) -shared
 .MAKEOPTS : -r
 
 .SUFFIXES :
-.SUFFIXES : .o .c .d .cpp .f
+.SUFFIXES : .$(OBJ_SUFFIX) .c .d .cpp .f
 ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
 .SUFFIXES : .xrc .xrch
 endif # USER_INTERFACE == WX_USER_INTERFACE
@@ -432,35 +475,35 @@ ifeq ($(SYSNAME),win32)
 .SUFFIXES : .res .rc
 endif # SYSNAME == win32
 
-%.o: %.c %.d
+%.$(OBJ_SUFFIX): %.c %.d
 	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
 	@case $*.c in  \
 	   $(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
-	      set -x ; $(CC) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.c;; \
+	      set -x ; $(CC) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.c;; \
 	   * ) \
-	      set -x ; $(CC) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(STRICT_FLAGS) $*.c;; \
+	      set -x ; $(CC) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(STRICT_FLAGS) $*.c;; \
 	esac ;
 
-%.o: %.cpp %.d
+%.$(OBJ_SUFFIX): %.cpp %.d
 	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
 	@case $*.cpp in  \
 		$(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
-	  set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.cpp;; \
+	  set -x ; $(CPP) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.cpp;; \
 	  * ) \
-	  set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $*.cpp;; \
+	  set -x ; $(CPP) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $*.cpp;; \
 	esac ;
 
-%.o: %.f %.d
+%.$(OBJ_SUFFIX): %.f %.d
 	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
 	@case $*.f in  \
 		* ) \
-	  set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) $(TARGET_TYPE_FLAGS) -o $(OBJECT_PATH)/$*.o $(SOURCE_DIRECTORY_INC) $*.f ;; \
+	  set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) $(TARGET_TYPE_FLAGS) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(SOURCE_DIRECTORY_INC) $*.f ;; \
 	esac ;
 
 $(OBJECT_PATH)/%.c : $(SOURCE_PATH)/%.c
@@ -476,7 +519,7 @@ else # NO_MAKE_DEPEND
 	@stem_name=$(subst $(OBJECT_PATH)/,,$*); \
    source_name=$(firstword $(wildcard $(SOURCE_PATH)/$(subst $(OBJECT_PATH)/,,$*).c $(SOURCE_PATH)/$(subst $(OBJECT_PATH)/,,$*).cpp)) ; \
 	set -x ; $(MAKEDEPEND) $(ALL_FLAGS) $(STRICT_FLAGS) $${source_name} 2> /dev/null | \
-	sed -e "s%^.*\.o%$${stem_name}.o $(OBJECT_PATH)/$${stem_name}.d%;s%$(SOURCE_PATH)/%%g;s%\([^ 	]*\.[ch]p*\)%\$$(wildcard \1)%g;" > $(OBJECT_PATH)/$${stem_name}.d ;
+	sed -e "s%^.*\.o%$${stem_name}.$(OBJ_SUFFIX) $(OBJECT_PATH)/$${stem_name}.d%;s%$(SOURCE_PATH)/%%g;s%\([^ 	]*\.[ch]p*\)%\$$(wildcard \1)%g;" > $(OBJECT_PATH)/$${stem_name}.d ;
 ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
    # Fix up the uidh references
 	@stem_name=$(subst $(OBJECT_PATH)/,,$*); \
@@ -566,9 +609,9 @@ define BuildNormalTarget
 	fi
 	cd $(OBJECT_PATH) && \
 	(echo $(3) 2>&1 > $(1).list$$$$) && \
-	$(LINK) -o $(TMPDIR)/$(1).tmp$$$$ $(ALL_FLAGS) `cat $(1).list$$$$` $(4) && \
+	$(LINK) $(LINKOFLAG)$(TMPDIR)/$(1).tmp$$$$ $(ALL_FLAGS) `cat $(1).list$$$$` $(4) && \
 	$(STRIP_TARGET) \
-   rm $(1).list$$$$ && \
+	rm $(1).list$$$$ && \
 	mv $(TMPDIR)/$(1).tmp$$$$ $(2)/$(1) ;
 endef
 

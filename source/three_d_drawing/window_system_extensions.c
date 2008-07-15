@@ -68,8 +68,8 @@ so it returns WGLEXTENSION_UNSURE, allowing the calling procedure to react
 appropriately.
 ==============================================================================*/
 {
-	USE_PARAMETER(extension_name);
 	int return_code = 0;
+	USE_PARAMETER(extension_name);
 
 	/* Could also check wglGetExtensionStringARB but if the functions are available
 		I'm going to try and use them */

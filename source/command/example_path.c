@@ -42,13 +42,17 @@ DESCRIPTION :
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <stdlib.h>
+#if !defined (WIN32_SYSTEM)
 #include <unistd.h>
+#endif /* !defined (WIN32_SYSTEM) */
 #include <sys/types.h>
 #include <signal.h>
 #include <string.h>
 #include <sys/stat.h>
+#if !defined (WIN32_SYSTEM)
 #include <sys/time.h>
 #include <fcntl.h>
+#endif /* !defined (WIN32_SYSTEM) */
 #include "general/debug.h"
 #include "user_interface/message.h"
 #include "command/example_path.h"
