@@ -713,6 +713,7 @@ be shared by multiple materials using the same program.
 									/* RGB texture */
 									append_string(&fragment_program_string,
 										"MUL		result.color.xyz, fragment.color, tex;\n"
+										"MOV	  result.color.w, fragment.color.w;\n"
 										, &error);
 								}
 								else
@@ -720,6 +721,7 @@ be shared by multiple materials using the same program.
 									/* grayscale texture */
 									append_string(&fragment_program_string,
 										"MUL		result.color.xyz, fragment.color.xyz, tex.x;\n"
+										"MOV	  result.color.w, fragment.color.w;\n"
 										, &error);
 								}
 							}
@@ -786,10 +788,10 @@ be shared by multiple materials using the same program.
 					}
 
 					append_string(&fragment_program_string,
-						"MOV		 result.depth.z, fragment.position.z;\n"
+						"MOV		 result.depth.z, eyespaceCoord.z;\n"
 						"\n"
 						"END\n"
- 						, &error);
+						, &error);
 				}
 				else if (MATERIAL_PROGRAM_CLASS_PER_PIXEL_LIGHTING & material_program->type)
 				{
