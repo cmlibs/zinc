@@ -2,18 +2,21 @@
 #Some examples uses of developer.Makefile, currently commented out.
 
 #Specify my preferred default
-#cmgui-motif-debug :
+cmgui-wx-debug :
 
 #Override variables in cmgui.Makefile by adding them to DEVELOPER_OPTIONS
-#DEVELOPER_OPTIONS += WX_DIR=/home/blackett/cmiss/wxWidgets-2.8.4/bin/
+DEVELOPER_OPTIONS += WX_DIR=/home/blackett/cmiss/wxWidgets-2.8.6/bin/ TEMPORARY_DEVELOPMENT_FLAGS=-DENABLE_TEXTURE_TILING
+#DEVELOPER_OPTIONS += WX_DIR=/home/blackett/cmiss/wxWidgets-2.8.6/bin/
 
 #DEVELOPER_OPTIONS += WX_DEBUG_FLAG=no
 
-DEVELOPER_OPTIONS += COMPILER=msvc
-DEVELOPER_OPTIONS += PERL_INTERPRETER=false
-DEVELOPER_OPTIONS += IMAGEMAGICK=false
-DEVELOPER_OPTIONS += USE_XML2=false
-DEVELOPER_OPTIONS += USE_ITK=false
+#DEVELOPER_OPTIONS += USE_LIBGDCM=true
 
-DEVELOPER_OPTIONS += TMPDIR=C:/tmp
+#DEVELOPER_OPTIONS += COMPILER=msvc
+#DEVELOPER_OPTIONS += PERL_INTERPRETER=false
+#DEVELOPER_OPTIONS += IMAGEMAGICK=false
+#DEVELOPER_OPTIONS += USE_XML2=false
+#DEVELOPER_OPTIONS += USE_ITK=false
+
+#DEVELOPER_OPTIONS += TMPDIR=C:/tmp
 
