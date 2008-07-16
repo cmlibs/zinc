@@ -613,6 +613,8 @@ contents to be modified.
 				ACCESS(Computed_field)(source_field);
 			}
 			option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+			  "An eigenvalues field returns the n eigenvalues of an (n * n) square matrix field.  Here, a 9 component source field is interpreted as a (3 * 3) matrix with the first 3 components being the first row, the next 3 components being the middle row, and so on.  The related eigenvectors field can extract the corresponding eigenvectors for the eigenvalues. See a/large_strain for an example of using the eigenvalues and eigenvectors fields.");
 			set_source_field_data.conditional_function =
 				Computed_field_is_square_matrix;
 			set_source_field_data.conditional_function_user_data = (void *)NULL;
@@ -980,6 +982,8 @@ its contents to be modified.
 				ACCESS(Computed_field)(source_field);
 			}
 			option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+			  "An eigenvectors field returns vectors corresponding to each eigenvalue from a source eigenvalues field.  For example, if 3 eigenvectors have been computed for a (3 * 3) matrix = 9 component field, the eigenvectors will be a 9 component field with the eigenvector corresponding to the first eigenvalue in the first 3 components, the second eigenvector in the next 3 components, and so on.  See a/large_strain for an example of using the eigenvalues and eigenvectors fields.");
 			/* field */
 			set_source_field_data.computed_field_manager =
 				computed_field_matrix_operations_package->computed_field_manager;
@@ -1454,6 +1458,8 @@ contents to be modified.
 				ACCESS(Computed_field)(source_field);
 			}
 			option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+			  "A matrix_invert field returns the inverse of a square matrix.  Here, a 9 component source field is interpreted as a (3 * 3) matrix with the first 3 components being the first row, the next 3 components being the middle row, and so on.  See a/current_density for an example of using the matrix_invert field.");
 			set_source_field_data.conditional_function =
 				Computed_field_is_square_matrix;
 			set_source_field_data.conditional_function_user_data = (void *)NULL;
@@ -2959,6 +2965,8 @@ already) and allows its contents to be modified.
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
 				{
 					option_table = CREATE(Option_table)();
+					Option_table_add_help(option_table,
+					  "A transpose field returns the transpose of a source matrix field.  If the source <field> has (m * n) components where m is specified by <source_number_of_rows> (with the first n components being the first row), the result is its (n * m) transpose.  See a/current_density for an example of using the matrix_invert field.");
 					Option_table_add_entry(option_table,"source_number_of_rows",
 						&source_number_of_rows,NULL,set_int_positive);
 					Option_table_add_entry(option_table,"field",&source_field,
