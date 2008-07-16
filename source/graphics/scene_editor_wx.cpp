@@ -870,7 +870,7 @@ Callback from wxChooser<Scene> when choice is made.
 								if (settings == newsettings)
 								{
 									 graphicalitemschecklist->SetSelection(i);
-									 Scene_editor_wx_UpdateGraphicalElementList(newsettings);
+									 Scene_editor_wx_UpdateSettingsType(newsettings);
 									 Scene_editor_wx_UpdateGraphicalElementSettings(newsettings);
 									 break;
 								}
@@ -1789,7 +1789,7 @@ void ResetWindow(wxSplitterEvent& event)
 								 scene_editor->lowersplitter->Show();
 								 Scene_editor_wx_set_manager_in_field_choosers(scene_editor);
 								 set_general_settings(scene_editor);
-								 Scene_editor_wx_UpdateGraphicalElementList(
+								 Scene_editor_wx_UpdateSettingsType(
 										get_settings_at_position_in_GT_element_group(
 											 scene_editor->edit_gt_element_group, selection+1));
 								 Scene_editor_wx_UpdateGraphicalElementSettings(
@@ -1875,53 +1875,7 @@ void CircleDiscretisationUpdate(wxCommandEvent &event)
 			scene_editor->edit_gt_element_group);
 }
 
-void UpdateSceneObjectList(Scene_object *scene_object)
-{
-	 if (scene_editor->scene_object) {
-			Scene_object_remove_transformation_callback(scene_editor->scene_object,
-				 Scene_editor_wx_transformation_change, (void *)scene_editor);
-	 }
-	 REACCESS(Scene_object)(&scene_editor->scene_object, scene_object);
-	 gtMatrix transformation_matrix;
-	 scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
-	 int selection =	scenechecklist->GetSelection();
-	 if (scene_object)
-	 {
-			if(scenechecklist->IsChecked(selection))
-			{
-				 Scene_object_set_visibility(scene_object, g_VISIBLE);
-			}
-			else
-			{
-				 Scene_object_set_visibility(scene_object, g_INVISIBLE);
-			}
-			Scene_object_get_transformation(scene_editor->scene_object,
-				 &transformation_matrix);
-			scene_editor->transformation_editor->transformation_editor_wx_set_transformation(
-				 &transformation_matrix);
-			Scene_object_add_transformation_callback(scene_editor->scene_object,
-				 Scene_editor_wx_transformation_change, (void *)scene_editor);
-			scene_editor->transformation_editor->transformation_editor_wx_set_current_object(
-				 scene_editor->scene_object);
-			scene_editor_set_active_graphical_element_group_from_scene_object(
-				 scene_editor, scene_object);
-			Scene_editor_set_settings_widgets_for_scene_object(scene_editor);
-	 }
-	 else
-	 {
-			if (!scene_editor->graphicalitemslistbox)
-				 scene_editor->graphicalitemslistbox = XRCCTRL(
-						*this, "GraphicalItemsListBox",wxCheckListBox);
-			scene_editor->graphicalitemslistbox->Clear();
-			scene_editor->collpane->Disable();
-			scene_editor->collpane->Hide();
-			scene_editor->lowersplitter->Disable();
-			scene_editor->lowersplitter->Hide();
-
-	 }
-}
-
-void Scene_editor_wx_UpdateGraphicalElementList(GT_element_settings *settings)
+void Scene_editor_wx_UpdateSettingsType(GT_element_settings *settings)
 {
 	 wxScrolledWindow *sceneeditingpanel= XRCCTRL(*this, "SceneEditing",wxScrolledWindow);
 	 sceneeditingpanel->Enable();
@@ -1959,7 +1913,49 @@ void SceneCheckListClicked(wxCommandEvent &event)
 	 scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
 	 currentsceneobjecttext->SetLabel(scenechecklist->GetStringSelection());
 	 int selection=scenechecklist->GetSelection();
-	 UpdateSceneObjectList(Scene_get_scene_object_at_position(scene_editor->scene,selection+1));
+	 Scene_object *new_object = 
+			Scene_get_scene_object_at_position(scene_editor->scene,selection+1);
+	 if (scene_editor->scene_object) {
+			Scene_object_remove_transformation_callback(scene_editor->scene_object,
+				 Scene_editor_wx_transformation_change, (void *)scene_editor);
+	 }
+	 REACCESS(Scene_object)(&scene_editor->scene_object, new_object);
+	 gtMatrix transformation_matrix;
+	 scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
+	 if (new_object)
+	 {
+			if(scenechecklist->IsChecked(selection))
+			{
+				 Scene_object_set_visibility(new_object, g_VISIBLE);
+			}
+			else
+			{
+				 Scene_object_set_visibility(new_object, g_INVISIBLE);
+			}
+			Scene_object_get_transformation(scene_editor->scene_object,
+				 &transformation_matrix);
+			scene_editor->transformation_editor->transformation_editor_wx_set_transformation(
+				 &transformation_matrix);
+			Scene_object_add_transformation_callback(scene_editor->scene_object,
+				 Scene_editor_wx_transformation_change, (void *)scene_editor);
+			scene_editor->transformation_editor->transformation_editor_wx_set_current_object(
+				 scene_editor->scene_object);
+			scene_editor_set_active_graphical_element_group_from_scene_object(
+				 scene_editor, new_object);
+			Scene_editor_set_settings_widgets_for_scene_object(scene_editor);
+	 }
+	 else
+	 {
+			if (!scene_editor->graphicalitemslistbox)
+				 scene_editor->graphicalitemslistbox = XRCCTRL(
+						*this, "GraphicalItemsListBox",wxCheckListBox);
+			scene_editor->graphicalitemslistbox->Clear();
+			scene_editor->collpane->Disable();
+			scene_editor->collpane->Hide();
+			scene_editor->lowersplitter->Disable();
+			scene_editor->lowersplitter->Hide();
+	 }
+
 	 if (scene_editor->lowersplitter)
 	 {
 			scene_editor->lowersplitter->GetSize(&width, &height);
@@ -1991,8 +1987,6 @@ void SceneObjectUpClicked(wxCommandEvent &event)
 			scenechecklist->Clear();
 			for_each_Scene_object_in_Scene(scene_editor->scene,
 				 add_scene_object_to_scene_check_box, (void *)scene_editor);
-			scene_editor_set_active_graphical_element_group_from_scene_object(
-				 scene_editor, scene_editor->scene_object);
 			scenechecklist->SetSelection(selection-1);
 			currentsceneobjecttext->SetLabel(scenechecklist->GetStringSelection());
 			Scene_editor_set_settings_widgets_for_scene_object(scene_editor);
@@ -2015,8 +2009,6 @@ void SceneObjectDownClicked(wxCommandEvent &event)
 			scenechecklist->Clear();
 			for_each_Scene_object_in_Scene(scene_editor->scene,
 				 add_scene_object_to_scene_check_box, (void *)scene_editor);
-			scene_editor_set_active_graphical_element_group_from_scene_object(
-				 scene_editor, scene_editor->scene_object);
 			scenechecklist->SetSelection(selection+1);
 			currentsceneobjecttext->SetLabel(scenechecklist->GetStringSelection());
 			Scene_editor_set_settings_widgets_for_scene_object(scene_editor);
@@ -2029,7 +2021,7 @@ void GTSettingsListBoxClicked(wxCommandEvent &event)
 	 int selection= graphicalitemschecklist->GetSelection();
 	 if (-1 != selection)
 	 {
-			Scene_editor_wx_UpdateGraphicalElementList(
+			Scene_editor_wx_UpdateSettingsType(
 				 get_settings_at_position_in_GT_element_group(
 						scene_editor->edit_gt_element_group, selection+1));
 			Scene_editor_wx_UpdateGraphicalElementSettings(
@@ -2221,7 +2213,7 @@ void AddToSettingList(wxCommandEvent &event)
 						sceneediting = 
 							 XRCCTRL(*this, "SceneEditing", wxScrolledWindow);
 						sceneediting->Freeze();
-						Scene_editor_wx_UpdateGraphicalElementList(
+						Scene_editor_wx_UpdateSettingsType(
 							 get_settings_at_position_in_GT_element_group(
 									scene_editor->edit_gt_element_group, graphicalitemschecklist->GetCount()));
 						Scene_editor_wx_UpdateGraphicalElementSettings(
@@ -2260,7 +2252,7 @@ void RemoveFromSettingList(wxCommandEvent &event)
 						if (graphicalitemschecklist->GetCount()>=position)
 						{
 							 graphicalitemschecklist->SetSelection(position-1);
-							 Scene_editor_wx_UpdateGraphicalElementList(
+							 Scene_editor_wx_UpdateSettingsType(
 									get_settings_at_position_in_GT_element_group(
 										 scene_editor->edit_gt_element_group, position));
 							 Scene_editor_wx_UpdateGraphicalElementSettings(
@@ -2270,7 +2262,7 @@ void RemoveFromSettingList(wxCommandEvent &event)
 						else
 						{
 							 graphicalitemschecklist->SetSelection(position-2);
-							 Scene_editor_wx_UpdateGraphicalElementList(
+							 Scene_editor_wx_UpdateSettingsType(
 									get_settings_at_position_in_GT_element_group(
 										 scene_editor->edit_gt_element_group, position-1));
 							 Scene_editor_wx_UpdateGraphicalElementSettings(
@@ -2320,7 +2312,7 @@ void MoveUpInSettingList(wxCommandEvent &event)
 				 for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
 						Scene_editor_add_element_settings_item, (void *)scene_editor);
 				 graphicalitemschecklist->SetSelection(position-2);
-				 Scene_editor_wx_UpdateGraphicalElementList(
+				 Scene_editor_wx_UpdateSettingsType(
 						get_settings_at_position_in_GT_element_group(
 							 scene_editor->edit_gt_element_group, position-1));
 				 Scene_editor_wx_UpdateGraphicalElementSettings(
@@ -2365,7 +2357,7 @@ void MoveUpInSettingList(wxCommandEvent &event)
 						for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
 						  Scene_editor_add_element_settings_item, (void *)scene_editor);
 						graphicalitemschecklist->SetSelection(position);
-						Scene_editor_wx_UpdateGraphicalElementList(
+						Scene_editor_wx_UpdateSettingsType(
 							 get_settings_at_position_in_GT_element_group(
 									scene_editor->edit_gt_element_group, position+1));
 						Scene_editor_wx_UpdateGraphicalElementSettings(
@@ -2446,7 +2438,7 @@ void MoveUpInSettingList(wxCommandEvent &event)
 				if (position>=1)
 					{
 						graphicalitemschecklist->SetSelection(position-1);
-						Scene_editor_wx_UpdateGraphicalElementList(settings);
+						Scene_editor_wx_UpdateSettingsType(settings);
 						Scene_editor_wx_UpdateGraphicalElementSettings(settings);
 					}
 			}
@@ -4465,6 +4457,9 @@ void scene_editor_set_active_graphical_element_group_from_scene_object(
 						{
 							 for_each_settings_in_GT_element_group(scene_editor->edit_gt_element_group,
 									Scene_editor_add_element_settings_item, (void *)scene_editor);
+							 scene_editor->wx_scene_editor->Scene_editor_wx_UpdateSettingsType(
+									get_settings_at_position_in_GT_element_group(
+										 scene_editor->edit_gt_element_group, 1));
 							 scene_editor->collpane->Enable();
 							 scene_editor->collpane->Show();
 							 scene_editor->lowersplitter->Enable();
@@ -4601,7 +4596,7 @@ This function will be called whenever there are global changes
 				 graphicalitemschecklist->SetSelection(selection);
 				 if (-1 != selection)
 				 {
-						scene_editor->wx_scene_editor->Scene_editor_wx_UpdateGraphicalElementList(
+						scene_editor->wx_scene_editor->Scene_editor_wx_UpdateSettingsType(
 							 get_settings_at_position_in_GT_element_group(
 									scene_editor->edit_gt_element_group, selection+1));
 				 }
