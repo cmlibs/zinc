@@ -43,8 +43,10 @@ Management routines for the main command window.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <stdlib.h>
-#if !defined (WIN32_SYSTEM)
-#include <unistd.h>
+#if defined (WIN32_SYSTEM)
+#  include <direct.h>
+#else /* !defined (WIN32_SYSTEM) */
+#  include <unistd.h>
 #endif /* !defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 #include <termios.h>

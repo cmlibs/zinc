@@ -46,8 +46,10 @@ Functions for executing cmiss commands.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#if !defined (WIN32_SYSTEM)
-#include <unistd.h>
+#if defined (WIN32_SYSTEM)
+#  include <direct.h>
+#else /* !defined (WIN32_SYSTEM) */
+#  include <unistd.h>
 #endif /* !defined (WIN32_SYSTEM) */
 #include <math.h>
 #include <time.h>
