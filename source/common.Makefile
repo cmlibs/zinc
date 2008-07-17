@@ -318,8 +318,7 @@ ifeq ($(SYSNAME),win32)
       CCOFLAG = -Fo
       LINKOFLAG = -Fe
       LINKOPTIONFLAG = /link
-      CPP_FLAGS =
-
+      CPP_FLAGS = /EHsc /Zi /MD
       MAKEDEPEND = gcc -MM -MG -mno-cygwin
       CPREPROCESS = $(CYGWIN_WRAPPER) cl.exe /P
       LINK = $(CYGWIN_WRAPPER) cl.exe
