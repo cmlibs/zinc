@@ -143,6 +143,7 @@ endif # ABI
 OBJ_SUFFIX = o
 CCOFLAG = -o 
 LINKOFLAG = -o 
+LINKOPTIONFLAG =
 
 ifeq ($(SYSNAME:IRIX%=),)
    ifneq ($(ABI),64)
@@ -316,7 +317,9 @@ ifeq ($(SYSNAME),win32)
       OBJ_SUFFIX = obj
       CCOFLAG = -Fo
       LINKOFLAG = -Fe
+      LINKOPTIONFLAG = /link
       CPP_FLAGS =
+
       MAKEDEPEND = gcc -MM -MG -mno-cygwin
       CPREPROCESS = $(CYGWIN_WRAPPER) cl.exe /P
       LINK = $(CYGWIN_WRAPPER) cl.exe
