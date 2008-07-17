@@ -1,3 +1,4 @@
+
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
@@ -347,7 +348,15 @@ ifeq ($(USE_ITK),true)
    ITK_SRCDIR = $(CMISS_ROOT)/itk/src
    ITK_BINDIR = $(CMISS_ROOT)/itk/lib/$(LIB_ARCH_DIR)
    ITK_INC = -I$(ITK_BINDIR) -I$(ITK_SRCDIR)/Code/Algorithms -I$(ITK_SRCDIR)/Code/BasicFilters -I$(ITK_SRCDIR)/Code/Common -I$(ITK_SRCDIR)/Code/Numerics/Statistics -I$(ITK_SRCDIR)/Utilities/vxl/vcl -I$(ITK_SRCDIR)/Utilities/vxl/core -I$(ITK_BINDIR)/Utilities/vxl/vcl -I$(ITK_BINDIR)/Utilities/vxl/core/
-   ITK_LIB = -L$(ITK_BINDIR)/bin -lITKAlgorithms -lITKStatistics -lITKBasicFilters  -lITKCommon -litkvnl -litkvnl_algo -litkvnl -litknetlib -litksys -lITKDICOMParser -litkzlib -litkzlib -litktiff -litkjpeg12 -litkjpeg16 -lITKNrrdIO 
+   ITK_LIBPATH_PREFIX = -L
+   ITK_LIB_PREFIX = -l 
+   ITK_LIB_SUFFIX =
+   ifeq ($(COMPILER),msvc)
+     ITK_LIBPATH_PREFIX = /libpath:
+     ITK_LIB_PREFIX = 
+     ITK_LIB_SUFFIX = .lib
+   endif
+   ITK_LIB = $(ITK_LIBPATH_PREFIX)$(ITK_BINDIR)/bin/Release $(ITK_LIB_PREFIX)ITKAlgorithms$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKStatistics$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKBasicFilters$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKCommon$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkvnl$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkvnl_algo$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkvnl$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itknetlib$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itksys$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKDICOMParser$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkzlib$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkzlib$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itktiff$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkjpeg12$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkjpeg16$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKNrrdIO$(ITK_LIB_SUFFIX) 
 else # $(USE_ITK) == true
    ITK_DEFINES =
    ITK_SRCDIR = 
@@ -741,7 +750,8 @@ ifeq ($(SYSNAME),AIX)
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
    ifeq ($(COMPILER),msvc)
-     LIB = /link /libpath:"C:\Program Files\\Microsoft SDKs\Windows\v6.0A\lib" /libpath:"C:\Program Files\\Microsoft Visual Studio 9.0\VC\lib" ws2_32.lib gdi32.lib msimg32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib netapi32.lib uuid.lib wsock32.lib mpr.lib winmm.lib version.lib odbc32.lib user32.lib
+#     LIB = /libpath:"C:\Program Files\Microsoft SDKs\Windows\v6.0A\lib" /libpath:"C:\Program Files\\Microsoft Visual Studio 9.0\VC\lib" /cygdrive/e/build/cmiss/cmgui/libgcc.a /cygdrive/e/build/cmiss/cmgui/libstdc++.a /cygdrive/e/build/cmiss/cmgui/libmingw32.a /cygdrive/e/build/cmiss/cmgui/libmoldname.a /cygdrive/e/build/cmiss/cmgui/libmingwex.a kernel32.lib advapi32.lib ws2_32.lib gdi32.lib msimg32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib netapi32.lib uuid.lib wsock32.lib mpr.lib winmm.lib version.lib odbc32.lib user32.lib /NODEFAULTLIB:LIBCMT
+     LIB = /libpath:"C:\Program Files\Microsoft SDKs\Windows\v6.0A\lib" /libpath:"C:\Program Files\\Microsoft Visual Studio 9.0\VC\lib" /cygdrive/e/build/cmiss/cmgui/libgcc.a /cygdrive/e/build/cmiss/cmgui/libstdc++.a /cygdrive/e/build/cmiss/cmgui/libmingw32.a /cygdrive/e/build/cmiss/cmgui/libmingwex.a kernel32.lib advapi32.lib ws2_32.lib gdi32.lib msimg32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib netapi32.lib uuid.lib wsock32.lib mpr.lib winmm.lib version.lib odbc32.lib user32.lib /NODEFAULTLIB:LIBCMT /DEFAULTLIB:MSVCRT
    else
      LIB = -lws2_32 -lgdi32 -lmsimg32 -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32 -lstdc++
    endif
@@ -795,7 +805,7 @@ ALL_INCLUDES = $(SOURCE_DIRECTORY_INC) $(HAPTIC_INC) $(WORMHOLE_INC) \
 ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 	$(ALL_DEFINES) $(ALL_INCLUDES)
 
-ALL_LIB = $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
+ALL_LIB = /link $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(WORMHOLE_LIB) $(INTERPRETER_LIB) $(IMAGEMAGICK_LIB) \
 	$(EXTERNAL_INPUT_LIB) $(HELP_LIB) $(ITK_LIB) \
 	$(MOVIE_FILE_LIB) $(XML_LIB) $(XML2_LIB) $(MEMORYCHECK_LIB) $(MATRIX_LIB) \
