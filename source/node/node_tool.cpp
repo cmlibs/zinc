@@ -2676,6 +2676,9 @@ public:
 			element_xi_field_chooser_panel->Enable();
 		}
 
+		XRCCTRL(*this, "DimensionTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+			wxCommandEventHandler(wxNodeTool::OnDimensionEntered), NULL, this);
+
 		cmgui_node_tool = XRCCTRL(*this, "CmguiNodeTool", wxPanel);
 		cmgui_node_tool->SetScrollbar(wxVERTICAL,0,-1,-1);
 		cmgui_node_tool -> Layout();

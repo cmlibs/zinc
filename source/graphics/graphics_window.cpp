@@ -1622,6 +1622,12 @@ public:
 				 (this, &wxGraphicsWindow::graphics_window_scene_callback);
       graphics_window_scene_chooser->set_callback(graphics_window_scene_callback);
 
+			XRCCTRL(*this, "GraphicsWindowTimeTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+				wxCommandEventHandler(wxGraphicsWindow::OnTimeTextEntered), NULL, this);
+			XRCCTRL(*this, "GraphicsWindowTimeFramerateTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+				wxCommandEventHandler(wxGraphicsWindow::OnTimeFramerateTextEntered), NULL, this);
+			XRCCTRL(*this, "GraphicsWindowTimeStepSizeTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+				wxCommandEventHandler(wxGraphicsWindow::OnTimeStepSizeTextEntered), NULL, this);
 	 };
 	 
 	 wxGraphicsWindow()
