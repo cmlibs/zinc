@@ -318,7 +318,7 @@ ifeq ($(SYSNAME),win32)
       CCOFLAG = -Fo
       LINKOFLAG = -Fe
       LINKOPTIONFLAG = /link
-      CPP_FLAGS = /EHsc /Zi /MD
+      CPP_FLAGS = /EHsc
       MAKEDEPEND = gcc -MM -MG -mno-cygwin
       CPREPROCESS = $(CYGWIN_WRAPPER) cl.exe /P
       LINK = $(CYGWIN_WRAPPER) cl.exe
@@ -330,17 +330,18 @@ ifeq ($(SYSNAME),win32)
       ifneq ($(DEBUG),true)
          OPTIMISATION_FLAGS = 
          COMPILE_DEFINES = -DOPTIMISED
-         COMPILE_FLAGS =
-         STRICT_FLAGS = -Werror
-         CPP_STRICT_FLAGS = -Werror
+         COMPILE_FLAGS = /MD
+         STRICT_FLAGS =
+         CPP_STRICT_FLAGS =
          DIGITAL_MEDIA_NON_STRICT_FLAGS = 
          DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
          STRIP = 
          STRIP_SHARED = 
       else # DEBUG != true
+         LINKOPTIONFLAG +=
          OPTIMISATION_FLAGS = /DEBUG
          COMPILE_DEFINES =
-         COMPILE_FLAGS =
+         COMPILE_FLAGS = /MDd /Zi
          STRICT_FLAGS =
          CPP_STRICT_FLAGS =
          DIGITAL_MEDIA_NON_STRICT_FLAGS = 
