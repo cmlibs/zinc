@@ -1136,6 +1136,19 @@ public:
 			grid_field_chooser->set_callback(grid_field_callback);
 
 			element_point_viewer->gridvaluetextctrl=XRCCTRL(*this, "GridValueTextCtrl", wxTextCtrl);
+
+			XRCCTRL(*this, "DiscretizationTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+				 wxCommandEventHandler(wxElementPointViewer::OnDiscretizationValueEntered),
+				 NULL, this);
+			XRCCTRL(*this, "PointTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+				 wxCommandEventHandler(wxElementPointViewer::OnPointValueEntered),
+				 NULL, this);
+			XRCCTRL(*this, "XiTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+				 wxCommandEventHandler(wxElementPointViewer::OnXiValueEntered),
+				 NULL, this);
+			XRCCTRL(*this, "GridValueTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+				 wxCommandEventHandler(wxElementPointViewer::OnGridValueEntered),
+				 NULL, this);
 			Show();
 			frame = XRCCTRL(*this, "CmguiElementPointViewer",wxFrame);
 			frame->GetSize(&(element_point_viewer->init_width), &(element_point_viewer->init_height));

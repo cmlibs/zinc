@@ -547,6 +547,12 @@ public:
 				 wxMaterialEditor, int (wxMaterialEditor::*)(Texture *) >
 				 (this, &wxMaterialEditor::material_editor_fourth_texture_callback);
 			material_editor_fourth_texture_chooser->set_callback(material_editor_fourth_texture_callback);
+			XRCCTRL(*this, "MaterialEditorAlphaTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+				 wxCommandEventHandler(wxMaterialEditor::OnMaterialEditorAlphaTextEntered),
+				 NULL, this);
+			XRCCTRL(*this, "MaterialEditorShininessTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+				 wxCommandEventHandler(wxMaterialEditor::OnMaterialEditorShininessTextEntered),
+				 NULL, this);
 	 };
 
 	 wxMaterialEditor()

@@ -67,6 +67,8 @@ public:
    {
 			Connect(wxEVT_COMMAND_TEXT_ENTER ,
 				 wxCommandEventHandler(wxTextChooser::OnTextEnter));
+			Connect(wxEVT_KILL_FOCUS,
+				 wxCommandEventHandler(wxTextChooser::OnTextEnter));
 // 			FE_region_add_callback(fe_region,
 // 				 wxTextChooser::object_change,
 // 				 (void *)this);

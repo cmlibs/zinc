@@ -513,6 +513,7 @@ public:
 				wxSceneEditor, int (wxSceneEditor::*)(Spectrum *) >
 		 (this, &wxSceneEditor::spectrum_callback);
 	spectrum_chooser->set_callback(spectrum_callback);
+
 	spectrum_chooser_panel->Fit();
 	radius_scalar_chooser = NULL;	
 	iso_scalar_chooser = NULL;
@@ -532,6 +533,59 @@ public:
 	render_type_chooser = NULL;
 	seed_element_chooser = NULL;
 	graphicalitemschecklist = NULL;
+
+	XRCCTRL(*this,"CircleDiscretisationPanel", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(wxSceneEditor::CircleDiscretisationUpdate),
+		NULL, this);
+	XRCCTRL(*this,"ElementDiscretisationPanel", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(wxSceneEditor::ElementDiscretisationUpdate),
+		NULL, this);
+	XRCCTRL(*this,"NameTextField", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(wxSceneEditor::SettingEditorNameText),
+		NULL, this);
+	XRCCTRL(*this,"ConstantRadiusTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(wxSceneEditor::EnterRadius),
+		NULL, this);
+	XRCCTRL(*this,"ScaleFactorsTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(wxSceneEditor::EnterRadius),
+		NULL, this);
+	XRCCTRL(*this,"IsoScalarTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(wxSceneEditor::EnterIsoScalar),
+		NULL, this);
+	XRCCTRL(*this,"IsoValueSequenceNumberTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(wxSceneEditor::EnterIsoScalar),
+		NULL, this);
+	XRCCTRL(*this,"IsoValueSequenceFirstTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(wxSceneEditor::EnterIsoScalar),
+		NULL, this);
+	XRCCTRL(*this,"IsoValueSequenceLastTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(wxSceneEditor::EnterIsoScalar),
+		NULL, this);
+	XRCCTRL(*this,"CentreTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(wxSceneEditor::EnterGlyphCentre),
+		NULL, this);
+	XRCCTRL(*this,"BaseGlyphSizeTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(wxSceneEditor::EnterGlyphSize),
+		NULL, this);
+	XRCCTRL(*this,"GlyphScaleFactorsTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(wxSceneEditor::EnterGlyphScale),
+		NULL, this);
+	XRCCTRL(*this,"DiscretizationTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(wxSceneEditor::EnterElementDiscretization),
+		NULL, this);
+	XRCCTRL(*this,"XiTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(wxSceneEditor::EnterSeedXi),
+		NULL, this);
+	XRCCTRL(*this,"LengthTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(wxSceneEditor::EnterLength),
+		NULL, this);
+	XRCCTRL(*this,"WidthTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(wxSceneEditor::EnterWidth),
+		NULL, this);
+	XRCCTRL(*this,"LineWidthTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+		wxCommandEventHandler(wxSceneEditor::EnterLineWidth),
+		NULL, this);
+
 	wxFrame *frame=XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
 	frame->Fit();
 	Show();

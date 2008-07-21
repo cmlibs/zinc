@@ -92,6 +92,8 @@ DESCRIPTION :
 			 update_callback = (Callback_base<FE_object*> *)NULL;
 			 Connect(wxEVT_COMMAND_TEXT_ENTER,
 					wxCommandEventHandler(FE_object_text_chooser::OnTextEnter));
+			 Connect(wxEVT_KILL_FOCUS,
+					wxCommandEventHandler(FE_object_text_chooser::OnTextEnter));
 			 FE_region_add_callback(fe_region,
 					FE_object_text_chooser::object_change,
 					(void *)this);

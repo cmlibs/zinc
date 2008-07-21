@@ -841,6 +841,8 @@ public:
 				 new Callback_member_callback< Scene*, 
 				 wxSpectrumEditor, int (wxSpectrumEditor::*)(Scene *) >
 				 (this, &wxSpectrumEditor::spectrum_scene_chooser_callback);
+			spectrum_scene_chooser->set_callback(spectrum_scene_chooser_callback);
+
 			XRCCTRL(*this, "wxSpectrumRangeMinText", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS, 
 				 wxCommandEventHandler(wxSpectrumEditor::OnSpectrumSettingRangeValueEntered),
 				 NULL, this);
@@ -868,7 +870,6 @@ public:
 			XRCCTRL(*this,"wxSpectrumNormalisedColourRangeMax", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
 				 wxCommandEventHandler(wxSpectrumEditor::OnSpectrumNormalisedColourRangeValueEntered),
 				 NULL, this);
-			spectrum_scene_chooser->set_callback(spectrum_scene_chooser_callback);
 	 };
 
 	 wxSpectrumEditor()

@@ -88,6 +88,8 @@ DESCRIPTION :
 		 callback = (Callback_base<FE_element*> *)NULL;
 		 Connect(wxEVT_COMMAND_TEXT_ENTER,
 				wxCommandEventHandler(wxFeElementTextChooser::OnTextEnter));
+		 Connect(wxEVT_KILL_FOCUS,
+				wxCommandEventHandler(wxFeElementTextChooser::OnTextEnter));
 		 FE_region_add_callback(fe_region,
 				wxFeElementTextChooser::object_change,
 				(void *)this);

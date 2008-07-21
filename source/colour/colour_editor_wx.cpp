@@ -153,13 +153,19 @@ Colour_editor::Colour_editor(wxPanel* parent, const char *panel_name, enum Colou
 	 colour_editor_text_ctrl_1->SetClientData((void *)this);
 	 colour_editor_text_ctrl_1->Connect(wxEVT_COMMAND_TEXT_ENTER, 
 			wxCommandEventHandler(Colour_editor::OnColourEditorTextEntered));
+	 colour_editor_text_ctrl_1->Connect(wxEVT_KILL_FOCUS, 
+			wxCommandEventHandler(Colour_editor::OnColourEditorTextEntered));
 
 	 colour_editor_text_ctrl_2->SetClientData((void *)this);
 	 colour_editor_text_ctrl_2->Connect(wxEVT_COMMAND_TEXT_ENTER, 
 			wxCommandEventHandler(Colour_editor::OnColourEditorTextEntered));
+	 colour_editor_text_ctrl_2->Connect(wxEVT_KILL_FOCUS, 
+			wxCommandEventHandler(Colour_editor::OnColourEditorTextEntered));
 
 	 colour_editor_text_ctrl_3->SetClientData((void *)this);
 	 colour_editor_text_ctrl_3->Connect(wxEVT_COMMAND_TEXT_ENTER, 
+			wxCommandEventHandler(Colour_editor::OnColourEditorTextEntered));
+	 colour_editor_text_ctrl_3->Connect(wxEVT_KILL_FOCUS, 
 			wxCommandEventHandler(Colour_editor::OnColourEditorTextEntered));
 
 	 colour_editor_slider_1->SetClientData((void *)this);
