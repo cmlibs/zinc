@@ -1632,6 +1632,9 @@ ifeq ($(SYSNAME),win32)
 	endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 endif # $(SYSNAME) == win32
 
+#Make a shorthand for the standard build target, so we can use it with so_lib and static_lib on the same build
+bin : $(BIN_TARGET)
+
 $(BIN_TARGET) : $(OBJS) $(UNEMAP_OBJS) $(COMPILED_RESOURCE_FILES) $(MAIN_OBJ) $(EXPORTS_DEPEND)
 	$(call BuildNormalTarget,$(BIN_TARGET),$(BIN_PATH),$(OBJS) $(UNEMAP_OBJS) $(MAIN_OBJ),$(ALL_LIB) $(INTERPRETER_LINK_FLAGS) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES))
 
@@ -1645,6 +1648,9 @@ ifeq ($(OPERATING_SYSTEM),linux)
 endif # SYSNAME == Linux
 
 STATIC_LIB_SUFFIX = .a
+ifeq ($(COMPILER),msvc)
+   STATIC_LIB_SUFFIX = .lib
+endif
 
 ifeq ($(SYSNAME),win32)
    SO_LIB_SUFFIX = .dll

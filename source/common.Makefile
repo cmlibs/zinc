@@ -144,6 +144,8 @@ OBJ_SUFFIX = o
 CCOFLAG = -o 
 LINKOFLAG = -o 
 LINKOPTIONFLAG =
+AR = ar
+AROFLAG = cr\
 
 ifeq ($(SYSNAME:IRIX%=),)
    ifneq ($(ABI),64)
@@ -322,6 +324,8 @@ ifeq ($(SYSNAME),win32)
       MAKEDEPEND = gcc -MM -MG -mno-cygwin
       CPREPROCESS = $(CYGWIN_WRAPPER) cl.exe /P
       LINK = $(CYGWIN_WRAPPER) cl.exe
+      AR = $(CYGWIN_WRAPPER) lib
+      AROFLAG = /out:
       ifeq ($(filter-out CONSOLE_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
          LINK +=  
       else # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE || $(USER_INTERFACE) == GTK_USER_INTERFACE
@@ -631,7 +635,7 @@ define BuildStaticLibraryTarget
 	fi
 	cd $(OBJECT_PATH) && \
 	(echo $(3) 2>&1 > $(1).list$$$$) && \
-	ar $(AR_FLAGS) cr $(LINK_DIR)/$(1)$(LINK_SUFFIX) `cat $(1).list$$$$` && \
+	$(AR) $(AR_FLAGS) $(AROFLAG)$(LINK_DIR)/$(1)$(LINK_SUFFIX) `cat $(1).list$$$$` && \
         rm $(1).list$$$$ && \
         $(LINK_MOVE) \
         echo 'Success $(2)/$(1)';
