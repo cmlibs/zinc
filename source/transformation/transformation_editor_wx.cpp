@@ -216,27 +216,43 @@ Connect the widgets to a callback function.
 		Transformation_editor_wx_position_text_ctrl_1->SetClientData((void *)this);
 		Transformation_editor_wx_position_text_ctrl_1->Connect(wxEVT_COMMAND_TEXT_ENTER, 
 			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
+		Transformation_editor_wx_position_text_ctrl_1->Connect(wxEVT_KILL_FOCUS, 
+			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
 		Transformation_editor_wx_position_text_ctrl_2->SetClientData((void *)this);
 		Transformation_editor_wx_position_text_ctrl_2->Connect(wxEVT_COMMAND_TEXT_ENTER, 
+			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
+		Transformation_editor_wx_position_text_ctrl_2->Connect(wxEVT_KILL_FOCUS, 
 			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
 		Transformation_editor_wx_position_text_ctrl_3->SetClientData((void *)this);
 		Transformation_editor_wx_position_text_ctrl_3->Connect(wxEVT_COMMAND_TEXT_ENTER, 
 			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
+		Transformation_editor_wx_position_text_ctrl_3->Connect(wxEVT_KILL_FOCUS, 
+			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
 		Transformation_editor_wx_position_text_ctrl_4->SetClientData((void *)this);
 		Transformation_editor_wx_position_text_ctrl_4->Connect(wxEVT_COMMAND_TEXT_ENTER, 
+			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
+		Transformation_editor_wx_position_text_ctrl_4->Connect(wxEVT_KILL_FOCUS, 
 			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
 
 		Transformation_editor_wx_direction_text_ctrl_1->SetClientData((void *)this);
 		Transformation_editor_wx_direction_text_ctrl_1->Connect(wxEVT_COMMAND_TEXT_ENTER, 
 			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
+		Transformation_editor_wx_direction_text_ctrl_1->Connect(wxEVT_KILL_FOCUS, 
+			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
 		Transformation_editor_wx_direction_text_ctrl_2->SetClientData((void *)this);
 		Transformation_editor_wx_direction_text_ctrl_2->Connect(wxEVT_COMMAND_TEXT_ENTER, 
+			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
+		Transformation_editor_wx_direction_text_ctrl_2->Connect(wxEVT_KILL_FOCUS, 
 			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
 		Transformation_editor_wx_direction_text_ctrl_3->SetClientData((void *)this);
 		Transformation_editor_wx_direction_text_ctrl_3->Connect(wxEVT_COMMAND_TEXT_ENTER, 
 			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
+		Transformation_editor_wx_direction_text_ctrl_3->Connect(wxEVT_KILL_FOCUS, 
+			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
 		Transformation_editor_wx_direction_text_ctrl_4->SetClientData((void *)this);
 		Transformation_editor_wx_direction_text_ctrl_4->Connect(wxEVT_COMMAND_TEXT_ENTER, 
+			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
+		Transformation_editor_wx_direction_text_ctrl_4->Connect(wxEVT_KILL_FOCUS, 
 			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
 
 		Transformation_editor_wx_position_spin_button_1->SetClientData((void *)this);
