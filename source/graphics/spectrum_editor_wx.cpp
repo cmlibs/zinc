@@ -36,7 +36,6 @@ extern "C" {
 
 class wxSpectrumEditor;
 
-
 static int spectrum_editor_wx_update_scene_viewer(
 	 struct Spectrum_editor *spectrum_editor);
 
@@ -842,6 +841,33 @@ public:
 				 new Callback_member_callback< Scene*, 
 				 wxSpectrumEditor, int (wxSpectrumEditor::*)(Scene *) >
 				 (this, &wxSpectrumEditor::spectrum_scene_chooser_callback);
+			XRCCTRL(*this, "wxSpectrumRangeMinText", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS, 
+				 wxCommandEventHandler(wxSpectrumEditor::OnSpectrumSettingRangeValueEntered),
+				 NULL, this);
+			XRCCTRL(*this,"wxSpectrumRangeMaxText", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+				 wxCommandEventHandler(wxSpectrumEditor::OnSpectrumSettingRangeValueEntered),
+				 NULL, this);
+			XRCCTRL(*this,"wxSpectrumExaggerationTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+				 wxCommandEventHandler(wxSpectrumEditor::OnSpectrumExaggerationSettingsChanged),
+				 NULL, this);
+			XRCCTRL(*this,"wxSpectrumDataComponentText", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+				 wxCommandEventHandler(wxSpectrumEditor::OnSpectrumDataValueEntered),
+				 NULL, this);
+			XRCCTRL(*this,"wxSpectrumNumberOfBandsTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+				 wxCommandEventHandler(wxSpectrumEditor::OnSpectrumBandsValuesEntered),
+				 NULL, this);
+			XRCCTRL(*this,"wxSpectrumRatioOfBlackBandsTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+				 wxCommandEventHandler(wxSpectrumEditor::OnSpectrumBandsValuesEntered),
+				 NULL, this);
+			XRCCTRL(*this,"wxSpectrumStepValueTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+				 wxCommandEventHandler(wxSpectrumEditor::OnSpectrumStepValueEntered),
+				 NULL, this);
+			XRCCTRL(*this,"wxSpectrumNormalisedColourRangeMin", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+				 wxCommandEventHandler(wxSpectrumEditor::OnSpectrumNormalisedColourRangeValueEntered),
+				 NULL, this);
+			XRCCTRL(*this,"wxSpectrumNormalisedColourRangeMax", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
+				 wxCommandEventHandler(wxSpectrumEditor::OnSpectrumNormalisedColourRangeValueEntered),
+				 NULL, this);
 			spectrum_scene_chooser->set_callback(spectrum_scene_chooser_callback);
 	 };
 
@@ -1018,7 +1044,7 @@ Callback for the range text widgets.
 	 ENTER(OnSpectrumSettingRangeValueEntered);
 	 /* check arguments */
 	 selection = spectrum_editor->spectrum_settings_checklist->GetSelection();
-	 if (settings =  get_settings_at_position_in_Spectrum(spectrum_editor->edit_spectrum,selection+1))
+	 if (settings = get_settings_at_position_in_Spectrum(spectrum_editor->edit_spectrum,selection+1))
 	 {
 			if (spectrum_editor->spectrum_range_min_text)
 			{
