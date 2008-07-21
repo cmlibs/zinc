@@ -58,6 +58,11 @@ Utilities for handling images.
 #include "general/mystring.h"
 #include "user_interface/message.h"
 #if defined (IMAGEMAGICK)
+#  if defined _MSC_VER
+   /* When using the gcc compiled headers from msvc we need to replace inline */
+#    define inline __inline
+#    define MAGICK_STATIC_LINK
+#  endif /* defined _MSC_VER */
 /* image magick interfaces */
 #include "magick/api.h"
 #endif /* defined (IMAGEMAGICK) */

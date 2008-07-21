@@ -584,21 +584,23 @@ UID2UIDH = utilities/uid2uidh.pl
 	perl $(UID2UIDH) $(UIDH_PATH)/$*.uid $(UIDH_PATH)/$*.uidh
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
-#Ensure something is defined for TMPDIR
-ifeq ($(TMPDIR),)
-  ifneq ($(wildcard /tmp), )
-    TMPDIR = /tmp
-  else
-    TMPDIR = .
-  endif
-endif
-
 ifneq ($(STRIP),)
-   STRIP_TARGET = $(STRIP) $(TMPDIR)/$(1).tmp$$$$ &&
+   STRIP_TARGET = $(STRIP) $(LINK_DIR)/$(1)$(LINK_SUFFIX) &&
    STRIP_SHARED = $(STRIP) $(2)/$(1)$(SO_LIB_SUFFIX) &&
 else
    STRIP_TARGET =
    STRIP_SHARED =
+endif
+
+#We only use a temp dir now if CMISS_TMP_DIR is set
+ifeq ($(CMISS_TMP_DIR),)
+   LINK_DIR = $(2)
+   LINK_SUFFIX =
+   LINK_MOVE =
+else
+   LINK_DIR = $(CMISS_TMP_DIR)
+   LINK_SUFFIX = .tmp$$$$
+   LINK_MOVE = mv $(CMISS_TMP_DIR)/$(1).tmp$$$$ $(2)/$(1) &&
 endif
 
 define BuildNormalTarget
@@ -611,10 +613,11 @@ define BuildNormalTarget
 	fi
 	cd $(OBJECT_PATH) && \
 	(echo $(3) 2>&1 > $(1).list$$$$) && \
-	$(LINK) $(LINKOFLAG)$(TMPDIR)/$(1).tmp$$$$ $(ALL_FLAGS) `cat $(1).list$$$$` $(4) && \
+	$(LINK) $(LINKOFLAG)$(LINK_DIR)/$(1)$(LINK_SUFFIX) $(ALL_FLAGS) `cat $(1).list$$$$` $(4) && \
 	$(STRIP_TARGET) \
 	rm $(1).list$$$$ && \
-	mv $(TMPDIR)/$(1).tmp$$$$ $(2)/$(1) ;
+        $(LINK_MOVE) \
+        echo 'Success $(2)/$(1)';
 endef
 
 define BuildStaticLibraryTarget
@@ -627,9 +630,10 @@ define BuildStaticLibraryTarget
 	fi
 	cd $(OBJECT_PATH) && \
 	(echo $(3) 2>&1 > $(1).list$$$$) && \
-	ar $(AR_FLAGS) cr $(TMPDIR)/$(1).tmp$$$$ `cat $(1).list$$$$` && \
-   rm $(1).list$$$$ && \
-	mv $(TMPDIR)/$(1).tmp$$$$ $(2)/$(1) ;
+	ar $(AR_FLAGS) cr $(LINK_DIR)/$(1)$(LINK_SUFFIX) `cat $(1).list$$$$` && \
+        rm $(1).list$$$$ && \
+        $(LINK_MOVE) \
+        echo 'Success $(2)/$(1)';
 endef
 
 ifeq ($(OPERATING_SYSTEM), win32)
