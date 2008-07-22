@@ -642,8 +642,13 @@ define BuildStaticLibraryTarget
 endef
 
 ifeq ($(OPERATING_SYSTEM), win32)
-  LINK_LINE = $(LINK) -shared -o $(2)/$(1)$(SO_LIB_SUFFIX) $(ALL_FLAGS) -Wl,--out-implib,$(2)/$(1)$(SO_LIB_IMPORT_LIB_SUFFIX) -Wl,--kill-at -Wl,--output-def,$(2)/$(1).def -Wl,--whole-archive `cat $(1).list$$$$`  -Wl,--no-whole-archive $(4) $(foreach import_lib,$(6),$(import_lib)$(SO_LIB_IMPORT_LIB_SUFFIX))
-  LINK_LINE += && (cd $(2) ; if ! lib /machine:i386 /def:$(1).def && [ -f $(1).lib ] ; then rm $(1).lib ; fi  )
+  ifeq ($(COMPILER),msvc)
+    LINK_LINE = ./win32_export_all $(1).dll `cat $(1).list$$$$` &&
+    LINK_LINE += $(CYGWIN_WRAPPER) link.exe /OUT:$(2)/$(1)$(SO_LIB_SUFFIX) /DEBUG /DEF:$(1).def `cat $(1).list$$$$` /libpath:"c:\Program Files\Microsoft SDKs\Windows\v6.0A\lib" /libpath:"c:\Program Files\Microsoft Visual Studio 9.0\VC\lib" $(4) $(foreach import_lib,$(6),$(import_lib)$(SO_LIB_IMPORT_LIB_SUFFIX)) /INCREMENTAL /NOLOGO /DLL /MANIFEST /MANIFESTFILE:"libcmgui_general.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'"  /DEBUG  /SUBSYSTEM:WINDOWS /DYNAMICBASE /NXCOMPAT /MACHINE:X86 /ERRORREPORT:PROMPT
+  else
+    LINK_LINE = $(LINK) -shared -o $(2)/$(1)$(SO_LIB_SUFFIX) $(ALL_FLAGS) -Wl,--out-implib,$(2)/$(1)$(SO_LIB_IMPORT_LIB_SUFFIX) -Wl,--kill-at -Wl,--output-def,$(2)/$(1).def -Wl,--whole-archive `cat $(1).list$$$$`  -Wl,--no-whole-archive $(4) $(foreach import_lib,$(6),$(import_lib)$(SO_LIB_IMPORT_LIB_SUFFIX))
+    LINK_LINE += && (cd $(2) ; if ! lib /machine:i386 /def:$(1).def && [ -f $(1).lib ] ; then rm $(1).lib ; fi  )
+  endif
 else
   LINK_LINE = $(LINK) -shared -o $(2)/$(1)$(SO_LIB_SUFFIX) $(ALL_FLAGS) `cat $(1).list$$$$` $(4) -Wl,-soname,$(5) $(foreach import_lib,$(6),$(import_lib)$(SO_LIB_SUFFIX))
 endif

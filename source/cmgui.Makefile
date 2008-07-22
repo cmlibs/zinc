@@ -754,6 +754,7 @@ ifeq ($(SYSNAME),win32)
    ifeq ($(COMPILER),msvc)
 #     LIB = /libpath:"C:\Program Files\Microsoft SDKs\Windows\v6.0A\lib" /libpath:"C:\Program Files\\Microsoft Visual Studio 9.0\VC\lib" /cygdrive/e/build/cmiss/cmgui/libgcc.a /cygdrive/e/build/cmiss/cmgui/libstdc++.a /cygdrive/e/build/cmiss/cmgui/libmingw32.a /cygdrive/e/build/cmiss/cmgui/libmoldname.a /cygdrive/e/build/cmiss/cmgui/libmingwex.a kernel32.lib advapi32.lib ws2_32.lib gdi32.lib msimg32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib netapi32.lib uuid.lib wsock32.lib mpr.lib winmm.lib version.lib odbc32.lib user32.lib /NODEFAULTLIB:LIBCMT
      LIB = /libpath:"C:\Program Files\Microsoft SDKs\Windows\v6.0A\lib" /libpath:"C:\Program Files\\Microsoft Visual Studio 9.0\VC\lib" /cygdrive/e/build/cmiss/cmgui/libgcc.a /cygdrive/e/build/cmiss/cmgui/libstdc++.a /cygdrive/e/build/cmiss/cmgui/libmingw32.a /cygdrive/e/build/cmiss/cmgui/libmingwex.a kernel32.lib advapi32.lib ws2_32.lib gdi32.lib msimg32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib netapi32.lib uuid.lib wsock32.lib mpr.lib winmm.lib version.lib odbc32.lib user32.lib /NODEFAULTLIB:LIBCMT /DEFAULTLIB:MSVCRT
+     SOLIB_LIB = /cygdrive/e/build/cmiss/cmgui/libgcc.a /cygdrive/e/build/cmiss/cmgui/libstdc++.a /cygdrive/e/build/cmiss/cmgui/libmingw32.a /cygdrive/e/build/cmiss/cmgui/libmingwex.a
    else
      LIB = -lws2_32 -lgdi32 -lmsimg32 -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32 -lstdc++
    endif
@@ -1654,7 +1655,11 @@ endif
 
 ifeq ($(SYSNAME),win32)
    SO_LIB_SUFFIX = .dll
-   SO_LIB_IMPORT_LIB_SUFFIX = .dll.a
+   ifeq ($(COMPILER),msvc)
+     SO_LIB_IMPORT_LIB_SUFFIX = .lib
+   else
+     SO_LIB_IMPORT_LIB_SUFFIX = .dll.a
+   endif
 endif # $(SYSNAME) == win32 else
 
 SO_LIB_GENERAL = cmgui_general
