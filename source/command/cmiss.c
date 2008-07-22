@@ -22657,6 +22657,7 @@ Executes a HELP command.
 ==============================================================================*/
 {
 	char *current_token;
+	char global_temp_string[1000];
 	int return_code;
 	struct Cmiss_command_data *command_data;
 
@@ -23929,6 +23930,7 @@ Executes the comfile specified on the command line.
 ==============================================================================*/
 {
 	int return_code;
+	char global_temp_string[1000];
 
 	ENTER(cmgui_execute_comfile);
 	return_code=0;
@@ -24248,6 +24250,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		*example_id,*examples_directory,*examples_environment,*execute_string,
 		*version_command_id,
 		version_id_string[100],*version_ptr,version_temp[20];
+	char global_temp_string[1000];
 	float default_light_direction[3]={0.0,-0.5,-1.0};
 	int i, number_of_startup_materials, return_code;
 	int batch_mode, console_mode, command_list, no_display, non_random,

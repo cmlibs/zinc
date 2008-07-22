@@ -930,6 +930,7 @@ function.
 ==============================================================================*/
 {
 	char *coordinate_system_string;
+	char global_temp_string[1000];
 	int error;
 
 	ENTER(Coordinate_system_string);

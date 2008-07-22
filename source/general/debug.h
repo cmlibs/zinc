@@ -149,15 +149,6 @@ else
 */
 
 /*
-Global variables
-----------------
-*/
-
-/* temporary storage string */
-#define GLOBAL_TEMP_STRING_SIZE 1000
-extern char global_temp_string[GLOBAL_TEMP_STRING_SIZE];
-
-/*
 Global functions
 ----------------
 */

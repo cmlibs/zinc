@@ -343,13 +343,6 @@ static struct LIST(Memory_block) *memory_block_list =
 #endif /* defined (MEMORY_CHECKING) */
 
 /*
-Global variables
-----------------
-*/
-/* temporary storage string */
-char global_temp_string[GLOBAL_TEMP_STRING_SIZE];
-
-/*
 Global functions
 ----------------
 */
