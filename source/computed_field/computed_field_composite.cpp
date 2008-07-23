@@ -76,8 +76,6 @@ this structure in set_Computed_field_component.
 
 class Computed_field_composite_package : public Computed_field_type_package
 {
-public:
-	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
 namespace {
@@ -1207,7 +1205,7 @@ ACCESSed in the initial source_data.
 } /* set_Computed_field_composite_source_data */
 
 int define_Computed_field_type_composite(struct Parse_state *state,
-	void *field_void,void *computed_field_composite_package_void)
+	void *field_modify_void,void *computed_field_composite_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1219,11 +1217,13 @@ already) and allows its contents to be modified.
 	int return_code;
 	struct Computed_field *field;
 	Computed_field_composite_package *computed_field_composite_package;
+	Computed_field_modify_data *field_modify;
 	struct Computed_field_composite_source_data source_data;
 	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_type_composite);
-	if (state && (field = (struct Computed_field *)field_void) &&
+	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void) &&
+			(field=field_modify->field)&&
 		(computed_field_composite_package=
 			(Computed_field_composite_package *)
 			computed_field_composite_package_void))
@@ -1266,7 +1266,7 @@ already) and allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* default option: composite field definition */
 			Option_table_add_entry(option_table, (char *)NULL, &source_data,
-				computed_field_composite_package->computed_field_manager,
+				Cmiss_region_get_Computed_field_manager(field_modify->region),
 				set_Computed_field_composite_source_data);
 			return_code = Option_table_multi_parse(option_table,state) &&
 				Computed_field_copy_type_specific_and_deaccess(field, 
@@ -1428,7 +1428,7 @@ a single source value, equal to <scalar>.
 } /* Computed_field_is_constant_scalar */
 
 int define_Computed_field_type_constant(struct Parse_state *state,
-	void *field_void, void *computed_field_composite_package_void)
+	void *field_modify_void, void *computed_field_composite_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1441,11 +1441,13 @@ and allows its contents to be modified.
 	double *values, *temp_values;
 	int i, number_of_values, previous_number_of_values, return_code;
 	struct Computed_field *field;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_type_constant);
 	USE_PARAMETER(computed_field_composite_package_void);
-	if (state && (field = (struct Computed_field *)field_void))
+	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void) &&
+			(field=field_modify->field))
 	{
 		return_code = 1;
 		previous_number_of_values = 0;
@@ -1772,8 +1774,6 @@ DESCRIPTION :
 	ENTER(Computed_field_register_types_composite);
 	if (computed_field_package)
 	{
-		computed_field_composite_package->computed_field_manager =
-			Computed_field_package_get_computed_field_manager(computed_field_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_composite_type_string,
 			define_Computed_field_type_composite,

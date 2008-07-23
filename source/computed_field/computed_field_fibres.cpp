@@ -58,8 +58,6 @@ extern "C" {
 
 class Computed_field_fibres_package : public Computed_field_type_package
 {
-public:
-	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
 namespace {
@@ -536,7 +534,7 @@ fields used by it are returned - otherwise an error is reported.
 } /* Computed_field_get_type_fibre_axes */
 
 int define_Computed_field_type_fibre_axes(struct Parse_state *state,
-	void *field_void,void *computed_field_fibres_package_void)
+	void *field_modify_void,void *computed_field_fibres_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -548,12 +546,14 @@ allows its contents to be modified.
 	int return_code;
 	struct Computed_field *coordinate_field, *fibre_field, *field;
 	Computed_field_fibres_package *computed_field_fibres_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_fibre_field_data;
 
 	ENTER(define_Computed_field_type_fibre_axes);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_fibres_package=(Computed_field_fibres_package *)
 		computed_field_fibres_package_void))
 	{
@@ -580,7 +580,7 @@ allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* coordinate */
 			set_coordinate_field_data.computed_field_manager=
-				computed_field_fibres_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=
@@ -590,7 +590,7 @@ allows its contents to be modified.
 				set_Computed_field_conditional);
 			/* fibre */
 			set_fibre_field_data.computed_field_manager=
-				computed_field_fibres_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_fibre_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_fibre_field_data.conditional_function_user_data=(void *)NULL;
@@ -639,9 +639,6 @@ DESCRIPTION :
 	ENTER(Computed_field_register_types_fibres);
 	if (computed_field_package)
 	{
-		computed_field_fibres_package->computed_field_manager =
-			Computed_field_package_get_computed_field_manager(
-				computed_field_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_fibre_axes_type_string,
 			define_Computed_field_type_fibre_axes,

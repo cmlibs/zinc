@@ -57,7 +57,6 @@ extern "C" {
 class Computed_field_image_package : public Computed_field_type_package
 {
 public:
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(Texture) *texture_manager;
 };
 
@@ -566,7 +565,7 @@ returned.
 } /* Computed_field_get_type_image */
 
 int define_Computed_field_type_sample_texture(struct Parse_state *state,
-	void *field_void,void *computed_field_image_package_void)
+	void *field_modify_void,void *computed_field_image_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -582,12 +581,14 @@ Maintains legacy version that is set with a texture.
 	struct Computed_field *field,*texture_coordinate_field;
 	Computed_field_image_package
 		*computed_field_image_package;
+	Computed_field_modify_data *field_modify;
 	struct Texture *texture;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_image);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void) &&
+			(field=field_modify->field)&&
 		(computed_field_image_package=
 		(Computed_field_image_package *)
 		computed_field_image_package_void))
@@ -642,7 +643,7 @@ Maintains legacy version that is set with a texture.
 
 			/* coordinates */
 			set_source_field_data.computed_field_manager=
-				computed_field_image_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_source_field_data.conditional_function =
 				Computed_field_has_numerical_components;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -761,9 +762,6 @@ DESCRIPTION :
 	ENTER(Computed_field_register_type_image);
 	if (computed_field_package && texture_manager)
 	{
-		computed_field_image_package->computed_field_manager =
-			Computed_field_package_get_computed_field_manager(
-				computed_field_package);
 		computed_field_image_package->texture_manager =
 			texture_manager;
 		return_code = Computed_field_package_add_type(computed_field_package,

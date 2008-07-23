@@ -62,7 +62,6 @@ extern "C" {
 class Computed_field_lookup_package : public Computed_field_type_package
 {
 public:
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Cmiss_region *root_region;
 };
 
@@ -435,13 +434,12 @@ If the node we are looking at changes generate a computed field change message.
 	{
 		/* I'm not sure if we could also check if we depend on an FE_field change
 			and so reduce the total number of changes? */
-		if (CHANGE_LOG_QUERY(FE_node)(changes->fe_node_changes,
+		if (field->manager && CHANGE_LOG_QUERY(FE_node)(changes->fe_node_changes,
 				core->nodal_lookup_node, &change))
 		{
 			if (change | CHANGE_LOG_OBJECT_CHANGED(FE_node))
 			{
-				Computed_field_changed(field,
-					core->lookup_package->computed_field_manager);
+				Computed_field_changed(field, field->manager);
 			}
 		}
 	}
@@ -557,7 +555,7 @@ Note that nothing returned has been ACCESSed.
 } /* Computed_field_get_type_nodal_lookup */
 
 int define_Computed_field_type_nodal_lookup(struct Parse_state *state,
-	void *field_void,void *computed_field_lookup_package_void)
+	void *field_modify_void,void *computed_field_lookup_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -570,6 +568,7 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,**source_fields;
 	Computed_field_lookup_package *computed_field_lookup_package,
 		*lookup_package_dummy;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
   int node_identifier;
@@ -577,7 +576,8 @@ already) and allows its contents to be modified.
   struct Cmiss_region *dummy_region,*region;
 
 	ENTER(define_Computed_field_type_nodal_lookup);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_lookup_package=
 		(Computed_field_lookup_package *)
 		computed_field_lookup_package_void))
@@ -609,7 +609,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* source field */
 				set_source_field_data.computed_field_manager=
-					computed_field_lookup_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_source_field_data.conditional_function=
 					Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -1111,13 +1111,12 @@ If the node we are looking at changes generate a computed field change message.
 	{
 		/* I'm not sure if we could also check if we depend on an FE_field change
 			and so reduce the total number of changes? */
-		if (CHANGE_LOG_QUERY(FE_node)(changes->fe_node_changes,
+		if (field->manager && CHANGE_LOG_QUERY(FE_node)(changes->fe_node_changes,
 				core->nodal_lookup_node, &change))
 		{
 			if (change | CHANGE_LOG_OBJECT_CHANGED(FE_node))
 			{
-				Computed_field_changed(field,
-					core->lookup_package->computed_field_manager);
+				Computed_field_changed(field, field->manager);
 			}
 		}
 	}
@@ -1243,7 +1242,7 @@ Note that nothing returned has been ACCESSed.
 } /* Computed_field_get_type_quaternion_SLERP */
 
 int define_Computed_field_type_quaternion_SLERP(struct Parse_state *state,
-	void *field_void, void *computed_field_lookup_package_void)
+	void *field_modify_void, void *computed_field_lookup_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -1256,6 +1255,7 @@ contents to be modified.
 	struct Computed_field *field, **source_fields;
 	Computed_field_lookup_package *computed_field_lookup_package,
 		 *lookup_package_dummy;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 	int node_identifier;
@@ -1263,7 +1263,8 @@ contents to be modified.
 	struct Cmiss_region *dummy_region,*region;
 	
 	ENTER(define_Computed_field_type_quaternion_SLERP);
-	if (state && (field = (struct Computed_field *)field_void) &&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		 (computed_field_lookup_package=
 				(Computed_field_lookup_package *)
 				computed_field_lookup_package_void))
@@ -1301,7 +1302,7 @@ contents to be modified.
 						 "using the quaternion_to_matrix field. This field must be define directly from"
 						 "exnode file or from a matrix_to_quaternion field");
 					set_source_field_data.computed_field_manager =
-						 computed_field_lookup_package->computed_field_manager;
+						Cmiss_region_get_Computed_field_manager(field_modify->region);
 					set_source_field_data.conditional_function =
 						 Computed_field_has_4_components;
 					set_source_field_data.conditional_function_user_data = (void *)NULL;
@@ -1388,9 +1389,6 @@ DESCRIPTION :
 	ENTER(Computed_field_register_types_lookup);
 	if (computed_field_package)
 	{
-		computed_field_lookup_package->computed_field_manager =
-			Computed_field_package_get_computed_field_manager(
-				computed_field_package);
 		computed_field_lookup_package->root_region = root_region;
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_nodal_lookup_type_string,

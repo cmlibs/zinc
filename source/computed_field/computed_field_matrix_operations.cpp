@@ -58,8 +58,6 @@ extern "C" {
 
 class Computed_field_matrix_operations_package : public Computed_field_type_package
 {
-public:
-	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
 int Computed_field_get_square_matrix_size(struct Computed_field *field)
@@ -577,7 +575,7 @@ eigenvalues of is returned.
 } /* Computed_field_get_type_eigenvalues */
 
 int define_Computed_field_type_eigenvalues(struct Parse_state *state,
-	void *field_void, void *computed_field_matrix_operations_package_void)
+	void *field_modify_void, void *computed_field_matrix_operations_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -590,11 +588,13 @@ contents to be modified.
 	struct Computed_field *field, *source_field;
 	Computed_field_matrix_operations_package 
 		*computed_field_matrix_operations_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_eigenvalues);
-	if (state && (field = (struct Computed_field *)field_void) &&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_matrix_operations_package=
 			(Computed_field_matrix_operations_package *)
 			computed_field_matrix_operations_package_void))
@@ -619,7 +619,7 @@ contents to be modified.
 				Computed_field_is_square_matrix;
 			set_source_field_data.conditional_function_user_data = (void *)NULL;
 			set_source_field_data.computed_field_manager =
-				computed_field_matrix_operations_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			Option_table_add_entry(option_table, "field", &source_field,
 				&set_source_field_data, set_Computed_field_conditional);
 			return_code = Option_table_multi_parse(option_table, state) &&
@@ -944,7 +944,7 @@ returned.
 } /* Computed_field_get_type_eigenvectors */
 
 int define_Computed_field_type_eigenvectors(struct Parse_state *state,
-	void *field_void,void *computed_field_matrix_operations_package_void)
+	void *field_modify_void,void *computed_field_matrix_operations_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -957,11 +957,13 @@ its contents to be modified.
 	struct Computed_field *field, *source_field;
 	Computed_field_matrix_operations_package 
 		*computed_field_matrix_operations_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_eigenvectors);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_matrix_operations_package=
 		(Computed_field_matrix_operations_package *)
 		computed_field_matrix_operations_package_void))
@@ -986,7 +988,7 @@ its contents to be modified.
 			  "An eigenvectors field returns vectors corresponding to each eigenvalue from a source eigenvalues field.  For example, if 3 eigenvectors have been computed for a (3 * 3) matrix = 9 component field, the eigenvectors will be a 9 component field with the eigenvector corresponding to the first eigenvalue in the first 3 components, the second eigenvector in the next 3 components, and so on.  See a/large_strain for an example of using the eigenvalues and eigenvectors fields.");
 			/* field */
 			set_source_field_data.computed_field_manager =
-				computed_field_matrix_operations_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_source_field_data.conditional_function =
 				Computed_field_is_type_eigenvalues_conditional;
 			set_source_field_data.conditional_function_user_data = (void *)NULL;
@@ -1422,7 +1424,7 @@ matrix_invert of is returned.
 } /* Computed_field_get_type_matrix_invert */
 
 int define_Computed_field_type_matrix_invert(struct Parse_state *state,
-	void *field_void, void *computed_field_matrix_operations_package_void)
+	void *field_modify_void, void *computed_field_matrix_operations_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -1435,11 +1437,13 @@ contents to be modified.
 	struct Computed_field *field, *source_field;
 	Computed_field_matrix_operations_package 
 		*computed_field_matrix_operations_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_matrix_invert);
-	if (state && (field = (struct Computed_field *)field_void) &&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_matrix_operations_package=
 			(Computed_field_matrix_operations_package *)
 			computed_field_matrix_operations_package_void))
@@ -1464,7 +1468,7 @@ contents to be modified.
 				Computed_field_is_square_matrix;
 			set_source_field_data.conditional_function_user_data = (void *)NULL;
 			set_source_field_data.computed_field_manager =
-				computed_field_matrix_operations_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			Option_table_add_entry(option_table, "field", &source_field,
 				&set_source_field_data, set_Computed_field_conditional);
 			return_code = Option_table_multi_parse(option_table, state) &&
@@ -1826,7 +1830,7 @@ If the field is of type COMPUTED_FIELD_MATRIX_MULTIPLY, the
 } /* Computed_field_get_type_matrix_multiply */
 
 int define_Computed_field_type_matrix_multiply(struct Parse_state *state,
-	void *field_void,void *computed_field_matrix_operations_package_void)
+	void *field_modify_void,void *computed_field_matrix_operations_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -1840,12 +1844,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,**source_fields;
 	Computed_field_matrix_operations_package 
 		*computed_field_matrix_operations_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_field_array_data;
 	struct Set_Computed_field_conditional_data set_field_data;
 
 	ENTER(define_Computed_field_type_matrix_multiply);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_matrix_operations_package=
 		(Computed_field_matrix_operations_package *)
 		computed_field_matrix_operations_package_void))
@@ -1888,7 +1894,7 @@ already) and allows its contents to be modified.
 							Computed_field_has_numerical_components;
 						set_field_data.conditional_function_user_data=(void *)NULL;
 						set_field_data.computed_field_manager=
-							computed_field_matrix_operations_package->computed_field_manager;
+							Cmiss_region_get_Computed_field_manager(field_modify->region);
 						set_field_array_data.number_of_fields=2;
 						set_field_array_data.conditional_data= &set_field_data;
 						Option_table_add_entry(option_table,"fields",source_fields,
@@ -1915,8 +1921,7 @@ already) and allows its contents to be modified.
 								Computed_field_has_numerical_components;
 							set_field_data.conditional_function_user_data=(void *)NULL;
 							set_field_data.computed_field_manager=
-								computed_field_matrix_operations_package->
-								computed_field_manager;
+								Cmiss_region_get_Computed_field_manager(field_modify->region);
 							set_field_array_data.number_of_fields=2;
 							set_field_array_data.conditional_data= &set_field_data;
 							Option_table_add_entry(option_table,"fields",source_fields,
@@ -2422,7 +2427,7 @@ Use function Computed_field_get_type to determine the field type.
 } /* Computed_field_get_type_projection */
 
 int define_Computed_field_type_projection(struct Parse_state *state,
-	void *field_void,void *computed_field_matrix_operations_package_void)
+	void *field_modify_void,void *computed_field_matrix_operations_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -2438,11 +2443,13 @@ and allows its contents to be modified.
 	struct Computed_field *field, *source_field;
 	Computed_field_matrix_operations_package 
 		*computed_field_matrix_operations_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_projection);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_matrix_operations_package=
 			(Computed_field_matrix_operations_package *)
 			computed_field_matrix_operations_package_void))
@@ -2452,7 +2459,7 @@ and allows its contents to be modified.
 			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 		set_source_field_data.conditional_function_user_data = (void *)NULL;
 		set_source_field_data.computed_field_manager =
-			computed_field_matrix_operations_package->computed_field_manager;
+			Cmiss_region_get_Computed_field_manager(field_modify->region);
 		source_field = (struct Computed_field *)NULL;
 		projection_matrix = (double *)NULL;
 		if (dynamic_cast<Computed_field_projection*>(field->core))
@@ -2913,7 +2920,7 @@ If the field is of type COMPUTED_FIELD_TRANSPOSE, the
 } /* Computed_field_get_type_transpose */
 
 int define_Computed_field_type_transpose(struct Parse_state *state,
-	void *field_void,void *computed_field_matrix_operations_package_void)
+	void *field_modify_void,void *computed_field_matrix_operations_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -2927,11 +2934,13 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,*source_field;
 	Computed_field_matrix_operations_package 
 		*computed_field_matrix_operations_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_transpose);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_matrix_operations_package=
 		(Computed_field_matrix_operations_package *)
 		computed_field_matrix_operations_package_void))
@@ -2960,7 +2969,7 @@ already) and allows its contents to be modified.
 					Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data = (void *)NULL;
 				set_source_field_data.computed_field_manager =
-					computed_field_matrix_operations_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
 				{
@@ -3276,7 +3285,7 @@ transformation of is returned.
 } /* Computed_field_get_type_quaternion */
 
 int define_Computed_field_type_quaternion_to_matrix(struct Parse_state *state,
-	void *field_void, void *computed_field_matrix_operations_package_void)
+	void *field_modify_void, void *computed_field_matrix_operations_package_void)
 /*******************************************************************************
 LAST MODIFIED : 18 Jun 2008
 
@@ -3287,11 +3296,13 @@ Converts a "quaternion" to a transformation matrix.
 	int return_code;
 	struct Computed_field *field, **source_fields;
 	Computed_field_matrix_operations_package *computed_field_matrix_operations_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_quaternion_to_matrix);
-	if (state && (field = (struct Computed_field *)field_void) &&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_matrix_operations_package=
 			(Computed_field_matrix_operations_package *)
 			computed_field_matrix_operations_package_void))
@@ -3317,7 +3328,7 @@ Converts a "quaternion" to a transformation matrix.
 					Option_table_add_help(option_table,
 						 "A computed field to convert a quaternion (w,x,y,z) to a 4x4 matrix,");
 					set_source_field_data.computed_field_manager =
-						 computed_field_matrix_operations_package->computed_field_manager;
+						Cmiss_region_get_Computed_field_manager(field_modify->region);
 					set_source_field_data.conditional_function =
 						 Computed_field_has_4_components;
 					set_source_field_data.conditional_function_user_data = (void *)NULL;
@@ -3620,7 +3631,7 @@ transformation of is returned.
 } /* Computed_field_get_type_quaternion */
 
 int define_Computed_field_type_matrix_to_quaternion(struct Parse_state *state,
-	void *field_void, void *computed_field_matrix_operations_package_void)
+	void *field_modify_void, void *computed_field_matrix_operations_package_void)
 /*******************************************************************************
 LAST MODIFIED : 18 Jun 2008
 
@@ -3631,11 +3642,13 @@ Converts a transformation matrix to  a "quaternion".
 	int return_code;
 	struct Computed_field *field, **source_fields;
 	Computed_field_matrix_operations_package *computed_field_matrix_operations_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_matrix_to_quaternion);
-	if (state && (field = (struct Computed_field *)field_void) &&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_matrix_operations_package=
 			(Computed_field_matrix_operations_package *)
 			computed_field_matrix_operations_package_void))
@@ -3666,7 +3679,7 @@ Converts a transformation matrix to  a "quaternion".
 						 "    8   9   10  11                                         "
 						 "    12  13  14  15                                         \n");
 					set_source_field_data.computed_field_manager =
-						 computed_field_matrix_operations_package->computed_field_manager;
+						Cmiss_region_get_Computed_field_manager(field_modify->region);
 					set_source_field_data.conditional_function =
 						 Computed_field_has_16_components;
 					set_source_field_data.conditional_function_user_data = (void *)NULL;
@@ -3733,10 +3746,6 @@ DESCRIPTION :
 	ENTER(Computed_field_register_types_matrix_operations);
 	if (computed_field_package)
 	{
-		computed_field_matrix_operations_package->computed_field_manager =
-			Computed_field_package_get_computed_field_manager(
-				computed_field_package);
-
 		return_code =
 			Computed_field_package_add_type(computed_field_package,
 				computed_field_eigenvalues_type_string,

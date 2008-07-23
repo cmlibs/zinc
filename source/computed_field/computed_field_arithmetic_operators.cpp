@@ -57,8 +57,7 @@ extern "C" {
 
 class Computed_field_arithmetic_operators_package : public Computed_field_type_package
 {
-public:
-	struct MANAGER(Computed_field) *computed_field_manager;
+	/* empty; field manager now comes from region, passed in Computed_field_modify_data */
 };
 
 namespace {
@@ -342,7 +341,7 @@ If the field is of type COMPUTED_FIELD_POWER, the
 } /* Computed_field_get_type_power */
 
 int define_Computed_field_type_power(struct Parse_state *state,
-	void *field_void,void *computed_field_arithmetic_operators_package_void)
+	void *field_modify_void,void *computed_field_arithmetic_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -355,12 +354,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,**source_fields;
 	Computed_field_arithmetic_operators_package 
 		*computed_field_arithmetic_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_power);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+		(field=field_modify->field)&&
 		(computed_field_arithmetic_operators_package=
 		(Computed_field_arithmetic_operators_package *)
 		computed_field_arithmetic_operators_package_void))
@@ -393,7 +394,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					computed_field_arithmetic_operators_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_source_field_data.conditional_function=
           Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -725,7 +726,7 @@ If the field is of type COMPUTED_FIELD_MULTIPLY_COMPONENTS, the
 } /* Computed_field_get_type_multiply_components */
 
 int define_Computed_field_type_multiply_components(struct Parse_state *state,
-	void *field_void,void *computed_field_arithmetic_operators_package_void)
+	void *field_modify_void,void *computed_field_arithmetic_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -738,12 +739,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,**source_fields;
 	Computed_field_arithmetic_operators_package 
 		*computed_field_arithmetic_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_multiply_components);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_arithmetic_operators_package=
 		(Computed_field_arithmetic_operators_package *)
 		computed_field_arithmetic_operators_package_void))
@@ -776,7 +779,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					computed_field_arithmetic_operators_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
 				set_source_field_array_data.number_of_fields=2;
@@ -1106,7 +1109,7 @@ If the field is of type COMPUTED_FIELD_DIVIDE_COMPONENTS, the
 } /* Computed_field_get_type_divide_components */
 
 int define_Computed_field_type_divide_components(struct Parse_state *state,
-	void *field_void,void *computed_field_arithmetic_operators_package_void)
+	void *field_modify_void,void *computed_field_arithmetic_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -1119,12 +1122,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,**source_fields;
 	Computed_field_arithmetic_operators_package 
 		*computed_field_arithmetic_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_divide_components);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_arithmetic_operators_package=
 		(Computed_field_arithmetic_operators_package *)
 		computed_field_arithmetic_operators_package_void))
@@ -1157,7 +1162,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					computed_field_arithmetic_operators_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
 				set_source_field_array_data.number_of_fields=2;
@@ -1538,7 +1543,7 @@ If the field is of type COMPUTED_FIELD_ADD, the
 } /* Computed_field_get_type_add */
 
 int define_Computed_field_type_add(struct Parse_state *state,
-	void *field_void,void *computed_field_arithmetic_operators_package_void)
+	void *field_modify_void,void *computed_field_arithmetic_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -1552,12 +1557,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,**source_fields;
 	Computed_field_arithmetic_operators_package 
 		*computed_field_arithmetic_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_add);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_arithmetic_operators_package=
 		(Computed_field_arithmetic_operators_package *)
 		computed_field_arithmetic_operators_package_void))
@@ -1595,7 +1602,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					computed_field_arithmetic_operators_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
 				set_source_field_array_data.number_of_fields=2;
@@ -2059,7 +2066,7 @@ If the field is of type COMPUTED_FIELD_SCALE, the
 } /* Computed_field_get_type_scale */
 
 int define_Computed_field_type_scale(struct Parse_state *state,
-	void *field_void,void *computed_field_arithmetic_operators_package_void)
+	void *field_modify_void,void *computed_field_arithmetic_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -2074,12 +2081,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,*source_field;
 	Computed_field_arithmetic_operators_package 
 		*computed_field_arithmetic_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Coordinate_system *coordinate_system;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_scale);
-	if (state && (field = (struct Computed_field *)field_void) &&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_arithmetic_operators_package =
 			(Computed_field_arithmetic_operators_package *)
 			computed_field_arithmetic_operators_package_void))
@@ -2087,7 +2096,7 @@ already) and allows its contents to be modified.
 		return_code = 1;
 		/* get valid parameters for projection field */
 		set_source_field_data.computed_field_manager =
-			computed_field_arithmetic_operators_package->computed_field_manager;
+			Cmiss_region_get_Computed_field_manager(field_modify->region);
 		set_source_field_data.conditional_function =
 			Computed_field_has_numerical_components;
 		set_source_field_data.conditional_function_user_data = (void *)NULL;
@@ -2573,7 +2582,7 @@ If the field is of type COMPUTED_FIELD_CLAMP_MAXIMUM, the
 } /* Computed_field_get_type_clamp_maximum */
 
 int define_Computed_field_type_clamp_maximum(struct Parse_state *state,
-	void *field_void,void *computed_field_arithmetic_operators_package_void)
+	void *field_modify_void,void *computed_field_arithmetic_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -2588,11 +2597,13 @@ already) and allows its contents to be modified.
 	struct Computed_field *field, *source_field;
 	Computed_field_arithmetic_operators_package 
 		*computed_field_arithmetic_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_clamp_maximum);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_arithmetic_operators_package=
 		(Computed_field_arithmetic_operators_package *)
 		computed_field_arithmetic_operators_package_void))
@@ -2600,7 +2611,7 @@ already) and allows its contents to be modified.
 		return_code=1;
 		/* get valid parameters for projection field */
 		set_source_field_data.computed_field_manager =
-			computed_field_arithmetic_operators_package->computed_field_manager;
+			Cmiss_region_get_Computed_field_manager(field_modify->region);
 		set_source_field_data.conditional_function =
 			Computed_field_has_numerical_components;
 		set_source_field_data.conditional_function_user_data = (void *)NULL;
@@ -3073,7 +3084,7 @@ If the field is of type COMPUTED_FIELD_CLAMP_MINIMUM, the
 } /* Computed_field_get_type_clamp_minimum */
 
 int define_Computed_field_type_clamp_minimum(struct Parse_state *state,
-	void *field_void,void *computed_field_arithmetic_operators_package_void)
+	void *field_modify_void,void *computed_field_arithmetic_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -3088,11 +3099,13 @@ already) and allows its contents to be modified.
 	struct Computed_field *field, *source_field;
 	Computed_field_arithmetic_operators_package 
 		*computed_field_arithmetic_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_clamp_minimum);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_arithmetic_operators_package=
 		(Computed_field_arithmetic_operators_package *)
 		computed_field_arithmetic_operators_package_void))
@@ -3100,7 +3113,7 @@ already) and allows its contents to be modified.
 		return_code=1;
 		/* get valid parameters for projection field */
 		set_source_field_data.computed_field_manager =
-			computed_field_arithmetic_operators_package->computed_field_manager;
+			Cmiss_region_get_Computed_field_manager(field_modify->region);
 		set_source_field_data.conditional_function =
 			Computed_field_has_numerical_components;
 		set_source_field_data.conditional_function_user_data = (void *)NULL;
@@ -3607,7 +3620,7 @@ It is up to the calling function to DEALLOCATE the returned <*offsets>.
 } /* Computed_field_get_type_offset */
 
 int define_Computed_field_type_offset(struct Parse_state *state,
-	void *field_void,void *computed_field_arithmetic_operators_package_void)
+	void *field_modify_void,void *computed_field_arithmetic_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -3622,12 +3635,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,*source_field;
 	Computed_field_arithmetic_operators_package 
 		*computed_field_arithmetic_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Coordinate_system *coordinate_system;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_offset);
-	if (state && (field = (struct Computed_field *)field_void) &&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_arithmetic_operators_package =
 			(Computed_field_arithmetic_operators_package *)
 			computed_field_arithmetic_operators_package_void))
@@ -3635,7 +3650,7 @@ already) and allows its contents to be modified.
 		return_code = 1;
 		/* get valid parameters for projection field */
 		set_source_field_data.computed_field_manager =
-			computed_field_arithmetic_operators_package->computed_field_manager;
+			Cmiss_region_get_Computed_field_manager(field_modify->region);
 		set_source_field_data.conditional_function =
 			Computed_field_has_numerical_components;
 		set_source_field_data.conditional_function_user_data = (void *)NULL;
@@ -4061,7 +4076,7 @@ If the field is of type COMPUTED_FIELD_SUM_COMPONENTS, the
 } /* Computed_field_get_type_sum_components */
 
 int define_Computed_field_type_sum_components(struct Parse_state *state,
-	void *field_void,void *computed_field_arithmetic_operators_package_void)
+	void *field_modify_void,void *computed_field_arithmetic_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -4076,11 +4091,13 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,*source_field;
 	Computed_field_arithmetic_operators_package 
 		*computed_field_arithmetic_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_sum_components);
-	if (state && (field = (struct Computed_field *)field_void) &&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_arithmetic_operators_package =
 			(Computed_field_arithmetic_operators_package *)
 			computed_field_arithmetic_operators_package_void))
@@ -4088,7 +4105,7 @@ already) and allows its contents to be modified.
 		return_code = 1;
 		/* get valid parameters for projection field */
 		set_source_field_data.computed_field_manager =
-			computed_field_arithmetic_operators_package->computed_field_manager;
+			Cmiss_region_get_Computed_field_manager(field_modify->region);
 		set_source_field_data.conditional_function =
 			Computed_field_has_numerical_components;
 		set_source_field_data.conditional_function_user_data = (void *)NULL;
@@ -4558,7 +4575,7 @@ allocated array containing the FE_values.
 } /* Computed_field_get_type_edit_mask */
 
 int define_Computed_field_type_edit_mask(struct Parse_state *state,
-	void *field_void, void *computed_field_arithmetic_operators_package_void)
+	void *field_modify_void, void *computed_field_arithmetic_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -4573,12 +4590,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,*source_field;
 	Computed_field_arithmetic_operators_package 
 		*computed_field_arithmetic_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Coordinate_system *coordinate_system;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_edit_mask);
-	if (state && (field = (struct Computed_field *)field_void) &&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_arithmetic_operators_package =
 			(Computed_field_arithmetic_operators_package *)
 			computed_field_arithmetic_operators_package_void))
@@ -4586,7 +4605,7 @@ already) and allows its contents to be modified.
 		return_code = 1;
 		/* get valid parameters for projection field */
 		set_source_field_data.computed_field_manager =
-			computed_field_arithmetic_operators_package->computed_field_manager;
+			Cmiss_region_get_Computed_field_manager(field_modify->region);
 		set_source_field_data.conditional_function =
 			Computed_field_has_numerical_components;
 		set_source_field_data.conditional_function_user_data = (void *)NULL;
@@ -4964,7 +4983,7 @@ If the field is of type COMPUTED_FIELD_LOG, the
 } /* Computed_field_get_type_log */
 
 int define_Computed_field_type_log(struct Parse_state *state,
-	void *field_void,void *computed_field_arithmetic_operators_package_void)
+	void *field_modify_void,void *computed_field_arithmetic_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -4977,12 +4996,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,**source_fields;
 	Computed_field_arithmetic_operators_package 
 		*computed_field_arithmetic_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_log);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_arithmetic_operators_package=
 		(Computed_field_arithmetic_operators_package *)
 		computed_field_arithmetic_operators_package_void))
@@ -5010,7 +5031,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					computed_field_arithmetic_operators_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_source_field_data.conditional_function=
 					Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -5308,7 +5329,7 @@ If the field is of type COMPUTED_FIELD_SQRT, the
 } /* Computed_field_get_type_sqrt */
 
 int define_Computed_field_type_sqrt(struct Parse_state *state,
-	void *field_void,void *computed_field_arithmetic_operators_package_void)
+	void *field_modify_void,void *computed_field_arithmetic_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -5321,12 +5342,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,**source_fields;
 	Computed_field_arithmetic_operators_package 
 		*computed_field_arithmetic_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_sqrt);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_arithmetic_operators_package=
 		(Computed_field_arithmetic_operators_package *)
 		computed_field_arithmetic_operators_package_void))
@@ -5354,7 +5377,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					computed_field_arithmetic_operators_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_source_field_data.conditional_function=
 					Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -5652,7 +5675,7 @@ If the field is of type COMPUTED_FIELD_EXP, the
 } /* Computed_field_get_type_exp */
 
 int define_Computed_field_type_exp(struct Parse_state *state,
-	void *field_void,void *computed_field_arithmetic_operators_package_void)
+	void *field_modify_void,void *computed_field_arithmetic_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -5665,12 +5688,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,**source_fields;
 	Computed_field_arithmetic_operators_package 
 		*computed_field_arithmetic_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_exp);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_arithmetic_operators_package=
 		(Computed_field_arithmetic_operators_package *)
 		computed_field_arithmetic_operators_package_void))
@@ -5698,7 +5723,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					computed_field_arithmetic_operators_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_source_field_data.conditional_function=
 					Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -5766,9 +5791,6 @@ DESCRIPTION :
 	ENTER(Computed_field_register_types_arithmetic_operators);
 	if (computed_field_package)
 	{
-		computed_field_arithmetic_operators_package->computed_field_manager =
-			Computed_field_package_get_computed_field_manager(
-				computed_field_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_power_type_string, 
 			define_Computed_field_type_power,

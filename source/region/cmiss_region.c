@@ -1528,6 +1528,210 @@ For safety, returns NULL in <region_address> on any error.
 	return (return_code);
 } /* Cmiss_region_get_region_from_path */
 
+int Cmiss_region_get_partial_region_path(struct Cmiss_region *root_region,
+	const char *path, struct Cmiss_region **region_address,
+	char **region_path_address,	char **remainder_address)
+{
+	char *child_name, *child_name_allocate, *child_name_end, *child_name_start;
+	int length, return_code;
+	struct Cmiss_region *next_region, *region;
+
+	ENTER(Cmiss_region_get_partial_region_path);
+	if (root_region && path && region_address && region_path_address &&
+		remainder_address)
+	{
+		return_code = 1;
+		region = root_region;
+		child_name_allocate = duplicate_string(path);
+		child_name = child_name_allocate;
+		/* skip leading separator */
+		if (child_name[0] == CMISS_REGION_PATH_SEPARATOR_CHAR)
+		{
+			child_name++;
+		}
+		child_name_start = child_name;
+		next_region = region;
+
+		while (next_region && (*child_name != '\0'))
+		{
+			child_name_end = strchr(child_name, CMISS_REGION_PATH_SEPARATOR_CHAR);
+			if (child_name_end)
+			{
+				*child_name_end = '\0';
+			}
+			if (next_region =
+				Cmiss_region_get_child_region_from_name(region, child_name))
+			{
+				region = next_region;
+				if (child_name_end)
+				{
+					child_name = child_name_end + 1;
+				}
+				else
+				{
+					child_name = child_name + strlen(child_name);
+				}
+			}
+			if (child_name_end)
+			{
+				*child_name_end = CMISS_REGION_PATH_SEPARATOR_CHAR;
+			}
+		}
+
+		length = child_name - child_name_start;
+		if ((length > 0) &&
+			(*(child_name - 1) == CMISS_REGION_PATH_SEPARATOR_CHAR))
+		{
+			length--;
+		}
+		if (ALLOCATE(*region_path_address, char, length + 1))
+		{
+			strncpy(*region_path_address, child_name_start, length);
+			(*region_path_address)[length] = '\0';
+		}
+		else
+		{
+			return_code = 0;
+		}
+
+		length = strlen(child_name);
+		if (length == 0)
+		{
+			*remainder_address = NULL;
+		}
+		else
+		{
+			/* remove trailing '/' */
+			if (child_name[length-1] == CMISS_REGION_PATH_SEPARATOR_CHAR)
+			{
+				length--;
+			}
+			if (ALLOCATE(*remainder_address, char, length + 1))
+			{
+				strncpy(*remainder_address, child_name, length);
+				(*remainder_address)[length] = '\0';
+			}
+			else
+			{
+				return_code = 0;
+			}
+		}
+
+		*region_address = region;
+		DEALLOCATE(child_name_allocate);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_region_get_partial_region_path.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_region_get_partial_region_path */
+
+/***************************************************************************//**
+ * Modifier function to set the region, region path and field name.
+ * Fields must not be the same name as a child region.
+ *
+ * Examples:
+ *   /heart/coordinates = region path and field name
+ *   heart              = region path only
+ *   coordinates        = field name only 
+ * @param region_path_and_name a struct Cmiss_region_path_and_name which if
+ *   set contains an ACCESSed region and allocated path and name which caller
+ *   is required to clean up. Name may be NULL if path is fully resolved.
+ */
+static int set_region_path_and_or_field_name(struct Parse_state *state,
+	void *region_path_and_name_void, void *root_region_void)
+{
+	const char *current_token;
+	int return_code;
+	struct Cmiss_region_path_and_name *name_data;
+	struct Cmiss_region *root_region;
+
+	ENTER(set_region_path_and_or_field_name);
+	if (state && (name_data = (struct Cmiss_region_path_and_name *)region_path_and_name_void) &&
+		(root_region = (struct Cmiss_region *)root_region_void))
+	{
+		if (current_token = state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
+			{
+				if (Cmiss_region_get_partial_region_path(root_region, current_token,
+					&name_data->region, &name_data->region_path, &name_data->name))
+				{
+					ACCESS(Cmiss_region)(name_data->region);
+					if (!name_data->name || (NULL == strchr(name_data->name, CMISS_REGION_PATH_SEPARATOR_CHAR)))
+					{
+						return_code = shift_Parse_state(state, 1);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "Bad region path and/or field name: %s",current_token);
+						display_parse_state_location(state);
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_region_path_and_or_field_name.  Failed to get path and name");
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE, " REGION_PATH|REGION_PATH/FIELD_NAME|FIELD_NAME");
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(WARNING_MESSAGE, "Missing region path and/or field name");
+			display_parse_state_location(state);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_region_path_and_or_field_name.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_region_path_and_or_field_name */
+
+int Option_table_add_region_path_and_or_field_name_entry(
+	struct Option_table *option_table, char *token,
+	struct Cmiss_region_path_and_name *region_path_and_name,
+	struct Cmiss_region *root_region)
+{
+	int return_code;
+
+	ENTER(Option_table_add_region_path_and_or_field_name_entry);
+	if (option_table && region_path_and_name && root_region)
+	{
+		return_code = Option_table_add_entry(option_table, token,
+			(void *)region_path_and_name, (void *)root_region,
+			set_region_path_and_or_field_name);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_region_path_and_or_field_name_entry.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_region_path_and_or_field_name_entry */
+
 int Cmiss_region_get_child_region_from_path(struct Cmiss_region *root_region,
 	char *path, struct Cmiss_region **child_region_address,
 	char **remaining_path_address)

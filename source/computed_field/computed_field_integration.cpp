@@ -71,7 +71,6 @@ namespace {
 class Computed_field_integration_package : public Computed_field_type_package
 {
 public:
-	MANAGER(Computed_field) *computed_field_manager;
 	Cmiss_region *root_region;
 };
 
@@ -2201,7 +2200,7 @@ the seed element used for the mapping is returned - otherwise an error is report
 } /* Computed_field_get_type_integration */
 
 int define_Computed_field_type_integration(Parse_state *state,
-	void *field_void,void *computed_field_integration_package_void)
+	void *field_modify_void,void *computed_field_integration_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -2215,6 +2214,7 @@ and allows its contents to be modified.
 	Cmiss_region *region;
 	Computed_field *coordinate_field, *field, *integrand;
 	Computed_field_integration_package *computed_field_integration_package;
+	Computed_field_modify_data *field_modify;
 	double value;
 	FE_element *seed_element;	
 	float time_update;
@@ -2225,7 +2225,8 @@ and allows its contents to be modified.
 		set_integrand_field_data;
 
 	ENTER(define_Computed_field_type_integration);
-	if (state&&(field=(Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_integration_package=
 			(Computed_field_integration_package *)computed_field_integration_package_void))
 	{
@@ -2303,7 +2304,7 @@ and allows its contents to be modified.
 					option_table = CREATE(Option_table)();
 					/* coordinate */
 					set_coordinate_field_data.computed_field_manager=
-						computed_field_integration_package->computed_field_manager;
+						Cmiss_region_get_Computed_field_manager(field_modify->region);
 					set_coordinate_field_data.conditional_function=
 						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=
@@ -2313,7 +2314,7 @@ and allows its contents to be modified.
 						set_Computed_field_conditional);
 					/* integrand */
 					set_integrand_field_data.computed_field_manager=
-						computed_field_integration_package->computed_field_manager;
+						Cmiss_region_get_Computed_field_manager(field_modify->region);
 					set_integrand_field_data.conditional_function=
 						Computed_field_is_scalar;
 					set_integrand_field_data.conditional_function_user_data=
@@ -2384,7 +2385,7 @@ and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* coordinate */
 				set_coordinate_field_data.computed_field_manager=
-					computed_field_integration_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_coordinate_field_data.conditional_function=
 					Computed_field_has_up_to_3_numerical_components;
 				set_coordinate_field_data.conditional_function_user_data=
@@ -2394,7 +2395,7 @@ and allows its contents to be modified.
 					set_Computed_field_conditional);
 				/* integrand */
 				set_integrand_field_data.computed_field_manager=
-					computed_field_integration_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_integrand_field_data.conditional_function=
 					Computed_field_is_scalar;
 				set_integrand_field_data.conditional_function_user_data=
@@ -2454,7 +2455,7 @@ and allows its contents to be modified.
 } /* define_Computed_field_type_integration */
 
 int define_Computed_field_type_xi_texture_coordinates(Parse_state *state,
-	void *field_void,void *computed_field_integration_package_void)
+	void *field_modify_void,void *computed_field_integration_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -2469,11 +2470,13 @@ and allows its contents to be modified.
 	int expected_parameters, previous_state_index, return_code;
 	Computed_field *coordinate_field, *field, *integrand;
 	Computed_field_integration_package *computed_field_integration_package;
+	Computed_field_modify_data *field_modify;
 	FE_element *seed_element;	
 	Option_table *option_table;
 
 	ENTER(define_Computed_field_type_xi_texture_coordinates);
-	if (state&&(field=(Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_integration_package=
 			(Computed_field_integration_package *)computed_field_integration_package_void))
 	{
@@ -2485,7 +2488,7 @@ and allows its contents to be modified.
 		if (!(coordinate_field = ACCESS(Computed_field)(
 			FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 			Computed_field_is_type_xi_coordinates, (void *)NULL,
-			computed_field_integration_package->computed_field_manager))))
+			Cmiss_region_get_Computed_field_manager(field_modify->region)))))
 		{
 			display_message(ERROR_MESSAGE,
 				"define_Computed_field_type_xi_texture_coordinates.  xi field not found");
@@ -2613,9 +2616,6 @@ DESCRIPTION :
 	ENTER(Computed_field_register_type_integration);
 	if (computed_field_package)
 	{
-		computed_field_integration_package->computed_field_manager =
-			Computed_field_package_get_computed_field_manager(
-				computed_field_package);
 		computed_field_integration_package->root_region = root_region;
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_integration_type_string, 

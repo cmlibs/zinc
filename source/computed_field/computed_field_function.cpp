@@ -62,8 +62,6 @@ Module types
 
 class Computed_field_function_package : public Computed_field_type_package
 {
-public:
-	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
 namespace {
@@ -500,7 +498,7 @@ internally used path.
 } /* Computed_field_get_type_function */
 
 int define_Computed_field_type_function(Parse_state *state,
-	void *field_void, void *computed_field_function_package_void)
+	void *field_modify_void, void *computed_field_function_package_void)
 /*******************************************************************************
 LAST MODIFIED : 31 March 2008
 
@@ -513,12 +511,14 @@ already) and allows its contents to be modified.
 	Computed_field *field, *source_field, *result_field,
 		*reference_field;
 	Computed_field_function_package *computed_field_function_package;
+	Computed_field_modify_data *field_modify;
 	Option_table *option_table;
 	Set_Computed_field_conditional_data set_source_field_data,
 		set_result_field_data, set_reference_field_data;
 
 	ENTER(define_Computed_field_type_function);
-	if (state && (field = (Computed_field *)field_void) &&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field) &&
 		(computed_field_function_package =
 			(Computed_field_function_package *)
 			computed_field_function_package_void))
@@ -556,7 +556,7 @@ already) and allows its contents to be modified.
 				"The value of a function field is found by evaluating the <source_field> values, and then evaluating the <result_field> with respect to the <reference_field> using the values from the source field.  The sequence of operations <reference_field> to <result_field> become a function operating on the input <source_field> values.  Either the number of components in the <source_field> and <reference_field> should be the same, and then the number of components of this <field> will be the same as the number of components in the <result_field>, or if the <reference_field> and <result_field> are scalar then the function operation will be applied as many times as required for each component in the <source_field> and then this <field> will have as many components as the <source_field>.");
 			/* reference_field */
 			set_reference_field_data.computed_field_manager =
-				computed_field_function_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_reference_field_data.conditional_function = 
 				Computed_field_has_numerical_components;
 			set_reference_field_data.conditional_function_user_data = 
@@ -566,7 +566,7 @@ already) and allows its contents to be modified.
 				set_Computed_field_conditional);
 			/* result_field */
 			set_result_field_data.computed_field_manager =
-				computed_field_function_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_result_field_data.conditional_function = 
 				Computed_field_has_numerical_components;
 			set_result_field_data.conditional_function_user_data = 
@@ -576,7 +576,7 @@ already) and allows its contents to be modified.
 				set_Computed_field_conditional);
 			/* source_field */
 			set_source_field_data.computed_field_manager =
-				computed_field_function_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_source_field_data.conditional_function = 
 				Computed_field_has_numerical_components;
 			set_source_field_data.conditional_function_user_data = 
@@ -644,8 +644,6 @@ DESCRIPTION :
 	ENTER(Computed_field_register_types_function);
 	if (computed_field_package)
 	{
-		computed_field_function_package->computed_field_manager =
-			Computed_field_package_get_computed_field_manager(computed_field_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_function_type_string,
 			define_Computed_field_type_function,

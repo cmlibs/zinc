@@ -56,6 +56,7 @@ Functions for executing cmiss commands.
 #if defined (MOTIF)
 #include <Xm/List.h>
 #endif /* defined (MOTIF) */
+#include "api/cmiss_region.h"
 #include "api/cmiss_scene_viewer.h"
 #include "api/cmiss_scene_viewer_private.h"
 #if defined (CELL)
@@ -9269,7 +9270,7 @@ Executes a GFX DEFINE command.
 				Option_table_add_entry(option_table, "faces", NULL,
 					command_data_void, gfx_define_faces);
 				/* field */
-				Option_table_add_entry(option_table, "field", NULL,
+				Option_table_add_entry(option_table, "field", command_data->root_region,
 					command_data->computed_field_package, define_Computed_field);
 				/* font */
 				Option_table_add_entry(option_table, "font", NULL,
@@ -12392,104 +12393,68 @@ Executes a GFX FILTER command.
 static int gfx_list_all_commands(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 October 1998
+LAST MODIFIED : 23 July 2008
 
 DESCRIPTION :
-Executes a GFX LIST WINDOW.
+Executes a GFX LIST ALL_COMMANDS.
 ==============================================================================*/
 {
-	 int return_code;
-	 static char	*command_prefix, *current_token;
-	 struct Cmiss_command_data *command_data;
-	 struct MANAGER(Graphical_material) *graphical_material_manager;
-	 struct MANAGER(Computed_field) *computed_field_manager;
-	 struct LIST(Computed_field) *list_of_fields;
-	 struct List_Computed_field_commands_data list_commands_data;
-	 ENTER(gfx_list_all_commands);
-	 USE_PARAMETER(dummy_to_be_modified);
-	 if (state)
-	 { 
-			if (current_token=state->current_token)
+	int return_code;
+	static char	*command_prefix, *current_token;
+	struct Cmiss_command_data *command_data;
+	struct MANAGER(Graphical_material) *graphical_material_manager;
+
+	ENTER(gfx_list_all_commands);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{ 
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				 if (strcmp(PARSER_HELP_STRING,current_token)&&
-						strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-				 {
-				 }
-				 else
-				 {
-						display_message(INFORMATION_MESSAGE," [ALL]");
-						return_code=1;
-				 }
 			}
 			else
 			{
-				 if	(command_data = (struct Cmiss_command_data *)command_data_void)
-				 {
-
-						/* Command of computed_field */
-						if (command_data->computed_field_package && (computed_field_manager=
-									Computed_field_package_get_computed_field_manager(
-										 command_data->computed_field_package)))
-						{
-							 if (list_of_fields = CREATE(LIST(Computed_field))())
-							 {
-									command_prefix="gfx define field ";
-									list_commands_data.command_prefix = command_prefix;
-									list_commands_data.listed_fields = 0;
-									list_commands_data.computed_field_list = list_of_fields;
-									list_commands_data.computed_field_manager =
-										 computed_field_manager;
-									while (FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
-														list_Computed_field_commands_if_managed_source_fields_in_list,
-														(void *)&list_commands_data, computed_field_manager) &&
-										 (0 != list_commands_data.listed_fields))
-									{
-										 list_commands_data.listed_fields = 0;
-									}			 
-									DESTROY(LIST(Computed_field))(&list_of_fields);
-									return_code=1;					
-							 } 
-							 else
-							 {
-									return_code=0;
-							 }
-							 if (!return_code)
-							 {
-									display_message(ERROR_MESSAGE,
-										 "gfx_list_Computed_field.  Could not list field commands");
-							 }
-						}
-						/* Commands of spectrum */
-						if (command_data->spectrum_manager)
-						{
-							 FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
-									for_each_spectrum_list_or_write_commands, (void *)"false", command_data->spectrum_manager);			
-						}
-						/* Command of graphical_material */
-						if (graphical_material_manager =
-							 Material_package_get_material_manager(command_data->material_package))
-						{
-							 command_prefix="gfx create material ";
-							 return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
-									list_Graphical_material_commands,(void *)command_prefix, 
-									graphical_material_manager);
-						}	
-						return_code=FOR_EACH_OBJECT_IN_MANAGER(Scene)(
-							 for_each_graphics_object_in_scene_get_command_list, (void*) "false",
-							 command_data->scene_manager);
-						/* Command of graphics window */
-#if defined (USE_CMGUI_GRAPHICS_WINDOW)
-						return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
-							 list_Graphics_window_commands,(void *)NULL,
-							 command_data->graphics_window_manager);
-#endif /*defined (USE_CMGUI_GRAPHICS_WINDOW)*/
-				 }
-				 
+				display_message(INFORMATION_MESSAGE," [ALL]");
+				return_code=1;
 			}
-	 }
-	 LEAVE;
-	 
-	 return (return_code);
+		}
+		else
+		{
+			if (command_data = (struct Cmiss_command_data *)command_data_void)
+			{
+				cmiss_execute_command("gfx list field commands", command_data_void);
+				/* Commands of spectrum */
+				if (command_data->spectrum_manager)
+				{
+					FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
+						for_each_spectrum_list_or_write_commands, (void *)"false", command_data->spectrum_manager);			
+				}
+				/* Command of graphical_material */
+				if (graphical_material_manager =
+					Material_package_get_material_manager(command_data->material_package))
+				{
+					command_prefix="gfx create material ";
+					return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
+						list_Graphical_material_commands,(void *)command_prefix, 
+						graphical_material_manager);
+				}	
+				return_code=FOR_EACH_OBJECT_IN_MANAGER(Scene)(
+					for_each_graphics_object_in_scene_get_command_list, (void*) "false",
+					command_data->scene_manager);
+				/* Command of graphics window */
+#if defined (USE_CMGUI_GRAPHICS_WINDOW)
+				return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
+					 list_Graphics_window_commands,(void *)NULL,
+					 command_data->graphics_window_manager);
+#endif /*defined (USE_CMGUI_GRAPHICS_WINDOW)*/
+			}
+		}
+	}
+	LEAVE;
+
+	return (return_code);
 }/* gfx_list_all_commands */
 	 
 static int gfx_list_environment_map(struct Parse_state *state,
@@ -12561,75 +12526,100 @@ Executes a GFX LIST ENVIRONMENT_MAP.
 } /* gfx_list_environment_map */
 
 static int gfx_list_Computed_field(struct Parse_state *state,
-	void *dummy_to_be_modified,void *computed_field_package_void)
+	void *dummy_to_be_modified,void *root_region_void)
 /*******************************************************************************
-LAST MODIFIED : 14 December 2001
+LAST MODIFIED : 23 July 2008
 
 DESCRIPTION :
 Executes a GFX LIST FIELD.
-???RC Could be moved to computed_field.c.
 ==============================================================================*/
 {
 	static char	*command_prefix="gfx define field ";
-	char commands_flag;
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"commands",NULL,NULL,set_char_flag},
-		{"name",NULL,NULL,set_Computed_field_conditional},
-		{NULL,NULL,NULL,set_Computed_field_conditional}
-	};
-	struct Computed_field *computed_field;
-	struct Computed_field_package *computed_field_package;
+	char commands_flag, *command_prefix_plus_region_path;
+	int path_length, return_code;
+	struct Cmiss_region *root_region;
+	struct Cmiss_region_path_and_name region_path_and_name;
+	struct Computed_field *field;
 	struct List_Computed_field_commands_data list_commands_data;
 	struct LIST(Computed_field) *list_of_fields;
-	struct MANAGER(Computed_field) *computed_field_manager;
-	struct Set_Computed_field_conditional_data set_field_data;
+	struct Option_table *option_table;
 
 	ENTER(gfx_list_Computed_field);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
+	if (state && (root_region = (struct Cmiss_region *)root_region_void))
 	{
-		if ((computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void)&&
-			(computed_field_manager=Computed_field_package_get_computed_field_manager(
-				computed_field_package)))
+		commands_flag=0;
+		region_path_and_name.region = (struct Cmiss_region *)NULL;
+		region_path_and_name.region_path = (char *)NULL;
+		region_path_and_name.name = (char *)NULL;
+		
+		option_table=CREATE(Option_table)();
+		/* commands */
+		Option_table_add_entry(option_table, "commands", &commands_flag, NULL,
+			set_char_flag);
+		/* default option: region_path and/or field_name */
+		Option_table_add_region_path_and_or_field_name_entry(
+			option_table, (char *)NULL, &region_path_and_name, root_region);
+		if (return_code = Option_table_multi_parse(option_table,state))
 		{
-			commands_flag=0;
-			/* if no computed_field specified, list all computed_fields */
-			computed_field=(struct Computed_field *)NULL;
-			set_field_data.conditional_function=
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
-			set_field_data.conditional_function_user_data=(void *)NULL;
-			set_field_data.computed_field_manager=
-				Computed_field_package_get_computed_field_manager(
-					computed_field_package);
-			(option_table[0]).to_be_modified= &commands_flag;
-			(option_table[1]).to_be_modified= &computed_field;
-			(option_table[1]).user_data= &set_field_data;
-			(option_table[2]).to_be_modified= &computed_field;
-			(option_table[2]).user_data= &set_field_data;
-			if (return_code=process_multiple_options(state,option_table))
+			field = (struct Computed_field *)NULL;
+			if (region_path_and_name.name)
 			{
-				if (commands_flag)
+				/* following accesses the field, if any */
+				field = Cmiss_region_find_field_by_name(region_path_and_name.region,
+					region_path_and_name.name);
+				if (!field)
 				{
-					if (computed_field)
+					display_message(ERROR_MESSAGE,
+						"gfx list field:  There is no field or child region called %s in region %s",
+						region_path_and_name.name, region_path_and_name.region_path);
+					return_code = 0;
+				}
+			}
+			if (return_code)
+			{
+				path_length = 0;
+				if (region_path_and_name.region_path)
+				{
+					path_length = strlen(region_path_and_name.region_path);
+					if (path_length > 0)
 					{
-						return_code=list_Computed_field_commands(computed_field,
-							(void *)command_prefix);
+						path_length += strlen(CMISS_REGION_PATH_SEPARATOR_STRING);
+					}
+				}
+				else
+				{
+					region_path_and_name.region = ACCESS(Cmiss_region)(root_region);
+				}
+				if (commands_flag)
+				{	
+					if (ALLOCATE(command_prefix_plus_region_path,char,
+						strlen(command_prefix)+1+path_length))
+					{
+						strcpy(command_prefix_plus_region_path,command_prefix);
+						if (path_length > 0)
+						{
+							strcat(command_prefix_plus_region_path,region_path_and_name.region_path);
+							strcat(command_prefix_plus_region_path,CMISS_REGION_PATH_SEPARATOR_STRING);
+						}
+					}
+					if (field)
+					{
+						return_code=list_Computed_field_commands(field,
+							(void *)command_prefix_plus_region_path);
 					}
 					else
 					{
 						if (list_of_fields = CREATE(LIST(Computed_field))())
 						{
-							list_commands_data.command_prefix = command_prefix;
+							list_commands_data.command_prefix = command_prefix_plus_region_path;
 							list_commands_data.listed_fields = 0;
 							list_commands_data.computed_field_list = list_of_fields;
 							list_commands_data.computed_field_manager =
-								computed_field_manager;
+								Cmiss_region_get_Computed_field_manager(region_path_and_name.region);
 							while (FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
 								list_Computed_field_commands_if_managed_source_fields_in_list,
-								(void *)&list_commands_data, computed_field_manager) &&
+								(void *)&list_commands_data, Cmiss_region_get_Computed_field_manager(region_path_and_name.region)) &&
 								(0 != list_commands_data.listed_fields))
 							{
 								list_commands_data.listed_fields = 0;
@@ -12640,44 +12630,52 @@ Executes a GFX LIST FIELD.
 						{
 							return_code=0;
 						}
-						if (!return_code)
-						{
-							display_message(ERROR_MESSAGE,
-								"gfx_list_Computed_field.  Could not list field commands");
-						}
 					}
+					DEALLOCATE(command_prefix_plus_region_path);
 				}
 				else
 				{
-					if (computed_field)
+					if (field)
 					{
-						return_code=list_Computed_field(computed_field,(void *)NULL);
+						return_code=list_Computed_field(field,(void *)NULL);
 					}
 					else
 					{
 						return_code=FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
-							list_Computed_field_name,(void *)NULL,computed_field_manager);
+							list_Computed_field_name,(void *)NULL,
+							Cmiss_region_get_Computed_field_manager(region_path_and_name.region));
 					}
 				}
+				if (!return_code)
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx list field.  Failed to list fields");
+				}
 			}
-			/* must deaccess computed_field since accessed by set_Computed_field */
-			if (computed_field)
+			if (field)
 			{
-				DEACCESS(Computed_field)(&computed_field);
+				DEACCESS(Computed_field)(&field);
 			}
 		}
-		else
+		DESTROY(Option_table)(&option_table);
+		if (region_path_and_name.region)
 		{
-			display_message(ERROR_MESSAGE,"gfx_list_Computed_field.  "
-				"Missing computed_field_package_void");
-			return_code=0;
+			DEACCESS(Cmiss_region)(&region_path_and_name.region);
+		}
+		if (region_path_and_name.region_path)
+		{
+			DEALLOCATE(region_path_and_name.region_path);
+		}
+		if (region_path_and_name.name)
+		{
+			DEALLOCATE(region_path_and_name.name);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"gfx_list_Computed_field.  Missing state");
-		return_code=0;
+			"gfx_list_Computed_field.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -14153,7 +14151,7 @@ Executes a GFX LIST command.
 				command_data_void, gfx_list_FE_element);
 			/* field */
 			Option_table_add_entry(option_table, "field", NULL,
-				command_data->computed_field_package, gfx_list_Computed_field);
+				(void *)command_data->root_region, gfx_list_Computed_field);
 			/* g_element */
 			Option_table_add_entry(option_table, "g_element", NULL,
 				command_data_void, gfx_list_g_element);

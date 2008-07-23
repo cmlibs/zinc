@@ -60,7 +60,6 @@ extern "C" {
 class Computed_field_compose_package : public Computed_field_type_package
 {
 public:
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Cmiss_region *root_region;
 };
 
@@ -588,7 +587,7 @@ internally used path.
 } /* Computed_field_get_type_compose */
 
 int define_Computed_field_type_compose(struct Parse_state *state,
-	void *field_void, void *computed_field_compose_package_void)
+	void *field_modify_void, void *computed_field_compose_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -604,6 +603,7 @@ already) and allows its contents to be modified.
 	struct Computed_field *field, *calculate_values_field,*find_element_xi_field,
 		*texture_coordinates_field;
 	Computed_field_compose_package *computed_field_compose_package;
+	Computed_field_modify_data *field_modify;
 	struct Coordinate_system *coordinate_system_ptr;
 	struct Cmiss_region *search_region;
 	struct Option_table *find_option_table, *option_table,
@@ -612,7 +612,8 @@ already) and allows its contents to be modified.
 		set_find_element_xi_field_data, set_texture_coordinates_field_data;
 
 	ENTER(define_Computed_field_type_compose);
-	if (state && (field = (struct Computed_field *)field_void) &&
+	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void) &&
+			(field=field_modify->field) &&
 		(computed_field_compose_package =
 			(Computed_field_compose_package *)
 			computed_field_compose_package_void))
@@ -671,7 +672,7 @@ already) and allows its contents to be modified.
 				"The value of a compose field is found by evaluating the <texture_coordinates_field>, then searching for matching values of the <find_element_xi_field> in the elements of the <group> and then finally evaluating the <calculate_values_field> at this found location.  By restricting the <element_dimension> you can speed up the search and you can specify the outcome if the matching values cannot be found in the element <group> with <use_point_five_when_out_of_bounds> or <fail_when_out_of_bounds>.  See a/resample_texture or a/create_slices where the compose field is used to find the equivalent coordinate in another element to evaluate a texture.");
 			/* calculate_values_field */
 			set_calculate_values_field_data.computed_field_manager =
-				computed_field_compose_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_calculate_values_field_data.conditional_function = 
 				Computed_field_has_numerical_components;
 			set_calculate_values_field_data.conditional_function_user_data = 
@@ -683,7 +684,7 @@ already) and allows its contents to be modified.
 				&element_dimension);
 			/* find_element_xi_field */
 			set_find_element_xi_field_data.computed_field_manager =
-				computed_field_compose_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_find_element_xi_field_data.conditional_function = 
 				Computed_field_has_numerical_components;
 			set_find_element_xi_field_data.conditional_function_user_data = 
@@ -702,7 +703,7 @@ already) and allows its contents to be modified.
 				 computed_field_compose_package->root_region, &search_region_path);
 			/* texture_coordinates_field */
 			set_texture_coordinates_field_data.computed_field_manager =
-				computed_field_compose_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_texture_coordinates_field_data.conditional_function = 
 				Computed_field_has_numerical_components;
 			set_texture_coordinates_field_data.conditional_function_user_data = 
@@ -845,9 +846,6 @@ DESCRIPTION :
 	ENTER(Computed_field_register_types_compose);
 	if (computed_field_package && root_region)
 	{
-		computed_field_compose_package->computed_field_manager =
-			Computed_field_package_get_computed_field_manager(
-			computed_field_package);
 		computed_field_compose_package->root_region = root_region;
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_compose_type_string, 

@@ -218,11 +218,10 @@ struct Computed_field_package
 LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Contains all information for editing and maintaining Computed_fields, including
-the MANAGER(Computed_field). Holds pointer to MANAGER(FE_field) since computed
-fields are based on them, and callback ID for FE_fields, since Computed_field
-wrappers need to be automatically created for each FE_field.
-???RC Make macro PACKAGE(Computed_field) etc.?
+Contains data for gfx define field commands.
+Also contains the computed_field_manger from the root region; this will be
+removed once code using it has been converted to get the field manager directly
+from the appropriate Cmiss_region.
 ==============================================================================*/
 {
 	struct MANAGER(Computed_field) *computed_field_manager;
@@ -3641,7 +3640,7 @@ a set of values.
 struct Add_type_to_option_table_data
 {
 	struct Option_table *option_table;
-	void *field_void;
+	Computed_field_modify_data *field_modify;
 	void *computed_field_package_void;
 };
 
@@ -3661,7 +3660,8 @@ Adds <type> to the <option_table> so it is available to the commands.
 	if (type&&(data=(struct Add_type_to_option_table_data *)
 		add_type_to_option_table_data_void))
 	{
-		Option_table_add_entry(data->option_table,type->name,data->field_void,
+		Option_table_add_entry(data->option_table,type->name,
+			(void *)data->field_modify,
 			type->define_type_user_data,
 			type->define_Computed_field_type_function);
 		return_code=1;
@@ -3678,9 +3678,9 @@ Adds <type> to the <option_table> so it is available to the commands.
 } /* Computed_field_add_type_to_option_table */
 
 static int define_Computed_field_type(struct Parse_state *state,
-	void *field_void,void *computed_field_package_void)
+	void *field_modify_void,void *computed_field_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 21 July 2008
 
 DESCRIPTION :
 Part of the group of define_Computed_field functions. Here, we already have the
@@ -3691,19 +3691,21 @@ and its parameter fields and values.
 {
 	int return_code;
 	struct Add_type_to_option_table_data data;
+	Computed_field_modify_data *field_modify;
 	struct Computed_field_package *computed_field_package;
 	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_type);
-	if (state && (computed_field_package = (struct Computed_field_package *)
-		computed_field_package_void))
+	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void) &&
+		(computed_field_package=(struct Computed_field_package *)
+			computed_field_package_void))
 	{
 		if (state->current_token)
 		{
 			option_table=CREATE(Option_table)();
 			/* new_types */
 			data.option_table = option_table;
-			data.field_void = field_void;
+			data.field_modify = field_modify;
 			data.computed_field_package_void = computed_field_package_void;
 			FOR_EACH_OBJECT_IN_LIST(Computed_field_type_data)(
 				Computed_field_add_type_to_option_table, (void *)&data,
@@ -3729,9 +3731,9 @@ and its parameter fields and values.
 } /* define_Computed_field_type */
 
 int define_Computed_field_coordinate_system(struct Parse_state *state,
-	void *field_void,void *computed_field_package_void)
+	void *field_modify_void,void *computed_field_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 21 July 2008
 
 DESCRIPTION :
 Modifier entry function acting as an optional prerequisite for settings the
@@ -3747,16 +3749,16 @@ to modify it if it was.
 	char *current_token;
 	struct Coordinate_system coordinate_system;
 	int return_code;
-	struct Computed_field *field;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_coordinate_system);
-	if (state&&(field=(struct Computed_field *)field_void))
+	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		if (current_token=state->current_token)
 		{
 			COPY(Coordinate_system)(&coordinate_system,
-				Computed_field_get_coordinate_system(field));
+				Computed_field_get_coordinate_system(field_modify->field));
 			/* read the optional cooordinate_system NAME [focus #] parameter */
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -3770,19 +3772,19 @@ to modify it if it was.
 					DESTROY(Option_table)(&option_table);
 					if(return_code)
 					{
-						if(return_code=define_Computed_field_type(state,field_void,
+						if(return_code=define_Computed_field_type(state,field_modify_void,
 							computed_field_package_void))
 						{
 							/* Override the type set by define_Computed_field_type */
 							return_code = Computed_field_set_coordinate_system(
-								field,&coordinate_system);
+								field_modify->field,&coordinate_system);
 						}
 					}
 				}
 				else
 				{
 					/* Default coordinate system should be set when type is defined */
-					return_code=define_Computed_field_type(state,field_void,
+					return_code=define_Computed_field_type(state,field_modify_void,
 						computed_field_package_void);
 				}
 			}
@@ -3791,7 +3793,7 @@ to modify it if it was.
 				/* Write out the help */
 				option_table = CREATE(Option_table)();
 				Option_table_add_entry(option_table,"[coordinate_system NAME]",
-					field_void, computed_field_package_void, 
+					field_modify_void, computed_field_package_void, 
 					define_Computed_field_type);
 				return_code=Option_table_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
@@ -3815,15 +3817,15 @@ to modify it if it was.
 	return (return_code);
 } /* define_Computed_field_coordinate_system */
 
-int define_Computed_field(struct Parse_state *state,void *dummy_to_be_modified,
+int define_Computed_field(struct Parse_state *state, void *root_region_void,
 	void *computed_field_package_void)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 18 July 2008
 
 DESCRIPTION :
 Modifier entry function for creating and modifying Computed_fields. Format for
 parameters from the parse state are:
-  FIELD_NAME|NEW_FIELD_NAME
+  [REGION_PATH/]{FIELD_NAME|NEW_FIELD_NAME}
     rectangular_cartesian/cylindrical_polar/spherical_polar/prolate_sph...
       component
         FIELD_NAME.COMPONENT_NAME
@@ -3851,15 +3853,15 @@ The <field_copy_void> parameter, if set, points to the field we are to modify
 and should not itself be managed.
 ==============================================================================*/
 {
-	char *current_token;
+	char *current_token, *field_name, *region_path;
 	int return_code;
 	struct Computed_field *existing_field,*temp_field;
 	struct Computed_field_package *computed_field_package;
 	struct Option_table *help_option_table;
+	struct Cmiss_region *region, *root_region;
 
 	ENTER(define_Computed_field);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
+	if (state && (root_region = (struct Cmiss_region *)root_region_void))
 	{
 		if (computed_field_package=
 			(struct Computed_field_package *)computed_field_package_void)
@@ -3870,74 +3872,101 @@ and should not itself be managed.
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
-					existing_field=
-						FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(current_token,
-							computed_field_package->computed_field_manager);
-					/* create temp_field with the supplied name for working on */
-					if (temp_field=CREATE(Computed_field)(current_token))
+					if (Cmiss_region_get_partial_region_path(root_region,
+						current_token, &region, &region_path, &field_name))
 					{
-						ACCESS(Computed_field)(temp_field);
-						if (existing_field)
+						if (field_name &&
+							(strchr(field_name, CMISS_REGION_PATH_SEPARATOR_CHAR)	== NULL))
 						{
-							if (!MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name)(
-								temp_field,existing_field))
+							existing_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+								field_name, Cmiss_region_get_Computed_field_manager(region));
+							/* create temp_field with the supplied name for working on */
+							if (temp_field=CREATE(Computed_field)(field_name))
 							{
-								display_message(ERROR_MESSAGE,
-									"define_Computed_field.  Could not copy existing field");
-								return_code=0;
-							}
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"define_Computed_field.  Could not build temporary field");
-						return_code=0;
-					}
-					shift_Parse_state(state,1);
-					if (return_code&&define_Computed_field_coordinate_system(state,
-						temp_field,computed_field_package_void))
-					{
-						/* FINITE_ELEMENT computed field wrappers are not defined here -
-							 done automatically in response to FE_field manager messages,
-							 so they always return false */
-						if (existing_field)
-						{
-							if (Computed_field_is_read_only(existing_field))
-							{
-								display_message(ERROR_MESSAGE,
-									"Not allowed to modify read-only field");
-								return_code=0;
-							}
-							else
-							{
-								/* copy modifications to existing_field */
-								return_code=
-									MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name)(
-										existing_field,temp_field,
-										computed_field_package->computed_field_manager);
-							}
-						}
-						else
-						{
-							if (temp_field->core && 
-								temp_field->core->get_type_string())
-							{
-								/* add the new field to the manager */
-								if (!ADD_OBJECT_TO_MANAGER(Computed_field)(temp_field,
-									computed_field_package->computed_field_manager))
+								ACCESS(Computed_field)(temp_field);
+								if (existing_field)
 								{
-									display_message(ERROR_MESSAGE,
-										"define_Computed_field.  Unable to add field to manager");
-									return_code = 0;
+									if (!MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name)(
+										temp_field,existing_field))
+									{
+										display_message(ERROR_MESSAGE,
+											"define_Computed_field.  Could not copy existing field");
+										return_code=0;
+									}
 								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"gfx define field:  No field type specified");
-								display_parse_state_location(state);
-								return_code = 0;
+									"define_Computed_field.  Could not build temporary field");
+								return_code=0;
+							}
+							shift_Parse_state(state,1);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"gfx define field: Bad region_path/field_name '%s'", current_token);
+							display_parse_state_location(state);
+							return_code = 0;
+						}
+						DEALLOCATE(region_path);
+						DEALLOCATE(field_name);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx define field: Bad region_path/field_name '%s'", current_token);
+						display_parse_state_location(state);
+						return_code = 0;
+					}
+					if (return_code)
+					{
+						Computed_field_modify_data field_modify(temp_field,region);
+						if (define_Computed_field_coordinate_system(state,
+								(void *)&field_modify,computed_field_package_void))
+						{
+							/* FINITE_ELEMENT computed field wrappers are not defined here -
+								 done automatically in response to FE_field manager messages,
+								 so they always return false */
+							if (existing_field)
+							{
+								if (Computed_field_is_read_only(existing_field))
+								{
+									display_message(ERROR_MESSAGE,
+										"Not allowed to modify read-only field");
+									return_code=0;
+								}
+								else
+								{
+									/* copy modifications to existing_field */
+									return_code=
+										MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name)(
+											existing_field,temp_field,
+											Cmiss_region_get_Computed_field_manager(region));
+								}
+							}
+							else
+							{
+								if (temp_field->core && 
+									temp_field->core->get_type_string())
+								{
+									/* add the new field to the manager */
+									if (!ADD_OBJECT_TO_MANAGER(Computed_field)(temp_field,
+										Cmiss_region_get_Computed_field_manager(region)))
+									{
+										display_message(ERROR_MESSAGE,
+											"define_Computed_field.  Unable to add field to manager");
+										return_code = 0;
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"gfx define field:  No field type specified");
+									display_parse_state_location(state);
+									return_code = 0;
+								}
 							}
 						}
 					}
@@ -3951,10 +3980,12 @@ and should not itself be managed.
 					/* Write out the help */
 					if (temp_field=CREATE(Computed_field)("dummy"))
 					{
+						Computed_field_modify_data field_modify(temp_field,root_region);
 						help_option_table = CREATE(Option_table)();
 						/* FIELD_NAME */
-						Option_table_add_entry(help_option_table,"FIELD_NAME",
-							(void *)temp_field, computed_field_package_void,
+						Option_table_add_entry(help_option_table,
+							"[REGION_PATH" CMISS_REGION_PATH_SEPARATOR_STRING "]FIELD_NAME",
+							(void *)&field_modify, computed_field_package_void,
 							define_Computed_field_coordinate_system);
 						return_code=Option_table_parse(help_option_table,state);
 						DESTROY(Option_table)(&help_option_table);
@@ -3986,7 +4017,7 @@ and should not itself be managed.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"define_Computed_field.  Missing state");
+			"define_Computed_field.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -4648,8 +4679,7 @@ manager from the respective Cmiss_region.
 			computed_field_package->computed_field_type_list =
 				CREATE(LIST(Computed_field_type_data))();
 			computed_field_package->simple_package =
-				new Computed_field_simple_package(
-					computed_field_package->computed_field_manager);
+				new Computed_field_simple_package();
 			computed_field_package->simple_package->addref();
 		}
 		else

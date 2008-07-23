@@ -81,17 +81,6 @@ LAST MODIFIED : 24 August 2006
 DESCRIPTION :
 ==============================================================================*/
 {
-public:
-	struct MANAGER(Computed_field) *computed_field_manager;
-	struct Cmiss_region *cmiss_region;
-	struct FE_region *fe_region;
-
-protected:
-	~Computed_field_finite_element_package()
-	{
-		DEACCESS(FE_region)(&fe_region);
-		DEACCESS(Cmiss_region)(&cmiss_region);
-	}
 }; /* Computed_field_finite_element_package */
 
 namespace {
@@ -1378,7 +1367,7 @@ If the field is of type COMPUTED_FIELD_FINITE_ELEMENT, the FE_field being
 } /* Computed_field_get_type_finite_element */
 
 int define_Computed_field_type_finite_element(struct Parse_state *state,
-	void *field_void,void *computed_field_finite_element_package_void)
+	void *field_modify_void,void *computed_field_finite_element_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1397,12 +1386,14 @@ FE_field being made and/or modified.
 		original_number_of_components,return_code;
 	struct Computed_field *field;
 	Computed_field_finite_element_package *computed_field_finite_element_package;
+	Computed_field_modify_data *field_modify;
 	struct Coordinate_system *coordinate_system;
 	struct FE_field *existing_fe_field;
 	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_type_finite_element);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_finite_element_package=
 		(Computed_field_finite_element_package *)
 		computed_field_finite_element_package_void))
@@ -1569,7 +1560,7 @@ FE_field being made and/or modified.
 					creating it if it doesn't exist and merging it into the region
 					automatically */
 				FE_region_get_FE_field_with_properties(
-					computed_field_finite_element_package->fe_region,
+					Cmiss_region_get_FE_region(field_modify->region),
 					field->name, GENERAL_FE_FIELD,
 					/*indexer_field*/(struct FE_field *)NULL, /*number_of_indexed_values*/0,
 					cm_field_type, coordinate_system,
@@ -1846,7 +1837,7 @@ although its cache may be lost.
 } /* Computed_field_set_type_cmiss_number */
 
 int define_Computed_field_type_cmiss_number(struct Parse_state *state,
-	void *field_void,void *dummy_void)
+	void *field_modify_void,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1855,11 +1846,13 @@ Converts <field> into type COMPUTED_FIELD_CMISS_NUMBER.
 ==============================================================================*/
 {
 	Computed_field* field;
+	Computed_field_modify_data *field_modify;
 	int return_code;
 
 	ENTER(define_Computed_field_type_cmiss_number);
 	USE_PARAMETER(dummy_void);
-	if (state&&(field=(struct Computed_field *)field_void))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field))
 	{
 		if (!state->current_token)
 		{
@@ -2125,7 +2118,7 @@ although its cache may be lost.
 } /* Computed_field_set_type_access_count */
 
 int define_Computed_field_type_access_count(struct Parse_state *state,
-	void *field_void,void *dummy_void)
+	void *field_modify_void,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -2135,10 +2128,12 @@ Converts <field> into type COMPUTED_FIELD_ACCESS_COUNT.
 {
 	int return_code;
 	struct Computed_field *field;
+	Computed_field_modify_data *field_modify;
 
 	ENTER(define_Computed_field_type_access_count);
 	USE_PARAMETER(dummy_void);
-	if (state&&(field=(struct Computed_field *)field_void))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field))
 	{
 		if (!state->current_token)
 		{
@@ -2792,7 +2787,7 @@ If the field is of type COMPUTED_FIELD_NODE_VALUE, the FE_field being
 } /* Computed_field_get_type_node_value */
 
 int define_Computed_field_type_node_value(struct Parse_state *state,
-	void *field_void,void *computed_field_finite_element_package_void)
+	void *field_modify_void,void *computed_field_finite_element_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -2818,11 +2813,13 @@ and allows its contents to be modified.
 	struct Computed_field *field;
 	Computed_field_finite_element_package 
 		*computed_field_finite_element_package;
+	Computed_field_modify_data *field_modify;
 	struct FE_field *fe_field;
 	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_type_node_value);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_finite_element_package=
 		(Computed_field_finite_element_package *)
 		computed_field_finite_element_package_void))
@@ -2856,7 +2853,7 @@ and allows its contents to be modified.
 					/* fe_field */
 					Option_table_add_set_FE_field_from_FE_region(
 						option_table, "fe_field" ,&fe_field,
-					  computed_field_finite_element_package->fe_region);
+					  Cmiss_region_get_FE_region(field_modify->region));
 					/* nodal_value_type */
 					nodal_value_type_string=nodal_value_type_strings[0];
 					Option_table_add_enumerator(option_table,
@@ -2879,7 +2876,7 @@ and allows its contents to be modified.
 					/* fe_field */
 					Option_table_add_set_FE_field_from_FE_region(
 						option_table, "fe_field" ,&fe_field,
-					  computed_field_finite_element_package->fe_region);
+					  Cmiss_region_get_FE_region(field_modify->region));
 					if (return_code=Option_table_parse(option_table,state))
 					{
 						if (!fe_field)
@@ -3547,7 +3544,7 @@ If the field is of type COMPUTED_FIELD_EMBEDDED, the FE_field being
 } /* Computed_field_get_type_embedded */
 
 int define_Computed_field_type_embedded(struct Parse_state *state,
-	void *field_void, void *computed_field_finite_element_package_void)
+	void *field_modify_void, void *computed_field_finite_element_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -3560,12 +3557,14 @@ and allows its contents to be modified.
 	struct Computed_field *source_field, *field;
 	Computed_field_finite_element_package
 		*computed_field_finite_element_package;
+	Computed_field_modify_data *field_modify;
 	struct FE_field *element_xi_fe_field;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_field_data;
 
 	ENTER(define_Computed_field_type_embedded);
-	if (state && (field = (struct Computed_field *)field_void) &&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field) &&
 		(computed_field_finite_element_package =
 			(Computed_field_finite_element_package *)
 			computed_field_finite_element_package_void))
@@ -3593,12 +3592,12 @@ and allows its contents to be modified.
 			/* element_xi FE_field */
 			Option_table_add_set_FE_field_from_FE_region(option_table, "element_xi", 
 				&element_xi_fe_field,
-				computed_field_finite_element_package->fe_region);
+				Cmiss_region_get_FE_region(field_modify->region));
 			set_field_data.conditional_function =
 				Computed_field_has_numerical_components;
 			set_field_data.conditional_function_user_data = (void *)NULL;
 			set_field_data.computed_field_manager =
-				computed_field_finite_element_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			Option_table_add_entry(option_table, "field", &source_field,
 				&set_field_data, set_Computed_field_conditional);
 			return_code = Option_table_multi_parse(option_table, state);
@@ -3851,7 +3850,7 @@ Returns allocated command string for reproducing field. Includes type.
 } // namespace
 
 int define_Computed_field_type_xi_coordinates(struct Parse_state *state,
-	void *field_void,void *dummy_void)
+	void *field_modify_void,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -3861,10 +3860,12 @@ Converts <field> into type COMPUTED_FIELD_XI_COORDINATES.
 {
 	int return_code;
 	Computed_field* field;
+	Computed_field_modify_data *field_modify;
 
 	ENTER(define_Computed_field_type_xi_coordinates);
 	USE_PARAMETER(dummy_void);
-	if (state&&(field=(struct Computed_field *)field_void))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field))
 	{
 		if (!state->current_token)
 		{
@@ -4791,7 +4792,7 @@ If the field is of type COMPUTED_FIELD_BASIS_DERIVATIVE, the FE_field being
 } /* Computed_field_get_type_basis_derivative */
 
 int define_Computed_field_type_basis_derivative(struct Parse_state *state,
-	void *field_void,void *computed_field_finite_element_package_void)
+	void *field_modify_void,void *computed_field_finite_element_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -4808,11 +4809,13 @@ FE_field being made and/or modified.
 	int i, order, previous_state_index, return_code, *xi_indices, *temp_xi_indices;
 	struct Computed_field *field;
 	Computed_field_finite_element_package *computed_field_finite_element_package;
+	Computed_field_modify_data *field_modify;
 	struct FE_field *fe_field;
 	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_type_finite_element);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_finite_element_package=
 		(Computed_field_finite_element_package *)
 		computed_field_finite_element_package_void))
@@ -4853,7 +4856,7 @@ FE_field being made and/or modified.
 					/* fe_field */
 					Option_table_add_set_FE_field_from_FE_region(
 						option_table, "fe_field" ,&fe_field,
-					  computed_field_finite_element_package->fe_region);
+					  Cmiss_region_get_FE_region(field_modify->region));
 					Option_table_add_int_positive_entry(option_table,
 						"order", &order);
 					Option_table_add_int_vector_entry(option_table,
@@ -4897,7 +4900,7 @@ FE_field being made and/or modified.
 				/* fe_field */
 				Option_table_add_set_FE_field_from_FE_region(
 					option_table, "fe_field" ,&fe_field,
-					computed_field_finite_element_package->fe_region);
+					Cmiss_region_get_FE_region(field_modify->region));
 				Option_table_add_int_positive_entry(option_table,
 					"order", &order);
 
@@ -5868,12 +5871,6 @@ automatically wrapped in corresponding computed_fields.
 	if (computed_field_package && cmiss_region &&
 		(fe_region = Cmiss_region_get_FE_region(cmiss_region)))
 	{
-		computed_field_finite_element_package->computed_field_manager =
-			Computed_field_package_get_computed_field_manager(computed_field_package);
-		computed_field_finite_element_package->cmiss_region =
-			ACCESS(Cmiss_region)(cmiss_region);
-		computed_field_finite_element_package->fe_region =
-			ACCESS(FE_region)(fe_region);
 		Computed_field_package_add_type(computed_field_package,
 			computed_field_finite_element_type_string,
 			define_Computed_field_type_finite_element,

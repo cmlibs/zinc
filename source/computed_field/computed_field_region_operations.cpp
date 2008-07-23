@@ -64,7 +64,6 @@ using namespace std;
 class Computed_field_region_operations_package : public Computed_field_type_package
 {
 public:
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Cmiss_region *root_region;
 };
 
@@ -474,7 +473,7 @@ and region to operate on.
 } /* Computed_field_get_type_region_sum */
 
 int define_Computed_field_type_region_sum(struct Parse_state *state,
-	void *field_void, void *computed_field_region_operations_package_void)
+	void *field_modify_void, void *computed_field_region_operations_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -487,13 +486,15 @@ already) and allows its contents to be modified.
 	int return_code;
 	struct Computed_field *field, *operate_field;
 	Computed_field_region_operations_package *computed_field_region_operations_package;
+	Computed_field_modify_data *field_modify;
 	struct Coordinate_system *coordinate_system_ptr;
 	struct Cmiss_region *operate_region;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_operate_field_data;
 
 	ENTER(define_Computed_field_type_region_sum);
-	if (state && (field = (struct Computed_field *)field_void) &&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_region_operations_package =
 			(Computed_field_region_operations_package *)
 			computed_field_region_operations_package_void))
@@ -524,7 +525,7 @@ already) and allows its contents to be modified.
 				 computed_field_region_operations_package->root_region, &operate_region_path);
 			/* texture_coordinates_field */
 			set_operate_field_data.computed_field_manager =
-				computed_field_region_operations_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_operate_field_data.conditional_function = 
 				Computed_field_has_numerical_components;
 			set_operate_field_data.conditional_function_user_data = 
@@ -1019,7 +1020,7 @@ and region to operate on.
 } /* Computed_field_get_type_region_mean */
 
 int define_Computed_field_type_region_mean(struct Parse_state *state,
-	void *field_void, void *computed_field_region_operations_package_void)
+	void *field_modify_void, void *computed_field_region_operations_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1032,13 +1033,15 @@ already) and allows its contents to be modified.
 	int return_code;
 	struct Computed_field *field, *operate_field;
 	Computed_field_region_operations_package *computed_field_region_operations_package;
+	Computed_field_modify_data *field_modify;
 	struct Coordinate_system *coordinate_system_ptr;
 	struct Cmiss_region *operate_region;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_operate_field_data;
 
 	ENTER(define_Computed_field_type_region_mean);
-	if (state && (field = (struct Computed_field *)field_void) &&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_region_operations_package =
 			(Computed_field_region_operations_package *)
 			computed_field_region_operations_package_void))
@@ -1069,7 +1072,7 @@ already) and allows its contents to be modified.
 				 computed_field_region_operations_package->root_region, &operate_region_path);
 			/* texture_coordinates_field */
 			set_operate_field_data.computed_field_manager =
-				computed_field_region_operations_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_operate_field_data.conditional_function = 
 				Computed_field_has_numerical_components;
 			set_operate_field_data.conditional_function_user_data = 
@@ -1564,7 +1567,7 @@ and region to operate on.
 } /* Computed_field_get_type_region_rms */
 
 int define_Computed_field_type_region_rms(struct Parse_state *state,
-	void *field_void, void *computed_field_region_operations_package_void)
+	void *field_modify_void, void *computed_field_region_operations_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1577,13 +1580,15 @@ already) and allows its contents to be modified.
 	int return_code;
 	struct Computed_field *field, *operate_field;
 	Computed_field_region_operations_package *computed_field_region_operations_package;
+	Computed_field_modify_data *field_modify;
 	struct Coordinate_system *coordinate_system_ptr;
 	struct Cmiss_region *operate_region;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_operate_field_data;
 
 	ENTER(define_Computed_field_type_region_rms);
-	if (state && (field = (struct Computed_field *)field_void) &&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_region_operations_package =
 			(Computed_field_region_operations_package *)
 			computed_field_region_operations_package_void))
@@ -1614,7 +1619,7 @@ already) and allows its contents to be modified.
 				 computed_field_region_operations_package->root_region, &operate_region_path);
 			/* texture_coordinates_field */
 			set_operate_field_data.computed_field_manager =
-				computed_field_region_operations_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_operate_field_data.conditional_function = 
 				Computed_field_has_numerical_components;
 			set_operate_field_data.conditional_function_user_data = 
@@ -1710,9 +1715,6 @@ Registering the region operations.
 	ENTER(Computed_field_register_types_region_sum);
 	if (computed_field_package && root_region)
 	{
-		computed_field_region_operations_package->computed_field_manager =
-			Computed_field_package_get_computed_field_manager(
-			computed_field_package);
 		computed_field_region_operations_package->root_region = root_region;
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_region_sum_type_string, 

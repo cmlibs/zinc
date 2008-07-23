@@ -440,7 +440,7 @@ If the field is of type COMPUTED_FIELD_IMAGE_RESAMPLE, the function returns the 
 } /* Computed_field_get_type_image_resample */
 
 int define_Computed_field_type_image_resample(struct Parse_state *state,
-	void *field_void,void *computed_field_image_resample_package_void)
+	void *field_modify_void,void *computed_field_image_resample_package_void)
 /*******************************************************************************
 LAST MODIFIED : 7 March 2007
 
@@ -452,11 +452,13 @@ already) and allows its contents to be modified.
 	int dimension, return_code, original_dimension, *sizes, *original_sizes;
 	Computed_field *field,*source_field, *texture_coordinate_field;
 	Computed_field_image_resample_package *computed_field_image_resample_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_image_resample);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void) &&
+			(field=field_modify->field) &&
 		(computed_field_image_resample_package=
 		(Computed_field_image_resample_package *)
 		computed_field_image_resample_package_void))

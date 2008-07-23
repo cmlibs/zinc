@@ -62,8 +62,6 @@ extern "C" {
 
 class Computed_field_derivatives_package : public Computed_field_type_package
 {
-public:
-	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
 using namespace CMISS;
@@ -682,7 +680,7 @@ If the field is of type COMPUTED_FIELD_DERIVATIVE, the
 } /* Computed_field_get_type_derivative */
 
 int define_Computed_field_type_derivative(struct Parse_state *state,
-	void *field_void,void *computed_field_derivatives_package_void)
+	void *field_modify_void,void *computed_field_derivatives_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -695,11 +693,13 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,*source_field;
 	Computed_field_derivatives_package 
 		*computed_field_derivatives_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_derivative);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_derivatives_package=
 		(Computed_field_derivatives_package *)
 		computed_field_derivatives_package_void))
@@ -740,7 +740,7 @@ already) and allows its contents to be modified.
 
 			/* field */
 			set_source_field_data.computed_field_manager=
-				computed_field_derivatives_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_source_field_data.conditional_function =
 				Computed_field_has_numerical_components;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -1162,7 +1162,7 @@ If the field is of type COMPUTED_FIELD_CURL, the
 } /* Computed_field_get_type_curl */
 
 int define_Computed_field_type_curl(struct Parse_state *state,
-	void *field_void,void *computed_field_derivatives_package_void)
+	void *field_modify_void,void *computed_field_derivatives_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1175,12 +1175,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *coordinate_field,*field,*vector_field;
 	Computed_field_derivatives_package 
 		*computed_field_derivatives_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_vector_field_data;
 
 	ENTER(define_Computed_field_type_curl);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_derivatives_package=
 		(Computed_field_derivatives_package *)
 		computed_field_derivatives_package_void))
@@ -1210,7 +1212,7 @@ already) and allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* coordinate */
 			set_coordinate_field_data.computed_field_manager=
-            computed_field_derivatives_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_3_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -1218,7 +1220,7 @@ already) and allows its contents to be modified.
 				(void *)&set_coordinate_field_data,set_Computed_field_conditional);
 			/* vector */
 			set_vector_field_data.computed_field_manager=
-            computed_field_derivatives_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_vector_field_data.conditional_function=
 				Computed_field_has_3_components;
 			set_vector_field_data.conditional_function_user_data=(void *)NULL;
@@ -1645,7 +1647,7 @@ If the field is of type COMPUTED_FIELD_DIVERGENCE, the
 } /* Computed_field_get_type_divergence */
 
 int define_Computed_field_type_divergence(struct Parse_state *state,
-	void *field_void,void *computed_field_derivatives_package_void)
+	void *field_modify_void,void *computed_field_derivatives_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1658,12 +1660,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *coordinate_field,*field,*vector_field;
 	Computed_field_derivatives_package 
 		*computed_field_derivatives_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_vector_field_data;
 
 	ENTER(define_Computed_field_type_divergence);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_derivatives_package=
 		(Computed_field_derivatives_package *)
 		computed_field_derivatives_package_void))
@@ -1693,7 +1697,7 @@ already) and allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* coordinate */
 			set_coordinate_field_data.computed_field_manager=
-            computed_field_derivatives_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -1701,7 +1705,7 @@ already) and allows its contents to be modified.
 				(void *)&set_coordinate_field_data,set_Computed_field_conditional);
 			/* vector */
 			set_vector_field_data.computed_field_manager=
-            computed_field_derivatives_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_vector_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_vector_field_data.conditional_function_user_data=(void *)NULL;
@@ -2090,7 +2094,7 @@ used by it are returned.
 } /* Computed_field_get_type_gradient */
 
 int define_Computed_field_type_gradient(struct Parse_state *state,
-	void *field_void,void *computed_field_derivatives_package_void)
+	void *field_modify_void,void *computed_field_derivatives_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -2102,12 +2106,14 @@ to be modified.
 	int return_code;
 	struct Computed_field *coordinate_field,*field,*source_field;
 	Computed_field_derivatives_package *computed_field_derivatives_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_source_field_data;
 
 	ENTER(define_Computed_field_type_gradient);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_derivatives_package=
 		(Computed_field_derivatives_package *)
 		computed_field_derivatives_package_void))
@@ -2137,7 +2143,7 @@ to be modified.
 			option_table = CREATE(Option_table)();
 			/* coordinate */
 			set_coordinate_field_data.computed_field_manager=
-				computed_field_derivatives_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -2145,7 +2151,7 @@ to be modified.
 				(void *)&set_coordinate_field_data,set_Computed_field_conditional);
 			/* field */
 			set_source_field_data.computed_field_manager=
-				computed_field_derivatives_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_source_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -2207,9 +2213,6 @@ DESCRIPTION :
 	ENTER(Computed_field_register_type_derivative);
 	if (computed_field_package)
 	{
-		computed_field_derivatives_package->computed_field_manager =
-			Computed_field_package_get_computed_field_manager(
-				computed_field_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_derivative_type_string, 
 			define_Computed_field_type_derivative,

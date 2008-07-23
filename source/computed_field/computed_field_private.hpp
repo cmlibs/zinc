@@ -58,7 +58,26 @@ Types used only internally to computed fields.
 #include "computed_field/field_location.hpp"
 extern "C" {
 #include "general/debug.h"
+#include "region/cmiss_region.h"
 }
+
+/**
+ * Argument to field modifier functions containing field to be modified,
+ * and the region which source fields should be chosen from.
+ */
+class Computed_field_modify_data
+{
+public:
+	struct Computed_field *field;
+	struct Cmiss_region *region;
+	
+	Computed_field_modify_data(struct Computed_field *field,
+		struct Cmiss_region *region) :
+		field(field),
+		region(region)
+	{
+	}
+};
 
 class Computed_field_type_package
 /*******************************************************************************
@@ -104,22 +123,11 @@ class Computed_field_simple_package : public Computed_field_type_package
 LAST MODIFIED : 24 January 2007
 
 DESCRIPTION :
-A simple package which just gives access back to the Computed_field_manager
+Minimum set of type-specific data for gfx define field commands.
+Contains nothing now that field manager is extracted from region, which is
+passed around as part of Computed_field_modify_data in to_be_modified argument.
 ==============================================================================*/
 {
-private:
-	MANAGER(Computed_field)* computed_field_manager;
-
-public:
-	Computed_field_simple_package(MANAGER(Computed_field) *computed_field_manager):
-		computed_field_manager(computed_field_manager)
-	{
-	}
-
-	MANAGER(Computed_field)* get_computed_field_manager()
-	{
-		return(computed_field_manager);
-	}
 };
 
 class Computed_field_core

@@ -58,7 +58,6 @@ extern "C" {
 class Computed_field_time_package : public Computed_field_type_package
 {
 public:
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Time_keeper *time_keeper;
 };
 
@@ -401,7 +400,7 @@ If the field is of type COMPUTED_FIELD_TIME_LOOKUP, the
 } /* Computed_field_get_type_time_lookup */
 
 int define_Computed_field_type_time_lookup(struct Parse_state *state,
-	void *field_void,void *computed_field_time_package_void)
+	void *field_modify_void,void *computed_field_time_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -414,12 +413,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,**source_fields;
 	Computed_field_time_package 
 		*computed_field_time_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data,
 		set_time_field_data;
 
 	ENTER(define_Computed_field_type_time_lookup);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_time_package=
 		(Computed_field_time_package *)
 		computed_field_time_package_void))
@@ -452,13 +453,13 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					computed_field_time_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
 				Option_table_add_entry(option_table,"field",&source_fields[0],
 					&set_source_field_data,set_Computed_field_conditional);
 				set_time_field_data.computed_field_manager=
-					computed_field_time_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_time_field_data.conditional_function=Computed_field_is_scalar;
 				set_time_field_data.conditional_function_user_data=(void *)NULL;
 				Option_table_add_entry(option_table,"time_field",&source_fields[1],
@@ -745,7 +746,7 @@ There are no fields to fetch from a time value field.
 ==============================================================================*/
 
 int define_Computed_field_type_time_value(struct Parse_state *state,
-	void *field_void,void *computed_field_time_package_void)
+	void *field_modify_void,void *computed_field_time_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -757,9 +758,11 @@ already) and allows its contents to be modified.
 	int return_code;
 	struct Computed_field *field;
 	Computed_field_time_package *computed_field_time_package;
+	Computed_field_modify_data *field_modify;
 
 	ENTER(define_Computed_field_type_time_value);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_time_package=
 		(Computed_field_time_package *)
 		computed_field_time_package_void))
@@ -799,9 +802,6 @@ DESCRIPTION :
 	ENTER(Computed_field_register_types_time);
 	if (computed_field_package)
 	{
-		computed_field_time_package->computed_field_manager =
-			Computed_field_package_get_computed_field_manager(
-				computed_field_package);
 		computed_field_time_package->time_keeper =
 			time_keeper;
 		return_code = Computed_field_package_add_type(computed_field_package,

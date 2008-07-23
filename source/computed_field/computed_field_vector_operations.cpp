@@ -57,8 +57,6 @@ extern "C" {
 
 class Computed_field_vector_operations_package : public Computed_field_type_package
 {
-public:
-	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
 namespace {
@@ -315,7 +313,7 @@ If the field is of type COMPUTED_FIELD_NORMALISE, the
 } /* Computed_field_get_type_normalise */
 
 int define_Computed_field_type_normalise(struct Parse_state *state,
-	void *field_void,void *computed_field_vector_operations_package_void)
+	void *field_modify_void,void *computed_field_vector_operations_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -328,11 +326,13 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,*source_field;
 	Computed_field_vector_operations_package 
 		*computed_field_vector_operations_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_normalise);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_vector_operations_package=
 		(Computed_field_vector_operations_package *)
 		computed_field_vector_operations_package_void))
@@ -355,7 +355,7 @@ already) and allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* field */
 			set_source_field_data.computed_field_manager=
-				computed_field_vector_operations_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"field",&source_field,
@@ -821,7 +821,7 @@ If the field is of type COMPUTED_FIELD_CROSS_PRODUCT, the
 } /* Computed_field_get_type_cross_product */
 
 int define_Computed_field_type_cross_product(struct Parse_state *state,
-	void *field_void,void *computed_field_vector_operations_package_void)
+	void *field_modify_void,void *computed_field_vector_operations_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -836,12 +836,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field, **source_fields, **temp_source_fields;
 	Computed_field_vector_operations_package 
 		*computed_field_vector_operations_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_field_array_data;
 	struct Set_Computed_field_conditional_data set_field_data;
 
 	ENTER(define_Computed_field_type_cross_product);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_vector_operations_package=
 		(Computed_field_vector_operations_package *)
 		computed_field_vector_operations_package_void))
@@ -890,7 +892,7 @@ already) and allows its contents to be modified.
 					set_field_data.conditional_function = Computed_field_has_n_components;
 					set_field_data.conditional_function_user_data = (void *)&dimension;
 					set_field_data.computed_field_manager =
-						computed_field_vector_operations_package->computed_field_manager;
+						Cmiss_region_get_Computed_field_manager(field_modify->region);
 					set_field_array_data.number_of_fields = number_of_source_fields;
 					set_field_array_data.conditional_data = &set_field_data;
 					Option_table_add_entry(option_table, "fields", source_fields,
@@ -954,7 +956,7 @@ already) and allows its contents to be modified.
 							Computed_field_has_n_components;
 						set_field_data.conditional_function_user_data = (void *)&dimension;
 						set_field_data.computed_field_manager =
-							computed_field_vector_operations_package->computed_field_manager;
+							Cmiss_region_get_Computed_field_manager(field_modify->region);
 						set_field_array_data.number_of_fields = number_of_source_fields;
 						set_field_array_data.conditional_data = &set_field_data;
 						Option_table_add_entry(option_table, "fields", source_fields,
@@ -1288,7 +1290,7 @@ If the field is of type COMPUTED_FIELD_DOT_PRODUCT, the
 } /* Computed_field_get_type_dot_product */
 
 int define_Computed_field_type_dot_product(struct Parse_state *state,
-	void *field_void,void *computed_field_vector_operations_package_void)
+	void *field_modify_void,void *computed_field_vector_operations_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1301,12 +1303,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,**source_fields;
 	Computed_field_vector_operations_package 
 		*computed_field_vector_operations_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_dot_product);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_vector_operations_package=
 		(Computed_field_vector_operations_package *)
 		computed_field_vector_operations_package_void))
@@ -1338,7 +1342,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					computed_field_vector_operations_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
 				set_source_field_array_data.number_of_fields=2;
@@ -1718,7 +1722,7 @@ If the field is of type COMPUTED_FIELD_MAGNITUDE, the
 } /* Computed_field_get_type_magnitude */
 
 int define_Computed_field_type_magnitude(struct Parse_state *state,
-	void *field_void,void *computed_field_vector_operations_package_void)
+	void *field_modify_void,void *computed_field_vector_operations_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1731,11 +1735,13 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,*source_field;
 	Computed_field_vector_operations_package 
 		*computed_field_vector_operations_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_magnitude);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_vector_operations_package=
 		(Computed_field_vector_operations_package *)
 		computed_field_vector_operations_package_void))
@@ -1758,7 +1764,7 @@ already) and allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* field */
 			set_source_field_data.computed_field_manager=
-				computed_field_vector_operations_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_source_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -2048,7 +2054,7 @@ by it is returned - otherwise an error is reported.
 } /* Computed_field_get_type_cubic_texture_coordinates */
 
 int define_Computed_field_type_cubic_texture_coordinates(struct Parse_state *state,
-	void *field_void,void *computed_field_vector_operations_package_void)
+	void *field_modify_void,void *computed_field_vector_operations_package_void)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -2061,11 +2067,13 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,*source_field;
 	Computed_field_vector_operations_package 
 		*computed_field_vector_operations_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_cubic_texture_coordinates);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_vector_operations_package=
 		(Computed_field_vector_operations_package *)
 		computed_field_vector_operations_package_void))
@@ -2087,7 +2095,7 @@ already) and allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* field */
 			set_source_field_data.computed_field_manager=
-				computed_field_vector_operations_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"field",&source_field,
@@ -2144,9 +2152,6 @@ DESCRIPTION :
 	ENTER(Computed_field_register_types_vector_operations);
 	if (computed_field_package)
 	{
-		computed_field_vector_operations_package->computed_field_manager =
-			Computed_field_package_get_computed_field_manager(
-				computed_field_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_magnitude_type_string,
 			define_Computed_field_type_magnitude,

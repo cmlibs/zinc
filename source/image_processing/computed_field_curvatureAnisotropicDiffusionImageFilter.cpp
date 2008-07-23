@@ -375,7 +375,7 @@ used by it are returned - otherwise an error is reported.
 } /* Computed_field_get_type_curvature_anisotropic_diffusion_image_filter */
 
 int define_Computed_field_type_curvature_anisotropic_diffusion_image_filter(struct Parse_state *state,
-	void *field_void, void *computed_field_simple_package_void)
+	void *field_modify_void, void *computed_field_simple_package_void)
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
 
@@ -390,11 +390,13 @@ already) and allows its contents to be modified.
 	int numIterations;
 	struct Computed_field *field, *source_field;
 	struct Computed_field_simple_package *computed_field_simple_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_curvature_anisotropic_diffusion_image_filter);
-	if (state && (field = (struct Computed_field *)field_void) &&
+	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void) &&
+			(field=field_modify->field) &&
 		(computed_field_simple_package = (Computed_field_simple_package*)computed_field_simple_package_void))
 	{
 		return_code = 1;
@@ -424,7 +426,7 @@ already) and allows its contents to be modified.
 
 			/* field */
 			set_source_field_data.computed_field_manager =
-				computed_field_simple_package->get_computed_field_manager();
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_source_field_data.conditional_function = Computed_field_is_scalar;
 			set_source_field_data.conditional_function_user_data = (void *)NULL;
 			Option_table_add_entry(option_table, "field", &source_field,

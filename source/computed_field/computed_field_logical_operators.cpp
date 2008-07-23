@@ -57,8 +57,6 @@ extern "C" {
 
 class Computed_field_logical_operators_package : public Computed_field_type_package
 {
-public:
-	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
 namespace {
@@ -243,7 +241,7 @@ If the field is of type COMPUTED_FIELD_XYZ, the
 } /* Computed_field_get_type_or */
 
 int define_Computed_field_type_or(struct Parse_state *state,
-	void *field_void,void *computed_field_logical_operators_package_void)
+	void *field_modify_void,void *computed_field_logical_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -256,12 +254,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,**source_fields;
 	Computed_field_logical_operators_package 
 		*computed_field_logical_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_or);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_logical_operators_package=
 		(Computed_field_logical_operators_package *)
 		computed_field_logical_operators_package_void))
@@ -293,7 +293,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					computed_field_logical_operators_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
 				set_source_field_array_data.number_of_fields=2;
@@ -532,7 +532,7 @@ If the field is of type COMPUTED_FIELD_AND, the
 } /* Computed_field_get_type_and */
 
 int define_Computed_field_type_and(struct Parse_state *state,
-	void *field_void,void *computed_field_logical_operators_package_void)
+	void *field_modify_void,void *computed_field_logical_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -545,12 +545,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,**source_fields;
 	Computed_field_logical_operators_package 
 		*computed_field_logical_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_and);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_logical_operators_package=
 		(Computed_field_logical_operators_package *)
 		computed_field_logical_operators_package_void))
@@ -582,7 +584,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					computed_field_logical_operators_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
 				set_source_field_array_data.number_of_fields=2;
@@ -826,7 +828,7 @@ If the field is of type COMPUTED_FIELD_XOR, the
 } /* Computed_field_get_type_xor */
 
 int define_Computed_field_type_xor(struct Parse_state *state,
-	void *field_void,void *computed_field_logical_operators_package_void)
+	void *field_modify_void,void *computed_field_logical_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -839,12 +841,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,**source_fields;
 	Computed_field_logical_operators_package 
 		*computed_field_logical_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_xor);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_logical_operators_package=
 		(Computed_field_logical_operators_package *)
 		computed_field_logical_operators_package_void))
@@ -876,7 +880,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					computed_field_logical_operators_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
 				set_source_field_array_data.number_of_fields=2;
@@ -1145,7 +1149,7 @@ If the field is of type COMPUTED_FIELD_EQUAL_TO, the
 } /* Computed_field_get_type_equal_to */
 
 int define_Computed_field_type_equal_to(struct Parse_state *state,
-	void *field_void,void *computed_field_logical_operators_package_void)
+	void *field_modify_void,void *computed_field_logical_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -1158,12 +1162,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,**source_fields;
 	Computed_field_logical_operators_package 
 		*computed_field_logical_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_equal_to);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_logical_operators_package=
 		(Computed_field_logical_operators_package *)
 		computed_field_logical_operators_package_void))
@@ -1195,7 +1201,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					computed_field_logical_operators_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_source_field_data.conditional_function=
 					(LIST_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -1435,7 +1441,7 @@ If the field is of type COMPUTED_FIELD_LESS_THAN, the
 } /* Computed_field_get_type_less_than */
 
 int define_Computed_field_type_less_than(struct Parse_state *state,
-	void *field_void,void *computed_field_logical_operators_package_void)
+	void *field_modify_void,void *computed_field_logical_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -1448,12 +1454,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,**source_fields;
 	Computed_field_logical_operators_package 
 		*computed_field_logical_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_less_than);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_logical_operators_package=
 		(Computed_field_logical_operators_package *)
 		computed_field_logical_operators_package_void))
@@ -1485,7 +1493,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					computed_field_logical_operators_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
 				set_source_field_array_data.number_of_fields=2;
@@ -1724,7 +1732,7 @@ If the field is of type COMPUTED_FIELD_GREATER_THAN, the
 } /* Computed_field_get_type_greater_than */
 
 int define_Computed_field_type_greater_than(struct Parse_state *state,
-	void *field_void,void *computed_field_logical_operators_package_void)
+	void *field_modify_void,void *computed_field_logical_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -1737,12 +1745,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,**source_fields;
 	Computed_field_logical_operators_package 
 		*computed_field_logical_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_greater_than);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_logical_operators_package=
 		(Computed_field_logical_operators_package *)
 		computed_field_logical_operators_package_void))
@@ -1774,7 +1784,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					computed_field_logical_operators_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
 				set_source_field_array_data.number_of_fields=2;
@@ -2006,7 +2016,7 @@ If the field is of type COMPUTED_FIELD_IS_DEFINED, the
 } /* Computed_field_get_type_is_defined */
 
 int define_Computed_field_type_is_defined(struct Parse_state *state,
-	void *field_void,void *computed_field_logical_operators_package_void)
+	void *field_modify_void,void *computed_field_logical_operators_package_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -2019,11 +2029,13 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,*source_field;
 	Computed_field_logical_operators_package 
 		*computed_field_logical_operators_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_is_defined);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field)&&
 		(computed_field_logical_operators_package=
 		(Computed_field_logical_operators_package *)
 		computed_field_logical_operators_package_void))
@@ -2046,7 +2058,7 @@ already) and allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* field */
 			set_source_field_data.computed_field_manager=
-				computed_field_logical_operators_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"field",&source_field,
@@ -2103,9 +2115,6 @@ DESCRIPTION :
 	ENTER(Computed_field_register_types_logical_operators);
 	if (computed_field_package)
 	{
-		computed_field_logical_operators_package->computed_field_manager =
-			Computed_field_package_get_computed_field_manager(
-				computed_field_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_or_type_string, 
 			define_Computed_field_type_or,

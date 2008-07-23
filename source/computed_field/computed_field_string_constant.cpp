@@ -430,7 +430,7 @@ If the field is of type COMPUTED_FIELD_STRING_CONSTANT, the
 } /* Computed_field_get_type_string_constant */
 
 int define_Computed_field_type_string_constant(struct Parse_state *state,
-	void *field_void, void *dummy_void)
+	void *field_modify_void, void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -440,11 +440,13 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
+	Computed_field_modify_data *field_modify;
 	struct Computed_field *field;
 
 	ENTER(define_Computed_field_type_string_constant);
 	USE_PARAMETER(dummy_void);
-	if (state&&(field=(struct Computed_field *)field_void))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field))
 	{
 		return_code=1;
 		if (!(strcmp(PARSER_HELP_STRING,state->current_token)&&

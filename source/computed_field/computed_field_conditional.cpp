@@ -56,8 +56,6 @@ extern "C" {
 
 class Computed_field_conditional_package : public Computed_field_type_package
 {
-public:
-	struct MANAGER(Computed_field) *computed_field_manager;
 };
 
 namespace {
@@ -364,7 +362,7 @@ are returned.
 } /* Computed_field_get_type_if */
 
 int define_Computed_field_type_if(struct Parse_state *state,
-	void *field_void,void *computed_field_conditional_package_void)
+	void *field_modify_void,void *computed_field_conditional_package_void)
 /*******************************************************************************
 LAST MODIFIED : 27 July 2007
 
@@ -377,12 +375,14 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,**source_fields;
 	Computed_field_conditional_package 
 		*computed_field_conditional_package;
+	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_if);
-	if (state&&(field=(struct Computed_field *)field_void)&&
+	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void) &&
+			(field=field_modify->field)&&
 		(computed_field_conditional_package=
 		(Computed_field_conditional_package *)
 		computed_field_conditional_package_void))
@@ -428,7 +428,7 @@ already) and allows its contents to be modified.
 
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					computed_field_conditional_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_source_field_data.conditional_function=
           Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -504,9 +504,6 @@ DESCRIPTION :
 	ENTER(Computed_field_register_types_conditional);
 	if (computed_field_package)
 	{
-		computed_field_conditional_package->computed_field_manager =
-			Computed_field_package_get_computed_field_manager(
-				computed_field_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_if_type_string, 
 			define_Computed_field_type_if,

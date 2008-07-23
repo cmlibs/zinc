@@ -310,6 +310,63 @@ Note <path> is modified within this function but returned in its original state.
 For safety, returns NULL in <region_address> on any error.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Separates a region/path/name into the region plus region-path and remainder
+ * string containing text from the first unrecognized child region name.
+ *
+ * Examples:
+ * "fibres" or "/fibres" -> root_region, "" and "fibres" if fibres was not a
+ *     child region of the root region
+ * "heart/fibres" or "/heart/fibres" -> heart region, "heart" and "fibres" if
+ *     heart region has no child region called fibres
+ * "body/heart" -> heart region, "body/heart" and NULL name if root region
+ *     contains body region contains heart region
+ * "heart/bob/fred/" -> region heart, "heart" and "bob/fred" if region heart
+ *     has no child region called bob 
+ * 
+ * @param root_region the starting region for path
+ * @path string the input path
+ * @param region_address on success, points to region partially matched by path
+ * @param region_path_address on success, returns allocated string path to the
+ *   returned region, stripped of leading and trailing region path separators
+ * @param remainder_address on success, returns pointer to allocated remainder
+ *   of path stripped of leading and trailing region path separators, or NULL
+ *   if all of path was resolved
+ * @return 1 on success, 0 on failure
+ */
+int Cmiss_region_get_partial_region_path(struct Cmiss_region *root_region,
+	const char *path, struct Cmiss_region **region_address,
+	char **region_path_address,	char **remainder_address);
+
+/***************************************************************************//**
+ * Structure to pass to function
+ * Option_table_add_region_path_and_field_name_entry
+ * Before calling: ensure all pointers are NULL
+ * After calling: DEACCESS region, if any and DEALLOCATE any strings
+ */
+struct Cmiss_region_path_and_name
+{
+	struct Cmiss_region *region;
+	char *region_path;
+	char *name;
+};
+
+/***************************************************************************//**
+ * Adds the token to the option table for setting a region path and/or field
+ * name. Note fields must not be the same name as a child region: region names
+ * are matched first.
+ *
+ * @param option_table table to add token to
+ * @param token token to be matched. Can be NULL for final, default entry
+ * @param region_path_and_name if set contains ACCESSed region and allocated
+ *   path and name which caller is required to clean up
+ * @param root_region the root region from which path is relative
+ */
+int Option_table_add_region_path_and_or_field_name_entry(
+	struct Option_table *option_table, char *token,
+	struct Cmiss_region_path_and_name *region_path_and_name,
+	struct Cmiss_region *root_region);
+
 int Cmiss_region_get_child_region_from_path(struct Cmiss_region *root_region,
 	char *path, struct Cmiss_region **child_region_address,
 	char **remaining_path_address);
