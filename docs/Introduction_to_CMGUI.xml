@@ -124,26 +124,27 @@
         <title>CMGUI Architecture</title>
         <section>
             <title>Regions and Fields</title>
-            <para>The basic structural unit in CMGUI is called a *region* - region is a container
-                for the objects representing a model. Regions own a set of fields and may contain
-                child regions, thereby allowing a hierarchical model structure. For example, you may
-                have a "body" region that contains "heart", "lung", and "stomach" regions..</para>
-            <para>When you start CMGUI, a *root region* exists; this is an empty space into which
-                other regions are loaded. When you load in exnode and exelem files, a new region
-                will be created in the *root region* named for the group declared in the files. For
-                example, if you were to load in heart.exnode and heart.exelem files which declare a
-                group "heart" (via the line ``Group name: heart``), a new region called "heart"
-                would be created containing all the nodes, elements and fields defined in these
-                files.</para>
-            <para>Each region contains a set of *fields* from which a model is built up. A field is
-                a function that returns values over a domain; for example, the "potential" field
-                could provide a value for the electrical potential of each point in the heart
-                domain, which could be a finite element mesh. The geometry of the heart is itself
-                defined by the coordinate field (this field is often called "coordinates" in our
-                models). Finite element fields in CMGUI are generally defined by storing discrete
-                parameters at nodes (eg the coordinates of the node, the electrical potential at
-                each node) and interpolated across the *xi space* spanned by elements to give the
-                continuous field.</para>
+            <para>The basic structural unit in CMGUI is called a <emphasis role="italic"
+                >region</emphasis> - region is a container for the objects representing a model.
+                Regions own a set of fields and may contain child regions, thereby allowing a
+                hierarchical model structure. For example, you may have a "body" region that
+                contains "heart", "lung", and "stomach" regions..</para>
+            <para>When you start CMGUI, a <emphasis role="italic">root region</emphasis> exists;
+                this is an empty space into which other regions are loaded. When you load in exnode
+                and exelem files, a new region will be created in the root region named for the
+                group declared in the files. For example, if you were to load in heart.exnode and
+                heart.exelem files which declare a group "heart" (via the line <code>Group name:
+                    heart</code>), a new region called "heart" would be created containing all the
+                nodes, elements and fields defined in these files.</para>
+            <para>Each region contains a set of <emphasis role="italic">fields</emphasis> from which
+                a model is built up. A field is a function that returns values over a domain; for
+                example, the "potential" field could provide a value for the electrical potential of
+                each point in the heart domain, which could be a finite element mesh. The geometry
+                of the heart is itself defined by the coordinate field (this field is often called
+                "coordinates" in our models). Finite element fields in CMGUI are generally defined
+                by storing discrete parameters at nodes (eg the coordinates of the node, the
+                electrical potential at each node) and interpolated across the *xi space* spanned by
+                elements to give the continuous field.</para>
             <para>Other examples of fields include fibre orientation in the heart, temperature,
                 pressure, material properties, strain and so on. In CMGUI you can also define fields
                 that are computed from other fields. For example, you might define a field called
@@ -154,10 +155,11 @@
         </section>
         <section>
             <title>Other data in CMGUI</title>
-            <para> The structure of the CMGUI *command data* (that is, the complete set of data used
-                by CMGUI) is divided into a number of *containers* and categories. Besides the
-                regions which contain fields, there are also the following lists and managers, which
-                contain other data used to create visualizations:</para>
+            <para> The structure of the CMGUI command data (that is, the complete set of data used
+                by CMGUI) is divided into a number of <emphasis role="italic">containers</emphasis>
+                and categories. Besides the regions which contain fields, there are also the
+                following lists and managers, which contain other data used to create
+                visualizations:</para>
             <para>
                 <itemizedlist>
                     <listitem>
