@@ -1634,21 +1634,45 @@ DESCRIPTION :
 } /* modify_Command_window_out_file */
 
 #if defined (WX_USER_INTERFACE)
+
+struct TextCtrlMouseEventData
+{
+	int left;
+	int d_click;
+	long x, y;
+};
+
+
 class wxCommandWindow : public wxFrame
 {
-	 Command_window *command_window;
+	Command_window *command_window;
 	wxListBox *history_list;
 	wxString SelectedCommand;
 	wxString command;
 	wxString blank;
 	wxTextCtrl *output_list;
 	int number;
+	struct TextCtrlMouseEventData mouse_event_data;
 
 public:
 
   wxCommandWindow(Command_window *command_window): 
     command_window(command_window)
   {
+		 wxXmlInit_command_window();
+		 command_window->wx_command_window = NULL;
+		 wxXmlResource::Get()->LoadFrame(this,
+				(wxWindow *)NULL, _T("CmguiCommandWindow"));
+		 this->SetIcon(cmiss_icon_xpm);
+		 output_list = XRCCTRL(*this,"OutputWindow", wxTextCtrl);
+		 mouse_event_data.left = 0;
+		 mouse_event_data.d_click = 0;
+		 mouse_event_data.x = 0;
+		 mouse_event_data.y = 0;
+		 output_list->Connect(wxEVT_LEFT_DOWN,
+				wxMouseEventHandler(wxCommandWindow::OnOutputLeftClick), NULL, this);
+		 output_list->Connect(wxEVT_LEFT_DCLICK,
+				wxMouseEventHandler(wxCommandWindow::OnOutputDClick), NULL, this);
   };
 
   wxCommandWindow()
@@ -1659,7 +1683,77 @@ public:
   ~wxCommandWindow()
   {
   };  
-                 
+
+	 void OutputListTripleClickEvent()
+	 {
+			long from, to, colume_no, line_no, line_length;
+			output_list->GetSelection(&from, &to);
+			output_list->PositionToXY(from, &colume_no, &line_no);
+			line_length = output_list->GetLineLength(line_no);
+			output_list->SetSelection(
+				 output_list->XYToPosition(0, line_no), 
+				 output_list->XYToPosition(line_length, line_no));
+			mouse_event_data.left = 0;
+			mouse_event_data.d_click = 0;
+	 }
+
+	 void OnOutputLeftClick(wxMouseEvent &event)
+	 {
+			if (event.GetX() == mouse_event_data.x && 
+				 event.GetY() == mouse_event_data.y)
+			{
+				 mouse_event_data.left++;
+			}
+			else
+			{
+				 mouse_event_data.left = 1;
+				 mouse_event_data.d_click = 0;
+				 mouse_event_data.x = event.GetX();
+				 mouse_event_data.y = event.GetY();
+				 event.Skip();
+			}
+#if defined (__WXMSW__)
+			if (mouse_event_data.left == 2 && mouse_event_data.d_click == 1)	
+#else
+			if (mouse_event_data.left == 3 && mouse_event_data.d_click == 1)
+#endif
+			{
+				 OutputListTripleClickEvent();
+			}
+#if defined (__WXMSW__)
+			else if (mouse_event_data.left > 2)	
+#else
+			else if (mouse_event_data.left > 3)
+#endif
+			{
+				 mouse_event_data.left = 1;
+				 mouse_event_data.d_click = 0;
+				 event.Skip();
+			}
+			else
+			{
+				 event.Skip();
+			}
+	 }
+
+	 void OnOutputDClick(wxMouseEvent &event)
+	 {
+			if (!(event.GetX() == mouse_event_data.x && 
+						event.GetY() == mouse_event_data.y))
+			{
+				 mouse_event_data.left = 0;
+			}
+			if (mouse_event_data.left == 0)
+			{
+				 mouse_event_data.d_click = 0 ;
+			}
+			else
+			{
+				 mouse_event_data.d_click++;
+			}
+			event.Skip();
+	 }
+        
 	 void wx_Add_to_command_list(wxString command)
 	 {
 			history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
@@ -1822,7 +1916,6 @@ private:
 			wxFontData fdata;
 			wxFont font;
 			wxColour colour;
-			output_list = XRCCTRL(*this,"OutputWindow", wxTextCtrl);
 			history_list = XRCCTRL(*this,"CommandHistory", wxListBox);
 			font = history_list->GetFont();
 			fdata.SetInitialFont(font);
@@ -2493,17 +2586,8 @@ Create the structures and retrieve the command window from the uil file.
 					"CREATE(Command_window).  Insufficient memory for command_window prompt");
 			}
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
-			command_window->output_window = NULL;
-			wxXmlInit_command_window();
 			command_window->wx_command_window = new 
 			  wxCommandWindow(command_window);
-			wxXmlResource::Get()->LoadFrame(command_window->wx_command_window,
-			   (wxWindow *)NULL, _T("CmguiCommandWindow"));
-			wxIcon frame_icon(wxICON(cmiss_icon));
-			command_window->wx_command_window->SetIcon(frame_icon);
-#if defined (__WXMSW__)
-			USE_PARAMETER(cmiss_icon_xpm);
-#endif
 			if (ALLOCATE(command_window->command_prompt, char , 1))
 			{
 				 *command_window->command_prompt = 0;
