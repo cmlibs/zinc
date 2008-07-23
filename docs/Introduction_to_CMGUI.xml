@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?oxygen RNGSchema="http://www.oasis-open.org/docbook/xml/5.0/rng/docbook.rng" type="xml"?>
+<article xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink"
+    version="5.0">
+    <title>Introduction to CMGUI</title>
+    <section>
+        <title>CMGUI: The Windows</title>
+        <para>In order to become acquainted with the features of CMGUI, it is useful to run through
+            some of the simple example files provided. CMGUI is a command line driven program, and
+            all of its features are available via a command line interface – however, it also
+            provides a more accessible GUI interface allowing many (but not all!) of these commands
+            to be executed via a more familiar graphical interface. The interface is broken up into
+            a number of windows that allow access to the different functions of the program. The
+            first example will familiarise you with the most commonly used windows.</para>
+        <para>The CMGUI examples can be obtained from the CMISS website at
+            http://cmiss.bioeng.auckland.ac.nz/development/examples/a/index_thumbs.html. These
+            examples normally consist of a comfile and some other data files for creating a mesh.</para>
+        <section>
+            <title>Example a1 – Graphical Element Groups – Viewing a Cube</title>
+            <para>Load CMGUI to begin the first example. The first window that will present itself
+                when loading CMGUI is the command window. This window has a selection of menus and
+                three functional areas; a history area which shows commands that have been executed,
+                a command line where commands may be entered directly, and an output area that shows
+                the text output of any commands, including error and help messages. </para>
+            <figure>
+                <title>The CMGUI main window</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="mainWindow.png" align="center"/>
+                    </imageobject>
+                    <textobject>
+                        <phrase>The CMGUI main window</phrase>
+                    </textobject>
+                </mediaobject>
+            </figure>
+            <para>In the file menu, go to Open > Com file, then locate the example-a1.com file. This
+                is a text file containing all the commands used in this example, as well as useful
+                comments on what the various commands are doing. You will see the comfile window
+                appear, displaying the file you have just loaded. All the lines that begin with a #
+                character are explanatory comments, the rest are commands. The comfile window has
+                three buttons at the bottom - the “All” button executes the entire comfile, while
+                the “Selected” button will execute only selected portions. “Close” closes the
+                comfile. Individual commands from the comfile can be executed by double clicking on
+                them – notice that clicking to select a command in the comfile window makes that
+                command appear in the command line panel in the command window, and clicking again
+                then executes it. It is important to note that the order the commands are executed
+                in can be important, especially in later examples, so click on the commands in the
+                order they appear in the example comfile.</para>
+            <para>Double-click the first two commands in the comfile – a new window will appear,
+                displaying a wireframe representation of a cube. This is the graphics window. You
+                can rotate, zoom and translate the view of the cube in this window by holding down
+                the left, right and middle mouse buttons respectively while moving the mouse in the
+                display area. Have a go at moving the cube around, and click the “perspective”
+                button on and off to see the difference it makes to the display. To reset the view,
+                click the “View All” button.</para>
+            <para>Once you have run through all of the commands in this example (either by
+                double-clicking them or by using the “All” button in the comfile window) you should
+                have a blue, somewhat shiny cube, a set of blue axes, and red numbers at each corner
+                of the cube. These are the numbers of the nodes, the points that make up the 3D
+                model. Another window will also have appeared, called the “Node Viewer”. This window
+                allows you to manipulate the data that define the nodes – in this case the corners
+                of the cube. In the cube example, each node has a number and coordinates. You can
+                click on each of these buttons (at this stage a small GUI bug means you need to
+                manually resize the window after clicking) to show editable boxes containing the
+                actual data contained in the nodes. This window therefore allows direct access to
+                the node data for editing. If you edit coordinate data and click the “Apply” button,
+                you will see changes in the shape of the cube in the graphics window. </para>
+        </section>
+        <section>
+            <title>Other Interface Windows: Editors</title>
+            <para>That is the end of the example file commands, but there are other windows you can
+                now use to manipulate the cube shown in the graphics window. Go into the Graphics
+                menu in the Command Window, and select “Material editor”. This brings up a window
+                that allows you to create and edit materials, which define the appearance of objects
+                in the graphics window. You can manipulate the colour, specularity (shininess),
+                emitted light (glow), and alpha (transparency) of a material using this window. Your
+                edited material is used to create the sphere in the preview panel at the bottom of
+                the window – you may need to resize the window in order to get a good sized preview
+                panel. Click on some of the already defined materials in the list at the top to see
+                how they affect the preview sphere, then play around with the sliders to alter the
+                material. </para>
+            <figure>
+                <title>The material editor window</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="materialEditorWindow.png" align="center"/>
+                    </imageobject>
+                    <textobject>
+                        <phrase>The material editor window</phrase>
+                    </textobject>
+                </mediaobject>
+            </figure>
+            <para>Click on the material “bluey” – this is the material used to show the faces of the
+                cube in this first example, as defined in the comfile. Use the colour and property
+                sliders to make it quite different; perhaps red and highly transparent, then click
+                “Apply” to change the cube in the graphics window to your new material.</para>
+            <para>Now close the material editor and go to the Graphics menu, selecting “Scene
+                editor”. The scene editor allows you to manipulate which objects appear in the
+                graphics window, and how they are rendered. It also allows you to create new
+                objects, as well as change their order in the scene, which is particularly important
+                when rendering transparent objects. As a quick example of what can be done with this
+                editor, select the “lines” setting in the settings list (shown selected below), and
+                un-tick the check box. The white lines along the edges of the cube will disappear in
+                the graphics window. Similarly, you can choose whether to show the cubes surfaces or
+                the node numbers using the appropriate check boxes. You will notice that as you
+                select settings (such as surfaces) in the settings list, their properties will
+                appear in the settings editor below. Using this editor you can change a large number
+                of the display properties of objects in the scene. There are many more important
+                functions to this editor window which will be explained in more depth later. </para>
+            <figure>
+                <title>The scene editor window</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="sceneEditorWindow.png" align="center"/>
+                    </imageobject>
+                    <textobject>
+                        <phrase>The scene editor window</phrase>
+                    </textobject>
+                </mediaobject>
+            </figure>
+        </section>
+    </section>
+    <section>
+        <title>CMGUI Architecture</title>
+        <section>
+            <title>Regions and Fields</title>
+            <para>The basic structural unit in CMGUI is called a *region* - region is a container
+                for the objects representing a model. Regions own a set of fields and may contain
+                child regions, thereby allowing a hierarchical model structure. For example, you may
+                have a "body" region that contains "heart", "lung", and "stomach" regions..</para>
+            <para>When you start CMGUI, a *root region* exists; this is an empty space into which
+                other regions are loaded. When you load in exnode and exelem files, a new region
+                will be created in the *root region* named for the group declared in the files. For
+                example, if you were to load in heart.exnode and heart.exelem files which declare a
+                group "heart" (via the line ``Group name: heart``), a new region called "heart"
+                would be created containing all the nodes, elements and fields defined in these
+                files.</para>
+            <para>Each region contains a set of *fields* from which a model is built up. A field is
+                a function that returns values over a domain; for example, the "potential" field
+                could provide a value for the electrical potential of each point in the heart
+                domain, which could be a finite element mesh. The geometry of the heart is itself
+                defined by the coordinate field (this field is often called "coordinates" in our
+                models). Finite element fields in CMGUI are generally defined by storing discrete
+                parameters at nodes (eg the coordinates of the node, the electrical potential at
+                each node) and interpolated across the *xi space* spanned by elements to give the
+                continuous field.</para>
+            <para>Other examples of fields include fibre orientation in the heart, temperature,
+                pressure, material properties, strain and so on. In CMGUI you can also define fields
+                that are computed from other fields. For example, you might define a field called
+                "scaled_coordinates" by scaling coordinates x, y, and z to x, y, and 10z, perhaps to
+                exaggerate the height of topological features. You might also compute strain from
+                deformed and undeformed coordinates, fibre axis from fibre Euler angles, and so
+            on.</para>
+        </section>
+        <section>
+            <title>Other data in CMGUI</title>
+            <para> The structure of the CMGUI *command data* (that is, the complete set of data used
+                by CMGUI) is divided into a number of *containers* and categories. Besides the
+                regions which contain fields, there are also the following lists and managers, which
+                contain other data used to create visualizations:</para>
+            <para>
+                <itemizedlist>
+                    <listitem>
+                        <para>Scene manager - scenes contain definitions of how to display
+                            visualizations. The region created when you load exnode and exelem data
+                            (such as the heart region described above) is used to automatically
+                            create a graphical representation in scene "default" when loaded. Scenes
+                            contains either (1) graphical renditions of regions (2) graphics objects
+                            (3) child scenes.</para>
+                    </listitem>
+                    <listitem>
+                        <para>Graphical material manager - contains a list of graphical materials
+                            that can be applied to graphical representations or objects.</para>
+                    </listitem>
+                    <listitem>
+                        <para>Texture manager - contains a list of textures that can be used in
+                            material definitions or volume renderings, etc. Textures are 2D or 3D
+                            images.</para>
+                    </listitem>
+                    <listitem>
+                        <para>Spectrum manager - contains a list of spectra that can be used in
+                            material definitions. These control how the graphical material is
+                            changed when graphics are coloured by a data field.</para>
+                    </listitem>
+                    <listitem>
+                        <para>Graphics object list - contains simple graphics objects which are not
+                            tied to a model representation, but can be drawn in a scene. These can
+                            animate with time.</para>
+                    </listitem>
+                    <listitem>
+                        <para>Glyph list - contains glyphs that can be used to represent data points
+                            in the graphics window - such things as spheres, cubes, arrows, axes,
+                            points or lines. Objects from the graphics objects list may be added to
+                            the glyph list, in order to create customized glyphs.</para>
+                    </listitem>
+                </itemizedlist>
+            </para>
+            <para>CMGUI is not like most common software packages that can save a single file
+                containing all of your work. In CMGUI, the data being worked on is often loaded in
+                as a number of separate files, and the editing of the visual representation of this
+                data often does not change it; it only alters how it is represented in the 3D
+                window. Currently, it is not possible to save your work in a single file that can be
+                loaded in order to recreate all your work on the representation. For example; if you
+                load in a model, change the viewpoint, alter the materials used to render it, and
+                add glyphs to important data points, there is no way to simply "save" all of these
+                changes from a simple menu item. There are ways to save all these changes but this
+                will be covered in another section.</para>
+        </section>
+    </section>
+</article>
