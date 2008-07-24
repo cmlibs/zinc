@@ -418,8 +418,6 @@ Applies the computed field to the grid field.
 						if (!Computed_field_set_type_curve_lookup(curve_lookup[i],
 							coordinate_component[i],
 							CHOOSE_OBJECT_GET_OBJECT(Curve)(widget),
-							Computed_field_package_get_computed_field_manager(
-								grid_calc->computed_field_package),
 							grid_calc->curve_manager))
 						{
 							return_code = 0;
