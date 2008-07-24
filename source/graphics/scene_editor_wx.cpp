@@ -533,6 +533,7 @@ public:
 	render_type_chooser = NULL;
 	seed_element_chooser = NULL;
 	graphicalitemschecklist = NULL;
+	scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
 
 	XRCCTRL(*this,"CircleDiscretisationPanel", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
 		wxCommandEventHandler(wxSceneEditor::CircleDiscretisationUpdate),
@@ -1960,11 +1961,10 @@ void Scene_editor_wx_UpdateGraphicalElementSettings(GT_element_settings *setting
 	 }
 }
 
-void SceneCheckListClicked(wxCommandEvent &event)
+void SceneCheckListProcessSelection()
 {
 	 int width, height;
 	 currentsceneobjecttext=XRCCTRL(*this,"CurrentSceneObjectText",wxStaticText);
-	 scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
 	 currentsceneobjecttext->SetLabel(scenechecklist->GetStringSelection());
 	 int selection=scenechecklist->GetSelection();
 	 Scene_object *new_object = 
@@ -1975,7 +1975,6 @@ void SceneCheckListClicked(wxCommandEvent &event)
 	 }
 	 REACCESS(Scene_object)(&scene_editor->scene_object, new_object);
 	 gtMatrix transformation_matrix;
-	 scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
 	 if (new_object)
 	 {
 			if(scenechecklist->IsChecked(selection))
@@ -2025,9 +2024,19 @@ void SceneCheckListClicked(wxCommandEvent &event)
 	 }
 }
 
+void SceneCheckListChecked(wxCommandEvent &event)
+{
+	scenechecklist->SetSelection(event.GetInt());
+	SceneCheckListProcessSelection();
+}
+
+void SceneCheckListClicked(wxCommandEvent &event)
+{
+	 SceneCheckListProcessSelection();
+}
+
 void SceneObjectUpClicked(wxCommandEvent &event)
 {
-	 scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
 	 int selection = scenechecklist->GetSelection();
 	 if (selection>=1)
 	 {
@@ -2049,7 +2058,6 @@ void SceneObjectUpClicked(wxCommandEvent &event)
 
 void SceneObjectDownClicked(wxCommandEvent &event)
 {
-	 scenechecklist=XRCCTRL(*this,"SceneCheckList",wxCheckListBox);
 	 int selection = scenechecklist->GetSelection();
 	 int number = scenechecklist->GetCount();
 	 if (number>=(selection+2))
@@ -2069,7 +2077,7 @@ void SceneObjectDownClicked(wxCommandEvent &event)
 	 }
 }
 
-void GTSettingsListBoxClicked(wxCommandEvent &event)
+void GTSettingsListBoxProcessSelection()
 {
 	 graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
 	 int selection= graphicalitemschecklist->GetSelection();
@@ -2084,6 +2092,17 @@ void GTSettingsListBoxClicked(wxCommandEvent &event)
 			AutoApplyorNot(scene_editor->gt_element_group,
 				 scene_editor->edit_gt_element_group);
 	 }
+}
+
+void GTSettingsListBoxChecked(wxCommandEvent &event)
+{
+	 graphicalitemschecklist->SetSelection(event.GetInt());
+	 GTSettingsListBoxProcessSelection();
+}
+
+void GTSettingsListBoxClicked(wxCommandEvent &event)
+{
+	 GTSettingsListBoxProcessSelection();
 }
 
 void AddToSettingList(wxCommandEvent &event)
@@ -4416,11 +4435,11 @@ BEGIN_EVENT_TABLE(wxSceneEditor, wxFrame)
 	 EVT_CHECKBOX(XRCID("AutoCheckBox"),wxSceneEditor::AutoChecked)
 	 EVT_BUTTON(XRCID("ApplyButton"),wxSceneEditor::ApplyClicked)
 	 EVT_BUTTON(XRCID("RevertButton"),wxSceneEditor::RevertClicked)
-	 EVT_CHECKLISTBOX(XRCID("SceneCheckList"), wxSceneEditor::SceneCheckListClicked)
+	 EVT_CHECKLISTBOX(XRCID("SceneCheckList"), wxSceneEditor::SceneCheckListChecked)
 	 EVT_LISTBOX(XRCID("SceneCheckList"), wxSceneEditor::SceneCheckListClicked)
 	 EVT_BUTTON(XRCID("SceneObjectUpButton"),wxSceneEditor::SceneObjectUpClicked)
 	 EVT_BUTTON(XRCID("SceneObjectDownButton"),wxSceneEditor::SceneObjectDownClicked)
-	 EVT_CHECKLISTBOX(XRCID("GraphicalItemsListBox"), wxSceneEditor::GTSettingsListBoxClicked)
+	 EVT_CHECKLISTBOX(XRCID("GraphicalItemsListBox"), wxSceneEditor::GTSettingsListBoxChecked)
 	 EVT_LISTBOX(XRCID("GraphicalItemsListBox"), wxSceneEditor::GTSettingsListBoxClicked)
 	 EVT_BUTTON(XRCID("AddButton"),wxSceneEditor::AddToSettingList)
 	 EVT_BUTTON(XRCID("DelButton"),wxSceneEditor::RemoveFromSettingList)
