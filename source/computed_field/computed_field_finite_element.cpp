@@ -5850,26 +5850,21 @@ Cleans up <fe_field> and its Computed_field wrapper if each are not in use.
 
 Computed_field_finite_element_package *
 Computed_field_register_types_finite_element(
-	struct Computed_field_package *computed_field_package,
-	struct Cmiss_region *cmiss_region)
+	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 24 August 2006
+LAST MODIFIED : 24 July 2008
 
 DESCRIPTION :
-This function registers the finite_element related types of Computed_fields and
-also attached to the <cmiss_region> so that any fe_fields are
-automatically wrapped in corresponding computed_fields.
+This function registers the finite_element related types of Computed_fields.
 ==============================================================================*/
 {
 	Computed_field_finite_element_package *return_ptr;
-	struct FE_region *fe_region;
 	Computed_field_finite_element_package 
 		*computed_field_finite_element_package = 
 		new Computed_field_finite_element_package;
 
 	ENTER(Computed_field_register_types_finite_element);
-	if (computed_field_package && cmiss_region &&
-		(fe_region = Cmiss_region_get_FE_region(cmiss_region)))
+	if (computed_field_package)
 	{
 		Computed_field_package_add_type(computed_field_package,
 			computed_field_finite_element_type_string,

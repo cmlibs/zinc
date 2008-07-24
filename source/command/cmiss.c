@@ -9589,85 +9589,91 @@ Executes a GFX DESTROY ELEMENTS command.
 } /* gfx_destroy_elements */
 
 static int gfx_destroy_Computed_field(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
+	void *dummy_to_be_modified,void *root_region_void)
 /*******************************************************************************
-LAST MODIFIED : 3 March 2003
+LAST MODIFIED : 24 July 2008
 
 DESCRIPTION :
 Executes a GFX DESTROY FIELD command.
 ==============================================================================*/
 {
-	char *current_token;
-	struct Computed_field *computed_field;
+	char *current_token, *field_name, *region_path;
+	struct Computed_field *field;
 	int return_code;
-	struct Cmiss_command_data *command_data;
+	struct Cmiss_region *region, *root_region;
 	struct FE_field *fe_field;
-	struct MANAGER(Computed_field) *computed_field_manager;
 
 	ENTER(gfx_destroy_Computed_field);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void)&&
-		(computed_field_manager=Computed_field_package_get_computed_field_manager(
-			command_data->computed_field_package)))
+	if (state && (root_region=(struct Cmiss_region *)root_region_void))
 	{
 		if (current_token=state->current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (computed_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-					current_token,computed_field_manager))
+				if (Cmiss_region_get_partial_region_path(root_region,
+					current_token, &region, &region_path, &field_name))
 				{
-					if (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(computed_field,
-						computed_field_manager))
+					if (field_name &&
+						(field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+							field_name, Cmiss_region_get_Computed_field_manager(region))))
 					{
-						/* also want to destroy wrapped FE_field */
-						fe_field = (struct FE_field *)NULL;
-						if (Computed_field_is_type_finite_element(computed_field))
+						if (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(field,
+							Cmiss_region_get_Computed_field_manager(region)))
 						{
-							Computed_field_get_type_finite_element(computed_field,
-								&fe_field);
-						}
-						if (fe_field)
-						{
-							return_code = FE_region_remove_FE_field(
-								FE_field_get_FE_region(fe_field), fe_field);
+							if (Computed_field_is_type_finite_element(field))
+							{
+								/* computed fielf wrapper is destroyed in response to FE_field */
+								fe_field = (struct FE_field *)NULL;
+								Computed_field_get_type_finite_element(field, &fe_field);
+								return_code = FE_region_remove_FE_field(
+									FE_field_get_FE_region(fe_field), fe_field);
+							}
+							else
+							{
+								return_code = REMOVE_OBJECT_FROM_MANAGER(Computed_field)(
+									field, Cmiss_region_get_Computed_field_manager(region));
+							}
+							if (!return_code)
+							{
+								display_message(ERROR_MESSAGE,
+									"gfx_destroy_Computed_field.  Could not destroy field");
+							}
 						}
 						else
 						{
-							return_code = REMOVE_OBJECT_FROM_MANAGER(Computed_field)(
-								computed_field, computed_field_manager);
-						}
-						if (!return_code)
-						{
 							display_message(ERROR_MESSAGE,
-								"gfx_destroy_Computed_field.  Could not destroy field");
+								"Cannot destroy field in use : %s",current_token);
+							return_code=0;
 						}
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,
-							"Cannot destroy field in use : %s",current_token);
+						display_message(ERROR_MESSAGE,"Field does not exist: %s",
+							current_token);
+						display_parse_state_location(state);
 						return_code=0;
 					}
+					DEALLOCATE(region_path);
+					DEALLOCATE(field_name);
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"Field does not exist: %s",
-						current_token);
-					display_parse_state_location(state);
-					return_code=0;
+					display_message(ERROR_MESSAGE,
+						"gfx_destroy_Computed_field.  Failed to get region_path/field_name");
+					return_code = 0;
 				}
 			}
 			else
 			{
-				display_message(INFORMATION_MESSAGE," FIELD_NAME");
+				display_message(INFORMATION_MESSAGE," [REGION_PATH/]FIELD_NAME");
 				return_code=1;
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"Missing field name");
+			display_message(ERROR_MESSAGE,"Missing region_path/field name");
 			return_code=0;
 		}
 	}
@@ -10339,7 +10345,7 @@ Executes a GFX DESTROY command.
 					command_data_void, gfx_destroy_elements);
 				/* field */
 				Option_table_add_entry(option_table, "field", NULL,
-					command_data_void, gfx_destroy_Computed_field);
+					(void *)command_data->root_region, gfx_destroy_Computed_field);
 				/* graphics_object */
 				Option_table_add_entry(option_table, "graphics_object", NULL,
 					command_data_void, gfx_destroy_graphics_object);
@@ -24966,7 +24972,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			if (command_data->root_region)
 			{
 				Computed_field_register_types_finite_element(
-						command_data->computed_field_package, command_data->root_region);
+						command_data->computed_field_package);
 				if (!((computed_field=CREATE(Computed_field)("cmiss_number"))&&
 						 Computed_field_set_coordinate_system(computed_field,
 							 &rect_coord_system)&&

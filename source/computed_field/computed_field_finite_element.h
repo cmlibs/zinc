@@ -85,15 +85,12 @@ extern "C" {
 
 struct Computed_field_finite_element_package *
 	Computed_field_register_types_finite_element(
-	struct Computed_field_package *computed_field_package,
-	struct Cmiss_region *cmiss_region);
+	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
-LAST MODIFIED : 11 March 2003
+LAST MODIFIED : 24 July 2008
 
 DESCRIPTION :
-This function registers the finite_element related types of Computed_fields and
-also registers with the fe_region in the <cmiss_region> so that any fe_fields are
-automatically wrapped in corresponding computed_fields.
+This function registers the finite_element related types of Computed_fields.
 ==============================================================================*/
 
 int Computed_field_is_type_finite_element(struct Computed_field *field);
