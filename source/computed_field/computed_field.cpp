@@ -3856,15 +3856,13 @@ and should not itself be managed.
 	char *current_token, *field_name, *region_path;
 	int return_code;
 	struct Computed_field *existing_field,*temp_field;
-	struct Computed_field_package *computed_field_package;
 	struct Option_table *help_option_table;
 	struct Cmiss_region *region, *root_region;
 
 	ENTER(define_Computed_field);
 	if (state && (root_region = (struct Cmiss_region *)root_region_void))
 	{
-		if (computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void)
+		if (computed_field_package_void)
 		{
 			return_code=1;
 			if (current_token=state->current_token)
