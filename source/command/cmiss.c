@@ -24346,7 +24346,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 	struct Cmgui_command_line_options command_line_options;
 	struct Cmiss_command_data *command_data;
 	struct Colour ambient_colour, colour, default_colour;
-	struct Computed_field *computed_field;
 #if defined(USE_CMGUI_COMMAND_WINDOW)
 	struct Command_window *command_window;
 #endif /* defined(USE_CMGUI_COMMAND_WINDOW) */
@@ -24969,31 +24968,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->computed_field_package, 
 					command_data->root_region);
 			}
-			if (command_data->root_region)
-			{
-				Computed_field_register_types_finite_element(
-						command_data->computed_field_package);
-				if (!((computed_field=CREATE(Computed_field)("cmiss_number"))&&
-						 Computed_field_set_coordinate_system(computed_field,
-							 &rect_coord_system)&&
-						 Computed_field_set_type_cmiss_number(computed_field)&&
-						 Computed_field_set_read_only(computed_field)&&
-						 ADD_OBJECT_TO_MANAGER(Computed_field)(computed_field,
-							 computed_field_manager)))
-				{
-					DESTROY(Computed_field)(&computed_field);
-				}
-				if (!((computed_field=CREATE(Computed_field)("xi"))&&
-						 Computed_field_set_coordinate_system(computed_field,
-							 &rect_coord_system)&&
-						 Computed_field_set_type_xi_coordinates(computed_field)&&
-						 Computed_field_set_read_only(computed_field)&&
-						 ADD_OBJECT_TO_MANAGER(Computed_field)(computed_field,
-							 computed_field_manager)))
-				{
-					DESTROY(Computed_field)(&computed_field);
-				}
-			}
+			Computed_field_register_types_finite_element(
+				command_data->computed_field_package);
 			Computed_field_register_types_deformation(
 				command_data->computed_field_package);
 			Computed_field_register_types_string_constant(

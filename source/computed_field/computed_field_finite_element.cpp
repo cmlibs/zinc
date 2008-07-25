@@ -53,6 +53,7 @@ extern "C" {
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_region.h"
+#include "finite_element/finite_element_region_private.h"
 #include "finite_element/finite_element_time.h"
 #include "general/debug.h"
 #include "general/mystring.h"
@@ -5177,19 +5178,19 @@ function.
 	return (return_code);
 } /* FE_field_to_Computed_field_change */
 
+/***************************************************************************//**
+ * Callback for changes to FE_region attached to this field manager.
+ * Updates definitions of Computed_field wrappers for changed FE_fields in the
+ * manager by calling FE_field_to_Computed_field_change for every FE_field in
+ * the changed_object_list.
+ * Also ensures manager has cmiss_number and xi fields, at the appropriate time.
+ */
 static void Computed_field_FE_region_change(struct FE_region *fe_region,
 	struct FE_region_changes *changes, void *computed_field_manager_void)
-/*******************************************************************************
-LAST MODIFIED : 22 May 2008
-
-DESCRIPTION :
-Updates definitions of Computed_field wrappers for changed FE_fields in the
-manager by calling FE_field_to_Computed_field_change for every FE_field in the
-changed_object_list. Caches computed_field_manager to consolidate messages
-that may result from this process.
-==============================================================================*/
 {
-	enum CHANGE_LOG_CHANGE(FE_field) change_summary;
+	enum CHANGE_LOG_CHANGE(FE_field) field_change_summary;
+	int add_cmiss_number_field, add_xi_field, check_field_wrappers;
+	struct Computed_field *field;
 	struct FE_field_to_Computed_field_change_data field_change_data;
 	struct MANAGER(Computed_field) *computed_field_manager;
 
@@ -5197,24 +5198,52 @@ that may result from this process.
 	if (fe_region && changes && (computed_field_manager =
 		(struct MANAGER(Computed_field) *)computed_field_manager_void))
 	{
-		field_change_data.computed_field_manager =  computed_field_manager;
-		field_change_data.changes = changes;
-		field_change_data.fe_region = fe_region;
 		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_field)(changes->fe_field_changes,
-			&change_summary);
-		if ((change_summary & CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field)) || 
-			(change_summary & CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field)) || 
-			(change_summary & CHANGE_LOG_OBJECT_ADDED(FE_field)))
+			&field_change_summary);
+		check_field_wrappers = 
+			(field_change_summary & CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field)) || 
+			(field_change_summary & CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field)) || 
+			(field_change_summary & CHANGE_LOG_OBJECT_ADDED(FE_field));
+		add_cmiss_number_field = FE_region_need_add_cmiss_number_field(fe_region);
+		add_xi_field = FE_region_need_add_xi_field(fe_region);
+		if (check_field_wrappers || add_cmiss_number_field || add_xi_field)
 		{
-			/* have begin/end cache because more than one field may have been added
-				 or modified */
 			MANAGER_BEGIN_CACHE(Computed_field)(computed_field_manager);
-			/* Ensure there is an updated Computed_field for each FE_field */
-			FE_region_for_each_FE_field(field_change_data.fe_region,
-				FE_field_to_Computed_field_change, (void *)&field_change_data);
+			field_change_data.computed_field_manager =  computed_field_manager;
+			field_change_data.changes = changes;
+			field_change_data.fe_region = fe_region;
+			if (check_field_wrappers)
+			{
+				FE_region_for_each_FE_field(field_change_data.fe_region,
+					FE_field_to_Computed_field_change, (void *)&field_change_data);
+			}
+			if (add_cmiss_number_field)
+			{
+				field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+					"cmiss_number", computed_field_manager);
+				if (!field)
+				{
+					field = CREATE(Computed_field)("cmiss_number");
+					Computed_field_set_type_cmiss_number(field);
+					Computed_field_set_read_only(field);
+					ADD_OBJECT_TO_MANAGER(Computed_field)(field, computed_field_manager);
+				}
+			}
+			if (add_xi_field)
+			{
+				field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+					"xi", computed_field_manager);
+				if (!field)
+				{
+					field = CREATE(Computed_field)("xi");
+					Computed_field_set_type_xi_coordinates(field);
+					Computed_field_set_read_only(field);
+					ADD_OBJECT_TO_MANAGER(Computed_field)(field, computed_field_manager);
+				}
+			}
 			MANAGER_END_CACHE(Computed_field)(computed_field_manager);
 		}
-		if (change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_field))
+		if (field_change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_field))
 		{
 			/* Currently we do nothing as the computed field wrapper is destroyed
 				before the FE_field is removed from the manager.  This is not necessary

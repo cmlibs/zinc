@@ -238,6 +238,12 @@ DESCRIPTION :
 	int next_fe_element_face_identifier_cache;
 	int next_fe_element_line_identifier_cache;
 
+	/* initially false, these flags are set to true once wrapping computed field
+	 * manager is informed that it should create cmiss_number and xi fields
+	 * See: FE_region_need_add_cmiss_number_field, FE_region_need_add_xi_field */
+	int informed_make_cmiss_number_field;
+	int informed_make_xi_field;
+
 	/* number of objects using this region */
 	int access_count;
 };
@@ -1470,6 +1476,9 @@ them to be specified allows sharing across regions).
 		fe_region->next_fe_element_identifier_cache = 0;
 		fe_region->next_fe_element_face_identifier_cache = 0;
 		fe_region->next_fe_element_line_identifier_cache = 0;
+
+		fe_region->informed_make_cmiss_number_field = 0;
+		fe_region->informed_make_xi_field = 0;
 
 		fe_region->access_count = 0;
 		if (!((master_fe_region ||
@@ -8363,3 +8372,59 @@ functions in <finite_element.c>.
 	return (return_code);
 } /* FE_region_notify_FE_element_field_change */
 
+int FE_region_need_add_cmiss_number_field(struct FE_region *fe_region)
+{
+	int return_code;
+
+	ENTER(FE_region_need_add_cmiss_number_field);
+	return_code = 0;
+	if (fe_region)
+	{
+		if (!fe_region->informed_make_cmiss_number_field)
+		{
+			if (NUMBER_IN_LIST(FE_node)(fe_region->fe_node_list) ||
+				NUMBER_IN_LIST(FE_element)(fe_region->fe_element_list) ||
+				(fe_region->data_hack_fe_region && 
+					NUMBER_IN_LIST(FE_node)(fe_region->data_hack_fe_region->fe_node_list)))
+			{
+				fe_region->informed_make_cmiss_number_field = 1;
+				return_code = 1;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_need_add_cmiss_number_field.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_region_need_add_cmiss_number_field */
+
+int FE_region_need_add_xi_field(struct FE_region *fe_region)
+{
+	int return_code;
+
+	ENTER(FE_region_need_add_xi_field);
+	return_code = 0;
+	if (fe_region)
+	{
+		if (!fe_region->informed_make_xi_field)
+		{
+			if (NUMBER_IN_LIST(FE_element)(fe_region->fe_element_list))
+			{
+				fe_region->informed_make_xi_field = 1;
+				return_code = 1;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_need_add_xi_field.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_region_need_add_xi_field */

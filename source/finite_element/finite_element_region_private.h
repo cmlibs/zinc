@@ -156,4 +156,26 @@ been modified only for <fe_field>.  This is intended to be called by
 <finite_element.c> only as any external code will call through the modify
 functions in <finite_element.c>.
 ==============================================================================*/
+
+/***************************************************************************//**
+ * Private function for use by computed_field_finite_element field wrapping
+ * code, to be called in response to region changes - tells it whether it to
+ * create a cmiss_number field. Informs only once and requires the existence
+ * of a node, element or data point (in the matching data_hack_fe_region).
+ * 
+ * @param fe_region the finite_element region to check for.
+ * @return true if cmiss_number field needs to be made, 0 if not
+ */
+int FE_region_need_add_cmiss_number_field(struct FE_region *fe_region);
+
+/***************************************************************************//**
+ * Private function for use by computed_field_finite_element field wrapping
+ * code, to be called in response to region changes - tells it whether to
+ * create an xi coordinates field. Informs only once - if any elements exist.
+ * 
+ * @param fe_region the finite_element region to check for.
+ * @return true if cmiss_number field needs to be made, 0 if not
+ */
+int FE_region_need_add_xi_field(struct FE_region *fe_region);
+
 #endif /* !defined (FINITE_ELEMENT_REGION_PRIVATE_H) */
