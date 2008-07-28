@@ -523,6 +523,7 @@ already) and allows its contents to be modified.
 			(Computed_field_function_package *)
 			computed_field_function_package_void))
 	{
+		USE_PARAMETER(computed_field_function_package);
 		return_code = 1;
 		source_field = (Computed_field *)NULL;
 		result_field = (Computed_field *)NULL;

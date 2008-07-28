@@ -1386,18 +1386,15 @@ FE_field being made and/or modified.
 	int i,number_of_components,number_of_valid_strings,
 		original_number_of_components,return_code;
 	struct Computed_field *field;
-	Computed_field_finite_element_package *computed_field_finite_element_package;
 	Computed_field_modify_data *field_modify;
 	struct Coordinate_system *coordinate_system;
 	struct FE_field *existing_fe_field;
 	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_type_finite_element);
+	USE_PARAMETER(computed_field_finite_element_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
-		(computed_field_finite_element_package=
-		(Computed_field_finite_element_package *)
-		computed_field_finite_element_package_void))
+			(field=field_modify->field))
 	{
 		return_code = 1;
 		existing_fe_field = (struct FE_field *)NULL;
@@ -2812,18 +2809,14 @@ and allows its contents to be modified.
 	  "d3/ds1ds2ds3"
 	};
 	struct Computed_field *field;
-	Computed_field_finite_element_package 
-		*computed_field_finite_element_package;
 	Computed_field_modify_data *field_modify;
 	struct FE_field *fe_field;
 	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_type_node_value);
+	USE_PARAMETER(computed_field_finite_element_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
-		(computed_field_finite_element_package=
-		(Computed_field_finite_element_package *)
-		computed_field_finite_element_package_void))
+			(field=field_modify->field))
 	{
 		return_code=1;
 		fe_field=(struct FE_field *)NULL;
@@ -3570,6 +3563,7 @@ and allows its contents to be modified.
 			(Computed_field_finite_element_package *)
 			computed_field_finite_element_package_void))
 	{
+		USE_PARAMETER(computed_field_finite_element_package);
 		return_code = 1;
 		element_xi_fe_field = (struct FE_field *)NULL;
 		source_field = (struct Computed_field *)NULL;
@@ -4809,17 +4803,14 @@ FE_field being made and/or modified.
 	char *current_token;
 	int i, order, previous_state_index, return_code, *xi_indices, *temp_xi_indices;
 	struct Computed_field *field;
-	Computed_field_finite_element_package *computed_field_finite_element_package;
 	Computed_field_modify_data *field_modify;
 	struct FE_field *fe_field;
 	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_type_finite_element);
+	USE_PARAMETER(computed_field_finite_element_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
-		(computed_field_finite_element_package=
-		(Computed_field_finite_element_package *)
-		computed_field_finite_element_package_void))
+			(field=field_modify->field))
 	{
 		return_code = 1;
 		order = 1;

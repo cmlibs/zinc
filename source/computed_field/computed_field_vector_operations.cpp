@@ -324,18 +324,14 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,*source_field;
-	Computed_field_vector_operations_package 
-		*computed_field_vector_operations_package;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_normalise);
+	USE_PARAMETER(computed_field_vector_operations_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
-		(computed_field_vector_operations_package=
-		(Computed_field_vector_operations_package *)
-		computed_field_vector_operations_package_void))
+			(field=field_modify->field))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -834,19 +830,15 @@ already) and allows its contents to be modified.
 	int dimension, i, number_of_source_fields, return_code,
 		temp_number_of_source_fields;
 	struct Computed_field *field, **source_fields, **temp_source_fields;
-	Computed_field_vector_operations_package 
-		*computed_field_vector_operations_package;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_field_array_data;
 	struct Set_Computed_field_conditional_data set_field_data;
 
 	ENTER(define_Computed_field_type_cross_product);
+	USE_PARAMETER(computed_field_vector_operations_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
-		(computed_field_vector_operations_package=
-		(Computed_field_vector_operations_package *)
-		computed_field_vector_operations_package_void))
+			(field=field_modify->field))
 	{
 		return_code = 1;
 		/* get valid parameters for projection field */
@@ -1301,19 +1293,15 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,**source_fields;
-	Computed_field_vector_operations_package 
-		*computed_field_vector_operations_package;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_dot_product);
+	USE_PARAMETER(computed_field_vector_operations_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
-		(computed_field_vector_operations_package=
-		(Computed_field_vector_operations_package *)
-		computed_field_vector_operations_package_void))
+			(field=field_modify->field))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -1733,18 +1721,14 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,*source_field;
-	Computed_field_vector_operations_package 
-		*computed_field_vector_operations_package;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_magnitude);
+	USE_PARAMETER(computed_field_vector_operations_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
-		(computed_field_vector_operations_package=
-		(Computed_field_vector_operations_package *)
-		computed_field_vector_operations_package_void))
+			(field=field_modify->field))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -2065,18 +2049,14 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field,*source_field;
-	Computed_field_vector_operations_package 
-		*computed_field_vector_operations_package;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_cubic_texture_coordinates);
+	USE_PARAMETER(computed_field_vector_operations_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
-		(computed_field_vector_operations_package=
-		(Computed_field_vector_operations_package *)
-		computed_field_vector_operations_package_void))
+			(field=field_modify->field))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */

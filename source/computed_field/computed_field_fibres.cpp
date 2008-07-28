@@ -545,17 +545,15 @@ allows its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *coordinate_field, *fibre_field, *field;
-	Computed_field_fibres_package *computed_field_fibres_package;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_fibre_field_data;
 
 	ENTER(define_Computed_field_type_fibre_axes);
+	USE_PARAMETER(computed_field_fibres_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
-		(computed_field_fibres_package=(Computed_field_fibres_package *)
-		computed_field_fibres_package_void))
+			(field=field_modify->field))
 	{
 		return_code=1;
 		coordinate_field=(struct Computed_field *)NULL;

@@ -586,18 +586,14 @@ contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field, *source_field;
-	Computed_field_matrix_operations_package 
-		*computed_field_matrix_operations_package;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_eigenvalues);
+	USE_PARAMETER(computed_field_matrix_operations_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
-		(computed_field_matrix_operations_package=
-			(Computed_field_matrix_operations_package *)
-			computed_field_matrix_operations_package_void))
+			(field=field_modify->field))
 	{
 		return_code=1;
 		source_field = (struct Computed_field *)NULL;
@@ -955,18 +951,14 @@ its contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field, *source_field;
-	Computed_field_matrix_operations_package 
-		*computed_field_matrix_operations_package;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_eigenvectors);
+	USE_PARAMETER(computed_field_matrix_operations_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
-		(computed_field_matrix_operations_package=
-		(Computed_field_matrix_operations_package *)
-		computed_field_matrix_operations_package_void))
+			(field=field_modify->field))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -1435,18 +1427,14 @@ contents to be modified.
 {
 	int return_code;
 	struct Computed_field *field, *source_field;
-	Computed_field_matrix_operations_package 
-		*computed_field_matrix_operations_package;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_matrix_invert);
+	USE_PARAMETER(computed_field_matrix_operations_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
-		(computed_field_matrix_operations_package=
-			(Computed_field_matrix_operations_package *)
-			computed_field_matrix_operations_package_void))
+			(field=field_modify->field))
 	{
 		return_code = 1;
 		source_field = (struct Computed_field *)NULL;
@@ -1842,19 +1830,15 @@ already) and allows its contents to be modified.
 	char *current_token;
 	int i, number_of_rows, return_code;
 	struct Computed_field *field,**source_fields;
-	Computed_field_matrix_operations_package 
-		*computed_field_matrix_operations_package;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_field_array_data;
 	struct Set_Computed_field_conditional_data set_field_data;
 
 	ENTER(define_Computed_field_type_matrix_multiply);
+	USE_PARAMETER(computed_field_matrix_operations_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
-		(computed_field_matrix_operations_package=
-		(Computed_field_matrix_operations_package *)
-		computed_field_matrix_operations_package_void))
+			(field=field_modify->field))
 	{
 		return_code=1;
 		if (ALLOCATE(source_fields,struct Computed_field *,2))
@@ -2441,18 +2425,14 @@ and allows its contents to be modified.
 	int i, number_of_components, number_of_projection_values, return_code,
 		temp_number_of_projection_values;
 	struct Computed_field *field, *source_field;
-	Computed_field_matrix_operations_package 
-		*computed_field_matrix_operations_package;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_projection);
+	USE_PARAMETER(computed_field_matrix_operations_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
-		(computed_field_matrix_operations_package=
-			(Computed_field_matrix_operations_package *)
-			computed_field_matrix_operations_package_void))
+			(field=field_modify->field))
 	{
 		return_code = 1;
 		set_source_field_data.conditional_function =
@@ -2932,18 +2912,14 @@ already) and allows its contents to be modified.
 	char *current_token;
 	int source_number_of_rows, return_code;
 	struct Computed_field *field,*source_field;
-	Computed_field_matrix_operations_package 
-		*computed_field_matrix_operations_package;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_transpose);
+	USE_PARAMETER(computed_field_matrix_operations_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
-		(computed_field_matrix_operations_package=
-		(Computed_field_matrix_operations_package *)
-		computed_field_matrix_operations_package_void))
+			(field=field_modify->field))
 	{
 		return_code=1;
 		/* get valid parameters for transpose field */
@@ -3295,17 +3271,14 @@ Converts a "quaternion" to a transformation matrix.
 {
 	int return_code;
 	struct Computed_field *field, **source_fields;
-	Computed_field_matrix_operations_package *computed_field_matrix_operations_package;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_quaternion_to_matrix);
+	USE_PARAMETER(computed_field_matrix_operations_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
-		(computed_field_matrix_operations_package=
-			(Computed_field_matrix_operations_package *)
-			computed_field_matrix_operations_package_void))
+			(field=field_modify->field))
 	{
 		return_code=1;
 		source_fields = (struct Computed_field **)NULL;
@@ -3641,17 +3614,14 @@ Converts a transformation matrix to  a "quaternion".
 {
 	int return_code;
 	struct Computed_field *field, **source_fields;
-	Computed_field_matrix_operations_package *computed_field_matrix_operations_package;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_matrix_to_quaternion);
+	USE_PARAMETER(computed_field_matrix_operations_package_void);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
-		(computed_field_matrix_operations_package=
-			(Computed_field_matrix_operations_package *)
-			computed_field_matrix_operations_package_void))
+			(field=field_modify->field))
 	{
 		return_code=1;
 		source_fields = (struct Computed_field **)NULL;

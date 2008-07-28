@@ -56,12 +56,6 @@ extern "C" {
 #include "image_processing/computed_field_image_resample.h"
 }
 
-class Computed_field_image_resample_package : public Computed_field_type_package
-{
-public:
-	struct MANAGER(Computed_field) *computed_field_manager;
-};
-
 namespace {
 
 	char computed_field_image_resample_type_string[] = "image_resample";
@@ -440,7 +434,7 @@ If the field is of type COMPUTED_FIELD_IMAGE_RESAMPLE, the function returns the 
 } /* Computed_field_get_type_image_resample */
 
 int define_Computed_field_type_image_resample(struct Parse_state *state,
-	void *field_modify_void,void *computed_field_image_resample_package_void)
+	void *field_modify_void,void *computed_field_simple_package_void)
 /*******************************************************************************
 LAST MODIFIED : 7 March 2007
 
@@ -451,17 +445,14 @@ already) and allows its contents to be modified.
 {
 	int dimension, return_code, original_dimension, *sizes, *original_sizes;
 	Computed_field *field,*source_field, *texture_coordinate_field;
-	Computed_field_image_resample_package *computed_field_image_resample_package;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_image_resample);
+	USE_PARAMETER(computed_field_simple_package_void);
 	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void) &&
-			(field=field_modify->field) &&
-		(computed_field_image_resample_package=
-		(Computed_field_image_resample_package *)
-		computed_field_image_resample_package_void))
+			(field=field_modify->field))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -488,7 +479,7 @@ already) and allows its contents to be modified.
 
 				/* source field */
 				set_source_field_data.computed_field_manager=
-					computed_field_image_resample_package->computed_field_manager;
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
 				set_source_field_data.conditional_function=
 					Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -506,7 +497,7 @@ already) and allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* source field */
 			set_source_field_data.computed_field_manager=
-				computed_field_image_resample_package->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(field_modify->region);
 			set_source_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -587,20 +578,14 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	Computed_field_image_resample_package
-		*computed_field_image_resample_package =
-		new Computed_field_image_resample_package;
 
 	ENTER(Computed_field_register_types_image_resample);
 	if (computed_field_package)
 	{
-		computed_field_image_resample_package->computed_field_manager =
-			Computed_field_package_get_computed_field_manager(
-				computed_field_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_image_resample_type_string,
 			define_Computed_field_type_image_resample,
-			computed_field_image_resample_package);
+			Computed_field_package_get_simple_package(computed_field_package));
 	}
 	else
 	{
