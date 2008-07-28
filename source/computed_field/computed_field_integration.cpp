@@ -2466,9 +2466,8 @@ and allows its contents to be modified.
 {
 	char* region_path;
 	Cmiss_region* region;
-	double value;
 	int expected_parameters, previous_state_index, return_code;
-	Computed_field *coordinate_field, *field, *integrand;
+	Computed_field *field;
 	Computed_field_integration_package *computed_field_integration_package;
 	Computed_field_modify_data *field_modify;
 	FE_element *seed_element;	
@@ -2482,27 +2481,7 @@ and allows its contents to be modified.
 	{
 		region = (struct Cmiss_region *)NULL;
 		region_path = (char *)NULL;
-		coordinate_field = (Computed_field *)NULL;
-		integrand = (Computed_field *)NULL;
 		return_code=1;
-		if (!(coordinate_field = ACCESS(Computed_field)(
-			FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-			Computed_field_is_type_xi_coordinates, (void *)NULL,
-			Cmiss_region_get_Computed_field_manager(field_modify->region)))))
-		{
-			display_message(ERROR_MESSAGE,
-				"define_Computed_field_type_xi_texture_coordinates.  xi field not found");
-			return_code=0;
-		}
-		value = 1.0;
-		if (!((integrand = ACCESS(Computed_field)(CREATE(Computed_field)("constant_1.0"))) &&
-			Computed_field_copy_type_specific_and_deaccess(integrand,
-			Computed_field_create_constant(1,&value))))
-		{
-			display_message(ERROR_MESSAGE,
-				"define_Computed_field_type_xi_texture_coordinates.  Unable to create constant field");
-			return_code=0;
-		}
 		Cmiss_region_get_root_region_path(&region_path);
 		seed_element = (FE_element *)NULL;
 		if ((!state->current_token) ||
@@ -2545,9 +2524,43 @@ and allows its contents to be modified.
 					set_FE_element_top_level_FE_region);
 				if (return_code = Option_table_multi_parse(option_table,state))
 				{
-					return_code=Computed_field_set_type_integration(field,
-						seed_element, Cmiss_region_get_FE_region(region),
-						integrand, /*magnitude_coordinates*/0, coordinate_field);
+					Computed_field *coordinate_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+						Computed_field_is_type_xi_coordinates, (void *)NULL,
+						Cmiss_region_get_Computed_field_manager(field_modify->region));
+					if (coordinate_field)
+					{
+						ACCESS(Computed_field)(coordinate_field);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"define_Computed_field_type_xi_texture_coordinates.  xi field not found");
+						return_code=0;
+					}
+					double value = 1.0;
+					Computed_field *integrand = (Computed_field *)NULL;
+					if (!((integrand = ACCESS(Computed_field)(CREATE(Computed_field)("constant_1.0"))) &&
+						Computed_field_copy_type_specific_and_deaccess(integrand,
+						Computed_field_create_constant(1,&value))))
+					{
+						display_message(ERROR_MESSAGE,
+							"define_Computed_field_type_xi_texture_coordinates.  Unable to create constant field");
+						return_code=0;
+					}
+					if (return_code)
+					{
+						return_code=Computed_field_set_type_integration(field,
+							seed_element, Cmiss_region_get_FE_region(region),
+							integrand, /*magnitude_coordinates*/0, coordinate_field);
+					}
+					if (coordinate_field)
+					{
+						DEACCESS(Computed_field)(&coordinate_field);
+					}
+					if (integrand)
+					{
+						DEACCESS(Computed_field)(&integrand);
+					}
 				}
 				DESTROY(Option_table)(&option_table);
 			}
@@ -2566,14 +2579,6 @@ and allows its contents to be modified.
 				set_FE_element_top_level_FE_region);
 			return_code = Option_table_multi_parse(option_table,state);
 			DESTROY(Option_table)(&option_table);
-		}
-		if (coordinate_field)
-		{
-			DEACCESS(Computed_field)(&coordinate_field);
-		}
-		if (integrand)
-		{
-			DEACCESS(Computed_field)(&integrand);
 		}
 		if (region)
 		{
