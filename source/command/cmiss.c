@@ -24349,7 +24349,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #if defined(USE_CMGUI_COMMAND_WINDOW)
 	struct Command_window *command_window;
 #endif /* defined(USE_CMGUI_COMMAND_WINDOW) */
-	struct Coordinate_system rect_coord_system;
 	struct Graphical_material *material;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Option_table *option_table;
@@ -24839,8 +24838,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		/* FE_element_shape manager */
 		/*???DB.  To be done */
 		command_data->element_shape_list=CREATE(LIST(FE_element_shape))();
-
-		rect_coord_system.type = RECTANGULAR_CARTESIAN;
 
 		command_data->curve_manager=CREATE(MANAGER(Curve))();
 
