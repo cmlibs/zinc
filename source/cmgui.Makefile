@@ -725,7 +725,7 @@ ifeq ($(USE_COMPUTED_VARIABLES),true)
 endif # USE_COMPUTED_VARIABLES == true
 
 ifeq ($(SYSNAME:IRIX%=),)
-   LIB = -lPW -lftn -lm -lC -lCio -lpthread 
+   SYSTEM_LIB = -lPW -lftn -lm -lC -lCio -lpthread 
 endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
    ifneq ($(STATIC_LINK),true)
@@ -736,36 +736,40 @@ ifeq ($(SYSNAME),Linux)
         #Link g2c statically as this only comes with g77 which many people don't have
         LIBG2C = $(shell g++ --print-file-name=libg2c.a)
 	   endif
-      LIB = $(LIBG2C) $(LIBSTDC++) -lcrypt -lm -ldl -lc -lpthread
+      SYSTEM_LIB = $(LIBG2C) $(LIBSTDC++) -lcrypt -lm -ldl -lc -lpthread
       # For the shared object libraries the stdc++ is included several times, do thsi
       # dynamically.
       SOLIB_LIB = $(LIBG2C) -lstdc++ -lcrypt -lm -ldl -lc -lpthread
 #???DB.  Need setenv LD_RUN_PATH /home/bullivan/gcc-3.3.1/lib
-#      LIB = -L/home/bullivan/gcc-3.3.1/lib -lg2c -lm -ldl -lc -lpthread /usr/lib/libcrypt.a -lstdc++
+#      SYSTEM_LIB = -L/home/bullivan/gcc-3.3.1/lib -lg2c -lm -ldl -lc -lpthread /usr/lib/libcrypt.a -lstdc++
    else # $(STATIC_LINK) != true
-      LIB = -lg2c -lm -ldl -lpthread -lcrypt -lstdc++
-#      LIB = -L/home/bullivan/gcc-3.3.1/lib -lg2c -lm -ldl -lpthread -lcrypt -lstdc++
+      SYSTEM_LIB = -lg2c -lm -ldl -lpthread -lcrypt -lstdc++
+#      SYSTEM_LIB = -L/home/bullivan/gcc-3.3.1/lib -lg2c -lm -ldl -lpthread -lcrypt -lstdc++
    endif # $(STATIC_LINK) != true
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)
-   LIB = -lm -ldl -lSM -lICE -lpthread -lcrypt -lbsd -lld -lC128
+   SYSTEM_LIB = -lm -ldl -lSM -lICE -lpthread -lcrypt -lbsd -lld -lC128
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
    ifeq ($(COMPILER),msvc)
-#     LIB = /libpath:"C:\Program Files\Microsoft SDKs\Windows\v6.0A\lib" /libpath:"C:\Program Files\\Microsoft Visual Studio 9.0\VC\lib" /cygdrive/e/build/cmiss/cmgui/libgcc.a /cygdrive/e/build/cmiss/cmgui/libstdc++.a /cygdrive/e/build/cmiss/cmgui/libmingw32.a /cygdrive/e/build/cmiss/cmgui/libmoldname.a /cygdrive/e/build/cmiss/cmgui/libmingwex.a kernel32.lib advapi32.lib ws2_32.lib gdi32.lib msimg32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib netapi32.lib uuid.lib wsock32.lib mpr.lib winmm.lib version.lib odbc32.lib user32.lib /NODEFAULTLIB:LIBCMT
-     LIB = /libpath:"C:\Program Files\Microsoft SDKs\Windows\v6.0A\lib" /libpath:"C:\Program Files\\Microsoft Visual Studio 9.0\VC\lib" /cygdrive/e/build/cmiss/cmgui/libgcc.a /cygdrive/e/build/cmiss/cmgui/libstdc++.a /cygdrive/e/build/cmiss/cmgui/libmingw32.a /cygdrive/e/build/cmiss/cmgui/libmingwex.a kernel32.lib advapi32.lib ws2_32.lib gdi32.lib msimg32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib netapi32.lib uuid.lib wsock32.lib mpr.lib winmm.lib version.lib odbc32.lib user32.lib /NODEFAULTLIB:LIBCMT /DEFAULTLIB:MSVCRT
-     SOLIB_LIB = /cygdrive/e/build/cmiss/cmgui/libgcc.a /cygdrive/e/build/cmiss/cmgui/libstdc++.a /cygdrive/e/build/cmiss/cmgui/libmingw32.a /cygdrive/e/build/cmiss/cmgui/libmingwex.a
+     CYGWINPATH = /cygdrive/c/cygwin
+     GCCLIBGCC = $(patsubst /usr/lib%,$(CYGWINPATH)/lib%,$(shell gcc -mno-cygwin -print-file-name=libgcc.a))
+     GCCLIBSTDC++ = $(patsubst /usr/lib%,$(CYGWINPATH)/lib%,$(shell gcc -mno-cygwin -print-file-name=libstdc++.a))
+     LIBMINGW32 = $(CYGWINPATH)/lib/mingw/libmingw32.a
+     LIBMINGWEX = $(CYGWINPATH)/lib/mingw/libmingwex.a
+     SYSTEM_LIB = $(GCCLIBSTDC++) $(LIBMINGW32) $(GCCLIBGCC) $(LIBMINGWEX) kernel32.lib advapi32.lib ws2_32.lib gdi32.lib msimg32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib netapi32.lib uuid.lib wsock32.lib mpr.lib winmm.lib version.lib odbc32.lib user32.lib /NODEFAULTLIB:LIBCMT /DEFAULTLIB:MSVCRT
+     SOLIB_LIB = $(GCCLIBSTDC++) $(LIBMINGW32) $(GCCLIBGCC) $(LIBMINGWEX)
    else
-     LIB = -lws2_32 -lgdi32 -lmsimg32 -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32 -lstdc++
+     SYSTEM_LIB = -lws2_32 -lgdi32 -lmsimg32 -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32 -lstdc++
    endif
    ifeq ($(USE_COMPUTED_VARIABLES),true)
-       LIB += -lg2c
+      SYSTEM_LIB += -lg2c
    endif # USE_COMPTED_VARAIABLES == true
 endif # SYSNAME == win32
 ifeq ($(SYSNAME),Darwin)
       # The lib -lSystemStubs is used to resolve some linking differences between some code
       # with gcc-3.3 and gcc-4
-      LIB = /usr/local/g77/lib/libg2c.a -lm -ldl -lpthread -liconv -lstdc++ -lSystemStubs
+      SYSTEM_LIB = /usr/local/g77/lib/libg2c.a -lm -ldl -lpthread -liconv -lstdc++ -lSystemStubs
 endif # SYSNAME == Darwin
 
 ifneq ($(USE_COMPUTED_VARIABLES), true)
@@ -812,7 +816,7 @@ ALL_LIB = $(LINKOPTIONFLAG) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(WORMHOLE_LIB) $(INTERPRETER_LIB) $(IMAGEMAGICK_LIB) \
 	$(EXTERNAL_INPUT_LIB) $(HELP_LIB) $(ITK_LIB) \
 	$(MOVIE_FILE_LIB) $(XML_LIB) $(XML2_LIB) $(MEMORYCHECK_LIB) $(MATRIX_LIB) \
-	$(LIB)
+	$(SYSTEM_LIB)
 
 API_SRCS = \
 	api/cmiss_command_data.c \
@@ -1808,7 +1812,7 @@ SO_ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(EXTERNAL_INPUT_LIB) $(HELP_LIB) $(ITK_LIB) \
 	$(MOVIE_FILE_LIB) $(XML_LIB) $(MEMORYCHECK_LIB) \
 	$(SOLIB_LIB)
-SO_ALL_LIB += $(LIB)
+SO_ALL_LIB += $(SYSTEM_LIB)
 
 SO_LIB_BASE = lib$(TARGET_EXECUTABLE_BASENAME)
 SO_LIB_TARGET = lib$(TARGET_EXECUTABLE_BASENAME)$(SO_LIB_SUFFIX)
