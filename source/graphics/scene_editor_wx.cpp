@@ -279,9 +279,20 @@ that of the first one in the scene.
 } /* Scene_editor_get_first_object */
 
 #if defined (WX_USER_INTERFACE)
+
+#if defined (__WXMSW__)
+struct Scene_editor_size
+{
+	int previous_width, previous_height, current_width, current_height;
+};
+#endif /* defined (__WXMSW__) */
+
 class wxSceneEditor : public wxFrame
-{				
+{	
 	Scene_editor *scene_editor;
+#if defined (__WXMSW__)
+	Scene_editor_size scene_editor_size;
+#endif /* defined (__WXMSW__) */
 	wxScrolledWindow *lowest_panel, *sceneediting;
 	wxFrame *frame;
 	wxSplitterWindow *lowersplitter,*topsplitter;
@@ -395,7 +406,14 @@ public:
 		 wxXmlResource::Get()->LoadFrame(this,
 				(wxWindow *)NULL, _T("CmguiSceneEditor"));
 		 this->SetIcon(cmiss_icon_xpm);
-		 
+
+#if defined (__WXMSW__)
+		 scene_editor_size.previous_width = 0;
+		 scene_editor_size.previous_height = 0;
+		 scene_editor_size.current_width = 0;
+		 scene_editor_size.current_height = 0;
+#endif /* defined (__WXMSW__) */
+
  /* Set the chooser panel  in the secne editor */
   wxPanel *scene_object_chooser_panel = 
 		XRCCTRL(*this, "SceneObjectChooserPanel", wxPanel);
@@ -586,8 +604,12 @@ public:
 	XRCCTRL(*this,"LineWidthTextCtrl", wxTextCtrl)->Connect(wxEVT_KILL_FOCUS,
 		wxCommandEventHandler(wxSceneEditor::EnterLineWidth),
 		NULL, this);
+	frame=XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
 
-	wxFrame *frame=XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
+#if defined (__WXMSW__)
+	frame->GetSize(&(scene_editor_size.current_width), &(scene_editor_size.current_height));
+#endif /*defined (__WXMSW__)*/
+
 	frame->Fit();
 	Show();
 };
@@ -1634,31 +1656,53 @@ Callback from wxChooser<Render Type> when choice is made.
 	return 1;
 }
 
-	 void ResetScrolledWindow(wxCollapsiblePaneEvent& event)
-	 {
-			lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
-			lowersplitter->Layout();	
-			topsplitter=XRCCTRL(*this,"TopSplitter",wxSplitterWindow);
-			topsplitter->Layout();	
-			frame = 
-				 XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
-			frame->Layout();
-			frame->SetMinSize(wxSize(50,100));
-			frame->SetMaxSize(wxSize(2000,2000));
-	 }
+/***************************************************************************//**
+*	Refresh the widgets upon collapsible pane change event.																																						
+* WXMSW only: Revert the size of the frame as this event will change the size
+*             of the window somehow.
+*/
+void CollapsiblepaneChangedEvent(wxCollapsiblePaneEvent& event)
+{
+	frame=XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
+	if (frame)
+	{
+		frame->Freeze();
+		lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
+		lowersplitter->Layout();	
+		topsplitter=XRCCTRL(*this,"TopSplitter",wxSplitterWindow);
+		topsplitter->Layout();	
+		frame = 
+			XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
+		frame->SetMinSize(wxSize(50,100));
+		frame->SetMaxSize(wxSize(2000,2000));
+		frame->Layout();
+#if defined (__WXMSW__)
+		frame->SetSize(scene_editor_size.previous_width, scene_editor_size.previous_height);
+		frame->GetSize(&scene_editor_size.current_width, &scene_editor_size.current_height);
+#endif /* defined (__WXMSW__) */
+		frame->Layout();
+		frame->Thaw();
+	}
+}
 
-	 void ResetTopWindow(wxCollapsiblePaneEvent& event)
-	 {
-			lowersplitter=XRCCTRL(*this,"LowerSplitter",wxSplitterWindow);
-			lowersplitter->Layout();	
-			topsplitter=XRCCTRL(*this,"TopSplitter",wxSplitterWindow);
-			topsplitter->Layout();	
-			frame = 
-				 XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
-			frame->Layout();
-			frame->SetMinSize(wxSize(50,100));
-			frame->SetMaxSize(wxSize(2000,2000));
-	 }
+#if defined (__WXMSW__)
+/***************************************************************************//**
+* Get the size of the frame in case the collapsible panes change the size
+* of the frame.
+* 
+*/
+void FrameGetSize(wxSizeEvent &event)
+{
+	frame=XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
+	if (frame)
+	{
+		scene_editor_size.previous_width = scene_editor_size.current_width;
+		scene_editor_size.previous_height = scene_editor_size.current_height;
+		frame->GetSize(&scene_editor_size.current_width, &scene_editor_size.current_height);
+		event.Skip();
+	}
+}
+#endif /* defined (__WXMSW__) */
 
 void AutoApplyorNot(struct GT_element_group  *destination, GT_element_group *source)
 /*******************************************************************************
@@ -4427,8 +4471,8 @@ IMPLEMENT_DYNAMIC_CLASS(wxSceneEditor, wxFrame)
 
 BEGIN_EVENT_TABLE(wxSceneEditor, wxFrame)
 	 EVT_SPLITTER_SASH_POS_CHANGED(XRCID("LowerSplitter"),wxSceneEditor::ResetWindow)
-	 EVT_COLLAPSIBLEPANE_CHANGED(XRCID("CollapsiblePane"), wxSceneEditor::ResetScrolledWindow)
-	 EVT_COLLAPSIBLEPANE_CHANGED(XRCID("SceneEditorTopCollapsiblePane"), wxSceneEditor::ResetTopWindow)
+	 EVT_COLLAPSIBLEPANE_CHANGED(XRCID("CollapsiblePane"), wxSceneEditor::CollapsiblepaneChangedEvent)
+	 EVT_COLLAPSIBLEPANE_CHANGED(XRCID("SceneEditorTopCollapsiblePane"), wxSceneEditor::CollapsiblepaneChangedEvent)
 	 EVT_TEXT_ENTER(XRCID("CircleDiscretisationPanel"), wxSceneEditor::CircleDiscretisationUpdate)
 	 EVT_TEXT_ENTER(XRCID("ElementDiscretisationPanel"), wxSceneEditor::ElementDiscretisationUpdate)
 	 EVT_CHECKBOX(XRCID("NativeDiscretisationFieldCheckBox"),wxSceneEditor::NativeDiscretisationFieldChecked)
@@ -4475,6 +4519,9 @@ BEGIN_EVENT_TABLE(wxSceneEditor, wxFrame)
 	 EVT_CHECKBOX(XRCID("ExteriorCheckBox"),wxSceneEditor::ExteriorChecked)
 	 EVT_CHECKBOX(XRCID("FaceCheckBox"),wxSceneEditor::FaceChecked)
 	 EVT_CHOICE(XRCID("FaceChoice"),wxSceneEditor::FaceChosen)
+#if defined (__WXMSW__)
+	 EVT_SIZE(wxSceneEditor::FrameGetSize)
+#endif /*!defined (__WXMSW__)*/
 	 EVT_CLOSE(wxSceneEditor::CloseSceneEditor)
 END_EVENT_TABLE()
 
