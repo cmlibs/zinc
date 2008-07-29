@@ -8379,13 +8379,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								"default_selected",
 								g_element_command_data->graphical_material_manager));
 					}
-					/* must start with valid iso_scalar_field: */
-					if (!settings->iso_scalar_field)
-					{
-						settings->iso_scalar_field=ACCESS(Computed_field)
-							(FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-							Computed_field_is_scalar,(void *)NULL,computed_field_manager));
-					}
 					visibility = settings->visibility;
 					range_number_of_iso_values = 0;
 					option_table=CREATE(Option_table)();
