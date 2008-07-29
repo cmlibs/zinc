@@ -8334,7 +8334,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
 	struct G_element_command_data *g_element_command_data;
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data,set_iso_scalar_field_data,
@@ -8344,8 +8343,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	if (state)
 	{
 		if ((g_element_command_data=
-			(struct G_element_command_data *)g_element_command_data_void)&&
-			(computed_field_manager=g_element_command_data->computed_field_manager))
+			(struct G_element_command_data *)g_element_command_data_void))
 		{
 			if (modify_g_element_data=
 				(struct Modify_g_element_data *)modify_g_element_data_void)
