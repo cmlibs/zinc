@@ -3870,10 +3870,11 @@ and should not itself be managed.
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
+					temp_field = (struct Computed_field *)NULL;
 					if (Cmiss_region_get_partial_region_path(root_region,
 						current_token, &region, &region_path, &field_name))
 					{
-						if (field_name &&
+						if (field_name && (strlen(field_name) > 0) &&
 							(strchr(field_name, CMISS_REGION_PATH_SEPARATOR_CHAR)	== NULL))
 						{
 							existing_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
@@ -3903,8 +3904,16 @@ and should not itself be managed.
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-								"gfx define field: Bad region_path/field_name '%s'", current_token);
+							if (field_name)
+							{
+								display_message(ERROR_MESSAGE,
+									"gfx define field:  Invalid region path or field name '%s'", field_name);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"gfx define field:  Missing field name or name matches child region '%s'", current_token);
+							}
 							display_parse_state_location(state);
 							return_code = 0;
 						}
