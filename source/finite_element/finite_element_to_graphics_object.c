@@ -751,41 +751,34 @@ these are simply returned, since no valid direction can be produced.
 				}
 			} break;
 			case 4:
-			{
-				/* 2 2-D vectors */
-				/* axis 1 */
-				axis1[0]=orientation_scale_values[0];
-				axis1[1]=orientation_scale_values[1];
-				axis1[2]=0.0;
-				if (0.0<(magnitude=sqrt(axis1[0]*axis1[0]+axis1[1]*axis1[1])))
-				{
-					axis1[0] /= magnitude;
-					axis1[1] /= magnitude;
-				}
-				size[0]=magnitude;
-				/* axis 2 */
-				axis2[0]=orientation_scale_values[2];
-				axis2[1]=orientation_scale_values[3];
-				axis2[2]=0.0;
-				if (0.0<(magnitude=sqrt(axis2[0]*axis2[0]+axis2[1]*axis2[1])))
-				{
-					axis2[0] /= magnitude;
-					axis2[1] /= magnitude;
-				}
-				size[1]=magnitude;
-				/* axis3 is a unit vector along the z-axis with zero size */
-				axis3[0]=0.0;
-				axis3[1]=0.0;
-				axis3[2]=1.0;
-				size[2]=0.0;
-			} break;
 			case 6:
 			{
-				/* 2 3-D vectors */
-				/* axis 1 */
-				axis1[0]=orientation_scale_values[0];
-				axis1[1]=orientation_scale_values[1];
-				axis1[2]=orientation_scale_values[2];
+				/* Two vectors */
+				if (number_of_orientation_scale_values == 4)
+				{
+					/* Two 2-D vectors */
+					axis1[0]=orientation_scale_values[0];
+					axis1[1]=orientation_scale_values[1];
+					axis1[2]=0.0;
+					axis2[0]=orientation_scale_values[2];
+					axis2[1]=orientation_scale_values[3];
+					axis2[2]=0.0;
+				}
+				else
+				{
+					/* Two 3-D vectors */
+					axis1[0]=orientation_scale_values[0];
+					axis1[1]=orientation_scale_values[1];
+					axis1[2]=orientation_scale_values[2];
+					axis2[0]=orientation_scale_values[3];
+					axis2[1]=orientation_scale_values[4];
+					axis2[2]=orientation_scale_values[5];
+				}
+				/* get axis3 = axis1 (x) axis2 */
+				axis3[0]=axis1[1]*axis2[2]-axis1[2]*axis2[1];
+				axis3[1]=axis1[2]*axis2[0]-axis1[0]*axis2[2];
+				axis3[2]=axis1[0]*axis2[1]-axis1[1]*axis2[0];
+				/* make all axes into unit vectors with size = magnitude */
 				if (0.0<(magnitude=
 					sqrt(axis1[0]*axis1[0]+axis1[1]*axis1[1]+axis1[2]*axis1[2])))
 				{
@@ -794,10 +787,6 @@ these are simply returned, since no valid direction can be produced.
 					axis1[2] /= magnitude;
 				}
 				size[0]=magnitude;
-				/* axis 2 */
-				axis2[0]=orientation_scale_values[3];
-				axis2[1]=orientation_scale_values[4];
-				axis2[2]=orientation_scale_values[5];
 				if (0.0<(magnitude=
 					sqrt(axis2[0]*axis2[0]+axis2[1]*axis2[1]+axis2[2]*axis2[2])))
 				{
@@ -806,11 +795,6 @@ these are simply returned, since no valid direction can be produced.
 					axis2[2] /= magnitude;
 				}
 				size[1]=magnitude;
-				/* get axis3 = axis1 (x) axis2 */
-				axis3[0]=axis1[1]*axis2[2]-axis1[2]*axis2[1];
-				axis3[1]=axis1[2]*axis2[0]-axis1[0]*axis2[2];
-				axis3[2]=axis1[0]*axis2[1]-axis1[1]*axis2[0];
-				/* make axis3 a unit vector, with zero size */
 				if (0.0<(magnitude=
 					sqrt(axis3[0]*axis3[0]+axis3[1]*axis3[1]+axis3[2]*axis3[2])))
 				{
@@ -818,7 +802,7 @@ these are simply returned, since no valid direction can be produced.
 					axis3[1] /= magnitude;
 					axis3[2] /= magnitude;
 				}
-				size[2]=0.0;
+				size[2]=magnitude;
 			} break;
 			case 9:
 			{
