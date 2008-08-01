@@ -43,19 +43,14 @@ DESTROY(Cmiss::Region region)
 
 int
 region_read_file(Cmiss::Region region,char *file_name);
-	PREINIT:
-		struct LIST(FE_element_shape) *element_shape_list;
-		struct MANAGER(FE_basis) *basis_manager;
 	CODE:
 		RETVAL=0;
-		if (region&&file_name&&(basis_manager=FE_region_get_basis_manager(
-			Cmiss_region_get_FE_region(region)))&&(element_shape_list=
-			FE_region_get_FE_element_shape_list(Cmiss_region_get_FE_region(region))))
+		if (region&&file_name)
 		{
 			char *fieldml;
 			struct Cmiss_region *temp_region;
 
-			temp_region=(struct Cmiss_region *)NULL;
+			temp_region = Cmiss_region_create_share_globals(region);
 			if (fieldml=strrchr(file_name,'.'))
 			{
 				fieldml++;
@@ -66,8 +61,7 @@ region_read_file(Cmiss::Region region,char *file_name);
 			}
 			if (fieldml)
 			{
-				temp_region=parse_fieldml_file(file_name,basis_manager,
-					element_shape_list);
+				RETVAL=parse_fieldml_file(temp_region, file_name);
 			}
 			else
 			{
@@ -75,21 +69,16 @@ region_read_file(Cmiss::Region region,char *file_name);
 
 				if (io_stream_package=CREATE(IO_stream_package)())
 				{
-					temp_region=read_exregion_file_of_name(file_name,io_stream_package,
-						basis_manager,element_shape_list,
-						(struct FE_import_time_index *)NULL);
+					RETVAL=read_exregion_file_of_name(temp_region, file_name,
+						io_stream_package, (struct FE_import_time_index *)NULL);
 					DESTROY(IO_stream_package)(&io_stream_package);
 				}
 			}
-			if (temp_region)
+			if (RETVAL && Cmiss_regions_FE_regions_can_be_merged(region,temp_region))
 			{
-				ACCESS(Cmiss_region)(temp_region);
-				if (Cmiss_regions_FE_regions_can_be_merged(region,temp_region))
-				{
-					RETVAL=Cmiss_regions_merge_FE_regions(region,temp_region);
-				}
-				DEACCESS(Cmiss_region)(&temp_region);
+				RETVAL=Cmiss_regions_merge_FE_regions(region,temp_region);
 			}
+			DEACCESS(Cmiss_region)(&temp_region);
 		}
 	OUTPUT:
 		RETVAL
