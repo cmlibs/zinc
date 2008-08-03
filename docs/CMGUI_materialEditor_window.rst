@@ -18,3 +18,9 @@ Below the surface editor is a panel that shows a preview of the currently edited
 
 At the bottom of the window are four buttons: OK, apply, revert and cancel.  The OK button leaves the editor and applies the changes made.  The apply button immediately applies current changes to the materials, allowing you to see how they look if they are used in any objects shown in the graphics window.  The revert button will undo any changes made to the currently edited material, and the cancel button exits the material editor window without applying changes.
 
+
+.. figure:: materialeditorwindow.png
+   :figwidth: image
+   :align: center
+
+   **Figure 1: The CMGUI Material Editor**
