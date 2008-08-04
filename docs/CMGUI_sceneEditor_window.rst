@@ -17,14 +17,20 @@ Scene object list
 
 | At the top of the scene objects list is a drop-down menu which usually contains the word *default*.  This is the scene selection menu, which you can use to swap between scenes.  The *default* scene is present when you load CMGUI, and is the default scene in which scene objects are created.  There are *up* and *down* buttons to the right of this menu, which allow you to change the order of the objects in the *scene object list*.  This is important when using transparent objects to ensure they are correctly rendered.
 
+| 
+
 Below the *scene object list*  Is the *transformation* button.  This button will open up a set of controls that allow you to spatially manipulate the selected scene object.  From these controls you can scale, translate or rotate the object within the scene.
 
 If a scene object made up of elements is selected, the *general settings* button will become available.  This button opens a series of settings that allow you to edit the coordinate field and discretisation options for the selected object.
+
+| 
 
 Graphical settings list
 -----------------------
 
 Below the transformation and general settings buttons is the *graphical settings list*.  This is where the visual representations (graphical settings) of the currently selected scene object are listed.  This panel allows creation, deletion, visibility switching (on or off) and re-ordering of these visual representations.
+
+| 
 
 Settings editor
 ---------------
