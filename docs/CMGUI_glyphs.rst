@@ -35,7 +35,7 @@ Glyphs are added and edited from within the scene editor.  When you select a sce
 Unscaled glyphs
 ---------------
 
-The simplest use of a glyph is to visually mark a point, with no direction or scale information.  Unscaled glyphs are simply glyphs for which you have not selected an *orientation/scale* field.  This means that they simply appear at the points you specify, at the default orientation, and at the base size you specify (the default base size is 1*1*1).  If you want to run through this example, load up example a1 in CMGUI and run the entire com file.
+The simplest use of a glyph is to visually mark a point, with no direction or scale information.  Unscaled glyphs are simply glyphs for which you have not selected an *orientation/scale* field.  This means that they simply appear at the points you specify, at the default orientation, and at the base size you specify (the default base size is 1*1*1).  If you want to run through this example, load up `example a1`_ in CMGUI and run the entire com file.
 
 Open the *scene editor* and make sure cube is selected in the *scene object list*.  You will notice that there are three items in the *graphical settings list*: *lines*, *node_points*, and *surfaces*.  Select the node_points graphical settings item.  You will see in the settings below that these node_points already have glyphs associated with them - in the *Glyph* drop-down menu, the glyphs currently used to display the nodes are *point* glyphs.  These are the default glyph, and are by default a single white pixel.  Figure 1 shows the scene editor window, with the three areas labelled.
 
@@ -131,7 +131,7 @@ This option automatically creates a three vector "fibre axes" field from it toge
 Variable scale glyphs
 ---------------------
 
-Variable scale glyphs use an extra "variable scale" field to give a signed magnitude; this not only multiplies the magnitude of the orientation_scale field (so it is doubly-scaled) but it's magnitude provides its "sense".  A good example of this would be extension (positive) versus compression (negative) for strain.  Negative values of this magnitude can be used to reverse glyphs about their origin along their orientation.  There are several special "mirror" glyphs designed specifically for this purpose.
+Variable scale glyphs use an extra "variable scale" field to give a signed magnitude; this not only multiplies the magnitude of the orientation_scale field (so it is doubly-scaled) but its magnitude provides its "sense".  A good example of this would be extension (positive) versus compression (negative) for strain.  Negative values of the variable scale field reverse glyphs about their origin along their orientation.  There are several special "mirror" glyphs designed specifically for this purpose.
 
 .. figure:: mirror_glyphs.png
    :figwidth: image
@@ -149,7 +149,7 @@ Variable scale glyphs need both:
 * direction: *orientation_scale* field
 * magnitude: *variable_scale* field
 
-The variable scale field is an extra scaling factor in addition to the magnitude of the vector.  For the final glyph size equation I will call the variable scale field "lambda" - this is because the variable scale field is often the eigenvalue of an eignevector calculated from deformations.  Run through example *a/large_strain* to see this in action.
+The variable scale field is an extra scaling factor in addition to the magnitude of the vector.  For the final glyph size equation I will call the variable scale field "lambda" - this is because the variable scale field is often the eigenvalue of an eignevector calculated from deformations.  Run through the `large_strain`_ example (*a/large_strain*) to see this in action.
 
 Final glyph size = (b1+c1M*lambda1)*(b2+c2M*lambda2)*(b3+c3M*lambda3)
 
@@ -160,6 +160,8 @@ It is most common to use a variable scale field with single vector glyphs, such 
 
 Additional tricks with glyphs
 -----------------------------
+
+| 
 
 Adjusting the glyph centre
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -177,3 +179,16 @@ By default, glyphs have a 0,0,0 coordinate point (origin) that is logically posi
 | 
 
 Using the *centre* value box, you can adjust the origin of your selected glyph so that it is positioned differently.  This could be used for example to make an elongated spheroid that points away from the origin, by adjusting the entering -0.5,0,0 in the centre value box, and setting the base size of the sphere glyph to 1,0.03,0.03.
+
+| 
+
+Using custom glyphs
+~~~~~~~~~~~~~~~~~~~
+
+It is possible in CMGUI to create your own glyphs from obj model files.  An example of this in action is the biplane_ example, where a model of a biplane is used to create a custom glyph.
+
+
+.. _example a1: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a1/index.html
+.. _large_strain: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/large_strain/index.html
+.. _biplane: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/biplane/index.html
+
