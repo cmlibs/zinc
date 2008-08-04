@@ -1,5 +1,17 @@
-Working With Glyphs
-===================
+Viewing point data using glyphs
+===============================
+
+Glyphs are graphical objects that are used to represent information at points within a model.  These glyphs can be coloured, scaled, and oriented according to the values of chosen fields.  Glyphs might be used for something as simple as showing node locations (Figure 1), or something more complex such as showing the strain at points within a deformed mesh.  CMGUI has a range of glyphs available, for representing different types of point data.  This document will explain how to position, scale and orient glyphs in a variety of ways.
+
+.. figure:: glyphs_variety.png
+   :figwidth: image
+   :align: center
+
+   **Figure 1: Different glyphs placed at the nodes of a cube mesh.**
+
+|  
+|  
+
 
 `Adding glyphs to a mesh`_
 
@@ -17,12 +29,7 @@ Working With Glyphs
 
 `Additional tricks with glyphs`_
 
-
-
-Glyphs are graphical objects that are used to represent information at points within a model.  These glyphs can be coloured, scaled, and oriented according to the values of chosen fields.  Glyphs might be used for something as simple as showing node locations, or something more complex such as showing the strain at points within a deformed mesh.  This document will explain how to position, scale and orient glyphs in a variety of ways.
-
-|  
-|  
+| 
 
 Adding glyphs to a mesh
 -----------------------
@@ -37,17 +44,17 @@ Unscaled glyphs
 
 The simplest use of a glyph is to visually mark a point, with no direction or scale information.  Unscaled glyphs are simply glyphs for which you have not selected an *orientation/scale* field.  This means that they simply appear at the points you specify, at the default orientation, and at the base size you specify (the default base size is 1*1*1).  If you want to run through this example, load up `example a1`_ in CMGUI and run the entire com file.
 
-Open the *scene editor* and make sure cube is selected in the *scene object list*.  You will notice that there are three items in the *graphical settings list*: *lines*, *node_points*, and *surfaces*.  Select the node_points graphical settings item.  You will see in the settings below that these node_points already have glyphs associated with them - in the *Glyph* drop-down menu, the glyphs currently used to display the nodes are *point* glyphs.  These are the default glyph, and are by default a single white pixel.  Figure 1 shows the scene editor window, with the three areas labelled.
+Open the *scene editor* and make sure cube is selected in the *scene object list*.  You will notice that there are three items in the *graphical settings list*: *lines*, *node_points*, and *surfaces*.  Select the node_points graphical settings item.  You will see in the settings below that these node_points already have glyphs associated with them - in the *Glyph* drop-down menu, the glyphs currently used to display the nodes are *point* glyphs.  These are the default glyph, and are by default a single white pixel.  Figure 2 shows the scene editor window, with the three areas labelled.
 
 .. figure:: sceneEditor_Glyphs1.png
    :figwidth: image
    :align: center
    
-   **Figure 1: The scene editor.**
+   **Figure 2: The scene editor.**
    
 | 
 
-Use the drop-down menu to select another type of glyph for the node points: select *sphere*.  In the graphics window, large orange spheres will appear at the corners (node points) of the cube.  As the cube in this example is 1*1*1 and the default size of the glyphs is also 1*1*1, the glyphs will be far too large to be useful.  For unscaled glyphs, you control the size by entering your desired size in the *Base glyph size* text-box, which will currently contain 1*1*1 (x*y*z dimensions).  Change this to 0.1*0.1*0.1.  If you enter a single value in the base glyph size box, it will use this value for all three dimensions.  After changing the glyphs to these dimensions, you will notice that the spheres have shrunk to a more practical size (Figure 2).  For unscaled glyphs, the final size is determined entirely by the *Base glyph size*.
+Use the drop-down menu to select another type of glyph for the node points: select *sphere*.  In the graphics window, large orange spheres will appear at the corners (node points) of the cube.  As the cube in this example is 1*1*1 and the default size of the glyphs is also 1*1*1, the glyphs will be far too large to be useful.  For unscaled glyphs, you control the size by entering your desired size in the *Base glyph size* text-box, which will currently contain 1*1*1 (x*y*z dimensions).  Change this to 0.1*0.1*0.1.  If you enter a single value in the base glyph size box, it will use this value for all three dimensions.  After changing the glyphs to these dimensions, you will notice that the spheres have shrunk to a more practical size (Figure 3).  For unscaled glyphs, the final size is determined entirely by the *Base glyph size*.
 
 Final glyph size = b1*b2*b3
 
@@ -55,7 +62,7 @@ Final glyph size = b1*b2*b3
    :figwidth: image
    :align: center
    
-   **Figure 2: Changing the glyph and its base size.**
+   **Figure 3: Changing the glyph and its base size.**
 
 | 
 
@@ -73,7 +80,7 @@ Scalar glyphs can be used to represent the value of a scalar field at selected p
    :figwidth: image
    :align: center
 
-   **Figure 3: How glyphs are scaled by a scalar orientation/scale field.**
+   **Figure 4: How glyphs are scaled by a scalar orientation/scale field.**
 
 | 
 
@@ -137,7 +144,7 @@ Variable scale glyphs use an extra "variable scale" field to give a signed magni
    :figwidth: image
    :align: center
 
-   **Figure 4: Mirror glyphs and glyph reversal using the variable scale field.**   
+   **Figure 5: Mirror glyphs and glyph reversal using the variable scale field.**   
    A) Mirror-cone glyphs being used in the large strain example, with the magnitude and sign of strain indicated by the length and direction of the glyphs respectively.
    B) How glyphs are represented with differently signed variable scale fields.  Un-mirrored glyphs are not as useful for representing this information.
 
@@ -174,7 +181,7 @@ By default, glyphs have a 0,0,0 coordinate point (origin) that is logically posi
    :figwidth: image
    :align: center
 
-   **Figure 5: Origins of various glyph types within their bounding cubes.**  Origin of each glyph family is indicated by a red dot.
+   **Figure 6: Origins of various glyph types within their bounding cubes.**  Origin of each glyph family is indicated by a red dot.
 
 | 
 
