@@ -24,7 +24,7 @@ If a scene object made up of elements is selected, the *general settings* button
 Graphical settings list
 -----------------------
 
-Below the transformation and general settings buttons is the *graphical settings list*.  This is where the visual representations (graphical settings) of the currently selected scene object are listed.  This panel allows creation, deletion, switching (on or off) and re-ordering of these visual representations.
+Below the transformation and general settings buttons is the *graphical settings list*.  This is where the visual representations (graphical settings) of the currently selected scene object are listed.  This panel allows creation, deletion, visibility switching (on or off) and re-ordering of these visual representations.
 
 Settings editor
 ---------------
