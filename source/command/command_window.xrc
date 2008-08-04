@@ -11,12 +11,6 @@
         <object class = "wxMenuItem" name="FileComFile">
           <label>Com File</label>
 				</object>
-        <object class = "wxMenu" name="ExampleComFile">
-          <label>Example</label>
-        <object class = "wxMenuItem" name="ExampleOne">
-          <label>ExampleOne</label>
-				</object>
-				</object>
       </object>
       <object class ="wxMenu" name="MenuRead">
         <label>Read...</label>
@@ -58,10 +52,6 @@
     </object>	
     <object class ="wxMenu" name="MenuModel">
       <label>Model</label>
-      <object class = "wxMenuItem" name="ModelCell">
-        <label>Cell</label>
-		 <enabled>0</enabled>
-      </object>
       <object class = "wxMenuItem" name="ModelCurveEditor">
         <label>Curve editor</label>
 		 <enabled>0</enabled>
@@ -76,20 +66,8 @@
         <label>Grid field calculator</label>
 		 <enabled>0</enabled>
       </object>
-      <object class = "wxMenuItem" name="ModelInputcontroller">
-        <label>Input controller</label>
-		 <enabled>0</enabled>
-      </object>
       <object class = "wxMenuItem" name="ModelNodeviewer">
         <label>Node viewer</label>
-      </object>
-      <object class = "wxMenuItem" name="ModelTracking">
-		 <enabled>0</enabled>
-        <label>Tracking</label>
-      </object>
-      <object class = "wxMenuItem" name="ModelUnemap">
-		 <enabled>0</enabled>
-        <label>Unemap</label>
       </object>
     </object>
 
@@ -106,10 +84,6 @@
       </object>
       <object class = "wxMenuItem" name="GraphicsSpectrumeditor">
         <label>Spectrum editor</label>
-      </object>
-      <object class = "wxMenuItem" name="GraphicsVolumeeditor">
-		 <enabled>0</enabled>
-        <label>Volume editor</label>
       </object>
       <object class="separator"/>
       <object class = "wxMenu" name="Graphics2Dprojections">
@@ -147,7 +121,7 @@
 				<object class ="wxSplitterWindow" name="CommandSplitterWindow">
 					<style>wxSP_3D|wxSP_LIVE_UPDATE</style>
 				  <orientation>horizontal</orientation>
-
+					<minsize>1</minsize>
 					<object class ="wxPanel">
 			 	    <object class = "wxBoxSizer">	
       				<orient>wxVERTICAL</orient>

@@ -144,13 +144,13 @@
                             	<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
       				  		       <object class="wxCheckBox" name = "MaterialEditorTextureCheckBox">
 				    	   				<label>Texture</label>
-										<size>-1,30</size>
+										<size>-1,26</size>
 				       			</object>
 								</object>
  		           			<object class ="sizeritem">
                             	<flag>wxRIGHT|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
       				  		       <object class="wxPanel" name="MaterialEditorTextureChooserPanel">
-										<size>150,30</size>
+										<size>150,26</size>
 				       			</object>
 		           			</object>
 							</object>
@@ -166,13 +166,13 @@
                             	<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
       				  		       <object class="wxCheckBox" name = "MaterialEditorSecondTextureCheckBox">
 				    	   				<label>Second Texture</label>
-										<size>-1,30</size>
+										<size>-1,26</size>
 				       			</object>
 								</object>
  		           			<object class ="sizeritem">
                             	<flag>wxRIGHT|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
       				  		       <object class="wxPanel" name="MaterialEditorSecondTextureChooserPanel">
-										<size>150,30</size>
+										<size>150,26</size>
 				       			</object>
 		           			</object>
 			           	</object>		
@@ -188,13 +188,13 @@
                             	<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
       				  		       <object class="wxCheckBox" name = "MaterialEditorThirdTextureCheckBox">
 				    	   				<label>Third Texture</label>
-										<size>-1,30</size>
+										<size>-1,26</size>
 				       			</object>
 								</object>
  		           			<object class ="sizeritem">
                             	<flag>wxRIGHT|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
       				  		       <object class="wxPanel" name="MaterialEditorThirdTextureChooserPanel">
-										<size>150,30</size>
+										<size>150,26</size>
 				       			</object>
 		           			</object>
 			           	</object>		
@@ -210,13 +210,13 @@
                             	<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
       				  		       <object class="wxCheckBox" name = "MaterialEditorFourthTextureCheckBox">
 				    	   				<label>Fourth Texture</label>
-										<size>-1,30</size>
+										<size>-1,26</size>
 				       			</object>
 								</object>
  		           			<object class ="sizeritem">
                             	<flag>wxRIGHT|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxADJUST_MINSIZE</flag>
       				  		       <object class="wxPanel" name="MaterialEditorFourthTextureChooserPanel">
-										<size>150,30</size>
+										<size>150,26</size>
 				       			</object>
 		           			</object>
 			           	</object>		
@@ -259,14 +259,14 @@
 							<flag>wxLEFT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
       				  		<object class="wxCheckBox" name="MaterialEditorPerPixelLightingCheckBox">
 								<label>Per Pixel Lighting</label>
-								<size>-1,30</size>		
+								<size>-1,26</size>		
 				       	</object>
 		           	</object>
  		           	<object class ="sizeritem">
 							<flag>wxLEFT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
       				  		<object class="wxCheckBox" name="MaterialEditorBumpMappingCheckBox">
 								<label>Bump Mapping</label>
-								<size>-1,30</size>		
+								<size>-1,26</size>		
 				       	</object>
 		           	</object>
 
