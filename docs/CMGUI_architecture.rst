@@ -1,6 +1,8 @@
 CMGUI Architecture
 ==================
 
+| 
+
 Regions and Fields
 ------------------
 
@@ -11,6 +13,9 @@ When you start CMGUI, a *root region* exists; this is an empty space into which 
 Each region contains a set of *fields* from which a model is built up.  A field is a function that returns values over a domain; for example, the "potential" field could provide a value for the electrical potential of each point in the heart domain, which could be a finite element mesh.  The geometry of the heart is itself defined by the coordinate field (this field is often called "coordinates" in our models).  Finite element fields in CMGUI are generally defined by storing discrete parameters at nodes (eg the coordinates of the node, the electrical potential at each node) and interpolated across the *xi space* spanned by elements to give the continuous field.
 
 Other examples of fields include fibre orientation in the heart, temperature, pressure, material properties, strain and so on.  In CMGUI you can also define fields that are computed from other fields.  For example, you might define a field called "scaled_coordinates" by scaling coordinates x, y, and z to x, y, and 10z, perhaps to exaggerate the height of topological features.  You might also compute strain from deformed and undeformed coordinates, fibre axis from fibre Euler angles, and so on.
+
+| 
+| 
 
 Other Data in CMGUI
 -------------------
