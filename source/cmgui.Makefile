@@ -328,9 +328,13 @@ else # ! IMAGEMAGICK
    IMAGEMAGICK_INC =  -I$(IMAGEMAGICK_PATH)/include/$(LIB_ARCH_DIR) -I$(IMAGEMAGICK_PATH)/include/$(LIB_ARCH_DIR)/ImageMagick
    IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libMagickCore.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libtiff.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libpng.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libjpeg.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a
    ifeq ($(USE_LIBGDCM), true)
-      IMAGEMAGICK_LIB += -L$(IMAGEMAGICK_PATH)/$(LIB_ARCH_DIR)/lib -lgdcmCWRAPPER -lgdcmMSFF -lgdcmDSED -lgdcmzlib -lgdcmmd5 -lgdcmDICT -lgdcmCommon -lgdcmIOD -lgdcmopenjpeg -lgdcmjpeg8 -lgdcmjpeg16 -lgdcmjpeg12 -lgdcmexpat
-      ifeq ($(SYSNAME),Linux)
-        IMAGEMAGICK_LIB += -lgdcmuuid
+      ifeq ($(COMPILER),msvc)
+         IMAGEMAGICK_LIB += $(foreach lib, gdcmCWRAPPER gdcmMSFF gdcmDSED gdcmzlib gdcmmd5 gdcmDICT gdcmCommon gdcmIOD gdcmopenjpeg gdcmjpeg8 gdcmjpeg16 gdcmjpeg12 gdcmexpat, $(IMAGEMAGICK_PATH)/$(LIB_ARCH_DIR)/lib/lib$(lib).a)
+      else
+         IMAGEMAGICK_LIB += -L$(IMAGEMAGICK_PATH)/$(LIB_ARCH_DIR)/lib -lgdcmCWRAPPER -lgdcmMSFF -lgdcmDSED -lgdcmzlib -lgdcmmd5 -lgdcmDICT -lgdcmCommon -lgdcmIOD -lgdcmopenjpeg -lgdcmjpeg8 -lgdcmjpeg16 -lgdcmjpeg12 -lgdcmexpat
+         ifeq ($(SYSNAME),Linux)
+            IMAGEMAGICK_LIB += -lgdcmuuid
+         endif
       endif
    endif
    ifneq ($(wildcard $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libltdl.a),)
@@ -760,7 +764,8 @@ ifeq ($(SYSNAME),win32)
      GCCLIBSTDC++ = $(patsubst /usr/lib%,$(CYGWINPATH)/lib%,$(shell gcc -mno-cygwin -print-file-name=libstdc++.a))
      LIBMINGW32 = $(CYGWINPATH)/lib/mingw/libmingw32.a
      LIBMINGWEX = $(CYGWINPATH)/lib/mingw/libmingwex.a
-     SYSTEM_LIB = $(GCCLIBSTDC++) $(LIBMINGW32) $(GCCLIBGCC) $(LIBMINGWEX) kernel32.lib advapi32.lib ws2_32.lib gdi32.lib msimg32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib netapi32.lib uuid.lib wsock32.lib mpr.lib winmm.lib version.lib odbc32.lib user32.lib /NODEFAULTLIB:LIBCMT /DEFAULTLIB:MSVCRT
+     LIBMINGW_MSVCRT = $(CYGWINPATH)/lib/mingw/libmsvcrt.a
+     SYSTEM_LIB = $(GCCLIBSTDC++) $(LIBMINGW32) $(GCCLIBGCC) $(LIBMINGW_MSVCRT) $(LIBMINGWEX) kernel32.lib advapi32.lib ws2_32.lib gdi32.lib msimg32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib netapi32.lib uuid.lib wsock32.lib mpr.lib winmm.lib version.lib odbc32.lib user32.lib /NODEFAULTLIB:LIBCMT /DEFAULTLIB:MSVCRT
      SOLIB_LIB = $(GCCLIBSTDC++) $(LIBMINGW32) $(GCCLIBGCC) $(LIBMINGWEX)
    else
      SYSTEM_LIB = -lws2_32 -lgdi32 -lmsimg32 -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32 -lstdc++
