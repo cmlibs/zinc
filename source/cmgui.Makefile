@@ -328,7 +328,10 @@ else # ! IMAGEMAGICK
    IMAGEMAGICK_INC =  -I$(IMAGEMAGICK_PATH)/include/$(LIB_ARCH_DIR) -I$(IMAGEMAGICK_PATH)/include/$(LIB_ARCH_DIR)/ImageMagick
    IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libMagickCore.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libtiff.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libpng.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libjpeg.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a
    ifeq ($(USE_LIBGDCM), true)
-      IMAGEMAGICK_LIB += -L$(IMAGEMAGICK_PATH)/$(LIB_ARCH_DIR)/lib -lgdcmCWRAPPER -lgdcmMSFF -lgdcmDSED -lgdcmzlib -lgdcmuuid -lgdcmmd5 -lgdcmDICT -lgdcmCommon -lgdcmIOD -lgdcmopenjpeg -lgdcmjpeg8 -lgdcmjpeg16 -lgdcmjpeg12 -lgdcmexpat
+      IMAGEMAGICK_LIB += -L$(IMAGEMAGICK_PATH)/$(LIB_ARCH_DIR)/lib -lgdcmCWRAPPER -lgdcmMSFF -lgdcmDSED -lgdcmzlib -lgdcmmd5 -lgdcmDICT -lgdcmCommon -lgdcmIOD -lgdcmopenjpeg -lgdcmjpeg8 -lgdcmjpeg16 -lgdcmjpeg12 -lgdcmexpat
+      ifeq ($(SYSNAME),Linux)
+        IMAGEMAGICK_LIB += -lgdcmuuid
+      endif
    endif
    ifneq ($(wildcard $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libltdl.a),)
       #When this first appeared it seemed to be configured for most versions, now it seems to be configured for very few.  Assume we need it only if it is found.
