@@ -25,11 +25,11 @@ The graphics window tools
 
   This is the default mode, and is used for simple viewing of the graphical representations you are working on.  In this mode the objects in the 3D window can be rotated, translated and zoomed using the mouse.  Holding the left mouse button within the 3D view and moving it around will rotate, or tumble the view.  Holding down the right mouse button and moving the mouse up and down will zoom the view in and out, and holding the middle button will allow you to translate the view around along two axes.  It is useful to spend some time getting used to the way these manipulations work.
 
-  In CMGUI, the rotate function works slightly differently from how similar view manipulations work in most software.  This may not be immediately obvious, as the function does not "feel" paricularly different in use; nevertheless there are some useful features of CMGUI's particular technique for rotating the view.
+  In CMGUI, the rotate function works slightly differently from how similar view manipulations work in most software.  This may not be immediately obvious, as the function does not "feel" particularly different in use; nevertheless there are some useful features of CMGUI's particular technique for rotating the view.
 
   Essentially, where you initially click in the view is the "handle" that you then move around by moving the mouse.  In CMGUI this handle is different to most applications, in that it is like "grabbing" a point on a sphere that bounds the object in the 3D window.  This allows manipulations using the rotate function that are not possible in most 3D views, such as rotating the object around an arbitrary axis, or rotating it in a circular fashion around the centre of the view.  These abilities can be useful when looking at data that has aligned features.
 
-  The four other tools available are used for the selection and limited editing of the type of item they refer to.  Selected items are able to be targetted by commands input to the command line, or edited from within the graphics window.
+  The four other tools available are used for the selection and limited editing of the type of item they refer to.  Selected items are able to be targeted by commands input to the command line, or edited from within the graphics window.
   
   When any of the following four tools is selected, holding down the ``Ctrl`` key will temporarily switch you back into transformation mode in order to manipulate the view.
 
