@@ -1,7 +1,9 @@
-Viewing 2D elements using lines and cylinders
+Viewing 1-D elements using lines and cylinders
 =============================================
 
-*Lines* and *cylinders* are graphical representations which can be used to visualize 2D elements in CMGUI.  In general, lines or cylinders are used to visualize the basic shape of a mesh.  When you load a mesh (exnode and exelem files) into CMGUI, the mesh is by default represented by lines of the default colour and thickness: white lines 1 pixel thick.  This means that a *lines* graphical setting is created in the default scene (see the `scene editor`_), with the default settings (Figure 1).
+*Lines* and *cylinders* are graphical representations which can be used to visualize 1-D elements in CMGUI - line elements at the edges of 2-D faces or 3-D elements.  In general, lines or cylinders are used to visualize the basic shape of a mesh.  When you load a mesh (exnode and exelem files) into CMGUI, the mesh is by default represented by lines of the default colour and thickness: white lines 1 pixel thick.  This means that a *lines* graphical setting is created in the default scene (see the `scene editor`_), with the default settings (Figure 1).  
+
+Two other default scene settings are important for lines and cylinders.  Under *General settings* in the scene editor, *element discretization* controls the number of line segments used to draw each line.  The *Circle discretization* value is used to control how many sides are used to draw each cylinder.  Higher numbers will give "rounder" looking cylinders.
 
 .. figure:: basic_cube_lines1.png
    :figwidth: image
@@ -13,16 +15,16 @@ Viewing 2D elements using lines and cylinders
 
 Lines have relatively few settings for altering their appearance (Figure 2).  The following settings are available for lines:
 
-* **Coordinate field:** When you check this box, you are able to select the coordinate field that the lines are drawn according to.  This setting is very rarely used.
+* **Coordinate field:** When you check this box, you are able to select the coordinate field that the lines are drawn according to.  This is used any time the coordinate field used for the lines needs to differ from the default coordinate field used for the whole graphical element (in the general settings).
 
-* **Exterior:** When this check box is selected, the lines will only be drawn on the exterior faces of a mesh.  This can be useful with large, complex meshes.
+* **Exterior:** When this check box is selected, the lines will only be drawn on the exterior faces of a 3D mesh, or the outside edges of a 2D mesh.  This can be useful with large, complex meshes.
 
 * **Face:** Checking this box allows you to select which face of 3D elements is visualized by lines.  Faces are selected according to one of the 3 xi directions of the element, and it's value (either 0 or 1).
 
 * **Select mode:** This drop-down menu allows you to select different selection behaviours for the lines.
 
-  * select_on - The default setting; line elements are able to be selected.
-  * no_select - No selection of line elements.
+  * select_on - The default setting; line elements are able to be selected and selected elements are highlighted by rendering in the selected material.
+  * no_select - No selection or highlighting of line elements.
   * draw_selected - only selected lines are drawn.
   * draw_unselected - only unseleted lines are drawn.
 
@@ -39,10 +41,14 @@ Lines have relatively few settings for altering their appearance (Figure 2).  Th
    :align: center
 
    **Figure 2: The scene editor settings available for a lines graphical setting.**
+   
+   **Note:** if no lines appear, you may not have added faces (and lines) to the mesh
+- try the ``gfx define faces`` command.
+
 
 | 
 
-*Cylinders* are very similar to lines, with a few additional parameters.  A cylinders graphical setting will draw cylinders along all the same elements that a lines graphical setting would.  Cylinders are different to lines in that they have a size relative to the mesh - therefore they scale with zooming just like other objects that have an actual "size" in the scene.  They have the following settings in addition to those above:
+*Cylinders* are very similar to lines, with a few additional parameters.  A cylinders graphical setting will draw cylinders along all the same elements that a lines graphical setting would.  Cylinders are different to lines in that they have a size relative to the mesh - therefore they scale with zooming just like other objects that have an actual "size" in the scene.  The number of "faces" that are used to display cylinders is set under the *General settings* under *Circle dicretization*.  The higher the number, the more circular the cylinders will appear.  The default setting is for six sides.  Cylinders have the following settings in addition to those for lines:
 
 * **Constant radius:** This is the radius of the cylinders, in the same units as the coordinate system.
 
