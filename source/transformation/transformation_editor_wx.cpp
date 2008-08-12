@@ -207,94 +207,111 @@ DESCRIPTION :
 Connect the widgets to a callback function.
 ==============================================================================*/
 {
-    Transformation_editor_wx_position_slider_1->SetClientData((void *)this);
 		Transformation_editor_wx_position_slider_1->Connect(wxEVT_SCROLL_THUMBTRACK, 
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorRateofChangeSliderChanged));
+			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorRateofChangeSliderChanged),
+			NULL, this);
 		Transformation_editor_wx_position_slider_1->Connect(wxEVT_SCROLL_THUMBRELEASE, 
-			wxCommandEventHandler(Transformation_editor::OnTransformationEditorRateofChangeSliderChanged));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditorRateofChangeSliderChanged),
+			NULL, this);
 
-		Transformation_editor_wx_position_text_ctrl_1->SetClientData((void *)this);
 		Transformation_editor_wx_position_text_ctrl_1->Connect(wxEVT_COMMAND_TEXT_ENTER, 
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered),
+			NULL, this);
 		Transformation_editor_wx_position_text_ctrl_1->Connect(wxEVT_KILL_FOCUS, 
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
-		Transformation_editor_wx_position_text_ctrl_2->SetClientData((void *)this);
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered),
+			NULL, this);
 		Transformation_editor_wx_position_text_ctrl_2->Connect(wxEVT_COMMAND_TEXT_ENTER, 
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered),
+			NULL, this);
 		Transformation_editor_wx_position_text_ctrl_2->Connect(wxEVT_KILL_FOCUS, 
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
-		Transformation_editor_wx_position_text_ctrl_3->SetClientData((void *)this);
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered),
+			NULL, this);
 		Transformation_editor_wx_position_text_ctrl_3->Connect(wxEVT_COMMAND_TEXT_ENTER, 
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered),
+			NULL, this);
 		Transformation_editor_wx_position_text_ctrl_3->Connect(wxEVT_KILL_FOCUS, 
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
-		Transformation_editor_wx_position_text_ctrl_4->SetClientData((void *)this);
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered),
+			NULL, this);
 		Transformation_editor_wx_position_text_ctrl_4->Connect(wxEVT_COMMAND_TEXT_ENTER, 
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered),
+			NULL, this);
 		Transformation_editor_wx_position_text_ctrl_4->Connect(wxEVT_KILL_FOCUS, 
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered),
+			NULL, this);
 
-		Transformation_editor_wx_direction_text_ctrl_1->SetClientData((void *)this);
 		Transformation_editor_wx_direction_text_ctrl_1->Connect(wxEVT_COMMAND_TEXT_ENTER, 
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered),
+			NULL, this);
 		Transformation_editor_wx_direction_text_ctrl_1->Connect(wxEVT_KILL_FOCUS, 
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
-		Transformation_editor_wx_direction_text_ctrl_2->SetClientData((void *)this);
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered),
+			NULL, this);
 		Transformation_editor_wx_direction_text_ctrl_2->Connect(wxEVT_COMMAND_TEXT_ENTER, 
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered),
+			NULL, this);
 		Transformation_editor_wx_direction_text_ctrl_2->Connect(wxEVT_KILL_FOCUS, 
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
-		Transformation_editor_wx_direction_text_ctrl_3->SetClientData((void *)this);
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered),
+			NULL, this);
 		Transformation_editor_wx_direction_text_ctrl_3->Connect(wxEVT_COMMAND_TEXT_ENTER, 
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered),
+			NULL, this);
 		Transformation_editor_wx_direction_text_ctrl_3->Connect(wxEVT_KILL_FOCUS, 
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
-		Transformation_editor_wx_direction_text_ctrl_4->SetClientData((void *)this);
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered),
+			NULL, this);
 		Transformation_editor_wx_direction_text_ctrl_4->Connect(wxEVT_COMMAND_TEXT_ENTER, 
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered),
+			NULL, this);
 		Transformation_editor_wx_direction_text_ctrl_4->Connect(wxEVT_KILL_FOCUS, 
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditorTextEntered),
+			NULL, this);
 
-		Transformation_editor_wx_position_spin_button_1->SetClientData((void *)this);
 		Transformation_editor_wx_position_spin_button_1->Connect(wxEVT_SCROLL_LINEUP,
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_up));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_up),
+			NULL, this);
 		Transformation_editor_wx_position_spin_button_1->Connect(wxEVT_SCROLL_LINEDOWN,
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_down));
-		Transformation_editor_wx_position_spin_button_2->SetClientData((void *)this);
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_down),
+			NULL, this);
 		Transformation_editor_wx_position_spin_button_2->Connect(wxEVT_SCROLL_LINEUP,
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_up));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_up),
+			NULL, this);
 		Transformation_editor_wx_position_spin_button_2->Connect(wxEVT_SCROLL_LINEDOWN,
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_down));
-		Transformation_editor_wx_position_spin_button_3->SetClientData((void *)this);
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_down),
+			NULL, this);
 		Transformation_editor_wx_position_spin_button_3->Connect(wxEVT_SCROLL_LINEUP,
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_up));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_up),
+			NULL, this);
 		Transformation_editor_wx_position_spin_button_3->Connect(wxEVT_SCROLL_LINEDOWN,
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_down));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_down),
+			NULL, this);
 
 		Transformation_editor_wx_direction_spin_button_1->SetClientData((void *)this);
 		Transformation_editor_wx_direction_spin_button_1->Connect(wxEVT_SCROLL_LINEUP,
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_up));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_up),
+			NULL, this);
 		Transformation_editor_wx_direction_spin_button_1->Connect(wxEVT_SCROLL_LINEDOWN,
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_down));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_down),
+			NULL, this);
 		Transformation_editor_wx_direction_spin_button_2->SetClientData((void *)this);
 		Transformation_editor_wx_direction_spin_button_2->Connect(wxEVT_SCROLL_LINEUP,
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_up));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_up),
+			NULL, this);
 		Transformation_editor_wx_direction_spin_button_2->Connect(wxEVT_SCROLL_LINEDOWN,
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_down));
-		Transformation_editor_wx_direction_spin_button_3->SetClientData((void *)this);
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_down),
+			NULL, this);
 		Transformation_editor_wx_direction_spin_button_3->Connect(wxEVT_SCROLL_LINEUP,
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_up));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_up),
+			NULL, this);
 		Transformation_editor_wx_direction_spin_button_3->Connect(wxEVT_SCROLL_LINEDOWN,
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_down));
-		Transformation_editor_wx_direction_spin_button_4->SetClientData((void *)this);
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_down),
+			NULL, this);
 		Transformation_editor_wx_direction_spin_button_4->Connect(wxEVT_SCROLL_LINEUP,
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_up));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_up),
+			NULL, this);
 		Transformation_editor_wx_direction_spin_button_4->Connect(wxEVT_SCROLL_LINEDOWN,
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_down));
-		
-		Transformation_editor_wx_direction_coord_system_choice->SetClientData((void *)this);
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditor_spin_button_down),
+			NULL, this);
 		Transformation_editor_wx_direction_coord_system_choice->Connect(wxEVT_COMMAND_CHOICE_SELECTED,
-			 wxCommandEventHandler(Transformation_editor::OnTransformationEditorDirectionSystemChoice));
+			wxCommandEventHandler(Transformation_editor::OnTransformationEditorDirectionSystemChoice),
+			NULL, this);
 
 }
 
@@ -710,11 +727,10 @@ transformation encoded in 4x4 <transformation_matrix>.
 			global_scale_factor[0] = 1;
 			global_scale_factor[1] = 1;
 			global_scale_factor[2] = 1;
-			transformation_editor_wx_set_transformation(&(transformation_editor_transformation_matrix));
 	 }
 	 if (temp_state)
 			destroy_Parse_state(&temp_state);
-	 ApplyTransformation();
+	 ApplyTransformation(/*force_apply*/0);
 }
 
 void Transformation_editor::OnTransformationEditorTextEntered(wxCommandEvent& event)
@@ -729,10 +745,7 @@ provoked then use this colour editor to do the settings.
 ==============================================================================*/
 {
 	 ENTER(Transformation_editor::OnTransformationEditorTextEntered);
-
-	 wxTextCtrl *temp_object = (wxTextCtrl *)event.GetEventObject();
-	 Transformation_editor *temp_editor = (Transformation_editor *)temp_object->GetClientData();
-	 temp_editor->transformation_editor_wx_update_position_and_direction();
+	 this->transformation_editor_wx_update_position_and_direction();
 	 LEAVE;
 }
 
@@ -759,10 +772,7 @@ provoked then use this colour editor to do the settings.
 ==============================================================================*/
 {
 	 ENTER(Transformation_editor::OnTransformationEditorSliderChanged);
-
-	 wxSlider *temp_object = (wxSlider *)event.GetEventObject();
-	 Transformation_editor *temp_editor = (Transformation_editor *)temp_object->GetClientData();
-	 temp_editor->transformation_editor_wx_get_rate_of_change_from_interface_slider();
+	 this->transformation_editor_wx_get_rate_of_change_from_interface_slider();
 	 LEAVE;
 }
 
@@ -797,7 +807,7 @@ global gtmatrix.
 	 else
 	 {
 			display_message(ERROR_MESSAGE,
-				 "transformation_editor_wx_set_transformation. Cannot allocate sufficient memory");
+				 "transformation_editor_quaternion_to_gtmatrix. Cannot allocate sufficient memory");
 	 }
 
 }
@@ -857,11 +867,7 @@ Must only call this function from OnTransformationEditor_spin_button_up function
 			&global_position, &global_direction,&(transformation_editor_transformation_matrix));
 	 scale_factor_to_transformation_matrix(global_scale_factor,
 			&(transformation_editor_transformation_matrix));	 
-	 if (gtMatrix_is_identity(&(transformation_editor_transformation_matrix)))
-	 {
-			transformation_editor_wx_set_transformation(&(transformation_editor_transformation_matrix));
-	 }
-	 ApplyTransformation();
+	 ApplyTransformation(/*force_apply*/0);
 }
 
 void Transformation_editor::OnTransformationEditor_spin_button_up(wxCommandEvent& event)
@@ -878,8 +884,7 @@ provoked then use this colour editor to do the settings.
 	 ENTER(Transformation_editor::OnTransformationEditorSliderChanged);
 
 	 wxSpinButton *temp_object = (wxSpinButton *)event.GetEventObject();
-	 Transformation_editor *temp_editor = (Transformation_editor *)temp_object->GetClientData();
-	 temp_editor->transformation_editor_wx_spin_button_change_value(temp_object, 1);
+	 this->transformation_editor_wx_spin_button_change_value(temp_object, 1);
 	 LEAVE;
 }
 
@@ -897,23 +902,22 @@ provoked then use this colour editor to do the settings.
 	 ENTER(Transformation_editor::OnTransformationEditorSliderChanged);
 
 	 wxSpinButton *temp_object = (wxSpinButton *)event.GetEventObject();
-	 Transformation_editor *temp_editor = (Transformation_editor *)temp_object->GetClientData();
-	 temp_editor->transformation_editor_wx_spin_button_change_value(temp_object, -1);
+	 this->transformation_editor_wx_spin_button_change_value(temp_object, -1);
 	 LEAVE;
 }
 
-void Transformation_editor::ApplyTransformation()
-/*******************************************************************************
-LAST MODIFIED : 5 March 2008
 
-DESCRIPTION :
-Apply Transformation from the transformation editor.
-==============================================================================*/
+/***************************************************************************//**
+* Apply Transformation using the values set on the transformation editor.
+*
+* @param force_apply Set this to 1 if need to set the transformation regardless of the auto_apply_flag
+*/
+void Transformation_editor::ApplyTransformation(int force_apply)
 {
 	 ENTER(Transformation_editor::OnTransformationEditorSliderChanged);
 	 if (current_object)
 	 {
-			if (*auto_apply_flag)
+			if (*auto_apply_flag || force_apply)
 			{
 				 Scene_object_set_transformation(current_object,
 						&transformation_editor_transformation_matrix);
@@ -990,10 +994,6 @@ provoked then use this colour editor to do the settings.
 ==============================================================================*/
 {
 	 ENTER(Transformation_editor::OnTransformationEditorSliderChanged);
-
-	 wxChoice *temp_object = (wxChoice *)event.GetEventObject();
-	 Transformation_editor *temp_editor = (Transformation_editor *)temp_object->GetClientData();
-	 temp_editor->transformation_editor_wx_direction_system_choice_changed();
-
+	 this->transformation_editor_wx_direction_system_choice_changed();
 	 LEAVE;
 }

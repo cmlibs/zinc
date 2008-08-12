@@ -67,7 +67,7 @@ public:
 			int *auto_apply);
 	 int transformation_editor_wx_set_transformation(gtMatrix *transformation_matrix);
 	 void transformation_editor_wx_set_current_object(struct Scene_object *scene_object);
-	 void ApplyTransformation();
+	 void ApplyTransformation(int force_apply);
 	 
 	 ~Transformation_editor()
 	 {
