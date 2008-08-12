@@ -7,7 +7,7 @@ Viewing 2D elements using lines and cylinders
    :figwidth: image
    :align: center
 
-   **Figure 1: The default graphical setting lines created for a cube mesh.** This mesh was created by reading the ``cube.exnode`` and ``cube.exelem`` files from `example a2`_.
+   **Figure 1: The default graphical setting lines created for a cube mesh.** This mesh was created by reading the ``cube.exnode`` and ``cube.exelem`` files from `example a2`_.  Note that `example a2`_ uses cylinders to visualize the cube mesh.
 
 | 
 
@@ -58,3 +58,4 @@ Lines have relatively few settings for altering their appearance (Figure 2).  Th
 .. _material editor window: http://www.cmiss.org/cmgui/wiki/UsingCMGUIMaterialEditor
 .. _example a2: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a2/index.html
 .. _example a4: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a4/index.html
+
