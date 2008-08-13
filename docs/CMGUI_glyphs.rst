@@ -1,5 +1,5 @@
-Visualizing fields using glyphs
-===============================
+Visualizing fields at points using glyphs
+=========================================
 
 .. _example a1: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a1/index.html
 .. _large_strain: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/large_strain/index.html

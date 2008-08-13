@@ -1,5 +1,5 @@
-Visualizing fields using lines and cylinders
-============================================
+Visualizing element fields using lines and cylinders
+====================================================
 
 .. _scene editor: http://www.cmiss.org/cmgui/wiki/UsingCMGUITheSceneEditorWindow
 .. _material editor window: http://www.cmiss.org/cmgui/wiki/UsingCMGUIMaterialEditor
