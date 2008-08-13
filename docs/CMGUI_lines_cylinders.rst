@@ -1,5 +1,11 @@
-Viewing 1-D elements using lines and cylinders
-=============================================
+Visualizing fields using lines and cylinders
+============================================
+
+.. _scene editor: http://www.cmiss.org/cmgui/wiki/UsingCMGUITheSceneEditorWindow
+.. _material editor window: http://www.cmiss.org/cmgui/wiki/UsingCMGUIMaterialEditor
+.. _example a2: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a2/index.html
+.. _example a4: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a4/index.html
+
 
 *Lines* and *cylinders* are graphical representations which can be used to visualize 1-D elements in CMGUI - line elements at the edges of 2-D faces or 3-D elements.  In general, lines or cylinders are used to visualize the basic shape of a mesh.  When you load a mesh (exnode and exelem files) into CMGUI, the mesh is by default represented by lines of the default colour and thickness: white lines 1 pixel thick.  This means that a *lines* graphical setting is created in the default scene (see the `scene editor`_), with the default settings (Figure 1).  
 
@@ -36,15 +42,16 @@ Lines have relatively few settings for altering their appearance (Figure 2).  Th
 
 * **Selected material:** Use this drop-down menu to select which material will be used to render selected lines.
 
+In addition to these settings there is a command line setting that can be very useful when using line based visualizations: ``gfx modify window 1 set perturb_lines``.  This command helps to prevent the "dotted lines" effect that occurs when lines and surfaces interfere.
+
+**Note:** if no lines appear, you may not have added faces (and lines) to the mesh - try the ``gfx define faces`` command.
+
+
 .. figure:: basic_cube_lines_graphicalsetting1.png
    :figwidth: image
    :align: center
 
    **Figure 2: The scene editor settings available for a lines graphical setting.**
-   
-   **Note:** if no lines appear, you may not have added faces (and lines) to the mesh
-- try the ``gfx define faces`` command.
-
 
 | 
 
@@ -57,11 +64,4 @@ Lines have relatively few settings for altering their appearance (Figure 2).  Th
 * **Scale factors** This box allows you to enter three values as factors for the scaling in three dimensions.  It is possible using this to exaggerate or reduce the scaling, or to restrict scaling to one or two dimensions.
 
 
-
-
-
-.. _scene editor: http://www.cmiss.org/cmgui/wiki/UsingCMGUITheSceneEditorWindow
-.. _material editor window: http://www.cmiss.org/cmgui/wiki/UsingCMGUIMaterialEditor
-.. _example a2: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a2/index.html
-.. _example a4: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a4/index.html
 

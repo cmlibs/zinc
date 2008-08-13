@@ -1,5 +1,10 @@
-Viewing point data using glyphs
+Visualizing fields using glyphs
 ===============================
+
+.. _example a1: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a1/index.html
+.. _large_strain: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/large_strain/index.html
+.. _biplane: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/biplane/index.html
+
 
 Glyphs are graphical objects that are used to represent information at points within a model.  These glyphs can be coloured, scaled, and oriented according to the values of chosen fields.  Glyphs might be used for something as simple as showing node locations (Figure 1), or something more complex such as showing the strain at points within a deformed mesh.  CMGUI has a range of glyphs available, for representing different types of point data.  This document will explain how to position, scale and orient glyphs in a variety of ways.
 
@@ -195,7 +200,4 @@ Using custom glyphs
 It is possible in CMGUI to create your own glyphs from obj model files.  An example of this in action is the biplane_ example, where a model of a biplane is used to create a custom glyph.
 
 
-.. _example a1: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a1/index.html
-.. _large_strain: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/large_strain/index.html
-.. _biplane: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/biplane/index.html
 
