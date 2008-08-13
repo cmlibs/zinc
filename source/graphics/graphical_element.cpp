@@ -1217,6 +1217,7 @@ changes.
 			{
 				gt_element_group->update_callback_list = callback_data;
 			}
+			return_code=1;
 		}
 		else
 		{
