@@ -4557,8 +4557,10 @@ int Scene_editor_revert_changes(Scene_editor *scene_editor)
 					scene_editor->graphicalitemslistbox->Clear();
 					for_each_settings_in_GT_element_group(scene_editor->gt_element_group,
 						Scene_editor_add_element_settings_item, (void *)scene_editor);
-					scene_editor->edit_gt_element_group =
-						create_editor_copy_GT_element_group(gt_element_group);
+					REACCESS(GT_element_group)(&scene_editor->edit_gt_element_group,
+						create_editor_copy_GT_element_group(gt_element_group));
+// 					scene_editor->edit_gt_element_group =
+// 						create_editor_copy_GT_element_group(gt_element_group);
 					int num = 	scene_editor->graphicalitemslistbox->GetCount();
 					if (selection >= num)
 					{
@@ -4668,8 +4670,8 @@ void scene_editor_set_active_graphical_element_group_from_scene_object(
 							 if (!edit_gt_element_group)
 							 {
 									display_message(ERROR_MESSAGE,
-										 "graphical_element_editor_set_gt_element_group.  "
-							 "Could not copy graphical element");
+										"graphical_element_editor_set_gt_element_group.  "
+										"Could not copy graphical element");
 							 }
 						}
 						else
@@ -4678,7 +4680,6 @@ void scene_editor_set_active_graphical_element_group_from_scene_object(
 						}
 						REACCESS(GT_element_group)(&(scene_editor->edit_gt_element_group),
 							 edit_gt_element_group);
-
 						if (previous_selection == 0)
 						{
 							previous_selection = 1;
@@ -4987,16 +4988,17 @@ static void Scene_editor_wx_scene_change(
 												position);
 											GET_NAME(Scene_object)(temp_scene_object, &name);
 											list_item_name = const_cast<char *>(scene_editor->checklistbox->GetString(position-1).c_str());
-											if (strcmp(list_item_name, name) != 0)
+											if (name && strcmp(list_item_name, name) != 0)
 											{
 												scene_editor->checklistbox->Deselect(wxNOT_FOUND);
 												scene_editor->checklistbox->Delete(position-1);
 												scene_editor->checklistbox->Insert(name, position-1);
 												scene_editor->checklistbox->Check(position-1,
 													(g_VISIBLE == Scene_object_get_visibility(temp_scene_object)));
-												scene_editor->checklistbox->SetSelection(selection-1);
 											}
+											DEALLOCATE(name);
 										}
+										scene_editor->checklistbox->SetSelection(selection-1);
 									}
 									else
 									{
