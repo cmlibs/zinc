@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.4: http://docutils.sourceforge.net/" />
+<title>Visualizing element fields using lines and cylinders</title>
+
+</head>
+<body>
+<div class="document" id="visualizing-element-fields-using-lines-and-cylinders">
+<h1 class="title">Visualizing element fields using lines and cylinders</h1>
+<p><em>Lines</em> and <em>cylinders</em> are graphical representations which can be used to visualize 1-D elements in CMGUI - line elements at the edges of 2-D faces or 3-D elements.  In general, lines or cylinders are used to visualize the basic shape of a mesh.  When you load a mesh (exnode and exelem files) into CMGUI, the mesh is by default represented by lines of the default colour and thickness: white lines 1 pixel thick.  This means that a <em>lines</em> graphical setting is created in the default scene (see the <a class="reference" href="http://www.cmiss.org/cmgui/wiki/UsingCMGUITheSceneEditorWindow">scene editor</a>), with the default settings (Figure 1).</p>
+<div align="center" class="figure">
+<img alt="basic_cube_lines1.png" src="basic_cube_lines1.png" />
+<p class="caption"><strong>Figure 1: The default graphical setting lines created for a cube mesh.</strong> This mesh was created by reading the <tt class="docutils literal"><span class="pre">cube.exnode</span></tt> and <tt class="docutils literal"><span class="pre">cube.exelem</span></tt> files from <a class="reference" href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a2/index.html">example a2</a>.  Note that <a class="reference" href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a2/index.html">example a2</a> uses cylinders to visualize the cube mesh.</p>
+</div>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Two other default scene settings are important for lines and cylinders.  Under <em>General settings</em> in the scene editor, <em>element discretization</em> controls the number of line segments used to draw each line.  The <em>Circle discretization</em> value is used to control how many sides are used to draw each cylinder.  Higher numbers will give &quot;rounder&quot; looking cylinders (Figure 2).</p>
+<div align="center" class="figure">
+<object width="425" height="344"><param name="movie" value="http://www.youtube.com/v/SiJsaZCB04c&ap=%2526fmt%3D18"></param><param name="wmode" value="transparent"></param><embed src="http://www.youtube.com/v/SiJsaZCB04c&ap=%2526fmt%3D18" type="application/x-shockwave-flash" wmode="transparent" width="425" height="344"></embed></object>
+<p class="caption"><strong>Figure 2: Altering the element discretization.</strong> As the general element discretization increases, CMGUI creates more finely divided surfaces.  Note that it is also possible to have different discretizations along the three directions - you might want the xi1 direction to have high discretization, but xi2 and xi3 to have coarse values.</p>
+</div>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Lines have relatively few settings for altering their appearance (Figure 2).  The following settings are available for lines:</p>
+<ul class="simple">
+<li><strong>Coordinate field:</strong> When you check this box, you are able to select the coordinate field that the lines are drawn according to.  This is used any time the coordinate field used for the lines needs to differ from the default coordinate field used for the whole graphical element (in the general settings).</li>
+<li><strong>Exterior:</strong> When this check box is selected, the lines will only be drawn on the exterior faces of a 3D mesh, or the outside edges of a 2D mesh.  This can be useful with large, complex meshes.</li>
+<li><strong>Face:</strong> Checking this box allows you to select which face of 3D elements is visualized by lines.  Faces are selected according to one of the 3 xi directions of the element, and it's value (either 0 or 1).</li>
+<li><strong>Select mode:</strong> This drop-down menu allows you to select different selection behaviours for the lines.<ul>
+<li>select_on - The default setting; line elements are able to be selected and selected elements are highlighted by rendering in the selected material.</li>
+<li>no_select - No selection or highlighting of line elements.</li>
+<li>draw_selected - only selected lines are drawn.</li>
+<li>draw_unselected - only unselected lines are drawn.</li>
+</ul>
+</li>
+<li><strong>Material:</strong> This drop down menu allows you to select which material the lines will be rendered as.  Materials are defined in the <a class="reference" href="http://www.cmiss.org/cmgui/wiki/UsingCMGUIMaterialEditor">material editor window</a>.</li>
+<li><strong>Width:</strong> You can enter a value in this box to set the thickness of the lines in pixels.  This width is independent of zoom, and remains constant through any transformation.  Setting this value to 0 results in lines of 1 pixel wide (the default).</li>
+<li><strong>Data:</strong> This setting allows you to choose a field which is used to colour the lines according to a spectrum.  Use the <em>Spectrum</em> drop-down menu to choose from one of the spectra defined in the spectrum editor window.</li>
+<li><strong>Selected material:</strong> Use this drop-down menu to select which material will be used to render selected lines.</li>
+</ul>
+<p>In addition to these settings there is a command line setting that can be very useful when using line based visualizations: <tt class="docutils literal"><span class="pre">gfx</span> <span class="pre">modify</span> <span class="pre">window</span> <span class="pre">1</span> <span class="pre">set</span> <span class="pre">perturb_lines</span></tt>.  This command helps to prevent the &quot;dotted lines&quot; effect that occurs when lines and surfaces interfere.</p>
+<p><strong>Note:</strong> if no lines appear, you may not have added faces (and lines) to the mesh - try the <tt class="docutils literal"><span class="pre">gfx</span> <span class="pre">define</span> <span class="pre">faces</span></tt> command.</p>
+<div align="center" class="figure">
+<img alt="basic_cube_lines_graphicalsetting1.png" src="basic_cube_lines_graphicalsetting1.png" />
+<p class="caption"><strong>Figure 3: The scene editor settings available for a lines graphical setting.</strong></p>
+</div>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p><em>Cylinders</em> are very similar to lines, with a few additional parameters.  A cylinders graphical setting will draw cylinders along all the same elements that a lines graphical setting would.  Cylinders are different to lines in that they have a size relative to the mesh - therefore they scale with zooming just like other objects that have an actual &quot;size&quot; in the scene.  The number of &quot;faces&quot; that are used to display cylinders is set under the <em>General settings</em> under <em>Circle dicretization</em>.  The higher the number, the more circular the cylinders will appear.  The default setting is for six sides.  Cylinders have the following settings in addition to those for lines:</p>
+<ul class="simple">
+<li><strong>Constant radius:</strong> This is the radius of the cylinders, in the same units as the coordinate system.</li>
+<li><strong>Scalar radius:</strong> This drop-down menu allows you to select a field to scale the radius of the cylinders.  A good example of this is shown in <a class="reference" href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a4/index.html">example a4</a>.</li>
+<li><strong>Scale factors</strong> This box allows you to enter three values as factors for the scaling in three dimensions.  It is possible using this to exaggerate or reduce the scaling, or to restrict scaling to one or two dimensions.</li>
+</ul>
+</div>
+</body>
+</html>
