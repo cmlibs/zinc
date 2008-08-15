@@ -19,12 +19,6 @@ Visualizing element fields using lines and cylinders
 
 Two other default scene settings are important for lines and cylinders.  Under *General settings* in the scene editor, *element discretization* controls the number of line segments used to draw each line.  The *Circle discretization* value is used to control how many sides are used to draw each cylinder.  Higher numbers will give "rounder" looking cylinders (Figure 2).
 
-.. figure:: video here
-   :figwidth: image
-   :align: center
-
-   **Figure 2: Altering the element discretization.** As the general element discretization increases, CMGUI creates more finely divided surfaces.  Note that it is also possible to have different discretizations along the three directions - you might want the xi1 direction to have high discretization, but xi2 and xi3 to have coarse values.
-
 | 
 
 Lines have relatively few settings for altering their appearance (Figure 2).  The following settings are available for lines:
