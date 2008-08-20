@@ -2,22 +2,25 @@ Visualizing element fields using lines and cylinders
 ====================================================
 
 .. _scene editor: http://www.cmiss.org/cmgui/wiki/UsingCMGUITheSceneEditorWindow
+.. _graphical setting: http://www.cmiss.org/cmgui/wiki/CMGUIGraphicalSettings
 .. _material editor window: http://www.cmiss.org/cmgui/wiki/UsingCMGUIMaterialEditor
 .. _example a2: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a2/index.html
 .. _example a4: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a4/index.html
 
 
-*Lines* and *cylinders* are graphical representations which can be used to visualize 1-D elements in CMGUI - line elements at the edges of 2-D faces or 3-D elements.  In general, lines or cylinders are used to visualize the basic shape of a mesh.  When you load a mesh (exnode and exelem files) into CMGUI, the mesh is by default represented by lines of the default colour and thickness: white lines 1 pixel thick.  This means that a *lines* graphical setting is created in the default scene (see the `scene editor`_), with the default settings (Figure 1).  
+*Lines* and *cylinders* are graphical representations which can be used to visualize 1-D elements in CMGUI - line elements at the edges of 2-D faces or 3-D elements.  In general, lines or cylinders are used to visualize the basic shape of a mesh.  When you load a mesh (exnode and exelem files) into CMGUI, the mesh is by default represented by lines of the default colour and thickness: white lines 1 pixel thick.  This means that a *lines* `graphical setting`_ is created in the default scene (see the `scene editor`_), with the default settings (Figure 1).  
+
+If you wish to create these lines in the graphics window, use the go to the file menu in CMGUI and select *Read*, then *Node file*.  Read in ``cube.exnode`` from the example a2 directory.  Then using the *Read* and *Elements file* menu options, read in ``cube.exelem`` from the same directory.  If you now create a graphics window (using the *Graphics* menu item *3-D window*) you will see this cube rendered in 1 pixel thick white lines.
 
 .. figure:: basic_cube_lines1.png
    :figwidth: image
    :align: center
 
-   **Figure 1: The default graphical setting lines created for a cube mesh.** This mesh was created by reading the ``cube.exnode`` and ``cube.exelem`` files from `example a2`_.  Note that `example a2`_ uses cylinders to visualize the cube mesh.
+   **Figure 1: The default graphical setting lines created for a cube mesh.** This mesh was created by reading the ``cube.exnode`` and ``cube.exelem`` files from `example a2`_.  Note that the `example a2`_ com file creates cylinders to visualize the cube mesh.
 
 | 
 
-Two other default scene settings are important for lines and cylinders.  Under *General settings* in the scene editor, *element discretization* controls the number of line segments used to draw each line.  The *Circle discretization* value is used to control how many sides are used to draw each cylinder.  Higher numbers will give "rounder" looking cylinders (Figure 2).
+Two default scene settings are important for lines and cylinders.  Under *General settings* in the scene editor, *element discretization* controls the number of line segments used to draw each line.  The *Circle discretization* value is used to control how many sides are used to draw each cylinder.  Higher numbers will give "rounder" looking cylinders (Figure 2).
 
 | 
 

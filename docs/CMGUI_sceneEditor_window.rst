@@ -1,6 +1,10 @@
 CMGUI Scene Editor Window
 =========================
 
+.. _cylinders: http://www.cmiss.org/cmgui/wiki/VisualizingFieldsUsingLinesAndCylinders
+.. _graphical setting: http://www.cmiss.org/cmgui/wiki/CMGUIGraphicalSettings
+
+
 The scene editor is where you control how visualizatons appear in the graphics window.  From this window you can select which graphical representations and settings are displayed.  You can add, remove, and edit visual elements such as lines, glyphs or surfaces; apply materials or spectra to graphical settings; and alter the order in which graphical representations are drawn.  The window itself is broken into three main panels - the scene objects list, graphical settings list, settings editor (Figure 1)
 
 .. figure:: sceneEditor_Glyphs1.png
@@ -21,8 +25,14 @@ Scene object list
 
 Below the *scene object list*  Is the *transformation* button.  This button will open up a set of controls that allow you to spatially manipulate the selected scene object.  From these controls you can scale, translate or rotate the object within the scene.
 
-If a scene object made up of elements is selected, the *general settings* button will become available.  This button opens a series of settings that allow you to edit the coordinate field and discretisation options for the selected object.
+If a scene object made up of elements is selected, the *general settings* button will become available.  This button opens a series of settings that allow you to edit the coordinate field and discretisation options for the selected object.  The discretization options allow you to change the level of detail objects are represented with in the graphics window (Figure 2).
 
+.. figure:: general_settings_discretization.png
+   :figwidth: image
+   :align: center
+
+   **Figure 2: The general settings -** A) This is the general settings panel, showing the settings available.  B) A simple cube rendered in wireframe to show the effect of the *element discretization*.  The three cubes have 2*2*2, 4*4*4 (default), and 10*10*10 discretizations from left to right.  C) The effect of *circle discretization* on the display of `cylinders`_.  These three cubes are rendered with cylinder edges, with the circle discretization set at 3, 6 (default), and 20 from left to right.
+   
 | 
 
 Graphical settings list
@@ -35,4 +45,4 @@ Below the transformation and general settings buttons is the *graphical settings
 Settings editor
 ---------------
 
-Below the *graphical settings list* is the *settings editor* where each graphical setting can be manipulated.  When a graphical setting is selected from the list, all of its editable properties appear in this area.  The range of editable properties will vary depending on what sort of graphical setting is currently selected.
+Below the *graphical settings list* is the *settings editor* where each graphical setting can be edited.  When a graphical setting is selected from the list, all of its editable properties appear in this area.  The range of editable properties will vary depending on what sort of `graphical setting`_ is currently selected.

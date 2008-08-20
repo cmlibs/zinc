@@ -15,8 +15,6 @@ Glyphs are graphical objects that are used to represent information at points wi
    **Figure 1: Different glyphs placed at the nodes of a cube mesh.**
 
 |  
-|  
-
 
 `Adding glyphs to a mesh`_
 

@@ -7,8 +7,8 @@ The graphics window is where all visualizations are displayed - it also has tool
 Immediately underneath the options section are controls for selecting how the 3D display is configured.  The *Layout* drop down list contains a list of display layouts, such as orthogonal or pseudo-3D views.  If an applicable layout is selected, the *up* and *front* controls will become available in order to change the viewpoint.  Many of these layouts contain multiple *scene viewers*, which may be useful in specific situations.  The default layout *simple* consists of a single 3D scene viewer.
 
 .. figure:: video here
- :figwidth: image
- :align: center
+   :figwidth: image
+   :align: center
 
  **Figure 1:** Selecting a variety of layouts in the CMGUI graphics window.
 
