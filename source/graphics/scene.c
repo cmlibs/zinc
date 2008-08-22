@@ -961,6 +961,8 @@ from 1 to assist conversion back to graphics_object addresses in picking.
 				/* Save starting modelview matrix */
 				glMatrixMode(GL_MODELVIEW);
 				glPushMatrix();
+				glPushAttrib(GL_TRANSFORM_BIT);
+				glEnable(GL_NORMALIZE);
 				/* perform individual object transformation */
 				wrapperMultiplyCurrentMatrix(scene_object->transformation);
 			}
@@ -999,6 +1001,7 @@ from 1 to assist conversion back to graphics_object addresses in picking.
 			if(scene_object->transformation)	
 			{
 				/* Restore starting modelview matrix */
+				glPopAttrib();
 				glPopMatrix();
 			}
 		}
