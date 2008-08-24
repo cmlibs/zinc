@@ -6139,7 +6139,11 @@ I think it is best to write a separate function if you want to write a
 			(char *)filename);
 		if (cmgui_image = Texture_get_image(texture))
 		{
-			if (!Cmgui_image_write(cmgui_image, cmgui_image_information))
+			if (Cmgui_image_write(cmgui_image, cmgui_image_information))
+			{
+				return_code = 1;
+			}
+			else
 			{
 				display_message(ERROR_MESSAGE,
 					"Cmiss_texture_write_to_file:  "
