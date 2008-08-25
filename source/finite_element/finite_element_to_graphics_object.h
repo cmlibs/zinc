@@ -89,6 +89,7 @@ Data for converting a 1-D element into a cylinder.
 	struct Graphical_material *material;
 	struct FE_region *fe_region;
 	struct GT_object *graphics_object;
+	enum Render_type render_type;
 }; /* struct Element_to_cylinder_data */
 
 struct Element_to_polyline_data
@@ -453,7 +454,8 @@ struct GT_surface *create_cylinder_from_FE_element(struct FE_element *element,
 	float constant_radius,float scale_factor,struct Computed_field *radius_field,
 	int number_of_segments_along,int number_of_segments_around,
 	struct Computed_field *texture_coordinate_field,
-	struct FE_element *top_level_element,FE_value time);
+	struct FE_element *top_level_element, enum Render_type render_type,
+	FE_value time);
 /*******************************************************************************
 LAST MODIFIED : 11 October 2002
 

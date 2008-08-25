@@ -756,7 +756,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->autorange_spectrum_flag = 0;
 			/* for glyphsets */
 			settings->font = (struct Graphics_font *)NULL;
-			/* for surfaces and volumes */
+			/* for cylinders, surfaces and volumes */
 			settings->render_type = RENDER_TYPE_SHADED;
 			/* for streamlines only */
 			settings->streamline_data_type=STREAM_NO_DATA;
@@ -5228,7 +5228,8 @@ if no coordinate field. Currently only write if we have a field.
 				DEALLOCATE(name);
 			}
 			/* for surfaces and volumes */
-			if ((GT_ELEMENT_SETTINGS_SURFACES==settings->settings_type) 
+			if ((GT_ELEMENT_SETTINGS_CYLINDERS==settings->settings_type)
+				|| (GT_ELEMENT_SETTINGS_SURFACES==settings->settings_type) 
 				|| (GT_ELEMENT_SETTINGS_VOLUMES==settings->settings_type)
 				|| (GT_ELEMENT_SETTINGS_ISO_SURFACES==settings->settings_type))
 			{
@@ -5514,7 +5515,8 @@ Converts a finite element into a graphics object with the supplied settings.
 									number_in_xi[0],
 									settings_to_object_data->circle_discretization,
 									settings->texture_coordinate_field,
-									top_level_element, settings_to_object_data->time)))
+									top_level_element, settings->render_type, 
+									settings_to_object_data->time)))
 							{
 								if (!GT_OBJECT_ADD(GT_surface)(
 									settings->graphics_object, time, surface))
@@ -7927,8 +7929,9 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char *select_mode_string,**valid_strings;
+	char *render_type_string,*select_mode_string,**valid_strings;
 	enum Graphics_select_mode select_mode;
+	enum Render_type render_type;
 	int number_of_valid_strings,return_code, visibility;
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
@@ -8017,6 +8020,15 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* position */
 					Option_table_add_entry(option_table,"position",
 						&(modify_g_element_data->position),NULL,set_int_non_negative);
+					/* render_type */
+					render_type = settings->render_type;
+					render_type_string = ENUMERATOR_STRING(Render_type)(render_type);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Render_type)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Render_type) *)NULL, (void *)NULL);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&render_type_string);
+					DEALLOCATE(valid_strings);
 					/* radius_scalar */
 					set_radius_scalar_field_data.computed_field_manager=
 						g_element_command_data->computed_field_manager;
@@ -8077,6 +8089,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 							&select_mode);
 						GT_element_settings_set_select_mode(settings, select_mode);
+						STRING_TO_ENUMERATOR(Render_type)(render_type_string, &render_type);
+						GT_element_settings_set_render_type(settings, render_type);
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)

@@ -1373,10 +1373,12 @@ DESCRIPTION :
 Executes a GFX CREATE CYLINDERS command.
 ==============================================================================*/
 {
-	char exterior_flag, *graphics_object_name, *region_path;
+	char exterior_flag, *graphics_object_name, *region_path,*render_type_string,
+		**valid_strings;
 	float constant_radius,scale_factor,time;
 	gtObject *graphics_object;
-	int face_number,return_code;
+	enum Render_type render_type;
+	int face_number,number_of_valid_strings,return_code;
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *region;
 	struct Element_discretization discretization;
@@ -1452,6 +1454,15 @@ Executes a GFX CREATE CYLINDERS command.
 		/* material */
 		Option_table_add_set_Material_entry(option_table, "material", &material,
 			command_data->material_package);
+		/* render_type */
+		render_type = RENDER_TYPE_SHADED;
+		render_type_string = ENUMERATOR_STRING(Render_type)(render_type);
+		valid_strings = ENUMERATOR_GET_VALID_STRINGS(Render_type)(
+			&number_of_valid_strings,
+			(ENUMERATOR_CONDITIONAL_FUNCTION(Render_type) *)NULL, (void *)NULL);
+		Option_table_add_enumerator(option_table,number_of_valid_strings,
+			valid_strings,&render_type_string);
+		DEALLOCATE(valid_strings);
 		/* radius_scalar */
 		set_radius_field_data.computed_field_manager=
 			Computed_field_package_get_computed_field_manager(
@@ -1554,6 +1565,8 @@ Executes a GFX CREATE CYLINDERS command.
 				texture_coordinate_field;
 			element_to_cylinder_data.scale_factor=scale_factor;
 			element_to_cylinder_data.graphics_object=graphics_object;
+			STRING_TO_ENUMERATOR(Render_type)(render_type_string, &render_type);
+			element_to_cylinder_data.render_type = render_type;
 			element_to_cylinder_data.time=time;
 			element_to_cylinder_data.material=material;
 			element_to_cylinder_data.data_field=data_field;
@@ -1698,7 +1711,7 @@ Executes a GFX CREATE ELEMENT_CREATOR command.
 #if defined (WX_USER_INTERFACE)
 	USE_PARAMETER(state);
 	USE_PARAMETER(command_data_void);
-	display_message(ERROR_MESSAGE,"command has been removed from the cmgui-wx, please use gfx modify window (NAME) node ? for further instruction for creating elements or directly create new elements using the node tool");
+	display_message(INFORMATION_MESSAGE,"command has been removed from the cmgui-wx, please use gfx modify window (NAME) node ? for further instruction for creating elements or directly create new elements using the node tool");
 		return_code=0;
 #endif /*defined (WX_USER_INTERFACE) */
 	LEAVE;

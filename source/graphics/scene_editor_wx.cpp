@@ -4374,7 +4374,8 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 		/* render_type */		
 		rendertypetext=XRCCTRL(*this, "RenderTypeText",wxStaticText);
 		render_type_chooser_panel=XRCCTRL(*this,"RenderTypeChooserPanel",wxPanel);
-		if ((GT_ELEMENT_SETTINGS_SURFACES==scene_editor->current_settings_type) ||
+		if ((GT_ELEMENT_SETTINGS_CYLINDERS == scene_editor->current_settings_type) ||
+			(GT_ELEMENT_SETTINGS_SURFACES==scene_editor->current_settings_type) ||
 			(GT_ELEMENT_SETTINGS_ISO_SURFACES==scene_editor->current_settings_type))
 		{
 			/* set texture_coordinate field */
@@ -4559,17 +4560,12 @@ int Scene_editor_revert_changes(Scene_editor *scene_editor)
 						Scene_editor_add_element_settings_item, (void *)scene_editor);
 					REACCESS(GT_element_group)(&scene_editor->edit_gt_element_group,
 						create_editor_copy_GT_element_group(gt_element_group));
-// 					scene_editor->edit_gt_element_group =
-// 						create_editor_copy_GT_element_group(gt_element_group);
 					int num = 	scene_editor->graphicalitemslistbox->GetCount();
 					if (selection >= num)
 					{
 						selection = 0;
 					}
 					scene_editor->graphicalitemslistbox->SetSelection(selection);
-					REACCESS(GT_element_settings)(&scene_editor->current_settings, 
-						get_settings_at_position_in_GT_element_group(
-							scene_editor->edit_gt_element_group, selection+1));
 					scene_editor->collpane->Show();
 					scene_editor->lowersplitter->Show();
 					scene_editor->wx_scene_editor->

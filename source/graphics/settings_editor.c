@@ -4560,7 +4560,8 @@ Changes the currently chosen settings.
 							}
 
 							/* render_type */
-							if ((GT_ELEMENT_SETTINGS_SURFACES==settings_type)
+							if ((GT_ELEMENT_SETTINGS_CYLINDERS==settings_type)
+								|| (GT_ELEMENT_SETTINGS_SURFACES==settings_type)
 							  || (GT_ELEMENT_SETTINGS_VOLUMES==settings_type)
 							  || (GT_ELEMENT_SETTINGS_ISO_SURFACES==settings_type))
 							{

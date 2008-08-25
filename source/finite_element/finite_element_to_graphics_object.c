@@ -1608,7 +1608,8 @@ struct GT_surface *create_cylinder_from_FE_element(struct FE_element *element,
 	float constant_radius,float scale_factor,struct Computed_field *radius_field,
 	int number_of_segments_along,int number_of_segments_around,
 	struct Computed_field *texture_coordinate_field,
-	struct FE_element *top_level_element,FE_value time)
+	struct FE_element *top_level_element, enum Render_type render_type,
+	FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 13 March 2003
 
@@ -1633,6 +1634,7 @@ Notes:
 		end_aligned_normal[3], facet_angle, jacobian[9], length, normal_1, normal_2,
 		normal_3, *radius_array, radius_derivative, radius_value, sin_theta,
 		tex_coordinates[3], theta, theta_change, xi, x, y;
+	enum GT_surface_type surface_type;
 	float texture_coordinate1;
 	GTDATA *data, *datum;
 	int facet_offset,i,j,k,n_data_components,number_of_points;
@@ -1673,12 +1675,23 @@ Notes:
 					"create_cylinder_from_FE_element.  Could allocate data");
 			}
 		}
+		switch (render_type)
+		{
+			case RENDER_TYPE_WIREFRAME:
+			{
+				surface_type = g_WIREFRAME_SHADED_TEXMAP;
+			} break;
+			default:
+			{
+				surface_type = g_SHADED_TEXMAP;
+			} break;
+		}
 		if ((data||(!n_data_components))&&
 			ALLOCATE(points,Triple,number_of_points)&&
 			ALLOCATE(normalpoints,Triple,number_of_points)&&
 			ALLOCATE(texturepoints,Triple,number_of_points)&&
 			ALLOCATE(radius_array,FE_value,3*(number_of_segments_along+1))&&
-			(surface=CREATE(GT_surface)(/*g_SHADED*/g_SHADED_TEXMAP,g_QUADRILATERAL,
+			(surface=CREATE(GT_surface)(surface_type,g_QUADRILATERAL,
 				number_of_segments_around+1,number_of_segments_along+1,
 				points,normalpoints,(Triple *)NULL,texturepoints,n_data_components,data)))
 		{
@@ -2545,10 +2558,7 @@ struct GT_surface *create_GT_surface_from_FE_element(
 	int number_of_segments_in_xi2_requested,char reverse_normals,
 	struct FE_element *top_level_element,enum Render_type render_type,
 	FE_value time)
-/*******************************************************************************
-LAST MODIFIED : 13 March 2003
-
-DESCRIPTION :
+/*****************************************************************************//**
 Creates a <GT_surface> from the <coordinate_field> for the 2-D finite <element>
 using an array of <number_of_segments_in_xi1> by <number_of_segments_in_xi2>
 rectangles in xi space.  The spacing is constant in each of xi1 and xi2.
@@ -4728,6 +4738,7 @@ Converts a finite element into a cylinder.
 				element_to_cylinder_data->number_of_segments_around,
 				element_to_cylinder_data->texture_coordinate_field,
 				/*top_level_element*/(struct FE_element *)NULL,
+					element_to_cylinder_data->render_type,
 				element_to_cylinder_data->time))
 			{
 				if (!(return_code=GT_OBJECT_ADD(GT_surface)(
