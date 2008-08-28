@@ -1,7 +1,10 @@
 Graphical settings in CMGUI
 ===========================
 
-.. |xi|     unicode:: U+003BE .. GREEK SMALL LETTER XI
+.. |xi|    unicode:: U+003BE .. GREEK SMALL LETTER XI
+.. |sub1|  unicode:: U+02081 .. SUBSCRIPT ONE
+.. |sub2|  unicode:: U+02082 .. SUBSCRIPT TWO
+.. |sub3|  unicode:: U+02083 .. SUBSCRIPT THREE
 .. _graphics window: http://www.cmiss.org/cmgui/wiki/UsingCMGUITheGraphicsWindow
 .. _scene editor: http://www.cmiss.org/cmgui/wiki/UsingCMGUITheSceneEditorWindow
 .. _glyphs: http://www.cmiss.org/cmgui/wiki/VisualizingFieldsAtPointsUsingGlyphs
@@ -59,7 +62,7 @@ The eight types of graphical settings
   Lines are used to visualize 1D elements, or the edges of 2D or 3D elements.  They are simple, unshaded lines that have a fixed, specified width.  They have the following settings in addition to the common settings listed above:
 
   * Exterior: This check box will automatically only render lines on exterior surfaces of a mesh.
-  * Face: This check box enables a drop-down menu that allows you to choose which faces are drawn according to |xi| values.  You can select xi=0 or 1 for each of the three xi-directions.
+  * Face: This check box enables a drop-down menu that allows you to choose which faces are drawn according to xi values.  You can select xi=0 or 1 for each of the three xi-directions.
   * Width: this allows you to specify the width of the lines in pixels.  This is a constant width that does not scale according to the zoom level.
 
 
@@ -68,7 +71,7 @@ The eight types of graphical settings
   Cylinders are used to visualize the same things as lines.  They are shaded cylinders of a specified radius, with their number of sides specified by the *Circle discretization* setting in the `scene editor`_ *General settings*.  They have the following settings in addition to the common settings listed above:
 
   * Exterior: This check box will automatically only render lines on exterior surfaces of a mesh.
-  * Face: This check box enables a drop-down menu that allows you to choose which faces are drawn according to |xi| values.  You can select xi=0 or 1 for each of the three xi-axes.
+  * Face: This check box enables a drop-down menu that allows you to choose which faces are drawn according to xi values.  You can select xi=0 or 1 for each of the three xi-axes.
   * Constant radius: This allows you to set the radius of the cylinders, in the units of the coordinate system.
   * Scalar radius: This check box will activate a drop-down menu allowing you to select which field will be used to scale the radius of the cylinders.  It will also activate a text box in which you can enter the scale factor, or how the scale field will scale the radius.
   * Texture coordinates: This check box activates a drop-down menu that allows you to select which field will be used to position any textures applied by the material setting.
@@ -78,18 +81,18 @@ The eight types of graphical settings
   Surfaces are used to visualize 2D elements or the faces of 3D elements.  They are shaded surfaces of zero thickness that are automatically shaped according to the nodes defining the element they represent.  Their level of detail is specified by the *Element discretization* setting in the `scene editor`_ *General settings*.  They have the following settings in addition to the common settings listed above:
   
   * Exterior: This check box will automatically only render surfaces on exterior surfaces of a mesh.
-  * Face: This check box enables a drop-down menu that allows you to choose which faces are drawn according to |xi| values.  You can select xi=0 or 1 for each of the three xi-axes.
+  * Face: This check box enables a drop-down menu that allows you to choose which faces are drawn according to xi values.  You can select xi=0 or 1 for each of the three xi-axes.
   * Render type: This drop down menu allows you to select shaded (default) or wireframe rendering of surfaces.  Wireframe rendering renders the surfaces as grids of shaded lines, with the grid detail determined by the *element discretization* setting in the *General settings*.
   * Texture coordinates: This check box activates a drop-down menu that allows you to select which field will be used to position any textures applied by the material setting.
 
 * **iso_surfaces**
   
-  Iso-surfaces are used to represent a surface that connects all points that share some common value.  For example, in `example a7`_ an iso-surface is used to represent a surface at which every point has a temperature of 100ºC.  They have the following settings in addition to the common settings listed above:
+  Iso-surfaces are used to represent a surface that connects all points that share some common value.  For example, in `example a7`_ an iso-surface is used to represent a surface at which every point has a temperature of 100 degrees C.  They have the following settings in addition to the common settings listed above:
   
   * Use element type: This drop down menu allows you to select which type of element will have surfaces rendered on it.  Type *use_elements* is the default.  The types *use_faces* and *use_lines* will render element points only on those components of elements.  If faces or lines are chosen, the following options are activated:
 
     * Exterior: This check box will automatically only render iso-surfaces on exterior surfaces of a mesh.  
-    * Face: This check box enables a drop-down menu that allows you to choose on which faces iso-surfaces are drawn, according to |xi| values.  You can select xi=0 or 1 for each of the three xi-axes.
+    * Face: This check box enables a drop-down menu that allows you to choose on which faces iso-surfaces are drawn, according to xi values.  You can select xi=0 or 1 for each of the three xi-axes.
     
   It is worth noting that if you select *use_surfaces* then the equivalent of iso-surfaces becomes iso-lines.  If you select *use_lines* then you will not get any visual representation.
   
@@ -109,8 +112,8 @@ The eight types of graphical settings
   * Use element type: This drop down menu allows you to select which type of element will have element points rendered on/in it.  Type *use_elements* is the default, and renders element points throughout 3D elements.  The types *use_faces* and *use_lines* will render element points only on those components of elements.  If faces or lines are chosen, the following options are activated:
   
     * Exterior: This check box will automatically only render element points on exterior surfaces of a mesh.
-    * Face: This check box enables a drop-down menu that allows you to choose on which faces element points are drawn according to |xi| values.  You can select xi=0 or 1 for each of the three xi-axes.
-  * Xi discretization mode:
+    * Face: This check box enables a drop-down menu that allows you to choose on which faces element points are drawn according to xi values.  You can select xi=0 or 1 for each of the three xi-axes.
+  * Xi discretization mode: this drop down menu allows you to select the method by which element points are distributed across the element.
 
 * **streamlines**
   
