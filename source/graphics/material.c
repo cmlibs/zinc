@@ -1196,7 +1196,7 @@ be shared by multiple materials using the same program.
 									"#starting at the middle of the first texel and finishing in the\n"
 									"#middle of the last texel\n"
 									"MAD		offsetcolour, finalCol.%s, lookup_scales, lookup_offsets;\n"
-									"TEX		dependentlookup, offsetcolour, texture[2], %1dD;\n",
+									"TEX		dependentlookup, offsetcolour, texture[1], %1dD;\n",
 									components_string, number_of_inputs);
 								append_string(&fragment_program_string,
 									tex_string, &error);
@@ -1240,7 +1240,7 @@ be shared by multiple materials using the same program.
 								"#starting at the middle of the first texel and finishing in the\n"
 								"#middle of the last texel\n"
 								"MAD		offsetcolour, finalCol.%s, lookup_scales, lookup_offsets;\n"
-								"TEX		dependentlookup, offsetcolour, texture[2], 1D;\n"
+								"TEX		dependentlookup, offsetcolour, texture[1], 1D;\n"
 								"MOV		finalCol.%s, dependentlookup.r;\n";
 							append_string(&fragment_program_string,
 								"TEMP dependentlookup;\n"
@@ -1759,6 +1759,12 @@ material results.
 				execute_Texture(material->second_texture);
 				glActiveTexture(GL_TEXTURE0);
 			}
+			else if (material->spectrum)
+			{
+				glActiveTexture(GL_TEXTURE1);
+				Spectrum_execute_colour_lookup(material->spectrum);
+				glActiveTexture(GL_TEXTURE0);
+			}
 			else
 			{
 				glActiveTexture(GL_TEXTURE1);
@@ -1774,12 +1780,6 @@ material results.
 			{
 				glActiveTexture(GL_TEXTURE2);
 				execute_Texture(material->third_texture);
-				glActiveTexture(GL_TEXTURE0);
-			}
-			else if (material->spectrum)
-			{
-				glActiveTexture(GL_TEXTURE2);
-				Spectrum_execute_colour_lookup(material->spectrum);
 				glActiveTexture(GL_TEXTURE0);
 			}
 			else
@@ -5014,8 +5014,10 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 				}
 				if (material->spectrum)
 				{
+					glActiveTexture(GL_TEXTURE1);
 					Spectrum_compile_colour_lookup(material->spectrum,
 						graphics_buffer);
+					glActiveTexture(GL_TEXTURE0);
 				}
 			}
 #endif /* defined (GL_VERSION_1_3) */
