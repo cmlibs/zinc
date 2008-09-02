@@ -29,7 +29,7 @@ These finite elements have a local coordinate system of limited span, which is c
 
 | 
 
-We must define a coordinate field over the domain in order to give it its true position in 3-dimensional space. This applies even to the simple cube model: it can be treated as a unit cube in xi space, but the coordinate field allows its real position to be transformed such that it is not aligned with the global coordinate system, and in fact can be generally distorted as shown in the figure 1C, above.  About the only thing special about a coordinate field is that - provided it is of the same dimension as the element xi space - it is usually bijective with it - this means if you have one you can find the other, eventually. (I say usually because the relation cannot generally be enforced: it is possible for coordinates of parts of the mesh to penetrate other parts of the mesh, including within a single element where the jacobian is zero or negative.)
+We must define a coordinate field over the domain in order to give it its true position in 3-dimensional space. This applies even to the simple cube model: it can be treated as a unit cube in xi space, but the coordinate field allows its real position to be transformed such that it is not aligned with the global coordinate system, and in fact can be generally distorted as shown in the figure 1B, above.  About the only thing special about a coordinate field is that - provided it is of the same dimension as the element xi space - it is usually bijective with it - this means if you have one you can find the other, eventually. (I say usually because the relation cannot generally be enforced: it is possible for coordinates of parts of the mesh to penetrate other parts of the mesh, including within a single element where the jacobian is zero or negative.)
 
 A set of finite elements which make up a domain is called a mesh.
 
@@ -43,7 +43,7 @@ The zero dimensional counterpart to elements and faces are called nodes. There i
    :figwidth: image
    :align: center
 
-   **Figure 2: How nodes, lines and faces make up a mesh** The simple cube mesh again; nodes (yellow), elements (red), faces (blue), and lines (green) are numbered.  A single cube element requires 8 nodes, 12 lines, and 6 faces.
+   **Figure 2: How nodes, lines and faces make up a mesh** The simple cube mesh again; nodes (yellow), elements (red), faces (green), and lines (blue) are numbered.  A single cube element requires 8 nodes, 12 lines, and 6 faces.
 
 | 
 
