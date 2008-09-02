@@ -5,7 +5,7 @@ CMGUI Fields
 .. |sub1|  unicode:: U+02081 .. SUBSCRIPT ONE
 .. |sub2|  unicode:: U+02082 .. SUBSCRIPT TWO
 .. |sub3|  unicode:: U+02083 .. SUBSCRIPT THREE
-.. _graphical settings: http://www.cmiss.org/cmgui/wiki/CMGUIGraphicalSettings
+.. _graphical settings: http://www.cmiss.org/cmgui/wiki/UsingCMGUIGraphicalSettings
 .. _glyphs: http://www.cmiss.org/cmgui/wiki/VisualizingFieldsAtPointsUsingGlyphs
 .. _surfaces: http://www.cmiss.org/cmgui/wiki/VisualizingElementFieldsUsingSurfaces
 .. _manifolds: http://en.wikipedia.org/wiki/Manifold
