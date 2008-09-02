@@ -63,7 +63,7 @@ Computed fields
 
 We have now introduced the main building blocks of finite element fields which are just one type of field representation in CMGUI.  In CMGUI we offer a large number of other field types which do not work directly with finite element meshes, but may be based on finite element fields. Most of these are mathematical operators which act on one or more source fields to produce a new field result.
 
-A simple example is the ‘add’ field which adds two other fields together to return a new field. The add field has two source fields as arguments. If you made field C which added finite element field A to finite element field B, the resulting field is defined over the intersection of the domains of field A and field B.
+A simple example is the *add* field which adds two other fields together to return a new field. The add field has two source fields as arguments. If you made field C which added finite element field A to finite element field B, the resulting field is defined over the intersection of the domains of field A and field B.
 
 | 
 
@@ -80,7 +80,7 @@ Other types of field
 
 * **Many more.**
 
-These types of fields can be created via ‘gfx define field’ commands or through the API.  Fields are a modular part of the CMGUI application. If a new function is required, it can be added as a field.  To get a list of the computed fields available in CMGUI, enter ``gfx define field ??`` in the command line.
+These types of fields can be created via ``gfx define field`` commands or through the API.  Fields are a modular part of the CMGUI application. If a new function is required, it can be added as a field.  To get a list of the computed fields available in CMGUI, enter ``gfx define field ??`` in the command line.
 
 
 Fields and visualization
