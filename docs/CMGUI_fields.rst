@@ -70,13 +70,26 @@ A simple example is the *add* field which adds two other fields together to retu
 Other types of field
 --------------------
 
-* **Arithmetic and transcendental functions:**
+* **Arithmetic and transcendental functions:** Add, subtract, multiply, divide, sum_components, log, power, square root, exp.
+
+* **Trigonometric functions:** sin, cos, tan, asin, acos, atan, atan2.
+
+* **Derivative functions:** Derivative, divergence, gradient, curl.
+
+* **Vector functions:** Dot_product.
+
+* **Matrix functions:** Matrix_multiply, matrix_invert, transpose, projection,
+eigenvalues, eigenvectors, quaternion_to_matrix, matrix_to_quaternion.
+
+* **Logical functions:** Less_than, greater_than.
+
+* **Conditional functions:** If.
 
 * **Constant fields:** Constant fields have a value which is independent of location within the domain.  You may also have a constant field that is constant (non-varying) across chosen dimension/s but varies across other dimension/s.
 
 * **Composite field:** Makes a new field built from other fields and field components in any order.
 
-* **Image-based fields:** These can be used for texture-mapping and image processing.
+* **Image-based fields:** These can be used for texture-mapping and image processing.  Image processing fields using ITK filters.
 
 * **Many more.**
 
