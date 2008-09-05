@@ -1545,7 +1545,8 @@ DESCRIPTION :
 		 }
 		 else
 		 {
-#if defined (UNIX) && !defined (DARWIN)
+#if defined (UNIX)
+#if !defined (DARWIN)
 				wxGLCanvas *test_canvas;
 				int *attribute_ptr, number_of_visual_attributes, selection_level;
 				visual_attributes = NULL;
@@ -1717,9 +1718,44 @@ DESCRIPTION :
 							}
 					 }
 				}
-#else
-				/* should find a way to get the best buffer for other system,
-					 but this default setting should work fine for other systems*/
+#else /*defined (DARWIN) */
+				/* Mac will receive an argument from wxGLCanvas to get
+				   the best settings but requires the program to state
+					 all the desired settings with a minimum settings. */
+				visual_attributes = NULL;
+				if (ALLOCATE(buffer->attrib_list, int, 25))
+				{
+					buffer->attrib_list[0] = WX_GL_RGBA;
+					buffer->attrib_list[1] = WX_GL_DOUBLEBUFFER;
+					buffer->attrib_list[2] = WX_GL_DEPTH_SIZE; 
+					buffer->attrib_list[3] = 1;
+					buffer->attrib_list[4] = WX_GL_MIN_RED;
+					buffer->attrib_list[5] = 1;
+					buffer->attrib_list[6] = WX_GL_MIN_GREEN;
+					buffer->attrib_list[7] = 1;
+					buffer->attrib_list[8] = WX_GL_MIN_BLUE;
+					buffer->attrib_list[9] = 1;
+					buffer->attrib_list[10] = WX_GL_MIN_ALPHA;
+					buffer->attrib_list[11] = 1;
+					buffer->attrib_list[12] = WX_GL_MIN_ACCUM_RED;
+					buffer->attrib_list[13] = 1;
+					buffer->attrib_list[14] = WX_GL_MIN_ACCUM_GREEN;
+					buffer->attrib_list[15] = 1;
+					buffer->attrib_list[16] = WX_GL_MIN_ACCUM_BLUE;
+					buffer->attrib_list[17] = 1;
+					buffer->attrib_list[18] = WX_GL_MIN_ACCUM_ALPHA;
+					buffer->attrib_list[19] = 1;
+					buffer->attrib_list[20] = WX_GL_DEPTH_SIZE;
+					buffer->attrib_list[21] = 1;
+					buffer->attrib_list[22] = WX_GL_STENCIL_SIZE;
+					buffer->attrib_list[23] = 1;
+					buffer->attrib_list[24] = 0;
+				};
+#endif /*defined (DARWIN) */
+#else /* defined (UNIX) */
+				/* The above routine does not work for win32 as it does not have the 
+					 member m_vi in wxGLCanvas.
+					 should find a way to get the best buffer, but this default setting should work fine. */
 				visual_attributes = NULL;
 				if (ALLOCATE(buffer->attrib_list, int, 5))
 				{
@@ -1729,7 +1765,7 @@ DESCRIPTION :
 					 buffer->attrib_list[3] = 8;
 					 buffer->attrib_list[4] = 0;
 				}
-#endif /* defined (UNIX) && !defined (DARWIN) */
+#endif /* defined (UNIX) */
 				if (!buffer->package->wxSharedContext)
 				{
 					 wxFrame *frame = new wxFrame(NULL, -1, "temporary", wxPoint(-1,-1), wxSize(500,500));
