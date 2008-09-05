@@ -78,8 +78,7 @@ Other types of field
 
 * **Vector functions:** Dot_product.
 
-* **Matrix functions:** Matrix_multiply, matrix_invert, transpose, projection,
-eigenvalues, eigenvectors, quaternion_to_matrix, matrix_to_quaternion.
+* **Matrix functions:** Matrix_multiply, matrix_invert, transpose, projection, eigenvalues, eigenvectors, quaternion_to_matrix, matrix_to_quaternion.
 
 * **Logical functions:** Less_than, greater_than.
 

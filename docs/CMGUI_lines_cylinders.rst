@@ -39,7 +39,7 @@ Lines have relatively few settings for altering their appearance (Figure 2).  Th
   * draw_selected - only selected lines are drawn.
   * draw_unselected - only unselected lines are drawn.
 
-* **Material:** This drop down menu allows you to select which material the lines will be rendered as.  Materials are defined in the `material editor window`_.
+* **Material:** This drop down menu allows you to select which material the lines will be rendered as.  Materials are defined in the `material editor window`_.  Note: the material for lines is unshaded.  This means that lines only use the *diffuse* colour for the selected material to draw the lines.  
 
 * **Width:** You can enter a value in this box to set the thickness of the lines in pixels.  This width is independent of zoom, and remains constant through any transformation.  Setting this value to 0 results in lines of 1 pixel wide (the default).
 
