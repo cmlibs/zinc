@@ -51,7 +51,7 @@ extern "C" {
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
-#include "image_processing/computed_field_binaryThresholdFilter.h"
+#include "image_processing/computed_field_binary_threshold_image_filter.h"
 }
 #include "itkImage.h"
 #include "itkVector.h"
