@@ -187,7 +187,7 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_image_resample.h"
 #if defined (USE_ITK)
 #include "image_processing/computed_field_thresholdFilter.h"
-#include "image_processing/computed_field_binaryThresholdFilter.h"
+#include "image_processing/computed_field_binary_threshold_image_filter.h"
 #include "image_processing/computed_field_cannyEdgeDetectionFilter.h"
 #include "image_processing/computed_field_meanImageFilter.h"
 #include "image_processing/computed_field_sigmoidImageFilter.h"

@@ -1189,7 +1189,7 @@ IMAGE_PROCESSING_SRCS = \
 ifeq ($(USE_ITK),true)
    IMAGE_PROCESSING_SRCS += \
 	   image_processing/computed_field_thresholdFilter.cpp \
-	   image_processing/computed_field_binaryThresholdFilter.cpp \
+	   image_processing/computed_field_binary_threshold_image_filter.cpp \
 	   image_processing/computed_field_cannyEdgeDetectionFilter.cpp \
 	   image_processing/computed_field_meanImageFilter.cpp \
 	   image_processing/computed_field_sigmoidImageFilter.cpp \
