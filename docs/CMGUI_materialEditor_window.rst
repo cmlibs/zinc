@@ -1,5 +1,5 @@
 CMGUI Material Editor Window
-----------------------------
+============================
 
 The material editor window is where you define materials to be applied to graphical elements or objects in the graphics window.  Along the top of the material editor window are three buttons; create, delete and rename.  You can create a new material, delete or rename an existing material using these buttons.  Below these buttons is the list of currently defined materials.  These will contain the default materials, as well as any defined in any comfile that has been run.
 
