@@ -2,7 +2,7 @@ CMGUI Scene Editor Window
 =========================
 
 .. _cylinders: http://www.cmiss.org/cmgui/wiki/VisualizingFieldsUsingLinesAndCylinders
-.. _graphical setting: http://www.cmiss.org/cmgui/wiki/CMGUIGraphicalSettings
+.. _graphical setting: http://www.cmiss.org/cmgui/wiki/UsingCMGUIGraphicalSettings
 
 
 The scene editor is where you control how visualizatons appear in the graphics window.  From this window you can select which graphical representations and settings are displayed.  You can add, remove, and edit visual elements such as lines, glyphs or surfaces; apply materials or spectra to graphical settings; and alter the order in which graphical representations are drawn.  The window itself is broken into three main panels - the scene objects list, graphical settings list, settings editor (Figure 1)

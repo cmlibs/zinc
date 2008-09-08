@@ -113,6 +113,7 @@ The eight types of graphical settings
   
     * Exterior: This check box will automatically only render element points on exterior surfaces of a mesh.
     * Face: This check box enables a drop-down menu that allows you to choose on which faces element points are drawn according to xi values.  You can select xi=0 or 1 for each of the three xi-axes.
+    
   * Xi discretization mode: this drop down menu allows you to select the method by which element points are distributed across the element.
 
 * **streamlines**
