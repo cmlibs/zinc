@@ -46,24 +46,14 @@ DESCRIPTION :
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_image_processing.h"
 
+
 int Computed_field_register_types_binary_threshold_image_filter(
 	struct Computed_field_package *computed_field_package);
 
-/*****************************************************************************//**
- * Creates a field of type COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER.
- * The newly created field consists of binary values (either 0 or 1) which are
- * determined by applying the threshold range to the source field. 
- * Input values with an intensity range between lower_threshold and the 
- * upper_threshold are set to 1, the rest are set to 0.
- * 
- * @param source_field The field to be filtered
- * @param lower_threshold Threshold value below which all pixels are set to 0 
- * @param upper_threshold Theshold value above which all values are set to 0
- * @return Newly created field
-*/
 struct Computed_field *Cmiss_field_create_binary_threshold_image_filter(
 	struct Computed_field *source_field, double lower_threshold,
    double upper_threshold);
 
+Cmiss_field_binary_threshold_image_filter_id Cmiss_field_binary_threshold_image_filter_cast(Cmiss_field_id field);
 
 #endif /* !defined (COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER_H) */
