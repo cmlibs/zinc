@@ -1,7 +1,7 @@
 /*******************************************************************************
-FILE : computed_field_binary_threshold_image_filter.c
+FILE : computed_field_binary_threshold_image_filter.cpp
 
-LAST MODIFIED : 9 September 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Wraps itk::BinaryThresholdImageFilter
@@ -96,13 +96,13 @@ private:
 	char* get_command_string();
 };
 
+/*****************************************************************************//**
+ * Compare the type specific data
+ * 
+ * @param other_core Core of other field to compare against
+ * @return Return code indicating field is the same (1) or different (0)
+*/
 int Computed_field_binary_threshold_image_filter::compare(Computed_field_core *other_core)
-/*******************************************************************************
-LAST MODIFIED : 30 August 2006
-
-DESCRIPTION :
-Compare the type specific data.
-==============================================================================*/
 {
 	Computed_field_binary_threshold_image_filter* other;
 	int return_code;
@@ -152,14 +152,14 @@ public:
 	{
 	}
 
+/*****************************************************************************//**
+ * Create a filter of the correct type, set the filter specific parameters
+ * and generate the output
+ * 
+ * @param location Field location
+ * @return Return code indicating succes (1) or failure (0)
+*/
 	int set_filter(Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 12 September 2006
-
-DESCRIPTION :
-Create a filter of the correct type, set the filter specific parameters
-and generate the outputImage.
-==============================================================================*/
 	{
 		int return_code;
 		
@@ -179,17 +179,21 @@ and generate the outputImage.
 
 }; /* template < class ImageType > class Computed_field_binary_threshold_image_filter_Functor */
 
+
+/*****************************************************************************//**
+ * Constructor for a binary threshold image filter field
+ * Creates the computed field representation of the binary threshold image filter
+ * 
+ * @param field Generic computed field
+ * @param lower_threshold Lower threshold value (below which values will be set to 0)
+ * @param upper_threshold Upper threshold value (above which values will be set to 0)
+ * @return Return code indicating succes (1) or failure (0)
+*/
 Computed_field_binary_threshold_image_filter::Computed_field_binary_threshold_image_filter(
 	Computed_field *field,
 	double lower_threshold, double upper_threshold) :
 	Computed_field_ImageFilter(field),
 	lower_threshold(lower_threshold), upper_threshold(upper_threshold)
-/*******************************************************************************
-LAST MODIFIED : 12 September 2006
-
-DESCRIPTION :
-Create the computed_field representation of the BinaryThresholdFilter.
-==============================================================================*/
 {
 #if defined DONOTUSE_TEMPLATETEMPLATES
 	create_filters_singlecomponent_multidimensions(
@@ -202,12 +206,12 @@ Create the computed_field representation of the BinaryThresholdFilter.
 #endif
 }
 
+/*****************************************************************************//**
+ * List field parameters
+ * 
+ * @return Return code indicating succes (1) or failure (0)
+*/
 int Computed_field_binary_threshold_image_filter::list()
-/*******************************************************************************
-LAST MODIFIED : 30 August 2006
-
-DESCRIPTION :
-==============================================================================*/
 {
 	int return_code;
 
@@ -232,13 +236,12 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_binary_threshold_image_filter */
 
+/*****************************************************************************//**
+ * Returns allocated command string for reproducing field. Includes type.
+ * 
+ * @return Command string to create field
+*/
 char *Computed_field_binary_threshold_image_filter::get_command_string()
-/*******************************************************************************
-LAST MODIFIED : 30 August 2006
-
-DESCRIPTION :
-Returns allocated command string for reproducing field. Includes type.
-==============================================================================*/
 {
 	char *command_string, *field_name, temp_string[40];
 	int error;
@@ -273,33 +276,43 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_binary_threshold_image_filter(struct Computed_field *field,
+/*****************************************************************************//**
+ * If field can be cast to a COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER do so
+ * and return the field.  Otherwise return NULL.
+ * 
+ * @param field Id of the field to cast
+ * @return Id of the cast field, or NULL
+*/
+Cmiss_field_binary_threshold_image_filter_id Cmiss_field_binary_threshold_image_filter_cast(Cmiss_field_id field)
+{
+	if (dynamic_cast<Computed_field_binary_threshold_image_filter*>(field->core))
+	{
+		return (reinterpret_cast<Cmiss_field_binary_threshold_image_filter_id>(field));
+	}
+	else
+	{
+		return (NULL);
+	}
+}
+
+Computed_field *Cmiss_field_create_binary_threshold_image_filter(
 	struct Computed_field *source_field, double lower_threshold,
 	double upper_threshold)
-/*******************************************************************************
-LAST MODIFIED : 9 September 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_BINARYTHRESHOLDFILTER.
-The <lower_threshold> and <upper_threshold> specify at what value thresholding
-occurs.
-==============================================================================*/
 {
-	int number_of_source_fields, return_code;
-	struct Computed_field **source_fields;
+	int number_of_source_fields;
+	Computed_field *field, **source_fields;
 
-	ENTER(Computed_field_set_type_binary_threshold_image_filter);
-	if (field && source_field &&
+	ENTER(Cmiss_field_create_binary_threshold_image_filter);
+	if ( source_field &&
 		Computed_field_is_scalar(source_field, (void *)NULL))
 	{
-		return_code = 1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields = 1;
 		if (ALLOCATE(source_fields, struct Computed_field *,
 			number_of_source_fields))
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
+			/* 2. create new field */
+			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
 			/* 3. establish the new type */
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0] = ACCESS(Computed_field)(source_field);
@@ -314,39 +327,38 @@ occurs.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_binary_threshold_image_filter.  "
+					"Computed_field_create_binary_threshold_image_filter.  "
 					"Unable to create image filter.");
-				return_code = 0;
+				field = (Computed_field *)NULL;
 			}
 		}
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code = 0;
+			field = (Computed_field *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_binary_threshold_image_filter.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_binary_threshold_image_filter.  Invalid argument(s)");
+		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_binary_threshold_image_filter */
+	return (field);
+} /* Cmiss_field_create_binary_threshold_image_filter */
 
+/*****************************************************************************//**
+ * If the field is of type COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER, 
+ * the source_field and thresholds used by it are returned - 
+ * otherwise an error is reported.
+ *
+ * @return Return code indicating succes (1) or failure (0)
+*/
 int Computed_field_get_type_binary_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, double *lower_threshold,
 	double *upper_threshold)
-/*******************************************************************************
-LAST MODIFIED : 9 September 2006
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_BINARYFILTER, 
-the source_field and thresholds used by it are returned - 
-otherwise an error is reported.
-==============================================================================*/
 {
 	Computed_field_binary_threshold_image_filter* core;
 	int return_code;
@@ -371,15 +383,17 @@ otherwise an error is reported.
 	return (return_code);
 } /* Computed_field_get_type_binary_threshold_image_filter */
 
+/*****************************************************************************//**
+ * Converts <field> into type COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER 
+ * (if it is not already) and allows its contents to be modified.
+ * 
+ * @param state Parse state of field to define
+ * @param field_modify_void
+ * @param computed_field_simple_package_void
+ * @return Return code indicating succes (1) or failure (0)
+*/
 int define_Computed_field_type_binary_threshold_image_filter(struct Parse_state *state,
 	void *field_modify_void, void *computed_field_simple_package_void)
-/*******************************************************************************
-LAST MODIFIED : 30 August 2006
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_BINARYTHRESHOLDFILTER (if it is not 
-already) and allows its contents to be modified.
-==============================================================================*/
 {
 	double lower_threshold, upper_threshold;
 	int return_code;
@@ -447,8 +461,9 @@ already) and allows its contents to be modified.
 			}
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_binary_threshold_image_filter(
-					field, source_field, lower_threshold, upper_threshold);				
+				return_code = Computed_field_copy_type_specific_and_deaccess(field,
+					Cmiss_field_create_binary_threshold_image_filter(
+						source_field, lower_threshold, upper_threshold));			
 			}
 			
 			if (!return_code)
@@ -481,11 +496,6 @@ already) and allows its contents to be modified.
 
 int Computed_field_register_types_binary_threshold_image_filter(
 	struct Computed_field_package *computed_field_package)
-/*******************************************************************************
-LAST MODIFIED : 30 August 2006
-
-DESCRIPTION :
-==============================================================================*/
 {
 	int return_code;
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_binary_threshold_image_filter.h
 
-LAST MODIFIED : 9 September 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 ==============================================================================*/
@@ -40,46 +40,30 @@ DESCRIPTION :
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_BINARYTHRESHOLDFILTER_H)
-#define COMPUTED_FIELD_BINARYTHRESHOLDFILTER_H
+#if !defined (COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER_H)
+#define COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER_H
 
 #include "api/cmiss_field.h"
-
-/* API functions are prefixed with Cmiss */
-#define Computed_field_set_type_binary_threshold_image_filter \
-	Cmiss_field_set_type_binary_threshold_image_filter
-#define Computed_field_get_type_binary_threshold_image_filter \
-	Cmiss_field_get_type_binary_threshold_image_filter
+#include "api/cmiss_field_image_processing.h"
 
 int Computed_field_register_types_binary_threshold_image_filter(
 	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 9 September 2006
 
-DESCRIPTION :
-==============================================================================*/
+/*****************************************************************************//**
+ * Creates a field of type COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER.
+ * The newly created field consists of binary values (either 0 or 1) which are
+ * determined by applying the threshold range to the source field. 
+ * Input values with an intensity range between lower_threshold and the 
+ * upper_threshold are set to 1, the rest are set to 0.
+ * 
+ * @param source_field The field to be filtered
+ * @param lower_threshold Threshold value below which all pixels are set to 0 
+ * @param upper_threshold Theshold value above which all values are set to 0
+ * @return Newly created field
+*/
+struct Computed_field *Cmiss_field_create_binary_threshold_image_filter(
+	struct Computed_field *source_field, double lower_threshold,
+   double upper_threshold);
 
-int Computed_field_set_type_binary_threshold_image_filter(struct Computed_field *field,
-	struct Computed_field *source_field,
-	double lower_threshold, double upper_threshold);
-/*******************************************************************************
-LAST MODIFIED : 9 September 2006
 
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_BINARYTHRESHOLDFILTER, returning the value of
-<binary_threshold_image_filter> at the time/parameter value given by scalar <source_field>.
-Sets number of components to same number as <binary_threshold_image_filter>.
-==============================================================================*/
-
-int Computed_field_get_type_binary_threshold_image_filter(struct Computed_field *field,
-	struct Computed_field **source_field,
-	double *lower_threshold, double *upper_threshold);
-/*******************************************************************************
-LAST MODIFIED : 9 September 2006
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_BINARYTHRESHOLDFILTER, the source_field and binary_threshold_image_filter
-used by it are returned - otherwise an error is reported.
-==============================================================================*/
-
-#endif /* !defined (COMPUTED_FIELD_BINARYTHRESHOLDFILTER_H) */
+#endif /* !defined (COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER_H) */
