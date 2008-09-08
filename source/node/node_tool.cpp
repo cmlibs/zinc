@@ -191,8 +191,6 @@ changes in node position and derivatives etc.
 	/* without cmiss_region_chooser need somewhere to store the region path */
 	char *current_region_path;
 #endif /* defined (MOTIF) */
-
-
 #if defined (WX_USER_INTERFACE)
 	wxNodeTool *wx_node_tool;
 	struct MANAGER(Computed_field) *computed_field_manager;
@@ -1707,6 +1705,7 @@ Callback for change of region that we are working in.
 {
 	struct Cmiss_region *region;
 	struct Node_tool *node_tool;
+	struct MANAGER(Computed_field) *computed_field_manager;
 
 	ENTER(Node_tool_update_region);
 	USE_PARAMETER(widget);
@@ -1714,6 +1713,24 @@ Callback for change of region that we are working in.
 	{
 		region = (struct Cmiss_region *)region_void;
 		Node_tool_set_Cmiss_region(node_tool, region);
+		computed_field_manager = Cmiss_region_get_Computed_field_manager(
+			node_tool->region);
+		if (computed_field_manager)
+		{
+			if (node_tool->command_field_widget)
+			{
+				CHOOSE_OBJECT_CHANGE_MANAGER(Computed_field)(
+					node_tool->command_field_widget, 
+					computed_field_manager, NULL);
+			}
+			if (node_tool->coordinate_field_widget)
+			{
+				CHOOSE_OBJECT_CHANGE_MANAGER(Computed_field)(
+					node_tool->coordinate_field_widget, 
+					computed_field_manager, NULL);
+			}
+		}
+		
 	}
 	else
 	{
@@ -2721,6 +2738,14 @@ Callback from wxChooser<Computed_field> when choice is made.
 ==============================================================================*/
 	{
 		Node_tool_set_Cmiss_region(node_tool, region);
+		node_tool->computed_field_manager = Cmiss_region_get_Computed_field_manager(
+			node_tool->region);
+		if (computed_field_chooser != NULL)
+		{
+			computed_field_chooser->set_manager(node_tool->computed_field_manager);
+			node_command_field_chooser->set_manager(node_tool->computed_field_manager);
+			element_xi_field_chooser->set_manager(node_tool->computed_field_manager);
+		}
 		return 1;
 	}
 
