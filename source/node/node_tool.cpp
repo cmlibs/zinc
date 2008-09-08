@@ -112,6 +112,9 @@ class wxNodeTool;
 #endif /* defined (WX_USER_INTERFACE) */
 
 
+static int Node_tool_set_Cmiss_region(struct Node_tool *node_tool,
+	struct Cmiss_region *region);
+
 struct Node_tool
 /*******************************************************************************
 LAST MODIFIED : 17 May 2003
@@ -1341,45 +1344,6 @@ try to enforce that the node is created on that element.
 	return (merged_node);
 } /* Node_tool_create_node_at_interaction_volume */
 
-static int Node_tool_set_Cmiss_region(struct Node_tool *node_tool,
-	struct Cmiss_region *region)
-/*******************************************************************************
-LAST MODIFIED : 20 March 2003
-
-DESCRIPTION :
-Sets the <region> used by <node_tool>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Node_tool_set_Cmiss_region);
-	if (node_tool)
-	{
-		return_code=1;
-		if (region != node_tool->region)
-		{
-			node_tool->region = region;
-			if (region)
-			{
-				node_tool->fe_region = Cmiss_region_get_FE_region(region);
-			}
-			else
-			{
-				node_tool->fe_region = (struct FE_region *)NULL;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_set_Cmiss_region.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Node_tool_set_Cmiss_region */
-
 #if defined (MOTIF)
 static void Node_tool_close_CB(Widget widget,void *node_tool_void,
 	void *call_data)
@@ -1705,7 +1669,6 @@ Callback for change of region that we are working in.
 {
 	struct Cmiss_region *region;
 	struct Node_tool *node_tool;
-	struct MANAGER(Computed_field) *computed_field_manager;
 
 	ENTER(Node_tool_update_region);
 	USE_PARAMETER(widget);
@@ -1713,24 +1676,6 @@ Callback for change of region that we are working in.
 	{
 		region = (struct Cmiss_region *)region_void;
 		Node_tool_set_Cmiss_region(node_tool, region);
-		computed_field_manager = Cmiss_region_get_Computed_field_manager(
-			node_tool->region);
-		if (computed_field_manager)
-		{
-			if (node_tool->command_field_widget)
-			{
-				CHOOSE_OBJECT_CHANGE_MANAGER(Computed_field)(
-					node_tool->command_field_widget, 
-					computed_field_manager, NULL);
-			}
-			if (node_tool->coordinate_field_widget)
-			{
-				CHOOSE_OBJECT_CHANGE_MANAGER(Computed_field)(
-					node_tool->coordinate_field_widget, 
-					computed_field_manager, NULL);
-			}
-		}
-		
 	}
 	else
 	{
@@ -2637,11 +2582,11 @@ public:
 	  region_chooser = new wxRegionChooser(region_chooser_panel,
 		  node_tool->root_region, initial_path); 
 	  DEALLOCATE(initial_path);
-	  Callback_base<Cmiss_region* > *region_callback = 
+	  Callback_base<Cmiss_region* > *Node_tool_wx_region_callback = 
 		  new Callback_member_callback< Cmiss_region*, 
 		  wxNodeTool, int (wxNodeTool::*)(Cmiss_region *) >
-		  (this, &wxNodeTool::region_callback);
-	  region_chooser->set_callback(region_callback);
+		  (this, &wxNodeTool::Node_tool_wx_region_callback);
+	  region_chooser->set_callback(Node_tool_wx_region_callback);
 	  if (node_tool->current_region_path != NULL)
 	  {
 			wx_Node_tool_set_region_path(node_tool->current_region_path);
@@ -2729,7 +2674,7 @@ Callback from wxChooser<Computed_field> when choice is made.
 		return 1;
 	}
 
-	int region_callback(Cmiss_region *region)
+	int Node_tool_wx_region_callback(Cmiss_region *region)
 /*******************************************************************************
 LAST MODIFIED : 9 February 2007
 
@@ -2738,14 +2683,6 @@ Callback from wxChooser<Computed_field> when choice is made.
 ==============================================================================*/
 	{
 		Node_tool_set_Cmiss_region(node_tool, region);
-		node_tool->computed_field_manager = Cmiss_region_get_Computed_field_manager(
-			node_tool->region);
-		if (computed_field_chooser != NULL)
-		{
-			computed_field_chooser->set_manager(node_tool->computed_field_manager);
-			node_command_field_chooser->set_manager(node_tool->computed_field_manager);
-			element_xi_field_chooser->set_manager(node_tool->computed_field_manager);
-		}
 		return 1;
 	}
 
@@ -3076,6 +3013,30 @@ struct  Cmiss_region *wx_Node_tool_get_region()
 	 }
 }
 
+void wx_Node_tool_set_field_chooser_manager()
+{
+	if (node_tool->computed_field_manager)
+	{
+		if (computed_field_chooser != NULL)
+		{
+			computed_field_chooser->set_manager(node_tool->computed_field_manager);
+		}
+		if (node_command_field_chooser != NULL)
+		{
+			node_command_field_chooser->set_manager(node_tool->computed_field_manager);
+		}
+		if (element_xi_field_chooser  != NULL)
+		{
+			element_xi_field_chooser->set_manager(node_tool->computed_field_manager);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Node_tool_set_field_chooser_manager.  "
+			"Could not update manager in choosers. Invalid field manager");
+	}
+}
+
   DECLARE_DYNAMIC_CLASS(wxNodeTool);
   DECLARE_EVENT_TABLE();
 };
@@ -3203,6 +3164,77 @@ Copies the state of one node tool to another.
 	}
 	return (return_code);
 } /* Node_tool_copy_function */
+
+static int Node_tool_set_Cmiss_region(struct Node_tool *node_tool,
+	struct Cmiss_region *region)
+/*******************************************************************************
+LAST MODIFIED : 8 September 2008
+
+DESCRIPTION :
+Sets the <region> used by <node_tool> and update the chooser to include fields
+in this region only.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Node_tool_set_Cmiss_region);
+	if (node_tool)
+	{
+		return_code=1;
+		if (region != node_tool->region)
+		{
+			node_tool->region = region;
+			if (region)
+			{
+				node_tool->fe_region = Cmiss_region_get_FE_region(region);
+			}
+			else
+			{
+				node_tool->fe_region = (struct FE_region *)NULL;
+			}
+#if defined (WX_USER_INTERFACE)
+			node_tool->computed_field_manager = Cmiss_region_get_Computed_field_manager(
+				node_tool->region);
+			if (node_tool->wx_node_tool)
+				node_tool->wx_node_tool->wx_Node_tool_set_field_chooser_manager();
+#elif defined (MOTIF)
+			struct MANAGER(Computed_field) *computed_field_manager;
+			computed_field_manager = Cmiss_region_get_Computed_field_manager(
+				node_tool->region);
+			if (computed_field_manager)
+			{
+				if (node_tool->command_field_widget)
+				{
+				CHOOSE_OBJECT_CHANGE_MANAGER(Computed_field)(
+					node_tool->command_field_widget, 
+					computed_field_manager, NULL);
+				}
+				if (node_tool->coordinate_field_widget)
+				{
+					CHOOSE_OBJECT_CHANGE_MANAGER(Computed_field)(
+						node_tool->coordinate_field_widget, 
+						computed_field_manager, NULL);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Node_tool_set_Cmiss_region. "
+					"Cannot update field chooser. Invalid field manager");
+			}
+#endif
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_set_Cmiss_region.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Node_tool_set_Cmiss_region */
 
 struct Node_tool *CREATE(Node_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
