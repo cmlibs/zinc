@@ -6217,6 +6217,9 @@ separated by 2 pixel borders within the viewing area.
 #if defined (MOTIF)
 	Dimension height,width;
 #endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+	RECT rect;
+#endif /* defined (WIN32_USER_INTERFACE) */	
 	int return_code;
 
 	ENTER(Graphics_window_get_viewing_area_size);
@@ -6229,19 +6232,37 @@ separated by 2 pixel borders within the viewing area.
 		/* subtract 2 pixel border */
 		*viewing_width=((int)width-2);
 		*viewing_height=((int)height-2);
+		return_code=1;
 #elif defined (GTK_USER_INTERFACE)
 #if GTK_MAJOR_VERSION >= 2
 		gtk_window_get_size(GTK_WINDOW(window->shell_window),
 			viewing_width, viewing_height);
+		return_code=1;
 #else /* GTK_MAJOR_VERSION >= 2 */
 		*viewing_width = window->shell_window->allocation.width;
 		*viewing_height = window->shell_window->allocation.height;
+		return_code=1;
 #endif /* GTK_MAJOR_VERSION >= 2 */
 #elif defined (WX_USER_INTERFACE)
 		XRCCTRL(*window->wx_graphics_window,"GridPanel", wxPanel)
 			 ->GetClientSize(viewing_width, viewing_height);
-#endif /* defined (USER_INTERFACE) */
 		return_code=1;
+#elif defined (WIN32_USER_INTERFACE)
+		if (0 != GetClientRect(window->hWnd, &rect))
+		{
+			*viewing_width = rect.right;
+			*viewing_height = rect.bottom;
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+#else
+		display_message(ERROR_MESSAGE,
+			"Graphics_window_get_viewing_area_size.  Not implemented for this user interface.");		
+		return_code=0;
+#endif /* defined (USER_INTERFACE) */
 	}
 	else
 	{
