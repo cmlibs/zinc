@@ -1,3 +1,4 @@
+
 /*******************************************************************************
 FILE : graphics_window.cpp
 
@@ -197,7 +198,7 @@ Contains information for a graphics window.
 	 wxFrame *GraphicsWindowTitle;
 	 wxGraphicsWindow *wx_graphics_window;
 	 wxGridSizer *grid_field;
-	 wxPanel *panel, *panel2, *panel3, *panel4,*interactive_toolbar_panel, *time_editor_panel;
+	wxPanel *panel, *panel2, *panel3, *panel4,*interactive_toolbar_panel, *time_editor_panel, *right_panel;
 	 wxScrolledWindow  *left_panel, *ToolPanel;
 	 wxSlider *time_slider;
 	 wxTextCtrl *time_text_ctrl, *time_framerate_text_ctrl, *time_step_size_text_ctrl;
@@ -1052,34 +1053,17 @@ Updates the time display of the time_slider
 					{
 						 window->current_time = Time_keeper_get_time(window->time_keeper);
 						 time_string.Printf(_T("%f"),window->current_time);
-						 if (window->maximum_time - window->minimum_time > 0)
-						 {
-								time_slider_index = (int)(window->current_time/(window->maximum_time - window->minimum_time) * 1000 + 0.5);
-								window->time_slider->SetValue(time_slider_index);
-						 }
-#if defined (DEBUG)
-						 printf("Graphics_window_time_keeper_callback.  time \n"
-								window->curren_time);
-#endif /* defined (DEBUG) */
 						 window->time_text_ctrl->ChangeValue(time_string);
 						 return_code = 1;
 					} break;
 					case TIME_KEEPER_NEW_MINIMUM:
 					{
 						 window->minimum_time = Time_keeper_get_minimum(window->time_keeper);			
-#if defined (DEBUG)
-						 printf("Graphics_window_time_keeper_callback.  time \n"
-								window->minimum_time);
-#endif /* defined (DEBUG) */
 						 return_code = 1;
 					} break;
 					case TIME_KEEPER_NEW_MAXIMUM:
 					{
 						 window->maximum_time = Time_keeper_get_maximum(window->time_keeper);
-#if defined (DEBUG)
-						 printf("Graphics_window_time_keeper_callback.  time \n"
-								window->maximum_time);
-#endif /*defined (DEBUG) */
 						 return_code = 1;
 					} break;
 					default:
@@ -1088,6 +1072,15 @@ Updates the time display of the time_slider
 								"Graphics_window_time_keeper_callback.  Unknown time_keeper event");
 						 return_code = 0;
 					} break;
+			 }
+			 if (return_code)
+			 {
+				 if (window->maximum_time - window->minimum_time > 0)
+				 {
+					 time_slider_index = (int)(
+						 window->current_time/(window->maximum_time - window->minimum_time) * 1000 + 0.5);
+					 window->time_slider->SetValue(time_slider_index);
+				 }
 			 }
 		}
 #endif /*defined (MOTIF) && (WX_USER_INTERFACE)*/
@@ -1531,7 +1524,11 @@ Bring up the time editor, WX_USER_INTERFACE only.
 	 if (window)
 	 {
 			window->time_editor_togglebutton->SetValue(1);
+			window->right_panel->Freeze();
 			window->time_editor_panel->Show(true);
+			window->right_panel->Layout();
+			window->right_panel->Update();
+			window->right_panel->Thaw();
 			return_code = 1;
 	 }
 	 else
@@ -1773,7 +1770,6 @@ void graphics_window_set_scene_chooser_selected_item(Scene *scene)
       view_options = XRCCTRL(*this,"View", wxChoice);
       up_view_options = XRCCTRL(*this,"UpViewOptions", wxChoice);
       front_view_options = XRCCTRL(*this,"FrontViewOptions", wxButton);
-      Redrawwindow = XRCCTRL(*this,"CmguiGraphicsWindow", wxFrame);     
       
       choices = view_options->GetCurrentSelection();
       if (choices == 0) 
@@ -1828,8 +1824,14 @@ void graphics_window_set_scene_chooser_selected_item(Scene *scene)
 			{
 				 printf("OnViewOptionspressed error. Invalid argument.");
 			}
-			Redrawwindow->SetSize(Redrawwindow->GetSize()+wxSize(0,1));
-			Redrawwindow->SetSize(Redrawwindow->GetSize()-wxSize(0,1));
+			wxPanel *grid_panel = XRCCTRL(*this,"GridPanel", wxPanel);
+			grid_panel->Freeze();
+			grid_panel->Layout();
+			grid_panel->Update();
+			grid_panel->Thaw();
+			graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()+wxSize(0,1));
+			graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()-wxSize(0,1));
+			graphics_window->GraphicsWindowTitle->Layout();
 	 }
 	 
 void OnPerspectivePressed(wxCommandEvent& event)
@@ -1855,6 +1857,10 @@ void OnTimeEditorButtonPressed(wxCommandEvent& event)
 	 graphics_window->time_editor_panel->Show(graphics_window->time_editor_togglebutton->GetValue());
 	 if (graphics_window->GraphicsWindowTitle)
 	 {
+			graphics_window->right_panel->Freeze();
+			graphics_window->right_panel->Layout();
+			graphics_window->right_panel->Update();
+			graphics_window->right_panel->Thaw();
 			graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()+wxSize(0,1));
 			graphics_window->GraphicsWindowTitle->SetSize(graphics_window->GraphicsWindowTitle->GetSize()-wxSize(0,1));
 			graphics_window->GraphicsWindowTitle->Layout();
@@ -4544,6 +4550,8 @@ it.
 				 "GraphicsWindowTimeTextCtrl", wxTextCtrl);
 			window->time_slider = XRCCTRL(*window->wx_graphics_window,
 				 "GraphicsWindowTimeSlider", wxSlider);
+			window->right_panel = XRCCTRL(*window->wx_graphics_window,
+				 "GraphicsRightPanel", wxPanel);
 			window->time_editor_panel = XRCCTRL(*window->wx_graphics_window,
 				 "TimeEditorPanel", wxPanel);
 			window->time_framerate_text_ctrl = XRCCTRL(*window->wx_graphics_window,
