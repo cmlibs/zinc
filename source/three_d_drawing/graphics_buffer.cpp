@@ -7402,7 +7402,7 @@ x==============================================================================*
 		/* Only delete it here if it isn't the share context, otherwise we
 			will destroy it when the graphics buffer package is destroyed.
 			In the intel workaround case we only want to destroy it at the end. */
-		if (buffer->hRC != buffer->package->wgl_shared_context)
+		if (buffer->hRC && (buffer->hRC != buffer->package->wgl_shared_context))
 		{
 			wglDeleteContext(buffer->hRC);
 		}
