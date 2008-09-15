@@ -99,7 +99,7 @@ The eight types of graphical settings
   * Iso-scalar: This drop down menu allows you to select the field that the iso-surface will be rendered according to the values of.
   * Iso-values: This settings box contains the following settings:
   
-    * List: This radio button activates a text box that allows you to enter a value to draw the iso-surface at.
+    * List: This radio button activates a text box that allows you to enter a value at which to draw the iso-surface.
     * Sequence: This radio button activates three text boxes that allow you to enter a sequence of evenly spaced values to draw iso-surfaces at.  The *Number* box allows you to enter the number of iso-surfaces you want.  The *First* and *Last* boxes allow you to enter the starting and ending values of the iso-surfaces.  The sequence will automatically space the number of surfaces between these two values.
     
   * Render type: This drop down menu allows you to select shaded (default) or wireframe rendering of surfaces.  Wireframe rendering renders the surfaces as grids of shaded lines, with the grid detail determined by the *element discretization* setting in the *General settings*.

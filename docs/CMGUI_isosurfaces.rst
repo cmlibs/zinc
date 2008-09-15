@@ -20,7 +20,7 @@ Visualizing element fields using iso-surfaces
 
 | 
 
-As with surfaces_, the detail level of iso-surfaces is determined by the *element discretization* setting in the *general settings* area of the `scene editor`_.  
+As with surfaces_, the detail level of iso-surfaces is determined by the *element discretization* setting in the *general settings* area of the `scene editor`_ (Figure 2).  Iso-surfaces are drawn to connect points on the edges of the sub-element divisions where the iso-scalar matches the chosen value.  With an *element discretization* setting of 1*1*1, an iso-surface will only connect points on the line edges of the element.
 
 | 
 
