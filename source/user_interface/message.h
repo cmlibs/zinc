@@ -82,18 +82,18 @@ A function for setting the <display_message_function> to be used for displaying
 a message of the specified <message_type>.
 ==============================================================================*/
 
-int display_message(enum Message_type message_type,char *format, ... );
+int display_message(enum Message_type message_type,const char *format, ... );
 /*******************************************************************************
-LAST MODIFIED : 31 May 1996
+LAST MODIFIED : 15 September 2008
 
 DESCRIPTION :
 A function for displaying a message of the specified <message_type>.  The printf
 form of arguments is used.
 ==============================================================================*/
 
-int write_message_to_file(enum Message_type message_type,char *format, ... );
+int write_message_to_file(enum Message_type message_type,const char *format, ... );
 /*******************************************************************************
-LAST MODIFIED : 10 August 2007
+LAST MODIFIED : 15 September 2008
 
 DESCRIPTION :
 A function for writing out commands to com file.

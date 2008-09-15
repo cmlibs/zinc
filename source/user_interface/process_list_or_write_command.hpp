@@ -27,7 +27,7 @@ public:
 	 
 	 virtual int write_enabled() = 0;
 
-	 virtual int process_command(enum Message_type message_type,char *format,...) = 0;
+	 virtual int process_command(enum Message_type message_type,const char *format,...) = 0;
 
 	 virtual ~Process_list_or_write_command_class() { }
 };
@@ -39,7 +39,7 @@ public:
 	 {
 	 };
 	 
-	 int process_command(enum Message_type message_type,char *format,...)
+	 int process_command(enum Message_type message_type,const char *format,...)
 	 {
 			int return_code;
 			va_list ap;
@@ -66,7 +66,7 @@ public:
 	 {
 	 };
 
-	 int process_command(enum Message_type message_type,char *format,...)
+	 int process_command(enum Message_type message_type,const char *format,...)
 	 {
 			int return_code;
 			va_list ap;

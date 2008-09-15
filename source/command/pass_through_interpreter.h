@@ -59,7 +59,7 @@ The different message types.
 typedef void (*execute_command_function_type)(char *, void *, int *, int *);
 
 typedef int (Interpreter_display_message_function)(enum Message_type message_type,
-	char *format, ... );
+	const char *format, ... );
 
 struct Interpreter;
 /*******************************************************************************
