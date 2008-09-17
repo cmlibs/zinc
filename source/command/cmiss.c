@@ -1711,7 +1711,9 @@ Executes a GFX CREATE ELEMENT_CREATOR command.
 #if defined (WX_USER_INTERFACE)
 	USE_PARAMETER(state);
 	USE_PARAMETER(command_data_void);
-	display_message(INFORMATION_MESSAGE,"command has been removed from the cmgui-wx, please use gfx modify window (NAME) node ? for further instruction for creating elements or directly create new elements using the node tool");
+	display_message(INFORMATION_MESSAGE,"\ncommand has been removed from the cmgui-wx.\n"
+		"please use gfx modify window (NAME) node ? for further instruction for creating elements\n"
+		"or directly create new elements using the node tool");
 		return_code=0;
 #endif /*defined (WX_USER_INTERFACE) */
 	LEAVE;
@@ -11073,7 +11075,7 @@ Executes a GFX EDIT command.
 	return (return_code);
 } /* execute_command_gfx_edit */
 
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (WX_USER_INTERFACE)
 static int execute_command_gfx_element_creator(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -11083,16 +11085,26 @@ DESCRIPTION :
 Executes a GFX ELEMENT_CREATOR command.
 ==============================================================================*/
 {
+#if defined (MOTIF)
 	char *region_path;
-	int create_enabled, element_dimension, return_code;
+	int create_enabled, element_dimension;
 	struct Cmiss_command_data *command_data;
 	struct Element_creator *element_creator;
 	struct FE_field *coordinate_field;
 	struct Option_table *option_table;
 	struct Set_FE_field_conditional_FE_region_data set_coordinate_field_data;
-
+#endif /*defined (MOTIF)*/
+	int return_code;
 	ENTER(execute_command_gfx_element_creator);
 	USE_PARAMETER(dummy_to_be_modified);
+#if defined (WX_USER_INTERFACE)
+	USE_PARAMETER(state);
+	USE_PARAMETER(command_data_void);
+	display_message(INFORMATION_MESSAGE,
+		"\nElement creator has been moved to node tool in the graphics window in cmgui-wx.\n"
+		"Please use gfx node_tool command instead.");
+	return_code = 1;
+#elif defined (MOTIF)
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		/* initialize defaults */
@@ -11178,10 +11190,10 @@ Executes a GFX ELEMENT_CREATOR command.
 		return_code=0;
 	}
 	LEAVE;
-
+#endif /*defined (WX_USER_INTERFACE) */
 	return (return_code);
 } /* execute_command_gfx_element_creator */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 
 #if defined (MOTIF) || (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 static int execute_command_gfx_element_point_tool(struct Parse_state *state,
@@ -20782,7 +20794,7 @@ Executes a GFX command.
 				command_data_void, execute_command_gfx_draw);
 			Option_table_add_entry(option_table, "edit", NULL,
 				command_data_void, execute_command_gfx_edit);
-#if defined (MOTIF)
+#if defined (MOTIF) || (WX_USER_INTERFACE)
 			Option_table_add_entry(option_table, "element_creator", NULL,
 				command_data_void, execute_command_gfx_element_creator);
 #endif /* defined (MOTIF) */
