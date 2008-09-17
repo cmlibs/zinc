@@ -815,7 +815,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Light_type)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Light_type)
 
-struct Light *CREATE(Light)(char *name)
+struct Light *CREATE(Light)(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 8 October 2002
 

@@ -99,7 +99,7 @@ Global functions
 ----------------
 */
 
-struct Interactive_tool *CREATE(Interactive_tool)(char *name,char *display_name,
+struct Interactive_tool *CREATE(Interactive_tool)(const char *name,const char *display_name,
 	char *tool_type_name,
 	Interactive_event_handler *interactive_event_handler,
 	Interactive_tool_get_icon_function *get_icon_function,

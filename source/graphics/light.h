@@ -101,7 +101,7 @@ Global functions
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Light_type);
 
-struct Light *CREATE(Light)(char *name);
+struct Light *CREATE(Light)(const char *name);
 /*******************************************************************************
 LAST MODIFIED : 4 December 1995
 

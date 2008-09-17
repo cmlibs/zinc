@@ -2059,7 +2059,7 @@ Executes a GFX DESTROY SPECTRUM command.
 } /* gfx_destroy_spectrum */
 
 int process_list_or_write_Spectrum_commands(struct Spectrum *spectrum,
-	 char *command_prefix,char *command_suffix,
+	 const char *command_prefix,char *command_suffix,
 	 class Process_list_or_write_command_class *process_message)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2007
@@ -2156,7 +2156,7 @@ DESCRIPTION :
 For each spectrum in manager, list the spectrum commands to the command windows or write them out.
 ==============================================================================*/
 {
-	 static char *command_prefix="gfx modify spectrum";
+	 static const char *command_prefix="gfx modify spectrum";
 	 char *write_enabled;
 	 int return_code;
 	 ENTER(for_each_spectrum_list_or_write_commands);
@@ -2306,7 +2306,7 @@ Writes the properties of the <spectrum> to the command window.
 	return (return_code);
 } /* Spectrum_list_contents */
 
-struct Spectrum *CREATE(Spectrum)(char *name)
+struct Spectrum *CREATE(Spectrum)(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 14 May 1998
 

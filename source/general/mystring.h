@@ -116,7 +116,7 @@ LAST MODIFIED : 1 June 1990
 DESCRIPTION :
 ==============================================================================*/
 
-int append_string(char **string1,char *string2,int *error);
+int append_string(char **string1,const char *string2,int *error);
 /*******************************************************************************
 LAST MODIFIED : 1 September 1998
 

@@ -455,7 +455,7 @@ DESCRIPTION :
 #endif /* defined (OPENGL_API) */
 
 #if defined (OPENGL_API)
-int query_gl_extension(char *extName)
+int query_gl_extension(const char *extName)
 /*******************************************************************************
 LAST MODIFIED : 9 September 1998
 
@@ -791,7 +791,7 @@ implementation which is valid for the current OpenGL context.
 	return (vendor_id);
 } /* Graphics_library_get_vendor_id */
 
-int Graphics_library_load_extension(char *extension_name)
+int Graphics_library_load_extension(const char *extension_name)
 /*******************************************************************************
 LAST MODIFIED : 2 March 2007
 

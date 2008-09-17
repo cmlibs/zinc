@@ -296,7 +296,7 @@ DECLARE_INDEXED_LIST_FUNCTIONS(Assign_variable)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Assign_variable,name,void *,
 	strcmp)
 
-static int reduce_fuzzy_string(char *reduced_string,char *string)
+static int reduce_fuzzy_string(char *reduced_string,const char *string)
 /*******************************************************************************
 LAST MODIFIED : 16 September 1998
 
@@ -306,7 +306,8 @@ whitespace, -'s and _'s.
 ???RC Removed filtering of dash and underline.
 ==============================================================================*/
 {
-	char *destination,*source;
+	char *destination;
+	const char *source;
 	int return_code;
 
 	ENTER(reduce_fuzzy_string);
@@ -523,7 +524,7 @@ Executes a VARIABLE SHOW command.
 Global functions
 ----------------
 */
-int fuzzy_string_compare(char *first,char *second)
+int fuzzy_string_compare(const char *first,const char *second)
 /*******************************************************************************
 LAST MODIFIED : 30 August 2000
 
@@ -607,7 +608,7 @@ reduced first string and starts with the characters in the first.
 	return (return_code);
 } /* fuzzy_string_compare */
 
-int fuzzy_string_compare_same_length(char *first,char *second)
+int fuzzy_string_compare_same_length(const char *first,const char *second)
 /*******************************************************************************
 LAST MODIFIED : 14 August 1998
 
@@ -1263,7 +1264,7 @@ DESCRIPTION :
 } /* DESTROY(Option_table) */
 
 static int Option_table_add_entry_private(struct Option_table *option_table,
-	char *token,void *to_be_modified,void *user_data,modifier_function modifier)
+	const char *token,void *to_be_modified,void *user_data,modifier_function modifier)
 /*******************************************************************************
 LAST MODIFIED : 23 December 1999
 
@@ -1314,7 +1315,7 @@ If fails, marks the option_table as invalid.
 		if (return_code)
 		{
 			temp_entry = &(option_table->entry[option_table->number_of_entries]);
-			temp_entry->option=token;
+			temp_entry->option=(char *)token;
 			temp_entry->to_be_modified=to_be_modified;
 			temp_entry->user_data=user_data;
 			temp_entry->modifier=modifier;
@@ -1333,7 +1334,7 @@ If fails, marks the option_table as invalid.
 } /* Option_table_add_entry_private */
 
 int Option_table_add_help(struct Option_table *option_table,
-	char *help_string)
+	const char *help_string)
 /*******************************************************************************
 LAST MODIFIED : 2 May 2007
 
@@ -1362,7 +1363,7 @@ Adds the given help to the option table.
 	return (return_code);
 } /* Option_table_add_help */
 
-int Option_table_add_entry(struct Option_table *option_table,char *token,
+int Option_table_add_entry(struct Option_table *option_table,const char *token,
 	void *to_be_modified,void *user_data,modifier_function modifier)
 /*******************************************************************************
 LAST MODIFIED : 23 December 1999
@@ -1468,7 +1469,7 @@ of option_table!
 } /* Option_table_add_suboption_table */
 
 int Option_table_add_switch(struct Option_table *option_table,
-	char *on_string,char *off_string,int *value_address)
+	const char *on_string,const char *off_string,int *value_address)
 /*******************************************************************************
 LAST MODIFIED : 12 May 2000
 
@@ -1490,9 +1491,9 @@ The <on_string> and <off_string> should be static, eg. passed in quotes.
 			if (suboption_table=CREATE(Option_table)())
 			{
 				Option_table_add_entry(suboption_table,on_string,
-					value_address,on_string,set_int_switch);
+					value_address,(void *)on_string,set_int_switch);
 				Option_table_add_entry(suboption_table,off_string,
-					value_address,off_string,unset_int_switch);
+					value_address,(void *)off_string,unset_int_switch);
 				return_code=
 					Option_table_add_suboption_table(option_table,suboption_table);
 			}
@@ -5295,7 +5296,7 @@ NB.  *enum_value_address_void is put in *set_value_address_void
 } /* set_enum */
 
 int Option_table_add_char_flag_entry(struct Option_table *option_table,
-	char *token, char *flag)
+	const char *token, char *flag)
 /*******************************************************************************
 LAST MODIFIED : 8 October 2003
 
@@ -5504,7 +5505,7 @@ help mode is entered.
 } /* Option_table_add_FE_value_vector_entry */
 
 int Option_table_add_double_entry(struct Option_table *option_table,
-	char *token, double *value)
+	const char *token, double *value)
 /*******************************************************************************
 LAST MODIFIED : 8 October 2003
 
@@ -5533,7 +5534,7 @@ the token following is assigned to <value>.
 } /* Option_table_add_double_entry */
 
 int Option_table_add_double_vector_entry(struct Option_table *option_table,
-	char *token, double *vector, int *number_of_components)
+	const char *token, double *vector, int *number_of_components)
 /*******************************************************************************
 LAST MODIFIED : 8 October 2003
 
@@ -5592,7 +5593,7 @@ Adds the given <token> to the <option_table>.  The <vector> is filled in with th
 } /* Option_table_add_variable_length_double_vector_entry */
 
 int Option_table_add_double_vector_with_help_entry(
-	struct Option_table *option_table, char *token, double *vector,
+	struct Option_table *option_table, const char *token, double *vector,
 	struct Set_vector_with_help_data *data)
 /*******************************************************************************
 LAST MODIFIED : 8 October 2003

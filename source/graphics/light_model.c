@@ -329,7 +329,7 @@ Set the <light_model> to infinite viewer.
 Global functions
 ----------------
 */
-struct Light_model *CREATE(Light_model)(char *name)
+struct Light_model *CREATE(Light_model)(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 5 December 1997
 

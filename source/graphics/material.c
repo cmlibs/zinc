@@ -2271,7 +2271,7 @@ Returns the material manager.
 	return (material_manager);
 } /* Material_package_get_default_selected_material */
 
-struct Graphical_material *CREATE(Graphical_material)(char *name)
+struct Graphical_material *CREATE(Graphical_material)(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 15 October 1998
 

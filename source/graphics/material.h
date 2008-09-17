@@ -172,7 +172,7 @@ DESCRIPTION :
 Returns the material manager.
 ==============================================================================*/
 
-struct Graphical_material *CREATE(Graphical_material)(char *name);
+struct Graphical_material *CREATE(Graphical_material)(const char *name);
 /*******************************************************************************
 LAST MODIFIED : 20 November 2003
 

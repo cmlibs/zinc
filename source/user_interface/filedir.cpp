@@ -906,7 +906,8 @@ name the <file_operation> is performed on the file with the <arguments>.
 ==============================================================================*/
 {
 #if defined (WX_USER_INTERFACE)
-	 char *filename, *shell_title,*temp_string, *extension;
+	 char *filename, *shell_title,*temp_string;
+	 const char  *extension;
 	 int retry, length;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF)
@@ -1171,12 +1172,11 @@ name the <file_operation> is performed on the file with the <arguments>.
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 	temp_string=(char *)NULL;
-	extension = (char *)NULL;
 	switch (file_open_data->type)
 	{
 		 case REGULAR:
 		 {
-				shell_title="Specify a file";
+			 shell_title=(char *)"Specify a file";
 				if (file_open_data->filter_extension)
 				{
 					 if (ALLOCATE(temp_string,char,strlen(shell_title)+
@@ -1212,7 +1212,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 		 } break;
 		 case DIRECTORY:
 		 {
-				shell_title="Specify a directory";
+				shell_title=(char *)"Specify a directory";
 		 } break;
 		 default:
 		 {
@@ -1399,7 +1399,8 @@ specified file.
 #if defined (WX_USER_INTERFACE)
 //	char *temp_str;
   int retry;
-	char *shell_title,*temp_string,*extension;
+	char *shell_title,*temp_string;
+	const char	*extension;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF)
 	Atom WM_DELETE_WINDOW;
@@ -1799,12 +1800,11 @@ specified file.
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 				temp_string=(char *)NULL;
-				extension = (char *)NULL;
 				switch (file_open_data->type)
 				{
 					case REGULAR:
 					{
-						shell_title="Specify a file";
+						shell_title=(char *)"Specify a file";
 						if (file_open_data->filter_extension)
 						{
 							if (ALLOCATE(temp_string,char,strlen(shell_title)+
@@ -1839,7 +1839,7 @@ specified file.
 					} break;
 					case DIRECTORY:
 					{
-						shell_title="Specify a directory";
+						shell_title=(char *)"Specify a directory";
 					} break;
 					default:
 					{
@@ -1988,7 +1988,7 @@ Zip .com, .exnode, .exelem and .exdata files into a single zip file
 	 char *zip_file_name;
 	 if (!file_name)
 	 {
-			file_name = "temp";
+		 file_name = (char *)"temp";
 	 }
 
 	 int length = strlen(file_name);

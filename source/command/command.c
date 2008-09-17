@@ -241,7 +241,7 @@ with it.
 } /* Execute_command_set_command_function */
 
 int Execute_command_execute_string(struct Execute_command *execute_command,
-	char *command_string)
+	const char *command_string)
 /*******************************************************************************
 LAST MODIFIED : 15 July 2002
 
@@ -259,7 +259,7 @@ DESCRIPTION :
 			if (execute_command->function)
 			{
 				return_code =
-					(*(execute_command->function))(command_string, execute_command->data);
+					(*(execute_command->function))((char *)command_string, execute_command->data);
 			}
 			else
 			{

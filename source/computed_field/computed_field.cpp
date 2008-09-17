@@ -202,7 +202,7 @@ Stores information defining a type of computed field so that it can be
 accessed by the rest of the program.
 ==============================================================================*/
 {
-	char *name;
+	const char *name;
 	Define_Computed_field_type_function define_Computed_field_type_function;
 	Computed_field_type_package *define_type_user_data;
 	int access_count;
@@ -238,7 +238,7 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Computed_field,name,char *,strcmp)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Computed_field)
 struct Computed_field_type_data *CREATE(Computed_field_type_data)
-   (char *name, Define_Computed_field_type_function 
+   (const char *name, Define_Computed_field_type_function 
 	define_Computed_field_type_function, 
 	Computed_field_type_package *define_type_user_data)
 /*******************************************************************************
@@ -323,7 +323,7 @@ Frees memory/deaccess data at <*data_address>.
 DECLARE_OBJECT_FUNCTIONS(Computed_field_type_data)
 FULL_DECLARE_INDEXED_LIST_TYPE(Computed_field_type_data);
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Computed_field_type_data,
-  name, char *, strcmp)
+  name, const char *, strcmp)
 DECLARE_INDEXED_LIST_FUNCTIONS(Computed_field_type_data)
 
 int Computed_field_clear_type(struct Computed_field *field)
@@ -4770,7 +4770,7 @@ allow interfacing to the choose_object widgets.
 } /* Computed_field_package_get_computed_field_manager */
 
 int Computed_field_package_add_type(
-	struct Computed_field_package *computed_field_package, char *name,
+	struct Computed_field_package *computed_field_package, const char *name,
 	Define_Computed_field_type_function define_Computed_field_type_function,
 	Computed_field_type_package *define_type_user_data)
 /*******************************************************************************

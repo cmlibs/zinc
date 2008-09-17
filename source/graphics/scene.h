@@ -583,7 +583,7 @@ Iterator function for writing the transformation in effect for <scene_object>
 as a command, using the given <command_prefix>.
 ==============================================================================*/
 
-struct Scene *CREATE(Scene)(char *name);
+struct Scene *CREATE(Scene)(const char *name);
 /*******************************************************************************
 LAST MODIFIED : 8 February 1998
 

@@ -3588,7 +3588,7 @@ Returns the internal pointer to the list of vertices used in the GT_voltex.
 	return (vertex_list);
 } /* GT_voltex_get_vertex_list */
 
-struct GT_object *CREATE(GT_object)(char *name,enum GT_object_type object_type,
+struct GT_object *CREATE(GT_object)(const char *name,enum GT_object_type object_type,
 	struct Graphical_material *default_material)
 /*******************************************************************************
 LAST MODIFIED : 17 March 2003

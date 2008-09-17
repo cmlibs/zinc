@@ -146,7 +146,7 @@ Module constants
 
 
 #define TIME_STEP 0.1
-static char *axis_name[7]={"??","x","y","z","-x","-y","-z"};
+static const char *axis_name[7]={"??","x","y","z","-x","-y","-z"};
 
 /*
 Module types
@@ -2626,7 +2626,7 @@ Parser commands for setting the scene and how it is displayed (time, light model
 etc.) in all panes of the <window>.
 ==============================================================================*/
 {
-	char *layout_mode_string,**valid_strings;
+	char **valid_strings, *layout_mode_string;
 	double eye_spacing;
 	enum Graphics_window_layout_mode layout_mode,old_layout_mode;
 	int height,number_of_valid_strings,old_height,old_width,return_code,width;
@@ -2664,7 +2664,7 @@ etc.) in all panes of the <window>.
 
 			option_table=CREATE(Option_table)();
 			/* layout_mode */
-			layout_mode_string=Graphics_window_layout_mode_string(layout_mode);
+			layout_mode_string=(char *)Graphics_window_layout_mode_string(layout_mode);
 			valid_strings=Graphics_window_layout_mode_get_valid_strings(
 				&number_of_valid_strings);
 			Option_table_add_enumerator(option_table,number_of_valid_strings,
@@ -4028,7 +4028,7 @@ it.
 									create_choose_enumerator_widget(
 										window->layout_mode_form,
 										number_of_valid_strings,valid_strings,
-										Graphics_window_layout_mode_string(
+										(char *)Graphics_window_layout_mode_string(
 											window->layout_mode), user_interface))
 								{
 									/* get callbacks for change of layout mode */
@@ -5546,7 +5546,7 @@ Sets the layout mode in effect on the <window>.
 #if defined (MOTIF)
 				/* make sure the current layout mode is displayed on the chooser */
 				choose_enumerator_set_string(window->layout_mode_widget,
-					Graphics_window_layout_mode_string(layout_mode));
+					(char *)Graphics_window_layout_mode_string(layout_mode));
 #elif defined (WX_USER_INTERFACE)
 				wxChoice *layout_choice = XRCCTRL(
 					 *window->wx_graphics_window, "View", wxChoice);
@@ -5930,7 +5930,7 @@ Axis numbers are from 1 to 6, where 1=x, 2=y, 3=z, 4=-x, 5=-y and 6=-z.
 		{
 #if defined (MOTIF)
 			temp_string=
-				XmStringCreateSimple(axis_name[window->ortho_front_axis]);
+				XmStringCreateSimple((char *)axis_name[window->ortho_front_axis]);
 			XtVaSetValues(window->ortho_front_button,
 				XmNlabelString,temp_string,NULL);
 			XmStringFree(temp_string);
@@ -8057,7 +8057,7 @@ then the <data_tool> is being modified, otherwise the <node_tool>.
 Which tool that is being modified is passed in <node_tool_void>.
 ==============================================================================*/
 {
-	static char *(dialog_strings[2]) = {"open_dialog", "close_dialog"};
+	static const char *(dialog_strings[2]) = {"open_dialog", "close_dialog"};
 	char *dialog_string, *region_path;
 	int create_enabled,define_enabled,edit_enabled,motion_update_enabled,
 		return_code,select_enabled, streaming_create_enabled,
@@ -8179,7 +8179,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 				/* open_dialog/close_dialog */
 				dialog_string = (char *)NULL;
 				Option_table_add_enumerator(option_table, /*number_of_valid_strings*/2,
-					 dialog_strings, &dialog_string);
+					(char **)dialog_strings, &dialog_string);
 				/* select/no_select */
 				Option_table_add_switch(option_table,"select","no_select",&select_enabled);
 				/* streaming_create/no_streaming_create */
@@ -8452,7 +8452,7 @@ function, and DEACCESS any returned window.
 	return (return_code);
 } /* set_Graphics_window */
 
-char *Graphics_window_layout_mode_string(
+const char *Graphics_window_layout_mode_string(
 	enum Graphics_window_layout_mode layout_mode)
 /*******************************************************************************
 LAST MODIFIED : 28 June 2000
@@ -8462,7 +8462,7 @@ Returns a string label for the <layout_mode>, used in widgets and parsing.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 {
-	char *return_string;
+	const char *return_string;
 
 	ENTER(Graphics_window_layout_mode_string);
 	switch (layout_mode)
@@ -8544,7 +8544,7 @@ Up to calling function to deallocate returned array - but not the strings in it!
 			i=0;
 			while (layout_mode < static_cast<int>(GRAPHICS_WINDOW_LAYOUT_MODE_AFTER_LAST))
 			{
-				valid_strings[i]=Graphics_window_layout_mode_string(
+				valid_strings[i]=(char *)Graphics_window_layout_mode_string(
 					static_cast<enum Graphics_window_layout_mode>(layout_mode));
 				i++;
 				layout_mode++;

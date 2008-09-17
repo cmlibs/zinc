@@ -444,7 +444,7 @@ DESCRIPTION :
 Writes the properties of the <spectrum> to the command window.
 ==============================================================================*/
 
-struct Spectrum *CREATE(Spectrum)(char *name);
+struct Spectrum *CREATE(Spectrum)(const char *name);
 /*******************************************************************************
 LAST MODIFIED : 13 August 1997
 

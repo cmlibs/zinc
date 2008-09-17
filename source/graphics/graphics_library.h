@@ -200,7 +200,7 @@ DESCRIPTION :
 #endif
 
 #if defined (OPENGL_API)
-int query_gl_extension(char *extName);
+int query_gl_extension(const char *extName);
 /*******************************************************************************
 LAST MODIFIED : 9 September 1998
 
@@ -246,7 +246,7 @@ Returns an enumeration which can be used to select for a particular vendor
 implementation which is valid for the current OpenGL context.
 ==============================================================================*/
 
-int Graphics_library_load_extension(char *extension_name);
+int Graphics_library_load_extension(const char *extension_name);
 /*******************************************************************************
 LAST MODIFIED : 2 March 2007
 

@@ -238,7 +238,7 @@ update in case it has changed, and writes the new object string in the widget.
 ============================================================================*/
 	{ 
 		 const char *current_string; 
-		 static char *null_object_name="<NONE>"; 
+		 static const char *null_object_name="<NONE>"; 
 		 char *object_name; 
 		 int return_code; 
 
@@ -342,11 +342,10 @@ Updates the chosen object and text field in response to messages.
 // 		 return (const_cast<char *>(GetValue().c_str()));
 // 	}
 
-	int set_item(char *new_item)
+	int set_item(const char *new_item)
 	{
 		unsigned int return_code;
 		return_code = 0;
-		
 		if (new_item !=NULL)
 		{
 			 SetValue(new_item);

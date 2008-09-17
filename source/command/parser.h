@@ -128,7 +128,7 @@ of double values to be parsed, with custom help text to be printed out as well.
 Global functions
 ----------------
 */
-int fuzzy_string_compare(char *first,char *second);
+int fuzzy_string_compare(const char *first,const char *second);
 /*******************************************************************************
 LAST MODIFIED : 21 June 1999
 
@@ -145,7 +145,7 @@ length of the shortest of first and second.
 Returns 1 if the strings match, 0 if they do not.
 ==============================================================================*/
 
-int fuzzy_string_compare_same_length(char *first,char *second);
+int fuzzy_string_compare_same_length(const char *first,const char *second);
 /*******************************************************************************
 LAST MODIFIED : 14 August 1998
 
@@ -196,7 +196,7 @@ DESCRIPTION :
 ==============================================================================*/
 
 int Option_table_add_help(struct Option_table *option_table,
-	char *help_string);
+	const char *help_string);
 /*******************************************************************************
 LAST MODIFIED : 2 May 2007
 
@@ -204,7 +204,7 @@ DESCRIPTION :
 Adds the given help to the option table.
 ==============================================================================*/
 
-int Option_table_add_entry(struct Option_table *option_table,char *token,
+int Option_table_add_entry(struct Option_table *option_table,const char *token,
 	void *to_be_modified,void *user_data,modifier_function modifier);
 /*******************************************************************************
 LAST MODIFIED : 15 December 1999
@@ -251,7 +251,7 @@ no further errors will be reported on subsequent calls.
 ==============================================================================*/
 
 int Option_table_add_switch(struct Option_table *option_table,
-	char *on_string,char *off_string,int *value_address);
+	const char *on_string,const char *off_string,int *value_address);
 /*******************************************************************************
 LAST MODIFIED : 12 May 2000
 
@@ -734,7 +734,7 @@ NB.  *enum_value_address_void is put in *set_value_address_void
 ==============================================================================*/
 
 int Option_table_add_char_flag_entry(struct Option_table *option_table,
-	char *token, char *flag);
+	const char *token, char *flag);
 /*******************************************************************************
 LAST MODIFIED : 8 October 2003
 
@@ -804,7 +804,7 @@ Adds the given <token> to the <option_table>.  The <vector> is filled in with th
 ==============================================================================*/
 
 int Option_table_add_double_entry(struct Option_table *option_table,
-	char *token, double *value);
+	const char *token, double *value);
 /*******************************************************************************
 LAST MODIFIED : 8 October 2003
 
@@ -814,7 +814,7 @@ the token following is assigned to <value>.
 ==============================================================================*/
 
 int Option_table_add_double_vector_entry(struct Option_table *option_table,
-	char *token, double *vector, int *number_of_components);
+	const char *token, double *vector, int *number_of_components);
 /*******************************************************************************
 LAST MODIFIED : 8 October 2003
 
@@ -835,7 +835,7 @@ Adds the given <token> to the <option_table>.  The <vector> is filled in with th
 ==============================================================================*/
 
 int Option_table_add_double_vector_with_help_entry(
-	struct Option_table *option_table, char *token, double *vector, 
+	struct Option_table *option_table, const char *token, double *vector, 
 	struct Set_vector_with_help_data *data);
 /*******************************************************************************
 LAST MODIFIED : 8 October 2003

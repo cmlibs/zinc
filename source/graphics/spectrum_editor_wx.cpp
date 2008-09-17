@@ -596,7 +596,7 @@ If current_settings is NULL, no editing fields are displayed.
 	return (return_code);
 } /* spectrum_editor_select_settings_item */
 
-int spectrum_editor_settings_wx_key_presssed(struct Spectrum_editor *spectrum_editor, char *flag)
+int spectrum_editor_settings_wx_key_presssed(struct Spectrum_editor *spectrum_editor, const char *flag)
 /*******************************************************************************
 LAST MODIFIED : 31 August 2007
 
@@ -728,7 +728,7 @@ settings.
 	return (return_code);
 } /* spectrum_editor_wx_refresh */
 
-void spectrum_editor_wx_key_presssed(struct Spectrum_editor *spectrum_editor, char *flag)
+void spectrum_editor_wx_key_presssed(struct Spectrum_editor *spectrum_editor, const char *flag)
 /*******************************************************************************
 LAST MODIFIED : 31 August 2007
 

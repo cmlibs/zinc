@@ -357,32 +357,8 @@ DESCRIPTION :
 Notifies the <computed_field_manager> that the <field> has changed.
 ==============================================================================*/
 
-struct Computed_field_type_data;
-
-struct Computed_field_type_data *CREATE(Computed_field_type_data)
-   (char *name, Define_Computed_field_type_function 
-	define_Computed_field_type_function, void *define_type_user_data);
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Creates a structure representing a type of computed field.  The <name> should
-point to a static string which is used as the identifier of that type
-throughout the program.  The <define_Computed_field_type_function> is added to
-the define_computed_field option table when needed.
-==============================================================================*/
-
-int DESTROY(Computed_field_type_data)
-   (struct Computed_field_type_data **data_address);
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Frees memory/deaccess data at <*data_address>.
-==============================================================================*/
-
 int Computed_field_package_add_type(
-	struct Computed_field_package *computed_field_package, char *name,
+	struct Computed_field_package *computed_field_package, const char *name,
 	Define_Computed_field_type_function define_Computed_field_type_function,
 	Computed_field_type_package *define_type_user_data);
 /*******************************************************************************

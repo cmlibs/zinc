@@ -102,7 +102,7 @@ DESCRIPTION :
 Global functions
 ----------------
 */
-struct Light_model *CREATE(Light_model)(char *name);
+struct Light_model *CREATE(Light_model)(const char *name);
 /*******************************************************************************
 LAST MODIFIED : 25 September 1995
 

@@ -936,7 +936,7 @@ DESCRIPTION :
 Sets the integer identifier used by the graphics to distinguish this object.
 ==============================================================================*/
 
-struct GT_object *CREATE(GT_object)(char *name,enum GT_object_type object_type,
+struct GT_object *CREATE(GT_object)(const char *name,enum GT_object_type object_type,
 	struct Graphical_material *default_material);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005

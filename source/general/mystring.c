@@ -535,7 +535,7 @@ DESCRIPTION :
 	return(out_string);
 } /* remove_leading_trailing_blanks */
 
-int append_string(char **string1,char *string2,int *error)
+int append_string(char **string1,const char *string2,int *error)
 /*******************************************************************************
 LAST MODIFIED : 2 December 1998
 

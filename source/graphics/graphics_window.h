@@ -583,7 +583,7 @@ NOTE: Calling function must remember to ACCESS any window passed to this
 function, and DEACCESS any returned window.
 ==============================================================================*/
 
-char *Graphics_window_layout_mode_string(
+const char *Graphics_window_layout_mode_string(
 	enum Graphics_window_layout_mode layout_mode);
 /*******************************************************************************
 LAST MODIFIED : 5 October 1998

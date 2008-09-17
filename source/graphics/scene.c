@@ -4548,7 +4548,7 @@ as a command, using the given <command_prefix>.
 	return (return_code);
 } /* list_Scene_object_transformation_commands */
 
-struct Scene *CREATE(Scene)(char *name)
+struct Scene *CREATE(Scene)(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 2 December 2002
 

@@ -251,7 +251,7 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(Texture_storage_type);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Texture_wrap_mode);
 
-struct Texture *CREATE(Texture)(char *name);
+struct Texture *CREATE(Texture)(const char *name);
 /*******************************************************************************
 LAST MODIFIED : 25 September 1995
 
@@ -404,7 +404,7 @@ Sets the texture filter: linear or nearest.
 
 int Texture_allocate_image(struct Texture *texture,
 	int width, int height, int depth, enum Texture_storage_type storage,
-	int number_of_bytes_per_component, char *source_name);
+	int number_of_bytes_per_component, const char *source_name);
 /*******************************************************************************
 LAST MODIFIED : 15 March 2002
 

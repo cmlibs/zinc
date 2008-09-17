@@ -166,7 +166,7 @@ update in case it has changed, and writes the new object string in the widget.
 ============================================================================*/ \
 	{ 
 	const char *current_string; 
-	static char *null_object_name="<NONE>"; 
+	static const char *null_object_name="<NONE>"; 
 	char *object_name; 
 	int return_code; 
 

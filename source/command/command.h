@@ -116,7 +116,7 @@ with it.
 ==============================================================================*/
 
 int Execute_command_execute_string(struct Execute_command *execute_command,
-	char *string);
+	const char *string);
 /*******************************************************************************
 LAST MODIFIED : 8 December 1999
 
