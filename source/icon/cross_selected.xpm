@@ -1,5 +1,5 @@
 /* XPM */
-static char * cross_selected_xpm[] = {
+static const char * cross_selected_xpm[] = {
 "14 14 143 2",
 "  	c #F8F8F8",
 ". 	c #E9B4B4",

@@ -1,5 +1,5 @@
 /* XPM */
-static char * backward_xpm[] = {
+static const char * backward_xpm[] = {
 "32 33 3 1",
 " 	c None",
 ".	c #EEEAE6",

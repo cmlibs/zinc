@@ -1,5 +1,5 @@
 /* XPM */
-static char * Element_point_tool_unclicked_xpm[] = {
+static const char * Element_point_tool_unclicked_xpm[] = {
 "36 36 5 1",
 " 	c None",
 ".	c #EAEAEA",

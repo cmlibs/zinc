@@ -1,5 +1,5 @@
 /* XPM */
-static char * cross_xpm[] = {
+static const char * cross_xpm[] = {
 "14 14 159 2",
 "  	c #F8F8F8",
 ". 	c #EFCCCD",

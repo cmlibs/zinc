@@ -1,5 +1,5 @@
 /* XPM */
-static char * stop_button_xpm[] = {
+static const char * stop_button_xpm[] = {
 "90 33 5 1",
 " 	c None",
 ".	c #F8F6F5",

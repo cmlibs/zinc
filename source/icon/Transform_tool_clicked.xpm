@@ -1,5 +1,5 @@
 /* XPM */
-static char * Transform_tool_clicked_xpm[] = {
+static const char * Transform_tool_clicked_xpm[] = {
 "36 36 12 1",
 " 	c None",
 ".	c #FF0000",

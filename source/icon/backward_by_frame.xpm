@@ -1,5 +1,5 @@
 /* XPM */
-static char * backward_by_frame_xpm[] = {
+static const char * backward_by_frame_xpm[] = {
 "34 35 6 1",
 " 	c None",
 ".	c #FFFFFF",

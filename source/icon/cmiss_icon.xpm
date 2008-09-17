@@ -1,5 +1,5 @@
 /* XPM */
-static char * cmiss_icon_xpm[] = {
+static const char * cmiss_icon_xpm[] = {
 "94 99 4408 2",
 "  	c None",
 ". 	c #FFEB7E",
