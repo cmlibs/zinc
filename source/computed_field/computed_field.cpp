@@ -234,7 +234,7 @@ Module functions
 ----------------
 */
 
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Computed_field,name,char *,strcmp)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Computed_field,name,const char *,strcmp)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Computed_field)
 struct Computed_field_type_data *CREATE(Computed_field_type_data)
@@ -464,7 +464,7 @@ COMPUTED_FIELD_INVALID with no components.
 			(field->name = duplicate_string(name)))
 		{
 			/* By default the name and the command_string are the same */
-			field->command_string = field->name;
+			field->command_string = (char *)field->name;
 			/* initialise all members of computed_field */	
 			field->number_of_components = 0;
 			/* allowed to modify/remove from manager until disabled with
@@ -682,7 +682,7 @@ in computed_field_set.cpp.
 DECLARE_INDEXED_LIST_FUNCTIONS(Computed_field)
 
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Computed_field,name,
-	char *,strcmp)
+	const char *,strcmp)
 
 DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Computed_field,name)
 
@@ -908,7 +908,7 @@ functions to check if read_only flag is set.
 	return (return_code);
 } /* MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Computed_field,name,char *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Computed_field,name,const char *)
 {
 	char *destination_name;
 	int return_code;
@@ -1192,8 +1192,8 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 	return (return_code);
 } /* MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name) */
 
-DECLARE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(Computed_field, name, char *)
-DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(Computed_field, name, char *)
+DECLARE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(Computed_field, name, const char *)
+DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(Computed_field, name, const char *)
 
 int Computed_field_changed(struct Computed_field *field,
 	struct MANAGER(Computed_field) *computed_field_manager)
@@ -5055,9 +5055,9 @@ Changes the name of a field.
 				}
 				DEALLOCATE(field->name);
 				field->name = new_name;
-				strcpy(field->name, name);
+				strcpy((char *)field->name, name);
 				/* Now make them point to the same memory */
-				field->command_string = field->name;
+				field->command_string = (char *)field->name;
 			}
 			
 			if (!LIST_END_IDENTIFIER_CHANGE(Computed_field,

@@ -1559,7 +1559,7 @@ FE_field being made and/or modified.
 					automatically */
 				FE_region_get_FE_field_with_properties(
 					Cmiss_region_get_FE_region(field_modify->region),
-					field->name, GENERAL_FE_FIELD,
+					(char *)field->name, GENERAL_FE_FIELD,
 					/*indexer_field*/(struct FE_field *)NULL, /*number_of_indexed_values*/0,
 					cm_field_type, coordinate_system,
 					value_type, number_of_components, component_names,

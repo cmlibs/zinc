@@ -362,7 +362,7 @@ DESCRIPTION :
 Graphical object data structure.
 ==============================================================================*/
 {
-	char *name;
+	const char *name;
 	enum GT_object_type object_type;
 	/* for linked object */
 	struct GT_object *nextobject;

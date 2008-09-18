@@ -430,7 +430,7 @@ Up to the calling function to DESTROY the returned Cmgui_image.
 
 int Texture_set_image(struct Texture *texture,
 	struct Cmgui_image *cmgui_image,
-	char *image_file_name, char *file_number_pattern,
+	const char *image_file_name, const char *file_number_pattern,
 	int start_file_number, int stop_file_number, int file_number_increment,
 	int crop_left, int crop_bottom, int crop_width, int crop_height);
 /*******************************************************************************

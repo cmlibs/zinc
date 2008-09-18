@@ -890,7 +890,7 @@ Modifier function for entering a path to a Cmiss_region, starting at
 } /* set_Cmiss_region_path */
 
 int Option_table_add_set_Cmiss_region_path(struct Option_table *option_table, 
-	char *entry_string, struct Cmiss_region *root_region, char **path_address)
+	const char *entry_string, struct Cmiss_region *root_region, char **path_address)
 /*******************************************************************************
 LAST MODIFIED : 13 March 2003
 

@@ -159,11 +159,11 @@ PROTOTYPE_OBJECT_FUNCTIONS(Computed_field);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Computed_field);
 
 PROTOTYPE_LIST_FUNCTIONS(Computed_field);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Computed_field,name,char *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Computed_field,name,const char *);
 
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Computed_field,name,char *);
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(Computed_field,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Computed_field);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Computed_field,name,char *);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Computed_field,name,const char *);
 
 int Computed_field_clear_cache(struct Computed_field *field);
 /*******************************************************************************

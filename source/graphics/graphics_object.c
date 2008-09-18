@@ -89,7 +89,7 @@ Module functions
 ----------------
 */
 
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(GT_object,name,char *,strcmp)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(GT_object,name,const char *,strcmp)
 
 static int GT_object_get_time_number(struct GT_object *graphics_object,
 	float time)
@@ -2237,7 +2237,7 @@ DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(GT_object)
 
 DECLARE_INDEXED_LIST_FUNCTIONS(GT_object)
 
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(GT_object,name,char *, \
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(GT_object,name,const char *, \
 	strcmp)
 
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
@@ -6639,7 +6639,7 @@ Sets the secondary_material of a GT_object.
 	return (return_code);
 } /* set_GT_object_secondary_material */
 
-int GT_object_set_name(struct GT_object *graphics_object, char *name)
+int GT_object_set_name(struct GT_object *graphics_object, const char *name)
 /*******************************************************************************
 LAST MODIFIED : 30 April 2003
 
@@ -6647,7 +6647,7 @@ DESCRIPTION :
 Changes the name of <graphics_object> to a copy of <name>.
 ==============================================================================*/
 {
-	char *temp_name;
+	const char *temp_name;
 	int return_code;
 
 	ENTER(GT_object_set_name);

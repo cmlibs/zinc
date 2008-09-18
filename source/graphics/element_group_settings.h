@@ -134,7 +134,7 @@ DESCRIPTION :
 Data for formating output with GT_element_settings_list_contents function.
 ==============================================================================*/
 {
-	char *line_prefix,*line_suffix;
+	const char *line_prefix,*line_suffix;
 	enum GT_element_settings_string_details settings_string_detail;
 }; /* GT_element_settings_list_data */
 

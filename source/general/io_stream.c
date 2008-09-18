@@ -874,7 +874,7 @@ DESCRIPTION :
 	return (return_code);
 } /* IO_stream_end_of_stream */
 
-int IO_stream_scan(struct IO_stream *stream, char *format, ...)
+int IO_stream_scan(struct IO_stream *stream, const char *format, ...)
 /*******************************************************************************
 LAST MODIFIED : 23 August 2004
 
@@ -915,7 +915,7 @@ Equivalent to a standard C fscanf or sscanf on the stream.
 				keep_scanning = 1;
 
 				va_start(arguments, format);
-				index1 = format;
+				index1 = (char *)format;
 				index2 = strchr(index1, '%');
 				local_counter = 0;
 				if (index2)
@@ -1244,7 +1244,7 @@ parameters so the stream is first).
 	return (return_code);
 } /* IO_stream_fread */
 
-int IO_stream_read_string(struct IO_stream *stream,char *format,char **string_read)
+int IO_stream_read_string(struct IO_stream *stream,const char *format,char **string_read)
 /******************************************************************************
 LAST MODIFIED : 23 August 2004
 

@@ -1215,7 +1215,7 @@ Removes <scene object> from the list of objects on <scene>.
 ==============================================================================*/
 
 int Scene_add_graphics_object(struct Scene *scene,
-	struct GT_object *graphics_object, int position, char *scene_object_name,
+	struct GT_object *graphics_object, int position, const char *scene_object_name,
 	int fast_changing);
 /*******************************************************************************
 LAST MODIFIED : 15 March 2001

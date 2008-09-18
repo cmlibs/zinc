@@ -203,7 +203,7 @@ The properties of a material.
 ==============================================================================*/
 {
 	/* the name of the material */
-	char *name;
+	const char *name;
 	/* the colour of the background light (so scattered that its incident
 		direction is unknown, comes from all directions) reflected */
 	struct Colour ambient;
@@ -1689,7 +1689,7 @@ DESCRIPTION :
 } /* Material_program_execute */
 #endif /* defined (OPENGL_API) */
 
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Graphical_material,name,char *,strcmp)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Graphical_material,name,const char *,strcmp)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Graphical_material)
 
@@ -2288,7 +2288,7 @@ Allocates memory and assigns fields for a material.
 		if (ALLOCATE(material,struct Graphical_material,1)&&
 			ALLOCATE(material->name,char,strlen(name)+1))
 		{
-			strcpy(material->name,name);
+			strcpy((char *)material->name,name);
 			material->access_count=0;
 			material->per_pixel_lighting_flag = 0;
 			material->bump_mapping_flag = 0;
@@ -2425,7 +2425,7 @@ DECLARE_OBJECT_FUNCTIONS(Graphical_material)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Graphical_material)
 DECLARE_INDEXED_LIST_FUNCTIONS(Graphical_material)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Graphical_material,name,
-	char *,strcmp)
+	const char *,strcmp)
 DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Graphical_material,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Graphical_material,name)
@@ -2565,7 +2565,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
 	return (return_code);
 } /* MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Graphical_material,name,char *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Graphical_material,name,const char *)
 {
 	char *destination_name;
 	int return_code;
@@ -2615,9 +2615,9 @@ DECLARE_MANAGER_FUNCTIONS(Graphical_material)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphical_material)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Graphical_material,name,char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Graphical_material,name,const char *)
 
-char *Graphical_material_name(struct Graphical_material *material)
+const char *Graphical_material_name(struct Graphical_material *material)
 /*******************************************************************************
 LAST MODIFIED : 29 November 1997
 
@@ -2628,7 +2628,7 @@ other string if the name is invalid, suitable for putting in printf statements.
 Be careful with the returned value: esp. do not modify or DEALLOCATE it!
 ==============================================================================*/
 {
-	char *return_name;
+	const char *return_name;
 	static char error_string[]="ERROR";
 	static char no_name_string[]="NO NAME";
 

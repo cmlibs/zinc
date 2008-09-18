@@ -70,9 +70,9 @@ ACCESS this object for as long as you need to keep it; it is not modifiable.
 ==============================================================================*/
 {
 	/* name identifier for the tool and display name for presentation */
-	char *display_name,*name;
+	const char *name, *display_name;
 	/* This points to the static string which identifies the tool type */
-	char *tool_type_name;
+	const char *tool_type_name;
 	Interactive_event_handler *interactive_event_handler;
 	Interactive_tool_get_icon_function *get_icon_function;
 	Interactive_tool_bring_up_dialog_function *bring_up_dialog_function;
@@ -100,7 +100,7 @@ Global functions
 */
 
 struct Interactive_tool *CREATE(Interactive_tool)(const char *name,const char *display_name,
-	char *tool_type_name,
+	const char *tool_type_name,
 	Interactive_event_handler *interactive_event_handler,
 	Interactive_tool_get_icon_function *get_icon_function,
 	Interactive_tool_bring_up_dialog_function *bring_up_dialog_function,
@@ -216,7 +216,7 @@ DECLARE_OBJECT_FUNCTIONS(Interactive_tool)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Interactive_tool)
 DECLARE_LIST_FUNCTIONS(Interactive_tool)
 DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Interactive_tool, \
-	name,char *,strcmp)
+	name,const char *,strcmp)
 DECLARE_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Interactive_tool,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Interactive_tool,name)
@@ -301,7 +301,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Interactive_tool,name)
 	return (return_code);
 } /* MANAGER_COPY_WITHOUT_IDENTIFIER(Interactive_tool,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Interactive_tool,name,char *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Interactive_tool,name,const char *)
 {
 	char *destination_name;
 	int return_code;
@@ -351,9 +351,9 @@ DECLARE_MANAGER_FUNCTIONS(Interactive_tool)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Interactive_tool)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Interactive_tool,name,char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Interactive_tool,name,const char *)
 
-char *Interactive_tool_get_display_name(
+const char *Interactive_tool_get_display_name(
 	struct Interactive_tool *interactive_tool)
 /*******************************************************************************
 LAST MODIFIED : 11 May 2000
@@ -365,7 +365,7 @@ instead of spaces for more terse commands.
 Up to calling function to DEALLOCATE the returned copy of the display_name.
 ==============================================================================*/
 {
-	char *display_name;
+	const char *display_name;
 
 	ENTER(Interactive_tool_get_display_name);
 	if (interactive_tool)
@@ -383,7 +383,7 @@ Up to calling function to DEALLOCATE the returned copy of the display_name.
 	return (display_name);
 } /* Interactive_tool_get_display_name */
 
-char *Interactive_tool_get_tool_type_name(
+const char *Interactive_tool_get_tool_type_name(
 	struct Interactive_tool *interactive_tool)
 /*******************************************************************************
 LAST MODIFIED : 6 October 2000
@@ -393,7 +393,7 @@ Returns the static pointer to the string which belongs to the tool type.  Do
 not DEALLOCATE this pointer.
 ==============================================================================*/
 {
-	char *tool_type_name;
+	const char *tool_type_name;
 
 	ENTER(Interactive_tool_get_tool_type_name);
 	if (interactive_tool)

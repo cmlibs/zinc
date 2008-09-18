@@ -80,7 +80,7 @@ struct Time_object
 DECLARE_OBJECT_FUNCTIONS(Time_object)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Time_object)
 
-struct Time_object *CREATE(Time_object)(char *name)
+struct Time_object *CREATE(Time_object)(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 29 September 1998
 

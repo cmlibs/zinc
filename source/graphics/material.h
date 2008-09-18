@@ -191,11 +191,11 @@ PROTOTYPE_OBJECT_FUNCTIONS(Graphical_material);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Graphical_material);
 
 PROTOTYPE_LIST_FUNCTIONS(Graphical_material);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Graphical_material,name,char *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Graphical_material,name,const char *);
 
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Graphical_material,name,char *);
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(Graphical_material,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Graphical_material);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Graphical_material,name,char *);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Graphical_material,name,const char *);
 
 int direct_render_Graphical_material(struct Graphical_material *material);
 /*******************************************************************************
@@ -205,7 +205,7 @@ DESCRIPTION :
 Directly outputs the graphics library commands for activating <material>.
 ==============================================================================*/
 
-char *Graphical_material_name(struct Graphical_material *material);
+const char *Graphical_material_name(struct Graphical_material *material);
 /*******************************************************************************
 LAST MODIFIED : 29 November 1997
 

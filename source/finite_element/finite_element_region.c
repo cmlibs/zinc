@@ -2612,7 +2612,7 @@ FE_region wrapper for set_FE_fields.
 } /* set_FE_fields_FE_region */
 
 int Option_table_add_set_FE_field_from_FE_region(
-	struct Option_table *option_table, char *entry_string,
+	struct Option_table *option_table, const char *entry_string,
 	struct FE_field **fe_field_address, struct FE_region *fe_region)
 /*******************************************************************************
 LAST MODIFIED : 11 March 2003

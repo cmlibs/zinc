@@ -131,7 +131,7 @@ private:
 
 	char* get_command_string();
 
-	char *projection_type_string(
+	const char *projection_type_string(
 		enum Computed_field_window_projection_type projection_type);
 
 	int calculate_matrix();
@@ -146,7 +146,7 @@ private:
 		FE_value *xi, int element_dimension, struct Cmiss_region *search_region);
 };
 
-char *Computed_field_window_projection::projection_type_string(
+const char *Computed_field_window_projection::projection_type_string(
 	enum Computed_field_window_projection_type projection_type)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
@@ -156,7 +156,7 @@ Returns a string label for the <projection_type>, used in widgets and parsing.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 {
-	char *return_string;
+	const char *return_string;
 
 	ENTER(Computed_field_window_projection_type_string);
 	switch (projection_type)

@@ -2282,7 +2282,7 @@ static int add_interactive_tool_to_wx_toolbar(struct Interactive_tool *interacti
 	 wxPanel *panel = window->interactive_toolbar_panel;
 	 //	 wxSizer *sizer = panel->GetSizer();
 	 wxInteractiveToolButton *button = new wxInteractiveToolButton(interactive_tool, window);
-	 char *interactive_tool_name = Interactive_tool_get_display_name(interactive_tool);
+	 const char *interactive_tool_name = Interactive_tool_get_display_name(interactive_tool);
 	 int return_int = 0;
 
 	 if (window->grid_field == NULL)

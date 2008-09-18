@@ -215,7 +215,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	/* the name/identifier of the Computed_field */
-	char *name;
+	const char *name;
 	/* The command string is what is printed for GET_NAME.  This is usually
 		the same as the name (and just points to it) however it is separated
 		out so that we can specify an string for the command_string which is not

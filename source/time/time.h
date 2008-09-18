@@ -57,7 +57,7 @@ typedef double (*Time_object_next_time_function)(double time_after,
 PROTOTYPE_OBJECT_FUNCTIONS(Time_object);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Time_object);
 
-struct Time_object *CREATE(Time_object)(char *name);
+struct Time_object *CREATE(Time_object)(const char *name);
 /*******************************************************************************
 LAST MODIFIED : 29 September 1998
 

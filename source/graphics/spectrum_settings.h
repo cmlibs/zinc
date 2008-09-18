@@ -168,7 +168,7 @@ DESCRIPTION :
 Data for formating output with Spectrum_list_contents function.
 ==============================================================================*/
 {
-	char *line_prefix,*line_suffix;
+	const char *line_prefix,*line_suffix;
 	enum Spectrum_settings_string_details settings_string_detail;
 }; /* Spectrum_settings_list_data */
 

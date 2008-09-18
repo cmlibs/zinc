@@ -1061,7 +1061,7 @@ scene on this window are modified, redraw.
 	LEAVE;
 } /* Scene_object_scene_change */
 
-static struct Scene_object *CREATE(Scene_object)(char *name)
+static struct Scene_object *CREATE(Scene_object)(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 4 December 2001
 
@@ -1119,7 +1119,7 @@ and is visible.
 } /* CREATE(Scene_object) */
 
 static struct Scene_object *create_Scene_object_with_Graphics_object(
-	char *name, struct GT_object *gt_object)
+	const char *name, struct GT_object *gt_object)
 /*******************************************************************************
 LAST MODIFIED : 11 July 2000
 
@@ -7554,7 +7554,7 @@ Removes <scene object> from the list of objects on <scene>.
 } /* Scene_remove_Scene_object */
 
 int Scene_add_graphics_object(struct Scene *scene,
-	struct GT_object *graphics_object, int position, char *scene_object_name,
+	struct GT_object *graphics_object, int position, const char *scene_object_name,
 	int fast_changing)
 /*******************************************************************************
 LAST MODIFIED : 15 March 2001

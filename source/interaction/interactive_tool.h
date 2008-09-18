@@ -97,7 +97,7 @@ Global functions
 */
 
 struct Interactive_tool *CREATE(Interactive_tool)(const char *name,const char *display_name,
-	char *tool_type_name,
+	const char *tool_type_name,
 	Interactive_event_handler *interactive_event_handler,
 	Interactive_tool_get_icon_function *get_icon_function,
 	Interactive_tool_bring_up_dialog_function *bring_up_dialog_function,
@@ -126,14 +126,14 @@ Destroys the Interactive_tool.
 
 PROTOTYPE_OBJECT_FUNCTIONS(Interactive_tool);
 PROTOTYPE_LIST_FUNCTIONS(Interactive_tool);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Interactive_tool,name,char *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Interactive_tool,name,const char *);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Interactive_tool);
 
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Interactive_tool,name,char *);
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(Interactive_tool,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Interactive_tool);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Interactive_tool,name,char *);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Interactive_tool,name,const char *);
 
-char *Interactive_tool_get_display_name(
+const char *Interactive_tool_get_display_name(
 	struct Interactive_tool *interactive_tool);
 /*******************************************************************************
 LAST MODIFIED : 11 May 2000
@@ -145,7 +145,7 @@ instead of spaces for more terse commands.
 Up to calling function to DEALLOCATE the returned copy of the display_name.
 ==============================================================================*/
 
-char *Interactive_tool_get_tool_type_name(
+const char *Interactive_tool_get_tool_type_name(
 	struct Interactive_tool *interactive_tool);
 /*******************************************************************************
 LAST MODIFIED : 6 October 2000

@@ -564,7 +564,7 @@ PROTOTYPE_OBJECT_FUNCTIONS(GT_object);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(GT_object);
 
 PROTOTYPE_LIST_FUNCTIONS(GT_object);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(GT_object,name,char *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(GT_object,name,const char *);
 
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
@@ -1392,7 +1392,7 @@ DESCRIPTION :
 Sets the secondary_material of a GT_object.
 ==============================================================================*/
 
-int GT_object_set_name(struct GT_object *graphics_object, char *name);
+int GT_object_set_name(struct GT_object *graphics_object, const char *name);
 /*******************************************************************************
 LAST MODIFIED : 30 April 2003
 

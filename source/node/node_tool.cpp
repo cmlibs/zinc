@@ -3257,7 +3257,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 ==============================================================================*/
 {
 	char *initial_path;
-	char *tool_display_name,*tool_name;
+	const char *tool_display_name,*tool_name;
 #if defined (MOTIF)
 	Atom WM_DELETE_WINDOW;
 	int init_widgets;

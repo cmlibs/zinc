@@ -100,7 +100,7 @@ NULL <state> and a NULL variable <to_be_modified> it should write a description
 of the values it expects to the command window.
 ==============================================================================*/
 {
-	char *option;
+	const char *option;
 	void *to_be_modified;
 	void *user_data;
 	modifier_function modifier;
@@ -119,7 +119,7 @@ of double values to be parsed, with custom help text to be printed out as well.
 	/* number of values to be read in */
 	int num_values;
 	/* text to print in help mode */
-	char *help_text;
+	const char *help_text;
 	/* Should initially be cleared to 0, set to 1 if values read in */
 	char set;
 };
@@ -744,7 +744,7 @@ then the <flag> will be set.
 ==============================================================================*/
 
 int Option_table_add_int_positive_entry(struct Option_table *option_table,
-	char *token, int *value);
+	const char *token, int *value);
 /*******************************************************************************
 LAST MODIFIED : 4 December 2003
 
@@ -754,7 +754,7 @@ the token following is assigned to <value>.
 ==============================================================================*/
 
 int Option_table_add_int_non_negative_entry(struct Option_table *option_table,
-	char *token, int *value);
+	const char *token, int *value);
 /*******************************************************************************
 LAST MODIFIED : 4 December 2003
 
@@ -764,7 +764,7 @@ the token following is assigned to <value>.
 ==============================================================================*/
 
 int Option_table_add_int_vector_entry(struct Option_table *option_table,
-	char *token, int *vector, int *number_of_components);
+	const char *token, int *vector, int *number_of_components);
 /*******************************************************************************
 LAST MODIFIED : 4 December 2003
 
@@ -897,7 +897,7 @@ are not repeated.
 ==============================================================================*/
 
 int Option_table_add_ignore_token_entry(struct Option_table *option_table,
-	char *token, int *expected_parameters);
+	const char *token, int *expected_parameters);
 /*******************************************************************************
 LAST MODIFIED : 21 September 2006
 

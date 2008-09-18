@@ -123,7 +123,7 @@ LAST MODIFIED : 23 August 2004
 DESCRIPTION :
 ==============================================================================*/
 
-int IO_stream_scan(struct IO_stream *stream, char *format, ...);
+int IO_stream_scan(struct IO_stream *stream, const char *format, ...);
 /*******************************************************************************
 LAST MODIFIED : 4 August 2004
 
@@ -148,7 +148,7 @@ DESCRIPTION :
 Equivalent to a standard C fgetc on the stream.
 ==============================================================================*/
 
-int IO_stream_read_string(struct IO_stream *stream,char *format,char **string_read);
+int IO_stream_read_string(struct IO_stream *stream,const char *format,char **string_read);
 /******************************************************************************
 LAST MODIFIED : 23 August 2004
 

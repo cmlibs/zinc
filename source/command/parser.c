@@ -5325,7 +5325,7 @@ then the <flag> will be set.
 } /* Option_table_add_char_flag_entry */
 
 int Option_table_add_int_positive_entry(struct Option_table *option_table,
-	char *token, int *value)
+	const char *token, int *value)
 /*******************************************************************************
 LAST MODIFIED : 4 December 2003
 
@@ -5354,7 +5354,7 @@ the token following is assigned to <value>.
 } /* Option_table_add_int_positive_entry */
 
 int Option_table_add_int_non_negative_entry(struct Option_table *option_table,
-	char *token, int *value)
+	const char *token, int *value)
 /*******************************************************************************
 LAST MODIFIED : 4 December 2003
 
@@ -5383,7 +5383,7 @@ the token following is assigned to <value>.
 } /* Option_table_add_int_non_negative_entry */
 
 int Option_table_add_int_vector_entry(struct Option_table *option_table,
-	char *token, int *vector, int *number_of_components)
+	const char *token, int *vector, int *number_of_components)
 /*******************************************************************************
 LAST MODIFIED : 4 December 2003
 
@@ -5714,7 +5714,7 @@ DESCRIPTION :
 } /* set_nothing */
 
 int Option_table_add_ignore_token_entry(struct Option_table *option_table,
-	char *token, int *expected_parameters)
+	const char *token, int *expected_parameters)
 /*******************************************************************************
 LAST MODIFIED : 21 September 2006
 
