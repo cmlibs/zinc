@@ -275,13 +275,13 @@ PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Texture);
 
 PROTOTYPE_LIST_FUNCTIONS(Texture);
 
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Texture,name,char *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Texture,name,const char *);
 
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Texture,name,char *);
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(Texture,name,const char *);
 
 PROTOTYPE_MANAGER_FUNCTIONS(Texture);
 
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Texture,name,char *);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Texture,name,const char *);
 
 int Texture_notify_change(struct Texture *texture);
 /*******************************************************************************

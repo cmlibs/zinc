@@ -91,8 +91,8 @@ DESCRIPTION :
 Stores a Texture_property, name and value pair.
 ==============================================================================*/
 {
-	char *name;
-	char *value;
+	const char *name;
+	const char *value;
 	int access_count;
 };
 
@@ -115,7 +115,7 @@ The properties of a graphical texture.
 ==============================================================================*/
 {
 	/* the name of the texture */
-	char *name;
+	const char *name;
 	/* texture dimension: 1,2 or 3, automatically determined from image files,
 		 ie. 2 if it has one texel depth, 1 if it has one texel height */
 	int dimension;
@@ -203,7 +203,7 @@ LAST MODIFIED : 25 October 2007
 DESCRIPTION :
 ==============================================================================*/
 {
-	char *name_copy, *value_copy;
+	const char *name_copy, *value_copy;
 	struct Texture_property *property;
 
 	ENTER(CREATE(Texture_property));
@@ -273,7 +273,7 @@ DESCRIPTION :
 
 DECLARE_OBJECT_FUNCTIONS(Texture_property)
 FULL_DECLARE_INDEXED_LIST_TYPE(Texture_property);
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Texture_property,name,char *,strcmp)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Texture_property,name,const char *,strcmp)
 DECLARE_INDEXED_LIST_FUNCTIONS(Texture_property)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Texture_property,name,
 	char *, strcmp)
@@ -368,7 +368,7 @@ DESCRIPTION :
 
 DECLARE_OBJECT_FUNCTIONS(Texture_tiling)
 
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Texture,name,char *,strcmp)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Texture,name,const char *,strcmp)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Texture)
 
@@ -2478,7 +2478,7 @@ DESCRIPTION :
 A modifier function to set the texture storage type.
 ==============================================================================*/
 {
-	char *current_token, *storage_type_string;
+	const char *current_token, *storage_type_string;
 	enum Texture_storage_type *storage_type_address, storage_type;
 	int return_code;
 
@@ -3043,14 +3043,14 @@ of all textures.
 		{
 			if (ALLOCATE(texture->name,char,strlen(name)+1))
 			{
-				strcpy(texture->name,name);
+				strcpy((char *)texture->name,name);
 			}
 		}
 		else
 		{
 			if (ALLOCATE(texture->name,char,1))
 			{
-				*(texture->name)='\0';
+				*((char *)texture->name)='\0';
 			}
 		}
 		if (texture->name)
@@ -3234,7 +3234,7 @@ DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Texture)
 
 DECLARE_INDEXED_LIST_FUNCTIONS(Texture)
 
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Texture,name,char *,strcmp)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Texture,name,const char *,strcmp)
 
 DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Texture,name)
 
@@ -3443,7 +3443,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Texture,name)
 	return (return_code);
 } /* MANAGER_COPY_WITHOUT_IDENTIFIER(Texture,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Texture,name,char *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Texture,name,const char *)
 {
 	char *destination_name;
 	int return_code;
@@ -3494,11 +3494,11 @@ DECLARE_MANAGER_FUNCTIONS(Texture)
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Texture)
 
 DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS( \
-	Texture,name,char *,texture_manager)
+	Texture,name,const char *,texture_manager)
 
 #if defined (OLD_CODE)
 	  /* Put the manager into scene */
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Texture,name,char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Texture,name,const char *)
 #endif /* defined (OLD_CODE) */
 
 int Texture_notify_change(struct Texture *texture)
@@ -3850,7 +3850,7 @@ DESCRIPTION :
 Sets the texture filter: linear or nearest.
 ==============================================================================*/
 {
-	char *type_string;
+	const char *type_string;
 	int return_code;
 
 	ENTER(Texture_set_filter_mode);
@@ -6062,7 +6062,7 @@ DESCRIPTION :
 Sets how textures coordinates outside [0,1] are handled.
 ==============================================================================*/
 {
-	char *type_string;
+	const char *type_string;
 	int return_code;
 
 	ENTER(Texture_set_wrap_mode);

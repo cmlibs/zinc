@@ -67,7 +67,7 @@ Global Functions
 */
 
 Widget create_choose_enumerator_widget(Widget parent,
-	int number_of_valid_strings, char **valid_strings, char *enumerator_string,
+	int number_of_valid_strings, const char **valid_strings, const char *enumerator_string,
 	struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 21 November 2001
@@ -109,7 +109,7 @@ must not destroy or modify the returned static string.
 ==============================================================================*/
 
 int choose_enumerator_set_string(Widget choose_enumerator_widget,
-	char *enumerator_string);
+	const char *enumerator_string);
 /*******************************************************************************
 LAST MODIFIED : 21 January 2000
 

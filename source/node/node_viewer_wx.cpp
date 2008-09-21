@@ -1280,7 +1280,7 @@ Creates the array of cells containing field component values and derivatives
 and their labels.
 ==============================================================================*/
 {
-	 char *component_name, * new_string;
+	const char *component_name, * new_string;
 	enum FE_nodal_value_type *component_nodal_value_types,nodal_value_type;
 	int col,comp_no,k,number_of_components,number_of_derivatives,
 		number_of_unknown_nodal_value_types,return_code;

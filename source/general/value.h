@@ -128,7 +128,7 @@ Global functions
 ----------------
 */
 
-char *Value_type_string(enum Value_type value_type);
+const char *Value_type_string(enum Value_type value_type);
 /*******************************************************************************
 LAST MODIFIED : 25 August 1999
 
@@ -138,7 +138,7 @@ DOUBLE_VALUE == "double". This string should match the command used
 to create the edit object. The returned string must not be DEALLOCATEd!
 ==============================================================================*/
 
-enum Value_type Value_type_from_string(char *value_type_string);
+enum Value_type Value_type_from_string(const char *value_type_string);
 /*******************************************************************************
 LAST MODIFIED : 17 September 1999
 
@@ -146,7 +146,7 @@ DESCRIPTION :
 Returns the value_type from the string, eg "integer" = INT_VALUE.
 ==============================================================================*/
 
-char **Value_type_get_valid_strings_simple(int *number_of_valid_strings);
+const char **Value_type_get_valid_strings_simple(int *number_of_valid_strings);
 /*******************************************************************************
 LAST MODIFIED : 10 May 2000
 

@@ -83,7 +83,7 @@ The properties of a light.
 ==============================================================================*/
 {
 	/* the name of the light */
-	char *name;
+	const char *name;
 	/* light type: infinite, point or spot */
 	enum Light_type type;
 	struct Colour colour;
@@ -832,7 +832,7 @@ Allocates memory and assigns fields for a light model.
 		if (ALLOCATE(light, struct Light, 1) &&
 			(light->name = duplicate_string(name)))
 		{
-			strcpy(light->name, name);
+			strcpy((char *)light->name, name);
 			light->access_count = 0;
 			light->type=INFINITE_LIGHT;
 			(light->colour).red = 1.;
@@ -916,7 +916,7 @@ DECLARE_OBJECT_FUNCTIONS(Light)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Light)
 
 DECLARE_LIST_FUNCTIONS(Light)
-DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Light,name,char *,strcmp)
+DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Light,name,const char *,strcmp)
 DECLARE_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Light,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Light,name)
@@ -1012,7 +1012,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Light,name)
 	return (return_code);
 } /* MANAGER_COPY_WITHOUT_IDENTIFIER(Light,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Light,name,char *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Light,name,const char *)
 {
 	char *destination_name;
 	int return_code;
@@ -1052,7 +1052,7 @@ DECLARE_MANAGER_FUNCTIONS(Light)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Light)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Light,name,char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Light,name,const char *)
 
 int get_Light_attenuation(struct Light *light, float *constant_attenuation,
 	float *linear_attenuation, float *quadratic_attenuation)
@@ -1487,7 +1487,7 @@ LAST MODIFIED : 9 October 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-	char *current_token, *light_type_string, **valid_strings;
+	const char *current_token, *light_type_string, **valid_strings;
 	enum Light_type light_type;
 	float constant_attenuation, direction[3], linear_attenuation, position[3],
 		quadratic_attenuation, spot_cutoff, spot_exponent;

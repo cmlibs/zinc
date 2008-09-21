@@ -187,7 +187,7 @@ object.
 ==============================================================================*/
 {
 	/* graphics object names are preceded by this */
-	char *name_prefix;
+	const char *name_prefix;
 	/* default_rc_coordinate_field to use if NULL in any settings */
 	struct Computed_field *rc_coordinate_field,*default_rc_coordinate_field,
 		*wrapper_orientation_scale_field,*wrapper_stream_vector_field;

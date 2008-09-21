@@ -431,7 +431,7 @@ current point.
 		{
 			choose_enumerator_set_string(
 				element_point_viewer->xi_discretization_mode_widget,
-				ENUMERATOR_STRING(Xi_discretization_mode)(element_point_viewer->
+				(char *)ENUMERATOR_STRING(Xi_discretization_mode)(element_point_viewer->
 					element_point_identifier.xi_discretization_mode));
 			is_sensitive=True;
 		}
@@ -1970,7 +1970,7 @@ fields.
 ==============================================================================*/
 {
 	Atom WM_DELETE_WINDOW;
-	char **valid_strings;
+	const char **valid_strings;
 	int i,init_widgets,number_of_faces,number_of_valid_strings,start,stop,
 		temp_element_point_number;
 	MrmType element_point_viewer_dialog_class;

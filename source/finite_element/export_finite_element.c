@@ -3077,15 +3077,14 @@ Global functions
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(FE_write_criterion)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(FE_write_criterion));
 	switch (enumerator_value)
 	{
 		case FE_WRITE_COMPLETE_GROUP:
 		{
-			enumerator_string = "complete_group";
-		} break;
+			enumerator_string = "complete_group";		} break;
 		case FE_WRITE_NO_FIELDS:
 		{
 			enumerator_string = "no_fields";
@@ -3100,7 +3099,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(FE_write_criterion)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;

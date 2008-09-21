@@ -443,7 +443,7 @@ Returns true if <gt_element_group> contains settings which depend on time.
 ==============================================================================*/
 
 int build_GT_element_group(struct GT_element_group *gt_element_group,
-	FE_value time, char *name_prefix);
+	FE_value time, const char *name_prefix);
 /*******************************************************************************
 LAST MODIFIED : 25 March 2003
 

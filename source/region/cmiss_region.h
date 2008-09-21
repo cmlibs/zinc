@@ -225,7 +225,7 @@ Removes the callback calling <function> with <user_data> from <region>.
 ==============================================================================*/
 
 int Cmiss_region_add_child_region(struct Cmiss_region *region,
-	struct Cmiss_region *child_region, char *child_name, int child_position);
+	struct Cmiss_region *child_region, const char *child_name, int child_position);
 /*******************************************************************************
 LAST MODIFIED : 22 October 2002
 

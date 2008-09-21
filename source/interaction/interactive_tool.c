@@ -675,10 +675,10 @@ Allocates a copy of the name of <interactive_tool>, puts a pointer to it at
 	return (return_code);
 } /* Interactive_tool_name_to_array */
 
-char **interactive_tool_manager_get_tool_names(
+const char **interactive_tool_manager_get_tool_names(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	int *number_of_tools,struct Interactive_tool *current_interactive_tool,
-	char **current_tool_name)
+	const char **current_tool_name)
 /*******************************************************************************
 LAST MODIFIED : 2 October 2000
 
@@ -690,21 +690,21 @@ string for <current_interactive_tool>, or the first one if it is not found.
 Up to calling function to deallocate the returned array AND the strings in it.
 ==============================================================================*/
 {
-	char **tool_names,**tool_name;
+	const char **tool_names,**tool_name;
 	int i;
 
 	ENTER(interactive_tool_manager_get_tool_names);
-	tool_names=(char **)NULL;
+	tool_names=(const char **)NULL;
 	if (interactive_tool_manager&&number_of_tools&&current_tool_name)
 	{
 		if (0<(*number_of_tools=
 			NUMBER_IN_MANAGER(Interactive_tool)(interactive_tool_manager)))
 		{
-			if (ALLOCATE(tool_names,char *,*number_of_tools))
+			if (ALLOCATE(tool_names,const char *,*number_of_tools))
 			{
 				for (i=0;i< *number_of_tools;i++)
 				{
-					tool_names[i]=(char *)NULL;
+					tool_names[i]=(const char *)NULL;
 				}
 				tool_name=tool_names;
 				if (FOR_EACH_OBJECT_IN_MANAGER(Interactive_tool)(

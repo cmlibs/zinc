@@ -158,7 +158,7 @@ in <match_string>. Whitespace characters (space,tab) are only allowed in
 <input_string> where they appear in match_string.
 ==============================================================================*/
 
-int is_standard_object_name(char *name);
+int is_standard_object_name(const char *name);
 /*******************************************************************************
 LAST MODIFIED : 29 April 2003
 

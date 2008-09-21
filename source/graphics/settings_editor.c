@@ -1387,7 +1387,7 @@ Callback for change of xi_discretization_mode.
 				/* make sure the chooser is showing the previous mode */
 				choose_enumerator_set_string(
 					settings_editor->xi_discretization_mode_widget,
-					ENUMERATOR_STRING(Xi_discretization_mode)(xi_discretization_mode));
+					(char *)ENUMERATOR_STRING(Xi_discretization_mode)(xi_discretization_mode));
 			}
 		}
 		XtSetSensitive(settings_editor->discretization_entry,
@@ -3019,7 +3019,7 @@ DESCRIPTION :
 Creates a settings_editor widget.
 ==============================================================================*/
 {
-	char **valid_strings;
+	const char **valid_strings;
 	int init_widgets,number_of_valid_strings;
 	MrmType settings_editor_dialog_class;
 	struct FE_region *fe_region;

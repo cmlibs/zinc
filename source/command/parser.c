@@ -1616,8 +1616,8 @@ value.
 } /* set_enumerator_string */
 
 int Option_table_add_enumerator(struct Option_table *option_table,
-	int number_of_valid_strings,char **valid_strings,
-	char **enumerator_string_address)
+	int number_of_valid_strings,const char **valid_strings,
+	const char **enumerator_string_address)
 /*******************************************************************************
 LAST MODIFIED : 20 December 1999
 
@@ -1646,7 +1646,7 @@ no further errors will be reported on subsequent calls.
 				for (i=0;i<number_of_valid_strings;i++)
 				{
 					Option_table_add_entry(suboption_table,valid_strings[i],
-						enumerator_string_address,valid_strings[i],set_enumerator_string);
+						enumerator_string_address,(void *)valid_strings[i],set_enumerator_string);
 				}
 				return_code=
 					Option_table_add_suboption_table(option_table,suboption_table);

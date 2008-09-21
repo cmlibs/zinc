@@ -78,7 +78,7 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(General_threshold_filter_mode);
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(General_threshold_filter_mode)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(General_threshold_filter_mode));
 	switch (enumerator_value)
@@ -97,7 +97,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(General_threshold_filter_mode)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;

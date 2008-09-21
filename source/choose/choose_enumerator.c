@@ -160,7 +160,7 @@ Global functions
 ----------------
 */
 Widget create_choose_enumerator_widget(Widget parent,
-	int number_of_valid_strings, char **valid_strings, char *enumerator_string,
+	int number_of_valid_strings, const char **valid_strings, const char *enumerator_string,
 	struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 21 November 2001
@@ -192,7 +192,7 @@ Note: Choose_enumerator will be automatically DESTROYed with its widgets.
 			choose_enumerator->update_callback.data=(void *)NULL;
 			if (choose_enumerator->chooser=
 				CREATE(Chooser)(parent,number_of_valid_strings, (void **)valid_strings,
-					valid_strings, (void *)enumerator_string,
+					(char **)valid_strings, (void *)enumerator_string,
 					&(choose_enumerator->widget), user_interface))
 			{
 				/* add choose_enumerator as user data to chooser widget */
@@ -350,7 +350,7 @@ must not destroy or modify the returned static string.
 } /* choose_enumerator_get_string */
 
 int choose_enumerator_set_string(Widget choose_enumerator_widget,
-	char *enumerator_string)
+	const char *enumerator_string)
 /*******************************************************************************
 LAST MODIFIED : 21 January 2000
 

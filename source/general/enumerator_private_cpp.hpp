@@ -84,11 +84,11 @@ the strings it contains must NOT be deallocated. \
 Default version assumes all valid enumerator values are sequential from 0. \
 ============================================================================*/ \
 { \
-	char *enumerator_string, **valid_strings; \
+	const char *enumerator_string, **valid_strings; \
 	int enumerator_value, i;		       \
 \
 	ENTER(ENUMERATOR_GET_VALID_STRINGS(enumerator_type)); \
-	valid_strings = (char **)NULL; \
+	valid_strings = (const char **)NULL; \
 	if (number_of_valid_strings) \
 	{ \
 		*number_of_valid_strings = 0; \
@@ -104,7 +104,7 @@ Default version assumes all valid enumerator values are sequential from 0. \
 			} \
 		} \
 		if ((0 == *number_of_valid_strings) || \
-			ALLOCATE(valid_strings, char *, *number_of_valid_strings)) \
+			ALLOCATE(valid_strings, const char *, *number_of_valid_strings)) \
 		{ \
 			i = 0; \
 			for (enumerator_value = 0; enumerator_string = \
@@ -150,7 +150,7 @@ an error message, for the calling function to handle. \
 Default version assumes all valid enumerator values are sequential from 0. \
 ============================================================================*/ \
 { \
-	char *other_enumerator_string; \
+	const char *other_enumerator_string; \
 	int enumerator_value, return_code;	\
 \
 	ENTER(STRING_TO_ENUMERATOR(enumerator_type)); \
@@ -239,7 +239,7 @@ value. \
 } /* set_enumerator_macro(enumerator_type) */ \
 \
 static int Option_table_add_enumerator_macro(enumerator_type)(struct Option_table *option_table, \
-	int number_of_valid_strings, char **valid_strings, \
+	int number_of_valid_strings, const char **valid_strings, \
 	enum enumerator_type *enumerator_address) \
 /******************************************************************************* \
 LAST MODIFIED : 4 November 2005 \
@@ -269,7 +269,7 @@ no further errors will be reported on subsequent calls. \
 				for (i=0;i<number_of_valid_strings;i++) \
 				{ \
 					Option_table_add_entry(suboption_table,valid_strings[i], \
-						enumerator_address,valid_strings[i],set_enumerator_macro(enumerator_type)); \
+						enumerator_address,(void *)valid_strings[i],set_enumerator_macro(enumerator_type)); \
 				} \
 				return_code= \
 					Option_table_add_suboption_table(option_table,suboption_table); \
@@ -306,7 +306,7 @@ LAST MODIFIED : 4 November 2005 \
 DESCRIPTION : \
 ============================================================================*/ \
 { \
-	char **valid_strings; \
+	const char **valid_strings; \
 	int number_of_valid_strings, return_code;	\
 \
 	ENTER(OPTION_TABLE_ADD_ENUMERATOR(enumerator_type)); \
@@ -317,7 +317,7 @@ DESCRIPTION : \
          (ENUMERATOR_CONDITIONAL_FUNCTION(enumerator_type) *)NULL, \
 			(void *)NULL); \
 		return_code = Option_table_add_enumerator_macro(enumerator_type)(option_table, number_of_valid_strings, \
-			valid_strings, enumerator); \
+			valid_strings, enumerator);																\
 		DEALLOCATE(valid_strings); \
 	} \
 	else \

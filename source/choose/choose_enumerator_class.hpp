@@ -60,7 +60,7 @@ private:
 public:
 	wxEnumeratorChooser<Enumerator>(wxPanel *parent, 
 		int number_of_items, 
-		char **item_names, typename Enumerator::Enumerator_type current_value,
+		const char **item_names, typename Enumerator::Enumerator_type current_value,
 		User_interface *user_interface) :
 		wxChoice(parent, /*id*/-1, wxPoint(0,0), wxSize(-1,-1))
 	{
@@ -111,7 +111,7 @@ public:
 	}
 
 	int build_main_menu(int number_of_items, 
-		char **item_names, 
+		const char **item_names, 
 		typename Enumerator::Enumerator_type current_value)
 	{
 		int i;
@@ -140,7 +140,7 @@ private:
 	wxEnumeratorChooser<Enumerator> *chooser;
 	Callback_base< typename Enumerator::Enumerator_type > *update_callback;
    int number_of_items;
-   char **item_names;
+   const char **item_names;
 
 public:
 	Enumerator_chooser(wxPanel *parent,
@@ -160,7 +160,7 @@ DESCRIPTION :
 		chooser = (wxEnumeratorChooser<Enumerator> *)NULL;
 		update_callback = (Callback_base< typename Enumerator::Enumerator_type > *)NULL;
 		number_of_items = 0;
-		item_names = (char **)NULL;
+		item_names = (const char **)NULL;
 		if (build_items())
 		{
 			chooser = new wxEnumeratorChooser<Enumerator>

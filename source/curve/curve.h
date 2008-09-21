@@ -139,7 +139,7 @@ Objects for the control curve commands.
 Global functions
 ----------------
 */
-char **Curve_FE_basis_type_get_valid_strings(
+const char **Curve_FE_basis_type_get_valid_strings(
 	int *number_of_valid_strings);
 /*******************************************************************************
 LAST MODIFIED : 9 February 2000
@@ -161,7 +161,7 @@ Returns the FE_basis_type described by <fe_basis_type_string>, if valid for
 use in Curves.
 ==============================================================================*/
 
-char *Curve_extend_mode_string(
+const char *Curve_extend_mode_string(
 	enum Curve_extend_mode extend_mode);
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -172,7 +172,7 @@ CURVE_EXTEND_CLAMP == "extend_clamp".
 The calling function must not deallocate the returned string.
 ==============================================================================*/
 
-char **Curve_extend_mode_get_valid_strings(
+const char **Curve_extend_mode_get_valid_strings(
 	int *number_of_valid_strings);
 /*******************************************************************************
 LAST MODIFIED : 10 November 1999
@@ -185,7 +185,7 @@ Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
 
 enum Curve_extend_mode Curve_extend_mode_from_string(
-	char *extend_mode_string);
+	const char *extend_mode_string);
 /*******************************************************************************
 LAST MODIFIED : 10 November 1999
 
@@ -197,7 +197,7 @@ PROTOTYPE_OBJECT_FUNCTIONS(Curve);
 PROTOTYPE_LIST_FUNCTIONS(Curve);
 PROTOTYPE_MANAGER_FUNCTIONS(Curve);
 
-struct Curve *CREATE(Curve)(char *name,
+struct Curve *CREATE(Curve)(const char *name,
 	enum FE_basis_type fe_basis_type,int number_of_components);
 /*******************************************************************************
 LAST MODIFIED : 15 September 1997
@@ -222,10 +222,10 @@ PROTOTYPE_OBJECT_FUNCTIONS(Curve);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Curve);
 PROTOTYPE_COPY_OBJECT_FUNCTION(Curve);
 PROTOTYPE_LIST_FUNCTIONS(Curve);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Curve,name,char *);
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Curve,name,char *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Curve,name,const char *);
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(Curve,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Curve);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Curve,name,char *);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Curve,name,const char *);
 
 int Curve_unitize_vector(FE_value *vector,int number_of_components,
 	FE_value *norm);
@@ -741,8 +741,8 @@ Writes <curve> to filename(s) stemming from the name of the curve,
 eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 ==============================================================================*/
 
-struct Curve *create_Curve_from_file(char *curve_name,
-	char *file_name_stem, struct IO_stream_package *io_stream_package);
+struct Curve *create_Curve_from_file(const char *curve_name,
+	const char *file_name_stem, struct IO_stream_package *io_stream_package);
 /*******************************************************************************
 LAST MODIFIED : 3 September 2004
 

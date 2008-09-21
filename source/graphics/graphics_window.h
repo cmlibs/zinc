@@ -178,7 +178,7 @@ Change the values on the wx interface if different.
 Global/Public functions
 -----------------------
 */
-struct Graphics_window *CREATE(Graphics_window)(char *name,
+struct Graphics_window *CREATE(Graphics_window)(const char *name,
 	enum Graphics_window_buffering_mode buffering_mode,
 	enum Graphics_window_stereo_mode stereo_mode, 
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
@@ -226,11 +226,11 @@ PROTOTYPE_OBJECT_FUNCTIONS(Graphics_window);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Graphics_window);
 
 PROTOTYPE_LIST_FUNCTIONS(Graphics_window);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Graphics_window,name,char *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Graphics_window,name,const char *);
 
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Graphics_window,name,char *);
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(Graphics_window,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Graphics_window);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_window,name,char *);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_window,name,const char *);
 
 char *Graphics_window_manager_get_new_name(
 	struct MANAGER(Graphics_window) *graphics_window_manager);
@@ -593,7 +593,7 @@ Returns a string label for the <layout_mode>, used in widgets and parsing.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 
-char **Graphics_window_layout_mode_get_valid_strings(
+const char **Graphics_window_layout_mode_get_valid_strings(
 	int *number_of_valid_strings);
 /*******************************************************************************
 LAST MODIFIED : 28 June 2000
@@ -606,7 +606,7 @@ Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
 
 enum Graphics_window_layout_mode Graphics_window_layout_mode_from_string(
-	char *layout_mode_string);
+	const char *layout_mode_string);
 /*******************************************************************************
 LAST MODIFIED : 28 June 2000
 

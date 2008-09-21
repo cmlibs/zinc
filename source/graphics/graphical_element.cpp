@@ -268,7 +268,7 @@ finally in the data group.
 } /* GT_element_group_changed */
 
 static int GT_element_group_build_graphics_objects(
-	struct GT_element_group *gt_element_group, FE_value time, char *name_prefix)
+	struct GT_element_group *gt_element_group, FE_value time, const char *name_prefix)
 /*******************************************************************************
 LAST MODIFIED : 30 April 2003
 
@@ -2317,7 +2317,7 @@ Returns true if <gt_element_group> contains settings which depend on time.
 } /* GT_element_group_has_multiple_times */
 
 int build_GT_element_group(struct GT_element_group *gt_element_group,
-	FE_value time, char *name_prefix)
+	FE_value time, const char *name_prefix)
 /*******************************************************************************
 LAST MODIFIED : 30 April 2003
 

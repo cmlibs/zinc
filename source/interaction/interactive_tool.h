@@ -217,10 +217,10 @@ Resets any current edits in the tool.
 Call on old tool when a new tool is activated, esp. on asynchronous tool change.
 ==============================================================================*/
 
-char **interactive_tool_manager_get_tool_names(
+const char **interactive_tool_manager_get_tool_names(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	int *number_of_tools,struct Interactive_tool *current_interactive_tool,
-	char **current_tool_name);
+	const char **current_tool_name);
 /*******************************************************************************
 LAST MODIFIED : 13 June 2000
 

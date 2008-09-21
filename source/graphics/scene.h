@@ -710,11 +710,11 @@ PROTOTYPE_OBJECT_FUNCTIONS(Scene);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Scene);
 
 PROTOTYPE_LIST_FUNCTIONS(Scene);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Scene,name,char *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Scene,name,const char *);
 
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Scene,name,char *);
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(Scene,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Scene);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Scene,name,char *);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Scene,name,const char *);
 
 float Scene_time(struct Scene *scene);
 /*******************************************************************************
@@ -1240,7 +1240,7 @@ Does not complain if <graphics_object> is not used in <scene>.
 ==============================================================================*/
 
 int Scene_add_child_scene(struct Scene *scene, struct Scene *child_scene,
-	int position, char *scene_object_name, struct MANAGER(Scene) *scene_manager);
+	int position, const char *scene_object_name, struct MANAGER(Scene) *scene_manager);
 /*******************************************************************************
 LAST MODIFIED : 15 March 2001
 

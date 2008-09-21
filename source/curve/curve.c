@@ -83,7 +83,7 @@ This structure is private; use functions to access its contents.
 It is designed to be flexible rather than fast.
 ==============================================================================*/
 {
-	char *name;
+	const char *name;
 	enum FE_basis_type fe_basis_type;
 	int number_of_components;
 	enum Curve_extend_mode extend_mode;
@@ -117,7 +117,7 @@ Module functions
 ----------------
 */
 
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Curve,name,char *,strcmp)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Curve,name,const char *,strcmp)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Curve)
 
@@ -422,7 +422,7 @@ Used for copy operations and as part of the DESTROY function.
 	return (return_code);
 } /* cc_clean_up */
 
-static struct Curve *cc_create_blank(char *name)
+static struct Curve *cc_create_blank(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 23 May 2008
 
@@ -441,7 +441,7 @@ but it is at least destroyable when returned from this function.
 		{
 			if (ALLOCATE(curve->name,char,strlen(name)+1))
 			{
-				strcpy(curve->name,name);
+				strcpy((char *)curve->name,name);
 			}
 			curve->fe_basis_type=NO_RELATION;
 			curve->number_of_components=0;
@@ -1005,7 +1005,7 @@ Global functions
 ----------------
 */
 
-char **Curve_FE_basis_type_get_valid_strings(
+const char **Curve_FE_basis_type_get_valid_strings(
 	int *number_of_valid_strings)
 /*******************************************************************************
 LAST MODIFIED : 9 February 2000
@@ -1017,13 +1017,13 @@ FE_basis_type_string.
 Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
 {
-	char **valid_strings;
+	const char **valid_strings;
 
 	ENTER(Curve_FE_basis_type_get_valid_strings);
 	if (number_of_valid_strings)
 	{
 		*number_of_valid_strings=4;
-		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		if (ALLOCATE(valid_strings,const char *,*number_of_valid_strings))
 		{
 			valid_strings[0]=FE_basis_type_string(CUBIC_HERMITE);
 			valid_strings[1]=FE_basis_type_string(CUBIC_LAGRANGE);
@@ -1040,7 +1040,7 @@ Up to calling function to deallocate returned array - but not the strings in it!
 	{
 		display_message(ERROR_MESSAGE,
 			"Curve_FE_basis_type_get_valid_strings.  Invalid argument");
-		valid_strings=(char **)NULL;
+		valid_strings=(const char **)NULL;
 	}
 	LEAVE;
 
@@ -1098,7 +1098,7 @@ use in Curves.
 	return (fe_basis_type);
 } /* Curve_FE_basis_type_from_string */
 
-char *Curve_extend_mode_string(
+const char *Curve_extend_mode_string(
 	enum Curve_extend_mode extend_mode)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -1109,7 +1109,7 @@ CURVE_EXTEND_CLAMP == "extend_clamp".
 The calling function must not deallocate the returned string.
 ==============================================================================*/
 {
-	char *return_string;
+	const char *return_string;
 
 	ENTER(Curve_extend_mode_string);
 	switch (extend_mode)
@@ -1138,7 +1138,7 @@ The calling function must not deallocate the returned string.
 	return (return_string);
 } /* Curve_extend_mode_string */
 
-char **Curve_extend_mode_get_valid_strings(
+const char **Curve_extend_mode_get_valid_strings(
 	int *number_of_valid_strings)
 /*******************************************************************************
 LAST MODIFIED : 10 November 1999
@@ -1150,7 +1150,7 @@ Curve_extend_mode_string.
 Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
 {
-	char **valid_strings;
+	const char **valid_strings;
 	enum Curve_extend_mode extend_mode;
 	int i;
 
@@ -1165,7 +1165,7 @@ Up to calling function to deallocate returned array - but not the strings in it!
 			(*number_of_valid_strings)++;
 			extend_mode++;
 		}
-		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		if (ALLOCATE(valid_strings,const char *,*number_of_valid_strings))
 		{
 			extend_mode=CURVE_EXTEND_MODE_BEFORE_FIRST;
 			extend_mode++;
@@ -1187,7 +1187,7 @@ Up to calling function to deallocate returned array - but not the strings in it!
 	{
 		display_message(ERROR_MESSAGE,
 			"Curve_extend_mode_get_valid_strings.  Invalid argument");
-		valid_strings=(char **)NULL;
+		valid_strings=(const char **)NULL;
 	}
 	LEAVE;
 
@@ -1195,7 +1195,7 @@ Up to calling function to deallocate returned array - but not the strings in it!
 } /* Curve_extend_mode_get_valid_strings */
 
 enum Curve_extend_mode Curve_extend_mode_from_string(
-	char *extend_mode_string)
+	const char *extend_mode_string)
 /*******************************************************************************
 LAST MODIFIED : 10 November 1999
 
@@ -1232,7 +1232,7 @@ Returns the <Curve_extend_mode> described by <extend_mode_string>.
 	return (extend_mode);
 } /* Curve_extend_mode_from_string */
 
-struct Curve *CREATE(Curve)(char *name,
+struct Curve *CREATE(Curve)(const char *name,
 	enum FE_basis_type fe_basis_type,int number_of_components)
 /*******************************************************************************
 LAST MODIFIED : 27 March 2003
@@ -1266,7 +1266,7 @@ value will be zero in its initial state.
 			if (cc_establish(curve,fe_basis_type,number_of_components))
 			{
 				/* set values allocated above */
-				strcpy(curve->name,name);
+				strcpy((char *)curve->name,name);
 				for (i=0;i<number_of_components;i++)
 				{
 					curve->min_value[i]=0.0;
@@ -1648,7 +1648,7 @@ Frees the memory for the fields of <**curve_ptr>, frees the memory for
 
 DECLARE_OBJECT_FUNCTIONS(Curve)
 DECLARE_INDEXED_LIST_FUNCTIONS(Curve)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Curve,name,char *, \
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Curve,name,const char *, \
 	strcmp)
 DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Curve,name)
 
@@ -1738,7 +1738,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Curve,name)
 	return (return_code);
 } /* MANAGER_COPY_WITHOUT_IDENTIFIER(Curve,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Curve,name,char *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Curve,name,const char *)
 {
 	char *destination_name;
 	int return_code;
@@ -1779,7 +1779,7 @@ DECLARE_MANAGER_FUNCTIONS(Curve)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Curve)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Curve,name,char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Curve,name,const char *)
 
 int Curve_unitize_vector(FE_value *vector,int number_of_components,
 	FE_value *norm)
@@ -4371,7 +4371,7 @@ LAST MODIFIED : 9 February 2000
 DESCRIPTION :
 ==============================================================================*/
 {
-	char *extend_mode_string,*file_name,**valid_strings;
+	const char *extend_mode_string,*file_name,**valid_strings;
 	enum Curve_extend_mode extend_mode;
 	enum FE_basis_type new_fe_basis_type;
 	FE_value *max_value,*min_value,parameter_grid,value_grid;
@@ -5209,8 +5209,8 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 	return (return_code);
 } /* write_Curve */
 
-struct Curve *create_Curve_from_file(char *curve_name,
-	char *file_name_stem, struct IO_stream_package *io_stream_package)
+struct Curve *create_Curve_from_file(const char *curve_name,
+	const char *file_name_stem, struct IO_stream_package *io_stream_package)
 /*******************************************************************************
 LAST MODIFIED : 23 May 2008
 

@@ -127,7 +127,7 @@ graphics object may have different visibility on different scenes.
 	/* flag indicating object should be rendered fast at the expense of quality */
 	int fast_changing;
 	/* these are defined for all scene objects */
-	char *name;
+	const char *name;
 	gtMatrix *transformation;
 	/* these are defined only for SCENE_OBJECT_GRAPHICS_OBJECT */
 	struct GT_object *gt_object;
@@ -164,7 +164,7 @@ Stores the collections of objects that make up a 3-D graphical model.
 ==============================================================================*/
 {
 	/* the name of the scene */
-	char *name;
+	const char *name;
 	/* keep pointer to this scene's manager since can pass on manager change */
 	/* messages if member manager changes occur (eg. materials) */
 	struct MANAGER(Scene) *scene_manager;
@@ -1198,7 +1198,7 @@ Creates a Scene_object with <gt_element_group> and visibility on.
 } /* create_Scene_object_with_Graphical_element_group */
 
 static struct Scene_object *create_Scene_object_with_Scene(
-	char *name, struct Scene *child_scene,struct MANAGER(Scene) *scene_manager)
+	const char *name, struct Scene *child_scene,struct MANAGER(Scene) *scene_manager)
 /*******************************************************************************
 LAST MODIFIED : 11 July 2000
 
@@ -5190,7 +5190,7 @@ material and spectrum.
 DECLARE_OBJECT_FUNCTIONS(Scene)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Scene)
 DECLARE_LIST_FUNCTIONS(Scene)
-DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Scene,name,char *,strcmp)
+DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Scene,name,const char *,strcmp)
 DECLARE_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Scene,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Scene,name)
@@ -5320,9 +5320,9 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 	return (return_code);
 } /* MANAGER_COPY_WITHOUT_IDENTIFIER(Scene,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Scene,name,char *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Scene,name,const char *)
 {
-	char *destination_name;
+	const char *destination_name;
 	int return_code;
 
 	ENTER(MANAGER_COPY_IDENTIFIER(Scene,name));
@@ -5333,7 +5333,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Scene,name,char *)
 		{
 			if (ALLOCATE(destination_name,char,strlen(name)+1))
 			{
-				strcpy(destination_name,name);
+				strcpy((char *)destination_name,name);
 				return_code=1;
 			}
 			else
@@ -5374,7 +5374,7 @@ DECLARE_OBJECT_WITH_MANAGER_MANAGER_FUNCTIONS(Scene,scene_manager)
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Scene)
 
 DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS( \
-	Scene,name,char *,scene_manager)
+	Scene,name,const char *,scene_manager)
 
 int Scene_get_number_of_scene_objects(struct Scene *scene)
 /*******************************************************************************
@@ -7658,7 +7658,7 @@ Does not complain if <graphics_object> is not used in <scene>.
 } /* Scene_remove_graphics_object */
 
 int Scene_add_child_scene(struct Scene *scene, struct Scene *child_scene,
-	int position, char *scene_object_name, struct MANAGER(Scene) *scene_manager)
+	int position, const char *scene_object_name, struct MANAGER(Scene) *scene_manager)
 /*******************************************************************************
 LAST MODIFIED : 15 March 2001
 
@@ -9434,7 +9434,7 @@ DESCRIPTION :
 Parser commands for modifying scenes - lighting, etc.
 ==============================================================================*/
 {
-	char *graphical_element_mode_string,**valid_strings;
+	const char *graphical_element_mode_string,**valid_strings;
 	enum Scene_graphical_element_mode graphical_element_mode,
 		old_graphical_element_mode;
 	int number_of_valid_strings,return_code;
@@ -10018,8 +10018,8 @@ in the <scene> which point to this spectrum.
 
 struct Temp_data
 {
-	 char *write_into_comfile;
-	 char *name;
+	 const char *write_into_comfile;
+	 const char *name;
 };
 
 int list_scene_object_in_scene_get_command_list(struct Scene_object *scene_object,
@@ -10040,9 +10040,10 @@ int list_scene_object_in_scene_get_command_list(struct Scene_object *scene_objec
 					 if (temp_data = (struct Temp_data *)temp_data_void)
 					 {
 							int error = 0;
-							char *command_prefix, *command_suffix, *region_path;
+							char *command_prefix, *command_suffix;
+							char *region_path;
 							command_prefix = duplicate_string("gfx modify g_element ");
-							region_path = scene_object->name;
+							region_path = (char *)scene_object->name;
 							make_valid_token(&region_path);
 							append_string(&command_prefix, region_path, &error);
 							append_string(&command_prefix, " ", &error);

@@ -3627,7 +3627,8 @@ DESCRIPTION :
 Creates a curve_editor widget.
 ==============================================================================*/
 {
-	char temp_string[30],**valid_strings;
+	char temp_string[30];
+	const char **valid_strings;
 	int number_of_valid_strings,init_widgets;
 	MrmType curve_editor_dialog_class;
 	struct Curve_editor *curve_editor=NULL;

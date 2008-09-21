@@ -94,7 +94,7 @@ Global functions
 #endif
 
 #define PROTOTYPE_ENUMERATOR_STRING_FUNCTION( enumerator_type ) \
-char *ENUMERATOR_STRING(enumerator_type)( \
+const char *ENUMERATOR_STRING(enumerator_type)( \
   enum enumerator_type enumerator_value)
 /*******************************************************************************
 LAST MODIFIED : 16 March 2001
@@ -116,7 +116,7 @@ string for unrecognized enumerator values WITHOUT an error message.
 #endif
 
 #define PROTOTYPE_ENUMERATOR_GET_VALID_STRINGS_FUNCTION( enumerator_type ) \
-char **ENUMERATOR_GET_VALID_STRINGS(enumerator_type)( \
+const char **ENUMERATOR_GET_VALID_STRINGS(enumerator_type)( \
 	int *number_of_valid_strings, \
 	ENUMERATOR_CONDITIONAL_FUNCTION(enumerator_type) conditional_function, \
 	void *user_data)
@@ -139,7 +139,7 @@ strings it contains must NOT be deallocated.
 #endif
 
 #define PROTOTYPE_STRING_TO_ENUMERATOR_FUNCTION( enumerator_type ) \
-int STRING_TO_ENUMERATOR(enumerator_type)(char *enumerator_string, \
+int STRING_TO_ENUMERATOR(enumerator_type)(const char *enumerator_string, \
 	enum enumerator_type *enumerator_value_address)
 /*******************************************************************************
 LAST MODIFIED : 16 March 2001
@@ -185,12 +185,12 @@ public: \
 	{ \
 	} \
 \
-	inline char* value_to_string(enum enumerator_type enumerator_value) \
+	inline const char* value_to_string(enum enumerator_type enumerator_value) \
 	{ \
 		return ENUMERATOR_STRING(enumerator_type)(enumerator_value); \
 	} \
 \
-   inline char **get_valid_strings(int *number_of_valid_strings, \
+   inline const char **get_valid_strings(int *number_of_valid_strings, \
 		ENUMERATOR_CONDITIONAL_FUNCTION(enumerator_type) conditional_function, \
 		void *user_data) \
 	{ \
@@ -198,7 +198,7 @@ public: \
 			conditional_function, user_data); \
 	} \
 \
-	inline int string_to_value(char *string, enum enumerator_type *enumerator_value) \
+	inline int string_to_value(const char *string, enum enumerator_type *enumerator_value) \
 	{ \
 		return STRING_TO_ENUMERATOR(enumerator_type)(string, enumerator_value);	\
 	} \

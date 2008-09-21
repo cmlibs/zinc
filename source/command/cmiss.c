@@ -1373,8 +1373,8 @@ DESCRIPTION :
 Executes a GFX CREATE CYLINDERS command.
 ==============================================================================*/
 {
-	char exterior_flag, *graphics_object_name, *region_path,*render_type_string,
-		**valid_strings;
+	char exterior_flag, *graphics_object_name, *region_path;
+	const char *render_type_string, **valid_strings;
 	float constant_radius,scale_factor,time;
 	gtObject *graphics_object;
 	enum Render_type render_type;
@@ -1730,8 +1730,8 @@ DESCRIPTION :
 Executes a GFX CREATE ELEMENT_POINTS command.
 ==============================================================================*/
 {
-	char exterior_flag, *graphics_object_name, *region_path,
-		*use_element_type_string, **valid_strings, *xi_discretization_mode_string;
+	char exterior_flag, *graphics_object_name, *region_path;
+	const char **valid_strings, *xi_discretization_mode_string, *use_element_type_string;
 	enum Use_element_type use_element_type;
 	enum Xi_discretization_mode xi_discretization_mode;
 	float time;
@@ -3060,8 +3060,8 @@ DESCRIPTION :
 Executes a GFX CREATE ISO_SURFACES command.
 ==============================================================================*/
 {
-	char exterior_flag, *graphics_object_name, *region_path, *render_type_string,
-		*surface_data_region_path, *use_element_type_string, **valid_strings;
+	char exterior_flag, *graphics_object_name, *region_path, *surface_data_region_path;
+	const char *render_type_string, *use_element_type_string, **valid_strings;
 	enum GT_object_type graphics_object_type;
 	enum Render_type render_type;
 	enum Use_element_type use_element_type;
@@ -5464,8 +5464,9 @@ Executes a GFX CREATE STREAMLINES command.
 ==============================================================================*/
 {
 	char *graphics_object_name, *region_path, reverse_track,
-		*seed_data_region_path, *streamline_data_type_string,
-		*streamline_type_string, **valid_strings;
+		*seed_data_region_path;
+	const char *streamline_data_type_string, *streamline_type_string,
+		**valid_strings;
 	enum GT_object_type graphics_object_type;
 	enum Streamline_type streamline_type;
 	enum Streamline_data_type streamline_data_type;
@@ -5882,7 +5883,8 @@ Executes a GFX CREATE SURFACES command.
 ==============================================================================*/
 {
 	char exterior_flag,*graphics_object_name,nurb, *region_path,
-		*render_type_string, reverse_normals,**valid_strings;
+		reverse_normals;
+	const char *render_type_string, **valid_strings;
 	enum GT_object_type object_type;
 	enum Render_type render_type;
 	float time;
@@ -6992,9 +6994,10 @@ DESCRIPTION :
 Modifies the properties of a texture.
 ==============================================================================*/
 {
-	char *combine_mode_string, *compression_mode_string, *current_token, 
-		*file_number_pattern, *filter_mode_string, *raw_image_storage_string,
-		*resize_filter_mode_string, **valid_strings, *wrap_mode_string;
+	char *current_token, *file_number_pattern;
+	const char *combine_mode_string, *compression_mode_string, *filter_mode_string,
+		*raw_image_storage_string, *resize_filter_mode_string, **valid_strings,
+		*wrap_mode_string;
 	double texture_distortion[3];
 	enum Raw_image_storage raw_image_storage;
 	enum Texture_combine_mode combine_mode;
@@ -11205,8 +11208,8 @@ DESCRIPTION :
 Executes a GFX ELEMENT_POINT_TOOL command.
 ==============================================================================*/
 {
-	static char *(dialog_strings[2]) = {"open_dialog", "close_dialog"};
-	char *dialog_string;
+	static const char *(dialog_strings[2]) = {"open_dialog", "close_dialog"};
+	const char *dialog_string;
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *command_field;
@@ -11304,8 +11307,8 @@ DESCRIPTION :
 Executes a GFX ELEMENT_TOOL command.
 ==============================================================================*/
 {
-	static char *(dialog_strings[2]) = {"open_dialog", "close_dialog"};
-	char *dialog_string;
+	static const char *(dialog_strings[2]) = {"open_dialog", "close_dialog"};
+	const char *dialog_string;
 	int select_elements_enabled,select_faces_enabled,select_lines_enabled,
 		return_code;
 	struct Cmiss_command_data *command_data;
@@ -16290,8 +16293,9 @@ then the <data_tool> is being modified, otherwise the <node_tool>.
 Which tool that is being modified is passed in <node_tool_void>.
 ==============================================================================*/
 {
-	static char *(dialog_strings[2]) = {"open_dialog", "close_dialog"};
-	char *dialog_string, *region_path;
+	static const char *(dialog_strings[2]) = {"open_dialog", "close_dialog"};
+	const char *dialog_string;
+	char *region_path;
 	int create_enabled,define_enabled,edit_enabled,motion_update_enabled,
 		return_code,select_enabled, streaming_create_enabled,
 		constrain_to_surface;
@@ -16536,8 +16540,8 @@ DESCRIPTION :
 Executes a GFX PRINT command.
 ==============================================================================*/
 {
-	char *file_name, force_onscreen_flag, *image_file_format_string,
-		**valid_strings;
+	char *file_name, force_onscreen_flag;
+	const char*image_file_format_string, **valid_strings;
 	enum Image_file_format image_file_format;
 	enum Texture_storage_type storage;
 	int antialias, height, number_of_valid_strings, return_code, 
@@ -17512,8 +17516,8 @@ If a file is not specified a file selection box is presented to the user,
 otherwise the wavefront obj file is read.
 ==============================================================================*/
 {
-	char *file_name, *graphics_object_name, *render_type_string, 
-		*specified_graphics_object_name, **valid_strings;
+	char *file_name, *graphics_object_name,	*specified_graphics_object_name;
+	const char *render_type_string, **valid_strings;
 	enum Render_type render_type;
 	float time;
 	int number_of_valid_strings, return_code;
@@ -19549,8 +19553,8 @@ Can also write individual groups with the <group> option.
 ==============================================================================*/
 {
 	 FILE *com_file;
-	 char *com_file_name, *data_file_name, *elem_file_name, *file_name, *node_file_name, *region_path,
-			**valid_strings, *write_criterion_string;
+	 char *com_file_name, *data_file_name, *elem_file_name, *file_name, *node_file_name, *region_path;
+	 const char **valid_strings, *write_criterion_string;
 	 enum FE_write_criterion write_criterion;
 	 int number_of_valid_strings, data_return_code, elem_return_code, 
 			node_return_code, return_code, data_fd,
@@ -20148,7 +20152,8 @@ Can also write individual element groups with the <group> option.
 ==============================================================================*/
 {
 	char *file_ext = ".exelem";
-	char *file_name, *region_path, **valid_strings, *write_criterion_string;
+	char *file_name, *region_path;
+	const char **valid_strings, *write_criterion_string;
 	enum FE_write_criterion write_criterion;
 	int number_of_valid_strings, return_code;
 	struct Cmiss_command_data *command_data;
@@ -20270,8 +20275,8 @@ If <use_data> is set, writing data, otherwise writing nodes.
 {
 	static char *data_file_ext = ".exdata";
 	static char *node_file_ext = ".exnode";
-	char *file_ext, *file_name, *region_path, **valid_strings,
-		*write_criterion_string;
+	char *file_ext, *file_name, *region_path;
+	const char **valid_strings, *write_criterion_string;
 	enum FE_write_criterion write_criterion;
 	int number_of_valid_strings, return_code;
 	struct Cmiss_command_data *command_data;
@@ -20491,8 +20496,8 @@ DESCRIPTION :
 Executes a GFX WRITE TEXTURE command.
 ==============================================================================*/
 {
-	char *current_token, *file_name, *file_number_pattern,
-		*image_file_format_string, **valid_strings;
+	char *current_token, *file_name, *file_number_pattern;
+	const char *image_file_format_string, **valid_strings;
 	enum Image_file_format image_file_format;
 	int number_of_bytes_per_component, number_of_valid_strings,
 		original_depth_texels, original_height_texels, original_width_texels,

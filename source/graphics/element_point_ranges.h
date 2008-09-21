@@ -160,7 +160,7 @@ Global functions
 ----------------
 */
 
-char **Xi_discretization_mode_get_valid_strings_for_Element_point_ranges(
+const char **Xi_discretization_mode_get_valid_strings_for_Element_point_ranges(
 	int *number_of_valid_strings);
 /*******************************************************************************
 LAST MODIFIED : 30 May 2000

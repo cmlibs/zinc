@@ -165,7 +165,7 @@ Contains information for a graphics window.
 ==============================================================================*/
 {
 	/* identifier for uniquely specifying window: */
-	char *name;
+	const char *name;
 	/* need to keep graphics window manager so window can be destroyed by self */
 	struct MANAGER(Graphics_window) *graphics_window_manager;
 	struct Graphics_buffer_package *graphics_buffer_package;
@@ -290,7 +290,7 @@ Module functions
 ----------------
 */
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Graphics_window, \
-        name,char *,strcmp)
+        name,const char *,strcmp)
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Graphics_window)
 
 #if defined (MOTIF)
@@ -2626,7 +2626,7 @@ Parser commands for setting the scene and how it is displayed (time, light model
 etc.) in all panes of the <window>.
 ==============================================================================*/
 {
-	char **valid_strings, *layout_mode_string;
+	const char **valid_strings, *layout_mode_string;
 	double eye_spacing;
 	enum Graphics_window_layout_mode layout_mode,old_layout_mode;
 	int height,number_of_valid_strings,old_height,old_width,return_code,width;
@@ -2996,8 +2996,8 @@ DESCRIPTION :
 Parser commands for setting simple parameters applicable to the whole <window>.
 ==============================================================================*/
 {
-	char *blending_mode_string,fast_transparency_flag,slow_transparency_flag,
-		*tool_name,**tool_names,**valid_strings;
+	char fast_transparency_flag,slow_transparency_flag;
+	const char **tool_names,*tool_name,*blending_mode_string,**valid_strings;
 	double depth_of_field, focal_depth, std_view_angle;
 	enum Scene_viewer_blending_mode blending_mode;
 	enum Scene_viewer_transparency_mode transparency_mode;
@@ -3689,7 +3689,7 @@ view angle, interest point etc.
 Global functions
 ----------------
 */
-struct Graphics_window *CREATE(Graphics_window)(char *name,
+struct Graphics_window *CREATE(Graphics_window)(const char *name,
 	enum Graphics_window_buffering_mode buffering_mode,
 	enum Graphics_window_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
@@ -3720,7 +3720,7 @@ it.
 {
 #if defined (MOTIF)
 	Atom WM_DELETE_WINDOW;
-	char **valid_strings;
+	const char **valid_strings;
 #endif /* defined (MOTIF) */
 	char *window_title;
 	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode;
@@ -3808,7 +3808,7 @@ it.
 		if (ALLOCATE(window,struct Graphics_window,1)&&
 			ALLOCATE(window->name,char,strlen(name)+1))
 		{
-			strcpy(window->name,name);
+			strcpy((char *)window->name,name);
 			/* initialize the fields of the window structure */
 			window->access_count=0;
 			window->eye_spacing=0.25;
@@ -4028,7 +4028,7 @@ it.
 									create_choose_enumerator_widget(
 										window->layout_mode_form,
 										number_of_valid_strings,valid_strings,
-										(char *)Graphics_window_layout_mode_string(
+										Graphics_window_layout_mode_string(
 											window->layout_mode), user_interface))
 								{
 									/* get callbacks for change of layout mode */
@@ -4958,12 +4958,12 @@ DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Graphics_window)
 
 DECLARE_INDEXED_LIST_FUNCTIONS(Graphics_window)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Graphics_window, \
-	name,char *,strcmp)
+	name,const char *,strcmp)
 DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Graphics_window,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Graphics_window,name)
 {
-	char *name;
+	const char *name;
 	int return_code;
 
 	ENTER(MANAGER_COPY_WITH_IDENTIFIER(Graphics_window,name));
@@ -4974,7 +4974,7 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Graphics_window,name)
 		{
 			if (ALLOCATE(name,char,strlen(source->name)+1))
 			{
-				strcpy(name,source->name);
+				strcpy((char *)name,source->name);
 				return_code=1;
 			}
 			else
@@ -4987,7 +4987,7 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Graphics_window,name)
 		}
 		else
 		{
-			name=(char *)NULL;
+			name=(const char *)NULL;
 			return_code=1;
 		}
 		if (return_code)
@@ -5044,7 +5044,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphics_window,name)
 	return (return_code);
 } /* MANAGER_COPY_WITHOUT_IDENTIFIER(Graphics_window,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Graphics_window,name,char *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Graphics_window,name,const char *)
 {
 	char *destination_name;
 	int return_code;
@@ -5087,7 +5087,7 @@ DECLARE_MANAGER_FUNCTIONS(Graphics_window)
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphics_window)
 
 DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_window,name, \
-	char *,graphics_window_manager)
+	const char *,graphics_window_manager)
 
 char *Graphics_window_manager_get_new_name(
 	struct MANAGER(Graphics_window) *graphics_window_manager)
@@ -8058,7 +8058,8 @@ Which tool that is being modified is passed in <node_tool_void>.
 ==============================================================================*/
 {
 	static const char *(dialog_strings[2]) = {"open_dialog", "close_dialog"};
-	char *dialog_string, *region_path;
+	const char *dialog_string;
+	char *region_path;
 	int create_enabled,define_enabled,edit_enabled,motion_update_enabled,
 		return_code,select_enabled, streaming_create_enabled,
 		constrain_to_surface;
@@ -8177,9 +8178,9 @@ Which tool that is being modified is passed in <node_tool_void>.
 				Option_table_add_switch(option_table,"motion_update","no_motion_update",
 					 &motion_update_enabled);
 				/* open_dialog/close_dialog */
-				dialog_string = (char *)NULL;
+				dialog_string = (const char *)NULL;
 				Option_table_add_enumerator(option_table, /*number_of_valid_strings*/2,
-					(char **)dialog_strings, &dialog_string);
+					dialog_strings, &dialog_string);
 				/* select/no_select */
 				Option_table_add_switch(option_table,"select","no_select",&select_enabled);
 				/* streaming_create/no_streaming_create */
@@ -8511,7 +8512,7 @@ NOTE: Calling function must not deallocate returned string.
 	return (return_string);
 } /* Graphics_window_layout_mode_string */
 
-char **Graphics_window_layout_mode_get_valid_strings(
+const char **Graphics_window_layout_mode_get_valid_strings(
 	int *number_of_valid_strings)
 /*******************************************************************************
 LAST MODIFIED : 28 June 2000
@@ -8523,7 +8524,7 @@ Graphics_window_layout_mode_string.
 Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
 {
-	char **valid_strings;
+	const char **valid_strings;
 	int i, layout_mode;
 
 	ENTER(Graphics_window_layout_mode_get_valid_strings);
@@ -8537,14 +8538,14 @@ Up to calling function to deallocate returned array - but not the strings in it!
 			(*number_of_valid_strings)++;
 			layout_mode++;
 		}
-		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		if (ALLOCATE(valid_strings,const char *,*number_of_valid_strings))
 		{
 			layout_mode=static_cast<int>(GRAPHICS_WINDOW_LAYOUT_MODE_BEFORE_FIRST);
 			layout_mode++;
 			i=0;
 			while (layout_mode < static_cast<int>(GRAPHICS_WINDOW_LAYOUT_MODE_AFTER_LAST))
 			{
-				valid_strings[i]=(char *)Graphics_window_layout_mode_string(
+				valid_strings[i]=(const char *)Graphics_window_layout_mode_string(
 					static_cast<enum Graphics_window_layout_mode>(layout_mode));
 				i++;
 				layout_mode++;
@@ -8560,7 +8561,7 @@ Up to calling function to deallocate returned array - but not the strings in it!
 	{
 		display_message(ERROR_MESSAGE,
 			"Graphics_window_layout_mode_get_valid_strings.  Invalid argument");
-		valid_strings=(char **)NULL;
+		valid_strings=(const char **)NULL;
 	}
 	LEAVE;
 
@@ -8568,7 +8569,7 @@ Up to calling function to deallocate returned array - but not the strings in it!
 } /* Graphics_window_layout_mode_get_valid_strings */
 
 enum Graphics_window_layout_mode Graphics_window_layout_mode_from_string(
-	char *layout_mode_string)
+	const char *layout_mode_string)
 /*******************************************************************************
 LAST MODIFIED : 28 June 2000
 

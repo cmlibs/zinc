@@ -767,7 +767,7 @@ in <match_string>. Whitespace characters (space,tab) are only allowed in
 	return (return_code);
 } /* string_matches_without_whitespace */
 
-int is_standard_object_name(char *name)
+int is_standard_object_name(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 12 May 2003
 

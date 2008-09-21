@@ -306,7 +306,7 @@ Fetches the appropriate icon for the interactive tool.
 			convert_Colour_to_Pixel(display, foreground, &foreground_pixel);
 			convert_Colour_to_Pixel(display, background, &background_pixel);
 			if (MrmSUCCESS == MrmFetchIconLiteral(transform_tool_hierarchy,
-				"transform_tool_icon",DefaultScreenOfDisplay(display),display,
+					(char *)"transform_tool_icon",DefaultScreenOfDisplay(display),display,
 				foreground_pixel, background_pixel, &pixmap))
 			{ 
 				image = create_Cmgui_image_from_Pixmap(display, pixmap);
@@ -542,8 +542,8 @@ scene_viewers.
 	static XtResource resources[]=
 	{
 		{
-			XmNtransformFreeSpin,
-			XmCtransformFreeSpin,
+			(char *)XmNtransformFreeSpin,
+			(char *)XmCtransformFreeSpin,
 			XmRBoolean,
 			sizeof(Boolean),
 			XtOffsetOf(struct Transform_tool_defaults,free_spin),

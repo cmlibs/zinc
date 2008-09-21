@@ -69,7 +69,7 @@ Object in which a Cmiss_region keeps a reference to a child region.
 Stores the name that this child is known by to this parent.
 ==============================================================================*/
 {
-  char *name;
+  const char *name;
   struct Cmiss_region *region;
 };
 
@@ -134,7 +134,7 @@ Module functions
 ----------------
 */
 
-static struct Cmiss_region_child *CREATE(Cmiss_region_child)(char *name,
+static struct Cmiss_region_child *CREATE(Cmiss_region_child)(const char *name,
 	struct Cmiss_region *region)
 /*******************************************************************************
 LAST MODIFIED : 11 September 2002
@@ -1079,7 +1079,7 @@ Removes the callback calling <function> with <user_data> from <region>.
 } /* Cmiss_region_remove_callback */
 
 int Cmiss_region_add_child_region(struct Cmiss_region *region,
-	struct Cmiss_region *child_region, char *child_name, int child_position)
+	struct Cmiss_region *child_region, const char *child_name, int child_position)
 /*******************************************************************************
 LAST MODIFIED : 29 April 2003
 

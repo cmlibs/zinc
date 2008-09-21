@@ -204,7 +204,7 @@ the existing Cmiss_element and it is returned.
 ==============================================================================*/
 
 int Cmiss_region_add_child_region(struct Cmiss_region *region,
-	struct Cmiss_region *child_region, char *child_name, int child_position);
+	struct Cmiss_region *child_region, const char *child_name, int child_position);
 /*******************************************************************************
 LAST MODIFIED : 22 October 2002
 

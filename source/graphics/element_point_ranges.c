@@ -87,7 +87,7 @@ Global functions
 ----------------
 */
 
-char **Xi_discretization_mode_get_valid_strings_for_Element_point_ranges(
+const char **Xi_discretization_mode_get_valid_strings_for_Element_point_ranges(
 	int *number_of_valid_strings)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2001
@@ -99,13 +99,13 @@ from function ENUMERATOR_STRING.
 Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
 {
-	char **valid_strings;
+	const char **valid_strings;
 
 	ENTER(Xi_discretization_mode_get_valid_strings_for_Element_point_ranges);
 	if (number_of_valid_strings)
 	{
 		*number_of_valid_strings=3;
-		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		if (ALLOCATE(valid_strings,const char *,*number_of_valid_strings))
 		{
 			valid_strings[0] = ENUMERATOR_STRING(Xi_discretization_mode)(
 				XI_DISCRETIZATION_CELL_CENTRES);
@@ -126,7 +126,7 @@ Up to calling function to deallocate returned array - but not the strings in it!
 		display_message(ERROR_MESSAGE,
 			"Xi_discretization_mode_get_valid_strings_for_Element_point_ranges.  "
 			"Invalid argument(s)");
-		valid_strings=(char **)NULL;
+		valid_strings=(const char **)NULL;
 	}
 	LEAVE;
 
@@ -1041,7 +1041,8 @@ successful return an Element_point_ranges will be created and the pointer to it
 returned in this location, for the calling function to use or destroy.
 ==============================================================================*/
 {
-	char *current_token,**valid_strings,*xi_discretization_mode_string;
+	char *current_token;
+	const char **valid_strings,*xi_discretization_mode_string;
 	enum Xi_discretization_mode xi_discretization_mode;
 	float xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int dimension, i, number_of_xi_points, number_of_valid_strings, return_code,

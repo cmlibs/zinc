@@ -788,7 +788,7 @@ and their labels.
 								if (0 < col)
 								{
 									new_string=XmStringCreateSimple(
-										ENUMERATOR_STRING(FE_nodal_value_type)(nodal_value_type));
+										(char *)ENUMERATOR_STRING(FE_nodal_value_type)(nodal_value_type));
 								}
 							}
 							else

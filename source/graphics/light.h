@@ -121,11 +121,11 @@ PROTOTYPE_OBJECT_FUNCTIONS(Light);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Light);
 
 PROTOTYPE_LIST_FUNCTIONS(Light);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Light,name,char *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Light,name,const char *);
 
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Light,name,char *);
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(Light,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Light);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Light,name,char *);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Light,name,const char *);
 
 int get_Light_attenuation(struct Light *light, float *constant_attenuation,
 	float *linear_attenuation, float *quadratic_attenuation);

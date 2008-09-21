@@ -1884,7 +1884,7 @@ DESCRIPTION :
 Creates a graphical_element_editor widget.
 ==============================================================================*/
 {
-	char **valid_strings;
+	const char **valid_strings;
 	int init_widgets,number_of_valid_strings;
 	MrmType graphical_element_editor_dialog_class;
 	struct Callback_data callback;

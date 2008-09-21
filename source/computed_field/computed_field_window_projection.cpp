@@ -1216,7 +1216,8 @@ Converts <field> into type COMPUTED_FIELD_WINDOW_PROJECTION (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-	char *graphics_window_name, *projection_type_string;
+	char *graphics_window_name;
+	const char *projection_type_string;
 	enum Computed_field_window_projection_type projection_type;
 	int pane_number, return_code;
 	struct Computed_field *field,*source_field;
@@ -1227,7 +1228,7 @@ already) and allows its contents to be modified.
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 	struct Scene_viewer *scene_viewer;
-	static char *projection_type_strings[] =
+	static const char *projection_type_strings[] =
 	{
 	  "ndc_projection",
 	  "texture_projection",

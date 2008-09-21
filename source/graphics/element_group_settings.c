@@ -92,7 +92,7 @@ finite element group rendition.
 	int position;
 
 	/* name for identifying settings */
-	char *name;
+	const char *name;
 
 	/* geometry settings */
 	/* for all graphic types */
@@ -962,7 +962,7 @@ graphics_object is NOT copied; destination->graphics_object is cleared.
 		if (source->name && ALLOCATE(destination->name, char, 
 			strlen(source->name) + 1))
 		{
-			strcpy(destination->name, source->name);
+			strcpy((char *)destination->name, source->name);
 		}
 
 		/* copy geometry settings */
@@ -1207,7 +1207,7 @@ Sets the <name> used by <settings>.
 		}
 		if (ALLOCATE(settings->name, char, strlen(name) + 1))
 		{
-			strcpy(settings->name, name);
+			strcpy((char *)settings->name, name);
 		}
 		return_code=1;
 	}
@@ -7164,7 +7164,8 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char *font_name, *glyph_scaling_mode_string, *select_mode_string, **valid_strings;
+	char *font_name;
+	const char *glyph_scaling_mode_string, *select_mode_string, **valid_strings;
 	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum Graphics_select_mode select_mode;
 	int number_of_components,number_of_valid_strings,return_code,
@@ -7459,7 +7460,8 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char *font_name, *glyph_scaling_mode_string, *select_mode_string, **valid_strings;
+	char *font_name; 
+	const char *glyph_scaling_mode_string, *select_mode_string, **valid_strings;
 	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum Graphics_select_mode select_mode;
 	int number_of_components,number_of_valid_strings,return_code,visibility;
@@ -7753,7 +7755,7 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char *select_mode_string,**valid_strings;
+	const char *select_mode_string,**valid_strings;
 	enum Graphics_select_mode select_mode;
 	int number_of_valid_strings,return_code, visibility;
 	struct Modify_g_element_data *modify_g_element_data;
@@ -7929,7 +7931,7 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char *render_type_string,*select_mode_string,**valid_strings;
+	const char *render_type_string,*select_mode_string,**valid_strings;
 	enum Graphics_select_mode select_mode;
 	enum Render_type render_type;
 	int number_of_valid_strings,return_code, visibility;
@@ -8142,7 +8144,7 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char *render_type_string,*select_mode_string,**valid_strings;
+	const char *render_type_string,*select_mode_string,**valid_strings;
 	enum Graphics_select_mode select_mode;
 	enum Render_type render_type;
 	int number_of_valid_strings,return_code, visibility;
@@ -8338,7 +8340,7 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char *render_type_string,*select_mode_string, *use_element_type_string,
+	const char *render_type_string,*select_mode_string, *use_element_type_string,
 		**valid_strings;
 	enum Graphics_select_mode select_mode;
 	enum Render_type render_type;
@@ -8635,7 +8637,8 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char *font_name, *glyph_scaling_mode_string,  *select_mode_string,
+	char *font_name;
+	const char *glyph_scaling_mode_string, *select_mode_string, 
 		*use_element_type_string,	**valid_strings, *xi_discretization_mode_string;
 	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum Graphics_select_mode select_mode;
@@ -8997,7 +9000,8 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char reverse_track,*select_mode_string,
+	char reverse_track;
+	const char *select_mode_string,
 		*streamline_data_type_string,*streamline_type_string,**valid_strings;
 	enum Graphics_select_mode select_mode;
 	enum Streamline_type streamline_type;

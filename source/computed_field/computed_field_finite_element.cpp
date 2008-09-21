@@ -1379,8 +1379,8 @@ The actual finite_element wrapper is not made here but in response to the
 FE_field being made and/or modified.
 ==============================================================================*/
 {
-	char *cm_field_type_string,**component_names,*current_token,
-		**temp_component_names,**valid_strings,*value_type_string;
+	char**component_names,*current_token,**temp_component_names;
+	const char *cm_field_type_string,**valid_strings,*value_type_string;
 	enum CM_field_type cm_field_type;
 	enum Value_type value_type;
 	int i,number_of_components,number_of_valid_strings,
@@ -2794,10 +2794,11 @@ Converts <field> into type COMPUTED_FIELD_NODE_VALUE (if it is not already)
 and allows its contents to be modified.
 ==============================================================================*/
 {
-	char *current_token, *nodal_value_type_string;
+	char *current_token;
+	const char *nodal_value_type_string;
 	enum FE_nodal_value_type nodal_value_type;
 	int return_code,version_number;
-	static char *nodal_value_type_strings[] =
+	static const char *nodal_value_type_strings[] =
 	{
 	  "value",
 	  "d/ds1",

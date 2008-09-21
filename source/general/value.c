@@ -69,7 +69,7 @@ Global functions
 ----------------
 */
 
-char *Value_type_string(enum Value_type value_type)
+const char *Value_type_string(enum Value_type value_type)
 /*******************************************************************************
 LAST MODIFIED : 17 September 1999
 
@@ -79,7 +79,7 @@ INT_VALUE == "integer". This string should match the command used
 to create the edit object. The returned string must not be DEALLOCATEd!
 ==============================================================================*/
 {
-	char *return_string;
+	const char *return_string;
 
 	ENTER(Value_type_string);
 	switch (value_type)
@@ -148,7 +148,7 @@ to create the edit object. The returned string must not be DEALLOCATEd!
 		{
 			display_message(ERROR_MESSAGE,
 				"Value_type_string.  Unknown value_type");
-			return_string=(char *)NULL;
+			return_string=(const char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -156,7 +156,7 @@ to create the edit object. The returned string must not be DEALLOCATEd!
 	return (return_string);
 } /* Value_type_string */
 
-enum Value_type Value_type_from_string(char *value_type_string)
+enum Value_type Value_type_from_string(const char *value_type_string)
 /*******************************************************************************
 LAST MODIFIED : 17 September 1999
 
@@ -165,7 +165,7 @@ Returns the value_type from the string, eg "integer" = INT_VALUE.
 Eeturns UNKNOWN_VALUE without error if value_type_string not recognized.
 ==============================================================================*/
 {
-	char *compare_type_string;
+	const char *compare_type_string;
 	enum Value_type value_type;
 
 	ENTER(Value_type_from_string);
@@ -197,7 +197,7 @@ Eeturns UNKNOWN_VALUE without error if value_type_string not recognized.
 	return (value_type);
 } /* Value_type_from_string */
 
-char **Value_type_get_valid_strings_simple(int *number_of_valid_strings)
+const char **Value_type_get_valid_strings_simple(int *number_of_valid_strings)
 /*******************************************************************************
 LAST MODIFIED : 10 May 2000
 
@@ -208,7 +208,7 @@ Does not return any array types.
 Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
 {
-	char **valid_strings;
+	const char **valid_strings;
 	enum Value_type value_type;
 	int i;
 
@@ -226,7 +226,7 @@ Up to calling function to deallocate returned array - but not the strings in it!
 			}
 			value_type++;
 		}
-		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		if (ALLOCATE(valid_strings,const char *,*number_of_valid_strings))
 		{
 			value_type=VALUE_TYPE_BEFORE_FIRST;
 			value_type++;
@@ -251,7 +251,7 @@ Up to calling function to deallocate returned array - but not the strings in it!
 	{
 		display_message(ERROR_MESSAGE,
 			"Value_type_get_valid_strings_simple.  Invalid argument");
-		valid_strings=(char **)NULL;
+		valid_strings=(const char **)NULL;
 	}
 	LEAVE;
 

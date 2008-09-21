@@ -234,8 +234,8 @@ of option_table!
 ==============================================================================*/
 
 int Option_table_add_enumerator(struct Option_table *option_table,
-	int number_of_valid_strings,char **valid_strings,
-	char **enumerator_string_address);
+	int number_of_valid_strings,const char **valid_strings,
+	const char **enumerator_string_address);
 /*******************************************************************************
 LAST MODIFIED : 20 December 1999
 

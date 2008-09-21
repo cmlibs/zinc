@@ -5922,7 +5922,8 @@ DESCRIPTION :
 Outputs the information contained by the node field.
 ==============================================================================*/
 {
-	char *component_name, *string_value, *type_string;
+	char *component_name, *string_value;
+	const char *type_string;
 	enum FE_nodal_value_type *type;
 	FE_value time;
 	int i,version,k,number_of_components,number_of_times,number_of_versions,
@@ -9269,7 +9270,7 @@ Global functions
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(CM_field_type)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(CM_field_type));
 	switch (enumerator_value)
@@ -9288,7 +9289,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(CM_field_type)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -15811,7 +15812,7 @@ Returns true if <node> is not in <node_list>.
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(FE_nodal_value_type)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(FE_nodal_value_type));
 	switch (enumerator_value)
@@ -15854,7 +15855,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(FE_nodal_value_type)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -23743,7 +23744,8 @@ DESCRIPTION :
 Outputs the information contained by the element field.
 ==============================================================================*/
 {
-	char *component_name,*type_string;
+	char *component_name;
+	const char *type_string;
 	int *basis_type,i,j,k,*nodal_value_index,*number_in_xi,
 		number_of_components,number_of_nodal_values,
 		number_of_xi_coordinates,return_code,*scale_factor_index;
