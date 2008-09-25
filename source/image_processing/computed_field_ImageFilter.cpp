@@ -72,13 +72,13 @@ Evaluate the fields cache at the location
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_meanImageFilter::evaluate_cache_at_location.  "
+			"Computed_field_ImageFilter::evaluate_cache_at_location.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_meanImageFilter::evaluate_cache_at_location */
+} /* Computed_field_ImageFilter::evaluate_cache_at_location */
 
 } // namespace CMISS
