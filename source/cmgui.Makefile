@@ -1188,12 +1188,12 @@ IMAGE_PROCESSING_SRCS = \
    image_processing/computed_field_image_resample.cpp
 ifeq ($(USE_ITK),true)
    IMAGE_PROCESSING_SRCS += \
-	   image_processing/computed_field_thresholdFilter.cpp \
+	   image_processing/computed_field_threshold_image_filter.cpp \
 	   image_processing/computed_field_binary_threshold_image_filter.cpp \
 	   image_processing/computed_field_cannyEdgeDetectionFilter.cpp \
 	   image_processing/computed_field_meanImageFilter.cpp \
 	   image_processing/computed_field_sigmoidImageFilter.cpp \
-	   image_processing/computed_field_discreteGaussianImageFilter.cpp \
+	   image_processing/computed_field_discrete_gaussian_image_filter.cpp \
 	   image_processing/computed_field_curvatureAnisotropicDiffusionImageFilter.cpp \
 	   image_processing/computed_field_derivativeImageFilter.cpp \
 	   image_processing/computed_field_rescaleIntensityImageFilter.cpp \

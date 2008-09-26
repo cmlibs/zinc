@@ -66,7 +66,7 @@ extern "C" {
 extern "C" {
 #include "general/mystring.h"
 #include "user_interface/message.h"
-#include "image_processing/computed_field_thresholdFilter.h"
+#include "image_processing/computed_field_threshold_image_filter.h"
 }
 #include "itkImage.h"
 #include "itkVector.h"
