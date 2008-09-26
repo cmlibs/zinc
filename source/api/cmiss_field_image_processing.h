@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_field_image_processing.h
 
-LAST MODIFIED : 02 Septemeber 2008
+LAST MODIFIED : 26 Septemeber 2008
 
 DESCRIPTION :
 Implements cmiss fields which deal with image processing
@@ -76,5 +76,90 @@ Cmiss_field_id Cmiss_field_create_binary_threshold_image_filter(Cmiss_field_id s
  * @return Id of the cast field, or NULL
 */
 Cmiss_field_binary_threshold_image_filter_id Cmiss_field_binary_threshold_image_filter_cast(Cmiss_field_id field);
+
+
+/*****************************************************************************//**
+ * The image field specific handle to a Cmiss discrete gaussian field.
+ */
+struct Cmiss_field_discrete_gaussian_image_filter;
+
+typedef struct Cmiss_field_discrete_gaussian_image_filter * Cmiss_field_discrete_gaussian_image_filter_id;
+
+/*****************************************************************************//**
+ * Creates a field of type COMPUTED_FIELD_DISCRETE_GAUSSIAN_IMAGE_FILTER.
+ * The newly created field applies a discrete gaussian image filter to the 
+ * source field.  This means that each pixel value in the new field
+ * is based on a weighted average of the pixel and the surrounding pixel values
+ * from the source field. Pixels further away are given a lower weighting.
+ * Increasing the variance increases the width of the gaussian distribution 
+ * used and hence the number of pixels used to calculate the weighted average. 
+ * This smooths the image more.  A limit is set on the max_kernel_width used 
+ * to approximate the guassian to ensure the calculation completes.
+ * 
+ * @param source_field The field to be filtered
+ * @param variance The variance of the gaussian distribution used in the filter
+ * @param max_kernel_width The limit on the maximum kernel width that may be used
+ * @return Newly created field
+*/
+Cmiss_field_id Cmiss_field_create_discrete_gaussian_image_filter(
+	struct Computed_field *source_field, double variance, int maxKernelWidth);
+
+/*****************************************************************************//**
+ * If field can be cast to a COMPUTED_FIELD_DISCRETE_GAUSSIAN_IMAGE_FILTER do so
+ * and return the field.  Otherwise return NULL.
+ * 
+ * @param field Id of the field to cast
+ * @return Id of the cast field, or NULL
+*/
+Cmiss_field_discrete_gaussian_image_filter_id Cmiss_field_discrete_gaussian_image_filter_cast(Cmiss_field_id field);
+
+
+
+enum General_threshold_filter_mode
+{
+	BELOW,
+	ABOVE,
+	OUTSIDE
+}; /* enum General_threshold_filter_mode */
+
+/*****************************************************************************//**
+ * The image field specific handle to a Cmiss threshold field.
+ */
+struct Cmiss_field_threshold_image_filter;
+
+typedef struct Cmiss_field_threshold_image_filter * Cmiss_field_threshold_image_filter_id;
+
+/*****************************************************************************//**
+ * Creates a field of type COMPUTED_FIELD_THRESHOLD_IMAGE_FILTER.
+ * The newly created field replaces certain values with a specified outside
+ * value, based on which threshold mode and the threshold values.
+ * For the below mode, all pixels BELOW the below value are set to 
+ * the outside value
+ * For the above mode, all pixels ABOVE the above value are set to a
+ * outside value
+ * For the oustide mode, all pixels OUTSIDE the range defined by the 
+ * below and above values are set to the outside value
+ * 
+ * @param source_field The field to be filtered
+ * @param threshold_mode The threshold mode to apply, either BELOW, ABOVE or OUTSIDE
+ * @param outside_value The value to replace all thresholded values with
+ * @param below_value Below value used by BELOW and OUTSIDE modes
+ * @param above_value Above value used by ABOVE and OUTSIDE modes
+ * @return Newly created field
+*/
+Cmiss_field_id Cmiss_field_create_threshold_image_filter(
+	struct Computed_field *source_field, 
+	enum General_threshold_filter_mode threshold_mode, 
+	double outside_value, double below_value, double above_value);
+
+/*****************************************************************************//**
+ * If field can be cast to a COMPUTED_FIELD_THRESHOLD_IMAGE_FILTER do so
+ * and return the field.  Otherwise return NULL.
+ * 
+ * @param field Id of the field to cast
+ * @return Id of the cast field, or NULL
+*/
+Cmiss_field_threshold_image_filter_id Cmiss_field_threshold_image_filter_cast(Cmiss_field_id field);
+
 
 #endif /* !defined (CMISS_FIELD_IMAGE_PROCESSING_H) */

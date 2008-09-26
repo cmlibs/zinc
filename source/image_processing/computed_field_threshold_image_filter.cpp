@@ -1,7 +1,7 @@
 /*******************************************************************************
-FILE : computed_field_thresholdFilter.c
+FILE : computed_field_threshold_image_filter.cpp
 
-LAST MODIFIED : 8 December 2006
+LAST MODIFIED : 26 September 2008
 
 DESCRIPTION :
 Wraps itk::ThresholdImageFilter
@@ -78,7 +78,7 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(General_threshold_filter_mode);
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(General_threshold_filter_mode)
 {
-	const char *enumerator_string;
+	char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(General_threshold_filter_mode));
 	switch (enumerator_value)
@@ -97,7 +97,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(General_threshold_filter_mode)
 		} break;
 		default:
 		{
-			enumerator_string = (const char *)NULL;
+			enumerator_string = (char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -398,38 +398,39 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_threshold_image_filter(struct Computed_field *field,
+
+Cmiss_field_threshold_image_filter_id Cmiss_field_threshold_image_filter_cast(Cmiss_field_id field)
+{
+	if (dynamic_cast<Computed_field_threshold_image_filter*>(field->core))
+	{
+		return (reinterpret_cast<Cmiss_field_threshold_image_filter_id>(field));
+	}
+	else
+	{
+		return (NULL);
+	}
+}
+
+
+Computed_field *Cmiss_field_create_threshold_image_filter(
 	struct Computed_field *source_field, 
 	enum General_threshold_filter_mode threshold_mode, double outside_value,
 	double below_value, double above_value)
-/*******************************************************************************
-LAST MODIFIED : 8 December 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_THRESHOLDFILTER.
-The <threshold_mode> specifies whether thresholding takes place below, above 
-or outside defined values.
-The <oustide_value> specifies what value pixels take oustide the threshold 
-range.
-The <below_vale> is used for below and outside thresholding.
-The <above_value is used for above and outside thresholding.
-==============================================================================*/
 {
-	int number_of_source_fields, return_code;
-	struct Computed_field **source_fields;
+	int number_of_source_fields;
+	Computed_field *field, **source_fields;
 
-	ENTER(Computed_field_set_type_threshold_image_filter);
-	if (field && source_field &&
+	ENTER(Cmiss_field_create_threshold_image_filter);
+	if ( source_field &&
 		Computed_field_is_scalar(source_field, (void *)NULL))
 	{
-		return_code = 1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields = 1;
 		if (ALLOCATE(source_fields, struct Computed_field *,
 				number_of_source_fields))
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
+			/* 2. create new field */
+			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
 			/* 3. establish the new type */
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0] = ACCESS(Computed_field)(source_field);
@@ -445,27 +446,27 @@ The <above_value is used for above and outside thresholding.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_threshold_image_filter.  "
+					"Computed_field_create_threshold_image_filter.  "
 					"Unable to create image filter.");
-				return_code = 0;
+				field = (Computed_field *)NULL;
 			}
 		}
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code = 0;
+			field = (Computed_field *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_threshold_image_filter.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_threshold_image_filter.  Invalid argument(s)");
+		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_threshold_image_filter */
+	return (field);
+} /* Cmiss_field_create_threshold_image_filter */
 
 int Computed_field_get_type_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field,  
@@ -511,7 +512,7 @@ int define_Computed_field_type_threshold_image_filter(struct Parse_state *state,
 LAST MODIFIED : 8 December 2006
 
 DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_THRESHOLDFILTER (if it is not 
+Converts <field> into type COMPUTED_FIELD_THRESHOLD_IMAGE_FILTER (if it is not 
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
@@ -597,9 +598,9 @@ already) and allows its contents to be modified.
 			}
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_threshold_image_filter(field, 
+				return_code = Computed_field_copy_type_specific_and_deaccess(field, Cmiss_field_create_threshold_image_filter( 
 					source_field, threshold_mode, outside_value, below_value, 
-					above_value);
+					above_value));
 				
 			}
 			

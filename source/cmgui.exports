@@ -150,8 +150,12 @@ Cmiss_field_image_storage_information_set_pixel_format
 Cmiss_field_image_storage_information_destroy
 
 /* api/cmiss_field_image_processing.h */
+Cmiss_field_create_threshold_image_filter
+Cmiss_field_threshold_image_filter_cast
 Cmiss_field_create_binary_threshold_image_filter
 Cmiss_field_binary_threshold_image_filter_cast
+Cmiss_field_create_discrete_gaussian_image_filter
+Cmiss_field_discrete_gaussian_image_filter_cast
 
 /* api/cmiss_field_logical_operators.h */
 Cmiss_field_create_less_than
@@ -163,8 +167,6 @@ Cmiss_field_set_type_curvature_anisotropic_diffusion_image_filter
 Cmiss_field_get_type_curvature_anisotropic_diffusion_image_filter
 Cmiss_field_set_type_derivative_image_filter
 Cmiss_field_get_type_derivative_image_filter
-Cmiss_field_set_type_discrete_gaussian_image_filter
-Cmiss_field_get_type_discrete_gaussian_image_filter
 Cmiss_field_set_type_rescale_intensity_image_filter
 Cmiss_field_get_type_rescale_intensity_image_filter
 Cmiss_field_set_type_sigmoid_image_filter
@@ -176,8 +178,6 @@ Cmiss_field_finite_element_define_at_node
 Cmiss_field_evaluate_in_element
 Cmiss_field_get_type_connected_threshold_image_filter
 Cmiss_field_set_type_connected_threshold_image_filter
-Cmiss_field_get_type_threshold_image_filter
-Cmiss_field_set_type_threshold_image_filter
 #if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
 Computed_field_set_type_window_projection
 #endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */

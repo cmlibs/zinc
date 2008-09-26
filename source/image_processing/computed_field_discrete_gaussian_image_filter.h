@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_discreteGaussianImageFilter.h
 
-LAST MODIFIED : 31 May 2001
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 ==============================================================================*/
@@ -41,44 +41,20 @@ DESCRIPTION :
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_DISCRETEGAUSSIANIMAGEFILTER_H)
-#define COMPUTED_FIELD_DISCRETEGAUSSIANIMAGEFILTER_H
+#if !defined (COMPUTED_FIELD_DISCRETE_GAUSSIAN_IMAGE_FILTER_H)
+#define COMPUTED_FIELD_DISCRETE_GAUSSIAN_IMAGE_FILTER_H
 
 #include "api/cmiss_field.h"
+#include "api/cmiss_field_image_processing.h"
 
-/* API functions are prefixed with Cmiss */
-#define Computed_field_set_type_discrete_gaussian_image_filter \
-	Cmiss_field_set_type_discrete_gaussian_image_filter
-#define Computed_field_get_type_discrete_gaussian_image_filter \
-	Cmiss_field_get_type_discrete_gaussian_image_filter
 
 int Computed_field_register_types_discrete_gaussian_image_filter(
 	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 18 Nov 2006
 
-DESCRIPTION :
-==============================================================================*/
-
-int Computed_field_set_type_discrete_gaussian_image_filter(struct Computed_field *field,
+struct Computed_field *Cmiss_field_create_discrete_gaussian_image_filter(
 	struct Computed_field *source_field, double variance, int maxKernelWidth);
-/*******************************************************************************
-LAST MODIFIED : 18 Nov 2006
 
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_DISCRETEGAUSSIANIMAGEFILTER, returning the value of
-<discrete_gaussian_image_filter> at the time/parameter value given by scalar <source_field>.
-Sets number of components to same number as <source_field>.
-==============================================================================*/
+Cmiss_field_discrete_gaussian_image_filter_id Cmiss_field_discrete_gaussian_image_filter_cast(Cmiss_field_id field);
 
-int Computed_field_get_type_discrete_gaussian_image_filter(struct Computed_field *field,
-	struct Computed_field **source_field, double *variance, int *maxKernelWidth);
-/*******************************************************************************
-LAST MODIFIED : 18 Nov 2006
 
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_DISCRETEGAUSSIANIMAGEFILTER_H, the source_field and discrete_gaussian_image_filter
-used by it are returned - otherwise an error is reported.
-==============================================================================*/
-
-#endif /* !defined (COMPUTED_FIELD_DISCRETEGAUSSIANIMAGEFILTER_H) */
+#endif /* !defined (COMPUTED_FIELD_DISCRETE_GAUSSIAN_IMAGE_FILTER_H) */

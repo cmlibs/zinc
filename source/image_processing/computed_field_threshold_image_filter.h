@@ -1,7 +1,7 @@
 /*******************************************************************************
-FILE : computed_field_thresholdFilter.h
+FILE : computed_field_threshold_image_filter.h
 
-LAST MODIFIED : 8 December 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Wraps itk::ThresholdImageFilter
@@ -41,59 +41,21 @@ Wraps itk::ThresholdImageFilter
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_THRESHOLDFILTER_H)
-#define COMPUTED_FIELD_THRESHOLDFILTER_H
+#if !defined (COMPUTED_FIELD_THRESHOLD_IMAGE_FILTER_H)
+#define COMPUTED_FIELD_THRESHOLD_IMAGE_FILTER_H
 
 #include "api/cmiss_field.h"
+#include "api/cmiss_field_image_processing.h"
 
-/* API functions are prefixed with Cmiss */
-#define Computed_field_set_type_threshold_image_filter \
-	Cmiss_field_set_type_threshold_image_filter
-#define Computed_field_get_type_threshold_image_filter \
-	Cmiss_field_get_type_threshold_image_filter
-
-enum General_threshold_filter_mode
-/*******************************************************************************
-LAST MODIFIED : 6 December 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	BELOW,
-	ABOVE,
-	OUTSIDE
-}; /* enum General_threshold_filter_mode */
 
 int Computed_field_register_types_threshold_image_filter(
 	struct Computed_field_package *computed_field_package);
-/*******************************************************************************
-LAST MODIFIED : 8 December 2006
 
-DESCRIPTION :
-==============================================================================*/
-
-int Computed_field_set_type_threshold_image_filter(struct Computed_field *field,
+struct Computed_field *Cmiss_field_create_threshold_image_filter(
 	struct Computed_field *source_field, 
 	enum General_threshold_filter_mode threshold_mode, 
 	double outside_value, double below_value, double above_value);
-/*******************************************************************************
-LAST MODIFIED : 8 December 2006
 
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_THRESHOLDFILTER, returning the value of
-<threshold_image_filter> at the time/parameter value given by scalar <source_field>.
-==============================================================================*/
+Cmiss_field_threshold_image_filter_id Cmiss_field_threshold_image_filter_cast(Cmiss_field_id field);
 
-int Computed_field_get_type_threshold_image_filter(struct Computed_field *field,
-	struct Computed_field **source_field, 
-	enum General_threshold_filter_mode *threshold_mode, 
-	double *outside_value, double *below_value,double *above_value);
-/*******************************************************************************
-LAST MODIFIED : 8 December 2006
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_THRESHOLDFILTER, the source_field and threshold_image_filter
-used by it are returned - otherwise an error is reported.
-==============================================================================*/
-
-#endif /* !defined (COMPUTED_FIELD_THRESHOLDFILTER_H) */
+#endif /* !defined (COMPUTED_FIELD_THRESHOLD_IMAGE_FILTER_H) */
