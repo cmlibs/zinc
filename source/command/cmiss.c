@@ -11105,7 +11105,7 @@ Executes a GFX ELEMENT_CREATOR command.
 	USE_PARAMETER(command_data_void);
 	display_message(INFORMATION_MESSAGE,
 		"\nElement creator has been moved to node tool in the graphics window in cmgui-wx.\n"
-		"Please use gfx node_tool command instead.");
+		"Please use gfx node_tool command instead.\n");
 	return_code = 1;
 #elif defined (MOTIF)
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
