@@ -5743,6 +5743,29 @@ the <token>.
 	return (return_code);
 } /* Option_table_add_ignore_token_entry */
 
+int Option_table_add_special_float3_entry(struct Option_table *option_table,
+	const char *token, float *values, const char *separation_char_string)
+{
+	int return_code;
+
+	ENTER(Option_table_add_special_float3_entry);
+	if (option_table && token)
+	{
+		return_code = Option_table_add_entry(option_table, token, 
+			values, (void *)separation_char_string, set_special_float3);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_special_float3_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_special_float3_entry */
+
+
 static int set_nothing_and_shift(struct Parse_state *state,void *dummy_to_be_modified,
 	void *dummy_user_data_void)
 /*******************************************************************************

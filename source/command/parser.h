@@ -855,6 +855,21 @@ Adds the given <token> to the <option_table>.  If the <token> is specified then
 the token following is assigned to <value>.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Modifier function for setting a float[3] from a token with 1 to 3 characters
+ * separated by the character at <separation_char_address> which may be either an
+ * asterisk or a comma. If '*' is used missing components take the values of the
+ * last number entered, eg '3' -> 3,3,3, while  '2.4*7.6' becomes 2.4,7.6,7.6.
+ * This functionality is useful for setting the size of glyphs. If the separation
+ * character is ',', values of unspecified components are left untouched, useful
+ * for setting glyph offsets which default to zero or some other number.
+ * Missing a number by putting two separators together works as expected, eg:
+ * '1.2**3.0' returns 1.2,1.2,3.0, '*2' gives 0.0,2.0,2.0 while ',,3' changes the
+ * third component of the float only to 3.
+ */
+int Option_table_add_special_float3_entry(struct Option_table *option_table,
+	const char *token, float *values, const char *separation_char_string);
+
 struct Set_names_from_list_token
 /*******************************************************************************
 LAST MODIFIED : 7 July 2004

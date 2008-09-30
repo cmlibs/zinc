@@ -1060,8 +1060,8 @@ a single point in 3-D space with an axes glyph.
 		Option_table_add_set_Material_entry(option_table, "material", &material,
 			command_data->material_package);
 		/* lengths */
-		Option_table_add_entry(option_table, "lengths", axis_lengths,
-			"*", set_special_float3);
+		Option_table_add_special_float3_entry(option_table, "lengths", axis_lengths,
+			"*");
 		/* origin */
 		number_of_components = 3;
 		Option_table_add_entry(option_table, "origin", axis_origin,
@@ -1890,11 +1890,11 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 			&orientation_scale_field,&set_orientation_scale_field_data,
 			set_Computed_field_conditional);
 		/* scale_factors */
-		Option_table_add_entry(option_table,"scale_factors",
-			glyph_scale_factors,"*",set_special_float3);
+		Option_table_add_special_float3_entry(option_table,"scale_factors",
+			glyph_scale_factors,"*");
 		/* size [of glyph] */
-		Option_table_add_entry(option_table,"size",
-			glyph_size,"*",set_special_float3);
+		Option_table_add_special_float3_entry(option_table,"size",
+			glyph_size,"*");
 		/* spectrum */
 		Option_table_add_entry(option_table,"spectrum",
 			&spectrum,command_data->spectrum_manager,set_Spectrum);
@@ -4515,11 +4515,11 @@ If <use_data> is set, creating data points, otherwise creating node points.
 			&orientation_scale_field,&set_orientation_scale_field_data,
 			set_Computed_field_conditional);
 		/* scale_factors */
-		Option_table_add_entry(option_table,"scale_factors",
-			glyph_scale_factors,"*",set_special_float3);
+		Option_table_add_special_float3_entry(option_table,"scale_factors",
+			glyph_scale_factors,"*");
 		/* size [of glyph] */
-		Option_table_add_entry(option_table,"size",
-			glyph_size,"*",set_special_float3);
+		Option_table_add_special_float3_entry(option_table,"size",
+			glyph_size,"*");
 		/* spectrum */
 		Option_table_add_entry(option_table,"spectrum",
 			&spectrum,command_data->spectrum_manager,set_Spectrum);
