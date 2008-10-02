@@ -867,7 +867,7 @@ The calling function must not deallocate the returned string.
 *** Must ensure implemented correctly for new Coordinate_system_type ***
 ==============================================================================*/
 {
-	char *coordinate_system_type_string;
+	const char *coordinate_system_type_string;
 
 	ENTER(ENUMERATOR_STRING(Coordinate_system_type));
 	switch (enumerator_value)
@@ -908,7 +908,7 @@ The calling function must not deallocate the returned string.
 		{
 			display_message(ERROR_MESSAGE,
 				"Coordinate_system_type_to_string.  Invalid coordinate system type");
-			coordinate_system_type_string=(char *)NULL;
+			coordinate_system_type_string=(const char *)NULL;
 		} break;
 	}
 	LEAVE;

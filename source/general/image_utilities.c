@@ -835,7 +835,7 @@ Called to finialise the use of the image environment
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Image_file_format)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Image_file_format));
 	switch (enumerator_value)
@@ -882,7 +882,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Image_file_format)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;

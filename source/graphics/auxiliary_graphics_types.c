@@ -63,7 +63,7 @@ Global functions
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Graphics_select_mode)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Graphics_select_mode));
 	switch (enumerator_value)
@@ -86,7 +86,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Graphics_select_mode)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -714,7 +714,7 @@ A modifier function for setting discretization in each element direction.
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Streamline_type)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Streamline_type));
 	switch (enumerator_value)
@@ -741,7 +741,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Streamline_type)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -753,7 +753,7 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Streamline_type)
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Streamline_data_type)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Streamline_data_type));
 	switch (enumerator_value)
@@ -776,7 +776,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Streamline_data_type)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -788,7 +788,7 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Streamline_data_type)
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Render_type)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Render_type));
 	switch (enumerator_value)
@@ -803,7 +803,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Render_type)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -815,7 +815,7 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Render_type)
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Xi_discretization_mode)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Xi_discretization_mode));
 	switch (enumerator_value)
@@ -846,7 +846,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Xi_discretization_mode)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;

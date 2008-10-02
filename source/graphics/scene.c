@@ -3090,7 +3090,7 @@ Global functions
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Scene_graphical_element_mode)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Scene_graphical_element_mode));
 	switch (enumerator_value)
@@ -3118,7 +3118,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Scene_graphical_element_mode)
 		default:
 		{
 			/* up to calling function to handle invalid enumerators */
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;

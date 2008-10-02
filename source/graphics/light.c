@@ -786,7 +786,7 @@ Global functions
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Light_type)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Light_type));
 	switch (enumerator_value)
@@ -805,7 +805,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Light_type)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;

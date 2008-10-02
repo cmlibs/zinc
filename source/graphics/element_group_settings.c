@@ -466,7 +466,7 @@ Global functions
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(GT_element_settings_type)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(GT_element_settings_type));
 	switch (enumerator_value)
@@ -511,7 +511,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(GT_element_settings_type)
 #endif /* ! defined (WX_USER_INTERFACE) */
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;

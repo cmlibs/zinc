@@ -275,7 +275,7 @@ Global functions
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Convert_finite_elements_mode)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Convert_finite_elements_mode));
 	switch (enumerator_value)
@@ -287,7 +287,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Convert_finite_elements_mode)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;

@@ -100,7 +100,7 @@ DECLARE_LIST_TYPES(Texture_property);
 
 PROTOTYPE_OBJECT_FUNCTIONS(Texture_property);
 PROTOTYPE_LIST_FUNCTIONS(Texture_property);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Texture_property,name,char *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Texture_property,name,const char *);
 
 struct Texture
 /*******************************************************************************
@@ -276,7 +276,7 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Texture_property);
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Texture_property,name,const char *,strcmp)
 DECLARE_INDEXED_LIST_FUNCTIONS(Texture_property)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Texture_property,name,
-	char *, strcmp)
+	const char *, strcmp)
 
 #if defined (OPENGL_API)
 static struct Texture_tiling *CREATE(Texture_tiling)(int dimension)
@@ -2744,7 +2744,7 @@ Global functions
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_combine_mode)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Texture_combine_mode));
 	switch (enumerator_value)
@@ -2799,7 +2799,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_combine_mode)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -2811,7 +2811,7 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Texture_combine_mode)
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_compression_mode)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Texture_compression_mode));
 	switch (enumerator_value)
@@ -2826,7 +2826,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_compression_mode)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -2838,7 +2838,7 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Texture_compression_mode)
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_filter_mode)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Texture_filter_mode));
 	switch (enumerator_value)
@@ -2868,7 +2868,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_filter_mode)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -2880,7 +2880,7 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Texture_filter_mode)
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_resize_filter_mode)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Texture_resize_filter_mode));
 	switch (enumerator_value)
@@ -2895,7 +2895,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_resize_filter_mode)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -2932,7 +2932,7 @@ select, ie. not a digital media buffer.
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_storage_type)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Texture_storage_type));
 	switch (enumerator_value)
@@ -2967,7 +2967,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_storage_type)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -2979,7 +2979,7 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Texture_storage_type)
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_wrap_mode)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Texture_wrap_mode));
 	switch (enumerator_value)
@@ -3006,7 +3006,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Texture_wrap_mode)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;

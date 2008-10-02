@@ -9118,7 +9118,7 @@ Returns a string label for the <blending_mode>.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Scene_viewer_blending_mode));
 	switch (enumerator_value)
@@ -9137,7 +9137,7 @@ NOTE: Calling function must not deallocate returned string.
 		} break;
 		default:
 		{
-			enumerator_string=(char *)NULL;
+			enumerator_string=(const char *)NULL;
 		} break;
 	}
 	LEAVE;

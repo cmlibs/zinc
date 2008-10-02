@@ -247,7 +247,7 @@ Global functions
 */
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Spectrum_settings_colour_mapping)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Spectrum_settings_colour_mapping));
 	switch (enumerator_value)
@@ -294,7 +294,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Spectrum_settings_colour_mapping)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;
