@@ -296,7 +296,7 @@ Evaluate the fields cache at the location
 		current_time = location->get_time();
 		
 		// sum field values over nodes in the region
-		FE_region_for_each_FE_node(fe_region,
+		return_code = FE_region_for_each_FE_node(fe_region,
 		   Computed_field_region_sum::accumulate_nodal_values, this);
 	}
 	else
@@ -836,7 +836,7 @@ Evaluate the fields cache at the location
 		current_time = location->get_time();
 		
 		// Sum the field values over a region
-		FE_region_for_each_FE_node(fe_region,
+		return_code = FE_region_for_each_FE_node(fe_region,
 		   Computed_field_region_mean::accumulate_nodal_values, this);
 		
 		// Divide the total sums for each component by the total number of nodes
@@ -1383,7 +1383,7 @@ Evaluate the fields cache at the location
 		current_time = location->get_time();
 		
 		// Sum the field values over a region
-		FE_region_for_each_FE_node(fe_region,
+		return_code = FE_region_for_each_FE_node(fe_region,
 		   Computed_field_region_rms::accumulate_nodal_values, this);
 		
 		// Calculates the RMS
