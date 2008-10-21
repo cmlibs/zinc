@@ -178,7 +178,6 @@ Structure to pass to modify_Scene.
 	struct MANAGER(Scene) *scene_manager;
 	struct Scene *default_scene;
 	/* following used for enabling GFEs */
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Cmiss_region *root_region;
 	struct Cmiss_region *data_root_region;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
@@ -687,7 +686,6 @@ scene.
 
 int Scene_set_graphical_element_mode(struct Scene *scene,
 	enum Scene_graphical_element_mode graphical_element_mode,
-	struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *root_region,
 	struct Cmiss_region *data_root_region,
 	struct Element_point_ranges_selection *element_point_ranges_selection,

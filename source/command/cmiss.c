@@ -4787,9 +4787,6 @@ Executes a GFX CREATE SCENE command.
 				modify_scene_data.scene_manager=command_data->scene_manager;
 				modify_scene_data.default_scene=command_data->default_scene;
 				/* following used for enabling GFEs */
-				modify_scene_data.computed_field_manager=
-					Computed_field_package_get_computed_field_manager(
-						command_data->computed_field_package);
 				modify_scene_data.root_region = command_data->root_region;
 				modify_scene_data.data_root_region = command_data->data_root_region;
 				modify_scene_data.element_point_ranges_selection=
@@ -15837,9 +15834,6 @@ Executes a GFX MODIFY command.
 				modify_scene_data.scene_manager=command_data->scene_manager;
 				modify_scene_data.default_scene=command_data->default_scene;
 				/* following used for enabling GFEs */
-				modify_scene_data.computed_field_manager=
-					Computed_field_package_get_computed_field_manager(
-						command_data->computed_field_package);
 				modify_scene_data.root_region = command_data->root_region;
 				modify_scene_data.data_root_region = command_data->data_root_region;
 				modify_scene_data.element_point_ranges_selection=
@@ -25065,8 +25059,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->texture_manager);
 				Scene_set_graphical_element_mode(command_data->default_scene,
 					GRAPHICAL_ELEMENT_LINES,
-					Computed_field_package_get_computed_field_manager(
-						command_data->computed_field_package),
 					command_data->root_region, command_data->data_root_region,
 					command_data->element_point_ranges_selection,
 					command_data->element_selection,command_data->node_selection,

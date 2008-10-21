@@ -175,10 +175,6 @@ Stores the collections of objects that make up a 3-D graphical model.
 	/* material/light changes, etc. */
 	enum Scene_graphical_element_mode graphical_element_mode;
 
-	/* computed_fields */
-	struct MANAGER(Computed_field) *computed_field_manager;
-	void *computed_field_manager_callback_id;
-
 	/*???RC temporary; have root_region and data_root_region until Scenes are
 		incorporated into the regions themselves */
 	struct Cmiss_region *root_region;
@@ -4574,8 +4570,7 @@ from the default versions of these functions.
 			scene->change_status=SCENE_NO_CHANGE;
 			scene->access_count = 0;
 			scene->scene_manager=(struct MANAGER(Scene) *)NULL;
-			/* fields, elements, nodes and data */
-			scene->computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
+			/* elements, nodes and data */
 
 			/*???RC temporary; have root_region and data_root_region until Scenes are
 				incorporated into the regions themselves */
@@ -4672,7 +4667,6 @@ Closes the scene and disposes of the scene data structure.
 			Scene_disable_time_behaviour(scene);
 			Scene_set_graphical_element_mode(scene,
 				GRAPHICAL_ELEMENT_NONE,
-				(struct MANAGER(Computed_field) *)NULL,
 				(struct Cmiss_region *)NULL,
 				(struct Cmiss_region *)NULL,
 				(struct Element_point_ranges_selection *)NULL,
@@ -5050,7 +5044,6 @@ scene.
 
 int Scene_set_graphical_element_mode(struct Scene *scene,
 	enum Scene_graphical_element_mode graphical_element_mode,
-	struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *root_region,
 	struct Cmiss_region *data_root_region,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
@@ -5074,7 +5067,7 @@ material and spectrum.
 
 	ENTER(Scene_set_graphical_element_mode);
 	if (scene && ((GRAPHICAL_ELEMENT_NONE == graphical_element_mode) || (
-		computed_field_manager && root_region && element_point_ranges_selection && 
+		root_region && element_point_ranges_selection && 
 		element_selection && node_selection)))
 	{
 		return_code = 1;
@@ -5102,7 +5095,6 @@ material and spectrum.
 					}
 				}
 				scene->graphical_element_mode = graphical_element_mode;
-				scene->computed_field_manager = (struct MANAGER(Computed_field) *)NULL;
 				scene->root_region = (struct Cmiss_region *)NULL;
 				scene->data_root_region = (struct Cmiss_region *)NULL;
 				scene->element_point_ranges_selection=
@@ -5123,7 +5115,6 @@ material and spectrum.
 			/* check managers consistent current mode - unless this is
 				 GRAPHICAL_ELEMENT_NONE so setting for the first time */
 			if ((GRAPHICAL_ELEMENT_NONE == scene->graphical_element_mode) || (
-				(computed_field_manager == scene->computed_field_manager) &&
 				(root_region == scene->root_region) &&
 				(data_root_region == scene->data_root_region)))
 			{
@@ -5132,7 +5123,6 @@ material and spectrum.
 					if (GRAPHICAL_ELEMENT_NONE == scene->graphical_element_mode)
 					{
 						scene->graphical_element_mode = graphical_element_mode;
-						scene->computed_field_manager = computed_field_manager;
 						scene->root_region = root_region;
 						scene->data_root_region = data_root_region;
 						scene->element_point_ranges_selection =
@@ -5271,8 +5261,8 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 			Scene_enable_time_behaviour(destination,
 				source->default_time_keeper);
 		}
+
 		Scene_set_graphical_element_mode(destination,source->graphical_element_mode,
-			source->computed_field_manager,
 			source->root_region, source->data_root_region,
 			source->element_point_ranges_selection,
 			source->element_selection,source->node_selection,source->data_selection,
@@ -7887,7 +7877,7 @@ GT_element_group and therefore have the same rendition.
 								}
 							}
 							else
-							{
+							{				
 								display_message(ERROR_MESSAGE,
 									"Scene_add_graphical_element_group.  "
 									"Could not create default line settings");
@@ -7895,10 +7885,11 @@ GT_element_group and therefore have the same rendition.
 							/* if the group has data, and the default_coordinate_field
 								 element_xi_coordinate field defined over them, then
 								 add data_points to the rendition */
+							
 							element_xi_coordinate_field =
 								FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-									Computed_field_is_type_embedded, NULL,
-									scene->computed_field_manager);
+								Computed_field_is_type_embedded, NULL,
+									Cmiss_region_get_Computed_field_manager(cmiss_region));
 							if (data_cmiss_region && 
 								(fe_region = Cmiss_region_get_FE_region(data_cmiss_region)) &&
 								FE_region_get_first_FE_node_that(fe_region,
@@ -9489,7 +9480,6 @@ Parser commands for modifying scenes - lighting, etc.
 						{
 							Scene_set_graphical_element_mode(scene,
 								graphical_element_mode,
-								modify_scene_data->computed_field_manager,
 								modify_scene_data->root_region,
 								modify_scene_data->data_root_region,
 								modify_scene_data->element_point_ranges_selection,
@@ -9643,16 +9633,15 @@ updates graphics of settings affected by the changes (probably all).
 	struct Set_Computed_field_conditional_data set_coordinate_field_data;
 
 	ENTER(gfx_modify_g_element_general);
-	if (state)
+	if (state && (cmiss_region = (struct Cmiss_region *)cmiss_region_void))
 	{
 		/* get default scene */
 		if (scene = (struct Scene *)scene_void)
 		{
 			/* if possible, get defaults from element_group on default scene */
-			if ((cmiss_region = (struct Cmiss_region *)cmiss_region_void)&&
-				(gt_element_group=Scene_get_graphical_element_group(scene,
-					cmiss_region)))
-			{
+			if (gt_element_group=Scene_get_graphical_element_group(scene,
+						cmiss_region))
+		  {
 				if (default_coordinate_field=
 					GT_element_group_get_default_coordinate_field(gt_element_group))
 				{
@@ -9691,7 +9680,7 @@ updates graphics of settings affected by the changes (probably all).
 				(void *)&clear_flag, NULL, set_char_flag);
 			/* default_coordinate */
 			set_coordinate_field_data.computed_field_manager=
-				scene->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(cmiss_region);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
