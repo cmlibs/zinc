@@ -594,12 +594,12 @@ static int Graphics_library_query_environment_extension(const char *extName)
 {
 	int error = 0, return_code;
 	char *environment_variable = duplicate_string("CMISS_");
+	char *environment_value;
 
 	return_code=GLEXTENSION_UNSURE;
 
 	append_string(&environment_variable, extName, &error);
 			
-	char *environment_value;
 	if (environment_value = getenv(environment_variable))
 	{
 		if (0 != atoi(environment_value))
