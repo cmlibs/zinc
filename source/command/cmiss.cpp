@@ -24316,7 +24316,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			sizeof(Pixel),
 			XtOffsetOf(User_settings,background_colour),
 			XmRString,
-			"black"
+			const_cast<char *>("black")
 		},
 		{
 			XmNforegroundColour,
@@ -24325,7 +24325,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			sizeof(Pixel),
 			XtOffsetOf(User_settings,foreground_colour),
 			XmRString,
-			"white"
+			const_cast<char *>("white")
 		},
 		{
 			XmNexamplesDirectory,
@@ -24334,7 +24334,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			sizeof(char *),
 			XtOffsetOf(User_settings,examples_directory),
 			XmRString,
-			""
+			const_cast<char *>("")
 		},
 		{
 			XmNstartupComfile,
@@ -24352,7 +24352,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			sizeof(char *),
 			XtOffsetOf(User_settings,help_directory),
 			XmRString,
-			""
+			const_cast<char *>("")
 		},
 		{
 			XmNhelpUrl,
@@ -24361,7 +24361,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			sizeof(char *),
 			XtOffsetOf(User_settings,help_url),
 			XmRString,
-			"http://www.bioeng.auckland.ac.nz/cmiss/help/user_help.php"
+			const_cast<char *>("http://www.bioeng.auckland.ac.nz/cmiss/help/user_help.php")
 		},
 	};
 #endif /* defined (MOTIF) */
