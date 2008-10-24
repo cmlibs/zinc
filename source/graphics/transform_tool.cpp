@@ -59,6 +59,9 @@ static char transform_tool_uidh[] =
 	;
 #endif /* defined (MOTIF) */
 #include "user_interface/message.h"
+#if defined (MOTIF)
+#include "user_interface/user_interface.h"
+#endif /* defined (MOTIF) */
 }
 
 #if defined (WX_USER_INTERFACE)
