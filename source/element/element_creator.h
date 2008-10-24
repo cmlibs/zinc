@@ -46,7 +46,6 @@ selections. Elements are created in this way while dialog is open.
 #define ELEMENT_CREATOR_H
 
 #include "finite_element/finite_element.h"
-#include "graphics/scene.h"
 #include "selection/element_selection.h"
 #include "selection/node_selection.h"
 

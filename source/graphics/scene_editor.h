@@ -44,7 +44,6 @@ Widgets for editing scene, esp. changing visibility of members.
 #if !defined (SCENE_EDITOR_H)
 #define SCENE_EDITOR_H
 
-#include "graphics/scene.h"
 #include "user_interface/user_interface.h"
 
 /*
@@ -53,6 +52,8 @@ Global types
 */
 
 struct Scene_editor;
+struct Scene;
+struct MANAGER(Scene);
 
 /*
 Global functions
