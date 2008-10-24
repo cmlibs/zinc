@@ -48,10 +48,12 @@ scenes.
 #include "api/cmiss_scene_viewer.h"
 #include "general/object.h"
 #include "graphics/colour.h"
-#include "graphics/scene.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
 #include "interaction/interactive_tool.h"
+
+struct Scene;
+struct MANAGER(Scene);
 
 int Cmiss_scene_viewer_free_data(void);
 /*******************************************************************************

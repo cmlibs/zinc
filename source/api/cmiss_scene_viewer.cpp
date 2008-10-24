@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : cmiss_scene_viewer.c
+FILE : cmiss_scene_viewer.cpp
 
 LAST MODIFIED : 2 June 2004
 
@@ -46,6 +46,7 @@ scenes.
 #if defined (GTK_USER_INTERFACE)
 #include <gtk/gtk.h>
 #endif /* defined (GTK_USER_INTERFACE) */
+extern "C" {
 #include "api/cmiss_scene_viewer.h"
 #include "api/cmiss_scene_viewer_private.h"
 #include "general/debug.h"
@@ -53,6 +54,8 @@ scenes.
 #include "graphics/transform_tool.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/message.h"
+}
+#include "graphics/scene.hpp"
 
 /*
 Global functions
@@ -71,11 +74,11 @@ Cmiss_scene_viewer_id create_Cmiss_scene_viewer_gtk(
 LAST MODIFIED : 19 January 2007
 
 DESCRIPTION :
-Creates a Cmiss_scene_viewer by creating a GtkGlArea inside the specified 
+Creates a Cmiss_scene_viewer by creating a GtkGlArea inside the specified
 <scene_viewer_widget> container.
-If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or 
+If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or
 <minimum_accumulation_buffer_depth> are not zero then they are used to filter
-out the possible visuals selected for graphics_buffers.  If they are zero then 
+out the possible visuals selected for graphics_buffers.  If they are zero then
 the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
 chosen.
 ==============================================================================*/
@@ -99,6 +102,14 @@ chosen.
 		else if (CMISS_SCENE_VIEWER_BUFFERING_SINGLE==buffer_mode)
 		{
 			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
+		}
+		else if (CMISS_SCENE_VIEWER_BUFFERING_RENDER_OFFSCREEN_AND_COPY==buffer_mode)
+		{
+			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_COPY;
+		}
+		else if (CMISS_SCENE_VIEWER_BUFFERING_RENDER_OFFSCREEN_AND_BLEND==buffer_mode)
+		{
+			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND;
 		}
 		else
 		{
@@ -151,11 +162,11 @@ Cmiss_scene_viewer_id create_Cmiss_scene_viewer_Carbon(
 LAST MODIFIED : 14 February 2007
 
 DESCRIPTION :
-Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified 
+Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified
 <port> window handle.
-If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or 
+If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or
 <minimum_accumulation_buffer_depth> are not zero then they are used to filter
-out the possible visuals selected for graphics_buffers.  If they are zero then 
+out the possible visuals selected for graphics_buffers.  If they are zero then
 the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
 chosen.
 ==============================================================================*/
@@ -231,11 +242,11 @@ Cmiss_scene_viewer_id create_Cmiss_scene_viewer_win32(
 LAST MODIFIED : 1 June 2007
 
 DESCRIPTION :
-Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified 
+Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified
 <hWnd> window handle.
-If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or 
+If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or
 <minimum_accumulation_buffer_depth> are not zero then they are used to filter
-out the possible visuals selected for graphics_buffers.  If they are zero then 
+out the possible visuals selected for graphics_buffers.  If they are zero then
 the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
 chosen.
 ==============================================================================*/
@@ -347,11 +358,11 @@ Cmiss_scene_viewer_id create_Cmiss_scene_viewer_motif(
 LAST MODIFIED : 25 January 2006
 
 DESCRIPTION :
-Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified 
+Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified
 <parent> widget.
-If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or 
+If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or
 <minimum_accumulation_buffer_depth> are not zero then they are used to filter
-out the possible visuals selected for graphics_buffers.  If they are zero then 
+out the possible visuals selected for graphics_buffers.  If they are zero then
 the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
 chosen.
 ==============================================================================*/
@@ -425,11 +436,11 @@ Cmiss_scene_viewer_id create_Cmiss_scene_viewer_X11(
 LAST MODIFIED : 25 January 2006
 
 DESCRIPTION :
-Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified 
+Creates a Cmiss_scene_viewer by creating a graphics buffer on the specified
 <window>.
-If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or 
+If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or
 <minimum_accumulation_buffer_depth> are not zero then they are used to filter
-out the possible visuals selected for graphics_buffers.  If they are zero then 
+out the possible visuals selected for graphics_buffers.  If they are zero then
 the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
 chosen.
 ==============================================================================*/
@@ -470,7 +481,7 @@ chosen.
 			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_MONO;
 		}
 		XGetGeometry(User_interface_get_display(cmiss_scene_viewer_package->user_interface),
-				window, &root, &x, &y, &width, &height, &border_width, &depth); 
+				window, &root, &x, &y, &width, &height, &border_width, &depth);
 		graphics_buffer = create_Graphics_buffer_X11(
 			Cmiss_scene_viewer_package_get_graphics_buffer_package(cmiss_scene_viewer_package),
 			window,
@@ -645,17 +656,17 @@ Sets the viewport mode(absolute/relative/distorting relative) for the
 		{
 			case CMISS_SCENE_VIEWER_VIEWPORT_ABSOLUTE:
 			{
-				return_code = Scene_viewer_set_viewport_mode(scene_viewer, 
+				return_code = Scene_viewer_set_viewport_mode(scene_viewer,
 					SCENE_VIEWER_ABSOLUTE_VIEWPORT);
 			} break;
 			case CMISS_SCENE_VIEWER_VIEWPORT_RELATIVE:
 			{
-				return_code = Scene_viewer_set_viewport_mode(scene_viewer, 
+				return_code = Scene_viewer_set_viewport_mode(scene_viewer,
 					SCENE_VIEWER_RELATIVE_VIEWPORT);
 			} break;
 			case CMISS_SCENE_VIEWER_VIEWPORT_DISTORTING_RELATIVE:
 			{
-				return_code = Scene_viewer_set_viewport_mode(scene_viewer, 
+				return_code = Scene_viewer_set_viewport_mode(scene_viewer,
 					SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT);
 			} break;
 			default:
@@ -748,12 +759,12 @@ Sets the projection mode - parallel/perspective/custom - of the Cmiss_scene_view
 		{
 			case CMISS_SCENE_VIEWER_PROJECTION_PERSPECTIVE:
 			{
-				return_code = Scene_viewer_set_projection_mode(scene_viewer, 
+				return_code = Scene_viewer_set_projection_mode(scene_viewer,
 					SCENE_VIEWER_PERSPECTIVE);
 			} break;
 			case CMISS_SCENE_VIEWER_PROJECTION_PARALLEL:
 			{
-				return_code = Scene_viewer_set_projection_mode(scene_viewer, 
+				return_code = Scene_viewer_set_projection_mode(scene_viewer,
 					SCENE_VIEWER_PARALLEL);
 			} break;
 			default:
@@ -1328,26 +1339,27 @@ were active when the event was generated.
 	ENTER(Cmiss_scene_viewer_input_get_event_type);
 	if (input_data)
 	{
-		*modifier_flags = (enum Cmiss_scene_viewer_input_modifier_flags)0;
+		int *modifier_flags_int = (int*)modifier_flags;
+		*modifier_flags_int = 0;
 		if (input_data->input_modifier &
 			GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT)
 		{
-			*modifier_flags |= CMISS_SCENE_VIEWER_INPUT_MODIFIER_SHIFT;
+			*modifier_flags_int |= CMISS_SCENE_VIEWER_INPUT_MODIFIER_SHIFT;
 		}
 		if (input_data->input_modifier &
 			GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL)
 		{
-			*modifier_flags |= CMISS_SCENE_VIEWER_INPUT_MODIFIER_CONTROL;
+			*modifier_flags_int |= CMISS_SCENE_VIEWER_INPUT_MODIFIER_CONTROL;
 		}
 		if (input_data->input_modifier &
 			GRAPHICS_BUFFER_INPUT_MODIFIER_ALT)
 		{
-			*modifier_flags |= CMISS_SCENE_VIEWER_INPUT_MODIFIER_ALT;
+			*modifier_flags_int |= CMISS_SCENE_VIEWER_INPUT_MODIFIER_ALT;
 		}
 		if (input_data->input_modifier &
 			GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1)
 		{
-			*modifier_flags |= CMISS_SCENE_VIEWER_INPUT_MODIFIER_BUTTON1;
+			*modifier_flags_int |= CMISS_SCENE_VIEWER_INPUT_MODIFIER_BUTTON1;
 		}
 	}
 	else
@@ -1378,24 +1390,26 @@ were active when the event was generated.
 	if (input_data)
 	{
 		input_data->input_modifier = (enum Graphics_buffer_input_modifier)0;
+		int *input_modifier_int = (int*)&input_data->input_modifier;
+		*input_modifier_int = 0;
 		if (modifier_flags & CMISS_SCENE_VIEWER_INPUT_MODIFIER_SHIFT)
 		{
-			input_data->input_modifier |= 
+			*input_modifier_int |=
 				GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
 		}
 		if (modifier_flags & CMISS_SCENE_VIEWER_INPUT_MODIFIER_CONTROL)
 		{
-			input_data->input_modifier |= 
+			*input_modifier_int |=
 				GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
 		}
 		if (modifier_flags & CMISS_SCENE_VIEWER_INPUT_MODIFIER_ALT)
 		{
-			input_data->input_modifier |= 
+			*input_modifier_int |=
 				GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
 		}
 		if (modifier_flags & CMISS_SCENE_VIEWER_INPUT_MODIFIER_BUTTON1)
 		{
-			input_data->input_modifier |= 
+			*input_modifier_int |=
 				GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
 		}
 	}
@@ -1426,7 +1440,7 @@ Cmiss_scene_viewer_blending_mode enumerator.
 	ENTER(Cmiss_scene_viewer_get_blending_mode);
 	if (scene_viewer)
 	{
-		if (return_code = Scene_viewer_get_blending_mode(scene_viewer, 
+		if (return_code = Scene_viewer_get_blending_mode(scene_viewer,
 				&scene_viewer_blending_mode))
 		{
 			switch(scene_viewer_blending_mode)
@@ -1486,17 +1500,17 @@ Cmiss_scene_viewer_blending_mode enumerator.
 		{
 			case CMISS_SCENE_VIEWER_BLENDING_NORMAL:
 			{
-				return_code = Scene_viewer_set_blending_mode(scene_viewer, 
+				return_code = Scene_viewer_set_blending_mode(scene_viewer,
 					SCENE_VIEWER_BLEND_NORMAL);
 			} break;
 			case CMISS_SCENE_VIEWER_BLENDING_NONE:
 			{
-				return_code = Scene_viewer_set_blending_mode(scene_viewer, 
+				return_code = Scene_viewer_set_blending_mode(scene_viewer,
 					SCENE_VIEWER_BLEND_NONE);
 			} break;
 			case CMISS_SCENE_VIEWER_BLENDING_TRUE_ALPHA:
 			{
-				return_code = Scene_viewer_set_blending_mode(scene_viewer, 
+				return_code = Scene_viewer_set_blending_mode(scene_viewer,
 					SCENE_VIEWER_BLEND_TRUE_ALPHA);
 			} break;
 			default:

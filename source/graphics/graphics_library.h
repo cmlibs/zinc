@@ -335,6 +335,9 @@ yet we just don't know.
 #if defined (GLX_ARB_get_proc_address)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GLX_ARB_get_proc_address);
 #endif /* defined (GLX_ARB_get_proc_address) */
+#if defined (GL_VERSION_1_1)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_VERSION_1_1);
+#endif /* defined (GL_VERSION_1_1) */
 #if defined (GL_VERSION_1_2)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_VERSION_1_2);
 #endif /* defined (GL_VERSION_1_2) */
@@ -368,6 +371,9 @@ yet we just don't know.
 #if defined (GL_ARB_texture_compression)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_texture_compression);
 #endif /* defined (GL_ARB_texture_compression) */
+#if defined (GL_ARB_vertex_buffer_object)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_vertex_buffer_object);
+#endif /* defined (GL_ARB_vertex_buffer_object) */
 #if defined (GL_ARB_vertex_program)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_vertex_program);
 #endif /* defined (GL_ARB_vertex_program) */
@@ -380,9 +386,16 @@ yet we just don't know.
 #if defined (GL_EXT_texture3D)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_EXT_texture3D);
 #endif /* defined (GL_EXT_texture3D) */
+#if defined (GL_EXT_vertex_array) || defined (GL_VERSION_1_1)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_EXT_vertex_array);
+#endif /* defined (GL_EXT_vertex_array) */
 #if defined (GL_EXT_framebuffer_object)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_EXT_framebuffer_object);
 #endif /* (GL_EXT_framebuffer_object) */
+/* Fake extension to control whether display lists are used or not.
+ * This is only determined by the corresponding CMISS_GL_display_list environment
+ * variable. */
+GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_display_lists);
 /* Extension function handles */
 #if defined (GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES)
 #  if defined (APIENTRY)
@@ -409,6 +422,17 @@ yet we just don't know.
        GRAPHICS_LIBRARY_EXTERN PFNGLBLENDFUNCSEPARATEPROC GLHANDLE(glBlendFuncSeparate);
 #      define glBlendFuncSeparate (GLHANDLE(glBlendFuncSeparate))
 #    endif /* defined (GL_VERSION_1_4) */
+
+#    if defined (GL_VERSION_1_5)
+       GRAPHICS_LIBRARY_EXTERN PFNGLGENBUFFERSPROC GLHANDLE(glGenBuffers);
+#      define glGenBuffers (GLHANDLE(glGenBuffers))
+       GRAPHICS_LIBRARY_EXTERN PFNGLDELETEBUFFERSPROC GLHANDLE(glDeleteBuffers);
+#      define glDeleteBuffers (GLHANDLE(glDeleteBuffers))
+       GRAPHICS_LIBRARY_EXTERN PFNGLBINDBUFFERPROC GLHANDLE(glBindBuffer);
+#      define glBindBuffer (GLHANDLE(glBindBuffer))
+       GRAPHICS_LIBRARY_EXTERN PFNGLBUFFERDATAPROC GLHANDLE(glBufferData);
+#      define glBufferData (GLHANDLE(glBufferData))
+#    endif /* defined (GL_VERSION_1_5) */
 
 #    if defined (GL_VERSION_2_0)
        GRAPHICS_LIBRARY_EXTERN PFNGLATTACHSHADERPROC GLHANDLE(glAttachShader);

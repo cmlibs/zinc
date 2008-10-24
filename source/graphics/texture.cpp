@@ -6,21 +6,6 @@ LAST MODIFIED : 31 March 2008
 
 DESCRIPTION :
 The functions for manipulating graphical textures.
-
-???RC Only OpenGL is supported now.
-
-???RC 12 February 1998.
-		Two functions are now used for activating the texture:
-- compile_Texture puts the texture into its own display list.
-- execute_Texture calls that display list, or disables textures if a NULL
-	argument is passed.
-		The separation into two functions was needed because OpenGL cannot start a
-new list while one is being written to. As a consequence, you must precompile
-all objects that are executed from within another display list. To make this job
-easier, compile_Texture is a list/manager iterator function.
-		Future updates of OpenGL may overcome this limitation, in which case the
-execute function can take over compiling as well. Furthermore, it is easy to
-return to direct rendering, as described with these routines.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -61,9 +46,9 @@ return to direct rendering, as described with these routines.
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+extern "C" {
 #include "command/parser.h"
 #include "general/debug.h"
-#include "general/enumerator_private.h"
 #include "general/image_utilities.h"
 #include "general/indexed_list_private.h"
 #include "general/manager_private.h"
@@ -73,10 +58,14 @@ return to direct rendering, as described with these routines.
 #include "three_d_drawing/graphics_buffer.h"
 #include "graphics/light.h"
 #include "graphics/graphics_library.h"
-#include "graphics/scene.h"
+#include "graphics/auxiliary_graphics_types.h"
 #include "graphics/texture.h"
 #include "three_d_drawing/movie_extensions.h"
 #include "user_interface/message.h"
+}
+#include "general/enumerator_private_cpp.hpp"
+#include "graphics/texture.hpp"
+#include "graphics/rendergl.hpp"
 
 /*
 Module types
@@ -94,6 +83,21 @@ Stores a Texture_property, name and value pair.
 	const char *name;
 	const char *value;
 	int access_count;
+};
+
+/***************************************************************************//**
+ * Flag for controlling the compile and execute stages of the texture
+ */
+enum Texture_compile_state
+{
+	/* Everything needs to be compiled */
+	TEXTURE_COMPILE_STATE_NOT_COMPILED,
+	 /** The display list is up to date, implies the texture object is compiled too. */
+	TEXTURE_COMPILE_STATE_DISPLAY_LIST_COMPILED,
+	/** The texture object data need to be updated but the display list doesn't. */
+	TEXTURE_COMPILE_STATE_TEXTURE_OBJECT_UPDATE_REQUIRED,
+	/** The texture object is up to date but the display list is not. */
+	TEXTURE_COMPILE_STATE_TEXTURE_OBJECT_COMPILED
 };
 
 DECLARE_LIST_TYPES(Texture_property);
@@ -173,7 +177,7 @@ The properties of a graphical texture.
 	GLuint texture_id;
 #endif /* defined (OPENGL_API) */
 	/* flag to say if the display list is up to date */
-	int display_list_current;
+	Texture_compile_state display_list_current;
 	/* the number of structures that point to this texture.  The texture
 		cannot be destroyed while this is greater than 0 */
 
@@ -1007,7 +1011,7 @@ GL_EXT_texture_object extension.
 
 #if defined (OPENGL_API)
 static int Texture_get_hardware_reduction_or_tiling(struct Texture *texture,
-   int *reductions, struct Texture_tiling **texture_tiling)
+   int *reductions, int &allow_texture_tiling, struct Texture_tiling **texture_tiling)
 /*******************************************************************************
 LAST MODIFIED : 19 November 2007
 
@@ -1250,7 +1254,7 @@ tiles (and <texture_tiling> wasn't NULL.
 			{
 				DEACCESS(Texture_tiling)(&texture->texture_tiling);
 			}
-			if ((2 == return_code) && texture_tiling)
+			if ((2 == return_code) && allow_texture_tiling)
 			{
 				int i, number_of_tiles;
 
@@ -2095,8 +2099,7 @@ Separating this out so we can set it for each activated tile.
 
 #if defined (OPENGL_API)
 static int direct_render_Texture(struct Texture *texture,
-	struct Graphics_buffer *graphics_buffer,
-	struct Texture_tiling **texture_tiling)
+	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 19 November 2007
 
@@ -2113,7 +2116,6 @@ Directly outputs the commands setting up the <texture>.
 
 	ENTER(direct_render_Texture);
 	return_code = 1;
-	USE_PARAMETER(graphics_buffer);
 	if (texture)
 	{
 		rendered_image = (unsigned char *)NULL;
@@ -2254,7 +2256,7 @@ Directly outputs the commands setting up the <texture>.
 					(texture->compression_mode, number_of_components);
 
 				if (0 < (reduction_flag = Texture_get_hardware_reduction_or_tiling(texture,
-					 reductions, texture_tiling)))
+					 reductions, renderer->allow_texture_tiling, &renderer->texture_tiling)))
 				{
 					reduced_image = (unsigned char *)NULL;
 					switch(reduction_flag)
@@ -2350,14 +2352,14 @@ Directly outputs the commands setting up the <texture>.
 						case 3:
 						{
 							number_of_tiles = 1;
-							for (i = 0 ; i < (*texture_tiling)->dimension ; i++)
+							for (i = 0 ; i < renderer->texture_tiling->dimension ; i++)
 							{
-								number_of_tiles *= (*texture_tiling)->texture_tiles[i];
+								number_of_tiles *= renderer->texture_tiling->texture_tiles[i];
 							}
-							render_tile_width = (*texture_tiling)->tile_size[0];
+							render_tile_width = renderer->texture_tiling->tile_size[0];
 							if (texture->dimension > 1)
 							{
-								render_tile_height = (*texture_tiling)->tile_size[1];
+								render_tile_height = renderer->texture_tiling->tile_size[1];
 							}
 							else
 							{
@@ -2365,7 +2367,7 @@ Directly outputs the commands setting up the <texture>.
 							}
 							if (texture->dimension > 2)
 							{
-								render_tile_depth = (*texture_tiling)->tile_size[2];
+								render_tile_depth = renderer->texture_tiling->tile_size[2];
 							}
 							else
 							{
@@ -2380,9 +2382,9 @@ Directly outputs the commands setting up the <texture>.
 							if (3 == reduction_flag)
 							{
 								Texture_get_image_tile(texture, &reduced_image,
-									*texture_tiling, /*tile_number*/i);
+									renderer->texture_tiling, /*tile_number*/i);
 								glBindTexture(texture_target,
-									(*texture_tiling)->texture_ids[i]);
+									renderer->texture_tiling->texture_ids[i]);
 								rendered_image = reduced_image;
 								glEnable(texture_target);
 
@@ -2480,7 +2482,7 @@ A modifier function to set the texture storage type.
 {
 	const char *current_token, *storage_type_string;
 	enum Texture_storage_type *storage_type_address, storage_type;
-	int return_code;
+	int storage_type_int, return_code;
 
 	ENTER(set_Texture_storage);
 	if (state && state->current_token && (!dummy_user_data))
@@ -2512,22 +2514,24 @@ A modifier function to set the texture storage type.
 				{
 					/* write help */
 					display_message(INFORMATION_MESSAGE, " ");
-					storage_type = (enum Texture_storage_type)0;
+					storage_type_int = 0;
 					while ((storage_type_string =
-						ENUMERATOR_STRING(Texture_storage_type)(storage_type)) &&
-						Texture_storage_type_is_user_selectable(storage_type, (void *)NULL))
+						ENUMERATOR_STRING(Texture_storage_type)(
+						(enum Texture_storage_type)storage_type_int)) &&
+						Texture_storage_type_is_user_selectable(
+						(enum Texture_storage_type)storage_type_int, (void *)NULL))
 					{
-						if (storage_type != (enum Texture_storage_type)0)
+						if (storage_type_int != 0)
 						{
 							display_message(INFORMATION_MESSAGE,"|");
 						}
 						display_message(INFORMATION_MESSAGE, storage_type_string);
-						if (storage_type == *storage_type_address)
+						if (storage_type_int == *storage_type_address)
 						{
 							display_message(INFORMATION_MESSAGE,"[%s]",
 								storage_type_string);
 						}
-						storage_type++;
+						storage_type_int++;
 					}
 				}
 			}
@@ -2677,11 +2681,11 @@ DESCRIPTION :
 				return_code=0;
 			} break;
 		}
-		if (texture->display_list_current)
+		if (texture->display_list_current == TEXTURE_COMPILE_STATE_DISPLAY_LIST_COMPILED)
 		{
 			/* If something else has made the whole list invalid keep that state,
 				otherwise we can set our special display_list_current state */
-			texture->display_list_current=2;
+			texture->display_list_current=TEXTURE_COMPILE_STATE_TEXTURE_OBJECT_UPDATE_REQUIRED;
 		}
 		Texture_refresh(texture);
 	}
@@ -3103,7 +3107,7 @@ of all textures.
 			texture->texture_id = 0;
 #endif /* defined (OPENGL_API) */
 			texture->texture_tiling = (struct Texture_tiling *)NULL;
-			texture->display_list_current=0;
+			texture->display_list_current= TEXTURE_COMPILE_STATE_NOT_COMPILED;
 			texture->property_list = (struct LIST(Texture_property) *)NULL;
 			texture->access_count=0;
 		}
@@ -3429,7 +3433,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Texture,name)
 				}
 			}
 			/* flag destination display list as no longer current */
-			destination->display_list_current=0;
+			destination->display_list_current=TEXTURE_COMPILE_STATE_NOT_COMPILED;
 		}
 	}
 	else
@@ -3520,7 +3524,7 @@ Returns the alpha value used for combining the texture.
 				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture), texture);
 		}
 		/* display list needs to be compiled again */
-		texture->display_list_current=0;
+		texture->display_list_current=TEXTURE_COMPILE_STATE_NOT_COMPILED;
 		if (texture->texture_manager)
 		{
 			MANAGER_END_CHANGE(Texture)(texture->texture_manager);
@@ -4041,7 +4045,7 @@ Crop and other parameters are cleared.
 			texture->crop_height = 0;
 			Texture_update_default_physical_size(texture);
 			/* display list needs to be compiled again */
-			texture->display_list_current = 0;
+			texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
 			return_code = 1;
 		}
 		else
@@ -4303,7 +4307,7 @@ positive. Cropping is not available in the depth direction.
 				texture->crop_height = crop_height;
 				Texture_update_default_physical_size(texture);
 				/* display list needs to be compiled again */
-				texture->display_list_current = 0;
+				texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
 				return_code = 1;
 			}
 			else
@@ -4374,7 +4378,7 @@ in size.
 			source += source_width_bytes;
 		}
 		/* display list needs to be compiled again */
-		texture->display_list_current = 0;
+		texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
 		return_code = 1;
 	}
 	else
@@ -4518,7 +4522,7 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 				texture->depth_texels = texture_depth;
 				Texture_update_default_physical_size(texture);
 				/* display list needs to be compiled again */
-				texture->display_list_current = 0;
+				texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
 				return_code = 1;
 			}
 			else
@@ -4688,7 +4692,7 @@ texture, and must be given a value.
 				texture->crop_width=image_width;
 				texture->crop_height=image_width;
 				/* display list needs to be compiled again */
-				texture->display_list_current=0;
+				texture->display_list_current=TEXTURE_COMPILE_STATE_NOT_COMPILED;
 				return_code=1;
 			}
 			else
@@ -4750,7 +4754,7 @@ texture, and must be given a value.
 						texture->crop_width=image_width;
 						texture->crop_height=image_width;
 						/* display list needs to be compiled again */
-						texture->display_list_current=0;
+						texture->display_list_current=TEXTURE_COMPILE_STATE_NOT_COMPILED;
 						return_code=1;
 					}
 					else
@@ -5553,7 +5557,7 @@ parameters.
 					{
 #endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
 						display_message(ERROR_MESSAGE,
-							"compile_Texture.  "
+							"Texture_execute_opengl_texture_object.  "
 							"3D textures not supported on this display.");
 						size = 0;
 #if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
@@ -5679,7 +5683,7 @@ real image data and not padding to make image sizes up to powers of 2.
 			texture->height = height;
 			texture->depth = depth;
 			/* display list needs to be compiled again */
-			texture->display_list_current = 0;
+			texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
 		}
 		return_code = 1;
 	}
@@ -5770,21 +5774,21 @@ the top right of the texture.
 			if (texture->width != sizes[0])
 			{
 				texture->width = sizes[0];
-				texture->display_list_current = 0;
+				texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
 			}
 			if (dimension > 1)
 			{
 				if (texture->height != sizes[1])
 				{
 					texture->height = sizes[1];
-					texture->display_list_current = 0;
+					texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
 				}
 				if (dimension > 2)
 				{
 					if (texture->depth != sizes[2])
 					{
 						texture->depth = sizes[2];
-						texture->display_list_current = 0;
+						texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
 					}
 				}
 			}
@@ -6087,7 +6091,7 @@ Sets how textures coordinates outside [0,1] are handled.
 			{
 				texture->wrap_mode = wrap_mode;
 				/* display list needs to be compiled again */
-			texture->display_list_current=0;
+			texture->display_list_current=TEXTURE_COMPILE_STATE_NOT_COMPILED;
 			}
 			return_code=1;
 		}
@@ -6443,59 +6447,30 @@ The command is started with the string pointed to by <command_prefix>.
 	return (return_code);
 } /* list_Texture_commands */
 
-int compile_Texture(struct Texture *texture,
-	struct Graphics_buffer *graphics_buffer,
-	struct Texture_tiling **texture_tiling)
-/*******************************************************************************
-LAST MODIFIED : 19 November 2007
-
-DESCRIPTION :
-Rebuilds the display_list for <texture> if it is not current. If <texture>
-does not have a display list, first attempts to give it one. The display list
-created here may be called using execute_Texture, below.
-If <texture_tiling> is not NULL then if the texture is larger than can be 
-compiled into a single texture on the current graphics hardware,
-then it can be tiled into several textures
-and information about the tile boundaries is returned in Texture_tiling 
-structure and should be used to compile any graphics objects.
-???RC Textures must be compiled before they are executed since openGL
-cannot start writing to a display list when one is currently being written to.
-???RC The behaviour of textures is set up to take advantage of pre-computed
-display lists. To switch to direct rendering make this routine do nothing and
-execute_Texture should just call direct_render_Texture.
-==============================================================================*/
+#if defined (OPENGL_API)
+int Texture_compile_opengl_texture_object(struct Texture *texture,
+	Render_graphics_opengl *renderer)
 {
 	int return_code;
-#if defined (OPENGL_API)
-	int i;
 	GLboolean resident;
 	GLenum texture_target;
-#endif /* defined (OPENGL_API) */
 
-	ENTER(compile_Texture);
-	/* Passed graphics_buffer through here as was using it to 
-		do special compilation for Intel graphics driver, but found
-		a more complete work around in the graphics_buffer creation.
-		This parameter is still better than the NULL from before. */
-	USE_PARAMETER(graphics_buffer);
+	ENTER(Texture_compile_opengl_texture_object);
 	if (texture)
 	{
-		if ((texture->display_list_current == 1) 
-#if defined (OPENGL_API)
+		if (((texture->display_list_current == TEXTURE_COMPILE_STATE_TEXTURE_OBJECT_COMPILED)
+			||(texture->display_list_current == TEXTURE_COMPILE_STATE_DISPLAY_LIST_COMPILED))
 			&& texture->texture_id 
-			&&glAreTexturesResident(1, &texture->texture_id, &resident)
-#endif /* defined (OPENGL_API) */
-				)
+			&& glAreTexturesResident(1, &texture->texture_id, &resident))
 		{
 			return_code = 1;
-			if (texture_tiling && texture->texture_tiling)
+			if (renderer->allow_texture_tiling && texture->texture_tiling)
 			{
-				*texture_tiling = texture->texture_tiling;
+				renderer->texture_tiling = texture->texture_tiling;
 			}
 		}
 		else
 		{
-#if defined (OPENGL_API)
 			switch (texture->dimension)
 			{
 				case 1:
@@ -6527,7 +6502,287 @@ execute_Texture should just call direct_render_Texture.
 					{
 #endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
 						display_message(ERROR_MESSAGE,
-							"compile_Texture.  "
+							"Texture_execute_opengl_texture_object.  "
+							"3D textures not supported on this display.");
+						return_code=0;
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+					}
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+				} break;
+			}
+			if(texture->display_list_current == TEXTURE_COMPILE_STATE_TEXTURE_OBJECT_UPDATE_REQUIRED)
+			{
+				switch(texture->storage)
+				{
+					case TEXTURE_DMBUFFER:
+					{
+						/* If copied by reference we don't need to do anything */
+#if defined (OLD_DEBUG)
+						Graphics_buffer_make_read_current(texture->graphics_buffer);
+						glBindTextureEXT(GL_TEXTURE_2D, texture->texture_id);
+						glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_FALSE);
+						glCopyTexImage2DEXT(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0,
+							256, 256, 0);
+						glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
+							texture->original_width_texels, texture->original_height_texels);
+						Texture_get_type_and_format_from_storage_type(texture->storage,
+							&type, &format);
+						glTexImage2D(GL_TEXTURE_2D,(GLint)0,
+							GL_RGBA8_EXT,
+							(GLint)(texture->width_texels),
+							(GLint)(texture->height_texels),(GLint)0,
+							format,type, NULL);
+						glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
+							256, 256);
+						{
+							unsigned char test_pixels[262144];
+							
+							glReadPixels(0, 0, 256, 256,
+								GL_RGBA, GL_UNSIGNED_BYTE,
+								(void*)test_pixels);
+							glTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0,
+								256, 256,
+								GL_RGBA, GL_UNSIGNED_BYTE, test_pixels);
+						}
+						glRasterPos3i(1,1,1);
+						glCopyPixels(0,0, 256,256, GL_COLOR);
+						{
+							static int counter = 100;
+							unsigned char test_pixels[262144];
+
+							counter += 7;
+							memset(test_pixels, counter % 255, 262144);
+							glTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0,
+								256, 256,
+								GL_RGBA, GL_UNSIGNED_BYTE, test_pixels);
+						}
+						X3dThreeDDrawingRemakeCurrent();
+#endif /* defined (DEBUG) */
+					} break;
+					case TEXTURE_PBUFFER:
+					{
+#if defined (SGI_DIGITAL_MEDIA)
+						glPushAttrib(GL_PIXEL_MODE_BIT);
+						glBindTextureEXT(GL_TEXTURE_2D, texture->texture_id);
+						Graphics_buffer_make_read_current(texture->graphics_buffer);
+						glPixelTransferf(GL_ALPHA_BIAS, 1.0);  /* This is required
+																				cause the OCTANE seems to return alpha of zero from render
+																				to buffer */
+						glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
+							texture->width_texels, texture->height_texels);
+						{
+							/* This code is should be totally unnecessary but
+								it seems that the texture stuff is broken */
+							unsigned char test_pixels[262144];
+							
+							glReadPixels(0, 0, 256, 256,
+								GL_RGBA, GL_UNSIGNED_BYTE,
+								(void*)test_pixels);
+							glTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0,
+								256, 256,
+								GL_RGBA, GL_UNSIGNED_BYTE, test_pixels);
+						}
+						glPopAttrib();
+#else /* defined (SGI_DIGITAL_MEDIA) */
+						display_message(ERROR_MESSAGE,
+							"Texture_execute_opengl_texture_object.  PBUFFER not supported");
+						return_code=0;								
+#endif /* defined (SGI_DIGITAL_MEDIA) */
+					} break;
+					default:
+					{
+						glBindTexture(texture_target, texture->texture_id);
+						direct_render_Texture(texture, renderer);
+					} break;
+				}
+				/* The display list does not need to be compiled too. */
+				texture->display_list_current= TEXTURE_COMPILE_STATE_DISPLAY_LIST_COMPILED;
+			}
+			else
+			{
+				if (!texture->texture_id)
+				{
+					glGenTextures(1, &(texture->texture_id));
+				}
+				glBindTexture(texture_target, texture->texture_id);
+				if(texture->storage==TEXTURE_DMBUFFER || 
+					texture->storage==TEXTURE_PBUFFER)
+				{
+					Graphics_buffer_make_read_current(texture->graphics_buffer);				
+					direct_render_Texture(texture, renderer);
+					/* X3dThreeDDrawingRemakeCurrent(); */
+				}
+				else
+				{
+					direct_render_Texture(texture, renderer);
+				}
+				texture->display_list_current= TEXTURE_COMPILE_STATE_TEXTURE_OBJECT_COMPILED;
+			}
+
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_execute_opengl_texture_object.  Missing texture");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_execute_opengl_texture_object */
+#endif /* defined (OPENGL_API) */
+
+#if defined (OPENGL_API)
+int Texture_execute_opengl_texture_object(struct Texture *texture,
+	Render_graphics_opengl *renderer)
+{
+	GLenum texture_target;
+	int return_code;
+
+	ENTER(Texture_execute_opengl_texture_object);
+	/* Passed graphics_buffer through here as was using it to 
+		do special compilation for Intel graphics driver, but found
+		a more complete work around in the graphics_buffer creation.
+		This parameter is still better than the NULL from before. */
+	if (texture)
+	{
+		switch (texture->dimension)
+		{
+			case 1:
+			{
+				texture_target = GL_TEXTURE_1D;
+			} break;
+			case 2:
+			{
+				texture_target = GL_TEXTURE_2D;
+			} break;
+			case 3:
+			{
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+				if (
+#  if defined (GL_VERSION_1_2)
+					Graphics_library_check_extension(GL_VERSION_1_2)
+#    if defined (GL_EXT_texture3D)
+					||
+#    endif /* defined (GL_EXT_texture3D) */
+#  endif /* defined (GL_VERSION_1_2) */
+#  if defined (GL_EXT_texture3D)
+					Graphics_library_check_extension(GL_EXT_texture3D)
+#  endif /* defined (GL_EXT_texture3D) */
+					)
+				{
+					texture_target = GL_TEXTURE_3D;
+				}
+				else
+				{
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+					display_message(ERROR_MESSAGE,
+						"Texture_execute_opengl_texture_object.  "
+						"3D textures not supported on this display.");
+					return_code=0;
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+				}
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+			} break;
+		}
+		if (texture->texture_tiling)
+		{
+			/* Tiling only implemented correctly with display lists */
+		}
+		else
+		{
+			glBindTexture(texture_target, texture->texture_id);
+			/* As we have bound the texture we only need the 
+				environment in the display list */
+			direct_render_Texture_environment(texture);
+		}
+	}
+	else
+	{
+#if defined (OPENGL_API)
+		glDisable(GL_TEXTURE_1D);
+		glDisable(GL_TEXTURE_2D);
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+		if (
+#  if defined (GL_VERSION_1_2)
+			Graphics_library_check_extension(GL_VERSION_1_2)
+#    if defined (GL_EXT_texture3D)
+			||
+#    endif /* defined (GL_EXT_texture3D) */
+#  endif /* defined (GL_VERSION_1_2) */
+#  if defined (GL_EXT_texture3D)
+			Graphics_library_check_extension(GL_EXT_texture3D)
+#  endif /* defined (GL_EXT_texture3D) */
+			)
+		{
+			glDisable(GL_TEXTURE_3D);
+		}
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+#endif /* defined (OPENGL_API) */
+		return_code=1;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_execute_opengl_texture_object */
+#endif /* defined (OPENGL_API) */
+
+#if defined (OPENGL_API)
+int Texture_compile_opengl_display_list(struct Texture *texture,
+	Callback_base< Texture * > *execute_function,
+	Render_graphics_opengl *renderer)
+{
+	int return_code;
+	int i;
+	GLenum texture_target;
+
+	ENTER(Texture_execute_opengl_dispay_list);
+	if (texture)
+	{
+		if ((texture->display_list_current == TEXTURE_COMPILE_STATE_DISPLAY_LIST_COMPILED))
+		{
+			return_code = 1;
+			if (renderer->allow_texture_tiling && texture->texture_tiling)
+			{
+				renderer->texture_tiling = texture->texture_tiling;
+			}
+		}
+		else
+		{
+			switch (texture->dimension)
+			{
+				case 1:
+				{
+					texture_target = GL_TEXTURE_1D;
+				} break;
+				case 2:
+				{
+					texture_target = GL_TEXTURE_2D;
+				} break;
+				case 3:
+				{
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+					if (
+#  if defined (GL_VERSION_1_2)
+						Graphics_library_check_extension(GL_VERSION_1_2)
+#    if defined (GL_EXT_texture3D)
+						||
+#    endif /* defined (GL_EXT_texture3D) */
+#  endif /* defined (GL_VERSION_1_2) */
+#  if defined (GL_EXT_texture3D)
+						Graphics_library_check_extension(GL_EXT_texture3D)
+#  endif /* defined (GL_EXT_texture3D) */
+						)
+					{
+						texture_target = GL_TEXTURE_3D;
+					}
+					else
+					{
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+						display_message(ERROR_MESSAGE,
+							"Texture_execute_opengl_dispay_list.  "
 							"3D textures not supported on this display.");
 						return_code=0;
 #if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
@@ -6537,200 +6792,65 @@ execute_Texture should just call direct_render_Texture.
 			}
 			if (texture->display_list||(texture->display_list=glGenLists(1)))
 			{
-				if(texture->display_list_current == 2)
+				return_code = Texture_compile_opengl_texture_object(texture, renderer);
+				if (texture->texture_tiling)
 				{
-					switch(texture->storage)
+					if (!texture->texture_tiling->tile_display_lists)
 					{
-						case TEXTURE_DMBUFFER:
-						{
-							/* If copied by reference we don't need to do anything */
-#if defined (OLD_DEBUG)
-							Graphics_buffer_make_read_current(texture->graphics_buffer);
-							glBindTextureEXT(GL_TEXTURE_2D, texture->texture_id);
-							glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_FALSE);
-							glCopyTexImage2DEXT(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0,
-								256, 256, 0);
-							glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
-								texture->original_width_texels, texture->original_height_texels);
-							Texture_get_type_and_format_from_storage_type(texture->storage,
-								&type, &format);
-							glTexImage2D(GL_TEXTURE_2D,(GLint)0,
-								GL_RGBA8_EXT,
-								(GLint)(texture->width_texels),
-								(GLint)(texture->height_texels),(GLint)0,
-								format,type, NULL);
-							glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
-								256, 256);
-							{
-								unsigned char test_pixels[262144];
-								
-								glReadPixels(0, 0, 256, 256,
-									GL_RGBA, GL_UNSIGNED_BYTE,
-									(void*)test_pixels);
-								glTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0,
-									256, 256,
-									GL_RGBA, GL_UNSIGNED_BYTE, test_pixels);
-							}
-							glRasterPos3i(1,1,1);
-							glCopyPixels(0,0, 256,256, GL_COLOR);
-							{
-								static int counter = 100;
-								unsigned char test_pixels[262144];
-
-								counter += 7;
-								memset(test_pixels, counter % 255, 262144);
-								glTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0,
-									256, 256,
-									GL_RGBA, GL_UNSIGNED_BYTE, test_pixels);
-							}
-							X3dThreeDDrawingRemakeCurrent();
-#endif /* defined (DEBUG) */
-						} break;
-						case TEXTURE_PBUFFER:
-						{
-#if defined (SGI_DIGITAL_MEDIA)
-							glPushAttrib(GL_PIXEL_MODE_BIT);
-							glBindTextureEXT(GL_TEXTURE_2D, texture->texture_id);
-							Graphics_buffer_make_read_current(texture->graphics_buffer);
-							glPixelTransferf(GL_ALPHA_BIAS, 1.0);  /* This is required
-																					cause the OCTANE seems to return alpha of zero from render
-																					to buffer */
-							glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
-								texture->width_texels, texture->height_texels);
-							{
-								/* This code is should be totally unnecessary but
-									it seems that the texture stuff is broken */
-								unsigned char test_pixels[262144];
-								
-								glReadPixels(0, 0, 256, 256,
-									GL_RGBA, GL_UNSIGNED_BYTE,
-									(void*)test_pixels);
-								glTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0,
-									256, 256,
-									GL_RGBA, GL_UNSIGNED_BYTE, test_pixels);
-							}
-							glPopAttrib();
-#else /* defined (SGI_DIGITAL_MEDIA) */
-							display_message(ERROR_MESSAGE,
-								"compile_Texture.  PBUFFER not supported");
-							return_code=0;								
-#endif /* defined (SGI_DIGITAL_MEDIA) */
-						} break;
-						default:
-						{
-							glBindTexture(texture_target, texture->texture_id);
-							direct_render_Texture(texture, graphics_buffer,
-								texture_tiling);
-						} break;
+						texture->texture_tiling->tile_display_lists
+							= glGenLists(texture->texture_tiling->total_tiles);
 					}
+					for (i = 0 ; i < texture->texture_tiling->total_tiles ; i++)
+					{
+						glNewList(texture->texture_tiling->tile_display_lists + i,
+							GL_COMPILE);
+						glBindTexture(texture_target, texture->texture_tiling->texture_ids[i]);
+						glEndList();
+					}
+					glNewList(texture->display_list,GL_COMPILE);
+					direct_render_Texture_environment(texture);
+					glEndList();
 				}
 				else
 				{
-					if (!texture->texture_id)
-					{
-						glGenTextures(1, &(texture->texture_id));
-					}
-					glBindTexture(texture_target, texture->texture_id);
-					if(texture->storage==TEXTURE_DMBUFFER || 
-						texture->storage==TEXTURE_PBUFFER)
-					{
-						Graphics_buffer_make_read_current(texture->graphics_buffer);				
-						direct_render_Texture(texture, graphics_buffer,
-							texture_tiling);
-						/* X3dThreeDDrawingRemakeCurrent(); */
-					}
-					else
-					{
-						direct_render_Texture(texture, graphics_buffer,
-							texture_tiling);
-					}
-					if (texture->texture_tiling)
-					{
-						if (!texture->texture_tiling->tile_display_lists)
-						{
-							texture->texture_tiling->tile_display_lists
-								= glGenLists(texture->texture_tiling->total_tiles);
-						}
-						for (i = 0 ; i < texture->texture_tiling->total_tiles ; i++)
-						{
-							glNewList(texture->texture_tiling->tile_display_lists + i,
-								GL_COMPILE);
-							glBindTexture(texture_target, texture->texture_tiling->texture_ids[i]);
-							/* As we have bound the texture we only need the 
-								environment in the display list */
-							//direct_render_Texture_environment(texture);
-							glEndList();
-						}
-						glNewList(texture->display_list,GL_COMPILE);
-						//glBindTexture(texture_target, texture->texture_tiling->texture_ids[0]);
-						/* As we have bound the texture we only need the 
-							environment in the display list */
-						direct_render_Texture_environment(texture);
-						glEndList();
-					}
-					else
-					{
-						glNewList(texture->display_list,GL_COMPILE);
-						glBindTexture(texture_target, texture->texture_id);
-						/* As we have bound the texture we only need the 
-							environment in the display list */
-						direct_render_Texture_environment(texture);
-						glEndList();
-					}
+					glNewList(texture->display_list,GL_COMPILE);
+					(*execute_function)(texture);
+					glEndList();
 				}
 
-				texture->display_list_current=1;
+				texture->display_list_current=TEXTURE_COMPILE_STATE_DISPLAY_LIST_COMPILED;
 				return_code=1;
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"compile_Texture.  Could not generate display list");
+					"Texture_execute_opengl_dispay_list.  Could not generate display list");
 				return_code=0;
 			}
-#else /* defined (OPENGL_API) */
-			display_message(ERROR_MESSAGE,
-				"compile_Texture.  Not defined for this API");
-			return_code=0;
-#endif /* defined (OPENGL_API) */
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"compile_Texture.  Missing texture");
+			"Texture_execute_opengl_dispay_list.  Missing texture");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* compile_Texture */
+} /* Texture_execute_opengl_dispay_list */
+#endif /* defined (OPENGL_API) */
 
-int execute_Texture(struct Texture *texture)
-/*******************************************************************************
-LAST MODIFIED : 14 March 2002
-
-DESCRIPTION :
-Activates <texture> by calling its display list. If the display list is not
-current, an error is reported.
-If a NULL <texture> is supplied, textures are disabled.
-???RC The behaviour of textures is set up to take advantage of pre-computed
-display lists. To switch to direct rendering this routine should just call
-direct_render_Texture.
-==============================================================================*/
+int Texture_execute_opengl_display_list(struct Texture *texture,
+	Render_graphics_opengl *renderer)
 {
 	int return_code;
-#if defined (OLD_CODE)
-#if defined (OPENGL_API)
-	GLboolean resident;
-#endif /* defined (OPENGL_API) */
-#endif /* defined (OLD_CODE) */
 
-	ENTER(execute_Texture);
+	ENTER(Texture_execute_opengl_display_list);
 	return_code=0;
 	if (texture)
 	{
-		if (texture->display_list_current)
+		if (texture->display_list_current == TEXTURE_COMPILE_STATE_DISPLAY_LIST_COMPILED)
 		{
 #if defined (OPENGL_API)
 			glCallList(texture->display_list);
@@ -6758,14 +6878,14 @@ direct_render_Texture.
 			return_code=1;
 #else /* defined (OPENGL_API) */
 			display_message(ERROR_MESSAGE,
-				"execute_Texture.  Not defined for this API");
+				"Texture_execute_opengl_display_list.  Not defined for this API");
 			return_code=0;
 #endif /* defined (OPENGL_API) */
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"execute_Texture.  Display list not current");
+				"Texture_execute_opengl_display_list.  Display list not current");
 			return_code=0;
 		}
 	}
@@ -6796,7 +6916,7 @@ direct_render_Texture.
 	LEAVE;
 
 	return (return_code);
-} /* execute_Texture */
+} /* Texture_execute_opengl_display_list */
 
 int Texture_execute_vertex_program_environment(struct Texture *texture)
 /*******************************************************************************

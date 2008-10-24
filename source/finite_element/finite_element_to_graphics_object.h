@@ -449,6 +449,28 @@ Notes:
 - the coordinate field is assumed to be rectangular cartesian.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Adds vertex values to the supplied set to create a line for
+ * the <coordinate_field> for the 1-D finite <element>
+ * using <number_of_segments> spaced equally in xi.
+ * The optional <data_field> (currently only a scalar) is calculated as data over
+ * the polyline, for later colouration by a spectrum.
+ * The optional <top_level_element> may be provided as a clue to Computed_fields
+ * to say which parent element they should be evaluated on as necessary.
+ * If the <line_width> is non zero then it will override the default line width.
+ * Notes:
+ * - the coordinate field is assumed to be rectangular cartesian.
+ * 
+ * @param number_of_data_values The number of components in the data_field and
+ * the allocated size of the data_buffer.
+ * @param data_buffer A buffer large enough to evaluate the data_field into.
+ */
+int FE_element_add_line_to_vertex_set(
+	struct FE_element *element, struct Graphics_vertex_array *set,
+	struct Computed_field *coordinate_field, struct Computed_field *data_field,
+	int number_of_data_values, FE_value *data_buffer,
+	unsigned int number_of_segments, struct FE_element *top_level_element, FE_value time);
+
 struct GT_surface *create_cylinder_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
 	float constant_radius,float scale_factor,struct Computed_field *radius_field,

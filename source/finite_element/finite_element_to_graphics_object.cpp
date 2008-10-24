@@ -1,7 +1,5 @@
 /*******************************************************************************
-FILE : finite_element_to_graphics_object.c
-
-LAST MODIFIED : 17 August 2006
+FILE : finite_element_to_graphics_object.cpp
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -44,6 +42,7 @@ The functions for creating graphical objects from finite elements.
 #include <limits.h>
 #include <math.h>
 #include <stdlib.h>
+extern "C" {
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -55,7 +54,9 @@ The functions for creating graphical objects from finite elements.
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_to_iso_lines.h"
 #include "general/debug.h"
-#include "general/enumerator_private.h"
+}
+#include "general/enumerator_private_cpp.hpp"
+extern "C" {
 #include "general/geometry.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
@@ -67,6 +68,8 @@ The functions for creating graphical objects from finite elements.
 #include "graphics/volume_texture.h"
 #include "graphics/mcubes.h"
 #include "user_interface/message.h"
+}
+#include "graphics/graphics_object.hpp"
 
 /* following used for encoding a CM_element_information as an integer */
 #define HALF_INT_MAX (INT_MAX/2)
@@ -865,7 +868,7 @@ these are simply returned, since no valid direction can be produced.
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Use_element_type)
 {
-	const char *enumerator_string;
+	char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Use_element_type));
 	switch (enumerator_value)
@@ -884,7 +887,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Use_element_type)
 		} break;
 		default:
 		{
-			enumerator_string = (const char *)NULL;
+			enumerator_string = (char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -1330,7 +1333,7 @@ Notes:
 					if (label_bounds_field)
 					{
 						label_bounds_dimension = coordinate_dimension;
-						label_bounds_values = pow(2, label_bounds_dimension);
+						label_bounds_values = 1 << label_bounds_dimension;
 						label_bounds_components = Computed_field_get_number_of_components(label_bounds_field);
 						ALLOCATE(label_bounds, float, number_of_points * label_bounds_values *
 							label_bounds_components);
@@ -1602,6 +1605,84 @@ Notes:
 
 	return (polyline);
 } /* create_GT_polyline_from_FE_element */
+
+int FE_element_add_line_to_vertex_set(
+	FE_element *element, Graphics_vertex_array *array,
+	Computed_field *coordinate_field, Computed_field *data_field,
+	int number_of_data_values, FE_value *data_buffer,
+	unsigned int number_of_segments, FE_element *top_level_element, FE_value time)
+{
+	FE_value coordinates[3],distance,xi;
+	int graphics_name, return_code;
+	struct CM_element_information cm;
+	unsigned int i, vertex_start, number_of_vertices;
+
+	ENTER(FE_element_add_line_to_vertex_buffer_set)
+	if (element && array && (1 == get_FE_element_dimension(element)) &&
+		coordinate_field &&
+		(3 >= Computed_field_get_number_of_components(coordinate_field)))
+	{
+		return_code = 1;
+		
+		/* clear coordinates in case coordinate field is not 3 component */
+		coordinates[0]=0.0;
+		coordinates[1]=0.0;
+		coordinates[2]=0.0;
+
+		/* for selective editing of GT_object primitives, record element ID */
+		get_FE_element_identifier(element, &cm);
+		graphics_name = CM_element_information_to_graphics_name(&cm);
+		array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ID,
+			1, &graphics_name);
+		
+		vertex_start = array->get_number_of_vertices(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
+		
+		distance=(FE_value)number_of_segments;
+		i=0;
+		for (i=0;(i<=number_of_segments)&&return_code;i++)
+		{
+			xi=((FE_value)i)/distance;
+			/* evaluate the fields */
+			if (return_code = Computed_field_evaluate_in_element(
+				coordinate_field,element,&xi,
+				time,top_level_element,coordinates,(FE_value *)NULL)&&
+				((!data_field)||Computed_field_evaluate_in_element(
+				data_field,element,&xi,time,top_level_element,data_buffer,
+				(FE_value *)NULL)))
+			{
+				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+					3, coordinates);
+				if (data_field)
+				{
+					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+						number_of_data_values, data_buffer);
+				}
+			}
+		}
+		number_of_vertices = number_of_segments+1;
+		array->add_unsigned_integer_attribute(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+			1, &number_of_vertices);
+		array->add_unsigned_integer_attribute(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+			1, &vertex_start);
+		
+		/* I don't think I need to clear the field cache's here, instead I have
+		 * done it in GT_element_settings_to_graphics_object.
+		 */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_add_line_to_vertex_buffer_set.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_add_line_to_vertex_buffer_set */
 
 struct GT_surface *create_cylinder_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
@@ -1957,7 +2038,7 @@ Notes:
 				}
 				facet_angle = 2*PI/number_of_segments_around;
 				/* calculate the number of times facet_angle can occur before theta */
-				facet_offset = theta / facet_angle;
+				facet_offset = (int)(theta / facet_angle);
 				/* get angle from the next lowest whole facet to propagated normal */
 				theta -= facet_offset*facet_angle;
 				/* nearest facet could be on the otherside of the propagated normal so

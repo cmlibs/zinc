@@ -44,7 +44,8 @@ Renders gtObjects to STL stereolithography file.
 #if !defined (RENDERSTL_H)
 #define RENDERSTL_H
 
-#include "graphics/scene.h"
+struct Scene;
+struct Scene_object;
 
 /*
 Global functions

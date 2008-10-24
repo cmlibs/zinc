@@ -211,6 +211,11 @@ object.
 	struct LIST(Element_point_ranges) *selected_element_point_ranges_list;
 	struct LIST(FE_element) *selected_element_list;
 	struct LIST(FE_node) *selected_data_list,*selected_node_list;
+	
+	/** The number of components in the data field */
+	int number_of_data_values;
+	/** A buffer allocated large enough for evaluating the data field */
+	FE_value *data_copy_buffer;
 
 	/* additional values for passing to element_to_graphics_object */
 	struct GT_element_settings *settings;
@@ -1347,16 +1352,13 @@ selected nodes, then they should be updated.
 Must call GT_element_settings_to_graphics_object afterwards to complete.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * If the settings visibility flag is set and it has a graphics_object, the
+ * graphics_object is compiled. <renderer_void> must point to a valid
+ * Render_graphics_opengl object.
+ */
 int GT_element_settings_compile_visible_settings(
-	struct GT_element_settings *settings, void *compile_data);
-/*******************************************************************************
-LAST MODIFIED : 18 November 2005
-
-DESCRIPTION :
-If the settings visibility flag is set and it has a graphics_object, the
-graphics_object is compiled. <compile_data> must point to a filled in
-struct GT_element_settings_compile_data.
-==============================================================================*/
+	struct GT_element_settings *settings, void *renderer_void);
 
 int GT_element_settings_execute_visible_settings(
 	struct GT_element_settings *settings, void *context_void);

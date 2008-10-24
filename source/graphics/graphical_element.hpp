@@ -1,11 +1,6 @@
-/*******************************************************************************
-FILE : callback_class.hpp
-
-LAST MODIFIED : 21 February 2007
-
-DESCRIPTION :
-Template definitions for callbacks.
-==============================================================================*/
+/***************************************************************************//**
+ * graphical_element.hpp
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -41,56 +36,29 @@ Template definitions for callbacks.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CALLBACK_CLASS_HPP)
-#define CALLBACK_CLASS_HPP
+#if !defined (GRAPHICAL_ELEMENT_HPP)
+#define GRAPHICAL_ELEMENT_HPP
 
-template < class Object > class Callback_base
-/*****************************************************************************
-LAST MODIFIED : 21 February 2007
+#include "general/callback_class.hpp"
 
-DESCRIPTION :
-============================================================================*/
-{
-public:
-	int operator()(Object object)
-	{
-		return callback_function(object);
-	}
-	virtual int callback_function(Object object) = 0;
+struct GT_element_group;
+class Render_graphics_compile_members;
+class Render_graphics_opengl;
 
-protected:
+int Graphical_element_group_compile_members(GT_element_group *gt_element_group,
+	Render_graphics_compile_members *renderer);
 
-	virtual ~Callback_base()
-	{
-	}
-};
+int GT_element_group_render_opengl(GT_element_group *gt_element_group,
+	Render_graphics_opengl *renderer);
 
-template < class Object, class Callee, class MemberFunction > class Callback_member_callback : public Callback_base< Object >
-/*****************************************************************************
-LAST MODIFIED : 21 February 2007
+int Graphical_element_group_compile_opengl_display_list(
+	GT_element_group *gt_element_group,
+	Callback_base< GT_element_group* > *execute_function,
+	Render_graphics_opengl *renderer);
 
-DESCRIPTION :
-============================================================================*/
-{
-private:
-	Callee *callee;
-	MemberFunction member_function;
+int Graphical_element_group_execute_opengl_display_list(
+	GT_element_group *gt_element_group,
+	Render_graphics_opengl *renderer);
 
-public:
-	Callback_member_callback(
-		Callee *callee, MemberFunction member_function) :
-		callee(callee), member_function(member_function)
-	{
-	}
 
-	virtual int callback_function(Object object)
-	{
-		return (callee->*member_function)(object);
-	}
-		
-	virtual ~Callback_member_callback()
-	{
-	}
-};
-
-#endif /* !defined (CALLBACK_CLASS_HPP) */
+#endif /* !defined (GRAPHICAL_ELEMENT_HPP) */

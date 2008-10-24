@@ -44,6 +44,7 @@ Decimate the triangles in the GT_voltex to satisfy a curvature threshold.
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+extern "C" {
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "general/compare.h"
@@ -54,13 +55,14 @@ Decimate the triangles in the GT_voltex to satisfy a curvature threshold.
 #include "general/object.h"
 #include "general/octree.h"
 #include "graphics/auxiliary_graphics_types.h"
+#include "graphics/decimate_voltex.h"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
-#include "graphics/rendergl.h"
 #include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
 #include "user_interface/message.h"
-#include "graphics/graphics_object_private.h"
+}
+#include "graphics/graphics_object_private.hpp"
 
 /* Predeclare the Decimation_cost as we have a circular dependency */
 struct Decimation_cost;

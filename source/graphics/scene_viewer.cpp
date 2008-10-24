@@ -1,7 +1,7 @@
 /*******************************************************************************
-FILE : scene_viewer.c
+FILE : scene_viewer.cpp
 
-LAST MODIFIED : 17 February 2005
+LAST MODIFIED : 17 February 200
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -54,11 +54,14 @@ November 97 Created from rendering part of Drawing.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <math.h>
+extern "C" {
 #include "general/compare.h"
 #include "three_d_drawing/movie_extensions.h"
 #include "general/callback_private.h"
 #include "general/debug.h"
-#include "general/enumerator_private.h"
+}
+#include "general/enumerator_private_cpp.hpp"
+extern "C" {
 #include "general/geometry.h"
 #include "general/image_utilities.h"
 #include "general/list.h"
@@ -70,7 +73,6 @@ November 97 Created from rendering part of Drawing.
 #include "graphics/graphics_library.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
-#include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
 #include "graphics/texture.h"
 #include "graphics/transform_tool.h"
@@ -78,6 +80,10 @@ November 97 Created from rendering part of Drawing.
 #include "user_interface/event_dispatcher.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
+}
+#include "graphics/scene.hpp"
+#include "graphics/rendergl.hpp"
+#include "graphics/scene_viewer.hpp"
 
 #define USE_LAYERZ
 #if defined (USE_LAYERZ)
@@ -338,6 +344,8 @@ rendering functions.
 	int rendering_double_buffered;
 	/* Stencil buffer depth */
 	GLint stencil_depth;
+	
+	Render_graphics_opengl *renderer;
 }; /* struct Scene_viewer_rendering_data */
 
 struct Scene_viewer_render_object;
@@ -505,7 +513,8 @@ DEFINE_CMISS_CALLBACK_FUNCTIONS(Scene_viewer_input_callback, \
 	struct Scene_viewer *,struct Graphics_buffer_input *)
 
 static int Scene_viewer_render_background_texture(
-	struct Scene_viewer *scene_viewer,int viewport_width,int viewport_height)
+	struct Scene_viewer *scene_viewer,int viewport_width,int viewport_height,
+	Render_graphics *renderer)
 /*******************************************************************************
 LAST MODIFIED : 11 February 2002
 
@@ -583,9 +592,8 @@ DESCRIPTION :
 			-1.0,1.0);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-		compile_Texture(scene_viewer->background_texture,
-			scene_viewer->graphics_buffer, (struct Texture_tiling **)NULL);
-		execute_Texture(scene_viewer->background_texture);
+		renderer->Texture_compile(scene_viewer->background_texture);
+		renderer->Texture_execute(scene_viewer->background_texture);
 
 #if defined (OLD_CODE)
 		/* simple, un-corrected texture */
@@ -746,7 +754,7 @@ DESCRIPTION :
 			}
 			glEnd();
 		}
-		execute_Texture((struct Texture *)NULL);
+		renderer->Texture_execute((struct Texture *)NULL);
 		glMatrixMode(GL_PROJECTION);
 		glPopMatrix();
 		return_code=1;
@@ -902,19 +910,6 @@ modes, so push/pop them if you want them preserved.
 				scene_viewer->upx,scene_viewer->upy,scene_viewer->upz);
 			glGetDoublev(GL_MODELVIEW_MATRIX,scene_viewer->modelview_matrix);
 		}
-#if defined (REPORT_GL_ERRORS)
-		{
-			char message[200];
-			GLenum error;
-			int max_error = 200;
-			while((max_error--) && (GL_NO_ERROR!=(error = glGetError())))
-			{
-				strcpy(message,"Scene_viewer_calculate_transformation: GL ERROR ");
-				strcat(message, (char *)gluErrorString(error));
-				display_message(ERROR_MESSAGE, message);
-			}
-		}
-#endif /* defined (REPORT_GL_ERRORS) */
 	}
 	else
 	{
@@ -926,6 +921,12 @@ modes, so push/pop them if you want them preserved.
 
 	return (return_code);
 } /* Scene_viewer_calculate_transformation */
+
+Render_graphics_opengl *Scene_viewer_rendering_data_get_renderer(
+	Scene_viewer_rendering_data *rendering_data)
+{
+	return rendering_data->renderer;
+}
 
 int Scene_viewer_call_next_renderer(
 	struct Scene_viewer_rendering_data *rendering_data)
@@ -977,9 +978,8 @@ scene.
 	ENTER(Scene_viewer_execute_scene_non_fastchanging);
 	if (rendering_data)
 	{
-		return_code = 1;
-		
-		execute_Scene_non_fast_changing(rendering_data->scene_viewer->scene);
+		return_code = rendering_data->renderer->Scene_execute(
+			rendering_data->scene_viewer->scene);
 	}
 	else
 	{
@@ -1179,13 +1179,15 @@ DESCRIPTION :
 		reset_Lights();
 		for_each_Light_in_Scene(scene_viewer->overlay_scene,
 			execute_Light,(void *)NULL);
+		
 		/* render overlay_scene */
 		switch (scene_viewer->transparency_mode)
 		{
 			default:
 			{
 				glAlphaFunc(GL_GREATER,0.0);
-				execute_Scene(scene_viewer->overlay_scene);
+				glInitNames();
+				rendering_data->renderer->Scene_execute(scene_viewer->overlay_scene);
 			} break;
 			case SCENE_VIEWER_SLOW_TRANSPARENCY:
 			{
@@ -1193,17 +1195,19 @@ DESCRIPTION :
 				/* render only fragments with alpha = 1.0, write depth */
 				glDepthMask(GL_TRUE);
 				glAlphaFunc(GL_EQUAL,1.0);
-				execute_Scene(scene_viewer->overlay_scene);
+				glInitNames();
+				rendering_data->renderer->Scene_execute(scene_viewer->overlay_scene);
 				/* render fragments with alpha != 1.0; do not write into
 					depth buffer */
 				glDepthMask(GL_FALSE);
 				glAlphaFunc(GL_NOTEQUAL,1.0);
-				execute_Scene(scene_viewer->overlay_scene);
+				glInitNames();
+				rendering_data->renderer->Scene_execute(scene_viewer->overlay_scene);
 				glDepthMask(GL_TRUE);
 				glDisable(GL_ALPHA_TEST);
 			} break;
 		}
-
+		
  		if (0 < rendering_data->stencil_depth)
 		{
 			/* use full z-buffer for overlay ranging from -1 to 1 in z */
@@ -1493,7 +1497,9 @@ update the fastchanging objects.
 				glEnable(GL_BLEND);
 			}
 #endif /* defined (OLD_CODE) */
-			execute_Scene_fast_changing(scene_viewer->scene);
+			rendering_data->renderer->fast_changing = 1;
+			rendering_data->renderer->Scene_execute(scene_viewer->scene);
+			rendering_data->renderer->fast_changing = 0;
 			glFlush();
 			scene_viewer->first_fast_change=0;
 		}
@@ -1565,7 +1571,8 @@ Renders the background into the scene.
 				(scene_viewer->background_colour).green,
 				(scene_viewer->background_colour).blue);
 			Scene_viewer_render_background_texture(scene_viewer,
-				rendering_data->viewport_width,rendering_data->viewport_height);
+				rendering_data->viewport_width,rendering_data->viewport_height,
+				rendering_data->renderer);
 			glEnable(GL_LIGHTING);
 		}	
 
@@ -2521,13 +2528,73 @@ access this function.
 			/* Make this visible to the rendering routines */
 			rendering_data.rendering_double_buffered = double_buffer;
 
-			build_Scene(scene_viewer->scene);
-			compile_Scene(scene_viewer->scene, scene_viewer->graphics_buffer);
+			/* Determine which renderer to use once now rather than when compiling
+			 * each individual object.
+			 */
+#if defined (GL_VERSION_1_5)
+			/* Check for GL_ARB_vertex_buffer_object includes whether OpenGL version is 1.1 or
+			 * greater and we actually use the OpenGL 1.5 interface and just use this
+			 * flag to enable override control.
+			 */
+			if (Graphics_library_check_extension(GL_ARB_vertex_buffer_object))
+			{
+				if (Graphics_library_check_extension(GL_display_lists))
+				{
+					rendering_data.renderer =
+						Render_graphics_opengl_create_vertex_buffer_object_display_list_renderer(
+						scene_viewer->graphics_buffer);
+				}
+				else
+				{
+					rendering_data.renderer =
+						Render_graphics_opengl_create_vertex_buffer_object_renderer(
+						scene_viewer->graphics_buffer);
+				}
+			}
+			else
+#endif /* defined (GL_VERSION_1_5) */
+#if defined (GL_VERSION_1_1)
+			/* Check for GL_EXT_vertex_array includes whether OpenGL version is 1.1 or
+			 * greater and we actually use the OpenGL 1.1 interface and just use this
+			 * flag to enable override control.
+			 */
+			if (Graphics_library_check_extension(GL_EXT_vertex_array))
+			{
+				if (Graphics_library_check_extension(GL_display_lists))
+				{
+					rendering_data.renderer =
+						Render_graphics_opengl_create_client_vertex_arrays_display_list_renderer(
+						scene_viewer->graphics_buffer);
+				}
+				else
+				{
+					rendering_data.renderer =
+						Render_graphics_opengl_create_client_vertex_arrays_renderer(
+						scene_viewer->graphics_buffer);
+				}
+			}
+			else
+#endif /* defined (GL_VERSION_1_1) */
+			{
+				if (Graphics_library_check_extension(GL_display_lists))
+				{
+					rendering_data.renderer = 
+						Render_graphics_opengl_create_glbeginend_display_list_renderer(
+						scene_viewer->graphics_buffer);
+				}
+				else
+				{
+					rendering_data.renderer = 
+						Render_graphics_opengl_create_glbeginend_renderer(
+					 scene_viewer->graphics_buffer);
+				}
+			}
+
+			rendering_data.renderer->Scene_compile(scene_viewer->scene);
 
 			if (scene_viewer->overlay_scene)
 			{
-				build_Scene(scene_viewer->overlay_scene);
-				compile_Scene(scene_viewer->overlay_scene, scene_viewer->graphics_buffer);
+				rendering_data.renderer->Scene_compile(scene_viewer->overlay_scene);
 			}
 
 			rendering_data.render_callstack = CREATE(LIST(Scene_viewer_render_object))();
@@ -2745,7 +2812,7 @@ access this function.
 
 				/* light model */
 				compile_Light_model(scene_viewer->light_model);
-				execute_Light_model(scene_viewer->light_model);
+				rendering_data.renderer->Light_model_execute(scene_viewer->light_model);
 
 				/* compile the viewer lights */
 				FOR_EACH_OBJECT_IN_LIST(Light)(compile_Light,(void *)NULL,
@@ -2770,6 +2837,7 @@ access this function.
 			}
 #endif /* defined (REPORT_GL_ERRORS) */
 			DESTROY(LIST(Scene_viewer_render_object))(&rendering_data.render_callstack);
+			delete rendering_data.renderer;
 		}
 		scene_viewer->fast_changing=1;
 		scene_viewer->frame_count++;

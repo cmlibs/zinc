@@ -51,6 +51,7 @@ December 1997. Created MANAGER(Scene).
 #if !defined (SCENE_H)
 #define SCENE_H
 
+extern "C" {
 #include "general/any_object.h"
 #include "general/callback.h"
 #include "general/enumerator.h"
@@ -71,6 +72,8 @@ December 1997. Created MANAGER(Scene).
 #include "selection/node_selection.h"
 #include "time/time_keeper.h"
 /* #include "graphics/texture.h" */
+}
+#include "general/callback_class.hpp"
 
 /*
 Global constants
@@ -178,6 +181,7 @@ Structure to pass to modify_Scene.
 	struct MANAGER(Scene) *scene_manager;
 	struct Scene *default_scene;
 	/* following used for enabling GFEs */
+	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Cmiss_region *root_region;
 	struct Cmiss_region *data_root_region;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
@@ -238,6 +242,10 @@ struct Scene_get_data_range_for_spectrum_data
 	struct Spectrum *spectrum;
 	struct Graphics_object_data_range_struct range;
 };
+
+class Render_graphics;
+class Render_graphics_compile_members;
+class Render_graphics_opengl;
 
 /*
 Global functions
@@ -552,6 +560,18 @@ DESCRIPTION :
 Returns the Scene_object_type of <scene_object>.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Render scene object.
+ */
+int execute_Scene_object(Scene_object *scene_object,
+	Render_graphics_opengl *renderer);
+
+/***************************************************************************//**
+ * Compile members of a scene_object.
+ */
+int Scene_object_compile_members(Scene_object *scene_object,
+	Render_graphics_compile_members *renderer);
+
 int list_Scene_object(struct Scene_object *scene_object,void *dummy);
 /*******************************************************************************
 LAST MODIFIED : 26 April 1999
@@ -686,6 +706,7 @@ scene.
 
 int Scene_set_graphical_element_mode(struct Scene *scene,
 	enum Scene_graphical_element_mode graphical_element_mode,
+	struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *root_region,
 	struct Cmiss_region *data_root_region,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
@@ -1152,17 +1173,15 @@ Returns the change state of the scene; SCENE_NO_CHANGE, SCENE_FAST_CHANGE or
 SCENE_CHANGE. Clients may respond to SCENE_FAST_CHANGE more efficiently.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * To speed up messaging response, graphical_elements put off building
+ * graphics objects for their settings until requested. This function should be
+ * called to request builds for all objects used by <scene>. It should be called
+ * before the scene is output to OpenGL, VRML and wavefront objs.
+ * This building is now incorporated into opengl scene compilation so does not need
+ * to be called explicitly before rendering.
+ */
 int build_Scene(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 31 May 2001
-
-DESCRIPTION :
-To speed up messaging response, graphical_elements put off building
-graphics objects for their settings until requested. This function should be
-called to request builds for all objects used by <scene>. It should be called
-before the scene is output to OpenGL, VRML and wavefront objs. In particular,
-this function must be called before compile_Scene.
-==============================================================================*/
 
 int compile_Scene(struct Scene *scene, struct Graphics_buffer *graphics_buffer);
 /*******************************************************************************
@@ -1176,32 +1195,30 @@ Note that lights are not included in the scene and must be handled separately!
 Must also call build_Scene before this functions.
 ==============================================================================*/
 
-int execute_Scene(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 9 March 2001
+/***************************************************************************//**
+ * Actually render a scene by executing the scene objects.
+ */
+int Scene_render_opengl(Scene *scene, Render_graphics_opengl *renderer);
 
-DESCRIPTION :
-Calls the display list for <scene>. If the display list is not current, an
-an error is reported. Version calls both the normal and fast_changing lists.
-Note that lights are not included in the scene and must be handled separately!
-Initialises the name stack then calls execute_child_Scene.
-==============================================================================*/
+/***************************************************************************//**
+ * Call the renderer to compile all the member objects which this Scene depends
+ * on.
+ */
+int Scene_compile_members(struct Scene *scene,
+	Render_graphics *renderer);
 
-int execute_Scene_non_fast_changing(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
+/***************************************************************************//**
+ * Compile the display list for this object.
+ */
+int Scene_compile_opengl_display_list(struct Scene *scene,
+	Callback_base< Scene * > *execute_function,
+	Render_graphics_opengl *renderer);
 
-DESCRIPTION :
-Calls just the normal non-fast_changing display list for <scene>, if any.
-==============================================================================*/
-
-int execute_Scene_fast_changing(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Calls the just fast_changing display list for <scene>, if any.
-==============================================================================*/
+/***************************************************************************//**
+ * Execute the display list for this object.
+ */
+int Scene_execute_opengl_display_list(struct Scene *scene,
+	Render_graphics_opengl *renderer);
 
 int Scene_remove_Scene_object(struct Scene *scene,
 	struct Scene_object *scene_object);
@@ -1615,4 +1632,6 @@ This function iterates through every graphics object in the scene
 including those in each individual settings of the graphical finite
 elements and those chained together with other graphics objects
 ==============================================================================*/
+
+
 #endif /* !defined (SCENE_H) */

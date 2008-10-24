@@ -463,27 +463,6 @@ Frees the memory for the fields of <**spectrum>, frees the memory for
 
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Spectrum);
 
-struct Graphics_buffer;
-
-int Spectrum_compile_colour_lookup(struct Spectrum *spectrum,
-	struct Graphics_buffer *graphics_buffer);
-/*******************************************************************************
-LAST MODIFIED : 18 August 2007
-
-DESCRIPTION :
-Rebuilds the display_list for <spectrum> if it is not current.
-==============================================================================*/
-
-int Spectrum_execute_colour_lookup(struct Spectrum *spectrum);
-/*******************************************************************************
-LAST MODIFIED : 10 May 2005
-
-DESCRIPTION :
-Activates <spectrum> by calling its display list. If the display list is not
-current, an error is reported.
-If a NULL <spectrum> is supplied, spectrums are disabled.
-==============================================================================*/
-
 int Spectrum_get_colour_lookup_sizes(struct Spectrum *spectrum,
 	int *lookup_dimension, int **lookup_sizes);
 /*******************************************************************************

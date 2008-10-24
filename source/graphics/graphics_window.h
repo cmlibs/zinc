@@ -53,14 +53,9 @@ interest and set scene_viewer values directly.
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
-#include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
 #include "interaction/interactive_tool.h"
 #include "user_interface/user_interface.h"
-
-
-
-
 
 
 /*

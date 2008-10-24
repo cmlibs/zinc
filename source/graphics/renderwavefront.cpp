@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : renderwavefront.c
+FILE : renderwavefront.cpp
 
 LAST MODIFIED : 20 March 2003
 
@@ -45,15 +45,19 @@ Renders gtObjects to Wavefront OBJ file
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+extern "C" {
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
 #include "graphics/renderwavefront.h"
-#include "graphics/scene.h"
+}
+#include "graphics/scene.hpp"
+extern "C" {
 #include "graphics/spectrum.h"
 #include "user_interface/message.h"
-#include "graphics/graphics_object_private.h"
+}
+#include "graphics/graphics_object_private.hpp"
 
 
 /*

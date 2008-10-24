@@ -74,13 +74,18 @@ Used to be gtypes.h
 #if !defined (GRAPHICS_OBJECT_PRIVATE_H)
 #define GRAPHICS_OBJECT_PRIVATE_H
 
+extern "C"
+{
 #include "general/geometry.h"
 #include "general/list.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_library.h"
+#include "graphics/graphics_object.h"
 #include "graphics/material.h"
 #include "graphics/selected_graphic.h"
 #include "graphics/spectrum.h"
+}
+#include "graphics/graphics_object.hpp"
 
 /*
 Global types
@@ -238,6 +243,17 @@ DESCRIPTION :
 	struct GT_polyline *ptrnext;
 }; /* struct GT_polyline */
 
+/***************************************************************************//**
+ * Provides the rendition information for the lines stored in the
+ * vertex_array.
+ */
+struct GT_polyline_vertex_buffers
+{
+	enum GT_polyline_type polyline_type;
+	/** If non zero then this specifies to use a non default pixel line width */
+	int line_width;
+}; /* struct GT_polyline_vertex_buffers */
+
 struct GT_surface
 /*******************************************************************************
 LAST MODIFIED : 16 April 1999
@@ -343,6 +359,8 @@ traversed from first to last, and additional primitives added at the end.
 	struct {
 		struct GT_polyline *first, *last;
 	} gt_polyline;
+	/* Only one object allowed for this type */
+	struct GT_polyline_vertex_buffers *gt_polyline_vertex_buffers;
 	struct {
 		struct GT_surface *first, *last;
 	} gt_surface;
@@ -388,6 +406,8 @@ Graphical object data structure.
 	int number_of_times;
 	float *times;
 
+	Graphics_vertex_array *vertex_array;
+	
 	enum GT_coordinate_system coordinate_system;
 
 	/* If the graphics object was compiled with respect to a texture
@@ -397,6 +417,17 @@ Graphical object data structure.
 	union GT_primitive_list *primitive_lists;
 #if defined (OPENGL_API)
 	GLuint display_list;
+	GLuint vertex_array_object;
+	GLuint position_vertex_buffer_object;
+	/* We need to know the values_per_vertex when the buffer object is
+	 * bound to the vertex pointer for rendering. */
+	GLuint position_values_per_vertex;
+	GLuint colour_vertex_buffer_object;
+	/* We need to know the values_per_vertex when the buffer object is
+	 * bound to the color pointer for rendering. */
+	GLuint colour_values_per_vertex;
+	GLuint normal_vertex_buffer_object;
+	/* The normal pointer doesn't have a size option, must be 3. */
 #endif /* defined (OPENGL_API) */
 	/* enumeration indicates whether the graphics display list is up to date */
 	enum Graphics_compile_status compile_status;
@@ -435,5 +466,10 @@ Data used to control the compilation fo the GT_object.
 		structure and should be used to compile any graphics objects. */
 	struct Texture_tiling *texture_tiling;
 };
+
+class Render_graphics_compile_members;
+
+int Graphics_object_compile_members(GT_object *graphics_object_list,
+	Render_graphics_compile_members *renderer);
 
 #endif /* ! defined (GRAPHICS_OBJECT_PRIVATE_H) */

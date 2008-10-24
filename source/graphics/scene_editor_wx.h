@@ -10,8 +10,10 @@ Widgets for editing scene, esp. changing visibility of members.
 #if !defined (SCENE_EDITOR_WX_H)
 #define SCENE_EDITOR_WX_H
 
-#include "graphics/scene.h"
 #include "user_interface/user_interface.h"
+
+struct Scene;
+struct MANAGER(Scene);
 
 /*
 Global types

@@ -1,11 +1,7 @@
-/*******************************************************************************
-FILE : callback_class.hpp
-
-LAST MODIFIED : 21 February 2007
-
-DESCRIPTION :
-Template definitions for callbacks.
-==============================================================================*/
+/***************************************************************************//**
+ * render.cpp
+ * Rendering calls - Non API specific.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -41,56 +37,41 @@ Template definitions for callbacks.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CALLBACK_CLASS_HPP)
-#define CALLBACK_CLASS_HPP
+#include <stdio.h>
+#include <math.h>
+extern "C" {
+#include "general/debug.h"
+#include "graphics/auxiliary_graphics_types.h"
+#include "graphics/graphics_library.h"
+#include "graphics/font.h"
+#include "graphics/graphics_object.h"
+#include "graphics/light_model.h"
+#include "graphics/mcubes.h"
+#include "graphics/spectrum.h"
+#include "graphics/tile_graphics_objects.h"
+#include "user_interface/message.h"
+}
+#include "graphics/graphical_element.hpp"
+#include "graphics/graphics_object_private.hpp"
+#include "graphics/scene.hpp"
+#include "graphics/material.hpp"
+#include "graphics/render.hpp"
 
-template < class Object > class Callback_base
-/*****************************************************************************
-LAST MODIFIED : 21 February 2007
+/****************** Render_graphics_compile_members **********************/
 
-DESCRIPTION :
-============================================================================*/
+int Render_graphics_compile_members::Scene_compile(Scene *scene)
 {
-public:
-	int operator()(Object object)
-	{
-		return callback_function(object);
-	}
-	virtual int callback_function(Object object) = 0;
+	return Scene_compile_members(scene, this);
+}
 
-protected:
-
-	virtual ~Callback_base()
-	{
-	}
-};
-
-template < class Object, class Callee, class MemberFunction > class Callback_member_callback : public Callback_base< Object >
-/*****************************************************************************
-LAST MODIFIED : 21 February 2007
-
-DESCRIPTION :
-============================================================================*/
+int Render_graphics_compile_members::Scene_object_compile(Scene_object *scene_object)
 {
-private:
-	Callee *callee;
-	MemberFunction member_function;
+	return Scene_object_compile_members(scene_object, this);
+}
 
-public:
-	Callback_member_callback(
-		Callee *callee, MemberFunction member_function) :
-		callee(callee), member_function(member_function)
-	{
-	}
+int Render_graphics_compile_members::Graphical_element_group_compile(
+	GT_element_group *graphical_element_group)
+{
+	return Graphical_element_group_compile_members(graphical_element_group, this);
+}
 
-	virtual int callback_function(Object object)
-	{
-		return (callee->*member_function)(object);
-	}
-		
-	virtual ~Callback_member_callback()
-	{
-	}
-};
-
-#endif /* !defined (CALLBACK_CLASS_HPP) */

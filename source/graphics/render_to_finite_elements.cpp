@@ -45,12 +45,15 @@ Renders gtObjects to VRML file
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+extern "C" {
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "general/debug.h"
-#include "general/enumerator_private.h"
+}
+#include "general/enumerator_private_cpp.hpp"
+extern "C" {
 #include "general/list.h"
 #include "general/list_private.h"
 #include "general/object.h"
@@ -59,12 +62,15 @@ Renders gtObjects to VRML file
 #include "general/statistics.h"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
-#include "graphics/scene.h"
+}
+#include "graphics/scene.hpp"
+extern "C" {
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
 #include "user_interface/message.h"
-#include "graphics/graphics_object_private.h"
 #include "graphics/render_to_finite_elements.h"
+}
+#include "graphics/graphics_object_private.hpp"
 
 /*
 Module types

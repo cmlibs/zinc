@@ -44,7 +44,8 @@ Renders gtObjects to WAVEFRONT file
 #if !defined (RENDERWAVEFRONT_H)
 #define RENDERWAVEFRONT_H
 
-#include "graphics/scene.h"
+struct Scene;
+struct Scene_object;
 
 /*
 Global functions

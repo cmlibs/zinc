@@ -442,36 +442,6 @@ DESCRIPTION :
 Returns true if <gt_element_group> contains settings which depend on time.
 ==============================================================================*/
 
-int build_GT_element_group(struct GT_element_group *gt_element_group,
-	FE_value time, const char *name_prefix);
-/*******************************************************************************
-LAST MODIFIED : 25 March 2003
-
-DESCRIPTION :
-Builds any graphics objects for settings without them in <gt_element_group>.
-The <name_prefix> is used for the start of all names of graphics generated for
-the group.
-==============================================================================*/
-
-int compile_GT_element_group(struct GT_element_group *gt_element_group,
-	struct GT_object_compile_context *context);
-/*******************************************************************************
-LAST MODIFIED : 18 November 2005
-
-DESCRIPTION :
-Rebuilds the display list for graphical_element_group. 
-The object is compiled at the <time>.  The <graphics_buffer> is used to 
-provide a operating system dependent rendering contexts.
-==============================================================================*/
-
-int execute_GT_element_group(struct GT_element_group *gt_element_group,
-	float time);
-/*******************************************************************************
-LAST MODIFIED : 27 June 2000
-
-DESCRIPTION :
-==============================================================================*/
-
 int GT_element_group_Graphical_material_change(
 	struct GT_element_group *gt_element_group,
 	struct LIST(Graphical_material) *changed_material_list);

@@ -12,7 +12,9 @@ extern "C" {
 #include <math.h>
 #include "command/parser.h"
 #include "general/debug.h"
-#include "graphics/scene.h"
+}
+#include "graphics/scene.hpp"
+extern "C" {
 #include "graphics/scene_viewer.h"
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_settings.h"
@@ -22,10 +24,10 @@ extern "C" {
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
+}
 /* SAB Trying to hide the guts of GT_object and its primitives,
 	however the spectrum editor is modifying it's primitives quite a bit . */
-#include "graphics/graphics_object_private.h"
-}
+#include "graphics/graphics_object_private.hpp"
 #include "wx/wx.h"
 #include <wx/splitter.h>
 #include "wx/xrc/xmlres.h"

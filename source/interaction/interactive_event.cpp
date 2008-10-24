@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : interactive_event.c
+FILE : interactive_event.cpp
 
 LAST MODIFIED : 6 May 2005
 
@@ -46,9 +46,12 @@ Structure describing an interactive event containing:
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include "general/debug.h"
 #include "interaction/interactive_event.h"
 #include "user_interface/message.h"
+}
+#include "graphics/scene.hpp"
 
 /*
 Module types

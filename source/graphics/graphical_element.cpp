@@ -62,6 +62,9 @@ extern "C" {
 #include "graphics/spectrum.h"
 #include "user_interface/message.h"
 }
+#include "general/callback_class.hpp"
+#include "graphics/rendergl.hpp"
+#include "graphics/graphical_element.hpp"
 #include "user_interface/process_list_or_write_command.hpp"
 
 /*
@@ -2316,55 +2319,45 @@ Returns true if <gt_element_group> contains settings which depend on time.
 	return (return_code);
 } /* GT_element_group_has_multiple_times */
 
-int build_GT_element_group(struct GT_element_group *gt_element_group,
-	FE_value time, const char *name_prefix)
-/*******************************************************************************
-LAST MODIFIED : 30 April 2003
-
-DESCRIPTION :
-Builds any graphics objects for settings without them in <gt_element_group>.
-The <name_prefix> is used for the start of all names of graphics generated for
-the group.
-==============================================================================*/
+int Graphical_element_group_compile_members(GT_element_group *gt_element_group,
+	Render_graphics_compile_members *renderer)
 {
 	int return_code;
 
-	ENTER(build_GT_element_group);
-	if (gt_element_group && name_prefix)
+	ENTER(Graphical_element_group_compile_members);
+	if (gt_element_group && renderer->name_prefix)
 	{
 		/* check whether graphical_element contents need building */
 		if (gt_element_group->build)
 		{
 			return_code = GT_element_group_build_graphics_objects(gt_element_group,
-				time, name_prefix);
+				renderer->time, renderer->name_prefix);
 			gt_element_group->build = 0;
 		}
 		else
 		{
 			return_code = 1;
 		}
+      /* Call the renderer to compile each of the graphics */
+		FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+			GT_element_settings_compile_visible_settings, (void *)renderer,
+			gt_element_group->list_of_settings);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"build_GT_element_group.  Invalid argument(s)");
+			"Graphical_element_group_compile_members.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* build_GT_element_group  */
+} /* Graphical_element_group_compile_members  */
 
-int compile_GT_element_group(struct GT_element_group *gt_element_group,
-	struct GT_object_compile_context *context)
-/*******************************************************************************
-LAST MODIFIED : 18 November 2005
-
-DESCRIPTION :
-Rebuilds the display list for graphical_element_group. 
-The object is compiled at the <time>.  The <graphics_buffer> is used to 
-provide a operating system dependent rendering contexts.
-==============================================================================*/
+int Graphical_element_group_compile_opengl_display_list(
+	GT_element_group *gt_element_group,
+	Callback_base< GT_element_group* > *execute_function,	
+	Render_graphics_opengl *renderer)
 {
 	int return_code;
 
@@ -2375,19 +2368,11 @@ provide a operating system dependent rendering contexts.
 		if (!gt_element_group->display_list_current)
 		{
 			/* compile visible graphics objects in the graphical element */
-			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-				GT_element_settings_compile_visible_settings, (void *)context,
-				gt_element_group->list_of_settings);
 			if (gt_element_group->display_list ||
 				(gt_element_group->display_list = glGenLists(1)))
 			{
 				glNewList(gt_element_group->display_list, GL_COMPILE);
-				/* push initial name to make space for subobject names */
-				glPushName(0);
-				FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-					GT_element_settings_execute_visible_settings,
-					NULL, gt_element_group->list_of_settings);
-				glPopName();
+				(*execute_function)(gt_element_group);
 				glEndList();
 				gt_element_group->display_list_current = 1;
 			}
@@ -2408,8 +2393,39 @@ provide a operating system dependent rendering contexts.
 	return (return_code);
 } /* compile_GT_element_group */
 
-int execute_GT_element_group(struct GT_element_group *gt_element_group,
-	float time)
+int Graphical_element_group_execute_opengl_display_list(
+	GT_element_group *gt_element_group,
+	Render_graphics_opengl *renderer)
+{
+	int return_code;
+
+	ENTER(compile_GT_element_group);
+	if (gt_element_group)
+	{
+		return_code = 1;
+		if (gt_element_group->display_list_current)
+		{
+			glCallList(gt_element_group->display_list);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Graphical_element_group_execute_opengl_display_list.  display list not current");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Graphical_element_group_execute_opengl_display_list.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphical_element_group_execute_opengl_display_list */
+
+int GT_element_group_render_opengl(struct GT_element_group *gt_element_group,
+	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 27 June 2000
 
@@ -2419,20 +2435,14 @@ DESCRIPTION :
 	int return_code;
 
 	ENTER(execute_GT_element_group);
-	USE_PARAMETER(time);
 	if (gt_element_group)
 	{
-		if (gt_element_group->display_list_current)
-		{
-			glCallList(gt_element_group->display_list);
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"execute_GT_element_group.  display list not current");
-			return_code = 0;
-		}
+		glPushName(0);
+		FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+			GT_element_settings_execute_visible_settings,
+			renderer, gt_element_group->list_of_settings);
+		glPopName();
+		return_code = 1;
 	}
 	else
 	{

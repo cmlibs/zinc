@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : rendervrml.c
+FILE : rendervrml.cpp
 
 LAST MODIFIED : 20 March 2003
 
@@ -45,6 +45,7 @@ Renders gtObjects to VRML file
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+extern "C" {
 #include "general/debug.h"
 #include "general/list.h"
 #include "general/list_private.h"
@@ -57,11 +58,14 @@ Renders gtObjects to VRML file
 #endif /* defined (OLD_CODE) */
 #include "graphics/material.h"
 #include "graphics/rendervrml.h"
-#include "graphics/scene.h"
+}
+#include "graphics/scene.hpp"
+extern "C" {
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
 #include "user_interface/message.h"
-#include "graphics/graphics_object_private.h"
+}
+#include "graphics/graphics_object_private.hpp"
 
 /*
 Module types
@@ -1576,7 +1580,7 @@ Writes VRML code to the file handle which represents the given pointset.
 	return (return_code);
 } /* draw_point_set_vrml */
 
-static int draw_polyline_vrml(FILE *vrml_file,Triple *point_list,
+static int draw_polyline_vrml(FILE *vrml_file,float *point_list,
 	int number_of_data_components,GTDATA *data,
 	struct Graphical_material *material,struct Spectrum *spectrum,int n_pts,
 	enum GT_polyline_type polyline_type)
@@ -1635,8 +1639,8 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 			fprintf(vrml_file,"      point [\n");
 			for (i=0;i<number_of_points;i++)
 			{
-				fprintf(vrml_file,"        %f %f %f,\n",point_list[i][0],
-					point_list[i][1],point_list[i][2]);
+				fprintf(vrml_file,"        %f %f %f,\n",point_list[i*3+0],
+					point_list[i*3+1],point_list[i*3+2]);
 			}
 			fprintf(vrml_file,"      ]\n");
 			fprintf(vrml_file,"    }\n");
@@ -2347,7 +2351,7 @@ Only writes the geometry field.
 								if (interpolate_line=
 									morph_GT_polyline(proportion,line,line_2))
 								{
-									draw_polyline_vrml(vrml_file,interpolate_line->pointlist,
+									draw_polyline_vrml(vrml_file,*interpolate_line->pointlist,
 										interpolate_line->n_data_components,interpolate_line->data,
 										object->default_material,object->spectrum,
 										interpolate_line->n_pts,interpolate_line->polyline_type);
@@ -2361,7 +2365,7 @@ Only writes the geometry field.
 						{
 							while (line)
 							{
-								draw_polyline_vrml(vrml_file,line->pointlist,
+								draw_polyline_vrml(vrml_file,*line->pointlist,
 									line->n_data_components,line->data,
 									object->default_material,object->spectrum,
 									line->n_pts,line->polyline_type);
@@ -2378,6 +2382,93 @@ Only writes the geometry field.
 					else
 					{
 						display_message(ERROR_MESSAGE,"makevrml.  Missing polyline");
+						return_code=0;
+					}
+				} break;
+				case g_POLYLINE_VERTEX_BUFFERS:
+				{
+					GT_polyline_vertex_buffers *line;
+					if (line = primitive_list1->gt_polyline_vertex_buffers)
+					{
+						unsigned int line_index;
+						unsigned int line_count =
+							object->vertex_array->get_number_of_vertices(
+							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
+
+						float *position_buffer, *data_buffer, *normal_buffer;
+						unsigned int position_values_per_vertex, position_vertex_count,
+						data_values_per_vertex, data_vertex_count, normal_values_per_vertex,
+						normal_vertex_count;
+
+						if (line_count > 1)
+						{
+							fprintf(vrml_file,"Group {\n");
+							fprintf(vrml_file,"  children [\n");
+							group = 1;
+						}
+
+						position_buffer = (float *)NULL;
+						object->vertex_array->get_float_vertex_buffer(
+							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+							&position_buffer, &position_values_per_vertex, &position_vertex_count);
+
+						data_buffer = (float *)NULL;
+						object->vertex_array->get_float_vertex_buffer(
+							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+							&data_buffer, &data_values_per_vertex, &data_vertex_count);
+						
+						normal_buffer = (float *)NULL;
+						object->vertex_array->get_float_vertex_buffer(
+							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+							&normal_buffer, &normal_values_per_vertex, &normal_vertex_count);
+
+						for (line_index = 0; line_index < line_count; line_index++)
+						{
+							int object_name;
+							object->vertex_array->get_integer_attribute(
+								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ID,
+								line_index, 1, &object_name);
+
+							unsigned int index_start, index_count;
+							float *position_vertex, *data_vertex, *normal_vertex;
+							
+							object->vertex_array->get_unsigned_integer_attribute(
+								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+								line_index, 1, &index_start);
+							object->vertex_array->get_unsigned_integer_attribute(
+								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+								line_index, 1, &index_count);
+
+							position_vertex = position_buffer +
+								position_values_per_vertex * index_start;
+							if (data_buffer)
+							{
+								data_vertex = data_buffer +
+									data_values_per_vertex * index_start;
+							}
+							else
+							{
+								data_values_per_vertex = 0;
+							}
+							if (normal_buffer)
+							{
+								normal_vertex = normal_buffer +
+									normal_values_per_vertex * index_start;
+							}
+							draw_polyline_vrml(vrml_file, position_vertex,
+								data_values_per_vertex, data_vertex,
+								object->default_material,object->spectrum,
+								index_count, line->polyline_type);
+						}
+						if (group)
+						{
+							fprintf(vrml_file,"  ]\n");
+							fprintf(vrml_file,"} #Group\n");
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"makevrml.  Missing line");
 						return_code=0;
 					}
 				} break;
@@ -2657,6 +2748,7 @@ graphics_object_tree_iterator_function
 			case g_POINT:
 			case g_POINTSET:
 			case g_POLYLINE:
+			case g_POLYLINE_VERTEX_BUFFERS:
 			case g_GLYPH_SET:
 			case g_VOLTEX:
 			case g_SURFACE:

@@ -120,6 +120,7 @@ without knowing which order the types are in.
 	g_SURFACE,
 	g_USERDEF,
 	g_VOLTEX,
+	g_POLYLINE_VERTEX_BUFFERS,
 	g_OBJECT_TYPE_AFTER_LAST
 };
 
@@ -304,29 +305,15 @@ struct GT_nurbs;
 struct GT_point;
 struct GT_pointset;
 struct GT_polyline;
+struct GT_polyline_vertex_buffers;
 struct GT_surface;
 struct GT_userdef;
 struct GT_voltex;
 
 struct GT_object;
-struct GT_object_compile_context;
 
 typedef int(*Graphics_object_callback)(struct GT_object *graphics_object,
 	void *user_data);
-
-typedef int (*Graphics_object_glyph_labels_function)(Triple coordinate_scaling,
-	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
-	struct Graphical_material *material, struct Graphical_material *secondary_material,
-	struct Graphics_font *font, struct GT_object_compile_context *context);
-/*******************************************************************************
-LAST MODIFIED : 18 November 2005
-
-DESCRIPTION :
-Used for rendering a per compile custom addon to a glyph, such as a grid or tick
-marks showing the scale of the glyph.
-<coordinate_scaling> gives a representative size for determining the number of 
-ticks.
-==============================================================================*/
 
 struct Graphics_object_callback_data
 {
@@ -807,6 +794,12 @@ DESCRIPTION :
 Frees the memory for <**polyline> and its fields and sets <*polyline> to NULL.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Creates the shared rendition information for a GT_polyline_vertex_buffers.
+ */
+struct GT_polyline_vertex_buffers *CREATE(GT_polyline_vertex_buffers)(
+	enum GT_polyline_type polyline_type, int line_width);
+
 int GT_polyline_set_integer_identifier(struct GT_polyline *polyline,
 	int identifier);
 /*******************************************************************************
@@ -954,29 +947,6 @@ Frees the memory for the fields of <**object>, frees the memory for <**object>
 and sets <*object> to NULL.
 ==============================================================================*/
 
-int compile_GT_object(struct GT_object *graphics_object_list,
-	struct GT_object_compile_context *context);
-/*******************************************************************************
-LAST MODIFIED : 18 November 2005
-
-DESCRIPTION :
-Rebuilds the display list for each uncreated or morphing graphics object in the
-<graphics_object_list>, a simple linked list. The object is compiled at the 
-<time>.  The <buffer> is used to obtain appropriate contexts with the 
-windowing system, used so far for compiling the font.
-==============================================================================*/
-
-int execute_GT_object(struct GT_object *graphics_object_list);
-/*******************************************************************************
-LAST MODIFIED : 18 November 2005
-
-DESCRIPTION :
-Rebuilds the display list for each uncreated or morphing graphics object in the
-<graphics_object_list>, a simple linked list.
-If the linked list has more than one graphics_object in it, the number of the
-graphics object, starting at zero for the first
-==============================================================================*/
-
 int GT_object_changed(struct GT_object *graphics_object);
 /*******************************************************************************
 LAST MODIFIED : 12 March 2002
@@ -1051,6 +1021,11 @@ LAST MODIFIED : 17 March 2003
 DESCRIPTION :
 Returns true if <graphics_object> has primitives stored exactly at <time>.
 ==============================================================================*/
+
+/***************************************************************************//**
+ * Returns the vertex buffer set if the graphics_object has one.
+ */
+struct Graphics_vertex_array *GT_object_get_vertex_set(struct GT_object *graphics_object);
 
 int GT_object_get_number_of_times(struct GT_object *graphics_object);
 /*******************************************************************************
@@ -1142,6 +1117,13 @@ PROTOTYPE_GT_OBJECT_ADD_FUNCTION(GT_polyline);
 PROTOTYPE_GT_OBJECT_ADD_FUNCTION(GT_surface);
 PROTOTYPE_GT_OBJECT_ADD_FUNCTION(GT_userdef);
 PROTOTYPE_GT_OBJECT_ADD_FUNCTION(GT_voltex);
+
+/*************************************************************************//**
+ * Adds <primitive> to <graphics_object>.  There can be only one time for this
+ * type
+ */
+int GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
+	struct GT_object *graphics_object, struct GT_polyline_vertex_buffers *primitive);
 
 #if ! defined (SHORT_NAMES)
 #define GT_OBJECT_GET_(primitive_type) GT_object_get_ ## primitive_type
@@ -1290,36 +1272,6 @@ LAST MODIFIED : 16 November 2000
 DESCRIPTION :
 Sets the glyph_mirror_mode of the <graphics_object> to true or false.
 ???RC temporary until we have a separate struct Glyph.
-==============================================================================*/
-
-Graphics_object_glyph_labels_function GT_object_get_glyph_labels_function(
-	struct GT_object *graphics_object);
-/*******************************************************************************
-LAST MODIFIED : 19 September 2005
-
-DESCRIPTION :
-Gets the glyph_labels_function of the <graphics_object>.
-This function enables a custom, per compile, labelling for a graphics object 
-==============================================================================*/
-
-int Graphics_object_set_glyph_labels_function(struct GT_object *graphics_object,
-	Graphics_object_glyph_labels_function glyph_labels_function);
-/*******************************************************************************
-LAST MODIFIED : 19 September 2005
-
-DESCRIPTION :
-Sets the glyph_labels_function of the <graphics_object>.
-This function enables a custom, per compile, labelling for a graphics object 
-==============================================================================*/
-
-Graphics_object_glyph_labels_function Graphics_object_get_glyph_labels_function(
-	struct GT_object *graphics_object);
-/*******************************************************************************
-LAST MODIFIED : 19 September 2005
-
-DESCRIPTION :
-Gets the glyph_labels_function of the <graphics_object>.
-This function enables a custom, per compile, labelling for a graphics object 
 ==============================================================================*/
 
 int GT_object_clear_selected_graphic_list(struct GT_object *graphics_object);

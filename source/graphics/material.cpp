@@ -60,6 +60,7 @@ return to direct rendering, as described with these routines.
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+extern "C" {
 #include "command/parser.h"
 #include "general/compare.h"
 #include "general/debug.h"
@@ -74,6 +75,10 @@ return to direct rendering, as described with these routines.
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
 #include "user_interface/message.h"
+}
+#include "graphics/rendergl.hpp"
+#include "graphics/material.hpp"
+#include "graphics/spectrum.hpp"
 
 /*
 Module types
@@ -430,8 +435,8 @@ be shared by multiple materials using the same program.
 	{
 #if defined (OPENGL_API)
 		/* #define TESTING_PROGRAM_STRINGS */
-		/* #define WRITE_STRING */
-		/* #define DEBUG */
+/* #define WRITE_STRING */
+/* #define DEBUG */
 #if defined (DEBUG)
 		const GLubyte *error_msg;
 #endif /* defined (DEBUG) */
@@ -1693,7 +1698,8 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Graphical_material,name,const char *,strcm
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Graphical_material)
 
-int direct_render_Graphical_material(struct Graphical_material *material)
+static int direct_render_Graphical_material(struct Graphical_material *material,
+	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 8 August 2002
 
@@ -1744,7 +1750,7 @@ material results.
 
 		if (material->texture)
 		{
-			execute_Texture(material->texture);
+			renderer->Texture_execute(material->texture);
 		}
 
 #if defined (GL_VERSION_1_3)
@@ -1756,13 +1762,13 @@ material results.
 			if (material->second_texture)
 			{
 				glActiveTexture(GL_TEXTURE1);
-				execute_Texture(material->second_texture);
+				renderer->Texture_execute(material->second_texture);
 				glActiveTexture(GL_TEXTURE0);
 			}
 			else if (material->spectrum)
 			{
 				glActiveTexture(GL_TEXTURE1);
-				Spectrum_execute_colour_lookup(material->spectrum);
+				Spectrum_execute_colour_lookup(material->spectrum, renderer);
 				glActiveTexture(GL_TEXTURE0);
 			}
 			else
@@ -1779,7 +1785,7 @@ material results.
 			if (material->third_texture)
 			{
 				glActiveTexture(GL_TEXTURE2);
-				execute_Texture(material->third_texture);
+				renderer->Texture_execute(material->third_texture);
 				glActiveTexture(GL_TEXTURE0);
 			}
 			else
@@ -1793,7 +1799,7 @@ material results.
 			if (material->fourth_texture)
 			{
 				glActiveTexture(GL_TEXTURE3);
-				execute_Texture(material->fourth_texture);
+				renderer->Texture_execute(material->fourth_texture);
 				glActiveTexture(GL_TEXTURE0);
 			}
 			else
@@ -3566,7 +3572,7 @@ If the material already exists, then behaves like gfx modify material.
 } /* gfx_create_material */
 
 int set_material_program_type_texture_mode(struct Graphical_material *material_to_be_modified,
-	 enum Material_program_type *type, int return_code)
+	 int *type, int return_code)
 {
 	 int dimension;
 
@@ -3639,7 +3645,7 @@ int set_material_program_type_texture_mode(struct Graphical_material *material_t
 }
 
 int set_material_program_type_second_texture(struct Graphical_material *material_to_be_modified,
-	 enum Material_program_type *type, int return_code)
+	 int *type, int return_code)
 /******************************************************************************
 LAST MODIFIED : 4 Dec 2007
 
@@ -3683,7 +3689,7 @@ functions are orginally from the modify_graphical_materil.
 }
 
 int set_material_program_type_bump_mapping(struct Graphical_material *material_to_be_modified,
-	 enum Material_program_type *type, int return_code)
+	 int *type, int return_code)
 /******************************************************************************
 LAST MODIFIED : 4 Dec 2007
 
@@ -3711,7 +3717,7 @@ functions are orginally from the modify_graphical_materil.
 }
 
 int set_material_program_type_spectrum(struct Graphical_material *material_to_be_modified,
-	 enum Material_program_type *type, int red_flag, int green_flag, int blue_flag,
+	 int *type, int red_flag, int green_flag, int blue_flag,
 	 int alpha_flag, int return_code)
 /******************************************************************************
 LAST MODIFIED : 4 Dec 2007
@@ -3860,7 +3866,7 @@ from the modify_graphical_material.
 NOTE: I use the pointer to the material_package from the material.
 ==============================================================================*/
 {
-	 enum Material_program_type type;
+	 int type;
 
 	 ENTER(set_material_program_type);
 
@@ -3901,7 +3907,7 @@ NOTE: I use the pointer to the material_package from the material.
 	 material_to_be_modified->compile_status = GRAPHICS_NOT_COMPILED;
 
 	 return_code = material_update_material_program(material_to_be_modified,
-			material_to_be_modified->package, type, return_code);
+			material_to_be_modified->package, (Material_program_type)type, return_code);
 
 	 return return_code;
 }
@@ -4949,31 +4955,13 @@ specified name and the default properties.
 	return (return_code);
 } /* file_read_Graphical_material_name */
 
-int compile_Graphical_material(struct Graphical_material *material,
-	struct Graphics_buffer *graphics_buffer,
-	struct Texture_tiling **texture_tiling)
-/*******************************************************************************
-LAST MODIFIED : 19 November 2007
-
-DESCRIPTION :
-Rebuilds the display_list for <material> if it is not current. If <material>
-does not have a display list, first attempts to give it one. The display list
-created here may be called using execute_Graphical_material, below.
-If <texture_tiling> is not NULL then if the material uses a primary texture
-and this texture is larger than can be compiled into a single texture on
-the current graphics hardware, then it can be tiled into several textures
-and information about the tile boundaries is returned in Texture_tiling
-structure and should be used to compile any graphics objects.
-???RC Graphical_materials must be compiled before they are executed since openGL
-cannot start writing to a display list when one is currently being written to.
-???RC The behaviour of materials is set up to take advantage of pre-computed
-display lists. To switch to direct rendering make this routine do nothing and
-execute_Graphical_material should just call direct_render_Graphical_material.
-==============================================================================*/
+#if defined (OPENGL_API)
+int Material_compile_members_opengl(Graphical_material *material,
+	Render_graphics_opengl *renderer)
 {
 	int return_code;
 
-	ENTER(compile_Graphical_material);
+	ENTER(Material_compile_members_opengl);
 	if (material)
 	{
 		return_code = 1;
@@ -4982,8 +4970,7 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 			/* must compile texture before opening material display list */
 			if (material->texture)
 			{
-				compile_Texture(material->texture, graphics_buffer,
-					texture_tiling);
+				renderer->Texture_compile(material->texture);
 			}
 #if defined (GL_VERSION_1_3)
 			if (Graphics_library_check_extension(GL_VERSION_1_3))
@@ -4994,29 +4981,29 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 				if (material->second_texture)
 				{
 					glActiveTexture(GL_TEXTURE1);
-					compile_Texture(material->second_texture,
-						graphics_buffer, (struct Texture_tiling **)NULL);
+					renderer->allow_texture_tiling = 0;
+					renderer->Texture_compile(material->second_texture);
 					glActiveTexture(GL_TEXTURE0);
 				}
 				if (material->third_texture)
 				{
 					glActiveTexture(GL_TEXTURE2);
-					compile_Texture(material->third_texture,
-						graphics_buffer, (struct Texture_tiling **)NULL);
+					renderer->allow_texture_tiling = 0;
+					renderer->Texture_compile(material->third_texture);
 					glActiveTexture(GL_TEXTURE0);
 				}
 				if (material->fourth_texture)
 				{
 					glActiveTexture(GL_TEXTURE3);
-					compile_Texture(material->fourth_texture,
-						graphics_buffer, (struct Texture_tiling **)NULL);
+					renderer->allow_texture_tiling = 0;
+					renderer->Texture_compile(material->fourth_texture);
 					glActiveTexture(GL_TEXTURE0);
 				}
 				if (material->spectrum)
 				{
 					glActiveTexture(GL_TEXTURE1);
 					Spectrum_compile_colour_lookup(material->spectrum,
-						graphics_buffer);
+						renderer);
 					glActiveTexture(GL_TEXTURE0);
 				}
 			}
@@ -5026,107 +5013,71 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 			{
 				Material_program_compile(material->program);
 			}
-			if (GRAPHICS_NOT_COMPILED == material->compile_status)
-			{
-#if defined (OPENGL_API)
-				if (material->display_list || (material->display_list = glGenLists(1)))
-				{
-					glNewList(material->display_list,GL_COMPILE);
-					if (material->program)
-					{
-						/* Load up the texture scaling into the vertex program
-							environment and the texel size into the fragment
-							program environment. */
-						if (material->texture)
-						{
-							Texture_execute_vertex_program_environment(material->texture);
-						}
-						else if (material->second_texture)
-						{
-							Texture_execute_vertex_program_environment(material->second_texture);
-						}
-						else if (material->third_texture)
-						{
-							Texture_execute_vertex_program_environment(material->third_texture);
-						}
-						else if (material->fourth_texture)
-						{
-							Texture_execute_vertex_program_environment(material->fourth_texture);
-						}
-					}
-#if defined GL_ARB_fragment_program
-					if (material->spectrum && Graphics_library_check_extension(GL_ARB_fragment_program))
-					{
-						int i, lookup_dimensions, *lookup_sizes;
-						float values[4];
-
-						Spectrum_get_colour_lookup_sizes(material->spectrum,
-							&lookup_dimensions, &lookup_sizes);
-						/* Set the offsets = 0.5 / size */
-						for (i = 0 ; i < lookup_dimensions ; i++)
-						{
-							values[i] = 0.5 / ((double)lookup_sizes[i]);
-						}
-						for (; i < 4 ; i++)
-						{
-							values[i] = 0.0;
-						}
-						glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 1,
-							values[0], values[1], values[2], values[3]);
-						/* Set the scales = (size - 1) / (size) */
-						for (i = 0 ; i < lookup_dimensions ; i++)
-						{
-							values[i] = ((double)(lookup_sizes[i] - 1)) / ((double)lookup_sizes[i]);
-						}
-						for (; i < 4 ; i++)
-						{
-							values[i] = 1.0;
-						}
-						glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 2,
-							values[0], values[1], values[2], values[3]);
-						DEALLOCATE(lookup_sizes);
-					}
-#endif /* defined GL_ARB_fragment_program */
-					direct_render_Graphical_material(material);
-					glEndList();
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"compile_Graphical_material.  Could not generate display list");
-					return_code = 0;
-				}
-#else /* defined (OPENGL_API) */
-				display_message(ERROR_MESSAGE,
-					"compile_Graphical_material.  Not defined for this API");
-				return_code = 0;
-#endif /* defined (OPENGL_API) */
-			}
-			if (return_code)
-			{
-				material->compile_status = GRAPHICS_COMPILED;
-			}
 		}
 		else
 		{
-			if (texture_tiling && material->texture)
+			if (renderer->allow_texture_tiling && material->texture)
 			{
-				compile_Texture(material->texture, graphics_buffer,
-					texture_tiling);
+				renderer->Texture_compile(material->texture);
 			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"compile_Graphical_material.  Missing material");
+			"Material_compile_members_opengl.  Missing material");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* compile_Graphical_material */
+} /* Material_compile_members_opengl */
+#endif /* defined (OPENGL_API) */
 
+#if defined (OPENGL_API)
+int Material_compile_opengl_display_list(Graphical_material *material,
+	Callback_base< Graphical_material* > *execute_function,
+	Render_graphics_opengl *renderer)
+{
+	int return_code;
+
+	ENTER(Material_compile_opengl_display_list);
+	if (material)
+	{
+		return_code = 1;
+		if (GRAPHICS_NOT_COMPILED == material->compile_status)
+		{
+			if (material->display_list || (material->display_list = glGenLists(1)))
+			{
+				glNewList(material->display_list,GL_COMPILE);
+				return_code = (*execute_function)(material);
+				glEndList();
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Material_compile_opengl_display_list.  Could not generate display list");
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
+			material->compile_status = GRAPHICS_COMPILED;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Material_compile_opengl_display_list.  Missing material");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Material_compile_opengl_display_list */
+#endif /* defined (OPENGL_API) */
+
+#if defined (OPENGL_API)
 int compile_Graphical_material_for_order_independent_transparency(
 	struct Graphical_material *material,
 	void *material_order_independent_data_void)
@@ -5139,17 +5090,14 @@ will work with order_independent_transparency.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (OPENGL_API)
-	enum Material_program_type modified_type;
+	int modified_type;
 	int dimension;
 	struct Material_order_independent_transparency *data;
 	struct Material_package *material_package;
 	struct Material_program *unmodified_program;
-#endif /* defined (OPENGL_API) */
 
-	ENTER(compile_Graphical_material);
+	ENTER(compile_Graphical_material_for_order_independent_transparency);
 
-#if defined (OPENGL_API)
 	if (material && (data = (struct Material_order_independent_transparency *)
 			material_order_independent_data_void))
 	{
@@ -5171,11 +5119,10 @@ will work with order_independent_transparency.
 				if (material->texture)
 				{
 					/* Texture should have already been compiled when the
-						scene was compiled before rendering */
+						scene was compiled before rendering. */
 					if (material->texture)
 					{
-						compile_Texture(material->texture, data->graphics_buffer,
-							(struct Texture_tiling **)NULL);
+						data->renderer->Texture_compile(material->texture);
 					}
 					Texture_get_dimension(material->texture, &dimension);
 					switch (dimension)
@@ -5261,11 +5208,11 @@ will work with order_independent_transparency.
 			if (modified_type != MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING)
 			{
 				if (!(material->program = FIND_BY_IDENTIFIER_IN_LIST(
-					Material_program,type)(modified_type,
+					Material_program,type)((Material_program_type)modified_type,
 						material_package->material_program_list)))
 				{
 					if (material->program = ACCESS(Material_program)(
-						CREATE(Material_program)(modified_type)))
+						CREATE(Material_program)((Material_program_type)modified_type)))
 					{
 						ADD_OBJECT_TO_LIST(Material_program)(material->program,
 							material_package->material_program_list);
@@ -5286,7 +5233,7 @@ will work with order_independent_transparency.
 			{
 				Texture_execute_vertex_program_environment(material->texture);
 			}
-			direct_render_Graphical_material(material);
+			direct_render_Graphical_material(material, data->renderer);
 			glEndList();
 
 			material->program = unmodified_program;
@@ -5295,22 +5242,112 @@ will work with order_independent_transparency.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"compile_Graphical_material.  Missing material");
+			"compile_Graphical_material_for_order_independent_transparency.  Missing material");
 		return_code=0;
 	}
-#else /* defined (OPENGL_API) */
-	USE_PARAMETER(material);
-	USE_PARAMETER(material_order_independent_data_void);
-	display_message(ERROR_MESSAGE,
-		"compile_Graphical_material.  Not defined for this graphics API");
-	return_code = 0;
-#endif /* defined (OPENGL_API) */
 	LEAVE;
 
 	return (return_code);
-} /* compile_Graphical_material */
+} /* compile_Graphical_material_for_order_independent_transparency */
+#endif /* defined (OPENGL_API) */
 
-int execute_Graphical_material(struct Graphical_material *material)
+#if defined (OPENGL_API)
+int Material_render_opengl(Graphical_material *material,
+	Render_graphics_opengl *renderer)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2007
+
+DESCRIPTION :
+Rebuilds the display_list for <material> if it is not current. If <material>
+does not have a display list, first attempts to give it one. The display list
+created here may be called using execute_Graphical_material, below.
+If <texture_tiling> is not NULL then if the material uses a primary texture
+and this texture is larger than can be compiled into a single texture on
+the current graphics hardware, then it can be tiled into several textures
+and information about the tile boundaries is returned in Texture_tiling
+structure and should be used to compile any graphics objects.
+???RC Graphical_materials must be compiled before they are executed since openGL
+cannot start writing to a display list when one is currently being written to.
+???RC The behaviour of materials is set up to take advantage of pre-computed
+display lists. To switch to direct rendering make this routine do nothing and
+execute_Graphical_material should just call direct_render_Graphical_material.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Material_render_opengl);
+	if (material)
+	{
+		if (material->program)
+		{
+			/* Load up the texture scaling into the vertex program
+				environment and the texel size into the fragment
+				program environment. */
+			if (material->texture)
+			{
+				Texture_execute_vertex_program_environment(material->texture);
+			}
+			else if (material->second_texture)
+			{
+				Texture_execute_vertex_program_environment(material->second_texture);
+			}
+			else if (material->third_texture)
+			{
+				Texture_execute_vertex_program_environment(material->third_texture);
+			}
+			else if (material->fourth_texture)
+			{
+				Texture_execute_vertex_program_environment(material->fourth_texture);
+			}
+		}
+#if defined GL_ARB_fragment_program
+		if (material->spectrum && Graphics_library_check_extension(GL_ARB_fragment_program))
+		{
+			int i, lookup_dimensions, *lookup_sizes;
+			float values[4];
+
+			Spectrum_get_colour_lookup_sizes(material->spectrum,
+				&lookup_dimensions, &lookup_sizes);
+			/* Set the offsets = 0.5 / size */
+			for (i = 0 ; i < lookup_dimensions ; i++)
+			{
+				values[i] = 0.5 / ((double)lookup_sizes[i]);
+			}
+			for (; i < 4 ; i++)
+			{
+				values[i] = 0.0;
+			}
+			glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 1,
+				values[0], values[1], values[2], values[3]);
+			/* Set the scales = (size - 1) / (size) */
+			for (i = 0 ; i < lookup_dimensions ; i++)
+			{
+				values[i] = ((double)(lookup_sizes[i] - 1)) / ((double)lookup_sizes[i]);
+			}
+			for (; i < 4 ; i++)
+			{
+				values[i] = 1.0;
+			}
+			glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 2,
+				values[0], values[1], values[2], values[3]);
+			DEALLOCATE(lookup_sizes);
+		}
+#endif /* defined GL_ARB_fragment_program */
+		return_code = direct_render_Graphical_material(material, renderer);
+	}
+	else
+	{
+		return_code = renderer->Texture_execute((struct Texture *)NULL);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Material_render_opengl */
+#endif /* defined (OPENGL_API) */
+
+#if defined (OPENGL_API)
+int Material_execute_opengl_display_list(Graphical_material *material,
+	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 13 March 2002
 
@@ -5329,7 +5366,6 @@ direct_render_Graphical_material.
 	ENTER(execute_Graphical_material);
 	if (material)
 	{
-#if defined (OPENGL_API)
 		if (GRAPHICS_COMPILED == material->compile_status)
 		{
 			glCallList(material->display_list);
@@ -5341,27 +5377,16 @@ direct_render_Graphical_material.
 				"execute_Graphical_material.  Display list not current");
 			return_code = 0;
 		}
-#else /* defined (OPENGL_API) */
-		display_message(ERROR_MESSAGE,
-			"execute_Graphical_material.  Not defined for this API");
-		return_code = 0;
-#endif /* defined (OPENGL_API) */
 	}
 	else
 	{
-#if defined (OPENGL_API)
-		/* turn off any texture */
-		return_code = execute_Texture((struct Texture *)NULL);
-#else /* defined (OPENGL_API) */
-		display_message(ERROR_MESSAGE,
-			"execute_Graphical_material.  Not defined for this API");
-		return_code = 0;
-#endif /* defined (OPENGL_API) */
+		return_code = renderer->Texture_execute((struct Texture *)NULL);
 	}
 	LEAVE;
 
 	return (return_code);
 } /* execute_Graphical_material */
+#endif /* defined (OPENGL_API) */
 
 int set_Graphical_material(struct Parse_state *state,
 	void *material_address_void,void *graphical_material_manager_void)

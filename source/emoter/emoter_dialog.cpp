@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : emoter_dialog.c
+FILE : emoter_dialog.cpp
 
 LAST MODIFIED : 4 May 2004
 
@@ -53,6 +53,7 @@ group of nodes
 #include <Xm/Text.h>
 #include <Xm/ToggleB.h>
 #endif /* defined (MOTIF) */
+extern "C" {
 #include "command/command.h"
 	/*???DB.  For Execute_command */
 #include "command/parser.h"
@@ -65,7 +66,6 @@ group of nodes
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_window.h"
 #include "graphics/movie_graphics.h"
-#include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
 #include "three_d_drawing/movie_extensions.h"
 #include "user_interface/confirmation.h"
@@ -83,6 +83,8 @@ static char emoter_dialog_uidh[] =
 #include "emoter/emoter_dialog.uidh"
 	;
 #endif /* defined (MOTIF) */
+}
+#include "graphics/scene.hpp"
 
 /*
 Module constants
@@ -2839,7 +2841,7 @@ Reads stuff from a file.
 					IO_stream_scan(file_data->stream, "%d", icon_height );
 					if ( ALLOCATE( *icon_data, char, 3 * *icon_width * *icon_height ))
 					{
-						char_data = *icon_data;
+						char_data = static_cast<char *>(*icon_data);
 						for ( j = 0 ; j < *icon_height ; j++ )
 						{
 							for ( i = 0 ; i < *icon_width ; i++ )
@@ -6311,7 +6313,7 @@ Executes a GFX MODIFY EMOTER command.
 {
 	char activate, convert_data, *export_filename, *filename, 
 		*input_sequence, keyframe, maximum_time_flag, minimum_time_flag, 
-		*movie_filename, new, no_rigid_body_motion, play, rigid_body_motion,
+		*movie_filename, new_flag, no_rigid_body_motion, play, rigid_body_motion,
 		*save_filename, *slidername, stop, *temp_filename, time_flag, value_flag;
 	float maximum_time, minimum_time, time, value;
 	int face_changed, i, integer_time, modes, return_code;
@@ -6347,7 +6349,7 @@ Executes a GFX MODIFY EMOTER command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (emoter_dialog = emoter_dialog_void)
+		if (emoter_dialog = static_cast<Emoter_dialog *>(emoter_dialog_void))
 		{
 			maximum_time = emoter_dialog->time_maximum;
 			minimum_time = emoter_dialog->time_minimum;
@@ -6374,7 +6376,7 @@ Executes a GFX MODIFY EMOTER command.
 		maximum_time_flag = 0;
 		minimum_time_flag = 0;
 		movie_filename = (char *)NULL;
-		new = 0;
+		new_flag = 0;
 		no_rigid_body_motion = 0;
 		play = 0;
 		rigid_body_motion = 0;
@@ -6392,7 +6394,7 @@ Executes a GFX MODIFY EMOTER command.
 		(option_table[4]).to_be_modified=&input_sequence;
 		(option_table[5]).to_be_modified=&keyframe;
 		(option_table[6]).to_be_modified=&filename;
-		(option_table[7]).to_be_modified=&new;
+		(option_table[7]).to_be_modified=&new_flag;
 		(option_table[8]).to_be_modified=&no_rigid_body_motion;
 		(option_table[9]).to_be_modified=&modes;
 		(option_table[10]).to_be_modified=&play;
@@ -6545,7 +6547,7 @@ Executes a GFX MODIFY EMOTER command.
 #endif /* defined (MOTIF) */
 						face_changed = 1;
 					}
-					if (new)
+					if (new_flag)
 					{
 						create_emoter_slider((char *)NULL,
 							"new", 

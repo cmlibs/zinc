@@ -1,7 +1,5 @@
 /*******************************************************************************
-FILE : rendergl.c
-
-LAST MODIFIED : 29 November 2007
+FILE : rendergl.cpp
 
 DESCRIPTION :
 GL rendering calls - API specific.
@@ -43,6 +41,7 @@ GL rendering calls - API specific.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <math.h>
+extern "C" {
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_library.h"
@@ -50,11 +49,558 @@ GL rendering calls - API specific.
 #include "graphics/graphics_object.h"
 #include "graphics/light_model.h"
 #include "graphics/mcubes.h"
-#include "graphics/rendergl.h"
 #include "graphics/spectrum.h"
 #include "graphics/tile_graphics_objects.h"
 #include "user_interface/message.h"
-#include "graphics/graphics_object_private.h"
+}
+#include "graphics/graphical_element.hpp"
+#include "graphics/graphics_object_private.hpp"
+#include "graphics/material.hpp"
+#include "graphics/scene.hpp"
+#include "graphics/rendergl.hpp"
+#include "graphics/texture.hpp"
+
+/***************************************************************************//**
+ * Specifies the rendering type for this graphics_object.  The render function
+ * could be split for different types or virtual methods or function callbacks
+ * added but much of the code would be repeated with the first strategy and
+ * there are a number of different points where the behaviour changes which would
+ * need over-riding for the second.  So the current plan is to keep a single 
+ * routine and switch on this type.
+ */
+enum Graphics_object_rendering_type
+{
+	GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND,
+	GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS,
+	GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT,
+};
+
+/***************************************************************************//**
+ * Convert graphical object into API object.
+ */
+static int render_GT_object_opengl_immediate(gtObject *object,
+	int draw_selected, Render_graphics_opengl *renderer,
+	Graphics_object_rendering_type type);
+
+static int Graphics_object_compile_opengl_display_list(GT_object *graphics_object,
+	Callback_base< GT_object * > *execute_function,
+	Render_graphics_opengl *renderer);
+
+static int Graphics_object_execute_opengl_display_list(GT_object *graphics_object,
+	Render_graphics_opengl *renderer);
+
+/***************************************************************************//**
+ * Call the renderer to compile all the member objects which this GT_object depends
+ * on.
+ */
+static int Graphics_object_compile_members_opengl(GT_object *graphics_object_list,
+	Render_graphics_opengl *renderer);
+
+/***************************************************************************//**
+ * Rebuilds the display list for each uncreated graphics object in the
+ * <graphics_object>, a simple linked list.
+ */
+static int Graphics_object_render_opengl(GT_object *graphics_object,
+	Render_graphics_opengl *renderer, Graphics_object_rendering_type type);
+
+/***************************************************************************//**
+ * Compile the vertex buffer object for rendering the specified primitive.
+ */
+static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object,
+	Render_graphics_opengl *renderer);
+
+/****************** Render_graphics_opengl method implementations **************/
+
+int Render_graphics_opengl::Scene_compile(Scene *scene)
+{
+	return Scene_compile_members(scene, this);
+}
+
+int Render_graphics_opengl::Graphics_object_compile(GT_object *graphics_object)
+{
+	return Graphics_object_compile_members_opengl(graphics_object, this);
+}
+
+int Render_graphics_opengl::Material_compile(Graphical_material *material)
+{
+	return Material_compile_members_opengl(material, this);
+}
+
+/***************************************************************************//**
+ * An implementation of a render class that uses immediate mode glBegin/glEnd.
+ */
+class Render_graphics_opengl_glbeginend : public Render_graphics_opengl
+{
+public:
+	Render_graphics_opengl_glbeginend(Graphics_buffer *graphics_buffer) :
+		Render_graphics_opengl(graphics_buffer)
+	{
+	}
+	
+	/***************************************************************************//**
+	 * Execute the Scene.
+	 */
+	int Scene_execute(Scene *scene)
+	{
+		return Scene_render_opengl(scene, this);
+	}
+
+	int Scene_object_execute(Scene_object *scene_object)
+	{
+		return execute_Scene_object(scene_object, this);
+	}
+
+	int Graphics_object_execute(GT_object *graphics_object)
+	{
+		return Graphics_object_render_opengl(graphics_object, this,
+			GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND);
+	}
+
+	int Graphics_object_render_immediate(GT_object *graphics_object)
+	{
+		return Graphics_object_render_opengl(graphics_object, this,
+			GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND);
+	}
+
+	int Graphical_element_group_execute(GT_element_group *graphical_element_group)
+	{
+		return GT_element_group_render_opengl(graphical_element_group,
+			this);
+	}
+
+	int Material_execute(Graphical_material *material)
+	{
+		return Material_render_opengl(material, this);
+	}
+
+	int Texture_compile(Texture *texture)
+	{
+		return Texture_compile_opengl_texture_object(texture, this);
+	}
+
+	int Texture_execute(Texture *texture)
+	{
+		return Texture_execute_opengl_texture_object(texture, this);
+	}
+
+	int Light_execute(Light *light)
+	{
+		return execute_Light(light, NULL);
+	}
+
+	int Light_model_execute(Light_model *light_model)
+	{
+		return Light_model_render_opengl(light_model, this);
+	}
+
+	int Start_ndc_coordinates()
+	{
+		if (picking)
+		{
+			/* To position this correctly we would need to know where the small
+			 * window we are looking at is in the whole window.  I don't think this
+			 * is right but at least it allows selection of non ndc objects.
+			 */
+	#if defined (OLD_CODE)
+			glMatrixMode(GL_PROJECTION);
+			glPushMatrix();
+			glLoadIdentity();
+			glOrtho(-1.0,1.0,-1.0,1.0,1.0,101.0);
+	#endif /* defined (OLD_CODE) */
+			glMatrixMode(GL_MODELVIEW);
+			glPushMatrix();
+			glLoadIdentity();
+			gluLookAt(/*eye*/0.0,0.0,2.0, /*lookat*/0.0,0.0,0.0,
+				/*up*/0.0,1.0,0.0);
+		}
+		else
+		{
+			/* Push the current model matrix and reset the model matrix to identity */
+			glMatrixMode(GL_PROJECTION);
+			glPushMatrix();
+			glLoadIdentity();
+			/* near = 1.0 and far = 3.0 gives -1 to be the near clipping plane
+				and +1 to be the far clipping plane */
+			glOrtho(-1.0,1.0,-1.0,1.0,1.0,3.0);
+			glMatrixMode(GL_MODELVIEW);
+			glPushMatrix();
+			glLoadIdentity();
+			gluLookAt(/*eye*/0.0,0.0,2.0, /*lookat*/0.0,0.0,0.0,
+				/*up*/0.0,1.0,0.0);
+		}
+		return 1;
+	}
+
+	int End_ndc_coordinates()
+	{
+		if (picking)
+		{
+			/* Pop the model matrix stack */
+			glMatrixMode(GL_MODELVIEW);
+			glPopMatrix();	
+		}
+		else
+		{
+			/* Pop the model matrix stack */
+			glMatrixMode(GL_PROJECTION);
+			glPopMatrix();
+			glMatrixMode(GL_MODELVIEW);
+			glPopMatrix();
+		}
+		return 1;
+	}
+
+}; /* class Render_graphics_opengl_glbeginend */
+
+Render_graphics_opengl *Render_graphics_opengl_create_glbeginend_renderer(
+	Graphics_buffer *graphics_buffer)
+{
+	return new Render_graphics_opengl_glbeginend(graphics_buffer);
+}
+
+/***************************************************************************//**
+ * An implementation of a render class that uses client vertex arrays.
+ */
+class Render_graphics_opengl_client_vertex_arrays : public Render_graphics_opengl_glbeginend
+{
+public:
+	Render_graphics_opengl_client_vertex_arrays(Graphics_buffer *graphics_buffer) :
+		Render_graphics_opengl_glbeginend(graphics_buffer)
+	{
+	}
+	
+	/***************************************************************************//**
+	 * Execute the Graphics_object.
+	 */
+	int Graphics_object_execute(GT_object *graphics_object)
+	{
+		return Graphics_object_render_opengl(graphics_object, this,
+			GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS);
+	}
+
+	/***************************************************************************//**
+	 * Execute the Graphics_object.
+	 */
+	int Graphics_object_render_immediate(GT_object *graphics_object)
+	{
+		return Graphics_object_render_opengl(graphics_object, this,
+			GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS);
+	}
+
+}; /* class Render_graphics_opengl_client_vertex_arrays */
+
+
+/***************************************************************************//**
+ * An implementation of a render class that uses client vertex arrays.
+ */
+class Render_graphics_opengl_vertex_buffer_object : public Render_graphics_opengl_glbeginend
+{
+public:
+	Render_graphics_opengl_vertex_buffer_object(Graphics_buffer *graphics_buffer) :
+		Render_graphics_opengl_glbeginend(graphics_buffer)
+	{
+	}
+	
+	/***************************************************************************//**
+	 * Compile the Graphics_object.
+	 */
+	int Graphics_object_compile(GT_object *graphics_object)
+	{
+		return Render_graphics_opengl_glbeginend::Graphics_object_compile(
+			graphics_object)
+			&& Graphics_object_compile_opengl_vertex_buffer_object(
+			graphics_object, this);
+	}
+
+	/***************************************************************************//**
+	 * Execute the Graphics_object.
+	 */
+	int Graphics_object_execute(GT_object *graphics_object)
+	{
+		return Graphics_object_render_opengl(graphics_object, this,
+			GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT);
+	}
+
+	/***************************************************************************//**
+	 * Execute the Graphics_object.
+	 */
+	int Graphics_object_render_immediate(GT_object *graphics_object)
+	{
+		return Graphics_object_compile_opengl_vertex_buffer_object(
+			graphics_object, this)
+			&& Graphics_object_render_opengl(graphics_object, this,
+			GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT);
+	}
+
+}; /* class Render_graphics_opengl_client_vertex_arrays */
+
+Render_graphics_opengl *Render_graphics_opengl_create_client_vertex_arrays_renderer(
+	Graphics_buffer *graphics_buffer)
+{
+	return new Render_graphics_opengl_client_vertex_arrays(graphics_buffer);
+}
+
+class Render_graphics_opengl_vertex_buffer_objects : public Render_graphics_opengl_glbeginend
+{
+public:
+	Render_graphics_opengl_vertex_buffer_objects(Graphics_buffer *graphics_buffer) :
+		Render_graphics_opengl_glbeginend(graphics_buffer)
+	{
+	}
+
+	int Graphics_object_compile(GT_object *graphics_object)
+	{
+		return Render_graphics_opengl_glbeginend::Graphics_object_compile(graphics_object) &&
+			Graphics_object_compile_opengl_vertex_buffer_object(graphics_object, this);
+	}
+
+}; /* class Render_graphics_opengl_glbeginend */
+
+Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_renderer(
+	Graphics_buffer *graphics_buffer)
+{
+	return new Render_graphics_opengl_vertex_buffer_object(graphics_buffer);
+}
+
+/***************************************************************************//**
+ * An implementation of a render class that wraps another opengl renderer in
+ * compile and then execute stages.
+ */
+template <class Render_immediate> class Render_graphics_opengl_display_list
+	: public Render_immediate
+{
+   int ndc_display_list, end_ndc_display_list;
+	
+public:
+	Render_graphics_opengl_display_list(Graphics_buffer *graphics_buffer) :
+		Render_immediate(graphics_buffer)
+	{
+		ndc_display_list = 0;
+		end_ndc_display_list = 0;
+	}
+	
+	~Render_graphics_opengl_display_list()
+	{
+		if (ndc_display_list)
+		{
+			glDeleteLists(ndc_display_list,1);
+		}
+		if (end_ndc_display_list)
+		{
+			glDeleteLists(end_ndc_display_list,1);
+		}
+	}
+
+	int Scene_execute_parent(Scene *scene)
+	{
+		return Render_immediate::Scene_execute(scene);
+	}
+
+	int Scene_compile(Scene *scene)
+	{
+		int return_code;
+		
+		/* Compile the ndc_display_lists here */
+		if (ndc_display_list || (ndc_display_list = glGenLists(1)))
+		{
+			glNewList(ndc_display_list, GL_COMPILE);
+			Render_immediate::Start_ndc_coordinates();
+			glEndList();
+		}
+		if (end_ndc_display_list || (end_ndc_display_list = glGenLists(1)))
+		{
+			glNewList(end_ndc_display_list, GL_COMPILE);
+			Render_immediate::End_ndc_coordinates();
+			glEndList();
+		}
+		
+		if (return_code = Render_immediate::Scene_compile(scene))
+		{
+			Callback_member_callback< Scene*, Render_graphics_opengl_display_list,
+				int (Render_graphics_opengl_display_list::*)(Scene*) >
+				execute_method(static_cast<Render_graphics_opengl_display_list*>(this),
+				&Render_graphics_opengl_display_list::Scene_execute_parent);
+			return_code = Scene_compile_opengl_display_list(scene, 
+				&execute_method, this);
+		}
+		return (return_code);
+	}
+
+	/***************************************************************************//**
+	 * Execute the Scene.
+	 */
+	int Scene_execute(Scene *scene)
+	{
+		return Scene_execute_opengl_display_list(scene, this);
+	}
+
+	int Graphical_element_group_execute_parent(GT_element_group *graphical_element_group)
+	{
+		return Render_immediate::Graphical_element_group_execute(graphical_element_group);
+	}
+
+	int Graphical_element_group_compile(GT_element_group *graphical_element_group)
+	{
+		int return_code;
+		
+		if (return_code = Render_immediate::Graphical_element_group_compile(graphical_element_group))
+		{
+			Callback_member_callback< GT_element_group*, Render_graphics_opengl_display_list,
+				int (Render_graphics_opengl_display_list::*)(GT_element_group*) >
+				execute_method(static_cast<Render_graphics_opengl_display_list*>(this),
+				&Render_graphics_opengl_display_list::Graphical_element_group_execute_parent);
+			return_code = Graphical_element_group_compile_opengl_display_list(
+				graphical_element_group, &execute_method, this);
+		}
+		return (return_code);
+	}
+
+	int Graphical_element_group_execute(GT_element_group *graphical_element_group)
+	{
+		return Graphical_element_group_execute_opengl_display_list(
+			graphical_element_group, this);
+	}
+
+	int Graphics_object_execute_parent(GT_object *graphics_object)
+	{
+		return Render_immediate::Graphics_object_execute(graphics_object);
+	}
+
+	int Graphics_object_compile(GT_object *graphics_object)
+	{
+		int return_code;
+		
+		if (return_code = Render_immediate::Graphics_object_compile(graphics_object))
+		{
+			Callback_member_callback< GT_object*, Render_graphics_opengl_display_list,
+				int (Render_graphics_opengl_display_list::*)(GT_object*) >
+				execute_method(static_cast<Render_graphics_opengl_display_list*>(this),
+				&Render_graphics_opengl_display_list::Graphics_object_execute_parent);
+			return_code = Graphics_object_compile_opengl_display_list(graphics_object, 
+				&execute_method, this);
+		}
+		return (return_code);
+	}
+
+	int Graphics_object_execute(GT_object *graphics_object)
+	{
+		return Graphics_object_execute_opengl_display_list(graphics_object, this);
+	}
+
+	int Material_execute_parent(Graphical_material *material)
+	{
+		return Render_immediate::Material_execute(material);
+	}
+
+	int Material_compile(Graphical_material *material)
+	{
+		int return_code;
+		
+		if (return_code = Render_immediate::Material_compile(material))
+		{
+			Callback_member_callback< Graphical_material*, Render_graphics_opengl_display_list,
+				int (Render_graphics_opengl_display_list::*)(Graphical_material*) >
+				execute_method(static_cast<Render_graphics_opengl_display_list*>(this),
+				&Render_graphics_opengl_display_list::Material_execute_parent);
+			return_code = Material_compile_opengl_display_list(material, 
+				&execute_method, this);
+		}
+		return (return_code);
+	}
+
+	int Material_execute(Graphical_material *material)
+	{
+		return Material_execute_opengl_display_list(material, this);
+	}
+
+	int Texture_execute_parent(Texture *texture)
+	{
+		return Render_immediate::Texture_execute(texture);
+	}
+
+	int Texture_compile(Texture *texture)
+	{
+		int return_code;
+		
+		if (return_code = Render_immediate::Texture_compile(texture))
+		{
+			Callback_member_callback< Texture*, Render_graphics_opengl_display_list,
+				int (Render_graphics_opengl_display_list::*)(Texture*) >
+				execute_method(static_cast<Render_graphics_opengl_display_list*>(this),
+				&Render_graphics_opengl_display_list::Texture_execute_parent);
+			return_code = Texture_compile_opengl_display_list(texture, 
+				&execute_method, this);
+		}
+		return (return_code);
+	}
+
+	int Texture_execute(Texture *texture)
+	{
+		return Texture_execute_opengl_display_list(texture, this);
+	}
+
+	int Start_ndc_coordinates()
+	{
+	   int return_code;
+	   if (this->picking)
+	   {
+			Render_immediate::Start_ndc_coordinates();   	
+	   }
+	   else if (ndc_display_list)
+	   {
+	   	glCallList(ndc_display_list);
+	   	return_code = 1;
+	   }
+		else
+		{
+			return_code = 0;
+		}
+		return (return_code);
+	}
+
+	int End_ndc_coordinates()
+	{
+	   int return_code;
+	   if (this->picking)
+	   {
+			Render_immediate::End_ndc_coordinates();
+	   }
+	   else if (end_ndc_display_list)
+	   {
+	   	glCallList(end_ndc_display_list);
+	   	return_code = 1;
+	   }
+		else
+		{
+			return_code = 0;
+		}
+		return (return_code);
+	}
+	
+}; /* class Render_graphics_opengl_display_list */
+
+Render_graphics_opengl *Render_graphics_opengl_create_glbeginend_display_list_renderer(
+	Graphics_buffer *graphics_buffer)
+{
+	return new Render_graphics_opengl_display_list
+		<Render_graphics_opengl_glbeginend>(graphics_buffer);
+}
+
+Render_graphics_opengl *Render_graphics_opengl_create_client_vertex_arrays_display_list_renderer(
+	Graphics_buffer *graphics_buffer)
+{
+	return new Render_graphics_opengl_display_list
+		<Render_graphics_opengl_client_vertex_arrays>(graphics_buffer);
+}
+
+Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_display_list_renderer(
+	Graphics_buffer *graphics_buffer)
+{
+	return new Render_graphics_opengl_display_list
+		<Render_graphics_opengl_vertex_buffer_object>(graphics_buffer);
+}
+
+/******************  **********************/
 
 static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis1_list,
 	Triple *axis2_list, Triple *axis3_list, Triple *scale_list,
@@ -63,7 +609,7 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
 	struct Graphical_material *material, struct Graphical_material *secondary_material, 
 	struct Spectrum *spectrum, struct Graphics_font *font, int draw_selected, int some_selected,
-	struct Multi_range *selected_name_ranges, struct GT_object_compile_context *context)
+	struct Multi_range *selected_name_ranges,	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 22 November 2005
 
@@ -87,7 +633,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 	Graphics_object_glyph_labels_function glyph_labels_function;
 	GTDATA *datum;
 	int draw_all, i, j, mirror_mode, *name, name_selected, label_bounds_per_glyph,
-		number_of_glyphs, orig_context_draw_selected, return_code;
+		number_of_glyphs, return_code;
 	struct GT_object *temp_glyph;
 	struct Spectrum_render_data *render_data;
 	Triple *axis1, *axis2, *axis3, *point, *scale, temp_axis1, temp_axis2,
@@ -141,7 +687,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 				label_bound = label_bounds;
 				if (label_bounds)
 				{
-					label_bounds_per_glyph = pow(2, label_bounds_dimension);
+					label_bounds_per_glyph = 1 << label_bounds_dimension;
 				}
 				/* try to draw points and lines faster */
 				if (0 == strcmp(glyph->name, "point"))
@@ -512,20 +1058,12 @@ are selected, or all points if <selected_name_ranges> is NULL.
 								{
 									temp_glyph = glyph;
 								}
-								/* call the glyph display lists of the linked-list of glyphs */
-								while (temp_glyph)
-								{
-									glCallList(temp_glyph->display_list);
-									temp_glyph = GT_object_get_next_object(temp_glyph);
-								}
+								renderer->Graphics_object_execute(temp_glyph);
 								if (glyph_labels_function = Graphics_object_get_glyph_labels_function(glyph))
 								{
-									orig_context_draw_selected = context->draw_selected;
-									context->draw_selected = 0;
 									return_code = (*glyph_labels_function)(*scale,
 										label_bounds_dimension, label_bounds_components, label_bound,
-										material, secondary_material, font, context);
-									context->draw_selected = orig_context_draw_selected;
+										material, secondary_material, font, renderer);
 								}
 								/* restore the original modelview matrix */
 								glPopMatrix();
@@ -953,7 +1491,7 @@ DESCRIPTION :
 	if (point_list&&(0<n_pts)&&((!data)||(render_data=
 		spectrum_start_renderGL(spectrum,material,number_of_data_components))))
 	{
-#if defined (OPENGL_API)
+#if defined (OPENGL_API)		
 		point=point_list;
 		if (normal_list)
 		{
@@ -1705,14 +2243,373 @@ preference to normal materials.
 	return (return_code);
 } /* draw_voltexGL */
 
-int render_GT_object_opengl(gtObject *object, struct GT_object_compile_context *context)
-/*******************************************************************************
-LAST MODIFIED : 27 October 2005
+/** Routine that uses the objects material and spectrum to convert 
+ * an array of data to corresponding colour data.
+ */
+static int Graphics_object_create_colour_buffer_from_data(GT_object *object,
+	float **colour_buffer, unsigned int *colour_values_per_vertex,
+	unsigned int *colour_vertex_count)
+{
+	float *data_buffer = NULL;
+	int return_code;
+	unsigned int data_values_per_vertex, data_vertex_count;
 
-DESCRIPTION :
-Convert graphical object into API object.
-The <context> is used to control how the object is compiled.
-==============================================================================*/
+	if (object->vertex_array->get_float_vertex_buffer(
+		GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+		&data_buffer, &data_values_per_vertex, &data_vertex_count))
+	{
+		Spectrum *spectrum = get_GT_object_spectrum(object);
+		/* Ignoring selected state here so we don't need to refer to primitive */
+		Graphical_material *material = get_GT_object_default_material(object);
+		
+		if (ALLOCATE(*colour_buffer, float, 4 * data_vertex_count))
+		{
+			float *data_vertex;
+			float *colour_vertex;
+			unsigned int i;
+			
+			if (!Spectrum_get_opaque_colour_flag(spectrum))
+			{
+				Colour diffuse_colour;
+				float alpha;
+				Graphical_material_get_diffuse(material, &diffuse_colour);
+				Graphical_material_get_alpha(material, &alpha);
+				
+				colour_vertex = *colour_buffer;
+				for (i = 0 ; i < data_vertex_count ; i++)
+				{
+					colour_vertex[0] = diffuse_colour.red;
+					colour_vertex[1] = diffuse_colour.green;
+					colour_vertex[2] = diffuse_colour.blue;
+					colour_vertex[3] = alpha;
+					colour_vertex += 4;
+				}
+			}
+			colour_vertex = *colour_buffer;
+			data_vertex = data_buffer;
+			for (i = 0 ; i < data_vertex_count ; i++)
+			{
+				Spectrum_value_to_rgba(spectrum, data_values_per_vertex,
+					data_vertex, colour_vertex);
+				colour_vertex += 4;
+				data_vertex += data_values_per_vertex;
+			}
+			Spectrum_end_value_to_rgba(spectrum);
+			
+			*colour_vertex_count = data_vertex_count;
+			*colour_values_per_vertex = 4;
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+
+	return (return_code);
+}
+
+static int Graphics_object_enable_opengl_client_vertex_arrays(GT_object *object,
+	Render_graphics_opengl *renderer,
+	float **vertex_buffer, float **colour_buffer, float **normal_buffer)
+{
+	int return_code;
+	
+	if (object && object->vertex_array)
+	{
+		return_code = 1;
+		switch (GT_object_get_type(object))
+		{
+			case g_POLYLINE_VERTEX_BUFFERS:
+			{
+				unsigned int position_values_per_vertex, position_vertex_count;
+				object->vertex_array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+					vertex_buffer, &position_values_per_vertex, &position_vertex_count);
+					
+				glEnableClientState(GL_VERTEX_ARRAY);							
+				glVertexPointer(position_values_per_vertex, GL_FLOAT,
+					/*Packed vertices*/0, /*Client vertex array*/*vertex_buffer);							
+
+				unsigned int colour_values_per_vertex, colour_vertex_count;
+				*colour_buffer = (float *)NULL;
+				if (Graphics_object_create_colour_buffer_from_data(object,
+					colour_buffer,	&colour_values_per_vertex, &colour_vertex_count))
+				{
+					if (colour_vertex_count == position_vertex_count)
+					{
+						glEnableClientState(GL_COLOR_ARRAY);							
+						glColorPointer(colour_values_per_vertex, GL_FLOAT,
+							/*Packed vertices*/0, /*Client vertex array*/*colour_buffer);						
+					}
+					else
+					{
+						DEALLOCATE(*colour_buffer);
+					}
+				}
+
+				*normal_buffer = NULL;
+				unsigned int normal_values_per_vertex, normal_vertex_count;
+				if (object->vertex_array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+					normal_buffer, &normal_values_per_vertex, &normal_vertex_count)
+					&& (3 == normal_values_per_vertex))
+				{
+					glEnableClientState(GL_NORMAL_ARRAY);							
+					glNormalPointer(GL_FLOAT, /*Packed vertices*/0,
+						/*Client vertex array*/*normal_buffer);					
+				}
+			} break;
+		}
+	}
+	else
+	{
+		/* Nothing to do */
+		return_code = 1;
+	}
+	return (return_code);
+} /* Graphics_object_enable_opengl_client_vertex_arrays */
+
+static int Graphics_object_disable_opengl_client_vertex_arrays(GT_object *object,
+	Render_graphics_opengl *renderer,
+	float *vertex_buffer, float *colour_buffer, float *normal_buffer)
+{
+	int return_code;
+	
+	if (object && object->vertex_array)
+	{
+		return_code = 1;
+		switch (GT_object_get_type(object))
+		{
+			case g_POLYLINE_VERTEX_BUFFERS:
+			{
+				if (vertex_buffer)
+				{
+					glDisableClientState(GL_VERTEX_ARRAY);					
+				}
+				if (colour_buffer)
+				{
+					glDisableClientState(GL_COLOR_ARRAY);
+					DEALLOCATE(colour_buffer);
+				}
+				if (normal_buffer)
+				{
+					glDisableClientState(GL_NORMAL_ARRAY);
+				}
+			} break;
+		}
+	}
+	else
+	{
+		/* Nothing to do */
+		return_code = 1;
+	}
+	return (return_code);
+} /* Graphics_object_disable_opengl_client_vertex_arrays */
+
+static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object,
+	Render_graphics_opengl *renderer)
+{
+	int return_code;
+	
+	ENTER(Graphics_object_compile_opengl_vertex_buffer_object);
+
+	if (object)
+	{
+		return_code = 1;
+		switch (GT_object_get_type(object))
+		{
+			case g_POLYLINE_VERTEX_BUFFERS:
+			{
+				float *position_vertex_buffer;
+				unsigned int position_values_per_vertex, position_vertex_count;
+				if (object->vertex_array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+					&position_vertex_buffer, &position_values_per_vertex,
+					&position_vertex_count))
+				{
+					if (!object->position_vertex_buffer_object)
+					{
+						glGenBuffers(1, &object->position_vertex_buffer_object);
+					}
+					glBindBuffer(GL_ARRAY_BUFFER, object->position_vertex_buffer_object);
+					glBufferData(GL_ARRAY_BUFFER, sizeof(float)*
+						position_values_per_vertex*position_vertex_count,
+						position_vertex_buffer, GL_STATIC_DRAW);
+					object->position_values_per_vertex = position_values_per_vertex;
+				}
+				else
+				{
+					if (object->position_vertex_buffer_object)
+					{
+						glDeleteBuffers(1, &object->position_vertex_buffer_object);
+						object->position_vertex_buffer_object = 0;
+					}
+				}
+
+				unsigned int colour_values_per_vertex, colour_vertex_count;
+				float *colour_buffer = (float *)NULL;
+				if (Graphics_object_create_colour_buffer_from_data(object,
+					&colour_buffer,
+					&colour_values_per_vertex, &colour_vertex_count)
+					&& (colour_vertex_count == position_vertex_count))
+				{
+					if (!object->colour_vertex_buffer_object)
+					{
+						glGenBuffers(1, &object->colour_vertex_buffer_object);
+					}
+					glBindBuffer(GL_ARRAY_BUFFER, object->colour_vertex_buffer_object);
+					glBufferData(GL_ARRAY_BUFFER, sizeof(float)*colour_values_per_vertex*colour_vertex_count,
+						colour_buffer, GL_STATIC_DRAW);
+					object->colour_values_per_vertex = colour_values_per_vertex;
+					if (colour_buffer)
+					{
+						DEALLOCATE(colour_buffer);
+					}
+				}
+				else
+				{
+					if (colour_buffer)
+					{
+						DEALLOCATE(colour_buffer);
+					}
+					if (object->colour_vertex_buffer_object)
+					{
+						glDeleteBuffers(1, &object->colour_vertex_buffer_object);
+						object->colour_vertex_buffer_object = 0;
+					}
+				}
+
+				float *normal_buffer = NULL;
+				unsigned int normal_values_per_vertex, normal_vertex_count;
+				if (object->vertex_array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+					&normal_buffer, &normal_values_per_vertex, &normal_vertex_count)
+					&& (3 == normal_values_per_vertex))
+				{
+					if (!object->normal_vertex_buffer_object)
+					{
+						glGenBuffers(1, &object->normal_vertex_buffer_object);
+					}
+					glBindBuffer(GL_ARRAY_BUFFER, object->normal_vertex_buffer_object);
+					glBufferData(GL_ARRAY_BUFFER, sizeof(float)*normal_values_per_vertex*normal_vertex_count,
+						normal_buffer, GL_STATIC_DRAW);
+				}
+				else
+				{
+					if (object->normal_vertex_buffer_object)
+					{
+						glDeleteBuffers(1, &object->normal_vertex_buffer_object);
+						object->normal_vertex_buffer_object = 0;
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		/* Nothing to do */
+		return_code = 1;
+	}
+	return (return_code);
+} /* Graphics_object_compile_opengl_vertex_buffer_object */
+
+static int Graphics_object_enable_opengl_vertex_buffer_object(GT_object *object,
+	Render_graphics_opengl *renderer)
+{
+	int return_code;
+	
+	if (object && object->vertex_array)
+	{
+		return_code = 1;
+		switch (GT_object_get_type(object))
+		{
+			case g_POLYLINE_VERTEX_BUFFERS:
+			{
+				if (object->position_vertex_buffer_object)
+				{
+					glBindBuffer(GL_ARRAY_BUFFER,
+						object->position_vertex_buffer_object);
+					glEnableClientState(GL_VERTEX_ARRAY);
+					glVertexPointer(
+						object->position_values_per_vertex,
+						GL_FLOAT, /*Packed vertices*/0,
+						/*No offset in vertex array*/(void *)0);
+				}
+				if (object->colour_vertex_buffer_object)
+				{
+					glBindBuffer(GL_ARRAY_BUFFER,
+						object->colour_vertex_buffer_object);
+					glEnableClientState(GL_COLOR_ARRAY);
+					glColorPointer(
+						object->colour_values_per_vertex,
+						GL_FLOAT, /*Packed vertices*/0,
+						/*No offset in vertex array*/(void *)0);
+				}
+				if (object->normal_vertex_buffer_object)
+				{
+					glBindBuffer(GL_ARRAY_BUFFER,
+						object->normal_vertex_buffer_object);
+					glEnableClientState(GL_NORMAL_ARRAY);
+					glNormalPointer(
+						GL_FLOAT, /*Packed vertices*/0,
+						/*No offset in vertex array*/(void *)0);
+				}
+			} break;
+		}
+	}
+	else
+	{
+		/* Nothing to do */
+		return_code = 1;
+	}
+	return (return_code);
+} /* Graphics_object_enable_opengl_client_vertex_arrays */
+
+static int Graphics_object_disable_opengl_vertex_buffer_object(GT_object *object,
+	Render_graphics_opengl *renderer)
+{
+	int return_code;
+	
+	if (object && object->vertex_array)
+	{
+		return_code = 1;
+		switch (GT_object_get_type(object))
+		{
+			case g_POLYLINE_VERTEX_BUFFERS:
+			{
+				if (object->position_vertex_buffer_object)
+				{
+					glDisableClientState(GL_VERTEX_ARRAY);
+				}
+				if (object->colour_vertex_buffer_object)
+				{
+					glDisableClientState(GL_COLOR_ARRAY);
+				}
+				if (object->normal_vertex_buffer_object)
+				{
+					glDisableClientState(GL_NORMAL_ARRAY);
+				}
+				/* Reset to normal client vertex arrays */
+				glBindBuffer(GL_ARRAY_BUFFER, 0);
+			} break;
+		}
+	}
+	else
+	{
+		/* Nothing to do */
+		return_code = 1;
+	}
+	return (return_code);
+} /* Graphics_object_enable_opengl_client_vertex_arrays */
+
+static int render_GT_object_opengl_immediate(gtObject *object,
+	int draw_selected, Render_graphics_opengl *renderer,
+	Graphics_object_rendering_type rendering_type)
 {
 	float proportion,*times;
 	int itime, name_selected, number_of_times, picking_names, return_code, strip,
@@ -1734,11 +2631,7 @@ The <context> is used to control how the object is compiled.
 	struct Spectrum *spectrum;
 	union GT_primitive_list *primitive_list1, *primitive_list2;
 
-	ENTER(makegtobject);
-/*???debug */
-/*printf("enter makegtobject %d  %d %d %d\n",GT_object_get_type(object),g_POINTSET,
-	g_POLYLINE,g_SURFACE);*/
-	/* check arguments */
+	ENTER(render_GT_object_opengl_immediate)
 	if (object)
 	{
 		return_code = 1;
@@ -1746,7 +2639,7 @@ The <context> is used to control how the object is compiled.
 		/* determine if picking names are to be output */
 		picking_names=(GRAPHICS_NO_SELECT != GT_object_get_select_mode(object));
 		/* determine which material to use */
-		if (context->draw_selected)
+		if (draw_selected)
 		{
 			material = get_GT_object_selected_material(object);
 		}
@@ -1763,11 +2656,11 @@ The <context> is used to control how the object is compiled.
 			} break;
 			case g_NDC_COORDINATES:
 			{
-				glCallList(context->ndc_display_list);
+				renderer->Start_ndc_coordinates();
 			} break;
 			default:
 			{
-				display_message(ERROR_MESSAGE,"makegtobject.  Invalid object coordinate system.");
+				display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Invalid object coordinate system.");
 				return_code=0;				
 			} break;
 		}
@@ -1779,18 +2672,18 @@ The <context> is used to control how the object is compiled.
 			{
 				itime--;
 				times += itime;
-				if (context->time >= *times)
+				if (renderer->time >= *times)
 				{
 					proportion = 0;
 				}
 				else
 				{
-					while ((itime>0)&&(context->time < *times))
+					while ((itime>0)&&(renderer->time < *times))
 					{
 						itime--;
 						times--;
 					}
-					if (context->time< *times)
+					if (renderer->time< *times)
 					{
 						proportion=0;
 					}
@@ -1799,7 +2692,7 @@ The <context> is used to control how the object is compiled.
 						proportion=times[1]-times[0];
 						if (proportion>0)
 						{
-							proportion=(context->time-times[0])/proportion;
+							proportion=(renderer->time-times[0])/proportion;
 						}
 						else
 						{
@@ -1821,7 +2714,7 @@ The <context> is used to control how the object is compiled.
 					if (!(primitive_list2 = object->primitive_lists + itime + 1))
 					{
 						display_message(ERROR_MESSAGE,
-							"makegtobject.  Invalid primitive_list");
+							"render_GT_object_opengl_immediate.  Invalid primitive_list");
 						return_code = 0;
 					}
 				}
@@ -1833,7 +2726,7 @@ The <context> is used to control how the object is compiled.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"makegtobject.  Invalid primitive_lists");
+					"render_GT_object_opengl_immediate.  Invalid primitive_lists");
 				return_code = 0;
 			}
 		}
@@ -1890,8 +2783,8 @@ The <context> is used to control how the object is compiled.
 										/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
 										material, secondary_material, spectrum, 
 										interpolate_glyph_set->font,
-										context->draw_selected,name_selected,selected_name_ranges,
-										context);
+										draw_selected,name_selected,selected_name_ranges,
+										renderer);
 									DESTROY(GT_glyph_set)(&interpolate_glyph_set);
 								}
 								glyph_set=glyph_set->ptrnext;
@@ -1920,8 +2813,8 @@ The <context> is used to control how the object is compiled.
 									glyph_set->label_bounds_dimension, glyph_set->label_bounds_components,
 									glyph_set->label_bounds, material, secondary_material, 
 									spectrum, glyph_set->font, 
-									context->draw_selected, name_selected, selected_name_ranges,
-									context);
+									draw_selected, name_selected, selected_name_ranges,
+									renderer);
 								glyph_set=glyph_set->ptrnext;
 							}
 						}
@@ -1937,7 +2830,7 @@ The <context> is used to control how the object is compiled.
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"makegtobject.  Missing glyph_set");
+						display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing glyph_set");
 						return_code=0;
 					}
 				} break;
@@ -1954,7 +2847,7 @@ The <context> is used to control how the object is compiled.
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"makegtobject.  Missing point");
+						display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing point");
 						return_code=0;
 					}
 				} break;
@@ -2018,8 +2911,8 @@ The <context> is used to control how the object is compiled.
 					}
 					else
 					{
-						/*???debug*/printf("! makegtobject.  Missing point");
-						display_message(ERROR_MESSAGE,"makegtobject.  Missing point");
+						/*???debug*/printf("! render_GT_object_opengl_immediate.  Missing point");
+						display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing point");
 						return_code=0;
 					}
 				} break;
@@ -2052,8 +2945,8 @@ The <context> is used to control how the object is compiled.
 							selected_name_ranges=(struct Multi_range *)NULL;
 							name_selected=GT_object_is_graphic_selected(object,
 								voltex->object_name,&selected_name_ranges);
-							if ((name_selected&&context->draw_selected)||
-								((!name_selected)&&(!context->draw_selected)))
+							if ((name_selected&&draw_selected)||
+								((!name_selected)&&(!draw_selected)))
 							{
 								if (picking_names)
 								{
@@ -2124,8 +3017,8 @@ The <context> is used to control how the object is compiled.
 										selected_name_ranges=(struct Multi_range *)NULL;
 										name_selected=GT_object_is_graphic_selected(object,
 											line->object_name,&selected_name_ranges);
-										if ((name_selected&&context->draw_selected)||
-											((!name_selected)&&(!context->draw_selected)))
+										if ((name_selected&&draw_selected)||
+											((!name_selected)&&(!draw_selected)))
 										{
 											if (interpolate_line=morph_GT_polyline(proportion,line,
 												line_2))
@@ -2156,8 +3049,8 @@ The <context> is used to control how the object is compiled.
 										selected_name_ranges=(struct Multi_range *)NULL;
 										name_selected=GT_object_is_graphic_selected(object,
 											line->object_name,&selected_name_ranges);
-										if ((name_selected&&context->draw_selected)||
-											((!name_selected)&&(!context->draw_selected)))
+										if ((name_selected&&draw_selected)||
+											((!name_selected)&&(!draw_selected)))
 										{
 											if (picking_names)
 											{
@@ -2200,8 +3093,8 @@ The <context> is used to control how the object is compiled.
 										selected_name_ranges=(struct Multi_range *)NULL;
 										name_selected=GT_object_is_graphic_selected(object,
 											line->object_name,&selected_name_ranges);
-										if ((name_selected&&context->draw_selected)||
-											((!name_selected)&&(!context->draw_selected)))
+										if ((name_selected&&draw_selected)||
+											((!name_selected)&&(!draw_selected)))
 										{
 											if (interpolate_line=morph_GT_polyline(proportion,line,
 												line_2))
@@ -2231,8 +3124,8 @@ The <context> is used to control how the object is compiled.
 										selected_name_ranges=(struct Multi_range *)NULL;
 										name_selected=GT_object_is_graphic_selected(object,
 											line->object_name,&selected_name_ranges);
-										if ((name_selected&&context->draw_selected)||
-											((!name_selected)&&(!context->draw_selected)))
+										if ((name_selected&&draw_selected)||
+											((!name_selected)&&(!draw_selected)))
 										{
 											if (picking_names)
 											{
@@ -2251,7 +3144,7 @@ The <context> is used to control how the object is compiled.
 							default:
 							{
 								display_message(ERROR_MESSAGE,
-									"makegtobject.  Invalid line type");
+									"render_GT_object_opengl_immediate.  Invalid line type");
 								return_code=0;
 							} break;
 						}
@@ -2269,8 +3162,226 @@ The <context> is used to control how the object is compiled.
 					}
 					else
 					{
-						/*???debug*/printf("! makegtobject.  Missing line");
-						display_message(ERROR_MESSAGE,"makegtobject.  Missing line");
+						/*???debug*/printf("! render_GT_object_opengl_immediate.  Missing line");
+						display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing line");
+						return_code=0;
+					}
+				} break;
+				case g_POLYLINE_VERTEX_BUFFERS:
+				{
+					GT_polyline_vertex_buffers *line;
+					if (line = primitive_list1->gt_polyline_vertex_buffers)
+					{
+						if (lighting_off=((g_PLAIN == line->polyline_type)||
+							(g_PLAIN_DISCONTINUOUS == line->polyline_type)))
+						{
+							/* disable lighting so rendered in flat diffuse colour */
+							/*???RC glPushAttrib and glPopAttrib are *very* slow */
+							glPushAttrib(GL_ENABLE_BIT);
+							glDisable(GL_LIGHTING);
+	#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
+							if (Graphics_library_check_extension(GL_ARB_vertex_program) &&
+								Graphics_library_check_extension(GL_ARB_fragment_program))
+							{
+								glDisable(GL_VERTEX_PROGRAM_ARB);
+								glDisable(GL_FRAGMENT_PROGRAM_ARB);
+								glDisable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
+							}
+	#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+						}
+						if (picking_names)
+						{
+							glPushName(0);
+						}
+						return_code = 1;
+						GLenum mode; 
+						switch (line->polyline_type)
+						{
+							case g_PLAIN:
+							case g_NORMAL:
+							{
+								mode = GL_LINE_STRIP;
+							} break;
+							case g_PLAIN_DISCONTINUOUS:
+							case g_NORMAL_DISCONTINUOUS:
+							{
+								mode = GL_LINES;
+							} break;
+							default:
+							{
+								display_message(ERROR_MESSAGE,
+									"render_GT_object_opengl_immediate.  Invalid line type");
+								return_code=0;
+							} break;
+						}
+						if (return_code)
+						{
+							if (line->line_width != 0)
+							{
+								glLineWidth(line->line_width);
+							}
+							else
+							{
+								glLineWidth(global_line_width);
+							}
+	
+							unsigned int line_index;
+							unsigned int line_count =
+								object->vertex_array->get_number_of_vertices(
+								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
+
+							float *position_buffer, *data_buffer, *normal_buffer;
+							struct Spectrum_render_data *render_data;
+							unsigned int position_values_per_vertex, position_vertex_count,
+							data_values_per_vertex, data_vertex_count, normal_values_per_vertex,
+							normal_vertex_count;
+
+							position_buffer = (float *)NULL;
+							data_buffer = (float *)NULL;
+							normal_buffer = (float *)NULL;
+
+							switch (rendering_type)
+							{
+								case GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND:
+								{
+									object->vertex_array->get_float_vertex_buffer(
+										GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+										&position_buffer, &position_values_per_vertex, &position_vertex_count);
+
+									object->vertex_array->get_float_vertex_buffer(
+										GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+										&data_buffer, &data_values_per_vertex, &data_vertex_count);
+									if (data_buffer)
+									{
+										render_data=spectrum_start_renderGL
+											(spectrum,material,data_values_per_vertex);
+									}
+
+									object->vertex_array->get_float_vertex_buffer(
+										GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+										&normal_buffer, &normal_values_per_vertex, &normal_vertex_count);
+								} break;
+								case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
+								{
+								   Graphics_object_enable_opengl_client_vertex_arrays(
+								   	object, renderer,
+									   &position_buffer, &data_buffer, &normal_buffer);
+								} break;
+								case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
+								{
+								   Graphics_object_enable_opengl_vertex_buffer_object(
+								   	object, renderer);
+								} break;
+							}
+							
+							for (line_index = 0; line_index < line_count; line_index++)
+							{
+								int object_name;
+								object->vertex_array->get_integer_attribute(
+									GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ID,
+									line_index, 1, &object_name);
+	
+								/* work out if subobjects selected */
+								selected_name_ranges=(struct Multi_range *)NULL;
+								name_selected=GT_object_is_graphic_selected(object,
+									object_name,&selected_name_ranges);
+								if ((name_selected&&draw_selected)||
+									((!name_selected)&&(!draw_selected)))
+								{
+									if (picking_names)
+									{
+										/* put out name for picking - cast to GLuint */
+										glLoadName((GLuint)object_name);
+									}
+									unsigned int i, index_start, index_count;
+									float *position_vertex, *data_vertex, *normal_vertex;
+									
+									object->vertex_array->get_unsigned_integer_attribute(
+										GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+										line_index, 1, &index_start);
+									object->vertex_array->get_unsigned_integer_attribute(
+										GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+										line_index, 1, &index_count);
+
+									switch (rendering_type)
+									{
+										case GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND:
+										{
+											position_vertex = position_buffer +
+												position_values_per_vertex * index_start;
+											if (data_buffer)
+											{
+												data_vertex = data_buffer +
+													data_values_per_vertex * index_start;
+											}
+											if (normal_buffer)
+											{
+												normal_vertex = normal_buffer +
+													normal_values_per_vertex * index_start;
+											}
+		
+											glBegin(mode);
+											for (i=index_count;i>0;i--)
+											{
+												if (data_buffer)
+												{
+													spectrum_renderGL_value(spectrum,material,render_data,data_vertex);
+													data_vertex += data_values_per_vertex;
+												}
+												if (normal_buffer)
+												{
+													glNormal3fv(normal_vertex);
+													normal_vertex += normal_values_per_vertex;
+												}
+												glVertex3fv(position_vertex);
+												position_vertex += position_values_per_vertex;
+											}
+											glEnd();
+										} break;
+										case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
+										case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
+										{
+											glDrawArrays(mode, index_start, index_count);
+										} break;
+									}
+								}
+							}
+							switch (rendering_type)
+							{
+								case GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND:
+								{
+									if (data_buffer)
+									{
+										spectrum_end_renderGL(spectrum, render_data);
+									}
+								} break;
+								case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
+								{
+								   Graphics_object_disable_opengl_client_vertex_arrays(
+								   	object, renderer,
+									   position_buffer, data_buffer, normal_buffer);
+								} break;
+								case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
+								{
+								   Graphics_object_disable_opengl_vertex_buffer_object(
+								   	object, renderer);
+								}
+							}
+						}
+						if (picking_names)
+						{
+							glPopName();
+						}
+						if (lighting_off)
+						{
+							/* restore previous lighting state */
+							glPopAttrib();
+						}
+					}
+					else
+					{
+						/*???debug*/printf("! render_GT_object_opengl_immediate.  Missing line");
+						display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing line");
 						return_code=0;
 					}
 				} break;
@@ -2312,8 +3423,8 @@ The <context> is used to control how the object is compiled.
 										selected_name_ranges=(struct Multi_range *)NULL;
 										name_selected=GT_object_is_graphic_selected(object,
 											surface->object_name,&selected_name_ranges);
-										if ((name_selected&&context->draw_selected)||
-											((!name_selected)&&(!context->draw_selected)))
+										if ((name_selected&&draw_selected)||
+											((!name_selected)&&(!draw_selected)))
 										{
 											if (interpolate_surface=morph_GT_surface(proportion,
 												surface,surface_2))
@@ -2323,15 +3434,15 @@ The <context> is used to control how the object is compiled.
 													/* put out name for picking - cast to GLuint */
 													glLoadName((GLuint)interpolate_surface->object_name);
 												}
-												if (context->texture_tiling &&
+												if (object->texture_tiling &&
 													 interpolate_surface->texturelist)
 												{
 													tile_surface = tile_GT_surface(interpolate_surface, 
-														context->texture_tiling);
+														object->texture_tiling);
 													while(tile_surface)
 													{
 														/* Need to select the texture target */
-														glCallList(context->texture_tiling->tile_display_lists + tile_surface->tile_number);
+														glCallList(object->texture_tiling->tile_display_lists + tile_surface->tile_number);
 														draw_dc_surfaceGL(tile_surface->pointlist,
 															tile_surface->normallist,
 															tile_surface->tangentlist,
@@ -2375,22 +3486,22 @@ The <context> is used to control how the object is compiled.
 										selected_name_ranges=(struct Multi_range *)NULL;
 										name_selected=GT_object_is_graphic_selected(object,
 											surface->object_name,&selected_name_ranges);
-										if ((name_selected&&context->draw_selected)||
-											((!name_selected)&&(!context->draw_selected)))
+										if ((name_selected&&draw_selected)||
+											((!name_selected)&&(!draw_selected)))
 										{
 											if (picking_names)
 											{
 												/* put out name for picking - cast to GLuint */
 												glLoadName((GLuint)surface->object_name);
 											}
-											if (context->texture_tiling &&
+											if (object->texture_tiling &&
 												surface->texturelist)
 											{
 												tile_surface = tile_GT_surface(surface, 
-													context->texture_tiling);
+													object->texture_tiling);
 												while(tile_surface)
 												{
-													glCallList(context->texture_tiling->tile_display_lists + tile_surface->tile_number);
+													glCallList(object->texture_tiling->tile_display_lists + tile_surface->tile_number);
 													draw_dc_surfaceGL(tile_surface->pointlist,
 														tile_surface->normallist,
 														tile_surface->tangentlist,
@@ -2440,8 +3551,8 @@ The <context> is used to control how the object is compiled.
 										selected_name_ranges=(struct Multi_range *)NULL;
 										name_selected=GT_object_is_graphic_selected(object,
 											surface->object_name,&selected_name_ranges);
-										if ((name_selected&&context->draw_selected)||
-											((!name_selected)&&(!context->draw_selected)))
+										if ((name_selected&&draw_selected)||
+											((!name_selected)&&(!draw_selected)))
 										{
 											if (interpolate_surface=morph_GT_surface(proportion,
 												surface,surface_2))
@@ -2476,8 +3587,8 @@ The <context> is used to control how the object is compiled.
 										selected_name_ranges=(struct Multi_range *)NULL;
 										name_selected=GT_object_is_graphic_selected(object,
 											surface->object_name,&selected_name_ranges);
-										if ((name_selected&&context->draw_selected)||
-											((!name_selected)&&(!context->draw_selected)))
+										if ((name_selected&&draw_selected)||
+											((!name_selected)&&(!draw_selected)))
 										{
 											if (picking_names)
 											{
@@ -2499,7 +3610,7 @@ The <context> is used to control how the object is compiled.
 							default:
 							{
 								display_message(ERROR_MESSAGE,
-									"makegtobject.  Invalid surface type");
+									"render_GT_object_opengl_immediate.  Invalid surface type");
 								return_code=0;
 							} break;
 						}
@@ -2512,8 +3623,8 @@ The <context> is used to control how the object is compiled.
 					}
 					else
 					{
-						/*???debug*/printf("! makegtobject.  Missing surface");
-						display_message(ERROR_MESSAGE,"makegtobject.  Missing surface");
+						/*???debug*/printf("! render_GT_object_opengl_immediate.  Missing surface");
+						display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing surface");
 						return_code=0;
 					}
 				} break;
@@ -2542,8 +3653,8 @@ The <context> is used to control how the object is compiled.
 							selected_name_ranges=(struct Multi_range *)NULL;
 							name_selected=GT_object_is_graphic_selected(object,
 								nurbs->object_name,&selected_name_ranges);
-							if ((name_selected&&context->draw_selected)||
-								((!name_selected)&&(!context->draw_selected)))
+							if ((name_selected&&draw_selected)||
+								((!name_selected)&&(!draw_selected)))
 							{
 								return_code = draw_nurbsGL(nurbs);
 							}
@@ -2552,7 +3663,7 @@ The <context> is used to control how the object is compiled.
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"makegtobject.  Missing nurbs");
+						display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing nurbs");
 						return_code=0;
 					}
 #if defined (OPENGL_API)
@@ -2580,13 +3691,13 @@ The <context> is used to control how the object is compiled.
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"makegtobject.  Missing render function user defined object");
+								"render_GT_object_opengl_immediate.  Missing render function user defined object");
 							return_code=0;
 						}
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"makegtobject.  Missing userdef");
+						display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing userdef");
 						return_code=0;
 					}
 #if defined (OPENGL_API)
@@ -2596,7 +3707,7 @@ The <context> is used to control how the object is compiled.
 				} break;
 				default:
 				{
-					display_message(ERROR_MESSAGE,"makegtobject.  Invalid object type");
+					display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Invalid object type");
 					return_code=0;
 				} break;
 			}
@@ -2609,18 +3720,407 @@ The <context> is used to control how the object is compiled.
 			} break;
 			case g_NDC_COORDINATES:
 			{
-				glCallList(context->end_ndc_display_list);
+				renderer->End_ndc_coordinates();
 			} break;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"makegtobject.  Missing object");
+		display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing object");
 		return_code=0;
 	}
-/*???debug */
-/*printf("leave makegtobject\n");*/
 	LEAVE;
 
 	return (return_code);
-} /* makegtobject */
+} /* render_GT_object_opengl_immediate */
+
+static int Graphics_object_compile_members_opengl(GT_object *graphics_object_list,
+	Render_graphics_opengl *renderer)
+{
+	int i, return_code;
+	struct GT_object *graphics_object;
+
+	ENTER(Graphics_object_compile_members);
+	if (graphics_object_list)
+	{
+		return_code = 1;
+		for (graphics_object=graphics_object_list;graphics_object != NULL;
+			graphics_object=graphics_object->nextobject)
+		{
+			if (GRAPHICS_COMPILED != graphics_object->compile_status)
+			{
+				/* compile components of graphics objects first */
+				if (graphics_object->default_material)
+				{
+					renderer->texture_tiling = NULL;
+					renderer->allow_texture_tiling = 1;
+					renderer->Material_compile(graphics_object->default_material);
+
+					/* The geometry needs to be updated if these are different. */
+					if (renderer->texture_tiling || graphics_object->texture_tiling)
+					{
+						REACCESS(Texture_tiling)(&graphics_object->texture_tiling,
+							renderer->texture_tiling);
+						graphics_object->compile_status = GRAPHICS_NOT_COMPILED;
+					}
+
+					renderer->allow_texture_tiling = 0;
+					renderer->texture_tiling = NULL;
+				}
+				if (graphics_object->selected_material)
+				{
+					renderer->Material_compile(graphics_object->selected_material);
+				}
+				if (graphics_object->secondary_material)
+				{
+					renderer->Material_compile(graphics_object->secondary_material);
+				}
+				switch (graphics_object->object_type)
+				{
+					case g_GLYPH_SET:
+					{
+						struct GT_glyph_set *glyph_set;
+
+						if (graphics_object->primitive_lists)
+						{
+							for (i = 0 ; i < graphics_object->number_of_times ; i++)
+							{
+								if (glyph_set =
+									graphics_object->primitive_lists[i].gt_glyph_set.first)
+								{
+									renderer->Graphics_object_compile(glyph_set->glyph);
+									if (glyph_set->font)
+									{
+										Graphics_font_compile(glyph_set->font, renderer->graphics_buffer);
+									}
+								}
+							}
+						}
+					} break;
+					case g_POINT:
+					{
+						struct GT_point *point;
+
+						if (graphics_object->primitive_lists)
+						{
+							for (i = 0 ; i < graphics_object->number_of_times ; i++)
+							{
+								if (point =
+									graphics_object->primitive_lists[i].gt_point.first)
+								{
+									if (point->font)
+									{
+										Graphics_font_compile(point->font, renderer->graphics_buffer);
+									}
+								}
+							}
+						}
+					} break;
+					case g_POINTSET:
+					{
+						struct GT_pointset *point_set;
+
+						if (graphics_object->primitive_lists)
+						{
+							for (i = 0 ; i < graphics_object->number_of_times ; i++)
+							{
+								if (point_set =
+									graphics_object->primitive_lists[i].gt_pointset.first)
+								{
+									if (point_set->font)
+									{
+										Graphics_font_compile(point_set->font, renderer->graphics_buffer);
+									}
+								}
+							}
+						}
+					} break;
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Graphics_object_compile_members.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphics_object_compile_members */
+
+/***************************************************************************//**
+ * Compile the display list for this object.
+ */
+static int Graphics_object_compile_opengl_display_list(GT_object *graphics_object_list,
+	Callback_base< GT_object * > *execute_function,
+	Render_graphics_opengl *renderer)
+{
+	int return_code;
+	struct GT_object *graphics_object;
+
+	ENTER(compile_GT_object);
+	if (graphics_object_list)
+	{
+		return_code = 1;
+		for (graphics_object=graphics_object_list;graphics_object != NULL;
+			graphics_object=graphics_object->nextobject)
+		{
+			if (GRAPHICS_COMPILED != graphics_object->compile_status)
+			{
+				if (GRAPHICS_NOT_COMPILED == graphics_object->compile_status)
+				{
+					if (graphics_object->display_list ||
+						(graphics_object->display_list=glGenLists(1)))
+					{
+						glNewList(graphics_object->display_list,GL_COMPILE);
+						(*execute_function)(graphics_object);
+						glEndList();
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Graphics_object_compile_opengl_display_list.  Unable to get display list");
+						return_code = 0;
+					}
+				}
+				if (return_code)
+				{
+					graphics_object->compile_status = GRAPHICS_COMPILED;
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Graphics_object_compile_opengl_display_list.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphics_object_compile_opengl_display_list */
+
+/***************************************************************************//**
+ * Compile the display list for this object.
+ */
+static int Graphics_object_execute_opengl_display_list(GT_object *graphics_object_list,
+	Render_graphics_opengl *renderer)
+{
+	int return_code;
+	struct GT_object *graphics_object;
+
+	ENTER(compile_GT_object);
+	if (graphics_object_list)
+	{
+		return_code = 1;
+		for (graphics_object=graphics_object_list;graphics_object != NULL;
+			graphics_object=graphics_object->nextobject)
+		{
+			if (GRAPHICS_COMPILED == graphics_object->compile_status)
+			{
+				glCallList(graphics_object->display_list);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"Graphics_object_execute_opengl_display_list.  Graphics object not compiled.");
+				return_code = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Graphics_object_execute_opengl_display_list.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphics_object_execute_opengl_display_list */
+
+#if defined (NEW_CODE)
+switch (graphics_object->object_type)
+{
+	case g_POLYLINE_VERTEX_BUFFERS:
+	{
+#if defined (GL_VERSION_3_0)
+		if (!graphics_object->vertex_array_object)
+		{
+			glGenVertexArrays(1,
+				&graphics_object->vertex_array_object);
+		}
+		glBindVertexArray(graphics_object->vertex_array_object);
+		render_GT_object_vertex_buffers(graphics_object, context);
+		glVertexPointer(3, GL_FLOAT,
+			/*Packed vertices*/3 * sizeof(float), /*No offset in vertex array*/NULL);
+		glEnableClientState(GL_VERTEX_ARRAY);
+#endif // defined (GL_VERSION_3_0)
+		render_GT_object_vertex_buffers(graphics_object, renderer);
+	} break;
+}
+#if defined (GL_VERSION_3_0)
+						if (graphics_object->vertex_array_object)
+						{
+							glBindVertexArray(graphics_object->vertex_array_object);
+						}
+						else
+#endif // defined (GL_VERSION_3_0)				
+						if (graphics_object->vertex_array)
+						{
+							/* Load vertex buffers */
+							if (!graphics_object->vertex_buffer_object)
+							{
+								glGenBuffers(1, &graphics_object->vertex_buffer_object);
+							}
+						}
+						if (graphics_object->vertex_buffer_object)
+						{			
+							float *colour_buffer, *vertex_buffer;
+							unsigned int position_values_per_vertex,
+								position_vertex_count, total_buffer_size;
+							
+							Graphics_vertex_set_get_float_vertex_buffer(
+								graphics_object->vertex_array,
+								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+								&vertex_buffer, &position_values_per_vertex, &position_vertex_count);
+							total_buffer_size = sizeof(float) * position_values_per_vertex *
+								position_vertex_count;
+
+							if (Graphics_vertex_set_get_number_of_vertices(
+								graphics_object->vertex_array,
+								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA))
+							{
+								float *data_buffer;
+								unsigned int data_values_per_vertex, data_vertex_count;
+								Graphics_vertex_set_get_float_vertex_buffer(
+									graphics_object->vertex_array,
+									GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+									&data_buffer, &data_values_per_vertex, &data_vertex_count);
+								if ((data_vertex_count == position_vertex_count) &&
+									ALLOCATE(colour_buffer, float, 4 * data_vertex_count))
+								{
+									
+								}
+								else
+								{
+									/* Mismatch so don't understand it */
+									colour_buffer = (float *)NULL;
+								}		
+							}
+							else
+							{
+								colour_buffer = (float *)NULL;
+							}
+							
+							glBindBuffer(GL_ARRAY_BUFFER, graphics_object->vertex_buffer_object);
+							glEnableClientState(GL_VERTEX_ARRAY);							
+							glBufferData(GL_ARRAY_BUFFER, total_buffer_size,
+								vertex_buffer, GL_STATIC_DRAW);
+
+							/* We should get the values_per_vertex from the
+							 * vertex_array. */
+							glVertexPointer(position_values_per_vertex, GL_FLOAT,
+								/*Packed vertices*/0,
+								/*No offset in vertex array*/(void *)0);
+						}
+						else if (graphics_object->vertex_array)
+						{
+							float *vertex_buffer;
+							unsigned int values_per_vertex, vertex_count;
+							Graphics_vertex_set_get_float_vertex_buffer(
+								graphics_object->vertex_array,
+								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+								&vertex_buffer, &values_per_vertex, &vertex_count);
+
+							glEnableClientState(GL_VERTEX_ARRAY);							
+							glVertexPointer(3, GL_FLOAT,
+								/*Packed vertices*/0, /*Client vertex array*/vertex_buffer);							
+						}
+						else
+						{
+#if defined (GL_VERSION_3_0)
+						if (graphics_object->vertex_array_object)
+						{
+							glBindVertexArray(0);
+						}
+						else
+#endif // defined (GL_VERSION_3_0)				
+						if (graphics_object->vertex_buffer_object)
+						{
+							glDisableClientState(GL_VERTEX_ARRAY);							
+						}
+#endif
+				
+static int Graphics_object_render_opengl(
+	struct GT_object *graphics_object,
+	Render_graphics_opengl *renderer, Graphics_object_rendering_type rendering_type)
+{
+	int graphics_object_no,return_code;
+	struct GT_object *graphics_object_item;
+
+	ENTER(execute_GT_object);
+	if (graphics_object)
+	{
+		return_code=1;
+		if (graphics_object->nextobject)
+		{
+			glPushName(0);
+		}
+		graphics_object_no=0;
+		for (graphics_object_item=graphics_object;graphics_object_item != NULL;
+			graphics_object_item=graphics_object_item->nextobject)
+		{
+			if (0<graphics_object_no)
+			{
+				glLoadName((GLuint)graphics_object_no);
+			}
+			graphics_object_no++;
+				
+			if ((GRAPHICS_SELECT_ON == graphics_object_item->select_mode) ||
+				(GRAPHICS_DRAW_SELECTED == graphics_object_item->select_mode))
+			{
+				if (graphics_object_item->selected_material)
+				{
+					if (FIRST_OBJECT_IN_LIST_THAT(Selected_graphic)(
+						(LIST_CONDITIONAL_FUNCTION(Selected_graphic) *)NULL,
+						(void *)NULL,graphics_object_item->selected_graphic_list))
+					{
+						renderer->Material_execute(
+							graphics_object_item->selected_material);
+						render_GT_object_opengl_immediate(graphics_object_item,
+							/*draw_selected*/1, renderer, rendering_type);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"compile_GT_object.  "
+						"Graphics object %s has no selected material",
+						graphics_object_item->name);
+				}
+			}
+			if (GRAPHICS_DRAW_SELECTED != graphics_object_item->select_mode)
+			{
+				if (graphics_object_item->default_material)
+				{
+					renderer->Material_execute(graphics_object_item->default_material);
+				}
+				render_GT_object_opengl_immediate(graphics_object_item,
+					/*draw_selected*/0, renderer, rendering_type);
+			}
+			renderer->Material_execute((Graphical_material *)NULL);
+		}
+		if (graphics_object->nextobject)
+		{
+			glPopName();
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"execute_GT_object.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_GT_object */
+

@@ -1,11 +1,8 @@
-/*******************************************************************************
-FILE : cmiss.c
-
-LAST MODIFIED : 12 April 2006
-
-DESCRIPTION :
-Functions for executing cmiss commands.
-==============================================================================*/
+/***************************************************************************//**
+ * cmiss.cpp
+ * 
+ * Functions for executing cmiss commands.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -56,6 +53,7 @@ Functions for executing cmiss commands.
 #if defined (MOTIF)
 #include <Xm/List.h>
 #endif /* defined (MOTIF) */
+extern "C" {
 #include "api/cmiss_region.h"
 #include "api/cmiss_scene_viewer.h"
 #include "api/cmiss_scene_viewer_private.h"
@@ -160,7 +158,9 @@ Functions for executing cmiss commands.
 #include "graphics/renderstl.h"
 #include "graphics/rendervrml.h"
 #include "graphics/renderwavefront.h"
-#include "graphics/scene.h"
+}
+#include "graphics/scene.hpp"
+extern "C" {
 #if defined (MOTIF) 
 #include "graphics/scene_editor.h"
 #elif defined (WX_USER_INTERFACE)
@@ -264,6 +264,7 @@ Functions for executing cmiss commands.
 #include "command/cmiss.h"
 /* following is temporary until circular references are removed for Cmiss_region - see DESTROY(Cmiss_command_data) */
 #include "region/cmiss_region_private.h"
+}
 
 /*
 Module types
@@ -4787,6 +4788,9 @@ Executes a GFX CREATE SCENE command.
 				modify_scene_data.scene_manager=command_data->scene_manager;
 				modify_scene_data.default_scene=command_data->default_scene;
 				/* following used for enabling GFEs */
+				modify_scene_data.computed_field_manager=
+					Computed_field_package_get_computed_field_manager(
+						command_data->computed_field_package);
 				modify_scene_data.root_region = command_data->root_region;
 				modify_scene_data.data_root_region = command_data->data_root_region;
 				modify_scene_data.element_point_ranges_selection=
@@ -9472,7 +9476,7 @@ Executes a GFX DESTROY ELEMENTS command.
 	struct Set_Computed_field_conditional_data set_conditional_field_data;
 
 	ENTER(gfx_destroy_elements);
-	cm_element_type = (enum CM_element_type)cm_element_type_void;
+	cm_element_type = (enum CM_element_type)(int)cm_element_type_void;
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		/* initialise defaults */
@@ -12734,7 +12738,7 @@ Executes a GFX LIST ELEMENT.
 	struct Option_table *option_table;
 
 	ENTER(gfx_list_FE_element);
-	cm_element_type = (enum CM_element_type)cm_element_type_void;
+	cm_element_type = (enum CM_element_type)(int)cm_element_type_void;
 	if (state && ((CM_ELEMENT == cm_element_type) ||
 		(CM_FACE == cm_element_type) || (CM_LINE == cm_element_type)) &&
 		(command_data = (struct Cmiss_command_data *)command_data_void))
@@ -15834,6 +15838,9 @@ Executes a GFX MODIFY command.
 				modify_scene_data.scene_manager=command_data->scene_manager;
 				modify_scene_data.default_scene=command_data->default_scene;
 				/* following used for enabling GFEs */
+				modify_scene_data.computed_field_manager=
+					Computed_field_package_get_computed_field_manager(
+						command_data->computed_field_package);
 				modify_scene_data.root_region = command_data->root_region;
 				modify_scene_data.data_root_region = command_data->data_root_region;
 				modify_scene_data.element_point_ranges_selection=
@@ -22979,7 +22986,7 @@ Opens an example.
 			Option_table_add_entry(option_table, "execute",
 				&execute_flag, NULL, set_char_flag);
 			/* default */
-			Option_table_add_entry(option_table, (void *)NULL,
+			Option_table_add_entry(option_table, (const char *)NULL,
 				&example, NULL, set_name);
 			return_code=Option_table_multi_parse(option_table,state);
 			DESTROY(Option_table)(&option_table);
@@ -23199,8 +23206,8 @@ Executes a SET DIR command.
 	struct Cmiss_command_data *command_data;
 	static struct Modifier_entry option_table[]=
 	{
-		{CMGUI_EXAMPLE_DIRECTORY_SYMBOL,CMGUI_EXAMPLE_DIRECTORY_SYMBOL,NULL,
-			set_char_flag},
+		{CMGUI_EXAMPLE_DIRECTORY_SYMBOL,const_cast<char *>(CMGUI_EXAMPLE_DIRECTORY_SYMBOL),
+			NULL,set_char_flag},
 		{NULL,NULL,NULL,set_name}
 	};
 
@@ -25059,6 +25066,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->texture_manager);
 				Scene_set_graphical_element_mode(command_data->default_scene,
 					GRAPHICAL_ELEMENT_LINES,
+					Computed_field_package_get_computed_field_manager(
+						command_data->computed_field_package),
 					command_data->root_region, command_data->data_root_region,
 					command_data->element_point_ranges_selection,
 					command_data->element_selection,command_data->node_selection,

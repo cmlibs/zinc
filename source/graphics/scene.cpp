@@ -1,7 +1,5 @@
 /*******************************************************************************
-FILE : scene.c
-
-LAST MODIFIED : 4 December 2003
+FILE : scene.cpp
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -41,6 +39,7 @@ November 1997. Created from Scene description part of Drawing.
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
+ *   Shane Blackett <shane@blackett.co.nz>
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -57,6 +56,7 @@ November 1997. Created from Scene description part of Drawing.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <string.h>
+extern "C" {
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -66,7 +66,9 @@ November 1997. Created from Scene description part of Drawing.
 #include "general/callback_private.h"
 #include "general/compare.h"
 #include "general/debug.h"
-#include "general/enumerator_private.h"
+}
+#include "general/enumerator_private_cpp.hpp"
+extern "C" {
 #include "general/indexed_list_private.h"
 #include "general/list_private.h"
 #include "general/manager_private.h"
@@ -81,12 +83,14 @@ November 1997. Created from Scene description part of Drawing.
 #include "graphics/graphics_object.h"
 #include "graphics/graphical_element.h"
 #include "graphics/light.h"
-#include "graphics/scene.h"
 #include "graphics/texture.h"
 #include "time/time.h"
 #include "time/time_keeper.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
+}
+#include "graphics/scene.hpp"
+#include "graphics/rendergl.hpp"
 
 /*
 Module constants
@@ -174,6 +178,10 @@ Stores the collections of objects that make up a 3-D graphical model.
  	/* need following info for autocreation of graphical finite elements, */
 	/* material/light changes, etc. */
 	enum Scene_graphical_element_mode graphical_element_mode;
+
+	/* computed_fields */
+	struct MANAGER(Computed_field) *computed_field_manager;
+	void *computed_field_manager_callback_id;
 
 	/*???RC temporary; have root_region and data_root_region until Scenes are
 		incorporated into the regions themselves */
@@ -272,23 +280,181 @@ DEFINE_CMISS_CALLBACK_FUNCTIONS(Scene_object_transformation, \
 static int Scene_object_set_time_dependent_transformation(struct Time_object *time_object,
 	 double current_time, void *scene_object_void);
 
+static int Scene_object_call_renderer(struct Scene_object *scene_object,
+	void *renderer_void)
+{
+	Render_graphics *renderer = static_cast<Render_graphics *>(renderer_void);
+	
+	return renderer->Scene_object_execute(scene_object);
+}
 
-static int execute_child_Scene(struct Scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 13 March 2002
+static int Scene_object_call_compiler(struct Scene_object *scene_object,
+	void *renderer_void)
+{
+	Render_graphics *renderer = static_cast<Render_graphics *>(renderer_void);
+	
+	return renderer->Scene_object_compile(scene_object);
+}
 
-DESCRIPTION :
-Calls the display list for <scene>. If the display list is not current, an
-an error is reported. Version calls both the normal and fast_changing lists.
-==============================================================================*/
+int Scene_compile_members(struct Scene *scene, Render_graphics *renderer)
+{
+	int return_code;
+
+	ENTER(compile_Scene);
+	if (scene)
+	{
+		return_code = 1;
+		if (GRAPHICS_COMPILED != scene->compile_status)
+		{
+#if defined (NEW_CODE)
+			if (scene->ndc_display_list || (scene->ndc_display_list = glGenLists(1)))
+			{
+				glNewList(scene->ndc_display_list, GL_COMPILE);
+				/* Push the current model matrix and reset the model matrix to identity */
+				glMatrixMode(GL_PROJECTION);
+				glPushMatrix();
+				glLoadIdentity();
+				/* near = 1.0 and far = 3.0 gives -1 to be the near clipping plane
+					and +1 to be the far clipping plane */
+				glOrtho(-1.0,1.0,-1.0,1.0,1.0,3.0);
+				glMatrixMode(GL_MODELVIEW);
+				glPushMatrix();
+				glLoadIdentity();
+				gluLookAt(/*eye*/0.0,0.0,2.0, /*lookat*/0.0,0.0,0.0,
+					/*up*/0.0,1.0,0.0);
+				glEndList();
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"compile_Scene.  Could not generate display list");
+				return_code = 0;
+			}
+			if (scene->end_ndc_display_list || (scene->end_ndc_display_list = glGenLists(1)))
+			{
+				glNewList(scene->end_ndc_display_list, GL_COMPILE);
+				/* Pop the model matrix stack */
+				glMatrixMode(GL_PROJECTION);
+				glPopMatrix();
+				glMatrixMode(GL_MODELVIEW);
+				glPopMatrix();
+				glEndList();
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"compile_Scene.  Could not generate display list");
+				return_code = 0;
+			}
+#endif // defined (NEW_CODE)
+			/* compile objects in the scene */
+			FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_call_compiler,
+				renderer, scene->scene_object_list);
+			/* compile lights in the scene */
+			FOR_EACH_OBJECT_IN_LIST(Light)(compile_Light,(void *)NULL,
+				scene->list_of_lights);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "compile_Scene.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* compile_Scene */
+
+int Scene_compile_opengl_display_list(struct Scene *scene,
+	Callback_base< Scene * > *execute_function,
+	Render_graphics_opengl *renderer)
+{
+	int fast_changing, return_code;
+
+	ENTER(compile_Scene);
+	if (scene)
+	{
+		return_code = 1;
+		if (GRAPHICS_NOT_COMPILED == scene->compile_status)
+		{
+			if (scene->display_list || (scene->display_list = glGenLists(1)))
+			{
+				fast_changing = 0;
+				/* compile non-fast changing part of scene */
+				glNewList(scene->display_list, GL_COMPILE);
+				/* Normally we would call execute_Scene here with the 
+				 * display_list renderer but we are splitting it into two display
+				 * lists.
+				 * execute_function(scene);
+				 */
+				/* push a dummy name to be overloaded with scene_object identifiers */
+				glPushName(0);
+				FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_call_renderer,
+					(void *)renderer, scene->scene_object_list);
+				glPopName();
+				glEndList();
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"compile_Scene.  Could not generate display list");
+				return_code = 0;
+			}
+			if (Scene_has_fast_changing_objects(scene))
+			{
+				if (scene->fast_changing_display_list ||
+					(scene->fast_changing_display_list = glGenLists(1)))
+				{
+					fast_changing = 1;
+					glNewList(scene->fast_changing_display_list, GL_COMPILE);
+					/* push dummy name to be overloaded with scene_object identifiers */
+					glPushName(0);
+					renderer->fast_changing = 1;
+					FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_call_renderer,
+						(void *)renderer, scene->scene_object_list);
+					glPopName();
+					glEndList();
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"compile_Scene.  Could not generate fast changing display list");
+					return_code = 0;
+				}
+			}
+		}
+		/* Assume the child graphics have just been compiled if necessary, could change
+		 * to toggle GRAPHICS_COMPILED and CHILD_GRAPHICS_COMPILED flags separately.
+		 */
+		if (return_code)
+		{
+			scene->compile_status = GRAPHICS_COMPILED;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "compile_Scene.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* compile_Scene */
+
+/***************************************************************************//**
+ * Execute the display list for this object.
+ */
+int Scene_execute_opengl_display_list(struct Scene *scene, Render_graphics_opengl *renderer)
 {
 	int return_code;
 
 	ENTER(execute_Scene);
+	USE_PARAMETER(renderer);
 	if (scene)
 	{
 		if (GRAPHICS_COMPILED == scene->compile_status)
 		{
+			/* Should handle cases where we only want fast or non-fast */
 			glCallList(scene->display_list);
 			if (Scene_has_fast_changing_objects(scene))
 			{
@@ -784,81 +950,13 @@ visible.
 	return (return_code);
 } /* Scene_object_element_group_update_callback */
 
-static int build_Scene_object(struct Scene_object *scene_object,
-	void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 30 April 2003
-
-DESCRIPTION :
-Rebuilds the display list for each uncreated or morphing graphics_object in the
-linked list contained in the scene_object.
-==============================================================================*/
+int Scene_object_compile_members(struct Scene_object *scene_object,
+	Render_graphics_compile_members *renderer)
 {
-	FE_value time;
 	int return_code;
-
-	ENTER(build_Scene_object);
-	USE_PARAMETER(dummy_void);
-	if (scene_object)
-	{
-		return_code = 1;
-		/* only build visible objects */
-		if (g_VISIBLE == scene_object->visibility)
-		{
-			switch(scene_object->type)
-			{
-				case SCENE_OBJECT_GRAPHICS_OBJECT:
-				{
-					/* do nothing as these are already built */
-				} break;
-				case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
-				{
-					if (scene_object->time_object)
-					{
-						time = Time_object_get_current_time(scene_object->time_object);
-					}
-					else
-					{
-						time = 0.0;
-					}
-					build_GT_element_group(scene_object->gt_element_group, time,
-						scene_object->name);
-				} break;
-				case SCENE_OBJECT_SCENE:
-				{
-					build_Scene(scene_object->child_scene);
-				} break;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "build_Scene_object.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* build_Scene_object */
-
-static int compile_Scene_object(struct Scene_object *scene_object,
-	void *graphics_buffer_void)
-/*******************************************************************************
-LAST MODIFIED : 18 November 2005
-
-DESCRIPTION :
-Rebuilds the display list for each uncreated or morphing graphics_object in the
-linked list contained in the scene_object.
-==============================================================================*/
-{
-	float time;
-	int return_code;
-	struct GT_object_compile_context *context;
-	struct Graphics_buffer *graphics_buffer;
 
 	ENTER(compile_Scene_object);
-	if (scene_object && 
-		(graphics_buffer = (struct Graphics_buffer *)graphics_buffer_void))
+	if (scene_object)
 	{
 		return_code=1;
 		/* only compile visible objects */
@@ -870,45 +968,33 @@ linked list contained in the scene_object.
 				{
 					if(Scene_object_has_time(scene_object))
 					{
-						time = Scene_object_get_time(scene_object);
+						renderer->time = Scene_object_get_time(scene_object);
 					}
 					else
 					{
-						time = 0.0;
+						renderer->time = 0.0;
 					}
-					context = CREATE(GT_object_compile_context)(time, graphics_buffer
-#if defined (OPENGL_API)
-						, scene_object->scene->ndc_display_list,
-						scene_object->scene->end_ndc_display_list
-#endif /* defined (OPENGL_API) */
-						);					
-					return_code=compile_GT_object(scene_object->gt_object, context);
-					DESTROY(GT_object_compile_context)(&context);
+					return_code=renderer->Graphics_object_compile(
+						scene_object->gt_object);
 				} break;
 				case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 				{
 					if(Scene_object_has_time(scene_object))
 					{
-						time = Scene_object_get_time(scene_object);
+						renderer->time = Scene_object_get_time(scene_object);
 					}
 					else
 					{
-						time = 0.0;
+						renderer->time = 0.0;
 					}
-			  context = CREATE(GT_object_compile_context)(time, graphics_buffer
-#if defined (OPENGL_API)
-						, scene_object->scene->ndc_display_list,
-						scene_object->scene->end_ndc_display_list
-#endif /* defined (OPENGL_API) */
-						);
-					return_code=compile_GT_element_group(scene_object->gt_element_group,
-						context);
-					DESTROY(GT_object_compile_context)(&context);
+					renderer->name_prefix = scene_object->name;
+					return_code=renderer->Graphical_element_group_compile(
+						scene_object->gt_element_group);
+					renderer->name_prefix = NULL;
 				} break;
 				case SCENE_OBJECT_SCENE:
 				{
-					return_code=compile_Scene(scene_object->child_scene,
-						graphics_buffer);
+					return_code=renderer->Scene_compile(scene_object->child_scene);
 				} break;
 			}
 		}
@@ -924,8 +1010,8 @@ linked list contained in the scene_object.
 	return (return_code);
 } /* compile_Scene_object */
 
-static int execute_Scene_object(struct Scene_object *scene_object,
-	void *fast_changing_void)
+int execute_Scene_object(struct Scene_object *scene_object,
+	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 9 March 2001
 
@@ -939,14 +1025,14 @@ from 1 to assist conversion back to graphics_object addresses in picking.
 ==============================================================================*/
 {
 	float time;
-	int *fast_changing,return_code;
+	int return_code;
 
 	ENTER(execute_Scene_object);
-	if (scene_object&&(fast_changing=(int *)fast_changing_void))
+	if (scene_object)
 	{
 		return_code=1;
 		if ((g_VISIBLE==scene_object->visibility)&&
-			(scene_object->fast_changing == (*fast_changing)))
+			(scene_object->fast_changing == (renderer->fast_changing)))
 		{
 			/* put out the name (position) of the scene_object: */
 			glLoadName((GLuint)scene_object->position);
@@ -974,7 +1060,7 @@ from 1 to assist conversion back to graphics_object addresses in picking.
 					{
 						time = 0.0;
 					}
-					return_code=execute_GT_object(scene_object->gt_object);
+					return_code=renderer->Graphics_object_execute(scene_object->gt_object);
 				} break;
 				case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 				{
@@ -986,12 +1072,13 @@ from 1 to assist conversion back to graphics_object addresses in picking.
 					{
 						time = 0.0;
 					}
-					return_code=execute_GT_element_group(scene_object->gt_element_group,
-						time);
+					renderer->time = time;
+					return_code=renderer->Graphical_element_group_execute(
+						scene_object->gt_element_group);
 				} break;
 				case SCENE_OBJECT_SCENE:
 				{
-					return_code = execute_child_Scene(scene_object->child_scene);
+					return_code = renderer->Scene_execute(scene_object->child_scene);
 				}
 			}
 			if(scene_object->transformation)	
@@ -3587,7 +3674,7 @@ visibility is of type enum GT_visibility_type.
 	ENTER(Scene_object_iterator_set_visibility);
 	if (scene_object)
 	{
-		scene_object->visibility=(enum GT_visibility_type)visibility_void;
+		scene_object->visibility=(enum GT_visibility_type)(int)visibility_void;
 		return_code=1;
 	}
 	else
@@ -4192,7 +4279,8 @@ graphics objects in scene_object.
 		(struct Graphics_object_range_struct *)graphics_object_range_void))
 	{
 		/* must first build graphics objects */
-		build_Scene_object(scene_object, (void *)NULL);
+		Render_graphics_build_objects renderer;
+		renderer.Scene_object_compile(scene_object);
 		if (transformation=scene_object->transformation)
 		{
 			temp_graphics_object_range.first=1;
@@ -4570,7 +4658,8 @@ from the default versions of these functions.
 			scene->change_status=SCENE_NO_CHANGE;
 			scene->access_count = 0;
 			scene->scene_manager=(struct MANAGER(Scene) *)NULL;
-			/* elements, nodes and data */
+			/* fields, elements, nodes and data */
+			scene->computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
 
 			/*???RC temporary; have root_region and data_root_region until Scenes are
 				incorporated into the regions themselves */
@@ -4667,6 +4756,7 @@ Closes the scene and disposes of the scene data structure.
 			Scene_disable_time_behaviour(scene);
 			Scene_set_graphical_element_mode(scene,
 				GRAPHICAL_ELEMENT_NONE,
+				(struct MANAGER(Computed_field) *)NULL,
 				(struct Cmiss_region *)NULL,
 				(struct Cmiss_region *)NULL,
 				(struct Element_point_ranges_selection *)NULL,
@@ -5044,6 +5134,7 @@ scene.
 
 int Scene_set_graphical_element_mode(struct Scene *scene,
 	enum Scene_graphical_element_mode graphical_element_mode,
+	struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *root_region,
 	struct Cmiss_region *data_root_region,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
@@ -5067,7 +5158,7 @@ material and spectrum.
 
 	ENTER(Scene_set_graphical_element_mode);
 	if (scene && ((GRAPHICAL_ELEMENT_NONE == graphical_element_mode) || (
-		root_region && element_point_ranges_selection && 
+		computed_field_manager && root_region && element_point_ranges_selection && 
 		element_selection && node_selection)))
 	{
 		return_code = 1;
@@ -5095,6 +5186,7 @@ material and spectrum.
 					}
 				}
 				scene->graphical_element_mode = graphical_element_mode;
+				scene->computed_field_manager = (struct MANAGER(Computed_field) *)NULL;
 				scene->root_region = (struct Cmiss_region *)NULL;
 				scene->data_root_region = (struct Cmiss_region *)NULL;
 				scene->element_point_ranges_selection=
@@ -5115,6 +5207,7 @@ material and spectrum.
 			/* check managers consistent current mode - unless this is
 				 GRAPHICAL_ELEMENT_NONE so setting for the first time */
 			if ((GRAPHICAL_ELEMENT_NONE == scene->graphical_element_mode) || (
+				(computed_field_manager == scene->computed_field_manager) &&
 				(root_region == scene->root_region) &&
 				(data_root_region == scene->data_root_region)))
 			{
@@ -5123,6 +5216,7 @@ material and spectrum.
 					if (GRAPHICAL_ELEMENT_NONE == scene->graphical_element_mode)
 					{
 						scene->graphical_element_mode = graphical_element_mode;
+						scene->computed_field_manager = computed_field_manager;
 						scene->root_region = root_region;
 						scene->data_root_region = data_root_region;
 						scene->element_point_ranges_selection =
@@ -5261,8 +5355,8 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 			Scene_enable_time_behaviour(destination,
 				source->default_time_keeper);
 		}
-
 		Scene_set_graphical_element_mode(destination,source->graphical_element_mode,
+			source->computed_field_manager,
 			source->root_region, source->data_root_region,
 			source->element_point_ranges_selection,
 			source->element_selection,source->node_selection,source->data_selection,
@@ -6685,7 +6779,11 @@ understood for the type of <interaction_volume> passed.
 	{
 		if (scene_picked_object_list=CREATE(LIST(Scene_picked_object))())
 		{
-			if (build_Scene(scene) && compile_Scene(scene, graphics_buffer))
+			Render_graphics_opengl *renderer = 
+				Render_graphics_opengl_create_glbeginend_renderer(graphics_buffer);
+			renderer->picking = 1;
+			
+			if (renderer->Scene_compile(scene))
 			{
 
 				select_buffer=(GLuint *)NULL;
@@ -6709,28 +6807,6 @@ understood for the type of <interaction_volume> passed.
 							}
 						}
 
-						/* Override the ndc_display_list */
-						glNewList(scene->ndc_display_list, GL_COMPILE);
-						/* Push the current model matrix and reset the model matrix to identity */
-#if defined (OLD_CODE)
-						glMatrixMode(GL_PROJECTION);
-						glPushMatrix();
-						glLoadIdentity();
-						glOrtho(-1.0,1.0,-1.0,1.0,1.0,101.0);
-#endif /* defined (OLD_CODE) */
-						glMatrixMode(GL_MODELVIEW);
-						glPushMatrix();
-						glLoadIdentity();
-						gluLookAt(/*eye*/0.0,0.0,2.0, /*lookat*/0.0,0.0,0.0,
-							/*up*/0.0,1.0,0.0);
-						glEndList();
-
-						glNewList(scene->end_ndc_display_list, GL_COMPILE);
-						/* Pop the model matrix stack */
-						glMatrixMode(GL_MODELVIEW);
-						glPopMatrix();
-						glEndList();
-
 						glSelectBuffer(select_buffer_size,select_buffer);
 						glRenderMode(GL_SELECT);
 						glMatrixMode(GL_PROJECTION);
@@ -6745,7 +6821,9 @@ understood for the type of <interaction_volume> passed.
 						   viewport, so presumably the last rendered viewport is OK. */
 						/* glViewport(0,0,1024,1024); */
 						glDepthRange((GLclampd)0,(GLclampd)1);
-						execute_Scene(scene);
+						{
+							renderer->Scene_execute(scene);
+						}
 						glFlush();
 						num_hits=glRenderMode(GL_RENDER);
 						if (0<=num_hits)
@@ -6858,28 +6936,6 @@ understood for the type of <interaction_volume> passed.
 						}
 						DEALLOCATE(select_buffer);
 
-						/* Reset the ndc_display_list */
-						glNewList(scene->ndc_display_list, GL_COMPILE);
-						/* Push the current model matrix and reset the model matrix to identity */
-						glMatrixMode(GL_PROJECTION);
-						glPushMatrix();
-						glLoadIdentity();
-						glOrtho(-1.0,1.0,-1.0,1.0,1.0,3.0);
-						glMatrixMode(GL_MODELVIEW);
-						glPushMatrix();
-						glLoadIdentity();
-						gluLookAt(/*eye*/0.0,0.0,2.0, /*lookat*/0.0,0.0,0.0,
-							/*up*/0.0,1.0,0.0);
-						glEndList();
-
-						glNewList(scene->end_ndc_display_list, GL_COMPILE);
-						/* Pop the model matrix stack */
-						glMatrixMode(GL_PROJECTION);
-						glPopMatrix();
-						glMatrixMode(GL_MODELVIEW);
-						glPopMatrix();
-						glEndList();
-
 					}
 				}
 			}
@@ -6888,6 +6944,7 @@ understood for the type of <interaction_volume> passed.
 				display_message(ERROR_MESSAGE,
 					"Scene_pick_objects.  Unable to compile scene.");
 			}
+			delete renderer;
 		}
 		else
 		{
@@ -7224,16 +7281,6 @@ in the <scene> which are autoranging and which point to this spectrum.
 } /* Scene_expand_data_range_for_autoranging_spectrum */
 
 int build_Scene(struct Scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 7 June 2001
-
-DESCRIPTION :
-To speed up messaging response, graphical_elements put off building
-graphics objects for their settings until requested. This function should be
-called to request builds for all objects used by <scene>. It should be called
-before the scene is output to OpenGL, VRML and wavefront objs. In particular,
-this function must be called before compile_Scene.
-==============================================================================*/
 {
 	int return_code;
 
@@ -7243,9 +7290,10 @@ this function must be called before compile_Scene.
 		/* check whether scene contents need building */
 		if (scene->build)
 		{
+			Render_graphics_build_objects renderer;
+			
 			scene->build = 0;
-			return_code = FOR_EACH_OBJECT_IN_LIST(Scene_object)(build_Scene_object,
-				(void *)NULL, scene->scene_object_list);
+			return_code = renderer.Scene_compile(scene);
 			if (return_code && scene->spectrum_manager)
 			{
 				return_code = FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
@@ -7258,8 +7306,7 @@ this function must be called before compile_Scene.
 					like changing contours and therefore some settings may have changed.
 				   I haven't put it in a while loop as I don't want to make a possible
 				   infinite loop */
-				return_code = FOR_EACH_OBJECT_IN_LIST(Scene_object)(build_Scene_object,
-					(void *)NULL, scene->scene_object_list);
+				return_code = renderer.Scene_compile(scene);
 			}
 		}
 		else
@@ -7277,233 +7324,37 @@ this function must be called before compile_Scene.
 	return (return_code);
 } /* build_Scene */
 
-int compile_Scene(struct Scene *scene, struct Graphics_buffer *graphics_buffer)
-/*******************************************************************************
-LAST MODIFIED : 18 November 2005
-
-DESCRIPTION :
-Assembles the display list containing the whole scene. Before that, however, it
-compiles the display lists of objects that will be executed in the scene.
-The <graphics_buffer> is used to provide rendering contexts.
-Note that lights are not included in the scene and must be handled separately!
-Must also call build_Scene before this functions.
-==============================================================================*/
+int Scene_render_opengl(Scene *scene, Render_graphics_opengl *renderer)
 {
-	int fast_changing, return_code;
+	int return_code;
 
-	ENTER(compile_Scene);
-	if (scene)
+	ENTER(Scene_render_opengl);
+	if (scene && renderer)
 	{
-		return_code = 1;
-		if (GRAPHICS_COMPILED != scene->compile_status)
+		renderer->fast_changing = 0;
+		glPushName(0);
+		FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_call_renderer,
+			(void *)renderer, scene->scene_object_list);
+		glPopName();
+		if (Scene_has_fast_changing_objects(scene))
 		{
-			if (scene->ndc_display_list || (scene->ndc_display_list = glGenLists(1)))
-			{
-				glNewList(scene->ndc_display_list, GL_COMPILE);
-				/* Push the current model matrix and reset the model matrix to identity */
-				glMatrixMode(GL_PROJECTION);
-				glPushMatrix();
-				glLoadIdentity();
-				/* near = 1.0 and far = 3.0 gives -1 to be the near clipping plane
-					and +1 to be the far clipping plane */
-				glOrtho(-1.0,1.0,-1.0,1.0,1.0,3.0);
-				glMatrixMode(GL_MODELVIEW);
-				glPushMatrix();
-				glLoadIdentity();
-				gluLookAt(/*eye*/0.0,0.0,2.0, /*lookat*/0.0,0.0,0.0,
-					/*up*/0.0,1.0,0.0);
-				glEndList();
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"compile_Scene.  Could not generate display list");
-				return_code = 0;
-			}
-			if (scene->end_ndc_display_list || (scene->end_ndc_display_list = glGenLists(1)))
-			{
-				glNewList(scene->end_ndc_display_list, GL_COMPILE);
-				/* Pop the model matrix stack */
-				glMatrixMode(GL_PROJECTION);
-				glPopMatrix();
-				glMatrixMode(GL_MODELVIEW);
-				glPopMatrix();
-				glEndList();
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"compile_Scene.  Could not generate display list");
-				return_code = 0;
-			}
-			/* compile objects in the scene */
-			FOR_EACH_OBJECT_IN_LIST(Scene_object)(compile_Scene_object,
-				(void *)graphics_buffer, scene->scene_object_list);
-			/* compile lights in the scene */
-			FOR_EACH_OBJECT_IN_LIST(Light)(compile_Light,(void *)NULL,
-				scene->list_of_lights);
-			if (GRAPHICS_NOT_COMPILED == scene->compile_status)
-			{
-				if (scene->display_list || (scene->display_list = glGenLists(1)))
-				{
-					fast_changing = 0;
-					/* compile non-fast changing part of scene */
-					glNewList(scene->display_list, GL_COMPILE);
-					/* push a dummy name to be overloaded with scene_object identifiers */
-					glPushName(0);
-					FOR_EACH_OBJECT_IN_LIST(Scene_object)(execute_Scene_object,
-						(void *)&fast_changing, scene->scene_object_list);
-					glPopName();
-					glEndList();
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"compile_Scene.  Could not generate display list");
-					return_code = 0;
-				}
-				if (Scene_has_fast_changing_objects(scene))
-				{
-					if (scene->fast_changing_display_list ||
-						(scene->fast_changing_display_list = glGenLists(1)))
-					{
-						fast_changing = 1;
-						glNewList(scene->fast_changing_display_list, GL_COMPILE);
-						/* push dummy name to be overloaded with scene_object identifiers */
-						glPushName(0);
-						FOR_EACH_OBJECT_IN_LIST(Scene_object)(execute_Scene_object,
-							(void *)&fast_changing, scene->scene_object_list);
-						glPopName();
-						glEndList();
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"compile_Scene.  Could not generate fast changing display list");
-						return_code = 0;
-					}
-				}
-			}
-			if (return_code)
-			{
-				scene->compile_status = GRAPHICS_COMPILED;
-			}
+			renderer->fast_changing = 1;
+			glPushName(0);
+			FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_call_renderer,
+				(void *)renderer, scene->scene_object_list);
+			renderer->fast_changing = 0;
+			glPopName();
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "compile_Scene.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "build_Scene.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* compile_Scene */
-
-int execute_Scene(struct Scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 9 March 2001
-
-DESCRIPTION :
-Calls the display list for <scene>. If the display list is not current, an
-an error is reported. Version calls both the normal and fast_changing lists.
-Note that lights are not included in the scene and must be handled separately!
-Initialises the name stack then calls execute_child_Scene.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(execute_Scene);
-	if (scene)
-	{
-		/* initialize the names stack at the start of the scene */
-		glInitNames();
-		return_code = execute_child_Scene(scene);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "execute_Scene.  Missing scene");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_Scene */
-
-int execute_Scene_non_fast_changing(struct Scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Calls just the normal non-fast_changing display list for <scene>, if any.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(execute_Scene_non_fast_changing);
-	if (scene)
-	{
-		if (GRAPHICS_COMPILED == scene->compile_status)
-		{
-			glCallList(scene->display_list);
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"execute_Scene_non_fast_changing.  display list not current");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"execute_Scene_non_fast_changing.  Missing scene");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_Scene_non_fast_changing */
-
-int execute_Scene_fast_changing(struct Scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Calls the just fast_changing display list for <scene>, if any.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(execute_Scene_fast_changing);
-	if (scene)
-	{
-		if (GRAPHICS_COMPILED == scene->compile_status)
-		{
-			if (Scene_has_fast_changing_objects(scene))
-			{
-				glCallList(scene->fast_changing_display_list);
-			}
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"execute_Scene_fast_changing.  display list not current");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"execute_Scene_fast_changing.  Missing scene");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_Scene_fast_changing */
+} /* build_Scene */
 
 int Scene_remove_Scene_object(struct Scene *scene,
 	struct Scene_object *scene_object)
@@ -7877,7 +7728,7 @@ GT_element_group and therefore have the same rendition.
 								}
 							}
 							else
-							{				
+							{
 								display_message(ERROR_MESSAGE,
 									"Scene_add_graphical_element_group.  "
 									"Could not create default line settings");
@@ -7885,11 +7736,10 @@ GT_element_group and therefore have the same rendition.
 							/* if the group has data, and the default_coordinate_field
 								 element_xi_coordinate field defined over them, then
 								 add data_points to the rendition */
-							
 							element_xi_coordinate_field =
 								FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-								Computed_field_is_type_embedded, NULL,
-									Cmiss_region_get_Computed_field_manager(cmiss_region));
+									Computed_field_is_type_embedded, NULL,
+									scene->computed_field_manager);
 							if (data_cmiss_region && 
 								(fe_region = Cmiss_region_get_FE_region(data_cmiss_region)) &&
 								FE_region_get_first_FE_node_that(fe_region,
@@ -9175,7 +9025,6 @@ work on these sub_elements.  These created scenes are not added to the manager.
 ==============================================================================*/
 {
 	char *current_token, *index, *next_index, *string_copy;
-	FE_value time;
 	int return_code;
 	gtMatrix transformation;
 	struct GT_element_group *gt_element_group;
@@ -9259,17 +9108,11 @@ work on these sub_elements.  These created scenes are not added to the manager.
 											} break;
 											case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
 											{
+												Render_graphics_build_objects renderer;
+												renderer.Scene_object_compile(scene_object);
+
 												gt_element_group = Scene_object_get_graphical_element_group(scene_object);
-												/* Ensure the graphical_element_group has been built */
-												if (scene_object->time_object)
-												{
-													time = Time_object_get_current_time(scene_object->time_object);
-												}
-												else
-												{
-													time = 0.0;
-												}
-												build_GT_element_group(gt_element_group, time, scene_object->name);
+												
 												/* Use the same name so that output using the name is correct */
 												if (scene = CREATE(Scene)(scene->name))
 												{
@@ -9480,6 +9323,7 @@ Parser commands for modifying scenes - lighting, etc.
 						{
 							Scene_set_graphical_element_mode(scene,
 								graphical_element_mode,
+								modify_scene_data->computed_field_manager,
 								modify_scene_data->root_region,
 								modify_scene_data->data_root_region,
 								modify_scene_data->element_point_ranges_selection,
@@ -9633,15 +9477,16 @@ updates graphics of settings affected by the changes (probably all).
 	struct Set_Computed_field_conditional_data set_coordinate_field_data;
 
 	ENTER(gfx_modify_g_element_general);
-	if (state && (cmiss_region = (struct Cmiss_region *)cmiss_region_void))
+	if (state)
 	{
 		/* get default scene */
 		if (scene = (struct Scene *)scene_void)
 		{
 			/* if possible, get defaults from element_group on default scene */
-			if (gt_element_group=Scene_get_graphical_element_group(scene,
-						cmiss_region))
-		  {
+			if ((cmiss_region = (struct Cmiss_region *)cmiss_region_void)&&
+				(gt_element_group=Scene_get_graphical_element_group(scene,
+					cmiss_region)))
+			{
 				if (default_coordinate_field=
 					GT_element_group_get_default_coordinate_field(gt_element_group))
 				{
@@ -9680,7 +9525,7 @@ updates graphics of settings affected by the changes (probably all).
 				(void *)&clear_flag, NULL, set_char_flag);
 			/* default_coordinate */
 			set_coordinate_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(cmiss_region);
+				scene->computed_field_manager;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;

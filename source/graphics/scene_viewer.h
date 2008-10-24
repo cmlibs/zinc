@@ -58,13 +58,15 @@ translating and zooming with mouse button press and motion events.
 #include "general/image_utilities.h"
 #include "general/object.h"
 #include "graphics/colour.h"
-#include "graphics/scene.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
 #include "interaction/interactive_tool.h"
 
 struct Graphics_buffer;
 #define Graphics_buffer_input Cmiss_scene_viewer_input
+
+struct Scene;
+struct MANAGER(Scene);
 
 struct Cmiss_scene_viewer_package;
 

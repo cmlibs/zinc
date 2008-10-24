@@ -79,6 +79,7 @@ static char node_tool_uidh[] =
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 }
+#include "graphics/scene.hpp"
 
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"

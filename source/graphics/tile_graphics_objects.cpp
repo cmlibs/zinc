@@ -45,10 +45,13 @@ and Texture_tiling boundaries.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <math.h>
+extern "C" {
 #include "general/debug.h"
 #include "graphics/graphics_object.h"
 #include "user_interface/message.h"
-#include "graphics/graphics_object_private.h"
+#include "graphics/tile_graphics_objects.h"
+}
+#include "graphics/graphics_object_private.hpp"
 
 static struct GT_surface *tile_create_GT_surface(struct GT_surface *original_surface,
 	int size, int tile_number, int polygon_size)

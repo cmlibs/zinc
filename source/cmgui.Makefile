@@ -1161,6 +1161,7 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
 		graphics/graphics_object.c \
 		graphics/light.c \
 		graphics/light_model.c \
+		graphics/render.cpp \
 		graphics/rendergl.c \
 		graphics/scene.c \
 		graphics/scene_viewer.c \

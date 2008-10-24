@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : order_independent_transparency.c
+FILE : order_independent_transparency.cpp
 
 LAST MODIFIED : 19 March 2008
 
@@ -56,11 +56,16 @@ HISTORY :
 #include <stdio.h>
 #include <stdlib.h>
 
+extern "C" {
 #include "general/debug.h"
 #include "graphics/graphics_library.h"
 #include "graphics/material.h"
 #include "graphics/scene_viewer.h"
 #include "user_interface/message.h"
+}
+#include "graphics/material.hpp"
+#include "graphics/scene.hpp"
+#include "graphics/scene_viewer.hpp"
 
 #define GL_GLEXT_PROTOTYPES
 #define GLX_GLXEXT_PROTOTYPES
@@ -855,7 +860,6 @@ Actually preforms the rendering pass.
 	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, 1);
 	glLightModeli(GL_LIGHT_MODEL_COLOR_CONTROL_EXT, GL_SEPARATE_SPECULAR_COLOR_EXT);
 
-	USE_PARAMETER(rendering_data);
 	USE_PARAMETER(data);
 	USE_PARAMETER(projection_matrix);
 	USE_PARAMETER(modelview_matrix);
@@ -867,8 +871,7 @@ Actually preforms the rendering pass.
 			struct Material_order_independent_transparency material_data;
 			
 			material_data.layer = layer + 1;
-			material_data.graphics_buffer = 
-				Scene_viewer_get_graphics_buffer(data->scene_viewer);
+			material_data.renderer = Scene_viewer_rendering_data_get_renderer(rendering_data);
 			
 			Scene_for_each_material(Scene_viewer_get_scene(data->scene_viewer),
 				compile_Graphical_material_for_order_independent_transparency,

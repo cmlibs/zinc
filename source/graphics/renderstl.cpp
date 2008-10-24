@@ -50,10 +50,10 @@ extern "C" {
 #include "general/mystring.h"
 #include "graphics/graphics_object.h"
 #include "graphics/renderstl.h"
-#include "graphics/scene.h"
 #include "user_interface/message.h"
-#include "graphics/graphics_object_private.h"
 }
+#include "graphics/graphics_object_private.hpp"
+#include "graphics/scene.hpp"
 
 namespace {
 

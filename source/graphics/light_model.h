@@ -252,4 +252,12 @@ current, an error is reported.
 display lists. To switch to direct rendering this routine should just call
 direct_render_Light_model.
 ==============================================================================*/
+
+#if defined __cplusplus
+class Render_graphics_opengl;
+
+int Light_model_render_opengl(Light_model *light_model,
+	Render_graphics_opengl *renderer);
+#endif /* defined __cplusplus */
+
 #endif

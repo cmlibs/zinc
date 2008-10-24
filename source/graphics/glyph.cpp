@@ -58,11 +58,14 @@ reference graphical materials or spectrums.
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+extern "C" {
 #include "general/debug.h"
 #include "graphics/glyph.h"
 #include "graphics/graphics_object.h"
-#include "graphics/rendergl.h"
 #include "user_interface/message.h"
+}
+#include "graphics/graphics_object.hpp"
+#include "graphics/rendergl.hpp"
 
 /*
 Module functions
@@ -233,7 +236,7 @@ static int draw_glyph_axes_general(Triple coordinate_scaling,
 	float minor_cross_min, float minor_cross_max, FE_value minor_grid_size,
 	int minor_grids_per_major, FE_value min_minor_grid, FE_value min_major_grid,
 	struct Graphical_material *material, struct Graphical_material *secondary_material,
-	struct Graphics_font *font, struct GT_object_compile_context *context)
+	struct Graphics_font *font, Render_graphics *renderer)
 /*******************************************************************************
 LAST MODIFIED : 22 November 2005
 
@@ -438,7 +441,6 @@ Renders the label_bounds as lines and labels.
 					number_of_minor_lines++;
 				}
 			}
-			execute_Graphical_material(material);
 			if (polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
 				number_of_major_lines, major_linepoints,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL))
 			{
@@ -448,7 +450,7 @@ Renders the label_bounds as lines and labels.
 				{
 					if (GT_OBJECT_ADD(GT_polyline)(graphics_object,/*time*/0.0,polyline))
 					{
-						render_GT_object_opengl(graphics_object, context);
+						renderer->Graphics_object_render_immediate(graphics_object);
 						DESTROY(GT_object)(&graphics_object);
 					}
 					else
@@ -470,7 +472,7 @@ Renders the label_bounds as lines and labels.
 				{
 					if (GT_OBJECT_ADD(GT_pointset)(graphics_object,/*time*/0.0,label_set))
 					{
-						render_GT_object_opengl(graphics_object, context);
+						renderer->Graphics_object_render_immediate(graphics_object);
 						DESTROY(GT_object)(&graphics_object);
 					}
 					else
@@ -490,8 +492,6 @@ Renders the label_bounds as lines and labels.
 				DEALLOCATE(label_strings);
 			}
 
-			/* The material in the GT_object is not executed with makegtobj */
-			execute_Graphical_material(secondary_material);
 			if (polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
 				number_of_minor_lines, minor_linepoints,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL))
 			{
@@ -499,7 +499,7 @@ Renders the label_bounds as lines and labels.
 				{
 					if (GT_OBJECT_ADD(GT_polyline)(graphics_object,/*time*/0.0,polyline))
 					{
-						render_GT_object_opengl(graphics_object, context);
+						renderer->Graphics_object_render_immediate(graphics_object);
 						DESTROY(GT_object)(&graphics_object);
 					}
 					else
@@ -528,7 +528,7 @@ Renders the label_bounds as lines and labels.
 static int draw_glyph_axes_ticks(Triple coordinate_scaling, 
 	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
 	struct Graphical_material *material, struct Graphical_material *secondary_material,
-	struct Graphics_font *font, struct GT_object_compile_context *context)
+	struct Graphics_font *font, Render_graphics *renderer)
 /*******************************************************************************
 LAST MODIFIED : 22 November 2005
 
@@ -551,7 +551,7 @@ so only the first component of the label_bounds is drawn.
 			/*minor_cross_min*/-0.01, /*minor_cross_max*/0.01,
 			/*minor_grid_size*/0.01, /*minor_grids_per_major*/5,
 			/*min_minor_grid*/0.01, /*min_major_grid*/0.1,
-			material, secondary_material, font, context);
+			material, secondary_material, font, renderer);
 	}
 	else
 	{
@@ -566,7 +566,7 @@ so only the first component of the label_bounds is drawn.
 static int draw_glyph_grid_lines(Triple coordinate_scaling, 
 	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
 	struct Graphical_material *material, struct Graphical_material *secondary_material,
-	struct Graphics_font *font, struct GT_object_compile_context *context)
+	struct Graphics_font *font, Render_graphics *renderer)
 /*******************************************************************************
 LAST MODIFIED : 22 November 2005
 
@@ -590,7 +590,7 @@ second component on the second axis.
 			/*minor_cross_min*/-0.01, /*minor_cross_max*/1.01,
 			/*minor_grid_size*/0.01, /*minor_grids_per_major*/2,
 			/*min_minor_grid*/0.1, /*min_major_grid*/0.2,
-			material, secondary_material, font, context);
+			material, secondary_material, font, renderer);
 		return_code = draw_glyph_axes_general(coordinate_scaling, 
 			label_bounds_dimension, label_bounds_components, label_bounds,
 			/*primary_axis_number*/1, /*label_bounds_component*/1,
@@ -598,7 +598,7 @@ second component on the second axis.
 			/*minor_cross_min*/-0.01, /*minor_cross_max*/1.01,
 			/*minor_grid_size*/0.01, /*minor_grids_per_major*/2,
 			/*min_minor_grid*/0.1, /*min_major_grid*/0.2,
-			material, secondary_material, font, context);
+			material, secondary_material, font, renderer);
 	}
 	else
 	{

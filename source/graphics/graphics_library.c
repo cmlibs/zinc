@@ -72,7 +72,10 @@ Functions for interfacing with the graphics library.
 #    endif /* defined (GTK_USE_GTKGLAREA) */
 #  endif /* switch (USER_INTERFACE) */
 #endif /* defined (OPENGL_API) */
+#include <stdio.h>
+#include <stdlib.h>
 #include "general/debug.h"
+#include "general/mystring.h"
 #define GRAPHICS_LIBRARY_C
 #include "graphics/graphics_library.h"
 #include "three_d_drawing/graphics_buffer.h"
@@ -467,7 +470,7 @@ memory.
 ???SAB.  Taken directly from the insight book on OpenGL Extensions
 Returns GLEXTENSION_UNSURE if openGL extension string is NULL and therefore
 we still are not sure if the extension will be available when the openGL is
-initialiased.
+initialised.
 ==============================================================================*/
 {
 	char *end, *p;
@@ -479,6 +482,7 @@ initialiased.
 		extNameLen=strlen(extName);
 
 		p=(char *)glGetString(GL_EXTENSIONS);
+	
 #if defined (DEBUG)
 		/* For debugging */
 		{
@@ -576,6 +580,41 @@ initialiased.
 
 	return (return_code);
 } /* query_gl_version */
+#endif /* defined (OPENGL_API) */
+
+#if defined (OPENGL_API)
+/*****************************************************************************//**
+ * If an environment variable matching the extName is defined then the
+ * return code is GLEXTENSION_AVAILABLE if the environment variable value is 1
+ * and GLEXTENSION_UNAVAILABLE if the environment variables is value 0 or not a number.
+ * If there is not an environment variable defined then this function returns
+ * GLEXTENSION_UNSURE.
+*/
+static int Graphics_library_query_environment_extension(const char *extName)
+{
+	int error = 0, return_code;
+	char *environment_variable = duplicate_string("CMISS_");
+
+	return_code=GLEXTENSION_UNSURE;
+
+	append_string(&environment_variable, extName, &error);
+			
+	char *environment_value;
+	if (environment_value = getenv(environment_variable))
+	{
+		if (0 != atoi(environment_value))
+		{
+			return_code = GLEXTENSION_AVAILABLE;
+		}
+		else
+		{
+			return_code = GLEXTENSION_UNAVAILABLE;
+		}					
+	}
+	DEALLOCATE(environment_variable);
+	
+	return (return_code);
+} /* Graphics_library_query_environment_extension */
 #endif /* defined (OPENGL_API) */
 
 int Graphics_library_read_pixels(unsigned char *frame_data,
@@ -1061,6 +1100,42 @@ appropriately.
 			}
 		}
 #endif /* GL_ARB_texture_rectangle */
+#if defined GL_ARB_vertex_program || defined GL_VERSION_1_5
+		else if (!strcmp(extension_name, "GL_ARB_vertex_buffer_object"))
+		{
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_ARB_vertex_program))
+			{
+				return_code = GLEXTENSIONFLAG(GL_ARB_vertex_program);
+			}
+			else
+			{
+				return_code = Graphics_library_query_environment_extension(extension_name);
+				if (GLEXTENSION_UNSURE == return_code)
+				{
+					return_code = query_gl_extension(extension_name);
+					if (GLEXTENSION_AVAILABLE != return_code)
+					{
+						return_code = query_gl_version(1, 5);
+					}
+				}
+				if (GLEXTENSION_AVAILABLE == return_code)
+				{
+					if (!((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenBuffers, PFNGLGENBUFFERSPROC)
+						Graphics_library_get_function_ptr("glGenBuffers")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDeleteBuffers, PFNGLDELETEBUFFERSPROC)
+						Graphics_library_get_function_ptr("glDeleteBuffers")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBindBuffer, PFNGLBINDBUFFERPROC)
+						Graphics_library_get_function_ptr("glBindBuffer")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBufferData, PFNGLBUFFERDATAPROC)
+						Graphics_library_get_function_ptr("glBufferData"))))
+					{
+						return_code = GLEXTENSION_UNAVAILABLE;
+					}
+				}
+				GLEXTENSIONFLAG(GL_ARB_vertex_program) = return_code;
+			}
+		}
+#endif /* GL_ARB_vertex_program */
 #if defined GL_ARB_vertex_program
 		else if (!strcmp(extension_name, "GL_ARB_vertex_program"))
 		{
@@ -1120,7 +1195,7 @@ appropriately.
 				GLEXTENSIONFLAG(GL_EXT_abgr) = return_code;
 			}
 		}
-#endif /* GL_EXT_texture3D */
+#endif /* GL_EXT_abgr */
 #if defined GL_EXT_texture3D
 		else if (!strcmp(extension_name, "GL_EXT_texture3D"))
 		{
@@ -1146,6 +1221,34 @@ appropriately.
 			}
 		}
 #endif /* GL_EXT_texture3D */
+#if defined GL_EXT_vertex_array || defined GL_VERSION_1_1
+		else if (!strcmp(extension_name, "GL_EXT_vertex_array"))
+		{
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_EXT_vertex_array))
+			{
+				return_code = GLEXTENSIONFLAG(GL_EXT_vertex_array);
+			}
+			else
+			{
+				return_code = Graphics_library_query_environment_extension(extension_name);
+				if (GLEXTENSION_UNSURE == return_code)
+				{
+					return_code = query_gl_extension(extension_name);
+					if (GLEXTENSION_AVAILABLE != return_code)
+					{
+						return_code = query_gl_version(1, 1);
+					}
+					if (GLEXTENSION_AVAILABLE == return_code)
+					{
+						/* We are actually using the OpenGL 1.1 interface for this extension
+						 * and only support OpenGL implementations 1.1 and on so we don't need
+						 * to bind pointers.  Only checking extension/version availability. */
+					}
+				}
+				GLEXTENSIONFLAG(GL_EXT_vertex_array) = return_code;
+			}
+		}
+#endif /* GL_EXT_vertex_array */
 #if defined GL_EXT_framebuffer_object
 		else if (!strcmp(extension_name, "GL_EXT_framebuffer_object"))
 		{
@@ -1186,6 +1289,25 @@ appropriately.
 			}
 		}
 #endif /* GL_EXT_FRAMEBUFFER_OBJECT */
+		/* A fake extension for controlling whether display lists are used at run time. */
+		else if (!strcmp(extension_name, "GL_display_lists"))
+		{
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_display_lists))
+			{
+				return_code = GLEXTENSIONFLAG(GL_display_lists);
+			}
+			else
+			{
+				return_code = Graphics_library_query_environment_extension(extension_name);
+				if (GLEXTENSION_UNSURE == return_code)
+				{
+					/* If we haven't disabled this with an environment variable then it
+					 * is available. */
+					return_code = GLEXTENSION_AVAILABLE;
+				}
+				GLEXTENSIONFLAG(GL_display_lists) = return_code;
+			}
+		}
 		else
 		{
 			display_message(ERROR_MESSAGE,  "Graphics_library_load_extension.  "

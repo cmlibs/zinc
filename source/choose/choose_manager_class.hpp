@@ -48,6 +48,10 @@ Calls the client-specified callback routine if a different object is chosen.
 #define CHOOSE_MANAGER_CLASS_H
 
 #include "choose/choose_class.hpp"
+extern "C"
+{
+#include "user_interface/message.h"
+}
 
 template < class Managed_object, class Manager > class Managed_object_chooser
 /*****************************************************************************

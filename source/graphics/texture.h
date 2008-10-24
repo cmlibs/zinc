@@ -760,44 +760,6 @@ Writes on the command window the command needed to recreate the <texture>.
 The command is started with the string pointed to by <command_prefix>.
 ==============================================================================*/
 
-struct Graphics_buffer;
-
-int compile_Texture(struct Texture *texture, 
-	struct Graphics_buffer *graphics_buffer,
-	struct Texture_tiling **texture_tiling);
-/*******************************************************************************
-LAST MODIFIED : 19 November 2007
-
-DESCRIPTION :
-Texture list/manager iterator function.
-Rebuilds the display_list for <texture> if it is not current. If <texture>
-does not have a display list, first attempts to give it one. The display list
-created here may be called using execute_Texture, below.
-If <texture_tiling> is not NULL then if the texture is larger than can be 
-compiled into a single texture on the current graphics hardware,
-then it can be tiled into several textures
-and information about the tile boundaries is returned in Texture_tiling 
-structure and should be used to compile any graphics objects.
-???RC Textures must be compiled before they are executed since openGL
-cannot start writing to a display list when one is currently being written to.
-???RC The behaviour of textures is set up to take advantage of pre-computed
-display lists. To switch to direct rendering make this routine do nothing and
-execute_Texture should just call direct_render_Texture.
-==============================================================================*/
-
-int execute_Texture(struct Texture *texture);
-/*******************************************************************************
-LAST MODIFIED : 28 November 1997
-
-DESCRIPTION :
-Activates <texture> by calling its display list. If the display list is not
-current, an error is reported.
-If a NULL <texture> is supplied, textures are disabled.
-???RC The behaviour of textures is set up to take advantage of pre-computed
-display lists. To switch to direct rendering this routine should just call
-direct_render_Texture.
-==============================================================================*/
-
 int Texture_execute_vertex_program_environment(struct Texture *texture);
 /*******************************************************************************
 LAST MODIFIED : 14 September 2005

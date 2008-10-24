@@ -59,6 +59,8 @@ extern "C" {
 #include "graphics/spectrum.h"
 #include "user_interface/message.h"
 }
+#include "graphics/rendergl.hpp"
+#include "graphics/spectrum.hpp"
 #include "user_interface/process_list_or_write_command.hpp"
 
 /*
@@ -2643,7 +2645,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 } /* Spectrum_render_colour_lookup */
 
 int Spectrum_compile_colour_lookup(struct Spectrum *spectrum,
-	struct Graphics_buffer *graphics_buffer)
+	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 10 May 2005
 
@@ -2658,8 +2660,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 	{
 		Spectrum_render_colour_lookup(spectrum);
 		
-		return_code = compile_Texture(spectrum->colour_lookup_texture,
-			graphics_buffer, (struct Texture_tiling **)NULL);
+		return_code = renderer->Texture_compile(spectrum->colour_lookup_texture);
 	}
 	else
 	{
@@ -2672,7 +2673,8 @@ Rebuilds the display_list for <spectrum> if it is not current.
 	return (return_code);
 } /* Spectrum_compile_colour_lookup */
 
-int Spectrum_execute_colour_lookup(struct Spectrum *spectrum)
+int Spectrum_execute_colour_lookup(struct Spectrum *spectrum,
+	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 10 May 2005
 
@@ -2688,7 +2690,7 @@ If a NULL <spectrum> is supplied, spectrums are disabled.
 	return_code=0;
 	if (spectrum && spectrum->colour_lookup_texture)
 	{
-		return_code = execute_Texture(spectrum->colour_lookup_texture);
+		return_code = renderer->Texture_execute(spectrum->colour_lookup_texture);
 	}
 	else
 	{

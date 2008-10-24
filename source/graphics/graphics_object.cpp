@@ -1,7 +1,5 @@
 /*******************************************************************************
-FILE : graphics_object.c
-
-LAST MODIFIED : 28 November 2003
+FILE : graphics_object.cpp
 
 DESCRIPTION :
 gtObject/gtWindow management routines.
@@ -34,6 +32,7 @@ gtObject/gtWindow management routines.
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
+ *   Shane Blackett <shane@blackett.co.nz>
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -51,8 +50,10 @@ gtObject/gtWindow management routines.
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+extern "C" {
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
+#include "general/compare.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/mystring.h"
@@ -63,11 +64,13 @@ gtObject/gtWindow management routines.
 #include "graphics/font.h"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
-#include "graphics/rendergl.h"
 #include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
 #include "user_interface/message.h"
-#include "graphics/graphics_object_private.h"
+}
+#include "graphics/rendergl.hpp"
+#include "graphics/graphics_object.hpp"
+#include "graphics/graphics_object_private.hpp"
 
 /*
 Global variables
@@ -82,7 +85,30 @@ Module types
 ------------
 */
 
+#define GRAPHICS_VERTEX_BUFFER_INITIAL_SIZE (50)
+
 FULL_DECLARE_INDEXED_LIST_TYPE(GT_object);
+
+/*****************************************************************************//**
+ * Holds the vertex buffer for a particular vertex_type.
+*/
+struct Graphics_vertex_buffer
+{
+	/** Number of vertices stored. */
+	unsigned int vertex_count;
+	/** Type of vertex. */
+	enum Graphics_vertex_array_attribute_type type;
+	/** Number of values per vertex */
+	unsigned int values_per_vertex;
+	/** Maximum number of vertices currently memory is allocated for. */
+	unsigned int max_vertex_count;
+	/** Vertex buffer memory */
+	void *memory;
+	/** Cmgui reference count. */
+	int access_count;
+};
+
+DECLARE_LIST_TYPES(Graphics_vertex_buffer);
 
 /*
 Module functions
@@ -90,6 +116,72 @@ Module functions
 */
 
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(GT_object,name,const char *,strcmp)
+
+PROTOTYPE_DEFAULT_DESTROY_OBJECT_FUNCTION(Graphics_vertex_buffer);
+PROTOTYPE_OBJECT_FUNCTIONS(Graphics_vertex_buffer);
+PROTOTYPE_LIST_FUNCTIONS(Graphics_vertex_buffer);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Graphics_vertex_buffer,type,
+	Graphics_vertex_array_attribute_type);
+FULL_DECLARE_INDEXED_LIST_TYPE(Graphics_vertex_buffer);
+DECLARE_OBJECT_FUNCTIONS(Graphics_vertex_buffer)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Graphics_vertex_buffer,type,
+	Graphics_vertex_array_attribute_type,compare_int)
+DECLARE_INDEXED_LIST_FUNCTIONS(Graphics_vertex_buffer)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Graphics_vertex_buffer,
+	type,Graphics_vertex_array_attribute_type,compare_int)
+
+class Graphics_vertex_array_internal
+{
+public:
+   enum Graphics_vertex_array_type type;
+   LIST(Graphics_vertex_buffer) *buffer_list;
+
+   Graphics_vertex_array_internal(enum Graphics_vertex_array_type type)
+		: type(type)
+   {
+   	buffer_list = CREATE(LIST(Graphics_vertex_buffer))();
+   }
+   
+   ~Graphics_vertex_array_internal()
+   {
+   	DESTROY(LIST(Graphics_vertex_buffer))(&buffer_list);
+   }
+   
+   /** Gets the buffer appropriate for storing this vertex data or
+    * creates one in this array if it doesn't already exist.
+    * If it does exist but the value_per_vertex does not match then
+    * the method return NULL.
+    */
+   Graphics_vertex_buffer *get_or_create_vertex_buffer(
+   	Graphics_vertex_array_attribute_type vertex_type,
+   	unsigned int values_per_vertex);
+
+   /** Gets the buffer appropriate for storing this vertex data or
+    * returns NULL.
+    */
+   Graphics_vertex_buffer *get_vertex_buffer_for_attribute(
+   	Graphics_vertex_array_attribute_type vertex_type);
+
+   /** Gets the buffer of the specified type if it exists or
+    * returns NULL.
+    */
+   Graphics_vertex_buffer *get_vertex_buffer(
+   	Graphics_vertex_array_attribute_type vertex_buffer_type);
+
+   template <class value_type> int add_attribute(
+   	Graphics_vertex_array_attribute_type vertex_type,
+   	unsigned int values_per_vertex, value_type *values);
+
+   template <class value_type> int get_attribute(
+   	enum Graphics_vertex_array_attribute_type vertex_type,
+   	unsigned int vertex_index,
+   	unsigned int number_of_values, value_type *values);
+
+   template <class value_type> int get_vertex_buffer(
+   		enum Graphics_vertex_array_attribute_type vertex_buffer_type,
+   		value_type **vertex_buffer, unsigned int *values_per_vertex, 
+   		unsigned int *vertex_count);
+};
 
 static int GT_object_get_time_number(struct GT_object *graphics_object,
 	float time)
@@ -473,6 +565,20 @@ from the conditional_function causes the primitive to be removed.
 				return_code=GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(GT_polyline)(
 					graphics_object, time_number, conditional_function, user_data);
 			} break;
+			case g_POLYLINE_VERTEX_BUFFERS:
+			{
+				if (graphics_object->number_of_times &&
+					graphics_object->primitive_lists)
+				{
+					graphics_object->number_of_times = 0;
+					DEALLOCATE(graphics_object->primitive_lists);
+					DEALLOCATE(graphics_object->times);
+				}
+				if (graphics_object->vertex_array)
+				{
+					graphics_object->vertex_array->clear_buffers();
+				}
+			} break;
 			case g_SURFACE:
 			{
 				return_code=GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(GT_surface)(
@@ -673,6 +779,10 @@ Returns a string describing the object type, suitable for writing to file
 		{
 			type_string="VOLTEX";
 		} break;
+		case g_POLYLINE_VERTEX_BUFFERS:
+		{
+			type_string="POLYLINE_VERTEX_BUFFERS";
+		} break;
 		default:
 		{
 			display_message(ERROR_MESSAGE,
@@ -705,12 +815,12 @@ enumerator numbers (as text) into the new enumerator values, with a warning.
 	{
 		return_code=1;
 		temp_obj_type=g_OBJECT_TYPE_BEFORE_FIRST;
-		temp_obj_type++;
+		temp_obj_type = (enum GT_object_type)((int)temp_obj_type + 1);
 		while ((temp_obj_type<g_OBJECT_TYPE_AFTER_LAST)&&
 			(compare_type_string=get_GT_object_type_string(temp_obj_type))&&
 			(!fuzzy_string_compare_same_length(compare_type_string,type_string)))
 		{
-			temp_obj_type++;
+			temp_obj_type = (enum GT_object_type)((int)temp_obj_type + 1);
 		}
 		if (g_OBJECT_TYPE_AFTER_LAST==temp_obj_type)
 		{
@@ -796,12 +906,12 @@ enumerator numbers (as text) into the new enumerator values, with a warning.
 	{
 		return_code=1;
 		temp_poly_type=g_POLYLINE_TYPE_BEFORE_FIRST;
-		temp_poly_type++;
+		temp_poly_type = (enum GT_polyline_type)((int)temp_poly_type + 1);
 		while ((temp_poly_type<g_POLYLINE_TYPE_AFTER_LAST)&&
 			(compare_type_string=get_GT_polyline_type_string(temp_poly_type))&&
 			(!fuzzy_string_compare_same_length(compare_type_string,type_string)))
 		{
-			temp_poly_type++;
+			temp_poly_type = (enum GT_polyline_type)((int)temp_poly_type + 1);
 		}
 		if (g_POLYLINE_TYPE_AFTER_LAST==temp_poly_type)
 		{
@@ -924,12 +1034,12 @@ enumerator numbers (as text) into the new enumerator values, with a warning.
 	{
 		return_code=1;
 		temp_surf_type=g_SURFACE_TYPE_BEFORE_FIRST;
-		temp_surf_type++;
+		temp_surf_type = (enum GT_surface_type)((int)temp_surf_type + 1);
 		while ((temp_surf_type<g_SURFACE_TYPE_AFTER_LAST)&&
 			(compare_type_string=get_GT_surface_type_string(temp_surf_type))&&
 			(!fuzzy_string_compare_same_length(compare_type_string,type_string)))
 		{
-			temp_surf_type++;
+			temp_surf_type = (enum GT_surface_type)((int)temp_surf_type + 1);
 		}
 		if (g_SURFACE_TYPE_AFTER_LAST==temp_surf_type)
 		{
@@ -3155,6 +3265,53 @@ Frees the memory for <**polyline> and its fields and sets <*polyline> to NULL.
 	return (return_code);
 } /* DESTROY(GT_polyline) */
 
+/***************************************************************************//**
+ * Creates the shared rendition information for a GT_polyline_vertex_buffers.
+ */
+GT_polyline_vertex_buffers *CREATE(GT_polyline_vertex_buffers)(
+	GT_polyline_type polyline_type, int line_width)
+{
+	struct GT_polyline_vertex_buffers *polyline;
+
+	ENTER(CREATE(GT_polyline_vertex_buffers));
+	if (ALLOCATE(polyline,struct GT_polyline_vertex_buffers,1))
+	{
+		polyline->polyline_type=polyline_type;
+		polyline->line_width=line_width;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"CREATE(GT_polyline_vertex_buffers).  Not enough memory");
+	}
+	LEAVE;
+
+	return (polyline);
+} /* CREATE(GT_polyline_vertex_buffers) */
+
+/***************************************************************************//**
+ * Destroys the polyline.
+ */
+int DESTROY(GT_polyline_vertex_buffers)(GT_polyline_vertex_buffers **polyline)
+{
+	int return_code;
+
+	ENTER(DESTROY(GT_polyline_vertex_buffers));
+	if (polyline)
+	{
+		DEALLOCATE(*polyline);
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"DESTROY(GT_polyline_vertex_buffers).  "
+			"Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(GT_polyline_vertex_buffers) */
+
 int GT_polyline_set_integer_identifier(struct GT_polyline *polyline,
 	int identifier)
 /*******************************************************************************
@@ -3615,6 +3772,7 @@ Allocates memory and assigns fields for a graphics object.
 			object->coordinate_system = g_MODEL_COORDINATES;
 			object->glyph_labels_function = (Graphics_object_glyph_labels_function)NULL;
 			object->texture_tiling = (struct Texture_tiling *)NULL;
+			object->vertex_array = (Graphics_vertex_array *)NULL;
 			object->access_count = 0;
 			return_code = 1;
 			switch (object_type)
@@ -3630,6 +3788,11 @@ Allocates memory and assigns fields for a graphics object.
 				{
 					/* these are valid object_types */
 				} break;
+				case g_POLYLINE_VERTEX_BUFFERS:
+				{
+					object->vertex_array = new Graphics_vertex_array
+						(GRAPHICS_VERTEX_ARRAY_TYPE_FLOAT_SEPARATE_DRAW_ARRAYS);
+				} break;
 				default:
 				{
 					display_message(ERROR_MESSAGE,
@@ -3641,6 +3804,12 @@ Allocates memory and assigns fields for a graphics object.
 			{
 #if defined (OPENGL_API)
 				object->display_list = 0;
+				object->position_vertex_buffer_object = 0;
+				object->position_values_per_vertex = 0;
+				object->colour_vertex_buffer_object = 0;
+				object->colour_values_per_vertex = 0;
+				object->normal_vertex_buffer_object = 0;
+				object->vertex_array_object = 0;
 #endif /* defined (OPENGL_API) */
 				object->compile_status = GRAPHICS_NOT_COMPILED;
 				object->object_type=object_type;
@@ -3744,6 +3913,10 @@ and sets <*object> to NULL.
 			{
 				DEACCESS(Spectrum)(&(object->spectrum));
 			}
+			if (object->vertex_array)
+			{
+				delete object->vertex_array;
+			}
 			callback_data = object->update_callback_list;
 			while(callback_data)
 			{
@@ -3760,6 +3933,29 @@ and sets <*object> to NULL.
 			{
 				glDeleteLists(object->display_list,1);
 			}
+#if defined (GL_VERSION_1_5)
+			/* Assume this function is available the vertex buffer object
+			 * values are set */
+			if (object->position_vertex_buffer_object)
+			{
+				glDeleteBuffers(1, &object->position_vertex_buffer_object);
+			}
+			if (object->colour_vertex_buffer_object)
+			{
+				glDeleteBuffers(1, &object->colour_vertex_buffer_object);
+			}
+			if (object->normal_vertex_buffer_object)
+			{
+				glDeleteBuffers(1, &object->normal_vertex_buffer_object);
+			}
+#endif /* defined (GL_VERSION_1_5) */
+#if defined (GL_VERSION_3_0)
+			if (object->vertex_array_object)
+			{
+				/* Assume this is safe as the vertex array object is set */
+				glDeleteVertexArrays(1, &object->vertex_array_object);
+			}
+#endif /* defined (GL_VERSION_3_0) */
 #endif /* defined (OPENGL_API) */
 			/* DEACCESS ptrnext so that objects attached in linked-list may be
 				 destroyed. Note that this means they should have been accessed! */
@@ -3780,241 +3976,6 @@ and sets <*object> to NULL.
 
 	return (return_code);
 } /* DESTROY(GT_object) */
-
-int compile_GT_object(struct GT_object *graphics_object_list, 
-	struct GT_object_compile_context *context)
-/*******************************************************************************
-LAST MODIFIED : 18 November 2005
-
-DESCRIPTION :
-Rebuilds the display list for each uncreated or morphing graphics object in the
-<graphics_object_list>, a simple linked list. The object is compiled using the
-supplied <compile_context>.
-==============================================================================*/
-{
-	int i, return_code;
-	struct GT_object *graphics_object;
-
-	ENTER(compile_GT_object);
-	if (graphics_object_list)
-	{
-		return_code = 1;
-		for (graphics_object=graphics_object_list;graphics_object != NULL;
-			graphics_object=graphics_object->nextobject)
-		{
-			if (GRAPHICS_COMPILED != graphics_object->compile_status)
-			{
-				/* compile components of graphics objects first */
-				if (graphics_object->default_material)
-				{
-					compile_Graphical_material(graphics_object->default_material,
-						context->graphics_buffer, &context->texture_tiling);
-					/* The geometry needs to be updated if these are different. */
-					if (context->texture_tiling || graphics_object->texture_tiling)
-					{
-						graphics_object->compile_status = GRAPHICS_NOT_COMPILED;
-					}
-				}
-				if (graphics_object->selected_material)
-				{
-					compile_Graphical_material(graphics_object->selected_material,
-						context->graphics_buffer, (struct Texture_tiling **)NULL);
-				}
-				if (graphics_object->secondary_material)
-				{
-					compile_Graphical_material(graphics_object->secondary_material,
-						context->graphics_buffer, (struct Texture_tiling **)NULL);
-				}
-				switch (graphics_object->object_type)
-				{
-					case g_GLYPH_SET:
-					{
-						struct GT_glyph_set *glyph_set;
-
-						if (graphics_object->primitive_lists)
-						{
-							for (i = 0 ; i < graphics_object->number_of_times ; i++)
-							{
-								if (glyph_set =
-									graphics_object->primitive_lists[i].gt_glyph_set.first)
-								{
-									compile_GT_object(glyph_set->glyph, context);
-									if (glyph_set->font)
-									{
-										Graphics_font_compile(glyph_set->font, context->graphics_buffer);
-									}
-								}
-							}
-						}
-					} break;
-					case g_POINT:
-					{
-						struct GT_point *point;
-
-						if (graphics_object->primitive_lists)
-						{
-							for (i = 0 ; i < graphics_object->number_of_times ; i++)
-							{
-								if (point =
-									graphics_object->primitive_lists[i].gt_point.first)
-								{
-									if (point->font)
-									{
-										Graphics_font_compile(point->font, context->graphics_buffer);
-									}
-								}
-							}
-						}
-					} break;
-					case g_POINTSET:
-					{
-						struct GT_pointset *point_set;
-
-						if (graphics_object->primitive_lists)
-						{
-							for (i = 0 ; i < graphics_object->number_of_times ; i++)
-							{
-								if (point_set =
-									graphics_object->primitive_lists[i].gt_pointset.first)
-								{
-									if (point_set->font)
-									{
-										Graphics_font_compile(point_set->font, context->graphics_buffer);
-									}
-								}
-							}
-						}
-					} break;
-				}
-				if (GRAPHICS_NOT_COMPILED == graphics_object->compile_status)
-				{
-					if (graphics_object->display_list ||
-						(graphics_object->display_list=glGenLists(1)))
-					{
-						glNewList(graphics_object->display_list,GL_COMPILE);
-						if ((GRAPHICS_SELECT_ON == graphics_object->select_mode) ||
-							(GRAPHICS_DRAW_SELECTED == graphics_object->select_mode))
-						{
-							context->draw_selected = 1;
-							if (graphics_object->selected_material)
-							{
-								if (FIRST_OBJECT_IN_LIST_THAT(Selected_graphic)(
-									(LIST_CONDITIONAL_FUNCTION(Selected_graphic) *)NULL,
-									(void *)NULL,graphics_object->selected_graphic_list))
-								{
-									execute_Graphical_material(
-										graphics_object->selected_material);
-									render_GT_object_opengl(graphics_object,context);
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,"compile_GT_object.  "
-									"Graphics object %s has no selected material",
-									graphics_object->name);
-							}
-						}
-						if (GRAPHICS_DRAW_SELECTED != graphics_object->select_mode)
-						{
-							context->draw_selected = 0;
-							if (graphics_object->default_material)
-							{
-								execute_Graphical_material(graphics_object->default_material);
-							}
-							render_GT_object_opengl(graphics_object, context);
-						}
-						/* It is expensive to reset the state, especially if
-							we may be going to use the same material again.  
-							Would be good to change how this works. */
-						execute_Graphical_material((struct Graphical_material *)NULL);
-						glEndList();
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"compile_GT_object.  Unable to get display list");
-						return_code = 0;
-					}
-				}
-				if (return_code)
-				{
-					graphics_object->compile_status = GRAPHICS_COMPILED;
-					if (context->texture_tiling)
-					{
-						REACCESS(Texture_tiling)(&graphics_object->texture_tiling,
-							context->texture_tiling);
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"compile_GT_object.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* compile_GT_object */
-
-int execute_GT_object(struct GT_object *graphics_object_list)
-/*******************************************************************************
-LAST MODIFIED : 22 November 2005
-
-DESCRIPTION :
-Rebuilds the display list for each uncreated or morphing graphics object in the
-<graphics_object_list>, a simple linked list.
-If the linked list has more than one graphics_object in it, the number of the
-graphics object, starting at zero for the first
-==============================================================================*/
-{
-	int graphics_object_no,return_code;
-	struct GT_object *graphics_object;
-
-	ENTER(execute_GT_object);
-	if (graphics_object_list)
-	{
-		return_code=1;
-		if (graphics_object_list->nextobject)
-		{
-			glPushName(0);
-		}
-		graphics_object_no=0;
-		for (graphics_object=graphics_object_list;graphics_object != NULL;
-			graphics_object=graphics_object->nextobject)
-		{
-			if (0<graphics_object_no)
-			{
-				glLoadName((GLuint)graphics_object_no);
-			}
-			graphics_object_no++;
-			if (GRAPHICS_COMPILED == graphics_object->compile_status)
-			{
-				/* construct object */
-				glCallList(graphics_object->display_list);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"execute_GT_object.  Graphics object not compiled");
-				return_code=0;
-			}
-		}
-		if (graphics_object_list->nextobject)
-		{
-			glPopName();
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"execute_GT_object.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_GT_object */
 
 static int GT_object_inform_clients(struct GT_object *graphics_object)
 /*******************************************************************************
@@ -4454,6 +4415,27 @@ Returns the number of times/primitive lists in the graphics_object.
 	return (number_of_times);
 } /* GT_object_get_number_of_times */
 
+Graphics_vertex_array *
+	GT_object_get_vertex_set(GT_object *graphics_object)
+{
+	Graphics_vertex_array *set;
+
+	ENTER(GT_object_get_vertex_set);
+	if (graphics_object)
+	{
+		set=graphics_object->vertex_array;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_get_vertex_set.  Invalid arguments");
+		set = (Graphics_vertex_array *)NULL;
+	}
+	LEAVE;
+
+	return (set);
+} /* GT_object_get_vertex_set */
+
 float GT_object_get_time(struct GT_object *graphics_object,int time_number)
 /*******************************************************************************
 LAST MODIFIED : 18 June 1998
@@ -4888,6 +4870,45 @@ will produce the range of all the graphics objects.
 							polyline = polyline->ptrnext;
 						}
 					} break;
+					case g_POLYLINE_VERTEX_BUFFERS:
+					{
+						float *vertex_buffer;
+						unsigned int values_per_vertex, vertex_count;
+						if (graphics_object->vertex_array->get_float_vertex_buffer(
+							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+							&vertex_buffer, &values_per_vertex, &vertex_count))
+						{
+							if (*first)
+							{
+								minimum[0]=vertex_buffer[0];
+								maximum[0]=minimum[0];
+								minimum[1]=vertex_buffer[1];
+								maximum[1]=minimum[1];
+								minimum[2]=vertex_buffer[2];
+								maximum[2]=minimum[2];
+								vertex_count--;
+								vertex_buffer += values_per_vertex;
+								*first=0;
+							}
+							while (vertex_count>0)
+							{
+								int i;
+								for (i = 0 ; i < 3 ; i++)
+								{
+									if (vertex_buffer[i]<minimum[i])
+									{
+										minimum[i]=vertex_buffer[i];
+									}
+									else if (vertex_buffer[i]>maximum[i])
+									{
+										maximum[i]=vertex_buffer[i];
+									}
+								}
+								vertex_count--;
+								vertex_buffer += values_per_vertex;
+							}
+						}
+					} break;
 					case g_SURFACE:
 					{
 						/* We will ignore range of morph point lists for morphing types */
@@ -5070,6 +5091,8 @@ Returns the range of the data values stored in the graphics object.
 Returned range generally used to set or enlarge spectrum ranges.
 ???RC likely to change when multiple data values stored in graphics_objects
 for combining several spectrums.
+This routine still assumes on a single data value per vertex but this isn't
+valid.
 ==============================================================================*/
 {
 	float maximum,minimum;
@@ -5194,6 +5217,36 @@ for combining several spectrums.
 								}
 							}
 							polyline=polyline->ptrnext;
+						}
+					} break;
+					case g_POLYLINE_VERTEX_BUFFERS:
+					{
+						float *vertex_buffer;
+						unsigned int values_per_vertex, vertex_count;
+						graphics_object->vertex_array->get_float_vertex_buffer(
+							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+							&vertex_buffer, &values_per_vertex, &vertex_count);
+
+						if (first)
+						{
+							minimum=vertex_buffer[0];
+							maximum=minimum;
+							vertex_count--;
+							vertex_buffer += values_per_vertex;
+							first=0;
+						}
+						while (vertex_count>0)
+						{
+							if (vertex_buffer[0]<minimum)
+							{
+								minimum=vertex_buffer[0];
+							}
+							else if (vertex_buffer[0]>maximum)
+							{
+								maximum=vertex_buffer[0];
+							}
+							vertex_count--;
+							vertex_buffer += values_per_vertex;
 						}
 					} break;
 					case g_SURFACE:
@@ -5529,6 +5582,29 @@ DECLARE_GT_OBJECT_ADD_FUNCTION(GT_surface,g_SURFACE,gt_surface)
 DECLARE_GT_OBJECT_ADD_FUNCTION(GT_userdef,g_USERDEF,gt_userdef)
 DECLARE_GT_OBJECT_ADD_FUNCTION(GT_voltex,g_VOLTEX,gt_voltex)
 
+int GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
+	struct GT_object *graphics_object, struct GT_polyline_vertex_buffers *primitive)
+{
+	int return_code;
+	
+	if (graphics_object && !graphics_object->primitive_lists)
+	{
+		if (ALLOCATE(graphics_object->primitive_lists, union GT_primitive_list, 1) &&
+			ALLOCATE(graphics_object->times, float, 1))
+		{
+		  graphics_object->primitive_lists->gt_polyline_vertex_buffers = primitive;
+		  graphics_object->times[0] = 0.0;
+		  graphics_object->number_of_times = 1;
+		  return_code = 1;
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+	return (return_code);
+}
+
 #define DECLARE_GT_OBJECT_GET_FUNCTION(primitive_type, \
 	gt_object_type,primitive_var) \
 PROTOTYPE_GT_OBJECT_GET_FUNCTION(primitive_type) \
@@ -5599,15 +5675,32 @@ from the conditional_function causes the primitive to be removed.
 	ENTER(GT_object_remove_primitives_at_time);
 	if (graphics_object)
 	{
-		if (0 < (time_number = GT_object_get_time_number(graphics_object, time)))
+		if (graphics_object->object_type == g_POLYLINE_VERTEX_BUFFERS)
 		{
-			return_code = GT_object_remove_primitives_at_time_number(graphics_object,
-				time_number, conditional_function, user_data);
+			if (graphics_object->number_of_times &&
+				graphics_object->primitive_lists)
+			{
+				graphics_object->number_of_times = 0;
+				DEALLOCATE(graphics_object->primitive_lists);
+				DEALLOCATE(graphics_object->times);
+			}
+			if (graphics_object->vertex_array)
+			{
+				graphics_object->vertex_array->clear_buffers();
+			}
 		}
 		else
 		{
-			/* graphics_object does not have that time, so no need to remove */
-			return_code = 1;
+			if (0 < (time_number	= GT_object_get_time_number(graphics_object, time)))
+			{
+				return_code = GT_object_remove_primitives_at_time_number(
+					graphics_object, time_number, conditional_function, user_data);
+			}
+			else
+			{
+				/* graphics_object does not have that time, so no need to remove */
+				return_code = 1;
+			}
 		}
 	}
 	else
@@ -7239,3 +7332,363 @@ Frees the memory for <**context> and sets <*context> to NULL.
 	return (return_code);
 } /* DESTROY(GT_object_compile_context) */
 
+/*****************************************************************************//**
+ * Creates a new Graphics_vertex_buffer.  Initially no memory is allocated
+ * and no vertices stored.
+ * 
+ * @param type  Determines the format of this vertex buffers.
+ * @return Newly created buffer.
+*/
+struct Graphics_vertex_buffer *
+  CREATE(Graphics_vertex_buffer)
+  (enum Graphics_vertex_array_attribute_type type,
+  unsigned int values_per_vertex)
+{
+	struct Graphics_vertex_buffer *buffer;
+	
+	if (ALLOCATE(buffer, struct Graphics_vertex_buffer, 1))
+	{
+		buffer->type = type;
+		buffer->values_per_vertex = values_per_vertex;
+		buffer->max_vertex_count = 0;
+		buffer->vertex_count = 0;
+		buffer->memory = NULL;
+		buffer->access_count = 0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"CREATE(Graphics_vertex_buffer)  "
+			"Unable to allocate buffer memory.");
+		buffer = (struct Graphics_vertex_buffer *)NULL;
+	}
+	return (buffer);
+}
+
+/*****************************************************************************//**
+ * Destroys a Graphics_vertex_buffer.
+ * 
+ * @param buffer_address  Pointer to a buffer to be destroyed.
+ * @return return_code. 1 for Success, 0 for failure.
+*/
+int DESTROY(Graphics_vertex_buffer)(
+	struct Graphics_vertex_buffer **buffer_address)
+{
+	int return_code;
+	struct Graphics_vertex_buffer *buffer;
+	if (buffer_address && (buffer = *buffer_address))
+	{
+		if (buffer->max_vertex_count && buffer->memory)
+		{
+			DEALLOCATE(buffer->memory);
+		}
+		DEALLOCATE(*buffer_address);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"DESTROY(Graphics_vertex_buffer)  "
+			"Invalid object.");
+		return_code = 0;
+	}
+	return (return_code);
+}
+
+Graphics_vertex_array::Graphics_vertex_array(enum Graphics_vertex_array_type type)
+{
+	internal = new Graphics_vertex_array_internal(type);
+}
+
+Graphics_vertex_buffer *Graphics_vertex_array_internal::get_or_create_vertex_buffer(
+	Graphics_vertex_array_attribute_type vertex_type,
+	unsigned int values_per_vertex)
+{
+	enum Graphics_vertex_array_attribute_type vertex_buffer_type;
+	Graphics_vertex_buffer *buffer;
+
+   switch (type)
+   {
+		case GRAPHICS_VERTEX_ARRAY_TYPE_FLOAT_SEPARATE_DRAW_ARRAYS:
+    	{
+    		vertex_buffer_type = vertex_type;
+    	} break;
+    }
+	if (buffer = FIND_BY_IDENTIFIER_IN_LIST(Graphics_vertex_buffer,type)
+		(vertex_buffer_type, buffer_list))
+	{
+		if (buffer->values_per_vertex != values_per_vertex)
+		{
+			buffer = (Graphics_vertex_buffer *)NULL;
+		}
+	}
+	else
+	{
+		if (buffer = CREATE(Graphics_vertex_buffer)(vertex_buffer_type,
+			values_per_vertex))
+		{
+			if (!ADD_OBJECT_TO_LIST(Graphics_vertex_buffer)(buffer,
+				buffer_list))
+			{
+				DESTROY(Graphics_vertex_buffer)(&buffer);
+			}	
+		}
+	}	
+	return (buffer);
+}
+	
+Graphics_vertex_buffer *Graphics_vertex_array_internal::get_vertex_buffer_for_attribute(
+	Graphics_vertex_array_attribute_type vertex_type)
+{
+	enum Graphics_vertex_array_attribute_type vertex_buffer_type;
+	Graphics_vertex_buffer *buffer;
+
+   switch (type)
+   {
+		case GRAPHICS_VERTEX_ARRAY_TYPE_FLOAT_SEPARATE_DRAW_ARRAYS:
+    	{
+    		vertex_buffer_type = vertex_type;
+    	} break;
+    }
+	buffer = FIND_BY_IDENTIFIER_IN_LIST(Graphics_vertex_buffer,type)
+		(vertex_buffer_type, buffer_list);
+
+	return (buffer);
+}
+	
+Graphics_vertex_buffer *Graphics_vertex_array_internal::get_vertex_buffer(
+	Graphics_vertex_array_attribute_type vertex_type)
+{
+	Graphics_vertex_buffer *buffer;
+
+	buffer = FIND_BY_IDENTIFIER_IN_LIST(Graphics_vertex_buffer,type)
+		(vertex_type, buffer_list);
+
+	return (buffer);
+}
+	
+template <class value_type> int Graphics_vertex_array_internal::add_attribute(
+	Graphics_vertex_array_attribute_type vertex_type,
+	unsigned int values_per_vertex, value_type *values)
+{
+	int return_code;
+	Graphics_vertex_buffer *buffer;
+	
+   return_code = 1;
+	if (buffer = get_or_create_vertex_buffer(vertex_type, values_per_vertex))
+	{
+		enum Graphics_vertex_array_attribute_type vertex_buffer_type = buffer->type;
+		if (!buffer->memory)
+		{
+			if (ALLOCATE(buffer->memory, value_type,
+				GRAPHICS_VERTEX_BUFFER_INITIAL_SIZE * values_per_vertex))
+			{
+				buffer->max_vertex_count = GRAPHICS_VERTEX_BUFFER_INITIAL_SIZE;
+			}
+			else
+			{
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
+			if (buffer->max_vertex_count == buffer->vertex_count)
+			{
+				if (REALLOCATE(buffer->memory, buffer->memory, value_type,
+					2 * buffer->max_vertex_count * values_per_vertex))
+				{
+					buffer->max_vertex_count = 2 * buffer->max_vertex_count;
+				}
+				else
+				{
+					return_code = 0;
+				}
+			}
+		}
+		if (return_code)
+		{
+			if (vertex_buffer_type == vertex_type)
+			{
+				memcpy((value_type*)buffer->memory + buffer->vertex_count * values_per_vertex,
+					values, values_per_vertex * sizeof(value_type));
+				buffer->vertex_count++;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"Graphics_vertex_array::add_attribute.  "
+					"Storage for this combination of vertex_buffer and vertex not implemented yet.");
+				return_code = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Graphics_vertex_array::add_attribute.  "
+			"Unable to create buffer.");
+		return_code = 0;
+	}
+	
+	return (return_code);
+}
+
+template <class value_type> int Graphics_vertex_array_internal::get_attribute(
+	enum Graphics_vertex_array_attribute_type vertex_type,
+	unsigned int vertex_index,
+	unsigned int number_of_values, value_type *values)
+{
+	Graphics_vertex_buffer *buffer;
+	int return_code;
+
+	if (buffer = get_vertex_buffer_for_attribute(vertex_type))
+	{
+		enum Graphics_vertex_array_attribute_type vertex_buffer_type = buffer->type;
+		if (buffer->values_per_vertex == number_of_values)
+		{
+			if (vertex_buffer_type == vertex_type)
+			{
+				memcpy(values, (value_type*) buffer->memory + vertex_index
+					* buffer->values_per_vertex, buffer->values_per_vertex
+					* sizeof(value_type));
+				return_code = 1;
+			}
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+	return (return_code);
+}
+
+template <class value_type> int Graphics_vertex_array_internal::get_vertex_buffer(
+		enum Graphics_vertex_array_attribute_type vertex_buffer_type,
+		value_type **vertex_buffer, unsigned int *values_per_vertex, 
+		unsigned int *vertex_count)
+{
+	Graphics_vertex_buffer *buffer;
+	int return_code;
+
+   if (buffer = get_vertex_buffer(vertex_buffer_type))
+	{
+		*vertex_buffer = static_cast<value_type*>(buffer->memory);
+		*values_per_vertex = buffer->values_per_vertex;
+		*vertex_count = buffer->vertex_count;
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+
+	return return_code;
+}
+
+int Graphics_vertex_array::add_float_attribute(
+	enum Graphics_vertex_array_attribute_type vertex_type,
+	unsigned int number_of_values, float *values)
+{
+	return internal->add_attribute(vertex_type, number_of_values, values);
+}
+
+int Graphics_vertex_array::get_float_vertex_buffer(
+		enum Graphics_vertex_array_attribute_type vertex_buffer_type,
+		float **vertex_buffer, unsigned int *values_per_vertex, 
+		unsigned int *vertex_count)
+{
+	return internal->get_vertex_buffer(vertex_buffer_type,
+		vertex_buffer, values_per_vertex, vertex_count);
+}
+
+int Graphics_vertex_array::add_unsigned_integer_attribute(
+		enum Graphics_vertex_array_attribute_type vertex_type,
+		unsigned int number_of_values, unsigned int *values)
+{
+	return internal->add_attribute(vertex_type, number_of_values, values);
+}
+
+int Graphics_vertex_array::get_unsigned_integer_attribute(
+		enum Graphics_vertex_array_attribute_type vertex_type,
+		unsigned int vertex_index,
+		unsigned int number_of_values, unsigned int *values)
+{
+	return internal->get_attribute(vertex_type,
+		vertex_index, number_of_values, values);
+}
+
+int Graphics_vertex_array::get_unsigned_integer_vertex_buffer(
+		enum Graphics_vertex_array_attribute_type vertex_buffer_type,
+		unsigned int **vertex_buffer, unsigned int *values_per_vertex,
+		unsigned int *vertex_count)
+{
+	return internal->get_vertex_buffer(vertex_buffer_type,
+		vertex_buffer, values_per_vertex, vertex_count);
+}
+
+int Graphics_vertex_array::add_integer_attribute(
+		enum Graphics_vertex_array_attribute_type vertex_type,
+		unsigned int number_of_values, int *values)
+{
+	return internal->add_attribute(vertex_type, number_of_values, values);
+}
+
+int Graphics_vertex_array::get_integer_attribute(
+		enum Graphics_vertex_array_attribute_type vertex_type,
+		unsigned int vertex_index,
+		unsigned int number_of_values, int *values)
+{
+	return internal->get_attribute(vertex_type,
+		vertex_index, number_of_values, values);	
+}
+
+unsigned int Graphics_vertex_array::get_number_of_vertices(
+	enum Graphics_vertex_array_attribute_type vertex_buffer_type)
+{
+	Graphics_vertex_buffer *buffer;
+	unsigned int vertex_count;
+	
+   if (buffer = internal->get_vertex_buffer(vertex_buffer_type))
+	{
+    	vertex_count = buffer->vertex_count;
+   }
+   else
+   {
+		vertex_count = 0;
+   }
+
+	return vertex_count;
+}
+
+/*****************************************************************************//**
+ * Resets the number of vertices defined in the buffer to zero.  Does not actually
+ * reset the allocated memory to zero as it is anticipated that the buffer will
+ * recreated.
+ * 
+ * @param buffer  Buffer to be cleared.
+ * @return return_code. 1 for Success, 0 for failure.
+*/
+int Graphics_vertex_buffer_clear(
+	struct Graphics_vertex_buffer *buffer, void *user_data_dummy)
+{
+	int return_code;
+	USE_PARAMETER(user_data_dummy);
+	
+	if (buffer)
+	{
+		buffer->vertex_count = 0;
+	}
+	return_code = 1;
+
+	return (return_code);
+}
+
+int Graphics_vertex_array::clear_buffers()
+{
+	return FOR_EACH_OBJECT_IN_LIST(Graphics_vertex_buffer)(
+		Graphics_vertex_buffer_clear, NULL, internal->buffer_list);
+}
+
+Graphics_vertex_array::~Graphics_vertex_array()
+{
+	delete internal;
+}

@@ -1,11 +1,6 @@
 /*******************************************************************************
-FILE : callback_class.hpp
-
-LAST MODIFIED : 21 February 2007
-
-DESCRIPTION :
-Template definitions for callbacks.
-==============================================================================*/
+ * material.hpp
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -41,56 +36,37 @@ Template definitions for callbacks.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CALLBACK_CLASS_HPP)
-#define CALLBACK_CLASS_HPP
+#if !defined (MATERIAL_HPP)
+#define MATERIAL_HPP
 
-template < class Object > class Callback_base
-/*****************************************************************************
-LAST MODIFIED : 21 February 2007
+#include "general/callback_class.hpp"
 
-DESCRIPTION :
-============================================================================*/
-{
-public:
-	int operator()(Object object)
-	{
-		return callback_function(object);
-	}
-	virtual int callback_function(Object object) = 0;
+class Render_graphics_opengl;
+struct Graphical_material;
 
-protected:
-
-	virtual ~Callback_base()
-	{
-	}
-};
-
-template < class Object, class Callee, class MemberFunction > class Callback_member_callback : public Callback_base< Object >
-/*****************************************************************************
-LAST MODIFIED : 21 February 2007
+struct Material_order_independent_transparency
+/*******************************************************************************
+LAST MODIFIED : 2 May 2005
 
 DESCRIPTION :
-============================================================================*/
+Data for compiling materials specially for order independent transparency.
+==============================================================================*/
 {
-private:
-	Callee *callee;
-	MemberFunction member_function;
+	int layer;
+   Render_graphics_opengl *renderer;
+}; /* struct Material_order_independent_transparency */
 
-public:
-	Callback_member_callback(
-		Callee *callee, MemberFunction member_function) :
-		callee(callee), member_function(member_function)
-	{
-	}
+int Material_render_opengl(struct Graphical_material *material,
+	Render_graphics_opengl *renderer);
 
-	virtual int callback_function(Object object)
-	{
-		return (callee->*member_function)(object);
-	}
-		
-	virtual ~Callback_member_callback()
-	{
-	}
-};
+int Material_compile_members_opengl(Graphical_material *material,
+	Render_graphics_opengl *renderer);
 
-#endif /* !defined (CALLBACK_CLASS_HPP) */
+int Material_compile_opengl_display_list(Graphical_material *material,
+	Callback_base< Graphical_material* > *execute_function,
+	Render_graphics_opengl *renderer);
+
+int Material_execute_opengl_display_list(Graphical_material *material,
+	Render_graphics_opengl *renderer);
+
+#endif // MATERIAL_HPP

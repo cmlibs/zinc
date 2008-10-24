@@ -58,6 +58,7 @@ return to direct rendering, as described with these routines.
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+extern "C" {
 #include "command/parser.h"
 #include "general/debug.h"
 #include "general/list_private.h"
@@ -68,6 +69,8 @@ return to direct rendering, as described with these routines.
 #include "graphics/graphics_library.h"
 #include "graphics/light_model.h"
 #include "user_interface/message.h"
+}
+#include "graphics/rendergl.hpp"
 
 /*
 Module types
@@ -116,7 +119,8 @@ Module functions
 */
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Light_model)
 
-static int direct_render_Light_model(struct Light_model *light_model)
+int Light_model_render_opengl(Light_model *light_model,
+	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 13 December 1997
 
@@ -1408,7 +1412,7 @@ execute_Light_model should just call direct_render_Light_model.
 			if (light_model->display_list||(light_model->display_list=glGenLists(1)))
 			{
 				glNewList(light_model->display_list,GL_COMPILE);
-				direct_render_Light_model(light_model);
+				//renderer->Light_model_execute(light_model);
 				glEndList();
 				light_model->display_list_current=1;
 				return_code=1;
@@ -1475,3 +1479,4 @@ direct_render_Light_model.
 
 	return (return_code);
 } /* execute_Light_model */
+

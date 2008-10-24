@@ -1,11 +1,6 @@
-/*******************************************************************************
-FILE : rendergl.h
-
-LAST MODIFIED : 29 November 2007
-
-DESCRIPTION :
-Header file for rendergl.c, GL rendering calls (API specific)
-==============================================================================*/
+/***************************************************************************//**
+ * texture.hpp
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -41,23 +36,36 @@ Header file for rendergl.c, GL rendering calls (API specific)
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (RENDERGL_H)
-#define RENDERGL_H
+#if !defined (TEXTURE_HPP)
+#define TEXTURE_HPP
 
-#include "graphics/graphics_object.h"
+class Render_graphics_opengl;
 
-/*
-Global functions
-----------------
-*/
+#include <general/callback_class.hpp>
 
-int render_GT_object_opengl(gtObject *object, struct GT_object_compile_context *context);
-/*******************************************************************************
-LAST MODIFIED : 22 November 2005
+/***************************************************************************//**
+ * Compile the texture_object for this texture.
+ */
+int Texture_compile_opengl_texture_object(struct Texture *texture,
+	Render_graphics_opengl *renderer);
 
-DESCRIPTION :
-Convert graphical object into API object.
-The <context> is used to control how the object is compiled.
-==============================================================================*/
+/***************************************************************************//**
+ * Execute the texture_object for this texture.
+ */
+int Texture_execute_opengl_texture_object(struct Texture *texture,
+	Render_graphics_opengl *renderer);
 
-#endif /* !defined (RENDERGL_H) */
+/***************************************************************************//**
+ * Compile the display_list for this texture.
+ */
+int Texture_compile_opengl_display_list(struct Texture *texture,
+	Callback_base< Texture * > *execute_function,
+	Render_graphics_opengl *renderer);
+
+/***************************************************************************//**
+ * Execute the display_list for this texture.
+ */
+int Texture_execute_opengl_display_list(struct Texture *texture,
+	Render_graphics_opengl *renderer);
+
+#endif /* !defined (TEXTURE_HPP) */

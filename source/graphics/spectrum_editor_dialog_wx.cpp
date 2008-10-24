@@ -51,7 +51,6 @@ extern "C" {
 #include "general/object.h"
 #include "graphics/light.h"
 #include "graphics/material.h"
-#include "graphics/scene.h"
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_editor_wx.h"
 #include "graphics/spectrum_editor_dialog_wx.h"

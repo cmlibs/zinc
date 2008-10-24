@@ -61,7 +61,9 @@ static char element_point_tool_uidh[] =
 #endif /* defined (MOTIF) */
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
-#include "graphics/scene.h"
+}
+#include "graphics/scene.hpp"
+extern "C" {
 #include "help/help_interface.h"
 #include "interaction/interaction_graphics.h"
 #include "interaction/interaction_volume.h"

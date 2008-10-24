@@ -98,18 +98,6 @@ struct Graphical_material_Texture_change_data
 	struct LIST(Graphical_material) *changed_material_list;
 };
 
-struct Material_order_independent_transparency
-/*******************************************************************************
-LAST MODIFIED : 2 May 2005
-
-DESCRIPTION :
-Data for compiling materials specially for order independent transparency.
-==============================================================================*/
-{
-	int layer;
-	struct Graphics_buffer *graphics_buffer;
-}; /* struct Material_order_independent_transparency */
-
 /*
 Global functions
 ----------------
@@ -196,14 +184,6 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Graphical_material,name,const char
 PROTOTYPE_MANAGER_COPY_FUNCTIONS(Graphical_material,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Graphical_material);
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Graphical_material,name,const char *);
-
-int direct_render_Graphical_material(struct Graphical_material *material);
-/*******************************************************************************
-LAST MODIFIED : 15 October 1998
-
-DESCRIPTION :
-Directly outputs the graphics library commands for activating <material>.
-==============================================================================*/
 
 const char *Graphical_material_name(struct Graphical_material *material);
 /*******************************************************************************
@@ -557,29 +537,6 @@ Activates the <material> as part of the rendering loop.
 ==============================================================================*/
 #endif /* defined (OLD_CODE) */
 
-int compile_Graphical_material(struct Graphical_material *material,
-	struct Graphics_buffer *graphics_buffer,
-	struct Texture_tiling **texture_tiling);
-/*******************************************************************************
-LAST MODIFIED : 19 November 2007
-
-DESCRIPTION :
-Graphical_material list/manager iterator function.
-Rebuilds the display_list for <material> if it is not current. If <material>
-does not have a display list, first attempts to give it one. The display list
-created here may be called using execute_Graphical_material, below.
-If <texture_tiling> is not NULL then if the material uses a primary texture
-and this texture is larger than can be compiled into a single texture on
-the current graphics hardware, then it can be tiled into several textures
-and information about the tile boundaries is returned in Texture_tiling 
-structure and should be used to compile any graphics objects.
-???RC Graphical_materials must be compiled before they are executed since openGL
-cannot start writing to a display list when one is currently being written to.
-???RC The behaviour of materials is set up to take advantage of pre-computed
-display lists. To switch to direct rendering make this routine do nothing and
-execute_Graphical_material should just call direct_render_Graphical_material.
-==============================================================================*/
-
 int compile_Graphical_material_for_order_independent_transparency(
 	struct Graphical_material *material, 
 	void *material_order_independent_data_void);
@@ -589,20 +546,6 @@ LAST MODIFIED : 2 May 2005
 DESCRIPTION :
 Recompile each of the <materials> which have already been compiled so that they
 will work with order_independent_transparency. 
-==============================================================================*/
-
-int execute_Graphical_material(struct Graphical_material *material);
-/*******************************************************************************
-LAST MODIFIED : 7 September 2000
-
-DESCRIPTION :
-Activates <material> by calling its display list. If the display list is not
-current, an error is reported.
-Passing a NULL material will deactivate any textures or material parameters
-that get set up with materials.
-???RC The behaviour of materials is set up to take advantage of pre-computed
-display lists. To switch to direct rendering this routine should just call
-direct_render_Graphical_material.
 ==============================================================================*/
 
 int set_Graphical_material(struct Parse_state *state,

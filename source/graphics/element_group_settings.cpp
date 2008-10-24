@@ -1,7 +1,5 @@
 /*******************************************************************************
-FILE : element_group_settings.c
-
-LAST MODIFIED : 30 April 2003
+FILE : element_group_settings.cpp
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -45,8 +43,11 @@ appearance of graphical finite element groups.
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+extern "C" {
 #include "general/debug.h"
-#include "general/enumerator_private.h"
+}
+#include "general/enumerator_private_cpp.hpp"
+extern "C" {
 #include "general/indexed_list_private.h"
 #include "general/compare.h"
 #include "general/multi_range.h"
@@ -66,9 +67,11 @@ appearance of graphical finite element groups.
 #include "graphics/element_group_settings.h"
 #include "graphics/font.h"
 #include "graphics/graphics_object.h"
-#include "graphics/scene.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
+}
+#include "graphics/scene.hpp"
+#include "graphics/rendergl.hpp"
 
 /*
 Global variables
@@ -466,7 +469,7 @@ Global functions
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(GT_element_settings_type)
 {
-	const char *enumerator_string;
+	char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(GT_element_settings_type));
 	switch (enumerator_value)
@@ -511,7 +514,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(GT_element_settings_type)
 #endif /* ! defined (WX_USER_INTERFACE) */
 		default:
 		{
-			enumerator_string = (const char *)NULL;
+			enumerator_string = (char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -4045,8 +4048,7 @@ Returns 1 if the settings are of the specified settings_type.
 	ENTER(GT_element_settings_type_matches);
 	if (settings)
 	{
-		return_code=(settings->settings_type ==
-			(enum GT_element_settings_type)settings_type_void);
+		return_code=((void *)settings->settings_type == settings_type_void);
 	}
 	else
 	{
@@ -5373,8 +5375,7 @@ Converts a finite element into a graphics object with the supplied settings.
 ==============================================================================*/
 {
 	FE_value base_size[3], centre[3], initial_xi[3], scale_factors[3];
-	float time;
-	int draw_element, draw_selected, element_dimension, element_graphics_name,
+	float time;	int draw_element, draw_selected, element_dimension, element_graphics_name,
 		element_selected, i, name_selected,
 		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		number_of_xi_points, return_code,
@@ -5457,40 +5458,20 @@ Converts a finite element into a graphics object with the supplied settings.
 					{
 						if (settings_to_object_data->existing_graphics)
 						{
-							polyline = GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME(GT_polyline)
-								(settings_to_object_data->existing_graphics, time,
-									element_graphics_name);
-						}
-						else
-						{
-							polyline = (struct GT_polyline *)NULL;
+							/* So far ignore these */
 						}
 						if (draw_element)
 						{
-							if (polyline ||
-								(polyline = create_GT_polyline_from_FE_element(element,
-									settings_to_object_data->rc_coordinate_field,
-									settings->data_field, number_in_xi[0], top_level_element,
-									settings_to_object_data->time, settings->line_width)))
-							{
-								if (!GT_OBJECT_ADD(GT_polyline)(
-									settings->graphics_object, time, polyline))
-								{
-									DESTROY(GT_polyline)(&polyline);
-									return_code = 0;
-								}
-							}
-							else
-							{
-								return_code = 0;
-							}
-						}
-						else
-						{
-							if (polyline)
-							{
-								DESTROY(GT_polyline)(&polyline);
-							}
+							return_code = 
+								FE_element_add_line_to_vertex_set(
+								element,
+								GT_object_get_vertex_set(settings->graphics_object),
+								settings_to_object_data->rc_coordinate_field,
+								settings->data_field,
+								settings_to_object_data->number_of_data_values,
+								settings_to_object_data->data_copy_buffer,
+								number_in_xi[0], top_level_element,
+								settings_to_object_data->time);
 						}
 					} break;
 					case GT_ELEMENT_SETTINGS_CYLINDERS:
@@ -6221,7 +6202,7 @@ The graphics object is stored with with the settings it was created from.
 								{
 									case GT_ELEMENT_SETTINGS_LINES:
 									{
-										graphics_object_type = g_POLYLINE;
+										graphics_object_type = g_POLYLINE_VERTEX_BUFFERS;
 									} break;
 									case GT_ELEMENT_SETTINGS_CYLINDERS:
 									case GT_ELEMENT_SETTINGS_SURFACES:
@@ -6323,6 +6304,13 @@ The graphics object is stored with with the settings it was created from.
 							return_code = 0;
 						}
 						DEALLOCATE(settings_name);
+						if (settings->data_field)
+						{
+							settings_to_object_data->number_of_data_values = 
+								Computed_field_get_number_of_components(settings->data_field);
+							ALLOCATE(settings_to_object_data->data_copy_buffer,
+								FE_value, settings_to_object_data->number_of_data_values);
+						}
 						if (settings->graphics_object)
 						{
 							settings->selected_graphics_changed=1;
@@ -6382,12 +6370,27 @@ The graphics object is stored with with the settings it was created from.
 									}
 								} break;
 								case GT_ELEMENT_SETTINGS_CYLINDERS:
-								case GT_ELEMENT_SETTINGS_LINES:
 								case GT_ELEMENT_SETTINGS_SURFACES:
 								case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
 								{
 									return_code = FE_region_for_each_FE_element(fe_region,
 										FE_element_to_graphics_object, settings_to_object_data_void);
+								} break;
+								case GT_ELEMENT_SETTINGS_LINES:
+								{
+									GT_polyline_vertex_buffers *lines = 
+										CREATE(GT_polyline_vertex_buffers)(
+										g_PLAIN, settings->line_width);
+									if (GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
+										settings->graphics_object, lines))
+									{
+										return_code = FE_region_for_each_FE_element(fe_region,
+											FE_element_to_graphics_object, settings_to_object_data_void);
+									}
+									else
+									{
+										return_code = 0;
+									}
 								} break;
 								case GT_ELEMENT_SETTINGS_ISO_SURFACES:
 								{
@@ -6522,11 +6525,19 @@ The graphics object is stored with with the settings it was created from.
 							Computed_field_end_wrap(
 								&(settings_to_object_data->wrapper_orientation_scale_field));
 						}
+						Computed_field_clear_cache(settings_to_object_data->rc_coordinate_field);
 						Computed_field_end_wrap(
 							&(settings_to_object_data->rc_coordinate_field));
 						if (settings->seed_node_coordinate_field)
 						{
 							Computed_field_clear_cache(settings->seed_node_coordinate_field);
+						}
+						if (settings->data_field)
+						{
+							settings_to_object_data->number_of_data_values = 0;
+							DEALLOCATE(settings_to_object_data->data_copy_buffer);
+							/* clear Computed_field caches so elements not accessed */
+							Computed_field_clear_cache(settings->data_field);
 						}
 					}
 					else
@@ -6874,7 +6885,7 @@ Must call GT_element_settings_to_graphics_object afterwards to complete.
 } /* GT_element_settings_selected_data_change */
 
 int GT_element_settings_compile_visible_settings(
-	struct GT_element_settings *settings, void *context_void)
+	struct GT_element_settings *settings, void *renderer_void)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -6884,14 +6895,15 @@ graphics_object is compiled.
 ==============================================================================*/
 {
 	int return_code;
-	struct GT_object_compile_context *context;
+	Render_graphics_compile_members *renderer;
 
 	ENTER(GT_element_settings_compile_visible_graphics_object);
-	if (settings && (context = (struct GT_object_compile_context *)context_void))
+	if (settings && (renderer = (Render_graphics_compile_members *)renderer_void))
 	{
 		if (settings->graphics_object && settings->visibility)
 		{
-			return_code = compile_GT_object(settings->graphics_object, context);
+			return_code = renderer->Graphics_object_compile(
+				settings->graphics_object);
 		}
 		else
 		{
@@ -6911,7 +6923,7 @@ graphics_object is compiled.
 } /* GT_element_settings_compile_visible_settings */
 
 int GT_element_settings_execute_visible_settings(
-	struct GT_element_settings *settings, void *dummy_void)
+	struct GT_element_settings *settings, void *renderer_void)
 /*******************************************************************************
 LAST MODIFIED : 12 October 2005
 
@@ -6922,10 +6934,10 @@ is put out as a name to identify the object in OpenGL picking.
 ==============================================================================*/
 {
 	int return_code;
+	Render_graphics_opengl *renderer;
 	
 	ENTER(GT_element_settings_execute_visible_settings);
-	USE_PARAMETER(dummy_void);
-	if (settings)
+	if (settings && (renderer = static_cast<Render_graphics_opengl *>(renderer_void)))
 	{
 		if (settings->graphics_object && settings->visibility)
 		{
@@ -6933,7 +6945,7 @@ is put out as a name to identify the object in OpenGL picking.
 			/* use position in list as name for GL picking */
 			glLoadName((GLuint)settings->position);
 #endif /* defined (OPENGL_API) */
-			return_code=execute_GT_object(settings->graphics_object);
+			return_code=renderer->Graphics_object_execute(settings->graphics_object);
 		}
 		else
 		{
@@ -7319,8 +7331,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"position",
 						&(modify_g_element_data->position),NULL,set_int_non_negative);
 					/* scale_factors */
-					Option_table_add_entry(option_table,"scale_factors",
-						glyph_scale_factors,"*",set_special_float3);
+					Option_table_add_special_float3_entry(option_table,"scale_factors",
+						glyph_scale_factors,"*");
 					/* scene */
 					Option_table_add_entry(option_table,"scene",
 						&(modify_g_element_data->scene),
@@ -7342,8 +7354,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						g_element_command_data->graphical_material_manager,
 						set_Graphical_material);
 					/* size */
-					Option_table_add_entry(option_table,"size",
-						glyph_size,"*",set_special_float3);
+					Option_table_add_special_float3_entry(option_table,"size",
+						glyph_size,"*");
 					/* spectrum */
 					Option_table_add_entry(option_table,"spectrum",
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
@@ -7614,8 +7626,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"position",
 						&(modify_g_element_data->position),NULL,set_int_non_negative);
 					/* scale_factors */
-					Option_table_add_entry(option_table,"scale_factors",
-						glyph_scale_factors,"*",set_special_float3);
+					Option_table_add_special_float3_entry(option_table,"scale_factors",
+						glyph_scale_factors,"*");
 					/* scene */
 					Option_table_add_entry(option_table,"scene",
 						&(modify_g_element_data->scene),
@@ -7637,8 +7649,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						g_element_command_data->graphical_material_manager,
 						set_Graphical_material);
 					/* size */
-					Option_table_add_entry(option_table,"size",
-						glyph_size,"*",set_special_float3);
+					Option_table_add_special_float3_entry(option_table,"size",
+						glyph_size,"*");
 					/* spectrum */
 					Option_table_add_entry(option_table,"spectrum",
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
@@ -7763,7 +7775,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	struct G_element_command_data *g_element_command_data;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data;
+		set_data_field_data, set_texture_coordinate_field_data;
 
 	ENTER(gfx_modify_g_element_lines);
 	if (state)
@@ -7841,6 +7853,11 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"material",&(settings->material),
 						g_element_command_data->graphical_material_manager,
 						set_Graphical_material);
+					/* multipass_pass1_material */
+					Option_table_add_entry(option_table,"multipass_pass1_material",
+						&(settings->secondary_material),
+						g_element_command_data->graphical_material_manager,
+						set_Graphical_material);
 					/* position */
 					Option_table_add_entry(option_table,"position",
 						&(modify_g_element_data->position),NULL,set_int_non_negative);
@@ -7868,6 +7885,16 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"spectrum",
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
 						set_Spectrum);
+					/* texture_coordinates */
+					set_texture_coordinate_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
+					set_texture_coordinate_field_data.conditional_function=
+						Computed_field_has_up_to_3_numerical_components;
+					set_texture_coordinate_field_data.conditional_function_user_data=
+						(void *)NULL;
+					Option_table_add_entry(option_table,"texture_coordinates",
+						&(settings->texture_coordinate_field),
+						&set_texture_coordinate_field_data,set_Computed_field_conditional);
 					/* visible/invisible */
 					Option_table_add_switch(option_table, "visible", "invisible", &visibility);
 					if (return_code=Option_table_multi_parse(option_table,state))
@@ -8836,8 +8863,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 			Option_table_add_entry(option_table,"position",
 				&(modify_g_element_data->position),NULL,set_int_non_negative);
 			/* scale_factors */
-			Option_table_add_entry(option_table,"scale_factors",
-				glyph_scale_factors,"*",set_special_float3);
+			Option_table_add_special_float3_entry(option_table,"scale_factors",
+				glyph_scale_factors,"*");
 			/* scene */
 			Option_table_add_entry(option_table,"scene",
 				&(modify_g_element_data->scene),
@@ -8859,8 +8886,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				g_element_command_data->graphical_material_manager,
 				set_Graphical_material);
 			/* size */
-			Option_table_add_entry(option_table,"size",
-				glyph_size,"*",set_special_float3);
+			Option_table_add_special_float3_entry(option_table,"size",
+				glyph_size,"*");
 			/* spectrum */
 			Option_table_add_entry(option_table,"spectrum",
 				&(settings->spectrum),g_element_command_data->spectrum_manager,

@@ -955,7 +955,7 @@ DESCRIPTION :
 
 	if (font && text)
 	{
-		if (font->display_list_offset != -1)
+		if (font->display_list_offset)
 		{
 			glBitmap(0, 0, 0, 0, font->offset_x, font->offset_y, NULL);
 			
