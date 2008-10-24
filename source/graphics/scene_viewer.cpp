@@ -713,10 +713,10 @@ DESCRIPTION :
 		printf("min_x=%f max_x=%f  min_y=%f max_y=%f\n",min_x,max_x,min_y,
 			max_y);
 #endif /* defined (DEBUG) */
-		min_i = min_x/texels_per_polygon_x;
-		max_i = ceil(0.999999*max_x/texels_per_polygon_x);
-		min_j = min_y/texels_per_polygon_y;
-		max_j = ceil(0.999999*max_y/texels_per_polygon_y);
+		min_i = (int)(min_x/(double)texels_per_polygon_x);
+		max_i = (int)ceil(0.999999*max_x/(double)texels_per_polygon_x);
+		min_j = (int)(min_y/(double)texels_per_polygon_y);
+		max_j = (int)ceil(0.999999*max_y/(double)texels_per_polygon_y);
 #if defined (DEBUG)
 		/*???debug */
 		printf("min_i=%i max_i=%i  min_j=%i max_j=%i\n",min_i,max_i,min_j,

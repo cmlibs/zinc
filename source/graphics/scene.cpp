@@ -3968,7 +3968,7 @@ DESCRIPTION :
 Returns 1 if the Scene object has a time dependence, 0 if not
 ==============================================================================*/
 {
-	double return_code;
+	int return_code;
 
 	ENTER(Scene_object_has_time);
 	if (scene_object)

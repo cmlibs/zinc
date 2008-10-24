@@ -1279,7 +1279,7 @@ tiles (and <texture_tiling> wasn't NULL.
 				for (i = 0 ; i < texture->dimension ; i++)
 				{
 					(*texture_tiling)->texture_tiles[i] = reductions[i];
-					reductions[i] = 1.0;
+					reductions[i] = 1;
 				}
 				if (texture->dimension > 0)
 				{
@@ -1803,7 +1803,7 @@ and overwritten.
 		if (return_code)
 		{
 			tile_x = tile_number % texture_tiling->texture_tiles[0];
-			start_x = tile_x * cropped_size[0];
+			start_x = (int)(tile_x * cropped_size[0]);
 			end_x = start_x + texture_tiling->tile_size[0];
 			if (end_x > texture->width_texels)
 			{
@@ -1819,7 +1819,7 @@ and overwritten.
 			{
 				tile_y = (tile_number / texture_tiling->texture_tiles[0])
 					% texture_tiling->texture_tiles[1];
-				start_y = tile_y * cropped_size[1];
+				start_y = (int)(tile_y * cropped_size[1]);
 				end_y = start_y + texture_tiling->tile_size[1];
 				if (end_y > texture->height_texels)
 				{
@@ -1837,7 +1837,7 @@ and overwritten.
 				tile_z = (tile_number / (texture_tiling->texture_tiles[0] *
 						texture_tiling->texture_tiles[1]))
 					% texture_tiling->texture_tiles[2];
-				start_z = tile_z * cropped_size[2];
+				start_z = (int)(tile_z * cropped_size[2]);
 				end_z = start_z + texture_tiling->tile_size[2];
 				if (end_z > texture->depth_texels)
 				{

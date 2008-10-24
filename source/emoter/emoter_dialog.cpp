@@ -3509,9 +3509,9 @@ DESCRIPTION :
 			time(&current_time);
 			fprintf(file, ctime(&current_time));
 
-			number_of_frames = slider->emoter_markers
+			number_of_frames = (int)(slider->emoter_markers
 				[slider->number_of_emoter_markers-1]->value
-				- slider->emoter_markers[0]->value + 1;
+				- slider->emoter_markers[0]->value + 1);
 			if ( number_of_frames > 0 && slider->mode_curve )
 			{
 				marker_no = 0;
@@ -3828,7 +3828,7 @@ DESCRIPTION :
 		shared = emoter_dialog->shared;
 		if ( ALLOCATE( command, char, strlen(filename)+100 ))
 		{
-			number_of_frames = floor( emoter_dialog->time_maximum -
+			number_of_frames = (int)floor( emoter_dialog->time_maximum -
 				emoter_dialog->time_minimum + 1);
 			
 			for ( frame = 0 ; frame < number_of_frames ; frame++ )
@@ -4750,7 +4750,7 @@ DESCRIPTION :
 #if defined (MOTIF)
 		busy_cursor_on((Widget)NULL, emoter_dialog->shared->user_interface );
 #endif /* defined (MOTIF) */
-		number_of_frames = floor( emoter_dialog->time_maximum -
+		number_of_frames = (int)floor( emoter_dialog->time_maximum -
 			emoter_dialog->time_minimum + 1);
 		if ( ALLOCATE( temp_data, float *, number_of_frames ))
 		{
@@ -6502,7 +6502,7 @@ Executes a GFX MODIFY EMOTER command.
 					}
 					if (time_flag)
 					{
-						integer_time = time;
+						integer_time = (int)time;
 						emoter_set_play_slider_value(emoter_dialog,
 							integer_time);
 						face_changed = 1;
