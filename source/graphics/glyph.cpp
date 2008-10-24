@@ -291,8 +291,8 @@ Renders the label_bounds as lines and labels.
 			tick_mark_get_grid_spacing(&minor_grid_size,
 				&minor_grids_per_major, grid_scale, min_minor_grid, min_major_grid);
 			
-			first=ceil(label_bounds[label_bounds_component] / minor_grid_size);
-			last=floor(label_bounds[label_bounds_offset + label_bounds_component]
+			first=(int)ceil(label_bounds[label_bounds_component] / minor_grid_size);
+			last=(int)floor(label_bounds[label_bounds_offset + label_bounds_component]
 				/ minor_grid_size);
 		}
 		else
@@ -304,7 +304,7 @@ Renders the label_bounds as lines and labels.
   			tick_mark_get_grid_spacing(&minor_grid_size,
 				&minor_grids_per_major, grid_scale, min_minor_grid, min_major_grid);
 
-			first = ceil(label_bounds[label_bounds_component] / minor_grid_size);
+			first = (int)ceil(label_bounds[label_bounds_component] / minor_grid_size);
 			last = first;
 		}								
 		if (first > last)
