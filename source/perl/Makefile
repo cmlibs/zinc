@@ -61,7 +61,7 @@ ifeq ($(filter-out IRIX%,$(SYSNAME)),)# SGI
    PERL_EXECUTABLES += $(wildcard ${CMISS_ROOT}/perl/bin-5.?.?-irix*/perl)
 endif
 ifeq ($(SYSNAME),AIX)
-   PERL_EXECUTABLES += $(wildcard ${CMISS_ROOT}/perl/bin-5.?.?-rs6000*/perl)
+   PERL_EXECUTABLES += $(wildcard ${CMISS_ROOT}/perl/bin-5.?.?-aix-thread-multi/perl)
 endif
 
 .NOTPARALLEL:
