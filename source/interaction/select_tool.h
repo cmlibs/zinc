@@ -48,6 +48,7 @@ mouse and other devices.
 #include "graphics/material.h"
 #include "interaction/interactive_tool.h"
 #include "selection/any_object_selection.h"
+#include "user_interface/user_interface.h"
 
 /*
 Global types

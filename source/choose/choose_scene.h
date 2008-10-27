@@ -44,9 +44,13 @@ Widget for choosing a scene, based on choose_object macro.
 #if !defined (CHOOSE_SCENE_H)
 #define CHOOSE_SCENE_H
 
+#include "general/list.h"
+#include "general/manager.h"
 #include "choose/choose_object.h"
 struct Scene;
+
 struct MANAGER(Scene);
+DECLARE_LIST_TYPES(Scene);
 
 PROTOTYPE_CHOOSE_OBJECT_GLOBAL_FUNCTIONS(Scene);
 

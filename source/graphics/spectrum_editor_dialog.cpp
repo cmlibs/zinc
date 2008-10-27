@@ -44,6 +44,7 @@ This module creates a spectrum_editor_dialog.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <Xm/Protocols.h>
+extern "C" {
 #include "three_d_drawing/graphics_buffer.h"
 #include "choose/choose_scene.h"
 #include "general/debug.h"
@@ -51,7 +52,6 @@ This module creates a spectrum_editor_dialog.
 #include "general/object.h"
 #include "graphics/light.h"
 #include "graphics/material.h"
-#include "graphics/scene.h"
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_editor.h"
 #include "graphics/spectrum_editor_dialog.h"
@@ -60,6 +60,8 @@ static char spectrum_editor_dialog_uidh[] =
 	;
 #include "select/select_spectrum.h"
 #include "user_interface/message.h"
+}
+#include "graphics/scene.hpp"
 
 /*
 Module Constants

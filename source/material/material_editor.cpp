@@ -45,6 +45,8 @@ Widgets for editing a graphical material.
 #define PI 3.1415927
 #define PI_180 (PI/180.0)
 #include <stdio.h>
+extern "C"
+{
 #include "three_d_drawing/graphics_buffer.h"
 #include "choose/choose_texture.h"
 #include "colour/colour_editor.h"
@@ -58,6 +60,8 @@ static char material_editor_uidh[] =
 #include "material/material_editor.uidh"
 	;
 #include "user_interface/message.h"
+}
+#include "graphics/rendergl.hpp"
 
 /*
 Module constants
@@ -189,10 +193,13 @@ Uses gl to draw a sphere with a lighting source.
 	if (material_editor)
 	{
 		return_code=1;
+
+		Render_graphics_opengl *renderer =
+			Render_graphics_opengl_create_glbeginend_renderer(material_editor->graphics_buffer);
+		
 		/* make sure the Graphical material display list is up-to-date, which
 			 in turn, requires any textures it uses to be compiled */
-		compile_Graphical_material(material_editor->edit_material,
-			NULL, (struct Texture_tiling **)NULL);
+		renderer->Material_compile(material_editor->edit_material);
 #if defined (OPENGL_API)
 		width = Graphics_buffer_get_width(material_editor->graphics_buffer);
 		height = Graphics_buffer_get_height(material_editor->graphics_buffer);
@@ -253,7 +260,7 @@ Uses gl to draw a sphere with a lighting source.
 		if (material_editor->background==0)
 		{
 			/* no material on the RGB background */
-			execute_Graphical_material((struct Graphical_material *)NULL);
+			renderer->Material_execute((struct Graphical_material *)NULL);
 			glDisable(GL_LIGHTING);
 			glBegin(GL_TRIANGLES);
 			/* red */
@@ -277,7 +284,7 @@ Uses gl to draw a sphere with a lighting source.
 				-sphere_panel_dist);
 			glEnd();
 		}
-		execute_Graphical_material(material_editor->edit_material);
+		renderer->Material_execute(material_editor->edit_material);
 		/* draw the sphere */
 		glEnable(GL_LIGHTING);
 		if (texture=Graphical_material_get_texture(material_editor->edit_material))
@@ -329,7 +336,8 @@ Uses gl to draw a sphere with a lighting source.
 			glEnd();
 		}
 		/* turn off material */
-		execute_Graphical_material((struct Graphical_material *)NULL);
+		renderer->Material_execute((struct Graphical_material *)NULL);
+		delete renderer;
 #endif /* defined (OPENGL_API) */
 	}
 	else

@@ -71,6 +71,7 @@ extern "C" {
 #include "transformation/transformation_editor.h"
 #include "user_interface/message.h"
 }
+#include "graphics/scene.hpp"
 
 /*
 Module types

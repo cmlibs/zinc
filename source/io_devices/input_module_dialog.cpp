@@ -46,6 +46,7 @@ data is accepted - pos,tangent,normal.
 #include <Xm/ToggleBG.h>
 #include <math.h>
 #include <stdio.h>
+extern "C" {
 #include "choose/choose_scene.h"
 #include "choose/choose_graphical_material.h"
 #include "dof3/dof3.h"
@@ -55,7 +56,6 @@ data is accepted - pos,tangent,normal.
 #include "general/manager.h"
 #include "general/simple_list.h"
 #include "graphics/graphics_object.h"
-#include "graphics/scene.h"
 #include "io_devices/input_module_dialog.h"
 #if defined (EXT_INPUT)
 static char input_module_dialog_uidh[] =
@@ -67,12 +67,13 @@ static char input_module_dialog_uidh[] =
 #include "io_devices/matrix.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
+}
 
-
+#include "graphics/scene.hpp"
 /* SAB Trying to hide the guts of GT_object and its primitives,
 	however the stream point stuff currently messes around in the guts
 	of a pointset. */
-#include "graphics/graphics_object_private.h"
+#include "graphics/graphics_object_private.hpp"
 
 #if defined (EXT_INPUT)
 

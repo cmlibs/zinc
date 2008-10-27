@@ -42,9 +42,12 @@ Widget for choosing a scene, based on choose_object macro.
  *
  * ***** END LICENSE BLOCK ***** */
 
+extern "C" {
 #include "choose/choose_scene.h"
 #include "choose/choose_object_private.h"
-#include "graphics/scene.h"
+}
+#include "graphics/scene.hpp"
+
 /*
 Module types
 ------------

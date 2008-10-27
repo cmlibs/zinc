@@ -60,7 +60,6 @@ extern "C"
 {
 #include "general/debug.h"
 #include "graphics/graphics_object.h"
-#include "graphics/scene.h"
 #include "graphics/spectrum.h"
 #include "io_devices/matrix.h"
 #include "io_devices/input_module.h"
@@ -68,6 +67,7 @@ extern "C"
 #include "user_interface/user_interface.h"
 }
 #include "io_devices/haptic_input_module.h"
+#include "graphics/scene.hpp"
 
 /*
 Module Constants

@@ -193,16 +193,16 @@ all : cmgui-motif cmgui-motif-debug cmgui64-motif cmgui-console cmgui-motif-debu
 endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
    ifeq ($(MACHNAME),x86_64)
-all : svn_update cmgui-motif cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-motif-static-lib cmgui-motif-debug-static-lib cmgui-no3dgraphics-motif-static-lib cmgui-no3dgraphics-motif-debug-static-lib cmgui-no3dgraphics-motif-debug-memorycheck-static-lib cmgui-gtk-debug-static-lib cmgui-gtk-lib cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck
+all : cmgui-motif cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-motif-static-lib cmgui-motif-debug-static-lib cmgui-no3dgraphics-motif-static-lib cmgui-no3dgraphics-motif-debug-static-lib cmgui-no3dgraphics-motif-debug-memorycheck-static-lib cmgui-gtk-debug-static-lib cmgui-gtk-lib cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck
    else # MACHNAME == x86_64
-all : svn_update cmgui-motif cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-motif-static cmgui-motif-static-debug cmgui-console cmgui-motif-static-lib cmgui-motif-debug-static-lib cmgui-gtk cmgui-gtk-debug cmgui-gtk-lib cmgui-gtk-debug-lib cmgui-gtk-static-lib cmgui-gtk-debug-static-lib cmgui-no3dgraphics-motif-static-lib cmgui-no3dgraphics-motif-debug-static-lib cmgui-no3dgraphics-motif-debug-memorycheck-static-lib cmgui-motif-unemap cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck
+all : cmgui-motif cmgui-motif-debug cmgui-motif-debug-memorycheck cmgui-motif-static cmgui-motif-static-debug cmgui-console cmgui-motif-static-lib cmgui-motif-debug-static-lib cmgui-gtk cmgui-gtk-debug cmgui-gtk-lib cmgui-gtk-debug-lib cmgui-gtk-static-lib cmgui-gtk-debug-static-lib cmgui-no3dgraphics-motif-static-lib cmgui-no3dgraphics-motif-debug-static-lib cmgui-no3dgraphics-motif-debug-memorycheck-static-lib cmgui-motif-unemap cmgui-wx cmgui-wx-debug cmgui-wx-debug-memorycheck
    endif # MACHNAME == x86_64
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)
 all : cmgui-motif cmgui-motif-debug cmgui64-motif cmgui64-motif-debug cmgui-motif-static-lib cmgui-no3dgraphics-motif-static-lib cmgui-no3dgraphics-motif-debug-static-lib cmgui64-no3dgraphics-motif-static-lib cmgui64-no3dgraphics-motif-debug-static-lib
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
-all : svn_update cmgui-win32 cmgui-win32-debug cmgui-gtk cmgui-wx cmgui-wx-debug cmgui-win32-lib cmgui-win32-static-lib cmgui-win32-debug-lib cmgui-win32-debug-static-lib
+all : cmgui-win32 cmgui-win32-debug cmgui-gtk cmgui-wx cmgui-wx-debug cmgui-win32-lib cmgui-win32-static-lib cmgui-win32-debug-lib cmgui-win32-debug-static-lib
 endif # SYSNAME == win32
 ifeq ($(SYSNAME),CYGWIN%=)
 all :
