@@ -49,7 +49,7 @@ enum Graphics_vertex_array_attribute_type
 	/** Specifies that the index of the first vertex for a primitive. */
 	GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
 	/** Records the identifier of a particular primitive for selection and editing. */
-	GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ID,
+	GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ID
 	/* Complex types might be like this...
 	 * GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_VERTEX3_NORMAL3
 	 * and element_array indices might be supported with an DRAW_ELEMENTS set

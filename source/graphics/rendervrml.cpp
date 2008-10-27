@@ -2455,6 +2455,7 @@ Only writes the geometry field.
 								normal_vertex = normal_buffer +
 									normal_values_per_vertex * index_start;
 							}
+							USE_PARAMETER(normal_vertex);
 							draw_polyline_vrml(vrml_file, position_vertex,
 								data_values_per_vertex, data_vertex,
 								object->default_material,object->spectrum,

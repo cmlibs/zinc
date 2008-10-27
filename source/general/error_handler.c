@@ -48,6 +48,7 @@ longjmp .
 #include <stdlib.h>
 #include <stdio.h>
 #include "general/error_handler.h"
+#include <setjmp.h>
 
 /*
 Global variables

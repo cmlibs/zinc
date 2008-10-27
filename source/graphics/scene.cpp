@@ -369,7 +369,7 @@ int Scene_compile_opengl_display_list(struct Scene *scene,
 	Callback_base< Scene * > *execute_function,
 	Render_graphics_opengl *renderer)
 {
-	int fast_changing, return_code;
+	int return_code;
 
 	ENTER(compile_Scene);
 	if (scene)
@@ -379,7 +379,6 @@ int Scene_compile_opengl_display_list(struct Scene *scene,
 		{
 			if (scene->display_list || (scene->display_list = glGenLists(1)))
 			{
-				fast_changing = 0;
 				/* compile non-fast changing part of scene */
 				glNewList(scene->display_list, GL_COMPILE);
 				/* Normally we would call execute_Scene here with the 
@@ -405,15 +404,15 @@ int Scene_compile_opengl_display_list(struct Scene *scene,
 				if (scene->fast_changing_display_list ||
 					(scene->fast_changing_display_list = glGenLists(1)))
 				{
-					fast_changing = 1;
+					renderer->fast_changing = 1;
 					glNewList(scene->fast_changing_display_list, GL_COMPILE);
 					/* push dummy name to be overloaded with scene_object identifiers */
 					glPushName(0);
-					renderer->fast_changing = 1;
 					FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_call_renderer,
 						(void *)renderer, scene->scene_object_list);
 					glPopName();
 					glEndList();
+					renderer->fast_changing = 0;
 				}
 				else
 				{
