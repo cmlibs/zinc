@@ -115,6 +115,8 @@ Module functions
 ----------------
 */
 
+int DESTROY(GT_polyline_vertex_buffers)(struct GT_polyline_vertex_buffers **polyline);
+
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(GT_object,name,const char *,strcmp)
 
 PROTOTYPE_DEFAULT_DESTROY_OBJECT_FUNCTION(Graphics_vertex_buffer);
@@ -571,6 +573,8 @@ from the conditional_function causes the primitive to be removed.
 					graphics_object->primitive_lists)
 				{
 					graphics_object->number_of_times = 0;
+					DESTROY(GT_polyline_vertex_buffers)(
+						&graphics_object->primitive_lists->gt_polyline_vertex_buffers);
 					DEALLOCATE(graphics_object->primitive_lists);
 					DEALLOCATE(graphics_object->times);
 				}
@@ -3296,7 +3300,7 @@ int DESTROY(GT_polyline_vertex_buffers)(GT_polyline_vertex_buffers **polyline)
 	int return_code;
 
 	ENTER(DESTROY(GT_polyline_vertex_buffers));
-	if (polyline)
+	if (polyline && *polyline)
 	{
 		DEALLOCATE(*polyline);
 		return_code=1;
@@ -5681,6 +5685,8 @@ from the conditional_function causes the primitive to be removed.
 				graphics_object->primitive_lists)
 			{
 				graphics_object->number_of_times = 0;
+				DESTROY(GT_polyline_vertex_buffers)(
+					&graphics_object->primitive_lists->gt_polyline_vertex_buffers);
 				DEALLOCATE(graphics_object->primitive_lists);
 				DEALLOCATE(graphics_object->times);
 			}
