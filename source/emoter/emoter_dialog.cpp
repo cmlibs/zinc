@@ -2583,7 +2583,7 @@ DESCRIPTION :
 					XtSetArg(override_arg[0],XmNuserData,emoter_marker);
 					XtSetArg(override_arg[1],XmNpositionIndex,index);
 					if (MrmSUCCESS==MrmFetchWidgetOverride(emoter_dialog_hierarchy,
-						end_marker ? "emoter_marker_end" : "emoter_marker",
+						const_cast<char *>(end_marker ? "emoter_marker_end" : "emoter_marker"),
 						parent,NULL,override_arg,2,
 						&emoter_marker->widget, &emoter_marker_class))
 					{
