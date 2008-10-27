@@ -3674,7 +3674,8 @@ visibility is of type enum GT_visibility_type.
 	ENTER(Scene_object_iterator_set_visibility);
 	if (scene_object)
 	{
-		scene_object->visibility=(enum GT_visibility_type)(int)visibility_void;
+		scene_object->visibility=static_cast<GT_visibility_type>(
+			VOIDPTR2INT(visibility_void));
 		return_code=1;
 	}
 	else

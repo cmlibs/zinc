@@ -9476,7 +9476,7 @@ Executes a GFX DESTROY ELEMENTS command.
 	struct Set_Computed_field_conditional_data set_conditional_field_data;
 
 	ENTER(gfx_destroy_elements);
-	cm_element_type = (enum CM_element_type)(int)cm_element_type_void;
+	cm_element_type = static_cast<CM_element_type>(VOIDPTR2INT(cm_element_type_void));
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		/* initialise defaults */
@@ -12738,7 +12738,7 @@ Executes a GFX LIST ELEMENT.
 	struct Option_table *option_table;
 
 	ENTER(gfx_list_FE_element);
-	cm_element_type = (enum CM_element_type)(int)cm_element_type_void;
+	cm_element_type = static_cast<CM_element_type>(VOIDPTR2INT(cm_element_type_void));
 	if (state && ((CM_ELEMENT == cm_element_type) ||
 		(CM_FACE == cm_element_type) || (CM_LINE == cm_element_type)) &&
 		(command_data = (struct Cmiss_command_data *)command_data_void))
