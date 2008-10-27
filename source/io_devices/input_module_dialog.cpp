@@ -980,7 +980,7 @@ Accepts input from one of the devices.
 
 	if ( identifier && message )
 	{
-		input_module_dialog = identifier;
+		input_module_dialog = static_cast<Input_module_dialog_struct*>(identifier);
 		switch (message->type)
 		{
 			case IM_TYPE_MOTION:
@@ -1273,7 +1273,8 @@ transformation.
 {
 	double temp[3];
 	int i,return_code;
-	struct Input_module_calib_sum_position_struct *sum_position = user_data;
+	struct Input_module_calib_sum_position_struct *sum_position = 
+		static_cast<Input_module_calib_sum_position_struct*>(user_data);
 
 	ENTER(input_module_calib_sum_positions);
 
@@ -1306,7 +1307,8 @@ point positions.
 {
 	double temp[3];
 	int i,return_code;
-	struct Input_module_calib_sum_position_struct *sum_position = user_data;
+	struct Input_module_calib_sum_position_struct *sum_position = 
+		static_cast<Input_module_calib_sum_position_struct*>(user_data);
 
 	ENTER(input_module_calib_sum_difference);
 	return_code=1;
@@ -1339,7 +1341,8 @@ point positions.
 {
 	char new_string[150];
 	int return_code;
-	struct Input_module_calib_sum_position_struct *sum_position = user_data;
+	struct Input_module_calib_sum_position_struct *sum_position = 
+		static_cast<Input_module_calib_sum_position_struct*>(user_data);
 	XmString list_item;
 
 	ENTER(input_module_calib_display_error);
@@ -1370,7 +1373,8 @@ point positions.
 {
 	char new_string[150];
 	int return_code;
-	struct Input_module_calib_sum_position_struct *sum_position = user_data;
+	struct Input_module_calib_sum_position_struct *sum_position = 
+		static_cast<Input_module_calib_sum_position_struct*>(user_data);
 	XmString list_item;
 
 	ENTER(input_module_calib_add_display);
