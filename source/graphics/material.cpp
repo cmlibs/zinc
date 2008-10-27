@@ -1700,6 +1700,7 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Graphical_material,name,const char *,strcm
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Graphical_material)
 
+#if defined (OPENGL_API)
 static int direct_render_Graphical_material(struct Graphical_material *material,
 	Render_graphics_opengl *renderer)
 /*******************************************************************************
@@ -1719,15 +1720,12 @@ sure that when this routine is compiled into different display list the correct
 material results.
 ==============================================================================*/
 {
-#if defined (OPENGL_API)
 	GLfloat values[4];
-#endif /* defined (OPENGL_API) */
 	int return_code;
 
 	ENTER(direct_render_Graphical_material);
 	if (material)
 	{
-#if defined (OPENGL_API)
 		values[0]=(material->diffuse).red;
 		values[1]=(material->diffuse).green;
 		values[2]=(material->diffuse).blue;
@@ -1894,12 +1892,6 @@ material results.
 #endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 		}
 		return_code=1;
-
-#else /* defined (OPENGL_API) */
-		display_message(ERROR_MESSAGE,
-			"direct_render_Graphical_material.  Not defined for this API");
-		return_code=0;
-#endif /* defined (OPENGL_API) */
 	}
 	else
 	{
@@ -1911,6 +1903,7 @@ material results.
 
 	return (return_code);
 } /* direct_render_Graphical_material */
+#endif /* defined (OPENGL_API) */
 
 static void Graphical_material_Spectrum_change(
 	struct MANAGER_MESSAGE(Spectrum) *message, void *material_void)
