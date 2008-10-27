@@ -419,6 +419,7 @@ DECLARE_INDEXED_LIST_FUNCTIONS(Material_program)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Material_program, type,
 	enum Material_program_type, compare_int)
 
+#if defined (OPENGL_API)
 static int Material_program_compile(struct Material_program *material_program)
 /*******************************************************************************
 LAST MODIFIED : 4 July 2007
@@ -1653,6 +1654,7 @@ be shared by multiple materials using the same program.
 
 	return (return_code);
 } /* Material_program_compile */
+#endif /* defined (OPENGL_API) */
 
 #if defined (OPENGL_API)
 static int Material_program_execute(struct Material_program *material_program)
