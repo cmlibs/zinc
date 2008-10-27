@@ -4223,7 +4223,7 @@ DESCRIPTION :
 				(Movie_graphics_set_Graphics_window(emoter_dialog->movie,
 					graphics_window)))
 			{
-				number_of_frames = floor( emoter_dialog->time_maximum -
+				number_of_frames = (int)floor( emoter_dialog->time_maximum -
 					emoter_dialog->time_minimum + 1);
 				for ( frame = 0 ; frame < number_of_frames ; frame++ )
 				{
