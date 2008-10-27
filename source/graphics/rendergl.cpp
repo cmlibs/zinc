@@ -476,7 +476,7 @@ public:
 				int (Render_graphics_opengl_display_list::*)(GT_object*) >
 				execute_method(static_cast<Render_graphics_opengl_display_list*>(this),
 				&Render_graphics_opengl_display_list::Graphics_object_execute_parent);
-			return_code = Graphics_object_compile_opengl_display_list(graphics_object, 
+			return_code = ::Graphics_object_compile_opengl_display_list(graphics_object, 
 				&execute_method, this);
 		}
 		return (return_code);
@@ -484,7 +484,7 @@ public:
 
 	int Graphics_object_execute(GT_object *graphics_object)
 	{
-		return Graphics_object_execute_opengl_display_list(graphics_object, this);
+	  return ::Graphics_object_execute_opengl_display_list(graphics_object, this);
 	}
 
 	int Material_execute_parent(Graphical_material *material)

@@ -3576,7 +3576,7 @@ Converts mouse button-press and motion events into viewing transformations in
 								radius=0.25*(width+height);
 								delta_x=pointer_x-scene_viewer->previous_pointer_x;
 								delta_y=scene_viewer->previous_pointer_y-pointer_y;
-								if (0<(tangent_dist=sqrt(delta_x*delta_x+delta_y*delta_y)))
+								if (0<(tangent_dist=sqrt((double)(delta_x*delta_x+delta_y*delta_y))))
 								{
 									/* get unit vector dx,dy normal to drag line */
 									dx=-(double)delta_y/tangent_dist;
