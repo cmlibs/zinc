@@ -49,13 +49,13 @@ static char select_tool_uidh[] =
 #include "interaction/select_tool.uidh"
 	;
 #include "general/debug.h"
+#include "graphics/scene.h"
 #include "interaction/interaction_graphics.h"
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
 #include "motif/image_utilities.h"
 #include "user_interface/message.h"
 }
-#include "graphics/scene.hpp"
 
 /*
 Module variables

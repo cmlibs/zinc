@@ -50,6 +50,7 @@ Provides the widgets to manipulate spectrum settings.
 extern "C" {
 #include "command/parser.h"
 #include "general/debug.h"
+#include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_editor.h"
@@ -64,7 +65,6 @@ static char spectrum_editor_uidh[] =
 #include "user_interface/user_interface.h"
 }
 
-#include "graphics/scene.hpp"
 /* SAB Trying to hide the guts of GT_object and its primitives,
 	however the spectrum editor is modifying it's primitives quite a bit . */
 #include "graphics/graphics_object_private.hpp"

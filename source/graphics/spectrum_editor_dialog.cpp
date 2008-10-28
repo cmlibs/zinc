@@ -52,6 +52,7 @@ extern "C" {
 #include "general/object.h"
 #include "graphics/light.h"
 #include "graphics/material.h"
+#include "graphics/scene.h"
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_editor.h"
 #include "graphics/spectrum_editor_dialog.h"
@@ -61,7 +62,6 @@ static char spectrum_editor_dialog_uidh[] =
 #include "select/select_spectrum.h"
 #include "user_interface/message.h"
 }
-#include "graphics/scene.hpp"
 
 /*
 Module Constants

@@ -44,6 +44,7 @@ Widget for choosing a scene, based on choose_object macro.
 
 extern "C" {
 #include "choose/choose_scene.h"
+#include "graphics/scene.h"
 #include "choose/choose_object_private.h"
 }
 #include "graphics/scene.hpp"

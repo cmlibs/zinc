@@ -56,6 +56,7 @@ extern "C" {
 #include "general/manager.h"
 #include "general/simple_list.h"
 #include "graphics/graphics_object.h"
+#include "graphics/scene.h"
 #include "io_devices/input_module_dialog.h"
 #if defined (EXT_INPUT)
 static char input_module_dialog_uidh[] =
@@ -69,7 +70,6 @@ static char input_module_dialog_uidh[] =
 #include "user_interface/user_interface.h"
 }
 
-#include "graphics/scene.hpp"
 /* SAB Trying to hide the guts of GT_object and its primitives,
 	however the stream point stuff currently messes around in the guts
 	of a pointset. */
@@ -839,8 +839,8 @@ Receives a pointer to a dof3_struct, and the new data for it.
 
 	if ( user_data && dof3_widget && new_dof3_data )
 	{
-		device = (enum Input_module_device)(((int)user_data) & 0xff);
-		mode = (enum Input_module_data_types)(((int)user_data & 0xff00 ) >> 8);
+	  device = (enum Input_module_device)(VOIDPTR2INT(user_data) & 0xff);
+		mode = (enum Input_module_data_types)((VOIDPTR2INT(user_data) & 0xff00 ) >> 8);
 		new_data = (struct Dof3_data *)new_dof3_data;
 		input_module_set( device, mode, new_data->data );
 	}

@@ -66,6 +66,7 @@ extern "C" {
 #include "graphics/graphical_element.h"
 #include "graphics/graphical_element_editor.h"
 #include "graphics/graphics_object.h"
+#include "graphics/scene.h"
 #include "graphics/scene_editor.h"
 #include "graphics/volume_texture.h"
 #include "transformation/transformation_editor.h"
