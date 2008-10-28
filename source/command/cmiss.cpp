@@ -158,6 +158,7 @@ extern "C" {
 #include "graphics/renderstl.h"
 #include "graphics/rendervrml.h"
 #include "graphics/renderwavefront.h"
+#include "graphics/scene.h"
 }
 #include "graphics/scene.hpp"
 extern "C" {
