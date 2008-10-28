@@ -47,10 +47,10 @@ Create a cpp class that act as a transformation editor for the wx widgets.
 extern "C"{
 #include "io_devices/matrix.h"
 #include "general/debug.h"
+#include "graphics/scene.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 }
-#include "graphics/scene.hpp"
 
 Transformation_editor::Transformation_editor(wxPanel *parent, const char *panel_name, 
 	 struct Scene_object *scene_object, int *auto_apply)

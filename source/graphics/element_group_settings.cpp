@@ -67,10 +67,10 @@ extern "C" {
 #include "graphics/element_group_settings.h"
 #include "graphics/font.h"
 #include "graphics/graphics_object.h"
+#include "graphics/scene.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 }
-#include "graphics/scene.hpp"
 #include "graphics/rendergl.hpp"
 
 /*

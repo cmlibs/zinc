@@ -48,10 +48,10 @@ Structure describing an interactive event containing:
  * ***** END LICENSE BLOCK ***** */
 extern "C" {
 #include "general/debug.h"
+#include "graphics/scene.h"
 #include "interaction/interactive_event.h"
 #include "user_interface/message.h"
 }
-#include "graphics/scene.hpp"
 
 /*
 Module types

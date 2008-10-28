@@ -91,6 +91,7 @@ static char graphics_window_uidh[] =
 extern "C" {
 #include "graphics/light.h"
 #include "graphics/light_model.h"
+#include "graphics/scene.h"
 }
 #include "graphics/scene.hpp"
 extern "C" {

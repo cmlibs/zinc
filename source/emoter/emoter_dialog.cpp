@@ -66,6 +66,7 @@ extern "C" {
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_window.h"
 #include "graphics/movie_graphics.h"
+#include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
 #include "three_d_drawing/movie_extensions.h"
 #include "user_interface/confirmation.h"
@@ -84,7 +85,6 @@ static char emoter_dialog_uidh[] =
 	;
 #endif /* defined (MOTIF) */
 }
-#include "graphics/scene.hpp"
 
 /*
 Module constants

@@ -83,6 +83,7 @@ extern "C" {
 #include "graphics/graphics_object.h"
 #include "graphics/graphical_element.h"
 #include "graphics/light.h"
+#include "graphics/scene.h"
 #include "graphics/texture.h"
 #include "time/time.h"
 #include "time/time_keeper.h"

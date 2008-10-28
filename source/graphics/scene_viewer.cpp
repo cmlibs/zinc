@@ -73,6 +73,7 @@ extern "C" {
 #include "graphics/graphics_library.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
+#include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
 #include "graphics/texture.h"
 #include "graphics/transform_tool.h"
@@ -81,7 +82,6 @@ extern "C" {
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 }
-#include "graphics/scene.hpp"
 #include "graphics/rendergl.hpp"
 #include "graphics/scene_viewer.hpp"
 

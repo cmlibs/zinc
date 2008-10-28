@@ -62,6 +62,7 @@ extern "C" {
 #include "general/statistics.h"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
+#include "graphics/scene.h"
 }
 #include "graphics/scene.hpp"
 extern "C" {

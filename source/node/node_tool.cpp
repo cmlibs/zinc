@@ -61,6 +61,7 @@ extern "C" {
 #include "graphics/element_group_settings.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
+#include "graphics/scene.h"
 #include "help/help_interface.h"
 #include "interaction/interaction_graphics.h"
 #include "interaction/interaction_volume.h"
@@ -76,10 +77,10 @@ static char node_tool_uidh[] =
 #include "region/cmiss_region_chooser.h"
 #endif /* defined (MOTIF) */
 #include "region/cmiss_region.h"
+#include "time/time_keeper.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 }
-#include "graphics/scene.hpp"
 
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"

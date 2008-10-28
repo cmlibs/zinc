@@ -60,11 +60,11 @@ extern "C" {
 #include "general/debug.h"
 #include "graphics/graphics_library.h"
 #include "graphics/material.h"
+#include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
 #include "user_interface/message.h"
 }
 #include "graphics/material.hpp"
-#include "graphics/scene.hpp"
 #include "graphics/scene_viewer.hpp"
 
 #define GL_GLEXT_PROTOTYPES

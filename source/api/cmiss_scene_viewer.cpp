@@ -54,8 +54,8 @@ extern "C" {
 #include "graphics/transform_tool.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/message.h"
+#include "graphics/scene.h"
 }
-#include "graphics/scene.hpp"
 
 /*
 Global functions

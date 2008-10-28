@@ -62,6 +62,7 @@ static char element_tool_uidh[] =
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
+#include "graphics/scene.h"
 #include "help/help_interface.h"
 #include "interaction/interaction_graphics.h"
 #include "interaction/interaction_volume.h"
@@ -70,10 +71,10 @@ static char element_tool_uidh[] =
 #include "motif/image_utilities.h"
 #endif /* defined (MOTIF) */
 #include "region/cmiss_region.h"
+#include "time/time_keeper.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 }
-#include "graphics/scene.hpp"
 
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"

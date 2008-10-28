@@ -146,11 +146,11 @@ LAST MODIFIED : 28 June 2007
 
 DESCRIPTION :
 Creates a texture <name> in <manager> if it can be read from <filename>.
-The extra parameters are supplied to the image reader and will only be 
+The extra parameters are supplied to the image reader and will only be
 used if the image format specified in <filename> does not override them.
 They will normally only be used for formats such as .gray or .rgb which
 only contain raw data. The <specify_format> values are defined in
-Texture.idl.  Supplying zero for any of these parameters ensures that 
+Texture.idl.  Supplying zero for any of these parameters ensures that
 particular parameter will be ignored.
 ==============================================================================*/
 
@@ -219,7 +219,7 @@ DESCRIPTION :
 Specfiy how the graphics hardware rasterises the texture onto the screen.
 ==============================================================================*/
 
-int Cmiss_texture_get_original_texel_sizes(Cmiss_texture_id texture, 
+int Cmiss_texture_get_original_texel_sizes(Cmiss_texture_id texture,
    unsigned int *dimension, unsigned int **original_texel_sizes);
 /*******************************************************************************
 LAST MODIFIED : 25 May 2007
@@ -240,7 +240,7 @@ Returns the rendered texel sizes of the texture.  These indicate what sizes
 were actually loaded into OpenGL and until the texture is rendered will be
 zero.
 ==============================================================================*/
-int Cmiss_texture_get_texture_coordinate_sizes(Cmiss_texture_id texture, 
+int Cmiss_texture_get_texture_coordinate_sizes(Cmiss_texture_id texture,
    unsigned int *dimension, double **texture_coordinate_sizes);
 /*******************************************************************************
 LAST MODIFIED : 25 May 2007
@@ -253,7 +253,7 @@ left of the texture and
 the top right of the texture.
 ==============================================================================*/
 
-int Cmiss_texture_set_texture_coordinate_sizes(Cmiss_texture_id texture, 
+int Cmiss_texture_set_texture_coordinate_sizes(Cmiss_texture_id texture,
    unsigned int dimension, double *texture_coordinate_sizes);
 /*******************************************************************************
 LAST MODIFIED : 25 May 2007
@@ -266,14 +266,12 @@ left of the texture and
 the top right of the texture.
 ==============================================================================*/
 
-/*****************************************************************************//**
-@date LAST MODIFIED : 1 August 2007
-
-Gets the number of components used per texel in the texture.
-
-@param texture The texture object. 
-@return Number of components used per texel, 1, 2, 3 or 4.
-*//*==============================================================================*/
+/***************************************************************************//**
+ * Gets the number of components used per texel in the texture.
+ *
+ * @param texture The texture object.
+ * @return Number of components used per texel, 1, 2, 3 or 4.
+ */
 int Cmiss_texture_get_number_of_components(Cmiss_texture_id texture);
 
 int Cmiss_texture_get_number_of_bytes_per_component(Cmiss_texture_id texture);
@@ -285,14 +283,14 @@ Returns the number of bytes used per components per texel in the texture:
 1 = 8 bit image, 2 = 16 bit image.
 ==============================================================================*/
 
-int Cmiss_texture_write_to_file(Cmiss_texture_id texture, 
+int Cmiss_texture_write_to_file(Cmiss_texture_id texture,
    const char *filename);
 /*******************************************************************************
 LAST MODIFIED : 27 June 2007
 
 DESCRIPTION :
 Writes the <texture> to file <filename>.
-I think it is best to write a separate function if you want to write a 
+I think it is best to write a separate function if you want to write a
 3D texture to a file sequence rather than handle it with this function.
 ==============================================================================*/
 
@@ -316,7 +314,7 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 int Cmiss_texture_get_pixels(Cmiss_texture_id texture,
 	unsigned int left, unsigned int bottom, unsigned int depth_start,
 	int width, int height, int depth,
-	unsigned int padded_width_bytes, unsigned int number_of_fill_bytes, 
+	unsigned int padded_width_bytes, unsigned int number_of_fill_bytes,
 	unsigned char *fill_bytes,
 	int components, unsigned char *destination_pixels);
 /*******************************************************************************
@@ -327,7 +325,7 @@ Fills <destination_pixels> with all or part of <texture>.
 The <left>, <bottom>, <depth_start> and  <width>, <height>, <depth> specify the part of <cmgui_image> output and must be wholly within its bounds.
 Image data is ordered from the bottom row to the top, and within each row from
 the left to the right, and from the front to back.
-If <components> is > 0, the specified components are output at each pixel, 
+If <components> is > 0, the specified components are output at each pixel,
 otherwise all the number_of_components components of the image are output at each pixel.
 Pixel values relate to components by:
   1 -> I    = Intensity;
@@ -368,7 +366,26 @@ LAST MODIFIED : 25 October 2007
 
 DESCRIPTION :
 If the <property> is defined for the <texture>, then a copy is returned (and
-should be DEALLOCATED when finished with).
+should be Cmiss_deallocate when finished with).
 ==============================================================================*/
+
+/*****************************************************************************//**
+ * Gets the number of properties defined for this texture.
+ *
+ * @param texture The texture object.
+ * @return Number of defined properties.
+ */
+unsigned int Cmiss_texture_get_number_of_properties(Cmiss_texture_id texture);
+
+/*****************************************************************************//**
+ * Gets the name of property identified by property_index for this texture.
+ *
+ * @param texture The texture object.
+ * @param property_index The index from 0 to #Cmiss_texture_get_number_of_properties.
+ * @return Returned copy of the property name, should be released with Cmiss_deallocate
+ * when finished with.
+ */
+char *Cmiss_texture_get_property_name(Cmiss_texture_id texture,
+	unsigned int property_index);
 
 #endif /* __CMISS_TEXTURE_H__ */

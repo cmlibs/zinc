@@ -58,13 +58,12 @@ extern "C" {
 #endif /* defined (OLD_CODE) */
 #include "graphics/material.h"
 #include "graphics/rendervrml.h"
-}
-#include "graphics/scene.hpp"
-extern "C" {
+#include "graphics/scene.h"
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
 #include "user_interface/message.h"
 }
+#include "graphics/scene.hpp"
 #include "graphics/graphics_object_private.hpp"
 
 /*

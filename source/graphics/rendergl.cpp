@@ -49,6 +49,7 @@ extern "C" {
 #include "graphics/graphics_object.h"
 #include "graphics/light_model.h"
 #include "graphics/mcubes.h"
+#include "graphics/scene.h"
 #include "graphics/spectrum.h"
 #include "graphics/tile_graphics_objects.h"
 #include "user_interface/message.h"

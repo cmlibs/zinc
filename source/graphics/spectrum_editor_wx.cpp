@@ -12,9 +12,7 @@ extern "C" {
 #include <math.h>
 #include "command/parser.h"
 #include "general/debug.h"
-}
-#include "graphics/scene.hpp"
-extern "C" {
+#include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_settings.h"

@@ -51,8 +51,8 @@ extern "C" {
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
 #include "user_interface/message.h"
+#include "graphics/scene.h"
 }
-#include "graphics/scene.hpp"
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
 #include <wx/tglbtn.h>
