@@ -2448,6 +2448,7 @@ Only writes the geometry field.
 							else
 							{
 								data_values_per_vertex = 0;
+								data_vertex = NULL;
 							}
 							if (normal_buffer)
 							{
