@@ -72,7 +72,8 @@ public:
 	{
 		fast_changing = 0;
 		picking = 0;
-		texture_tiling = NULL;		
+		allow_texture_tiling = 0;
+		texture_tiling = NULL;
 	}
 
 	/***************************************************************************//**
