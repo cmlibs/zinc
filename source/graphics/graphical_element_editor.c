@@ -1457,9 +1457,10 @@ Add button press: create new settings of the current type.
 				if (GT_ELEMENT_SETTINGS_DATA_POINTS==
 					gelem_editor->current_settings_type)
 				{
-					data_fe_region = Cmiss_region_get_FE_region(
-						GT_element_group_get_data_Cmiss_region(
-							gelem_editor->edit_gt_element_group));
+					data_fe_region = FE_region_get_data_FE_region(
+						Cmiss_region_get_FE_region(
+						GT_element_group_get_Cmiss_region(
+							gelem_editor->edit_gt_element_group)));
 					default_coordinate_field=
 						GT_element_group_get_default_coordinate_field(
 							gelem_editor->edit_gt_element_group);
