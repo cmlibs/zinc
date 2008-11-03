@@ -507,12 +507,6 @@ cases in code.
 							(struct MANAGER(FE_basis) *)NULL,
 							(struct LIST(FE_element_shape) *)NULL);
 					} break;
-				case CMISS_REGION_SHARE_FIELDS_DATA_HACK:
-					{
-						/* temporary: region shares master's fields but has its own nodes */
-						region->fields = ACCESS(Cmiss_region_fields)(master_region->fields);
-						fe_region = create_data_hack_FE_region(master_region->fields->fe_region);
-					} break;
 				case CMISS_REGION_SHARE_BASES_SHAPES:
 				default:
 					{
@@ -707,41 +701,6 @@ Consider as private: NOT approved for exposing in API.
 
 	return (region);
 } /* Cmiss_region_create_group */
-
-struct Cmiss_region *Cmiss_region_create_data_hack(
-	struct Cmiss_region *master_region)
-/*******************************************************************************
-LAST MODIFIED : 26 May 2008
-
-DESCRIPTION :
-Creates a Cmiss_region that shares the fields and elements of
-master_region but has its own nodes.
-Region is created with an access_count of 1; DEACCESS to destroy.
-Consider as temporary and private: NOT approved for exposing in API.
-==============================================================================*/
-{
-	struct Cmiss_region *region;
-
-	ENTER(Cmiss_region_create_data_hack);
-	region = (struct Cmiss_region *)NULL;
-	if (master_region)
-	{
-		region = CREATE(Cmiss_region)();
-		if (!region || !Cmiss_region_attach_fields(region, master_region,
-			CMISS_REGION_SHARE_FIELDS_DATA_HACK))
-		{
-			DEACCESS(Cmiss_region)(&region);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_region_create_data_hack.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (region);
-} /* Cmiss_region_create_data_hack */
 
 struct Cmiss_region *Cmiss_region_create_share_globals(
 		struct Cmiss_region *source_region)

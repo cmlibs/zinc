@@ -3400,13 +3400,9 @@ in a grid field.
 	return (element);
 } /* read_FE_element */
 
-/*
-Global functions
-----------------
-*/
-
-int read_exregion_file(struct Cmiss_region *region,
-	struct IO_stream *input_file, struct FE_import_time_index *time_index)
+static int read_exregion_file_private(struct Cmiss_region *region,
+	struct IO_stream *input_file, struct FE_import_time_index *time_index,
+	int use_data)
 /*******************************************************************************
 LAST MODIFIED : 23 May 2008
 
@@ -3520,7 +3516,12 @@ If objects are repeated in the file, they are merged correctly.
 									return_code = 0;
 								}
 							}
-							if (!(fe_region = Cmiss_region_get_FE_region(child_region)))
+							fe_region = Cmiss_region_get_FE_region(child_region);
+							if (use_data)
+							{
+								fe_region=FE_region_get_data_FE_region(fe_region);
+							}
+							if (!fe_region)
 							{
 								location = IO_stream_get_location_string(input_file);
 								display_message(ERROR_MESSAGE, "read_exregion_file.  "
@@ -3867,6 +3868,25 @@ If objects are repeated in the file, they are merged correctly.
 	return (return_code);
 } /* read_exregion_file */
 
+/*
+Global functions
+----------------
+*/
+
+int read_exregion_file(struct Cmiss_region *region,
+	struct IO_stream *input_file, struct FE_import_time_index *time_index)
+{
+	return read_exregion_file_private(region, input_file, time_index,
+		/*use_data*/0);
+}
+
+int read_exdata_file(struct Cmiss_region *region,
+	struct IO_stream *input_file, struct FE_import_time_index *time_index)
+{
+	return read_exregion_file_private(region, input_file, time_index,
+		/*use_data*/1);
+}
+
 int read_exregion_file_of_name(struct Cmiss_region *region, char *file_name,
 	struct IO_stream_package *io_stream_package,
 	struct FE_import_time_index *time_index)
@@ -3888,7 +3908,8 @@ Up to the calling function to check and merge the returned cmiss_region.
 		if ((input_file = CREATE(IO_stream)(io_stream_package))
 			&& (IO_stream_open_for_read(input_file, file_name)))
 		{
-			return_code = read_exregion_file(region, input_file, time_index);
+			return_code = read_exregion_file_private(region, input_file, time_index,
+				/*use_data*/0);
 			IO_stream_close(input_file);
 			DESTROY(IO_stream)(&input_file);
 		}

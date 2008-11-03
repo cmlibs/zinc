@@ -75,7 +75,7 @@ struct Node_viewer *CREATE(Node_viewer)(
 	struct Node_viewer **node_viewer_address,
 	char *dialog_title,
 	struct FE_node *initial_node,
-	struct Cmiss_region *root_region,
+	struct Cmiss_region *root_region, int use_data,
 	struct FE_node_selection *node_selection,
 	struct Computed_field_package *computed_field_package,
 	struct Time_object *time_object,	struct User_interface *user_interface);

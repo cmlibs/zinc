@@ -65,8 +65,7 @@ Region is created with an access_count of 1; DEACCESS to destroy.
 enum Cmiss_region_attach_fields_variant
 {
 	CMISS_REGION_SHARE_BASES_SHAPES,
-	CMISS_REGION_SHARE_FIELDS_GROUP,
-	CMISS_REGION_SHARE_FIELDS_DATA_HACK
+	CMISS_REGION_SHARE_FIELDS_GROUP
 };
 
 int Cmiss_region_attach_fields(struct Cmiss_region *region,

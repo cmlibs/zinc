@@ -2192,9 +2192,10 @@ void AddToSettingList(wxCommandEvent &event)
 				 if (GT_ELEMENT_SETTINGS_DATA_POINTS==
 						scene_editor->current_settings_type)
 				 {
-						FE_region *data_fe_region = Cmiss_region_get_FE_region(
-							 GT_element_group_get_data_Cmiss_region(
-									scene_editor->edit_gt_element_group));
+					FE_region *data_fe_region = FE_region_get_data_FE_region(
+						Cmiss_region_get_FE_region(
+							 GT_element_group_get_Cmiss_region(
+									scene_editor->edit_gt_element_group)));
 						Computed_field *default_coordinate_field=
 							 GT_element_group_get_default_coordinate_field(
 									scene_editor->edit_gt_element_group);

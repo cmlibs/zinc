@@ -83,7 +83,8 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(FE_write_criterion);
 
 int write_exregion_file(FILE *output_file,
 	struct Cmiss_region *root_region, char *write_path,
-	int write_elements, int write_nodes, enum FE_write_criterion write_criterion,
+	int write_elements, int write_nodes, int write_data,
+	enum FE_write_criterion write_criterion,
 	struct FE_field_order_info *field_order_info);
 /*******************************************************************************
 LAST MODIFIED : 7 March 2003
@@ -97,8 +98,9 @@ format this is done so; this is only possible if the output hierarchy is
 two-deep and the second level contains only regions which use their parent's
 name space for fields etc. In all other cases, <region> and </region> elements
 are used to start and end regions so that they can be nested.
-The <write_elements>, <write_nodes>, <write_criterion> and <field_order_info>
-control what part of the regions are written:
+The <write_elements>, <write_nodes>, <write_data>, <write_criterion> and
+<field_order_info> control what part of the regions are written:
+May only use <write_data> if <write_elements> and <write_nodes> are 0.
 If <field_order_info> is NULL, all element fields are written in the default,
 alphabetical order.
 If <field_order_info> is empty, only object identifiers are output.
@@ -113,7 +115,8 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 
 int write_exregion_file_of_name(char *file_name,
 	struct Cmiss_region *root_region, char *write_path,
-	int write_elements, int write_nodes, enum FE_write_criterion write_criterion,
+	int write_elements, int write_nodes, int write_data,
+	enum FE_write_criterion write_criterion,
 	struct FE_field_order_info *field_order_info);
 /*******************************************************************************
 LAST MODIFIED : 18 March 2003

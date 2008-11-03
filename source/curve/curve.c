@@ -5171,14 +5171,14 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 			{
 				sprintf(file_name,"%s.curve.exnode",curve->name);
 				if (!write_exregion_file_of_name(file_name, temp_parent_region,
-					(char *)NULL, /*write_elements*/0, /*write_nodes*/1,
+					(char *)NULL, /*write_elements*/0, /*write_nodes*/1, /*write_data*/0,
 				  FE_WRITE_COMPLETE_GROUP, (struct FE_field_order_info *)NULL))
 				{
 					return_code = 0;
 				}
 				sprintf(file_name,"%s.curve.exelem",curve->name);
 				if (!write_exregion_file_of_name(file_name, temp_parent_region,
-					(char *)NULL, /*write_elements*/1, /*write_nodes*/0,
+					(char *)NULL, /*write_elements*/1, /*write_nodes*/0, /*write_data*/0,
 				  FE_WRITE_COMPLETE_GROUP, (struct FE_field_order_info *)NULL))
 				{
 					return_code = 0;

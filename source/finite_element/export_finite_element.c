@@ -2007,7 +2007,7 @@ listed in it are compared.
 } /* FE_elements_have_same_header */
 
 static int write_FE_region_element(struct FE_element *element,
-	void *write_data_void)
+	void *write_elements_data_void)
 /*******************************************************************************
 LAST MODIFIED : 6 November 2002
 
@@ -2021,34 +2021,34 @@ in the header.
 	FILE *output_file;
 	int new_field_header, new_shape, return_code;
 	struct FE_element_shape *element_shape, *last_element_shape;
-	struct Write_FE_region_element_data *write_data;
+	struct Write_FE_region_element_data *write_elements_data;
 
 	ENTER(write_FE_region_element);
-	if (element &&
-		(write_data = (struct Write_FE_region_element_data *)write_data_void) &&
-			(output_file = write_data->output_file))
+	if (element && (write_elements_data =
+		(struct Write_FE_region_element_data *)write_elements_data_void) &&
+		(output_file = write_elements_data->output_file))
 	{
 		return_code = 1;
 		/* only output the element if it has the specified dimension and fields
 			 appropriate to the write_criterion */
-		if ((write_data->dimension == get_FE_element_dimension(element)) &&
-			FE_element_passes_write_criterion(element, write_data->fe_region,
-				write_data->write_criterion, write_data->field_order_info))
+		if ((write_elements_data->dimension == get_FE_element_dimension(element)) &&
+			FE_element_passes_write_criterion(element, write_elements_data->fe_region,
+				write_elements_data->write_criterion, write_elements_data->field_order_info))
 		{
 			/* work out if shape or field header have changed from last element */
 			if (get_FE_element_shape(element, &element_shape))
 			{
 				new_shape = 1;
 				new_field_header = 1;
-				if (write_data->last_element)
+				if (write_elements_data->last_element)
 				{
-					if (get_FE_element_shape(write_data->last_element,
+					if (get_FE_element_shape(write_elements_data->last_element,
 						&last_element_shape))
 					{
 						new_shape = (element_shape != last_element_shape);
 					}
 					new_field_header = !FE_elements_have_same_header(element,
-						write_data->last_element, write_data->field_order_info);
+						write_elements_data->last_element, write_elements_data->field_order_info);
 				}
 				if (new_shape)
 				{
@@ -2057,19 +2057,19 @@ in the header.
 				if (new_field_header)
 				{
 					write_FE_element_field_info(output_file, element,
-						write_data->field_order_info,
-						&(write_data->output_number_of_nodes),
-						&(write_data->output_node_indices),
-						&(write_data->output_number_of_scale_factors),
-						&(write_data->output_scale_factor_indices));
+						write_elements_data->field_order_info,
+						&(write_elements_data->output_number_of_nodes),
+						&(write_elements_data->output_node_indices),
+						&(write_elements_data->output_number_of_scale_factors),
+						&(write_elements_data->output_scale_factor_indices));
 				}
 				write_FE_element(output_file, element,
-					write_data->field_order_info,
-					write_data->output_number_of_nodes,
-					write_data->output_node_indices,
-					write_data->output_number_of_scale_factors,
-					write_data->output_scale_factor_indices);
-				write_data->last_element = element;
+					write_elements_data->field_order_info,
+					write_elements_data->output_number_of_nodes,
+					write_elements_data->output_node_indices,
+					write_elements_data->output_number_of_scale_factors,
+					write_elements_data->output_scale_factor_indices);
+				write_elements_data->last_element = element;
 			}
 			else
 			{
@@ -2237,7 +2237,7 @@ time this function is called - this function adds on
 } /* write_FE_node_field */
 
 static int write_FE_node_field_info_sub(struct FE_node *node,
-	struct FE_field *field,void *user_data)
+	struct FE_field *field,void *write_nodes_data_void)
 /*******************************************************************************
 LAST MODIFIED : 20 September 1999
 
@@ -2246,14 +2246,14 @@ Calls the write_FE_node_field routine for each FE_node_field
 ==============================================================================*/
 {
 	int return_code;
-	struct Write_FE_node_field_info_sub *write_data;
+	struct Write_FE_node_field_info_sub *write_nodes_data;
 
 	ENTER(write_FE_node_field_info_sub);
-	if (write_data=(struct Write_FE_node_field_info_sub *)user_data)
+	if (write_nodes_data=(struct Write_FE_node_field_info_sub *)write_nodes_data_void)
 	{
-		return_code=write_FE_node_field(write_data->output_file,
-			write_data->field_number,node,field,&(write_data->value_index));
-		write_data->field_number++;
+		return_code=write_FE_node_field(write_nodes_data->output_file,
+			write_nodes_data->field_number,node,field,&(write_nodes_data->value_index));
+		write_nodes_data->field_number++;
 	}
 	else
 	{
@@ -2601,7 +2601,7 @@ listed in it are compared.
 	return (return_code);
 } /* FE_nodes_have_same_header */
 
-static int write_FE_region_node(struct FE_node *node, void *user_data)
+static int write_FE_region_node(struct FE_node *node, void *write_nodes_data_void)
 /*******************************************************************************
 LAST MODIFIED : 10 September 2001
 
@@ -2616,22 +2616,22 @@ has been selected for output) then the header is written out.
 		write_field_values;
 	struct FE_field *field;
 	struct FE_field_order_info *field_order_info;
-	struct Write_FE_region_node_data *write_data;
+	struct Write_FE_region_node_data *write_nodes_data;
 	struct Write_FE_node_field_info_sub field_data;
 
 	ENTER(write_FE_region_node);
-	if (node && (write_data = (struct Write_FE_region_node_data *)user_data) &&
-		(output_file = write_data->output_file))
+	if (node && (write_nodes_data = (struct Write_FE_region_node_data *)write_nodes_data_void) &&
+		(output_file = write_nodes_data->output_file))
 	{
 		return_code = 1;
-		field_order_info = write_data->field_order_info;
+		field_order_info = write_nodes_data->field_order_info;
 		/* write this node? */
-		if (FE_node_passes_write_criterion(node, write_data->write_criterion,
+		if (FE_node_passes_write_criterion(node, write_nodes_data->write_criterion,
 			field_order_info))
 		{
 			/* need to write new header? */
-			if (((struct FE_node *)NULL == write_data->last_node) ||
-				(!FE_nodes_have_same_header(node, write_data->last_node,
+			if (((struct FE_node *)NULL == write_nodes_data->last_node) ||
+				(!FE_nodes_have_same_header(node, write_nodes_data->last_node,
 					field_order_info)))
 			{
 				/* get number of fields in header */
@@ -2706,7 +2706,7 @@ has been selected for output) then the header is written out.
 			}
 			write_FE_node(output_file, node, field_order_info);
 			/* remember the last node to check if header needs to be re-output */
-			write_data->last_node = node;
+			write_nodes_data->last_node = node;
 		}
 	}
 	else
@@ -2744,13 +2744,14 @@ Writes a node group to a file.
 #endif /* defined (OLD_CODE) */
 
 static int write_FE_region(FILE *output_file, struct FE_region *fe_region,
-	int write_elements, int write_nodes, enum FE_write_criterion write_criterion,
+	int write_elements, int write_nodes, int write_data,
+	enum FE_write_criterion write_criterion,
 	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
 LAST MODIFIED : 27 February 2003
 
 DESCRIPTION :
-Writes <fe_region> to the <output_file>.
+Writes <base_fe_region> to the <output_file>.
 If <field_order_info> is NULL, all element fields are written in the default,
 alphabetical order.
 If <field_order_info> is empty, only element identifiers are output.
@@ -2764,6 +2765,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 ==============================================================================*/
 {
 	int dimension, return_code;
+	struct FE_region *use_fe_region;
 	struct Write_FE_region_element_data write_elements_data;
 	struct Write_FE_region_node_data write_nodes_data;
 
@@ -2771,13 +2773,18 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 	if (output_file && fe_region)
 	{
 		return_code = 1;
-		if (write_nodes)
+		use_fe_region = fe_region;
+		if (write_data)
+		{
+			use_fe_region = FE_region_get_data_FE_region(fe_region);
+		}
+		if (write_nodes || write_data)
 		{
 			write_nodes_data.output_file = output_file;
 			write_nodes_data.write_criterion = write_criterion;
 			write_nodes_data.field_order_info = field_order_info;
 			write_nodes_data.last_node = (struct FE_node *)NULL;
-			return_code = FE_region_for_each_FE_node(fe_region,
+			return_code = FE_region_for_each_FE_node(use_fe_region,
 				write_FE_region_node, &write_nodes_data);
 		}
 		if (write_elements)
@@ -2789,13 +2796,13 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 			write_elements_data.output_scale_factor_indices = (int *)NULL;
 			write_elements_data.write_criterion = write_criterion;
 			write_elements_data.field_order_info = field_order_info;
-			write_elements_data.fe_region = fe_region;
+			write_elements_data.fe_region = use_fe_region;
 			write_elements_data.last_element = (struct FE_element *)NULL;
 			/* write 1-D, 2-D then 3-D so lines and faces precede elements */
 			for (dimension = 1; dimension <= 3; dimension++)
 			{
 				write_elements_data.dimension = dimension;
-				if (!FE_region_for_each_FE_element(fe_region,
+				if (!FE_region_for_each_FE_element(use_fe_region,
 					write_FE_region_element, &write_elements_data))
 				{
 					return_code = 0;
@@ -2824,7 +2831,8 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 static int write_Cmiss_region(FILE *output_file, struct Cmiss_region *region,
 	struct Cmiss_region *root_region, int force_no_master_region,
 	char *write_path, struct Cmiss_region *write_region, int indent_level,
-	int write_elements, int write_nodes, enum FE_write_criterion write_criterion,
+	int write_elements, int write_nodes, int write_data,
+	enum FE_write_criterion write_criterion,
 	struct FE_field_order_info *field_order_info,
 	struct LIST(Cmiss_region_write_info) *write_info_list, char *path)
 /*******************************************************************************
@@ -2907,7 +2915,7 @@ Notes:
 				}
 				fprintf(output_file, "<exelem>");
 				return_code = write_FE_region(output_file, fe_region,
-					write_elements, write_nodes, use_write_criterion, field_order_info);
+					write_elements, write_nodes, write_data, use_write_criterion, field_order_info);
 				for (j = 0; j < indent_level; j++)
 				{
 					fputc(' ', output_file);
@@ -3026,8 +3034,9 @@ Notes:
 											((!master_region) || master_region_not_in_file),
 											write_path, write_region,
 											indent_level + EXPORT_INDENT_SPACES,
-											write_elements, write_nodes, write_criterion,
-											field_order_info, write_info_list, child_path);
+											write_elements, write_nodes, write_data,
+											write_criterion, field_order_info,
+											write_info_list, child_path);
 										write_status = CMISS_REGION_WRITTEN;
 									}
 									else
@@ -3111,7 +3120,8 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(FE_write_criterion)
 
 int write_exregion_file(FILE *output_file,
 	struct Cmiss_region *root_region, char *write_path,
-	int write_elements, int write_nodes, enum FE_write_criterion write_criterion,
+	int write_elements, int write_nodes, int write_data,
+	enum FE_write_criterion write_criterion,
 	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
 LAST MODIFIED : 16 April 2003
@@ -3125,8 +3135,9 @@ format this is done so; this is only possible if the output hierarchy is
 two-deep and the second level contains only regions which use their parent's
 name space for fields etc. In all other cases, <region> and </region> elements
 are used to start and end regions so that they can be nested.
-The <write_elements>, <write_nodes>, <write_criterion> and <field_order_info>
-control what part of the regions are written:
+The <write_elements>, <write_nodes>, <write_data>, <write_criterion> and
+<field_order_info> control what part of the regions are written:
+May only use <write_data> if <write_elements> and <write_nodes> are 0.
 If <field_order_info> is NULL, all element fields are written in the default,
 alphabetical order.
 If <field_order_info> is empty, only object identifiers are output.
@@ -3151,7 +3162,8 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 	if (output_file && root_region && 
 		Cmiss_region_get_number_of_child_regions(root_region, &number_of_children)
 		&& ((!write_path) || (Cmiss_region_get_region_from_path(root_region,
-			write_path, &write_region) && write_region)))
+			write_path, &write_region) && write_region)) &&
+			(!write_data || (!write_elements && !write_nodes)))
 	{
 		return_code = 1;
 		/* determine if the region hierarchy can be written in the old format
@@ -3190,7 +3202,8 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				return_code = write_Cmiss_region(output_file,
 					root_region, root_region, /*no_master*/1, write_path,
 					/*write_region*/(struct Cmiss_region *)NULL, EXPORT_INDENT_SPACES,
-					write_elements, write_nodes, write_criterion, field_order_info,
+					write_elements, write_nodes, write_data,
+					write_criterion, field_order_info,
 					write_info_list, /*path*/"");
 				fprintf(output_file, "</regionml>\n");
 				DESTROY(LIST(Cmiss_region_write_info))(&write_info_list);
@@ -3210,7 +3223,8 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 						if (fe_region = Cmiss_region_get_FE_region(child_region))
 						{
 							return_code = write_FE_region(output_file, fe_region,
-								write_elements, write_nodes, write_criterion, field_order_info);
+								write_elements, write_nodes, write_data,
+								write_criterion, field_order_info);
 						}
 						DEALLOCATE(child_region_name);
 					}
@@ -3236,7 +3250,8 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 
 int write_exregion_file_of_name(char *file_name,
 	struct Cmiss_region *root_region, char *write_path,
-	int write_elements, int write_nodes, enum FE_write_criterion write_criterion,
+	int write_elements, int write_nodes, int write_data,
+	enum FE_write_criterion write_criterion,
 	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
 LAST MODIFIED : 18 March 2003
@@ -3255,7 +3270,7 @@ Opens <file_name> for writing, calls write_exregion_file and then closes the fil
 		if (output_file = fopen(file_name, "w"))
 		{
 			return_code = write_exregion_file(output_file,
-				root_region, write_path, write_elements, write_nodes,
+				root_region, write_path, write_elements, write_nodes, write_data,
 				write_criterion, field_order_info);
 			fclose(output_file);
 		}

@@ -91,10 +91,10 @@ struct Node_tool *CREATE(Node_tool)(
 LAST MODIFIED : 15 January 2003
 
 DESCRIPTION :
-Creates a Node_tool for editing nodes/data in the <node_manager>,
+Creates a Node_tool for editing nodes/data in the <root_region>,
 using the <node_selection>.
-The <use_data> flag indicates that <node_manager> and <node_selection>
-refer to data, not nodes, needed since different GT_element_settings types are
+The <use_data> flag indicates to use data, and that the <node_selection>
+refers to data, not nodes; needed since different GT_element_settings types are
 used to represent them. <element_manager> should be NULL if <use_data> is true.
 ==============================================================================*/
 

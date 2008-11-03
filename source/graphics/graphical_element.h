@@ -92,7 +92,6 @@ PROTOTYPE_OBJECT_FUNCTIONS(GT_element_group);
 
 struct GT_element_group *CREATE(GT_element_group)(
 	struct Cmiss_region *cmiss_region,
-	struct Cmiss_region *data_cmiss_region,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
@@ -102,9 +101,7 @@ LAST MODIFIED : 14 March 2003
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphical finite element group for
-the given <cmiss_region> and <data_cmiss_region>. Neither region is accessed;
-instead the Scene is required to destroy GT_element_group if either region is
-destroyed.
+the given <cmiss_region>.
 If supplied, callbacks are requested from the <element_selection> and
 <node_selection> to enable automatic highlighting of selected graphics.
 ==============================================================================*/
@@ -338,15 +335,6 @@ LAST MODIFIED : 3 December 2002
 
 DESCRIPTION :
 Returns the Cmiss_region used by <gt_element_group>.
-==============================================================================*/
-
-struct Cmiss_region *GT_element_group_get_data_Cmiss_region(
-	struct GT_element_group *gt_element_group);
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Returns the data_Cmiss_region used by <gt_element_group>.
 ==============================================================================*/
 
 int GT_element_group_list_commands(struct GT_element_group *gt_element_group,

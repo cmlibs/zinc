@@ -172,17 +172,15 @@ supplied then a default empty object will be created for this region.  (Allowing
 them to be specified allows sharing across regions).
 ==============================================================================*/
 
-struct FE_region *create_data_hack_FE_region(
-	struct FE_region *data_hack_master_fe_region);
+struct FE_region *FE_region_get_data_FE_region(struct FE_region *fe_region);
 /*******************************************************************************
-LAST MODIFIED : 29 November 2002
+LAST MODIFIED : 24 October 2008
 
 DESCRIPTION :
-???RC Temporary until data is removed from cmgui.
-Creates a FE_region using its own nodes but with fields and elements from
-<data_hack_master_fe_region>.
-???RC Must destroy the data_root_region before root_region so the borrowed
-fe_time, fe_field_list etc. are still around.
+Gets the data FE_region for <fe_region>, which has an additional set
+of discrete data objects, just like nodes, which we call "data". Data points
+in the data_FE_region share the same fields as <fe_region>.
+Returns NULL with error if <fe_region> is itself a data region.
 ==============================================================================*/
 
 int DESTROY(FE_region)(struct FE_region **fe_region_address);
@@ -489,14 +487,14 @@ FE_node conditional function version of FE_region_contains_FE_node.
 Returns true if <node> is in <fe_region>.
 ==============================================================================*/
 
-int FE_region_or_data_hack_FE_region_contains_FE_node(struct FE_region *fe_region,
+int FE_region_or_data_FE_region_contains_FE_node(struct FE_region *fe_region,
 	struct FE_node *node);
 /*******************************************************************************
 LAST MODIFIED : 26 April 2005
 
 DESCRIPTION :
-Returns true if <node> is in <fe_region> or if the <fe_region> has a data_hack
-region attached to it in that attached region.
+Returns true if <node> is in <fe_region> or if the <fe_region> has a
+data_FE_region attached to it in that attached region.
 ==============================================================================*/
 
 int FE_node_is_not_in_FE_region(struct FE_node *node, void *fe_region_void);
@@ -1159,24 +1157,6 @@ it contains will be significantly modified during the merge. It would be more
 expensive to keep FE_regions unchanged during the merge, a behaviour not
 required at this time for import functions. If this is required in future,
 FE_regions_merge would have to be changed.
-==============================================================================*/
-
-void Cmiss_region_synchronise_children_with_FE_region(
-	struct Cmiss_region *region1, struct Cmiss_region_changes *region_changes,
-	void *region2_void);
-/*******************************************************************************
-LAST MODIFIED : 16 May 2003
-
-DESCRIPTION :
-Callback from <region1> informing of <changes>.
-Ensures <region2> has children of the same name and in the same order as
-<region1>. Any newly created child regions in <region2> are created with
-FE_regions using the FE_region from <region2> as their master_fe_region.
-Used to keep root_region and data_root_region in sync.
-???RC Temporary: remove once data_root_region is eliminated.
-???RC Note cannot handle renaming children.
-???RC Note cannot handle both root_region and data_root_region simultaneously
-having children added or removed.
 ==============================================================================*/
 
 #endif /* !defined (FINITE_ELEMENT_REGION_H) */

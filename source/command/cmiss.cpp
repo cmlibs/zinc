@@ -313,8 +313,6 @@ DESCRIPTION :
 	struct MANAGER(Comfile_window) *comfile_window_manager;
 #endif /* defined (MOTIF) || (WX_USER_INTERFACE)*/
 	struct Cmiss_region *root_region;
-		/*???RC data_root_region is temporary until data is removed */
-	struct Cmiss_region *data_root_region;
 	struct Computed_field_package *computed_field_package;
 	struct MANAGER(Environment_map) *environment_map_manager;
 	struct MANAGER(FE_basis) *basis_manager;
@@ -674,7 +672,7 @@ DESCRIPTION :
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *region;
 	struct Computed_field *sort_by_field;
-	struct FE_region *fe_region;
+	struct FE_region *data_fe_region, *fe_region;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_sort_by_field_data;
 
@@ -736,74 +734,69 @@ DESCRIPTION :
 
 		if (return_code = Option_table_multi_parse(option_table,state))
 		{
-			if (data_flag)
+			if (Cmiss_region_get_region_from_path(command_data->root_region,
+				region_path, &region) &&
+				(fe_region = Cmiss_region_get_FE_region(region)))
 			{
-				if (Cmiss_region_get_region_from_path(command_data->data_root_region,
-					region_path, &region) &&
-					(fe_region = Cmiss_region_get_FE_region(region)))
+				FE_region_begin_change(fe_region);
+				if (element_flag)
 				{
-					FE_region_begin_change(fe_region);
-					if (!FE_region_change_node_identifiers(fe_region,
-						data_offset, sort_by_field, time))
+					if (!FE_region_change_element_identifiers(fe_region,
+						CM_ELEMENT,	element_offset, sort_by_field, time))
 					{
 						return_code = 0;
 					}
-					FE_region_end_change(fe_region);
 				}
-				else
+				if (face_flag)
 				{
-					display_message(ERROR_MESSAGE,
-						"gfx_change_identifier.  Invalid data region");
-					return_code = 0;
+					if (!FE_region_change_element_identifiers(fe_region,
+						CM_FACE,	face_offset, sort_by_field, time))
+					{
+						return_code = 0;
+					}
 				}
+				if (line_flag)
+				{
+					if (!FE_region_change_element_identifiers(fe_region,
+						CM_LINE,	line_offset, sort_by_field, time))
+					{
+						return_code = 0;
+					}
+				}
+				if (node_flag)
+				{
+					if (!FE_region_change_node_identifiers(fe_region,
+						node_offset, sort_by_field, time))
+					{
+						return_code = 0;
+					}
+				}
+				if (data_flag)
+				{
+					if (data_fe_region=FE_region_get_data_FE_region(fe_region))
+					{
+						FE_region_begin_change(data_fe_region);
+						if (!FE_region_change_node_identifiers(data_fe_region,
+							data_offset, sort_by_field, time))
+						{
+							return_code = 0;
+						}
+						FE_region_end_change(data_fe_region);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx_change_identifier.  Invalid data region");
+						return_code = 0;
+					}
+				}
+				FE_region_end_change(fe_region);
 			}
-			if (element_flag || face_flag || line_flag || node_flag)
+			else
 			{
-				if (Cmiss_region_get_region_from_path(command_data->root_region,
-					region_path, &region) &&
-					(fe_region = Cmiss_region_get_FE_region(region)))
-				{
-					FE_region_begin_change(fe_region);
-					if (element_flag)
-					{
-						if (!FE_region_change_element_identifiers(fe_region,
-							CM_ELEMENT,	element_offset, sort_by_field, time))
-						{
-							return_code = 0;
-						}
-					}
-					if (face_flag)
-					{
-						if (!FE_region_change_element_identifiers(fe_region,
-							CM_FACE,	face_offset, sort_by_field, time))
-						{
-							return_code = 0;
-						}
-					}
-					if (line_flag)
-					{
-						if (!FE_region_change_element_identifiers(fe_region,
-							CM_LINE,	line_offset, sort_by_field, time))
-						{
-							return_code = 0;
-						}
-					}
-					if (node_flag)
-					{
-						if (!FE_region_change_node_identifiers(fe_region,
-							node_offset, sort_by_field, time))
-						{
-							return_code = 0;
-						}
-					}
-					FE_region_end_change(fe_region);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx_change_identifier.  Invalid region");
-					return_code = 0;
-				}
+				display_message(ERROR_MESSAGE,
+					"gfx_change_identifier.  Invalid region");
+				return_code = 0;
 			}
 		}
 		DESTROY(Option_table)(&option_table);
@@ -2257,16 +2250,17 @@ Executes a GFX CREATE ELEMENT_SELECTION_CALLBACK command.
 } /* gfx_create_element_selection_callback */
 
 static int gfx_create_group(struct Parse_state *state,
-	void *use_nodes, void *root_region_void)
+	void *use_object_type, void *root_region_void)
 /*******************************************************************************
 LAST MODIFIED : 15 August 2006
 
 DESCRIPTION :
 Executes a GFX CREATE GROUP command.
+<use_object_type> is an integer; 0=elements, 1=nodes, 2=data.
 ==============================================================================*/
 {
 	char *from_region_path, *name, *region_path;
-	int return_code;
+	int return_code, object_type;
 	struct CM_element_type_Multi_range_data element_data;
 	struct Cmiss_region *base_region, *from_region, *region, *root_region;
 	struct FE_region *fe_region, *from_fe_region;
@@ -2276,6 +2270,7 @@ Executes a GFX CREATE GROUP command.
 	ENTER(gfx_create_group);
 	if (state && (root_region = (struct Cmiss_region *)root_region_void))
 	{
+		object_type=VOIDPTR2INT(use_object_type);
 		name = (char *)NULL;
 		if (set_name(state, (void *)&name, (void *)1))
 		{
@@ -2309,6 +2304,10 @@ Executes a GFX CREATE GROUP command.
 						&base_region);
 					region = Cmiss_region_create_group(base_region);
 					fe_region = Cmiss_region_get_FE_region(region);
+					if (object_type==/*data*/2)
+					{
+						fe_region = FE_region_get_data_FE_region(fe_region);
+					}
 					FE_region_begin_change(fe_region);
 					if (0 < Multi_range_get_number_of_ranges(add_ranges))
 					{
@@ -2316,9 +2315,13 @@ Executes a GFX CREATE GROUP command.
 							&from_region) &&
 							(from_fe_region = Cmiss_region_get_FE_region(from_region)))
 						{
-							if (use_nodes)
+							if (object_type != /*elements*/0)
 							{
-								/* add nodes */
+								if (object_type==/*data*/2)
+								{
+									from_fe_region = FE_region_get_data_FE_region(from_fe_region);
+								}
+								/* add nodes or data */
 								return_code =
 									FE_region_for_each_FE_node_conditional(from_fe_region,
 										FE_node_is_in_Multi_range, (void *)add_ranges,
@@ -3218,7 +3221,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 		/* surface_data_group */
 		Option_table_add_entry(option_table, "surface_data_group",
 			&surface_data_region_path,
-			command_data->data_root_region, set_Cmiss_region_path);
+			command_data->root_region, set_Cmiss_region_path);
 		/* time */
 		Option_table_add_entry(option_table,"time",&time,NULL,set_float);
 		/* use_elements/use_faces/use_lines */
@@ -3250,10 +3253,10 @@ Executes a GFX CREATE ISO_SURFACES command.
 			surface_data_fe_region = (struct FE_region *)NULL;
 			if (surface_data_region_path)
 			{
-				if (!(Cmiss_region_get_region_from_path(command_data->data_root_region,
+				if (!(Cmiss_region_get_region_from_path(command_data->root_region,
 					surface_data_region_path, &surface_data_region) &&
-					(surface_data_fe_region =
-						Cmiss_region_get_FE_region(surface_data_region))))
+					(surface_data_fe_region = FE_region_get_data_FE_region(
+						Cmiss_region_get_FE_region(surface_data_region)))))
 				{
 					display_message(ERROR_MESSAGE,
 						"gfx_create_iso_surfaces.  Invalid surface_data_region");
@@ -4162,7 +4165,7 @@ Executes a GFX CREATE NODE_VIEWER command.
 							&(command_data->node_viewer),
 							"Node Viewer",
 							(struct FE_node *)NULL,
-							command_data->root_region,
+							command_data->root_region, /*use_data*/0,
 							command_data->node_selection,
 							command_data->computed_field_package,
 							time_object, command_data->user_interface))
@@ -4253,7 +4256,7 @@ Executes a GFX CREATE DATA_VIEWER command.
 							&(command_data->data_viewer),
 							"Data Viewer",
 							(struct FE_node *)NULL,
-							command_data->data_root_region,
+							command_data->root_region, /*use_data*/1,
 							command_data->data_selection,
 							command_data->computed_field_package,
 							time_object, command_data->user_interface))
@@ -4397,7 +4400,7 @@ If <use_data> is set, creating data points, otherwise creating node points.
 	FE_value base_size[3], centre[3], scale_factors[3], time;
 	int number_of_components, return_code;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *region, *root_region;
+	struct Cmiss_region *region;
 	struct Computed_field *coordinate_field, *data_field, *label_field,
 		*orientation_scale_field, *rc_coordinate_field, *variable_scale_field,
 		*wrapper_orientation_scale_field;
@@ -4418,12 +4421,10 @@ If <use_data> is set, creating data points, otherwise creating node points.
 		/* initialise defaults */
 		if (use_data)
 		{
-			root_region = command_data->data_root_region;
 			graphics_object_name = duplicate_string("data_points");
 		}
 		else
 		{
-			root_region = command_data->root_region;
 			graphics_object_name = duplicate_string("node_points");
 		}
 		/* default to point glyph for fastest possible display */
@@ -4489,7 +4490,7 @@ If <use_data> is set, creating data points, otherwise creating node points.
 			&set_data_field_data,set_Computed_field_conditional);
 		/* from */
 		Option_table_add_entry(option_table, "from", &region_path,
-			root_region, set_Cmiss_region_path);
+			command_data->root_region, set_Cmiss_region_path);
 		/* glyph */
 		Option_table_add_entry(option_table,"glyph",&glyph,
 			command_data->glyph_list,set_Graphics_object);
@@ -4539,8 +4540,9 @@ If <use_data> is set, creating data points, otherwise creating node points.
 		return_code = Option_table_multi_parse(option_table,state);
 		if (return_code)
 		{
-			if (!(Cmiss_region_get_region_from_path(root_region, region_path, &region)
-				&& (fe_region = Cmiss_region_get_FE_region(region))))
+			if (!(Cmiss_region_get_region_from_path(command_data->root_region, region_path, &region)
+				&& (fe_region = Cmiss_region_get_FE_region(region)) &&
+				((!use_data) || (fe_region=FE_region_get_data_FE_region(fe_region)))))
 			{
 				display_message(ERROR_MESSAGE,
 					"gfx_create_node_points.  Invalid region");
@@ -4789,11 +4791,7 @@ Executes a GFX CREATE SCENE command.
 				modify_scene_data.scene_manager=command_data->scene_manager;
 				modify_scene_data.default_scene=command_data->default_scene;
 				/* following used for enabling GFEs */
-				modify_scene_data.computed_field_manager=
-					Computed_field_package_get_computed_field_manager(
-						command_data->computed_field_package);
 				modify_scene_data.root_region = command_data->root_region;
-				modify_scene_data.data_root_region = command_data->data_root_region;
 				modify_scene_data.element_point_ranges_selection=
 					command_data->element_point_ranges_selection;
 				modify_scene_data.element_selection=command_data->element_selection;
@@ -5577,14 +5575,14 @@ Executes a GFX CREATE STREAMLINES command.
 		set_seed_data_field_data.conditional_function = FE_field_has_value_type;
 		set_seed_data_field_data.user_data = (void *)ELEMENT_XI_VALUE;
 		set_seed_data_field_data.fe_region =
-			Cmiss_region_get_FE_region(command_data->data_root_region);
+			FE_region_get_data_FE_region(Cmiss_region_get_FE_region(command_data->root_region));
 		Option_table_add_entry(option_table, "seed_data_field", &seed_data_field,
 			(void *)&set_seed_data_field_data,
 			set_FE_field_conditional_FE_region);
 		/* seed_data_group */
 		Option_table_add_entry(option_table, "seed_data_group",
 			&seed_data_region_path,
-			command_data->data_root_region, set_Cmiss_region_path);
+			command_data->root_region, set_Cmiss_region_path);
 		/* seed_element */
 		Option_table_add_entry(option_table, "seed_element",
 			&seed_element, Cmiss_region_get_FE_region(command_data->root_region),
@@ -5664,10 +5662,10 @@ Executes a GFX CREATE STREAMLINES command.
 			if (seed_data_region_path)
 			{
 				if (!(Cmiss_region_get_region_from_path(
-					command_data->data_root_region,
+					command_data->root_region,
 					seed_data_region_path, &seed_data_region) &&
-					(seed_data_fe_region =
-						Cmiss_region_get_FE_region(seed_data_region))))
+					(seed_data_fe_region = FE_region_get_data_FE_region(
+						Cmiss_region_get_FE_region(seed_data_region)))))
 				{
 					display_message(ERROR_MESSAGE,
 						"gfx_create_streamlines.  Invalid seed_data_region");
@@ -8006,7 +8004,7 @@ Executes a GFX CREATE WINDOW command.
 								command_data->execute_command);
 						CREATE(Node_tool)(
 								interactive_tool_manager,
-								command_data->data_root_region, /*use_data*/1,
+								command_data->root_region, /*use_data*/1,
 								command_data->data_selection,
 								command_data->computed_field_package,
 								Material_package_get_default_material(command_data->material_package),
@@ -8333,7 +8331,6 @@ Executes a GFX CREATE CMISS_CONNECTION command.
 					if (CMISS=CREATE(CMISS_connection)(host_name, host_type,
 						connection_number, wormhole_timeout, mycm_flag,
 						asynchronous_commands, command_data->root_region,
-						command_data->data_root_region,
 						&(command_data->prompt_window),
 						parameters_file_name,examples_directory,
 						command_data->user_interface))
@@ -8952,9 +8949,9 @@ Executes a GFX CREATE command.
 #endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
 				Option_table_add_entry(option_table,"data_points",/*use_data*/(void *)1,
 					command_data_void,gfx_create_node_points);
-				Option_table_add_entry(option_table, "dgroup", /*use_nodes*/(void *)1,
-					(void *)command_data->data_root_region, gfx_create_group);
-				Option_table_add_entry(option_table, "egroup", /*use_nodes*/(void *)0,
+				Option_table_add_entry(option_table, "dgroup", /*use_object_type*/(void *)2,
+					(void *)command_data->root_region, gfx_create_group);
+				Option_table_add_entry(option_table, "egroup", /*use_object_type*/(void *)0,
 					(void *)command_data->root_region, gfx_create_group);
 #if defined (MOTIF) || defined (WX_USER_INTERFACE)
 				Option_table_add_entry(option_table,"element_creator",NULL,
@@ -9043,7 +9040,7 @@ Executes a GFX CREATE command.
 					/*create_more*/(void *)1, command_data_void, gfx_create_flow_particles);
 				Option_table_add_entry(option_table,"morph",NULL,
 					command_data_void,gfx_create_morph);
-				Option_table_add_entry(option_table, "ngroup", /*use_nodes*/(void *)1,
+				Option_table_add_entry(option_table, "ngroup", /*use_object_type*/(void *)1,
 					(void *)command_data->root_region, gfx_create_group);
 				Option_table_add_entry(option_table,"node_points",/*use_data*/(void *)0,
 					command_data_void,gfx_create_node_points);
@@ -9902,7 +9899,7 @@ use node_manager and node_selection.
 	FE_value time;
 	int number_not_destroyed, return_code;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *region, *root_region;
+	struct Cmiss_region *region;
 	struct Computed_field *conditional_field;
 	struct FE_node_selection *node_selection;
 	struct FE_region *fe_region, *master_fe_region;
@@ -9916,12 +9913,10 @@ use node_manager and node_selection.
 	{
 		if (use_data)
 		{
-			root_region = command_data->data_root_region;
 			node_selection = command_data->data_selection;
 		}
 		else
 		{
-			root_region = command_data->root_region;
 			node_selection = command_data->node_selection;
 		}
 		/* initialise defaults */
@@ -9954,7 +9949,7 @@ use node_manager and node_selection.
 			set_Computed_field_conditional);
 		/* group */
 		Option_table_add_entry(option_table, "group", &region_path,
-			root_region, set_Cmiss_region_path);
+			command_data->root_region, set_Cmiss_region_path);
 		/* selected */
 		Option_table_add_entry(option_table, "selected", &selected_flag,
 			NULL, set_char_flag);
@@ -9964,11 +9959,12 @@ use node_manager and node_selection.
 		if (return_code = Option_table_multi_parse(option_table, state))
 		{
 			if (((region_path &&
-				Cmiss_region_get_region_from_path(root_region, region_path, &region)) ||
+				Cmiss_region_get_region_from_path(command_data->root_region, region_path, &region)) ||
 				((all_flag || selected_flag ||
 					(0 < Multi_range_get_number_of_ranges(node_ranges))) &&
-					(region = root_region))) &&
+					(region = command_data->root_region))) &&
 				(fe_region = Cmiss_region_get_FE_region(region)) &&
+				((!use_data) || (fe_region=FE_region_get_data_FE_region(fe_region))) &&
 				FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region))
 			{
 				if (destroy_node_list =
@@ -10353,7 +10349,7 @@ Executes a GFX DESTROY command.
 					command_data_void, gfx_destroy_nodes);
 				/* dgroup */
 				Option_table_add_entry(option_table, "dgroup", NULL,
-					command_data->data_root_region, gfx_remove_region);
+					command_data->root_region, gfx_remove_region);
 				/* egroup */
 				Option_table_add_entry(option_table, "egroup", NULL,
 					command_data->root_region, gfx_remove_region);
@@ -10495,7 +10491,7 @@ Executes a GFX DRAW command.
 	struct GT_object *graphics_object;
 	int return_code, position;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *data_region, *region;
+	struct Cmiss_region *region;
 	struct Scene *child_scene, *scene;
 	struct Scene_add_graphics_object_iterator_data data;
 	struct Option_table *option_table;
@@ -10587,16 +10583,14 @@ Executes a GFX DRAW command.
 			else if (region_path)
 			{
 				if (Cmiss_region_get_region_from_path(command_data->root_region,
-					region_path, &region) &&
-					Cmiss_region_get_region_from_path(command_data->data_root_region,
-						region_path, &data_region))
+					region_path, &region))
 				{
 					if (!scene_object_name)
 					{
 						scene_object_name = duplicate_string(region_path);
 					}
 					return_code = Scene_add_graphical_element_group(scene,
-						region, data_region, position, scene_object_name);
+						region, position, scene_object_name);
 				}
 			}
 			else
@@ -10789,30 +10783,22 @@ Executes a GFX EDIT GRAPHICS_OBJECT command.
 							if ((region = GT_element_group_get_Cmiss_region(gt_element_group))
 								&& (fe_region = Cmiss_region_get_FE_region(region)))
 							{
+								/* nodes */
 								data.fe_region = fe_region;
 								FE_region_begin_change(fe_region);
 								FE_region_for_each_FE_node(fe_region,
 									apply_transformation_to_node, (void *)&data);
 								FE_region_end_change(fe_region);
+								/* data */
+								data.fe_region = FE_region_get_data_FE_region(fe_region);
+								FE_region_begin_change(data.fe_region);
+								FE_region_for_each_FE_node(data.fe_region,
+									apply_transformation_to_node, (void *)&data);
+								FE_region_end_change(data.fe_region);
 							}
 							else
 							{
 								display_message(WARNING_MESSAGE, "Invalid region");
-								return_code = 0;
-							}
-							if ((region =
-								GT_element_group_get_data_Cmiss_region(gt_element_group)) &&
-								(fe_region = Cmiss_region_get_FE_region(region)))
-							{
-								data.fe_region = fe_region;
-								FE_region_begin_change(fe_region);
-								FE_region_for_each_FE_node(fe_region,
-									apply_transformation_to_node, (void *)&data);
-								FE_region_end_change(fe_region);
-							}
-							else
-							{
-								display_message(WARNING_MESSAGE, "Invalid data region");
 								return_code = 0;
 							}
 							Scene_object_set_transformation(scene_object, &identity);
@@ -11680,7 +11666,7 @@ Executes a GFX EXPORT CM command.
 			NULL, set_name);
 		/* region */
 		Option_table_add_entry(option_table, "region", &region_path,
-			command_data->data_root_region, set_Cmiss_region_path);
+			command_data->root_region, set_Cmiss_region_path);
 
 		if (return_code = Option_table_multi_parse(option_table,state))
 		{
@@ -12262,7 +12248,7 @@ DESCRIPTION :
 			&set_destination_field_data, set_Computed_field_conditional);
 		/* dgroup */
 		Option_table_add_entry(option_table, "dgroup", &data_region_path,
-			command_data->data_root_region, set_Cmiss_region_path);
+			command_data->root_region, set_Cmiss_region_path);
 		/* egroup */
 		Option_table_add_entry(option_table, "egroup", &element_region_path,
 			command_data->root_region, set_Cmiss_region_path);
@@ -12305,11 +12291,11 @@ DESCRIPTION :
 
 				if (data_region_path && (!element_region_path) && (!node_region_path))
 				{
-					if (Cmiss_region_get_region_from_path(command_data->data_root_region,
+					if (Cmiss_region_get_region_from_path(command_data->root_region,
 						data_region_path, &region))
 					{
 						Computed_field_update_nodal_values_from_source(
-							destination_field, source_field, region, data_selection, time);
+							destination_field, source_field, region, /*use_data*/1, data_selection, time);
 					}
 				}
 				else if (element_region_path && (!data_region_path) &&
@@ -12330,7 +12316,7 @@ DESCRIPTION :
 						node_region_path, &region))
 					{
 						Computed_field_update_nodal_values_from_source(
-							destination_field, source_field, region, node_selection, time);
+							destination_field, source_field, region, /*use_data*/0, node_selection, time);
 					}
 				}
 				else
@@ -12893,7 +12879,7 @@ use node_manager and node_selection.
 	char all_flag, *region_path, selected_flag, verbose_flag;
 	int return_code, start, stop;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *region, *root_region;
+	struct Cmiss_region *region;
 	struct FE_node_selection *node_selection;
 	struct FE_region *fe_region;
 	struct LIST(FE_node) *node_list;
@@ -12905,12 +12891,10 @@ use node_manager and node_selection.
 	{
 		if (use_data)
 		{
-			root_region = command_data->data_root_region;
 			node_selection = command_data->data_selection;
 		}
 		else
 		{
-			root_region = command_data->root_region;
 			node_selection = command_data->node_selection;
 		}
 		/* initialise defaults */
@@ -12925,7 +12909,7 @@ use node_manager and node_selection.
 		Option_table_add_entry(option_table, "all", &all_flag, NULL, set_char_flag);
 		/* group */
 		Option_table_add_entry(option_table, "group", &region_path,
-			root_region, set_Cmiss_region_path);
+			command_data->root_region, set_Cmiss_region_path);
 		/* selected */
 		Option_table_add_entry(option_table, "selected", &selected_flag,
 			NULL, set_char_flag);
@@ -12937,8 +12921,9 @@ use node_manager and node_selection.
 			NULL, set_Multi_range);
 		if (return_code = Option_table_multi_parse(option_table, state))
 		{
-			if (Cmiss_region_get_region_from_path(root_region, region_path, &region)
-				&& (fe_region = Cmiss_region_get_FE_region(region)))
+			if (Cmiss_region_get_region_from_path(command_data->root_region, region_path, &region)
+				&& (fe_region = Cmiss_region_get_FE_region(region)) &&
+				(!use_data) || (fe_region=FE_region_get_data_FE_region(fe_region)))
 			{
 				if (node_list = FE_node_list_from_fe_region_selection_ranges_condition(
 					fe_region, node_selection, selected_flag, node_ranges,
@@ -14172,7 +14157,7 @@ Executes a GFX LIST command.
 				command_data_void, gfx_list_FE_node);
 			/* dgroup */
 			Option_table_add_entry(option_table, "dgroup", NULL,
-				command_data->data_root_region, gfx_list_region);
+				command_data->root_region, gfx_list_region);
 			/* egroup */
 			Option_table_add_entry(option_table, "egroup", NULL,
 				command_data->root_region, gfx_list_region);
@@ -14899,7 +14884,7 @@ use node_manager and node_selection.
 	int number_not_removed, return_code;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *conditional_field;
-	struct Cmiss_region *region, *root_region;
+	struct Cmiss_region *region;
 	struct FE_node_selection *node_selection;
 	struct FE_region *fe_region, *modify_fe_region;
 	struct LIST(FE_node) *node_list;
@@ -14913,16 +14898,14 @@ use node_manager and node_selection.
 		modify_region_path = (char *)NULL;
 		if (use_data)
 		{
-			root_region = command_data->data_root_region;
 			node_selection = command_data->data_selection;
 		}
 		else
 		{
-			root_region = command_data->root_region;
 			node_selection = command_data->node_selection;
 		}
 		if (set_Cmiss_region_path(state, (void *)&modify_region_path,
-			(void *)root_region))
+			(void *)command_data->root_region))
 		{
 			/* initialise defaults */
 			add_flag = 0;
@@ -14960,7 +14943,7 @@ use node_manager and node_selection.
 				set_Computed_field_conditional);
 			/* group */
 			Option_table_add_entry(option_table, "group", &from_region_path,
-				root_region, set_Cmiss_region_path);
+				command_data->root_region, set_Cmiss_region_path);
 			/* remove */
 			Option_table_add_entry(option_table, "remove", &remove_flag,
 				NULL, set_char_flag);
@@ -15004,14 +14987,16 @@ use node_manager and node_selection.
 			/* no errors, not asking for help */
 			if (return_code)
 			{
-				if (Cmiss_region_get_region_from_path(root_region,
+				if (Cmiss_region_get_region_from_path(command_data->root_region,
 					modify_region_path, &region) &&
-					(modify_fe_region = Cmiss_region_get_FE_region(region)))
+					(modify_fe_region = Cmiss_region_get_FE_region(region)) &&
+					((!use_data) || (modify_fe_region=FE_region_get_data_FE_region(modify_fe_region))))
 				{
 					if ((from_region_path &&
-						Cmiss_region_get_region_from_path(root_region,
+						Cmiss_region_get_region_from_path(command_data->root_region,
 							from_region_path, &region) &&
-						(fe_region = Cmiss_region_get_FE_region(region))) ||
+						(fe_region = Cmiss_region_get_FE_region(region)) &&
+						((!use_data) || (fe_region=FE_region_get_data_FE_region(fe_region)))) ||
 						((!from_region_path) && FE_region_get_ultimate_master_FE_region(
 							modify_fe_region,	&fe_region)))
 					{
@@ -15444,7 +15429,7 @@ use node_manager and node_selection.
 	int i, j, number_in_elements, number_of_components, return_code;
 	FE_value time;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *region, *root_region;
+	struct Cmiss_region *region;
 	struct Computed_field *conditional_field;
 	struct FE_field *define_field, *undefine_field;
 	struct FE_node *node;
@@ -15465,12 +15450,10 @@ use node_manager and node_selection.
 	{
 		if (use_data)
 		{
-			root_region = command_data->data_root_region;
 			node_selection = command_data->data_selection;
 		}
 		else
 		{
-			root_region = command_data->root_region;
 			node_selection = command_data->node_selection;
 		}
 		/* initialise defaults */
@@ -15524,11 +15507,15 @@ use node_manager and node_selection.
 		set_define_field_data.user_data = (void *)NULL;
 		set_define_field_data.fe_region =
 			Cmiss_region_get_FE_region(command_data->root_region);
+		if (use_data)
+		{
+			set_define_field_data.fe_region = FE_region_get_data_FE_region(set_define_field_data.fe_region);
+		}
 		Option_table_add_entry(option_table, "define", &define_field,
 			(void *)&set_define_field_data, set_FE_field_conditional_FE_region);
 		/* group */
 		Option_table_add_entry(option_table, "group", &region_path,
-			root_region, set_Cmiss_region_path);
+			command_data->root_region, set_Cmiss_region_path);
 		/* selected */
 		Option_table_add_entry(option_table, "selected", &selected_flag,
 			NULL, set_char_flag);
@@ -15538,6 +15525,10 @@ use node_manager and node_selection.
 		set_undefine_field_data.user_data = (void *)NULL;
 		set_undefine_field_data.fe_region =
 			Cmiss_region_get_FE_region(command_data->root_region);
+		if (use_data)
+		{
+			set_undefine_field_data.fe_region = FE_region_get_data_FE_region(set_undefine_field_data.fe_region);
+		}
 		Option_table_add_entry(option_table, "undefine", &undefine_field,
 			(void *)&set_undefine_field_data, set_FE_field_conditional_FE_region);
 		/* default option: node number ranges */
@@ -15561,11 +15552,12 @@ use node_manager and node_selection.
 		if (return_code)
 		{
 			if (((region_path &&
-				Cmiss_region_get_region_from_path(root_region, region_path, &region)) ||
+				Cmiss_region_get_region_from_path(command_data->root_region, region_path, &region)) ||
 				((all_flag || selected_flag ||
 					(0 < Multi_range_get_number_of_ranges(node_ranges))) &&
-					(region = root_region))) &&
-				(fe_region = Cmiss_region_get_FE_region(region)))
+					(region = command_data->root_region))) &&
+				(fe_region = Cmiss_region_get_FE_region(region)) &&
+				((!use_data) || (fe_region=FE_region_get_data_FE_region(fe_region))))
 			{
 				if (node_list = FE_node_list_from_fe_region_selection_ranges_condition(
 					fe_region, node_selection,  selected_flag, node_ranges,
@@ -15839,11 +15831,7 @@ Executes a GFX MODIFY command.
 				modify_scene_data.scene_manager=command_data->scene_manager;
 				modify_scene_data.default_scene=command_data->default_scene;
 				/* following used for enabling GFEs */
-				modify_scene_data.computed_field_manager=
-					Computed_field_package_get_computed_field_manager(
-						command_data->computed_field_package);
 				modify_scene_data.root_region = command_data->root_region;
-				modify_scene_data.data_root_region = command_data->data_root_region;
 				modify_scene_data.element_point_ranges_selection=
 					command_data->element_point_ranges_selection;
 				modify_scene_data.element_selection=command_data->element_selection;
@@ -16305,7 +16293,6 @@ Which tool that is being modified is passed in <node_tool_void>.
 	int element_dimension, element_create_enabled;
 #endif /*(WX_USER_INTERFACE)*/
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *root_region;
 	struct Computed_field *coordinate_field, *command_field, *element_xi_field;
 	struct Node_tool *node_tool;
 	struct Option_table *option_table;
@@ -16318,12 +16305,10 @@ Which tool that is being modified is passed in <node_tool_void>.
 		if (data_tool_flag)
 		{
 			node_tool = command_data->data_tool;
-			root_region = command_data->data_root_region;
 		}
 		else
 		{
 			node_tool=command_data->node_tool;
-			root_region = command_data->root_region;
 		}
 		/* initialize defaults */
 		coordinate_field=(struct Computed_field *)NULL;
@@ -16421,7 +16406,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 			 &set_element_xi_field_data,set_Computed_field_conditional);
 		/* group */
 		Option_table_add_entry(option_table, "group", &region_path,
-			root_region, set_Cmiss_region_path);
+			command_data->root_region, set_Cmiss_region_path);
 		/* motion_update/no_motion_update */
 		Option_table_add_switch(option_table,"motion_update","no_motion_update",
 			&motion_update_enabled);
@@ -17171,14 +17156,7 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 					}
 					else
 					{
-						if (use_data)
-						{
-							top_region = command_data->data_root_region;
-						}
-						else
-						{
-							top_region = command_data->root_region;
-						}
+						top_region = command_data->root_region;
 						ACCESS(Cmiss_region)(top_region);
 					}
 					if (return_code)
@@ -17187,13 +17165,21 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 							&& (IO_stream_open_for_read(input_file, file_name)))
 						{
 							region = Cmiss_region_create_share_globals(command_data->root_region);
-							if (read_exregion_file(region, input_file,
-								node_time_index))
+							if (use_data)
+							{
+								return_code = read_exdata_file(region, input_file, node_time_index);
+							}
+							else
+							{
+								return_code = read_exregion_file(region, input_file, node_time_index);
+							}
+							if (return_code)
 							{
 								if (node_offset_flag)
 								{
 									/* Offset these nodes before merging */
-									if (fe_region = Cmiss_region_get_FE_region(region))
+									if ((fe_region = Cmiss_region_get_FE_region(region)) &&
+										(!use_data || (fe_region = FE_region_get_data_FE_region(fe_region))))
 									{
 										FE_region_begin_change(fe_region);
 										if (!FE_region_change_node_identifiers(fe_region,
@@ -17702,11 +17688,11 @@ Executes a GFX SELECT command.
 	int return_code;
 	struct Computed_field *conditional_field;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *data_region, *region;
+	struct Cmiss_region *region;
 	struct Element_point_ranges *element_point_ranges;
 	struct FE_element_grid_to_Element_point_ranges_list_data grid_to_list_data;
 	struct FE_field *grid_field;
-	struct FE_region *data_fe_region, *fe_region;
+	struct FE_region *fe_region;
 	struct LIST(FE_element) *element_list;
 	struct LIST(FE_node) *node_list;
 	struct Multi_range *multi_range;
@@ -17820,10 +17806,7 @@ Executes a GFX SELECT command.
 				if (!(region_path &&
 					Cmiss_region_get_region_from_path(command_data->root_region,
 						region_path, &region) &&
-					(fe_region = Cmiss_region_get_FE_region(region)) &&
-					Cmiss_region_get_region_from_path(command_data->data_root_region,
-						region_path, &data_region) &&
-					(data_fe_region = Cmiss_region_get_FE_region(data_region))))
+					(fe_region = Cmiss_region_get_FE_region(region))))
 				{
 					display_message(ERROR_MESSAGE, "gfx select:  Invalid region");
 					return_code = 0;
@@ -17836,7 +17819,8 @@ Executes a GFX SELECT command.
 				{
 					if (node_list =
 						FE_node_list_from_fe_region_selection_ranges_condition(
-							data_fe_region, command_data->data_selection, selected_flag,
+							FE_region_get_data_FE_region(fe_region),
+							command_data->data_selection, selected_flag,
 							multi_range, conditional_field, time))
 					{
 						FE_node_selection_begin_cache(command_data->data_selection);
@@ -18075,11 +18059,11 @@ Executes a GFX UNSELECT command.
 	int return_code;
 	struct Computed_field *conditional_field;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *data_region, *region;
+	struct Cmiss_region *region;
 	struct Element_point_ranges *element_point_ranges;
 	struct FE_element_grid_to_Element_point_ranges_list_data grid_to_list_data;
 	struct FE_field *grid_field;
-	struct FE_region *data_fe_region, *fe_region;
+	struct FE_region *fe_region;
 	struct LIST(FE_element) *element_list;
 	struct LIST(FE_node) *node_list;
 	struct Multi_range *multi_range;
@@ -18192,12 +18176,9 @@ Executes a GFX UNSELECT command.
 				if (!(region_path &&
 					Cmiss_region_get_region_from_path(command_data->root_region,
 						region_path, &region) &&
-					(fe_region = Cmiss_region_get_FE_region(region)) &&
-					Cmiss_region_get_region_from_path(command_data->data_root_region,
-						region_path, &data_region) &&
-					(data_fe_region = Cmiss_region_get_FE_region(data_region))))
+					(fe_region = Cmiss_region_get_FE_region(region))))
 				{
-					display_message(ERROR_MESSAGE, "gfx select:  Invalid region");
+					display_message(ERROR_MESSAGE, "gfx unselect:  Invalid region");
 					return_code = 0;
 				}
 			}
@@ -18208,7 +18189,8 @@ Executes a GFX UNSELECT command.
 				{
 					if (node_list =
 						FE_node_list_from_fe_region_selection_ranges_condition(
-							data_fe_region, command_data->data_selection, selected_flag,
+							FE_region_get_data_FE_region(fe_region),
+							command_data->data_selection, selected_flag,
 							multi_range, conditional_field, time))
 					{
 						FE_node_selection_begin_cache(command_data->data_selection);
@@ -19818,51 +19800,51 @@ Can also write individual groups with the <group> option.
 				 if (data_fd == -1)
 				 {
 						display_message(ERROR_MESSAGE,
-							 "gfx_write_All.  Could not open temprary data file");
+							 "gfx_write_All.  Could not open temporary data file");
 				 }
 				 else
 				 {
 						if (!(data_return_code = write_exregion_file_of_name(temp_data, 
-										 command_data->data_root_region, region_path,
-										 /*write_elements*/0, /*write_nodes*/1,
+										 command_data->root_region, region_path,
+										 /*write_elements*/0, /*write_nodes*/0, /*write_data*/1,
 										 write_criterion, field_order_info)))
 						{
 							 display_message(ERROR_MESSAGE,
-									"gfx_write_All.  Could not create temprary data file");
+									"gfx_write_All.  Could not create temporary data file");
 						}
 				 }
 
 				 if (elem_fd == -1)
 				 {
 						display_message(ERROR_MESSAGE,
-							 "gfx_write_All.  Could not open temprary elem file");
+							 "gfx_write_All.  Could not open temporary elem file");
 				 }
 				 else
 				 {
 						if (!(elem_return_code = write_exregion_file_of_name(temp_elem, 
 										 command_data->root_region, region_path,
-										 /*write_elements*/1, /*write_nodes*/0,
+										 /*write_elements*/1, /*write_nodes*/0, /*write_data*/0,
 										 write_criterion, field_order_info)))
 						{
 							 display_message(ERROR_MESSAGE,
-									"gfx_write_All.  Could not create temprary elem file");
+									"gfx_write_All.  Could not create temporary elem file");
 						}
 				 }
 
 				 if (node_fd == -1)
 				 {
 						display_message(ERROR_MESSAGE,
-							 "gfx_write_All.  Could not open temprary node file");
+							 "gfx_write_All.  Could not open temporary node file");
 				 }
 				 else
 				 {			
 						if (!(node_return_code = write_exregion_file_of_name(temp_node, 
 										 command_data->root_region, region_path,
-										 /*write_elements*/0, /*write_nodes*/1,
+										 /*write_elements*/0, /*write_nodes*/1, /*write_data*/0,
 										 write_criterion, field_order_info)))
 						{
 							 display_message(ERROR_MESSAGE,
-									"gfx_write_All.  Could not create temprary node file");
+									"gfx_write_All.  Could not create temporary node file");
 						}
 				 }
 				 if (com_return_code)
@@ -20234,7 +20216,7 @@ Can also write individual element groups with the <group> option.
 				{
 					return_code = write_exregion_file_of_name(file_name, 
 						command_data->root_region, region_path,
-						/*write_elements*/1, /*write_nodes*/0,
+						/*write_elements*/1, /*write_nodes*/0, /*write_data*/0,
 						write_criterion, field_order_info);
 				}
 			}
@@ -20282,7 +20264,6 @@ If <use_data> is set, writing data, otherwise writing nodes.
 	enum FE_write_criterion write_criterion;
 	int number_of_valid_strings, return_code;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *root_region;
 	struct FE_field_order_info *field_order_info;
 	struct Option_table *option_table;
 
@@ -20293,12 +20274,10 @@ If <use_data> is set, writing data, otherwise writing nodes.
 		region_path = (char *)NULL;
 		if (use_data)
 		{
-			root_region = command_data->data_root_region;
 			file_ext = data_file_ext;
 		}
 		else
 		{
-			root_region = command_data->root_region;
 			file_ext = node_file_ext;
 		}
 		field_order_info = (struct FE_field_order_info *)NULL;
@@ -20365,8 +20344,9 @@ If <use_data> is set, writing data, otherwise writing nodes.
 				/* open the file */
 				if (return_code = check_suffix(&file_name, file_ext))
 				{
-					return_code = write_exregion_file_of_name(file_name, root_region,
-						region_path, /*write_elements*/0, /*write_nodes*/1,
+					return_code = write_exregion_file_of_name(file_name, command_data->root_region,
+						region_path, /*write_elements*/0, /*write_nodes*/!use_data,
+						/*write_data*/(0 != use_data),
 						write_criterion, field_order_info);
 				}
 			}
@@ -24459,7 +24439,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->graphics_window_manager=(struct MANAGER(Graphics_window) *)NULL;
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 		command_data->root_region = (struct Cmiss_region *)NULL;
-		command_data->data_root_region = (struct Cmiss_region *)NULL;
 		command_data->curve_manager=(struct MANAGER(Curve) *)NULL;
 		command_data->basis_manager=(struct MANAGER(FE_basis) *)NULL;
 		command_data->streampoint_list=(struct Streampoint *)NULL;
@@ -24877,18 +24856,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 
 		command_data->root_region = Cmiss_region_create();
 
-		/* data_hack begin - temporary until data is eliminated */
-		command_data->data_root_region = Cmiss_region_create_data_hack(command_data->root_region);
-		/* add callbacks so root_region and data_root_region keep their children
-			 synchronised */
-		Cmiss_region_add_callback(command_data->root_region,
-			Cmiss_region_synchronise_children_with_FE_region,
-			(void *)(command_data->data_root_region));
-		Cmiss_region_add_callback(command_data->data_root_region,
-			Cmiss_region_synchronise_children_with_FE_region,
-			(void *)(command_data->root_region));
-		/* data_hack end */
-
 		/* create graphics object list */
 		/*???RC.  Eventually want graphics object manager */
 		command_data->graphics_object_list=CREATE(LIST(GT_object))();
@@ -24910,7 +24877,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->node_selection = CREATE(FE_node_selection)(
 			Cmiss_region_get_FE_region(command_data->root_region));
 		command_data->data_selection = CREATE(FE_node_selection)(
-			Cmiss_region_get_FE_region(command_data->data_root_region));	
+			FE_region_get_data_FE_region(Cmiss_region_get_FE_region(command_data->root_region)));	
 
 		/* interactive_tool manager */
 		command_data->interactive_tool_manager=CREATE(MANAGER(Interactive_tool))();
@@ -25067,9 +25034,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->texture_manager);
 				Scene_set_graphical_element_mode(command_data->default_scene,
 					GRAPHICAL_ELEMENT_LINES,
-					Computed_field_package_get_computed_field_manager(
-						command_data->computed_field_package),
-					command_data->root_region, command_data->data_root_region,
+					command_data->root_region,
 					command_data->element_point_ranges_selection,
 					command_data->element_selection,command_data->node_selection,
 					command_data->data_selection,command_data->user_interface);
@@ -25127,7 +25092,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->execute_command);
 			command_data->data_tool=CREATE(Node_tool)(
 				command_data->interactive_tool_manager,
-				command_data->data_root_region, /*use_data*/1,
+				command_data->root_region, /*use_data*/1,
 				command_data->data_selection,
 				command_data->computed_field_package,
 				Material_package_get_default_material(command_data->material_package),
@@ -25198,7 +25163,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			command_data->computed_field_package,
 			command_data->basis_manager,
 			command_data->root_region,
-			command_data->data_root_region,
 			command_data->graphics_buffer_package,
 			Material_package_get_material_manager(command_data->material_package),
 			Material_package_get_default_material(command_data->material_package),
@@ -25641,22 +25605,10 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		DESTROY(LIST(GT_object))(&command_data->graphics_object_list);
 		DESTROY(LIST(GT_object))(&command_data->glyph_list);
 
-		/* remove callbacks synchronising root_region and data_root_region since
-			 they were established by the Command_data -- this must be done before
-			 the regions are destroyed */
-		Cmiss_region_remove_callback(command_data->root_region,
-			Cmiss_region_synchronise_children_with_FE_region,
-			(void *)(command_data->data_root_region));
-		Cmiss_region_remove_callback(command_data->data_root_region,
-			Cmiss_region_synchronise_children_with_FE_region,
-			(void *)(command_data->root_region));
-
 		/* need the following due to cirular reference where field owned by region references region itself;
 		 * when following removed also remove #include "region/cmiss_region_private.h" */
-		Cmiss_region_detach_fields_hierarchical(command_data->data_root_region); /* probably not needed */
 		Cmiss_region_detach_fields_hierarchical(command_data->root_region);
 		
-		DEACCESS(Cmiss_region)(&(command_data->data_root_region));
 		DEACCESS(Cmiss_region)(&(command_data->root_region));
 		DESTROY(MANAGER(FE_basis))(&command_data->basis_manager);
 		DESTROY(LIST(FE_element_shape))(&command_data->element_shape_list);

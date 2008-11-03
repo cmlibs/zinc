@@ -176,8 +176,8 @@ DESCRIPTION :
 
 int Computed_field_update_nodal_values_from_source(
 	struct Computed_field *destination_field,	struct Computed_field *source_field,
-	struct Cmiss_region *region, struct FE_node_selection *node_selection,
-	FE_value time)
+	struct Cmiss_region *region, int use_data,
+	struct FE_node_selection *node_selection,	FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -194,7 +194,8 @@ Restricts update to nodes in <node_selection>, if supplied.
 	ENTER(Computed_field_update_nodal_values_from_source);
 	return_code = 0;
 	if (destination_field && source_field && region && 
-		(fe_region = Cmiss_region_get_FE_region(region)))
+		(fe_region = Cmiss_region_get_FE_region(region)) &&
+		(!use_data || (fe_region = FE_region_get_data_FE_region(fe_region))))
 	{
 		if (Computed_field_get_number_of_components(source_field) ==
 			Computed_field_get_number_of_components(destination_field))

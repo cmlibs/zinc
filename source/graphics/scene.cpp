@@ -180,14 +180,9 @@ Stores the collections of objects that make up a 3-D graphical model.
 	/* material/light changes, etc. */
 	enum Scene_graphical_element_mode graphical_element_mode;
 
-	/* computed_fields */
-	struct MANAGER(Computed_field) *computed_field_manager;
-	void *computed_field_manager_callback_id;
-
-	/*???RC temporary; have root_region and data_root_region until Scenes are
+	/*???RC temporary; have root_region until Scenes are
 		incorporated into the regions themselves */
 	struct Cmiss_region *root_region;
-	struct Cmiss_region *data_root_region;
 
 	/* global stores of selected objects */
 	struct Element_point_ranges_selection *element_point_ranges_selection;
@@ -1841,12 +1836,9 @@ root region.
 	ENTER(Scene_object_has_removed_Cmiss_region);
 	if (scene_object && (scene = (struct Scene *)scene_void))
 	{
-		if ((SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP == scene_object->type) && (
+		if ((SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP == scene_object->type) &&
 			(!Cmiss_region_contains_Cmiss_region(scene->root_region,
-				GT_element_group_get_Cmiss_region(scene_object->gt_element_group))) ||
-			(scene->data_root_region &&(!Cmiss_region_contains_Cmiss_region(scene->data_root_region,
-				GT_element_group_get_data_Cmiss_region(
-					scene_object->gt_element_group))))))
+				GT_element_group_get_Cmiss_region(scene_object->gt_element_group))))
 		{
 			return_code = 1;
 		}
@@ -1871,13 +1863,12 @@ int Scene_update_graphical_element_groups(struct Scene *scene)
 LAST MODIFIED : 21 March 2003
 
 DESCRIPTION :
-Ensures there is a GT_element_group in <scene> for every Cmiss_region with
-associated data_Cmiss_region.
+Ensures there is a GT_element_group in <scene> for every Cmiss_region.
 ==============================================================================*/
 {
 	char *child_region_name;
 	int i, number_of_child_regions, return_code;
-	struct Cmiss_region *child_region, *data_child_region;
+	struct Cmiss_region *child_region;
 
 	ENTER(Scene_update_graphical_element_groups);
 	if (scene)
@@ -1890,20 +1881,15 @@ associated data_Cmiss_region.
 		{
 			child_region = Cmiss_region_get_child_region(
 				scene->root_region, /*child_number*/i);
-			if ((NULL != child_region) &&
-				Cmiss_region_get_child_region_name(scene->root_region,
-					/*child_number*/i, &child_region_name))
+			if (!Scene_has_Cmiss_region(scene, child_region))
 			{
-				data_child_region = (struct Cmiss_region *)NULL;
-				/* don't build until we have both child_region and data_child_region */
-				if ((!Scene_has_Cmiss_region(scene, child_region)) &&
-					(!scene->data_root_region || (data_child_region = Cmiss_region_get_child_region_from_name(
-					scene->data_root_region, child_region_name))))
+				if (Cmiss_region_get_child_region_name(scene->root_region,
+					/*child_number*/i, &child_region_name))
 				{
 					Scene_add_graphical_element_group(scene, child_region,
-						data_child_region, /*position*/0, child_region_name);
+						/*position*/0, child_region_name);
+					DEALLOCATE(child_region_name);
 				}
-				DEALLOCATE(child_region_name);
 			}
 		}
 		Scene_end_cache(scene);
@@ -1932,7 +1918,7 @@ Callback from <root_region> informing of <changes>.
 {
 	char *child_region_name;
 	int child_number, return_code;
-	struct Cmiss_region *child_region, *data_child_region;
+	struct Cmiss_region *child_region;
 	struct Scene *scene;
 	struct Scene_object *scene_object;
 
@@ -1970,32 +1956,8 @@ Callback from <root_region> informing of <changes>.
 							Cmiss_region_get_child_region_name(root_region,
 							child_number, &child_region_name))
 						{
-							data_child_region = (struct Cmiss_region *)NULL;
-							if (!scene->data_root_region || 
-								(data_child_region = Cmiss_region_get_child_region_from_name(
-								scene->data_root_region, child_region_name)))
-							{
-								return_code = Scene_add_graphical_element_group(scene, child_region,
-									data_child_region, /*position*/0, child_region_name);
-							}
-							DEALLOCATE(child_region_name);
-						}
-					}
-					else if (root_region == scene->data_root_region)
-					{
-						data_child_region = region_changes->child_added;
-						if ((!Scene_has_data_Cmiss_region(scene, data_child_region)) &&
-							Cmiss_region_get_child_region_number(root_region,
-							data_child_region, &child_number) &&
-							Cmiss_region_get_child_region_name(root_region,
-							child_number, &child_region_name))
-						{
-							if (child_region = Cmiss_region_get_child_region_from_name(
-								scene->root_region, child_region_name))
-							{
-								return_code = Scene_add_graphical_element_group(scene, child_region,
-									data_child_region, /*position*/0, child_region_name);
-							}
+							return_code = Scene_add_graphical_element_group(scene, child_region,
+								/*position*/0, child_region_name);
 							DEALLOCATE(child_region_name);
 						}
 					}
@@ -3044,20 +3006,31 @@ and its "nearest" value is stored in the nearest_node_data.
 					Scene_picked_object_get_subobject(scene_picked_object,0)))&&
 				(((GT_ELEMENT_SETTINGS_NODE_POINTS==
 					(settings_type=GT_element_settings_get_settings_type(settings)))&&
-					(!(nearest_node_data->use_data)) && (cmiss_region =
-						GT_element_group_get_Cmiss_region(gt_element_group))) ||
+					(!nearest_node_data->use_data)) ||
 					((GT_ELEMENT_SETTINGS_DATA_POINTS == settings_type) &&
-						nearest_node_data->use_data && (cmiss_region =
-							GT_element_group_get_data_Cmiss_region(gt_element_group)))))
+						nearest_node_data->use_data)) &&
+				(cmiss_region = GT_element_group_get_Cmiss_region(gt_element_group)))
 			{
 				node_number=Scene_picked_object_get_subobject(scene_picked_object,2);
-				if ((fe_region = Cmiss_region_get_FE_region(cmiss_region)) && (node =
+				fe_region = Cmiss_region_get_FE_region(cmiss_region);
+				if (nearest_node_data->use_data)
+				{
+					fe_region = FE_region_get_data_FE_region(fe_region);
+				}
+				if (fe_region && (node =
 					FE_region_get_FE_node_from_identifier(fe_region, node_number)))
 				{
 					/* is the node in the nearest_node_data->cmiss_region, if supplied */
-					if ((!nearest_node_data->cmiss_region) || ((fe_region =
-						Cmiss_region_get_FE_region(nearest_node_data->cmiss_region)) &&
-						FE_region_contains_FE_node(fe_region, node)))
+					if (nearest_node_data->cmiss_region)
+					{
+						fe_region = Cmiss_region_get_FE_region(nearest_node_data->cmiss_region);
+						if (nearest_node_data->use_data)
+						{
+							fe_region = FE_region_get_data_FE_region(fe_region);
+						}
+					}
+					if ((!nearest_node_data->cmiss_region) ||
+						FE_region_contains_FE_node(fe_region, node))
 					{
 						nearest_node_data->nearest_node=node;
 						nearest_node_data->scene_picked_object=scene_picked_object;
@@ -3132,17 +3105,20 @@ manager, ensures it is in the list.
 			(settings=get_settings_at_position_in_GT_element_group(
 				gt_element_group,
 				Scene_picked_object_get_subobject(scene_picked_object,0)))&&
-			(((GT_ELEMENT_SETTINGS_NODE_POINTS==
-				(settings_type=GT_element_settings_get_settings_type(settings)))&&
-				(!(picked_nodes_data->use_data)) && (cmiss_region =
-					GT_element_group_get_Cmiss_region(gt_element_group))) ||
-				((GT_ELEMENT_SETTINGS_DATA_POINTS == settings_type) &&
-					picked_nodes_data->use_data && (cmiss_region =
-						GT_element_group_get_data_Cmiss_region(gt_element_group)))))
+			(((GT_ELEMENT_SETTINGS_NODE_POINTS ==
+				(settings_type = GT_element_settings_get_settings_type(settings))) &&
+				(!picked_nodes_data->use_data)) ||
+			((GT_ELEMENT_SETTINGS_DATA_POINTS == settings_type) &&
+				picked_nodes_data->use_data)) &&
+			(cmiss_region = GT_element_group_get_Cmiss_region(gt_element_group)))
 		{
 			node_number=Scene_picked_object_get_subobject(scene_picked_object,2);
-			if ((fe_region = Cmiss_region_get_FE_region(cmiss_region)) &&
-				(node = FE_region_get_FE_node_from_identifier(fe_region, node_number)))
+			fe_region = Cmiss_region_get_FE_region(cmiss_region);
+			if (picked_nodes_data->use_data)
+			{
+				fe_region = FE_region_get_data_FE_region(fe_region);
+			}
+			if ((node = FE_region_get_FE_node_from_identifier(fe_region, node_number)))
 			{
 				return_code = ensure_FE_node_is_in_list(node,
 					(void *)(picked_nodes_data->node_list));
@@ -4146,44 +4122,6 @@ graphical element group for the given <cmiss_region>.
 	return (return_code);
 } /* Scene_object_has_Cmiss_region */
 
-int Scene_object_has_data_Cmiss_region(struct Scene_object *scene_object,
-	void *data_cmiss_region_void)
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-Scene_object iterator function returning true if <scene_object> contains a
-g_ELEMENT_GROUP gt_object referencing the given <data_cmiss_region>.
-==============================================================================*/
-{
-	int return_code;
-	struct Cmiss_region *data_cmiss_region;
-
-	ENTER(Scene_object_has_data_Cmiss_region);
-	if (scene_object &&
-		(data_cmiss_region = (struct Cmiss_region *)data_cmiss_region_void))
-	{
-		if (SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP == scene_object->type)
-		{
-			return_code = (data_cmiss_region ==
-				GT_element_group_get_data_Cmiss_region(scene_object->gt_element_group));
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_has_data_Cmiss_region.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_has_data_Cmiss_region */
-
 int Scene_object_has_graphical_element_group(struct Scene_object *scene_object,
 	void *gt_element_group_void)
 /*******************************************************************************
@@ -4659,13 +4597,11 @@ from the default versions of these functions.
 			scene->change_status=SCENE_NO_CHANGE;
 			scene->access_count = 0;
 			scene->scene_manager=(struct MANAGER(Scene) *)NULL;
-			/* fields, elements, nodes and data */
-			scene->computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
+			/* elements, nodes and data */
 
-			/*???RC temporary; have root_region and data_root_region until Scenes are
+			/*???RC temporary; have root_region until Scenes are
 				incorporated into the regions themselves */
 			scene->root_region = (struct Cmiss_region *)NULL;
-			scene->data_root_region = (struct Cmiss_region *)NULL;
 
 			/* defaults to not adding GFEs - besides, need managers anyway */
 			scene->graphical_element_mode=GRAPHICAL_ELEMENT_NONE;
@@ -4757,8 +4693,6 @@ Closes the scene and disposes of the scene data structure.
 			Scene_disable_time_behaviour(scene);
 			Scene_set_graphical_element_mode(scene,
 				GRAPHICAL_ELEMENT_NONE,
-				(struct MANAGER(Computed_field) *)NULL,
-				(struct Cmiss_region *)NULL,
 				(struct Cmiss_region *)NULL,
 				(struct Element_point_ranges_selection *)NULL,
 				(struct FE_element_selection *)NULL,
@@ -5135,9 +5069,7 @@ scene.
 
 int Scene_set_graphical_element_mode(struct Scene *scene,
 	enum Scene_graphical_element_mode graphical_element_mode,
-	struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *root_region,
-	struct Cmiss_region *data_root_region,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
@@ -5159,7 +5091,7 @@ material and spectrum.
 
 	ENTER(Scene_set_graphical_element_mode);
 	if (scene && ((GRAPHICAL_ELEMENT_NONE == graphical_element_mode) || (
-		computed_field_manager && root_region && element_point_ranges_selection && 
+		root_region && element_point_ranges_selection && 
 		element_selection && node_selection)))
 	{
 		return_code = 1;
@@ -5180,16 +5112,9 @@ material and spectrum.
 				{
 					Cmiss_region_remove_callback(scene->root_region,
 						Scene_Cmiss_region_change, (void *)scene);
-					if (scene->data_root_region)
-					{
-						Cmiss_region_remove_callback(scene->data_root_region,
-							Scene_Cmiss_region_change, (void *)scene);
-					}
 				}
 				scene->graphical_element_mode = graphical_element_mode;
-				scene->computed_field_manager = (struct MANAGER(Computed_field) *)NULL;
 				scene->root_region = (struct Cmiss_region *)NULL;
-				scene->data_root_region = (struct Cmiss_region *)NULL;
 				scene->element_point_ranges_selection=
 					(struct Element_point_ranges_selection *)NULL;
 				scene->element_selection=(struct FE_element_selection *)NULL;
@@ -5208,18 +5133,14 @@ material and spectrum.
 			/* check managers consistent current mode - unless this is
 				 GRAPHICAL_ELEMENT_NONE so setting for the first time */
 			if ((GRAPHICAL_ELEMENT_NONE == scene->graphical_element_mode) || (
-				(computed_field_manager == scene->computed_field_manager) &&
-				(root_region == scene->root_region) &&
-				(data_root_region == scene->data_root_region)))
+				(root_region == scene->root_region)))
 			{
 				if (scene->graphical_material_manager)
 				{
 					if (GRAPHICAL_ELEMENT_NONE == scene->graphical_element_mode)
 					{
 						scene->graphical_element_mode = graphical_element_mode;
-						scene->computed_field_manager = computed_field_manager;
 						scene->root_region = root_region;
-						scene->data_root_region = data_root_region;
 						scene->element_point_ranges_selection =
 							element_point_ranges_selection;
 						scene->element_selection = element_selection;
@@ -5234,11 +5155,6 @@ material and spectrum.
 						/* add region callbacks */
 						Cmiss_region_add_callback(root_region,
 							Scene_Cmiss_region_change, (void *)scene);
-						if (data_root_region)
-						{
-							Cmiss_region_add_callback(data_root_region,
-								Scene_Cmiss_region_change, (void *)scene);
-						}
 					}
 					else
 					{
@@ -5356,10 +5272,9 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 			Scene_enable_time_behaviour(destination,
 				source->default_time_keeper);
 		}
+
 		Scene_set_graphical_element_mode(destination,source->graphical_element_mode,
-			source->computed_field_manager,
-			source->root_region, source->data_root_region,
-			source->element_point_ranges_selection,
+			source->root_region, source->element_point_ranges_selection,
 			source->element_selection,source->node_selection,source->data_selection,
 			source->user_interface);
 		/* copy list of lights to destination */
@@ -6450,9 +6365,7 @@ Returns the nearest picked node in <scene_picked_object_list> that is in
 arguments are not NULL, they are filled with the appropriate information
 pertaining to the nearest node.
 The <use_data> flag indicates that we are searching for a data point instead of
-a node, needed since different settings type used for each, plus it uses the
-data_Cmiss_region from the GT_element_group. <cmiss_region> must be a data
-region if <use_data> set.
+a node, needed since different settings type used for each.
 ==============================================================================*/
 {
 	struct Scene_picked_object_get_nearest_node_data nearest_node_data;
@@ -7592,14 +7505,13 @@ Does not complain if <child_scene> is not used in <scene>.
 } /* Scene_remove_child_scene */
 
 int Scene_add_graphical_element_group(struct Scene *scene,
-	struct Cmiss_region *cmiss_region, 	struct Cmiss_region *data_cmiss_region,
-	int position, char *scene_object_name)
+	struct Cmiss_region *cmiss_region, int position, char *scene_object_name)
 /*******************************************************************************
 LAST MODIFIED : 3 December 2002
 
 DESCRIPTION :
-Adds a graphical element group for <cmiss_region>, with data from
-<data_cmiss_region> to the list of objects in <scene> at <position>.
+Adds a graphical element group for <cmiss_region> to the list of objects in
+<scene> at <position>.
 The group will be given a default rendition depending on the scene's current
 graphical_element_mode.
 The new Scene_object will take the <scene_object_name>; an error is
@@ -7685,7 +7597,7 @@ GT_element_group and therefore have the same rendition.
 				{
 					/* Make a new GT_element_group */
 					if (gt_element_group = CREATE(GT_element_group)(
-						cmiss_region, data_cmiss_region,
+						cmiss_region,
 						scene->element_point_ranges_selection,
 						scene->element_selection,
 						scene->node_selection,
@@ -7739,10 +7651,10 @@ GT_element_group and therefore have the same rendition.
 								 add data_points to the rendition */
 							element_xi_coordinate_field =
 								FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-									Computed_field_is_type_embedded, NULL,
-									scene->computed_field_manager);
-							if (data_cmiss_region && 
-								(fe_region = Cmiss_region_get_FE_region(data_cmiss_region)) &&
+								Computed_field_is_type_embedded, NULL,
+									Cmiss_region_get_Computed_field_manager(cmiss_region));
+							if ((fe_region = FE_region_get_data_FE_region(
+									Cmiss_region_get_FE_region(cmiss_region))) &&
 								FE_region_get_first_FE_node_that(fe_region,
 									(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL))
 							{
@@ -8810,41 +8722,6 @@ Returns true if <scene> contains a graphical element for <cmiss_region>.
 	return (return_code);
 } /* Scene_has_Cmiss_region */
 
-int Scene_has_data_Cmiss_region(struct Scene *scene,
-	struct Cmiss_region *cmiss_region)
-/*******************************************************************************
-LAST MODIFIED : 4 December 2003
-
-DESCRIPTION :
-Returns true if <scene> contains a graphical element for data <cmiss_region>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_has_data_Cmiss_region);
-	if (scene && cmiss_region)
-	{
-		if (FIRST_OBJECT_IN_LIST_THAT(Scene_object)(Scene_object_has_data_Cmiss_region,
-			(void *)cmiss_region, scene->scene_object_list))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_has_data_Cmiss_region.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_has_data_Cmiss_region */
-
 struct GT_element_group *Scene_get_graphical_element_group(
 	struct Scene *scene, struct Cmiss_region *cmiss_region)
 /*******************************************************************************
@@ -9324,9 +9201,7 @@ Parser commands for modifying scenes - lighting, etc.
 						{
 							Scene_set_graphical_element_mode(scene,
 								graphical_element_mode,
-								modify_scene_data->computed_field_manager,
 								modify_scene_data->root_region,
-								modify_scene_data->data_root_region,
 								modify_scene_data->element_point_ranges_selection,
 								modify_scene_data->element_selection,
 								modify_scene_data->node_selection,
@@ -9478,16 +9353,15 @@ updates graphics of settings affected by the changes (probably all).
 	struct Set_Computed_field_conditional_data set_coordinate_field_data;
 
 	ENTER(gfx_modify_g_element_general);
-	if (state)
+	if (state && (cmiss_region = (struct Cmiss_region *)cmiss_region_void))
 	{
 		/* get default scene */
 		if (scene = (struct Scene *)scene_void)
 		{
 			/* if possible, get defaults from element_group on default scene */
-			if ((cmiss_region = (struct Cmiss_region *)cmiss_region_void)&&
-				(gt_element_group=Scene_get_graphical_element_group(scene,
-					cmiss_region)))
-			{
+			if (gt_element_group=Scene_get_graphical_element_group(scene,
+						cmiss_region))
+		  {
 				if (default_coordinate_field=
 					GT_element_group_get_default_coordinate_field(gt_element_group))
 				{
@@ -9526,7 +9400,7 @@ updates graphics of settings affected by the changes (probably all).
 				(void *)&clear_flag, NULL, set_char_flag);
 			/* default_coordinate */
 			set_coordinate_field_data.computed_field_manager=
-				scene->computed_field_manager;
+				Cmiss_region_get_Computed_field_manager(cmiss_region);
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;

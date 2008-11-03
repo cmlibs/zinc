@@ -1225,14 +1225,13 @@ try to enforce that the node is created on that element.
 		else
 		{
 			node_tool_coordinate_field=node_tool->coordinate_field;
+			scene_object_conditional_function=Scene_object_has_Cmiss_region;
 			if (node_tool->use_data)
 			{
-				scene_object_conditional_function=Scene_object_has_data_Cmiss_region;
 				gt_element_settings_type=GT_ELEMENT_SETTINGS_DATA_POINTS;
 			}
 			else
 			{
-				scene_object_conditional_function=Scene_object_has_Cmiss_region;
 				gt_element_settings_type=GT_ELEMENT_SETTINGS_NODE_POINTS;
 			}
 			if (scene&&(scene_object=first_Scene_object_in_Scene_that(scene,
@@ -3189,6 +3188,10 @@ in this region only.
 			if (region)
 			{
 				node_tool->fe_region = Cmiss_region_get_FE_region(region);
+				if (node_tool->use_data)
+				{
+					node_tool->fe_region = FE_region_get_data_FE_region(node_tool->fe_region);
+				}
 			}
 			else
 			{
@@ -3253,8 +3256,8 @@ LAST MODIFIED : 17 May 2003
 DESCRIPTION :
 Creates a Node_tool for editing nodes/data in the <node_manager>,
 using the <node_selection>.
-The <use_data> flag indicates that <node_manager> and <node_selection>
-refer to data, not nodes, needed since different GT_element_settings types are
+The <use_data> flag indicates to use data, and that the <node_selection>
+refers to data, not nodes; needed since different GT_element_settings types are
 used to represent them. <element_manager> should be NULL if <use_data> is true.
 ==============================================================================*/
 {

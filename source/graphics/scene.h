@@ -177,9 +177,7 @@ Structure to pass to modify_Scene.
 	struct MANAGER(Scene) *scene_manager;
 	struct Scene *default_scene;
 	/* following used for enabling GFEs */
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Cmiss_region *root_region;
-	struct Cmiss_region *data_root_region;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *data_selection,*node_selection;
@@ -493,16 +491,6 @@ Scene_object iterator function returning true if <scene_object> contains a
 graphical element group for the given <cmiss_region>.
 ==============================================================================*/
 
-int Scene_object_has_data_Cmiss_region(struct Scene_object *scene_object,
-	void *data_cmiss_region_void);
-/*******************************************************************************
-LAST MODIFIED : 2 December 2002
-
-DESCRIPTION :
-Scene_object iterator function returning true if <scene_object> contains a
-g_ELEMENT_GROUP gt_object referencing the given <data_cmiss_region>.
-==============================================================================*/
-
 int Scene_object_has_graphical_element_group(struct Scene_object *scene_object,
 	void *gt_element_group_void);
 /*******************************************************************************
@@ -686,9 +674,7 @@ scene.
 
 int Scene_set_graphical_element_mode(struct Scene *scene,
 	enum Scene_graphical_element_mode graphical_element_mode,
-	struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *root_region,
-	struct Cmiss_region *data_root_region,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
@@ -1026,9 +1012,7 @@ Returns the nearest picked node in <scene_picked_object_list> that is in
 arguments are not NULL, they are filled with the appropriate information
 pertaining to the nearest node.
 The <use_data> flag indicates that we are searching for a data point instead of
-a node, needed since different settings type used for each, plus it uses the
-data_Cmiss_region from the GT_element_group. <cmiss_region> must be a data
-region if <use_data> set.
+a node, needed since different settings type used for each.
 ==============================================================================*/
 
 struct LIST(FE_node) *Scene_picked_object_list_get_picked_nodes(
@@ -1210,14 +1194,13 @@ Does not complain if <child_scene> is not used in <scene>.
 ==============================================================================*/
 
 int Scene_add_graphical_element_group(struct Scene *scene,
-	struct Cmiss_region *cmiss_region, 	struct Cmiss_region *data_cmiss_region,
-	int position, char *scene_object_name);
+	struct Cmiss_region *cmiss_region, int position, char *scene_object_name);
 /*******************************************************************************
 LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
-Adds a graphical element group for <cmiss_region>, with data from
-<data_cmiss_region> to the list of objects in <scene> at <position>.
+Adds a graphical element group for <cmiss_region> to the list of objects in
+<scene> at <position>.
 The group will be given a default rendition depending on the scene's current
 graphical_element_mode.
 The new Scene_object will take the <scene_object_name>; an error is
@@ -1435,15 +1418,6 @@ LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 Returns true if <scene> contains a graphical element for <cmiss_region>.
-==============================================================================*/
-
-int Scene_has_data_Cmiss_region(struct Scene *scene,
-	struct Cmiss_region *cmiss_region);
-/*******************************************************************************
-LAST MODIFIED : 4 December 2003
-
-DESCRIPTION :
-Returns true if <scene> contains a graphical element for data <cmiss_region>.
 ==============================================================================*/
 
 struct GT_element_group *Scene_get_graphical_element_group(

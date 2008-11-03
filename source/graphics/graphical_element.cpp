@@ -90,9 +90,6 @@ Structure for maintaining a graphical rendition of an element group.
 	/* the [FE] region being drawn */
 	struct Cmiss_region *cmiss_region;
 	struct FE_region *fe_region;
-	/*???RC temporary until data_root_region is removed:
-		the data Cmiss_region partner for cmiss_region */
-	struct Cmiss_region *data_cmiss_region;
 	struct FE_region *data_fe_region;
 	/* settings shared by whole rendition */
 	/* curve approximation with line segments over elements */
@@ -716,7 +713,6 @@ DECLARE_OBJECT_FUNCTIONS(GT_element_group)
 
 struct GT_element_group *CREATE(GT_element_group)(
 	struct Cmiss_region *cmiss_region,
-	struct Cmiss_region *data_cmiss_region,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
@@ -726,9 +722,7 @@ LAST MODIFIED : 28 March 2003
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphical finite element group for
-the given <cmiss_region> and <data_cmiss_region>. Neither region is accessed;
-instead the Scene is required to destroy GT_element_group if either region is
-destroyed.
+the given <cmiss_region>.
 If supplied, callbacks are requested from the <element_selection> and
 <node_selection> to enable automatic highlighting of selected graphics.
 ==============================================================================*/
@@ -740,8 +734,7 @@ If supplied, callbacks are requested from the <element_selection> and
 	data_fe_region = (struct FE_region *)NULL;
 	if (cmiss_region &&
 		(fe_region = Cmiss_region_get_FE_region(cmiss_region)) && 
-		(!data_cmiss_region || 
-		(data_fe_region = Cmiss_region_get_FE_region(data_cmiss_region))))
+		(data_fe_region = FE_region_get_data_FE_region(fe_region)))
 	{
 		if (ALLOCATE(gt_element_group, struct GT_element_group, 1))
 		{
@@ -750,17 +743,7 @@ If supplied, callbacks are requested from the <element_selection> and
 			{
 				gt_element_group->cmiss_region = ACCESS(Cmiss_region)(cmiss_region);
 				gt_element_group->fe_region = ACCESS(FE_region)(fe_region);
-				if (data_cmiss_region)
-				{
-					gt_element_group->data_cmiss_region =
-						ACCESS(Cmiss_region)(data_cmiss_region);
-					gt_element_group->data_fe_region = ACCESS(FE_region)(data_fe_region);
-				}
-				else
-				{
-					gt_element_group->data_cmiss_region = (struct Cmiss_region *)NULL;
-					gt_element_group->data_fe_region = (struct FE_region *)NULL;
-				}
+				gt_element_group->data_fe_region = ACCESS(FE_region)(data_fe_region);
 				/* set settings shared by whole rendition */
 				gt_element_group->element_discretization.number_in_xi1=2;
 				gt_element_group->element_discretization.number_in_xi2=2;
@@ -878,7 +861,6 @@ WITHOUT copying graphics objects, and WITHOUT manager and selection callbacks.
 		/* make an empty GT_element_group for the same groups */
 		if (gt_element_group = CREATE(GT_element_group)(
 			existing_gt_element_group->cmiss_region,
-			existing_gt_element_group->data_cmiss_region,
 			(struct Element_point_ranges_selection *)NULL,
 			(struct FE_element_selection *)NULL,
 			(struct FE_node_selection *)NULL,
@@ -1000,15 +982,7 @@ Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
 				}
 				DEACCESS(Cmiss_region)(&(gt_element_group->cmiss_region));
 				DEACCESS(FE_region)(&(gt_element_group->fe_region));
-				if (gt_element_group->data_cmiss_region)
-				{
-					DEACCESS(Cmiss_region)(&(gt_element_group->data_cmiss_region));
-				}
-				if (gt_element_group->data_fe_region)
-				{
-					DEACCESS(FE_region)(&(gt_element_group->data_fe_region));
-				}
-
+				DEACCESS(FE_region)(&(gt_element_group->data_fe_region));
 				DEALLOCATE(*gt_element_group_address);
 			}
 		}
@@ -1883,33 +1857,6 @@ Returns the Cmiss_region used by <gt_element_group>.
 
 	return (cmiss_region);
 } /* GT_element_group_get_Cmiss_region */
-
-struct Cmiss_region *GT_element_group_get_data_Cmiss_region(
-	struct GT_element_group *gt_element_group)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Returns the data_Cmiss_region used by <gt_element_group>.
-==============================================================================*/
-{
-	struct Cmiss_region *data_cmiss_region;
-
-	ENTER(GT_element_group_get_data_Cmiss_region);
-	if (gt_element_group)
-	{
-		data_cmiss_region = gt_element_group->data_cmiss_region;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_group_get_data_Cmiss_region.  Invalid argument(s)");
-		data_cmiss_region = (struct Cmiss_region *)NULL;
-	}
-	LEAVE;
-
-	return (data_cmiss_region);
-} /* GT_element_group_get_data_Cmiss_region */
 
 struct GT_element_group_process_temp_data
 {

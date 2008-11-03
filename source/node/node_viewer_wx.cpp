@@ -96,6 +96,7 @@ Contains all the information carried by the node_viewer widget.
 	 struct Node_viewer **node_viewer_address;
 	 struct FE_node *node_copy, *initial_node, *current_node, *template_node;
 	 struct Cmiss_region *region;
+	 int use_data;
 	 struct FE_region *fe_region;
 	 struct FE_node_selection *node_selection;
 	 struct User_interface *user_interface;	
@@ -642,7 +643,7 @@ struct Node_viewer *CREATE(Node_viewer)(
 	struct Node_viewer **node_viewer_address,
 	char *dialog_title,
 	struct FE_node *initial_node,
-	struct Cmiss_region *region,
+	struct Cmiss_region *region, int use_data,
 	struct FE_node_selection *node_selection,
 	struct Computed_field_package *computed_field_package,
 	struct Time_object *time_object, struct User_interface *user_interface)
@@ -687,7 +688,12 @@ Since both nodes and data can depend on embedded fields, the
 				node_viewer->node_copy = (struct FE_node *)NULL;
 				node_viewer->node_viewer_address = node_viewer_address;
 				node_viewer->region = region;
+				node_viewer->use_data = use_data;
 				node_viewer->fe_region = Cmiss_region_get_FE_region(region);
+				if (use_data)
+				{
+					node_viewer->fe_region = FE_region_get_data_FE_region(node_viewer->fe_region);
+				}
 				node_viewer->node_selection=node_selection;
 				node_viewer->computed_field_package=computed_field_package;
 				node_viewer->collpane = NULL;

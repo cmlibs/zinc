@@ -77,8 +77,8 @@ this function are finished.
 
 int Computed_field_update_nodal_values_from_source(
 	struct Computed_field *destination_field,	struct Computed_field *source_field,
-	struct Cmiss_region *region, struct FE_node_selection *node_selection,
-	FE_value time);
+	struct Cmiss_region *region, int use_data,
+	struct FE_node_selection *node_selection,	FE_value time);
 /*******************************************************************************
 LAST MODIFIED : 3 March 2003
 
