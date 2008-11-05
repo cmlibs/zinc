@@ -99,7 +99,7 @@ static int Graphics_object_compile_members_opengl(GT_object *graphics_object_lis
 
 /***************************************************************************//**
  * Rebuilds the display list for each uncreated graphics object in the
- * <graphics_object>, a simple linked list.
+ * graphics_object_list, a simple linked list.
  */
 static int Graphics_object_render_opengl(GT_object *graphics_object,
 	Render_graphics_opengl *renderer, Graphics_object_rendering_type type);
@@ -2327,6 +2327,11 @@ static int Graphics_object_enable_opengl_client_vertex_arrays(GT_object *object,
 		{
 			case g_POLYLINE_VERTEX_BUFFERS:
 			{
+				if (object->secondary_material)
+				{
+					display_message(WARNING_MESSAGE,"Graphics_object_enable_opengl_client_vertex_arrays.  "
+						"Multipass rendering not implemented with client vertex arrays.");
+				}
 				unsigned int position_values_per_vertex, position_vertex_count;
 				object->vertex_array->get_float_vertex_buffer(
 					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
@@ -2412,6 +2417,307 @@ static int Graphics_object_disable_opengl_client_vertex_arrays(GT_object *object
 	return (return_code);
 } /* Graphics_object_disable_opengl_client_vertex_arrays */
 
+/***************************************************************************//**
+ * Uses the secondary material (which is assumed to write float colour values) to
+ * calculate a vertex buffer which will be used as the primitive vertex positions
+ * when finally actually rendering geometry.
+ */
+static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_object *object,
+	Render_graphics_opengl *renderer, float *position_vertex_buffer,
+	unsigned int position_values_per_vertex, unsigned int position_vertex_count)
+{
+   int return_code;
+	
+   /* We will be overriding this so we will need to store the original value */
+   GLuint object_position_vertex_buffer_object;
+	/* Sizes of our first pass render */
+	GLuint tex_width, tex_height;
+
+	renderer->Material_compile(object->secondary_material);
+
+	return_code = 1;
+	switch (GT_object_get_type(object))
+	{
+		case g_POLYLINE_VERTEX_BUFFERS:
+		{
+         /* Add up the number of vertices that we are calculating,
+          * we need a pixel in our view buffer for each vertex. */
+			/* All lines must be the same length so that the rendered space is rectangular. */
+			unsigned int line_count =
+				object->vertex_array->get_number_of_vertices(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
+			unsigned int line_index, line_length;
+			
+			object->vertex_array->get_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+				/*line_index*/0, 1, &line_length);
+			for (line_index = 1 ; line_index < line_count ; line_index++)
+			{
+				unsigned int index_count;
+				object->vertex_array->get_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+					line_index, 1, &index_count);
+				if (index_count != line_length)
+				{
+					return_code = 0;
+				}
+			}
+			
+			tex_width = line_length;
+			tex_height = line_count;
+		} break;
+	}
+
+	if (return_code)
+	{
+		if (!object->multipass_vertex_buffer_object)
+		{
+			float *temp_position_array, *temp_pointer;
+
+			glGenBuffers(1, &object->multipass_vertex_buffer_object);
+			glBindBuffer(GL_ARRAY_BUFFER, object->multipass_vertex_buffer_object);
+			/* Initialise the size to hold the original vertex data and the 
+			 * pass 1 frame buffer positions.
+			 */
+			glBufferData(GL_ARRAY_BUFFER, sizeof(float)*
+				(position_values_per_vertex + 3)*position_vertex_count,
+				NULL, GL_STATIC_DRAW);
+			
+			/* Calculate and store the tex1 texture coordinates which are 
+			 * the positions that each vertex must have in the frame buffer. */
+			ALLOCATE(temp_position_array, float,3*position_vertex_count);
+			temp_pointer = temp_position_array;
+			unsigned int i, j;
+			for (j = 0 ; j < tex_height ; j++)
+			{
+				for (i = 0 ; i < tex_width ; i++)
+				{
+					*temp_pointer = (float)i * ((float)tex_width+1.0)/(float)tex_width;
+					temp_pointer++;
+					*temp_pointer = (float)j + 0.5; 
+					temp_pointer++;
+					*temp_pointer = 0.0; 
+					temp_pointer++;
+				}
+			}
+
+			/* Set pass 1 frame buffer positions. */
+			glBufferSubData(GL_ARRAY_BUFFER,
+				/*offset*/sizeof(float)*position_values_per_vertex*position_vertex_count,
+				/*size*/sizeof(float)*3*position_vertex_count,
+				temp_position_array);
+			DEALLOCATE(temp_position_array);
+     }
+
+		glBindBuffer(GL_ARRAY_BUFFER, object->multipass_vertex_buffer_object);
+		glClientActiveTexture(GL_TEXTURE1);
+		glTexCoordPointer(/*size*/3, GL_FLOAT, /*Packed vertices*/0,
+			/*offset*/(void*)(sizeof(float)*position_values_per_vertex*position_vertex_count));
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glClientActiveTexture(GL_TEXTURE0);
+
+		/* Load the position vertex buffer into the first half of the array
+		 * as it will be bound with the standard vertex buffer object 
+		 * rendering code as the position vertex buffer.
+		 */
+		glBufferSubData(GL_ARRAY_BUFFER,
+			/*offset*/0,
+			/*size*/sizeof(float)*position_values_per_vertex*position_vertex_count,
+			position_vertex_buffer);
+		
+		glBindBuffer(GL_PIXEL_PACK_BUFFER_EXT, object->position_vertex_buffer_object);						
+		glBufferData(GL_PIXEL_PACK_BUFFER_EXT, sizeof(float)*
+			4*tex_width*tex_height,
+			/*position_vertex_buffer*/NULL, GL_STATIC_DRAW);
+	
+		object_position_vertex_buffer_object = object->position_vertex_buffer_object;
+		object->position_vertex_buffer_object = object->multipass_vertex_buffer_object;
+		object->position_values_per_vertex = position_values_per_vertex;
+	
+		static GLuint fb_handle = 0;
+		static GLuint fbo_tex_vertices = 0;
+		if (0 == fb_handle)
+		{
+			glGenFramebuffersEXT(1,&fb_handle);
+			fbo_tex_vertices = Texture_create_float_texture(tex_width,tex_height,
+				/*initial_data*/NULL,/*alpha*/1, /*fallback_to_shorts*/1);
+		}
+	
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,fb_handle);
+	
+		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, fbo_tex_vertices, 0);
+	
+#if defined (NEW_CODE)
+		/* Could generate more of attributes by adding new framebuffer attachments and copying
+		 * these to other buffers.  Currently no way to determine which attributes
+		 * should be set by the secondary material and used in the final render. */
+		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_2D, fbo_tex_normals, 0); 
+	
+		GLenum dbuffers[] = 
+		{GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT};
+		glDrawBuffers(2, dbuffers);
+#endif /* defined (NEW_CODE) */
+		
+		GLenum dbuffers[] = 
+		{GL_COLOR_ATTACHMENT0_EXT};
+		glDrawBuffers(1, dbuffers);
+	
+		glDisable(GL_DEPTH_TEST);
+		glDepthMask(GL_FALSE);
+		glDisable(GL_CULL_FACE);
+		glDisable(GL_ALPHA_TEST);
+		glDisable(GL_STENCIL_TEST);
+		glDisable(GL_BLEND);
+	
+		// Should not be necessary as we should be writing every pixel,
+		// but better than random values when debugging if we aren't.
+		glClearColor(1, 0, 0, 0);
+		glClear(GL_COLOR_BUFFER_BIT);
+	
+	#if defined (OLD_CODE)
+		/* There seems to be code binding these textures in samples I have seen,
+		 * I don't think I should need to do this, these textures are just targets
+		 * for the framebuffer extension (and they may interfere with any real textures
+		 * I want to bind), but I've kept this code here in case it is necessary on some other platfrom.
+		 */
+		glActiveTextureARB( GL_TEXTURE0_ARB );
+		glBindTexture(GL_TEXTURE_2D,fbo_tex_vertices);
+	
+		glActiveTextureARB( GL_TEXTURE1_ARB );
+		glBindTexture(GL_TEXTURE_2D,fbo_tex_normals);
+	#endif /* defined (OLD_CODE) */
+	
+		glMatrixMode(GL_PROJECTION); 
+		glLoadIdentity(); 
+		gluOrtho2D(0.0,tex_width,0.0,tex_height);
+		glMatrixMode(GL_MODELVIEW); 
+		glLoadIdentity(); 
+	
+#if defined (OLD_CODE)
+		int viewport[4];
+		glGetIntegerv(GL_VIEWPORT, viewport);
+#endif /* defined (OLD_CODE) */
+		glViewport(0,0,tex_width,tex_height); 
+	
+		//Not available on my implementation, maybe we should be setting this
+		//if available to ensure the results aren't clamped.
+		//glClampColorARB(GL_CLAMP_VERTEX_COLOR_ARB, GL_FALSE);
+	
+		renderer->Material_execute(object->secondary_material);
+	
+		//Render my vertices here, the coordinates must fill in
+		//the render buffer so we expect that the vertex position
+		//from this stage will be read from the GL_TEXTURE1 multi
+		//tex coordinates, so this is what the secondary material
+		//must do.  We could override the vertex position but it
+		//seems more useful to make this available to the program
+		//if necessary.
+		switch (GT_object_get_type(object))
+		{
+			case g_POLYLINE_VERTEX_BUFFERS:
+			{
+				/* Render lines with the original positions set as the vertex
+				 * position array, enabling all the OpenGL attributes defined on the
+				 * original geometry to be used when calculating the final coordinates. */
+				render_GT_object_opengl_immediate(object, /*draw_selected*/0,
+					renderer, GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT);
+			} break;
+			// A simpler (and therefore faster) case would be not to render with
+			// the original geometry but use a single quad here instead.  In this
+			// case the secondary material would need to calculate all the vertex
+			// values required just from these values supplied here and not the original geometry.
+#if defined (NEW_CODE)
+			case ALL_VALUES_CALCULATED:
+			{
+				glBegin(GL_QUADS); 
+				glColor3f(1,1,1);
+				glMultiTexCoord4f( GL_TEXTURE0, 0.0, 0.0, 0.0, 1.0);
+				glVertex2f(0, 0);
+				glMultiTexCoord4f( GL_TEXTURE0, 1.0, 0.0, 0.0, 1.0);
+				glVertex2f(tex_width,0);
+				glMultiTexCoord4f( GL_TEXTURE0, 1.0, 1.0, 0.0, 1.0);
+				glVertex2f(tex_width, tex_height);
+				glMultiTexCoord4f( GL_TEXTURE0, 0.0, 1.0, 0.0, 1.0);
+				glVertex2f(0, tex_height);
+				glEnd();
+			} break;
+#endif //defined (NEW_CODE)
+		}
+	
+		glClientActiveTexture(GL_TEXTURE1);
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		glClientActiveTexture(GL_TEXTURE0);
+	
+		/*Set the vertex buffer object back to the final position buffer */
+		object->position_vertex_buffer_object = object_position_vertex_buffer_object;
+		object->position_values_per_vertex = 4;
+	
+		glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, object->position_vertex_buffer_object);
+		glReadPixels(0, 0, tex_width, tex_height, GL_RGBA, GL_FLOAT, 0);
+	
+#if defined (NEW_CODE)
+		/* If we were copying other attributes */
+		glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, vbo_normals_handle);
+		glReadPixels(0, 0, tex_width, tex_height, GL_RGBA, GL_FLOAT, 0);
+#endif /* defined (NEW_CODE) */
+	
+		glReadBuffer(GL_NONE);
+		glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, 0 );
+	
+#if defined (DEBUG)
+		// Read the buffer out to memory so we can see the vertex values.
+		{
+			float debugreadbuffer[4 * tex_width * tex_height];
+			glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
+			glReadPixels(0, 0, tex_width, tex_height, GL_RGBA, GL_FLOAT, debugreadbuffer);
+			unsigned int i, j;
+			for (i = 0 ; i < tex_height ; i++)
+				for (j = 0 ; j < tex_width ; j++)
+				{
+			printf("(%d,%d) %f %f %f %f\n", i, j,
+					debugreadbuffer[(i * tex_width + j) * 4 + 0],
+					debugreadbuffer[(i * tex_width + j) * 4 + 1],
+					debugreadbuffer[(i * tex_width + j) * 4 + 2],
+					debugreadbuffer[(i * tex_width + j) * 4 + 3]);
+				}
+			glReadBuffer(GL_NONE);
+		}
+#endif /* defined (DEBUG) */
+
+		//Set back to the normal screen
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	
+#if defined (OLD_CODE)
+		// We don't need to reset all this state as we are in the compile stage and
+		// the rendering setup is still to occur.
+		glViewport(viewport[0],viewport[1],viewport[2],viewport[3]); 
+		glDrawBuffer(GL_BACK);
+	
+		glEnable(GL_DEPTH_TEST);
+		glDepthMask(GL_TRUE);
+		glEnable(GL_CULL_FACE);
+		glEnable(GL_ALPHA_TEST);
+		glEnable(GL_STENCIL_TEST);
+		glEnable(GL_BLEND);
+	
+      /* Note that the corresponding glPushMatrix has been removed. */
+		glMatrixMode(GL_PROJECTION); 
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+		glPopMatrix();
+#endif /* defined (OLD_CODE) */
+	
+		renderer->Material_execute((Graphical_material *)NULL);
+	}
+
+	return (return_code);
+}
+
+/***************************************************************************//**
+ * Compile Graphics_vertex_array data into vertex buffer objects.
+ */
 static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object,
 	Render_graphics_opengl *renderer)
 {
@@ -2437,11 +2743,21 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 					{
 						glGenBuffers(1, &object->position_vertex_buffer_object);
 					}
-					glBindBuffer(GL_ARRAY_BUFFER, object->position_vertex_buffer_object);
-					glBufferData(GL_ARRAY_BUFFER, sizeof(float)*
-						position_values_per_vertex*position_vertex_count,
-						position_vertex_buffer, GL_STATIC_DRAW);
-					object->position_values_per_vertex = position_values_per_vertex;
+					
+					if (object->secondary_material)
+					{
+						return_code = Graphics_object_generate_vertex_positions_from_secondary_material(
+							object, renderer, position_vertex_buffer, position_values_per_vertex,
+							position_vertex_count);
+					}
+					else
+					{
+						glBindBuffer(GL_ARRAY_BUFFER, object->position_vertex_buffer_object);
+						glBufferData(GL_ARRAY_BUFFER, sizeof(float)*
+							position_values_per_vertex*position_vertex_count,
+							position_vertex_buffer, GL_STATIC_DRAW);
+						object->position_values_per_vertex = position_values_per_vertex;
+					}
 				}
 				else
 				{
@@ -2519,6 +2835,10 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 	return (return_code);
 } /* Graphics_object_compile_opengl_vertex_buffer_object */
 
+/***************************************************************************//**
+ * Set the OpenGL state to use vertex buffer objects that have been previously
+ * created for this object.
+ */
 static int Graphics_object_enable_opengl_vertex_buffer_object(GT_object *object,
 	Render_graphics_opengl *renderer)
 {
@@ -2571,6 +2891,9 @@ static int Graphics_object_enable_opengl_vertex_buffer_object(GT_object *object,
 	return (return_code);
 } /* Graphics_object_enable_opengl_client_vertex_arrays */
 
+/***************************************************************************//**
+ * Reset the OpenGL state to not use vertex buffer objects.
+ */
 static int Graphics_object_disable_opengl_vertex_buffer_object(GT_object *object,
 	Render_graphics_opengl *renderer)
 {
@@ -2861,15 +3184,6 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 						/*???RC glPushAttrib and glPopAttrib are *very* slow */
 						glPushAttrib(GL_ENABLE_BIT);
 						glDisable(GL_LIGHTING);
-#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
-						if (Graphics_library_check_extension(GL_ARB_vertex_program) &&
-							Graphics_library_check_extension(GL_ARB_fragment_program))
-						{
-							glDisable(GL_VERTEX_PROGRAM_ARB);
-							glDisable(GL_FRAGMENT_PROGRAM_ARB);
-							glDisable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
-						}
-#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 #endif /* defined (OPENGL_API) */
 						if (proportion>0)
 						{
@@ -2990,15 +3304,6 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 							/*???RC glPushAttrib and glPopAttrib are *very* slow */
 							glPushAttrib(GL_ENABLE_BIT);
 							glDisable(GL_LIGHTING);
-#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
-							if (Graphics_library_check_extension(GL_ARB_vertex_program) &&
-								Graphics_library_check_extension(GL_ARB_fragment_program))
-							{
-								glDisable(GL_VERTEX_PROGRAM_ARB);
-								glDisable(GL_FRAGMENT_PROGRAM_ARB);
-								glDisable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
-							}
-#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 						}
 						if (picking_names)
 						{
@@ -3180,15 +3485,6 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 							/*???RC glPushAttrib and glPopAttrib are *very* slow */
 							glPushAttrib(GL_ENABLE_BIT);
 							glDisable(GL_LIGHTING);
-	#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
-							if (Graphics_library_check_extension(GL_ARB_vertex_program) &&
-								Graphics_library_check_extension(GL_ARB_fragment_program))
-							{
-								glDisable(GL_VERTEX_PROGRAM_ARB);
-								glDisable(GL_FRAGMENT_PROGRAM_ARB);
-								glDisable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
-							}
-	#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 						}
 						if (picking_names)
 						{
@@ -3261,6 +3557,11 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									object->vertex_array->get_float_vertex_buffer(
 										GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
 										&normal_buffer, &normal_values_per_vertex, &normal_vertex_count);
+									if (object->secondary_material)
+									{
+										display_message(WARNING_MESSAGE,"render_GT_object_opengl_immediate.  "
+											"Multipass rendering not implemented with glbegin/glend rendering.");
+									}
 								} break;
 								case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
 								{

@@ -362,15 +362,18 @@ yet we just don't know.
 #if defined (GL_ARB_fragment_program_shadow)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_fragment_program_shadow);
 #endif /* defined (GL_ARB_fragment_program_shadow) */
+#if defined (GL_ARB_texture_compression)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_texture_compression);
+#endif /* defined (GL_ARB_texture_compression) */
+#if defined (GL_ARB_texture_float)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_texture_float);
+#endif /* defined (GL_ARB_texture_float) */
 #if defined (GL_ARB_texture_non_power_of_two)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_texture_non_power_of_two);
 #endif /* defined (GL_ARB_texture_non_power_of_two) */
 #if defined (GL_ARB_texture_rectangle)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_texture_rectangle);
 #endif /* defined (GL_ARB_texture_rectangle) */
-#if defined (GL_ARB_texture_compression)
-  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_texture_compression);
-#endif /* defined (GL_ARB_texture_compression) */
 #if defined (GL_ARB_vertex_buffer_object)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_vertex_buffer_object);
 #endif /* defined (GL_ARB_vertex_buffer_object) */
@@ -380,6 +383,9 @@ yet we just don't know.
 #if defined (GL_ARB_shadow)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_shadow);
 #endif /* defined (GL_ARB_shadow) */
+#if defined (GL_ATI_texture_float)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ATI_texture_float);
+#endif /* defined (GL_ATI_texture_float) */
 #if defined (GL_EXT_abgr)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_EXT_abgr);
 #endif /* defined (GL_EXT_abgr) */
@@ -392,6 +398,9 @@ yet we just don't know.
 #if defined (GL_EXT_framebuffer_object)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_EXT_framebuffer_object);
 #endif /* (GL_EXT_framebuffer_object) */
+#if defined (GL_NV_float_buffer)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_NV_float_buffer);
+#endif /* defined (GL_NV_float_buffer) */
 /* Fake extension to control whether display lists are used or not.
  * This is only determined by the corresponding CMISS_GL_display_list environment
  * variable. */

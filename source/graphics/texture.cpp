@@ -7199,3 +7199,98 @@ should be DEALLOCATED when finished with).
 	return (return_value);
 } /* Texture_get_property */
 
+#if defined (OPENGL_API)
+unsigned int Texture_create_float_texture(int width, int height, char* buffer,
+	int alpha, int fallback_to_shorts)
+{
+	GLuint type = GL_TEXTURE_2D;
+	GLuint texture_object_id;
+	
+	GLuint format, iformat;
+	format = 0;
+	if (alpha)
+	{
+		iformat = GL_RGBA;
+	}
+	else
+	{
+		iformat = GL_RGB;
+	}
+	
+#if defined (GL_ARB_texture_float)
+	if (Graphics_library_check_extension(GL_ARB_texture_float))
+	{
+		if (alpha)
+		{
+			format = GL_RGB32F_ARB;
+		}
+		else
+		{
+			format = GL_RGBA32F_ARB;
+		}
+	}
+	else
+#endif /* defined (GL_ARB_texture_float) */
+#if defined (GL_ATI_texture_float)
+	if (Graphics_library_check_extension(GL_ATI_texture_float))
+	{
+		if (alpha)
+		{
+			format = GL_RGBA_FLOAT32_ATI;
+		}
+		else
+		{
+			format = GL_RGB_FLOAT32_ATI;
+		}
+	}
+	else
+#endif /* defined (GL_ATI_texture_float) */
+#if defined (GL_NV_float_buffer)
+	if (Graphics_library_check_extension(GL_NV_float_buffer))
+	{
+		if (alpha)
+		{
+			format = GL_FLOAT_RGBA32_NV;
+		}
+		else
+		{
+			format = GL_FLOAT_RGB32_NV;
+		}
+	}
+	else
+#endif /* defined (GL_ATI_texture_float) */
+	if (fallback_to_shorts)
+	{
+		/* Fall back to shorts if no float format available */
+		if (alpha)
+		{
+			format = GL_RGBA16;
+		}
+		else
+		{
+			format = GL_RGB16;
+		}		
+	}
+   if (format)
+   {
+   	glGenTextures (1, &texture_object_id);
+   	glBindTexture(type,texture_object_id);
+   	
+   	// set texture parameters
+   	glTexParameteri(type, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+   	glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   	glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   	glTexParameteri(type, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+   	glTexImage2D(type,0,format,width,height,0,iformat,GL_FLOAT,buffer);
+
+   	glBindTexture(type,0);
+	}
+   else
+   {
+		texture_object_id = 0;
+   }
+	return texture_object_id;
+}
+#endif /* defined (OPENGL_API) */
+

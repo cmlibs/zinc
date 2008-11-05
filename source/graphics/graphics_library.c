@@ -1054,6 +1054,29 @@ appropriately.
 			}
 		}
 #endif /* GL_ARB_texture_compression */
+#if defined GL_ARB_texture_float || defined GL_VERSION_3_0
+		else if (!strcmp(extension_name, "GL_ARB_texture_float"))
+		{
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_ARB_texture_float))
+			{
+				return_code = GLEXTENSIONFLAG(GL_ARB_texture_float);
+			}
+			else
+			{
+				return_code = Graphics_library_query_environment_extension(extension_name);
+				if (GLEXTENSION_UNSURE == return_code)
+				{
+					return_code = query_gl_extension(extension_name);
+					if (GLEXTENSION_AVAILABLE != return_code)
+					{
+						return_code = query_gl_version(3, 0);
+					}
+					/* Only using symbols, no functions so far. */
+				}
+				GLEXTENSIONFLAG(GL_ARB_texture_float) = return_code;
+			}
+		}
+#endif /* GL_ARB_texture_float || defined GL_VERSION_3_0 */
 #if defined GL_ARB_texture_non_power_of_two
 		else if (!strcmp(extension_name, "GL_ARB_texture_non_power_of_two"))
 		{
@@ -1182,6 +1205,25 @@ appropriately.
 			}
 		}
 #endif /* GL_ARB_shadow */
+#if defined GL_ATI_texture_float
+		else if (!strcmp(extension_name, "GL_ATI_texture_float"))
+		{
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_ATI_texture_float))
+			{
+				return_code = GLEXTENSIONFLAG(GL_ATI_texture_float);
+			}
+			else
+			{
+				return_code = Graphics_library_query_environment_extension(extension_name);
+				if (GLEXTENSION_UNSURE == return_code)
+				{
+					return_code = query_gl_extension(extension_name);
+					/* Only using symbols, no functions so far. */
+				}
+				GLEXTENSIONFLAG(GL_ATI_texture_float) = return_code;
+			}
+		}
+#endif /* GL_ATI_texture_float */
 #if defined GL_EXT_abgr
 		else if (!strcmp(extension_name, "GL_EXT_abgr"))
 		{
@@ -1289,6 +1331,25 @@ appropriately.
 			}
 		}
 #endif /* GL_EXT_FRAMEBUFFER_OBJECT */
+#if defined GL_NV_float_buffer
+		else if (!strcmp(extension_name, "GL_NV_float_buffer"))
+		{
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_NV_float_buffer))
+			{
+				return_code = GLEXTENSIONFLAG(GL_NV_float_buffer);
+			}
+			else
+			{
+				return_code = Graphics_library_query_environment_extension(extension_name);
+				if (GLEXTENSION_UNSURE == return_code)
+				{
+					return_code = query_gl_extension(extension_name);
+					/* Only using symbols, no functions so far. */
+				}
+				GLEXTENSIONFLAG(GL_NV_float_buffer) = return_code;
+			}
+		}
+#endif /* GL_NV_float_buffer */
 		/* A fake extension for controlling whether display lists are used at run time. */
 		else if (!strcmp(extension_name, "GL_display_lists"))
 		{

@@ -3814,6 +3814,7 @@ Allocates memory and assigns fields for a graphics object.
 				object->colour_values_per_vertex = 0;
 				object->normal_vertex_buffer_object = 0;
 				object->vertex_array_object = 0;
+				object->multipass_vertex_buffer_object = 0;
 #endif /* defined (OPENGL_API) */
 				object->compile_status = GRAPHICS_NOT_COMPILED;
 				object->object_type=object_type;
@@ -3952,8 +3953,12 @@ and sets <*object> to NULL.
 			{
 				glDeleteBuffers(1, &object->normal_vertex_buffer_object);
 			}
+			if (object->multipass_vertex_buffer_object)
+			{
+				glDeleteBuffers(1, &object->multipass_vertex_buffer_object);
+			}
 #endif /* defined (GL_VERSION_1_5) */
-#if defined (GL_VERSION_3_0)
+#if defined (GL_VERSION_3_0)  && (NOT_IN_MESA_HEADER_YET)
 			if (object->vertex_array_object)
 			{
 				/* Assume this is safe as the vertex array object is set */

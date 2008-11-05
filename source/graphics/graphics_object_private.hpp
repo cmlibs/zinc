@@ -428,6 +428,9 @@ Graphical object data structure.
 	GLuint colour_values_per_vertex;
 	GLuint normal_vertex_buffer_object;
 	/* The normal pointer doesn't have a size option, must be 3. */
+	
+	/* For multipass rendering we use some more vertex_buffers */
+	GLuint multipass_vertex_buffer_object;
 #endif /* defined (OPENGL_API) */
 	/* enumeration indicates whether the graphics display list is up to date */
 	enum Graphics_compile_status compile_status;

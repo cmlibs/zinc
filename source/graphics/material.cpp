@@ -5375,6 +5375,15 @@ direct_render_Graphical_material.
 	}
 	else
 	{
+#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
+		if (Graphics_library_check_extension(GL_ARB_vertex_program) &&
+			Graphics_library_check_extension(GL_ARB_fragment_program))
+		{
+			glDisable(GL_VERTEX_PROGRAM_ARB);
+			glDisable(GL_FRAGMENT_PROGRAM_ARB);
+			glDisable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
+		}
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 		return_code = renderer->Texture_execute((struct Texture *)NULL);
 	}
 	LEAVE;

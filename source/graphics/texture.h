@@ -797,4 +797,20 @@ If the <property> is defined for the <texture>, then a copy is returned (and
 should be DEALLOCATED when finished with).
 ==============================================================================*/
 
+#if defined (OPENGL_API)
+/***************************************************************************//**
+ * Create a float texture of the specified with and height.
+ * 
+ * @param width Width of texture to create
+ * @param height Height of texture to create
+ * @param buffer Optional data to initialise texture.
+ * @param alpha Flag which specifies whether the texture format should include alpha or not.
+ * @param fallback_to_shorts Flag which specifies whether if no float formats are
+ *  available an integer texture should be created instead.
+ * @return Returns texture object id if texture is created or 0 if not.
+ */
+unsigned int Texture_create_float_texture(int width, int height, char* buffer,
+	int alpha, int fallback_to_shorts);
+#endif /* defined (OPENGL_API) */
+
 #endif /* !defined (TEXTURE_H) */
