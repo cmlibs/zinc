@@ -2255,7 +2255,7 @@ these arrays are expanded out one value at a time, many times over.
 static int copy_value_storage_array(Value_storage *destination,
 	enum Value_type value_type, struct FE_time_sequence *destination_time_sequence,
 	struct FE_time_sequence *source_time_sequence,int number_of_values,
-	Value_storage *source)
+	Value_storage *source, int optimised_merge)
 /*******************************************************************************
 LAST MODIFIED : 21 November 2001
 
@@ -2266,6 +2266,8 @@ for <destination>. <destination> is assumed to be blank and large enough to
 contain such values.  If <source_time_sequence> and <destination_time_sequence>
 are non NULL then the value storage correspond to an arrays of values at those
 times.
+If <optimised_merge> is set then time sequences may be transferred from source
+to destination in certain cases instead of copied; only call from merge_FE_node.
 ==============================================================================*/
 {
 	enum FE_time_sequence_mapping time_sequence_mapping;
@@ -2286,8 +2288,15 @@ times.
 				src = source;
 				value_size=get_Value_storage_size(value_type,
 					destination_time_sequence);
-				time_sequence_mapping = 
-					FE_time_sequences_mapping(source_time_sequence, destination_time_sequence);
+				if (optimised_merge)
+				{
+					time_sequence_mapping = 
+						FE_time_sequences_mapping(source_time_sequence, destination_time_sequence);
+				}
+				else
+				{
+					time_sequence_mapping = FE_TIME_SEQUENCE_MAPPING_UNKNOWN;
+				}
 				switch (time_sequence_mapping)
 				{
 					case FE_TIME_SEQUENCE_MAPPING_IDENTICAL:
@@ -3291,6 +3300,7 @@ struct FE_node_field_merge_values_storage_data
 	Value_storage *old_values_storage;
 	struct LIST(FE_node_field) *add_node_field_list;
 	Value_storage *add_values_storage;
+	int optimised_merge;
 }; /* FE_node_field_merge_values_storage_data */
 
 static int FE_node_field_merge_values_storage(
@@ -3369,7 +3379,7 @@ Assumes component nodal values are consecutive and start at first component.
 								old_node_field->components->value;
 							return_code = copy_value_storage_array(destination, value_type,
 								new_node_field->time_sequence, old_node_field->time_sequence,
-								number_of_values, source);
+								number_of_values, source, copy_data->optimised_merge);
 						}
 						else
 						{
@@ -3393,7 +3403,7 @@ Assumes component nodal values are consecutive and start at first component.
 							{
 								return_code = copy_value_storage_array(destination, value_type,
 									new_node_field->time_sequence, add_node_field->time_sequence,
-									number_of_values, source);
+									number_of_values, source, copy_data->optimised_merge);
 							}
 						}
 						else
@@ -3446,7 +3456,7 @@ Assumes component nodal values are consecutive and start at first component.
 									(void *)copy_data->old_values_storage);
 								return_code = copy_value_storage_array(destination, value_type,
 									old_node_field->time_sequence, add_node_field->time_sequence,
-									number_of_values, source);
+									number_of_values, source, copy_data->optimised_merge);
 							}
 						}
 						else
@@ -3482,7 +3492,7 @@ Assumes component nodal values are consecutive and start at first component.
 static int merge_FE_node_values_storage(struct FE_node *node,
 	Value_storage *values_storage,
 	struct LIST(FE_node_field) *new_node_field_list,
-	struct FE_node *add_node)
+	struct FE_node *add_node, int optimised_merge)
 /*******************************************************************************
 LAST MODIFIED: 4 March 2005
 
@@ -3531,6 +3541,7 @@ allocated in the new <values_storage> so <node> and <add_node> are unchanged.
 			copy_data.add_node_field_list = (struct LIST(FE_node_field) *)NULL;
 			copy_data.add_values_storage = (Value_storage *)NULL;
 		}
+		copy_data.optimised_merge = optimised_merge;
 		return_code = FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
 			FE_node_field_merge_values_storage, (void *)(&copy_data),
 			new_node_field_list);
@@ -3611,7 +3622,8 @@ and any arrays in values_storage.
 				if (ALLOCATE(dest_values_storage,Value_storage,size))
 				{
 					return_code = merge_FE_node_values_storage(node, dest_values_storage,
-						node->fields->node_field_list, (struct FE_node *)NULL);
+						node->fields->node_field_list, (struct FE_node *)NULL,
+						/*optimised_merge*/0);
 				}
 				else
 				{
@@ -9795,7 +9807,7 @@ Function prototype should be in finite_element_private.h, so not public.
 				(struct FE_time_sequence *)NULL,source->number_of_values))&&
 				copy_value_storage_array(values_storage,source->value_type,
 					(struct FE_time_sequence *)NULL,(struct FE_time_sequence *)NULL,
-					source->number_of_values,source->values_storage)))
+					source->number_of_values,source->values_storage, /*optimised_merge*/0)))
 			{
 				return_code=0;
 			}
@@ -9806,7 +9818,7 @@ Function prototype should be in finite_element_private.h, so not public.
 				(struct FE_time_sequence *)NULL,source->number_of_times))&&
 				copy_value_storage_array(times,source->time_value_type,
 					(struct FE_time_sequence *)NULL,(struct FE_time_sequence *)NULL,
-					source->number_of_times,source->times)))
+					source->number_of_times,source->times, /*optimised_merge*/0)))
 			{
 				return_code=0;
 			}
@@ -13343,7 +13355,8 @@ their FE_field listed in <fe_field_list>.
 				(ALLOCATE(values_storage, Value_storage,
 					copy_data.values_storage_size) &&
 					merge_FE_node_values_storage(node, values_storage,
-						copy_data.node_field_list, (struct FE_node *)NULL)))
+						copy_data.node_field_list, (struct FE_node *)NULL,
+						/*optimised_merge*/0)))
 			{
 				/* create a node field info for the combined list */
 				if (fe_node_field_info = FE_region_get_FE_node_field_info(
@@ -13690,7 +13703,7 @@ Defines a field at a node (does not assign values)
 														existing_time_sequence,new_node_field->time_sequence,(Value_storage *)&temp_storage)))
 											{
 												display_message(ERROR_MESSAGE,
-													"copy_value_storage_array.  Failed to copy array");
+													"define_FE_field_at_node.  Failed to copy array");
 												return_code = 0;
 											}
 											/* Must free the src array now otherwise we will lose any reference to it */
@@ -18529,7 +18542,7 @@ Function is atomic; <destination> is unchanged if <source> cannot be merged.
 		{
 			/* sum the values_storage_size and number_of_values */
 			number_of_values = 0;
-			values_storage_size = 0;
+			values_storage_size = 0; 
 			if (FOR_EACH_OBJECT_IN_LIST(FE_node_field)(count_nodal_size,
 				(void *)(&values_storage_size), node_field_list) &&
 				FOR_EACH_OBJECT_IN_LIST(FE_node_field)(count_nodal_values,
@@ -18550,7 +18563,7 @@ Function is atomic; <destination> is unchanged if <source> cannot be merged.
 						/* Don't need to reallocate memory as we are only overwriting
 							existing values */
 						merge_FE_node_values_storage(destination, (Value_storage *)NULL,
-							node_field_list, source);
+							node_field_list, source, /*optimised_merge*/1);
 					}
 					else
 					{
@@ -18563,7 +18576,7 @@ Function is atomic; <destination> is unchanged if <source> cannot be merged.
 						if ((0 == values_storage_size) ||
 							(ALLOCATE(values_storage, Value_storage, values_storage_size) &&
 								merge_FE_node_values_storage(destination, values_storage,
-									node_field_list, source)))
+									node_field_list, source, /*optimised_merge*/1)))
 						{
 							/* create a node field info for the combined list */
 							if (fe_node_field_info = FE_region_get_FE_node_field_info(
@@ -25811,7 +25824,7 @@ they are, should follow pattern of FE_node_field_copy_values_storage.
 								add_component->map.element_grid_based.value_index;
 							return_code = copy_value_storage_array(destination, value_type,
 								(struct FE_time_sequence *)NULL, (struct FE_time_sequence *)NULL,
-								number_of_values, source);
+								number_of_values, source, /*optimised_merge*/0);
 						}
 						else
 						{
@@ -25829,7 +25842,7 @@ they are, should follow pattern of FE_node_field_copy_values_storage.
 								old_component->map.element_grid_based.value_index;
 							return_code = copy_value_storage_array(destination, value_type,
 								(struct FE_time_sequence *)NULL, (struct FE_time_sequence *)NULL,
-								number_of_values, source);
+								number_of_values, source, /*optimised_merge*/0);
 						}
 						else
 						{
@@ -26704,7 +26717,7 @@ been allocated but is uninitialised.
 							copy_data->destination_values_storage+value_index,
 							value_type,(struct FE_time_sequence *)NULL,
 							(struct FE_time_sequence *)NULL,number_of_values,
-							copy_data->source_values_storage+value_index);
+							copy_data->source_values_storage+value_index, /*optimised_merge*/0);
 					}
 					else
 					{
