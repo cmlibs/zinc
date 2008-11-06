@@ -2751,6 +2751,7 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 					{
 #if defined (GL_VERSION_2_0) && defined (GL_EXT_framebuffer_object)
 						if (Graphics_library_check_extension(GL_ARB_draw_buffers)
+							/* Need to check extension to load multitexture functions */
 							&& Graphics_library_check_extension(GL_VERSION_1_3)
 							&& Graphics_library_check_extension(GL_EXT_framebuffer_object))
 						{
