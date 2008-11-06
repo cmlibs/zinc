@@ -356,6 +356,9 @@ yet we just don't know.
 #if defined (GL_ARB_depth_texture)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_depth_texture);
 #endif /* defined (GL_ARB_depth_texture) */
+#if defined (GL_ARB_draw_buffers)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_draw_buffers);
+#endif /* defined (GL_ARB_draw_buffers) */
 #if defined (GL_ARB_fragment_program)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_fragment_program);
 #endif /* defined (GL_ARB_fragment_program) */
@@ -423,6 +426,8 @@ GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_display_lists);
 #    if defined (GL_VERSION_1_3)
        GRAPHICS_LIBRARY_EXTERN PFNGLACTIVETEXTUREPROC GLHANDLE(glActiveTexture);
 #      define glActiveTexture (GLHANDLE(glActiveTexture))
+       GRAPHICS_LIBRARY_EXTERN PFNGLCLIENTACTIVETEXTUREPROC GLHANDLE(glClientActiveTexture);
+#      define glClientActiveTexture (GLHANDLE(glClientActiveTexture))
        GRAPHICS_LIBRARY_EXTERN PFNGLMULTITEXCOORD3FVPROC GLHANDLE(glMultiTexCoord3fv);
 #      define glMultiTexCoord3fv (GLHANDLE(glMultiTexCoord3fv))
 #    endif /* defined (GL_VERSION_1_3) */
@@ -441,6 +446,8 @@ GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_display_lists);
 #      define glBindBuffer (GLHANDLE(glBindBuffer))
        GRAPHICS_LIBRARY_EXTERN PFNGLBUFFERDATAPROC GLHANDLE(glBufferData);
 #      define glBufferData (GLHANDLE(glBufferData))
+       GRAPHICS_LIBRARY_EXTERN PFNGLBUFFERSUBDATAPROC GLHANDLE(glBufferSubData);
+#      define glBufferSubData (GLHANDLE(glBufferSubData))
 #    endif /* defined (GL_VERSION_1_5) */
 
 #    if defined (GL_VERSION_2_0)
@@ -456,6 +463,8 @@ GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_display_lists);
 #      define glDeleteProgram (GLHANDLE(glDeleteProgram))
        GRAPHICS_LIBRARY_EXTERN PFNGLDELETESHADERPROC GLHANDLE(glDeleteShader);
 #      define glDeleteShader (GLHANDLE(glDeleteShader))
+       GRAPHICS_LIBRARY_EXTERN PFNGLDRAWBUFFERSPROC GLHANDLE(glDrawBuffers);
+#      define glDrawBuffers (GLHANDLE(glDrawBuffers))
        GRAPHICS_LIBRARY_EXTERN PFNGLGETSHADERIVPROC  GLHANDLE(glGetShaderiv);
 #      define glGetShaderiv (GLHANDLE(glGetShaderiv))
        GRAPHICS_LIBRARY_EXTERN PFNGLGETSHADERINFOLOGPROC GLHANDLE(glGetShaderInfoLog);

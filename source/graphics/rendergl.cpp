@@ -2417,6 +2417,8 @@ static int Graphics_object_disable_opengl_client_vertex_arrays(GT_object *object
 	return (return_code);
 } /* Graphics_object_disable_opengl_client_vertex_arrays */
 
+/* Require glDrawBuffers from OpenGL 2.0 */
+#if defined (GL_VERSION_2_0)
 /***************************************************************************//**
  * Uses the secondary material (which is assumed to write float colour values) to
  * calculate a vertex buffer which will be used as the primitive vertex positions
@@ -2653,18 +2655,18 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 		object->position_values_per_vertex = 4;
 	
 		glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
-		glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, object->position_vertex_buffer_object);
+		glBindBuffer(GL_PIXEL_PACK_BUFFER_EXT, object->position_vertex_buffer_object);
 		glReadPixels(0, 0, tex_width, tex_height, GL_RGBA, GL_FLOAT, 0);
 	
 #if defined (NEW_CODE)
 		/* If we were copying other attributes */
 		glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
-		glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, vbo_normals_handle);
+		glBindBuffer(GL_PIXEL_PACK_BUFFER_EXT, vbo_normals_handle);
 		glReadPixels(0, 0, tex_width, tex_height, GL_RGBA, GL_FLOAT, 0);
 #endif /* defined (NEW_CODE) */
 	
 		glReadBuffer(GL_NONE);
-		glBindBufferARB(GL_PIXEL_PACK_BUFFER_EXT, 0 );
+		glBindBuffer(GL_PIXEL_PACK_BUFFER_EXT, 0 );
 	
 #if defined (DEBUG)
 		// Read the buffer out to memory so we can see the vertex values.
@@ -2713,7 +2715,8 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 	}
 
 	return (return_code);
-}
+} /* Graphics_object_generate_vertex_positions_from_secondary_material */
+#endif /* defined (GL_VERSION_2_0) */
 
 /***************************************************************************//**
  * Compile Graphics_vertex_array data into vertex buffer objects.
@@ -2746,9 +2749,24 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 					
 					if (object->secondary_material)
 					{
-						return_code = Graphics_object_generate_vertex_positions_from_secondary_material(
-							object, renderer, position_vertex_buffer, position_values_per_vertex,
-							position_vertex_count);
+#if defined (GL_VERSION_2_0) && defined (GL_EXT_framebuffer_object)
+						if (Graphics_library_check_extension(GL_ARB_draw_buffers)
+							&& Graphics_library_check_extension(GL_VERSION_1_3)
+							&& Graphics_library_check_extension(GL_EXT_framebuffer_object))
+						{
+							return_code = Graphics_object_generate_vertex_positions_from_secondary_material(
+								object, renderer, position_vertex_buffer, position_values_per_vertex,
+								position_vertex_count);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"Graphics_object_compile_opengl_vertex_buffer_object.  "
+								"Multipass rendering not available with this OpenGL driver.");
+						}
+#else /* defined (GL_VERSION_2_0) && defined (GL_EXT_framebuffer_object) */
+						display_message(ERROR_MESSAGE,"Graphics_object_compile_opengl_vertex_buffer_object.  "
+							"Multipass rendering not compiled in this version.");
+#endif /* defined (GL_VERSION_2_0) && defined (GL_EXT_framebuffer_object) */
 					}
 					else
 					{

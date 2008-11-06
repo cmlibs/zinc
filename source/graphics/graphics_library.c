@@ -896,6 +896,8 @@ appropriately.
 				{
 					if (!((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glActiveTexture, PFNGLACTIVETEXTUREPROC)
 						Graphics_library_get_function_ptr("glActiveTexture")) &&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glClientActiveTexture, PFNGLCLIENTACTIVETEXTUREPROC)
+							Graphics_library_get_function_ptr("glClientActiveTexture")) &&
 						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glMultiTexCoord3fv, PFNGLMULTITEXCOORD3FVPROC)
 							Graphics_library_get_function_ptr("glMultiTexCoord3fv"))))
  					{
@@ -980,6 +982,36 @@ appropriately.
 			}
 		}
 #endif /* GL_VERSION_2_0 */
+#if defined GL_VERSION_2_0
+		else if (!strcmp(extension_name, "GL_ARB_draw_buffers"))
+		{
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_ARB_draw_buffers))
+			{
+				return_code = GLEXTENSIONFLAG(GL_ARB_draw_buffers);
+			}
+			else
+			{
+				return_code = Graphics_library_query_environment_extension(extension_name);
+				if (GLEXTENSION_UNSURE == return_code)
+				{
+					return_code = query_gl_extension(extension_name);
+					if (GLEXTENSION_AVAILABLE != return_code)
+					{
+						return_code = query_gl_version(2, 0);
+					}
+					if (GLEXTENSION_AVAILABLE == return_code)
+					{
+						if (!(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDrawBuffers, PFNGLDRAWBUFFERSROC)
+								Graphics_library_get_function_ptr("glDrawBuffers")))
+						{
+							return_code = GLEXTENSION_UNAVAILABLE;
+						}
+					}
+				}
+				GLEXTENSIONFLAG(GL_ARB_texture_float) = return_code;
+			}
+		}
+#endif /* defined GL_VERSION_2_0 */
 #if defined GL_ARB_depth_texture
 		else if (!strcmp(extension_name, "GL_ARB_depth_texture"))
 		{
@@ -1054,7 +1086,7 @@ appropriately.
 			}
 		}
 #endif /* GL_ARB_texture_compression */
-#if defined GL_ARB_texture_float || defined GL_VERSION_3_0
+#if defined GL_VERSION_3_0
 		else if (!strcmp(extension_name, "GL_ARB_texture_float"))
 		{
 			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_ARB_texture_float))
@@ -1076,7 +1108,7 @@ appropriately.
 				GLEXTENSIONFLAG(GL_ARB_texture_float) = return_code;
 			}
 		}
-#endif /* GL_ARB_texture_float || defined GL_VERSION_3_0 */
+#endif /* defined GL_VERSION_3_0 */
 #if defined GL_ARB_texture_non_power_of_two
 		else if (!strcmp(extension_name, "GL_ARB_texture_non_power_of_two"))
 		{
@@ -1150,7 +1182,9 @@ appropriately.
 						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBindBuffer, PFNGLBINDBUFFERPROC)
 						Graphics_library_get_function_ptr("glBindBuffer")) &&
 						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBufferData, PFNGLBUFFERDATAPROC)
-						Graphics_library_get_function_ptr("glBufferData"))))
+						Graphics_library_get_function_ptr("glBufferData"))	&&
+						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBufferSubData, PFNGLBUFFERSUBDATAPROC)
+							Graphics_library_get_function_ptr("glBufferSubData"))))
 					{
 						return_code = GLEXTENSION_UNAVAILABLE;
 					}
@@ -1158,7 +1192,7 @@ appropriately.
 				GLEXTENSIONFLAG(GL_ARB_vertex_program) = return_code;
 			}
 		}
-#endif /* GL_ARB_vertex_program */
+#endif /* GL_ARB_vertex_buffer_object */
 #if defined GL_ARB_vertex_program
 		else if (!strcmp(extension_name, "GL_ARB_vertex_program"))
 		{
