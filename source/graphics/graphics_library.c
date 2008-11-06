@@ -1001,7 +1001,7 @@ appropriately.
 					}
 					if (GLEXTENSION_AVAILABLE == return_code)
 					{
-						if (!(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDrawBuffers, PFNGLDRAWBUFFERSROC)
+						if (!(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDrawBuffers, PFNGLDRAWBUFFERSPROC)
 								Graphics_library_get_function_ptr("glDrawBuffers")))
 						{
 							return_code = GLEXTENSION_UNAVAILABLE;
