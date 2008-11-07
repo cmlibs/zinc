@@ -2623,8 +2623,10 @@ DESCRIPTION :
 			{
 				sprintf(prototype_name,"object_%s_%s",gt_object->name, material_name);
 			}
-			/* Can't have . in a name */
-			while (dot_pointer = strchr(prototype_name, '.'))
+			/* Can't have certain characters (.: ) in a name */
+			while ((dot_pointer = strchr(prototype_name, '.'))
+				|| (dot_pointer = strchr(prototype_name, ' '))
+				|| (dot_pointer = strchr(prototype_name, ':')))
 			{
 				*dot_pointer = '_';
 			}
