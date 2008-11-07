@@ -238,7 +238,7 @@ ifeq ($(SYSNAME),Linux)
       COMPILE_DEFINES = -DOPTIMISED
       COMPILE_FLAGS = -fPIC
       STRICT_FLAGS = -Werror
-      CPP_STRICT_FLAGS = -Werror
+      CPP_STRICT_FLAGS = -Wno-write-strings -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
       ifeq ($(PROFILE),true)

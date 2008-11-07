@@ -7,7 +7,7 @@
 #Override variables in cmgui.Makefile by adding them to DEVELOPER_OPTIONS
 #DEVELOPER_OPTIONS += TEMPORARY_DEVELOPMENT_FLAGS=-DENABLE_TEXTURE_TILING
 #DEVELOPER_OPTIONS += WX_DIR=/home/blackett/cmiss/wxWidgets-2.8.6/bin/
-
+DEVELOPER_OPTIONS += WX_DIR=/home/gchr006/cmiss/wxWidgets-2.8.7/bin/
 #DEVELOPER_OPTIONS += WX_DEBUG_FLAG=no
 
 #DEVELOPER_OPTIONS += USE_LIBGDCM=true

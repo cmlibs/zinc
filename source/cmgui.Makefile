@@ -267,7 +267,8 @@ ifeq ($(filter-out MOTIF_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
       ifeq ($(INSTRUCTION),x86_64)
         X_LIB = /usr/X11R6/lib64
       else
-        X_LIB = /usr/X11R6/lib
+#        X_LIB = /usr/X11R6/lib
+        X_LIB = /usr/lib
       endif
     endif
   endif
