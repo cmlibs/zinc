@@ -2771,6 +2771,7 @@ Reads stuff from a file.
 											= combine_slider;
 										combine_slider->slider = slider_to_combine;
 										combine_slider->curve = curve;
+										combine_slider->combine_time = shared->time;
 										if ( read_file_marker(file_data, "TIMEBASE"))
 										{
 											strcat( name, " timebase" );
