@@ -130,7 +130,7 @@ extern "C" {
 	These calls should be available in every system with GLX 1.3 or greater
 	but on the SGI the original code seems to work better with movies and
 	with grabbing frames off the screen.  This is done by trying the SGI versions
-	first on these machines.  
+	first on these machines.
 	The SGI allows the creation of the correct Pbuffer using GLX commands
 	and then generates a bad alloc error when I try to make it current.
 	The code should still run on an older GLX even if it is compiled on a GLX 1.3 by
@@ -164,7 +164,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	GRAPHICS_BUFFER_ONSCREEN_CLASS, /* A normal graphics buffer */
-	GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS, /* Try to create an offscreen buffer with 
+	GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS, /* Try to create an offscreen buffer with
 															 shared display lists */
 	GRAPHICS_BUFFER_OFFSCREEN_CLASS  /* Try to create an offscreen buffer,
 													 don't worry whether it shares context or not */
@@ -293,7 +293,7 @@ DESCRIPTION :
 	HDC hDC;
 	HGLRC hRC;
 	int pixel_format;
-	/* x, y, width and height are used with the windowless mode (no hWnd). 
+	/* x, y, width and height are used with the windowless mode (no hWnd).
 		x and y locate the current hDC with respect to the top left corner of the plugin.
 		width and height are the total size of the plugin port.  */
 	int width;
@@ -488,7 +488,11 @@ contained in the this module only.
 		 buffer->resize_handler_ref = (EventHandlerRef)NULL;
 #endif /* defined (CARBON_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
+		 buffer->parent = (wxPanel *)NULL;
 		 buffer->canvas = (wxGraphicsBuffer *)NULL;
+		 buffer->attrib_list = NULL;
+		 buffer->fbo = 0;
+		 buffer->depthbuffer = 0;
 #endif /* defined (CARBON_USER_INTERFACE) */
 	}
 	else
@@ -790,7 +794,7 @@ returned to the scene.
 #  if defined USE_GLX_FBCONFIG
 static int Graphics_buffer_create_from_fb_config(struct Graphics_buffer *buffer,
 	struct Graphics_buffer_package *graphics_buffer_package,
-	enum Graphics_buffer_class buffer_class,  Widget x3d_parent_widget, 
+	enum Graphics_buffer_class buffer_class,  Widget x3d_parent_widget,
 	int width, int height, GLXFBConfig fb_config)
 /*******************************************************************************
 LAST MODIFIED : 6 May 2004
@@ -806,19 +810,19 @@ DESCRIPTION :
 	Widget drawing_widget;
 #if defined (USE_GLX_PBUFFER)
 	GLXPbuffer pbuffer;
-	int pbuffer_attribs [] = 
+	int pbuffer_attribs [] =
 	{
 		GLX_PBUFFER_WIDTH, 0, /* Note that these 0 values are explictly overwritten below */
 		GLX_PBUFFER_HEIGHT, 0,
 		GLX_PRESERVED_CONTENTS, True,
 		(int) None
-	};	
+	};
 #endif /* defined (USE_GLX_PBUFFER) */
-	int pixmap_attribs [] = 
+	int pixmap_attribs [] =
 	{
 		/* There are currently no valid attributes */
 		(int) None
-	};	
+	};
 
 	ENTER(Graphics_buffer_X3d_expose_callback);
 
@@ -856,7 +860,7 @@ DESCRIPTION :
 	switch (buffer_class)
 	{
 		case GRAPHICS_BUFFER_ONSCREEN_CLASS:
-		{										
+		{
 			visual_info = glXGetVisualFromFBConfig(display, fb_config);
 			if (drawing_widget=XtVaCreateWidget("cmiss_graphics_buffer_area",
 					threeDDrawingWidgetClass, x3d_parent_widget,
@@ -884,7 +888,7 @@ DESCRIPTION :
 					buffer->config = fb_config;
 					buffer->visual_info = glXGetVisualFromFBConfig(display, fb_config);
 					buffer->context = glXCreateNewContext(
-						display, buffer->config, GLX_RGBA_TYPE, 
+						display, buffer->config, GLX_RGBA_TYPE,
 						graphics_buffer_package->shared_glx_context, GL_TRUE);
 					XtAddCallback(buffer->drawing_widget ,X3dNinitializeCallback,
 						Graphics_buffer_X3d_initialize_callback, buffer);
@@ -915,10 +919,10 @@ DESCRIPTION :
 				buffer->display = display;
 				buffer->config = fb_config;
 				buffer->glx_pbuffer = pbuffer;
-				buffer->visual_info = 
+				buffer->visual_info =
 					glXGetVisualFromFBConfig(display, buffer->config);
 				buffer->context = glXCreateNewContext(
-					display, buffer->config, GLX_RGBA_TYPE, 
+					display, buffer->config, GLX_RGBA_TYPE,
 					graphics_buffer_package->shared_glx_context, GL_TRUE);
 				return_code = 1;
 			}
@@ -928,7 +932,7 @@ DESCRIPTION :
 			visual_info = glXGetVisualFromFBConfig(display, buffer->config);
 			/* ???? Should be freed */
 			if (pixmap = XCreatePixmap(display,
-					DefaultRootWindow(display), width, height, 
+					DefaultRootWindow(display), width, height,
 					visual_info->depth))
 			{
 				if (glx_pixmap = glXCreatePixmap(display,
@@ -942,7 +946,7 @@ DESCRIPTION :
 					buffer->visual_info = visual_info;
 					/* pixmaps do not share contexts */
 					buffer->context = glXCreateNewContext(
-						display, buffer->config, GLX_RGBA_TYPE, 
+						display, buffer->config, GLX_RGBA_TYPE,
 						NULL, GL_TRUE);
 					return_code = 1;
 				}
@@ -953,7 +957,7 @@ DESCRIPTION :
 	{
 		case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 		case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
-		{										
+		{
 			if (!graphics_buffer_package->shared_glx_context &&
 				buffer->context)
 			{
@@ -986,7 +990,7 @@ DESCRIPTION :
 #  if defined (GLX_SGIX_pbuffer)
 static int Graphics_buffer_create_from_fb_config_sgi(struct Graphics_buffer *buffer,
 	struct Graphics_buffer_package *graphics_buffer_package,
-	enum Graphics_buffer_class buffer_class,  Widget x3d_parent_widget, 
+	enum Graphics_buffer_class buffer_class,  Widget x3d_parent_widget,
 	int width, int height, GLXFBConfig fb_config)
 /*******************************************************************************
 LAST MODIFIED : 28 May 2004
@@ -1003,16 +1007,16 @@ the equivalent GLX1.3 versions.
 	XVisualInfo *visual_info;
 	Widget drawing_widget;
 	GLXPbuffer pbuffer;
-	int pbuffer_attribs [] = 
+	int pbuffer_attribs [] =
 	{
 		GLX_PRESERVED_CONTENTS, True,
 		(int) None
-	};	
-	int pixmap_attribs [] = 
+	};
+	int pixmap_attribs [] =
 	{
 		/* There are currently no valid attributes */
 		(int) None
-	};	
+	};
 
 	ENTER(Graphics_buffer_X3d_expose_callback);
 
@@ -1021,8 +1025,8 @@ the equivalent GLX1.3 versions.
 	switch (buffer_class)
 	{
 		case GRAPHICS_BUFFER_ONSCREEN_CLASS:
-		{										
-			visual_info = 
+		{
+			visual_info =
 					glXGetVisualFromFBConfigSGIX(display, fb_config);
 			if (drawing_widget=XtVaCreateWidget("cmiss_graphics_buffer_area",
 					threeDDrawingWidgetClass, x3d_parent_widget,
@@ -1048,10 +1052,10 @@ the equivalent GLX1.3 versions.
 					buffer->drawing_widget = drawing_widget;
 					buffer->display = display;
 					buffer->config = fb_config;
-					buffer->visual_info = 
+					buffer->visual_info =
 						glXGetVisualFromFBConfigSGIX(display, buffer->config);
 					buffer->context = glXCreateContextWithConfigSGIX(
-						display, buffer->config, GLX_RGBA_TYPE_SGIX, 
+						display, buffer->config, GLX_RGBA_TYPE_SGIX,
 						graphics_buffer_package->shared_glx_context, GL_TRUE);
 					XtAddCallback(buffer->drawing_widget ,X3dNinitializeCallback,
 						Graphics_buffer_X3d_initialize_callback, buffer);
@@ -1078,21 +1082,21 @@ the equivalent GLX1.3 versions.
 				buffer->display = display;
 				buffer->config = fb_config;
 				buffer->glx_pbuffer = pbuffer;
-				buffer->visual_info = 
+				buffer->visual_info =
 					glXGetVisualFromFBConfigSGIX(display, buffer->config);
 				buffer->context = glXCreateContextWithConfigSGIX(
-					display, buffer->config, GLX_RGBA_TYPE_SGIX, 
+					display, buffer->config, GLX_RGBA_TYPE_SGIX,
 					graphics_buffer_package->shared_glx_context, GL_TRUE);
 				return_code = 1;
 			}
 		} break;
 		case GRAPHICS_BUFFER_OFFSCREEN_CLASS:
 		{
-			visual_info = 
+			visual_info =
 					glXGetVisualFromFBConfigSGIX(display, fb_config);
 			/* ???? Should be freed */
 			if (pixmap = XCreatePixmap(display,
-					DefaultRootWindow(display), width, height, 
+					DefaultRootWindow(display), width, height,
 					visual_info->depth))
 			{
 				if (glx_pixmap = glXCreatePixmap(display,
@@ -1106,7 +1110,7 @@ the equivalent GLX1.3 versions.
 					buffer->visual_info = visual_info;
 					/* pixmaps do not share contexts */
 					buffer->context = glXCreateContextWithConfigSGIX(
-						display, buffer->config, GLX_RGBA_TYPE, 
+						display, buffer->config, GLX_RGBA_TYPE,
 						NULL, GL_TRUE);
 					return_code = 1;
 				}
@@ -1117,7 +1121,7 @@ the equivalent GLX1.3 versions.
 	{
 		case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 		case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
-		{										
+		{
 			if (!graphics_buffer_package->shared_glx_context &&
 				buffer->context)
 			{
@@ -1144,7 +1148,7 @@ the equivalent GLX1.3 versions.
 #if defined (MOTIF)
 static int Graphics_buffer_create_from_visual_info(struct Graphics_buffer *buffer,
 	struct Graphics_buffer_package *graphics_buffer_package,
-	enum Graphics_buffer_class buffer_class,  Widget x3d_parent_widget, 
+	enum Graphics_buffer_class buffer_class,  Widget x3d_parent_widget,
 	int width, int height, XVisualInfo *visual_info)
 /*******************************************************************************
 LAST MODIFIED : 6 May 2004
@@ -1161,7 +1165,7 @@ DESCRIPTION :
 	ENTER(Graphics_buffer_X3d_expose_callback);
 
 	return_code = 0;
-	display = graphics_buffer_package->display;	
+	display = graphics_buffer_package->display;
 	switch (buffer_class)
 	{
 		case GRAPHICS_BUFFER_ONSCREEN_CLASS:
@@ -1216,7 +1220,7 @@ DESCRIPTION :
 		case GRAPHICS_BUFFER_OFFSCREEN_CLASS:
 		{
 			if (pixmap = XCreatePixmap(display,
-					DefaultRootWindow(display), width, height, 
+					DefaultRootWindow(display), width, height,
 					visual_info->depth))
 			{
 				if (glx_pixmap = glXCreateGLXPixmap(display,
@@ -1248,7 +1252,7 @@ DESCRIPTION :
 	{
 		case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 		case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
-		{										
+		{
 			if (!graphics_buffer_package->shared_glx_context &&
 				buffer->context)
 			{
@@ -1287,7 +1291,7 @@ public:
 		graphics_buffer(graphics_buffer), parent(parent)
 	{
 	};
-	
+
 	~wxGraphicsBuffer()
 	{
 		if (graphics_buffer)
@@ -1315,7 +1319,7 @@ public:
 
 		/* must always be here */
 		wxPaintDC dc(this);
-		
+
 		CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
 			graphics_buffer->expose_callback_list, graphics_buffer, NULL);
 	}
@@ -1360,7 +1364,7 @@ public:
 		{
 			input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
 		}
-		
+
 		if (event.Dragging())
 		{
 			input.type = GRAPHICS_BUFFER_MOTION_NOTIFY;
@@ -1462,7 +1466,7 @@ public:
 			parent(parent), graphics_buffer(graphics_buffer), sharedContext(sharedContext)
 	 {
 	 };
-	
+
 	~wxTestingBuffer()
 	{
 	};
@@ -1482,7 +1486,7 @@ static void Graphics_buffer_create_buffer_wx(
 	wxPanel *parent,
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
 	int minimum_accumulation_buffer_depth,
 	int width, int height, struct Graphics_buffer  *buffer_to_match)
 /*******************************************************************************
@@ -1496,9 +1500,8 @@ DESCRIPTION :
 	ENTER(Graphics_buffer_create_buffer_wx);
 	wxLogNull logNo;
 	if (buffer)
-	{	
+	{
 		 buffer->parent = parent;
-		 buffer->attrib_list = NULL;
 		 return_code = 0;
 		 if (buffer->type == GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE)
 		 {
@@ -1510,7 +1513,7 @@ DESCRIPTION :
 				{
 					 GLenum status;
 					 status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-					 switch(status) 
+					 switch(status)
 					 {
 							case GL_FRAMEBUFFER_COMPLETE_EXT:
 								 break;
@@ -1569,10 +1572,10 @@ DESCRIPTION :
 							new canvas, else use the current visual attribute list*/
 					 test_canvas = new wxTestingBuffer(parent, (Graphics_buffer *)NULL,
 							graphics_buffer_package->wxSharedContext,
-							visual_attributes);	
+							visual_attributes);
 					 if (ALLOCATE(visual_attributes, int, number_of_visual_attributes))
 					 {
-							selection_level = 5;	
+							selection_level = 5;
 							while ((selection_level > 0) && (test_canvas->m_vi == NULL) || (selection_level == 5))
 							{
 								 attribute_ptr = visual_attributes;
@@ -1676,7 +1679,7 @@ DESCRIPTION :
 								 }
 								 test_canvas = new wxTestingBuffer(parent, (Graphics_buffer *)NULL,
 										graphics_buffer_package->wxSharedContext,
-										visual_attributes);	
+										visual_attributes);
 								 selection_level--;
 								 if ((selection_level == 0) && (test_canvas->m_vi == NULL))
 								 {
@@ -1769,7 +1772,7 @@ DESCRIPTION :
 				if (!buffer->package->wxSharedContext)
 				{
 					 wxFrame *frame = new wxFrame(NULL, -1, "temporary", wxPoint(-1,-1), wxSize(500,500));
-					 wxPanel *temp = new wxPanel(frame, -1, wxPoint(-1,-1), wxSize(450,450));	  
+					 wxPanel *temp = new wxPanel(frame, -1, wxPoint(-1,-1), wxSize(450,450));
 					 wxTestingBuffer *testingbuffer;
 					 struct Graphics_buffer *temp_buffer;
 					 temp_buffer = CREATE(Graphics_buffer)(graphics_buffer_package);
@@ -1784,8 +1787,8 @@ DESCRIPTION :
 					 frame->Show(false);
 					 DESTROY(Graphics_buffer)(&temp_buffer);
 				}
-				buffer->canvas = new wxGraphicsBuffer(parent, 
-					 graphics_buffer_package->wxSharedContext, 
+				buffer->canvas = new wxGraphicsBuffer(parent,
+					 graphics_buffer_package->wxSharedContext,
 					 buffer, buffer->attrib_list);
 				wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
 				topsizer->Add(buffer->canvas,
@@ -1800,7 +1803,7 @@ DESCRIPTION :
 		 buffer = (struct Graphics_buffer *)NULL;
 	}
 	LEAVE;
-	
+
 } /* Graphics_buffer_create_buffer_wx */
 #endif /* defined (WX_USER_INTERFACE) */
 
@@ -1808,7 +1811,7 @@ DESCRIPTION :
 #if defined (OPENGL_API)
 static void Graphics_buffer_create_buffer_glx(struct Graphics_buffer *buffer,
 	struct Graphics_buffer_package *graphics_buffer_package,
-	enum Graphics_buffer_class buffer_class, 
+	enum Graphics_buffer_class buffer_class,
 	Widget x3d_parent_widget, int width, int height,
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
@@ -1831,7 +1834,7 @@ that it is all in one place.
 	DMparams *imageFormat, *poolSpec;
 	DMboolean cacheable = DM_FALSE;
 	DMboolean mapped = DM_FALSE;
-	int dmbuffer_attribs [] = 
+	int dmbuffer_attribs [] =
 	{
 		GLX_DIGITAL_MEDIA_PBUFFER_SGIX, True,
 		GLX_PRESERVED_CONTENTS_SGIX, True,
@@ -1845,7 +1848,7 @@ that it is all in one place.
 	Display *display;
 	int *attribute_ptr, number_of_visual_attributes, selection_level,
 		*visual_attributes;
-	XVisualInfo *visual_info;	
+	XVisualInfo *visual_info;
 
 	ENTER(Graphics_buffer_select_visual);
 
@@ -1910,7 +1913,7 @@ that it is all in one place.
 								buffer->config, width, height, dmbuffer_attribs))
 							{
 								if (buffer->context = glXCreateContextWithConfigSGIX(
-									display, buffer->config, GLX_RGBA_TYPE_SGIX, 
+									display, buffer->config, GLX_RGBA_TYPE_SGIX,
 									graphics_buffer_package->shared_glx_context, GL_TRUE))
 								{
 									if (glXAssociateDMPbufferSGIX(display,
@@ -1996,8 +1999,8 @@ that it is all in one place.
 				attribute_ptr++;
 				*attribute_ptr = None;
 				attribute_ptr++;
-				
-				if (buffer->config_list = glXChooseFBConfigSGIX(display, 
+
+				if (buffer->config_list = glXChooseFBConfigSGIX(display,
 					DefaultScreen(display), visual_attributes, &nelements))
 				{
 					config_index = 0;
@@ -2007,7 +2010,7 @@ that it is all in one place.
 					  if (visual_info = glXGetVisualFromFBConfigSGIX(display,
 						 buffer->config_list[config_index]))
 					  {
-						 if (visual_info->visualid == 
+						 if (visual_info->visualid ==
 							graphics_buffer_package->override_visual_id)
 						 {
 							if (buffer_class == GRAPHICS_BUFFER_OFFSCREEN_CLASS)
@@ -2075,7 +2078,7 @@ that it is all in one place.
 							*attribute_ptr = GLX_DRAWABLE_TYPE;
 							attribute_ptr++;
 							*attribute_ptr = GLX_WINDOW_BIT | GLX_PBUFFER_BIT;
-							attribute_ptr++;			
+							attribute_ptr++;
 						} break;
 						case GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS:
 						case GRAPHICS_BUFFER_OFFSCREEN_CLASS:
@@ -2086,14 +2089,14 @@ that it is all in one place.
 								*attribute_ptr = GLX_DRAWABLE_TYPE;
 								attribute_ptr++;
 								*attribute_ptr = GLX_WINDOW_BIT | GLX_PBUFFER_BIT;
-								attribute_ptr++;			
+								attribute_ptr++;
 							}
 							else
 							{
 								*attribute_ptr = GLX_DRAWABLE_TYPE;
 								attribute_ptr++;
 								*attribute_ptr = GLX_PIXMAP_BIT;
-								attribute_ptr++;			
+								attribute_ptr++;
 							}
 						} break;
 					}
@@ -2219,8 +2222,8 @@ that it is all in one place.
 					}
 					*attribute_ptr = None;
 					attribute_ptr++;
-							
-					if (buffer->config_list = glXChooseFBConfigSGIX(display, 
+
+					if (buffer->config_list = glXChooseFBConfigSGIX(display,
 						DefaultScreen(display), visual_attributes, &nelements))
 					{
 						/* Need to copy config we select and free the list, currently leaky */
@@ -2245,7 +2248,7 @@ that it is all in one place.
 									width, height, buffer->config_list[config_index]);
 							}
 							config_index++;
-						}				
+						}
 					}
 					selection_level--;
 				}
@@ -2257,7 +2260,7 @@ that it is all in one place.
 	/* 3: Use fbconfig functions to select visual if available */
 #if defined USE_GLX_FBCONFIG
 	if ((GRAPHICS_BUFFER_INVALID_TYPE == buffer->type) &&
-		glXQueryVersion(display,&glx_major_version, &glx_minor_version) && 
+		glXQueryVersion(display,&glx_major_version, &glx_minor_version) &&
 		((glx_major_version == 1) && (glx_minor_version > 2)))
 	{
 		if (graphics_buffer_package->override_visual_id)
@@ -2272,8 +2275,8 @@ that it is all in one place.
 				attribute_ptr++;
 				*attribute_ptr = None;
 				attribute_ptr++;
-				
-				if (buffer->config_list = glXChooseFBConfig(display, 
+
+				if (buffer->config_list = glXChooseFBConfig(display,
 					DefaultScreen(display), visual_attributes, &nelements))
 				{
 					config_index = 0;
@@ -2283,7 +2286,7 @@ that it is all in one place.
 					  if (visual_info = glXGetVisualFromFBConfig(display,
 						 buffer->config_list[config_index]))
 					  {
-						  if ((int)visual_info->visualid == 
+						  if ((int)visual_info->visualid ==
 							 graphics_buffer_package->override_visual_id)
 						 {
 							if (buffer_class == GRAPHICS_BUFFER_OFFSCREEN_CLASS)
@@ -2345,7 +2348,7 @@ that it is all in one place.
 							*attribute_ptr = GLX_DRAWABLE_TYPE;
 							attribute_ptr++;
 							*attribute_ptr = GLX_WINDOW_BIT | GLX_PBUFFER_BIT;
-							attribute_ptr++;			
+							attribute_ptr++;
 						} break;
 						case GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS:
 						case GRAPHICS_BUFFER_OFFSCREEN_CLASS:
@@ -2356,14 +2359,14 @@ that it is all in one place.
 								*attribute_ptr = GLX_DRAWABLE_TYPE;
 								attribute_ptr++;
 								*attribute_ptr = GLX_WINDOW_BIT | GLX_PBUFFER_BIT;
-								attribute_ptr++;			
+								attribute_ptr++;
 							}
 							else
 							{
 								*attribute_ptr = GLX_DRAWABLE_TYPE;
 								attribute_ptr++;
 								*attribute_ptr = GLX_PIXMAP_BIT;
-								attribute_ptr++;			
+								attribute_ptr++;
 							}
 						} break;
 					}
@@ -2489,8 +2492,8 @@ that it is all in one place.
 					}
 					*attribute_ptr = None;
 					attribute_ptr++;
-							
-					if (buffer->config_list = glXChooseFBConfig(display, 
+
+					if (buffer->config_list = glXChooseFBConfig(display,
 						DefaultScreen(display), visual_attributes, &nelements))
 					{
 						/* Need to copy config we select and free the list, currently leaky */
@@ -2515,7 +2518,7 @@ that it is all in one place.
 									width, height, buffer->config_list[config_index]);
 							}
 							config_index++;
-						}				
+						}
 					}
 					selection_level--;
 				}
@@ -2532,7 +2535,7 @@ that it is all in one place.
 			XVisualInfo template_visual, *visual_info_list;
 
 			template_visual.visualid = graphics_buffer_package->override_visual_id;
-				
+
 			if (visual_info_list = XGetVisualInfo(display, VisualIDMask, &template_visual,
 				&nelements))
 			{
@@ -2548,7 +2551,7 @@ that it is all in one place.
 			if (buffer_to_match->visual_info)
 			{
 				Graphics_buffer_create_from_visual_info(buffer,
-					graphics_buffer_package, buffer_class, x3d_parent_widget, 
+					graphics_buffer_package, buffer_class, x3d_parent_widget,
 					width, height, buffer_to_match->visual_info);
 			}
 		}
@@ -2691,7 +2694,7 @@ that it is all in one place.
 					}
 					*attribute_ptr = None;
 					attribute_ptr++;
-							
+
 					if (visual_info = glXChooseVisual(display,
 						DefaultScreen(display), visual_attributes))
 					{
@@ -2915,7 +2918,7 @@ returned to the scene.
 
 #if defined (WIN32_USER_INTERFACE)
 static int Graphics_buffer_win32_button_callback(
-	unsigned int *button_event, struct Graphics_buffer *graphics_buffer, 
+	unsigned int *button_event, struct Graphics_buffer *graphics_buffer,
 	WPARAM wParam, LPARAM lParam)
 /*******************************************************************************
 LAST MODIFIED : 11 July 2002
@@ -3001,7 +3004,7 @@ returned to the scene.
 	{
 		input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
 	}
-*/	
+*/
 	input.input_modifier = static_cast<enum Graphics_buffer_input_modifier>
 		(input_modifier);
 	if (return_code)
@@ -3160,7 +3163,7 @@ returned to the scene.
 			CMISS_CALLBACK_LIST_CALL(Graphics_buffer_input_callback)(
 				graphics_buffer->input_callback_list, graphics_buffer, &input);
 		}
-		
+
 	}
 	else
 	{
@@ -3332,9 +3335,9 @@ DESCRIPTION :
 	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
 	{
 #if defined (MOTIF)
-		Graphics_buffer_create_buffer_glx(buffer, graphics_buffer_package, 
+		Graphics_buffer_create_buffer_glx(buffer, graphics_buffer_package,
 			GRAPHICS_BUFFER_OFFSCREEN_CLASS, (Widget)NULL, width, height,
-			buffering_mode, stereo_mode, minimum_colour_buffer_depth, 
+			buffering_mode, stereo_mode, minimum_colour_buffer_depth,
 			minimum_depth_buffer_depth, /*minimum_alpha_buffer_depth*/0,
 			minimum_accumulation_buffer_depth,
 			/*buffer_to_match*/(struct Graphics_buffer *)NULL);
@@ -3351,7 +3354,7 @@ DESCRIPTION :
 		{
 #if defined (DEBUG)
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_offscreen.  "
-				"Unable to create offscreen graphics buffer.");				
+				"Unable to create offscreen graphics buffer.");
 #endif /* defined (DEBUG) */
 			DESTROY(Graphics_buffer)(&buffer);
 		}
@@ -3359,7 +3362,7 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,"create_Graphics_buffer_offscreen.  "
-			"Unable to create generic Graphics_buffer.");				
+			"Unable to create generic Graphics_buffer.");
 		buffer = (struct Graphics_buffer *)NULL;
 	}
 	LEAVE;
@@ -3387,9 +3390,9 @@ DESCRIPTION :
 	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
 	{
 #if defined (MOTIF)
-		Graphics_buffer_create_buffer_glx(buffer, graphics_buffer_package, 
+		Graphics_buffer_create_buffer_glx(buffer, graphics_buffer_package,
 			GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS, (Widget)NULL, width, height,
-			buffering_mode, stereo_mode, minimum_colour_buffer_depth, 
+			buffering_mode, stereo_mode, minimum_colour_buffer_depth,
 			minimum_depth_buffer_depth, /*minimum_alpha_buffer_depth*/0,
 			minimum_accumulation_buffer_depth,
 			/*buffer_to_match*/(struct Graphics_buffer *)NULL);
@@ -3406,7 +3409,7 @@ DESCRIPTION :
 		{
 #if defined (DEBUG)
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_offscreen.  "
-				"Unable to create offscreen graphics buffer.");				
+				"Unable to create offscreen graphics buffer.");
 #endif /* defined (DEBUG) */
 			DESTROY(Graphics_buffer)(&buffer);
 		}
@@ -3414,7 +3417,7 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,"create_Graphics_buffer_offscreen.  "
-			"Unable to create generic Graphics_buffer.");				
+			"Unable to create generic Graphics_buffer.");
 		buffer = (struct Graphics_buffer *)NULL;
 	}
 	LEAVE;
@@ -3437,16 +3440,16 @@ DESCRIPTION :
 	if (buffer = CREATE(Graphics_buffer)(buffer_to_match->package))
 	{
 #if defined (MOTIF)
-		Graphics_buffer_create_buffer_glx(buffer, buffer_to_match->package, 
+		Graphics_buffer_create_buffer_glx(buffer, buffer_to_match->package,
 			GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS, (Widget)NULL, width, height,
 			GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
 			/*minimum_colour_buffer_depth*/0, /*minimum_depth_buffer_depth */0,
 			/*minimum_alpha_buffer_depth*/0, /*minimum_accumulation_buffer_depth*/0,
 			buffer_to_match);
-#elif defined (WX_USER_INTERFACE)
+#elif defined (WX_USER_INTERFACE) && (NEW_CODE)
 		buffer->type = GRAPHICS_BUFFER_WX_OFFSCREEN_TYPE;
 		 Graphics_buffer_create_buffer_wx(buffer, buffer_to_match->package,
-				NULL, GRAPHICS_BUFFER_ANY_BUFFERING_MODE, 
+				NULL, GRAPHICS_BUFFER_ANY_BUFFERING_MODE,
 				GRAPHICS_BUFFER_ANY_STEREO_MODE,
 				0, 0, 0, width, height,
 				buffer_to_match);
@@ -3459,7 +3462,7 @@ DESCRIPTION :
 		{
 #if defined (DEBUG)
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_offscreen_from_buffer.  "
-				"Unable to create offscreen_from_buffer graphics buffer.");				
+				"Unable to create offscreen_from_buffer graphics buffer.");
 			buffer = (struct Graphics_buffer *)NULL;
 #endif /* defined (DEBUG) */
 			DESTROY(Graphics_buffer)(&buffer);
@@ -3468,7 +3471,7 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,"create_Graphics_buffer_offscreen_from_buffer.  "
-			"Unable to create generic Graphics_buffer.");				
+			"Unable to create generic Graphics_buffer.");
 		buffer = (struct Graphics_buffer *)NULL;
 	}
 	LEAVE;
@@ -3496,9 +3499,9 @@ DESCRIPTION :
 
 	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
 	{
-		Graphics_buffer_create_buffer_glx(buffer, graphics_buffer_package, 
+		Graphics_buffer_create_buffer_glx(buffer, graphics_buffer_package,
 			GRAPHICS_BUFFER_ONSCREEN_CLASS, parent, width, height,
-			buffering_mode, stereo_mode, minimum_colour_buffer_depth, 
+			buffering_mode, stereo_mode, minimum_colour_buffer_depth,
 			minimum_depth_buffer_depth, /*minimum_alpha_buffer_depth*/0,
 			minimum_accumulation_buffer_depth,
 			/*buffer_to_match*/(struct Graphics_buffer *)NULL);
@@ -3506,7 +3509,7 @@ DESCRIPTION :
 		{
 #if defined (DEBUG)
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d.  "
-				"Unable to create X3d graphics buffer.");				
+				"Unable to create X3d graphics buffer.");
 #endif /* defined (DEBUG) */
 			DESTROY(Graphics_buffer)(&buffer);
 		}
@@ -3514,7 +3517,7 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d.  "
-			"Unable to create generic Graphics_buffer.");				
+			"Unable to create generic Graphics_buffer.");
 		buffer = (struct Graphics_buffer *)NULL;
 	}
 	LEAVE;
@@ -3525,7 +3528,7 @@ DESCRIPTION :
 
 #if defined (MOTIF)
 struct Graphics_buffer *create_Graphics_buffer_X3d_from_buffer(
-	Widget parent, int width, int height, 
+	Widget parent, int width, int height,
 	struct Graphics_buffer *buffer_to_match)
 /*******************************************************************************
 LAST MODIFIED : 6 May 2004
@@ -3539,7 +3542,7 @@ DESCRIPTION :
 
 	if (buffer = CREATE(Graphics_buffer)(buffer_to_match->package))
 	{
-		Graphics_buffer_create_buffer_glx(buffer, buffer_to_match->package, 
+		Graphics_buffer_create_buffer_glx(buffer, buffer_to_match->package,
 			GRAPHICS_BUFFER_ONSCREEN_CLASS, parent, width, height,
 			GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
 			/*minimum_colour_buffer_depth*/0, /*minimum_depth_buffer_depth */0,
@@ -3549,7 +3552,7 @@ DESCRIPTION :
 		{
 #if defined (DEBUG)
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d_from_buffer.  "
-				"Unable to create X3d graphics buffer.");				
+				"Unable to create X3d graphics buffer.");
 #endif /* defined (DEBUG) */
 			DESTROY(Graphics_buffer)(&buffer);
 		}
@@ -3557,7 +3560,7 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d_from_buffer.  "
-			"Unable to create generic Graphics_buffer.");				
+			"Unable to create generic Graphics_buffer.");
 		buffer = (struct Graphics_buffer *)NULL;
 	}
 	LEAVE;
@@ -3587,7 +3590,7 @@ a Graphics_buffer.
 	else
 	{
 		display_message(ERROR_MESSAGE,"Graphics_buffer_X3d_get_widget.  "
-			"Unable to create generic Graphics_buffer.");				
+			"Unable to create generic Graphics_buffer.");
 		widget = (Widget)NULL;
 	}
 	LEAVE;
@@ -3597,13 +3600,249 @@ a Graphics_buffer.
 #endif /* defined (MOTIF) */
 
 #if defined (GTK_USER_INTERFACE)
+#if defined (NEW_CODE)
+static int Graphics_buffer_gtk_reallocate_offscreen_size(
+	struct Graphics_buffer *buffer)
+/*******************************************************************************
+LAST MODIFIED : 10 March 2008
+
+DESCRIPTION :
+Resizes the offscreen pbuffer used for rendering with windowless mode.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Graphics_buffer_gtk_reallocate_pbuffer_size);
+	if (buffer)
+	{
+		return_code = 0;
+		/* We never bother to reduce the size */
+		if (!buffer->offscreen_width || (buffer->offscreen_width < buffer->width)
+			|| !buffer->offscreen_height || (buffer->offscreen_height < buffer->height))
+		{
+			/* 256x256 is the current minimum, also allocate powers of two just to be
+				conservative with graphics card drivers */
+			int required_width = 256;
+			int required_height = 256;
+			while (required_width < buffer->width)
+			{
+				required_width *= 2;
+			}
+			while (required_height < buffer->height)
+			{
+				required_height *= 2;
+			}
+
+#if defined (GL_EXT_framebuffer_object)
+			if (Graphics_library_check_extension(GL_EXT_framebuffer_object))
+			{
+
+			GenRenderbuffersEXT(1, &buffer->framebuffer_object);
+
+	        // Enable render-to-texture
+	        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, buffer->framebuffer_object);
+
+	        // Set up color_tex and depth_rb for render-to-texture
+	        glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT,
+	                                  GL_COLOR_ATTACHMENT0_EXT,
+	                                  GL_TEXTURE_2D, color_tex, 0);
+	        glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT,
+	                                     GL_DEPTH_ATTACHMENT_EXT,
+	                                     GL_RENDERBUFFER_EXT, depth_rb);
+
+	        // Check framebuffer completeness at the end of initialization.
+	        CHECK_FRAMEBUFFER_STATUS();
+
+	        <draw to the texture and renderbuffer>
+
+	        // Re-enable rendering to the window
+	        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+
+
+
+					/* Should be selecting with our standard rules and minimums here */
+					int colour_bits = 32;
+					int alpha_bits = 8;
+					int depth_bits = 24;
+					GLint pixel_format;
+					unsigned int number_of_formats;
+
+					const int pbuffer_attributes[]=
+						{WGL_DRAW_TO_PBUFFER_ARB, 1,
+						 WGL_COLOR_BITS_ARB, colour_bits,
+						 WGL_ALPHA_BITS_ARB, alpha_bits,
+						 WGL_DEPTH_BITS_ARB, depth_bits,
+						 0};
+					const float float_pbuffer_attributes[]={
+						0};
+
+#if defined (DEBUG)
+					printf("Trying pbuffer\n");
+#endif /* defined (DEBUG) */
+
+					/* Only get the first valid format */
+					if(wglChoosePixelFormatARB(buffer->hidden_graphics_buffer->hDC,
+							pbuffer_attributes, float_pbuffer_attributes, 1,
+							&pixel_format, &number_of_formats))
+					{
+						const int pbuffer_attrib[] = {0};
+
+						if (buffer->pbuffer=wglCreatePbufferARB(
+								 buffer->hidden_graphics_buffer->hDC, pixel_format,
+								 required_width, required_height, pbuffer_attrib))
+						{
+							if (buffer->hDC = wglGetPbufferDCARB(buffer->pbuffer))
+							{
+								buffer->type = GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE;
+								buffer->pixel_format = pixel_format;
+								return_code = 1;
+							}
+							else
+							{
+								return_code = 0;
+							}
+						}
+						else
+						{
+							return_code = 0;
+						}
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+				else
+				{
+					/* Try non accelerated bitmap OpenGL instead */
+					return_code = 1;
+				}
+			}
+#endif /* defined (WGL_ARB_pixel_format) && (WGL_ARB_pbuffer) */
+			/* In either case we need a device independent bitmap matching the
+				onscreen hdc.  Either for copying the pbuffer pixels or for rendering
+				directly if we cannot get a pbuffer. */
+			if (buffer->device_independent_bitmap)
+			{
+				DeleteObject(buffer->device_independent_bitmap);
+			}
+			if (buffer->device_independent_bitmap_hdc)
+			{
+				DeleteDC(buffer->device_independent_bitmap_hdc);
+			}
+			{
+				BITMAPINFO bmi;
+
+				bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+				bmi.bmiHeader.biWidth = required_width;
+				bmi.bmiHeader.biHeight= required_height;
+				bmi.bmiHeader.biPlanes = 1;
+				if (GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND == buffer->buffering_mode)
+				{
+					bmi.bmiHeader.biBitCount = 32;
+				}
+				else
+				{
+					bmi.bmiHeader.biBitCount = 24;
+				}
+				if (GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE != buffer->type)
+				{
+					/* If the onscreen size is 32 then the setpixelformat seems to
+						want this even if rendering without alpha */
+					int onscreen_bits = GetDeviceCaps(onscreen_hdc, BITSPIXEL);
+					if (bmi.bmiHeader.biBitCount < onscreen_bits)
+					{
+						bmi.bmiHeader.biBitCount = onscreen_bits;
+					}
+				}
+
+#if defined (DEBUG)
+				printf("Bitmap bit count %d\n", bmi.bmiHeader.biBitCount);
+#endif /* defined (DEBUG) */
+
+				bmi.bmiHeader.biCompression = BI_RGB;
+				bmi.bmiHeader.biSizeImage = 0;
+				bmi.bmiHeader.biXPelsPerMeter = 0;
+				bmi.bmiHeader.biYPelsPerMeter = 0;
+				bmi.bmiHeader.biClrUsed = 0;
+				bmi.bmiHeader.biClrImportant = 0;
+
+				buffer->device_independent_bitmap_hdc = CreateCompatibleDC(onscreen_hdc);
+
+				buffer->device_independent_bitmap =
+					CreateDIBSection(onscreen_hdc,
+						&bmi,
+						DIB_RGB_COLORS,
+						(void **)&buffer->device_independent_bitmap_pixels,
+						0,
+						0);
+				SelectObject(buffer->device_independent_bitmap_hdc,
+					buffer->device_independent_bitmap);
+
+#if defined (DEBUG)
+				printf ("Made dib\n");
+#endif /* defined (DEBUG) */
+
+				return_code = 1;
+
+				if (buffer->type != GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE)
+				{
+					buffer->type = GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE;
+					/* We use the bitmap directly as the OpenGL rendering surface */
+					buffer->hDC = buffer->device_independent_bitmap_hdc;
+
+					PIXELFORMATDESCRIPTOR pfd;
+					SetPixelFormat( buffer->hDC, buffer->pixel_format, &pfd );
+					buffer->hRC = wglCreateContext( buffer->hDC );
+					if(!wglMakeCurrent(buffer->hDC,buffer->hRC))
+					{
+						display_message(ERROR_MESSAGE,"Graphics_buffer_gtk_reallocate_pbuffer_size.  "
+							"Bitmap make current failed");
+						return_code = 0;
+					}
+				}
+
+			}
+			if (return_code)
+			{
+				buffer->offscreen_width = required_width;
+				buffer->offscreen_height = required_height;
+
+				/* This tells the scene_viewer that it needs to repaint */
+				CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+					buffer->expose_callback_list, buffer, NULL);
+				/* The expose data tells the clients that we need to be up to date now */
+				Graphics_buffer_expose_data expose_data;
+				CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+					buffer->expose_callback_list, buffer, &expose_data);
+			}
+		}
+		else
+		{
+			/* Already large enough so nothing to do */
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Graphics_buffer_gtk_reallocate_pbuffer_size.  "
+			"Missing graphics_buffer parameter.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphics_buffer_gtk_reallocate_pbuffer_size */
+#endif /* defined (GTK_USER_INTERFACE) */
+
+#if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 struct Graphics_buffer *create_Graphics_buffer_gtkgl(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	GtkContainer *parent,
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
 	int minimum_accumulation_buffer_depth)
 /*******************************************************************************
 LAST MODIFIED : 2 June 2004
@@ -3621,146 +3860,190 @@ DESCRIPTION :
 	{
 		if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
 		{
-			attribute_ptr = attribute_list;
+			if (parent)
+			{
+				attribute_ptr = attribute_list;
 
-			*attribute_ptr = GDK_GL_RGBA;
-			attribute_ptr++;
- 			if (buffering_mode == GRAPHICS_BUFFER_DOUBLE_BUFFERING)
-			{
-				*attribute_ptr = GDK_GL_DOUBLEBUFFER;
+				*attribute_ptr = GDK_GL_RGBA;
 				attribute_ptr++;
-				buffer->buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
-			}
-			else
-			{
-				/* GRAPHICS_BUFFER_ANY_BUFFERING_MODE so don't specify it */
-				buffer->buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
-			}
- 			if (stereo_mode == GRAPHICS_BUFFER_STEREO)
-			{
-				*attribute_ptr = GDK_GL_STEREO;
-				attribute_ptr++;
-				buffer->stereo_mode = GRAPHICS_BUFFER_STEREO;
-			}
-			else
-			{
-				/* GRAPHICS_BUFFER_ANY_STEREO_MODE so don't specify it */
-				buffer->stereo_mode = GRAPHICS_BUFFER_MONO;
-			}
-			if (minimum_colour_buffer_depth)
-			{
-				*attribute_ptr = GDK_GL_BUFFER_SIZE;
-				attribute_ptr++;
-				*attribute_ptr = minimum_colour_buffer_depth;
-				attribute_ptr++;
-			}
-			if (minimum_depth_buffer_depth)
-			{
-				*attribute_ptr = GDK_GL_DEPTH_SIZE;
-				attribute_ptr++;
-				*attribute_ptr = minimum_depth_buffer_depth;
-				attribute_ptr++;
-			}
-			if (minimum_accumulation_buffer_depth)
-			{
-				accumulation_colour_size = minimum_accumulation_buffer_depth / 4;
-				*attribute_ptr = GDK_GL_ACCUM_RED_SIZE;
-				attribute_ptr++;
-				*attribute_ptr = accumulation_colour_size;
-				attribute_ptr++;
-				*attribute_ptr = GDK_GL_ACCUM_GREEN_SIZE;
-				attribute_ptr++;
-				*attribute_ptr = accumulation_colour_size;
-				attribute_ptr++;
-				*attribute_ptr = GDK_GL_ACCUM_BLUE_SIZE;
-				attribute_ptr++;
-				*attribute_ptr = accumulation_colour_size;
-				attribute_ptr++;
-				*attribute_ptr = GDK_GL_ACCUM_ALPHA_SIZE;
-				attribute_ptr++;
-				*attribute_ptr = accumulation_colour_size;
-				attribute_ptr++;
-			}
-			*attribute_ptr = GDK_GL_NONE;
-			attribute_ptr++;
-			if (graphics_buffer_package->share_glarea)
-			{
-				share = GTK_GL_AREA(graphics_buffer_package->share_glarea);
-			}
-			else
-			{
-				share = (GtkGLArea *)NULL;
-			}
-			if (buffer->glarea = gtk_gl_area_share_new(attribute_list, share))
-			{
-				if (!graphics_buffer_package->share_glarea)
+				if (buffering_mode == GRAPHICS_BUFFER_DOUBLE_BUFFERING)
 				{
-					graphics_buffer_package->share_glarea = buffer->glarea;
+					*attribute_ptr = GDK_GL_DOUBLEBUFFER;
+					attribute_ptr++;
+					buffer->buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
 				}
-				buffer->type = GRAPHICS_BUFFER_GTKGLAREA_TYPE;
-				gtk_widget_set_events(GTK_WIDGET(buffer->glarea),
-					GDK_EXPOSURE_MASK|GDK_POINTER_MOTION_MASK|GDK_POINTER_MOTION_HINT_MASK|
-					GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|
-					GDK_KEY_PRESS_MASK|GDK_KEY_RELEASE_MASK);
+				else
+				{
+					/* GRAPHICS_BUFFER_ANY_BUFFERING_MODE so don't specify it */
+					buffer->buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
+				}
+				if (stereo_mode == GRAPHICS_BUFFER_STEREO)
+				{
+					*attribute_ptr = GDK_GL_STEREO;
+					attribute_ptr++;
+					buffer->stereo_mode = GRAPHICS_BUFFER_STEREO;
+				}
+				else
+				{
+					/* GRAPHICS_BUFFER_ANY_STEREO_MODE so don't specify it */
+					buffer->stereo_mode = GRAPHICS_BUFFER_MONO;
+				}
+				if (minimum_colour_buffer_depth)
+				{
+					*attribute_ptr = GDK_GL_BUFFER_SIZE;
+					attribute_ptr++;
+					*attribute_ptr = minimum_colour_buffer_depth;
+					attribute_ptr++;
+				}
+				if (minimum_depth_buffer_depth)
+				{
+					*attribute_ptr = GDK_GL_DEPTH_SIZE;
+					attribute_ptr++;
+					*attribute_ptr = minimum_depth_buffer_depth;
+					attribute_ptr++;
+				}
+				if (minimum_accumulation_buffer_depth)
+				{
+					accumulation_colour_size = minimum_accumulation_buffer_depth / 4;
+					*attribute_ptr = GDK_GL_ACCUM_RED_SIZE;
+					attribute_ptr++;
+					*attribute_ptr = accumulation_colour_size;
+					attribute_ptr++;
+					*attribute_ptr = GDK_GL_ACCUM_GREEN_SIZE;
+					attribute_ptr++;
+					*attribute_ptr = accumulation_colour_size;
+					attribute_ptr++;
+					*attribute_ptr = GDK_GL_ACCUM_BLUE_SIZE;
+					attribute_ptr++;
+					*attribute_ptr = accumulation_colour_size;
+					attribute_ptr++;
+					*attribute_ptr = GDK_GL_ACCUM_ALPHA_SIZE;
+					attribute_ptr++;
+					*attribute_ptr = accumulation_colour_size;
+					attribute_ptr++;
+				}
+				*attribute_ptr = GDK_GL_NONE;
+				attribute_ptr++;
+				if (graphics_buffer_package->share_glarea)
+				{
+					share = GTK_GL_AREA(graphics_buffer_package->share_glarea);
+				}
+				else
+				{
+					share = (GtkGLArea *)NULL;
+				}
+				if (buffer->glarea = gtk_gl_area_share_new(attribute_list, share))
+				{
+					if (!graphics_buffer_package->share_glarea)
+					{
+						graphics_buffer_package->share_glarea = buffer->glarea;
+					}
+					buffer->type = GRAPHICS_BUFFER_GTKGLAREA_TYPE;
+					gtk_widget_set_events(GTK_WIDGET(buffer->glarea),
+						GDK_EXPOSURE_MASK|GDK_POINTER_MOTION_MASK|GDK_POINTER_MOTION_HINT_MASK|
+						GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|
+						GDK_KEY_PRESS_MASK|GDK_KEY_RELEASE_MASK);
 #if GTK_MAJOR_VERSION >= 2
-				g_signal_connect(G_OBJECT(buffer->glarea), "realize",
-					G_CALLBACK(Graphics_buffer_gtkglarea_initialise_callback),
-					(gpointer)buffer);
-				g_signal_connect(G_OBJECT(buffer->glarea), "size-allocate",
-					G_CALLBACK(Graphics_buffer_gtkglarea_resize_callback),
-					(gpointer)buffer);
-				g_signal_connect(G_OBJECT(buffer->glarea), "expose-event",
-					G_CALLBACK(Graphics_buffer_gtkglarea_expose_callback),
-					(gpointer)buffer);
-				g_signal_connect(G_OBJECT(buffer->glarea), "button-press-event",
-					G_CALLBACK(Graphics_buffer_gtkglarea_button_callback),
-					(gpointer)buffer);
-				g_signal_connect(G_OBJECT(buffer->glarea), "button-release-event",
-					G_CALLBACK(Graphics_buffer_gtkglarea_button_callback),
-					(gpointer)buffer);
-				g_signal_connect(G_OBJECT(buffer->glarea), "key-press-event",
-					G_CALLBACK(Graphics_buffer_gtkglarea_key_callback),
-					(gpointer)buffer);
-				g_signal_connect(G_OBJECT(buffer->glarea), "key-release-event",
-					G_CALLBACK(Graphics_buffer_gtkglarea_key_callback),
-					(gpointer)buffer);
-				g_signal_connect(G_OBJECT(buffer->glarea), "motion-notify-event",
-					G_CALLBACK(Graphics_buffer_gtkglarea_motion_notify_callback),
-					(gpointer)buffer);
+					g_signal_connect(G_OBJECT(buffer->glarea), "realize",
+						G_CALLBACK(Graphics_buffer_gtkglarea_initialise_callback),
+						(gpointer)buffer);
+					g_signal_connect(G_OBJECT(buffer->glarea), "size-allocate",
+						G_CALLBACK(Graphics_buffer_gtkglarea_resize_callback),
+						(gpointer)buffer);
+					g_signal_connect(G_OBJECT(buffer->glarea), "expose-event",
+						G_CALLBACK(Graphics_buffer_gtkglarea_expose_callback),
+						(gpointer)buffer);
+					g_signal_connect(G_OBJECT(buffer->glarea), "button-press-event",
+						G_CALLBACK(Graphics_buffer_gtkglarea_button_callback),
+						(gpointer)buffer);
+					g_signal_connect(G_OBJECT(buffer->glarea), "button-release-event",
+						G_CALLBACK(Graphics_buffer_gtkglarea_button_callback),
+						(gpointer)buffer);
+					g_signal_connect(G_OBJECT(buffer->glarea), "key-press-event",
+						G_CALLBACK(Graphics_buffer_gtkglarea_key_callback),
+						(gpointer)buffer);
+					g_signal_connect(G_OBJECT(buffer->glarea), "key-release-event",
+						G_CALLBACK(Graphics_buffer_gtkglarea_key_callback),
+						(gpointer)buffer);
+					g_signal_connect(G_OBJECT(buffer->glarea), "motion-notify-event",
+						G_CALLBACK(Graphics_buffer_gtkglarea_motion_notify_callback),
+						(gpointer)buffer);
 #else /* GTK_MAJOR_VERSION >= 2 */
-				gtk_signal_connect(GTK_OBJECT(buffer->glarea), "realize",
-					GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_initialise_callback),
-					(gpointer)buffer);
-				gtk_signal_connect(GTK_OBJECT(buffer->glarea), "size-allocate",
-					GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_resize_callback),
-					(gpointer)buffer);
-				gtk_signal_connect(GTK_OBJECT(buffer->glarea), "expose-event",
-					GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_expose_callback),
-					(gpointer)buffer);
-				gtk_signal_connect(GTK_OBJECT(buffer->glarea), "button-press-event",
-					GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_button_callback),
-					(gpointer)buffer);
-				gtk_signal_connect(GTK_OBJECT(buffer->glarea), "button-release-event",
-					GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_button_callback),
-					(gpointer)buffer);
-				gtk_signal_connect(GTK_OBJECT(buffer->glarea), "key-press-event",
-					GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_key_callback),
-					(gpointer)buffer);
-				gtk_signal_connect(GTK_OBJECT(buffer->glarea), "key-release-event",
-					GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_key_callback),
-					(gpointer)buffer);
-				gtk_signal_connect(GTK_OBJECT(buffer->glarea), "motion-notify-event",
-					GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_motion_notify_callback),
-					(gpointer)buffer);
+					gtk_signal_connect(GTK_OBJECT(buffer->glarea), "realize",
+						GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_initialise_callback),
+						(gpointer)buffer);
+					gtk_signal_connect(GTK_OBJECT(buffer->glarea), "size-allocate",
+						GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_resize_callback),
+						(gpointer)buffer);
+					gtk_signal_connect(GTK_OBJECT(buffer->glarea), "expose-event",
+						GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_expose_callback),
+						(gpointer)buffer);
+					gtk_signal_connect(GTK_OBJECT(buffer->glarea), "button-press-event",
+						GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_button_callback),
+						(gpointer)buffer);
+					gtk_signal_connect(GTK_OBJECT(buffer->glarea), "button-release-event",
+						GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_button_callback),
+						(gpointer)buffer);
+					gtk_signal_connect(GTK_OBJECT(buffer->glarea), "key-press-event",
+						GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_key_callback),
+						(gpointer)buffer);
+					gtk_signal_connect(GTK_OBJECT(buffer->glarea), "key-release-event",
+						GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_key_callback),
+						(gpointer)buffer);
+					gtk_signal_connect(GTK_OBJECT(buffer->glarea), "motion-notify-event",
+						GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_motion_notify_callback),
+						(gpointer)buffer);
 #endif /* GTK_MAJOR_VERSION >= 2 */
-				gtk_container_add(parent, GTK_WIDGET(buffer->glarea));
+					gtk_container_add(parent, GTK_WIDGET(buffer->glarea));
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkglarea.  "
+						"Unable to create gtk gl area.");
+					DESTROY(Graphics_buffer)(&buffer);
+					buffer = (struct Graphics_buffer *)NULL;
+				}
+			}
+			else if ((GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_COPY == buffering_mode) ||
+				(GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND == buffering_mode))
+			{
+				buffer->minimum_colour_buffer_depth = minimum_colour_buffer_depth;
+				buffer->minimum_depth_buffer_depth = minimum_depth_buffer_depth;
+				buffer->minimum_accumulation_buffer_depth = minimum_accumulation_buffer_depth;
+
+				buffer->buffering_mode = buffering_mode;
+
+				/* If we don't use the pbuffer below we need a SINGLE BUFFERING OpenGL
+					when we search pixel formats */
+				buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
+				if (Graphics_buffer_gtk_reallocate_offscreen_size(buffer))
+				{
+					if (GRAPHICS_BUFFER_GTK_COPY_PBUFFER_TYPE == buffer->type)
+					{
+	#if defined (DEBUG)
+						printf("Using pbuffer\n");
+	#endif /* defined (DEBUG) */
+						use_pbuffer = 1;
+					}
+					else
+					{
+						/* Try to get some alpha planes although I think they don't work anyway */
+						minimum_alpha_buffer_depth = 1;
+					}
+				}
+				else
+				{
+					DESTROY(Graphics_buffer)(&buffer);
+					buffer = (struct Graphics_buffer *)NULL;
+				}
+
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkglarea.  "
-					"Unable to create gtk gl area.");
-				DESTROY(Graphics_buffer)(&buffer);
+					"Missing gtk container and not an render and copy display mode.");
 				buffer = (struct Graphics_buffer *)NULL;
+
 			}
 		}
 		else
@@ -3773,7 +4056,7 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkglarea.  "
-			"Gdk Open GL not supported.");				
+			"Gdk Open GL not supported.");
 		buffer = (struct Graphics_buffer *)NULL;
 	}
 	LEAVE;
@@ -3782,6 +4065,7 @@ DESCRIPTION :
 } /* create_Graphics_buffer_gtkglarea */
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
+#endif // defined (NEW_CODE)
 
 #if defined (GTK_USER_INTERFACE)
 #if ! defined (GTK_USE_GTKGLAREA)
@@ -3790,7 +4074,7 @@ struct Graphics_buffer *create_Graphics_buffer_gtkgl(
 	GtkContainer *parent,
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
 	int minimum_accumulation_buffer_depth)
 /*******************************************************************************
 LAST MODIFIED : 2 June 2004
@@ -3809,149 +4093,195 @@ DESCRIPTION :
 
 	if (gdk_gl_query_extension() == TRUE)
 	{
-		if (glarea = gtk_drawing_area_new())
+		if (parent)
 		{
-			if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
+			if (glarea = gtk_drawing_area_new())
 			{
-				glconfig = (GdkGLConfig *)NULL;
-				selection_level = 2;
-				while (!glconfig && (selection_level > 0))
+				if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
 				{
-					attribute_ptr = attribute_list;
+					glconfig = (GdkGLConfig *)NULL;
+					selection_level = 2;
+					while (!glconfig && (selection_level > 0))
+					{
+						attribute_ptr = attribute_list;
 
-					*attribute_ptr = GDK_GL_RGBA;
-					attribute_ptr++;
-					if (buffering_mode == GRAPHICS_BUFFER_DOUBLE_BUFFERING)
-					{
-						*attribute_ptr = GDK_GL_DOUBLEBUFFER;
+						*attribute_ptr = GDK_GL_RGBA;
 						attribute_ptr++;
-					}
-					/* else GRAPHICS_BUFFER_ANY_BUFFERING_MODE so don't specify it */
-					if (stereo_mode == GRAPHICS_BUFFER_STEREO)
-					{
-						*attribute_ptr = GDK_GL_STEREO;
+						if (buffering_mode == GRAPHICS_BUFFER_DOUBLE_BUFFERING)
+						{
+							*attribute_ptr = GDK_GL_DOUBLEBUFFER;
+							attribute_ptr++;
+						}
+						/* else GRAPHICS_BUFFER_ANY_BUFFERING_MODE so don't specify it */
+						if (stereo_mode == GRAPHICS_BUFFER_STEREO)
+						{
+							*attribute_ptr = GDK_GL_STEREO;
+							attribute_ptr++;
+						}
+						/* else GRAPHICS_BUFFER_ANY_STEREO_MODE so don't specify it */
+						if (minimum_colour_buffer_depth)
+						{
+							*attribute_ptr = GDK_GL_BUFFER_SIZE;
+							attribute_ptr++;
+							*attribute_ptr = minimum_colour_buffer_depth;
+							attribute_ptr++;
+						}
+						if (selection_level > 1)
+						{
+							*attribute_ptr = GDK_GL_ALPHA_SIZE;
+							attribute_ptr++;
+							*attribute_ptr = 1;
+							attribute_ptr++;
+						}
+						if (minimum_depth_buffer_depth)
+						{
+							*attribute_ptr = GDK_GL_DEPTH_SIZE;
+							attribute_ptr++;
+							*attribute_ptr = minimum_depth_buffer_depth;
+							attribute_ptr++;
+						}
+						if (minimum_accumulation_buffer_depth)
+						{
+							accumulation_colour_size = minimum_accumulation_buffer_depth / 4;
+							*attribute_ptr = GDK_GL_ACCUM_RED_SIZE;
+							attribute_ptr++;
+							*attribute_ptr = accumulation_colour_size;
+							attribute_ptr++;
+							*attribute_ptr = GDK_GL_ACCUM_GREEN_SIZE;
+							attribute_ptr++;
+							*attribute_ptr = accumulation_colour_size;
+							attribute_ptr++;
+							*attribute_ptr = GDK_GL_ACCUM_BLUE_SIZE;
+							attribute_ptr++;
+							*attribute_ptr = accumulation_colour_size;
+							attribute_ptr++;
+							*attribute_ptr = GDK_GL_ACCUM_ALPHA_SIZE;
+							attribute_ptr++;
+							*attribute_ptr = accumulation_colour_size;
+							attribute_ptr++;
+						}
+						*attribute_ptr = GDK_GL_ATTRIB_LIST_NONE;
 						attribute_ptr++;
-					}
-					/* else GRAPHICS_BUFFER_ANY_STEREO_MODE so don't specify it */
-					if (minimum_colour_buffer_depth)
-					{
-						*attribute_ptr = GDK_GL_BUFFER_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = minimum_colour_buffer_depth;
-						attribute_ptr++;
-					}
-					if (selection_level > 1)
-					{
-						*attribute_ptr = GDK_GL_ALPHA_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = 1;
-						attribute_ptr++;
-					}
-					if (minimum_depth_buffer_depth)
-					{
-						*attribute_ptr = GDK_GL_DEPTH_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = minimum_depth_buffer_depth;
-						attribute_ptr++;
-					}
-					if (minimum_accumulation_buffer_depth)
-					{
-						accumulation_colour_size = minimum_accumulation_buffer_depth / 4;
-						*attribute_ptr = GDK_GL_ACCUM_RED_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = accumulation_colour_size;
-						attribute_ptr++;
-						*attribute_ptr = GDK_GL_ACCUM_GREEN_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = accumulation_colour_size;
-						attribute_ptr++;
-						*attribute_ptr = GDK_GL_ACCUM_BLUE_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = accumulation_colour_size;
-						attribute_ptr++;
-						*attribute_ptr = GDK_GL_ACCUM_ALPHA_SIZE;
-						attribute_ptr++;
-						*attribute_ptr = accumulation_colour_size;
-						attribute_ptr++;
-					}
-					*attribute_ptr = GDK_GL_ATTRIB_LIST_NONE;
-					attribute_ptr++;
-					glconfig = gdk_gl_config_new(attribute_list);
+						glconfig = gdk_gl_config_new(attribute_list);
 
-					selection_level--;
-				}
-				if (glconfig &&
-					gtk_widget_set_gl_capability(glarea, glconfig,
-						graphics_buffer_package->share_glcontext,
-						TRUE, GDK_GL_RGBA_TYPE))
-				{
-					buffer->glarea = glarea;
-					buffer->glconfig = gtk_widget_get_gl_config(glarea);
-					buffer->type = GRAPHICS_BUFFER_GTKGLEXT_TYPE;
-					gtk_widget_set_events(buffer->glarea,
-						GDK_EXPOSURE_MASK|GDK_POINTER_MOTION_MASK|GDK_POINTER_MOTION_HINT_MASK|
-						GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|
-						GDK_KEY_PRESS_MASK|GDK_KEY_RELEASE_MASK);
-				buffer->initialise_handler_id = 
-					g_signal_connect(G_OBJECT(buffer->glarea), "realize",
-						G_CALLBACK(Graphics_buffer_gtkglarea_initialise_callback),
-						(gpointer)buffer);
-				buffer->resize_handler_id = 
-					g_signal_connect(G_OBJECT(buffer->glarea), "size-allocate",
-						G_CALLBACK(Graphics_buffer_gtkglarea_resize_callback),
-						(gpointer)buffer);
-				buffer->expose_handler_id = 
-					g_signal_connect(G_OBJECT(buffer->glarea), "expose-event",
-						G_CALLBACK(Graphics_buffer_gtkglarea_expose_callback),
-						(gpointer)buffer);
-				buffer->button_press_handler_id = 
-					g_signal_connect(G_OBJECT(buffer->glarea), "button-press-event",
-						G_CALLBACK(Graphics_buffer_gtkglarea_button_callback),
-						(gpointer)buffer);
-				buffer->button_release_handler_id = 
-					g_signal_connect(G_OBJECT(buffer->glarea), "button-release-event",
-						G_CALLBACK(Graphics_buffer_gtkglarea_button_callback),
-						(gpointer)buffer);
-				buffer->key_press_handler_id = 
-					g_signal_connect(G_OBJECT(buffer->glarea), "key-press-event",
-						G_CALLBACK(Graphics_buffer_gtkglarea_key_callback),
-						(gpointer)buffer);
-				buffer->key_release_handler_id = 
-					g_signal_connect(G_OBJECT(buffer->glarea), "key-release-event",
-						G_CALLBACK(Graphics_buffer_gtkglarea_key_callback),
-						(gpointer)buffer);
-				buffer->motion_handler_id = 
-					g_signal_connect(G_OBJECT(buffer->glarea), "motion-notify-event",
-						G_CALLBACK(Graphics_buffer_gtkglarea_motion_notify_callback),
-						(gpointer)buffer);
-					gtk_container_add(parent, buffer->glarea);
+						selection_level--;
+					}
+					if (glconfig &&
+						gtk_widget_set_gl_capability(glarea, glconfig,
+							graphics_buffer_package->share_glcontext,
+							TRUE, GDK_GL_RGBA_TYPE))
+					{
+						buffer->glarea = glarea;
+						buffer->glconfig = gtk_widget_get_gl_config(glarea);
+						buffer->type = GRAPHICS_BUFFER_GTKGLEXT_TYPE;
+						gtk_widget_set_events(buffer->glarea,
+							GDK_EXPOSURE_MASK|GDK_POINTER_MOTION_MASK|GDK_POINTER_MOTION_HINT_MASK|
+							GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|
+							GDK_KEY_PRESS_MASK|GDK_KEY_RELEASE_MASK);
+						buffer->initialise_handler_id =
+							g_signal_connect(G_OBJECT(buffer->glarea), "realize",
+							G_CALLBACK(Graphics_buffer_gtkglarea_initialise_callback),
+							(gpointer)buffer);
+					buffer->resize_handler_id =
+						g_signal_connect(G_OBJECT(buffer->glarea), "size-allocate",
+							G_CALLBACK(Graphics_buffer_gtkglarea_resize_callback),
+							(gpointer)buffer);
+					buffer->expose_handler_id =
+						g_signal_connect(G_OBJECT(buffer->glarea), "expose-event",
+							G_CALLBACK(Graphics_buffer_gtkglarea_expose_callback),
+							(gpointer)buffer);
+					buffer->button_press_handler_id =
+						g_signal_connect(G_OBJECT(buffer->glarea), "button-press-event",
+							G_CALLBACK(Graphics_buffer_gtkglarea_button_callback),
+							(gpointer)buffer);
+					buffer->button_release_handler_id =
+						g_signal_connect(G_OBJECT(buffer->glarea), "button-release-event",
+							G_CALLBACK(Graphics_buffer_gtkglarea_button_callback),
+							(gpointer)buffer);
+					buffer->key_press_handler_id =
+						g_signal_connect(G_OBJECT(buffer->glarea), "key-press-event",
+							G_CALLBACK(Graphics_buffer_gtkglarea_key_callback),
+							(gpointer)buffer);
+					buffer->key_release_handler_id =
+						g_signal_connect(G_OBJECT(buffer->glarea), "key-release-event",
+							G_CALLBACK(Graphics_buffer_gtkglarea_key_callback),
+							(gpointer)buffer);
+					buffer->motion_handler_id =
+						g_signal_connect(G_OBJECT(buffer->glarea), "motion-notify-event",
+							G_CALLBACK(Graphics_buffer_gtkglarea_motion_notify_callback),
+							(gpointer)buffer);
+						gtk_container_add(parent, buffer->glarea);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkgl.  "
+							"Unable to add opengl capability.");
+						DESTROY(Graphics_buffer)(&buffer);
+						buffer = (struct Graphics_buffer *)NULL;
+					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkgl.  "
-						"Unable to add opengl capability.");
-					DESTROY(Graphics_buffer)(&buffer);
+						"Unable to create generic Graphics_buffer.");
 					buffer = (struct Graphics_buffer *)NULL;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkgl.  "
-					"Unable to create generic Graphics_buffer.");
+					"Could not create drawing area widget.");
 				buffer = (struct Graphics_buffer *)NULL;
 			}
 		}
+#if defined (NEW_CODE)
+		else if ((GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_COPY == buffering_mode) ||
+			(GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND == buffering_mode))
+		{
+			buffer->minimum_colour_buffer_depth = minimum_colour_buffer_depth;
+			buffer->minimum_depth_buffer_depth = minimum_depth_buffer_depth;
+			buffer->minimum_accumulation_buffer_depth = minimum_accumulation_buffer_depth;
+
+			buffer->buffering_mode = buffering_mode;
+
+			/* If we don't use the pbuffer below we need a SINGLE BUFFERING OpenGL
+				when we search pixel formats */
+			buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
+			if (Graphics_buffer_gtk_reallocate_offscreen_size(buffer))
+			{
+				if (GRAPHICS_BUFFER_GTK_COPY_PBUFFER_TYPE == buffer->type)
+				{
+#if defined (DEBUG)
+					printf("Using pbuffer\n");
+#endif /* defined (DEBUG) */
+					use_pbuffer = 1;
+				}
+				else
+				{
+					/* Try to get some alpha planes although I think they don't work anyway */
+					minimum_alpha_buffer_depth = 1;
+				}
+			}
+			else
+			{
+				DESTROY(Graphics_buffer)(&buffer);
+				buffer = (struct Graphics_buffer *)NULL;
+			}
+
+		}
+#endif // defined (NEW_CODE)
 		else
 		{
-			display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkgl.  "
-				"Could not create drawing area widget.");				
+			display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkglarea.  "
+				"Missing gtk container and not an render and copy display mode.");
 			buffer = (struct Graphics_buffer *)NULL;
+
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkgl.  "
-			"Gdk Open GL EXT not supported.");				
+			"Gdk Open GL EXT not supported.");
 		buffer = (struct Graphics_buffer *)NULL;
 	}
 	LEAVE;
@@ -3996,19 +4326,19 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 
 #if defined (WGL_ARB_pixel_format) && (WGL_ARB_pbuffer)
 			{
-				/* Must create and select the offscreen buffer before testing extensions 
+				/* Must create and select the offscreen buffer before testing extensions
 				 otherwise default windows implementation will just respond unavailable. */
 				if (!buffer->hidden_graphics_buffer)
 				{
 					BOOL win32_return_code;
 					static char *class_name="Hidden window";
 					WNDCLASS class_information;
-				
+
 					/* check if the class is registered */
 					win32_return_code=GetClassInfo(User_interface_get_instance(
 																 buffer->package->user_interface),
 						class_name,&class_information);
-				
+
 					if (win32_return_code==FALSE)
 					{
 						/* register class */
@@ -4078,7 +4408,7 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 						 WGL_ALPHA_BITS_ARB, alpha_bits,
 						 WGL_DEPTH_BITS_ARB, depth_bits,
 						 0};
-					const float float_pbuffer_attributes[]={	
+					const float float_pbuffer_attributes[]={
 						0};
 
 #if defined (DEBUG)
@@ -4086,21 +4416,21 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 #endif /* defined (DEBUG) */
 
 					/* Only get the first valid format */
-					if(wglChoosePixelFormatARB(buffer->hidden_graphics_buffer->hDC, 
+					if(wglChoosePixelFormatARB(buffer->hidden_graphics_buffer->hDC,
 							pbuffer_attributes, float_pbuffer_attributes, 1,
 							&pixel_format, &number_of_formats))
 					{
 						const int pbuffer_attrib[] = {0};
 
 						if (buffer->pbuffer=wglCreatePbufferARB(
-								 buffer->hidden_graphics_buffer->hDC, pixel_format, 
+								 buffer->hidden_graphics_buffer->hDC, pixel_format,
 								 required_width, required_height, pbuffer_attrib))
 						{
 							if (buffer->hDC = wglGetPbufferDCARB(buffer->pbuffer))
 							{
 								buffer->type = GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE;
 								buffer->pixel_format = pixel_format;
-								return_code = 1;						
+								return_code = 1;
 							}
 							else
 							{
@@ -4124,7 +4454,7 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 				}
 			}
 #endif /* defined (WGL_ARB_pixel_format) && (WGL_ARB_pbuffer) */
-			/* In either case we need a device independent bitmap matching the 
+			/* In either case we need a device independent bitmap matching the
 				onscreen hdc.  Either for copying the pbuffer pixels or for rendering
 				directly if we cannot get a pbuffer. */
 			if (buffer->device_independent_bitmap)
@@ -4134,10 +4464,10 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 			if (buffer->device_independent_bitmap_hdc)
 			{
 				DeleteDC(buffer->device_independent_bitmap_hdc);
-			}	  
+			}
 			{
 				BITMAPINFO bmi;
-			
+
 				bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 				bmi.bmiHeader.biWidth = required_width;
 				bmi.bmiHeader.biHeight= required_height;
@@ -4171,9 +4501,9 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 				bmi.bmiHeader.biYPelsPerMeter = 0;
 				bmi.bmiHeader.biClrUsed = 0;
 				bmi.bmiHeader.biClrImportant = 0;
-     
+
 				buffer->device_independent_bitmap_hdc = CreateCompatibleDC(onscreen_hdc);
-			
+
 				buffer->device_independent_bitmap =
 					CreateDIBSection(onscreen_hdc,
 						&bmi,
@@ -4220,7 +4550,7 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 				Graphics_buffer_expose_data expose_data;
 				CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
 					buffer->expose_callback_list, buffer, &expose_data);
-			}		
+			}
 		}
 		else
 		{
@@ -4246,7 +4576,7 @@ struct Graphics_buffer *create_Graphics_buffer_win32(
 	HWND hWnd, HDC hDC,
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
 	int minimum_accumulation_buffer_depth)
 /*******************************************************************************
 LAST MODIFIED : 9 August 2004
@@ -4276,7 +4606,7 @@ are performed but the graphics window will render into the supplied device conte
 		{
 			buffer->hWnd = hWnd;
 
-			SetWindowLongPtr(hWnd, GWL_WNDPROC, 
+			SetWindowLongPtr(hWnd, GWL_WNDPROC,
 				(LONG)Graphics_buffer_callback_proc);
 			SetWindowLongPtr(hWnd, GWL_USERDATA, (LONG)buffer);
 
@@ -4298,9 +4628,9 @@ are performed but the graphics window will render into the supplied device conte
 
 			buffer->buffering_mode = buffering_mode;
 
-			/* If we don't use the pbuffer below we need a SINGLE BUFFERING OpenGL 
+			/* If we don't use the pbuffer below we need a SINGLE BUFFERING OpenGL
 				when we search pixel formats */
-			buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING; 
+			buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
 			if (Graphics_buffer_win32_reallocate_offscreen_size(buffer, hDC))
 			{
 				if (GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE == buffer->type)
@@ -4344,7 +4674,7 @@ are performed but the graphics window will render into the supplied device conte
 					pfd.nVersion = 1;
 
 					DescribePixelFormat(buffer->hDC, i, pfd.nSize, &pfd);
-				
+
 					if ((pfd.dwFlags & PFD_SUPPORT_OPENGL)
 						&& (pfd.iPixelType == PFD_TYPE_RGBA))
 					{
@@ -4389,7 +4719,7 @@ are performed but the graphics window will render into the supplied device conte
 							selection_level = 0;
 						}
 					}
-				
+
 					if (pfd.cColorBits >= 24)
 					{
 						/* Best */
@@ -4404,7 +4734,7 @@ are performed but the graphics window will render into the supplied device conte
 						/* Poor */
 						selection_level-=2;
 					}
-				
+
 					if (pfd.cDepthBits >= 24)
 					{
 						/* Best */
@@ -4416,10 +4746,10 @@ are performed but the graphics window will render into the supplied device conte
 					}
 					else
 					{
-						/* Poor */					
+						/* Poor */
 						selection_level-=2;
 					}
-				
+
 					if (pfd.cAlphaBits >= minimum_alpha_buffer_depth)
 					{
 						/* Best */
@@ -4431,7 +4761,7 @@ are performed but the graphics window will render into the supplied device conte
 					}
 					else
 					{
-						/* Poor */					
+						/* Poor */
 						selection_level-=2;
 					}
 
@@ -4446,7 +4776,7 @@ are performed but the graphics window will render into the supplied device conte
 					}
 					else
 					{
-						/* Poor */					
+						/* Poor */
 						selection_level-=2;
 					}
 
@@ -4541,7 +4871,7 @@ are performed but the graphics window will render into the supplied device conte
 		{
 			/* A work around for Intel GMA 900 cards on windows where compilation
 				of textures only seems to work on the first context of a
-				share group.  On these cards only use a single 
+				share group.  On these cards only use a single
 				graphics context for all graphics buffers.
 				The vendor string will not be defined the first time around,
 				although when using multiple instances in the same memory
@@ -4587,9 +4917,9 @@ are performed but the graphics window will render into the supplied device conte
 					ZeroMemory( &pfd, sizeof( PIXELFORMATDESCRIPTOR ) );
 					pfd.nSize = sizeof( pfd );
 					pfd.nVersion = 1;
-						
+
 					DescribePixelFormat(buffer->hDC, buffer->pixel_format, pfd.nSize, &pfd);
-						
+
 					printf("Pixel format %d\n", buffer->pixel_format);
 					const char *vendor_string = (const char *)glGetString(GL_VENDOR);
 					printf("OpenGL vendor string %s\n", vendor_string);
@@ -4650,7 +4980,7 @@ extern "C" {
 }
 #endif /* defined (WIN32_USER_INTERFACE) && (defined (__CYGWIN__) || defined (__MINGW__)) */
 
-#if defined (WIN32_USER_INTERFACE) 
+#if defined (WIN32_USER_INTERFACE)
 int Graphics_buffer_handle_windows_event(struct Graphics_buffer *buffer,
 	UINT message_identifier,WPARAM first_message,LPARAM second_message)
 /*******************************************************************************
@@ -4724,7 +5054,7 @@ mode with zinc.  Requiring development.
 			  {
 				  bottom = buffer->height + buffer->y;
 			  }
-			  
+
 			  x = buffer->x;
 			  y = buffer->y;
 			  right = buffer->width + buffer->x;
@@ -4760,7 +5090,7 @@ mode with zinc.  Requiring development.
 								  [4 * buffer->offscreen_width * (buffer->offscreen_height - height - y + buffer->y) + 3]);
 #endif /* defined (DEBUG) */
 
-							  BLENDFUNCTION blendfunction = 
+							  BLENDFUNCTION blendfunction =
 								  {
 									  AC_SRC_OVER,
 									  0,
@@ -4788,11 +5118,11 @@ mode with zinc.  Requiring development.
 						  {
 							  glReadPixels(x - buffer->x, buffer->height - height - y + buffer->y,
 								  width, height, GL_BGRA,
-								  GL_UNSIGNED_BYTE, 
-								  (unsigned char *)buffer->device_independent_bitmap_pixels + 
+								  GL_UNSIGNED_BYTE,
+								  (unsigned char *)buffer->device_independent_bitmap_pixels +
 								  4 * buffer->offscreen_width * (buffer->offscreen_height - height));
 
-							  BLENDFUNCTION blendfunction = 
+							  BLENDFUNCTION blendfunction =
 								  {
 									  AC_SRC_OVER,
 									  0,
@@ -4813,7 +5143,7 @@ mode with zinc.  Requiring development.
 								  ((unsigned char *)buffer->device_independent_bitmap_pixels)
 								  [4 * buffer->offscreen_width * (buffer->offscreen_height - height) + 3]);
 							  printf ("Going to alpha blend %ld %d %d %ld %d %d\n",
-								  drc->left, buffer->x, buffer->width, 
+								  drc->left, buffer->x, buffer->width,
 								  drc->top, buffer->y, buffer->height );
 #endif /* defined (DEBUG) */
 
@@ -4825,14 +5155,14 @@ mode with zinc.  Requiring development.
 						  {
 							  glReadPixels(x - buffer->x, buffer->height - height - y + buffer->y,
 								  width, height, GL_BGR,
-								  GL_UNSIGNED_BYTE, 
-								  (unsigned char *)buffer->device_independent_bitmap_pixels + 
+								  GL_UNSIGNED_BYTE,
+								  (unsigned char *)buffer->device_independent_bitmap_pixels +
 								  3 * buffer->offscreen_width * (buffer->offscreen_height - height));
 
 #if defined (DEBUG)
 							  //memset(buffer->device_independent_bitmap_pixels, 128,
 							  //	 3 * buffer->offscreen_width * buffer->offscreen_height);
-					  
+
 							  printf ("Copied pixels %d %d %d %d (rgb %d %d %d)\n",
 								  x - buffer->x, y - buffer->y,
 								  width, height,
@@ -4843,10 +5173,10 @@ mode with zinc.  Requiring development.
 								  ((unsigned char *)buffer->device_independent_bitmap_pixels)
 								  [3 * buffer->offscreen_width * (buffer->offscreen_height - height) + 2]);
 							  printf ("Going to blt %ld %d %d %ld %d %d\n",
-								  drc->left, buffer->x, buffer->width, 
+								  drc->left, buffer->x, buffer->width,
 								  drc->top, buffer->y, buffer->height );
 #endif /* defined (DEBUG) */
-					  
+
 							  BitBlt(hdc, x, y, width, height,
 								  buffer->device_independent_bitmap_hdc, 0, 0,
 								  SRCCOPY);
@@ -4944,7 +5274,7 @@ int Graphics_buffer_win32_set_window_size(struct Graphics_buffer *buffer,
 LAST MODIFIED : 14 September 2007
 
 DESCRIPTION :
-Sets the maximum extent of the graphics window within which individual paints 
+Sets the maximum extent of the graphics window within which individual paints
 will be requested with handle_windows_event.
 ==============================================================================*/
 {
@@ -4989,7 +5319,7 @@ DESCRIPTION:
 	ENTER(Graphics_buffer_callback_proc);
 
 	return_code=FALSE;
-	struct Graphics_buffer *graphics_buffer = 
+	struct Graphics_buffer *graphics_buffer =
 		(struct Graphics_buffer *)GetWindowLongPtr(window, GWL_USERDATA);
 
 #if defined (DEBUG)
@@ -5119,7 +5449,7 @@ DESCRIPTION:
 #endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (WIN32_USER_INTERFACE)
-int Graphics_buffer_win32_use_font_bitmaps(struct Graphics_buffer *buffer, 
+int Graphics_buffer_win32_use_font_bitmaps(struct Graphics_buffer *buffer,
 	HFONT font, int first_bitmap, int number_of_bitmaps, int display_list_offset)
 /*******************************************************************************
 LAST MODIFIED : 17 November 2005
@@ -5128,9 +5458,9 @@ DESCRIPTION :
 ==============================================================================*/
 {
   	int return_code;
-	
+
 	ENTER(Graphics_buffer_win32_use_font_bitmaps);
-	
+
 	if (buffer)
 	{
 		switch (buffer->type)
@@ -5147,7 +5477,7 @@ DESCRIPTION :
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_win32_use_font_bitmaps.  "
-					"This function should only be used with WIN32 type buffers.");				
+					"This function should only be used with WIN32 type buffers.");
 				return_code = 0;
 			} break;
 		}
@@ -5155,11 +5485,11 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,"Graphics_buffer_win32_use_font_bitmaps.  "
-			"Graphics_bufffer missing.");				
+			"Graphics_bufffer missing.");
 		return_code = 0;
 	}
 	LEAVE;
-	
+
 	return (return_code);
 } /* Graphics_buffer_win32_use_font_bitmaps */
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -5224,7 +5554,7 @@ DESCRIPTION :
 			(location.y > buffer->clip_height))
 		{
 			// If the event isn't ours, pass it on.
-			OSStatus result = CallNextEventHandler(handler, event);	
+			OSStatus result = CallNextEventHandler(handler, event);
 			return(result);
 		}
 		return_code = 1;
@@ -5318,7 +5648,7 @@ DESCRIPTION :
 	USE_PARAMETER(event);
 
 	OSStatus result = eventNotHandledErr;
-	
+
 	if (graphics_buffer = (struct Graphics_buffer *)buffer_void)
 	{
 		CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
@@ -5349,7 +5679,7 @@ DESCRIPTION :
 	USE_PARAMETER(event);
 
 	OSStatus result = eventNotHandledErr;
-	
+
 	if (graphics_buffer = (struct Graphics_buffer *)buffer_void)
 	{
 		aglSetDrawable(graphics_buffer->aglContext, graphics_buffer->port);
@@ -5375,7 +5705,7 @@ struct Graphics_buffer *create_Graphics_buffer_Carbon(
 	int    porty,
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
 	int minimum_accumulation_buffer_depth)
 /*******************************************************************************
 LAST MODIFIED : 21 November 2006
@@ -5415,7 +5745,7 @@ DESCRIPTION :
 
 				if(aglSetDrawable(buffer->aglContext, port))
 				{
-					
+
 					if (aglSetCurrentContext(buffer->aglContext))
 					{
 						EventHandlerUPP mouse_handler_UPP,
@@ -5433,21 +5763,21 @@ DESCRIPTION :
 						aglEnable(buffer->aglContext, AGL_BUFFER_RECT);
 						//aglEnable(buffer->aglContext, AGL_SWAP_RECT);
 
-						expose_handler_UPP = 
+						expose_handler_UPP =
 							NewEventHandlerUPP (Graphics_buffer_expose_Carbon_callback);
 
 						InstallWindowEventHandler(GetWindowFromPort(port),
 							expose_handler_UPP, GetEventTypeCount(expose_event_list),
 							expose_event_list, buffer, &buffer->expose_handler_ref);
 
-						resize_handler_UPP = 
+						resize_handler_UPP =
 							NewEventHandlerUPP (Graphics_buffer_resize_Carbon_callback);
 
 						InstallWindowEventHandler(GetWindowFromPort(port),
 							resize_handler_UPP, GetEventTypeCount(resize_event_list),
 							resize_event_list, buffer, &buffer->resize_handler_ref);
 
-						mouse_handler_UPP = 
+						mouse_handler_UPP =
 							NewEventHandlerUPP (Graphics_buffer_mouse_Carbon_callback);
 
 						InstallWindowEventHandler(GetWindowFromPort(port),
@@ -5540,7 +5870,7 @@ struct Graphics_buffer *create_Graphics_buffer_wx(
 	wxPanel *parent,
 	enum Graphics_buffer_buffering_mode buffering_mode,
 	enum Graphics_buffer_stereo_mode stereo_mode,
-	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
 	int minimum_accumulation_buffer_depth,
 	struct Graphics_buffer  *buffer_to_match)
 {
@@ -5551,7 +5881,7 @@ struct Graphics_buffer *create_Graphics_buffer_wx(
 	{
 		 buffer->type = GRAPHICS_BUFFER_WX_TYPE;
 		 Graphics_buffer_create_buffer_wx(buffer, graphics_buffer_package,
-				parent, buffering_mode, stereo_mode, minimum_colour_buffer_depth, 
+				parent, buffering_mode, stereo_mode, minimum_colour_buffer_depth,
 				minimum_depth_buffer_depth, minimum_accumulation_buffer_depth, 0, 0,
 				buffer_to_match);
 	}
@@ -5576,11 +5906,14 @@ DESCRIPTION :
 ==============================================================================*/
 {
   	int return_code;
-	
+
 	ENTER(Graphics_buffer_make_current);
-	
+
 	if (buffer)
 	{
+#if defined (DEBUG)
+		printf("Graphics_buffer_make_current\n");
+#endif /* defined (DEBUG) */
 		switch (buffer->type)
 		{
 #if defined (MOTIF)
@@ -5615,6 +5948,10 @@ DESCRIPTION :
 #else /* defined (GTK_USE_GTKGLAREA) */
 			case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
 			{
+#if defined (DEBUG)
+				printf("Graphics_buffer_make_current %p %p\n",
+					buffer->gldrawable, buffer->glcontext);
+#endif /* defined (DEBUG) */
 				gdk_gl_drawable_make_current(buffer->gldrawable, buffer->glcontext);
 				return_code = 1;
 			} break;
@@ -5639,7 +5976,7 @@ DESCRIPTION :
  				GetPortBounds(buffer->port, &port_bounds);
 
 				aglSetCurrentContext(buffer->aglContext);
-				
+
 				parms[0] = -buffer->portx;
 				parms[1] = bounds.bottom - bounds.top + buffer->porty - buffer->clip_height;
 				parms[2] = buffer->clip_width;
@@ -5675,7 +6012,7 @@ DESCRIPTION :
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_make_current.  "
-					"Graphics_bufffer type unknown or not supported.");				
+					"Graphics_bufffer type unknown or not supported.");
 				return_code = 0;
 			} break;
 		}
@@ -5683,11 +6020,11 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,"Graphics_buffer_make_current.  "
-			"Graphics_bufffer missing.");				
+			"Graphics_bufffer missing.");
 		return_code = 0;
 	}
 	LEAVE;
-	
+
 	return (return_code);
 } /* Graphics_buffer_make_current */
 
@@ -5761,7 +6098,7 @@ Returns the visual id used by the graphics buffer.
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_visual_id.  "
-					"Graphics_bufffer type unknown or not supported.");				
+					"Graphics_bufffer type unknown or not supported.");
 				return_code = 0;
 			} break;
 		}
@@ -5769,7 +6106,7 @@ Returns the visual id used by the graphics buffer.
 	else
 	{
 		display_message(ERROR_MESSAGE,"Graphics_buffer_get_visual_id.  "
-			"Graphics_bufffer missing.");				
+			"Graphics_bufffer missing.");
 		return_code = 0;
 	}
 	LEAVE;
@@ -5841,7 +6178,7 @@ Returns the depth of the colour buffer used by the graphics buffer.
 				ZeroMemory( &pfd, sizeof( PIXELFORMATDESCRIPTOR ) );
 				pfd.nSize = sizeof( pfd );
 				pfd.nVersion = 1;
-				
+
 				DescribePixelFormat(buffer->hDC, buffer->pixel_format, pfd.nSize, &pfd);
 
 				*colour_buffer_depth = pfd.cColorBits;
@@ -5895,7 +6232,7 @@ Returns the depth of the depth buffer used by the graphics buffer.
 			 case GRAPHICS_BUFFER_WX_TYPE:
 			{
 				 GLint depth_bits;
-				 glGetIntegerv(GL_DEPTH_BITS, &depth_bits);	 
+				 glGetIntegerv(GL_DEPTH_BITS, &depth_bits);
 				 *depth_buffer_depth = depth_bits;
 				 return_code = 1;
 			} break;
@@ -5925,7 +6262,7 @@ Returns the depth of the depth buffer used by the graphics buffer.
 				ZeroMemory( &pfd, sizeof( PIXELFORMATDESCRIPTOR ) );
 				pfd.nSize = sizeof( pfd );
 				pfd.nVersion = 1;
-				
+
 				DescribePixelFormat(buffer->hDC, buffer->pixel_format, pfd.nSize, &pfd);
 
 				*depth_buffer_depth = pfd.cDepthBits;
@@ -6011,7 +6348,7 @@ Returns the depth of the accumulation buffer used by the graphics buffer.
 #else /* defined (GTK_USE_GTKGLAREA) */
 			case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
 			{
-				int accum_red_size, accum_green_size, accum_blue_size, accum_alpha_size; 
+				int accum_red_size, accum_green_size, accum_blue_size, accum_alpha_size;
 				gdk_gl_config_get_attrib(buffer->glconfig, GDK_GL_ACCUM_RED_SIZE,
 					&accum_red_size);
 				gdk_gl_config_get_attrib(buffer->glconfig, GDK_GL_ACCUM_GREEN_SIZE,
@@ -6020,7 +6357,7 @@ Returns the depth of the accumulation buffer used by the graphics buffer.
 					&accum_blue_size);
 				gdk_gl_config_get_attrib(buffer->glconfig, GDK_GL_ACCUM_ALPHA_SIZE,
 					&accum_alpha_size);
-				*accumulation_buffer_depth = accum_red_size + accum_green_size + 
+				*accumulation_buffer_depth = accum_red_size + accum_green_size +
 					accum_blue_size + accum_alpha_size;
 				return_code = 1;
 			} break;
@@ -6035,7 +6372,7 @@ Returns the depth of the accumulation buffer used by the graphics buffer.
 				ZeroMemory( &pfd, sizeof( PIXELFORMATDESCRIPTOR ) );
 				pfd.nSize = sizeof( pfd );
 				pfd.nVersion = 1;
-				
+
 				DescribePixelFormat(buffer->hDC, buffer->pixel_format, pfd.nSize, &pfd);
 
 				*accumulation_buffer_depth = pfd.cAccumBits;
@@ -6094,7 +6431,7 @@ Returns the buffering mode used by the graphics buffer.
 				else
 				{
 					*buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
-				}				
+				}
 				return_code = 1;
 			} break;
 #endif /* defined (MOTIF) */
@@ -6161,7 +6498,7 @@ Returns the buffering mode used by the graphics buffer.
 				else
 				{
 					display_message(ERROR_MESSAGE,"Graphics_buffer_get_buffering_mode.  "
-						"Invalid Pixel Format Query.");				
+						"Invalid Pixel Format Query.");
 					return_code = 0;
 				}
 			} break;
@@ -6176,7 +6513,7 @@ Returns the buffering mode used by the graphics buffer.
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_buffering_mode.  "
-					"Graphics_bufffer type unknown or not supported.");				
+					"Graphics_bufffer type unknown or not supported.");
 				return_code = 0;
 			} break;
 		}
@@ -6184,7 +6521,7 @@ Returns the buffering mode used by the graphics buffer.
 	else
 	{
 		display_message(ERROR_MESSAGE,"Graphics_buffer_get_buffering_mode.  "
-			"Graphics_bufffer missing.");				
+			"Graphics_bufffer missing.");
 		return_code = 0;
 	}
 	LEAVE;
@@ -6225,7 +6562,7 @@ Returns the stereo mode used by the graphics buffer.
 				else
 				{
 					*stereo_mode = GRAPHICS_BUFFER_MONO;
-				}				
+				}
 				return_code = 1;
 			} break;
 #endif /* defined (MOTIF) */
@@ -6292,7 +6629,7 @@ Returns the stereo mode used by the graphics buffer.
 				else
 				{
 					display_message(ERROR_MESSAGE,"Graphics_buffer_get_buffering_mode.  "
-						"Invalid Pixel Format Query.");				
+						"Invalid Pixel Format Query.");
 					return_code = 0;
 				}
 			} break;
@@ -6308,7 +6645,7 @@ Returns the stereo mode used by the graphics buffer.
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_stereo_mode.  "
-					"Graphics_bufffer type unknown or not supported.");				
+					"Graphics_bufffer type unknown or not supported.");
 				return_code = 0;
 			} break;
 		}
@@ -6316,7 +6653,7 @@ Returns the stereo mode used by the graphics buffer.
 	else
 	{
 		display_message(ERROR_MESSAGE,"Graphics_buffer_get_stereo_mode.  "
-			"Graphics_bufffer missing.");				
+			"Graphics_bufffer missing.");
 		return_code = 0;
 	}
 	LEAVE;
@@ -6379,7 +6716,7 @@ DESCRIPTION :
 			case GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE:
 			{
 				/* Seems to help the OpenGL context get updated to the right place in Vista */
-				SetWindowPos(buffer->hWnd, HWND_TOP, 0, 0, 0, 0, 
+				SetWindowPos(buffer->hWnd, HWND_TOP, 0, 0, 0, 0,
 					SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
 				SwapBuffers(buffer->hDC);
 				return_code = 1;
@@ -6402,7 +6739,7 @@ DESCRIPTION :
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_swap_buffers.  "
-					"Graphics_bufffer type unknown or not supported.");				
+					"Graphics_bufffer type unknown or not supported.");
 				return_code = 0;
 			} break;
 		}
@@ -6410,7 +6747,7 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,"Graphics_buffer_swap_buffers.  "
-			"Graphics_bufffer missing.");				
+			"Graphics_bufffer missing.");
 		return_code = 0;
 	}
 	LEAVE;
@@ -6448,7 +6785,7 @@ made current) to be the GLX destination.
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_make_read_current.  "
-					"Graphics_bufffer type unknown or not supported.");				
+					"Graphics_bufffer type unknown or not supported.");
 				return_code = 0;
 			} break;
 		}
@@ -6456,7 +6793,7 @@ made current) to be the GLX destination.
 	else
 	{
 		display_message(ERROR_MESSAGE,"Graphics_buffer_make_read_current.  "
-			"Graphics_bufffer missing.");				
+			"Graphics_bufffer missing.");
 		return_code = 0;
 	}
 	LEAVE;
@@ -6518,7 +6855,7 @@ Returns the width of buffer represented by <buffer>.
 					else
 					{
 						display_message(ERROR_MESSAGE,"Graphics_buffer_get_width.  "
-							"Failed to get window rectangle");				
+							"Failed to get window rectangle");
 						width = 0;
 					}
 				}
@@ -6545,8 +6882,8 @@ Returns the width of buffer represented by <buffer>.
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_width.  "
-					"Graphics_bufffer type unknown or not supported.");				
-				width = 0;				
+					"Graphics_bufffer type unknown or not supported.");
+				width = 0;
 			} break;
 		}
 	}
@@ -6603,8 +6940,8 @@ Sets the width of buffer represented by <buffer>.
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_set_width.  "
-					"Graphics_bufffer type unknown or not supported.");				
-				return_code = 0;				
+					"Graphics_bufffer type unknown or not supported.");
+				return_code = 0;
 			} break;
 		}
 	}
@@ -6673,7 +7010,7 @@ Returns the height of buffer represented by <buffer>.
 					else
 					{
 						display_message(ERROR_MESSAGE,"Graphics_buffer_get_height.  "
-							"Failed to get window rectangle");				
+							"Failed to get window rectangle");
 						height = 0;
 					}
 				}
@@ -6700,7 +7037,7 @@ Returns the height of buffer represented by <buffer>.
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_height.  "
-					"Graphics_bufffer type unknown or not supported.");				
+					"Graphics_bufffer type unknown or not supported.");
 				height = 0;
 			} break;
 		}
@@ -6758,8 +7095,8 @@ Sets the height of buffer represented by <buffer>.
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_set_height.  "
-					"Graphics_bufffer type unknown or not supported.");				
-				return_code = 0;				
+					"Graphics_bufffer type unknown or not supported.");
+				return_code = 0;
 			} break;
 		}
 	}
@@ -6881,7 +7218,7 @@ Returns the border width of buffer represented by <buffer>.
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_border_width.  "
-					"Graphics_bufffer type unknown or not supported.");				
+					"Graphics_bufffer type unknown or not supported.");
 				border_width = 0;
 			} break;
 		}
@@ -6934,8 +7271,8 @@ Sets the border width of buffer represented by <buffer>.
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_set_border_width.  "
-					"Graphics_bufffer type unknown or not supported.");				
-				return_code = 0;				
+					"Graphics_bufffer type unknown or not supported.");
+				return_code = 0;
 			} break;
 		}
 	}
@@ -7012,7 +7349,7 @@ into unmanaged or invisible widgets.
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_is_visible.  "
-					"Graphics_bufffer type unknown or not supported.");				
+					"Graphics_bufffer type unknown or not supported.");
 				return_code = 0;
 			} break;
 		}
@@ -7087,7 +7424,7 @@ Activates the graphics <buffer>.
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_awaken.  "
-					"Graphics_bufffer type unknown or not supported.");				
+					"Graphics_bufffer type unknown or not supported.");
 				return_code = 0;
 			} break;
 		}
@@ -7536,7 +7873,7 @@ memory.
 			while (p<end)
 			{
 				n=strcspn(p," ");
-				if ((extNameLen==n)&&(strncmp(extName,p,n)==0)) 
+				if ((extNameLen==n)&&(strncmp(extName,p,n)==0))
 				{
 					return_code=1;
 				}
