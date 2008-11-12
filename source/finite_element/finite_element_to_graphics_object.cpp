@@ -1606,13 +1606,14 @@ Notes:
 	return (polyline);
 } /* create_GT_polyline_from_FE_element */
 
-int FE_element_add_line_to_vertex_set(
+int FE_element_add_line_to_vertex_array(
 	FE_element *element, Graphics_vertex_array *array,
 	Computed_field *coordinate_field, Computed_field *data_field,
 	int number_of_data_values, FE_value *data_buffer,
+	Computed_field *texture_coordinate_field,
 	unsigned int number_of_segments, FE_element *top_level_element, FE_value time)
 {
-	FE_value coordinates[3],distance,xi;
+	FE_value coordinates[3],distance,texture_coordinates[3],xi;
 	int graphics_name, return_code;
 	struct CM_element_information cm;
 	unsigned int i, vertex_start, number_of_vertices;
@@ -1620,7 +1621,9 @@ int FE_element_add_line_to_vertex_set(
 	ENTER(FE_element_add_line_to_vertex_buffer_set)
 	if (element && array && (1 == get_FE_element_dimension(element)) &&
 		coordinate_field &&
-		(3 >= Computed_field_get_number_of_components(coordinate_field)))
+		(3 >= Computed_field_get_number_of_components(coordinate_field)) &&
+		(!texture_coordinate_field ||
+	   (3 >= Computed_field_get_number_of_components(texture_coordinate_field))))
 	{
 		return_code = 1;
 		
@@ -1629,6 +1632,13 @@ int FE_element_add_line_to_vertex_set(
 		coordinates[1]=0.0;
 		coordinates[2]=0.0;
 
+		if (texture_coordinate_field)
+		{
+			texture_coordinates[0] = 0.0;
+			texture_coordinates[1] = 0.0;
+			texture_coordinates[2] = 0.0;
+		}
+		
 		/* for selective editing of GT_object primitives, record element ID */
 		get_FE_element_identifier(element, &cm);
 		graphics_name = CM_element_information_to_graphics_name(&cm);
@@ -1649,7 +1659,10 @@ int FE_element_add_line_to_vertex_set(
 				time,top_level_element,coordinates,(FE_value *)NULL)&&
 				((!data_field)||Computed_field_evaluate_in_element(
 				data_field,element,&xi,time,top_level_element,data_buffer,
-				(FE_value *)NULL)))
+				(FE_value *)NULL))&&
+				((!texture_coordinate_field)||Computed_field_evaluate_in_element(
+				texture_coordinate_field,element,&xi,time,top_level_element,
+				texture_coordinates,(FE_value *)NULL)))
 			{
 				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
 					3, coordinates);
@@ -1657,6 +1670,12 @@ int FE_element_add_line_to_vertex_set(
 				{
 					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
 						number_of_data_values, data_buffer);
+				}
+				if (texture_coordinate_field)
+				{
+					array->add_float_attribute(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+						3, texture_coordinates);
 				}
 			}
 		}

@@ -450,25 +450,29 @@ Notes:
 ==============================================================================*/
 
 /***************************************************************************//**
- * Adds vertex values to the supplied set to create a line for
- * the <coordinate_field> for the 1-D finite <element>
- * using <number_of_segments> spaced equally in xi.
- * The optional <data_field> (currently only a scalar) is calculated as data over
- * the polyline, for later colouration by a spectrum.
- * The optional <top_level_element> may be provided as a clue to Computed_fields
- * to say which parent element they should be evaluated on as necessary.
- * If the <line_width> is non zero then it will override the default line width.
- * Notes:
- * - the coordinate field is assumed to be rectangular cartesian.
+ * Adds vertex values to the supplied vertex array to create a line representing
+ * the 1-D finite element.
  * 
+ * @param element The element that primitives will be generated for.
+ * @param vertex_array The array which this primitive will be added to.
+ * @param coordinate_field The required position coordinate field.  It is assumed
+ * that this field is rectangular cartesian (already wrapped if the original coordinates were not).
+ * @param data_field Optional data field, if not wanted set to NULL.
  * @param number_of_data_values The number of components in the data_field and
  * the allocated size of the data_buffer.
  * @param data_buffer A buffer large enough to evaluate the data_field into.
+ * @param texture_coordinate_field Optional field usually used for positioning textures.
+ * @param number_of_segments The supplied element is broken into this many linear
+ * segments in the created primitive.
+ * @param top_level_element Optional element may be provided as a clue to Computed_fields
+ * to say which parent element they should be evaluated on as necessary.
+ * @param time The time used for evaluating the various fields.
  */
-int FE_element_add_line_to_vertex_set(
-	struct FE_element *element, struct Graphics_vertex_array *set,
+int FE_element_add_line_to_vertex_array(
+	struct FE_element *element, struct Graphics_vertex_array *vertex_array,
 	struct Computed_field *coordinate_field, struct Computed_field *data_field,
 	int number_of_data_values, FE_value *data_buffer,
+	struct Computed_field *texture_coordinate_field,
 	unsigned int number_of_segments, struct FE_element *top_level_element, FE_value time);
 
 struct GT_surface *create_cylinder_from_FE_element(struct FE_element *element,

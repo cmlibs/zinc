@@ -1008,7 +1008,7 @@ appropriately.
 						}
 					}
 				}
-				GLEXTENSIONFLAG(GL_ARB_texture_float) = return_code;
+				GLEXTENSIONFLAG(GL_ARB_draw_buffers) = return_code;
 			}
 		}
 #endif /* defined GL_VERSION_2_0 */

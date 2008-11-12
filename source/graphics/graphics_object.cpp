@@ -3813,6 +3813,7 @@ Allocates memory and assigns fields for a graphics object.
 				object->colour_vertex_buffer_object = 0;
 				object->colour_values_per_vertex = 0;
 				object->normal_vertex_buffer_object = 0;
+				object->texture_coordinate0_vertex_buffer_object = 0;
 				object->vertex_array_object = 0;
 				object->multipass_vertex_buffer_object = 0;
 #endif /* defined (OPENGL_API) */
@@ -3952,6 +3953,10 @@ and sets <*object> to NULL.
 			if (object->normal_vertex_buffer_object)
 			{
 				glDeleteBuffers(1, &object->normal_vertex_buffer_object);
+			}
+			if (object->texture_coordinate0_vertex_buffer_object)
+			{
+				glDeleteBuffers(1, &object->texture_coordinate0_vertex_buffer_object);
 			}
 			if (object->multipass_vertex_buffer_object)
 			{

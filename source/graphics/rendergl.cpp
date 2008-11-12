@@ -2316,7 +2316,8 @@ static int Graphics_object_create_colour_buffer_from_data(GT_object *object,
 
 static int Graphics_object_enable_opengl_client_vertex_arrays(GT_object *object,
 	Render_graphics_opengl *renderer,
-	float **vertex_buffer, float **colour_buffer, float **normal_buffer)
+	float **vertex_buffer, float **colour_buffer, float **normal_buffer,
+	float **texture_coordinate0_buffer)
 {
 	int return_code;
 	
@@ -2369,6 +2370,21 @@ static int Graphics_object_enable_opengl_client_vertex_arrays(GT_object *object,
 					glNormalPointer(GL_FLOAT, /*Packed vertices*/0,
 						/*Client vertex array*/*normal_buffer);					
 				}
+
+				*texture_coordinate0_buffer = NULL;
+				unsigned int texture_coordinate0_values_per_vertex,
+					texture_coordinate0_vertex_count;
+				if (object->vertex_array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+					texture_coordinate0_buffer, &texture_coordinate0_values_per_vertex,
+					&texture_coordinate0_vertex_count)
+					&& (texture_coordinate0_vertex_count == position_vertex_count))
+				{
+					glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+					glTexCoordPointer(texture_coordinate0_values_per_vertex,
+						GL_FLOAT, /*Packed vertices*/0,
+						/*Client vertex array*/*texture_coordinate0_buffer);					
+				}
 			} break;
 		}
 	}
@@ -2382,7 +2398,8 @@ static int Graphics_object_enable_opengl_client_vertex_arrays(GT_object *object,
 
 static int Graphics_object_disable_opengl_client_vertex_arrays(GT_object *object,
 	Render_graphics_opengl *renderer,
-	float *vertex_buffer, float *colour_buffer, float *normal_buffer)
+	float *vertex_buffer, float *colour_buffer, float *normal_buffer,
+	float *texture_coordinate0_buffer)
 {
 	int return_code;
 	
@@ -2405,6 +2422,10 @@ static int Graphics_object_disable_opengl_client_vertex_arrays(GT_object *object
 				if (normal_buffer)
 				{
 					glDisableClientState(GL_NORMAL_ARRAY);
+				}
+				if (texture_coordinate0_buffer)
+				{
+					glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 				}
 			} break;
 		}
@@ -2749,25 +2770,9 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 					
 					if (object->secondary_material)
 					{
-#if defined (GL_VERSION_2_0) && defined (GL_EXT_framebuffer_object)
-						if (Graphics_library_check_extension(GL_ARB_draw_buffers)
-							/* Need to check extension to load multitexture functions */
-							&& Graphics_library_check_extension(GL_VERSION_1_3)
-							&& Graphics_library_check_extension(GL_EXT_framebuffer_object))
-						{
-							return_code = Graphics_object_generate_vertex_positions_from_secondary_material(
-								object, renderer, position_vertex_buffer, position_values_per_vertex,
-								position_vertex_count);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"Graphics_object_compile_opengl_vertex_buffer_object.  "
-								"Multipass rendering not available with this OpenGL driver.");
-						}
-#else /* defined (GL_VERSION_2_0) && defined (GL_EXT_framebuffer_object) */
-						display_message(ERROR_MESSAGE,"Graphics_object_compile_opengl_vertex_buffer_object.  "
-							"Multipass rendering not compiled in this version.");
-#endif /* defined (GL_VERSION_2_0) && defined (GL_EXT_framebuffer_object) */
+						/* Defer to lower in this function as we may want to use the contents of 
+						 * some of the other buffers in our first pass calculation.
+						 */
 					}
 					else
 					{
@@ -2843,6 +2848,56 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 						object->normal_vertex_buffer_object = 0;
 					}
 				}
+
+				float *texture_coordinate0_buffer = NULL;
+				unsigned int texture_coordinate0_values_per_vertex,
+					texture_coordinate0_vertex_count;
+				if (object->vertex_array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+					&texture_coordinate0_buffer, &texture_coordinate0_values_per_vertex,
+					&texture_coordinate0_vertex_count)
+					&& (texture_coordinate0_vertex_count == position_vertex_count))
+				{
+					if (!object->texture_coordinate0_vertex_buffer_object)
+					{
+						glGenBuffers(1, &object->texture_coordinate0_vertex_buffer_object);
+					}
+					glBindBuffer(GL_ARRAY_BUFFER, object->texture_coordinate0_vertex_buffer_object);
+					glBufferData(GL_ARRAY_BUFFER, sizeof(float)*texture_coordinate0_values_per_vertex*texture_coordinate0_vertex_count,
+						texture_coordinate0_buffer, GL_STATIC_DRAW);
+					object->texture_coordinate0_values_per_vertex = texture_coordinate0_values_per_vertex;
+				}
+				else
+				{
+					if (object->texture_coordinate0_vertex_buffer_object)
+					{
+						glDeleteBuffers(1, &object->texture_coordinate0_vertex_buffer_object);
+						object->texture_coordinate0_vertex_buffer_object = 0;
+					}
+				}
+
+				if (position_vertex_buffer && object->secondary_material)
+				{
+#if defined (GL_VERSION_2_0) && defined (GL_EXT_framebuffer_object)
+					if (Graphics_library_check_extension(GL_ARB_draw_buffers)
+						/* Need to check extension to load multitexture functions */
+						&& Graphics_library_check_extension(GL_VERSION_1_3)
+						&& Graphics_library_check_extension(GL_EXT_framebuffer_object))
+					{
+						return_code = Graphics_object_generate_vertex_positions_from_secondary_material(
+							object, renderer, position_vertex_buffer, position_values_per_vertex,
+							position_vertex_count);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Graphics_object_compile_opengl_vertex_buffer_object.  "
+							"Multipass rendering not available with this OpenGL driver.");
+					}
+#else /* defined (GL_VERSION_2_0) && defined (GL_EXT_framebuffer_object) */
+					display_message(ERROR_MESSAGE,"Graphics_object_compile_opengl_vertex_buffer_object.  "
+						"Multipass rendering not compiled in this version.");
+#endif /* defined (GL_VERSION_2_0) && defined (GL_EXT_framebuffer_object) */
+				}
 			}
 		}
 	}
@@ -2899,6 +2954,16 @@ static int Graphics_object_enable_opengl_vertex_buffer_object(GT_object *object,
 						GL_FLOAT, /*Packed vertices*/0,
 						/*No offset in vertex array*/(void *)0);
 				}
+				if (object->texture_coordinate0_vertex_buffer_object)
+				{
+					glBindBuffer(GL_ARRAY_BUFFER,
+						object->texture_coordinate0_vertex_buffer_object);
+					glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+					glTexCoordPointer(
+						object->texture_coordinate0_values_per_vertex,
+						GL_FLOAT, /*Packed vertices*/0,
+						/*No offset in vertex array*/(void *)0);
+				}
 			} break;
 		}
 	}
@@ -2936,6 +3001,10 @@ static int Graphics_object_disable_opengl_vertex_buffer_object(GT_object *object
 				if (object->normal_vertex_buffer_object)
 				{
 					glDisableClientState(GL_NORMAL_ARRAY);
+				}
+				if (object->texture_coordinate0_vertex_buffer_object)
+				{
+					glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 				}
 				/* Reset to normal client vertex arrays */
 				glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -3546,15 +3615,18 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 								object->vertex_array->get_number_of_vertices(
 								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
 
-							float *position_buffer, *data_buffer, *normal_buffer;
+							float *position_buffer, *data_buffer, *normal_buffer,
+								*texture_coordinate0_buffer;
 							struct Spectrum_render_data *render_data;
 							unsigned int position_values_per_vertex, position_vertex_count,
 							data_values_per_vertex, data_vertex_count, normal_values_per_vertex,
-							normal_vertex_count;
+							normal_vertex_count, texture_coordinate0_values_per_vertex,
+							texture_coordinate0_vertex_count;
 
 							position_buffer = (float *)NULL;
 							data_buffer = (float *)NULL;
 							normal_buffer = (float *)NULL;
+							texture_coordinate0_buffer = (float *)NULL;
 
 							switch (rendering_type)
 							{
@@ -3576,6 +3648,11 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									object->vertex_array->get_float_vertex_buffer(
 										GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
 										&normal_buffer, &normal_values_per_vertex, &normal_vertex_count);
+									object->vertex_array->get_float_vertex_buffer(
+										GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+										&texture_coordinate0_buffer, &texture_coordinate0_values_per_vertex,
+										&texture_coordinate0_vertex_count);
+
 									if (object->secondary_material)
 									{
 										display_message(WARNING_MESSAGE,"render_GT_object_opengl_immediate.  "
@@ -3586,7 +3663,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 								{
 								   Graphics_object_enable_opengl_client_vertex_arrays(
 								   	object, renderer,
-									   &position_buffer, &data_buffer, &normal_buffer);
+									   &position_buffer, &data_buffer, &normal_buffer,
+									   &texture_coordinate0_buffer);
 								} break;
 								case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
 								{
@@ -3615,7 +3693,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										glLoadName((GLuint)object_name);
 									}
 									unsigned int i, index_start, index_count;
-									float *position_vertex, *data_vertex, *normal_vertex;
+									float *position_vertex, *data_vertex, *normal_vertex,
+										*texture_coordinate0_vertex;
 									
 									object->vertex_array->get_unsigned_integer_attribute(
 										GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
@@ -3640,6 +3719,11 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 												normal_vertex = normal_buffer +
 													normal_values_per_vertex * index_start;
 											}
+											if (texture_coordinate0_buffer)
+											{
+												texture_coordinate0_vertex = texture_coordinate0_buffer +
+													texture_coordinate0_values_per_vertex * index_start;
+											}
 		
 											glBegin(mode);
 											for (i=index_count;i>0;i--)
@@ -3653,6 +3737,11 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 												{
 													glNormal3fv(normal_vertex);
 													normal_vertex += normal_values_per_vertex;
+												}
+												if (texture_coordinate0_buffer)
+												{
+													glTexCoord3fv(texture_coordinate0_vertex);
+													texture_coordinate0_vertex += texture_coordinate0_values_per_vertex;
 												}
 												glVertex3fv(position_vertex);
 												position_vertex += position_values_per_vertex;
@@ -3680,7 +3769,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 								{
 								   Graphics_object_disable_opengl_client_vertex_arrays(
 								   	object, renderer,
-									   position_buffer, data_buffer, normal_buffer);
+									   position_buffer, data_buffer, normal_buffer,
+									   texture_coordinate0_buffer);
 								} break;
 								case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
 								{

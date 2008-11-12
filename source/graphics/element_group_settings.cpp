@@ -5463,13 +5463,13 @@ Converts a finite element into a graphics object with the supplied settings.
 						if (draw_element)
 						{
 							return_code = 
-								FE_element_add_line_to_vertex_set(
-								element,
+								FE_element_add_line_to_vertex_array(element,
 								GT_object_get_vertex_set(settings->graphics_object),
 								settings_to_object_data->rc_coordinate_field,
 								settings->data_field,
 								settings_to_object_data->number_of_data_values,
 								settings_to_object_data->data_copy_buffer,
+								settings->texture_coordinate_field,
 								number_in_xi[0], top_level_element,
 								settings_to_object_data->time);
 						}

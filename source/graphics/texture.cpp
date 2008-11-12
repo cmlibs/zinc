@@ -7269,7 +7269,9 @@ unsigned int Texture_create_float_texture(int width, int height, char* buffer,
 		else
 		{
 			format = GL_RGB16;
-		}		
+		}
+		display_message(WARNING_MESSAGE, "Texture_create_float_texture.  "
+			"Float texture formats unavailable with this OpenGL implementation, using integer texture as a fallback.");
 	}
    if (format)
    {

@@ -417,17 +417,17 @@ Graphical object data structure.
 	union GT_primitive_list *primitive_lists;
 #if defined (OPENGL_API)
 	GLuint display_list;
+
 	GLuint vertex_array_object;
+
 	GLuint position_vertex_buffer_object;
-	/* We need to know the values_per_vertex when the buffer object is
-	 * bound to the vertex pointer for rendering. */
 	GLuint position_values_per_vertex;
 	GLuint colour_vertex_buffer_object;
-	/* We need to know the values_per_vertex when the buffer object is
-	 * bound to the color pointer for rendering. */
 	GLuint colour_values_per_vertex;
 	GLuint normal_vertex_buffer_object;
 	/* The normal pointer doesn't have a size option, must be 3. */
+	GLuint texture_coordinate0_vertex_buffer_object;
+	GLuint texture_coordinate0_values_per_vertex;
 	
 	/* For multipass rendering we use some more vertex_buffers */
 	GLuint multipass_vertex_buffer_object;
