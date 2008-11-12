@@ -2756,7 +2756,7 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 		{
 			case g_POLYLINE_VERTEX_BUFFERS:
 			{
-				float *position_vertex_buffer;
+				float *position_vertex_buffer = NULL;
 				unsigned int position_values_per_vertex, position_vertex_count;
 				if (object->vertex_array->get_float_vertex_buffer(
 					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
