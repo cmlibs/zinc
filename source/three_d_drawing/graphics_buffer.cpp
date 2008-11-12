@@ -3599,8 +3599,8 @@ a Graphics_buffer.
 } /* Graphics_buffer_X3d_get_widget */
 #endif /* defined (MOTIF) */
 
+#if defined (ENABLE_GTK_PBUFFER_RENDERING)
 #if defined (GTK_USER_INTERFACE)
-#if defined (NEW_CODE)
 static int Graphics_buffer_gtk_reallocate_offscreen_size(
 	struct Graphics_buffer *buffer)
 /*******************************************************************************
@@ -3834,6 +3834,7 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 	return (return_code);
 } /* Graphics_buffer_gtk_reallocate_pbuffer_size */
 #endif /* defined (GTK_USER_INTERFACE) */
+#endif /* defined (ENABLE_GTK_PBUFFER_RENDERING) */
 
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
@@ -4004,6 +4005,7 @@ DESCRIPTION :
 					buffer = (struct Graphics_buffer *)NULL;
 				}
 			}
+#if defined (ENABLE_GTK_PBUFFER_RENDERING)
 			else if ((GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_COPY == buffering_mode) ||
 				(GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND == buffering_mode))
 			{
@@ -4038,6 +4040,7 @@ DESCRIPTION :
 				}
 
 			}
+#endif /* defined (ENABLE_GTK_PBUFFER_RENDERING) */
 			else
 			{
 				display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkglarea.  "
@@ -4065,7 +4068,6 @@ DESCRIPTION :
 } /* create_Graphics_buffer_gtkglarea */
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
-#endif // defined (NEW_CODE)
 
 #if defined (GTK_USER_INTERFACE)
 #if ! defined (GTK_USE_GTKGLAREA)
@@ -4234,7 +4236,7 @@ DESCRIPTION :
 				buffer = (struct Graphics_buffer *)NULL;
 			}
 		}
-#if defined (NEW_CODE)
+#if defined (ENABLE_GTK_PBUFFER_RENDERING)
 		else if ((GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_COPY == buffering_mode) ||
 			(GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND == buffering_mode))
 		{
@@ -4269,7 +4271,7 @@ DESCRIPTION :
 			}
 
 		}
-#endif // defined (NEW_CODE)
+#endif /* defined (ENABLE_GTK_PBUFFER_RENDERING) */
 		else
 		{
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkglarea.  "
