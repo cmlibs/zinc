@@ -1086,7 +1086,7 @@ appropriately.
 			}
 		}
 #endif /* GL_ARB_texture_compression */
-#if defined GL_VERSION_3_0
+#if defined GL_VERSION_3_0 || defined GL_ARB_texture_float
 		else if (!strcmp(extension_name, "GL_ARB_texture_float"))
 		{
 			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_ARB_texture_float))
