@@ -741,6 +741,8 @@ Compiles the specified <font> so it can be used by the graphics.  The
 #endif /* defined (GTK_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 				case GRAPHICS_BUFFER_WIN32_TYPE:
+			        case GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE:
+			        case GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE:
 				{
 					if (!strcmp(font->font_string,"default"))
 					{
