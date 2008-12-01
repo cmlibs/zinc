@@ -250,7 +250,7 @@ Examples:
 		/* write the field name */
 		if (GET_NAME(FE_field)(field,&name))
 		{
-			fprintf(output_file,name);
+			fprintf(output_file, "%s", name);
 			DEALLOCATE(name);
 		}
 		else
@@ -282,7 +282,7 @@ Examples:
 				{
 					if (GET_NAME(FE_field)(indexer_field,&name))
 					{
-						fprintf(output_file,name);
+						fprintf(output_file, "%s", name);
 						DEALLOCATE(name);
 					}
 					else
@@ -758,7 +758,7 @@ be rewritten for 4-D and above elements.
 			{
 				if (basis_type_string = FE_basis_type_string(basis_type))
 				{
-					fprintf(output_file, basis_type_string);
+					fprintf(output_file, "%s", basis_type_string);
 					switch (basis_type)
 					{
 						case CUBIC_HERMITE:

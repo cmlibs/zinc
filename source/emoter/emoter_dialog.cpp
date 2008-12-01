@@ -3508,7 +3508,7 @@ DESCRIPTION :
 			/* Write header comment */
 			fprintf(file, "#Emoter emotion file '%s' written ", slider->name);
 			time(&current_time);
-			fprintf(file, ctime(&current_time));
+			fprintf(file, "%s", ctime(&current_time));
 
 			number_of_frames = (int)(slider->emoter_markers
 				[slider->number_of_emoter_markers-1]->value

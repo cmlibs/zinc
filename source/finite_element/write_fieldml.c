@@ -1370,7 +1370,7 @@ Writes out the <basis> to <output_file>.
 			{
 				if (basis_type_string = FE_basis_type_string(basis_type))
 				{
-					fprintf(output_file, basis_type_string);
+					fprintf(output_file, "%s", basis_type_string);
 					switch (basis_type)
 					{
 						case CUBIC_HERMITE:

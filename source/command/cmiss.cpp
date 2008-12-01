@@ -23896,7 +23896,7 @@ Display a cmgui information message.
 	}
 	else
 	{
-		printf(message);
+		printf("%s", message);
 	}
 	LEAVE;
 

@@ -3079,7 +3079,7 @@ Writes the <message> to the <command_window>.
 		if (command_window->out_file &&
 			(command_window->out_file_mode & OUTFILE_OUTPUT))
 		{
-			fprintf(command_window->out_file,message);
+			fprintf(command_window->out_file, "%s", message);
 			return_code=1;
 		}
 	}
