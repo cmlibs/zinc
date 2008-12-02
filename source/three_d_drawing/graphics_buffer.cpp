@@ -5256,8 +5256,22 @@ mode with zinc.  Requiring development.
 	  } break;
 	  case WM_MOUSEMOVE:
 	  {
+#if defined (DEBUG)
+		  printf ("Graphics_buffer_handle_windows_event WM_MOUSEMOVE\n");
+#endif /* defined (DEBUG) */
 		  Graphics_buffer_win32_button_callback(&message_identifier,
 			  buffer, first_message, second_message);
+	          SetCursor(LoadCursor(NULL, IDC_ARROW)); 
+		  return_code=1;
+	  } break;
+	  case WM_SETCURSOR:
+	  {
+	    /* This message does not seem to propagate through to zinc so 
+	     setting cursor on WM_MOUSEMOVE above instead*/
+#if defined (DEBUG)
+		  printf ("Graphics_buffer_handle_windows_event WM_SETCURSOR\n");
+#endif /* defined (DEBUG) */
+	          SetCursor(LoadCursor(NULL, IDC_ARROW)); 
 		  return_code=1;
 	  } break;
 	  default:
