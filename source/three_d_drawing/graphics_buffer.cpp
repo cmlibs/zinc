@@ -322,6 +322,9 @@ DESCRIPTION :
 	Graphics_buffer *hidden_graphics_buffer;
 	/* So we know how to composite we need to keep the buffering mode */
 	enum Graphics_buffer_buffering_mode buffering_mode;
+        /* Some calls to the scene viewer mean that we will need to rerender
+           the offscreen window (such as resizing) so this flag tells us this. */
+        int offscreen_render_required;
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (CARBON_USER_INTERFACE)
 	CGrafPtr port;
@@ -471,6 +474,7 @@ contained in the this module only.
 		 buffer->device_independent_bitmap_pixels = NULL;
 		 buffer->hidden_accelerated_window = (HWND)NULL;
 		 buffer->hidden_graphics_buffer = (Graphics_buffer *)NULL;
+		 buffer->offscreen_render_required = 0;
 #endif // defined (WIN32_USER_INTERFACE)
 
 #if defined (CARBON_USER_INTERFACE)
@@ -3807,14 +3811,7 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 			{
 				buffer->offscreen_width = required_width;
 				buffer->offscreen_height = required_height;
-
-				/* This tells the scene_viewer that it needs to repaint */
-				CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
-					buffer->expose_callback_list, buffer, NULL);
-				/* The expose data tells the clients that we need to be up to date now */
-				Graphics_buffer_expose_data expose_data;
-				CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
-					buffer->expose_callback_list, buffer, &expose_data);
+                                buffer->offscreen_render_required = 1;
 			}
 		}
 		else
@@ -4544,14 +4541,7 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 			{
 				buffer->offscreen_width = required_width;
 				buffer->offscreen_height = required_height;
-
-				/* This tells the scene_viewer that it needs to repaint */
-				CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
-					buffer->expose_callback_list, buffer, NULL);
-				/* The expose data tells the clients that we need to be up to date now */
-				Graphics_buffer_expose_data expose_data;
-				CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
-					buffer->expose_callback_list, buffer, &expose_data);
+                                buffer->offscreen_render_required = 1;
 			}
 		}
 		else
@@ -5017,14 +5007,15 @@ mode with zinc.  Requiring development.
 
 		  Graphics_buffer_win32_reallocate_offscreen_size(buffer, hdc);
 
-		  wglMakeCurrent( buffer->hDC, buffer->hRC );
+                  if (buffer->offscreen_render_required)
+		  {
+		    //Graphics_buffer_expose_data expose_data;
+		          CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+		  	          buffer->expose_callback_list, buffer, NULL);
+			  buffer->offscreen_render_required = 0;
+		  }
 
-#if defined (OLD_CODE)
-		  Graphics_buffer_expose_data expose_data;
-		  /* The expose data tells the clients that we need to be up to date now */
-		  CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
-		  	  buffer->expose_callback_list, buffer, &expose_data);
-#endif // defined (OLD_CODE)
+		  wglMakeCurrent( buffer->hDC, buffer->hRC );
 
 		  {
  			  int x = drc->left;
@@ -5299,6 +5290,10 @@ will be requested with handle_windows_event.
 	ENTER(Graphics_buffer_win32_set_window_size);
 	if (buffer)
 	{
+	        if ((buffer->width != width) || (buffer->height != height))
+		{
+		   buffer->offscreen_render_required = 1;
+                }
 		buffer->width = width;
 		buffer->height = height;
 		buffer->x = x;
