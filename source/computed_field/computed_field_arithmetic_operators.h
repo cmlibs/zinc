@@ -58,6 +58,7 @@ Implements a number of basic component wise operators on computed fields.
 #define Computed_field_create_log Cmiss_field_create_log
 #define Computed_field_create_power Cmiss_field_create_power
 #define Computed_field_create_sqrt Cmiss_field_create_sqrt
+#define Computed_field_create_abs Cmiss_field_create_abs
 
 int Computed_field_register_types_arithmetic_operators(
 	struct Computed_field_package *computed_field_package);
@@ -185,6 +186,16 @@ LAST MODIFIED : 15 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_EXP with the supplied
+field, <source_field_one>.  Sets the number of components equal to the source_fields.
+==============================================================================*/
+
+struct Computed_field *Computed_field_create_abs(
+	struct Computed_field *source_field);
+/*******************************************************************************
+LAST MODIFIED : 1 December 2008
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_ABS with the supplied
 field, <source_field_one>.  Sets the number of components equal to the source_fields.
 ==============================================================================*/
 #endif /* !defined (COMPUTED_FIELD_ARITHMETIC_OPERATORS_H) */

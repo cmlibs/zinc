@@ -5723,11 +5723,364 @@ already) and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_exp */
 
+namespace {
+
+char computed_field_abs_type_string[] = "abs";
+
+class Computed_field_abs : public Computed_field_core
+{
+public:
+	Computed_field_abs(Computed_field *field) : Computed_field_core(field)
+	{
+	};
+
+private:
+	Computed_field_core *copy(Computed_field* new_parent)
+	{
+		return new Computed_field_abs(new_parent);
+	}
+
+	char *get_type_string()
+	{
+		return(computed_field_abs_type_string);
+	}
+
+	int compare(Computed_field_core* other_field)
+	{
+		if (dynamic_cast<Computed_field_abs*>(other_field))
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	int evaluate_cache_at_location(Field_location* location);
+
+	int list();
+
+	char* get_command_string();
+};
+
+int Computed_field_abs::evaluate_cache_at_location(
+    Field_location* location)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Evaluate the fields cache at the element.
+==============================================================================*/
+{
+	FE_value *derivative;
+	int i, j, number_of_xi, return_code;
+
+	ENTER(Computed_field_abs::evaluate_cache_at_location);
+	if (field && location && (field->number_of_source_fields == 1) && 
+		(field->number_of_components ==
+      field->source_fields[0]->number_of_components))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		{
+			/* 2. Calculate the field */
+			for (i = 0 ; i < field->number_of_components ; i++)
+			{
+				field->values[i] =
+					(FE_value)fabs((double)(field->source_fields[0]->values[i]));
+			}
+			if (field->source_fields[0]->derivatives_valid
+				&& (0 < (number_of_xi = location->get_number_of_derivatives())))
+			{
+				derivative = field->derivatives;
+				for (i = 0 ; i < field->number_of_components ; i++)
+				{
+					/* d(abs u)/dx = du/dx u>0
+					 *               -du/dx u<0
+					 *               and lets just put 0 at u=0 */
+					if (field->source_fields[0]->values[i] > 0)
+					{
+						for (j = 0 ; j < number_of_xi ; j++)
+						{
+							*derivative = field->source_fields[0]->derivatives[i * number_of_xi + j];
+							derivative++;
+						}
+					}
+					else if (field->source_fields[0]->values[i] < 0)
+					{
+						for (j = 0 ; j < number_of_xi ; j++)
+						{
+							*derivative = -field->source_fields[0]->derivatives[i * number_of_xi + j];
+							derivative++;
+						}
+					}
+					else
+					{
+						for (j = 0 ; j < number_of_xi ; j++)
+						{
+							*derivative = 0.0;
+							derivative++;
+						}
+					}
+				}
+				field->derivatives_valid = 1;
+			}
+			else
+			{
+				field->derivatives_valid = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_abs::evaluate_cache_at_location.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_abs::evaluate_cache_at_location */
+
+
+int Computed_field_abs::list()
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(List_Computed_field_abs);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,
+			"    source field : %s\n",field->source_fields[0]->name);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_abs.  Invalid field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_abs */
+
+char *Computed_field_abs::get_command_string()
+/*******************************************************************************
+LAST MODIFIED : 24 August 2006
+
+DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
+==============================================================================*/
+{
+	char *command_string, *field_name;
+	int error;
+
+	ENTER(Computed_field_abs::get_command_string);
+	command_string = (char *)NULL;
+	if (field)
+	{
+		error = 0;
+		append_string(&command_string,
+			computed_field_abs_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_abs::get_command_string.  Invalid field");
+	}
+	LEAVE;
+
+	return (command_string);
+} /* Computed_field_abs::get_command_string */
+
+} //namespace
+
+Computed_field *Computed_field_create_abs(
+	struct Computed_field *source_field)
+/*******************************************************************************
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_EXP with the supplied
+field, <source_field_one>.  Sets the number of components equal to the source_fields.
+==============================================================================*/
+{
+	int number_of_source_fields;
+	Computed_field *field, **source_fields;
+
+	ENTER(Computed_field_create_abs);
+	if ( source_field)
+	{
+		/* 1. make dynamic allocations for any new type-specific data */
+		number_of_source_fields=1;
+		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
+		{
+			/* 2. create new field */
+			field = CREATE(Computed_field)("");
+			/* 3. establish the new type */
+			field->number_of_components = source_field->number_of_components;
+			source_fields[0]=ACCESS(Computed_field)(source_field);
+			field->source_fields=source_fields;
+			field->number_of_source_fields=number_of_source_fields;			
+			field->core = new Computed_field_abs(field);
+			ACCESS(Computed_field)(field);
+		}
+		else
+		{
+			DEALLOCATE(source_fields);
+			field = (Computed_field *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_create_abs.  Invalid argument(s)");
+		field = (Computed_field *)NULL;
+	}
+	LEAVE;
+
+	return (field);
+} /* Computed_field_create_abs */
+
+int Computed_field_get_type_abs(struct Computed_field *field,
+	struct Computed_field **source_field)
+/*******************************************************************************
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_EXP, the 
+<source_field> used by it are returned.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_get_type_abs);
+	if (field&&(dynamic_cast<Computed_field_abs*>(field->core)))
+	{
+		*source_field = field->source_fields[0];
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_abs.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_abs */
+
+int define_Computed_field_type_abs(struct Parse_state *state,
+	void *field_modify_void,void *computed_field_arithmetic_operators_package_void)
+/*******************************************************************************
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_EXP (if it is not 
+already) and allows its contents to be modified.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *field,**source_fields;
+	Computed_field_modify_data *field_modify;
+	struct Option_table *option_table;
+	struct Set_Computed_field_array_data set_source_field_array_data;
+	struct Set_Computed_field_conditional_data set_source_field_data;
+
+	ENTER(define_Computed_field_type_abs);
+	USE_PARAMETER(computed_field_arithmetic_operators_package_void);
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
+			(field=field_modify->field))
+	{
+		return_code=1;
+		/* get valid parameters for projection field */
+		source_fields = (struct Computed_field **)NULL;
+		if (ALLOCATE(source_fields, struct Computed_field *, 1))
+		{
+			source_fields[0] = (struct Computed_field *)NULL;
+			if (computed_field_abs_type_string ==
+				Computed_field_get_type_string(field))
+			{
+				return_code=Computed_field_get_type_abs(field, 
+					source_fields);
+			}
+			if (return_code)
+			{
+				/* must access objects for set functions */
+				if (source_fields[0])
+				{
+					ACCESS(Computed_field)(source_fields[0]);
+				}
+
+				option_table = CREATE(Option_table)();
+				/* fields */
+				set_source_field_data.computed_field_manager=
+					Cmiss_region_get_Computed_field_manager(field_modify->region);
+				set_source_field_data.conditional_function=
+					Computed_field_has_numerical_components;
+				set_source_field_data.conditional_function_user_data=(void *)NULL;
+				set_source_field_array_data.number_of_fields=1;
+				set_source_field_array_data.conditional_data= &set_source_field_data;
+				Option_table_add_entry(option_table,"field",source_fields,
+					&set_source_field_array_data,set_Computed_field_array);
+				return_code=Option_table_multi_parse(option_table,state);
+				/* no errors,not asking for help */
+				if (return_code)
+				{
+					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_abs(
+						source_fields[0]));
+				}
+				if (!return_code)
+				{
+					if ((!state->current_token)||
+						(strcmp(PARSER_HELP_STRING,state->current_token)&&
+							strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+					{
+						/* error */
+						display_message(ERROR_MESSAGE,
+							"define_Computed_field_type_abs.  Failed");
+					}
+				}
+				if (source_fields[0])
+				{
+					DEACCESS(Computed_field)(&source_fields[0]);
+				}
+				DESTROY(Option_table)(&option_table);
+			}
+			DEALLOCATE(source_fields);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"define_Computed_field_type_abs.  Not enough memory");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_abs.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_abs */
+
 int Computed_field_register_types_arithmetic_operators(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 15 May 2008
-
 DESCRIPTION :
 ==============================================================================*/
 {
@@ -5790,6 +6143,10 @@ DESCRIPTION :
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_exp_type_string, 
 			define_Computed_field_type_exp,
+			computed_field_arithmetic_operators_package);
+		return_code = Computed_field_package_add_type(computed_field_package,
+			computed_field_abs_type_string, 
+			define_Computed_field_type_abs,
 			computed_field_arithmetic_operators_package);
 	}
 	else
