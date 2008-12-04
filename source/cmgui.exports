@@ -121,10 +121,12 @@ Cmiss_field_create_sum_components
 Cmiss_field_create_log
 Cmiss_field_create_sqrt
 Cmiss_field_create_exp
+Cmiss_field_create_abs
 
 /* api/cmiss_field_composite.h */
 Cmiss_field_create_constant
 Cmiss_field_create_identity
+Cmiss_field_create_component
 
 /* api/cmiss_field_conditional.h */
 Cmiss_field_create_if
@@ -160,6 +162,15 @@ Cmiss_field_discrete_gaussian_image_filter_cast
 /* api/cmiss_field_logical_operators.h */
 Cmiss_field_create_less_than
 Cmiss_field_create_greater_than
+
+/* api/cmiss_field_trigonometry.h */
+Cmiss_field_create_sin
+Cmiss_field_create_cos
+Cmiss_field_create_tan
+Cmiss_field_create_asin
+Cmiss_field_create_acos
+Cmiss_field_create_atan
+Cmiss_field_create_atan2
 
 Cmiss_field_set_type_canny_edge_detection_image_filter
 Cmiss_field_get_type_canny_edge_detection_image_filter
