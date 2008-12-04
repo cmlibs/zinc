@@ -159,7 +159,7 @@ DESCRIPTION :
 Evaluate the fields cache at the location
 ==============================================================================*/
 {
-	int i, return_code;
+	int i, j, return_code;
 
 	ENTER(Computed_field_function::evaluate_cache_at_location);
 	if (field && location)
@@ -169,13 +169,25 @@ Evaluate the fields cache at the location
 			Computed_field_evaluate_cache_at_location(field->source_fields[0],
 			location))
 		{
+			int number_of_derivatives;
+			if (location->get_number_of_derivatives() &&
+				field->source_fields[0]->derivatives_valid)
+			{
+				number_of_derivatives = location->get_number_of_derivatives();
+			}
+			else
+			{
+				number_of_derivatives = 0;
+			}
+
 			if ((field->source_fields[0]->number_of_components ==
 				field->source_fields[2]->number_of_components))
 			{
 				Field_coordinate_location coordinate_location(
 					field->source_fields[2],
 					field->source_fields[0]->number_of_components,
-					field->source_fields[0]->values, location->get_time());
+					field->source_fields[0]->values, location->get_time(),
+					number_of_derivatives, field->source_fields[0]->derivatives);
 				if (return_code=Computed_field_evaluate_cache_at_location(
 						 field->source_fields[1], &coordinate_location))
 				{
@@ -183,6 +195,19 @@ Evaluate the fields cache at the location
 					for (i=0;i<field->number_of_components;i++)
 					{
 						field->values[i]=field->source_fields[1]->values[i];
+					}
+					if (number_of_derivatives &&
+						field->source_fields[1]->derivatives_valid)
+					{
+						for (i=0;i<field->number_of_components*number_of_derivatives;i++)
+						{
+							field->derivatives[i]=field->source_fields[1]->derivatives[i];
+						}
+						field->derivatives_valid = 1;
+					}
+					else
+					{
+						field->derivatives_valid = 0;
 					}
 				}
 			}
@@ -194,7 +219,7 @@ Evaluate the fields cache at the location
 
 				/* Make all the locations before evaluating any of the 
 					result field values in case the result_field from 
-					reference_field calcualtion also involves the source field
+					reference_field calculation also involves the source field
 					and the subsequent evaluations would overwrite the current values. */
 				Field_coordinate_location **locations = new Field_coordinate_location*[field->number_of_components];
 				for (i = 0 ; i < field->number_of_components ; i++)
@@ -202,20 +227,35 @@ Evaluate the fields cache at the location
 					locations[i] = new Field_coordinate_location(
 						field->source_fields[2],
 						1, field->source_fields[0]->values +i,
-						location->get_time());
+						location->get_time(),
+						number_of_derivatives,
+						field->source_fields[0]->derivatives +i*number_of_derivatives);
 				}
 				for (i = 0 ; return_code && (i < field->number_of_components) ; i++)
 				{
+					field->derivatives_valid = 1;
 					if (return_code=Computed_field_evaluate_cache_at_location(
 						field->source_fields[1], locations[i]))
 					{
 						field->values[i]=field->source_fields[1]->values[0];
+						if (number_of_derivatives && 
+							field->source_fields[1]->derivatives_valid)
+						{
+							for (j=0;j<number_of_derivatives;j++)
+							{
+								field->derivatives[i*number_of_derivatives+j]=
+									field->source_fields[1]->derivatives[j];
+							}
+						}
+						else
+						{
+							field->derivatives_valid = 0;
+						}
 					}
 					delete locations[i];
 				}
 				delete [] locations;
 			}
-			field->derivatives_valid = 0;
 		}
 	}
 	else

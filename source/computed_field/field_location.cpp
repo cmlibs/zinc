@@ -132,7 +132,7 @@ int Field_node_location::update_cache_for_location(Computed_field *field)
 Field_coordinate_location::Field_coordinate_location(
 	Computed_field *reference_field,
 	int number_of_values_in, FE_value* values_in, FE_value time,
-	int number_of_derivatives):
+	int number_of_derivatives, FE_value* derivatives_in):
 		Field_location(time, number_of_derivatives),
 		reference_field(reference_field)
 {
@@ -147,11 +147,33 @@ Field_coordinate_location::Field_coordinate_location(
 	{
 		values[i] = 0.0;
 	}
+	if (number_of_derivatives && derivatives_in)
+	{
+		derivatives = new FE_value[number_of_values * number_of_derivatives];			
+		for (i = 0 ; (i < number_of_values * number_of_derivatives) &&
+			(i < number_of_values_in * number_of_derivatives) ; i++)
+		{
+			derivatives[i] = derivatives_in[i];
+		}
+		for (; i < number_of_values * number_of_derivatives ; i++)
+		{
+			derivatives[i] = 0.0;
+		}
+	}
+	else
+	{
+	   this->number_of_derivatives = 0;
+	   derivatives = NULL;
+	}
 }
 	
 Field_coordinate_location::~Field_coordinate_location()
 {
 	delete [] values;
+	if (derivatives)
+	{
+		delete [] derivatives;
+	}
 }
 
 int Field_coordinate_location::set_values(int number_of_values_in, 
@@ -189,6 +211,14 @@ int Field_coordinate_location::check_cache_for_location(Computed_field *field)
 		for (int i = 0 ; i < field->number_of_components ; i++)
 		{
 				field->values[i] = values[i];
+		}
+		if (derivatives && number_of_derivatives)
+		{
+			for (int i = 0 ; i < field->number_of_components * number_of_derivatives ; i++)
+			{
+					field->derivatives[i] = derivatives[i];
+			}
+			field->derivatives_valid = 1;
 		}
 		cache_is_valid = 1;
 	}

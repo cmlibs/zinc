@@ -164,11 +164,12 @@ private:
 	Computed_field *reference_field;
 	int number_of_values;
 	FE_value *values;
+	FE_value *derivatives;
 
 public:
 	Field_coordinate_location(Computed_field *reference_field,
 		int number_of_values_in, FE_value* values_in, FE_value time = 0,
-		int number_of_derivatives = 0);
+		int number_of_derivatives = 0, FE_value* derivatives_in = NULL);
 	
    ~Field_coordinate_location();
 
