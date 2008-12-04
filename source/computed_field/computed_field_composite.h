@@ -108,7 +108,7 @@ Creates a constructor for COMPOSITE with one input field, the <source_field>.
 ==============================================================================*/
 
 struct Computed_field *Cmiss_field_create_component(
-	Computed_field *source_field, int component_number);
+	struct Computed_field *source_field, int component_number);
 
 int Computed_field_register_types_composite(
 	struct Computed_field_package *computed_field_package);
