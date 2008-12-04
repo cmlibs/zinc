@@ -45,24 +45,40 @@ The public interface to the Cmiss_fields that perform arithmetic operations.
 #ifndef __CMISS_FIELD_COMPOSITE_H__
 #define __CMISS_FIELD_COMPOSITE_H__
 
+/*****************************************************************************//**
+ * Creates a field with the components specified in the array values.
+ * Internally this a composite field.
+ * 
+ * @param number_of_values  The number of values in the array.
+ * @param values The array of constant values
+ * @return Newly created field
+ */
 Cmiss_field_id Cmiss_field_create_constant(
 	int number_of_values, double *values);
-/*******************************************************************************
-LAST MODIFIED : 15 May 2008
 
-DESCRIPTION :
-Creates a constructor for COMPOSITE which has constant
-components of the <number_of_values> listed in <values> array.
-==============================================================================*/
-
+/*****************************************************************************//**
+ * Creates a field with the single source field.  This field is useful
+ * as a placeholder candidate for replacement with more complicated operations
+ * later on.
+ * Internally this a composite field.
+ * 
+ * @param source_field The field the values are copied from.
+ * @return Newly created field
+ */
 Cmiss_field_id Cmiss_field_create_identity(Cmiss_field_id source_field);
-/*******************************************************************************
-LAST MODIFIED : 13 May 2008
 
-DESCRIPTION :
-Creates a constructor for COMPOSITE with one input field, the <source_field>.
-==============================================================================*/
-
+/*****************************************************************************//**
+ * Creates a field with the single source field and extracts a single component
+ * specified by the component_number.
+ * Internally this a composite field.
+ * 
+ * @param source_field The field the component value is copied from.
+ * @param component_index  The index for the component.  The first values index
+ * is 0 and the last is (number_of_field_components - 1).
+ * @return Newly created field
+ */
+Cmiss_field_id Cmiss_field_create_component(Cmiss_field_id source_field,
+	int component_index);
 
 
 #endif /* __CMISS_FIELD_COMPOSITE_H__ */

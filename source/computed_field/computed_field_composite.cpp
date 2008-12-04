@@ -1755,6 +1755,56 @@ Changes <field> into type composite with one input field, the <source_field>.
 	return (field);
 } /* Computed_field_create_identity */
 
+Computed_field *Cmiss_field_create_component(Computed_field *source_field,
+	int component_number)
+/*******************************************************************************
+
+DESCRIPTION :
+Changes <field> into type composite with one input field, the <source_field>
+and the component index <component_number>.
+==============================================================================*/
+{
+	int number_of_values, *source_field_numbers,
+		*source_value_numbers;
+	Computed_field *field;
+
+	ENTER(Computed_field_create_component);
+	if (source_field)
+	{
+		number_of_values = 1;
+		ALLOCATE(source_field_numbers, int, number_of_values);
+		ALLOCATE(source_value_numbers, int, number_of_values);
+		if (source_field_numbers && source_value_numbers)
+		{
+			source_field_numbers[0] = 0;
+			source_value_numbers[0] = component_number;
+			field =
+				Computed_field_create_composite(
+				/*number_of_components*/number_of_values,
+				/*number_of_source_fields*/1, /*source_fields*/&source_field,
+				/*number_of_source_values*/0, /*source_values*/(FE_value *)NULL,
+				source_field_numbers, source_value_numbers);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_create_component.  Not enough memory");
+			field = (Computed_field *)NULL;
+		}
+		DEALLOCATE(source_field_numbers);
+		DEALLOCATE(source_value_numbers);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_create_component.  Invalid argument(s)");
+		field = (Computed_field *)NULL;
+	}
+	LEAVE;
+
+	return (field);
+} /* Computed_field_create_component */
+
 int Computed_field_register_types_composite(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_trigonometry.c
 
-LAST MODIFIED : 24 August 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -227,10 +227,10 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_sin(struct Computed_field *field,
+Computed_field *Computed_field_create_sin(
 	struct Computed_field *source_field)
 /*******************************************************************************
-LAST MODIFIED : 24 August 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_SIN with the supplied
@@ -239,19 +239,18 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
+	int number_of_source_fields;
+	Computed_field *field, **source_fields;
 
-	ENTER(Computed_field_set_type_sin);
-	if (field && source_field)
+	ENTER(Computed_field_create_sin);
+	if ( source_field)
 	{
-		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=1;
 		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
+			/* 2. create new field */
+			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
 			/* 3. establish the new type */
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
@@ -262,19 +261,19 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code = 0;
+			field = (Computed_field *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_sin.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_sin.  Invalid argument(s)");
+		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_sin */
+	return (field);
+} /* Computed_field_create_sin */
 
 int Computed_field_get_type_sin(struct Computed_field *field,
 	struct Computed_field **source_field)
@@ -362,8 +361,8 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_set_type_sin(field,
-						source_fields[0]);
+					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_sin(
+						source_fields[0]));
 				}
 				if (!return_code)
 				{
@@ -571,10 +570,10 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_cos(struct Computed_field *field,
+Computed_field *Computed_field_create_cos(
 	struct Computed_field *source_field)
 /*******************************************************************************
-LAST MODIFIED : 24 August 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_COS with the supplied
@@ -583,19 +582,18 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
+	int number_of_source_fields;
+	Computed_field *field, **source_fields;
 
-	ENTER(Computed_field_set_type_cos);
-	if (field && source_field)
+	ENTER(Computed_field_create_cos);
+	if ( source_field)
 	{
-		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=1;
 		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
+			/* 2. create new field */
+			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
 			/* 3. establish the new type */
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
@@ -606,19 +604,19 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code = 0;
+			field = (Computed_field *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_cos.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_cos.  Invalid argument(s)");
+		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_cos */
+	return (field);
+} /* Computed_field_create_cos */
 
 int Computed_field_get_type_cos(struct Computed_field *field,
 	struct Computed_field **source_field)
@@ -706,8 +704,8 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_set_type_cos(field,
-						source_fields[0]);
+					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_cos(
+						source_fields[0]));
 				}
 				if (!return_code)
 				{
@@ -915,10 +913,10 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_tan(struct Computed_field *field,
+Computed_field *Computed_field_create_tan(
 	struct Computed_field *source_field)
 /*******************************************************************************
-LAST MODIFIED : 24 August 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_TAN with the supplied
@@ -927,19 +925,18 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
+	int number_of_source_fields;
+	Computed_field *field, **source_fields;
 
-	ENTER(Computed_field_set_type_tan);
-	if (field && source_field)
+	ENTER(Computed_field_create_tan);
+	if ( source_field)
 	{
-		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=1;
 		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
+			/* 2. create new field */
+			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
 			/* 3. establish the new type */
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
@@ -950,19 +947,19 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code = 0;
+			field = (Computed_field *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_tan.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_tan.  Invalid argument(s)");
+		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_tan */
+	return (field);
+} /* Computed_field_create_tan */
 
 int Computed_field_get_type_tan(struct Computed_field *field,
 	struct Computed_field **source_field)
@@ -1050,8 +1047,8 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_set_type_tan(field,
-						source_fields[0]);
+					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_tan(
+						source_fields[0]));
 				}
 				if (!return_code)
 				{
@@ -1267,10 +1264,10 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_asin(struct Computed_field *field,
+Computed_field *Computed_field_create_asin(
 	struct Computed_field *source_field)
 /*******************************************************************************
-LAST MODIFIED : 24 August 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_ASIN with the supplied
@@ -1279,19 +1276,18 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
+	int number_of_source_fields;
+	Computed_field *field, **source_fields;
 
-	ENTER(Computed_field_set_type_asin);
-	if (field && source_field)
+	ENTER(Computed_field_create_asin);
+	if ( source_field)
 	{
-		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=1;
 		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
+			/* 2. create new field */
+			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
 			/* 3. establish the new type */
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
@@ -1302,19 +1298,19 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code = 0;
+			field = (Computed_field *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_asin.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_asin.  Invalid argument(s)");
+		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_asin */
+	return (field);
+} /* Computed_field_create_asin */
 
 int Computed_field_get_type_asin(struct Computed_field *field,
 	struct Computed_field **source_field)
@@ -1402,8 +1398,8 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_set_type_asin(field,
-						source_fields[0]);
+					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_asin(
+						source_fields[0]));
 				}
 				if (!return_code)
 				{
@@ -1619,10 +1615,10 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_acos(struct Computed_field *field,
+Computed_field *Computed_field_create_acos(
 	struct Computed_field *source_field)
 /*******************************************************************************
-LAST MODIFIED : 24 August 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_ACOS with the supplied
@@ -1631,19 +1627,18 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
+	int number_of_source_fields;
+	Computed_field *field, **source_fields;
 
-	ENTER(Computed_field_set_type_acos);
-	if (field && source_field)
+	ENTER(Computed_field_create_acos);
+	if ( source_field)
 	{
-		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=1;
 		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
+			/* 2. create new field */
+			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
 			/* 3. establish the new type */
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
@@ -1654,19 +1649,19 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code = 0;
+			field = (Computed_field *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_acos.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_acos.  Invalid argument(s)");
+		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_acos */
+	return (field);
+} /* Computed_field_create_acos */
 
 int Computed_field_get_type_acos(struct Computed_field *field,
 	struct Computed_field **source_field)
@@ -1754,8 +1749,8 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_set_type_acos(field,
-						source_fields[0]);
+					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_acos(
+						source_fields[0]));
 				}
 				if (!return_code)
 				{
@@ -1964,10 +1959,10 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_atan(struct Computed_field *field,
+Computed_field *Computed_field_create_atan(
 	struct Computed_field *source_field)
 /*******************************************************************************
-LAST MODIFIED : 24 August 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_ATAN with the supplied
@@ -1976,19 +1971,18 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
+	int number_of_source_fields;
+	Computed_field *field, **source_fields;
 
-	ENTER(Computed_field_set_type_atan);
-	if (field && source_field)
+	ENTER(Computed_field_create_atan);
+	if ( source_field)
 	{
-		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=1;
 		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
+			/* 2. create new field */
+			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
 			/* 3. establish the new type */
 			field->number_of_components = source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
@@ -1999,19 +1993,19 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code = 0;
+			field = (Computed_field *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_atan.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_atan.  Invalid argument(s)");
+		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_atan */
+	return (field);
+} /* Computed_field_create_atan */
 
 int Computed_field_get_type_atan(struct Computed_field *field,
 	struct Computed_field **source_field)
@@ -2099,8 +2093,8 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_set_type_atan(field,
-						source_fields[0]);
+					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_atan(
+						source_fields[0]));
 				}
 				if (!return_code)
 				{
@@ -2322,11 +2316,11 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_atan2(struct Computed_field *field,
+Computed_field *Computed_field_create_atan2(
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 24 August 2006
+LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_ATAN2 with the supplied
@@ -2336,21 +2330,20 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
+	int number_of_source_fields;
+	Computed_field *field, **source_fields;
 
-	ENTER(Computed_field_set_type_atan2);
-	if (field&&source_field_one&&source_field_two&&
+	ENTER(Computed_field_create_atan2);
+	if (source_field_one&&source_field_two&&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=2;
 		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
+			/* 2. create new field */
+			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
 			/* 3. establish the new type */
 			field->number_of_components = source_field_one->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field_one);
@@ -2362,19 +2355,19 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code = 0;
+			field = (Computed_field *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_atan2.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_atan2.  Invalid argument(s)");
+		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_atan2 */
+	return (field);
+} /* Computed_field_create_atan2 */
 
 int Computed_field_get_type_atan2(struct Computed_field *field,
 	struct Computed_field **source_field_one,
@@ -2469,8 +2462,8 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_set_type_atan2(field,
-						source_fields[0], source_fields[1]);
+					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_atan2(
+						source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
 				{

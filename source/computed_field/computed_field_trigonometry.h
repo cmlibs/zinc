@@ -44,6 +44,37 @@ Implements a number of basic trigonometry operations on computed fields.
 #if !defined (COMPUTED_FIELD_TRIGONOMETRY_H)
 #define COMPUTED_FIELD_TRIGONOMETRY_H
 
+/* API functions are prefixed with Cmiss */
+#define Computed_field_create_sin Cmiss_field_create_sin
+#define Computed_field_create_cos Cmiss_field_create_cos
+#define Computed_field_create_tan Cmiss_field_create_tan
+#define Computed_field_create_asin Cmiss_field_create_asin
+#define Computed_field_create_acos Cmiss_field_create_acos
+#define Computed_field_create_atan Cmiss_field_create_atan
+#define Computed_field_create_atan2 Cmiss_field_create_atan2
+
+Computed_field *Computed_field_create_sin(
+	struct Computed_field *source_field);
+
+Computed_field *Computed_field_create_cos(
+	struct Computed_field *source_field);
+
+Computed_field *Computed_field_create_tan(
+	struct Computed_field *source_field);
+
+Computed_field *Computed_field_create_asin(
+	struct Computed_field *source_field);
+
+Computed_field *Computed_field_create_acos(
+	struct Computed_field *source_field);
+
+Computed_field *Computed_field_create_atan(
+	struct Computed_field *source_field);
+
+Computed_field *Computed_field_create_atan2(
+	struct Computed_field *source_field_one,
+	struct Computed_field *source_field_two);
+
 int Computed_field_register_types_trigonometry(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************

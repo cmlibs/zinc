@@ -51,6 +51,7 @@ and real values in any order into a single vector field.
 
 #define Computed_field_create_constant Cmiss_field_create_constant
 #define Computed_field_create_identity Cmiss_field_create_identity
+#define Computed_field_create_component Cmiss_field_create_component
 
 int Computed_field_is_constant(struct Computed_field *field);
 /*******************************************************************************
@@ -105,6 +106,9 @@ LAST MODIFIED : 13 May 2008
 DESCRIPTION :
 Creates a constructor for COMPOSITE with one input field, the <source_field>.
 ==============================================================================*/
+
+struct Computed_field *Cmiss_field_create_component(
+	Computed_field *source_field, int component_number);
 
 int Computed_field_register_types_composite(
 	struct Computed_field_package *computed_field_package);
