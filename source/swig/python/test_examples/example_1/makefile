@@ -1,10 +1,19 @@
-# example: wrap an entire header
+# **************************************************************************
+# FILE : makefile
+#
+# LAST MODIFIED : 8 December 2008
+#
+# DESCRIPTION :
+#
+# makefile for wrapping the entire example_functions for 
+# python using swig 
+# ==========================================================================
 
 make: 
-	swig -python -c++ egfunc.i
-	g++ -c -Wall egfunc_wrap.cxx egfunc.cc -I/usr/include/python2.5
-	g++ -shared egfunc_wrap.o egfunc.o -o _egfunc.so
+	swig -python -c++ example_functions.i
+	g++ -c -Wall example_functions_wrap.cxx example_functions.cc -I/usr/include/python2.5
+	g++ -shared example_functions_wrap.o example_functions.o -o _example_functions.so
 
 clean:
-	rm -f egfunc.o egfunc.py egfunc.pyc _egfunc.so egfunc_wrap.cxx egfunc_wrap.o
+	rm -f example_functions.o example_functions.py example_functions.pyc _example_functions.so example_functions_wrap.cxx example_functions_wrap.o
 
