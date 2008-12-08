@@ -1268,11 +1268,12 @@ REGION_SRCS = \
    region/cmiss_region.c \
    region/cmiss_region_write_info.c
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
-REGION_INTERFACE_SRCS += \
+REGION_INTERFACE_SRCS = \
    region/cmiss_region_chooser_wx.cpp
-endif #$(USER_INTERFACE) == WX_USER_INTERFACE
+else
 REGION_INTERFACE_SRCS = \
    region/cmiss_region_chooser.c
+endif #$(USER_INTERFACE) == WX_USER_INTERFACE
 SELECT_INTERFACE_SRCS = \
 	select/select_curve.c \
 	select/select_environment_map.c \
@@ -1398,7 +1399,8 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
 	      $(COMMAND_INTERFACE_SRCS) \
 	      $(COMPUTED_FIELD_INTERFACE_SRCS) \
 	      $(MATERIAL_INTERFACE_SRCS) \
-	   		$(TRANSFORMATION_INTERFACE_SRCS) \
+	      $(REGION_INTERFACE_SRCS) \
+   		  $(TRANSFORMATION_INTERFACE_SRCS) \
 	      graphics/graphics_window.cpp
 endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 ifeq ($(USER_INTERFACE),CARBON_USER_INTERFACE)
