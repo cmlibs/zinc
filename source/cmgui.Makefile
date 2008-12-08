@@ -1268,7 +1268,7 @@ REGION_SRCS = \
    region/cmiss_region.c \
    region/cmiss_region_write_info.c
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
-REGION_SRCS += \
+REGION_INTERFACE_SRCS += \
    region/cmiss_region_chooser_wx.cpp
 endif #$(USER_INTERFACE) == WX_USER_INTERFACE
 REGION_INTERFACE_SRCS = \
