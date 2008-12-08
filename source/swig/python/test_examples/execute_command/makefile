@@ -3,8 +3,8 @@
 
 make: 
 	swig -python execute_command.i
-	g++ -c -Wall execute_command_wrap.c -I/usr/include/python2.5
-	g++ -shared execute_command_wrap.o cmiss_command_data.o -o _execute_command.so
+	gcc -c -Wall execute_command_wrap.c -I/usr/include/python2.5
+	g++ -shared execute_command_wrap.o $(CMISS_ROOT)/cmgui/lib/i686-linux/cmgui-wx-debug/libcmgui.so -o _execute_command.so
 
 
 clean:
