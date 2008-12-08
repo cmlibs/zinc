@@ -171,6 +171,14 @@ cmgui-win32-static-lib :
 	$(MAKE) -f $(MAKEFILE) cmgui-win32 TARGET=static_lib ;
 cmgui-win32-debug-static-lib:
 	$(MAKE) -f $(MAKEFILE) cmgui-win32-debug TARGET=static_lib ;
+cmgui-wx-lib :
+	$(MAKE) -f $(MAKEFILE) cmgui-wx TARGET=so_lib ;
+cmgui-wx-debug-lib :
+	$(MAKE) -f $(MAKEFILE) cmgui-wx-debug TARGET=so_lib ;
+cmgui-wx-static-lib :
+	$(MAKE) -f $(MAKEFILE) cmgui-wx TARGET=static_lib ;
+cmgui-wx-debug-static-lib:
+	$(MAKE) -f $(MAKEFILE) cmgui-wx-debug TARGET=static_lib ;
 cmgui-no3dgraphics-motif-lib :
 	$(MAKE) -f $(MAKEFILE) cmgui-no3dgraphics-motif TARGET=so_lib ;
 cmgui-no3dgraphics-motif-debug-lib :
