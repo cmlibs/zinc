@@ -1,9 +1,18 @@
-# example: wrap an one function in a script
+# **************************************************************************
+# FILE : makefile
+#
+# LAST MODIFIED : 8 December 2008
+#
+# DESCRIPTION :
+#
+# makefile for wrapping the arithmetics function in example_functions for 
+# python using swig 
+# ==========================================================================
 
 make: 
-	swig -python -c++ egarith.i
-	g++ -c -Wall egarith_wrap.cxx egfunc.cc -I/usr/include/python2.5
-	g++ -shared egarith_wrap.o egfunc.o -o _egarith.so
+	swig -python -c++ example_arithmetics.i
+	g++ -c -Wall example_arithmetics_wrap.cxx example_functions.cc -I/usr/include/python2.5
+	g++ -shared example_arithmetics_wrap.o example_functions.o -o _example_arithmetics.so
 
 clean:
-	rm -f egfunc.o egarith.py egarith.pyc _egarith.so egarith_wrap.cxx egarith_wrap.o
+	rm -f example_functions.o example_arithmetics.py example_arithmetics.pyc _example_arithmetics.so example_arithmetics_wrap.cxx example_arithmetics_wrap.o
