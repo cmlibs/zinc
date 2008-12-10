@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : example.i
+FILE : factorial_example.i
 
 LAST MODIFIED : 10 December 2008
 
@@ -41,13 +41,12 @@ Swig interface file for wrapping the factorial_example functions
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
- /* example.i */
 
 
-%module example
+%module factorial_example
 
 %{
-#include "example.h"
+#include "factorial_example.h"
 %}
 
 int fact(int n);

@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : example.c
+FILE : factorial_example.c
 
 LAST MODIFIED : 10 December 2008
 
@@ -41,9 +41,8 @@ A simple function to be wrapped for octave using swig.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
- /* example.c */
 
-#include "example.h"
+#include "factorial_example.h"
 
 int fact(int n) {
     if (n < 0){ 
