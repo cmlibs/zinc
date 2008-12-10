@@ -49,6 +49,20 @@ struct Cmiss_command_data;
 %{
 extern int Cmiss_command_data_execute_command(struct Cmiss_command_data *command_data, const char *command);
 extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, char *argv[], char *version_string);
+
+
+%}
+     %inline %{
+        /* Create a new cmiss_command_data */
+        Cmiss_command_data *new_Cmiss_command_data() {
+	char* cmgui_argv[] = {strdup("cmgui"), NULL};
+
+	char **string_ptr;
+
+	return (create_Cmiss_command_data((sizeof(cmgui_argv)/sizeof(char *) - 1),
+		cmgui_argv, "0.0")); 
+        /* Need to fix up the memory leaks from the stdup sometime */
+      }
 %}
 
 extern int Cmiss_command_data_execute_command(struct Cmiss_command_data *command_data, const char *command);
