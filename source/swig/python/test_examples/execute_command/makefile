@@ -1,5 +1,13 @@
-# example: wrap the cmiss_command_data_execute_command function
-# 	   in cmiss_command_data
+#**************************************************************************
+#FILE : makefile
+
+#LAST MODIFIED : 11 December 2008
+
+#DESCRIPTION :
+
+#makefile for wrapping the execute_command file functions for 
+#python using swig.
+#==========================================================================
 
 make: 
 	swig -python execute_command.i 
