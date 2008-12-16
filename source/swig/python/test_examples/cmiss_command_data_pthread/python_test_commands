@@ -1,11 +1,31 @@
+export LD_LIBRARY_PATH=$CMISS_ROOT/cmgui/lib/i686-linux/cmgui-wx-debug/
+
 ***simple python console commands for testing execute_command***
 
-export LD_LIBRARY_PATH=$CMISS_ROOT/cmgui/lib/i686-linux/cmgui-wx-debug/
+#================================================#
+#=Initiate and load an example femur mesh (mean)=#
+#================================================#
 import execute_command
 a = execute_command.new_Cmiss_command_data()
-execute_command.Cmiss_command_data_execute_command(a, "gfx cre axes length 20")
 execute_command.Cmiss_command_data_execute_command(a, "gfx re no mean")
 execute_command.Cmiss_command_data_execute_command(a, "gfx re elem mean")
+
+#==============================================================#
+#=obtain cmiss_region objects to query number of nodes in mean=#
+#==============================================================# 
+root_region= execute_command.Cmiss_command_data_get_root_region(a)
+region_1=execute_command.Cmiss_region_get_sub_region(root_region, "/mean")
+execute_command.Cmiss_region_get_number_of_nodes_in_region(region_1)
+
+#=======================#
+#=creating a new region=#
+#=======================#
+new_region=execute_command.Cmiss_region_create()
+num_nodes=execute_command.Cmiss_region_get_number_of_nodes_in_region(new_region)
+
+#==========================================#
+#=opening new cmgui windows (causes crash)=#
+#==========================================#
 execute_command.Cmiss_command_data_execute_command(a, "gfx cre win 1")
 execute_command.Cmiss_command_data_execute_command(a, "gfx edit scene")
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : execute_command.i
 
-LAST MODIFIED : 10 December 2008
+LAST MODIFIED : 16 December 2008
 
 DESCRIPTION :
 Swig interface file for wrapping the Cmiss_command_data_execute_command 
@@ -48,9 +48,17 @@ struct Cmiss_command_data;
 
 %{
 #include "api/cmiss_command_data.h"
-extern int Cmiss_command_data_execute_command(struct Cmiss_command_data *command_data, const char *command);
-extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, char *argv[], char *version_string);
-extern int Cmiss_command_data_main_loop(struct Cmiss_command_data *command_data);
+extern int Cmiss_command_data_execute_command(struct Cmiss_command_data 
+	*command_data, const char *command);
+extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, 
+	char *argv[], char *version_string);
+extern struct Cmiss_region *Cmiss_command_data_get_root_region(
+	struct Cmiss_command_data *command_data);
+extern struct Cmiss_region *Cmiss_region_create(void);
+extern int Cmiss_region_get_number_of_nodes_in_region(struct Cmiss_region 
+	*region);
+extern struct Cmiss_region *Cmiss_region_get_sub_region(struct Cmiss_region *region,
+	const char *path);
 %}
 
 %inline %{
@@ -66,7 +74,7 @@ extern int Cmiss_command_data_main_loop(struct Cmiss_command_data *command_data)
     	struct Cmiss_command_data *new_Cmiss_command_data()
     	{
 		Cmiss_command_data_id command_data;
-		            
+		           
 		char* cmgui_argv[] = {strdup("cmgui"), NULL};
 
 		char **string_ptr;
@@ -86,8 +94,41 @@ extern int Cmiss_command_data_main_loop(struct Cmiss_command_data *command_data)
         
         	return command_data;
       	}
+
+	int Cmiss_region_get_number_of_nodes_in_region(struct Cmiss_region *region)
+	/*******************************************************************************
+	LAST MODIFIED : 4 November 2004
+
+	DESCRIPTION :
+	Returns the number of nodes in the <region>.
+	==============================================================================*/
+	{
+		int number_of_nodes;
+		struct FE_region *fe_region;
+
+		//ENTER(Cmiss_region_get_number_of_nodes_in_region);
+		number_of_nodes = 0;
+		if (region)
+		{
+			if (fe_region = Cmiss_region_get_FE_region(region))
+			{
+				number_of_nodes = FE_region_get_number_of_FE_nodes(fe_region);
+			}
+		}
+		//LEAVE;
+
+		return (number_of_nodes);
+	} /* Cmiss_region_get_number_of_elements */
 %}
 
-extern int Cmiss_command_data_execute_command(struct Cmiss_command_data *command_data, const char *command);
-extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, char *argv[], char *version_string);
-extern int Cmiss_command_data_main_loop(struct Cmiss_command_data *command_data);
+extern int Cmiss_command_data_execute_command(struct Cmiss_command_data 
+	*command_data, const char *command);
+extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, 
+	char *argv[], char *version_string);
+extern struct Cmiss_region *Cmiss_command_data_get_root_region(
+	struct Cmiss_command_data *command_data);
+extern struct Cmiss_region *Cmiss_region_create(void);
+extern int Cmiss_region_get_number_of_nodes_in_region(struct Cmiss_region 
+	*region);
+extern struct Cmiss_region *Cmiss_region_get_sub_region(struct Cmiss_region *region,
+	const char *path);
