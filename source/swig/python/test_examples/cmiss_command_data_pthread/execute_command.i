@@ -10,7 +10,7 @@ Swig interface file for wrapping api functions for using in python
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
  * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
+ * 1.1 (the "License"); you may not use this file except in compliance with/
  * the License. You may obtain a copy of the License at
  * http://www.mozilla.org/MPL/
  *
@@ -56,18 +56,18 @@ extern struct Cmiss_command_data *create_Cmiss_command_data(int argc,
 	char *argv[], char *version_string);
 
 /* cmiss_region functions */
-extern struct Cmiss_region *Cmiss_command_data_get_root_region(
+extern Cmiss_region_id Cmiss_command_data_get_root_region(
 	struct Cmiss_command_data *command_data);
-extern struct Cmiss_region *Cmiss_region_create(void);
-extern struct Cmiss_region *Cmiss_region_get_sub_region(struct Cmiss_region *region,
+extern Cmiss_region_id Cmiss_region_create(void);
+extern Cmiss_region_id Cmiss_region_get_sub_region(Cmiss_region_id region,
 	const char *path);
-extern int Cmiss_region_get_number_of_nodes_in_region(struct Cmiss_region 
-	*region);
-extern struct Cmiss_field *Cmiss_region_find_field_by_name(struct Cmiss_region *region, 
+extern int Cmiss_region_get_number_of_nodes_in_region(Cmiss_region_id 
+	region);
+extern Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
 	const char *field_name);
 
 /* cmiss_field functions */
-extern int Cmiss_field_get_number_of_components(struct Cmiss_field *field);
+extern int Cmiss_field_get_number_of_components(Cmiss_field_id field);
 %}
 
 %inline %{
@@ -130,17 +130,22 @@ extern int Cmiss_field_get_number_of_components(struct Cmiss_field *field);
 	} /* Cmiss_region_get_number_of_elements */
 %}
 
+/* cmiss_command functions */
 extern int Cmiss_command_data_execute_command(struct Cmiss_command_data 
 	*command_data, const char *command);
 extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, 
 	char *argv[], char *version_string);
-extern struct Cmiss_region *Cmiss_command_data_get_root_region(
+
+/* cmiss_region functions */
+extern Cmiss_region_id Cmiss_command_data_get_root_region(
 	struct Cmiss_command_data *command_data);
-extern struct Cmiss_region *Cmiss_region_create(void);
-extern int Cmiss_region_get_number_of_nodes_in_region(struct Cmiss_region 
-	*region);
-extern struct Cmiss_region *Cmiss_region_get_sub_region(struct Cmiss_region *region,
+extern Cmiss_region_id Cmiss_region_create(void);
+extern Cmiss_region_id Cmiss_region_get_sub_region(Cmiss_region_id region,
 	const char *path);
-extern struct Cmiss_field *Cmiss_region_find_field_by_name(struct Cmiss_region *region, 
+extern int Cmiss_region_get_number_of_nodes_in_region(Cmiss_region_id 
+	region);
+extern Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
 	const char *field_name);
-extern int Cmiss_field_get_number_of_components(struct Cmiss_field *field);
+
+/* cmiss_field functions */
+extern int Cmiss_field_get_number_of_components(Cmiss_field_id field);
