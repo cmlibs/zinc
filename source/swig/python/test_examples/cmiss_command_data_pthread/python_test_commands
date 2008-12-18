@@ -26,6 +26,22 @@ field_1_id=execute_command.Cmiss_region_find_field_by_name(region_1_id, "coordin
 field_1_number_of_components=execute_command.Cmiss_field_get_number_of_components(field_1_id)
 print "Number of components in field:", field_1_number_of_components
 
+#===============================================================================#
+#=use cpointer.i from swig library to extract array of field values from a node=#
+#===============================================================================#
+node ="401"
+array_size = 12
+field_val=[0.0]*array_size
+
+node_1_id=execute_command.Cmiss_region_get_node(region_1_id,node)
+node_1_fieldval = execute_command.new_float_array(array_size)
+execute_command.Cmiss_field_evaluate_at_node(field_1_id, node_1_id, 0, array_size, node_1_fieldval)
+
+for i in range(0,array_size):
+    field_val[i]=execute_command.float_array_getitem(node_1_fieldval,i)
+
+print "field values at node", node, ":", field_val
+
 #=======================#
 #=creating a new region=#
 #=======================#

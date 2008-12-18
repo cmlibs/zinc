@@ -45,29 +45,37 @@ Swig interface file for wrapping api functions for using in python
 
 struct Cmiss_command_data;
 %module execute_command
+%include carrays.i
+%array_functions(float, float_array);
 
 %{
 #include "api/cmiss_command_data.h"
 
-/* cmiss_command functions */
+/* Cmiss_command functions */
 extern int Cmiss_command_data_execute_command(struct Cmiss_command_data 
 	*command_data, const char *command);
 extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, 
 	char *argv[], char *version_string);
 
-/* cmiss_region functions */
+/* Cmiss_region functions */
 extern Cmiss_region_id Cmiss_command_data_get_root_region(
 	struct Cmiss_command_data *command_data);
 extern Cmiss_region_id Cmiss_region_create(void);
 extern Cmiss_region_id Cmiss_region_get_sub_region(Cmiss_region_id region,
-	const char *path);
+	const char *path); //returns struct
 extern int Cmiss_region_get_number_of_nodes_in_region(Cmiss_region_id 
 	region);
+extern Cmiss_node_id Cmiss_region_get_node(Cmiss_region_id region,
+	const char *name); //returns struct
 extern Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
-	const char *field_name);
+	const char *field_name); //returns struct
 
-/* cmiss_field functions */
+/* Cmiss_node functions */
+
+/* Cmiss_field functions */
 extern int Cmiss_field_get_number_of_components(Cmiss_field_id field);
+extern int Cmiss_field_evaluate_at_node(Cmiss_field_id field,
+	Cmiss_node_id node, float time, int number_of_values, float *values);
 %}
 
 %inline %{
@@ -129,23 +137,29 @@ extern int Cmiss_field_get_number_of_components(Cmiss_field_id field);
 		return (number_of_nodes);
 	} /* Cmiss_region_get_number_of_elements */
 %}
-
-/* cmiss_command functions */
+ 	
+/* Cmiss_command functions */
 extern int Cmiss_command_data_execute_command(struct Cmiss_command_data 
 	*command_data, const char *command);
 extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, 
 	char *argv[], char *version_string);
 
-/* cmiss_region functions */
+/* Cmiss_region functions */
 extern Cmiss_region_id Cmiss_command_data_get_root_region(
 	struct Cmiss_command_data *command_data);
 extern Cmiss_region_id Cmiss_region_create(void);
 extern Cmiss_region_id Cmiss_region_get_sub_region(Cmiss_region_id region,
-	const char *path);
+	const char *path); //returns struct
 extern int Cmiss_region_get_number_of_nodes_in_region(Cmiss_region_id 
 	region);
+extern Cmiss_node_id Cmiss_region_get_node(Cmiss_region_id region,
+	const char *name); //returns struct
 extern Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
-	const char *field_name);
+	const char *field_name); //returns struct
 
-/* cmiss_field functions */
+/* Cmiss_node functions */
+
+/* Cmiss_field functions */
 extern int Cmiss_field_get_number_of_components(Cmiss_field_id field);
+extern int Cmiss_field_evaluate_at_node(Cmiss_field_id field,
+	Cmiss_node_id node, float time, int number_of_values, float *values);
