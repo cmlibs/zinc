@@ -1,10 +1,10 @@
 /*******************************************************************************
 FILE : execute_command.i
 
-LAST MODIFIED : 16 December 2008
+LAST MODIFIED : 18 December 2008
 
 DESCRIPTION :
-Swig interface file for wrapping the Cmiss_command_data_execute_command 
+Swig interface file for wrapping api functions for using in python
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -48,17 +48,26 @@ struct Cmiss_command_data;
 
 %{
 #include "api/cmiss_command_data.h"
+
+/* cmiss_command functions */
 extern int Cmiss_command_data_execute_command(struct Cmiss_command_data 
 	*command_data, const char *command);
 extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, 
 	char *argv[], char *version_string);
+
+/* cmiss_region functions */
 extern struct Cmiss_region *Cmiss_command_data_get_root_region(
 	struct Cmiss_command_data *command_data);
 extern struct Cmiss_region *Cmiss_region_create(void);
-extern int Cmiss_region_get_number_of_nodes_in_region(struct Cmiss_region 
-	*region);
 extern struct Cmiss_region *Cmiss_region_get_sub_region(struct Cmiss_region *region,
 	const char *path);
+extern int Cmiss_region_get_number_of_nodes_in_region(struct Cmiss_region 
+	*region);
+extern struct Cmiss_field *Cmiss_region_find_field_by_name(struct Cmiss_region *region, 
+	const char *field_name);
+
+/* cmiss_field functions */
+extern int Cmiss_field_get_number_of_components(struct Cmiss_field *field);
 %}
 
 %inline %{
@@ -132,3 +141,6 @@ extern int Cmiss_region_get_number_of_nodes_in_region(struct Cmiss_region
 	*region);
 extern struct Cmiss_region *Cmiss_region_get_sub_region(struct Cmiss_region *region,
 	const char *path);
+extern struct Cmiss_field *Cmiss_region_find_field_by_name(struct Cmiss_region *region, 
+	const char *field_name);
+extern int Cmiss_field_get_number_of_components(struct Cmiss_field *field);
