@@ -79,17 +79,13 @@ extern "C" {
 #endif /* ! defined GL_ARB_texture_rectangle */
 
 static char *required_extensions_default[] = {"GL_ARB_texture_rectangle",
-												  "GL_ARB_vertex_program",
-												  "GL_ARB_fragment_program",
-												  "GL_ARB_fragment_program_shadow",
+													"GL_ARB_fragment_program_shadow",
 												  "GL_ARB_depth_texture",
 												  "GL_ARB_shadow"};
 /* Mesa actually does the shadow test automatically but does not expose
 the extension, and ATI on Linux has the extension but does not list it
 in the extensions string. */
 static char *required_extensions_mesa_ati[] = {"GL_ARB_texture_rectangle",
-												  "GL_ARB_vertex_program",
-												  "GL_ARB_fragment_program",
 												  "GL_ARB_depth_texture"};
 #if defined GL_ARB_texture_rectangle && defined GL_ARB_vertex_program \
    && defined GL_ARB_fragment_program && defined  GL_ARB_fragment_program_shadow \
@@ -361,10 +357,11 @@ Draws one peeled layer of the scene.
 		fragment_program);
 
 #endif /* defined (OLD_CODE) */
-
-	glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 1,
-		data->viewport_width, data->viewport_height, 1.0, 1.0);
-
+	if (!(Graphics_library_check_extension(GL_shading_language)))
+	{
+		 glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 1,
+				data->viewport_width, data->viewport_height, 1.0, 1.0);
+	}
 	if(layer > 0)
 	{
 		glActiveTexture(GL_TEXTURE3);
@@ -419,9 +416,11 @@ Draws one peeled layer of the scene.
 	glActiveTexture(GL_TEXTURE0);
 
 	glDisable(GL_TEXTURE_RECTANGLE_ARB);
-
+#if !defined (GL_VERSION_2_0)
 	glEnable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
-
+#else
+	glEnable(GL_VERTEX_PROGRAM_TWO_SIDE);
+#endif
 	Scene_viewer_call_next_renderer(rendering_data);
 
 	if(layer < data->number_of_layers - 1)
@@ -467,8 +466,17 @@ Draw a textured quad for each layer and blend them all together correctly.
 
 	glDisable(GL_DEPTH_TEST);
 
-	glDisable(GL_VERTEX_PROGRAM_ARB);
-	glDisable(GL_FRAGMENT_PROGRAM_ARB);
+	if (Graphics_library_check_extension(GL_shading_language))
+	{
+#if defined(GL_VERSION_2_0)
+		 glUseProgram(0);
+#endif
+	}
+	else
+	{
+		 glDisable(GL_VERTEX_PROGRAM_ARB);
+		 glDisable(GL_FRAGMENT_PROGRAM_ARB);
+	}
 
 	glActiveTexture(GL_TEXTURE3);
 	glDisable(GL_TEXTURE_RECTANGLE_ARB);
@@ -579,11 +587,16 @@ Returns true if the current display is capable of order independent transparency
 	}
 #if defined (ORDER_INDEPENDENT_CAPABLE)
 	return_code = 1;
-	for (i = 0 ; i < number_of_required_extensions ; i++)
+	if (Graphics_library_load_extension("GL_shading_language") ||
+		(Graphics_library_load_extension("GL_ARB_vertex_program") &&
+			Graphics_library_load_extension("GL_ARB_fragment_program")))
 	{
-		if (!Graphics_library_load_extension(required_extensions[i]))
+		for (i = 0 ; i < number_of_required_extensions ; i++)
 		{
-			return_code = 0;
+			if (!Graphics_library_load_extension(required_extensions[i]))
+			{
+				return_code = 0;
+			}
 		}
 	}
 	glGetIntegerv(GL_DEPTH_BITS, &depth_bits);

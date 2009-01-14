@@ -404,6 +404,9 @@ yet we just don't know.
 #if defined (GL_NV_float_buffer)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_NV_float_buffer);
 #endif /* defined (GL_NV_float_buffer) */
+#if defined (GL_VERSION_2_0)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_shading_language);
+#endif 
 /* Fake extension to control whether display lists are used or not.
  * This is only determined by the corresponding CMISS_GL_display_list environment
  * variable. */
@@ -465,6 +468,8 @@ GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_display_lists);
 #      define glDeleteShader (GLHANDLE(glDeleteShader))
        GRAPHICS_LIBRARY_EXTERN PFNGLDRAWBUFFERSPROC GLHANDLE(glDrawBuffers);
 #      define glDrawBuffers (GLHANDLE(glDrawBuffers))
+       GRAPHICS_LIBRARY_EXTERN PFNGLGETPROGRAMIVPROC  GLHANDLE(glGetProgramiv);
+#      define glGetProgramiv (GLHANDLE(glGetProgramiv))
        GRAPHICS_LIBRARY_EXTERN PFNGLGETSHADERIVPROC  GLHANDLE(glGetShaderiv);
 #      define glGetShaderiv (GLHANDLE(glGetShaderiv))
        GRAPHICS_LIBRARY_EXTERN PFNGLGETSHADERINFOLOGPROC GLHANDLE(glGetShaderInfoLog);

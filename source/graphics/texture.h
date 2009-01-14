@@ -760,7 +760,7 @@ Writes on the command window the command needed to recreate the <texture>.
 The command is started with the string pointed to by <command_prefix>.
 ==============================================================================*/
 
-int Texture_execute_vertex_program_environment(struct Texture *texture);
+int Texture_execute_vertex_program_environment(struct Texture *texture, unsigned int program);
 /*******************************************************************************
 LAST MODIFIED : 14 September 2005
 

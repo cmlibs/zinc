@@ -931,7 +931,7 @@ appropriately.
 		}
 #endif /* GL_VERSION_1_4 */
 #if defined GL_VERSION_2_0
-		else if (!strcmp(extension_name, "GL_VERSION_2_0"))
+		else if (!strcmp(extension_name, "GL_shading_language"))
 		{
 			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_VERSION_2_0))
 			{
@@ -939,43 +939,49 @@ appropriately.
 			}
 			else
 			{
-				return_code = query_gl_version(2, 0);
-				if (GLEXTENSION_AVAILABLE == return_code)
+				return_code = Graphics_library_query_environment_extension(extension_name);
+				if (GLEXTENSION_UNSURE == return_code)
 				{
-					 if (!((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glAttachShader, PFNGLATTACHSHADERPROC)
-										Graphics_library_get_function_ptr("glAttachShader")) &&
-								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glCompileShader, PFNGLCOMPILESHADERPROC)
-										Graphics_library_get_function_ptr("glCompileShader")) &&
-								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glCreateProgram, PFNGLCREATEPROGRAMPROC)
-										Graphics_library_get_function_ptr("glCreateProgram")) &&
-								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glCreateShader, PFNGLCREATESHADERPROC)
-										Graphics_library_get_function_ptr("glCreateShader")) &&
-								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDeleteProgram,PFNGLDELETEPROGRAMPROC)
-										Graphics_library_get_function_ptr("glDeleteProgram")) &&
-								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDeleteShader,PFNGLDELETESHADERPROC)
-										Graphics_library_get_function_ptr("glDeleteShader")) &&
-								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGetShaderiv, PFNGLGETSHADERIVPROC)
-										Graphics_library_get_function_ptr("glGetShaderiv")) &&
-								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGetShaderInfoLog, PFNGLGETSHADERINFOLOGPROC)
-										Graphics_library_get_function_ptr("glGetShaderInfoLog")) &&
-								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGetShaderSource, PFNGLGETSHADERSOURCEPROC)
-										Graphics_library_get_function_ptr("glGetShaderSource")) &&
-								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGetUniformLocation, PFNGLGETUNIFORMLOCATIONPROC)
-										Graphics_library_get_function_ptr("glGetUniformLocation")) &&
-								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE( glIsProgram, PFNGLISPROGRAMPROC)
-										Graphics_library_get_function_ptr("glIsProgram")) &&
-								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glLinkProgram, PFNGLLINKPROGRAMPROC)
-										Graphics_library_get_function_ptr("glLinkProgram")) &&
-								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glShaderSource, PFNGLSHADERSOURCEPROC)
-										Graphics_library_get_function_ptr("glShaderSource")) &&
-								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glUseProgram, PFNGLUSEPROGRAMPROC)
-										Graphics_library_get_function_ptr("glUseProgram")) &&
-								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glUniform4f, PFNGLUNIFORM4FPROC)
-										Graphics_library_get_function_ptr("glUniform4f")) &&
-								 (GRAPHICS_LIBRARY_ASSIGN_HANDLE(glUniform1i, PFNGLUNIFORM1IPROC)
-										Graphics_library_get_function_ptr("glUniform1i"))))
- 					{
-						return_code = GLEXTENSION_UNAVAILABLE;
+					return_code = query_gl_version(2, 0);
+					if (GLEXTENSION_AVAILABLE == return_code)
+					{
+						if (!((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glAttachShader, PFNGLATTACHSHADERPROC)
+									Graphics_library_get_function_ptr("glAttachShader")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glCompileShader, PFNGLCOMPILESHADERPROC)
+									Graphics_library_get_function_ptr("glCompileShader")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glCreateProgram, PFNGLCREATEPROGRAMPROC)
+									Graphics_library_get_function_ptr("glCreateProgram")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glCreateShader, PFNGLCREATESHADERPROC)
+									Graphics_library_get_function_ptr("glCreateShader")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDeleteProgram,PFNGLDELETEPROGRAMPROC)
+									Graphics_library_get_function_ptr("glDeleteProgram")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDeleteShader,PFNGLDELETESHADERPROC)
+									Graphics_library_get_function_ptr("glDeleteShader")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGetProgramiv, PFNGLGETPROGRAMIVPROC)
+									Graphics_library_get_function_ptr("glGetProgramiv")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGetShaderiv, PFNGLGETSHADERIVPROC)
+									Graphics_library_get_function_ptr("glGetShaderiv")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGetShaderInfoLog, PFNGLGETSHADERINFOLOGPROC)
+									Graphics_library_get_function_ptr("glGetShaderInfoLog")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGetShaderSource, PFNGLGETSHADERSOURCEPROC)
+									Graphics_library_get_function_ptr("glGetShaderSource")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGetUniformLocation, PFNGLGETUNIFORMLOCATIONPROC)
+									Graphics_library_get_function_ptr("glGetUniformLocation")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE( glIsProgram, PFNGLISPROGRAMPROC)
+									Graphics_library_get_function_ptr("glIsProgram")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glLinkProgram, PFNGLLINKPROGRAMPROC)
+									Graphics_library_get_function_ptr("glLinkProgram")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glShaderSource, PFNGLSHADERSOURCEPROC)
+									Graphics_library_get_function_ptr("glShaderSource")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glUseProgram, PFNGLUSEPROGRAMPROC)
+									Graphics_library_get_function_ptr("glUseProgram")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glUniform4f, PFNGLUNIFORM4FPROC)
+									Graphics_library_get_function_ptr("glUniform4f")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glUniform1i, PFNGLUNIFORM1IPROC)
+									Graphics_library_get_function_ptr("glUniform1i"))))
+						{
+							return_code = GLEXTENSION_UNAVAILABLE;
+						}
 					}
 				}
 				GLEXTENSIONFLAG(GL_VERSION_2_0) = return_code;
@@ -1035,23 +1041,27 @@ appropriately.
 			}
 			else
 			{
-				return_code = query_gl_extension(extension_name);
-				if (GLEXTENSION_AVAILABLE == return_code)
+				return_code = Graphics_library_query_environment_extension(extension_name);
+				if (GLEXTENSION_UNSURE == return_code)
 				{
-					if (!((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenProgramsARB, PFNGLGENPROGRAMSARBPROC)
-						Graphics_library_get_function_ptr("glGenProgramsARB")) &&
-						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBindProgramARB, PFNGLBINDPROGRAMARBPROC)
-						Graphics_library_get_function_ptr("glBindProgramARB")) &&
-						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramStringARB, PFNGLPROGRAMSTRINGARBPROC)
-						Graphics_library_get_function_ptr("glProgramStringARB")) &&
-						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDeleteProgramsARB, PFNGLDELETEPROGRAMSARBPROC)
-						Graphics_library_get_function_ptr("glDeleteProgramsARB")) &&
-						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramEnvParameter4fARB, PFNGLPROGRAMENVPARAMETER4FARBPROC)
-						Graphics_library_get_function_ptr("glProgramEnvParameter4fARB")) &&
-						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramEnvParameter4fvARB, PFNGLPROGRAMENVPARAMETER4FVARBPROC)
-						Graphics_library_get_function_ptr("glProgramEnvParameter4fvARB"))))
- 					{
-						return_code = GLEXTENSION_UNAVAILABLE;
+					return_code = query_gl_extension(extension_name);
+					if (GLEXTENSION_AVAILABLE == return_code)
+					{
+						if (!((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenProgramsARB, PFNGLGENPROGRAMSARBPROC)
+									Graphics_library_get_function_ptr("glGenProgramsARB")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBindProgramARB, PFNGLBINDPROGRAMARBPROC)
+									Graphics_library_get_function_ptr("glBindProgramARB")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramStringARB, PFNGLPROGRAMSTRINGARBPROC)
+									Graphics_library_get_function_ptr("glProgramStringARB")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDeleteProgramsARB, PFNGLDELETEPROGRAMSARBPROC)
+									Graphics_library_get_function_ptr("glDeleteProgramsARB")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramEnvParameter4fARB, PFNGLPROGRAMENVPARAMETER4FARBPROC)
+									Graphics_library_get_function_ptr("glProgramEnvParameter4fARB")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramEnvParameter4fvARB, PFNGLPROGRAMENVPARAMETER4FVARBPROC)
+									Graphics_library_get_function_ptr("glProgramEnvParameter4fvARB"))))
+						{
+							return_code = GLEXTENSION_UNAVAILABLE;
+						}
 					}
 				}
 				GLEXTENSIONFLAG(GL_ARB_fragment_program) = return_code;
@@ -1202,23 +1212,27 @@ appropriately.
 			}
 			else
 			{
-				return_code = query_gl_extension(extension_name);
-				if (GLEXTENSION_AVAILABLE == return_code)
+				return_code = Graphics_library_query_environment_extension(extension_name);
+				if (GLEXTENSION_UNSURE == return_code)
 				{
-					if (!((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenProgramsARB, PFNGLGENPROGRAMSARBPROC)
-						Graphics_library_get_function_ptr("glGenProgramsARB")) &&
-						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBindProgramARB, PFNGLBINDPROGRAMARBPROC)
-						Graphics_library_get_function_ptr("glBindProgramARB")) &&
-						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramStringARB, PFNGLPROGRAMSTRINGARBPROC)
-						Graphics_library_get_function_ptr("glProgramStringARB")) &&
-						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDeleteProgramsARB, PFNGLDELETEPROGRAMSARBPROC)
-						Graphics_library_get_function_ptr("glDeleteProgramsARB")) &&
-						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramEnvParameter4fARB, PFNGLPROGRAMENVPARAMETER4FARBPROC)
-						Graphics_library_get_function_ptr("glProgramEnvParameter4fARB")) &&
-						(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramEnvParameter4fvARB, PFNGLPROGRAMENVPARAMETER4FVARBPROC)
-							Graphics_library_get_function_ptr("glProgramEnvParameter4fvARB"))))
- 					{
-						return_code = GLEXTENSION_UNAVAILABLE;
+					return_code = query_gl_extension(extension_name);
+					if (GLEXTENSION_AVAILABLE == return_code)
+					{
+						if (!((GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenProgramsARB, PFNGLGENPROGRAMSARBPROC)
+									Graphics_library_get_function_ptr("glGenProgramsARB")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBindProgramARB, PFNGLBINDPROGRAMARBPROC)
+									Graphics_library_get_function_ptr("glBindProgramARB")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramStringARB, PFNGLPROGRAMSTRINGARBPROC)
+									Graphics_library_get_function_ptr("glProgramStringARB")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glDeleteProgramsARB, PFNGLDELETEPROGRAMSARBPROC)
+									Graphics_library_get_function_ptr("glDeleteProgramsARB")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramEnvParameter4fARB, PFNGLPROGRAMENVPARAMETER4FARBPROC)
+									Graphics_library_get_function_ptr("glProgramEnvParameter4fARB")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glProgramEnvParameter4fvARB, PFNGLPROGRAMENVPARAMETER4FVARBPROC)
+									Graphics_library_get_function_ptr("glProgramEnvParameter4fvARB"))))
+						{
+							return_code = GLEXTENSION_UNAVAILABLE;
+						}
 					}
 				}
 				GLEXTENSIONFLAG(GL_ARB_vertex_program) = return_code;

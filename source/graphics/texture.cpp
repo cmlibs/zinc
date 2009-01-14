@@ -6918,7 +6918,7 @@ int Texture_execute_opengl_display_list(struct Texture *texture,
 	return (return_code);
 } /* Texture_execute_opengl_display_list */
 
-int Texture_execute_vertex_program_environment(struct Texture *texture)
+int Texture_execute_vertex_program_environment(struct Texture *texture, unsigned int program)
 /*******************************************************************************
 LAST MODIFIED : 14 September 2005
 
@@ -6928,18 +6928,22 @@ by vertex programs.
 ==============================================================================*/
 {
 	int return_code;
-#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
+#if (defined GL_ARB_vertex_program && defined GL_ARB_fragment_program) || defined GL_VERSION_2_0
 	GLfloat texture_scaling[4];
 	GLfloat texel_size[4];
 #endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+#if defined (GL_VERSION_2_0)
+	GLint loc1 = -1;
+#endif 
 
 	ENTER(Texture_execute_vertex_program_environment);
 	return_code=0;
 	if (texture)
 	{
-#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
-		if (Graphics_library_check_extension(GL_ARB_vertex_program) &&
-			Graphics_library_check_extension(GL_ARB_fragment_program))
+#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program || defined (GL_VERSION_2_0)
+		if (Graphics_library_check_extension(GL_shading_language) ||
+			(Graphics_library_check_extension(GL_ARB_vertex_program) &&
+				Graphics_library_check_extension(GL_ARB_fragment_program)))
 		{
 			if (texture->width)
 			{
@@ -6969,10 +6973,26 @@ by vertex programs.
 				texture_scaling[2] = 1.0;
 			}
 			texture_scaling[3] = 1.0;
-			glProgramEnvParameter4fvARB(GL_VERTEX_PROGRAM_ARB, 0,
-				texture_scaling);
-
-
+			
+			if (Graphics_library_check_extension(GL_shading_language) && glIsProgram((GLuint)program))
+			{
+				int flag;
+				glGetProgramiv(program,GL_LINK_STATUS, &flag);
+				if (flag == GL_TRUE)
+				{
+					loc1 = glGetUniformLocation((GLuint)program,"texture_scaling");
+					if (loc1 > (GLint)-1)
+					{
+						glUniform4f(loc1, texture_scaling[0], texture_scaling[1],
+							texture_scaling[2], texture_scaling[3]);
+					}
+				}
+			}
+			else
+			{
+				 glProgramEnvParameter4fvARB(GL_VERTEX_PROGRAM_ARB, 0,
+						texture_scaling);
+			}
 			if (texture->rendered_width_texels)
 			{
 				texel_size[0] = 1.0 / texture->rendered_width_texels;
@@ -6998,8 +7018,19 @@ by vertex programs.
 				texel_size[2] = 0.0;
 			}
 			texel_size[3] = 0.0;
-			glProgramEnvParameter4fvARB(GL_FRAGMENT_PROGRAM_ARB, 0,
-				texel_size);
+			if (Graphics_library_check_extension(GL_shading_language) && glIsProgram((GLuint)program))
+			{
+				loc1 = -1;
+				loc1 = glGetUniformLocation((GLuint)program,"texture_size");
+				if (loc1 > (GLint)-1)
+					glUniform4f(loc1, texel_size[0], texel_size[1],
+						texel_size[2], texel_size[3]);
+			}
+			else
+			{
+				 glProgramEnvParameter4fvARB(GL_FRAGMENT_PROGRAM_ARB, 0,
+						texel_size);
+			}
 		}
 		else
 		{
