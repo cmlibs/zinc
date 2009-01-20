@@ -1,10 +1,10 @@
 /*******************************************************************************
-FILE : cmiss_field.i
+FILE : cmiss_texture.i
 
-LAST MODIFIED  8 January 2008
+LAST MODIFIED  12 January 2008
 
 DESCRIPTION :
-Swig interface file for wrapping api/cmiss_field_x headers
+Swig interface file for wrapping api/cmiss_texture.h
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -42,31 +42,10 @@ Swig interface file for wrapping api/cmiss_field_x headers
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module field
-%include carrays.i
-%array_functions(float, float_array);
-%array_functions(double, double_array);
+%module texture
 
 %{
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_image_processing.h"
-#include "api/cmiss_field_arithmetic_operators.h"
-#include "api/cmiss_field_logical_operators.h"
-#include "api/cmiss_field_image.h"
-#include "api/cmiss_field_composite.h"
-
-extern int Cmiss_field_get_number_of_components(Cmiss_field_id field);
-extern int Cmiss_field_evaluate_at_node(Cmiss_field_id field,
-	struct Cmiss_node *node, float time, int number_of_values, float *values);
+#include "api/cmiss_texture.h"
 %}
 
-/*%include "api/cmiss_field.h"	*/
-%include "api/cmiss_field_image_processing.h"
-%include "api/cmiss_field_arithmetic_operators.h"
-%include "api/cmiss_field_logical_operators.h"
-%include "api/cmiss_field_image.h"
-%include "api/cmiss_field_composite.h"
-
-extern int Cmiss_field_get_number_of_components(Cmiss_field_id field);
-extern int Cmiss_field_evaluate_at_node(Cmiss_field_id field,
-	struct Cmiss_node *node, float time, int number_of_values, float *values);
+%include "api/cmiss_texture.h"

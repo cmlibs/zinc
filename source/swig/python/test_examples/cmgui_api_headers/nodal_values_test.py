@@ -45,29 +45,31 @@
 #================================================#
 #=Initiate and load an example femur mesh (mean)=#
 #================================================#
+print "loading modules..."
 import cmiss.command_data
 import cmiss.region
 import cmiss.field
 #import cmiss.cmiss_node
-import cmiss.element
+#import cmiss.element
 
-print "Modules Loaded\n"
-
+print "creating cmiss_command_data..."
 a = cmiss.command_data.new_Cmiss_command_data()
-cmiss.command_data.Cmiss_command_data_execute_command(a, "gfx re no mean_mag_pc1_fitted")
-cmiss.command_data.Cmiss_command_data_execute_command(a, "gfx re elem mean_mag_pc1_fitted")
 
-print "Cmiss_command_data_created, mesh loaded\n"
+print "loading mesh..."
+filename = "mean_mag_pc1_fitted"
+region_id = cmiss.region.Cmiss_region_create()
+cmiss.region.Cmiss_region_read_file(region_id, filename+".exnode")
+cmiss.region.Cmiss_region_read_file(region_id, filename+".exelem")
+
+region_name = "mean_mag_pc1_fitted"
+root_region_id = cmiss.command_data.Cmiss_command_data_get_root_region(a)
+cmiss.region.Cmiss_region_add_child_region(root_region_id, region_id, region_name, -1)
 
 #==============================================================#
 #=obtain cmiss_region objects to query number of nodes in mean=#
 #==============================================================# 
-region = "/mean_mag_pc1_fitted"
-root_region_id = cmiss.command_data.Cmiss_command_data_get_root_region(a)
-region_id = cmiss.region.Cmiss_region_get_sub_region(root_region_id, region)
 region_number_of_nodes = cmiss.region.Cmiss_region_get_number_of_nodes_in_region(region_id)
-print "Number of nodes in region \"", region, "\":", region_number_of_nodes
-
+print "Number of nodes in region \"", filename, "\":", region_number_of_nodes
 
 #=============================================================================#
 #= use carrays.i from swig library to extract array of field values at nodes =#
@@ -81,10 +83,10 @@ def write_field(field_id, region_id, number_of_nodes, components, file_name):
     	node = str(node)
     	node_id = cmiss.region.Cmiss_region_get_node(region_id,node)
    	node_fieldvalues = cmiss.field.new_float_array(components) # carrays method
-    	cmiss.field.Cmiss_field_evaluate_at_node(field_id, node_id, 0, components, node_fieldvalues)
+    	cmiss.field.Cmiss_field_evaluate_at_node(field_id, node_id, 0, components, node_fieldvalues) #returns a c array into node_fieldvalues object
 
     	for i in range(0,components):
-            field_values[i] = cmiss.field.float_array_getitem(node_fieldvalues,i) #carrays method
+            field_values[i] = cmiss.field.float_array_getitem(node_fieldvalues,i) # retrieve individual elements from the node_fielvalue object
 
     	print field, "field values at node", node, ":", field_values
 

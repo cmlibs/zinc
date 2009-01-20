@@ -1,0 +1,67 @@
+ Group name: square
+ Shape. Dimension=1, line
+ #Scale factor sets=0
+ #Nodes=0
+ #Fields=0
+ Element: 0 0 100000
+ Element: 0 0 100001
+ Element: 0 0 100002
+ Element: 0 0 100003
+ Shape. Dimension=2, line*line
+ #Scale factor sets=1
+ l.Lagrange*l.Lagrange, #Scale factors=4
+ #Nodes=4
+ #Fields=1
+ 1) coordinates, coordinate, rectangular cartesian, #Components=3
+ x. l.Lagrange*l.Lagrange, no modify, standard node based.
+   #Nodes=4
+   1. #Values=1
+     Value indices: 1
+     Scale factor indices: 1
+   2. #Values=1
+     Value indices: 1
+     Scale factor indices: 2
+   3. #Values=1
+     Value indices: 1
+     Scale factor indices: 3
+   4. #Values=1
+     Value indices: 1
+     Scale factor indices: 4
+y. l.Lagrange*l.Lagrange, no modify, standard node based.
+   #Nodes=4
+   1. #Values=1
+     Value indices: 1
+     Scale factor indices: 1
+   2. #Values=1
+     Value indices: 1
+     Scale factor indices: 2
+   3. #Values=1
+     Value indices: 1
+     Scale factor indices: 3
+   4. #Values=1
+     Value indices: 1
+     Scale factor indices: 4
+ z. l.Lagrange*l.Lagrange, no modify, standard node based.
+   #Nodes=4
+   1. #Values=1
+     Value indices: 1
+     Scale factor indices: 1
+   2. #Values=1
+     Value indices: 1
+     Scale factor indices: 2
+   3. #Values=1
+     Value indices: 1
+     Scale factor indices: 3
+   4. #Values=1
+     Value indices: 1
+     Scale factor indices: 4
+ Element: 100000 0 0
+ Faces:
+ 0 0 100000
+ 0 0 100001
+ 0 0 100002
+ 0 0 100003
+ Nodes:
+ 100000 100001 100002 100003
+ Scale factors:
+  1.000000e+00  1.000000e+00  1.000000e+00  1.000000e+00
