@@ -57,7 +57,7 @@ extern struct Cmiss_region *Cmiss_command_data_get_root_region(
 %}
 
 %inline %{
-	static void *Cmiss_main_loop_run(void *command_data_void)
+	void *Cmiss_main_loop_run(void *command_data_void)
 	{
 		Cmiss_command_data_id command_data = 
 			(Cmiss_command_data_id)command_data_void;
@@ -81,11 +81,11 @@ extern struct Cmiss_region *Cmiss_command_data_get_root_region(
 
         /* Need to fix up the memory leaks from the strdup sometime */        
 	 
-		if (pthread_create(&thread, NULL, Cmiss_main_loop_run,
-		    (void *)command_data) != 0)
-	    	{
-	        	return NULL;
-	    	}
+		//if (pthread_create(&thread, NULL, Cmiss_main_loop_run,
+		//    (void *)command_data) != 0)
+	    //	{
+	    //    	return NULL;
+	    //	}
         
         	return command_data;
       	}
