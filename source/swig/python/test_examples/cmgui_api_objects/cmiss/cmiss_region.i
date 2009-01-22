@@ -53,6 +53,7 @@ Swig interface file for wrapping api header api/cmiss_region
 //%include "api/cmiss_region.h"
 
 %nodefaultctor;
+%nodefaultdtor;
 
 typedef struct Cmiss_region
 {
@@ -60,6 +61,10 @@ typedef struct Cmiss_region
 	    Cmiss_region()
 	    {
 	       return Cmiss_region_create();
+	    }
+	    ~Cmiss_region()
+	    {
+	       Cmiss_region_destroy(&$self);
 	    }
 	    int read_file(char *filename);
 	    int add_child_region(struct Cmiss_region *child_region,

@@ -51,3 +51,15 @@ Swig interface file for wrapping api header api/cmiss_node
 
 %include "api/cmiss_node.h"
 
+%nodefaultctor;
+%nodefaultdtor;
+
+typedef struct Cmiss_node
+{
+	%extend {
+	    ~Cmiss_node()
+	    {
+	       destroy_Cmiss_node(&$self);
+	    }
+	}
+} *Cmiss_node_id;

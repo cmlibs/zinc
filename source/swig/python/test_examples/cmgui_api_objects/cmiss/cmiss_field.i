@@ -71,10 +71,16 @@ extern int Cmiss_field_evaluate_at_node(Cmiss_field_id field,
 	struct Cmiss_node *node, float time, int number_of_values, float *values);
 
 %nodefaultctor;
+%nodefaultdtor;
 
 typedef struct Cmiss_field
 {
 	%extend {
+	    ~Cmiss_field()
+	    {
+	       Cmiss_field_destroy(&$self);
+	    }
+	    
 		int get_number_of_components();		   
 	}
 } *Cmiss_field_id;

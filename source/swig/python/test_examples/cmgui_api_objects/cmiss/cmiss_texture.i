@@ -49,3 +49,17 @@ Swig interface file for wrapping api/cmiss_texture.h
 %}
 
 %include "api/cmiss_texture.h"
+
+%nodefaultctor;
+%nodefaultdtor;
+
+typedef struct Cmiss_texture
+{
+	%extend {
+	    ~Cmiss_texture()
+	    {
+	       //Not exposed yet but don't use the default
+	       //Cmiss_texture_destroy(&$self);
+	    }
+	}
+} *Cmiss_element_id;
