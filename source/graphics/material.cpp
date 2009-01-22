@@ -304,25 +304,11 @@ DESCRIPTION :
 	{
 		material_program->type = type;
 #if defined (OPENGL_API)
-		material_program->shader_type=MATERIAL_PROGRAM_SHADER_NONE;
-#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
-		if (Graphics_library_check_extension(GL_ARB_vertex_program) &&
-			Graphics_library_check_extension(GL_ARB_fragment_program))
-		{
-			material_program->shader_type=MATERIAL_PROGRAM_SHADER_ARB;
-			material_program->vertex_program = 0;
-			material_program->fragment_program = 0;
-		}
+#if defined GL_ARB_vertex_program &&defined GL_ARB_fragment_program
+		material_program->vertex_program = 0;
+		material_program->fragment_program = 0;
 #endif
-#if defined (GL_VERSION_2_0)
-		if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_ARB)
-		{
-			if (Graphics_library_check_extension(GL_shading_language))
-			{
-				material_program->shader_type=MATERIAL_PROGRAM_SHADER_GLSL;
-			}
-		}
-#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+		material_program->shader_type=MATERIAL_PROGRAM_SHADER_NONE;
 		material_program->glsl_current_program = 0;
 		material_program->vertex_program_string = (char *)NULL;
 		material_program->fragment_program_string = (char *)NULL;
@@ -489,6 +475,23 @@ be shared by multiple materials using the same program.
 		if (!material_program->compiled)
 		{
 #if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program || defined GL_VERSION_2_0
+
+#if defined GL_ARB_fragment_program && defined GL_ARB_vertex_program
+			 if (Graphics_library_check_extension(GL_ARB_fragment_program) &&
+				  Graphics_library_check_extension(GL_ARB_vertex_program))
+			 {
+				 material_program->shader_type=MATERIAL_PROGRAM_SHADER_ARB;
+			 }
+#endif
+#if defined (GL_VERSION_2_0)
+			 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_ARB)
+			 {
+				 if (Graphics_library_check_extension(GL_shading_language))
+				 {
+					 material_program->shader_type=MATERIAL_PROGRAM_SHADER_GLSL;
+				 }
+			 }
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 			 if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL ||
 					 material_program->shader_type==MATERIAL_PROGRAM_SHADER_ARB)
 			 {
@@ -508,6 +511,50 @@ be shared by multiple materials using the same program.
 				vendor_id = Graphics_library_get_vendor_id();
 				error = 0;
 				fragment_program_string = NULL;
+
+				if (0 == material_program->type)
+				{
+					vertex_program_string = material_program->vertex_program_string;
+					fragment_program_string = material_program->fragment_program_string;
+					if (vertex_program_string && strstr(vertex_program_string, "!!ARBvp"))
+					{
+						if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_ARB)
+						{
+							if (Graphics_library_check_extension(GL_ARB_fragment_program) &&
+								Graphics_library_check_extension(GL_ARB_vertex_program))
+							{
+								material_program->shader_type=MATERIAL_PROGRAM_SHADER_ARB;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"Program_string is written with ARB shading program\n"
+									"but ARB shading program is not supported.\n");	
+								vertex_program_string = NULL;
+								fragment_program_string = NULL;
+							}
+						}
+					}
+					else if (vertex_program_string && strstr(vertex_program_string, "void main()"))
+					{
+						if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+						{
+							if (Graphics_library_check_extension(GL_shading_language))
+							{
+								material_program->shader_type=MATERIAL_PROGRAM_SHADER_GLSL;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"Program_string is written with GLSL\n"
+									"but GLSL is not supported.\n");
+								vertex_program_string = NULL;
+								fragment_program_string = NULL;
+							}
+						}
+					}
+				}
+
 #if defined DEBUG
 				if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
 				{
@@ -518,13 +565,9 @@ be shared by multiple materials using the same program.
 				{
 					 display_message(INFORMATION_MESSAGE,
 							"ARB shading program supported\n");
-					if (0 == material_program->type)
-					{
-						vertex_program_string = material_program->vertex_program_string;
-						fragment_program_string = material_program->fragment_program_string;
-					}
 				}
 #endif  /* defined DEBUG */
+
 				if (MATERIAL_PROGRAM_CLASS_GOURAUD_SHADING & material_program->type)
 				{	
 					 if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
@@ -2510,236 +2553,238 @@ be shared by multiple materials using the same program.
 								, &error);
 					}
 				}
-				if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+				if (vertex_program_string && fragment_program_string)
 				{
+					if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+					{
 #if defined (WRITE_STRING)
-					 FILE *program_file;
-					 if (program_file = fopen("out.vert", "w"))
-					 {
+						FILE *program_file;
+						if (vertex_program_string && (program_file = fopen("out.vert", "w")))
+						{
 							fprintf(program_file, "%s", vertex_program_string);
 							fclose (program_file);
-					 }
-					 if (program_file = fopen("out.frag", "w"))
-					 {
+						}
+						if (fragment_program_string  && (program_file = fopen("out.frag", "w")))
+						{
 							fprintf(program_file, "%s", fragment_program_string);
 							fclose (program_file);
-					 }
+						}
 #endif /* defined (WRITE_STRING) */
 #if defined (GL_VERSION_2_0)
-					 material_program->vertex_program = glCreateShader(GL_VERTEX_SHADER);
-					 material_program->fragment_program = glCreateShader(GL_FRAGMENT_SHADER);
+						material_program->vertex_program = glCreateShader(GL_VERTEX_SHADER);
+						material_program->fragment_program = glCreateShader(GL_FRAGMENT_SHADER);
 #endif /* defined (GL_VERSION_2_0) */
-				}
-				else
-				{
-					 if (!material_program->vertex_program)
-					 {
+					}
+					else
+					{
+						if (!material_program->vertex_program)
+						{
 							glGenProgramsARB(1, &material_program->vertex_program);
-					 }
-					 glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
-					 glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+						}
+						glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
+						glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
 							strlen(vertex_program_string), vertex_program_string);
 #if defined (DEBUG)
-					 error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
-					 display_message(WARNING_MESSAGE,
+						error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
+						display_message(WARNING_MESSAGE,
 							"Material_program_compile.  Vertex Result: %s\n", error_msg);
 #endif /* defined (DEBUG) */
 #if defined (WRITE_STRING)
-					 FILE *program_file;
-					 if (program_file = fopen("out.vp", "w"))
-					 {
+						FILE *program_file;
+						if (vertex_program_string && (program_file = fopen("out.vp", "w")))
+						{
 							fprintf(program_file, "%s", vertex_program_string);
 							fclose (program_file);
-					 }
+						}
 #endif /* defined (WRITE_STRING) */
-					 DEALLOCATE(vertex_program_string);
-					 
-					 if (!material_program->fragment_program)
-					 {
+						DEALLOCATE(vertex_program_string);
+						if (!material_program->fragment_program)
+						{
 							glGenProgramsARB(1, &material_program->fragment_program);
-					 }
-					 glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
-					 glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+						}
+						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
+						glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
 							strlen(fragment_program_string), fragment_program_string);
 #if defined (DEBUG)
-					 error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
-					 display_message(WARNING_MESSAGE,
+						error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
+						display_message(WARNING_MESSAGE,
 							"Material_program_compile.  Fragment Result: %s\n", error_msg);
 #endif /* defined (DEBUG) */
 #if defined (WRITE_STRING)
-					 if (program_file = fopen("out.fp", "w"))
-					 {
+						if (fragment_program_string && (program_file = fopen("out.fp", "w")))
+						{
 							fprintf(program_file, "%s", fragment_program_string);
 							fclose (program_file);
-					 }				
+						}				
 #endif /* defined (WRITE_STRING) */
-					 DEALLOCATE(fragment_program_string);
-				}
+						DEALLOCATE(fragment_program_string);
+					}
 #else /* ! defined (TESTING_PROGRAM_STRINGS) */
 #define MAX_PROGRAM (20000)
-				char vertex_program_string[MAX_PROGRAM], fragment_program_string[MAX_PROGRAM];
-				{
-					 FILE *program_file;
-					 int count;
-					 
-					 if (program_file = fopen("test.vp", "r"))
-					 {
+					char vertex_program_string[MAX_PROGRAM], fragment_program_string[MAX_PROGRAM];
+					{
+						FILE *program_file;
+						int count;
+						
+						if (program_file = fopen("test.vp", "r"))
+						{
 							count = fread(vertex_program_string, 1, MAX_PROGRAM - 1, program_file);
 							vertex_program_string[count] = 0;
 							if (count > MAX_PROGRAM - 2)
 							{
 								display_message(ERROR_MESSAGE, "Material_program_compile.  "
-									 "Short read on test.vp, need to increase MAX_PROGRAM.");
+									"Short read on test.vp, need to increase MAX_PROGRAM.");
 							}
 							fclose (program_file);
-					 }
-					 else
-					 {
+						}
+						else
+						{
 							display_message(ERROR_MESSAGE, "Material_program_compile.  "
-								 "Unable to open file test.vp.");
-					 }
-					 
-					 if (program_file = fopen("test.fp", "r"))
-					 {
+								"Unable to open file test.vp.");
+						}
+						
+						if (program_file = fopen("test.fp", "r"))
+						{
 							count = fread(fragment_program_string, 1, MAX_PROGRAM - 1, program_file);
 							fragment_program_string[count] = 0;
 							if (count > MAX_PROGRAM - 2)
 							{
-								 display_message(ERROR_MESSAGE, "Material_program_compile.  "
-										"Short read on test.fp, need to increase MAX_PROGRAM.");
+								display_message(ERROR_MESSAGE, "Material_program_compile.  "
+									"Short read on test.fp, need to increase MAX_PROGRAM.");
 							}
 							fclose (program_file);
-					 }
-					 else
-					 {
+						}
+						else
+						{
 							display_message(ERROR_MESSAGE, "Material_program_compile.  "
-								 "Unable to open file test.fp.");
-					 }
-				}
-				if (material_program->shader_type == MATERIAL_PROGRAM_SHADER_GLSL)))
-				{
+								"Unable to open file test.fp.");
+						}
+					}
+					if (material_program->shader_type == MATERIAL_PROGRAM_SHADER_GLSL)
+					{
 #if defined (GL_VERSION_2_0)
-					 material_program->vertex_program = glCreateShader(GL_VERTEX_SHADER);
-					 material_program->fragment_program = glCreateShader(GL_FRAGMENT_SHADER);
+						material_program->vertex_program = glCreateShader(GL_VERTEX_SHADER);
+						material_program->fragment_program = glCreateShader(GL_FRAGMENT_SHADER);
 #endif /* defined (GL_VERSION_2_0) */		 
-				}
-				else
-				{
-					 if (!material_program->vertex_program)
-					 {
+					}
+					else
+					{
+						if (!material_program->vertex_program)
+						{
 							glGenProgramsARB(1, &material_program->vertex_program);
-					 }
-					 
-					 glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
-					 glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+						}
+						
+						glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
+						glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
 							strlen(vertex_program_string), vertex_program_string);
 #if defined (DEBUG)
-					 error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
-					 display_message(WARNING_MESSAGE,
+						error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
+						display_message(WARNING_MESSAGE,
 							"Material_program_compile.  test.vp Vertex Result: %s", error_msg);
 #endif /* defined (DEBUG) */
-					 
-					 if (!material_program->fragment_program)
-					 {
+						
+						if (!material_program->fragment_program)
+						{
 							glGenProgramsARB(1, &material_program->fragment_program);
-					 }
-					 
-					 glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
-					 glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
-						 strlen(fragment_program_string), fragment_program_string);
+						}
+						
+						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
+						glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+							strlen(fragment_program_string), fragment_program_string);
 #if defined (DEBUG)
-					 error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
-					 display_message(WARNING_MESSAGE,
+						error_msg = glGetString(GL_PROGRAM_ERROR_STRING_ARB);
+						display_message(WARNING_MESSAGE,
 							"Material_program_compile.  test.fp Fragment Result: %s", error_msg);
 #endif /* defined (DEBUG) */
-				}
-				material_program->compiled = 1;
+					}
+					material_program->compiled = 1;
 #endif /* ! defined (TESTING_PROGRAM_STRINGS) */			
-				if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
-				{
-					 material_program->glsl_current_program = glCreateProgram();
-
-					 vv = vertex_program_string;
-					 glShaderSource(material_program->vertex_program,1, &vv, NULL);
-					 glCompileShader(material_program->vertex_program);
-					 glAttachShader(material_program->glsl_current_program,material_program->vertex_program);
-					 DEALLOCATE(vertex_program_string);
-					 
-					 ff = fragment_program_string;
-					 glShaderSource(material_program->fragment_program,1, &ff, NULL);
-					 glCompileShader(material_program->fragment_program);
-					 glAttachShader(material_program->glsl_current_program,material_program->fragment_program);
-					 DEALLOCATE(fragment_program_string);
-
-					 //#if !defined (DEBUG)
-					 int infologLength = 0;
-					 int charsWritten  = 0;
-					 char *infoLog;
-					 glGetShaderiv(material_program->vertex_program, GL_INFO_LOG_LENGTH,&infologLength);
-					 if (infologLength > 0)
-					 {
+					if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+					{
+						material_program->glsl_current_program = glCreateProgram();
+						
+						vv = vertex_program_string;
+						glShaderSource(material_program->vertex_program,1, &vv, NULL);
+						glCompileShader(material_program->vertex_program);
+						glAttachShader(material_program->glsl_current_program,material_program->vertex_program);
+						DEALLOCATE(vertex_program_string);
+						
+						ff = fragment_program_string;
+						glShaderSource(material_program->fragment_program,1, &ff, NULL);
+						glCompileShader(material_program->fragment_program);
+						glAttachShader(material_program->glsl_current_program,material_program->fragment_program);
+						DEALLOCATE(fragment_program_string);
+						
+#if defined (DEBUG)
+						int infologLength = 0;
+						int charsWritten  = 0;
+						char *infoLog;
+						glGetShaderiv(material_program->vertex_program, GL_INFO_LOG_LENGTH,&infologLength);
+						if (infologLength > 0)
+						{
 							infoLog = (char *)malloc(infologLength);
 							glGetShaderInfoLog(material_program->vertex_program,
-								 infologLength, &charsWritten, infoLog);
+								infologLength, &charsWritten, infoLog);
 							display_message(INFORMATION_MESSAGE,"Vertex program info:\n%s\n",infoLog);
 							free(infoLog);
-					 }
-					 glGetShaderiv(material_program->fragment_program, GL_INFO_LOG_LENGTH,&infologLength);
-					 if (infologLength > 0)
-					 {
+						}
+						glGetShaderiv(material_program->fragment_program, GL_INFO_LOG_LENGTH,&infologLength);
+						if (infologLength > 0)
+						{
 							infoLog = (char *)malloc(infologLength);
 							glGetShaderInfoLog(material_program->fragment_program, 
-								 infologLength, &charsWritten, infoLog);
+								infologLength, &charsWritten, infoLog);
 							display_message(INFORMATION_MESSAGE,"Fragment program info:\n%s\n",infoLog);
 							free(infoLog);
-					 }
-					 //#endif /* defined (DEBUG) */	 
+						}
+#endif /* defined (DEBUG) */	 
 					 
-					 if (!material_program->display_list)
-					 {
+						if (!material_program->display_list)
+						{
 							material_program->display_list = glGenLists(1);
-					 }
-					 glNewList(material_program->display_list, GL_COMPILE);
-					 glLinkProgram(material_program->glsl_current_program);
-					 glUseProgram(material_program->glsl_current_program);
-					 glEnable(GL_VERTEX_PROGRAM_TWO_SIDE);
-					 glEndList();
-				}
-				else
-				{
-					 if (!material_program->display_list)
-					 {
+						}
+						glNewList(material_program->display_list, GL_COMPILE);
+						glLinkProgram(material_program->glsl_current_program);
+						glUseProgram(material_program->glsl_current_program);
+						glEnable(GL_VERTEX_PROGRAM_TWO_SIDE);
+						glEndList();
+					}
+					else
+					{
+						if (!material_program->display_list)
+						{
 							material_program->display_list = glGenLists(/*number_of_lists*/1);
-					 }
-					 
-					 glNewList(material_program->display_list, GL_COMPILE);
-					 
-					 glEnable(GL_VERTEX_PROGRAM_ARB);
-					 glBindProgramARB(GL_VERTEX_PROGRAM_ARB,
+						}
+						
+						glNewList(material_program->display_list, GL_COMPILE);
+						
+						glEnable(GL_VERTEX_PROGRAM_ARB);
+						glBindProgramARB(GL_VERTEX_PROGRAM_ARB,
 							material_program->vertex_program);
-						 
-					 glEnable(GL_FRAGMENT_PROGRAM_ARB);
-					 glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB,
+						
+						glEnable(GL_FRAGMENT_PROGRAM_ARB);
+						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB,
 							material_program->fragment_program);
-					 
-					 glEnable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
-					 
-					 glEndList();
+						
+						glEnable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
+						
+						glEndList();
+					}
 				}
 				material_program->compiled = 1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "Support for per pixel lighting and "
-					"bump mapping requires the "
-					"GL_ARB_vertex_program and GL_ARB_fragment_program extensions "
-					"which are not available in this OpenGL implementation.");
-			}
+			 }
+			 else
+			 {
+				 display_message(ERROR_MESSAGE, "Support for per pixel lighting and "
+					 "bump mapping requires the "
+					 "GL_ARB_vertex_program and GL_ARB_fragment_program extensions "
+					 "which are not available in this OpenGL implementation.");
+			 }
 #else /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
-			display_message(ERROR_MESSAGE, "Support for per pixel lighting and "
-				"bump mapping requires the "
-				"GL_ARB_vertex_program and GL_ARB_fragment_program extensions or GL_VERSION_2_0 "
-				"which were not compiled into this version.");
+			 display_message(ERROR_MESSAGE, "Support for per pixel lighting and "
+				 "bump mapping requires the "
+				 "GL_ARB_vertex_program and GL_ARB_fragment_program extensions or GL_VERSION_2_0 "
+				 "which were not compiled into this version.");
 #endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 		}
 #else /* defined (OPENGL_API) */

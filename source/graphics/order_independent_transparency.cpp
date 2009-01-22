@@ -357,7 +357,7 @@ Draws one peeled layer of the scene.
 		fragment_program);
 
 #endif /* defined (OLD_CODE) */
-	if (!(Graphics_library_check_extension(GL_shading_language)))
+	if ((Graphics_library_check_extension(GL_ARB_fragment_program)))
 	{
 		 glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 1,
 				data->viewport_width, data->viewport_height, 1.0, 1.0);
@@ -472,7 +472,8 @@ Draw a textured quad for each layer and blend them all together correctly.
 		 glUseProgram(0);
 #endif
 	}
-	else
+	if (Graphics_library_check_extension(GL_ARB_fragment_program) &&
+		Graphics_library_check_extension(GL_ARB_vertex_program))
 	{
 		 glDisable(GL_VERTEX_PROGRAM_ARB);
 		 glDisable(GL_FRAGMENT_PROGRAM_ARB);
