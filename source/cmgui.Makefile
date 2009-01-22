@@ -52,6 +52,18 @@ PERL_INTERPRETER = true
 IMAGEMAGICK = true
 #Does your version of imagemagick include libgdcm
 USE_LIBGDCM = false
+ifeq ($(SYSNAME),Linux)
+  USE_LIBGDCM = true
+endif # SYSNAME == Linux
+ifeq ($(SYSNAME),win32)
+  USE_LIBGDCM = true
+endif  # SYSNAME == win32
+ifeq ($(SYSNAME:IRIX%=),)
+  USE_LIBGDCM = false
+endif
+ifeq ($(SYSNAME),AIX)
+  USE_LIBGDCM = false
+endif
 USE_XML2 = true
 ifneq ($(filter linux aix win32 irix darwin,$(OPERATING_SYSTEM)),)
   ifneq ($(GRAPHICS_API),NO3D_GRAPHICS)
