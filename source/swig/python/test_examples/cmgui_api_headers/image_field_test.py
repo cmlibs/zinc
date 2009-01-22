@@ -117,3 +117,6 @@ binary_threshold_field_id = cmiss.field.Cmiss_field_create_binary_threshold_imag
 	0.1, 0.5)
 # add field to region for display in 3D window
 binary_threshold_region_field_id = cmiss.region.Cmiss_region_add_field(region_id, binary_threshold_field_id)
+
+
+cmiss.command_data.Cmiss_main_loop_run(a)
