@@ -84,6 +84,7 @@ a.execute_command("gfx modify g_element cube surfaces material trans_purple rend
 a.execute_command("gfx modify g_element cube surfaces face xi1_0 material kermit render_shaded position 3")
 
 #a.execute_command("gfx cre win 1")
+a.main_loop_run()
 
 #=====================#
 #= create isosurface =#
@@ -112,9 +113,6 @@ def add_isosurface(field_id, region_id, component, value):
     # add isosurface to scene
     a.execute_command("gfx modify g_element cube iso_surfaces iso_scalar " + coord_field_name + " iso_value " + str(value) + " use_elements material red render_shaded position 4")
 
-    coord_field_id.destroy()
-    coord_field_region_id.destroy()
-
 #=====================================================================
 
 go = 1
@@ -126,8 +124,12 @@ while go:
         value = input("enter component value: ")
 	add_isosurface(coord_field_id, region_id, component, value)
 	
+a.main_loop_run()
 
-# get screenshot
+
+#==================#
+#= get screenshot =#
+#==================#
 get_screenshot = input("open 3D window and enter 1 if you want a screenshot, otherwise enter 0: ")
 if get_screenshot:
     print "getting screenshot..."
@@ -153,6 +155,7 @@ else:
 # label nodes with cmiss_numbers
 a.execute_command("gfx modify g_element cube node_points glyph point label cmiss_number select_on material default selected_material default_selected")
 
+#========================================================================
 # function for viewing and changing node values
 def set_node_value(node, field_id, region_id):
 
@@ -177,6 +180,7 @@ def set_node_value(node, field_id, region_id):
     
     cmiss.field.Cmiss_field_set_values_at_node(field_id, node_id, 0, field_number_of_components, node_value_array)
 
+#========================================================================
 
 # call function to change node values
 selected_node = 1
@@ -186,6 +190,10 @@ while selected_node > 0:
     	set_node_value(selected_node, coord_field_id, region_id)
 
 
+# adjust discretisation
+a.execute_command('gfx modify g_element cube general element_discretization "16*16*16"')
+
+a.main_loop_run()
 
 run = input("continue? (0 or 1): ")
 if run:
@@ -195,11 +203,9 @@ else:
    quit()
 
 
-# adjust discretisation
-a.execute_command('gfx modify g_element cube general element_discretization "16*16*16"')
+
 
 print ("END OF EXAMPLE")
-#quit()
 a.main_loop_run()
 
 
