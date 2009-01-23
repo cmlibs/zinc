@@ -62,7 +62,7 @@ extern int Cmiss_field_get_name(Cmiss_field_id field, char **name);
 extern int Cmiss_field_set_name(Cmiss_field_id field, const char *name);
 extern int Cmiss_field_set_values_at_node(Cmiss_field_id field,
 	struct Cmiss_node *node, float time, int number_of_values, float *values);
-extern int Cmiss_field_destroy(Cmiss_field_id *field);
+//extern int Cmiss_field_destroy(Cmiss_field_id *field);
 %}
 
 /*%include "api/cmiss_field.h"	*/
@@ -78,13 +78,18 @@ extern int Cmiss_field_set_values_at_node(Cmiss_field_id field,
 	struct Cmiss_node *node, float time, int number_of_values, float *values);
 
 %nodefaultctor;
+%nodefaultdtor;
 
 typedef struct Cmiss_field
 {
 	%extend {
+	    	~Cmiss_field()
+	    	{
+	       		Cmiss_field_destroy(&$self);
+	    	}
 		int get_number_of_components();	
 		int set_name(const char *name);	 
 		int get_name(char **name);
-		int destroy();  
+		//int destroy();  
 	}
 } *Cmiss_field_id;
