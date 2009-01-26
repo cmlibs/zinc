@@ -412,10 +412,12 @@ Frees the memory for the material_program.
 			if (material_program->vertex_program_string)
 			{
 				DEALLOCATE(material_program->vertex_program_string);
+				material_program->vertex_program_string = NULL;
 			}
 			if (material_program->fragment_program_string)
 			{
 				DEALLOCATE(material_program->fragment_program_string);
+				material_program->fragment_program_string = NULL;
 			}
 #endif /* defined (OPENGL_API) */
 			DEALLOCATE(*material_program_address);
@@ -514,8 +516,8 @@ be shared by multiple materials using the same program.
 
 				if (0 == material_program->type)
 				{
-					vertex_program_string = material_program->vertex_program_string;
-					fragment_program_string = material_program->fragment_program_string;
+					vertex_program_string = duplicate_string(material_program->vertex_program_string);
+					fragment_program_string = duplicate_string(material_program->fragment_program_string);
 					if (vertex_program_string && strstr(vertex_program_string, "!!ARBvp"))
 					{
 						if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_ARB)
