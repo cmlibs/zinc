@@ -1081,7 +1081,7 @@ Updates the time display of the time_slider
 				 if (window->maximum_time - window->minimum_time > 0)
 				 {
 					 time_slider_index = (int)(
-						 window->current_time/(window->maximum_time - window->minimum_time) * 1000 + 0.5);
+						 (window->current_time - window->minimum_time)/(window->maximum_time - window->minimum_time) * 1000 + 0.5);
 					 window->time_slider->SetValue(time_slider_index);
 				 }
 			 }
@@ -2022,7 +2022,7 @@ void OnTimeSliderChanged( wxScrollEvent& event)
 	 ENTER(OnTimeSliderChanged);
 
 	 value = graphics_window->time_slider->GetValue();
-	 time = (double)(((graphics_window->maximum_time - graphics_window->minimum_time) * (double)value ) / (double)1000);
+	 time = (double)(((graphics_window->maximum_time - graphics_window->minimum_time) * (double)value)/ (double)1000) + graphics_window->minimum_time;
 	 time_string.Printf(_T("%f"), time);
 	 graphics_window->time_text_ctrl->ChangeValue(time_string);
 	 if(graphics_window->time_keeper)
