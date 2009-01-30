@@ -1,0 +1,55 @@
+Group name: grid
+#Fields=2
+1) coordinates, coordinate, rectangular cartesian, #Components=2
+ x. Value index= 1, #Derivatives= 0
+ y. Value index= 2, #Derivatives= 0
+2) general, field, rectangular cartesian, #Components=1
+ value.  Value index= 3, #Derivatives= 0
+Node: 1
+-3.1 -3.1
+1.0
+Node: 2
+-3.1 -1.1
+-0.4
+Node: 3
+-3.1 0.9
+-0.7
+Node: 4
+-3.1 2.9
+1.0
+Node: 5
+-1.1 -3.1
+-0.4
+Node: 6
+-1.1 -1.1
+0.2
+Node: 7
+-1.1 0.9
+0.3
+Node: 8
+-1.1 2.9
+-0.4
+Node: 9
+0.9 -3.1
+-0.7
+Node: 10
+0.9 -1.1
+0.3
+Node: 11
+0.9 0.9
+0.4
+Node: 12
+0.9 2.9
+-0.6
+Node: 13
+2.9 -3.1
+1.0
+Node: 14
+2.9 -1.1
+-0.4
+Node: 15
+2.9 0.9
+-0.6
+Node: 16
+2.9 2.9
+0.9
