@@ -190,20 +190,19 @@ void EM_write_basis(char *filename,struct EM_Object *em_object)
 	{
 	   return_code = 0;
 	}		
-	if (em_object->n_nodes != fwrite(em_object->index,sizeof(int),em_object->n_nodes,file))
+	if (0 == fwrite(em_object->index,sizeof(int),em_object->n_nodes,file))
 	{
 	   return_code = 0;
 	}		
-	if (em_object->m*em_object->n_modes != fwrite(em_object->u,sizeof(double),
-		em_object->m*em_object->n_modes,file))
+	if (0 == fwrite(em_object->u,sizeof(double),em_object->m*em_object->n_modes,file))
 	{
 	   return_code = 0;
 	}		
-	if (em_object->n_modes != fwrite(em_object->w,sizeof(double),em_object->n_modes,file))
+	if (0 == fwrite(em_object->w,sizeof(double),em_object->n_modes,file))
 	{
 	   return_code = 0;
 	}		
-	if (em_object->n_modes*em_object->n_modes != fwrite(em_object->v,
+	if (0 == fwrite(em_object->v,
 		sizeof(double),em_object->n_modes*em_object->n_modes, file))
 	{
 	   return_code = 0;
