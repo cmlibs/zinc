@@ -1080,56 +1080,62 @@ Temporary.
 		printf("\nRanges:\n");
 		Multi_range_print(multi_range);
 		printf("\na/r/i/l/n/m/g # #: \n");
-		scanf("%c %d %d",&cmd,&v1,&v2);
-		switch (cmd)
+		if (1 < scanf("%c %d %d",&cmd,&v1,&v2))
 		{
-			case 'a':
+			switch (cmd)
 			{
-				printf("Add: %i %i\n",v1,v2);
-				Multi_range_add_range(multi_range,v1,v2);
-			} break;
-			case 'r':
-			{
-				printf("Remove: %i %i\n",v1,v2);
-				Multi_range_remove_range(multi_range,v1,v2);
-			} break;
-			case 'i':
-			{
-				r=Multi_range_is_value_in_range(multi_range,v1);
-				printf("Is %i in range: %i\n",v1,r);
-			} break;
-			case 'l':
-			{
-				if (Multi_range_get_last_stop_value(multi_range,v1,&r))
+				case 'a':
 				{
-					printf("Last stop value before %i: %i\n",v1,r);
-				}
-				else
+					printf("Add: %i %i\n",v1,v2);
+					Multi_range_add_range(multi_range,v1,v2);
+				} break;
+				case 'r':
 				{
-					printf("No Last stop value before %i\n",v1);
-				}
-			} break;
-			case 'n':
-			{
-				if (Multi_range_get_next_start_value(multi_range,v1,&r))
+					printf("Remove: %i %i\n",v1,v2);
+					Multi_range_remove_range(multi_range,v1,v2);
+				} break;
+				case 'i':
 				{
-					printf("Next start value after %i: %i\n",v1,r);
-				}
-				else
+					r=Multi_range_is_value_in_range(multi_range,v1);
+					printf("Is %i in range: %i\n",v1,r);
+				} break;
+				case 'l':
 				{
-					printf("No Next start value after %i\n",v1);
-				}
-			} break;
-			case 'm':
-			{
-				r=Multi_range_get_number_of_ranges(multi_range);
-				printf("Number of ranges: %i\n",r);
-			} break;
-			case 'g':
-			{
-				Multi_range_get_range(multi_range,v1,&v2,&r);
-				printf("Range[%i]: %i %i\n",v1,v2,r);
-			} break;
+					if (Multi_range_get_last_stop_value(multi_range,v1,&r))
+					{
+						printf("Last stop value before %i: %i\n",v1,r);
+					}
+					else
+					{
+						printf("No Last stop value before %i\n",v1);
+					}
+				} break;
+				case 'n':
+				{
+					if (Multi_range_get_next_start_value(multi_range,v1,&r))
+					{
+						printf("Next start value after %i: %i\n",v1,r);
+					}
+					else
+					{
+						printf("No Next start value after %i\n",v1);
+					}
+				} break;
+				case 'm':
+				{
+					r=Multi_range_get_number_of_ranges(multi_range);
+					printf("Number of ranges: %i\n",r);
+				} break;
+				case 'g':
+				{
+					Multi_range_get_range(multi_range,v1,&v2,&r);
+					printf("Range[%i]: %i %i\n",v1,v2,r);
+				} break;
+			}
+		}
+		else
+		{
+			printf("Error parsing command\n");
 		}
 	}
 	return_code=1;

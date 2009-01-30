@@ -173,8 +173,16 @@ Sends a string to the stdin pipe of a Child_process.
 	{
 #if defined (UNIX)
 		length = strlen(string);
-		write(child_process->stdin_filedes, (void *)string, length);
-		return_code=1;
+		if (-1 == write(child_process->stdin_filedes, (void *)string, length))
+		{
+			display_message(ERROR_MESSAGE,"Child_process_send_string_to_stdin.  "
+				"Error writing child_process result.");
+		   return_code = 0;
+		}
+		else
+		{
+			return_code=1;
+		}
 #else /* defined (UNIX) */
 		USE_PARAMETER(string);
 		display_message(ERROR_MESSAGE,"Child_process_send_string_to_stdin.  "

@@ -1311,7 +1311,11 @@ name the <file_operation> is performed on the file with the <arguments>.
 		 char *last,*pathname;
 		 int return_code=1;
 		 old_directory = (char *)malloc(4096);
-		 getcwd(old_directory, 4096);
+		 if (!getcwd(old_directory, 4096))
+		 {
+			 // Unable to read old directory so just set it to a empty string
+			 old_directory[0] = 0;
+		 }
 		 length = strlen(old_directory);
 		 filename = file_open_data->file_name;
 		 if ((ALLOCATE(old_directory_name,char,length+2)) && old_directory !=NULL)

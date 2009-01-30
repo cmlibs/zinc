@@ -130,7 +130,11 @@ be DEALLOCATED by the calling function.
 					if (process_id)
 					{
 						/* Parent process comes here */
-						write(stdin_filedes[1], directory_name, strlen(directory_name) + 1);
+						if (-1 == write(stdin_filedes[1], directory_name, strlen(directory_name) + 1))
+						{
+							display_message(ERROR_MESSAGE,"resolve_example_path."
+								"  Error writing directory to external command");							
+						}
 
 						FD_ZERO(&readfds);
 						FD_SET(stdout_filedes[0], &readfds);
@@ -196,7 +200,11 @@ be DEALLOCATED by the calling function.
 								"  Unable to allocate string");
 							return_string = (char *)NULL;
 						}
-						write(stdin_filedes[1], end, 3);
+						if (3 != write(stdin_filedes[1], end, 3))
+						{
+							display_message(ERROR_MESSAGE,"resolve_example_path."
+								"  Error writing end characters");							
+						}
 						close(stdin_filedes[1]);
 						close(stdout_filedes[0]);
 

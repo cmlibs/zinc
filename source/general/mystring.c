@@ -393,8 +393,13 @@ string.  It uses fscanf:
 						working_string_len+1))
 					{
 						characters_read=0;
-						fscanf(in,working_format,working_string+working_string_len-80,
-							&characters_read);
+						if (EOF == fscanf(in,working_format,working_string+working_string_len-80,
+							&characters_read))
+						{
+							display_message(WARNING_MESSAGE,
+								"read_string.  Error reading from string");
+							return_code = 0;
+						}
 					}
 					else
 					{

@@ -223,15 +223,18 @@ specified on the command line, a file selection box is presented to the user.
 #else /* defined (__WIN32__)*/
 				 /* Save the current working directory */
 				 old_directory = (char *)malloc(4096);
-				 getcwd(old_directory, 4096);
-				length = strlen(old_directory);
-				if ((ALLOCATE(old_directory_name,char,length+2)) && old_directory !=NULL)
-				{
-					 strcpy(old_directory_name, old_directory);
-							strcat(old_directory_name,"/");
-							old_directory_name[length+1]='\0';
-				}
-			 
+				 if ((NULL != getcwd(old_directory, 4096)) && 
+					 (NULL != old_directory))
+				 {
+					length = strlen(old_directory);
+					if (ALLOCATE(old_directory_name,char,length+2))
+					{
+						 strcpy(old_directory_name, old_directory);
+								strcat(old_directory_name,"/");
+								old_directory_name[length+1]='\0';
+					}
+				 }
+				 
 					 /* Set the current directory to that of filename */
 				if (!(0 < open_comfile_data->execute_count))
 				{
@@ -245,7 +248,8 @@ specified on the command line, a file selection box is presented to the user.
 							{
 								 strncpy(pathname,filename,length);
 								 pathname[length]='\0';
-								 if (strcmp (old_directory_name,pathname) != 0)
+								 if ((NULL != old_directory_name) &&
+									 strcmp (old_directory_name,pathname) != 0)
 								 {
 										make_valid_token(&pathname);
 										length = strlen(pathname);

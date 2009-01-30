@@ -169,24 +169,53 @@ Create a basis data file.
 ==============================================================================*/
 void EM_write_basis(char *filename,struct EM_Object *em_object)
 {
+	int return_code;
 	FILE* file;
 
 	ENTER(write_basis);
 
 	file = fopen(filename,"w");
 
-	fwrite(magic,sizeof(magic),1,file);
-	fwrite(&(em_object->m),sizeof(int),1,file);
-	fwrite(&(em_object->n_modes),sizeof(int),1,file);
-
-	fwrite(em_object->index,sizeof(int),   em_object->n_nodes,file);
-	fwrite(em_object->u,  sizeof(double),em_object->m*em_object->n_modes,file);
-	fwrite(em_object->w,  sizeof(double),em_object->n_modes,file);
-	fwrite(em_object->v,  sizeof(double),em_object->n_modes*em_object->n_modes,
-		file);
+	return_code = 1;
+	
+	if (1 != fwrite(magic,sizeof(magic),1,file))
+	{
+	   return_code = 0;
+	}
+	if (1 != fwrite(&(em_object->m),sizeof(int),1,file))
+	{
+	   return_code = 0;
+	}		
+	if (1 != fwrite(&(em_object->n_modes),sizeof(int),1,file))
+	{
+	   return_code = 0;
+	}		
+	if (em_object->n_nodes != fwrite(em_object->index,sizeof(int),em_object->n_nodes,file))
+	{
+	   return_code = 0;
+	}		
+	if (em_object->m*em_object->n_modes != fwrite(em_object->u,sizeof(double),
+		em_object->m*em_object->n_modes,file))
+	{
+	   return_code = 0;
+	}		
+	if (em_object->n_modes != fwrite(em_object->w,sizeof(double),em_object->n_modes,file))
+	{
+	   return_code = 0;
+	}		
+	if (em_object->n_modes*em_object->n_modes != fwrite(em_object->v,
+		sizeof(double),em_object->n_modes*em_object->n_modes, file))
+	{
+	   return_code = 0;
+	}		
 
 	fclose(file);
-
+	if (!return_code)
+	{
+		display_message(ERROR_MESSAGE,"EM_write_basis.  Error writing file %s",
+			filename);
+	}
+	
 	LEAVE;
 }
 

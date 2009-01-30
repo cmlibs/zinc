@@ -23437,9 +23437,9 @@ Executes a SET DIR #CMGUI_EXAMPLE_DIRECTORY_SYMBOL command.
 				{
 					strcpy(system_command,command);
 					parse_variable(&system_command);
-					system(system_command);
+					//system commands return 0 for no error
+					return_code = !system(system_command);
 					DEALLOCATE(system_command);
-					return_code=1;
 				}
 				else
 				{
