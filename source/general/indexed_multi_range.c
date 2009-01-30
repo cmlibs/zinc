@@ -1272,7 +1272,7 @@ line format. Also write the header_text at the top of the file.
 	{
 		if (write_data.out_file=fopen(file_name,"w"))
 		{
-			fprintf(write_data.out_file,header_text);
+			fprintf(write_data.out_file,"%s",header_text);
 			write_data.line_format=line_format;
 			return_code=FOR_EACH_OBJECT_IN_LIST(Index_multi_range)(Index_multi_range_write,
 				(void *)&write_data,index_multi_range_list);

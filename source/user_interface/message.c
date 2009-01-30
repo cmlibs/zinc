@@ -293,9 +293,9 @@ A function for writing out commands to com file.
 				if (com_file = fopen("temp_file_com.com", "a"))
 				{
 #if defined (WIN32_USER_INTERFACE)
-					 fprintf(com_file, message_string);
+					 fprintf(com_file, "%s", message_string);
 #else /* defined (WIN32_USER_INTERFACE) */
-					 fprintf(com_file, message_string);
+					 fprintf(com_file, "%s", message_string);
 #endif /* defined (WIN32_USER_INTERFACE) */
 					 fclose(com_file);
 				}
