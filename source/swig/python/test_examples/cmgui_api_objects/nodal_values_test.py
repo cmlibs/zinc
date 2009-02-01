@@ -1,7 +1,7 @@
 #*******************************************************************************
 #FILE : cmgui_api_header_test.py
 
-#LAST MODIFIED : 12 January 2008
+#LAST MODIFIED : 02 February 2008
 
 #DESCRIPTION :
 #python script for testing wrapped api headers in the cmiss package
@@ -49,8 +49,6 @@ print "loading modules..."
 import cmiss.command_data
 import cmiss.region
 import cmiss.field
-#import cmiss.cmiss_node
-#import cmiss.element
 
 print "creating cmiss_command_data..."
 a = cmiss.command_data.Cmiss_command_data()
@@ -83,7 +81,7 @@ def write_field(field_id, region_id, number_of_nodes, components, file_name):
     	node = str(node)
     	node_id = region_id.get_node(node)
    	node_fieldvalues = cmiss.field.new_float_array(components) # carrays method
-    	cmiss.field.Cmiss_field_evaluate_at_node(field_id, node_id, 0, components, node_fieldvalues) #returns a c array into node_fieldvalues object
+    	field_id.evaluate_at_node(node_id, 0, components, node_fieldvalues) #returns a c array into node_fieldvalues object
 
     	for i in range(0,components):
             field_values[i] = cmiss.field.float_array_getitem(node_fieldvalues,i) # retrieve individual elements from the node_fielvalue object

@@ -1,7 +1,7 @@
 #*******************************************************************************
 #FILE : cmgui_api_header_image_field_test.py
 
-#LAST MODIFIED : 20 January 2008
+#LAST MODIFIED : 02 February 2008
 
 #DESCRIPTION :
 #python script for testing image field reading and writing
@@ -114,9 +114,12 @@ else:
 # perform binary thresholding
 print "thresholding image"
 binary_threshold_field_id = cmiss.field.Cmiss_field_create_binary_threshold_image_filter(new_field_id,
-	0.1, 0.5)
+	0.5, 1.0)
 # add field to region for display in 3D window
 binary_threshold_region_field_id = region_id.add_field(binary_threshold_field_id)
+binary_threshold_region_field_id.set_name("binary_threshold")
 
+cmiss.command_data.Cmiss_command_data_execute_command(a, "gfx cre win 1")
+cmiss.command_data.Cmiss_command_data_execute_command(a, "gfx modify g_element image surfaces select_on material default data binary_threshold spectrum default selected_material default_selected render_shaded;")
 
 a.main_loop_run()
