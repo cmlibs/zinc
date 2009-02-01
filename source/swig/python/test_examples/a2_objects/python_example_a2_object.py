@@ -83,16 +83,13 @@ a.execute_command("gfx modify g_element cube cylinders constant_radius 0.02 mate
 a.execute_command("gfx modify g_element cube surfaces material trans_purple render_shaded")
 a.execute_command("gfx modify g_element cube surfaces face xi1_0 material kermit render_shaded position 3")
 
-#a.execute_command("gfx cre win 1")
+print 'PAUSE: view cube mesh'
+a.execute_command("gfx cre win 1")
 a.main_loop_run()
 
 #=====================#
 #= create isosurface =#
 #=====================#
-
-# debug: write x_coord_field to file
-#field_number_of_components = cmiss.field.Cmiss_field_get_number_of_components(x_coord_field_region_id)
-#write_field(x_coord_field_region_id, region_id, 8, field_number_of_components, "x_coord_field_region")
 
 # add isosurface
 print "adding isosurface..."
@@ -123,7 +120,8 @@ while go:
     else:
         value = input("enter component value: ")
 	add_isosurface(coord_field_id, region_id, component, value)
-	
+
+print "PAUSE: view isosurfaces"
 a.main_loop_run()
 
 
@@ -167,7 +165,7 @@ def set_node_value(node, field_id, region_id):
     node_value_array = cmiss.field.new_float_array(field_number_of_components) # carrays method
 
     # get current values
-    cmiss.field.Cmiss_field_evaluate_at_node(field_id, node_id, 0, field_number_of_components, node_value_array)
+    field_id.evaluate_at_node(node_id, 0, field_number_of_components, node_value_array)
     for i in range(0,field_number_of_components):
 	node_values[i] = cmiss.field.float_array_getitem(node_value_array, i) 
     
@@ -178,7 +176,7 @@ def set_node_value(node, field_id, region_id):
 	node_value = input("enter value for component "+str(i+1)+": ")
 	cmiss.field.float_array_setitem(node_value_array, i, node_value)
     
-    cmiss.field.Cmiss_field_set_values_at_node(field_id, node_id, 0, field_number_of_components, node_value_array)
+    field_id.set_values_at_node(node_id, 0, field_number_of_components, node_value_array)
 
 #========================================================================
 
@@ -193,19 +191,7 @@ while selected_node > 0:
 # adjust discretisation
 a.execute_command('gfx modify g_element cube general element_discretization "16*16*16"')
 
-a.main_loop_run()
-
-run = input("continue? (0 or 1): ")
-if run:
-   print("...")
-else:
-   print("EXITING")
-   quit()
-
-
-
-
-print ("END OF EXAMPLE")
+print "END: going to main_loop"
 a.main_loop_run()
 
 
