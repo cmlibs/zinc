@@ -1,7 +1,7 @@
 #*******************************************************************************
-#FILE : cmgui_api_header_image_field_test.py
+#FILE : image_field_test.py
 
-#LAST MODIFIED : 02 February 2008
+#LAST MODIFIED : 03 February 2008
 
 #DESCRIPTION :
 #python script for testing image field reading and writing
@@ -106,20 +106,27 @@ if not cmiss.field.Cmiss_field_image_write(image_field_id, storage_information):
     print "cannot write", output_image_filename
     quit()
 else:
-   print "file written"
+   print "\tfile writing successful"
 
 #================================#
-#= write binary threshold image =#
+#= binary threshold image =#
 #================================#
 # perform binary thresholding
 print "thresholding image"
 binary_threshold_field_id = cmiss.field.Cmiss_field_create_binary_threshold_image_filter(new_field_id,
 	0.5, 1.0)
-# add field to region for display in 3D window
-binary_threshold_region_field_id = region_id.add_field(binary_threshold_field_id)
-binary_threshold_region_field_id.set_name("binary_threshold")
 
-cmiss.command_data.Cmiss_command_data_execute_command(a, "gfx cre win 1")
-cmiss.command_data.Cmiss_command_data_execute_command(a, "gfx modify g_element image surfaces select_on material default data binary_threshold spectrum default selected_material default_selected render_shaded;")
+if binary_threshold_field_id == None:
+    print "ERROR: binary threshold failed"
+else:
+    # add field to region for display in 3D window
+    print "\tthresholding successful"
+    binary_threshold_region_field_id = region_id.add_field(binary_threshold_field_id)
+    binary_threshold_region_field_id.set_name("binary_threshold")
 
+    a.execute_command("gfx cre win 1")
+    a.execute_command("gfx modify g_element image surfaces select_on material default data binary_threshold spectrum default selected_material default_selected render_shaded;")
+
+print "END: going to main_loop"
 a.main_loop_run()
+
