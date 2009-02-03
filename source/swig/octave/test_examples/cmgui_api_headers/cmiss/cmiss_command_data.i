@@ -82,9 +82,9 @@ extern struct Cmiss_region *Cmiss_command_data_get_root_region(struct Cmiss_comm
 		    (void *)command_data) != 0)
 	    {
 	        return NULL;
-	    }
+	    }*/
         
-        return command_data;*/
+        return command_data;
       }
 %}
 
