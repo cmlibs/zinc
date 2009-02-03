@@ -1,10 +1,10 @@
 /*******************************************************************************
-FILE : cmiss_command_data.i
+FILE : cmiss_element.i
 
-LAST MODIFIED : 23 December 2008
+LAST MODIFIED : 15 January 2009
 
 DESCRIPTION :
-Swig interface file for wrapping the Cmiss_command_data_execute_command 
+Swig interface file for wrapping the Cmiss_element 
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -41,54 +41,13 @@ Swig interface file for wrapping the Cmiss_command_data_execute_command
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
- /* cmiss_command_data.i */
+ /* cmiss_element.i */
 
-struct Cmiss_command_data;
-%module cmiss_command_data
+%module cmiss_element
 
 %{
-#include "api/cmiss_command_data.h"
-extern int Cmiss_command_data_execute_command(struct Cmiss_command_data *command_data, const char *command);
-extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, char *argv[], char *version_string);
-extern struct Cmiss_region *Cmiss_command_data_get_root_region(struct Cmiss_command_data *command_data);
+#include "api/cmiss_element.h"
 %}
 
-%inline %{
-	void *Cmiss_main_loop_run(void *command_data_void)
-	{
-		Cmiss_command_data_id command_data = 
-			(Cmiss_command_data_id)command_data_void;
-	
-        Cmiss_command_data_main_loop(command_data);
-	}
-
-    /* Create a new cmiss_command_data */
-    Cmiss_command_data *new_Cmiss_command_data()
-    {
-		Cmiss_command_data_id command_data;
-		            
-		char* cmgui_argv[] = {strdup("cmgui"), NULL};
-
-		char **string_ptr;
-	    pthread_t thread;
-	
-		command_data = create_Cmiss_command_data(
-			(sizeof(cmgui_argv)/sizeof(char *) - 1),
-			cmgui_argv, "0.0"); 
-
-        /* Need to fix up the memory leaks from the stdup sometime */        
-	 
-	    /*if (pthread_create(&thread, NULL, Cmiss_main_loop_run,
-		    (void *)command_data) != 0)
-	    {
-	        return NULL;
-	    }
-        
-        return command_data;*/
-      }
-%}
-
-extern int Cmiss_command_data_execute_command(struct Cmiss_command_data *command_data, const char *command);
-extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, char *argv[], char *version_string);
-extern struct Cmiss_region *Cmiss_command_data_get_root_region(struct Cmiss_command_data *command_data);
+%include "api/cmiss_element.h"
 

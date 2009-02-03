@@ -43,14 +43,18 @@ Swig interface file for wrapping the Cmiss_command_data_execute_command
  * ***** END LICENSE BLOCK ***** */
  /* cmiss_command_data.i */
 
-struct Cmiss_command_data;
 %module cmiss_command_data
+struct Cmiss_command_data;
 
 %{
 #include "api/cmiss_command_data.h"
-extern int Cmiss_command_data_execute_command(struct Cmiss_command_data *command_data, const char *command);
-extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, char *argv[], char *version_string);
-extern struct Cmiss_region *Cmiss_command_data_get_root_region(struct Cmiss_command_data *command_data);
+/* Cmiss_command functions */
+extern int Cmiss_command_data_execute_command(struct Cmiss_command_data 
+	*command_data, const char *command);
+extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, 
+	char *argv[], char *version_string);
+extern struct Cmiss_region *Cmiss_command_data_get_root_region(
+	struct Cmiss_command_data *command_data);
 %}
 
 %inline %{
@@ -59,36 +63,40 @@ extern struct Cmiss_region *Cmiss_command_data_get_root_region(struct Cmiss_comm
 		Cmiss_command_data_id command_data = 
 			(Cmiss_command_data_id)command_data_void;
 	
-        Cmiss_command_data_main_loop(command_data);
+        	Cmiss_command_data_main_loop(command_data);
 	}
 
-    /* Create a new cmiss_command_data */
-    Cmiss_command_data *new_Cmiss_command_data()
-    {
+	/* Create a new cmiss_command_data */
+    	struct Cmiss_command_data *new_Cmiss_command_data()
+    	{
 		Cmiss_command_data_id command_data;
-		            
+		           
 		char* cmgui_argv[] = {strdup("cmgui"), NULL};
 
 		char **string_ptr;
-	    pthread_t thread;
+	    	pthread_t thread;
 	
 		command_data = create_Cmiss_command_data(
 			(sizeof(cmgui_argv)/sizeof(char *) - 1),
 			cmgui_argv, "0.0"); 
 
-        /* Need to fix up the memory leaks from the stdup sometime */        
+        /* Need to fix up the memory leaks from the strdup sometime */        
 	 
-	    /*if (pthread_create(&thread, NULL, Cmiss_main_loop_run,
-		    (void *)command_data) != 0)
-	    {
-	        return NULL;
-	    }
+		//if (pthread_create(&thread, NULL, Cmiss_main_loop_run,
+		//    (void *)command_data) != 0)
+	    //	{
+	    //    	return NULL;
+	    //	}
         
-        return command_data;*/
-      }
+        	return command_data;
+      	}
 %}
-
-extern int Cmiss_command_data_execute_command(struct Cmiss_command_data *command_data, const char *command);
-extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, char *argv[], char *version_string);
-extern struct Cmiss_region *Cmiss_command_data_get_root_region(struct Cmiss_command_data *command_data);
+ 	
+/*%include "api/cmiss_command_data.h"*/
+extern int Cmiss_command_data_execute_command(struct Cmiss_command_data 
+	*command_data, const char *command);
+extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, 
+	char *argv[], char *version_string);
+extern struct Cmiss_region *Cmiss_command_data_get_root_region(
+	struct Cmiss_command_data *command_data); 
 

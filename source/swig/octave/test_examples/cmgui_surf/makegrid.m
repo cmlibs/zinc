@@ -1,25 +1,20 @@
-function [X,Y,Z] = makegrid(x,y)
-
-x = -pi:2:pi;
-y = -pi:2:pi;
-[X,Y] = meshgrid(x,y);
-Z = cos(X).*cos(Y);
+function makegrid(x,y,X,Y,Z)
 
 numnodes = length(x)*length(y);
 fid = fopen('grid.exelem', 'w');
 fprintf(fid, "Group name: grid\n")
 fprintf(fid, "#Fields=2\n")
-fprintf(fid, "1) coordinates, coordinate, rectangular cartesian, #Components=3\n")
+fprintf(fid, "1) coordinates, coordinate, rectangular cartesian, #Components=2\n")
 fprintf(fid, " x. Value index= 1, #Derivatives= 0\n")
 fprintf(fid, " y. Value index= 2, #Derivatives= 0\n")
-fprintf(fid, " z. Value index= 3, #Derivatives= 0\n")
-%fprintf(fid, "2) general, field, rectangular cartesian, #Components=1\n")
-%fprintf(fid, " value.  Value index= 3, #Derivatives= 0\n")
+%fprintf(fid, " z. Value index= 3, #Derivatives= 0\n")
+fprintf(fid, "2) general, field, rectangular cartesian, #Components=1\n")
+fprintf(fid, " value.  Value index= 3, #Derivatives= 0\n")
 
 for p = 1: numnodes;
  fprintf(fid, "Node: %d\n", p);
  fprintf(fid, "%2.1f %2.1f\n", X(p), Y(p));
- fprintf(fid, "%2.1f\n", Z(p))
+fprintf(fid, "%2.1f\n", Z(p))
 end;
 %fclose(fid);
 
@@ -49,18 +44,17 @@ fprintf(fid, "y.  l.Lagrange*l.Lagrange, no modify, standard node based.\n   #No
 for b = 1:Nodes;
 fprintf(fid, "    %d.   #Values= 1\n       Value indices:  1\n       Scale factor indices: %d\n", b, b)
 end;
-%c = 1:numfaces;
 
-fprintf(fid, "z.  l.Lagrange*l.Lagrange, no modify, standard node based.\n   #Nodes= 4\n")
-for c = 1:Nodes;
-fprintf(fid, "    %d.   #Values= 1\n       Value indices:  1\n       Scale factor indices: %d\n", c, c)
-end;
-
-%fprintf(fid, "2) general, field, rectangular cartesian, #Components=1\n")
-%fprintf(fid, "value.  l.Lagrange*l.Lagrange, no modify, standard node based.\n   #Nodes= 4\n")
-%for g = 1:Nodes;
-%fprintf(fid, "    %d.   #Values= 1\n       Value indices:  1\n       Scale factor indices: %d\n", g, g)
+%fprintf(fid, "z.  l.Lagrange*l.Lagrange, no modify, standard node based.\n   #Nodes= 4\n")
+%for c = 1:Nodes;
+%fprintf(fid, "    %d.   #Values= 1\n       Value indices:  1\n       Scale factor indices: %d\n", c, c)
 %end;
+
+fprintf(fid, "2) general, field, rectangular cartesian, #Components=1\n")
+fprintf(fid, "value.  l.Lagrange*l.Lagrange, no modify, standard node based.\n   #Nodes= 4\n")
+for g = 1:Nodes;
+fprintf(fid, "    %d.   #Values= 1\n       Value indices:  1\n       Scale factor indices: %d\n", g, g)
+end;
 
 fprintf(fid, " Element:     %d 0 0\n", 1)
 %fprintf(fid, "   Faces:\n     0  0   4\n     0  0   5\n     0  0   1\n     0  0   8\n")
@@ -107,6 +101,5 @@ fprintf(fid, " Element:     %d 0 0\n", 9)
 fprintf(fid, "   Nodes:\n  11 12 15 16\n")
 %fprintf(fid, "   Scale factors:\n       0.10000E+01   0.10000E+01   0.10000E+01   0.10000E+01\n")
 
-fclose(fid)
-
+fclose(fid);
 endfunction

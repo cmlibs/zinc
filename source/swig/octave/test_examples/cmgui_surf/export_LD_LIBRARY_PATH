@@ -1,0 +1,1 @@
+export LD_LIBRARY_PATH=$CMISS_ROOT/cmgui/lib/i686-linux/cmgui-wx-debug/

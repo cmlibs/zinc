@@ -47,12 +47,16 @@ struct Cmiss_command_data;
 %module execute_command
 
 %{
+/*Cmiss_command functions*/
 extern int Cmiss_command_data_execute_command(struct Cmiss_command_data *command_data, const char *command);
 extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, char *argv[], char *version_string);
+/*Cmiss region functions*/
+/*Cmiss field functions*/
+/*Cmiss node functions*/
+/*Cmiss element functions*/
 
 #include "api/cmiss_command_data.h"
-
-
+#include "api/cmiss_region.h"
 
 %}
 %inline %{
@@ -90,6 +94,22 @@ extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, char *argv
       }
 %}
 
+/*Cmiss_command functions*/
 extern int Cmiss_command_data_execute_command(struct Cmiss_command_data *command_data, const char *command);
 extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, char *argv[], char *version_string);
 
+/*Cmiss region functions*/
+extern struct Cmiss_region *Cmiss_region_get_sub_region(struct Cmiss_region *region,
+	const char *path)
+
+/*Cmiss field functions*/
+
+/*Cmiss node functions*/
+extern struct Cmiss_node *Cmiss_region_get_node(struct Cmiss_region *region,
+	const char *name)
+extern int Cmiss_region_get_number_of_nodes_in_region(struct Cmiss_region *region)
+
+/*Cmiss element functions*/
+extern struct Cmiss_element *Cmiss_region_get_element(struct Cmiss_region *region,
+	const char *name)
+extern int Cmiss_region_get_number_of_elements_in_region(struct Cmiss_region *region)

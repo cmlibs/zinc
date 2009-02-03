@@ -11,7 +11,7 @@
 
 make:
 	swig -octave -o execute_command_wrap.cpp execute_command.i
-	mkoctfile -I$(CMISS_ROOT)/cmgui/source -c execute_command_wrap.cpp 
+	mkoctfile -I$(CMISS_ROOT)/cmgui/source -c execute_command_wrap.cpp
 	mkoctfile -L$(CMISS_ROOT)/cmgui/lib/i686-linux/cmgui-wx-debug/ -lcmgui execute_command_wrap.o -o execute_command.oct
 
 clean:
