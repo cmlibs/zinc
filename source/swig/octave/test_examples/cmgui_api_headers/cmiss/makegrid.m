@@ -1,5 +1,3 @@
-function [X,Y,Z] = makegrid(x,y)
-
 x = -pi:2:pi;
 y = -pi:2:pi;
 [X,Y] = meshgrid(x,y);
@@ -108,5 +106,3 @@ fprintf(fid, "   Nodes:\n  11 12 15 16\n")
 %fprintf(fid, "   Scale factors:\n       0.10000E+01   0.10000E+01   0.10000E+01   0.10000E+01\n")
 
 fclose(fid)
-
-endfunction
