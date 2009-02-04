@@ -42,7 +42,13 @@ Swig interface file for wrapping api functions in api/cmiss_command_data
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module command_data
+#if defined SWIGPYTHON
+#  define MODULE_PREFIX(modulename) modulename
+#else
+#  define MODULE_PREFIX(modulename) cmiss_ ## modulename
+#endif
+
+%module MODULE_PREFIX(command_data)
 %nodefaultctor;
 
 struct Cmiss_command_data;

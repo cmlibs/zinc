@@ -42,7 +42,13 @@ Swig interface file for wrapping api/cmiss_texture.h
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module texture
+#if defined SWIGPYTHON
+#  define MODULE_PREFIX(modulename) modulename
+#else
+#  define MODULE_PREFIX(modulename) cmiss_ ## modulename
+#endif
+
+%module MODULE_PREFIX(texture)
 
 %{
 #include "api/cmiss_texture.h"

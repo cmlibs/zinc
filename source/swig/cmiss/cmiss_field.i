@@ -42,7 +42,14 @@ Swig interface file for wrapping api/cmiss_field_x headers
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module field
+#if defined SWIGPYTHON
+#  define MODULE_PREFIX(modulename) modulename
+#else
+#  define MODULE_PREFIX(modulename) cmiss_ ## modulename
+#endif
+
+%module MODULE_PREFIX(field)
+
 %include carrays.i
 %array_functions(float, float_array);
 %array_functions(double, double_array);

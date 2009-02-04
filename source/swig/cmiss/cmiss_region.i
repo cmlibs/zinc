@@ -42,7 +42,14 @@ Swig interface file for wrapping api header api/cmiss_region
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module region
+#if defined SWIGPYTHON
+#  define MODULE_PREFIX(modulename) modulename
+#else
+#  define MODULE_PREFIX(modulename) cmiss_ ## modulename
+#endif
+
+%module MODULE_PREFIX(region)
+
 %include carrays.i
 %array_functions(float, float_array);
 
@@ -74,7 +81,7 @@ typedef struct Cmiss_region
 	    struct Cmiss_field *find_field_by_name(const char *field_name);
 	    struct Cmiss_node *get_node(const char *name);
 	    struct Cmiss_field *add_field(struct Cmiss_field *field);
-	    
+	    struct Cmiss_region *get_sub_region(const char *name);
 	}
 } *Cmiss_region_id;
 

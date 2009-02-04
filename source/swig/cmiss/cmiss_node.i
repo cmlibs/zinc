@@ -42,7 +42,13 @@ Swig interface file for wrapping api header api/cmiss_node
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module node
+#if defined SWIGPYTHON
+#  define MODULE_PREFIX(modulename) modulename
+#else
+#  define MODULE_PREFIX(modulename) cmiss_ ## modulename
+#endif
+
+%module MODULE_PREFIX(node)
 
 %{
 #include "api/cmiss_node.h"
