@@ -19,8 +19,8 @@ CXXFLAGS = -shared
 # Includes
 SWIG_INCLUDES = -I$(CMISS_ROOT)/cmgui/source
 
-CMISS_LIBS = -L$(CMISS_ROOT)/cmgui/lib/x86_64-linux/cmgui-wx-debug/ -lcmgui
-#CMISS_LIBS = -L$(CMISS_ROOT)/cmgui/lib/i686-linux/cmgui-wx-debug/ -lcmgui
+#CMISS_LIBS = -L$(CMISS_ROOT)/cmgui/lib/x86_64-linux/cmgui-wx-debug/ -lcmgui
+CMISS_LIBS = -L$(CMISS_ROOT)/cmgui/lib/i686-linux/cmgui-wx-debug/ -lcmgui
 
 PYTHON_INCLUDES = -I/usr/include/python2.5 -I$(CMISS_ROOT)/cmgui/source
 
