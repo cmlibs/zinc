@@ -353,21 +353,25 @@ Sets the <values> of the computed <field> over the <element>.
 			  (source_field_number<field->number_of_source_fields)&&return_code;
 			  source_field_number++)
 		{
-			if (ALLOCATE(source_values,FE_value,field->number_of_components))
+			int source_number_of_components = 
+				field->source_fields[source_field_number]->number_of_components;
+			if (ALLOCATE(source_values,FE_value,source_number_of_components))
 			{
 				if (Computed_field_evaluate_cache_at_location(
-						 field->source_fields[source_field_number], location))
+					 field->source_fields[source_field_number], location))
 				{
+					/* It isn't easy to work out which of the source values are going
+					 * to be overwritten by new values so lets just copy them all.
+					 */
+               for (i=0;i<source_number_of_components;i++)
+               {
+               	source_values[i] = field->source_fields[source_field_number]->values[i];
+               }
 					for (i=0;i<field->number_of_components;i++)
 					{
 						if (source_field_number == source_field_numbers[i])
 						{
 							source_values[source_value_numbers[i]] = values[i];
-						}
-						else
-						{
-							source_values[source_value_numbers[i]] = 
-								field->source_fields[source_field_number]->values[i];	
 						}
 					}
 					return_code=Computed_field_set_values_at_location(
