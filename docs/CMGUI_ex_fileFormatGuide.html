@@ -1,7 +1,12 @@
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+  <title></title>
+</head>
+
 <body>
 
 <div class="document" id="the-cmgui-ex-format-guide-exnode-and-exelem-files">
-<h1 class="title">The cmgui EX format guide: exnode and exelem files</h1>
 
 <div class="contents topic">
 <ul class="simple">
@@ -14,7 +19,7 @@
   <li><a class="reference" href="#field-declaration-headers" id="id4"
     name="id4">Field declaration headers</a></li>
   <li><a class="reference" href="#defining-nodes-and-node-fields" id="id5"
-    name="id5">Defining nodes and node fields</a>
+    name="id5">Defining nodes and node fields</a> 
     <ul>
       <li><a class="reference"
         href="#example-specifying-3-d-coordinates-of-nodes" id="id6"
@@ -34,7 +39,7 @@
     </ul>
   </li>
   <li><a class="reference" href="#defining-elements-and-element-fields"
-    id="id11" name="id11">Defining elements and element fields</a>
+    id="id11" name="id11">Defining elements and element fields</a> 
     <ul>
       <li><a class="reference"
         href="#cmgui-elements-shapes-faces-and-identifiers" id="id12"
@@ -74,10 +79,10 @@ name="overview">Overview</a></h1>
 <p>Spatially-varying "finite element" field definitions are commonly imported
 into cmgui in two parts:</p>
 <ol class="arabic simple">
-  <li>".exnode" files containing definitions of nodes which are points
-    identified by a unique integer identifier, and for which field parameters
-    are listed.</li>
-  <li>".exelem" files containing definitions of elements which are
+  <li>"<code>.exnode</code>" files containing definitions of nodes which are
+    points identified by a unique integer identifier, and for which field
+    parameters are listed.</li>
+  <li>"<code>.exelem</code>" files containing definitions of elements which are
     n-dimensional coordinate spaces, and the functions giving field values over
     them, usually by interpolating node field parameters.</li>
 </ol>
@@ -92,11 +97,12 @@ specified in your scripts and command files.</p>
 interpolation, but are widely used to represent any point data, and there need
 not be any associated elements. You will occasionally see files with the
 ".exdata" extension which are identical to ".exnode" files but read in with a
-different command ("gfx read data …") so that the objects and associated
-fields are put in a different set of node objects referred to within cmgui as
-data rather than nodes, and which are unable to be interpolated in element
-fields. Note the current limitation of cmgui that each region consists of one
-list of node objects, one list of elements, and one list of data points.</p>
+different command ("<code>gfx read data...</code>") so that the objects and
+associated fields are put in a different set of node objects referred to within
+cmgui as data rather than nodes, and which are unable to be interpolated in
+element fields. Note the current limitation of cmgui that each region consists
+of one list of node objects, one list of elements, and one list of data
+points.</p>
 </div>
 
 <div class="section">
@@ -112,10 +118,12 @@ hand.</p>
 <p>The format has been around for many years and has several exacting rules
 which can catch the unwary:</p>
 <ol class="arabic simple">
-  <li>Main blocks of the file begin with tokens such as "Group name", "Shape",
-    "#Fields", "Node", "Element" which must be written in full with exact
-    capitalisation. Within these blocks are further tokens indicating
-    sub-blocks of data to be read, each with their own rigid rules.</li>
+  <li>Main blocks of the file begin with tokens such as "<code>Group
+    name</code>", "<code>Shape</code>", "<code>#Fields</code>",
+    "<code>Node</code>", "<code>Element</code>" which must be written in full
+    with exact capitalisation. Within these blocks are further tokens
+    indicating sub-blocks of data to be read, each with their own rigid
+  rules.</li>
   <li>The characters used to separate tokens, identifiers, parameters and other
     data are quite inconsistent and could be white space, commas, colons, full
     stops (periods), equal signs and so on. In each case the precise character
@@ -128,12 +136,13 @@ which can catch the unwary:</p>
   <li>The format does not allow comments to be recorded with the data.</li>
 </ol>
 
-<p>Fortunately, cmgui import commands ("gfx read node/element/data") report the
-line number in the file at which the first errant text is located (do not
-confuse this with line element numbers). Unfortunately the actual problem may
-be earlier: if the previous block was incomplete then the first text of the
-next block, however correct, will be complained about as not matching the
-tokens and data expected for the previous block.</p>
+<p>Fortunately, cmgui import commands ("<code>gfx read
+node/element/data</code>") report the line number in the file at which the
+first errant text is located (do not confuse this with line element numbers).
+Unfortunately the actual problem may be earlier: if the previous block was
+incomplete then the first text of the next block, however correct, will be
+complained about as not matching the tokens and data expected for the previous
+block.</p>
 </div>
 
 <div class="section">
@@ -141,26 +150,28 @@ tokens and data expected for the previous block.</p>
 name="regions-and-groups">Regions and Groups</a></h1>
 
 <p>All nodes, elements and fields in a single cmgui ex file are read into one
-region. If you read the file with the command "gfx read node bob.exnode" then
-that defaults to reading these objects into the root region "/". If you specify
-a region on the command, e.g. "gfx read node bob.exnode region fred" then all
-these objects are read into region "fred", a child of the root region which is
-created if necessary.</p>
+region. If you read the file with the command "<code>gfx read node
+bob.exnode</code>" then that defaults to reading these objects into the root
+region "/". If you specify a region on the command, e.g. "<code>gfx read node
+bob.exnode region fred</code>" then all these objects are read into region
+"<code>fred</code>", a child of the root region which is created if
+necessary.</p>
 
 <p>At the outermost level in each ex file is one or more named groups which
 contain the nodes and elements that follow. These lines appear as follows:</p>
 <pre class="literal-block">Group name: NAME</pre>
 
 <p>Group names must start with an alphanumeric character and contain only
-alphanumeric characters, underscores "_" and spaces; spaces are not permitted
-at the end of the name. Colons ":" and dots/periods "." are permitted but
-discouraged.</p>
+alphanumeric characters, underscores "<code>_</code>" and spaces; spaces are
+not permitted at the end of the name. Colons "<code>:</code>" and dots/periods
+"<code>.</code>" are permitted but discouraged.</p>
 
 <p>A group is a special type of region that contains a subset of nodes and
 elements of the "master" region specified with the read command, which becomes
 the parent region of the groups when reading ex files. Hence, if an exnode file
-begins a group with "Group name: Joe", then all subsequent nodes are not only
-read into the master region, but also added to the child group called Joe.</p>
+begins a group with "<code>Group name: Joe</code>", then all subsequent nodes
+are not only read into the master region, but also added to the child group
+called <code>Joe</code>.</p>
 
 <p>There can be any number of groups in a single ex file, each potentially
 sharing some or all of the same nodes and elements. The definitions of fields
@@ -188,15 +199,16 @@ An example header:</p>
 1) coordinates, coordinate, rectangular cartesian, real, #Components=3
  ... field data specific to nodes or elements ...</pre>
 
-<p>The above header declares a field called "coordinates", flagged as a
-coordinate CM field type as a hint to its use in cmgui, embedded in a
-rectangular Cartesian coordinate system, and with 3 real-valued components. The
-rectangular Cartesian coordinate system is assumed if none is specified. The
-value type real is frequently omitted as it is the default; other types such as
-integer, string and element_xi are only usable in node fields and integer for
-grid-based element fields. More complex declarations are given throughout this
-document. Note that if there is no header or the header has "#Fields=0", then
-nodes and elements can be defined or listed for adding to a group without
+<p>The above header declares a field called "<code>coordinates</code>", flagged
+as a <em>coordinate</em> CM field type as a hint to its use in cmgui, embedded
+in a rectangular Cartesian coordinate system, and with 3 real-valued
+components. The rectangular Cartesian coordinate system is assumed if none is
+specified. The value type <em>real</em> is frequently omitted as it is the
+default; other types such as <em>integer</em>, <em>string</em> and
+<em>element_xi</em> are only usable in node fields and integer for grid-based
+element fields. More complex declarations are given throughout this document.
+Note that if there is no header or the header has "<code>#Fields=0</code>",
+then nodes and elements can be defined or listed for adding to a group without
 defining fields.</p>
 
 <p>Following each line declaring the main details of a field are the details on
@@ -222,7 +234,9 @@ coordinates of nodes</a></h2>
 
 <p>Following is an example reading 8 nodes numbered from 1 to 8, with a field
 "coordinates" giving positions at the corners of a unit cube, adapted from
-cmgui example a/a2:</p>
+cmgui <a
+href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a2/index.html">example
+a/a2</a>:</p>
 <pre class="literal-block">Group name: cube
 Shape. Dimension=0
 #Fields=1
@@ -250,7 +264,8 @@ Node: 8
 <p>Notes:</p>
 <ul class="simple">
   <li>The first line indicates that the following objects will be put in a
-    group called "cube". Ex files must begin with a group declaration.</li>
+    group called "<code>cube</code>". Ex files must begin with a group
+    declaration.</li>
   <li>The second line says that zero dimensional nodes are to be read until a
     different shape is specified. You will seldom see this line in any .exnode
     file because 0-D nodes are the default shape at the start of file read and
@@ -259,18 +274,19 @@ Node: 8
     declares finite element fields and indicates what field parameters will be
     read in with any nodes defined after the header. The first line of the
     header indicates only one field follows.</li>
-  <li>The first line following the #Fields declares a 3-component
-    coordinate-type field called "coordinates" whose values are to be
-    interpreted in a rectangular Cartesian coordinate system. This field
+  <li>The first line following the <code>#Fields</code> declares a 3-component
+    coordinate-type field called "<code>coordinates</code>" whose values are to
+    be interpreted in a rectangular Cartesian coordinate system. This field
     defaults to having real values.</li>
   <li>Following the declaration of the field are the details of the components
     including their names and the parameter values held for each, with the
     minimum being the value of the field at that node. The above node field
     component definitions indicate that there are no derivative parameters. The
-    "Value index" is redundant since the index of where values for components
-    "x", "y" and "z" of the "coordinates" field are held in each node"s
-    parameter vector is calculated assuming they are in order (the correct
-    index is written for interest).</li>
+    "<code>Value index</code>" is redundant since the index of where values for
+    components "<code>x</code>", "<code>y</code>" and "<code>z</code>" of the
+    "<code>coordinates</code>" field are held in each node's parameter vector
+    is calculated assuming they are in order (the correct index is written for
+    interest).</li>
   <li>Finally each of the nodes are listed followed by the number of parameters
     required from the node field header.</li>
 </ul>
@@ -282,7 +298,8 @@ id="example-multiple-node-fields-and-derivative-parameters"
 name="example-multiple-node-fields-and-derivative-parameters">Example: multiple
 node fields and derivative parameters</a></h2>
 
-<p>A slightly more complex example adds a second field "temperature":</p>
+<p>A slightly more complex example adds a second field
+"<code>temperature</code>":</p>
 <pre class="literal-block">Group name: heated_bar
 #Fields=2
 1) coordinates, coordinate, rectangular cartesian, #Components=2
@@ -302,20 +319,20 @@ Node: 3
 
 <p>Notes:</p>
 <ul class="simple">
-  <li>The coordinates field is now 2-dimensional. Beware it isn"t possible to
+  <li>The coordinates field is now 2-dimensional. Beware it isn't possible to
     have a two-component and three-component field of the same name in the same
     region.</li>
   <li>The temperature field is of CM type field which merely means it has no
     special meaning (as opposed to the coordinate CM field type hint for the
-    "coordinates"). Although it is not entirely relevant, the coordinate system
-    must still be specified since cmgui performs appropriate transformations
-    whenever it is used as a coordinate field.</li>
+    "<code>coordinates</code>"). Although it is not entirely relevant, the
+    coordinate system must still be specified since cmgui performs appropriate
+    transformations whenever it is used as a coordinate field.</li>
   <li>The scalar (single component) temperature field has two parameters for
     each node, the first being the exact temperature at the node, the second
-    being a nodal derivative. The optional text "(d/ds1)" labels the derivative
-    parameter as the derivative of the temperature with respect to a physical
-    distance in space. It isn"t until the definition of element interpolation
-    that its contribution to the element field is known.</li>
+    being a nodal derivative. The optional text "<code>(d/ds1)</code>" labels
+    the derivative parameter as the derivative of the temperature with respect
+    to a physical distance in space. It isn't until the definition of element
+    interpolation that its contribution to the element field is known.</li>
 </ul>
 </div>
 
@@ -325,8 +342,10 @@ id="example-node-derivatives-and-versions-in-the-prolate-heart"
 name="example-node-derivatives-and-versions-in-the-prolate-heart">Example: node
 derivatives and versions in the prolate heart</a></h2>
 
-<p>The following snippet from example a/a3 shows the nodal parameters held at
-the apex of the prolate heart model:</p>
+<p>The following snippet from <a
+href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a3/index.html">example
+a/a3</a> shows the nodal parameters held at the apex of the prolate heart
+model:</p>
 <pre class="literal-block">#Fields=2
  1) coordinates, coordinate, prolate spheroidal, focus=0.3525E+02, #Components=3
   lambda. Value index=1,#Derivatives=3 (d/ds1,d/ds2,d2/ds1ds2)
@@ -350,12 +369,12 @@ Node: 13
     coordinate field. This is inherently heart-like in shape allowing fewer
     parameters to describe the heart, and requires a focus parameter to set is
     scale and form.</li>
-  <li>The "theta" component of the prolate coordinates has 10 versions meaning
-    there are 10 versions of each value and derivative specified. In this case
-    there are no derivatives so only 10 values are read in. 10 versions are
-    used to supply the angles at which each line element heads away from the
-    apex of the heart which is on the axis of the prolate spheroidal coordinate
-    system.</li>
+  <li>The "<code>theta</code>" component of the prolate coordinates has 10
+    versions meaning there are 10 versions of each value and derivative
+    specified. In this case there are no derivatives so only 10 values are read
+    in. 10 versions are used to supply the angles at which each line element
+    heads away from the apex of the heart which is on the axis of the prolate
+    spheroidal coordinate system.</li>
   <li>Node field parameters are always listed in component order, and for each
     component in the order:</li>
 </ul>
@@ -372,11 +391,11 @@ value then derivatives for version 2</div>
 etc.</div>
 </div>
 <ul class="simple">
-  <li>The second field "fibres" declares a field of CM type anatomical with a
-    fibre coordinate system. In elements these fields are interpreted as Euler
-    angles for rotating an ortho-normal coordinate frame initially oriented
-    with element "xi" axes and used to define axes of material anisotropy, such
-    as muscle fibres in tissue.</li>
+  <li>The second field "<code>fibres</code>" declares a field of CM type
+    anatomical with a fibre coordinate system. In elements these fields are
+    interpreted as Euler angles for rotating an ortho-normal coordinate frame
+    initially oriented with element "xi" axes and used to define axes of
+    material anisotropy, such as muscle fibres in tissue.</li>
 </ul>
 </div>
 
@@ -386,9 +405,11 @@ id="example-embedded-locations-in-a-mesh"
 name="example-embedded-locations-in-a-mesh">Example: embedded locations in a
 mesh</a></h2>
 
-<p>Following is the file "cube_element_xi.exdata" taken from cmgui example a/ar
-(exnode formats), which defines a node field containing embedded locations
-within elements:</p>
+<p>Following is the file "<code>cube_element_xi.exdata</code>" taken from cmgui
+<a
+href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/ar/index.html">example
+a/ar</a> (exnode formats), which defines a node field containing embedded
+locations within elements:</p>
 <pre class="literal-block">Group name: xi_points
 #Fields=1
  1) element_xi, field, element_xi, #Components=1
@@ -410,10 +431,10 @@ Node:     7
 
 <p>Notes:</p>
 <ul class="simple">
-  <li>The field named "element_xi" uses the special value type confusingly also
-    called element_xi indicating it returns a reference to an element and a
-    location within its coordinate "xi" space. Only 1 component and no
-    derivatives or versions are permitted with this value type.</li>
+  <li>The field named "<code>element_xi</code>" uses the special value type
+    confusingly also called element_xi indicating it returns a reference to an
+    element and a location within its coordinate "xi" space. Only 1 component
+    and no derivatives or versions are permitted with this value type.</li>
   <li>Element xi values are written as:</li>
 </ul>
 
@@ -431,8 +452,9 @@ location in two-dimensional face element number 3 with face xi=(0.3,0.6).</div>
 <ul class="simple">
   <li>Node fields storing embedded locations permit fields in the host element
     at those locations to be evaluated for the nodes using the special embedded
-    computed field type, for example: "gfx define field embedded_coordinates
-    embedded element_xi element_xi field element_coordinates".</li>
+    computed field type, for example: "<code>gfx define field
+    embedded_coordinates embedded element_xi element_xi field
+    element_coordinates</code>".</li>
 </ul>
 </div>
 
@@ -440,12 +462,16 @@ location in two-dimensional face element number 3 with face xi=(0.3,0.6).</div>
 <h2><a class="toc-backref" href="#id10" id="special-field-types"
 name="special-field-types">Special field types</a></h2>
 
-<p>The example a/ar (exnode formats) and a/aq (exelem formats) lists several
-other special field types including constant (one value for all the nodes it is
-defined on) and indexed (value indexed by the value of a second integer "index
-field"), but their use is discouraged and they may be deprecated in time. If
-such functionality is required, prefer computed fields created with "gfx define
-field" commands or request indexed functionality on the cmgui tracker.</p>
+<p>The <a
+href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/ar/index.html">example
+a/ar</a> (exnode formats) and <a
+href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/aq/index.html">a/aq</a>
+(exelem formats) lists several other special field types including constant
+(one value for all the nodes it is defined on) and indexed (value indexed by
+the value of a second integer "<code>index field</code>"), but their use is
+discouraged and they may be deprecated in time. If such functionality is
+required, prefer computed fields created with "<code>gfx define field</code>"
+commands or request indexed functionality on the cmgui tracker.</p>
 </div>
 </div>
 
@@ -470,31 +496,61 @@ each element.</p>
 <p>Each element has a shape which describes the form and limits of this
 coordinate space. Shapes are declared in the EX format are follows:</p>
 
-<p>Shape. Dimension=n SHAPE-DESCRIPTION</p>
+<p><code>Shape. Dimension=n SHAPE-DESCRIPTION</code></p>
 
 <p>Up to three dimensions, the most important shape descriptions are:</p>
-<pre class="literal-block">Shape. Dimension=0                            nodes (no shape)
-Shape. Dimension=1 line                       line shape, xi covering [0,1]
-Shape. Dimension=2 line*line          square on [0,1]
-Shape. Dimension=2 simplex(2)*simplex triangle on [0,1]; xi1+xi2&lt;1
-Shape. Dimension=3 line*line*line             cube on [0,1]
-Shape. Dimension=3 simplex(2;3)*simplex*simplex
-           tetrahedron on [0,1]; xi1+xi2+xi3&lt;1
-Shape. Dimension=3 line*simplex(3)*simplex (and other permutations)
-           triangle wedge; line on xi1 (etc.)</pre>
 
-<p>Pairs of dimensions can also be linked into polygon shapes; see example
-a/element_types.</p>
+<table border="1">
+  <tbody>
+    <tr>
+      <td><code>Shape. Dimension=0</code></td>
+      <td>nodes (no shape)</td>
+    </tr>
+    <tr>
+      <td><code>Shape. Dimension=1 line </code></td>
+      <td>line shape, xi covering [0,1]</td>
+    </tr>
+    <tr>
+      <td><code>Shape. Dimension=2 line*line </code></td>
+      <td>square on [0,1]</td>
+    </tr>
+    <tr>
+      <td><code>Shape. Dimension=2 simplex(2)*simplex </code></td>
+      <td>triangle on [0,1]; xi1+xi2&lt;1</td>
+    </tr>
+    <tr>
+      <td><code>Shape. Dimension=3 line*line*line</code></td>
+      <td>cube on [0,1]</td>
+    </tr>
+    <tr>
+      <td><code>Shape. Dimension=3 simplex(2;3)*simplex*simplex </code></td>
+      <td>tetrahedron on [0,1]; xi1+xi2+xi3&lt;1</td>
+    </tr>
+    <tr>
+      <td><code>Shape. Dimension=3 line*simplex(3)*simplex </code>(and other
+        permutations)<code> </code></td>
+      <td>triangle wedge; line on xi1 (etc.)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>These shapes are shown below.</p>
+
+<p><img alt="element types; shapes" src="element_types_shapes.png"></p>
+
+<p>Pairs of dimensions can also be linked into polygon shapes; see example <a
+href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/element_types/index.html">a/element_types</a>.</p>
 
 <p>The shape description works by describing the span of the space along each
 xi direction for its dimension. The simplest cases are the line shapes:
-"line*line*line" indicates the outer or tensor product of three line shapes,
-thus describing a cube. If the shape description is omitted then line shape is
-assumed for all dimensions. Simplex shapes, used for triangles and tetrahedra,
-cannot be simply described by an outer product and must be tied to another
-dimension; in the EX format the tied dimension is written in brackets after the
-first simplex coordinate, and for 3 or higher dimensional simplices all linked
-dimensions must be listed as shown for the tetrahedron shape.</p>
+"<code>line*line*line</code>" indicates the outer or tensor product of three
+line shapes, thus describing a cube. If the shape description is omitted then
+line shape is assumed for all dimensions. Simplex shapes, used for triangles
+and tetrahedra, cannot be simply described by an outer product and must be tied
+to another dimension; in the EX format the tied dimension is written in
+brackets after the first simplex coordinate, and for 3 or higher dimensional
+simplices all linked dimensions must be listed as shown for the tetrahedron
+shape.</p>
 
 <p>The cmgui shape description is extensible to 4 dimensions or higher, for
 example the following denotes a 4-dimensional shape with a simplex across
@@ -518,8 +574,8 @@ defined or which are not themselves the faces of a higher dimensional element
 use the first identifier, the element number. All 2-D faces of 3-D elements use
 the face number and all 1-D faces of 2-D elements (including faces of faces of
 3-D elements) use the line number. The naming scheme for faces of 4 or higher
-dimensional elements is not yet defined. The element identifier "0 0 0" may be
-used to indicate a NULL face.</p>
+dimensional elements is not yet defined. The element identifier "<code>0 0
+0</code>" may be used to indicate a NULL face.</p>
 </div>
 
 <div class="section">
@@ -582,7 +638,7 @@ element shapes, require linked xi dimensions to be specified.</p>
 <pre class="literal-block">l.Lagrange*l.Lagrange*l.Lagrange              trilinear interpolation (8 nodes)
 c.Hermite*c.Hermite                           bicubic Hermite (4 nodes x 4 params)
 l.simplex(2)*l.simplex                        linear triangle (3 nodes)
-q.simplex(2;3)*q.simplex*q.simplex    quadratic tetrahedron (10 nodes)
+q.simplex(2;3)*q.simplex*q.simplex            quadratic tetrahedron (10 nodes)
 c.Hermite*l.simplex(3)*l.simplex              cubic Hermite * linear triangle (6 nodes, 2 parameters per node)</pre>
 
 <p>Most element bases have one basis functions per node which multiplies a
@@ -597,15 +653,15 @@ triangle has 6 nodes with 1 parameter.</p>
 <p>1-D Hermite bases provide 2 basis functions per node, expected to multiple
 two parameters: (1) the value of the field at the node, and (2) the derivative
 of that field value with respect to the xi coordinate. If this derivative is
-common across an element boundary then the field is C¬1 continuous there.
-Outer products of 1-D Hermite basis functions double the number of parameters
-per node for each Hermite term. A bicubic Hermite basis expect 4 nodes with 4
-basis functions per node, multiplying 4 nodal parameters: (1) value of the
-field, (2) the derivative of the field with respect to the first xi direction,
-(3) the derivative with respect to the second xi direction and (4) the double
-derivative of the field with respect to both directions referred to as the
-cross derivative. Tri-cubic Hermite bases have 8 basis functions per node, one
-multiplying the value, 3 for first derivatives, 3 for second (cross)
+common across an element boundary then the field is C<sub>1</sub> continuous
+there. Outer products of 1-D Hermite basis functions double the number of
+parameters per node for each Hermite term. A bicubic Hermite basis expect 4
+nodes with 4 basis functions per node, multiplying 4 nodal parameters: (1)
+value of the field, (2) the derivative of the field with respect to the first
+xi direction, (3) the derivative with respect to the second xi direction and
+(4) the double derivative of the field with respect to both directions referred
+to as the cross derivative. Tri-cubic Hermite bases have 8 basis functions per
+node, one multiplying the value, 3 for first derivatives, 3 for second (cross)
 derivatives and a final function multiplying a triple cross derivative
 parameter.</p>
 
@@ -616,9 +672,10 @@ element node array, just the order in which those nodes are referenced in the
 parameter map. In most example files the order of the nodes in the element node
 list will also follow this pattern.</p>
 
-<p>Cmgui example a/element_types provides a large number of sample elements
-using complex combinations of basis functions on supported 3-D element
-shapes.</p>
+<p>Cmgui example <a
+href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/element_types/index.html">a/element_types</a>
+provides a large number of sample elements using complex combinations of basis
+functions on supported 3-D element shapes.</p>
 </div>
 
 <div class="section">
@@ -628,9 +685,11 @@ name="example-tri-linear-interpolation-on-a-cube">Example: tri-linear
 interpolation on a cube</a></h2>
 
 <p>Following is an example of a coordinate field defined over a unit cube,
-adapted from example a/a2, with faces and scale factors removed to cut the
-example down to minimum size, and assuming the cube node file from earlier has
-already been loaded:</p>
+adapted from <a
+href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a2/index.html">example
+a/a2</a>, with faces and scale factors removed to cut the example down to
+minimum size, and assuming the cube node file from earlier has already been
+loaded:</p>
 <pre class="literal-block">Group name: cube
 Shape.  Dimension=3  line*line*line
 #Scale factor sets=0
@@ -721,38 +780,39 @@ Shape.  Dimension=3  line*line*line
 
 <p>Notes:</p>
 <ul class="simple">
-  <li>"Shape. Dimension=3 line*line*line" declares that following this point
-    three dimensional cube-shaped elements are being defined. "line*line*line"
-    could have been omitted as line shapes are the default.</li>
-  <li>"#Scale factor sets=0" indicates no scale factors are to be read in with
-    the elements that follow. Scale factors are usually only needed for Hermite
-    basis functions when nodal derivative parameters are maintained with
-    respect to a physical distance and the scale factors convert the derivative
-    to be with respect to the element xi coordinate. Avoid scale factors when
-    not needed.</li>
-  <li>The 4th line "#Nodes=8" says that 8 nodes will be listed with all
-    elements defined under this header.</li>
-  <li>Under the declaration of the "coordinates" field (which is identical to
-    its declaration for the nodes) are the details on how the field is
-    evaluated for each field component. Each field component is always
+  <li>"<code>Shape. Dimension=3 line*line*line</code>" declares that following
+    this point three dimensional cube-shaped elements are being defined.
+    "<code>line*line*line</code>" could have been omitted as line shapes are
+    the default.</li>
+  <li>"<code>#Scale factor sets=0</code>" indicates no scale factors are to be
+    read in with the elements that follow. Scale factors are usually only
+    needed for Hermite basis functions when nodal derivative parameters are
+    maintained with respect to a physical distance and the scale factors
+    convert the derivative to be with respect to the element xi coordinate.
+    Avoid scale factors when not needed.</li>
+  <li>The 4th line "<code>#Nodes=8</code>" says that 8 nodes will be listed
+    with all elements defined under this header.</li>
+  <li>Under the declaration of the "<code>coordinates</code>" field (which is
+    identical to its declaration for the nodes) are the details on how the
+    field is evaluated for each field component. Each field component is always
     described separately: each may use different basis functions and parameter
-    mappings. In this example the components "x", "y" and "z" all use the same
-    tri-linear basis functions and use an identical parameter mapping except
-    that parameters are automatically taken from the corresponding field
-    component at the node.</li>
-  <li>"no modify" in the element field component definition is an instruction
-    to do no extra value manipulations as part of the interpolation. Other
-    modify functions are used with polar coordinates to indicate whether
-    interpolation of angles is increasing or decreasing in xi; see the prolate
-    heart example later.</li>
-  <li>"standard node based" indicates that each element field parameter is
-    obtained by multiplying one parameter extracted from a node by one scale
-    factor. An alternative called "general node based" evaluates each element
-    field parameter as the dot product of multiple node field parameters and
-    scale factors; it is currently unimplemented for I/O but is designed to
-    handle the problems like meshing the apex of the heart with Hermite basis
-    functions without requiring multiple versions. A final option "grid based"
-    is described in a later example.</li>
+    mappings. In this example the components "<code>x</code>", "<code>y</code>"
+    and "<code>z</code>" all use the same tri-linear basis functions and use an
+    identical parameter mapping except that parameters are automatically taken
+    from the corresponding field component at the node.</li>
+  <li>"<code>no modify</code>" in the element field component definition is an
+    instruction to do no extra value manipulations as part of the
+    interpolation. Other modify functions are used with polar coordinates to
+    indicate whether interpolation of angles is increasing or decreasing in xi;
+    see the prolate heart example later.</li>
+  <li>"<code>standard node based</code>" indicates that each element field
+    parameter is obtained by multiplying one parameter extracted from a node by
+    one scale factor. An alternative called "<code>general node based</code>"
+    evaluates each element field parameter as the dot product of multiple node
+    field parameters and scale factors; it is currently unimplemented for I/O
+    but is designed to handle the problems like meshing the apex of the heart
+    with Hermite basis functions without requiring multiple versions. A final
+    option "<code>grid based</code>" is described in a later example.</li>
   <li>Following the above text are several lines describing in detail how all
     the element field parameters are evaluated prior to multiplication by the
     basis functions. Being a tri-linear Lagrange basis, 8 nodes must be
@@ -764,7 +824,7 @@ Shape.  Dimension=3  line*line*line
   class="pre">8</span></tt></blockquote>
 
 <p>Following are 8 sets of three lines each indicating the index of the node in
-the element"s node array from which parameters are extracted (in this case the
+the element's node array from which parameters are extracted (in this case the
 uncomplicated sequence 1,2,3,4,5,6,7,8), the number of values to be extracted
 (1), the index of the each parameter value in the list of parameters for that
 field component at that node and the index of the scale factor multiplying it
@@ -779,8 +839,8 @@ follow a set order, increasing in xi1 fastest, then xi2, then xi3, etc. to
 match the order of the basis functions procedurally generated from the basis
 description.</p>
 <ul class="simple">
-  <li>At the end of the example is the definition of element "0 0 1" which
-    lists the nodes 1 to 8.</li>
+  <li>At the end of the example is the definition of element "<code>0 0
+    1</code>" which lists the nodes 1 to 8.</li>
 </ul>
 </div>
 
@@ -791,10 +851,10 @@ name="defining-faces-and-lines">Defining faces and lines</a></h2>
 <p>The above example is not ready to be fully visualised in cmgui because it
 contains no definitions of element faces and lines. Cmgui requires these to be
 formally defined because it visualises element surfaces by evaluating fields on
-face elements, and element edges via line elements. The command "gfx define
-faces ..." can create the faces and lines after loading such a file.
-Alternatively they can be defined and referenced within the ex file as in the
-following:</p>
+face elements, and element edges via line elements. The command "<code>gfx
+define faces ...</code>" can create the faces and lines after loading such a
+file. Alternatively they can be defined and referenced within the ex file as in
+the following:</p>
 <pre class="literal-block">Group name: cube
  Shape.  Dimension=1
  Element: 0 0     1
@@ -859,8 +919,10 @@ Shape.  Dimension=3
      1     2     3     4     5     6     7     8</pre>
 
 <p>Likewise scale factors can be read in as listed in the cube.exelem file from
-cmgui example a/a2, however with Lagrange basis functions the scale factors are
-all unit valued, so this is rather needless.</p>
+cmgui <a
+href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a2/index.html">example
+a/a2</a>, however with Lagrange basis functions the scale factors are all unit
+valued, so this is rather needless.</p>
 </div>
 
 <div class="section">
@@ -934,7 +996,7 @@ Element:     1 0 0
     fourth parameter mappings both refer to the node at index 3 in the element
     node list.</li>
   <li>Note that face on the collapsed side of the element is undefined, as
-    indicated by special face identifier 0 0 0.</li>
+    indicated by special face identifier <code>0 0 0</code>.</li>
   <li>It is also possible to obtain an equivalent result by physically storing
     4 nodes in the element but repeating node 3 in that array.</li>
 </ul>
@@ -946,13 +1008,17 @@ id="simplex-elements-triangles-and-tetrahedra"
 name="simplex-elements-triangles-and-tetrahedra">Simplex elements: triangles
 and tetrahedra</a></h2>
 
-<p>The cmgui example a/testing/simplex defines two fields on a triangle
-element, one using a 6-node quadratic simplex, the other a 3-node linear
-simplex basis. The element in that example stores 6 nodes in its node array,
-only 3 of which are used for the linear basis, but all 6 contribute parameters
-to the quadratic interpolation.</p>
+<p>The cmgui <a
+href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/testing/simplex/index.html">example
+a/testing/simplex</a> defines two fields on a triangle element, one using a
+6-node quadratic simplex, the other a 3-node linear simplex basis. The element
+in that example stores 6 nodes in its node array, only 3 of which are used for
+the linear basis, but all 6 contribute parameters to the quadratic
+interpolation.</p>
 
-<p>Example a/element_types has both linear and quadratic tetrahedra.</p>
+<p>Example <a
+href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/element_types/index.html">a/element_types</a>
+has both linear and quadratic tetrahedra.</p>
 </div>
 
 <div class="section">
@@ -962,9 +1028,11 @@ name="example-multiple-fields-bases-and-scale-factor-sets-in-the-prolate-heart">
 multiple fields, bases and scale factor sets in the prolate heart</a></h2>
 
 <p>At the more complex end of the scale is this excerpt from the prolate heart
-model from cmgui example a/a3. It defines two element fields using different
-basis functions for each field component. It was exported from cm which always
-uses a full complement of scale factors i.e. one per basis function.</p>
+model from cmgui <a
+href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a3/index.html">example
+a/a3</a>. It defines two element fields using different basis functions for
+each field component. It was exported from cm which always uses a full
+complement of scale factors i.e. one per basis function.</p>
 <pre class="literal-block">Shape.  Dimension=3
  #Scale factor sets= 4
    c.Hermite*c.Hermite*l.Lagrange, #Scale factors=32
@@ -1171,17 +1239,16 @@ uses a full complement of scale factors i.e. one per basis function.</p>
    0.7673250860396258E+01   0.3238325173328371E+03   0.1000000000000000E+01
    0.3339669014010959E+02   0.1368084332227282E+02   0.4568948852893329E+03
    0.1000000000000000E+01   0.3810870609422361E+02   0.1181772996260416E+02
-   0.4503583978457821E+03
-   </pre>
+   0.4503583978457821E+03</pre>
 
 <p>Notes:</p>
 <ul class="simple">
   <li>It can be seen that for each Hermite term in the basis function there are
     twice as many parameter values for each node.</li>
-  <li>The "Value indices" are indices into the array of parameters held for the
-    field component at the node, starting at 1 for the value. It is not
-    possible to refer to parameters by names such as "value", "d/ds1" or by
-    version number.</li>
+  <li>The "<code>Value indices</code>" are indices into the array of parameters
+    held for the field component at the node, starting at 1 for the value. It
+    is not possible to refer to parameters by names such as
+    "<code>value</code>", "<code>d/ds1</code>" or by version number.</li>
   <li>All scale factors are listed in a single block; in this case there are
     32+8+16+32=88 scale factors, listed in the order of the scale factor set
     declaration at the top of the file excerpt. Scale factor indices are
@@ -1200,8 +1267,9 @@ fields</a></h2>
 
 <p>Cmgui and its EX files also support storage of regular grids of real or
 integer values across elements. Only line based shapes are properly supported,
-i.e. lines, squares and cubes. Following is an excerpt from cmgui example a/aq
-"element formats":</p>
+i.e. lines, squares and cubes. Following is an excerpt from cmgui <a
+href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/aq/index.html">example
+a/aq</a> "element formats":</p>
 <pre class="literal-block">Group name: block
 Shape.  Dimension=3
 #Scale factor sets=0
@@ -1242,12 +1310,12 @@ Element: 1 0 0
 
 <p>Notes:</p>
 <ul class="simple">
-  <li>"#xi1=2, #xi2=3, #xi3=2" actually refers to the number of divisions
-    between grid points, so 3*4*3=36 values are read in, and represent values
-    at the corners of the grid "cells". If there are 2 divisions along an xi
-    direction, values are held for xi=0.0, xi=0.5 and xi=1.0. Under each
-    element, values are listed in order of location changing fastest along xi1,
-    then along xi2, then along xi3.</li>
+  <li>"<code>#xi1=2, #xi2=3, #xi3=2</code>" actually refers to the number of
+    divisions between grid points, so 3*4*3=36 values are read in, and
+    represent values at the corners of the grid "cells". If there are 2
+    divisions along an xi direction, values are held for xi=0.0, xi=0.5 and
+    xi=1.0. Under each element, values are listed in order of location changing
+    fastest along xi1, then along xi2, then along xi3.</li>
   <li>Only linear Lagrange bases are supported. The basis is irrelevant for
     integer-valued grids which choose the "nearest value", so halfway between
     integer value 1 and 3 the field value jumps directly from 1 to 3.</li>
@@ -1272,7 +1340,7 @@ at:</p>
 <p><a
 href="https://tracker.physiomeproject.org/">tracker.physiomeproject.org</a></p>
 
-<p>Note: be sure to search and post under the "CMGUI" project!</p>
+<p>Note: be sure to search and post under the CMGUI project!</p>
 </div>
 </div>
 </body>
