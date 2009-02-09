@@ -5209,51 +5209,29 @@ mode with zinc.  Requiring development.
 			  buffer->resize_callback_list, buffer, NULL);
 		  return_code=1;
 	  } break;
-	  case WM_LBUTTONDOWN:
-	  {
-		  Graphics_buffer_win32_button_callback(&message_identifier,
-			  buffer, first_message, second_message);
-		  return_code=1;
-	  } break;
-	  case WM_LBUTTONUP:
-	  {
-		  Graphics_buffer_win32_button_callback(&message_identifier,
-			  buffer, first_message, second_message);
-		  return_code=1;
-	  } break;
-	  case WM_RBUTTONDOWN:
-	  {
-		  Graphics_buffer_win32_button_callback(&message_identifier,
-			  buffer, first_message, second_message);
-		  return_code=1;
-	  } break;
-	  case WM_RBUTTONUP:
-	  {
-		  Graphics_buffer_win32_button_callback(&message_identifier,
-			  buffer, first_message, second_message);
-		  return_code=1;
-	  } break;
-	  case WM_MBUTTONDOWN:
-	  {
-		  Graphics_buffer_win32_button_callback(&message_identifier,
-			  buffer, first_message, second_message);
-		  return_code=1;
-	  } break;
-	  case WM_MBUTTONUP:
-	  {
-		  Graphics_buffer_win32_button_callback(&message_identifier,
-			  buffer, first_message, second_message);
-		  return_code=1;
-	  } break;
 	  case WM_MOUSEMOVE:
+	  {
+		  SetCursor(LoadCursor(NULL, IDC_ARROW));
+	  } // No break, fall through
+	  case WM_LBUTTONDOWN:
+	  case WM_LBUTTONUP:
+	  case WM_RBUTTONDOWN:
+	  case WM_RBUTTONUP:
+	  case WM_MBUTTONDOWN:
+	  case WM_MBUTTONUP:
 	  {
 #if defined (DEBUG)
 		  printf ("Graphics_buffer_handle_windows_event WM_MOUSEMOVE\n");
 #endif /* defined (DEBUG) */
-		  Graphics_buffer_win32_button_callback(&message_identifier,
-			  buffer, first_message, second_message);
-	          SetCursor(LoadCursor(NULL, IDC_ARROW)); 
-		  return_code=1;
+
+		  LPARAM offset_coordinates;
+		  
+		  offset_coordinates = MAKELPARAM(
+			  GET_X_LPARAM(second_message) - buffer->x, 
+			  GET_Y_LPARAM(second_message) - buffer->y);
+
+		  return_code = Graphics_buffer_win32_button_callback(&message_identifier,
+			  buffer, first_message, offset_coordinates);
 	  } break;
 	  case WM_SETCURSOR:
 	  {
