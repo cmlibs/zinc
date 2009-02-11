@@ -1401,7 +1401,9 @@ be shared by multiple materials using the same program.
 						 append_string(&vertex_program_string, 
 								"  gl_FrontColor = gl_Color;\n"
 								"  gl_BackColor = gl_Color;\n"
-								"  gl_Position = ftransform();\n"
+							  "  gl_FrontSecondaryColor = vec4(1.0);\n"
+							  "  gl_BackSecondaryColor = vec4(0.0);\n"
+								"  gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n"
 								"}\n"
 								, &error);
 
@@ -1476,6 +1478,14 @@ be shared by multiple materials using the same program.
 												 , &error);	
 								}
 						 }
+
+						 if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1D_COMPONENT_LOOKUP & material_program->type)
+						 {
+							 append_string(&fragment_program_string,
+								 "uniform sampler1D texture1;\n"
+								 , &error);
+						 }	 
+							 
 
 						 if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 | 
 									 MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2 | 
@@ -1926,7 +1936,7 @@ be shared by multiple materials using the same program.
 								 {
 										/* float type tex */
 										append_string(&fragment_program_string, 
-											 "  color.xyz = tex;\n"
+											 "  color.xyz = vec3(tex);\n"
 											 , &error);										
 								 }
 							}
@@ -2177,12 +2187,15 @@ be shared by multiple materials using the same program.
 							 }
 							 else
 							 {
+								  append_string(&fragment_program_string,
+									   "  //Offset and scale to counteract effect of linear interpolation\n"
+									   "  //starting at the middle of the first texel and finishing in the\n"
+									   "  //middle of the last texel\n"
+									   "  float  offsetcolour;\n"
+										 "  vec4  dependentlookup;\n", &error);
 									char lookup_one_component_string[] = 
-										 "  //Offset and scale to counteract effect of linear interpolation\n"
-										 "  //starting at the middle of the first texel and finishing in the\n"
-										 "  //middle of the last texel\n"
-										 "  float  offsetcolour = finalcol.%s * lookup_scales + lookup_offsets;\n"
-										 "  vec4  dependentlookup = texture1D(texture1, offsetcolour);\n"
+										 "  offsetcolour = color.%s * lookup_scales.x + lookup_offsets.x;\n"
+										 "  dependentlookup = texture1D(texture1, offsetcolour);\n"
 										 "  color.%s = dependentlookup.r;\n";
 									if (MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1
 										 & material_program->type)
