@@ -2771,7 +2771,7 @@ DESCRIPTION :
 Updates the scene_viewer.
 ==============================================================================*/
 {
-	int return_code;
+	int repeat_idle;
 	struct Scene_viewer *scene_viewer;
 
 	ENTER(Scene_viewer_idle_update_callback);
@@ -2806,17 +2806,19 @@ Updates the scene_viewer.
 		}
 		CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
-		return_code = 1;
+		/* We don't want the idle callback to repeat so we return 0 */
+		repeat_idle = 0;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_viewer_idle_update_callback.  Missing scene_viewer");
-		return_code = 0;
+		/* We don't want the idle callback to repeat so we return 0 */
+		repeat_idle = 0;
 	}
 	LEAVE;
 
-	return (return_code); /* so workproc finished */
+	return (repeat_idle);
 } /* Scene_viewer_idle_update_callback */
 
 static int Scene_viewer_redraw_in_idle_time(struct Scene_viewer *scene_viewer)
