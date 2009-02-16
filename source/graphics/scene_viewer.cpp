@@ -2806,7 +2806,7 @@ Updates the scene_viewer.
 		}
 		CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
-		return_code = 0;
+		return_code = 1;
 	}
 	else
 	{
