@@ -339,7 +339,14 @@ else # ! IMAGEMAGICK
    IMAGEMAGICK_DEFINES += -DIMAGEMAGICK
    IMAGEMAGICK_PATH = $(CMISS_ROOT)/image_libraries
    IMAGEMAGICK_INC =  -I$(IMAGEMAGICK_PATH)/include/$(LIB_ARCH_DIR) -I$(IMAGEMAGICK_PATH)/include/$(LIB_ARCH_DIR)/ImageMagick
-   IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libMagickCore.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libtiff.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libpng.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libjpeg.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a
+   MAGICK_LIB_NAME = libMagickCore.a
+   ifeq ($(SYSNAME),AIX)
+      MAGICK_LIB_NAME = libMagick.a
+   endif
+   ifeq ($(SYSNAME:IRIX%=),)
+      MAGICK_LIB_NAME = libMagick.a
+   endif
+   IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/$(MAGICK_LIB_NAME) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libtiff.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libpng.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libjpeg.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a	
    ifeq ($(USE_LIBGDCM), true)
       ifeq ($(COMPILER),msvc)
          IMAGEMAGICK_LIB += $(foreach lib, gdcmCWRAPPER gdcmMSFF gdcmDSED gdcmzlib gdcmmd5 gdcmDICT gdcmCommon gdcmIOD gdcmopenjpeg gdcmjpeg8 gdcmjpeg16 gdcmjpeg12 gdcmexpat, $(IMAGEMAGICK_PATH)/$(LIB_ARCH_DIR)/lib/lib$(lib).a)
