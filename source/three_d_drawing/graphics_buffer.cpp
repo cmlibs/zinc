@@ -4491,7 +4491,8 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 				}
 
 #if defined (DEBUG)
-				printf("Bitmap bit count %d\n", bmi.bmiHeader.biBitCount);
+				printf("Bitmap bit count %d %d\n", bmi.bmiHeader.biBitCount,
+				       GetDeviceCaps(onscreen_hdc, BITSPIXEL));
 #endif /* defined (DEBUG) */
 
 				bmi.bmiHeader.biCompression = BI_RGB;
@@ -4502,7 +4503,10 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 				bmi.bmiHeader.biClrImportant = 0;
 
 				buffer->device_independent_bitmap_hdc = CreateCompatibleDC(onscreen_hdc);
-
+				if (!buffer->device_independent_bitmap_hdc)
+				{
+					buffer->device_independent_bitmap_hdc = CreateCompatibleDC(NULL);
+				}
 				buffer->device_independent_bitmap =
 					CreateDIBSection(onscreen_hdc,
 						&bmi,
@@ -4514,7 +4518,9 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 					buffer->device_independent_bitmap);
 
 #if defined (DEBUG)
-				printf ("Made dib\n");
+				printf("Made dib %p %p %d\n", 
+				       buffer->device_independent_bitmap_hdc,
+				       buffer->device_independent_bitmap, buffer->type);
 #endif /* defined (DEBUG) */
 
 				return_code = 1;
@@ -4524,6 +4530,9 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 					buffer->type = GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE;
 					/* We use the bitmap directly as the OpenGL rendering surface */
 					buffer->hDC = buffer->device_independent_bitmap_hdc;
+#if defined (DEBUG)
+					printf("buffer->hDC %d\n", buffer->hDC);
+#endif /* defined (DEBUG) */
 
 					PIXELFORMATDESCRIPTOR pfd;
 					SetPixelFormat( buffer->hDC, buffer->pixel_format, &pfd );
