@@ -2056,6 +2056,10 @@ DESCRIPTION :
 					&idle_callback->carbon_timer_ref);
 			}
 #elif defined (WX_USER_INTERFACE)
+			else
+			{
+				::wxWakeUpIdle();
+			}
 #elif defined (WIN32_SYSTEM)
 			else
 			{
