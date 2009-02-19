@@ -119,7 +119,7 @@ extern "C" {
 
 #include "three_d_drawing/window_system_extensions.h"
 
-	/* #define DEBUG */
+/* #define DEBUG */
 #if defined (DEBUG)
 #include <stdio.h>
 #endif /* defined (DEBUG) */
@@ -4828,6 +4828,21 @@ are performed but the graphics window will render into the supplied device conte
 						best_selection_level = selection_level;
 					}
 				}
+				if (!format)
+				{
+				  /* Try the automatic chooser */
+				  memset(&pfd,0, sizeof(PIXELFORMATDESCRIPTOR)) ;
+				  pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR); 
+				  pfd.nVersion = 1 ;
+				  pfd.dwFlags =  PFD_SUPPORT_OPENGL ;
+				  pfd.iPixelType = PFD_TYPE_RGBA ;
+				  pfd.cColorBits = 24 ;
+				  pfd.cDepthBits = 32 ;
+				  pfd.iLayerType = PFD_MAIN_PLANE ;				  
+				  // Choose the pixel format.
+				  format = ChoosePixelFormat(buffer->hDC, &pfd);
+				  best_selection_level = -1;  /* Set a value to show that it was selected by ChoosePixelFormat */
+				}
 
 				if (format)
 				{
@@ -4957,6 +4972,9 @@ are performed but the graphics window will render into the supplied device conte
 				}
 			}
 		}
+#if defined (DEBUG)
+		fflush(stdout);
+#endif /* defined (DEBUG) */
 	}
 	else
 	{
