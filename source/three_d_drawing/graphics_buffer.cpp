@@ -1734,7 +1734,7 @@ DESCRIPTION :
 				{
 					buffer->attrib_list[0] = WX_GL_RGBA;
 					buffer->attrib_list[1] = WX_GL_DOUBLEBUFFER;
-					buffer->attrib_list[2] = WX_GL_DEPTH_SIZE; 
+					buffer->attrib_list[2] = WX_GL_DEPTH_SIZE;
 					buffer->attrib_list[3] = 1;
 					buffer->attrib_list[4] = WX_GL_MIN_RED;
 					buffer->attrib_list[5] = 1;
@@ -1760,7 +1760,7 @@ DESCRIPTION :
 				};
 #endif /*defined (DARWIN) */
 #else /* defined (UNIX) */
-				/* The above routine does not work for win32 as it does not have the 
+				/* The above routine does not work for win32 as it does not have the
 					 member m_vi in wxGLCanvas.
 					 should find a way to get the best buffer, but this default setting should work fine. */
 				visual_attributes = NULL;
@@ -4508,7 +4508,7 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 					buffer->device_independent_bitmap_hdc = CreateCompatibleDC(NULL);
 				}
 				buffer->device_independent_bitmap =
-					CreateDIBSection(onscreen_hdc,
+					CreateDIBSection(buffer->device_independent_bitmap_hdc,
 						&bmi,
 						DIB_RGB_COLORS,
 						(void **)&buffer->device_independent_bitmap_pixels,
@@ -4518,7 +4518,7 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 					buffer->device_independent_bitmap);
 
 #if defined (DEBUG)
-				printf("Made dib %p %p %d\n", 
+				printf("Made dib %p %p %d\n",
 				       buffer->device_independent_bitmap_hdc,
 				       buffer->device_independent_bitmap, buffer->type);
 #endif /* defined (DEBUG) */
@@ -4531,7 +4531,7 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 					/* We use the bitmap directly as the OpenGL rendering surface */
 					buffer->hDC = buffer->device_independent_bitmap_hdc;
 #if defined (DEBUG)
-					printf("buffer->hDC %d\n", buffer->hDC);
+					printf("buffer->hDC %p\n", buffer->hDC);
 #endif /* defined (DEBUG) */
 
 					PIXELFORMATDESCRIPTOR pfd;
@@ -5234,9 +5234,9 @@ mode with zinc.  Requiring development.
 #endif /* defined (DEBUG) */
 
 		  LPARAM offset_coordinates;
-		  
+
 		  offset_coordinates = MAKELPARAM(
-			  GET_X_LPARAM(second_message) - buffer->x, 
+			  GET_X_LPARAM(second_message) - buffer->x,
 			  GET_Y_LPARAM(second_message) - buffer->y);
 
 		  return_code = Graphics_buffer_win32_button_callback(&message_identifier,
@@ -5244,12 +5244,12 @@ mode with zinc.  Requiring development.
 	  } break;
 	  case WM_SETCURSOR:
 	  {
-	    /* This message does not seem to propagate through to zinc so 
+	    /* This message does not seem to propagate through to zinc so
 	     setting cursor on WM_MOUSEMOVE above instead*/
 #if defined (DEBUG)
 		  printf ("Graphics_buffer_handle_windows_event WM_SETCURSOR\n");
 #endif /* defined (DEBUG) */
-	          SetCursor(LoadCursor(NULL, IDC_ARROW)); 
+	          SetCursor(LoadCursor(NULL, IDC_ARROW));
 		  return_code=1;
 	  } break;
 	  default:
