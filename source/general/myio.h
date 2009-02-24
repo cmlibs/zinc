@@ -63,7 +63,7 @@ Some additions/modifications to stdio.
 #define BYTE_ORDER 1234
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (DARWIN)
-#include <ppc/endian.h>
+#include <machine/endian.h>
 #endif /* defined (DARWIN) */
 
 #if ! defined BYTE_ORDER
