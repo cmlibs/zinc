@@ -385,66 +385,6 @@ the existing Cmiss_element and it is returned.
 	return (returned_element);
 } /* Cmiss_region_merge_Cmiss_element */
 
-Cmiss_field_id Cmiss_region_add_field(Cmiss_region_id region,
-	Cmiss_field_id field)
-/*******************************************************************************
-LAST MODIFIED : 13 May 2008
-
-DESCRIPTION :
-Adds the <field> to <region>.  The <field> pointer is returned on success
-as a convenience.
-==============================================================================*/
-{
-	char *field_name;
-	struct MANAGER(Computed_field) *manager;
-
-	ENTER(Cmiss_region_add_field);
-	if (region && 
-		(manager = Cmiss_region_get_Computed_field_manager(region))
-		&& field)
-	{
-		if (GET_NAME(Computed_field)(field, &field_name))
-		{
-			if (0 == field_name[0])
-			{
-				char name[100];
-				int number = NUMBER_IN_MANAGER(Computed_field)(manager);
-			
-				/* Make a 'unique' name based on the number_of_objects in the manager */
-				sprintf(name, "temp%d", number);
-				while(FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-							name, manager))
-				{
-					number++;
-					sprintf(name, "temp%d", number);
-				}
-				Computed_field_set_name(field, name);
-
-				/* We assume by default that fields made this way are
-					intermediaries which will get destroyed when only
-					the manager is referencing them. */
-				Computed_field_set_intermediary_managed_field_flag(
-					field, 1);
-			}
-			DEALLOCATE(field_name);
-
-			if (!ADD_OBJECT_TO_MANAGER(Computed_field)(field, manager))
-			{
-				field = (struct Cmiss_field *)NULL;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_region_add_field.  Invalid argument(s)");
-		field = (struct Cmiss_field *)NULL;
-	}
-	LEAVE;
-
-	return (field);
-} /* Cmiss_region_add_field */
-
 Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
 	const char *field_name)
 /*******************************************************************************

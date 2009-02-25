@@ -205,6 +205,9 @@ public:
 	virtual int get_native_resolution(int *dimension, int **sizes,
 		struct Computed_field **texture_coordinate_field);
 
+	virtual int check_manager(MANAGER(Computed_field) **manager_address);
+
+	virtual int add_to_manager_recursive(MANAGER(Computed_field) *manager);
 }; /* class Computed_field_core */
 
 struct Computed_field

@@ -2054,3 +2054,40 @@ This function is only externally visible to context objects.
 
 	return (any_object_list);
 } /* Cmiss_region_private_get_any_object_list */
+
+Cmiss_field_id Cmiss_region_add_field(Cmiss_region_id region,
+	Cmiss_field_id field)
+{
+	struct MANAGER(Computed_field) *manager;
+
+	ENTER(Cmiss_region_add_field);
+	if (region && 
+		(manager = Cmiss_region_get_Computed_field_manager(region))
+		&& field)
+	{
+		if (Computed_field_check_manager(field, &manager))
+		{
+			if (!Computed_field_add_to_manager_recursive(field, manager))
+			{
+				field = (struct Cmiss_field *)NULL;
+				display_message(ERROR_MESSAGE,
+					"Cmiss_region_add_field.  Field cannot be added to region.");
+			}
+		}
+		else
+		{
+			field = (struct Cmiss_field *)NULL;
+			display_message(ERROR_MESSAGE,
+				"Cmiss_region_add_field.  Field or source field is already in another region.");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_region_add_field.  Invalid argument(s)");
+		field = (struct Cmiss_field *)NULL;
+	}
+	LEAVE;
+
+	return (field);
+} /* Cmiss_region_add_field */

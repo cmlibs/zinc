@@ -219,15 +219,25 @@ Ensures:
 - <child_region> is not the same as or contains <region>;
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Adds a field to the region, and ensures that all the fields it depends on
+ * are also in that region. Fails with no fields added if there exists a
+ * dependency on a field from another region.
+ * Where field names are already in use in the region, names of fields being
+ * added are made unique by the addition of a suffix. Unnamed fields are
+ * automatically given unique names.
+ * Note that in contrast to all other functions returning an object pointer,
+ * the returned field does not gain an additional reference count, so the
+ * following is allowable:
+ * Cmiss_field_id field = Cmiss_region_add_field(region, Cmiss_field_create...);
+ *
+ * @param region  The region which will contain the field.
+ * @param field  The field to be added.
+ * @return  A valid field is returned if field has been successfully added,
+ *   otherwise NULL is returned.
+ */
 Cmiss_field_id Cmiss_region_add_field(Cmiss_region_id region, 
 	Cmiss_field_id field);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2008
-
-DESCRIPTION :
-Adds <field> to <region>, and as a convenience returns the field id if
-successful.
-==============================================================================*/
 
 Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
 	const char *field_name);

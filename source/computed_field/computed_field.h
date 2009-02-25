@@ -1002,6 +1002,36 @@ DESCRIPTION :
 Change the name of a field.
 ==============================================================================*/
 
+
+/***************************************************************************//**
+ * This function to call Computed_field_core::check_manager which checks that 
+ * the field is dependent on source fields in at most one manager.
+ *
+ * @param field  Field to be checked.
+ * @param manager_address  Address of manager which must be initialised to the
+ *   required manager if known, or NULL if unknown. On return points at the
+ *   first manager used by field or any of its source fields, or NULL if none.
+ * @return  1 if valid i.e. field depends on fields from at most one manager;
+ *   0 if invalid combination of fields from more than one mnanager.
+ */
+int Computed_field_check_manager(struct Computed_field *field, 
+	struct MANAGER(Computed_field) **manager_address);
+
+/***************************************************************************//**
+ * This function to call Computed_field_core::add_to_manager_recursive which
+ * adds field to the manager after recursively doing the same for all
+ * fields in the source_fields array.
+ * Assumes check_manager has been used to ensure fields are not already in
+ * another manager.
+ *
+ * @param field  Field to be added to the manager.
+ * @param manager  Computed field manager.
+ * @return  1 if field successfully added to manager, 0 if not added.
+ */
+int Computed_field_add_to_manager_recursive(struct Computed_field *field, 
+	struct MANAGER(Computed_field) *manager);
+
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

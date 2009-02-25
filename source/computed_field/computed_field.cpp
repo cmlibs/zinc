@@ -5088,3 +5088,237 @@ Changes the name of a field.
 
 	return (return_code);
 } /* Computed_field_set_name */
+
+/***************************************************************************//**
+ * Checks that the field is dependent on source fields in at most one manager.
+ * Base version that checks manager of this field and all source fields.
+ * Override if source_fields array is used differently (e.g. import) or
+ * source fields are held by the core itself.
+ * 
+ * Usage for unknown target manager,
+ * e.g. Computed_field_create_add(field1, field2):
+ *  MANAGER(Computed_field) *manager = NULL;
+ *  return_code =
+ *    field1->core->check_manager(&manager) &&
+ *    field2->core->check_manager(&manager);
+ * 
+ * Usage for known target manager, e.g. Cmiss_region_add_field(region, field):
+ *  MANAGER(Computed_field) *manager =
+ *    Cmiss_region_get_Computed_field_manager(region);
+ *  return_code = field->core->check_manager(&manager);
+ * 
+ * @param manager_address  Address of manager which must be initialised to the
+ *   required manager if known, or NULL if unknown. On return points at the
+ *   first manager used by field or any of its source fields, or NULL if none.
+ * @return  1 if valid i.e. field depends on fields from at most one manager;
+ *   0 if invalid combination of fields from more than one mnanager.
+ */
+int Computed_field_core::check_manager(struct MANAGER(Computed_field) **manager_address)
+{
+	int return_code = 0;
+
+	ENTER(Computed_field_core::check_manager);
+  if (field && manager_address)
+  {
+    if (field->manager)
+    {
+      // managed fields should already maintain source field consistency
+      if (field->manager == *manager_address)
+      {
+        return_code = 1;
+      }
+      else if ((MANAGER(Computed_field) *)NULL == *manager_address)
+      {
+        *manager_address = field->manager;
+        return_code = 1;
+      }
+      else
+      {
+        // incompatible managers
+        return_code = 0;
+      }
+    }
+    else
+    {
+      return_code = 1;
+      for (int i = 0; (i < field->number_of_source_fields) && return_code; i++)
+      {
+        return_code =
+          field->source_fields[i]->core->check_manager(manager_address);
+      }
+    }
+  }
+  else
+  {
+    return_code = 0;
+		display_message(ERROR_MESSAGE,"Computed_field_core::check_manager.  "
+			"Missing field and/or manager_address.");
+  }
+	LEAVE;
+
+  return (return_code);
+}
+
+int Computed_field_check_manager(struct Computed_field *field, struct MANAGER(Computed_field) **manager_address)
+{
+	int return_code;
+
+	ENTER(Computed_field_check_manager);
+	if (field && manager_address)
+	{
+		return_code = field->core->check_manager(manager_address);
+	}
+	else
+	{
+		return_code = 0;
+		display_message(ERROR_MESSAGE,
+			"Computed_field_check_manager. Invalid argument(s).");
+	}
+	LEAVE;
+
+	return return_code;
+}
+
+/***************************************************************************//**
+ * Private function to add field to a manager, automatically making field names
+ * unique if name already used by another field.
+ * Sets the intermediary flag for unnamed fields.
+ *
+ * @param field  Field not already in a manager.
+ * @param manager  Computed field manager from region.
+ * @return  1 if field successfully added to manager, 0 if not added.
+ */
+int Computed_field_add_to_manager_private(struct Computed_field *field, struct MANAGER(Computed_field) *manager)
+{
+	int return_code;
+
+  ENTER(Computed_field_add_to_manager_private);
+	if (field && manager && (!field->manager))
+	{
+		if (field->name[0] != 0)
+		{
+			if (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+						field->name, manager))
+			{
+				char *field_name;
+				if (ALLOCATE(field_name, char, strlen(field->name)+20))
+				{
+					int number = 1;
+					do
+					{
+						sprintf(field_name, "%s%d", field->name, number);
+						number++;
+					}
+					while (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(field_name, manager));
+					display_message(WARNING_MESSAGE,
+						"Computed_field_add_to_manager_private.  Renaming field from %s to %s as name already in use."
+						, field->name, field_name);
+					Computed_field_set_name(field, field_name);
+					DEALLOCATE(field_name);
+				}
+			}
+		}
+		else
+		{
+			char name[100];
+			/* We assume by default that fields made this way are intermediaries which
+				 will get destroyed when only the manager is referencing them. */
+			Computed_field_set_intermediary_managed_field_flag(field, 1);
+			/* Make a 'unique' name based on the number_of_objects in the manager */
+			int number = NUMBER_IN_MANAGER(Computed_field)(manager);
+			do
+			{
+				sprintf(name, "temp%d", number);
+				number++;
+			}
+			while (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(name, manager));
+			Computed_field_set_name(field, name);
+		}
+		return_code = ADD_OBJECT_TO_MANAGER(Computed_field)(field,manager);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_add_to_manager_private.  Invalid argument(s).");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return return_code;
+}
+
+/***************************************************************************//**
+ * Adds this field to the manager after recursively doing the same for all
+ * fields in the source_fields array.
+ * Assumes check_manager has been used to ensure fields are not already in
+ * another manager.
+ * 
+ * @param manager  Computed field manager.
+ * @return  1 if successfully added field and its source fields to manager.
+ *   0 if field or any of the source fields not added. 
+ */
+int Computed_field_core::add_to_manager_recursive(MANAGER(Computed_field) *manager)
+{
+	int return_code = 0;
+
+	ENTER(Computed_field_core::add_to_manager_recursive);
+	if (field && manager)
+	{
+		if (field->manager)
+		{
+			// source fields must already be in manager
+			return_code = 1;
+			// sanity check:
+			if (field->manager != manager)
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_core::add_to_manager_recursive.  Field is already managed by a different manager");
+				return_code = 0;
+			}
+		}
+		else
+		{
+			return_code = 1;
+			MANAGER_BEGIN_CHANGE(Computed_field)(manager, MANAGER_CHANGE_OBJECT(Computed_field), field);
+			for (int i = 0; (i < field->number_of_source_fields) && return_code; i++)
+			{
+				return_code = field->source_fields[i]->core->add_to_manager_recursive(manager);
+			}
+			if (return_code)
+			{
+				return_code = Computed_field_add_to_manager_private(field, manager);
+			}
+			MANAGER_END_CHANGE(Computed_field)(manager);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_core::add_to_manager_recursive.  Invalid arguments");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+int Computed_field_add_to_manager_recursive(struct Computed_field *field, 
+	struct MANAGER(Computed_field) *manager)	
+{
+	int return_code;
+
+	ENTER(Computed_field_add_to_manager_recursive)
+	if (field && manager)
+	{
+		return_code = field->core->add_to_manager_recursive(manager);
+	}
+	else
+	{
+		return_code = 0;
+		display_message(ERROR_MESSAGE,
+			"Computed_field_add_to_manager_recursive. Invalid argument(s).");
+	}
+	LEAVE;
+
+	return return_code;
+}
