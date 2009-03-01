@@ -5279,7 +5279,7 @@ int Computed_field_core::add_to_manager_recursive(MANAGER(Computed_field) *manag
 		else
 		{
 			return_code = 1;
-			MANAGER_BEGIN_CHANGE(Computed_field)(manager, MANAGER_CHANGE_OBJECT(Computed_field), field);
+			MANAGER_BEGIN_CACHE(Computed_field)(manager);
 			for (int i = 0; (i < field->number_of_source_fields) && return_code; i++)
 			{
 				return_code = field->source_fields[i]->core->add_to_manager_recursive(manager);
@@ -5288,7 +5288,7 @@ int Computed_field_core::add_to_manager_recursive(MANAGER(Computed_field) *manag
 			{
 				return_code = Computed_field_add_to_manager_private(field, manager);
 			}
-			MANAGER_END_CHANGE(Computed_field)(manager);
+			MANAGER_END_CACHE(Computed_field)(manager);
 		}
 	}
 	else
