@@ -57,6 +57,10 @@ Global types
 */
 struct Cmiss_command_data;
 typedef struct Cmiss_command_data *Cmiss_command_data_id;
+
+struct manager_Cmiss_texture;
+typedef struct manager_Cmiss_texture *Cmiss_texture_manager_id;
+
 /*******************************************************************************
 LAST MODIFIED : 13 August 2002
 
@@ -126,5 +130,14 @@ LAST MODIFIED : 26 January 2007
 DESCRIPTION :
 Returns the a handle to the scene_viewer that inhabits the pane of a graphics_window.
 ==============================================================================*/
+
+/***************************************************************************//**
+ * Returns a handle to the texture manager.
+ *
+ * @param command_data  The Cmiss command data object.
+ * @return  The Texture manager.
+ */
+Cmiss_texture_manager_id Cmiss_command_data_get_texture_manager(
+ Cmiss_command_data_id command_data);
 
 #endif /* __CMISS_COMMAND_H__ */
