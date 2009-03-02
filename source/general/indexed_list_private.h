@@ -1784,41 +1784,47 @@ Should only be declared with manager functions. \
 		if (0 == ITERATION_COUNT(object_type)) \
 		{ \
 			if (ALLOCATE(identifier_change_data, \
-				struct LIST_IDENTIFIER_CHANGE_DATA(object_type, \
-					identifier), 1) && \
-				ALLOCATE(identifier_change_data->lists_containing_object, \
-					struct LIST(object_type) *, NUMBER_OF_DEFINED_LISTS(object_type))) \
-			{ \
-            /* If the access_count is zero then there is nothing to do \
-               and accessing and deaccessing would destroy the object so \
-               we avoid this */ \
-            if (0 < object->access_count) \
-            { \
-				   identifier_change_data->object = ACCESS(object_type)(object); \
-				   j = 0; \
-				   for (i = 0; i < NUMBER_OF_DEFINED_LISTS(object_type); i++) \
-				   { \
-					   /* note must also compare pointer as different object with same \
-						   identifier may be returned by */ \
-					   if ((object_in_list = \
-						   FIND_BY_IDENTIFIER_IN_LIST(object_type,identifier)( \
-						   object->identifier, DEFINED_LISTS(object_type)[i])) && \
-						   (object_in_list == object)) \
+					struct LIST_IDENTIFIER_CHANGE_DATA(object_type,					\
+						identifier), 1) &&																					\
+				(NUMBER_OF_DEFINED_LISTS(object_type) == 0 ||										\
+					ALLOCATE(identifier_change_data->lists_containing_object,			\
+						struct LIST(object_type) *, NUMBER_OF_DEFINED_LISTS(object_type)))) \
+			{																																	\
+				/* handle case where there is no defined list of object type */ \
+				if (NUMBER_OF_DEFINED_LISTS(object_type) == 0)									\
+				{																																\
+					identifier_change_data->lists_containing_object = NULL;				\
+				}																																\
+				/* If the access_count is zero then there is nothing to do			\
+					 and accessing and deaccessing would destroy the object so		\
+					 we avoid this */																							\
+				if (0 < object->access_count)															\
+				{																																\
+					identifier_change_data->object = ACCESS(object_type)(object); \
+					j = 0;																												\
+					for (i = 0; i < NUMBER_OF_DEFINED_LISTS(object_type); i++)		\
+					{																															\
+						/* note must also compare pointer as different object with same \
+						   identifier may be returned by */													\
+						if ((object_in_list =																				\
+								FIND_BY_IDENTIFIER_IN_LIST(object_type,identifier)(			\
+									object->identifier, DEFINED_LISTS(object_type)[i])) && \
+							(object_in_list == object))																\
 					   { \
-					   	identifier_change_data->lists_containing_object[j] = \
-					   		DEFINED_LISTS(object_type)[i]; \
-					   	REMOVE_OBJECT_FROM_LIST(object_type)(object, \
-					   		DEFINED_LISTS(object_type)[i]); \
-					   	j++; \
-					   } \
-				   } \
-				   identifier_change_data->number_of_lists_containing_object = j; \
-				} \
-				else \
-				{ \
-					identifier_change_data->object = (struct object_type *)NULL; \
-				} \
-			} \
+							 identifier_change_data->lists_containing_object[j] = \
+								 DEFINED_LISTS(object_type)[i];											\
+							 REMOVE_OBJECT_FROM_LIST(object_type)(object,					\
+								 DEFINED_LISTS(object_type)[i]);										\
+							 j++;																									\
+					   }																											\
+					}																															\
+					identifier_change_data->number_of_lists_containing_object = j; \
+				}																																\
+				else																														\
+				{																																\
+					identifier_change_data->object = (struct object_type *)NULL;	\
+				}																																\
+			}																																	\
 			else \
 			{ \
 				display_message(ERROR_MESSAGE, \
