@@ -374,6 +374,27 @@ the non-master FE_region is attached in the region's any_object_list.
 	return (return_code);
 } /* Cmiss_region_fields_end_change */
 
+struct Cmiss_region *Cmiss_region_fields_get_master_region(
+	struct Cmiss_region_fields *region_fields)
+{
+	struct Cmiss_region *region;
+
+	ENTER(Cmiss_region_fields_get_master_region);
+	if (region_fields)
+	{
+		region = region_fields->owning_region;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_region_fields_get_master_region.  Missing region fields object");
+		region = (struct Cmiss_region *)NULL;
+	}
+	LEAVE;
+
+	return (region);
+}
+
 DECLARE_OBJECT_FUNCTIONS(Cmiss_region_fields)
 	
 static int Cmiss_region_update(struct Cmiss_region *region)
@@ -611,7 +632,7 @@ Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
 			DESTROY(LIST(CMISS_CALLBACK_ITEM(Cmiss_region_change)))(
 				&(region->change_callback_list));
 			// remove link back from region_fields to this region
-			if (region->fields->owning_region == *region_address)
+			if (region->fields && (region->fields->owning_region == *region_address))
 			{
 				region->fields->owning_region = NULL;
 			}
@@ -658,6 +679,11 @@ Call ONLY before deaccessing root_region in command_data.
 		for (i = 0; i < region->number_of_child_regions; i++)
 		{
 			Cmiss_region_detach_fields_hierarchical(region->child[i]->region);
+		}
+		// remove link back from region_fields to this region
+		if (region->fields && (region->fields->owning_region == region))
+		{
+			region->fields->owning_region = NULL;
 		}
 		DEACCESS(Cmiss_region_fields)(&(region->fields));
 	}

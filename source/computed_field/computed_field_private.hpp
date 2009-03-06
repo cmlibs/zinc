@@ -351,8 +351,13 @@ DESCRIPTION :
 Add the <value> to the list of values referenced by <field_type>.
 ==============================================================================*/
 
-struct Cmiss_region_fields;
-
+/***************************************************************************//**
+ * Sets the Cmiss_region_fields object which will own this manager.
+ * Private! Only to be called only from Cmiss_region object.
+ * 
+ * @param manager  Computed field manager.
+ * @return  The owning Cmiss_region_fields object.
+ */
 int Computed_field_manager_set_owner(struct MANAGER(Computed_field) *manager,
 	struct Cmiss_region_fields *region_fields);
 

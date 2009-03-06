@@ -184,6 +184,7 @@ extern "C" {
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "general/value.h"
+#include "region/cmiss_region_private.h"
 #include "user_interface/message.h"
 }
 #include <typeinfo>
@@ -1201,15 +1202,6 @@ int Computed_field_manager_set_owner(struct MANAGER(Computed_field) *manager,
 	struct Cmiss_region_fields *region_fields)
 {
 	return MANAGER_SET_OWNER(Computed_field)(manager, region_fields);
-}
-
-struct Cmiss_region_fields *Computed_field_get_owner(struct Computed_field *field)
-{
-	if (field && field->manager)
-	{
-		return field->manager->owner;
-	}
-	return NULL;
 }
 
 int Computed_field_changed(struct Computed_field *field,
@@ -5114,16 +5106,20 @@ struct Cmiss_region *Computed_field_get_region(struct Computed_field *field)
 	region = (struct Cmiss_region *)NULL;
 	if (field)
 	{
-		struct Cmiss_region_fields *region_fields = Computed_field_get_owner(field);
-		if (region_fields)
+		if (field->manager)
 		{
-			region = region_fields->owning_region;
+			struct Cmiss_region_fields *region_fields =
+				MANAGER_GET_OWNER(Computed_field)(field->manager);
+			if (region_fields)
+			{
+				region = Cmiss_region_fields_get_master_region(region_fields);
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_region_add_field.  Invalid argument(s)");
+			"Cmiss_region_add_field.  Missing field");
 	}
 	LEAVE;
 

@@ -52,6 +52,12 @@ Global functions
 ----------------
 */
 
+/***************************************************************************//**
+ * Private structure containing fields owned by a region and shared by any
+ * groups using it as a master region.
+ */
+struct Cmiss_region_fields;
+
 struct Cmiss_region *CREATE(Cmiss_region)(void);
 /*******************************************************************************
 LAST MODIFIED : 22 May 2008
@@ -125,5 +131,15 @@ Returns the list of objects, abstractly stored as struct Any_object from
 <region>. It is important that this list not be modified directly.
 This function is only externally visible to context objects.
 ==============================================================================*/
+
+/***************************************************************************//**
+ * Returns the master region from the private Cmiss_region_fields object.
+ * Can return NULL if master Cmiss_region prematurely destroyed. 
+ * 
+ * @param region_fields Cmiss_region_fields object owning fields for region.
+ * @return  Master Cmiss_region, or NULL if it has been prematurely destroyed.
+ */
+struct Cmiss_region *Cmiss_region_fields_get_master_region(
+	struct Cmiss_region_fields *region_fields);
 
 #endif /* !defined (CMISS_REGION_PRIVATE_H) */
