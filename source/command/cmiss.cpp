@@ -23589,6 +23589,15 @@ DESCRIPTION:
 					return_code=Option_table_parse(option_table, state);
 					DESTROY(Option_table)(&option_table);
 				}
+				// Catching case where a fail returned code is returned but we are
+				// asking for help, reseting the return code to pass if this is the case.
+		                if (!return_code &&
+		                   ((0==strcmp(PARSER_HELP_STRING,state->current_token)) ||
+		                    (0==strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))))
+		                {
+		                        return_code = 1;
+		                }
+		
 			}
 			destroy_Parse_state(&state);
 		}
