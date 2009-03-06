@@ -311,7 +311,7 @@ DESCRIPTION :
 /*
 Computed field functions
 ------------------------
-Functions used only internally to computed fields
+Functions used only internally to computed fields or the region that owns them.
 */
 
 struct Computed_field_constructor *CREATE(Computed_field_constructor)
@@ -649,5 +649,43 @@ cache.
 
 	return (return_code);
 } /* Computed_field_evaluate_source_fields_cache_at_location */
+
+/***************************************************************************//**
+ * Private function to add field to a manager, automatically making field names
+ * unique if name already used by another field.
+ * Sets the intermediary flag for unnamed fields.
+ *
+ * @param field  Field not already in a manager.
+ * @param manager  Computed field manager from region.
+ * @return  1 if field successfully added to manager, 0 if not added.
+ */
+int Computed_field_add_to_manager_private(struct Computed_field *field,
+	struct MANAGER(Computed_field) *manager);
+
+/***************************************************************************//**
+ * Checks field is dependent on source fields in at most one manager.
+ *
+ * @param field  Field to be checked.
+ * @param manager_address  Address of manager which must be initialised to the
+ *   required manager if known, or NULL if unknown. On return points at the
+ *   first manager used by field or any of its source fields, or NULL if none.
+ * @return  1 if valid i.e. field depends on fields from at most one manager;
+ *   0 if invalid combination of fields from more than one mnanager.
+ */
+int Computed_field_check_manager(struct Computed_field *field, 
+	struct MANAGER(Computed_field) **manager_address);
+
+/***************************************************************************//**
+ * Recursively adds field to the manager after doing the same for all source
+ * fields it depends on.
+ * Assumes check_manager has been used to ensure fields are not already in
+ * another manager.
+ *
+ * @param field  Field to be added to the manager.
+ * @param manager  Computed field manager.
+ * @return  1 if field successfully added to manager, 0 if not added.
+ */
+int Computed_field_add_to_manager_recursive(struct Computed_field *field, 
+	struct MANAGER(Computed_field) *manager);
 
 #endif /* !defined (COMPUTED_FIELD_PRIVATE_H) */

@@ -3958,8 +3958,7 @@ and should not itself be managed.
 								if (temp_field->core && 
 									temp_field->core->get_type_string())
 								{
-									/* add the new field to the manager */
-									if (!ADD_OBJECT_TO_MANAGER(Computed_field)(temp_field,
+									if (!Computed_field_add_to_manager_recursive(temp_field,
 										Cmiss_region_get_Computed_field_manager(region)))
 									{
 										display_message(ERROR_MESSAGE,
@@ -5179,16 +5178,8 @@ int Computed_field_check_manager(struct Computed_field *field, struct MANAGER(Co
 	return return_code;
 }
 
-/***************************************************************************//**
- * Private function to add field to a manager, automatically making field names
- * unique if name already used by another field.
- * Sets the intermediary flag for unnamed fields.
- *
- * @param field  Field not already in a manager.
- * @param manager  Computed field manager from region.
- * @return  1 if field successfully added to manager, 0 if not added.
- */
-int Computed_field_add_to_manager_private(struct Computed_field *field, struct MANAGER(Computed_field) *manager)
+int Computed_field_add_to_manager_private(struct Computed_field *field,
+	struct MANAGER(Computed_field) *manager)
 {
 	int return_code;
 
