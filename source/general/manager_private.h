@@ -79,7 +79,7 @@ Local types
 #define MANAGER_CALLBACK_ITEM( object_type )  mi ## object_type
 #endif
 
-#define FULL_DECLARE_MANAGER_TYPE( object_type ) \
+#define FULL_DECLARE_MANAGER_TYPE_WITH_OWNER( object_type , owner_type ) \
 struct MANAGER_CALLBACK_ITEM(object_type) \
 /***************************************************************************** \
 LAST MODIFIED : 27 September 1995 \
@@ -109,9 +109,14 @@ The structure for the manager. \
 	int locked; \
 	/* the type of changes since the last update message */ \
 	struct MANAGER_MESSAGE(object_type) *message; \
+	/* pointer to owning object which exists for lifetime of this manager, if any */ \
+	owner_type *owner; \
 	/* flag indicating whether caching is on */ \
 	int cache; \
 } /* struct MANAGER(object_type) */
+
+#define FULL_DECLARE_MANAGER_TYPE( object_type ) \
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(object_type, void)
 
 /*
 Local functions
@@ -1548,6 +1553,80 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(GROUP(object_type),name) \
 \
 	return (return_code); \
 } /* MANAGER_COPY_WITH_IDENTIFIER(GROUP(object_type),name) */
+
+#define MANAGER_GET_OWNER(object_type)  manager_get_owner_ ## object_type
+
+#define PROTOTYPE_MANAGER_GET_OWNER_FUNCTION( object_type, owner_type ) \
+owner_type *MANAGER_GET_OWNER(object_type)(struct MANAGER(object_type) *manager) \
+/***************************************************************************** \
+LAST MODIFIED : 5 March 2009 \
+\
+DESCRIPTION : \
+Private function to get the owning object for this manager. \
+==============================================================================*/
+
+#define DECLARE_MANAGER_GET_OWNER_FUNCTION( object_type , owner_type ) \
+PROTOTYPE_MANAGER_GET_OWNER_FUNCTION(object_type,owner_type) \
+{ \
+	owner_type *owner; \
+\
+	ENTER(MANAGER_GET_OWNER(object_type)); \
+	if (manager) \
+	{ \
+		owner = manager->owner; \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"MANAGER_GET_OWNER(" #object_type ").  Missing manager"); \
+		owner = (owner_type *)NULL; \
+	} \
+	LEAVE; \
+\
+	return (owner); \
+} /* MANAGER_GET_OWNER(object_type) */
+
+#define MANAGER_SET_OWNER(object_type)  manager_set_owner_ ## object_type
+
+#define PROTOTYPE_MANAGER_SET_OWNER_FUNCTION( object_type, owner_type ) \
+int MANAGER_SET_OWNER(object_type)(struct MANAGER(object_type) *manager, \
+	owner_type *owner) \
+/***************************************************************************** \
+LAST MODIFIED : 5 March 2009 \
+\
+DESCRIPTION : \
+Private function to set the owning object for this manager. \
+==============================================================================*/
+
+#define DECLARE_MANAGER_SET_OWNER_FUNCTION( object_type , owner_type ) \
+PROTOTYPE_MANAGER_SET_OWNER_FUNCTION(object_type,owner_type) \
+{ \
+	int return_code; \
+\
+	ENTER(MANAGER_SET_OWNER(object_type)); \
+	if (manager && owner) \
+	{ \
+		manager->owner = owner; \
+		return_code = 1; \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"MANAGER_SET_OWNER(" #object_type ").  Missing manager"); \
+		return_code = 0; \
+	} \
+	LEAVE; \
+\
+	return (return_code); \
+} /* MANAGER_SET_OWNER(object_type) */
+
+#define PROTOTYPE_MANAGER_OWNER_FUNCTIONS(object_type, owner_type) \
+PROTOTYPE_MANAGER_GET_OWNER_FUNCTION(object_type, owner_type); \
+PROTOTYPE_MANAGER_SET_OWNER_FUNCTION(object_type, owner_type)
+
+#define DECLARE_MANAGER_OWNER_FUNCTIONS(object_type, owner_type) \
+DECLARE_MANAGER_GET_OWNER_FUNCTION(object_type, owner_type) \
+DECLARE_MANAGER_SET_OWNER_FUNCTION(object_type, owner_type)
 
 #define DECLARE_LOCAL_MANAGER_FUNCTIONS(object_type) \
 DECLARE_MANAGER_UPDATE_FUNCTION(object_type) \

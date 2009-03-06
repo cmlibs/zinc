@@ -1002,6 +1002,14 @@ DESCRIPTION :
 Change the name of a field.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Returns the region which this field belongs to, if any.
+ * 
+ * @param field  The field.
+ * @return  A handle to the owning region if in one, or NULL if none.
+ */
+struct Cmiss_region *Computed_field_get_region(struct Computed_field *field);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

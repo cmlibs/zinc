@@ -48,6 +48,7 @@ to regions, but hiding their details from the core Cmiss_region object.
 #if !defined (CMISS_REGION_H)
 #define CMISS_REGION_H
 
+#include "api/cmiss_region.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "general/callback.h"
@@ -438,5 +439,14 @@ Lists the Cmiss_region hierarchy starting from <region>. Contents are listed
 indented from the left margin by <indent> spaces; this is incremented by
 <indent_increment> for each child level.
 ==============================================================================*/
+
+/***************************************************************************//**
+ * Returns the full path name from the root region to this region. Path name
+ * always begins and ends with the CMISS_REGION_PATH_SEPARATOR_CHAR '/'.
+ * 
+ * @param region  The region whose path is requested.
+ * @return  On success: allocated string containing full region path.
+ */
+char *Cmiss_region_get_path(struct Cmiss_region *region);
 
 #endif /* !defined (CMISS_REGION_H) */

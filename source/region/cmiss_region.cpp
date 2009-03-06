@@ -91,6 +91,9 @@ FE_region whose FE_fields are automatically wrapped.
 'group' regions ACCESS the same Cmiss_region_fields as the full region.
 ==============================================================================*/
 {
+	/* non-accessed pointer to master region owning these fields */
+	/* must be cleared to NULL on destruction of owning_region */
+	struct Cmiss_region *owning_region;
 	struct MANAGER(Computed_field) *field_manager;
 	struct FE_region *fe_region;
 	int access_count;
@@ -108,6 +111,8 @@ Implements advanced hierarchical functionality through context objects stored
 within it. Type and role of context objects are not known to the Cmiss_region.
 ==============================================================================*/
 {
+	/* non-accessed pointer to parent region, or NULL if root */
+	struct Cmiss_region *parent;
 	/* fields owned by this region (or master) */
 	struct Cmiss_region_fields *fields;
 	/* list of objects attached to region */
@@ -220,6 +225,7 @@ DEFINE_CMISS_CALLBACK_FUNCTIONS(Cmiss_region_change, \
 PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_region_fields);
 
 struct Cmiss_region_fields *CREATE(Cmiss_region_fields)(
+	struct Cmiss_region *owning_region,
 	struct MANAGER(FE_basis) *basis_manager,
 	struct LIST(FE_element_shape) *element_shape_list)
 /*******************************************************************************
@@ -232,6 +238,7 @@ FE_region, i.e. the true region and subgroups of it.
 If <basis_manager> and <element_shape_list> are supplied they are reused,
 otherwise new local manager & list are created.
 Created with access_count of 1 so call DEACCESS to clean up.
+@param owning_region  The master region owning these fields.
 ==============================================================================*/
 {
 	struct Cmiss_region_fields *region_fields;
@@ -240,7 +247,9 @@ Created with access_count of 1 so call DEACCESS to clean up.
 	ALLOCATE(region_fields, struct Cmiss_region_fields, 1);
 	if (region_fields)
 	{
+		region_fields->owning_region = owning_region;
 		region_fields->field_manager = CREATE(MANAGER(Computed_field))();
+		Computed_field_manager_set_owner(region_fields->field_manager, region_fields);
 		region_fields->fe_region = CREATE(FE_region)(
 			/*master_fe_region*/(struct FE_region *)NULL,
 			basis_manager, element_shape_list);
@@ -439,6 +448,7 @@ Region is created with an access_count of 1; DEACCESS to destroy.
 	ENTER(CREATE(Cmiss_region));
 	if (ALLOCATE(region, struct Cmiss_region, 1))
 	{
+		region->parent = NULL;
 		region->fields = NULL;
 		region->any_object_list = CREATE(LIST(Any_object))();
 		region->number_of_child_regions = 0;
@@ -517,7 +527,7 @@ cases in code.
 					{
 						/* creates a full region sharing the basis manager and shape list from
 						 * the master region */
-						region->fields = CREATE(Cmiss_region_fields)(
+						region->fields = CREATE(Cmiss_region_fields)(region,
 							FE_region_get_basis_manager(master_region->fields->fe_region),
 							FE_region_get_FE_element_shape_list(master_region->fields->fe_region));
 						if (region->fields)
@@ -529,7 +539,7 @@ cases in code.
 			}
 			else
 			{
-				region->fields = CREATE(Cmiss_region_fields)(
+				region->fields = CREATE(Cmiss_region_fields)(region,
 					(struct MANAGER(FE_basis) *)NULL,
 					(struct LIST(FE_element_shape) *)NULL);
 				if (region->fields)
@@ -600,6 +610,11 @@ Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
 			}
 			DESTROY(LIST(CMISS_CALLBACK_ITEM(Cmiss_region_change)))(
 				&(region->change_callback_list));
+			// remove link back from region_fields to this region
+			if (region->fields->owning_region == *region_address)
+			{
+				region->fields->owning_region = NULL;
+			}
 			DEACCESS(Cmiss_region_fields)(&region->fields);
 			DEALLOCATE(*region_address);
 			return_code = 1;
@@ -1107,6 +1122,12 @@ Ensures:
 				"Region already contains this child region");
 			return_code = 0;
 		}
+		if (child_region->parent)
+		{
+			display_message(ERROR_MESSAGE, "Cmiss_region_add_child_region.  "
+				"Child region already has a parent");
+			return_code = 0;
+		}
 		if (return_code)
 		{
 			if (region_child = CREATE(Cmiss_region_child)(child_name, child_region))
@@ -1126,6 +1147,7 @@ Ensures:
 						}
 						temp_child[child_position] = region_child;
 					}
+					child_region->parent = region;
 					region->child = temp_child;
 					region->number_of_child_regions++;
 					/* note changes and inform clients */
@@ -1180,8 +1202,6 @@ LAST MODIFIED : 27 March 2003
 
 DESCRIPTION :
 Removes <child_region> from <region>.
-???RC what if this region contains the master FE_region for the FE_region
-in the child?
 ==============================================================================*/
 {
 	char *child_region_name;
@@ -1204,6 +1224,7 @@ in the child?
 					/* Copy out the name before we remove it */
 					child_region_name = duplicate_string((region->child[i])->name);
 				}
+				region->child[i]->region->parent = NULL;
 				DESTROY(Cmiss_region_child)(&(region->child[i]));
 				child_in_region = 1;
 			}
@@ -2096,3 +2117,43 @@ Cmiss_field_id Cmiss_region_add_field(Cmiss_region_id region,
 
 	return (field);
 } /* Cmiss_region_add_field */
+
+char *Cmiss_region_get_path(struct Cmiss_region *region)
+{
+	char *path = NULL;
+
+	ENTER(Cmiss_region_get_path);
+	if (region)
+	{
+		int error = 0;
+		Cmiss_region* parent = region->parent;
+		if (parent)
+		{
+			if (path = Cmiss_region_get_path(parent))
+			{
+				const char *child_name = NULL;
+				for (int i = 0; i < parent->number_of_child_regions; i++)
+				{
+					if (region == parent->child[i]->region)
+					{
+						child_name = parent->child[i]->name;
+						break;
+					}
+				}
+				append_string(&path, child_name, &error);
+			}
+			else
+			{
+				error = 1;
+			}
+		}
+		append_string(&path, CMISS_REGION_PATH_SEPARATOR_STRING, &error);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Cmiss_region_get_path.  Missing region");
+	}
+	LEAVE;
+	
+	return (path);
+}

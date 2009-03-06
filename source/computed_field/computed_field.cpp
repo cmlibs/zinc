@@ -191,7 +191,7 @@ extern "C" {
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Computed_field);
 
-FULL_DECLARE_MANAGER_TYPE(Computed_field);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Computed_field, struct Cmiss_region_fields);
 
 struct Computed_field_type_data
 /*******************************************************************************
@@ -1194,6 +1194,23 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 
 DECLARE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(Computed_field, name, const char *)
 DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(Computed_field, name, const char *)
+
+DECLARE_MANAGER_OWNER_FUNCTIONS(Computed_field, struct Cmiss_region_fields);
+
+int Computed_field_manager_set_owner(struct MANAGER(Computed_field) *manager,
+	struct Cmiss_region_fields *region_fields)
+{
+	return MANAGER_SET_OWNER(Computed_field)(manager, region_fields);
+}
+
+struct Cmiss_region_fields *Computed_field_get_owner(struct Computed_field *field)
+{
+	if (field && field->manager)
+	{
+		return field->manager->owner;
+	}
+	return NULL;
+}
 
 int Computed_field_changed(struct Computed_field *field,
 	struct MANAGER(Computed_field) *computed_field_manager)
@@ -3946,6 +3963,7 @@ and should not itself be managed.
 								}
 								else
 								{
+									// GRC modified source fields may not be in manager, e.g. automatic constants [1 2 3] 
 									/* copy modifications to existing_field */
 									return_code=
 										MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name)(
@@ -5087,6 +5105,30 @@ Changes the name of a field.
 
 	return (return_code);
 } /* Computed_field_set_name */
+
+struct Cmiss_region *Computed_field_get_region(struct Computed_field *field)
+{
+	struct Cmiss_region *region;
+
+	ENTER(Computed_field_get_region);
+	region = (struct Cmiss_region *)NULL;
+	if (field)
+	{
+		struct Cmiss_region_fields *region_fields = Computed_field_get_owner(field);
+		if (region_fields)
+		{
+			region = region_fields->owning_region;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_region_add_field.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (region);
+}
 
 /***************************************************************************//**
  * Checks that the field is dependent on source fields in at most one manager.

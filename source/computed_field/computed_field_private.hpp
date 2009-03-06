@@ -351,6 +351,20 @@ DESCRIPTION :
 Add the <value> to the list of values referenced by <field_type>.
 ==============================================================================*/
 
+struct Cmiss_region_fields;
+
+int Computed_field_manager_set_owner(struct MANAGER(Computed_field) *manager,
+	struct Cmiss_region_fields *region_fields);
+
+/***************************************************************************//**
+ * Returns the Cmiss_region_fields object this field is packaged into, if any.
+ * Private! Only to be called only by Cmiss_region object.
+ * 
+ * @param field  The field.
+ * @return  A handle to the owning region fields object or NULL if none.
+ */
+struct Cmiss_region_fields *Computed_field_get_owner(struct Computed_field *field);
+
 int Computed_field_changed(struct Computed_field *field,
 	struct MANAGER(Computed_field) *computed_field_manager);
 /*******************************************************************************
