@@ -1,16 +1,14 @@
 Graphical settings in CMGUI
 ===========================
 
-.. |xi|    unicode:: U+003BE .. GREEK SMALL LETTER XI
-.. |sub1|  unicode:: U+02081 .. SUBSCRIPT ONE
-.. |sub2|  unicode:: U+02082 .. SUBSCRIPT TWO
-.. |sub3|  unicode:: U+02083 .. SUBSCRIPT THREE
 .. _graphics window: http://www.cmiss.org/cmgui/wiki/UsingCMGUITheGraphicsWindow
 .. _scene editor: http://www.cmiss.org/cmgui/wiki/UsingCMGUITheSceneEditorWindow
 .. _glyphs: http://www.cmiss.org/cmgui/wiki/VisualizingFieldsAtPointsUsingGlyphs
 .. _material editor window: http://www.cmiss.org/cmgui/wiki/UsingCMGUIMaterialEditor
 .. _spectrum editor window: http://www.cmiss.org/cmgui/wiki/UsingCMGUISpectrumEditor
 .. _example a7: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a7/index.html
+.. _example ao: http://cmiss.bioeng.auckland.ac.nz/development/examples/a/ao/index.html
+.. _curl: http://www.math.umn.edu/~nykamp/m2374/readings/divcurl/
 
 General description of graphical settings
 -----------------------------------------
@@ -59,16 +57,23 @@ The eight types of graphical settings
 
 * **lines**
   
-  Lines are used to visualize 1D elements, or the edges of 2D or 3D elements.  They are simple, unshaded lines that have a fixed, specified width.  They have the following settings in addition to the common settings listed above:
+  Lines are used to visualize 1D elements, or the edges of 2D or 3D elements.  They are simple, unshaded lines that have a fixed, specified width.  They have the following specific settings:
 
   * Exterior: This check box will automatically only render lines on exterior surfaces of a mesh.
   * Face: This check box enables a drop-down menu that allows you to choose which faces are drawn according to xi values.  You can select xi=0 or 1 for each of the three xi-directions.
   * Width: this allows you to specify the width of the lines in pixels.  This is a constant width that does not scale according to the zoom level.
+  
+  .. figure:: graphicalSettings_lines.png
+   :figwidth: image
+   :align: center
+   
+   Here is the mesh from `example a7`_ rendered with the default lines graphical setting.
+
 
 
 * **cylinders**
   
-  Cylinders are used to visualize the same things as lines.  They are shaded cylinders of a specified radius, with their number of sides specified by the *Circle discretization* setting in the `scene editor`_ *General settings*.  They have the following settings in addition to the common settings listed above:
+  Cylinders are used to visualize the same things as lines.  They are shaded cylinders of a specified radius, with their number of sides specified by the *Circle discretization* setting in the `scene editor`_ *General settings*.  They have the following specific settings:
 
   * Exterior: This check box will automatically only render lines on exterior surfaces of a mesh.
   * Face: This check box enables a drop-down menu that allows you to choose which faces are drawn according to xi values.  You can select xi=0 or 1 for each of the three xi-axes.
@@ -78,7 +83,7 @@ The eight types of graphical settings
 
 * **surfaces**
   
-  Surfaces are used to visualize 2D elements or the faces of 3D elements.  They are shaded surfaces of zero thickness that are automatically shaped according to the nodes defining the element they represent.  Their level of detail is specified by the *Element discretization* setting in the `scene editor`_ *General settings*.  They have the following settings in addition to the common settings listed above:
+  Surfaces are used to visualize 2D elements or the faces of 3D elements.  They are shaded surfaces of zero thickness that are automatically shaped according to the nodes defining the element they represent.  Their level of detail is specified by the *Element discretization* setting in the `scene editor`_ *General settings*.  They have the following specific settings:
   
   * Exterior: This check box will automatically only render surfaces on exterior surfaces of a mesh.
   * Face: This check box enables a drop-down menu that allows you to choose which faces are drawn according to xi values.  You can select xi=0 or 1 for each of the three xi-axes.
@@ -87,7 +92,7 @@ The eight types of graphical settings
 
 * **iso_surfaces**
   
-  Iso-surfaces are used to represent a surface that connects all points that share some common value.  For example, in `example a7`_ an iso-surface is used to represent a surface at which every point has a temperature of 100 degrees C.  They have the following settings in addition to the common settings listed above:
+  Iso-surfaces are used to represent a surface that connects all points that share some common value.  For example, in `example a7`_ an iso-surface is used to represent a surface at which every point has a temperature of 100 degrees C.  They have the following specific settings:
   
   * Use element type: This drop down menu allows you to select which type of element will have surfaces rendered on it.  Type *use_elements* is the default.  The types *use_faces* and *use_lines* will render element points only on those components of elements.  If faces or lines are chosen, the following options are activated:
 
@@ -107,7 +112,7 @@ The eight types of graphical settings
 
 * **element_points**
   
-  Element points are used to visualize the discretized points within an element.  Elements may be 1, 2 or 3 dimensional, in which case the element points are spaced along the line, across the surface, or throughout the volume according to the *Element discretization* setting in the `scene editor`_ *General settings*.  They have the 
+  Element points are used to visualize the discretized points within an element.  Elements may be 1, 2 or 3 dimensional, in which case the element points are spaced along the line, across the surface, or throughout the volume according to the *Element discretization* setting in the `scene editor`_ *General settings*.  They have the following specific settings:
   
   * Use element type: This drop down menu allows you to select which type of element will have element points rendered on/in it.  Type *use_elements* is the default, and renders element points throughout 3D elements.  The types *use_faces* and *use_lines* will render element points only on those components of elements.  If faces or lines are chosen, the following options are activated:
   
@@ -118,7 +123,22 @@ The eight types of graphical settings
 
 * **streamlines**
   
-  Streamlines are a special graphical setting for use with *fibre fields*.
+  Streamlines are a special graphical setting for visualizing *vector* fields - for example, a fluid flow solution.  They can be used to visualize 3, 6 or 9 component vector fields within a 3 dimensional element. In `example ao`_, streamlines are used to show the fibre and sheet directions in the heart. Streamlines will align along their length according to the first vector of a vector field, and across their "width" (eg the width of the *ribbon* or *rectangle* streamline types) to the second vector. For single vector (3 component) vector fields, the width of the streamlines will align to the curl_ of the vector.
 
-
-
+  Streamlines have the following specific settings:
+  
+  * Streamline type: This drop-down box allows you to select the shape of the streamlines; that is, the shape outline that is extruded along the length of the streamline. *Line* and *Cylinder* can be used to visualize streamlines without showing orientation (curl). *Ellipse*, *rectangle* and *ribbon* types will enable visualization of the direction of the vector orthogonal to the streamline direction.
+  
+  * Length: Enter a value into this box to set the length of the streamline/s.
+  
+  * Width: Enter a value into this box to set the width of the streamline/s.
+  
+  * Stream vector: This drop-down box allows you to select the vector that is being visualized by the streamlines.
+  
+  * Reverse: Checking this box reverses the streamline.
+  
+  * Seed element: Checking this box allows you to select the single element number from which the streamline will be seeded.
+  
+  * Xi: Entering three comma-separated values (between 0 and 1) allows you to set the xi location within elements from which streamlines will be seeded.
+  
+  
