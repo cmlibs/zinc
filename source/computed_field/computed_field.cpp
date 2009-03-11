@@ -1196,7 +1196,7 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 DECLARE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(Computed_field, name, const char *)
 DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(Computed_field, name, const char *)
 
-DECLARE_MANAGER_OWNER_FUNCTIONS(Computed_field, struct Cmiss_region_fields);
+DECLARE_MANAGER_OWNER_FUNCTIONS(Computed_field, struct Cmiss_region_fields)
 
 int Computed_field_manager_set_owner(struct MANAGER(Computed_field) *manager,
 	struct Cmiss_region_fields *region_fields)
