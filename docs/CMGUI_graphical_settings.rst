@@ -35,6 +35,12 @@ Graphical settings are the building blocks used to create any visualization disp
 * Selected material: This drop-down menu allows you to set which material will be used to render parts of the graphical setting which are selected.
 
 
+.. figure:: video here
+   :figwidth: image
+   :align: center
+
+ The different types of graphical settings, demonstrated using the simple cube mesh.
+
 The eight types of graphical settings
 -------------------------------------
 
@@ -62,13 +68,6 @@ The eight types of graphical settings
   * Exterior: This check box will automatically only render lines on exterior surfaces of a mesh.
   * Face: This check box enables a drop-down menu that allows you to choose which faces are drawn according to xi values.  You can select xi=0 or 1 for each of the three xi-directions.
   * Width: this allows you to specify the width of the lines in pixels.  This is a constant width that does not scale according to the zoom level.
-  
-  .. figure:: graphicalSettings_lines.png
-   :figwidth: image
-   :align: center
-   
-   Here is the mesh from `example a7`_ rendered with the default lines graphical setting.
-
 
 
 * **cylinders**
@@ -89,6 +88,7 @@ The eight types of graphical settings
   * Face: This check box enables a drop-down menu that allows you to choose which faces are drawn according to xi values.  You can select xi=0 or 1 for each of the three xi-axes.
   * Render type: This drop down menu allows you to select shaded (default) or wireframe rendering of surfaces.  Wireframe rendering renders the surfaces as grids of shaded lines, with the grid detail determined by the *element discretization* setting in the *General settings*.
   * Texture coordinates: This check box activates a drop-down menu that allows you to select which field will be used to position any textures applied by the material setting.
+
 
 * **iso_surfaces**
   
@@ -124,6 +124,9 @@ The eight types of graphical settings
 * **streamlines**
   
   Streamlines are a special graphical setting for visualizing *vector* fields - for example, a fluid flow solution.  They can be used to visualize 3, 6 or 9 component vector fields within a 3 dimensional element. In `example ao`_, streamlines are used to show the fibre and sheet directions in the heart. Streamlines will align along their length according to the first vector of a vector field, and across their "width" (eg the width of the *ribbon* or *rectangle* streamline types) to the second vector. For single vector (3 component) vector fields, the width of the streamlines will align to the curl_ of the vector.
+  
+  Note that streamlines can be quite expensive to compute; changes to streamline settings in the `scene editor`_ can 
+take several seconds to appear in the 3D window, especially for complex scenes.
 
   Streamlines have the following specific settings:
   
@@ -140,5 +143,4 @@ The eight types of graphical settings
   * Seed element: Checking this box allows you to select the single element number from which the streamline will be seeded.
   
   * Xi: Entering three comma-separated values (between 0 and 1) allows you to set the xi location within elements from which streamlines will be seeded.
-  
-  
+

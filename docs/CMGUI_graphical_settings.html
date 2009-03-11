@@ -1,0 +1,314 @@
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+  <title></title>
+</head>
+
+<body>
+<h1 class="title">Graphical settings in CMGUI</h1>
+
+<div class="section">
+<h1><a id="general-description-of-graphical-settings"
+name="general-description-of-graphical-settings">General description of
+graphical settings</a></h1>
+
+<p>Graphical settings are the building blocks used to create any visualization
+displayed in the CMGUI <a class="reference"
+href="http://www.cmiss.org/cmgui/wiki/UsingCMGUITheGraphicsWindow">graphics
+window</a>. They are created, edited, re-ordered and deleted from within the <a
+class="reference"
+href="http://www.cmiss.org/cmgui/wiki/UsingCMGUITheSceneEditorWindow">scene
+editor</a>, or via the command line. All graphical settings have the following
+settings in common:</p>
+<ul class="simple">
+  <li>Name: This allows you to set the name of the graphical setting.</li>
+  <li>Coordinate field: This setting has a check box, which activates a
+    drop-down menu showing a list of fields that can be selected as the
+    coordinate field for the selected graphical setting.</li>
+  <li>Select mode: This drop-down menu allows you to select different selection
+    behaviours for the graphical setting: 
+    <ul>
+      <li>select_on - The default setting; graphical settings are able to be
+        selected and selected items are highlighted by rendering in the
+        <em>default_selected</em> material.</li>
+      <li>no_select - No selection or highlighting of the graphical
+      setting.</li>
+      <li>draw_selected - only selected items are drawn.</li>
+      <li>draw_unselected - only unselected items are drawn.</li>
+    </ul>
+  </li>
+  <li>Material: This drop-down menu allows you to select which material should
+    be used to render the graphical setting. Materials are defined and edited
+    in the <a class="reference"
+    href="http://www.cmiss.org/cmgui/wiki/UsingCMGUIMaterialEditor">material
+    editor window</a>.</li>
+  <li>Data: This setting has a check box which activates a drop-down menu. This
+    menu allows you to select which field will be mapped on to the graphical
+    setting, allowing you to colour the graphical setting according to the
+    values of some field for example. The check box also activates the
+    <em>spectrum</em> drop-down menu.</li>
+  <li>Spectrum: This drop-down menu is used to select which spectrum is to be
+    used to colour the graphical element according to the field selected in the
+    <em>data</em> setting. Spectra are edited in the <a class="reference"
+    href="http://www.cmiss.org/cmgui/wiki/UsingCMGUISpectrumEditor">spectrum
+    editor window</a>.</li>
+  <li>Selected material: This drop-down menu allows you to set which material
+    will be used to render parts of the graphical setting which are
+  selected.</li>
+</ul>
+</div>
+
+<div class="figure" align="center">
+<object width="640" height="505">
+  <param name="movie"
+  value="http://www.youtube.com/v/wyPUSskC8Pw&amp;hl=en&amp;fs=1">
+  <param name="allowFullScreen" value="true">
+  <param name="allowscriptaccess" value="always">
+  <embed src="http://www.youtube.com/v/wyPUSskC8Pw&amp;hl=en&amp;fs=1"
+  type="application/x-shockwave-flash" width="640" height="505" /></object> 
+
+<p class="caption">A short video showing the various kinds of graphical
+settings.</p>
+</div>
+
+<div class="section">
+<h1><a id="the-eight-types-of-graphical-settings"
+name="the-eight-types-of-graphical-settings">The eight types of graphical
+settings</a></h1>
+<ul>
+  <li><p class="first"><strong>node_points</strong></p>
+    <p>Node points are used to visualize nodes. You can use <a
+    class="reference"
+    href="http://www.cmiss.org/cmgui/wiki/VisualizingFieldsAtPointsUsingGlyphs">glyphs</a>
+    to represent node points. There are a range of built-in glyphs in CMGUI,
+    and it is possible to create custom glyphs as well. <em>Node points</em>
+    graphical settings have the following settings in addition to the common
+    ones listed above:</p>
+    <ul class="simple">
+      <li>Glyph: this drop-down menu allows you to choose the glyph that will
+        be rendered at the node points.</li>
+      <li>Centre: this box allows you to offset the origin of the glyph in
+        order to alter its placement at the node point.</li>
+      <li>Base glyph size: This box allows you to enter a size (x,y,z) for the
+        glyph in the same scale as the coordinate system for the region.</li>
+      <li>Orientation/Scale: This check box enables a drop-down menu that
+        allows selection of the field that the glyphs will be oriented and
+        scaled according to.</li>
+      <li>Scale factors: This box allows you to enter how each dimension scales
+        according to the orientation/scale field value.</li>
+      <li>Variable scale: This check box enables a drop-down menu that allows
+        selection of the field that acts as the variable scale field. For more
+        information on this and other of the <em>node points</em> options, see
+        the document on working with <a class="reference"
+        href="http://www.cmiss.org/cmgui/wiki/VisualizingFieldsAtPointsUsingGlyphs">glyphs</a>.</li>
+    </ul>
+  </li>
+  <li><p class="first"><strong>data_points</strong></p>
+    <p>Data points are used to visualize data points. Like node points, they
+    can be represented using <a class="reference"
+    href="http://www.cmiss.org/cmgui/wiki/VisualizingFieldsAtPointsUsingGlyphs">glyphs</a>.
+    They have the same settings as <em>node points</em>.</p>
+  </li>
+  <li><p class="first"><strong>lines</strong></p>
+    <p>Lines are used to visualize 1D elements, or the edges of 2D or 3D
+    elements. They are simple, unshaded lines that have a fixed, specified
+    width. They have the following specific settings:</p>
+    <ul class="simple">
+      <li>Exterior: This check box will automatically only render lines on
+        exterior surfaces of a mesh.</li>
+      <li>Face: This check box enables a drop-down menu that allows you to
+        choose which faces are drawn according to xi values. You can select
+        xi=0 or 1 for each of the three xi-directions.</li>
+      <li>Width: this allows you to specify the width of the lines in pixels.
+        This is a constant width that does not scale according to the zoom
+        level.</li>
+    </ul>
+    <p></p>
+  </li>
+  <li><p class="first"><strong>cylinders</strong></p>
+    <p>Cylinders are used to visualize the same things as lines. They are
+    shaded cylinders of a specified radius, with their number of sides
+    specified by the <em>Circle discretization</em> setting in the <a
+    class="reference"
+    href="http://www.cmiss.org/cmgui/wiki/UsingCMGUITheSceneEditorWindow">scene
+    editor</a> <em>General settings</em>. They have the following specific
+    settings:</p>
+    <ul class="simple">
+      <li>Exterior: This check box will automatically only render lines on
+        exterior surfaces of a mesh.</li>
+      <li>Face: This check box enables a drop-down menu that allows you to
+        choose which faces are drawn according to xi values. You can select
+        xi=0 or 1 for each of the three xi-axes.</li>
+      <li>Constant radius: This allows you to set the radius of the cylinders,
+        in the units of the coordinate system.</li>
+      <li>Scalar radius: This check box will activate a drop-down menu allowing
+        you to select which field will be used to scale the radius of the
+        cylinders. It will also activate a text box in which you can enter the
+        scale factor, or how the scale field will scale the radius.</li>
+      <li>Texture coordinates: This check box activates a drop-down menu that
+        allows you to select which field will be used to position any textures
+        applied by the material setting.</li>
+    </ul>
+    <p></p>
+  </li>
+  <li><p class="first"><strong>surfaces</strong></p>
+    <p>Surfaces are used to visualize 2D elements or the faces of 3D elements.
+    They are shaded surfaces of zero thickness that are automatically shaped
+    according to the nodes defining the element they represent. Their level of
+    detail is specified by the <em>Element discretization</em> setting in the
+    <a class="reference"
+    href="http://www.cmiss.org/cmgui/wiki/UsingCMGUITheSceneEditorWindow">scene
+    editor</a> <em>General settings</em>. They have the following specific
+    settings:</p>
+    <ul>
+      <li>Exterior: This check box will automatically only
+        render surfaces on exterior surfaces of a mesh.
+      </li>
+      <li>Face: This check box enables a drop-down menu that
+        allows you to choose which faces are drawn according to xi values. You
+        can select xi=0 or 1 for each of the three xi-axes.
+      </li>
+      <li>Render type: This drop down menu allows you to
+        select shaded (default) or wireframe rendering of surfaces. Wireframe
+        rendering renders the surfaces as grids of shaded lines, with the grid
+        detail determined by the <em>element discretization</em> setting in the
+        <em>General settings</em>.
+      </li>
+      <li>Texture coordinates: This check box activates a
+        drop-down menu that allows you to select which field will be used to
+        position any textures applied by the material setting.
+      </li>
+    </ul>
+  </li>
+
+  <p></p>
+  <li><p class="first"><strong>iso_surfaces</strong></p>
+    <p>Iso-surfaces are used to represent a surface that connects all points
+    that share some common value. For example, in <a class="reference"
+    href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/a7/index.html">example
+    a7</a> an iso-surface is used to represent a surface at which every point
+    has a temperature of 100 degrees C. They have the following specific
+    settings:</p>
+    <ul class="simple">
+      <li>Use element type: This drop down menu allows you to select which type
+        of element will have surfaces rendered on it. Type
+        <em>use_elements</em> is the default. The types <em>use_faces</em> and
+        <em>use_lines</em> will render element points only on those components
+        of elements. If faces or lines are chosen, the following options are
+        activated: 
+        <ul>
+          <li>Exterior: This check box will automatically only render
+            iso-surfaces on exterior surfaces of a mesh.</li>
+          <li>Face: This check box enables a drop-down menu that allows you to
+            choose on which faces iso-surfaces are drawn, according to xi
+            values. You can select xi=0 or 1 for each of the three xi-axes.</li>
+        </ul>
+      </li>
+    </ul>
+    <p>It is worth noting that if you select <em>use_surfaces</em> then the
+    equivalent of iso-surfaces becomes iso-lines. If you select
+    <em>use_lines</em> then you will not get any visual representation.</p>
+    <ul class="simple">
+      <li>Iso-scalar: This drop down menu allows you to select the field that
+        the iso-surface will be rendered according to the values of.</li>
+      <li>Iso-values: This settings box contains the following settings: 
+        <ul>
+          <li>List: This radio button activates a text box that allows you to
+            enter a value at which to draw the iso-surface.</li>
+          <li>Sequence: This radio button activates three text boxes that allow
+            you to enter a sequence of evenly spaced values to draw
+            iso-surfaces at. The <em>Number</em> box allows you to enter the
+            number of iso-surfaces you want. The <em>First</em> and
+            <em>Last</em> boxes allow you to enter the starting and ending
+            values of the iso-surfaces. The sequence will automatically space
+            the number of surfaces between these two values.</li>
+        </ul>
+      </li>
+      <li>Render type: This drop down menu allows you to select shaded
+        (default) or wireframe rendering of surfaces. Wireframe rendering
+        renders the surfaces as grids of shaded lines, with the grid detail
+        determined by the <em>element discretization</em> setting in the
+        <em>General settings</em>.</li>
+      <li>Texture coordinates: This check box activates a drop-down menu that
+        allows you to select which field will be used to position any textures
+        applied by the material setting.</li>
+    </ul>
+    <p></p>
+  </li>
+  <li><p class="first"><strong>element_points</strong></p>
+    <p>Element points are used to visualize the discretized points within an
+    element. Elements may be 1, 2 or 3 dimensional, in which case the element
+    points are spaced along the line, across the surface, or throughout the
+    volume according to the <em>Element discretization</em> setting in the <a
+    class="reference"
+    href="http://www.cmiss.org/cmgui/wiki/UsingCMGUITheSceneEditorWindow">scene
+    editor</a> <em>General settings</em>. They have the following specific
+    settings:</p>
+    <ul class="simple">
+      <li>Use element type: This drop down menu allows you to select which type
+        of element will have element points rendered on/in it. Type
+        <em>use_elements</em> is the default, and renders element points
+        throughout 3D elements. The types <em>use_faces</em> and
+        <em>use_lines</em> will render element points only on those components
+        of elements. If faces or lines are chosen, the following options are
+        activated: 
+        <ul>
+          <li>Exterior: This check box will automatically only render element
+            points on exterior surfaces of a mesh.</li>
+          <li>Face: This check box enables a drop-down menu that allows you to
+            choose on which faces element points are drawn according to xi
+            values. You can select xi=0 or 1 for each of the three xi-axes.</li>
+        </ul>
+      </li>
+      <li>Xi discretization mode: this drop down menu allows you to select the
+        method by which element points are distributed across the element.</li>
+    </ul>
+    <p></p>
+  </li>
+  <li><p class="first"><strong>streamlines</strong></p>
+    <p>Streamlines are a special graphical setting for visualizing
+    <em>vector</em> fields - for example, a fluid flow solution. They can be
+    used to visualize 3, 6 or 9 component vector fields within a 3 dimensional
+    element. In <a class="reference"
+    href="http://cmiss.bioeng.auckland.ac.nz/development/examples/a/ao/index.html">example
+    ao</a>, streamlines are used to show the fibre and sheet directions in the
+    heart. Streamlines will align along their length according to the first
+    vector of a vector field, and across their "width" (eg the width of the
+    <em>ribbon</em> or <em>rectangle</em> streamline types) to the second
+    vector. For single vector (3 component) vector fields, the width of the
+    streamlines will align to the <a class="reference"
+    href="http://www.math.umn.edu/~nykamp/m2374/readings/divcurl/">curl</a> of
+    the vector.</p>
+    <p>Note that streamlines can be quite expensive to compute; changes to
+    streamline settings in the <a class="reference"
+    href="http://www.cmiss.org/cmgui/wiki/UsingCMGUITheSceneEditorWindow">scene
+    editor</a> can take several seconds to appear in the 3D window, especially
+    for complex scenes.</p>
+    <p>Streamlines have the following specific settings:</p>
+    <ul class="simple">
+      <li>Streamline type: This drop-down box allows you to select the shape of
+        the streamlines; that is, the shape outline that is extruded along the
+        length of the streamline. <em>Line</em> and <em>Cylinder</em> can be
+        used to visualize streamlines without showing orientation (curl).
+        <em>Ellipse</em>, <em>rectangle</em> and <em>ribbon</em> types will
+        enable visualization of the direction of the vector orthogonal to the
+        streamline direction.</li>
+      <li>Length: Enter a value into this box to set the length of the
+        streamline/s.</li>
+      <li>Width: Enter a value into this box to set the width of the
+        streamline/s.</li>
+      <li>Stream vector: This drop-down box allows you to select the vector
+        that is being visualized by the streamlines.</li>
+      <li>Reverse: Checking this box reverses the streamline.</li>
+      <li>Seed element: Checking this box allows you to select the single
+        element number from which the streamline will be seeded.</li>
+      <li>Xi: Entering three comma-separated values (between 0 and 1) allows
+        you to set the xi location within elements from which streamlines will
+        be seeded.</li>
+    </ul>
+    <p></p>
+  </li>
+</ul>
+</div>
+</body>
+</html>
