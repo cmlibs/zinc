@@ -5235,13 +5235,15 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
 					int number = 1;
 					do
 					{
-						sprintf(field_name, "%s%d", field->name, number);
+						sprintf(field_name, "%s_%d", field->name, number);
 						number++;
 					}
 					while (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(field_name, manager));
+					/*
 					display_message(WARNING_MESSAGE,
 						"Computed_field_add_to_manager_private.  Renaming field from %s to %s as name already in use."
 						, field->name, field_name);
+					*/
 					Computed_field_set_name(field, field_name);
 					DEALLOCATE(field_name);
 				}
