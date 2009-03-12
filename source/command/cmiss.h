@@ -138,14 +138,15 @@ DESCRIPTION :
 Returns the root region from the <command_data>.
 ==============================================================================*/
 
-struct Time_keeper *Cmiss_command_data_get_default_time_keeper(
+/***************************************************************************//**
+ * Get the default time keeper from the command data.
+ *
+ * @param  command_data The cmiss command data.
+ * @return  Time_keeper if successfully get time keeper from command data
+ *    otherwis returns null
+ */
+struct Cmiss_time_keeper *Cmiss_command_data_get_default_time_keeper(
 	struct Cmiss_command_data *command_data);
-/*******************************************************************************
-LAST MODIFIED : 30 July 2003
-
-DESCRIPTION :
-Returns the default time_keeper from the <command_data>.
-==============================================================================*/
 
 struct Execute_command *Cmiss_command_data_get_execute_command(
 	struct Cmiss_command_data *command_data);

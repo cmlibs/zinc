@@ -11,8 +11,23 @@ This is intended to be multithreaded......
 #if !defined (TIME_KEEPER_H)
 #define TIME_KEEPER_H
 
-
+#include "api/cmiss_time_keeper.h"
 #include "user_interface/user_interface.h"
+
+#define Time_keeper Cmiss_time_keeper
+#define Time_object Cmiss_time_object
+
+#define Time_keeper_get_minimum Cmiss_time_keeper_get_minimum
+#define Time_keeper_set_minimum Cmiss_time_keeper_set_minimum
+#define Time_keeper_get_maximum Cmiss_time_keeper_get_maximum
+#define Time_keeper_set_maximum Cmiss_time_keeper_set_maximum
+#define Time_keeper_stop 	Cmiss_time_keeper_stop
+#define Time_keeper_get_time Cmiss_time_keeper_get_time
+#define Time_keeper_request_new_time Cmiss_time_keeper_request_new_time
+#define Time_keeper_get_speed Cmiss_time_keeper_get_speed
+#define Time_keeper_set_speed Cmiss_time_keeper_set_speed
+#define Time_keeper_is_playing Cmiss_time_keeper_is_playing
+
 
 struct Time_object; /* Either this or #include "time/time.h" */
 struct Time_keeper;
@@ -33,6 +48,14 @@ enum Time_keeper_event
 	TIME_KEEPER_NEW_MINIMUM = 16,
 	TIME_KEEPER_NEW_MAXIMUM = 32
 };
+
+enum Time_keeper_play_mode
+{
+	TIME_KEEPER_PLAY_ONCE,
+	TIME_KEEPER_PLAY_LOOP,
+	TIME_KEEPER_PLAY_SWING
+};
+
 
 typedef int (*Time_keeper_callback)(struct Time_keeper *time_keeper,
 	enum Time_keeper_event event, void *user_data);
@@ -227,12 +250,6 @@ LAST MODIFIED : 6 October 1998
 DESCRIPTION :
 ==============================================================================*/
 
-int Time_keeper_set_play_once(struct Time_keeper *time_keeper);
-/*******************************************************************************
-LAST MODIFIED : 6 October 1998
-DESCRIPTION :
-==============================================================================*/
-
 enum Time_keeper_play_direction Time_keeper_get_play_direction(
 	struct Time_keeper *time_keeper);
 /*******************************************************************************
@@ -254,6 +271,15 @@ LAST MODIFIED : 31 Oct 2007
 
 DESCRIPTION :
 Check if time keeper has time object
+x==============================================================================*/
+
+enum Time_keeper_play_mode Time_keeper_get_play_mode(
+	struct Time_keeper *time_keeper);
+/*******************************************************************************
+LAST MODIFIED : 6 Mar 2009
+
+DESCRIPTION :
+Get the play mode of time keeper
 x==============================================================================*/
 
 #endif /* !defined (TIME_KEEPER_H) */

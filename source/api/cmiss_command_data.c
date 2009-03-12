@@ -43,7 +43,9 @@ The public interface to the some of the internal functions of cmiss.
  * ***** END LICENSE BLOCK ***** */
 #include <stdlib.h>
 #include "api/cmiss_command_data.h"
+#include "api/cmiss_time_keeper.h"
 #include "command/cmiss.h"
+#include "time/time_keeper.h"
 #include "general/debug.h"
 #include "graphics/graphics_window.h"
 #include "user_interface/message.h"
@@ -137,3 +139,23 @@ variable.
 
 	return (scene_viewer);
 } /* Cmiss_command_data_get_graphics_window_pane_by_name */
+
+Cmiss_time_keeper_id Cmiss_command_data_get_time_keeper(
+	Cmiss_command_data_id command_data)
+{
+	Cmiss_time_keeper_id time_keeper;
+
+	ENTER(Cmiss_command_data_get_time_keeper);
+	if (command_data)
+	{
+		time_keeper = ACCESS(Time_keeper)
+			(Cmiss_command_data_get_default_time_keeper(command_data));
+	}
+	else
+	{
+		time_keeper = NULL;
+	}
+	LEAVE;
+
+	return (time_keeper);
+}

@@ -59,13 +59,6 @@ static int Time_keeper_set_play_timeout(struct Time_keeper *time_keeper);
 /* Declaration for circular reference between this and the event handler and
    play private */
 
-enum Time_keeper_play_mode
-{
-	TIME_KEEPER_PLAY_ONCE,
-	TIME_KEEPER_PLAY_LOOP,
-	TIME_KEEPER_PLAY_SWING
-};
-
 #if defined (MOTIF)
 struct Time_keeper_defaults
 {
@@ -96,7 +89,7 @@ struct Time_keeper
 	double time;
 	double real_time;
 	struct Time_object_info *time_object_info_list;
-	int play_mode;
+	enum Time_keeper_play_mode play_mode;
 	int minimum_set, maximum_set;
 	double minimum, maximum;
 	double speed;
@@ -980,7 +973,7 @@ DESCRIPTION :
 #if defined (DEBUG)
 					printf("Time_keeper_set_play_timeout.  Next time %lf\n", next_time);
 #endif /* defined (DEBUG) */
-					
+
 					if(time_keeper->maximum_set && (next_time > time_keeper->maximum))
 					{
 						if(time_keeper->time > time_keeper->minimum)
@@ -1715,3 +1708,25 @@ x==============================================================================*
 	 
 	return (return_code);
 } /* Time_keeper_has_time_object */
+
+enum Time_keeper_play_mode Time_keeper_get_play_mode(
+	struct Time_keeper *time_keeper)
+{
+	enum Time_keeper_play_mode play_mode;
+
+	ENTER(Time_keeper_get_play_mode);
+	if (time_keeper)
+	{
+		play_mode = time_keeper->play_mode;
+
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Time_keeper_set_play_skip_frames. Invalid time object");
+		play_mode = TIME_KEEPER_PLAY_ONCE;
+	}
+	LEAVE;
+
+	return (play_mode);
+}

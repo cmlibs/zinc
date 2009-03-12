@@ -25754,19 +25754,13 @@ Returns the root region from the <command_data>.
 	return (root_region);
 } /* Cmiss_command_data_get_root_region */
 
-struct Time_keeper *Cmiss_command_data_get_default_time_keeper(
+struct Cmiss_time_keeper *Cmiss_command_data_get_default_time_keeper(
 	struct Cmiss_command_data *command_data)
-/*******************************************************************************
-LAST MODIFIED : 30 July 2003
-
-DESCRIPTION :
-Returns the default time_keeper from the <command_data>.
-==============================================================================*/
 {
-	struct Time_keeper *default_time_keeper;
+	struct Cmiss_time_keeper *default_time_keeper;
 
 	ENTER(Cmiss_command_data_get_default_time_keeper);
-	default_time_keeper=(struct Time_keeper *)NULL;
+	default_time_keeper=(struct Cmiss_time_keeper *)NULL;
 	if (command_data)
 	{
 		default_time_keeper=command_data->default_time_keeper;

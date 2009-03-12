@@ -853,6 +853,8 @@ API_SRCS = \
 	api/cmiss_element.c \
 	api/cmiss_node.c \
 	api/cmiss_region.c \
+	api/cmiss_time.c \
+	api/cmiss_time_keeper.c \
 	api/cmiss_time_sequence.c
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    API_SRCS += \

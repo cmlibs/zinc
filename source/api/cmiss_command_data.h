@@ -45,6 +45,7 @@ The public interface to the some of the internal functions of cmiss.
 #define __CMISS_COMMAND_H__
 
 #include "api/cmiss_field.h"
+#include "api/cmiss_time_keeper.h"
 /* If this is going to be in the API then it needs to have an interface there */
 #include "general/object.h"
 #if defined (WIN32_USER_INTERFACE)
@@ -130,6 +131,16 @@ LAST MODIFIED : 26 January 2007
 DESCRIPTION :
 Returns the a handle to the scene_viewer that inhabits the pane of a graphics_window.
 ==============================================================================*/
+
+/***************************************************************************//**
+ * Returns the handle to time keeper and also increments the access count of 
+ * the returned time keeper by one.
+ *
+ * @param command_data  The Cmiss command data object.
+ * @return  The time keeper if successfully called otherwise NULL.
+ */
+Cmiss_time_keeper_id Cmiss_command_data_get_time_keeper(
+	Cmiss_command_data_id command_data);
 
 /***************************************************************************//**
  * Returns a handle to the texture manager.

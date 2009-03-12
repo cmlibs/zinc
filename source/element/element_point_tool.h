@@ -47,7 +47,7 @@ Interactive tool for selecting element/grid points with mouse and other devices.
 #include "graphics/material.h"
 #include "interaction/interactive_tool.h"
 #include "selection/element_point_ranges_selection.h"
-
+#include "time/time_keeper.h"
 /*
 Global types
 ------------

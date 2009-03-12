@@ -92,6 +92,7 @@ Cmiss_command_data_get_IO_stream_package
 Cmiss_command_data_get_scene_viewer_package
 Cmiss_command_data_get_texture_manager
 Cmiss_command_data_execute_command
+Cmiss_command_data_get_time_keeper
 
 FE_element_selection_get_element_list
 FE_element_selection_add_callback
@@ -501,6 +502,34 @@ euler_
 improved_euler_
 runge_kutta_
 #endif /* defined (CELL) */
+
+/* Cmiss_time */
+Cmiss_time_object_create
+Cmiss_time_object_destroy
+Cmiss_time_object_add_callback
+Cmiss_time_object_remove_callback
+Cmiss_time_object_get_time_keeper
+Cmiss_time_object_set_time_keeper
+Cmiss_time_object_set_update_frequency
+
+/* Cmiss_time_keeper */
+Cmiss_time_keeper_get_minimum
+Cmiss_time_keeper_set_minimum
+Cmiss_time_keeper_get_maximum
+Cmiss_time_keeper_set_maximum
+Cmiss_time_keeper_get_frame_mode
+Cmiss_time_keeper_set_frame_mode
+Cmiss_time_keeper_get_play_direction
+Cmiss_time_keeper_play
+Cmiss_time_keeper_is_playing
+Cmiss_time_keeper_stop
+Cmiss_time_keeper_get_repeat_mode
+Cmiss_time_keeper_set_repeat_mode
+Cmiss_time_keeper_get_time
+Cmiss_time_keeper_request_new_time
+Cmiss_time_keeper_get_speed
+Cmiss_time_keeper_set_speed
+Cmiss_time_keeper_destroy
 
 /* Carey's internal exports which we should shift to using Cmiss_textures */
 create_Cmgui_image_information

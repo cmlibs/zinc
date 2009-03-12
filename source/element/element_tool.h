@@ -46,6 +46,7 @@ Interactive tool for selecting elements with mouse and other devices.
 
 #include "interaction/interactive_tool.h"
 #include "selection/element_selection.h"
+#include "time/time_keeper.h"
 
 /*
 Global types

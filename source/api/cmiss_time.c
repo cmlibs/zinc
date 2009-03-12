@@ -1,10 +1,9 @@
 /*******************************************************************************
-FILE : computed_field_time.h
-
-LAST MODIFIED : 19 September 2003
+FILE : cmiss_time.c
 
 DESCRIPTION :
-Implements computed fields that control the time behaviour.
+The public interface to the Cmiss_time_object which supplies a concept of time 
+to Cmgui.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -26,8 +25,6 @@ Implements computed fields that control the time behaviour.
  * Portions created by the Initial Developer are Copyright (C) 2005
  * the Initial Developer. All Rights Reserved.
  *
- * Contributor(s):
- *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
  * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
@@ -41,30 +38,27 @@ Implements computed fields that control the time behaviour.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_TIME_H)
-#define COMPUTED_FIELD_TIME_H
 
-#include "time/time_keeper.h"
+#include "time/time.h"
+#include "api/cmiss_time.h"
+#include "general/debug.h"
+#include "user_interface/message.h"
 
-int Computed_field_register_types_time(
-	struct Computed_field_package *computed_field_package,
-	struct Time_keeper *time_keeper);
-/*******************************************************************************
-LAST MODIFIED : 19 September 2003
+Cmiss_time_object_id Cmiss_time_object_create(const char *name)
+{
+	Cmiss_time_object_id time_object; 
 
-DESCRIPTION :
-==============================================================================*/
+	ENTER(miss_time_object_create);
+	if (name)
+	{
+		time_object = ACCESS(Time_object)(CREATE(Time_object)(name));
+	}
+	LEAVE;
 
-int Computed_field_set_type_time_lookup(struct Computed_field *field,
-	struct Computed_field *source_field, struct Computed_field *time_field);
-/*******************************************************************************
-LAST MODIFIED : 16 December 2002
+	return time_object;
+}
 
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_TIME_LOOKUP with the supplied
-fields, <source_field> is the field the values are returned from but rather
-than using the current time, the scalar <time_field> is evaluated and its value
-is used for the time.
-==============================================================================*/
-
-#endif /* !defined (COMPUTED_FIELD_TIME_H) */
+int Cmiss_time_object_destroy(Cmiss_time_object_id *time_object_address)
+{
+	return(DEACCESS(Time_object)(time_object_address));
+}
