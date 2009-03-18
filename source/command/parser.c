@@ -5814,3 +5814,25 @@ that do not match other options.  This option must be added last.
 	return (return_code);
 } /* Option_table_ignore_all_unmatched_entries */
 
+int Option_table_add_string_entry(struct Option_table *option_table,
+	const char *token, char **string_address, const char *string_description)
+{
+	int return_code;
+
+	ENTER(Option_table_add_string_entry);
+	if (option_table && token && string_address && string_description)
+	{
+		return_code = Option_table_add_entry(option_table, token,
+			(void *)string_address, (void *)string_description, set_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_string_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_string_entry */
+

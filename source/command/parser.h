@@ -930,4 +930,19 @@ DESCRIPTION :
 Adds a dummy option to the Option_table that will consume and ignore all tokens
 that do not match other options.  This option must be added last.
 ==============================================================================*/
+
+/***************************************************************************//**
+ * Adds a token to the option_table which if matched reads the following token
+ * as a string value.
+ * 
+ * @param option_table  The command option table to add the entry to.
+ * @param token  The required token for this option.
+ * @param string_address  Address of string to be modified. Prior to calling,
+ *   pointed-to string must either be NULL or allocated and set.
+ * @param string_description  Text output for this entry in help mode.
+ * @return  1 on success, 0 on failure.
+ */
+int Option_table_add_string_entry(struct Option_table *option_table,
+	const char *token, char **string_address, const char *string_description);
+
 #endif /* !defined (PARSER_H) */
