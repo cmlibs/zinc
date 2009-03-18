@@ -5302,7 +5302,7 @@ Clears 'valid' flag if fails.
 ==============================================================================*/
 {
 	char *temp_file_name, **temp_file_names;
-	int return_code;
+	int i, return_code;
 
 	ENTER(Cmgui_image_information_add_file_name);
 	if (cmgui_image_information && file_name)
@@ -5315,6 +5315,14 @@ Clears 'valid' flag if fails.
 				/* add another file_name */
 				temp_file_names[cmgui_image_information->number_of_file_names] =
 					temp_file_name;
+				if (cmgui_image_information->number_of_file_names)
+				{
+					for (i = 0; i < cmgui_image_information->number_of_file_names; i++)
+					{
+						DEALLOCATE(cmgui_image_information->file_names[i]);
+					}
+				}
+				DEALLOCATE(cmgui_image_information->file_names);
 				cmgui_image_information->file_names = temp_file_names;
 				cmgui_image_information->number_of_file_names++;
 				return_code = 1;
@@ -5969,6 +5977,7 @@ Extracts parameters from <magick_image> that matter for a Cmgui_image
 		{
 			*number_of_bytes_per_component = 1;
 		}
+		DestroyExceptionInfo(&magick_exception);
 		return_code = 1;
 	}
 	else
@@ -6709,6 +6718,7 @@ equal to the number_of_components.
 				DispatchImage(magick_image, left, image_height_minus_1 - y,
 					width, 1, magick_image_storage, magick_storage_type,
 					(void *)destination, &magick_exception);
+				DestroyExceptionInfo(&magick_exception);
 #else /* defined (IMAGEMAGICK) */
 				memcpy(destination, source, width_bytes);
 				source += source_width_bytes;
@@ -7199,6 +7209,7 @@ and other parameters for formats that require them.
 					"Cmgui_image_read.  Could not create image information");
 				return_code = 0;
 			}
+			DestroyExceptionInfo(&magick_exception);
 #else /* defined (IMAGEMAGICK) */
 			if (ALLOCATE(cmgui_image->image_arrays, unsigned char *,
 				cmgui_image_information->number_of_file_names))
