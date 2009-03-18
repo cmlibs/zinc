@@ -171,6 +171,10 @@ particular parameter will be ignored.
 				"Unable to load texture from file : %s", filename);
 			texture = (struct Cmiss_texture *)NULL;
 		}
+		if (cmgui_image_information)
+		{
+			DESTROY(Cmgui_image_information)(&cmgui_image_information);
+		}
 	}
 	else
 	{
