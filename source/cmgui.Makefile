@@ -976,6 +976,7 @@ COMPUTED_FIELD_SRCS = \
 	$(COMPUTED_FIELD_CORE_SRCS) \
 	$(COMPUTED_FIELD_GRAPHICS_SRCS) \
 	minimise/minimise.cpp \
+	computed_field/computed_field_alias.cpp \
 	computed_field/computed_field_compose.cpp \
 	computed_field/computed_field_curve.cpp \
 	computed_field/computed_field_coordinate.cpp \

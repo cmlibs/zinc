@@ -73,6 +73,7 @@ extern "C" {
 #include "command/example_path.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_alias.h"
 #include "computed_field/computed_field_arithmetic_operators.h"
 #include "computed_field/computed_field_compose.h"
 #include "computed_field/computed_field_composite.h"
@@ -24907,6 +24908,12 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		{
 			Computed_field_register_types_coordinate(
 				command_data->computed_field_package);
+			if (command_data->root_region)
+			{
+				Computed_field_register_type_alias(
+					command_data->computed_field_package, 
+					command_data->root_region);
+			}
 			Computed_field_register_types_arithmetic_operators(
 				command_data->computed_field_package);
 			Computed_field_register_types_trigonometry(
