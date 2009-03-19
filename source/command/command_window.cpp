@@ -1961,11 +1961,7 @@ void Terminate(wxCloseEvent& event)
 
 void Exit(wxCommandEvent& event)
 {
-	 wxMessageDialog *dlg = new wxMessageDialog(NULL,"Are you sure you want to quit cmgui?", 
-			"Exit Confirmation", wxYES_NO|wxICON_QUESTION|wxSTAY_ON_TOP);
-	 if ( dlg->ShowModal() == wxID_YES)
-			Execute_command_execute_string(command_window->execute_command, "QUIT");
-	 dlg->Destroy();
+	Execute_command_execute_string(command_window->execute_command, "QUIT");
 } 
 
    DECLARE_EVENT_TABLE();
