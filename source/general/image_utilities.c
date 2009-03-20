@@ -6718,7 +6718,6 @@ equal to the number_of_components.
 				DispatchImage(magick_image, left, image_height_minus_1 - y,
 					width, 1, magick_image_storage, magick_storage_type,
 					(void *)destination, &magick_exception);
-				DestroyExceptionInfo(&magick_exception);
 #else /* defined (IMAGEMAGICK) */
 				memcpy(destination, source, width_bytes);
 				source += source_width_bytes;
@@ -6758,6 +6757,9 @@ equal to the number_of_components.
 				}
 			}
 		}
+#if defined (IMAGEMAGICK)
+		DestroyExceptionInfo(&magick_exception);
+#endif /* defined (IMAGEMAGICK) */
 	}
 	else
 	{
