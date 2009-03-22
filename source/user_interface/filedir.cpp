@@ -1206,7 +1206,6 @@ name the <file_operation> is performed on the file with the <arguments>.
 							{
 								 extension = "*.exelem";
 							}
-							DEALLOCATE(temp_string);
 					 }
 				}
 		 } break;
@@ -1221,6 +1220,11 @@ name the <file_operation> is performed on the file with the <arguments>.
 	}
 	wxFileDialog *ReadData = new wxFileDialog ((wxWindow *)NULL,shell_title,"","",
 		 extension,wxOPEN|wxFILE_MUST_EXIST,wxDefaultPosition);
+	if (temp_string)
+	{
+		DEALLOCATE(temp_string);
+		shell_title=(char *)NULL;	
+	}
 	if (ReadData->ShowModal() == wxID_OK)
 	{
 		 wxString file_name=ReadData->GetPath();
@@ -1288,6 +1292,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 										}
 										DEALLOCATE(temp_string);
 								 }
+								 DEALLOCATE(directory_name);
 							}
 							DEALLOCATE(temp_directory_name);
 					 }
@@ -1855,6 +1860,7 @@ wxFileDialog *SaveData = new wxFileDialog ((wxWindow *)NULL,shell_title,"","",
  if (temp_string)
  {
 		DEALLOCATE(temp_string);
+		shell_title=(char *)NULL;
  }
 
  if (SaveData->ShowModal() == wxID_OK)
@@ -1923,6 +1929,7 @@ wxFileDialog *SaveData = new wxFileDialog ((wxWindow *)NULL,shell_title,"","",
 										}
 										DEALLOCATE(temp_string);
 								 }
+								 DEALLOCATE(directory_name);
 							}
 							DEALLOCATE(temp_directory_name);
 					 }
