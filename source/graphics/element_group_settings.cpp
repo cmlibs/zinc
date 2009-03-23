@@ -6315,11 +6315,9 @@ The graphics object is stored with with the settings it was created from.
 						{
 							settings->selected_graphics_changed=1;
 							coordinate_system = Computed_field_get_coordinate_system(coordinate_field);
-							if (NORMALISED_WINDOW_COORDINATES == coordinate_system->type)
-							{
-								GT_object_set_coordinate_system(settings->graphics_object,
-									g_NDC_COORDINATES);
-							}
+							GT_object_set_coordinate_system(settings->graphics_object,
+								(NORMALISED_WINDOW_COORDINATES == coordinate_system->type) ?
+									g_NDC_COORDINATES : g_MODEL_COORDINATES);
 							/* need settings for FE_element_to_graphics_object routine */
 							settings_to_object_data->settings=settings;
 							switch (settings->settings_type)
