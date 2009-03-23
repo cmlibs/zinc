@@ -45,6 +45,7 @@ rewind and fast forward.
 #define __CMISS_TIME_KEEPER_H__
 
 #include "general/object.h"
+#include "api/cmiss_time.h"
 
 /***************************************************************************//**
  * An enum type to define which direction the time keeper should go.
@@ -258,6 +259,30 @@ double Cmiss_time_keeper_get_speed(Cmiss_time_keeper_id time_keeper);
  */
 int Cmiss_time_keeper_set_speed(Cmiss_time_keeper_id time_keeper,
 	double speed);
+
+/***************************************************************************//**
+ * Add a time object to the time keeper. The time keeper will keep track of the
+ * time. When time changes, time keeper will notify the time object and then 
+ * the time object will notify its clients. Time object can only have one set of
+ * time keeper but time keeper can have multiple time objects. This function 
+ * will increase the access count of the time object. 
+ * 
+ * @param time_keeper  Handle to time keeper.
+ * @param time_object  Handle to time object.
+ * @return  1 if successfully set time object to time keeper, otherwise 0.
+ */
+int Cmiss_time_keeper_add_time_object(Cmiss_time_keeper_id time_keeper, 
+	Cmiss_time_object_id time_object);
+
+/***************************************************************************//**
+ * Remove the time object from the time keeper. This function will decrease the 
+ * access count of the time object. 
+ * @param time_keeper  Handle to time keeper.
+ * @param time_object  Handle to time object.
+ * @return  1 if successfully set time object to time keeper, otherwise 0.
+ */
+int Cmiss_time_keeper_remove_time_object(Cmiss_time_keeper_id time_keeper, 
+	Cmiss_time_object_id time_object);
 
 /***************************************************************************//**
  * Destroys this reference to the time keeper (and sets it to NULL).

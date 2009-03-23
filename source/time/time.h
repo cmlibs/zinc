@@ -51,9 +51,6 @@ This provides an object which supplies a concept of time to Cmgui
 #define Time_object Cmiss_time_object
 #define Time_object_add_callback Cmiss_time_object_add_callback
 #define Time_object_remove_callback Cmiss_time_object_remove_callback
-#define Time_object_get_time_keeper Cmiss_time_object_get_time_keeper
-#define Time_object_set_time_keeper Cmiss_time_object_set_time_keeper
-#define Time_object_get_current_time Cmiss_time_object_get_current_time
 #define Time_object_set_update_frequency Cmiss_time_object_set_update_frequency
 
 struct Time_object;

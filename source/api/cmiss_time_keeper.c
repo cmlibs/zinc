@@ -45,6 +45,7 @@ rewind and fast forward.
 #include "api/cmiss_time_keeper.h"
 #include "general/debug.h"
 #include "time/time_keeper.h"
+#include "time/time.h"
 #include "user_interface/message.h"
 
 enum Cmiss_time_keeper_play_direction Cmiss_time_keeper_get_play_direction(
@@ -281,4 +282,56 @@ int Cmiss_time_keeper_set_repeat_mode(Cmiss_time_keeper_id time_keeper,
 int Cmiss_time_keeper_destroy(Cmiss_time_keeper_id *time_keeper_address)
 {
 	return (DEACCESS(Time_keeper)(time_keeper_address));
+}
+
+int Cmiss_time_keeper_add_time_object(Cmiss_time_keeper_id time_keeper, 
+	Cmiss_time_object_id time_object)
+{
+	int return_code;
+
+	ENTER(Cmiss_time_keeper_add_time_object);
+	if (time_keeper && time_object)
+	{
+		return_code = Time_keeper_add_time_object(time_keeper, time_object);
+		if (return_code)
+		{
+			ACCESS(Time_object)(time_object);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_time_keeper_add_time_object.  Invalid argument(s).");
+		return_code=0;
+	}
+
+	LEAVE;
+
+	return(return_code);
+}
+
+int Cmiss_time_keeper_remove_time_object(Cmiss_time_keeper_id time_keeper, 
+	Cmiss_time_object_id time_object)
+{
+	int return_code;
+
+	ENTER(Cmiss_time_keeper_remove_time_object);
+	if (time_keeper && time_object)
+	{
+		return_code = Time_keeper_remove_time_object(time_keeper, time_object);
+		if (return_code)
+		{
+			DEACCESS(Time_object)(&time_object);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_time_keeper_remove_time_object.  Invalid argument(s).");
+		return_code=0;
+	}
+
+	LEAVE;
+
+	return(return_code);
 }

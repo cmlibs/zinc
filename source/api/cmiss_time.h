@@ -42,13 +42,12 @@ to Cmgui.
 #define __CMISS_TIME_H__
 
 #include "general/object.h"
-#include "api/cmiss_time_keeper.h"
 
 /***************************************************************************//**
  * A handle to cmiss time object. This object provides a concept of time to
  * Cmgui, it will notify its client when time has changed if a callback is setup 
  * for this object. Time object normally receives its callback from a
- * time keeper. See Cmiss_time_object_set_time_keeper function.
+ * time keeper. See Cmiss_time_keeper_add_time_object function.
  */
 typedef struct Cmiss_time_object *Cmiss_time_object_id;
 
@@ -108,40 +107,6 @@ int Cmiss_time_object_remove_callback(Cmiss_time_object_id time_object,
   Cmiss_time_object_callback callback, void *user_data);
 
 /***************************************************************************//**
- * Get the handle to time keeper from time object.
- *
- * @param time_object  Handle to time object.
- * @return  The handle to time keeper if successfully get time keeper from 
- *    time object, otherwise NULL.
- */
-Cmiss_time_keeper_id Cmiss_time_object_get_time_keeper(
-	Cmiss_time_object_id time_object);
-
-/***************************************************************************//**
- * Set the time keeper for time object. The time keeper will keep track of the
- * time. When time changes, time keeper will notify the time object and then 
- * the time object will notify its clients. This will increase the access count
- * of the new time_keeper and decrease the access count of the original
- * time_keeper in the time_object by 1.
- *
- * @param time_object  Handle to time object.
- * @param time_keeper  Handle to time keeper. If this is null it will remove
- *    the time keeper from the time object and time object will be without
- *    a time keeper.
- * @return  1 if successfully set time keeper for time object, otherwise 0.
- */
-int Cmiss_time_object_set_time_keeper(Cmiss_time_object_id time_object,
-	Cmiss_time_keeper_id time_keeper);
-
-/***************************************************************************//**
- * Get the current time of time object.
- *
- * @param time_object  Handle to time object.
- * @return  current time of the time object if successful otherwise 0.
- */
-double Cmiss_time_object_get_current_time(Cmiss_time_object_id time_object);
-
-/***************************************************************************//**
  * This controls the rate which the time depedent object is called back.
  * The default value is 10 which means time object will receive 10 callbacks
  * per unit of time in the time keeper. 
@@ -160,4 +125,4 @@ double Cmiss_time_object_get_current_time(Cmiss_time_object_id time_object);
 int Cmiss_time_object_set_update_frequency(Cmiss_time_object_id time_object,
 	double frequency);
 
-#endif /* __CMISS_TIME_KEEPER_H__ */
+#endif /* __CMISS_TIME_OBJECT_H__ */

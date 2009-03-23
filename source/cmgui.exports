@@ -508,8 +508,6 @@ Cmiss_time_object_create
 Cmiss_time_object_destroy
 Cmiss_time_object_add_callback
 Cmiss_time_object_remove_callback
-Cmiss_time_object_get_time_keeper
-Cmiss_time_object_set_time_keeper
 Cmiss_time_object_set_update_frequency
 
 /* Cmiss_time_keeper */
@@ -529,6 +527,8 @@ Cmiss_time_keeper_get_time
 Cmiss_time_keeper_request_new_time
 Cmiss_time_keeper_get_speed
 Cmiss_time_keeper_set_speed
+Cmiss_time_keeper_add_time_object
+Cmiss_time_keeper_remove_time_object
 Cmiss_time_keeper_destroy
 
 /* Carey's internal exports which we should shift to using Cmiss_textures */
