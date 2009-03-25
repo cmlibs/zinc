@@ -1024,8 +1024,16 @@ DESCRIPTION :
 								time_keeper->play_start_seconds) + ((double)(timeofday.tv_usec
 									- time_keeper->play_start_microseconds) / 1000000.0);
 							sleep = time_keeper->step / time_keeper->speed - real_time_elapsed;
-							sleep_s = (unsigned long)floor(sleep);
-							sleep_ns = (unsigned long)((sleep - floor(sleep))*1e9);
+							if (sleep > 0)
+							{
+								sleep_s = (unsigned long)floor(sleep);
+								sleep_ns = (unsigned long)((sleep - floor(sleep))*1e9);
+							}
+							else
+							{
+								sleep_s = 0;
+								sleep_ns = 0;
+							}
 							if((sleep_s < 1) && (sleep_ns < 3000000))
 							{
 								/* Ensure all the events from the previous timestamp are 
@@ -1112,8 +1120,16 @@ DESCRIPTION :
 								time_keeper->play_start_seconds) + ((double)(timeofday.tv_usec
 									- time_keeper->play_start_microseconds) / 1000000.0);
 							sleep = time_keeper->step / time_keeper->speed - real_time_elapsed;
-							sleep_s = (unsigned long)floor(sleep);
-							sleep_ns = (unsigned long)((sleep - floor(sleep))*1e9);
+							if (sleep > 0)
+							{
+								sleep_s = (unsigned long)floor(sleep);
+								sleep_ns = (unsigned long)((sleep - floor(sleep))*1e9);
+							}
+							else
+							{
+								sleep_s = 0;
+								sleep_ns = 0;
+							}
 							if((sleep_s < 1) && (sleep_ns < 3000000))
 							{
 								/* Ensure all the events from the previous timestamp are 
