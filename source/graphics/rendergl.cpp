@@ -370,18 +370,24 @@ Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_rende
 template <class Render_immediate> class Render_graphics_opengl_display_list
 	: public Render_immediate
 {
+#if defined (OLD_CODE)
+	/* can't have these display lists owned by renderer as they are deleted while still called by graphics object */
    int ndc_display_list, end_ndc_display_list;
+#endif /* defined (OLD_CODE) */
 	
 public:
 	Render_graphics_opengl_display_list(Graphics_buffer *graphics_buffer) :
 		Render_immediate(graphics_buffer)
 	{
+#if defined (OLD_CODE)
 		ndc_display_list = 0;
 		end_ndc_display_list = 0;
+#endif /* defined (OLD_CODE) */
 	}
 	
 	~Render_graphics_opengl_display_list()
 	{
+#if defined (OLD_CODE)
 		if (ndc_display_list)
 		{
 			glDeleteLists(ndc_display_list,1);
@@ -390,6 +396,7 @@ public:
 		{
 			glDeleteLists(end_ndc_display_list,1);
 		}
+#endif /* defined (OLD_CODE) */
 	}
 
 	int Scene_execute_parent(Scene *scene)
@@ -401,6 +408,7 @@ public:
 	{
 		int return_code;
 		
+#if defined (OLD_CODE)
 		/* Compile the ndc_display_lists here */
 		if (ndc_display_list || (ndc_display_list = glGenLists(1)))
 		{
@@ -414,6 +422,7 @@ public:
 			Render_immediate::End_ndc_coordinates();
 			glEndList();
 		}
+#endif /* defined (OLD_CODE) */
 		
 		if (return_code = Render_immediate::Scene_compile(scene))
 		{
@@ -540,6 +549,7 @@ public:
 		return Texture_execute_opengl_display_list(texture, this);
 	}
 
+#if defined (OLD_CODE)
 	int Start_ndc_coordinates()
 	{
 	   int return_code;
@@ -577,6 +587,7 @@ public:
 		}
 		return (return_code);
 	}
+#endif /* defined (OLD_CODE) */
 	
 }; /* class Render_graphics_opengl_display_list */
 
