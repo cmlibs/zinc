@@ -1544,9 +1544,8 @@ Renders the background into the scene.
 			twice, which appears to work around a rendering bug on ATI windows driver 6.14.0010.6706 */
 		if (1 == scene_viewer->clear_twice_flag)
 		{
-			const char *vendor_string = (const char *)glGetString(GL_VENDOR);
 			/* Now that we have a current context check to see what the vendor is */ 
-			if (vendor_string && !strcmp("ATI Technologies Inc.", vendor_string))
+			if (Graphics_library_vendor_ati = Graphics_library_get_vendor_id())
 			{
 				/* Don't check again */
 				scene_viewer->clear_twice_flag = 2;
@@ -2252,7 +2251,14 @@ access this function.
 			 */
 			if (Graphics_library_check_extension(GL_ARB_vertex_buffer_object))
 			{
-				if (Graphics_library_check_extension(GL_display_lists))
+				if (Graphics_library_check_extension(GL_display_lists)
+					/* Prevent using display lists with vertex_buffers on ATI
+					 * as this generates a segfault in the driver on both linux
+					 * and windows.
+					 * See https://tracker.physiomeproject.org/show_bug.cgi?id=1533
+					 */
+					&& (Graphics_library_vendor_ati != Graphics_library_get_vendor_id())
+				)
 				{
 					rendering_data.renderer =
 						Render_graphics_opengl_create_vertex_buffer_object_display_list_renderer(
