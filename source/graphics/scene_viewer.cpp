@@ -1545,7 +1545,7 @@ Renders the background into the scene.
 		if (1 == scene_viewer->clear_twice_flag)
 		{
 			/* Now that we have a current context check to see what the vendor is */ 
-			if (Graphics_library_vendor_ati = Graphics_library_get_vendor_id())
+			if (Graphics_library_vendor_ati == Graphics_library_get_vendor_id())
 			{
 				/* Don't check again */
 				scene_viewer->clear_twice_flag = 2;
