@@ -148,6 +148,81 @@ DESCRIPTION :
 	return (return_code);
 } /* Time_object_get_current_time */
 
+int Time_object_check_valid_callback_time(struct Time_object *time_object,
+	double time,enum Time_keeper_play_direction play_direction)
+{
+	int return_code = 0;
+
+	ENTER(Time_object_check_valid_callback_time);
+	if (time_object)
+	{
+		switch(time_object->type)
+		{
+			default:
+			{
+				switch(play_direction)
+				{
+					case TIME_KEEPER_PLAY_FORWARD:
+					{
+						/* minus the current time by a faction of the update frequency
+							 then workout the closest callback time */
+						if (time == (1.0 + 
+								floor((time - 1.0 / time_object->update_frequency) *
+								time_object->update_frequency)) /
+								time_object->update_frequency)
+						{
+							return_code = 1;
+						}
+					} break;
+					case TIME_KEEPER_PLAY_BACKWARD:
+					{
+						/* add the current time by a faction of the update frequency
+							 then workout the closest callback time */
+						if (time == (1.0 + 
+								ceil((time + 1.0 / time_object->update_frequency) *
+								time_object->update_frequency)) /
+								time_object->update_frequency)
+						{
+							return_code = 1;
+						}
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"Time_object_check_valid_callback_time.  Unknown play direction");
+						return_code=0;
+					} break;
+				}
+			} break;
+			case TIME_OBJECT_NEXT_TIME_FUNCTION:
+			{
+				if(time_object->next_time_function)
+				{
+					if (time == (time_object->next_time_function)(time, play_direction,
+							time_object->next_time_user_data))
+					{
+						return_code = 1;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Time_object_get_next_callback_time.  type TIME_OBJECT_NEXT_TIME_FUNCTION but no function");
+					return_code=0;
+				}
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Time_object_check_valid_callback_time.  Invalid time object");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
 double Time_object_get_next_callback_time(struct Time_object *time,
 	double time_after, enum Time_keeper_play_direction play_direction)
 /*******************************************************************************

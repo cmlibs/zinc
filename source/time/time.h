@@ -77,6 +77,14 @@ LAST MODIFIED : 29 September 1998
 DESCRIPTION :
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Check either the time specified is a valid callback time or not.
+ *
+ * @return  1 if the specified time is a valid callback time, otherwise 0.
+ */
+int Time_object_check_valid_callback_time(struct Time_object *time_object,
+	double time,enum Time_keeper_play_direction play_direction);
+
 double Time_object_get_next_callback_time(struct Time_object *time,
 	double time_after,enum Time_keeper_play_direction play_direction);
 /*******************************************************************************
