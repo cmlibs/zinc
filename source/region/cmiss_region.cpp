@@ -2119,7 +2119,7 @@ Cmiss_field_id Cmiss_region_add_field(Cmiss_region_id region,
 	{
 		if (Computed_field_check_manager(field, &manager))
 		{
-			if (!Computed_field_add_to_manager_recursive(field, manager))
+			if (!Computed_field_manage(field, manager, Computed_field::MANAGED_PUBLIC))
 			{
 				field = (struct Cmiss_field *)NULL;
 				display_message(ERROR_MESSAGE,
@@ -2130,7 +2130,7 @@ Cmiss_field_id Cmiss_region_add_field(Cmiss_region_id region,
 		{
 			field = (struct Cmiss_field *)NULL;
 			display_message(ERROR_MESSAGE,
-				"Cmiss_region_add_field.  Field or source field is already in another region.");
+				"Cmiss_region_add_field.  Field or source field is already managed by another region.");
 		}
 	}
 	else

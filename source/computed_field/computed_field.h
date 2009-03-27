@@ -981,18 +981,6 @@ it is of type COMPUTED_FIELD_FINITE_ELEMENT further tests that its fe_field can
 be destroyed, assuming it is only accessed by this field and its manager.
 ==============================================================================*/
 
-int Computed_field_set_intermediary_managed_field_flag(
-	struct Computed_field *field, int intermediary_managed_field_flag);
-/*******************************************************************************
-LAST MODIFIED : 17 April 2008
-
-DESCRIPTION :
-If this flag is set then when the ACCESS count gets to 1 a managed field
-will automatically remove itself from the manager and be destroyed.
-When the flag is not set, the field will only be destroyed when given a 
-specific command to destroy or as the program ends.
-==============================================================================*/
-
 int Computed_field_set_name(struct Computed_field *field,
 	const char *name);
 /*******************************************************************************

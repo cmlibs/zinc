@@ -132,9 +132,17 @@ private:
 
 	int set_values_at_location(Field_location* location, FE_value *values);
 	
-	int check_manager(MANAGER(Computed_field) **manager_address);
+	int check_source_fields_manager(MANAGER(Computed_field) **manager_address)
+	{
+		// nothing to do as source field may be in a different manager
+		return 1;
+	}
 
-	int add_to_manager_recursive(MANAGER(Computed_field) *manager);
+	int manage_source_fields(MANAGER(Computed_field) *manager)
+	{
+		// nothing to do as source field may be in a different manager
+		return 1;
+	};
 };
 
 /***************************************************************************//**
@@ -386,90 +394,6 @@ char *Computed_field_alias::get_command_string()
 
 	return (command_string);
 } /* Computed_field_alias::get_command_string */
-
-/**
- * Override handles source field legally not being the same manager.
- */
-int Computed_field_alias::check_manager(struct MANAGER(Computed_field) **manager_address)
-{
-	int return_code = 0;
-
-	ENTER(Computed_field_alias::check_manager);
-  if (field && manager_address)
-  {
-    if (field->manager)
-    {
-      // managed fields should already maintain source field consistency
-      if (field->manager == *manager_address)
-      {
-        return_code = 1;
-      }
-      else if ((MANAGER(Computed_field) *)NULL == *manager_address)
-      {
-        *manager_address = field->manager;
-        return_code = 1;
-      }
-      else
-      {
-        // incompatible managers
-        return_code = 0;
-      }
-    }
-    else
-    {
-    	// no need to check source field as allowed to be in another region
-      return_code = 1;
-    }
-  }
-  else
-  {
-    return_code = 0;
-		display_message(ERROR_MESSAGE,"Computed_field_alias::check_manager.  "
-			"Missing field and/or manager_address.");
-  }
-	LEAVE;
-
-  return (return_code);
-}
-
-/**
- * Override handles source field legally not being the same manager.
- */
-int Computed_field_alias::add_to_manager_recursive(MANAGER(Computed_field) *manager)
-{
-	int return_code = 0;
-
-	ENTER(Computed_field_alias::add_to_manager_recursive);
-	if (field && manager)
-	{
-		if (field->manager)
-		{
-			// source fields must already be in manager
-			return_code = 1;
-			// sanity check:
-			if (field->manager != manager)
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_alias::add_to_manager_recursive.  Field is already managed by a different manager");
-				return_code = 0;
-			}
-		}
-		else
-		{
-			return_code = Computed_field_add_to_manager_private(field, manager);
-			check_alias_from_other_manager();
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_alias::add_to_manager_recursive.  Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
 
 } //namespace
 

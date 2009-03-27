@@ -205,9 +205,9 @@ public:
 	virtual int get_native_resolution(int *dimension, int **sizes,
 		struct Computed_field **texture_coordinate_field);
 
-	virtual int check_manager(MANAGER(Computed_field) **manager_address);
+	virtual int check_source_fields_manager(MANAGER(Computed_field) **manager_address);
 
-	virtual int add_to_manager_recursive(MANAGER(Computed_field) *manager);
+	virtual int manage_source_fields(MANAGER(Computed_field) *manager);
 }; /* class Computed_field_core */
 
 struct Computed_field
@@ -300,11 +300,25 @@ DESCRIPTION :
 	/* Keep a reference to the objects manager */
 	struct MANAGER(Computed_field) *manager;
 
-	/* This flag indicates that when the ACCESS count reaches 1 then
-		the field should automatically be removed from the MANAGER,
-		indicating intermediary fields.  They need to be in the manager
-		in case they are modified through API calls. */
-	int intermediary_managed_field;
+	/** Mode/flags controlling how this field is managed by a region. */
+	enum Managed_status
+	{
+		/** If bit set, remove from region when unused / access_count reduced to 1 */
+		REMOVE_IF_UNUSED_BIT = 4,
+
+		/** Field is not managed by a region */
+		UNMANAGED = 0,
+
+		/** Field is managed by region with public visibility */
+		MANAGED_PUBLIC = 1,
+
+		/** Field is managed by region with private visibility */
+		MANAGED_PRIVATE = 3,
+
+		/** Field is managed by region with private visibility, and is volatile */
+		MANAGED_PRIVATE_VOLATILE = MANAGED_PRIVATE + REMOVE_IF_UNUSED_BIT
+	};
+	Managed_status managed_status;
 
 }; /* struct Computed_field */
 
@@ -670,18 +684,6 @@ cache.
 } /* Computed_field_evaluate_source_fields_cache_at_location */
 
 /***************************************************************************//**
- * Private function to add field to a manager, automatically making field names
- * unique if name already used by another field.
- * Sets the intermediary flag for unnamed fields.
- *
- * @param field  Field not already in a manager.
- * @param manager  Computed field manager from region.
- * @return  1 if field successfully added to manager, 0 if not added.
- */
-int Computed_field_add_to_manager_private(struct Computed_field *field,
-	struct MANAGER(Computed_field) *manager);
-
-/***************************************************************************//**
  * Checks field is dependent on source fields in at most one manager.
  *
  * @param field  Field to be checked.
@@ -695,16 +697,19 @@ int Computed_field_check_manager(struct Computed_field *field,
 	struct MANAGER(Computed_field) **manager_address);
 
 /***************************************************************************//**
- * Recursively adds field to the manager after doing the same for all source
- * fields it depends on.
+ * Ensures field is in the manager with the desired status.
+ * If not currently managed, first recursively adds any unmanaged source fields
+ * to manager with status Computed_field::MANAGED_PRIVATE_VOLATILE.
  * Assumes check_manager has been used to ensure fields are not already in
  * another manager.
+ * Note: Should only be called by Cmiss_region_add_field.
  *
  * @param field  Field to be added to the manager.
  * @param manager  Computed field manager.
  * @return  1 if field successfully added to manager, 0 if not added.
  */
-int Computed_field_add_to_manager_recursive(struct Computed_field *field, 
-	struct MANAGER(Computed_field) *manager);
+int Computed_field_manage(struct Computed_field *field, 
+	struct MANAGER(Computed_field) *manager,
+	Computed_field::Managed_status managed_status);
 
 #endif /* !defined (COMPUTED_FIELD_PRIVATE_H) */
