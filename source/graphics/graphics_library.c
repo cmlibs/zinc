@@ -1128,7 +1128,11 @@ appropriately.
 			}
 			else
 			{
-				return_code = query_gl_extension(extension_name);
+				return_code = Graphics_library_query_environment_extension(extension_name);
+				if (GLEXTENSION_UNSURE == return_code)
+				{
+					return_code = query_gl_extension(extension_name);
+				}
 				GLEXTENSIONFLAG(GL_ARB_texture_non_power_of_two) = return_code;
 			}
 		}
