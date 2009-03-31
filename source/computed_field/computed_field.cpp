@@ -1071,6 +1071,7 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 					}
 					else
 					{
+						return_code = 1;
 						struct MANAGER(Computed_field) *manager_in_use = manager;
 						/* ensure source fields are in the same manager */
 						if (!Computed_field_check_manager(new_data, &manager_in_use))
@@ -1190,6 +1191,7 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 				if ((new_data->number_of_components == object->number_of_components) ||
 					MANAGED_OBJECT_NOT_IN_USE(Computed_field)(object, manager))
 				{
+					return_code = 1;
 					struct MANAGER(Computed_field) *manager_in_use = manager;
 					/* ensure source fields are in the same manager */
 					if (!Computed_field_check_manager(new_data, &manager_in_use))
