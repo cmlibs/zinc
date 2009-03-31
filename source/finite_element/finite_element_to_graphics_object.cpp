@@ -1679,13 +1679,17 @@ int FE_element_add_line_to_vertex_array(
 				}
 			}
 		}
-		number_of_vertices = number_of_segments+1;
-		array->add_unsigned_integer_attribute(
-			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
-			1, &number_of_vertices);
-		array->add_unsigned_integer_attribute(
-			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
-			1, &vertex_start);
+		if (return_code)
+		{
+			number_of_vertices = number_of_segments+1;
+			array->add_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+				1, &number_of_vertices);
+			array->add_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+				1, &vertex_start);
+		}
+		/* else could try and remove vertices that failed */
 		
 		/* I don't think I need to clear the field cache's here, instead I have
 		 * done it in GT_element_settings_to_graphics_object.
