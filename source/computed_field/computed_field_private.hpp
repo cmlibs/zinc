@@ -451,16 +451,21 @@ Iterator/conditional function returning true if contents of <field> other than
 its name matches the contents of the <other_computed_field_void>.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Copy the type specific parts of <source> field to <destination>, namely the
+ * number_of_components, the source_fields, the soure_values and the core. 
+ * The <source> field is then DEACCESSED.
+ * Chiefly used in gfx define field commands to copy a new field's contents over
+ * an existing field.
+ * Note: destination may not be managed since this function could destroy
+ * volatile source fields, sending change messages while destination is corrupt.
+ * 
+ * @destination  Field being modified to have a copy of type-specific data.
+ * @source  Field providing the type-specific data. Deaccessed at end.
+ * @return  1 on success, 0 on failure.
+ */
 int Computed_field_copy_type_specific_and_deaccess(
 	struct Computed_field *destination, struct Computed_field *source);
-/*******************************************************************************
-LAST MODIFIED : 13 May 2008
-
-DESCRIPTION :
-Copy the type specific parts of <source> field to <destination>,
-namely the number_of_components, the source_fields, the soure_values
-and the core.  The <source> field is then DEACCESSED.
-==============================================================================*/
 
 int Computed_field_default_clear_type_specific(struct Computed_field *field);
 /*******************************************************************************

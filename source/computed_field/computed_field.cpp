@@ -689,6 +689,126 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Computed_field,name,
 
 DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Computed_field,name)
 
+/***************************************************************************//**
+ * Copy the type specific parts of <source> field to <destination>, namely the
+ * number_of_components, the source_fields, the soure_values and the core.
+ * For safety, <destination> must be unmanaged or its contents must have been
+ * copied to a temporary field while copying, otherwise clearing the type of
+ * <destination> can cause objects to be cleaned up such as volatile source
+ * fields. 
+ * 
+ * @destination  Field being modified to have a copy of type-specific data.
+ * @source  Field providing the type-specific data. 
+ * @return  1 on success, 0 on failure.
+ */
+int Computed_field_copy_type_specific(
+	struct Computed_field *destination, struct Computed_field *source)
+{
+	int return_code;
+
+	ENTER(Computed_field_copy_type_specific);
+	if (source && destination)
+	{
+		return_code = 1;
+		char **component_names = (char **)NULL;
+		Computed_field **source_fields = (struct Computed_field **)NULL;
+		Computed_field_core *core = (Computed_field_core *)NULL;
+		FE_value *source_values = (FE_value *)NULL;
+		if (source->component_names)
+		{
+			if (ALLOCATE(component_names, char *, source->number_of_components))
+			{
+				for (int i = 0 ; i < source->number_of_components; i++)
+				{
+					if (!(component_names[i] = duplicate_string(source->component_names[i])))
+					{
+						return_code = 0;
+					}
+				}
+			}
+			else
+			{
+				return_code = 0;
+			}
+		}
+		if (source->number_of_source_fields > 0)
+		{
+			if (!ALLOCATE(source_fields, struct Computed_field *, source->number_of_source_fields))
+			{
+				return_code = 0;
+			}
+		}
+		if (source->number_of_source_values > 0)
+		{
+			if (!ALLOCATE(source_values, FE_value, source->number_of_source_values))
+			{
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
+			Computed_field_clear_type(destination);
+
+			destination->number_of_components=source->number_of_components;
+			destination->component_names = component_names;
+			destination->number_of_source_fields = source->number_of_source_fields;
+			for (int i = 0; i < source->number_of_source_fields; i++)
+			{
+				source_fields[i] = ACCESS(Computed_field)(source->source_fields[i]);
+			}
+			destination->source_fields = source_fields;
+			destination->number_of_source_values = source->number_of_source_values;
+			for (int i = 0; i < source->number_of_source_values; i++)
+			{
+				source_values[i] = source->source_values[i];
+			}
+			destination->source_values = source_values;
+
+			if ((!source->core) || (core = source->core->copy(destination)))
+			{
+				destination->core = core;
+				return_code = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_copy_type_specific.  Unable to copy Computed_field_core.");
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Computed_field_copy_type_specific.  Not enough memory");
+			if (component_names)
+			{
+				for (int i = 0 ; i < source->number_of_components ; i++)
+				{
+					if (component_names[i])
+					{
+						DEALLOCATE(component_names[i]);
+					}
+				}
+				DEALLOCATE(component_names);
+			}
+			if (source_fields)
+			{
+				DEALLOCATE(source_fields);
+			}
+			if (source_values)
+			{
+				DEALLOCATE(source_values);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Computed_field_copy_type_specific.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);	
+} /* Computed_field_copy_type_specific */
+
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Computed_field,name)
 {
 	char *name;
@@ -749,7 +869,7 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Computed_field,name)
 
 PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Computed_field,name)
 /*******************************************************************************
-LAST MODIFIED : 14 August 2006
+LAST MODIFIED : 31 March 2009
 
 DESCRIPTION :
 Do not allow copy if:
@@ -757,21 +877,12 @@ Do not allow copy if:
   result in an infinite loop;
 - it changes the number of components of a field in use;
 - it would make field depend on fields from another region
-
-???RC.  Previously denied copy if read_only flag was set in the destination
-field. However, this makes it impossible to modify computed fields that wrap
-fe_fields when the latter changes. Hence, now leave it up to define/destroy
-functions to check if read_only flag is set.
 ==============================================================================*/
 {
-	char **component_names;
-	Computed_field_core *core;
-	FE_value *source_values;
-	int i,return_code;
-	struct Computed_field **source_fields;
+	int return_code;
 
 	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name));
-	if (source&&destination&&(source!=destination))
+	if (source && destination && (source != destination))
 	{
 		return_code = 1;
 		/* check <source> does not depend on <destination> else infinite loop */
@@ -783,15 +894,8 @@ functions to check if read_only flag is set.
 			return_code=0;		
 		}
 		struct MANAGER(Computed_field) *manager_in_use = destination->manager;
-		/* ensure source fields are in the same manager */
-		if (Computed_field_check_manager(source, &manager_in_use))
-		{
-			if (destination->manager)
-			{
-				return_code = source->core->manage_source_fields(destination->manager);
-			}
-		}
-		else
+		/* check source fields are in the same manager */
+		if (!Computed_field_check_manager(source, &manager_in_use))
 		{
 			display_message(ERROR_MESSAGE,
 				"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
@@ -800,121 +904,14 @@ functions to check if read_only flag is set.
 		}
 		if (return_code)
 		{
-			source_fields=(struct Computed_field **)NULL;
-			source_values=(FE_value *)NULL;
-			core = (Computed_field_core*)NULL;
-			component_names = (char **)NULL;
-			/* 1. make dynamic allocations for any new type-specific data */
-			return_code = 1;
-			if (source->component_names)
-			{
-				if (ALLOCATE(component_names, char *, 
-					source->number_of_components))
-				{
-					for (i = 0 ; i < source->number_of_components; i++)
-					{
-						if (!(component_names[i]=duplicate_string(
-							source->component_names[i])))
-						{
-							return_code = 0;
-						}
-					}
-				}
-				else
-				{
-					return_code = 0;
-				}
-			}
-			if (return_code&&
-				((0==source->number_of_source_fields)||ALLOCATE(source_fields,
-					struct Computed_field *,source->number_of_source_fields))&&
-				((0==source->number_of_source_values)||ALLOCATE(source_values,
-					FE_value,source->number_of_source_values)))
-			{
-				/* 2. free current type-specific data */
-				Computed_field_clear_type(destination);
-				/* 3. establish the new type */
-				destination->number_of_components=source->number_of_components;
-				destination->read_only=source->read_only;
-				COPY(Coordinate_system)(&destination->coordinate_system,
-					&source->coordinate_system);
-				
-				destination->component_names = component_names;
-				
-				/* for all Computed_field_types calculated from others */
-				destination->number_of_source_fields=
-					source->number_of_source_fields;
-				for (i=0;i<source->number_of_source_fields;i++)
-				{
-					source_fields[i]=ACCESS(Computed_field)(source->source_fields[i]);
-				}
-				destination->source_fields=source_fields;
-				
-				destination->number_of_source_values=
-					source->number_of_source_values;
-				for (i=0;i<source->number_of_source_values;i++)
-				{
-					source_values[i]=source->source_values[i];
-				}
-				destination->source_values=source_values;
-
-				if (core = source->core->copy(destination))
-				{
-					destination->core = core;
-					return_code=1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
-						"Unable to copy Computed_field_core.");
-					return_code=0;
-					if (source_fields)
-					{
-						DEALLOCATE(source_fields);
-					}
-					if (source_values)
-					{
-						DEALLOCATE(source_values);
-					}
-					if (component_names)
-					{
-						for (i = 0 ; i < source->number_of_components ; i++)
-						{
-							if (component_names[i])
-							{
-								DEALLOCATE(component_names[i]);
-							}
-						}
-						DEALLOCATE(component_names);
-					}
-				}
-			}
-			else
+			destination->read_only = source->read_only;
+			COPY(Coordinate_system)(&destination->coordinate_system,
+				&source->coordinate_system);
+			if (!Computed_field_copy_type_specific(destination, source))
 			{
 				display_message(ERROR_MESSAGE,
-					"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
-					"Not enough memory");
+					"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  Not enough memory");
 				return_code=0;
-				if (source_fields)
-				{
-					DEALLOCATE(source_fields);
-				}
-				if (source_values)
-				{
-					DEALLOCATE(source_values);
-				}
-				if (component_names)
-				{
-					for (i = 0 ; i < source->number_of_components ; i++)
-					{
-						if (component_names[i])
-						{
-							DEALLOCATE(component_names[i]);
-						}
-					}
-					DEALLOCATE(component_names);
-				}
 			}
 		}
 	}
@@ -1074,37 +1071,68 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 					}
 					else
 					{
-						/* must perform IDENTIFIER_CHANGE stuff between BEGIN_CHANGE and
-							 END_CHANGE calls; manager message must not be sent while object
-							 is part changed and/or temporarily out of the manager! */
-						MANAGER_BEGIN_CHANGE(Computed_field)(manager,
-							MANAGER_CHANGE_OBJECT(Computed_field), object);
-						if (identifier_change_data =
-							LIST_BEGIN_IDENTIFIER_CHANGE(Computed_field, name)(object))
-						{
-							if (!(return_code = MANAGER_COPY_WITH_IDENTIFIER(Computed_field,
-								name)(object, new_data)))
-							{
-								display_message(ERROR_MESSAGE,
-									"MANAGER_MODIFY(Computed_field,name).  "
-									"Could not copy object");
-							}
-							if (!LIST_END_IDENTIFIER_CHANGE(Computed_field,
-								name)(&identifier_change_data))
-							{
-								display_message(ERROR_MESSAGE,
-									"MANAGER_MODIFY(Computed_field,name).  "
-									"Could not restore object to all indexed lists");
-							}
-						}
-						else
+						struct MANAGER(Computed_field) *manager_in_use = manager;
+						/* ensure source fields are in the same manager */
+						if (!Computed_field_check_manager(new_data, &manager_in_use))
 						{
 							display_message(ERROR_MESSAGE,
 								"MANAGER_MODIFY(Computed_field,name).  "
-								"Could not safely change identifier in indexed lists");
+								"Cannot modify definition to depend on field from another region");
 							return_code = 0;
 						}
-						MANAGER_END_CHANGE(Computed_field)(manager);
+						if (return_code)
+						{
+							/* cache changes because there could be new source fields added to manager and
+							 * old, volatile source fields removed by this modification */
+							MANAGER_BEGIN_CACHE(Computed_field)(manager);
+							/* copy type specific data from destination field to clean up at the end otherwise
+							 * automatic destruction of volatile source fields may notify the rest of the program
+							 * with destination in a half constructed state. See tracker item 1323 */  
+							struct Computed_field *old_object_copy = ACCESS(Computed_field)(CREATE(Computed_field)(""));
+							if (!Computed_field_copy_type_specific(old_object_copy, object))
+							{
+								return_code = 0;
+							}
+							if (!new_data->core->manage_source_fields(manager))
+							{
+								return_code = 0;
+							}
+							/* must perform IDENTIFIER_CHANGE stuff between BEGIN_CHANGE and
+								 END_CHANGE calls; manager message must not be sent while object
+								 is part changed and/or temporarily out of the manager! */
+							MANAGER_BEGIN_CHANGE(Computed_field)(manager,
+								MANAGER_CHANGE_OBJECT(Computed_field), object);
+							if (identifier_change_data =
+								LIST_BEGIN_IDENTIFIER_CHANGE(Computed_field, name)(object))
+							{
+								if (!(MANAGER_COPY_WITH_IDENTIFIER(Computed_field,
+									name)(object, new_data)))
+								{
+									display_message(ERROR_MESSAGE,
+										"MANAGER_MODIFY(Computed_field,name).  "
+										"Could not copy object");
+									return_code = 0;
+								}
+								if (!LIST_END_IDENTIFIER_CHANGE(Computed_field,
+									name)(&identifier_change_data))
+								{
+									display_message(ERROR_MESSAGE,
+										"MANAGER_MODIFY(Computed_field,name).  "
+										"Could not restore object to all indexed lists");
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"MANAGER_MODIFY(Computed_field,name).  "
+									"Could not safely change identifier in indexed lists");
+								return_code = 0;
+							}
+							MANAGER_END_CHANGE(Computed_field)(manager);
+							/* following may cause volatile source fields to be removed from manager */
+							DEACCESS(Computed_field)(&old_object_copy);
+							MANAGER_END_CACHE(Computed_field)(manager);
+						}
 					}
 				}
 				else
@@ -1162,21 +1190,47 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 				if ((new_data->number_of_components == object->number_of_components) ||
 					MANAGED_OBJECT_NOT_IN_USE(Computed_field)(object, manager))
 				{
-					MANAGER_BEGIN_CHANGE(Computed_field)(manager,
-						MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field), object);
-					if (MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,
-						name)(object, new_data))
-					{
-						return_code = 1;
-					}
-					else
+					struct MANAGER(Computed_field) *manager_in_use = manager;
+					/* ensure source fields are in the same manager */
+					if (!Computed_field_check_manager(new_data, &manager_in_use))
 					{
 						display_message(ERROR_MESSAGE,
 							"MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name).  "
-							"Could not copy object");
+							"Cannot modify definition to depend on field from another region");
 						return_code = 0;
 					}
-					MANAGER_END_CHANGE(Computed_field)(manager);
+					if (return_code)
+					{
+						/* cache changes because there could be new source fields added to manager and
+						 * old, volatile source fields removed by this modification */
+						MANAGER_BEGIN_CACHE(Computed_field)(manager);
+						/* copy type specific data from destination field to clean up at the end otherwise
+						 * automatic destruction of volatile source fields may notify the rest of the program
+						 * with destination in a half constructed state. See tracker item 1323 */  
+						struct Computed_field *old_object_copy = ACCESS(Computed_field)(CREATE(Computed_field)(""));
+						if (!Computed_field_copy_type_specific(old_object_copy, object))
+						{
+							return_code = 0;
+						}
+						if (!new_data->core->manage_source_fields(manager))
+						{
+							return_code = 0;
+						}
+						MANAGER_BEGIN_CHANGE(Computed_field)(manager,
+							MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field), object);
+						if (!MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,
+							name)(object, new_data))
+						{
+							display_message(ERROR_MESSAGE,
+								"MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name).  "
+								"Could not copy object");
+							return_code = 0;
+						}
+						MANAGER_END_CHANGE(Computed_field)(manager);
+						/* following may cause volatile source fields to be removed from manager */
+						DEACCESS(Computed_field)(&old_object_copy);
+						MANAGER_END_CACHE(Computed_field)(manager);
+					}
 				}
 				else
 				{
@@ -4502,96 +4556,24 @@ its name matches the contents of the <other_computed_field_void>.
 
 int Computed_field_copy_type_specific_and_deaccess(
 	struct Computed_field *destination, struct Computed_field *source)
-/*******************************************************************************
-LAST MODIFIED : 13 May 2008
-
-DESCRIPTION :
-Copy the type specific parts of <source> field to <destination>,
-namely the number_of_components, the source_fields, the soure_values
-and the core.  The <source> field is then DESTROYED.
-==============================================================================*/
 {
-	FE_value *source_values;
-	int i, return_code;
-	Computed_field **source_fields;
+	int return_code;
 
 	ENTER(Computed_field_copy_type_specific_and_deaccess);
-	if (source && destination)
+	if (destination && source && (!destination->manager))
 	{
-		source_fields=(struct Computed_field **)NULL;
-		source_values=(FE_value *)NULL;
-		if (((0==source->number_of_source_fields)||ALLOCATE(source_fields,
-				struct Computed_field *,source->number_of_source_fields))&&
-			((0==source->number_of_source_values)||ALLOCATE(source_values,
-				FE_value,source->number_of_source_values)))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(destination);
-			/* 3. establish the new type */
-			destination->number_of_components=source->number_of_components;
-								
-			/* for all Computed_field_types calculated from others */
-			destination->number_of_source_fields=
-				source->number_of_source_fields;
-			for (i=0;i<source->number_of_source_fields;i++)
-			{
-				source_fields[i]=ACCESS(Computed_field)(source->source_fields[i]);
-			}
-			destination->source_fields=source_fields;
-				
-			destination->number_of_source_values=
-				source->number_of_source_values;
-			for (i=0;i<source->number_of_source_values;i++)
-			{
-				source_values[i]=source->source_values[i];
-			}
-			destination->source_values=source_values;
-
-			if (destination->core = source->core->copy(destination))
-			{
-				return_code = 1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_copy_type_specific_and_deaccess.  "
-					"Unable to copy Computed_field_core.");
-				return_code=0;
-				if (source_fields)
-				{
-					DEALLOCATE(source_fields);
-				}
-				if (source_values)
-				{
-					DEALLOCATE(source_values);
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_copy_type_specific_and_deaccess.  "
-				"Not enough memory");
-			return_code=0;
-			if (source_fields)
-			{
-				DEALLOCATE(source_fields);
-			}
-			if (source_values)
-			{
-				DEALLOCATE(source_values);
-			}
-		}
-		DEACCESS(Computed_field)(&source);
+		return_code = Computed_field_copy_type_specific(destination, source);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_copy_type_specific_and_deaccess.  Missing field");
+			"Computed_field_copy_type_specific_and_deaccess.  Invalid arguments");
 		return_code=0;
 	}
-
-	return (return_code);	
+	DEACCESS(Computed_field)(&source);
+	LEAVE;
+	
+	return (return_code);
 } /* Computed_field_copy_type_specific_and_deaccess */
 
 int Computed_field_core::list()
