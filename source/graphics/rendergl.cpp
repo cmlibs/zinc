@@ -2655,6 +2655,8 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 				 * original geometry to be used when calculating the final coordinates. */
 				render_GT_object_opengl_immediate(object, /*draw_selected*/0,
 					renderer, GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT);
+				render_GT_object_opengl_immediate(object, /*draw_selected*/1,
+					renderer, GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT);
 			} break;
 			// A simpler (and therefore faster) case would be not to render with
 			// the original geometry but use a single quad here instead.  In this
