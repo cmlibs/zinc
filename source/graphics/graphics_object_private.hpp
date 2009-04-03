@@ -429,8 +429,13 @@ Graphical object data structure.
 	GLuint texture_coordinate0_vertex_buffer_object;
 	GLuint texture_coordinate0_values_per_vertex;
 	
-	/* For multipass rendering we use some more vertex_buffers */
+	/* For multipass rendering we use some more vertex_buffers
+	 * a framebuffer and a texture. */
+	unsigned int multipass_width;
+	unsigned int multipass_height;
 	GLuint multipass_vertex_buffer_object;
+	GLuint multipass_frame_buffer_object;
+	GLuint multipass_frame_buffer_texture;
 #endif /* defined (OPENGL_API) */
 	/* enumeration indicates whether the graphics display list is up to date */
 	enum Graphics_compile_status compile_status;

@@ -2506,9 +2506,16 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 	{
 		if (!object->multipass_vertex_buffer_object)
 		{
-			float *temp_position_array, *temp_pointer;
-
 			glGenBuffers(1, &object->multipass_vertex_buffer_object);
+		}
+		if (!object->multipass_frame_buffer_object)
+		{
+			glGenFramebuffersEXT(1,&object->multipass_frame_buffer_object);
+		}
+		if ((object->multipass_width != tex_width)
+			|| (object->multipass_height != tex_height))
+		{
+			float *temp_position_array, *temp_pointer;
 			glBindBuffer(GL_ARRAY_BUFFER, object->multipass_vertex_buffer_object);
 			/* Initialise the size to hold the original vertex data and the 
 			 * pass 1 frame buffer positions.
@@ -2526,7 +2533,9 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 			{
 				for (i = 0 ; i < tex_width ; i++)
 				{
-					*temp_pointer = (float)i * ((float)tex_width+1.0)/(float)tex_width;
+					//We are rendering a line so the x coordinate covers the
+					//full range of the image coordinates.
+					*temp_pointer = (float)i * ((float)tex_width/(float)(tex_width - 1));
 					temp_pointer++;
 					*temp_pointer = (float)j + 0.5; 
 					temp_pointer++;
@@ -2541,7 +2550,18 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 				/*size*/sizeof(float)*3*position_vertex_count,
 				temp_position_array);
 			DEALLOCATE(temp_position_array);
-     }
+
+			if (object->multipass_frame_buffer_texture)
+			{
+				glDeleteTextures(1, &object->multipass_frame_buffer_texture);
+			}
+			object->multipass_frame_buffer_texture = Texture_create_float_texture(
+				tex_width, tex_height,
+				/*initial_data*/NULL,/*alpha*/1, /*fallback_to_shorts*/1);
+			
+			object->multipass_width = tex_width;
+			object->multipass_height = tex_height;
+		}
 
 		glBindBuffer(GL_ARRAY_BUFFER, object->multipass_vertex_buffer_object);
 		glClientActiveTexture(GL_TEXTURE1);
@@ -2567,19 +2587,11 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 		object_position_vertex_buffer_object = object->position_vertex_buffer_object;
 		object->position_vertex_buffer_object = object->multipass_vertex_buffer_object;
 		object->position_values_per_vertex = position_values_per_vertex;
+
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, object->multipass_frame_buffer_object);
 	
-		static GLuint fb_handle = 0;
-		static GLuint fbo_tex_vertices = 0;
-		if (0 == fb_handle)
-		{
-			glGenFramebuffersEXT(1,&fb_handle);
-			fbo_tex_vertices = Texture_create_float_texture(tex_width,tex_height,
-				/*initial_data*/NULL,/*alpha*/1, /*fallback_to_shorts*/1);
-		}
-	
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,fb_handle);
-	
-		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, fbo_tex_vertices, 0);
+		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D,
+			object->multipass_frame_buffer_texture, 0);
 	
 #if defined (NEW_CODE)
 		/* Could generate more of attributes by adding new framebuffer attachments and copying
@@ -2605,7 +2617,7 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 	
 		// Should not be necessary as we should be writing every pixel,
 		// but better than random values when debugging if we aren't.
-		glClearColor(1, 0, 0, 0);
+		glClearColor(1, 0.5, 0, 0);
 		glClear(GL_COLOR_BUFFER_BIT);
 	
 	#if defined (OLD_CODE)
@@ -2623,7 +2635,7 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 	
 		glMatrixMode(GL_PROJECTION); 
 		glLoadIdentity(); 
-		gluOrtho2D(0.0,tex_width,0.0,tex_height);
+		glOrtho(0.0,tex_width,0.0,tex_height,-1.0,1.0);
 		glMatrixMode(GL_MODELVIEW); 
 		glLoadIdentity(); 
 	
@@ -2710,7 +2722,7 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 			glReadPixels(0, 0, tex_width, tex_height, GL_RGBA, GL_FLOAT, debugreadbuffer);
 			unsigned int i, j;
 			for (i = 0 ; i < tex_height ; i++)
-				for (j = 0 ; j < tex_width ; j++)
+				for (j = 0 ; j < tex_width ; j+=100)
 				{
 			printf("(%d,%d) %f %f %f %f\n", i, j,
 					debugreadbuffer[(i * tex_width + j) * 4 + 0],

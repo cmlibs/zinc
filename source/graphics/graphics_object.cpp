@@ -3815,7 +3815,11 @@ Allocates memory and assigns fields for a graphics object.
 				object->normal_vertex_buffer_object = 0;
 				object->texture_coordinate0_vertex_buffer_object = 0;
 				object->vertex_array_object = 0;
+				object->multipass_width = 0;
+				object->multipass_height = 0;
 				object->multipass_vertex_buffer_object = 0;
+				object->multipass_frame_buffer_object = 0;
+				object->multipass_frame_buffer_texture = 0;
 #endif /* defined (OPENGL_API) */
 				object->compile_status = GRAPHICS_NOT_COMPILED;
 				object->object_type=object_type;
@@ -3961,6 +3965,16 @@ and sets <*object> to NULL.
 			if (object->multipass_vertex_buffer_object)
 			{
 				glDeleteBuffers(1, &object->multipass_vertex_buffer_object);
+			}			
+			if (object->multipass_frame_buffer_object)
+			{
+#if defined GL_EXT_framebuffer_object
+				glDeleteFramebuffersEXT(1, &object->multipass_frame_buffer_object);
+#endif // defined GL_EXT_framebuffer_object
+			}
+			if (object->multipass_frame_buffer_texture)
+			{
+				glDeleteTextures(1, &object->multipass_frame_buffer_texture);
 			}
 #endif /* defined (GL_VERSION_1_5) */
 #if defined (GL_VERSION_3_0)  && (NOT_IN_MESA_HEADER_YET)
