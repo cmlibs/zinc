@@ -2717,7 +2717,9 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 #if defined (DEBUG)
 		// Read the buffer out to memory so we can see the vertex values.
 		{
-			float debugreadbuffer[4 * tex_width * tex_height];
+			//float debugreadbuffer[4 * tex_width * tex_height];
+			float *debugreadbuffer;
+			ALLOCATE(debugreadbuffer, float, 4 * tex_width * tex_height);
 			glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
 			glReadPixels(0, 0, tex_width, tex_height, GL_RGBA, GL_FLOAT, debugreadbuffer);
 			unsigned int i, j;
@@ -2731,6 +2733,7 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 					debugreadbuffer[(i * tex_width + j) * 4 + 3]);
 				}
 			glReadBuffer(GL_NONE);
+			DEALLOCATE(debugreadbuffer);
 		}
 #endif /* defined (DEBUG) */
 
