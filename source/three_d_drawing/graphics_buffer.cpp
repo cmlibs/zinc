@@ -88,18 +88,7 @@ extern "C" {
 }
 #if defined (WX_USER_INTERFACE)
 extern "C" {
-//#define GL_GLEXT_LEGACY
-// #define GL_GLEXT_PROTOTYPES
-//#include <GL/gl.h>
-// #define GL_GLEXT_PROTOTYPES
-// #include <GL/glext.h>
-// #if GL_GLEXT_VERSION < 29
-// #error "require a newer version of <GL/glext.h>"
-// #endif
 #include "graphics/graphics_library.h"
-#if !defined GL_EXT_framebuffer_object
-#define GL_EXT_framebuffer_object 1
-#endif
 }
 #include <wx/wx.h>
 #include <wx/glcanvas.h>
@@ -343,10 +332,12 @@ DESCRIPTION :
 	EventHandlerRef resize_handler_ref;
 #endif /* defined (CARBON_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
-	 wxPanel *parent;
-	 wxGraphicsBuffer *canvas;
-	 int *attrib_list;
-	 GLuint fbo, depthbuffer;
+	wxPanel *parent;
+	wxGraphicsBuffer *canvas;
+	int *attrib_list, framebuffer_width, framebuffer_height;
+#if defined (OPENGL_API)
+	GLuint fbo, depthbuffer, img;
+#endif
 #endif /* defined (WX_USER_INTERFACE) */
 };
 
@@ -495,8 +486,13 @@ contained in the this module only.
 		 buffer->parent = (wxPanel *)NULL;
 		 buffer->canvas = (wxGraphicsBuffer *)NULL;
 		 buffer->attrib_list = NULL;
+#if defined (OPENGL_API)
 		 buffer->fbo = 0;
 		 buffer->depthbuffer = 0;
+		 buffer->img = 0;
+#endif
+		 buffer->framebuffer_height = 0;
+		 buffer->framebuffer_width = 0;
 #endif /* defined (CARBON_USER_INTERFACE) */
 	}
 	else
@@ -1509,43 +1505,45 @@ DESCRIPTION :
 		 return_code = 0;
 		 if (buffer->type == GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE)
 		 {
-				if (Graphics_library_load_extension("GL_EXT_framebuffer_object"))
-				{
-					 return_code = 1;
-				}
-				if (return_code && Graphics_library_check_extension(GL_EXT_framebuffer_object))
-				{
-					 GLenum status;
-					 status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-					 switch(status)
-					 {
-							case GL_FRAMEBUFFER_COMPLETE_EXT:
-								 break;
-							case GL_FRAMEBUFFER_UNSUPPORTED_EXT:
-								 display_message(ERROR_MESSAGE,"create_Graphics_buffer_wx."
-										"no_framebuffer.");
-							default:
-								 assert(0);
-					 }
-					 glGenFramebuffersEXT (1,&buffer->fbo);
-					 glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, buffer->fbo);
-					 glGenRenderbuffersEXT(1, &buffer->depthbuffer);
-					 glBindRenderbufferEXT(GL_RENDERBUFFER_EXT,buffer->depthbuffer);
-					 glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT, width, height);
-					 glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, buffer->depthbuffer);
-					 GLuint img;
-					 glGenTextures(1, &img);
-					 glBindTexture(GL_TEXTURE_2D, img);
-					 glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA8, width, height, 0, GL_RGBA,GL_UNSIGNED_BYTE,NULL);
-					 glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT,GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, img, 0);
-					 status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-					 glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,buffer->fbo);
-					 glPushAttrib(GL_VIEWPORT_BIT);
-					 glViewport(0,0, width,height);
-					 glPopAttrib();
-					 glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-					 glBindTexture(GL_TEXTURE_2D, img);
-				}
+#if defined (OPENGL_API) && defined (GL_EXT_framebuffer_object)
+			 if (Graphics_library_check_extension(GL_EXT_framebuffer_object))
+			 {
+				 GLint buffer_size;
+				 glGenFramebuffersEXT (1,&buffer->fbo);
+				 glGenRenderbuffersEXT(1, &buffer->depthbuffer);
+				 glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE_EXT, &buffer_size);
+				 if (height > buffer_size)
+				 {
+					 display_message(WARNING_MESSAGE,"Graphics_buffer_create_buffer_wx.  "
+						 "Request height is larger than allowed, set height to maximum possible"
+						 "height.");
+					 buffer->framebuffer_height = buffer_size;
+				 }
+				 else
+				 {
+					 buffer->framebuffer_height = height;
+				 }
+				 if (width > buffer_size)
+				 {
+					 display_message(WARNING_MESSAGE,"Graphics_buffer_create_buffer_wx.  "
+						 "Request width is larger than allowed, set width to maximum possible"
+						 "width.");
+					 buffer->framebuffer_width = buffer_size;
+				 }
+				 else
+				 {
+					 buffer->framebuffer_width = width;
+				 }
+				 glGenTextures(1, &buffer->img);
+				 glBindTexture(GL_TEXTURE_2D, buffer->img);
+				 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+				 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+				 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+				 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+				 glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA8, width, height, 0, 
+					 GL_RGBA,GL_UNSIGNED_BYTE,NULL);
+			 }
+#endif
 		 }
 		 else if (buffer->type == GRAPHICS_BUFFER_WX_OFFSCREEN_TYPE)
 		 {
@@ -3450,13 +3448,19 @@ DESCRIPTION :
 			/*minimum_colour_buffer_depth*/0, /*minimum_depth_buffer_depth */0,
 			/*minimum_alpha_buffer_depth*/0, /*minimum_accumulation_buffer_depth*/0,
 			buffer_to_match);
-#elif defined (WX_USER_INTERFACE) && (NEW_CODE)
-		buffer->type = GRAPHICS_BUFFER_WX_OFFSCREEN_TYPE;
-		 Graphics_buffer_create_buffer_wx(buffer, buffer_to_match->package,
-				NULL, GRAPHICS_BUFFER_ANY_BUFFERING_MODE,
-				GRAPHICS_BUFFER_ANY_STEREO_MODE,
-				0, 0, 0, width, height,
-				buffer_to_match);
+#elif defined (WX_USER_INTERFACE)
+ 		buffer->type = GRAPHICS_BUFFER_WX_OFFSCREEN_TYPE;
+#if defined (OPENGL_API) && (GL_EXT_framebuffer_object)
+		if (Graphics_library_load_extension("GL_EXT_framebuffer_object"))
+		{
+			buffer->type = GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE;
+		}
+#endif
+		Graphics_buffer_create_buffer_wx(buffer, buffer_to_match->package,
+			NULL, GRAPHICS_BUFFER_ANY_BUFFERING_MODE,
+			GRAPHICS_BUFFER_ANY_STEREO_MODE,
+			0, 0, 0, width, height,
+			buffer_to_match);
 #else /* defined (MOTIF) */
 		USE_PARAMETER(width);
 		USE_PARAMETER(height);
@@ -6020,9 +6024,49 @@ DESCRIPTION :
 			} break;
 			 case GRAPHICS_BUFFER_WX_OFFSCREEN_TYPE:
 			{
+				return_code = 0;
 			} break;
 			 case GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE:
 			{
+#if defined (OPENGL_API) && defined (GL_EXT_framebuffer_object)
+			 if (Graphics_library_check_extension(GL_EXT_framebuffer_object))
+			 {
+				 if (buffer->fbo && buffer->depthbuffer && buffer->img)
+				 glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, buffer->fbo);
+				 glBindRenderbufferEXT(GL_RENDERBUFFER_EXT,buffer->depthbuffer);
+				 glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT,
+					 buffer->framebuffer_width, buffer->framebuffer_height);
+				 glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT,
+					 GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, buffer->img, 0);
+				 glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, 
+					 GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, buffer->depthbuffer);
+				 GLenum status;
+				 status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+				 switch(status) 
+				 {                                          
+					 case GL_FRAMEBUFFER_COMPLETE_EXT:
+					 {
+						 return_code = 1;
+					 }    
+					 break;
+					 case GL_FRAMEBUFFER_UNSUPPORTED_EXT:
+					 {
+						 display_message(ERROR_MESSAGE, 
+							 "Graphics_buffer_make_current."  
+							 "Framebuffer object format not supported.\n");
+						 return_code = 0;
+					 } 
+					 break;
+					 default:
+					 {
+						 display_message(ERROR_MESSAGE, 
+							 "Graphics_buffer_make_current." 
+							 "Framebuffer object not supported.\n");
+						 return_code = 0;
+					 }
+				 }
+			 }
+#endif
 			} break;
 #endif /* defined (WX_USER_INTERFACE) */
 			default:
@@ -7829,18 +7873,33 @@ x==============================================================================*
 		}
 		if (buffer->type == GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE)
 		 {
-				int return_code;
-				return_code = 1;
-				if (Graphics_library_load_extension("GL_EXT_framebuffer_object"))
-				{
-					 return_code = 0;
-				}
-				if (return_code && Graphics_library_check_extension(GL_EXT_framebuffer_object))
-				{
-					 //					 glDeleteFramebuffersEXT(1, &buffer->fbo);
-					 glDeleteRenderbuffersEXT(1, &buffer->depthbuffer);
-				}
+#if defined (OPENGL_API) && defined (GL_EXT_framebuffer_object)
+			 GLint framebuffer_flag;
+			 if (Graphics_library_check_extension(GL_EXT_framebuffer_object))
+			 {
+				 glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &framebuffer_flag);
+				 if (framebuffer_flag != 0)
+				 {
+					 if (buffer->fbo != 0)
+					 {
+						 if (framebuffer_flag == (GLint)buffer->fbo)
+						 {
+							 glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+						 }
+						 glDeleteFramebuffersEXT(1, &buffer->fbo);
+					 }
+					 if (buffer->depthbuffer != 0)
+					 {
+						 glDeleteRenderbuffersEXT(1, &buffer->depthbuffer);
+					 }
+					 if (buffer->img != 0)
+					 {
+						 glDeleteTextures(1, &buffer->img);
+					 }
+				 }
+			 }
 		 }
+#endif /* defined (OPENGL_API) && defined (GL_EXT_framebuffer_object) */
 #endif /* defined (WX_USER_INTERFACE) */
 		DEALLOCATE(*buffer_ptr);
 		*buffer_ptr = (struct Graphics_buffer *)NULL;

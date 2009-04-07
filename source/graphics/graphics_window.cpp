@@ -6696,6 +6696,17 @@ graphics window on screen.
 					glClear(GL_COLOR_BUFFER_BIT); 
 				}
 #endif /* defined (OPENGL_API) */
+
+				if (Graphics_buffer_get_type(offscreen_buffer) ==	
+					GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE)
+				{
+					if (preferred_antialias != 0)
+					{
+						display_message(WARNING_MESSAGE,
+							"Graphics_window_get_frame_pixels. Cmgui-wx does not write"
+							"image with anti-aliasing under offscreen mode at the moment.");
+					}
+				}
 				if ((tiles_across > 1) || (panes_across > 1))
 				{
 					glPixelStorei(GL_PACK_ROW_LENGTH, frame_width);
@@ -6750,12 +6761,21 @@ graphics window on screen.
 									viewport_left, viewport_top,
 									viewport_pixels_per_x, viewport_pixels_per_y);
 							}
-
-							Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
-								/*left*/0, /*bottom*/0, /*right*/tile_width, /*top*/tile_height,
-								preferred_antialias, preferred_transparency_layers,
-								/*drawing_offscreen*/1);
-
+							if (Graphics_buffer_get_type(offscreen_buffer) ==	
+								GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE )
+							{
+								Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
+									/*left*/0, /*bottom*/0, /*right*/tile_width, /*top*/tile_height,
+									/*preferred_antialias*/0, preferred_transparency_layers,
+									/*drawing_offscreen*/1);
+							}
+							else
+							{
+								Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
+									/*left*/0, /*bottom*/0, /*right*/tile_width, /*top*/tile_height,
+									preferred_antialias, preferred_transparency_layers,
+									/*drawing_offscreen*/1);
+							}
 							if (return_code)
 							{
 								if (i < tiles_across - 1)

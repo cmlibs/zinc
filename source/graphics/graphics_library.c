@@ -632,22 +632,42 @@ double buffered context.
 ==============================================================================*/
 {
 	int return_code;
-
+#if defined (OPENGL_API)
+	GLint framebuffer_flag = 0;
+#endif
 	ENTER(Graphics_library_read_pixels);
 	if (frame_data && width && height)
 	{
 #if defined (OPENGL_API)
 		/* Make sure we get it from the front for a double buffer,
 			has no effect on a single buffer, keep the old read
-			buffer so we can set it back after reading */
-		if (front_buffer)
+			buffer so we can set it back after reading 
+		  If framebuffer object is bound then read the buffer from
+			COLOR_ATTACHMENT0 */
+		if (Graphics_library_check_extension(GL_EXT_framebuffer_object))
 		{
-			glReadBuffer(GL_FRONT);
+#if defined (GL_EXT_framebuffer_object)
+			glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &framebuffer_flag);
+#endif
 		}
+
+		if (framebuffer_flag == 0)
+		{
+			if (front_buffer)
+			{
+				glReadBuffer(GL_FRONT);
+			}
+			else
+			{
+				glReadBuffer(GL_BACK);
+			}
+		}
+#if defined (GL_EXT_framebuffer_object)
 		else
 		{
-			glReadBuffer(GL_BACK);
+			glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
 		}
+#endif
 		glPixelStorei(GL_PACK_ALIGNMENT, 1);
 		switch(storage)
 		{

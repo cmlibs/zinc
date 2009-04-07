@@ -1691,6 +1691,8 @@ the entire scene.
 	double pixel_offset_x, pixel_offset_y;
 	GLdouble temp_matrix[16];
 	int accumulation_count, antialias, return_code;
+	int framebuffer_flag = 0;
+
 	float j2[2][2]=
 		{
 			{0.25,0.75},
@@ -1716,6 +1718,14 @@ the entire scene.
 		};
 
 	ENTER(Scene_viewer_antialias);
+
+#if defined (GL_EXT_framebuffer_object)
+	if (Graphics_library_check_extension(GL_EXT_framebuffer_object))
+	{
+		 glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &framebuffer_flag);
+	}
+#endif
+
 	if (rendering_data)
 	{
 		return_code = 1;
@@ -1795,21 +1805,31 @@ the entire scene.
 			glMultMatrixd(temp_matrix);
 
 			Scene_viewer_call_next_renderer(rendering_data);
+	
+			if (!framebuffer_flag)
+			{	
+				if (0==accumulation_count)
+				{
+					glAccum(GL_LOAD,1.0f/((GLfloat)antialias));
+				}
+				else
+				{
+					glAccum(GL_ACCUM,1.0f/((GLfloat)antialias));
+				}
 			
-			if (0==accumulation_count)
-			{
-				glAccum(GL_LOAD,1.0f/((GLfloat)antialias));
-			}
-			else
-			{
-				glAccum(GL_ACCUM,1.0f/((GLfloat)antialias));
-			}
-			
-		} /* for (antialias_count) */
-
+			} /* for (antialias_count) */
+		}
 		/* We want to ensure that we return white when we accumulate a white
 			background */
-		glAccum(GL_RETURN,1.001f);
+		if (!framebuffer_flag)
+		{	
+			glAccum(GL_RETURN,1.001f);
+		}
+		else
+		{
+			display_message(WARNING_MESSAGE, "Framebuffer object does not "
+				"support accumulation buffer, anti-aliasing is not available.\n");
+		}
 		glFlush();
 	}
 	else
@@ -1834,6 +1854,7 @@ depth of field effect.
 	double depth_of_field, dx, dy, focal_depth, pixel_offset_x, pixel_offset_y;
 	GLdouble temp_matrix[16];
 	int accumulation_count, return_code;
+	int framebuffer_flag = 0;
 	float j8[8][2]=
 		{
 			{0.5625,0.4375},
@@ -1847,6 +1868,12 @@ depth of field effect.
 		};
 
 	ENTER(Scene_viewer_antialias);
+#if defined (GL_EXT_framebuffer_object)
+	if (Graphics_library_check_extension(GL_EXT_framebuffer_object))
+	{
+		 glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &framebuffer_flag);
+	}
+#endif
 	if (rendering_data)
 	{
 		return_code = 1;
@@ -1903,21 +1930,30 @@ depth of field effect.
 			glMultMatrixd(temp_matrix);
 
 			Scene_viewer_call_next_renderer(rendering_data);
-			
-			if (0==accumulation_count)
+			if (!framebuffer_flag)
 			{
-				glAccum(GL_LOAD,1.0f/(8.0f));
+				if (0==accumulation_count)
+				{
+					glAccum(GL_LOAD,1.0f/(8.0f));
+				}
+				else
+				{
+					glAccum(GL_ACCUM,1.0f/(8.0f));
+				}
 			}
-			else
-			{
-				glAccum(GL_ACCUM,1.0f/(8.0f));
-			}
-			
 		} /* for (antialias_count) */
 
 		/* We want to ensure that we return white when we accumulate a white
 			background */
-		glAccum(GL_RETURN,1.001f);
+		if (!framebuffer_flag)
+		{
+			glAccum(GL_RETURN,1.001f);
+		}
+		else
+		{
+			display_message(WARNING_MESSAGE, "Framebuffer object does not "
+				"support accumulation buffer, depth of field is not available.\n");
+		}
 		glFlush();
 	}
 	else
@@ -2469,22 +2505,42 @@ access this function.
 				glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 				/* depth tests are against a normalised z coordinate (i.e. [0..1])
 					so the following sets this up and turns on the test */
-				if (SCENE_VIEWER_STEREO != scene_viewer->stereo_mode)
+
+				GLint framebuffer_flag = 0;
+#if defined (GL_EXT_framebuffer_object)
+				if (Graphics_library_check_extension(GL_EXT_framebuffer_object) &&
+					Graphics_library_load_extension("GL_EXT_framebuffer_object"))
 				{
-					if (double_buffer)
+					glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &framebuffer_flag);
+				}
+#endif
+				if (!framebuffer_flag)
+				{
+					if (SCENE_VIEWER_STEREO != scene_viewer->stereo_mode)
 					{
-						glDrawBuffer(GL_BACK);
-						/* Multipass rendering types need to have the correct read buffer */
-						glReadBuffer(GL_BACK);
-					}
-					else	
-					{
-						glDrawBuffer(GL_FRONT);
-						/* Multipass rendering types need to have the correct read buffer */
-						glReadBuffer(GL_FRONT);
+						if (double_buffer)
+						{
+							glDrawBuffer(GL_BACK);
+							/* Multipass rendering types need to have the correct read buffer */
+							glReadBuffer(GL_BACK);
+						}
+						else	
+						{
+							glDrawBuffer(GL_FRONT);
+							/* Multipass rendering types need to have the correct read buffer */
+							glReadBuffer(GL_FRONT);
+						}
 					}
 				}
-
+				else
+				{
+#if defined (GL_EXT_framebuffer_object)
+					/* framebuffer object is currently bound,
+						 assume color_attachment0 is the texture to write too*/
+					glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+					glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
+#endif
+				}
 				glDepthRange((GLclampd)0.0,(GLclampd)1.0);
 				glDepthMask(GL_TRUE);
 				glEnable(GL_DEPTH_TEST);
