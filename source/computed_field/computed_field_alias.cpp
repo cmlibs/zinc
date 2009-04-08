@@ -143,6 +143,11 @@ private:
 		// nothing to do as source field may be in a different manager
 		return 1;
 	};
+
+	void field_is_managed(void)
+	{
+		check_alias_from_other_manager();
+	}
 };
 
 /***************************************************************************//**

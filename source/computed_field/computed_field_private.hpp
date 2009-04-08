@@ -208,6 +208,11 @@ public:
 	virtual int check_source_fields_manager(MANAGER(Computed_field) **manager_address);
 
 	virtual int manage_source_fields(MANAGER(Computed_field) *manager);
+
+	/* override if field type needs to be informed when it has been added to region */
+	virtual void field_is_managed(void)
+	{
+	}
 }; /* class Computed_field_core */
 
 struct Computed_field

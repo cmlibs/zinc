@@ -5266,6 +5266,11 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
 		}
 		Computed_field_set_managed_status(field, managed_status);
 		return_code = ADD_OBJECT_TO_MANAGER(Computed_field)(field,manager);
+		if (return_code)
+		{
+			/* notify field types which need to know when they are managed */
+			field->core->field_is_managed();
+		}
 	}
 	else
 	{
