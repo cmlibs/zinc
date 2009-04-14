@@ -215,10 +215,10 @@ If defined it should be used to compile any graphics objects.
 	float *coordinate_scaling;
 	/* Recording the bound texture id for each tile */
 	int *texture_ids;
-	/* Display lists to enable each texture tile */
-	int tile_display_lists;
 	/* Overlap of duplicated pixels on boundaries of tiles to allow filtering */
 	int overlap;
+	/* The OpenGL enumerated bound texture target */
+	int texture_target;
 	int access_count;
 };
 
@@ -812,5 +812,34 @@ should be DEALLOCATED when finished with).
 unsigned int Texture_create_float_texture(int width, int height, char* buffer,
 	int alpha, int fallback_to_shorts);
 #endif /* defined (OPENGL_API) */
+
+/***************************************************************************//**
+ * Return the flag specifying whether texture tiling is enabled for this texture or not.
+ * 
+ * @param texture Texture object
+ * @return Returns 1 if the texture tiling is enabled and 0 if it is not.
+ */
+int Texture_get_texture_tiling_enabled(struct Texture *texture);
+
+/***************************************************************************//**
+ * Set the flag specifying whether texture tiling is enabled for this texture or not.
+ * 
+ * @param texture Texture object
+ * @param enable_texture_tiling The new value for the flag, 1 if texture tiling should
+ * be allowed, 0 if it should not.
+ * @return Returns 1 if successful.
+ */
+int Texture_set_texture_tiling_enabled(struct Texture *texture, int enable_texture_tiling);
+
+/***************************************************************************//**
+ * While rendering objects with a tiled texture, this function is used to activate
+ * differing tiles with respect to that texture.
+ * 
+ * @param texture_tiling The texture tiling object for the currently rendering texture.
+ * @param tile_index  The tile to activate, which is a zero array index, width index
+ * first, the height index, then depth.
+ * @return Returns 1 if successful.
+ */
+int Texture_tiling_activate_tile(struct Texture_tiling *texture_tiling, int tile_index);
 
 #endif /* !defined (TEXTURE_H) */

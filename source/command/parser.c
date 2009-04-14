@@ -5324,6 +5324,28 @@ then the <flag> will be set.
 	return (return_code);
 } /* Option_table_add_char_flag_entry */
 
+int Option_table_add_unset_char_flag_entry(struct Option_table *option_table,
+	const char *token, char *flag)
+{
+	int return_code;
+
+	ENTER(Option_table_add_unset_char_flag_entry);
+	if (option_table && token && flag)
+	{
+		return_code = Option_table_add_entry(option_table, token, (void *)flag, NULL,
+			unset_char_flag);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_unset_char_flag_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_unset_char_flag_entry */
+
 int Option_table_add_int_positive_entry(struct Option_table *option_table,
 	const char *token, int *value)
 /*******************************************************************************

@@ -1,4 +1,3 @@
-
 /*******************************************************************************
 FILE : texture.c
 
@@ -182,7 +181,8 @@ The properties of a graphical texture.
 		cannot be destroyed while this is greater than 0 */
 
 	/* Texture_tiling */
-	struct Texture_tiling *texture_tiling;
+	int allow_texture_tiling;  /* Is texture tiling allowed for this texture */
+	struct Texture_tiling *texture_tiling;  /* This structure is non-null if a texture tiling has been applied */
 
 	/* Store the properties */
 	struct LIST(Texture_property) *property_list;
@@ -198,6 +198,54 @@ FULL_DECLARE_MANAGER_TYPE(Texture);
 Module functions
 ----------------
 */
+
+#if defined (OPENGL_API)
+static GLenum Texture_get_target_enum(Texture *texture)
+{
+	GLenum texture_target;
+	
+	switch (texture->dimension)
+	{
+		case 1:
+		{
+			texture_target = GL_TEXTURE_1D;
+		} break;
+		case 2:
+		{
+			texture_target = GL_TEXTURE_2D;
+		} break;
+		case 3:
+		{
+	#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+			if (
+	#  if defined (GL_VERSION_1_2)
+				Graphics_library_check_extension(GL_VERSION_1_2)
+	#    if defined (GL_EXT_texture3D)
+				||
+	#    endif /* defined (GL_EXT_texture3D) */
+	#  endif /* defined (GL_VERSION_1_2) */
+	#  if defined (GL_EXT_texture3D)
+				Graphics_library_check_extension(GL_EXT_texture3D)
+	#  endif /* defined (GL_EXT_texture3D) */
+				)
+			{
+				texture_target = GL_TEXTURE_3D;
+			}
+			else
+			{
+	#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+				display_message(ERROR_MESSAGE,
+					"Texture_get_target_enum.  "
+					"3D textures not supported on this display.");
+				texture_target=0;
+	#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+			}
+	#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+		} break;
+	}
+	return (texture_target);
+}
+#endif // defined (OPENGL_API)
 
 static struct Texture_property *CREATE(Texture_property)(
 	const char *name, const char *value)
@@ -302,10 +350,10 @@ DESCRIPTION :
 			dimension))
 	{
 		texture_tiling->total_tiles = 0;
-		texture_tiling->tile_display_lists = 0;
 		texture_tiling->dimension = dimension;
 		texture_tiling->texture_ids = (int *)NULL;
 		texture_tiling->overlap = 0;
+		texture_tiling->texture_target = 0;
 		texture_tiling->access_count = 0;
 	}
 	else
@@ -336,10 +384,6 @@ DESCRIPTION :
 	ENTER(DESTROY(Texture_tiling));
 	if (texture_tiling_address && (texture_tiling = *texture_tiling_address))
 	{
-#if defined (OPENGL_API)
-		glDeleteLists(texture_tiling->tile_display_lists,
-			texture_tiling->total_tiles);
-#endif /* defined (OPENGL_API) */
 		if (texture_tiling->texture_ids)
 		{
 #if defined (OPENGL_API)
@@ -1248,13 +1292,13 @@ tiles (and <texture_tiling> wasn't NULL.
 				printf("\n");
 			}
 #endif /* defined (DEBUG) */
-#if defined (ENABLE_TEXTURE_TILING)
-			/* Disable as I haven't handled all the cases yet */
 			if (texture->texture_tiling)
 			{
 				DEACCESS(Texture_tiling)(&texture->texture_tiling);
 			}
-			if ((2 == return_code) && allow_texture_tiling)
+			if ((2 == return_code) && texture->allow_texture_tiling &&
+				/* Allowed according to the renderer (compilation_context)*/
+				allow_texture_tiling)
 			{
 				int i, number_of_tiles;
 
@@ -1263,6 +1307,7 @@ tiles (and <texture_tiling> wasn't NULL.
 					true, need to test that too). */
 				return_code = 3;
 				*texture_tiling = CREATE(Texture_tiling)(texture->dimension);
+				(*texture_tiling)->texture_target = Texture_get_target_enum(texture);
 				switch (texture->filter_mode)
 				{
 					case TEXTURE_LINEAR_FILTER:
@@ -1350,10 +1395,6 @@ tiles (and <texture_tiling> wasn't NULL.
 				}
 				texture->texture_tiling = ACCESS(Texture_tiling)(*texture_tiling);
 			}
-#else /* defined (ENABLE_TEXTURE_TILING) */
-			USE_PARAMETER(texture_tiling);
-			USE_PARAMETER(CREATE(Texture_tiling));
-#endif /* defined (ENABLE_TEXTURE_TILING) */
 		}
 		else
 		{
@@ -2119,45 +2160,7 @@ Directly outputs the commands setting up the <texture>.
 	if (texture)
 	{
 		rendered_image = (unsigned char *)NULL;
-		switch (texture->dimension)
-		{
-			case 1:
-			{
-				texture_target = GL_TEXTURE_1D;
-			} break;
-			case 2:
-			{
-				texture_target = GL_TEXTURE_2D;
-			} break;
-			case 3:
-			{
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-				if (
-#  if defined (GL_VERSION_1_2)
-					Graphics_library_check_extension(GL_VERSION_1_2)
-#    if defined (GL_EXT_texture3D)
-					||
-#    endif /* defined (GL_EXT_texture3D) */
-#  endif /* defined (GL_VERSION_1_2) */
-#  if defined (GL_EXT_texture3D)
-					Graphics_library_check_extension(GL_EXT_texture3D)
-#  endif /* defined (GL_EXT_texture3D) */
-					)
-				{
-					texture_target = GL_TEXTURE_3D;
-				}
-				else
-				{
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-					display_message(ERROR_MESSAGE,
-						"direct_render_texture.  "
-						"3D textures not supported on this display.");
-					return_code=0;
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-				}
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-			} break;
-		}
+		texture_target = Texture_get_target_enum(texture);
 		switch(texture->storage)
 		{
 			case TEXTURE_DMBUFFER:
@@ -3106,6 +3109,8 @@ of all textures.
 			texture->display_list=0;
 			texture->texture_id = 0;
 #endif /* defined (OPENGL_API) */
+			/* Don't enable texture tiling by default as it doesn't work for all our primitives yet. */
+			texture->allow_texture_tiling = 0;
 			texture->texture_tiling = (struct Texture_tiling *)NULL;
 			texture->display_list_current= TEXTURE_COMPILE_STATE_NOT_COMPILED;
 			texture->property_list = (struct LIST(Texture_property) *)NULL;
@@ -3411,6 +3416,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Texture,name)
 			(destination->combine_colour).green=(source->combine_colour).green;
 			(destination->combine_colour).blue=(source->combine_colour).blue;
 			destination->combine_alpha=source->combine_alpha;
+			destination->allow_texture_tiling=source->allow_texture_tiling;
 			if (source->property_list)
 			{
 				if (destination->property_list)
@@ -5526,55 +5532,18 @@ parameters.
 			GLint texture_size;
 			GLenum texture_target;
 
-			switch (texture->dimension)
+			if (texture_target = Texture_get_target_enum(texture))
 			{
-				case 1:
-				{
-					texture_target = GL_TEXTURE_1D;
-				} break;
-				case 2:
-				{
-					texture_target = GL_TEXTURE_2D;
-				} break;
-				case 3:
-				{
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-					if (
-#  if defined (GL_VERSION_1_2)
-						Graphics_library_check_extension(GL_VERSION_1_2)
-#    if defined (GL_EXT_texture3D)
-						||
-#    endif /* defined (GL_EXT_texture3D) */
-#  endif /* defined (GL_VERSION_1_2) */
-#  if defined (GL_EXT_texture3D)
-						Graphics_library_check_extension(GL_EXT_texture3D)
-#  endif /* defined (GL_EXT_texture3D) */
-						)
-					{
-						texture_target = GL_TEXTURE_3D;
-					}
-					else
-					{
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-						display_message(ERROR_MESSAGE,
-							"Texture_execute_opengl_texture_object.  "
-							"3D textures not supported on this display.");
-						size = 0;
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-					}
-#endif /* defined (GL_ARB_texture_compression) */
-				} break;
-				default:
-				{
-					size = 0;
-				}
+				/* get the compressed texture size */
+				glBindTexture(texture_target, texture->texture_id);
+				glGetTexLevelParameteriv(texture_target, (GLint)0,
+				  GL_TEXTURE_COMPRESSED_IMAGE_SIZE_ARB, &texture_size);
+				size = texture_size;
 			}
-
-			/* get the compressed texture size */
-			glBindTexture(texture_target, texture->texture_id);
-			glGetTexLevelParameteriv(texture_target, (GLint)0,
-			  GL_TEXTURE_COMPRESSED_IMAGE_SIZE_ARB, &texture_size);
-			size = texture_size;
+			else
+			{
+				size = 0;
+			}
 		}
 		else
 		{
@@ -6452,7 +6421,6 @@ int Texture_compile_opengl_texture_object(struct Texture *texture,
 	Render_graphics_opengl *renderer)
 {
 	int return_code;
-	GLboolean resident;
 	GLenum texture_target;
 
 	ENTER(Texture_compile_opengl_texture_object);
@@ -6460,8 +6428,7 @@ int Texture_compile_opengl_texture_object(struct Texture *texture,
 	{
 		if (((texture->display_list_current == TEXTURE_COMPILE_STATE_TEXTURE_OBJECT_COMPILED)
 			||(texture->display_list_current == TEXTURE_COMPILE_STATE_DISPLAY_LIST_COMPILED))
-			&& texture->texture_id 
-			&& glAreTexturesResident(1, &texture->texture_id, &resident))
+			&& texture->texture_id)
 		{
 			return_code = 1;
 			if (renderer->allow_texture_tiling && texture->texture_tiling)
@@ -6471,45 +6438,7 @@ int Texture_compile_opengl_texture_object(struct Texture *texture,
 		}
 		else
 		{
-			switch (texture->dimension)
-			{
-				case 1:
-				{
-					texture_target = GL_TEXTURE_1D;
-				} break;
-				case 2:
-				{
-					texture_target = GL_TEXTURE_2D;
-				} break;
-				case 3:
-				{
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-					if (
-#  if defined (GL_VERSION_1_2)
-						Graphics_library_check_extension(GL_VERSION_1_2)
-#    if defined (GL_EXT_texture3D)
-						||
-#    endif /* defined (GL_EXT_texture3D) */
-#  endif /* defined (GL_VERSION_1_2) */
-#  if defined (GL_EXT_texture3D)
-						Graphics_library_check_extension(GL_EXT_texture3D)
-#  endif /* defined (GL_EXT_texture3D) */
-						)
-					{
-						texture_target = GL_TEXTURE_3D;
-					}
-					else
-					{
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-						display_message(ERROR_MESSAGE,
-							"Texture_execute_opengl_texture_object.  "
-							"3D textures not supported on this display.");
-						return_code=0;
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-					}
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-				} break;
-			}
+			texture_target = Texture_get_target_enum(texture);
 			if(texture->display_list_current == TEXTURE_COMPILE_STATE_TEXTURE_OBJECT_UPDATE_REQUIRED)
 			{
 				switch(texture->storage)
@@ -6625,13 +6554,13 @@ int Texture_compile_opengl_texture_object(struct Texture *texture,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Texture_execute_opengl_texture_object.  Missing texture");
+			"Texture_compile_opengl_texture_object.  Missing texture");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Texture_execute_opengl_texture_object */
+} /* Texture_compile_opengl_texture_object */
 #endif /* defined (OPENGL_API) */
 
 #if defined (OPENGL_API)
@@ -6648,48 +6577,12 @@ int Texture_execute_opengl_texture_object(struct Texture *texture,
 		This parameter is still better than the NULL from before. */
 	if (texture)
 	{
-		switch (texture->dimension)
-		{
-			case 1:
-			{
-				texture_target = GL_TEXTURE_1D;
-			} break;
-			case 2:
-			{
-				texture_target = GL_TEXTURE_2D;
-			} break;
-			case 3:
-			{
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-				if (
-#  if defined (GL_VERSION_1_2)
-					Graphics_library_check_extension(GL_VERSION_1_2)
-#    if defined (GL_EXT_texture3D)
-					||
-#    endif /* defined (GL_EXT_texture3D) */
-#  endif /* defined (GL_VERSION_1_2) */
-#  if defined (GL_EXT_texture3D)
-					Graphics_library_check_extension(GL_EXT_texture3D)
-#  endif /* defined (GL_EXT_texture3D) */
-					)
-				{
-					texture_target = GL_TEXTURE_3D;
-				}
-				else
-				{
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-					display_message(ERROR_MESSAGE,
-						"Texture_execute_opengl_texture_object.  "
-						"3D textures not supported on this display.");
-					return_code=0;
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-				}
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-			} break;
-		}
+		texture_target = Texture_get_target_enum(texture);
 		if (texture->texture_tiling)
 		{
-			/* Tiling only implemented correctly with display lists */
+			/* We only activate the environment here, the individual
+			 * textures will be bound as we activate each driver */
+			direct_render_Texture_environment(texture);
 		}
 		else
 		{
@@ -6735,10 +6628,9 @@ int Texture_compile_opengl_display_list(struct Texture *texture,
 	Render_graphics_opengl *renderer)
 {
 	int return_code;
-	int i;
 	GLenum texture_target;
 
-	ENTER(Texture_execute_opengl_dispay_list);
+	ENTER(Texture_compile_opengl_dispay_list);
 	if (texture)
 	{
 		if ((texture->display_list_current == TEXTURE_COMPILE_STATE_DISPLAY_LIST_COMPILED))
@@ -6751,72 +6643,13 @@ int Texture_compile_opengl_display_list(struct Texture *texture,
 		}
 		else
 		{
-			switch (texture->dimension)
-			{
-				case 1:
-				{
-					texture_target = GL_TEXTURE_1D;
-				} break;
-				case 2:
-				{
-					texture_target = GL_TEXTURE_2D;
-				} break;
-				case 3:
-				{
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-					if (
-#  if defined (GL_VERSION_1_2)
-						Graphics_library_check_extension(GL_VERSION_1_2)
-#    if defined (GL_EXT_texture3D)
-						||
-#    endif /* defined (GL_EXT_texture3D) */
-#  endif /* defined (GL_VERSION_1_2) */
-#  if defined (GL_EXT_texture3D)
-						Graphics_library_check_extension(GL_EXT_texture3D)
-#  endif /* defined (GL_EXT_texture3D) */
-						)
-					{
-						texture_target = GL_TEXTURE_3D;
-					}
-					else
-					{
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-						display_message(ERROR_MESSAGE,
-							"Texture_execute_opengl_dispay_list.  "
-							"3D textures not supported on this display.");
-						return_code=0;
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-					}
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
-				} break;
-			}
+			texture_target = Texture_get_target_enum(texture);
 			if (texture->display_list||(texture->display_list=glGenLists(1)))
 			{
 				return_code = Texture_compile_opengl_texture_object(texture, renderer);
-				if (texture->texture_tiling)
-				{
-					if (!texture->texture_tiling->tile_display_lists)
-					{
-						texture->texture_tiling->tile_display_lists
-							= glGenLists(texture->texture_tiling->total_tiles);
-					}
-					for (i = 0 ; i < texture->texture_tiling->total_tiles ; i++)
-					{
-						glNewList(texture->texture_tiling->tile_display_lists + i,
-							GL_COMPILE);
-						glBindTexture(texture_target, texture->texture_tiling->texture_ids[i]);
-						glEndList();
-					}
-					glNewList(texture->display_list,GL_COMPILE);
-					direct_render_Texture_environment(texture);
-					glEndList();
-				}
-				else
-				{
-					glNewList(texture->display_list,GL_COMPILE);
-					(*execute_function)(texture);
-					glEndList();
-				}
+				glNewList(texture->display_list,GL_COMPILE);
+				(*execute_function)(texture);
+				glEndList();
 
 				texture->display_list_current=TEXTURE_COMPILE_STATE_DISPLAY_LIST_COMPILED;
 				return_code=1;
@@ -7327,3 +7160,74 @@ unsigned int Texture_create_float_texture(int width, int height, char* buffer,
 }
 #endif /* defined (OPENGL_API) */
 
+int Texture_get_texture_tiling_enabled(struct Texture *texture)
+{
+	int return_value;
+
+	ENTER(Texture_get_texture_tiling_enabled);
+	if (texture)
+	{
+		return_value = texture->allow_texture_tiling;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_get_wrap_mode.  Invalid argument(s)");
+		return_value = 0;
+	}
+	LEAVE;
+
+	return (return_value);
+} /* Texture_get_texture_tiling_enabled */
+
+int Texture_set_texture_tiling_enabled(struct Texture *texture, int enable_texture_tiling)
+{
+	int return_code;
+
+	ENTER(Texture_set_texture_tiling_enabled);
+	if (texture)
+	{
+      if (enable_texture_tiling != texture->allow_texture_tiling)
+		{
+			texture->allow_texture_tiling = enable_texture_tiling;
+				/* display list needs to be compiled again */
+			texture->display_list_current=TEXTURE_COMPILE_STATE_NOT_COMPILED;
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_set_texture_tiling_enabled.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_set_texture_tiling_enabled */
+
+#if defined (OPENGL_API)
+int Texture_tiling_activate_tile(struct Texture_tiling *texture_tiling,
+	int tile_index)
+{
+	int return_code;
+
+	ENTER(Texture_tiling_activate_tile);
+	if (texture_tiling && texture_tiling->texture_target &&
+		(tile_index >= 0) && (tile_index < texture_tiling->total_tiles))
+	{
+		glBindTexture(texture_tiling->texture_target,
+			texture_tiling->texture_ids[tile_index]);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_tiling_activate_tile.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+#endif // defined (OPENGL_API)

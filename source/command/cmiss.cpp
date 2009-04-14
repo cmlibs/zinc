@@ -6995,7 +6995,7 @@ DESCRIPTION :
 Modifies the properties of a texture.
 ==============================================================================*/
 {
-	char *current_token, *file_number_pattern;
+	char *current_token, *file_number_pattern, texture_tiling_enabled;
 	const char *combine_mode_string, *compression_mode_string, *filter_mode_string,
 		*raw_image_storage_string, *resize_filter_mode_string, **valid_strings,
 		*wrap_mode_string;
@@ -7114,6 +7114,7 @@ Modifies the properties of a texture.
 						&width, &height, &depth);
 					Texture_get_distortion_info(texture,
 						&distortion_centre_x,&distortion_centre_y,&distortion_factor_k1);
+					texture_tiling_enabled = Texture_get_texture_tiling_enabled(texture);
 					texture_distortion[0]=(double)distortion_centre_x;
 					texture_distortion[1]=(double)distortion_centre_y;
 					texture_distortion[2]=(double)distortion_factor_k1;
@@ -7264,6 +7265,12 @@ Modifies the properties of a texture.
 					/* specify_width */
 					Option_table_add_entry(option_table, "specify_width",&specify_width,
 					  NULL,set_int_non_negative);
+					/* texture_tiling */
+					Option_table_add_char_flag_entry(option_table,
+						"texture_tiling", &texture_tiling_enabled);
+					/* no_texture_tiling */
+					Option_table_add_unset_char_flag_entry(option_table,
+						"no_texture_tiling", &texture_tiling_enabled);
 					/* width */
 					Option_table_add_entry(option_table, "width", &width,
 					  NULL,set_float_non_negative);
@@ -7304,6 +7311,7 @@ Modifies the properties of a texture.
 						Texture_set_combine_colour(texture, &colour);
 						Texture_set_physical_size(texture, width,
 							height, depth);
+						Texture_set_texture_tiling_enabled(texture, texture_tiling_enabled);
 
 						STRING_TO_ENUMERATOR(Texture_combine_mode)(
 							combine_mode_string, &combine_mode);

@@ -3881,7 +3881,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 													while(tile_surface)
 													{
 														/* Need to select the texture target */
-														glCallList(object->texture_tiling->tile_display_lists + tile_surface->tile_number);
+														Texture_tiling_activate_tile(object->texture_tiling,
+															tile_surface->tile_number);
 														draw_dc_surfaceGL(tile_surface->pointlist,
 															tile_surface->normallist,
 															tile_surface->tangentlist,
@@ -3940,7 +3941,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 													object->texture_tiling);
 												while(tile_surface)
 												{
-													glCallList(object->texture_tiling->tile_display_lists + tile_surface->tile_number);
+													Texture_tiling_activate_tile(object->texture_tiling,
+														tile_surface->tile_number);
 													draw_dc_surfaceGL(tile_surface->pointlist,
 														tile_surface->normallist,
 														tile_surface->tangentlist,

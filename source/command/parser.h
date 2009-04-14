@@ -743,6 +743,13 @@ Adds the given <token> to the <option_table>.  If the <token> is specified
 then the <flag> will be set.
 ==============================================================================*/
 
+int Option_table_add_unset_char_flag_entry(struct Option_table *option_table,
+	const char *token, char *flag);
+/*******************************************************************************
+Adds the given <token> to the <option_table>.  If the <token> is specified 
+then the <flag> will be unset (cleared).
+==============================================================================*/
+
 int Option_table_add_int_positive_entry(struct Option_table *option_table,
 	const char *token, int *value);
 /*******************************************************************************
