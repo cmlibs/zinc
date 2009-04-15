@@ -23,11 +23,12 @@ This is intended to be multithreaded......
 #define Time_keeper_set_maximum Cmiss_time_keeper_set_maximum
 #define Time_keeper_stop 	Cmiss_time_keeper_stop
 #define Time_keeper_get_time Cmiss_time_keeper_get_time
-#define Time_keeper_request_new_time Cmiss_time_keeper_request_new_time
+#define Time_keeper_request_new_time Cmiss_time_keeper_set_time
 #define Time_keeper_get_speed Cmiss_time_keeper_get_speed
 #define Time_keeper_set_speed Cmiss_time_keeper_set_speed
 #define Time_keeper_is_playing Cmiss_time_keeper_is_playing
-
+#define Time_keeper_add_time_object Cmiss_time_keeper_add_time_object
+#define Time_keeper_remove_time_object Cmiss_time_keeper_remove_time_object
 
 struct Time_object; /* Either this or #include "time/time.h" */
 struct Time_keeper;

@@ -397,7 +397,7 @@ DESCRIPTION :
 	{
 		if(ALLOCATE(object_info, struct Time_object_info, 1))
 		{
-			object_info->time_object = time_object;
+			object_info->time_object = ACCESS(Time_object)(time_object);
 			Time_object_set_current_time_privileged(time_object, time_keeper->time);
 			Time_object_notify_clients_privileged(time_object);
 			if (time_keeper->playing)
@@ -470,6 +470,7 @@ DESCRIPTION :
 		object_info = time_keeper->time_object_info_list;
 		if(object_info->time_object == time_object)
 		{
+			DEACCESS(Time_object)(&(object_info->time_object));
 			time_keeper->time_object_info_list = object_info->next;
 			DEALLOCATE(object_info);
 			return_code = 1;
@@ -483,6 +484,7 @@ DESCRIPTION :
 				object_info = object_info->next;
 				if(object_info->time_object == time_object)
 				{
+					DEACCESS(Time_object)(&(object_info->time_object));
 					previous->next = object_info->next;
 					DEALLOCATE(object_info);
 					return_code = 1;
@@ -1719,10 +1721,14 @@ x==============================================================================*
 		object_info = (*time_keeper)->time_object_info_list;
 		while(object_info)
 		{
+			if (object_info->time_object)
+			{
+				DEACCESS(Time_object)(&(object_info->time_object));
+			}
 			next = object_info->next;
 			DEALLOCATE(object_info);
 			object_info = next;
-		}
+ 		}
 
 		if ((*time_keeper)->name)
 		{

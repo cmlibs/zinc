@@ -52,8 +52,8 @@ rewind and fast forward.
  */
 enum Cmiss_time_keeper_play_direction
 {
-	CMISS_TIME_KEEPER_PLAY_FORWARD,
-	CMISS_TIME_KEEPER_PLAY_BACKWARD
+	CMISS_TIME_KEEPER_PLAY_FORWARD = 1,
+	CMISS_TIME_KEEPER_PLAY_BACKWARD = 2
 };
 
 /***************************************************************************//**
@@ -61,28 +61,28 @@ enum Cmiss_time_keeper_play_direction
  */
 enum Cmiss_time_keeper_repeat_mode
 {
-	CMISS_TIME_KEEPER_PLAY_ONCE, /*!< Only play once until it reaches either the
+	CMISS_TIME_KEEPER_INVALID_REPEAT_MODE = 0, /*!< Invalid play mode to handle special
+																							 circumstances. */
+	CMISS_TIME_KEEPER_PLAY_ONCE = 1, /*!< Only play once until it reaches either the
 																    minimum or maximum time set on the 
 																		time keeper. */  
-	CMISS_TIME_KEEPER_PLAY_LOOP, /*!< Play repeatedly in the same direction.
+	CMISS_TIME_KEEPER_PLAY_LOOP = 2, /*!< Play repeatedly in the same direction.
 																    i.e The time keeper will start from the 
 																		minimum time again after it reaches the 
 																		maximum time during a forward playback
 																		time keeper. */  
-	CMISS_TIME_KEEPER_PLAY_SWING, /*!< Play repeatedly in both direction.
+	CMISS_TIME_KEEPER_PLAY_SWING = 3 /*!< Play repeatedly in both direction.
 																     i.e The time keeper will play forward till 
 																		 it reaches the maximum time and then play 
 																		 backward to minimum time and the same cycle
 																		 will repeat until stopped by the user. */
-	CMISS_TIME_KEEPER_INVALID_REPEAT_MODE /*!< Invalid play mode to handle special
-																				   circumstances. */
 };
 
 enum Cmiss_time_keeper_frame_mode
 {
-	CMISS_TIME_KEEPER_PLAY_REAL_TIME,
-	CMISS_TIME_KEEPER_PLAY_EVERY_FRAME,
-	CMISS_TIME_KEEPER_INVALID_FRAME_MODE
+	CMISS_TIME_KEEPER_INVALID_FRAME_MODE = 0,
+	CMISS_TIME_KEEPER_PLAY_REAL_TIME = 1,
+	CMISS_TIME_KEEPER_PLAY_EVERY_FRAME = 2
 };
 
 /***************************************************************************//**
@@ -226,15 +226,15 @@ int Cmiss_time_keeper_set_repeat_mode(Cmiss_time_keeper_id time_keeper,
 double Cmiss_time_keeper_get_time(Cmiss_time_keeper_id time_keeper);
 
 /***************************************************************************//**
- * Request a new time on the time keeper. This new time should not be 
+ * Set a new time on the time keeper. This new time should not be 
  * smaller than the minimum time or larger then the maximum time set on the
  * time keeper. This will notify the clients of the changes.
  *
  * @param time_keeper  Handle to time keeper.
  * @param new_time  Time to be set on the time keeper
- * @return  1 if successfully request a time on time keeper, otherwise 0.
+ * @return  1 if successfully set a time on time keeper, otherwise 0.
  */
-int Cmiss_time_keeper_request_new_time(Cmiss_time_keeper_id time_keeper, 
+int Cmiss_time_keeper_set_time(Cmiss_time_keeper_id time_keeper, 
 	double new_time);
 
 /***************************************************************************//**

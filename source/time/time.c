@@ -465,11 +465,9 @@ DESCRIPTION :
 			if(time->time_keeper)
 			{
 				Time_keeper_remove_time_object(time->time_keeper, time);
-				DEACCESS(Time_keeper)(&(time->time_keeper));
 			}
 			if(time_keeper)
 			{
-				time->time_keeper = ACCESS(Time_keeper)(time_keeper);
 				Time_keeper_add_time_object(time_keeper, time);
 			}
 			else
