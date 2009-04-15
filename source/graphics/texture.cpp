@@ -6628,7 +6628,6 @@ int Texture_compile_opengl_display_list(struct Texture *texture,
 	Render_graphics_opengl *renderer)
 {
 	int return_code;
-	GLenum texture_target;
 
 	ENTER(Texture_compile_opengl_dispay_list);
 	if (texture)
