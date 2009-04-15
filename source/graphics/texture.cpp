@@ -6642,7 +6642,6 @@ int Texture_compile_opengl_display_list(struct Texture *texture,
 		}
 		else
 		{
-			texture_target = Texture_get_target_enum(texture);
 			if (texture->display_list||(texture->display_list=glGenLists(1)))
 			{
 				return_code = Texture_compile_opengl_texture_object(texture, renderer);
