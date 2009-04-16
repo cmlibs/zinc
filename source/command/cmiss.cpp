@@ -4159,8 +4159,8 @@ Executes a GFX CREATE NODE_VIEWER command.
 				else
 				{
 					if ((time_object = CREATE(Time_object)("node_viewer_time"))
-						&&(Time_object_set_time_keeper(time_object,
-						command_data->default_time_keeper)))
+						&&(Time_keeper_add_time_object(command_data->default_time_keeper,
+								time_object)))
 					{
 						if (command_data->node_viewer = CREATE(Node_viewer)(
 							&(command_data->node_viewer),
@@ -4250,8 +4250,8 @@ Executes a GFX CREATE DATA_VIEWER command.
 				else
 				{
 					if ((time_object = CREATE(Time_object)("data_viewer_time"))
-						&&(Time_object_set_time_keeper(time_object,
-						command_data->default_time_keeper)))
+						&&(Time_keeper_add_time_object(command_data->default_time_keeper,
+								time_object)))
 					{
 						if (command_data->data_viewer = CREATE(Node_viewer)(
 							&(command_data->data_viewer),
@@ -4341,8 +4341,8 @@ Executes a GFX CREATE ELEMENT_POINT_VIEWER command.
 				else
 				{
 					if ((time_object = CREATE(Time_object)("element_point_viewer_time"))
-						&&(Time_object_set_time_keeper(time_object,
-						command_data->default_time_keeper)))
+						&&(Time_keeper_add_time_object(command_data->default_time_keeper,
+								time_object)))
 					{
 					if (command_data->element_point_viewer=CREATE(Element_point_viewer)(
 						&(command_data->element_point_viewer),
@@ -16185,9 +16185,8 @@ movie is being created.
 					{
 						/* attach the time object of the new movie to the default time
 							keeper */
-						Time_object_set_time_keeper(
-							X3d_movie_get_time_object(Movie_graphics_get_X3d_movie(movie)),
-							command_data->default_time_keeper);
+						Time_keeper_add_time_object(command_data->default_time_keeper,
+							X3d_movie_get_time_object(Movie_graphics_get_X3d_movie(movie)));
 					}
 				}
 				if (movie && (x3d_movie = Movie_graphics_get_X3d_movie(movie)))

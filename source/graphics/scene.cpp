@@ -7868,7 +7868,7 @@ Scene_object has a Time_object.
 						if(time = CREATE(Time_object)(time_object_name))
 						{
 							Scene_object_set_time_object(scene_object, time);
-							Time_object_set_time_keeper(time, scene->default_time_keeper);
+							Time_keeper_add_time_object(scene->default_time_keeper, time);
 						}
 						DEALLOCATE(time_object_name);
 						DEALLOCATE(graphics_object_name);
@@ -7938,7 +7938,7 @@ Scene_object has a Time_object.
 						if(time = CREATE(Time_object)(time_object_name))
 						{
 							Scene_object_set_time_object(scene_object, time);
-							Time_object_set_time_keeper(time, scene->default_time_keeper);
+							Time_keeper_add_time_object(scene->default_time_keeper, time);
 							/* Time_object_set_next_time_function(time,
 								GT_element_group_next_time_function, gt_element_group); */
 						}
@@ -8008,7 +8008,7 @@ object for the scene_object named <scene_object_name>.
 			if(time = CREATE(Time_object)(time_object_name))
 			{
 				Scene_object_set_time_object(scene_object, time);
-				Time_object_set_time_keeper(time, time_keeper);
+				Time_keeper_add_time_object(time_keeper, time);
 			}
 			else
 			{

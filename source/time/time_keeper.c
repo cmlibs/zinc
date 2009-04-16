@@ -53,6 +53,7 @@ This is intended to be multithreaded......
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 #include "time/time.h"
+#include "time/time_private.h"
 #include "time/time_keeper.h"
 
 static int Time_keeper_set_play_timeout(struct Time_keeper *time_keeper);
@@ -395,50 +396,58 @@ DESCRIPTION :
 
 	if (time_keeper && time_object)
 	{
-		if(ALLOCATE(object_info, struct Time_object_info, 1))
+		if (!Time_object_get_time_keeper(time_object))
 		{
-			object_info->time_object = ACCESS(Time_object)(time_object);
-			Time_object_set_current_time_privileged(time_object, time_keeper->time);
-			Time_object_notify_clients_privileged(time_object);
-			if (time_keeper->playing)
+			if(ALLOCATE(object_info, struct Time_object_info, 1))
 			{
-				switch(time_keeper->play_direction)
+				object_info->time_object = time_object;
+				Time_object_set_current_time_privileged(time_object, time_keeper->time);
+				Time_object_notify_clients_privileged(time_object);
+				if (time_keeper->playing)
 				{
-					case TIME_KEEPER_PLAY_FORWARD:
+					switch(time_keeper->play_direction)
 					{
-						object_info->next_callback_due = Time_object_get_next_callback_time(
-							object_info->time_object, time_keeper->time + 0.01 * time_keeper->speed,
-							TIME_KEEPER_PLAY_FORWARD);
-					} break;
-					case TIME_KEEPER_PLAY_BACKWARD:
-					{
-						object_info->next_callback_due = Time_object_get_next_callback_time(
-							object_info->time_object, time_keeper->time - 0.01 * time_keeper->speed,
-							TIME_KEEPER_PLAY_BACKWARD);
-					} break;
+						case TIME_KEEPER_PLAY_FORWARD:
+						{
+							object_info->next_callback_due = Time_object_get_next_callback_time(
+								object_info->time_object, time_keeper->time + 0.01 * time_keeper->speed,
+								TIME_KEEPER_PLAY_FORWARD);
+						} break;
+						case TIME_KEEPER_PLAY_BACKWARD:
+						{
+							object_info->next_callback_due = Time_object_get_next_callback_time(
+								object_info->time_object, time_keeper->time - 0.01 * time_keeper->speed,
+								TIME_KEEPER_PLAY_BACKWARD);
+						} break;
+					}
 				}
-			}
-			object_info->next = (struct Time_object_info *)NULL;
-			if(time_keeper->time_object_info_list)
-			{
-				previous = time_keeper->time_object_info_list;
-				while(previous->next)
+				object_info->next = (struct Time_object_info *)NULL;
+				if(time_keeper->time_object_info_list)
 				{
-					previous = previous->next;
+					previous = time_keeper->time_object_info_list;
+					while(previous->next)
+					{
+						previous = previous->next;
+					}
+					previous->next = object_info;
 				}
-				previous->next = object_info;
+				else
+				{
+					time_keeper->time_object_info_list = object_info;
+				}
+				Time_object_set_time_keeper(time_object, time_keeper);
+				return_code=1;
 			}
 			else
 			{
-				time_keeper->time_object_info_list = object_info;
+				display_message(ERROR_MESSAGE,
+					"Time_keeper_add_time_object.  Unable to allocate time object info structure");
 			}
-			return_code=1;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Time_keeper_add_time_object.  Unable to allocate time object info structure");
-			return_code=0;
+				display_message(ERROR_MESSAGE,
+					"Time_keeper_add_time_object.  Time object already has a time keeper.");
 		}
 	}
 	else
@@ -467,27 +476,32 @@ DESCRIPTION :
 
 	if (time_keeper && time_object)
 	{
-		object_info = time_keeper->time_object_info_list;
-		if(object_info->time_object == time_object)
+		if (time_keeper == Time_object_get_time_keeper(time_object))
 		{
-			DEACCESS(Time_object)(&(object_info->time_object));
-			time_keeper->time_object_info_list = object_info->next;
-			DEALLOCATE(object_info);
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-			while(!return_code && object_info->next)
+			object_info = time_keeper->time_object_info_list;
+			while(!return_code && object_info)
 			{
-				previous = object_info;
-				object_info = object_info->next;
-				if(object_info->time_object == time_object)
+				if (object_info->time_object == time_object)
 				{
-					DEACCESS(Time_object)(&(object_info->time_object));
-					previous->next = object_info->next;
+					Time_object_set_time_keeper(object_info->time_object,
+						(struct Time_keeper *)NULL);
+					object_info->time_object = (struct Time_object *)NULL;
+					if (object_info == time_keeper->time_object_info_list)
+					{
+						time_keeper->time_object_info_list = object_info->next;
+					}
+					else
+					{
+						object_info = object_info->next;
+						previous->next = object_info->next;
+					}
 					DEALLOCATE(object_info);
 					return_code = 1;
+				}
+				else
+				{
+					previous = object_info;
+					object_info = object_info->next;
 				}
 			}
 			if (!return_code)
@@ -495,6 +509,12 @@ DESCRIPTION :
 				display_message(ERROR_MESSAGE,
 					"Time_keeper_remove_time_object.  Unable to find time object specified");
 			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Time_keeper_remove_time_object.  Time keeper does not match with the time keeper"
+				"in time object.");
 		}
 	}
 	else
@@ -1723,7 +1743,9 @@ x==============================================================================*
 		{
 			if (object_info->time_object)
 			{
-				DEACCESS(Time_object)(&(object_info->time_object));
+				Time_object_set_time_keeper(object_info->time_object,
+					(struct Time_keeper *)NULL);
+				object_info->time_object = (struct Time_object *)NULL;
 			}
 			next = object_info->next;
 			DEALLOCATE(object_info);

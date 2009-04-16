@@ -460,22 +460,18 @@ DESCRIPTION :
 
 	if (time)
 	{
+		return_code = 1;
 		if(time_keeper != time->time_keeper)
 		{
-			if(time->time_keeper)
-			{
-				Time_keeper_remove_time_object(time->time_keeper, time);
-			}
 			if(time_keeper)
 			{
-				Time_keeper_add_time_object(time_keeper, time);
+				return_code = REACCESS(Time_keeper)(&(time->time_keeper), time_keeper); 
 			}
 			else
 			{
 				time->time_keeper = (struct Time_keeper *)NULL;
 			}
 		}
-		return_code = 1;
 	}
 	else
 	{
@@ -618,7 +614,6 @@ Destroys a Time_object object
 		if((*time)->time_keeper)
 		{
 			Time_keeper_remove_time_object((*time)->time_keeper, *time);
-			DEACCESS(Time_keeper)(&((*time)->time_keeper));
 		}
 
 		callback_data = (*time)->callback_list;

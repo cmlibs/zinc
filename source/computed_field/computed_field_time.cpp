@@ -522,7 +522,7 @@ public:
 		Computed_field_core(field)
 	{
 		time_object = CREATE(Time_object)(field->name);
-		Time_object_set_time_keeper(time_object, time_keeper);
+		Time_keeper_add_time_object(time_keeper, time_object);
 	};
 
 	~Computed_field_time_value()
