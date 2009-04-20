@@ -10840,6 +10840,10 @@ Executes a GFX EDIT GRAPHICS_OBJECT command.
 					"Must specify name of graphics object in scene");
 				return_code = 0;
 			}
+			if (graphics_object_name)
+			{
+				DEALLOCATE(graphics_object_name);
+			}
 		}
 		DESTROY(Option_table)(&option_table);
 		DEACCESS(Scene)(&scene);

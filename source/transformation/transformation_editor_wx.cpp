@@ -440,9 +440,25 @@ transformation encoded in 4x4 <transformation_matrix>.
 	 int i, j, k, return_code;
 	 Gmatrix gmatrix;
 	 float *values;
-	 gtMatrix resolved_transformation_matrix;
+	 gtMatrix resolved_transformation_matrix, *matrix; 
+	 gtMatrix default_initial_transformation_matrix =
+		 {
+			 { 1.0, 0.0, 0.0, 0.0 },
+			 { 0.0, 1.0, 0.0, 0.0 },
+			 { 0.0, 0.0, 1.0, 0.0 },
+			 { 0.0, 0.0, 0.0, 1.0 }
+		 };
 
-	 if (transformation_matrix)
+	 if (!transformation_matrix)
+	 {
+		 matrix = &default_initial_transformation_matrix;
+	 }
+	 else
+	 {
+		 matrix = transformation_matrix;
+	 }
+
+	 if (matrix)
 	 {
 			return_code = 1;
 			/* 1. store the 4x4 transformation_matrix */
@@ -451,7 +467,7 @@ transformation encoded in 4x4 <transformation_matrix>.
 				 for (j = 0; j < 4; j++)
 				 {
 						transformation_editor_transformation_matrix[i][j] =
-							 (*transformation_matrix)[i][j];
+							 (*matrix)[i][j];
 				 }
 			}
 			
@@ -467,7 +483,7 @@ transformation encoded in 4x4 <transformation_matrix>.
 			{
 				 for (j = 0; j < GMATRIX_SIZE; j++)
 				 {
-						gmatrix.data[i][j] = (*transformation_matrix)[i][j];
+						gmatrix.data[i][j] = (*matrix)[i][j];
 				 }
 			}
 
@@ -491,7 +507,7 @@ transformation encoded in 4x4 <transformation_matrix>.
 						{
 							 for (j = 0; j < 4; j++)
 							 {
-									values[k] = (*transformation_matrix)[i][j];
+									values[k] = (*matrix)[i][j];
 									k++;
 							 }
 						}
@@ -514,9 +530,9 @@ transformation encoded in 4x4 <transformation_matrix>.
 
 			}
 			/* extract the position from the 4x4 matrix */
-			global_position.data[0] = (*transformation_matrix)[3][0];
-			global_position.data[1] = (*transformation_matrix)[3][1];
-			global_position.data[2] = (*transformation_matrix)[3][2];
+			global_position.data[0] = (*matrix)[3][0];
+			global_position.data[1] = (*matrix)[3][1];
+			global_position.data[2] = (*matrix)[3][2];
 			sprintf(temp_str, DOF3_NUM_FORMAT, global_position.data[0]);
 			Transformation_editor_wx_position_text_ctrl_1->ChangeValue(temp_str);
 			sprintf(temp_str, DOF3_NUM_FORMAT, global_position.data[1]);
@@ -525,7 +541,7 @@ transformation encoded in 4x4 <transformation_matrix>.
 			Transformation_editor_wx_position_text_ctrl_3->ChangeValue(temp_str);
 			if (position_direction_to_transformation_matrix(
 						 &global_position, &global_direction, &resolved_transformation_matrix) &&
-				 gtMatrix_match_with_tolerance(transformation_matrix,
+				 gtMatrix_match_with_tolerance(matrix,
 						&resolved_transformation_matrix, /*tolerance*/1.0E-6) && 
 				 gtMatrix_is_identity(&(resolved_transformation_matrix)))
 			{
@@ -541,14 +557,13 @@ transformation encoded in 4x4 <transformation_matrix>.
 						global_scale_factor[0],global_scale_factor[1],global_scale_factor[2]);
 				 Transformation_editor_wx_position_text_ctrl_4->SetValue(temp_string);	 
 			}
-			
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"transformation_editor_set_transformation.  Invalid argument(s)");
+	 }
+	 else
+	 {
+		 display_message(ERROR_MESSAGE,
+			 "transformation_editor_set_transformation.  Invalid argument(s)");
 		return_code = 0;
-	}
+	 }
 	 return (return_code);
 }
 

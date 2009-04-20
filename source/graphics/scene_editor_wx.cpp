@@ -215,10 +215,6 @@ Prototype.
 static int Scene_editor_add_element_settings_item(
 	 struct GT_element_settings *settings, void *scene_editor_void);
 
-
-void Scene_editor_wx_transformation_change(struct Scene_object *scene_object,
-	 gtMatrix *transformation_matrix, void *scene_editor_void);
-
 void scene_editor_set_active_graphical_element_group_from_scene_object(
 	 struct Scene_editor *scene_editor, Scene_object *scene_object);
 
@@ -244,18 +240,22 @@ void Scene_editor_wx_transformation_change(struct Scene_object *scene_object,
 	 gtMatrix *transformation_matrix, void *scene_editor_void)
 {
 	 struct Scene_editor *scene_editor;
-
+	 
 	 if (scene_editor = (struct Scene_editor *)scene_editor_void)
 	 {
-		 scene_editor->transformation_edited=1;
 		 if (scene_object == scene_editor->scene_object)
 		 {
-			 if (transformation_matrix && (scene_object == scene_editor->scene_object))
-			 {
-				 scene_editor->transformation_editor->
-					 transformation_editor_wx_set_transformation(transformation_matrix);
-			 }
+			 /* transformation_matrix can be null here which acutally indicates that
+					the scene object has not been transformed. */
+			 scene_editor->transformation_editor->
+				 transformation_editor_wx_set_transformation(transformation_matrix);
+			 scene_editor->transformation_edited=1;
 		 }
+	 }
+	 else
+	 {
+		 display_message(ERROR_MESSAGE,
+			 "Scene_editor_wx_transformation_change.  Invalid argument(s)");
 	 }
 }
 
