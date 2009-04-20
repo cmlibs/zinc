@@ -4158,10 +4158,12 @@ Executes a GFX CREATE NODE_VIEWER command.
 				}
 				else
 				{
-					if ((time_object = CREATE(Time_object)("node_viewer_time"))
+					if ((time_object = Time_object_create_regular(
+								 /*update_frequency*/10.0, /*time_offset*/0.0))
 						&&(Time_keeper_add_time_object(command_data->default_time_keeper,
 								time_object)))
 					{
+						Time_object_set_name(time_object, "node_viewer_time");
 						if (command_data->node_viewer = CREATE(Node_viewer)(
 							&(command_data->node_viewer),
 							"Node Viewer",
@@ -4177,6 +4179,7 @@ Executes a GFX CREATE NODE_VIEWER command.
 						{
 							return_code=0;
 						}
+						DEACCESS(Time_object)(&time_object);
 					}
 					else
 					{
@@ -4249,10 +4252,12 @@ Executes a GFX CREATE DATA_VIEWER command.
 				}
 				else
 				{
-					if ((time_object = CREATE(Time_object)("data_viewer_time"))
+					if ((time_object = Time_object_create_regular(
+								 /*update_frequency*/10.0, /*time_offset*/0.0))
 						&&(Time_keeper_add_time_object(command_data->default_time_keeper,
-								time_object)))
+									time_object)))
 					{
+						Time_object_set_name(time_object, "data_viewer_time");
 						if (command_data->data_viewer = CREATE(Node_viewer)(
 							&(command_data->data_viewer),
 							"Data Viewer",
@@ -4265,9 +4270,10 @@ Executes a GFX CREATE DATA_VIEWER command.
 							return_code=1;
 						}
 						else
-					{
+						{
 							return_code=0;
 						}
+						DEACCESS(Time_object)(&time_object);
 					}
 					else
 					{
@@ -4340,24 +4346,27 @@ Executes a GFX CREATE ELEMENT_POINT_VIEWER command.
 				}
 				else
 				{
-					if ((time_object = CREATE(Time_object)("element_point_viewer_time"))
+					if ((time_object = Time_object_create_regular(
+								 /*update_frequency*/10.0, /*time_offset*/0.0))
 						&&(Time_keeper_add_time_object(command_data->default_time_keeper,
 								time_object)))
 					{
-					if (command_data->element_point_viewer=CREATE(Element_point_viewer)(
-						&(command_data->element_point_viewer),
-						command_data->root_region,
-						command_data->element_point_ranges_selection,
-						command_data->computed_field_package,
-						time_object,
-						command_data->user_interface))
-					{
-						return_code=1;
-					}
-					else
-					{
-						return_code=0;
-					}
+						Time_object_set_name(time_object, "element_point_viewer_time");
+						if (command_data->element_point_viewer=CREATE(Element_point_viewer)(
+									&(command_data->element_point_viewer),
+									command_data->root_region,
+									command_data->element_point_ranges_selection,
+									command_data->computed_field_package,
+									time_object,
+									command_data->user_interface))
+						{
+							return_code=1;
+						}
+						else
+						{
+							return_code=0;
+						}
+						DEACCESS(Time_object)(&time_object);
 					}
 					else
 					{

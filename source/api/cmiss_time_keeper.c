@@ -5,7 +5,7 @@ LAST MODIFIED : 2 Mar 2009
 
 DESCRIPTION :
 The public interface of Cmiss_time_keeper which defines a relationship between
-a bunch of time objects, keeps them in sync and allows control such as play,
+a bunch of time notifiers, keeps them in sync and allows control such as play,
 rewind and fast forward.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****

@@ -7857,30 +7857,32 @@ Scene_object has a Time_object.
 				Scene_object_has_gt_object,
 				(void *)graphics_object,scene->scene_object_list))
 			{
-				if(!Scene_object_has_time(scene_object))
+				time = Scene_object_get_time_object(scene_object);
+				if(!time)
 				{
+					time = Time_object_create_regular(/*update_frequency*/10.0,
+						/*time_offset*/0.0);				
 					if(GET_NAME(GT_object)(graphics_object,&graphics_object_name)
 						&& ALLOCATE(time_object_name, char, strlen(graphics_object_name)
-						+ strlen(scene->name) + 5))
+							+ strlen(scene->name) + 5))
 					{
 						sprintf(time_object_name, "%s_in_%s", graphics_object_name,
 							scene->name);
-						if(time = CREATE(Time_object)(time_object_name))
-						{
-							Scene_object_set_time_object(scene_object, time);
-							Time_keeper_add_time_object(scene->default_time_keeper, time);
-						}
+						Time_object_set_name(time, time_object_name);
 						DEALLOCATE(time_object_name);
 						DEALLOCATE(graphics_object_name);
 					}
+					Scene_object_set_time_object(scene_object, time);
+					Time_keeper_add_time_object(scene->default_time_keeper, time);
 				}
 				else
 				{
-					time = Scene_object_get_time_object(scene_object);
+					ACCESS(Time_object)(time);
 				}
 				return_code=FOR_EACH_OBJECT_IN_LIST(Scene_object)(
 					Scene_object_update_time_behaviour, (void *)time,
 					scene->scene_object_list);
+				DEACCESS(Time_object)(&time);
 			}
 			else
 			{
@@ -7928,30 +7930,32 @@ Scene_object has a Time_object.
 		{
 			if(GT_element_group_has_multiple_times(gt_element_group))
 			{
-				if(!Scene_object_has_time(scene_object))
+				time = Scene_object_get_time_object(scene_object);
+				if(!time)
 				{
+					time = Time_object_create_regular(/*update_frequency*/10.0,
+						/*time_offset*/0.0);
 					if (ALLOCATE(time_object_name, char, strlen(scene_object->name)
 						+ strlen(scene->name) + 5))
 					{
 						sprintf(time_object_name, "%s_in_%s", scene_object->name,
 							scene->name);
-						if(time = CREATE(Time_object)(time_object_name))
-						{
-							Scene_object_set_time_object(scene_object, time);
-							Time_keeper_add_time_object(scene->default_time_keeper, time);
-							/* Time_object_set_next_time_function(time,
-								GT_element_group_next_time_function, gt_element_group); */
-						}
+						Time_object_set_name(time, time_object_name);
 						DEALLOCATE(time_object_name);
 					}
+					Scene_object_set_time_object(scene_object, time);
+					Time_keeper_add_time_object(scene->default_time_keeper, time);
+					/* Time_object_set_next_time_function(time,
+						 GT_element_group_next_time_function, gt_element_group); */
 				}
 				else
 				{
-					time = Scene_object_get_time_object(scene_object);
+					ACCESS(Time_object)(time);
 				}
 				return_code=FOR_EACH_OBJECT_IN_LIST(Scene_object)(
 					Scene_object_update_time_behaviour, (void *)time,
 					scene->scene_object_list);
+				DEACCESS(Time_object)(&time);
 			}
 			else
 			{
@@ -8005,10 +8009,13 @@ object for the scene_object named <scene_object_name>.
 			Scene_object_has_name,
 			(void *)scene_object_name,scene->scene_object_list))
 		{
-			if(time = CREATE(Time_object)(time_object_name))
+			if(time = Time_object_create_regular(
+						/*update_frequency*/10.0, /*time_offset*/0.0))
 			{
+				Time_object_set_name(time, time_object_name);
 				Scene_object_set_time_object(scene_object, time);
 				Time_keeper_add_time_object(time_keeper, time);
+				DEACCESS(Time_object)(&time);
 			}
 			else
 			{

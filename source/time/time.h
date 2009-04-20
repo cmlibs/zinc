@@ -48,10 +48,12 @@ This provides an object which supplies a concept of time to Cmgui
 #include "general/object.h"
 #include "time/time_keeper.h"
 
-#define Time_object Cmiss_time_object
-#define Time_object_add_callback Cmiss_time_object_add_callback
-#define Time_object_remove_callback Cmiss_time_object_remove_callback
-#define Time_object_set_update_frequency Cmiss_time_object_set_update_frequency
+#define Time_object Cmiss_time_notifier
+#define Time_object_create_regular Cmiss_time_notifier_create_regular
+#define Time_object_add_callback Cmiss_time_notifier_add_callback
+#define Time_object_remove_callback Cmiss_time_notifier_remove_callback
+#define Time_object_set_update_frequency Cmiss_time_notifier_set_frequency
+#define Time_object_set_offset Cmiss_time_notifier_set_offset
 
 struct Time_object;
 
@@ -63,12 +65,27 @@ typedef double (*Time_object_next_time_function)(double time_after,
 PROTOTYPE_OBJECT_FUNCTIONS(Time_object);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Time_object);
 
-struct Time_object *CREATE(Time_object)(const char *name);
-/*******************************************************************************
-LAST MODIFIED : 29 September 1998
+/***************************************************************************//**
+ * Create a time object with regular update time.
+ *
+ * @param update_frequency  The number of times which time notifier will receive
+ *    callback per unit of time in the time keeper.
+ * @param time_offset  the offset value for the time object to receive time 
+ *    callback.
+ * @return  The time object if successfully create a time object otherwise 
+ *    NULL.
+ */
+struct Time_object *Time_object_create_regular(double update_frequency, 
+	double time_offset);
 
-DESCRIPTION :
-==============================================================================*/
+/***************************************************************************//**
+ * Set the name of time object.
+ *
+ * @param time  The time object to set the name for.
+ * @param name  The name to be set for time object.
+ * @return  1 if successfully set name for time object, otherwise 0.
+ */
+int Time_object_set_name(struct Time_object *time, const char *name);
 
 double Time_object_get_current_time(struct Time_object *time);
 /*******************************************************************************
@@ -127,6 +144,8 @@ This controls the rate per second which the time depedent object is called back
 when in play mode.
 ==============================================================================*/
 
+int Time_object_set_offset(struct Time_object *time,double time_offset);
+
 int Time_object_set_next_time_function(struct Time_object *time,
 	Time_object_next_time_function next_time_function,void *user_data);
 /*******************************************************************************
@@ -139,14 +158,6 @@ time.
 ==============================================================================*/
 
 struct Time_keeper *Time_object_get_time_keeper(struct Time_object *time);
-/*******************************************************************************
-LAST MODIFIED : 29 September 1998
-
-DESCRIPTION :
-==============================================================================*/
-
-int Time_object_set_time_keeper(struct Time_object *time,
-	struct Time_keeper *time_keeper);
 /*******************************************************************************
 LAST MODIFIED : 29 September 1998
 
@@ -171,11 +182,4 @@ DESCRIPTION :
 Removes a callback which was added previously
 ==============================================================================*/
 
-int DESTROY(Time_object)(struct Time_object **time);
-/*******************************************************************************
-LAST MODIFIED : 29 September 1998
-
-DESCRIPTION :
-Destroys a Time_object object
-==============================================================================*/
 #endif /* !defined (TIME_TIME_H) */

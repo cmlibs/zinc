@@ -5,7 +5,7 @@ LAST MODIFIED : 2 Mar 2009
 
 DESCRIPTION :
 The public interface of Cmiss_time_keeper which defines a relationship between
-a bunch of time objects, keeps them in sync and allows control such as play,
+a bunch of time notifiers, keeps them in sync and allows control such as play,
 rewind and fast forward.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
@@ -88,7 +88,7 @@ enum Cmiss_time_keeper_frame_mode
 /***************************************************************************//**
  * A handle to a time keeper. 
  * Time keeper maintains a current time which can be automatically advanced
- * with the system clock to drive animation. It sends callbacks to time objects
+ * with the system clock to drive animation. It sends callbacks to time notifiers
  * at the requested time or interval.
  */
 typedef struct Cmiss_time_keeper *Cmiss_time_keeper_id;
@@ -148,7 +148,7 @@ enum Cmiss_time_keeper_frame_mode Cmiss_time_keeper_get_frame_mode(
  * as closely as possible, when the redraw time is greater than the requested 
  * interval. Every frame mode will cause the time keeper to generate every 
  * event it thinks is due and may affect the synchronisation both with the 
- * system time and between time objects.
+ * system time and between time notifiers.
  *
  * @param time_keeper  Handle to time keeper.
  * @param frame_mode  Enumerator to set the frame mode of the time keeper.
@@ -170,7 +170,7 @@ enum Cmiss_time_keeper_play_direction Cmiss_time_keeper_get_play_direction(
 /***************************************************************************//**
  * Set the time keeper to play forward or backward in time, synchronised by the
  * system clock. Generates time events during playback as requested by time
- * objects.
+ * notifier.
  *
  * @param time_keeper  Handle to time keeper.
  * @param Cmiss_time_keeper_play_direction  Enumerator to tell time keeper which
@@ -238,7 +238,7 @@ int Cmiss_time_keeper_set_time(Cmiss_time_keeper_id time_keeper,
 	double new_time);
 
 /***************************************************************************//**
- * Get speed from the time object
+ * Get speed from the time notifier
  *
  * @param time_keeper  Handle to time keeper.
  * @return  Speed of the time keeper if successful otherwise 0.
@@ -261,28 +261,28 @@ int Cmiss_time_keeper_set_speed(Cmiss_time_keeper_id time_keeper,
 	double speed);
 
 /***************************************************************************//**
- * Add a time object to the time keeper. The time keeper will keep track of the
- * time. When time changes, time keeper will notify the time object and then 
- * the time object will notify its clients. Time object can only have one set of
- * time keeper but time keeper can have multiple time objects. This function 
- * will increase the access count of the time object. 
+ * Add a time notifier to the time keeper. The time keeper will keep track of the
+ * time. When time changes, time keeper will notify the time notifier and then 
+ * the time notifier will notify its clients. time notifier can only have one set of
+ * time keeper but time keeper can have multiple time notifiers. This function 
+ * will increase the access count of the time notifier. 
  * 
  * @param time_keeper  Handle to time keeper.
- * @param time_object  Handle to time object.
- * @return  1 if successfully set time object to time keeper, otherwise 0.
+ * @param time_notifier  Handle to time notifier.
+ * @return  1 if successfully set time notifier to time keeper, otherwise 0.
  */
-int Cmiss_time_keeper_add_time_object(Cmiss_time_keeper_id time_keeper, 
-	Cmiss_time_object_id time_object);
+int Cmiss_time_keeper_add_time_notifier(Cmiss_time_keeper_id time_keeper, 
+	Cmiss_time_notifier_id time_notifier);
 
 /***************************************************************************//**
- * Remove the time object from the time keeper. This function will decrease the 
- * access count of the time object. 
+ * Remove the time notifier from the time keeper. This function will decrease the 
+ * access count of the time notifier. 
  * @param time_keeper  Handle to time keeper.
- * @param time_object  Handle to time object.
- * @return  1 if successfully set time object to time keeper, otherwise 0.
+ * @param time_notifier  Handle to time notifier.
+ * @return  1 if successfully set time notifier to time keeper, otherwise 0.
  */
-int Cmiss_time_keeper_remove_time_object(Cmiss_time_keeper_id time_keeper, 
-	Cmiss_time_object_id time_object);
+int Cmiss_time_keeper_remove_time_notifier(Cmiss_time_keeper_id time_keeper, 
+	Cmiss_time_notifier_id time_notifier);
 
 /***************************************************************************//**
  * Destroys this reference to the time keeper (and sets it to NULL).

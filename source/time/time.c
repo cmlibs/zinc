@@ -68,6 +68,7 @@ struct Time_object
 	char *name;
 	double current_time;
 	double update_frequency;
+	double time_offset;
 	enum Time_object_type type;
 	struct Time_object_callback_data *callback_list;
 	struct Time_keeper *time_keeper;
@@ -77,10 +78,55 @@ struct Time_object
 	int access_count;
 };
 
+int DESTROY(Time_object)(struct Time_object **time)
+/*******************************************************************************
+LAST MODIFIED : 29 September 1998
+
+DESCRIPTION :
+Destroys a Time_object object
+==============================================================================*/
+{
+	int return_code;
+	struct Time_object_callback_data *callback_data, *next;
+
+	ENTER(DESTROY(Time_object));
+
+	if (time && *time)
+	{
+		return_code=1;
+
+		if((*time)->time_keeper)
+		{
+			Time_keeper_remove_time_object((*time)->time_keeper, *time);
+		}
+
+		callback_data = (*time)->callback_list;
+		while(callback_data)
+		{
+			next = callback_data->next;
+			DEALLOCATE(callback_data);
+			callback_data = next;
+		}
+
+		DEALLOCATE((*time)->name);
+		DEALLOCATE(*time);
+		*time = (struct Time_object *)NULL;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Time_object).  Missing time object");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Time_object) */
+
 DECLARE_OBJECT_FUNCTIONS(Time_object)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Time_object)
 
-struct Time_object *CREATE(Time_object)(const char *name)
+struct Time_object *CREATE(Time_object)(void)
 /*******************************************************************************
 LAST MODIFIED : 29 September 1998
 
@@ -91,36 +137,84 @@ DESCRIPTION :
 
 	ENTER(CREATE(Time_object));
 
-	if(name)
+	if (ALLOCATE(time, struct Time_object, 1))
 	{
-		if (ALLOCATE(time, struct Time_object, 1) &&
-			ALLOCATE(time->name, char, strlen(name) + 1))
-		{
-			strcpy(time->name, name);
-			time->current_time = 0.0;
-			time->time_keeper = (struct Time_keeper *)NULL;
-			time->callback_list = (struct Time_object_callback_data *)NULL;
-			time->update_frequency = 10.0;
-			time->type = TIME_OBJECT_UPDATE_FREQUENCY;
-			time->next_time_function = (Time_object_next_time_function)NULL;
-			time->next_time_user_data = NULL;
-			time->access_count = 0;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"CREATE(Time_object). Unable to allocate buffer structure");
-			time = (struct Time_object *)NULL;
-		}
+		time->name = (char *)NULL;
+		time->current_time = 0.0;
+		time->time_keeper = (struct Time_keeper *)NULL;
+		time->callback_list = (struct Time_object_callback_data *)NULL;
+		time->update_frequency = 10.0;
+		time->time_offset = 0.0;
+		/* after setting the time notifier type in the type specific constructor,
+			 it should not be allowed to change it later. This can be enforced when 
+			 other types are added. */
+		time->type = TIME_OBJECT_UPDATE_FREQUENCY;
+		time->next_time_function = (Time_object_next_time_function)NULL;
+		time->next_time_user_data = NULL;
+		time->access_count = 1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"CREATE(Time_object). Invalid arguments");
+		display_message(ERROR_MESSAGE,"CREATE(Time_object). Unable to allocate buffer structure");
 		time = (struct Time_object *)NULL;
 	}
+
 	LEAVE;
 
 	return (time);
 } /* CREATE(Time_object) */
+
+struct Time_object *Time_object_create_regular(double update_frequency, 
+	double time_offset)
+{
+	struct Time_object *time;
+
+	ENTER(Time_object_create_regular);
+	if (time = CREATE(Time_object)())
+	{
+		time->update_frequency = update_frequency;
+		time->time_offset = time_offset;
+		time->type = TIME_OBJECT_UPDATE_FREQUENCY;
+	}
+	else
+	{
+		time = (struct Time_object *)NULL;
+	}
+	LEAVE;
+	
+	return (time);
+}
+
+int Time_object_set_name(struct Time_object *time, const char *name)
+{
+	int return_code;
+	char *temp_name;
+	
+	ENTER(Time_object_set_name);
+	if(time && name)
+	{
+		if (REALLOCATE(temp_name, time->name, char, strlen(name) + 1))
+		{
+			time->name = temp_name;
+			strcpy(time->name, name);
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Time_object_set_name. "
+				"Unable to reallocate memory for name.");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Time_object_set_name. Invalid arguments");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Time_object_set_name */
 
 double Time_object_get_current_time(struct Time_object *time)
 /*******************************************************************************
@@ -132,7 +226,6 @@ DESCRIPTION :
 	double return_code;
 
 	ENTER(Time_object_get_current_time);
-
 	if (time)
 	{
 		return_code = time->current_time;
@@ -245,13 +338,13 @@ DESCRIPTION :
 				{
 					case TIME_KEEPER_PLAY_FORWARD:
 					{
-						return_code = (1.0 +
-							floor(time_after * time->update_frequency)) / time->update_frequency;
+						return_code = time->time_offset + (1.0 +
+							floor((time_after - time->time_offset) * time->update_frequency)) / time->update_frequency;
 					} break;
 					case TIME_KEEPER_PLAY_BACKWARD:
 					{
-						return_code = (-1.0 +
-							ceil(time_after * time->update_frequency)) / time->update_frequency;
+						return_code = time->time_offset + (-1.0 +
+							ceil((time_after -  time->time_offset) * time->update_frequency)) / time->update_frequency;
 					} break;
 					default:
 					{
@@ -388,6 +481,27 @@ when in play mode.
 	return (return_code);
 } /* Time_object_set_update_frequency */
 
+int Time_object_set_offset(struct Time_object *time,double time_offset)
+{
+	int return_code;
+
+	ENTER(Time_object_set_offset);
+	if (time)
+	{
+		time->time_offset = time_offset;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Time_object_set_offset. Invalid time object");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
 int Time_object_set_next_time_function(struct Time_object *time,
 	Time_object_next_time_function next_time_function, void *user_data)
 /*******************************************************************************
@@ -460,18 +574,7 @@ DESCRIPTION :
 
 	if (time)
 	{
-		return_code = 1;
-		if(time_keeper != time->time_keeper)
-		{
-			if(time_keeper)
-			{
-				return_code = REACCESS(Time_keeper)(&(time->time_keeper), time_keeper); 
-			}
-			else
-			{
-				time->time_keeper = (struct Time_keeper *)NULL;
-			}
-		}
+		return_code = REACCESS(Time_keeper)(&(time->time_keeper), time_keeper);
 	}
 	else
 	{
@@ -593,49 +696,3 @@ Removes a callback which was added previously
 
 	return (return_code);
 } /* Time_object_remove_callback */
-
-int DESTROY(Time_object)(struct Time_object **time)
-/*******************************************************************************
-LAST MODIFIED : 29 September 1998
-
-DESCRIPTION :
-Destroys a Time_object object
-==============================================================================*/
-{
-	int return_code;
-	struct Time_object_callback_data *callback_data, *next;
-
-	ENTER(DESTROY(Time_object));
-
-	if (time && *time)
-	{
-		return_code=1;
-
-		if((*time)->time_keeper)
-		{
-			Time_keeper_remove_time_object((*time)->time_keeper, *time);
-		}
-
-		callback_data = (*time)->callback_list;
-		while(callback_data)
-		{
-			next = callback_data->next;
-			DEALLOCATE(callback_data);
-			callback_data = next;
-		}
-
-		DEALLOCATE((*time)->name);
-		DEALLOCATE(*time);
-		*time = (struct Time_object *)NULL;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(Time_object).  Missing time object");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(Time_object) */
-

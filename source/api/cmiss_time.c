@@ -2,7 +2,7 @@
 FILE : cmiss_time.c
 
 DESCRIPTION :
-The public interface to the Cmiss_time_object which supplies a concept of time 
+The public interface to the Cmiss_time_notifier which supplies a concept of time 
 to Cmgui.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
@@ -44,21 +44,20 @@ to Cmgui.
 #include "general/debug.h"
 #include "user_interface/message.h"
 
-Cmiss_time_object_id Cmiss_time_object_create(const char *name)
+int Cmiss_time_notifier_destroy(Cmiss_time_notifier_id *time_notifier_address)
 {
-	Cmiss_time_object_id time_object; 
+	int return_code;
 
-	ENTER(miss_time_object_create);
-	if (name)
+	ENTER(Cmiss_time_notifier_destroy);
+	if (time_notifier_address && *time_notifier_address)
 	{
-		time_object = ACCESS(Time_object)(CREATE(Time_object)(name));
+		return_code = DEACCESS(Time_object)(time_notifier_address);
+	}
+	else
+	{
+		return_code = 0;
 	}
 	LEAVE;
 
-	return time_object;
-}
-
-int Cmiss_time_object_destroy(Cmiss_time_object_id *time_object_address)
-{
-	return(DEACCESS(Time_object)(time_object_address));
+	return return_code;
 }

@@ -478,24 +478,23 @@ DESCRIPTION :
 	{
 		if (time_keeper == Time_object_get_time_keeper(time_object))
 		{
+			return_code = 0;
 			object_info = time_keeper->time_object_info_list;
 			return_code = 0;
 			while(!return_code && object_info)
 			{
 				if (object_info->time_object == time_object)
 				{
-					Time_object_set_time_keeper(object_info->time_object,
-						(struct Time_keeper *)NULL);
-					object_info->time_object = (struct Time_object *)NULL;
 					if (object_info == time_keeper->time_object_info_list)
 					{
 						time_keeper->time_object_info_list = object_info->next;
 					}
 					else
 					{
-						object_info = object_info->next;
 						previous->next = object_info->next;
 					}
+					Time_object_set_time_keeper(object_info->time_object,
+						(struct Time_keeper *)NULL);
 					DEALLOCATE(object_info);
 					return_code = 1;
 				}

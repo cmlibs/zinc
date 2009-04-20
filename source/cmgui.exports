@@ -504,11 +504,12 @@ runge_kutta_
 #endif /* defined (CELL) */
 
 /* Cmiss_time */
-Cmiss_time_object_create
-Cmiss_time_object_destroy
-Cmiss_time_object_add_callback
-Cmiss_time_object_remove_callback
-Cmiss_time_object_set_update_frequency
+Cmiss_time_notifier_create_regular
+Cmiss_time_notifier_destroy
+Cmiss_time_notifier_add_callback
+Cmiss_time_notifier_remove_callback
+Cmiss_time_notifier_set_frequency
+Cmiss_time_notifier_set_offset
 
 /* Cmiss_time_keeper */
 Cmiss_time_keeper_get_minimum
@@ -527,8 +528,8 @@ Cmiss_time_keeper_get_time
 Cmiss_time_keeper_set_time
 Cmiss_time_keeper_get_speed
 Cmiss_time_keeper_set_speed
-Cmiss_time_keeper_add_time_object
-Cmiss_time_keeper_remove_time_object
+Cmiss_time_keeper_add_time_notifier
+Cmiss_time_keeper_remove_time_notifier
 Cmiss_time_keeper_destroy
 
 /* Carey's internal exports which we should shift to using Cmiss_textures */

@@ -212,7 +212,9 @@ Attempts to create a movie object.
 				movie->image_height = 0;
 				movie->image_padding = 0;
 				movie->create_option = create_option;
-				movie->time_object = ACCESS(Time_object)(CREATE(Time_object)(filename));
+				movie->time_object = Time_object_create_regular(
+					/*update_frequency*/10.0, /*time_offset*/0.0);
+				Time_object_set_name(movie->time_object, filename);
 				Time_object_add_callback(movie->time_object, X3d_movie_update_callback,
 					(void *)movie);
 				switch ( create_option )

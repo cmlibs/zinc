@@ -521,13 +521,15 @@ public:
 		Time_keeper* time_keeper) : 
 		Computed_field_core(field)
 	{
-		time_object = CREATE(Time_object)(field->name);
-		Time_keeper_add_time_object(time_keeper, time_object);
+		time_object = Time_object_create_regular(
+			/*update_frequency*/10.0, /*time_offset*/0.0); 
+		Time_object_set_name(time_object,field->name);
+		Time_keeper_add_time_object(time_keeper,time_object);
 	};
 
 	~Computed_field_time_value()
 	{
-		DESTROY(Time_object)(&time_object);
+		DEACCESS(Time_object)(&time_object);
 	};
 
 private:
