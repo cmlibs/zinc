@@ -484,6 +484,15 @@ static int tile_copy_vertices_to_triangle(
 			new_surface->normallist[new_index+2][k] =
 				surface->normallist[index3][k];
 		}
+		if (surface->tangentlist)
+		{
+			new_surface->tangentlist[new_index][k] =
+				surface->tangentlist[index1][k];
+			new_surface->tangentlist[new_index+1][k] = 
+				surface->tangentlist[index2][k];
+			new_surface->tangentlist[new_index+2][k] =
+				surface->tangentlist[index3][k];
+		}
 	}
 	if (surface->data)
 	{
