@@ -128,7 +128,7 @@ int Cmiss_time_notifier_remove_callback(Cmiss_time_notifier_id time_notifier,
  * @return  1 if successfully set the update frequency to the value provided,
  *    otherwise 0.
  */
-int Cmiss_time_notifier_set_frequency(Cmiss_time_notifier_id time_notifier,
+int Cmiss_time_notifier_regular_set_frequency(Cmiss_time_notifier_id time_notifier,
 	double frequency);
 
 /***************************************************************************//**
@@ -141,7 +141,7 @@ int Cmiss_time_notifier_set_frequency(Cmiss_time_notifier_id time_notifier,
  * @return  1 if successfully set the update frequency to the value provided,
  *    otherwise 0.
  */
-int Cmiss_time_notifier_set_offset(Cmiss_time_notifier_id time_notifier,
+int Cmiss_time_notifier_regular_set_offset(Cmiss_time_notifier_id time_notifier,
 	double time_offset);
 
 #endif /* __CMISS_TIME_H__ */

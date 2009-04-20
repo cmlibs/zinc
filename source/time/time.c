@@ -51,7 +51,7 @@ This provides an object which supplies a concept of time to Cmgui
 
 enum Time_object_type
 {
-	TIME_OBJECT_UPDATE_FREQUENCY,
+	TIME_OBJECT_REGULAR,
 	TIME_OBJECT_NEXT_TIME_FUNCTION
 };
 
@@ -148,7 +148,7 @@ DESCRIPTION :
 		/* after setting the time notifier type in the type specific constructor,
 			 it should not be allowed to change it later. This can be enforced when 
 			 other types are added. */
-		time->type = TIME_OBJECT_UPDATE_FREQUENCY;
+		time->type = TIME_OBJECT_REGULAR;
 		time->next_time_function = (Time_object_next_time_function)NULL;
 		time->next_time_user_data = NULL;
 		time->access_count = 1;
@@ -174,7 +174,7 @@ struct Time_object *Time_object_create_regular(double update_frequency,
 	{
 		time->update_frequency = update_frequency;
 		time->time_offset = time_offset;
-		time->type = TIME_OBJECT_UPDATE_FREQUENCY;
+		time->type = TIME_OBJECT_REGULAR;
 	}
 	else
 	{
@@ -453,7 +453,7 @@ through the timekeeper.
 	return (return_code);
 } /* Time_object_set_current_time_privileged */
 
-int Time_object_set_update_frequency(struct Time_object *time, double frequency)
+int Time_object_regular_set_frequency(struct Time_object *time, double frequency)
 /*******************************************************************************
 LAST MODIFIED : 25 November 1999
 
@@ -464,16 +464,26 @@ when in play mode.
 {
 	int return_code;
 
-	ENTER(Time_object_set_update_frequency);
+	ENTER(Time_object_regular_set_update_frequency);
 	if (time)
 	{
-		time->update_frequency = frequency;
-		return_code = 1;
+		if (time->type == TIME_OBJECT_REGULAR)
+		{
+			time->update_frequency = frequency;
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Time_object_regular_set_frequency. Change of frequency is not allowed"
+				"for this time object/notifier type");
+			return_code = 0;
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Time_object_set_update_frequency. Invalid time object");
+			"Time_object_regular_set_frequency. Invalid time object");
 		return_code=0;
 	}
 	LEAVE;
@@ -481,15 +491,25 @@ when in play mode.
 	return (return_code);
 } /* Time_object_set_update_frequency */
 
-int Time_object_set_offset(struct Time_object *time,double time_offset)
+int Time_object_regular_set_offset(struct Time_object *time,double time_offset)
 {
 	int return_code;
 
-	ENTER(Time_object_set_offset);
+	ENTER(Time_object_regular_set_offset);
 	if (time)
 	{
-		time->time_offset = time_offset;
-		return_code = 1;
+		if (time->type == TIME_OBJECT_REGULAR)
+		{
+			time->time_offset = time_offset;
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Time_object_regular_set_offset. Change of time offset is not allowed"
+				"for this time object/notifier type");
+			return_code = 0;
+		}
 	}
 	else
 	{
@@ -515,7 +535,7 @@ time.
 {
 	int return_code;
 
-	ENTER(Time_object_set_update_frequency);
+	ENTER(Time_object_set_next_time_function);
 	if (time && next_time_function)
 	{
 		time->type = TIME_OBJECT_NEXT_TIME_FUNCTION;

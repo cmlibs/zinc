@@ -297,7 +297,7 @@ Attempts to create a movie object.
 								&(movie->video_track_id)))
 							{
 								movie->timebase = mvGetImageRate(movie->video_track_id);
-								Time_object_set_update_frequency(movie->time_object,
+								Time_object_regular_set_frequency(movie->time_object,
 									(double)movie->timebase);
 							}
 						}

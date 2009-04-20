@@ -52,8 +52,8 @@ This provides an object which supplies a concept of time to Cmgui
 #define Time_object_create_regular Cmiss_time_notifier_create_regular
 #define Time_object_add_callback Cmiss_time_notifier_add_callback
 #define Time_object_remove_callback Cmiss_time_notifier_remove_callback
-#define Time_object_set_update_frequency Cmiss_time_notifier_set_frequency
-#define Time_object_set_offset Cmiss_time_notifier_set_offset
+#define Time_object_regular_set_frequency Cmiss_time_notifier_regular_set_frequency
+#define Time_object_regular_set_offset Cmiss_time_notifier_regular_set_offset
 
 struct Time_object;
 
@@ -135,7 +135,7 @@ Users of a time object that is controlled by a timekeeper should set the time
 through the timekeeper.
 ==============================================================================*/
 
-int Time_object_set_update_frequency(struct Time_object *time,double frequency);
+int Time_object_regular_set_frequency(struct Time_object *time,double frequency);
 /*******************************************************************************
 LAST MODIFIED : 6 October 1998
 
@@ -144,7 +144,17 @@ This controls the rate per second which the time depedent object is called back
 when in play mode.
 ==============================================================================*/
 
-int Time_object_set_offset(struct Time_object *time,double time_offset);
+/***************************************************************************//**
+ * This controls the exact time which the time object receive callbacks.
+ * Time offset will set the time object to receive callback when 
+ * time_offset + original callback time is reached. i.e 
+ *
+ * @param time_object  The time object to be set.
+ * @param offset  This set the time that notifier will receive callback.
+ * @return  1 if successfully set the update frequency to the value provided,
+ *    otherwise 0.
+ */
+int Time_object_regular_set_offset(struct Time_object *time,double time_offset);
 
 int Time_object_set_next_time_function(struct Time_object *time,
 	Time_object_next_time_function next_time_function,void *user_data);
