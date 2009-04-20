@@ -479,6 +479,7 @@ DESCRIPTION :
 		if (time_keeper == Time_object_get_time_keeper(time_object))
 		{
 			object_info = time_keeper->time_object_info_list;
+			return_code = 0;
 			while(!return_code && object_info)
 			{
 				if (object_info->time_object == time_object)
