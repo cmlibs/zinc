@@ -508,8 +508,8 @@ Cmiss_time_notifier_create_regular
 Cmiss_time_notifier_destroy
 Cmiss_time_notifier_add_callback
 Cmiss_time_notifier_remove_callback
-Cmiss_time_notifier_set_frequency
-Cmiss_time_notifier_set_offset
+Cmiss_time_notifier_regular_set_frequency
+Cmiss_time_notifier_regular_set_offset
 
 /* Cmiss_time_keeper */
 Cmiss_time_keeper_get_minimum
