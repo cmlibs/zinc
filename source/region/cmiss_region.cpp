@@ -1539,6 +1539,68 @@ For safety, returns NULL in <region_address> on any error.
 	return (return_code);
 } /* Cmiss_region_get_region_from_path */
 
+struct Cmiss_region *Cmiss_region_get_or_create_region_at_path(
+	struct Cmiss_region *root_region, const char *path)
+{
+	char *child_name, *child_name_end, *path_copy;
+	struct Cmiss_region *child_region, *region;
+
+	ENTER(Cmiss_region_get_or_create_region_at_path);
+	if (root_region && path)
+	{
+		region = ACCESS(Cmiss_region)(root_region);
+		path_copy = duplicate_string(path);
+		child_name = path_copy;
+		if (child_name[0] == CMISS_REGION_PATH_SEPARATOR_CHAR)
+		{
+			child_name++;
+		}
+		while (region && child_name && (child_name[0] != '\0') &&
+			(0 != strcmp(child_name, CMISS_REGION_PATH_SEPARATOR_STRING)))
+		{
+			if (child_name_end = strchr(child_name, CMISS_REGION_PATH_SEPARATOR_CHAR))
+			{
+				*child_name_end = '\0';
+			}
+			child_region = Cmiss_region_get_child_region_from_name(region, child_name);
+			if (child_region)
+			{
+				ACCESS(Cmiss_region)(child_region);
+			}
+			else
+			{
+				child_region = Cmiss_region_create_share_globals(region);
+				if (!Cmiss_region_add_child_region(region, child_region, child_name, /*child_position*/-1))
+				{
+					display_message(ERROR_MESSAGE,
+						"Cmiss_region_get_or_create_region_at_path.  Failed");
+					DEACCESS(Cmiss_region)(&child_region);
+				}
+			}
+			REACCESS(Cmiss_region)(&region, child_region);
+			DEACCESS(Cmiss_region)(&child_region);
+			if (child_name_end)
+			{
+				child_name = child_name_end + 1;
+			}
+			else
+			{
+				child_name = (char *)NULL;
+			}
+		}
+		DEALLOCATE(path_copy);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_region_get_or_create_region_at_path.  Invalid argument(s)");
+		region = (Cmiss_region *)NULL;
+	}
+	LEAVE;
+
+	return (region);
+} /* Cmiss_region_get_or_create_region_at_path */
+
 int Cmiss_region_get_partial_region_path(struct Cmiss_region *root_region,
 	const char *path, struct Cmiss_region **region_address,
 	char **region_path_address,	char **remainder_address)
