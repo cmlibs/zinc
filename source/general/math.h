@@ -50,6 +50,7 @@ Defines the finite function for UNIX and WIN32_SYSTEM
 #include <ieeefp.h>
 #endif /* defined (SGI) */
 #if defined (WIN32_SYSTEM)
+#include <float.h>
 #define finite _finite
 #endif /* defined (WIN32_SYSTEM) */
 
