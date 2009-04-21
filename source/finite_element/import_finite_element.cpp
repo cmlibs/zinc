@@ -42,9 +42,9 @@ interface to CMISS.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#include <cctype>
-#include <cmath>
 extern "C" {
+#include <ctype.h>
+#include <math.h>
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_time.h"
