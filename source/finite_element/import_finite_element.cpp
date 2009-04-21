@@ -3429,7 +3429,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 	struct IO_stream *input_file, struct FE_import_time_index *time_index,
 	int use_data)
 {
-	char first_character_in_token, *last_character, *location,
+	char first_character_in_token, *location,
 		*temp_string, test_string[5];
 	int input_result, return_code;
 	struct CM_element_information element_identifier;
@@ -3504,23 +3504,20 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 							DEALLOCATE(location);
 							return_code = 0;
 						}
+						char *rest_of_line = (char *)NULL;
 						char *region_path = (char *)NULL;
 						if (return_code)
 						{
 							/* read the region path */
-							if (IO_stream_read_string(input_file, "[^\n\r]", &region_path))
+							if (IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
 							{
+								region_path = rest_of_line;
 								/* trim leading and trailing white space */
-								last_character = region_path;
-								while ((' ' == *last_character) || ('\t' == *last_character))
+								while ((' ' == *region_path) || ('\t' == *region_path))
 								{
-									last_character++;
+									region_path++;
 								}
-								if (last_character > region_path)
-								{
-									strcpy(region_path,last_character);
-								}
-								last_character = region_path+(strlen(region_path)-1);
+								char *last_character = region_path+(strlen(region_path)-1);
 								while ((last_character > region_path) && ((' ' == *last_character) || ('\t' == *last_character)))
 								{
 									last_character--;
@@ -3580,7 +3577,8 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 								}
 							}
 						}
-						DEALLOCATE(region_path);
+						region_path = (char *)NULL;
+						DEALLOCATE(rest_of_line);
 
 						if (template_node)
 						{
