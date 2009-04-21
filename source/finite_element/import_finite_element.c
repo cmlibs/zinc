@@ -3400,35 +3400,40 @@ in a grid field.
 	return (element);
 } /* read_FE_element */
 
-static int read_exregion_file_private(struct Cmiss_region *region,
+/***************************************************************************//**
+ * Reads region, group, field, node and element field data in EX format into
+ * the supplied region.
+ *
+ * It is good practice to read the file into a newly created region and check it
+ * can be merged into the global region before doing so, otherwise failure to
+ * merge incompatible data will leave the global region in a compromised state.
+ * Where objects not within the file are referred to, such as nodes in a pure
+ * exelem file or elements in embedded element:xi fields, local objects of the
+ * correct type are made as placeholders and all checking is left to the merge.
+ * Embedding elements are located by a region path starting at the root region
+ * in the file; if no path is supplied they are placed in the root region.
+ * If objects are repeated in the file, they are merged correctly.
+ * 
+ * @param root_region  The region into which data is read which will be the
+ *   root of a region hierarchy when sub-regions and groups are read in.
+ * @param input_file  The stream from which EX data is read.
+ * @param time_index  If non NULL then the values in this read are assumed to
+ *   belong to the specified time.  This means that the nodal values will be
+ *   read into an array and the correct index put into the corresponding time
+ *   array.
+ * @param use_data  Flag, if set indicates nodes are to be read into separate
+ *   data regions, otherwise nodes and elements are read normally.
+ * @return  1 on success, 0 on failure. 
+ */ 
+static int read_exregion_file_private(struct Cmiss_region *root_region,
 	struct IO_stream *input_file, struct FE_import_time_index *time_index,
 	int use_data)
-/*******************************************************************************
-LAST MODIFIED : 23 May 2008
-
-DESCRIPTION :
-Reads finite element groups in exnode/exelem format from <input_file> into
-<region>. Groups in the file are created as child group regions of <region>,
-sharing its definitions of fields, nodes and elements.
-It is good practice to read the file into a newly created region and check it
-can be merged into the global region before doing so, otherwise failure to
-merge incompatible data will leave the global region in a compromised state.
-If the <time_index> is non NULL then the values in this read are assumed
-to belong to the specified time.  This means that the nodal values will be read
-into an array and the correct index put into the corresponding time array.
-Where objects not within the file are referred to, such as nodes in a pure
-exelem file or elements in embedded element:xi fields, local objects of the
-correct type are made as placeholders and all checking is left to the merge.
-Embedding elements are located by a region path starting at the root region
-in the file; if no path is supplied they are placed in the root region.
-If objects are repeated in the file, they are merged correctly.
-==============================================================================*/
 {
-	char first_character_in_token, *group_name, *last_character, *location,
+	char first_character_in_token, *last_character, *location,
 		*temp_string, test_string[5];
 	int input_result, return_code;
 	struct CM_element_information element_identifier;
-	struct Cmiss_region *child_region;
+	struct Cmiss_region *read_region, *region;
 	struct FE_region *fe_region;
 	struct FE_element *element, *template_element;
 	struct FE_element_shape *element_shape;
@@ -3437,15 +3442,27 @@ If objects are repeated in the file, they are merged correctly.
 
 	ENTER(read_exregion_file);
 	return_code = 0;
-	if (region && input_file)
+	if (root_region && input_file)
 	{
+		Cmiss_region_begin_change(root_region);
+		/* set up the root region to be read into by default */
+		/* region is the same as read_region if reading into a true region,
+		 * otherwise it is the parent region of a group */
+		region = ACCESS(Cmiss_region)(root_region);
 		Cmiss_region_begin_change(region);
-		field_order_info = (struct FE_field_order_info *)NULL;
-		template_node = (struct FE_node *)NULL;
+		read_region = ACCESS(Cmiss_region)(region);
+		Cmiss_region_begin_change(read_region);
+		fe_region = Cmiss_region_get_FE_region(read_region);
+		if (use_data)
+		{
+			fe_region = FE_region_get_data_FE_region(fe_region);
+		}
+		/* create the initial template node for no fields */
+		template_node = ACCESS(FE_node)(CREATE(FE_node)(1, fe_region, (struct FE_node *)NULL));
+		field_order_info = CREATE(FE_field_order_info)();
 		template_element = (struct FE_element *)NULL;
 		element_shape = (struct FE_element_shape *)NULL;
-		child_region = (struct Cmiss_region *)NULL;
-		fe_region = (struct FE_region *)NULL;
+		
 		input_result = 1;
 		return_code = 1;
 		while (return_code && (1 == input_result))
@@ -3459,81 +3476,112 @@ If objects are repeated in the file, they are merged correctly.
 			{
 				switch (first_character_in_token)
 				{
-					case 'G':
+					case 'R': /* Region : <path> */
+					case 'G': /* Group name : <name> */
 					{
-						if (child_region)
+						if (read_region)
 						{
-							Cmiss_region_end_change(child_region);
-							DEACCESS(Cmiss_region)(&child_region);
+							Cmiss_region_end_change(read_region);
+							DEACCESS(Cmiss_region)(&read_region);
 						}
 						fe_region = (struct FE_region *)NULL;
 						/* Use a %1[:] so that a successful read will return 1 */
-						if (1 != IO_stream_scan(input_file,"roup name %1[:] ", test_string))
+						int valid_token = 0;
+						if ('R' == first_character_in_token)
 						{
-							display_message(WARNING_MESSAGE, 
-								"Truncated read of required \"Group name : \" token in node file.");
-						}
-						/* read the name of the group */
-						group_name = (char *)NULL;
-						if (IO_stream_read_string(input_file, "[^\n\r]", &group_name))
-						{
-							/* trim trailing blanks */
-							last_character = group_name+(strlen(group_name)-1);
-							while ((last_character > group_name) && (' ' == *last_character))
-							{
-								last_character--;
-							}
-							*(last_character + 1)='\0';
-							return_code = 1;
+							Cmiss_region_end_change(region);
+							valid_token = IO_stream_scan(input_file,"egion %1[:]", test_string);
 						}
 						else
 						{
+							valid_token = IO_stream_scan(input_file,"roup name %1[:]", test_string);
+						}
+						if (1 != valid_token)
+						{
 							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE,
-								"Error reading group name from file.  %s",
-								location);
+								"Truncated \'Region :\' or \'Group name :\' token in EX file.  %s", location);
 							DEALLOCATE(location);
 							return_code = 0;
 						}
-						/* make sure we have a child child_region of that name */
+						char *region_path = (char *)NULL;
 						if (return_code)
 						{
-							if (child_region = Cmiss_region_get_child_region_from_name(
-								region, group_name))
+							/* read the region path */
+							if (IO_stream_read_string(input_file, "[^\n\r]", &region_path))
 							{
-								ACCESS(Cmiss_region)(child_region);
+								/* trim leading and trailing white space */
+								last_character = region_path;
+								while ((' ' == *last_character) || ('\t' == *last_character))
+								{
+									last_character++;
+								}
+								if (last_character > region_path)
+								{
+									strcpy(region_path,last_character);
+								}
+								last_character = region_path+(strlen(region_path)-1);
+								while ((last_character > region_path) && ((' ' == *last_character) || ('\t' == *last_character)))
+								{
+									last_character--;
+								}
+								*(last_character + 1)='\0';
+								return_code = 1;
 							}
 							else
 							{
-								child_region = Cmiss_region_create_group(region);
-								if (!Cmiss_region_add_child_region(region,
-									child_region, group_name, /*child_position*/-1))
-								{
-									location = IO_stream_get_location_string(input_file);
-									display_message(ERROR_MESSAGE,
-										"read_exregion_file.  Could not add child region");
-									DEALLOCATE(location);
-									return_code = 0;
-								}
-							}
-							fe_region = Cmiss_region_get_FE_region(child_region);
-							if (use_data)
-							{
-								fe_region=FE_region_get_data_FE_region(fe_region);
-							}
-							if (!fe_region)
-							{
 								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE, "read_exregion_file.  "
-									"Could not get finite element region");
+								display_message(ERROR_MESSAGE,
+									"Error reading region path or group name from file.  %s", location);
 								DEALLOCATE(location);
 								return_code = 0;
 							}
 						}
-						if (group_name)
+						/* get or create region with that path */
+						if (return_code)
 						{
-							DEALLOCATE(group_name);
+							if ('R' == first_character_in_token)
+							{
+								read_region = Cmiss_region_get_or_create_region_at_path(root_region, region_path);
+								if (read_region)
+								{
+									REACCESS(Cmiss_region)(&region, read_region);
+									Cmiss_region_begin_change(region);
+								}
+								else
+								{
+									location = IO_stream_get_location_string(input_file);
+									display_message(ERROR_MESSAGE,
+										"Could not create region \'%s\'.  %s", region_path, location);
+									DEALLOCATE(location);
+									return_code = 0;
+								}
+							}
+							else
+							{
+								if (read_region = Cmiss_region_get_child_region_from_name(
+									region, region_path))
+								{
+									ACCESS(Cmiss_region)(read_region);
+								}
+								else
+								{
+									read_region = Cmiss_region_create_group(region);
+									if (!Cmiss_region_add_child_region(region,
+										read_region, region_path, /*child_position*/-1))
+									{
+										location = IO_stream_get_location_string(input_file);
+										display_message(ERROR_MESSAGE,
+											"Could not create group \'%s\'.  %s", region_path, location);
+										DEALLOCATE(location);
+										DEACCESS(Cmiss_region)(&read_region);
+										return_code = 0;
+									}
+								}
+							}
 						}
+						DEALLOCATE(region_path);
+
 						if (template_node)
 						{
 							DEACCESS(FE_node)(&template_node);
@@ -3542,30 +3590,36 @@ If objects are repeated in the file, they are merged correctly.
 						{
 							DEACCESS(FE_element)(&template_element);
 						}
-						/* default to reading nodes after group token */
+						/* default to reading nodes after region / group token */
 						if (element_shape)
 						{
 							DEACCESS(FE_element_shape)(&element_shape);
 						}
-						if (child_region)
-						{
-							Cmiss_region_begin_change(child_region);
-						}
-						if (fe_region)
-						{
-							/* create the initial template node for no fields */
-							template_node =
-								CREATE(FE_node)(1, fe_region, (struct FE_node *)NULL);
-							ACCESS(FE_node)(template_node);
-						}
-						/* clear field_order_info */
 						if (field_order_info)
 						{
 							DESTROY(FE_field_order_info)(&field_order_info);
 						}
-						field_order_info = CREATE(FE_field_order_info)();
+						if (read_region)
+						{
+							Cmiss_region_begin_change(read_region);
+							fe_region = Cmiss_region_get_FE_region(read_region);
+							if (use_data)
+							{
+								fe_region = FE_region_get_data_FE_region(fe_region);
+							}
+							if (!fe_region)
+							{
+								location = IO_stream_get_location_string(input_file);
+								display_message(ERROR_MESSAGE, "read_exregion_file.  "
+									"Could not get finite element region.  %s", location);
+								DEALLOCATE(location);
+								return_code = 0;
+							}
+							template_node = ACCESS(FE_node)(CREATE(FE_node)(1, fe_region, (struct FE_node *)NULL));
+							field_order_info = CREATE(FE_field_order_info)();
+						}
 					} break;
-					case 'S':
+					case 'S': /* Shape */
 					{
 						if (fe_region)
 						{
@@ -3624,13 +3678,19 @@ If objects are repeated in the file, they are merged correctly.
 						{
 							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE,
-								"Group not set before Shape token in file.  %s",
+								"Region/Group not set before Shape token in file.  %s",
 								location);
 							DEALLOCATE(location);
 							return_code = 0;
 						}
 					} break;
-					case '#':
+					case '!': /* ! Comment ignored to end of line */
+					{
+						char *comment = NULL;
+						IO_stream_read_string(input_file, "[^\n\r]", &comment);
+						DEALLOCATE(comment);
+					} break;
+					case '#': /* #Scale factor sets, #Nodes, or #Fields */
 					{
 						if (fe_region)
 						{
@@ -3682,13 +3742,13 @@ If objects are repeated in the file, they are merged correctly.
 						{
 							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE,
-								"Group not set before #Fields token in file.  %s",
+								"Region/Group not set before field header tokens in file.  %s",
 								location);
 							DEALLOCATE(location);
 							return_code = 0;
 						}
 					} break;
-					case 'N':
+					case 'N': /* Node */
 					{
 						if (fe_region)
 						{
@@ -3726,13 +3786,13 @@ If objects are repeated in the file, they are merged correctly.
 						{
 							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE,
-								"Group not set before Node token in file.  %s",
+								"Region/Group not set before Node token in file.  %s",
 								location);
 							DEALLOCATE(location);
 							return_code = 0;
 						}
 					} break;
-					case 'E':
+					case 'E': /* Element */
 					{
 						if (fe_region)
 						{
@@ -3776,13 +3836,13 @@ If objects are repeated in the file, they are merged correctly.
 						{
 							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE,
-								"Group not set before Element token in file.  %s",
+								"Region/Group not set before Element token in file.  %s",
 								location);
 							DEALLOCATE(location);
 							return_code = 0;
 						}
 					} break;
-					case 'V':
+					case 'V': /* Values */
 					{
 						/* read in field values */
 						if ((template_node || template_element) && field_order_info)
@@ -3810,33 +3870,23 @@ If objects are repeated in the file, they are merged correctly.
 					} break;
 					default:
 					{
-						if (IO_stream_read_string(input_file, "[^\n\r]", &temp_string))
-						{
-							location = IO_stream_get_location_string(input_file);
-							display_message(ERROR_MESSAGE,
-								"Invalid initial character \'%c\' in node, data or element file.  %s \'%c%s\'",
-								first_character_in_token, location,
-								first_character_in_token, temp_string);
-							DEALLOCATE(temp_string);
-							DEALLOCATE(location);
-						}
-						else
-						{
-							location = IO_stream_get_location_string(input_file);
-							display_message(ERROR_MESSAGE,
-								"Invalid initial character \'%c\' in node, data or element file.  %s",
-								first_character_in_token, location);
-							DEALLOCATE(location);
-						}
+						temp_string = (char *)NULL;
+						IO_stream_read_string(input_file, "[^\n\r]", &temp_string);
+						location = IO_stream_get_location_string(input_file);
+						display_message(ERROR_MESSAGE,
+							"Invalid text \'%c%s\' in EX node/element file.  %s",
+							first_character_in_token, temp_string ? temp_string : "", location);
+						DEALLOCATE(temp_string);
+						DEALLOCATE(location);
 						return_code = 0;
 					} break;
 				} /* switch (first_character_in_token) */
 			} /* if (1 == input_result) */
 		} /* while (return_code && (1 == input_result)) */
-		if (child_region)
+		if (read_region)
 		{
-			Cmiss_region_end_change(child_region);
-			DEACCESS(Cmiss_region)(&child_region);
+			Cmiss_region_end_change(read_region);
+			DEACCESS(Cmiss_region)(&read_region);
 		}
 		if (template_node)
 		{
@@ -3855,6 +3905,8 @@ If objects are repeated in the file, they are merged correctly.
 			DESTROY(FE_field_order_info)(&field_order_info);
 		}
 		Cmiss_region_end_change(region);
+		DEACCESS(Cmiss_region)(&region);
+		Cmiss_region_end_change(root_region);
 	}
 	else
 	{
