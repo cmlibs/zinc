@@ -42,8 +42,9 @@ interface to CMISS.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#include <ctype.h>
-#include <math.h>
+#include <cctype>
+#include <cmath>
+extern "C" {
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_time.h"
@@ -57,6 +58,7 @@ interface to CMISS.
 #include "general/object.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
+}
 
 /*
 Module types
@@ -1080,7 +1082,6 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 	char *component_name, *derivative_type_name, *location, *nodal_value_type_string,
 		*rest_of_line;
 	enum FE_field_type fe_field_type;
-	enum FE_nodal_value_type derivative_type;	
 	int component_number, end_of_names, end_of_string, i, number_of_components,
 		number_of_derivatives, number_of_versions, return_code, temp_int;
 	struct FE_field *field, *merged_fe_field;
@@ -1142,7 +1143,6 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 							if (IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
 							{
 								derivative_type_name = rest_of_line;
-								derivative_type++;
 								/* skip leading spaces */
 								while (' ' == *derivative_type_name)
 								{
@@ -1188,6 +1188,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 													end_of_names = (')' == *derivative_type_name);
 													end_of_string = ('\0' == *derivative_type_name);
 												}
+												enum FE_nodal_value_type derivative_type;	
 												if (STRING_TO_ENUMERATOR(FE_nodal_value_type)(
 													nodal_value_type_string, &derivative_type))
 												{
@@ -1221,7 +1222,6 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 													component_name, location);
 												DEALLOCATE(location);
 											}
-											derivative_type++;
 											i--;
 										}
 										if (end_of_names)
