@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : filedir.c
 
-LAST MODIFIED : 22 May 2007
+LAST MODIFIED : 24 March 2009
 
 DESCRIPTION :
 Routines for opening files using Motif and wx widgets.
@@ -897,7 +897,7 @@ void open_file_and_read(
 
 	)
 /*******************************************************************************
-LAST MODIFIED : 23 April 2004
+LAST MODIFIED : 24 March 2009
 
 DESCRIPTION :
 Expects a pointer to a File_open_data structure as the <client_data>.  Displays
@@ -906,13 +906,12 @@ name the <file_operation> is performed on the file with the <arguments>.
 ==============================================================================*/
 {
 #if defined (WX_USER_INTERFACE)
-	 char *filename, *shell_title,*temp_string;
-	 const char  *extension;
-	 int retry, length;
+	char *allocated_shell_title,*filename,*shell_title,*temp_string,*extension;
+	int retry, length;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF)
 	Atom WM_DELETE_WINDOW;
-	char *shell_title,*temp_string;
+	char *allocated_shell_title,*shell_title,*temp_string;
 	MrmType selection_class;
 	struct File_open_data *file_open_data;
 	Widget file_selection_child,parent;
@@ -941,6 +940,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 				}
 				/* assign the shell title */
 				temp_string=(char *)NULL;
+				allocated_shell_title=(char *)NULL;
 				switch (file_open_data->type)
 				{
 					case REGULAR:
@@ -948,13 +948,13 @@ name the <file_operation> is performed on the file with the <arguments>.
 						shell_title="Specify a file";
 						if (file_open_data->filter_extension)
 						{
-							if (ALLOCATE(temp_string,char,strlen(shell_title)+
+							if (ALLOCATE(allocated_shell_title,char,strlen(shell_title)+
 								strlen(file_open_data->filter_extension)+2))
 							{
-								strcpy(temp_string,"Specify a ");
-								strcat(temp_string,file_open_data->filter_extension);
-								strcat(temp_string," file");
-								shell_title=temp_string;
+								strcpy(allocated_shell_title,"Specify a ");
+								strcat(allocated_shell_title,file_open_data->filter_extension);
+								strcat(allocated_shell_title," file");
+								shell_title=allocated_shell_title;
 							}
 						}
 					} break;
@@ -1075,6 +1075,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 					display_message(ERROR_MESSAGE,
 						"open_file_and_read.  Could not create file_selection_dialog");
 				}
+				DEALLOCATE(allocated_shell_title);
 				DEALLOCATE(temp_string);
 			}
 			else
@@ -1172,59 +1173,46 @@ name the <file_operation> is performed on the file with the <arguments>.
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 	temp_string=(char *)NULL;
+	extension=(char *)NULL;
+	allocated_shell_title=(char *)NULL;
 	switch (file_open_data->type)
 	{
-		 case REGULAR:
-		 {
-			 shell_title=(char *)"Specify a file";
-				if (file_open_data->filter_extension)
+		case REGULAR:
+		{
+			shell_title="Specify a file";
+			if (file_open_data->filter_extension)
+			{
+				if (ALLOCATE(allocated_shell_title,char,strlen(shell_title)+
+					strlen(file_open_data->filter_extension)+2))
 				{
-					 if (ALLOCATE(temp_string,char,strlen(shell_title)+
-								 strlen(file_open_data->filter_extension)+2))
-					 {
-							strcpy(temp_string,"Specify a ");
-							strcat(temp_string,file_open_data->filter_extension);
-							strcat(temp_string," file");
-							shell_title=temp_string;
-							if (strcmp(file_open_data->filter_extension, ".com") == 0)
-							{
-								 extension = "*.com";
-							}
-							else if (strcmp(file_open_data->filter_extension, ".exdata") == 0)
-							{
-								 extension = "*.exdata";
-							}
-							else if (strcmp(file_open_data->filter_extension, ".curve.com") == 0)
-							{
-								 extension = "*.curve.com";
-							}
-							else if (strcmp(file_open_data->filter_extension, ".exnode") == 0)
-							{
-								 extension = "*.exnode";
-							}
-							else if (strcmp(file_open_data->filter_extension, ".exelem") == 0)
-							{
-								 extension = "*.exelem";
-							}
-					 }
+					strcpy(allocated_shell_title,"Specify a ");
+					strcat(allocated_shell_title,file_open_data->filter_extension);
+					strcat(allocated_shell_title," file");
+					shell_title=allocated_shell_title;
 				}
-		 } break;
-		 case DIRECTORY:
-		 {
-				shell_title=(char *)"Specify a directory";
-		 } break;
-		 default:
-		 {
-				shell_title=(char *)NULL;
-		 } break;
+				char *wildcard_extension = "All files (*.*)|*.*|";
+				if (ALLOCATE(extension,char,
+						strlen(file_open_data->filter_extension)*2+strlen(wildcard_extension)+4))
+				{
+					strcpy(extension,wildcard_extension);
+					strcat(extension,"*");
+					strcat(extension,file_open_data->filter_extension);
+					strcat(extension,"|*");
+					strcat(extension,file_open_data->filter_extension);
+				}
+			}
+		} break;
+		case DIRECTORY:
+		{
+			shell_title="Specify a directory";
+		} break;
+		default:
+		{
+			shell_title=(char *)NULL;
+		} break;
 	}
 	wxFileDialog *ReadData = new wxFileDialog ((wxWindow *)NULL,shell_title,"","",
 		 extension,wxOPEN|wxFILE_MUST_EXIST,wxDefaultPosition);
-	if (temp_string)
-	{
-		DEALLOCATE(temp_string);
-		shell_title=(char *)NULL;	
-	}
 	if (ReadData->ShowModal() == wxID_OK)
 	{
 		 wxString file_name=ReadData->GetPath();
@@ -1292,7 +1280,6 @@ name the <file_operation> is performed on the file with the <arguments>.
 										}
 										DEALLOCATE(temp_string);
 								 }
-								 DEALLOCATE(directory_name);
 							}
 							DEALLOCATE(temp_directory_name);
 					 }
@@ -1316,11 +1303,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 		 char *last,*pathname;
 		 int return_code=1;
 		 old_directory = (char *)malloc(4096);
-		 if (!getcwd(old_directory, 4096))
-		 {
-			 // Unable to read old directory so just set it to a empty string
-			 old_directory[0] = 0;
-		 }
+		 getcwd(old_directory, 4096);
 		 length = strlen(old_directory);
 		 filename = file_open_data->file_name;
 		 if ((ALLOCATE(old_directory_name,char,length+2)) && old_directory !=NULL)
@@ -1380,6 +1363,9 @@ name the <file_operation> is performed on the file with the <arguments>.
 		 }
 #endif /* !defined (__WIN32__)*/
 	}
+	DEALLOCATE(allocated_shell_title);
+	DEALLOCATE(extension);
+	DEALLOCATE(temp_string);
 #endif /* defined (WX_USER_INTERFACE) */
 	LEAVE;
 } /* open_file_and_read */
@@ -1408,8 +1394,7 @@ specified file.
 #if defined (WX_USER_INTERFACE)
 //	char *temp_str;
   int retry;
-	char *shell_title,*temp_string;
-	const char	*extension;
+	char *shell_title,*temp_string,*extension;
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF)
 	Atom WM_DELETE_WINDOW;
@@ -1808,61 +1793,54 @@ specified file.
 	}
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
-				temp_string=(char *)NULL;
-				switch (file_open_data->type)
+	temp_string=(char *)NULL;
+	extension = (char *)NULL;
+	switch (file_open_data->type)
+	{
+		case REGULAR:
+		{
+			shell_title="Specify a file";
+			if (file_open_data->filter_extension)
+			{
+				if (ALLOCATE(temp_string,char,strlen(shell_title)+
+						strlen(file_open_data->filter_extension)+2))
 				{
-					case REGULAR:
-					{
-						shell_title=(char *)"Specify a file";
-						if (file_open_data->filter_extension)
-						{
-							if (ALLOCATE(temp_string,char,strlen(shell_title)+
-								strlen(file_open_data->filter_extension)+2))
-							{
-								strcpy(temp_string,"Specify a ");
-								strcat(temp_string,file_open_data->filter_extension);
-								strcat(temp_string," file");
-								shell_title=temp_string;
-								if (strcmp(file_open_data->filter_extension, ".com") == 0)
-								{
-									 extension = "*.com";
-								}
-								else if (strcmp(file_open_data->filter_extension, ".exdata") == 0)
-								{
-									 extension = "*.exdata";
-								}
-								else if (strcmp(file_open_data->filter_extension, ".curve.com") == 0)
-								{
-									 extension = "*.curve.com";
-								}
-								else if (strcmp(file_open_data->filter_extension, ".exnode") == 0)
-								{
-									 extension = "*.exnode";
-								}
-								else if (strcmp(file_open_data->filter_extension, ".exelem") == 0)
-								{
-									 extension = "*.exelem";
-								}
-							}
-						}
-					} break;
-					case DIRECTORY:
-					{
-						shell_title=(char *)"Specify a directory";
-					} break;
-					default:
-					{
-						shell_title=(char *)NULL;
-					} break;
+					strcpy(temp_string,"Specify a ");
+					strcat(temp_string,file_open_data->filter_extension);
+					strcat(temp_string," file");
+					shell_title=temp_string;
 				}
-wxFileDialog *SaveData = new wxFileDialog ((wxWindow *)NULL,shell_title,"","",
-  extension,wxSAVE|wxOVERWRITE_PROMPT,wxDefaultPosition);
- if (temp_string)
- {
+				char *wildcard_extension = "All files (*.*)|*.*|";
+				if (ALLOCATE(extension,char,
+						strlen(file_open_data->filter_extension)*2+strlen(wildcard_extension)+4))
+				{
+					strcpy(extension,wildcard_extension);
+					strcat(extension,"(*");
+					strcat(extension,file_open_data->filter_extension);
+					strcat(extension,"*");
+					strcat(extension,file_open_data->filter_extension);
+				}
+			}
+		} break;
+		case DIRECTORY:
+		{
+			shell_title="Specify a directory";
+		} break;
+		default:
+		{
+			shell_title=(char *)NULL;
+		} break;
+	}
+	wxFileDialog *SaveData = new wxFileDialog ((wxWindow *)NULL,shell_title,"","",
+		extension,wxSAVE|wxOVERWRITE_PROMPT,wxDefaultPosition);
+	if (temp_string)
+	{
 		DEALLOCATE(temp_string);
-		shell_title=(char *)NULL;
- }
-
+	}
+	if (extension)
+	{
+		DEALLOCATE(extension);
+	}
  if (SaveData->ShowModal() == wxID_OK)
 	{
 	  wxString file_name=SaveData->GetPath();
@@ -1929,7 +1907,6 @@ wxFileDialog *SaveData = new wxFileDialog ((wxWindow *)NULL,shell_title,"","",
 										}
 										DEALLOCATE(temp_string);
 								 }
-								 DEALLOCATE(directory_name);
 							}
 							DEALLOCATE(temp_directory_name);
 					 }
@@ -1999,7 +1976,7 @@ Zip .com, .exnode, .exelem and .exdata files into a single zip file
 	 char *zip_file_name;
 	 if (!file_name)
 	 {
-		 file_name = (char *)"temp";
+			file_name = "temp";
 	 }
 
 	 int length = strlen(file_name);
