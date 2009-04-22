@@ -41,12 +41,15 @@ Functions for exporting finite element data to a file.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include <stdio.h>
 #include "finite_element/finite_element.h"
 #include "finite_element/export_finite_element.h"
 #include "general/compare.h"
 #include "general/debug.h"
-#include "general/enumerator_private.h"
+}
+#include "general/enumerator_private_cpp.hpp"
+extern "C" {
 #include "general/list.h"
 #include "general/indexed_list_private.h"
 #include "general/mystring.h"
@@ -54,6 +57,7 @@ Functions for exporting finite element data to a file.
 #include "region/cmiss_region_write_info.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
+}
 
 /* the number of spaces each child object is indented from its parent by in the
 	 output file */
