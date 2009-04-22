@@ -4877,7 +4877,7 @@ if no coordinate field. Currently only write if we have a field.
 			}
 			else
 			{
-				sprintf(temp_string," number_of_iso_values %d",
+				sprintf(temp_string," range_number_of_iso_values %d",
 					settings->number_of_iso_values);
 				append_string(&settings_string,temp_string,&error);				
 				sprintf(temp_string," first_iso_value %g",

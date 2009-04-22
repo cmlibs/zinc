@@ -1084,6 +1084,7 @@ Callback from wxChooser<Iso Scalar> when choice is made.
 		int number_of_iso_values;
 		struct Computed_field *scalar_field;
 
+		iso_values = (double *)NULL;
 		GT_element_settings_get_iso_surface_parameters(
 			scene_editor->current_settings,&scalar_field,&number_of_iso_values,
 			&iso_values,&first_iso_value,&last_iso_value,
@@ -1092,6 +1093,7 @@ Callback from wxChooser<Iso Scalar> when choice is made.
 			scene_editor->current_settings,iso_scalar_field,number_of_iso_values,
 			iso_values,first_iso_value,last_iso_value,
 			decimation_threshold);
+		DEALLOCATE(iso_values);
 		AutoApplyorNot(scene_editor->gt_element_group,
 			scene_editor->edit_gt_element_group);
 		RenewLabelonList(scene_editor->current_settings);
@@ -3688,6 +3690,7 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 						isoscalartextctrl ->SetValue(vector_temp_string);
 						DEALLOCATE(vector_temp_string);
 					}
+					DEALLOCATE(iso_values);
 				}
 				else
 				{
