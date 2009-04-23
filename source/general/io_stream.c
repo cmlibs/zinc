@@ -580,9 +580,10 @@ DESCRIPTION :
 		}
 	   else
 		{
-			/* Look for a colon operator, fail if not file: */
+			/* Look for a colon operator, fail if not file: or d: etc. */
+			int dos_file_uri_specifier = (stream_uri[1] == ':');
 			file_uri_specifier = !strncmp("file:", stream_uri, 5);
-			if (file_uri_specifier || (!(colon = strchr(stream_uri, ':'))))
+			if (file_uri_specifier || dos_file_uri_specifier || (!(colon = strchr(stream_uri, ':'))))
 			{
 				if (file_uri_specifier)
 				{

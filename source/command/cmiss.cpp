@@ -24742,6 +24742,34 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		{
 			command_data->examples_directory = (char *)NULL;
 		}
+#if defined (WIN32_SYSTEM)
+		/* We don't know about cygdrive as we are using the win32 api,
+		   but try and interpret the variable anyway.  We can't handle
+			other cygwin paths unless we call out to cygpath. */
+		if (!strncmp(command_data->examples_directory, "/cygdrive", 9) && (strlen(command_data->examples_directory) > 11))
+		{
+			char *new_examples_string;
+			ALLOCATE(new_examples_string, char,
+				strlen(command_data->examples_directory) + 10);
+			new_examples_string[0] = command_data->examples_directory[10];
+		   new_examples_string[1] = ':';
+		   new_examples_string[2] = '\\';
+		   strcpy(new_examples_string + 3, command_data->examples_directory + 12);
+#if defined (OLD_CODE)
+		   /* Replace all / with \,
+		      actually it doesn't seem to be necessary, left in case we need it */
+		   char* dirchar;
+		   dirchar=strchr(new_examples_string,'/');
+		   while (dirchar!=NULL)
+		   {
+		   	*dirchar = '\\';
+		   	dirchar=strchr(dirchar+1,'/');
+		   }
+#endif /* defined (OLD_CODE) */
+		   DEALLOCATE(command_data->examples_directory);
+		   command_data->examples_directory = new_examples_string;
+		}
+#endif /* defined (WIN32_SYSTEM) */
 		command_data->cm_examples_directory = cm_examples_directory;
 		command_data->cm_parameters_file_name = cm_parameters_file_name;
 		command_data->help_directory = user_settings.help_directory;

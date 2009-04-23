@@ -305,6 +305,155 @@ be DEALLOCATED by the calling function.
 			display_message(ERROR_MESSAGE,"resolve_example_path. Unable to allocate program string");
 			return_string = (char *)NULL;
 		}
+#elif defined (WIN32_SYSTEM)
+#define BLOCKSIZE (100)
+		char end[3] = {04, 10, 00}, *error_message, *filename, last_char, *new_string,
+		*comfile_offset, *end_offset, *requirements_offset, *example_string;
+		int timeout;
+		size_t index, string_size;
+		struct _stat buf;
+
+		timeout = 20; /* seconds */
+
+		if (ALLOCATE(filename, char, strlen(example_path) + 
+			strlen(directory_name) +50))
+		{
+			sprintf(filename, "%s\\common\\resolve_example_path", example_path);
+
+			if (-1 == _stat(filename,&buf))
+			{
+				if (!ALLOCATE(error_message, char, strlen(filename) + strlen("resolve_example_path. File %s does not exist")))
+				{
+					display_message(ERROR_MESSAGE,"resolve_example_path. Unable to allocate string");
+				}
+				else
+				{
+					sprintf(error_message, "resolve_example_path. File %s does not exist", filename);
+					display_message(ERROR_MESSAGE,error_message);
+					DEALLOCATE(error_message);
+				}
+				return_string = (char *)NULL;
+			}
+			else if (ALLOCATE(example_string, char, strlen(filename) + strlen(directory_name) + 20))
+			{
+				sprintf(example_string, "perl %s %s\n%s", filename, directory_name, end);
+
+				string_size = 2 * BLOCKSIZE;
+				last_char = 0xff;
+				index = 0;
+				if (return_string = ALLOCATE(return_string, char,
+					2 * BLOCKSIZE))
+				{
+					FILE* fp = _popen(example_string,"rt");
+					while(!feof(fp) && return_string)
+					{
+						if (index + BLOCKSIZE > string_size)
+						{
+							if(REALLOCATE(new_string, return_string, char,
+								index + 2 * BLOCKSIZE))
+							{
+								return_string = new_string;
+								string_size = index + 2 * BLOCKSIZE;
+
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"resolve_example_path."
+									"  Unable to reallocate string");
+								DEALLOCATE(return_string);
+								return_string = (char *)NULL;
+							}
+						}
+						if (return_string)
+						{
+							if(fgets(return_string + index, BLOCKSIZE, fp) != 0)
+							{
+								index += BLOCKSIZE;
+							}
+							else if (!feof(fp))
+								DEALLOCATE(return_string);
+						}
+					}
+					if (return_string)
+					{
+						comfile_offset = (char *)NULL;
+						requirements_offset = (char *)NULL;
+						/* Look for the first space separator in the 
+							  returned string */
+						if (comfile_offset = strchr(return_string, ' '))
+						{
+							/* Terminate the example path string */
+							*comfile_offset = 0;
+							comfile_offset++;
+
+							/* Look for the next space */
+							if (requirements_offset = strchr(comfile_offset, ' '))
+							{
+								/* Terminate the comfile string */
+								*requirements_offset = 0;
+								requirements_offset++;
+
+								/* Look for the end of this word */
+								if (end_offset = strchr(requirements_offset, ' '))
+								{
+									/* Terminate the requirements string */
+									*end_offset = 0;
+								}
+							}
+						}
+						if (comfile_name)
+						{
+							if (comfile_offset && ALLOCATE(*comfile_name, char,
+								strlen (comfile_offset) + 1))
+							{
+								strcpy (*comfile_name, comfile_offset);
+							}
+							else
+							{
+								*comfile_name = (char *)NULL;
+							}
+						}
+						if (requirements)
+						{
+							if (requirements_offset && ALLOCATE(*requirements, 
+								char, strlen (requirements_offset) + 1))
+							{
+								strcpy (*requirements, requirements_offset);
+							}
+							else
+							{
+								*requirements = (char *)NULL;
+							}
+						}
+						if (ALLOCATE(new_string, char,
+							strlen(return_string) + strlen(example_path) + 5))
+						{
+							sprintf(new_string, "%s/%s/", example_path,
+								return_string);
+							DEALLOCATE(return_string);
+							return_string = new_string;
+						}
+						else
+						{
+							DEALLOCATE(return_string);
+							display_message(ERROR_MESSAGE,"resolve_example_path."
+								"  Unable to make final reallocate of string");
+							return_string = (char *)NULL;
+						}
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"resolve_example_path. Unable to allocate target string");
+			}
+			DEALLOCATE(filename);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"resolve_example_path. Unable to allocate program string");
+			return_string = (char *)NULL;
+		}
 #else /* defined (UNIX) */
 		display_message(ERROR_MESSAGE,"resolve_example_path.  "
 			"Not implemented yet.");
