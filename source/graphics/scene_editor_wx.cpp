@@ -1825,12 +1825,13 @@ void ResetWindow(wxSplitterEvent& event)
 		struct Parse_state *temp_state;
 		struct Element_discretization element_discretization,
 			old_element_discretization;
-		elementdiscretisationpanel=XRCCTRL(*this, "ElementDiscretisationPanel",wxTextCtrl);
-		TempText = elementdiscretisationpanel->GetValue();
+		char *text_entry;
 
-		if (TempText)
+		elementdiscretisationpanel=XRCCTRL(*this, "ElementDiscretisationPanel",wxTextCtrl);
+		if (text_entry = duplicate_string(
+					const_cast<char *>(elementdiscretisationpanel->GetValue().c_str())))
 		{
-			if (temp_state=create_Parse_state(const_cast<char *>(TempText.c_str())))
+			if (temp_state=create_Parse_state(text_entry))
 			{
 				if (GT_element_group_get_element_discretization(
 					scene_editor->edit_gt_element_group, &old_element_discretization) &&
@@ -1858,6 +1859,7 @@ void ResetWindow(wxSplitterEvent& event)
 					"Could not create parse state");
 			}
 			set_general_settings(scene_editor);
+			DEALLOCATE(text_entry);
 		}
 		else
 		{
@@ -2847,8 +2849,8 @@ void MoveUpInSettingList(wxCommandEvent &event)
 				&variable_scale_field))
 			{
 				/* Get the text string */
-				text_entry =  const_cast<char *>(centretextctrl->GetValue().c_str());
-	 			if (text_entry)
+	 			if (text_entry = duplicate_string(
+							const_cast<char *>(centretextctrl->GetValue().c_str())))
 				{
 					/* clean up spaces? */
 					if (temp_state=create_Parse_state(text_entry))
@@ -2867,10 +2869,11 @@ void MoveUpInSettingList(wxCommandEvent &event)
 							scene_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
 						   glyph_size, &orientation_scale_field, glyph_scale_factors,
 							&variable_scale_field);
-						 sprintf(temp_string,"%g,%g,%g",
-							 glyph_centre[0],glyph_centre[1],glyph_centre[2]);
-						 centretextctrl->SetValue(temp_string);
+						sprintf(temp_string,"%g,%g,%g",
+							glyph_centre[0],glyph_centre[1],glyph_centre[2]);
+						centretextctrl->ChangeValue(temp_string);
 					}
+					DEALLOCATE(text_entry);
 				}
 				else
 				{
@@ -2899,8 +2902,8 @@ void EnterGlyphSize(wxCommandEvent &event)
 					&variable_scale_field))
 		{
 			/* Get the text string */
-			text_entry =  const_cast<char *>(baseglyphsizetextctrl->GetValue().c_str());
-			if (text_entry)
+			if (text_entry = 
+				duplicate_string(const_cast<char *>(baseglyphsizetextctrl->GetValue().c_str())))
 			{
 				/* clean up spaces? */
 				if (temp_state=create_Parse_state(text_entry))
@@ -2921,8 +2924,9 @@ void EnterGlyphSize(wxCommandEvent &event)
 						&variable_scale_field);
 					sprintf(temp_string,"%g*%g*%g",
 						glyph_size[0],glyph_size[1],glyph_size[2]);
-					baseglyphsizetextctrl->SetValue(temp_string);
+					baseglyphsizetextctrl->ChangeValue(temp_string);
 				}
+				DEALLOCATE(text_entry);
 			}
 			else
 			{
@@ -2956,27 +2960,27 @@ void EnterGlyphSize(wxCommandEvent &event)
 				&variable_scale_field))
 			{
 				/* Get the text string */
-				text_entry =  const_cast<char *>(glyphscalefactorstextctrl->GetValue().c_str());
-				if (text_entry)
+				if (text_entry = duplicate_string(
+							const_cast<char *>(glyphscalefactorstextctrl->GetValue().c_str())))
 				{
 					/* clean up spaces? */
 					if (temp_state=create_Parse_state(text_entry))
 					{
 						set_special_float3(temp_state,glyph_scale_factors,const_cast<char *>("*"));
 						if (orientationscalecheckbox->IsChecked())
-							{
-								orientation_scale_field_chooser_panel->Enable();
-								glyphscalefactorstext->Enable();
-								glyphscalefactorstextctrl->Enable();					
-								orientation_scale_field=orientation_scale_field_chooser->get_object();
-							}
+						{
+							orientation_scale_field_chooser_panel->Enable();
+							glyphscalefactorstext->Enable();
+							glyphscalefactorstextctrl->Enable();					
+							orientation_scale_field=orientation_scale_field_chooser->get_object();
+						}
 						else
-							{
-								orientation_scale_field_chooser_panel->Disable();
-								glyphscalefactorstext->Disable();
-								glyphscalefactorstextctrl->Disable();					
-								orientation_scale_field=(Computed_field *)NULL;
-							}
+						{
+							orientation_scale_field_chooser_panel->Disable();
+							glyphscalefactorstext->Disable();
+							glyphscalefactorstextctrl->Disable();					
+							orientation_scale_field=(Computed_field *)NULL;
+						}
 						GT_element_settings_set_glyph_parameters(
 							scene_editor->current_settings, glyph, glyph_scaling_mode,
 							glyph_centre, glyph_size, orientation_scale_field,
@@ -2986,12 +2990,12 @@ void EnterGlyphSize(wxCommandEvent &event)
 						RenewLabelonList(scene_editor->current_settings);
 						destroy_Parse_state(&temp_state);
 						GT_element_settings_get_glyph_parameters(
-						    scene_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
-						    glyph_size, &orientation_scale_field, glyph_scale_factors,
+							scene_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
+							glyph_size, &orientation_scale_field, glyph_scale_factors,
 							&variable_scale_field);
-							sprintf(temp_string,"%g*%g*%g",
-										glyph_scale_factors[0],glyph_scale_factors[1],glyph_scale_factors[2]);
-						glyphscalefactorstextctrl->SetValue(temp_string);						
+						sprintf(temp_string,"%g*%g*%g",
+							glyph_scale_factors[0],glyph_scale_factors[1],glyph_scale_factors[2]);
+						glyphscalefactorstextctrl->ChangeValue(temp_string);
 					}
 				}
 				else
@@ -2999,6 +3003,7 @@ void EnterGlyphSize(wxCommandEvent &event)
 					display_message(ERROR_MESSAGE,
 						"settings_editor_glyph_scale_factors_text_CB.  Missing text");
 				}
+				DEALLOCATE(text_entry);
 			}
 		}
 	}
@@ -3073,9 +3078,9 @@ void EnterElementDiscretization(wxCommandEvent &event)
 		if (scene_editor->current_settings)
 		{
 			/* Get the text string */
-			discretizationtextctrl=XRCCTRL(*this,"DiscretizationTextCtrl",wxTextCtrl);	
-			text_entry=const_cast<char *>(discretizationtextctrl->GetValue().c_str());
-			if (text_entry)
+			discretizationtextctrl=XRCCTRL(*this,"DiscretizationTextCtrl",wxTextCtrl);
+			if (text_entry =duplicate_string(
+						const_cast<char *>(discretizationtextctrl->GetValue().c_str())))
 			{
 				if (temp_state=create_Parse_state(text_entry))
 				{
@@ -3098,6 +3103,7 @@ void EnterElementDiscretization(wxCommandEvent &event)
 						"settings_editor_discretization_text_CB.  "
 						"Could not create parse state");
 				}
+				DEALLOCATE(text_entry);
 			}
 			else
 			{
@@ -3110,7 +3116,7 @@ void EnterElementDiscretization(wxCommandEvent &event)
 				/* always restore constant_radius to actual value in use */
 				sprintf(temp_string,"%d*%d*%d",discretization.number_in_xi1,
 					discretization.number_in_xi2,discretization.number_in_xi3);
-				discretizationtextctrl->SetValue(temp_string);
+				discretizationtextctrl->ChangeValue(temp_string);
 			}
 		}
 }
@@ -3175,8 +3181,7 @@ void EnterSeedXi(wxCommandEvent &event)
 		   scene_editor->current_settings,seed_xi))
 	{
 		/* Get the text string */
-		text_entry=const_cast<char *>(xitextctrl->GetValue().c_str());
-		if (text_entry)
+		if (text_entry = duplicate_string(const_cast<char *>(xitextctrl->GetValue().c_str())))
 		{
 			/* clean up spaces? */
 			if (temp_state=create_Parse_state(text_entry))
@@ -3189,7 +3194,9 @@ void EnterSeedXi(wxCommandEvent &event)
 				AutoApplyorNot(scene_editor->gt_element_group,
 					scene_editor->edit_gt_element_group);
 				RenewLabelonList(scene_editor->current_settings);
+				destroy_Parse_state(&temp_state);
 			}
+			DEALLOCATE(text_entry);
 		}
 		else
 		{
@@ -3198,7 +3205,7 @@ void EnterSeedXi(wxCommandEvent &event)
 		}
 		/* always re-display the values actually set */
 		sprintf(temp_string,"%g,%g,%g",seed_xi[0],seed_xi[1],seed_xi[2]);
-		xitextctrl->SetValue(temp_string);
+		xitextctrl->ChangeValue(temp_string);
 	}
 }
 
