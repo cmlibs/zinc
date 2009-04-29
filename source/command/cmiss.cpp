@@ -24746,7 +24746,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		/* We don't know about cygdrive as we are using the win32 api,
 		   but try and interpret the variable anyway.  We can't handle
 			other cygwin paths unless we call out to cygpath. */
-		if (!strncmp(command_data->examples_directory, "/cygdrive", 9) && (strlen(command_data->examples_directory) > 11))
+		if (command_data->examples_directory
+		    && (strlen(command_data->examples_directory) > 11)
+		    && (!strncmp(command_data->examples_directory, "/cygdrive", 9)))
 		{
 			char *new_examples_string;
 			ALLOCATE(new_examples_string, char,
