@@ -93,7 +93,6 @@ Contains all the information carried by the graphical element editor widget.
 {
 	struct Cmiss_region *root_region;
 	struct GT_element_settings *current_settings;
-	struct Computed_field_package *computed_field_package;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct LIST(GT_object) *glyph_list;
 	struct MANAGER(Spectrum) *spectrum_manager;
@@ -3006,7 +3005,6 @@ Global functions
 */
 Widget create_settings_editor_widget(Widget *settings_editor_widget,
 	Widget parent,struct GT_element_settings *settings,
-	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *root_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct LIST(GT_object) *glyph_list,struct MANAGER(Spectrum) *spectrum_manager,
@@ -3242,9 +3240,7 @@ Creates a settings_editor widget.
 
 	ENTER(create_settings_editor_widget);
 	return_widget=(Widget)NULL;
-	if (settings_editor_widget && parent && computed_field_package &&
-		(computed_field_manager=Computed_field_package_get_computed_field_manager(
-			computed_field_package)) && root_region &&
+	if (settings_editor_widget && parent && root_region &&
 		(fe_region = Cmiss_region_get_FE_region(root_region)) &&
 		graphical_material_manager && glyph_list && spectrum_manager &&
 		volume_texture_manager && user_interface)
@@ -3252,6 +3248,11 @@ Creates a settings_editor widget.
 		if (MrmOpenHierarchy_binary_string(settings_editor_uidh,sizeof(settings_editor_uidh),
 			&settings_editor_hierarchy,&settings_editor_hierarchy_open))
 		{
+			/* Unfortunately to initialize the chooser, a valid computed_field_manager must be
+				 provided. We will use the manager from the root region at the beginning.
+				 Fortunately, the field manager on the chooser will be reset when a valid setting 
+				 is provided */
+			computed_field_manager=Cmiss_region_get_Computed_field_manager(root_region);
 			/* allocate memory */
 			if (ALLOCATE(settings_editor,struct Settings_editor,1))
 			{

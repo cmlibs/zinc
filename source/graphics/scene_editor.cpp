@@ -1928,7 +1928,6 @@ Global functions
 struct Scene_editor *CREATE(Scene_editor)(
 	struct Scene_editor **scene_editor_address, Widget parent,
 	struct MANAGER(Scene) *scene_manager, struct Scene *scene,
-	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *root_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
@@ -1953,7 +1952,7 @@ Note on successful return the dialog is put at <*scene_editor_address>.
 
 	ENTER(CREATE(Scene_editor));
 	scene_editor = (struct Scene_editor *)NULL;
-	if (scene_manager && scene && computed_field_package && root_region &&
+	if (scene_manager && scene && root_region &&
 		graphical_material_manager && default_material &&
 		glyph_list && spectrum_manager && default_spectrum &&
 		volume_texture_manager && user_interface)
@@ -2274,7 +2273,7 @@ Note on successful return the dialog is put at <*scene_editor_address>.
 				&(scene_editor->graphical_element_editor),
 				scene_editor->child_form,
 				(struct GT_element_group *)NULL,
-				computed_field_package, root_region,
+				root_region,
 				graphical_material_manager, default_material, 
 				default_font, glyph_list,
 				spectrum_manager, default_spectrum,

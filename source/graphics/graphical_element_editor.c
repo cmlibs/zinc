@@ -118,7 +118,6 @@ Contains all the information carried by the graphical element editor widget.
 ==============================================================================*/
 {
 	struct Cmiss_region *root_region;
-	struct Computed_field_package *computed_field_package;
 	struct GT_element_group *edit_gt_element_group;
 	struct Graphical_material *default_material;
 	struct Graphics_font *default_font;
@@ -469,7 +468,7 @@ Sets the current_settings in the <gelem_editor> for editing. Updates widgets.
 			{
 				 field_manager = Cmiss_region_get_Computed_field_manager(
 					 GT_element_group_get_Cmiss_region(
-						 gelem_editor->edit_gt_element_group));;
+						 gelem_editor->edit_gt_element_group));
 			}
 			else
 			{
@@ -1426,8 +1425,8 @@ Add button press: create new settings of the current type.
 	if (widget &&
 		(gelem_editor=(struct Graphical_element_editor *)client_data) &&
 		gelem_editor->edit_gt_element_group &&
-		(computed_field_manager = Computed_field_package_get_computed_field_manager(
-			gelem_editor->computed_field_package)))
+		(computed_field_manager = Cmiss_region_get_Computed_field_manager(
+			 GT_element_group_get_Cmiss_region(gelem_editor->edit_gt_element_group))))
 	{
 		if (settings =
 			CREATE(GT_element_settings)(gelem_editor->current_settings_type))
@@ -1868,7 +1867,6 @@ Global functions
 
 Widget create_graphical_element_editor_widget(Widget *gelem_editor_widget,
 	Widget parent,struct GT_element_group *gt_element_group,
-	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *root_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
@@ -1891,7 +1889,7 @@ Creates a graphical_element_editor widget.
 	struct Callback_data callback;
 	struct FE_region *root_fe_region;
 	struct Graphical_element_editor *gelem_editor=NULL;
-	struct MANAGER(Computed_field) *computed_field_manager;
+	struct MANAGER(Computed_field) *computed_field_manager = NULL;
 	static MrmRegisterArg callback_list[]=
 	{
 		{"gelem_ed_destroy_CB",(XtPointer)graphical_element_editor_destroy_CB},
@@ -1955,10 +1953,12 @@ Creates a graphical_element_editor widget.
 
 	ENTER(create_graphical_element_editor_widget);
 	return_widget=(Widget)NULL;
-	if (gelem_editor_widget && parent && computed_field_package &&
-		(computed_field_manager = Computed_field_package_get_computed_field_manager(
-			computed_field_package)) && root_region &&
-		(root_fe_region = Cmiss_region_get_FE_region(root_region)) &&
+	if (gelem_editor_widget && parent &&
+		((!gt_element_group && (computed_field_manager = 
+				Cmiss_region_get_Computed_field_manager(root_region))) || 
+			(computed_field_manager = Cmiss_region_get_Computed_field_manager(
+				 GT_element_group_get_Cmiss_region(gt_element_group)))) && 
+		root_region && (root_fe_region = Cmiss_region_get_FE_region(root_region)) &&
 		graphical_material_manager&&default_material&&default_font&&glyph_list&&
 		spectrum_manager&&default_spectrum&&volume_texture_manager&&user_interface)
 	{
@@ -1971,7 +1971,6 @@ Creates a graphical_element_editor widget.
 			{
 				/* initialise the structure */
 				gelem_editor->edit_gt_element_group=(struct GT_element_group *)NULL;
-				gelem_editor->computed_field_package=computed_field_package;
 				gelem_editor->root_region = root_region;
 				gelem_editor->glyph_list=glyph_list;
 				gelem_editor->graphical_material_manager=graphical_material_manager;
@@ -2070,7 +2069,6 @@ Creates a graphical_element_editor widget.
 							if (!(create_settings_editor_widget(
 								&(gelem_editor->settings_widget),
 								gelem_editor->settings_form,(struct GT_element_settings *)NULL,
-								gelem_editor->computed_field_package,
 								gelem_editor->root_region,
 								gelem_editor->graphical_material_manager,
 								gelem_editor->glyph_list,gelem_editor->spectrum_manager,

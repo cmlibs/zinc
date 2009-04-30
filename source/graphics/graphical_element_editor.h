@@ -58,10 +58,8 @@ Global Types
 Global Functions
 ----------------
 */
-
 Widget create_graphical_element_editor_widget(Widget *gelem_editor_widget,
 	Widget parent,struct GT_element_group *gt_element_group,
-	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *root_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,

@@ -135,7 +135,6 @@ DESCRIPTION :
 	 struct Graphics_font *default_font;
 	 struct MANAGER(Scene) *scene_manager;
 	 struct User_interface *user_interface;
-	 struct Computed_field_package *computed_field_package;
 	 enum GT_element_settings_type current_settings_type;
 	 struct GT_element_settings *current_settings;
 	 struct LIST(GT_object) *glyph_list;	
@@ -760,9 +759,7 @@ Callback from wxChooser<Scene> when choice is made.
 		}
 		else
 		{
-			 scene_editor->field_manager=
-					Computed_field_package_get_computed_field_manager(
-						 scene_editor->computed_field_package);
+			scene_editor->field_manager= (MANAGER(Computed_field)*)NULL;
 		}
 		if (scene_editor->scene_object && scene_editor->transformation_callback_flag)
 		{
@@ -2182,6 +2179,10 @@ void AddToSettingList(wxCommandEvent &event)
 			}
 			else
 			{
+				struct MANAGER(Computed_field) *computed_field_manager = 
+					Cmiss_region_get_Computed_field_manager(
+						GT_element_group_get_Cmiss_region(
+							scene_editor->edit_gt_element_group));
 				 /* set materials for all settings */
 				 GT_element_settings_set_material(settings,
 						scene_editor->default_material);
@@ -2198,17 +2199,15 @@ void AddToSettingList(wxCommandEvent &event)
 				 {
 					FE_region *data_fe_region = FE_region_get_data_FE_region(
 						Cmiss_region_get_FE_region(
-							 GT_element_group_get_Cmiss_region(
-									scene_editor->edit_gt_element_group)));
+							GT_element_group_get_Cmiss_region(
+								scene_editor->edit_gt_element_group)));
 						Computed_field *default_coordinate_field=
 							 GT_element_group_get_default_coordinate_field(
 									scene_editor->edit_gt_element_group);
 						if (!FE_region_get_first_FE_node_that(data_fe_region,
-									FE_node_has_Computed_field_defined,
+								FE_node_has_Computed_field_defined,
 									(void *)default_coordinate_field))
 						{
-							 MANAGER(Computed_field) *computed_field_manager=  Computed_field_package_get_computed_field_manager(
-									scene_editor->computed_field_package);
 							 Computed_field *element_xi_coordinate_field;
 							 if ((element_xi_coordinate_field=
 										 FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
@@ -2227,8 +2226,6 @@ void AddToSettingList(wxCommandEvent &event)
 						scene_editor->current_settings_type)
 				 {
 						Computed_field *iso_scalar_field;
-						MANAGER(Computed_field) *computed_field_manager=  Computed_field_package_get_computed_field_manager(
-							 scene_editor->computed_field_package);
 						if (iso_scalar_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 									 Computed_field_is_scalar,(void *)NULL,computed_field_manager))
 						{
@@ -2303,8 +2300,6 @@ void AddToSettingList(wxCommandEvent &event)
 								Computed_field *stream_vector_field;
 								float streamline_length,streamline_width;
 								int reverse_track;
-								MANAGER(Computed_field) *computed_field_manager=  Computed_field_package_get_computed_field_manager(
-																																																										scene_editor->computed_field_package);
 								GT_element_settings_get_streamline_parameters(
 																															settings,&streamline_type,&stream_vector_field,&reverse_track,
 																															&streamline_length,&streamline_width);
@@ -4746,18 +4741,10 @@ void scene_editor_set_active_graphical_element_group_from_scene_object(
 							}
 						}
 				 } break;
-				 case SCENE_OBJECT_GRAPHICS_OBJECT:
-				 {
-						scene_editor->field_manager=
-							 Computed_field_package_get_computed_field_manager(
-									scene_editor->computed_field_package);
-				 }break;
-				 case SCENE_OBJECT_SCENE:
-				 {
-						scene_editor->field_manager=
-							 Computed_field_package_get_computed_field_manager(
-									scene_editor->computed_field_package);
-				 } break;		 
+				default:
+				{
+					scene_editor->field_manager=(MANAGER(Computed_field)*)NULL;
+				} break;		 
 			}
 	 }
 	 else
@@ -5056,7 +5043,6 @@ Global functions
 struct Scene_editor *CREATE(Scene_editor)(	
 	struct Scene_editor **scene_editor_address,
 	struct MANAGER(Scene) *scene_manager, struct Scene *scene,
-	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *root_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
@@ -5077,7 +5063,7 @@ DESCRIPTION :
  
 	ENTER(CREATE(Scene_editor));
 	scene_editor = (struct Scene_editor *)NULL;
-	if (scene_manager && scene && computed_field_package && root_region &&
+	if (scene_manager && scene && root_region &&
 		graphical_material_manager && default_material &&
 		glyph_list && spectrum_manager && default_spectrum &&
 		volume_texture_manager && font_package && user_interface)
@@ -5103,12 +5089,11 @@ DESCRIPTION :
 			 scene_editor->glyph_list=glyph_list;
 			 scene_editor->scene_manager = scene_manager;
 			 scene_editor->user_interface=user_interface;
-			 scene_editor->computed_field_package=computed_field_package;
 			 scene_editor->current_settings_type=GT_ELEMENT_SETTINGS_LINES;		
 			 scene_editor->current_settings=(GT_element_settings*)NULL;
 			 scene_editor->default_coordinate_field=(Computed_field *)NULL;
 			 scene_editor->volume_texture_manager=volume_texture_manager;
-			 scene_editor->field_manager=Computed_field_package_get_computed_field_manager(computed_field_package);
+			 scene_editor->field_manager=(MANAGER(Computed_field)*)NULL;
  			 scene_editor->font_manager=Graphics_font_package_get_font_manager(font_package);
 			 scene_editor->native_discretization_field=(FE_field*)NULL ;
 			 scene_editor->coordinate_field=(Computed_field *)NULL;	
@@ -5150,20 +5135,12 @@ DESCRIPTION :
 									 GT_element_group_get_Cmiss_region(
 											scene_editor->edit_gt_element_group));
 					}
-					else
-					{
-						 scene_editor->field_manager=
-								Computed_field_package_get_computed_field_manager(computed_field_package);
-					}
-					if (scene_editor->field_manager)
-						 Scene_editor_set_settings_widgets_for_scene_object(scene_editor);
+					Scene_editor_set_settings_widgets_for_scene_object(scene_editor);
 			 }
 			 else
 			 {
 					scene_editor->collpane->Hide();
 					scene_editor->lowersplitter->Hide();
-					scene_editor->field_manager=
-						 Computed_field_package_get_computed_field_manager(computed_field_package);
 			 }
 			 scene_editor->top_collpane = XRCCTRL(*scene_editor->wx_scene_editor, 
 					"SceneEditorTopCollapsiblePane", wxCollapsiblePane);

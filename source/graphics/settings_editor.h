@@ -59,7 +59,6 @@ Global Functions
 */
 Widget create_settings_editor_widget(Widget *settings_editor_widget,
 	Widget parent,struct GT_element_settings *settings,
-	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *root_region,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct LIST(GT_object) *glyph_list,struct MANAGER(Spectrum) *spectrum_manager,
