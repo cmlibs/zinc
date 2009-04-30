@@ -644,13 +644,13 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
       ifeq ($(USE_GTK2),true)
          USER_INTERFACE_INC += $(shell pkg-config gtkglext-1.0 gtk+-2.0 --cflags)
          ifneq ($(STATIC_LINK),true)
-            USER_INTERFACE_LIB += -Wl,-Bstatic -lgtkglext-x11-1.0 -lgdkglext-x11-1.0 -lGLU -Wl,-Bdynamic -lGL $(shell pkg-config gtk+-2.0 pangox --libs) -lXmu
+            USER_INTERFACE_LIB += -Wl,-Bstatic -lgtkglext-x11-1.0 -lgdkglext-x11-1.0 -Wl,-Bdynamic $(shell pkg-config gtk+-2.0 pangox --libs) -lXmu $(GRAPHICS_LIB)
          else # $(STATIC_LINK) != true
             USER_INTERFACE_LIB += -lgtkglext-x11-1.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 $(GRAPHICS_LIB)
          endif # $(STATIC_LINK) != true
       else # $(USE_GTK2) == true
          USER_INTERFACE_INC +=  -I/usr/include/gtk-1.2 -I/usr/include/glib-1.2 -I/usr/lib/glib/include/
-         USER_INTERFACE_LIB +=  -lgtkgl -L$(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) -lGLU -lGL -lgtk -lgdk -lgmodule -lglib -ldl -lXi -lXext -lX11
+         USER_INTERFACE_LIB +=  -lgtkgl $(GRAPHICS_LIB) -lgtk -lgdk -lgmodule -lglib -ldl -lXi -lXext -lX11
       endif # $(USE_GTK2) == true
    else # $(SYSNAME) != win32
       # SAB It seems that ld currently requires (version 2.13.90 20021005) the 
