@@ -2245,3 +2245,97 @@ char *Cmiss_region_get_path(struct Cmiss_region *region)
 	
 	return (path);
 }
+
+char *Cmiss_region_get_relative_path(struct Cmiss_region *region,
+	struct Cmiss_region *other_region)
+{
+	char *path = NULL;
+
+	ENTER(Cmiss_region_get_relative_path);
+	if (region && other_region)
+	{
+		int error = 0;
+		if (region != other_region) 
+		{
+			Cmiss_region* parent = region->parent;
+			if (parent)
+			{
+				if (path = Cmiss_region_get_relative_path(parent, other_region))
+				{
+					const char *child_name = NULL;
+					for (int i = 0; i < parent->number_of_child_regions; i++)
+					{
+						if (region == parent->child[i]->region)
+						{
+							child_name = parent->child[i]->name;
+							break;
+						}
+					}
+					append_string(&path, child_name, &error);
+				}
+				else
+				{
+					error = 1;
+				}
+			}
+			else
+			{
+				error = 1;
+			}
+		}
+		append_string(&path, CMISS_REGION_PATH_SEPARATOR_STRING, &error);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Cmiss_region_get_relative_path.  Invalid arguments");
+	}
+	LEAVE;
+	
+	return (path);
+}
+
+int Cmiss_region_is_group(struct Cmiss_region *region)
+{
+	int return_code = 0;
+
+	ENTER(Cmiss_region_is_group);
+	if (region)
+	{
+		FE_region *fe_region = Cmiss_region_get_FE_region(region);
+		FE_region *master_fe_region = NULL;
+		if (fe_region &&
+			FE_region_get_immediate_master_FE_region(fe_region, &master_fe_region) &&
+			master_fe_region)
+		{
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Cmiss_region_is_group.  Missing region");
+	}
+	LEAVE;
+	
+	return (return_code);
+}
+
+struct Cmiss_region *Cmiss_region_get_parent(struct Cmiss_region *region)
+{
+	struct Cmiss_region *parent = NULL;
+
+	ENTER(Cmiss_region_get_parent);
+	if (region)
+	{
+		if (region->parent)
+		{
+			parent = ACCESS(Cmiss_region)(region->parent);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Cmiss_region_get_parent.  Missing region");
+	}
+	LEAVE;
+	
+	return (parent);
+}

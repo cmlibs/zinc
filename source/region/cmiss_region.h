@@ -463,4 +463,31 @@ indented from the left margin by <indent> spaces; this is incremented by
  */
 char *Cmiss_region_get_path(struct Cmiss_region *region);
 
+/***************************************************************************//**
+ * Returns the relative path name to this region from other_region. Path name
+ * always begins and ends with the CMISS_REGION_PATH_SEPARATOR_CHAR '/'.
+ * 
+ * @param region  The region whose path is requested.
+ * @param other_region  The region the path is relative to.
+ * @return  On success: allocated string containing full region path. NULL on
+ *   failure, including case when region is not within other_region.
+ */
+char *Cmiss_region_get_relative_path(struct Cmiss_region *region,
+	struct Cmiss_region *other_region);
+
+/***************************************************************************//**
+ * Returns true if region is a sub group of its parent region.
+ * 
+ * @param region  The region to test for being a group.
+ */
+int Cmiss_region_is_group(struct Cmiss_region *region);
+
+/***************************************************************************//**
+ * Returns an accessed pointer to the parent region of this region, if any. 
+ * 
+ * @param region  The child region.
+ * @return  ACCESSed pointer to parent region, or NULL if none.
+ */
+struct Cmiss_region *Cmiss_region_get_parent(struct Cmiss_region *region);
+
 #endif /* !defined (CMISS_REGION_H) */
