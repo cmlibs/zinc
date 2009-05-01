@@ -11843,8 +11843,8 @@ Executes a GFX EXPORT IGES command.
 		Option_table_add_entry(option_table, "group", &region_path,
 			command_data->root_region, set_Cmiss_region_path);
 		/* default option: file name */
-		Option_table_add_entry(option_table,(char *)NULL,&file_name,NULL,
-			set_name);
+		Option_table_add_default_string_entry(option_table, &file_name, "FILE_NAME");
+
 		/* no errors, not asking for help */
 		if (return_code = Option_table_multi_parse(option_table,state))
 		{
@@ -12943,7 +12943,7 @@ use node_manager and node_selection.
 		{
 			if (Cmiss_region_get_region_from_path(command_data->root_region, region_path, &region)
 				&& (fe_region = Cmiss_region_get_FE_region(region)) &&
-				(!use_data) || (fe_region=FE_region_get_data_FE_region(fe_region)))
+				((!use_data) || (fe_region=FE_region_get_data_FE_region(fe_region))))
 			{
 				if (node_list = FE_node_list_from_fe_region_selection_ranges_condition(
 					fe_region, node_selection, selected_flag, node_ranges,
@@ -17433,8 +17433,7 @@ If <use_data> is set, writing data, otherwise writing nodes.
 		Option_table_add_entry(option_table, "group", &region_path,
 			command_data->root_region, set_Cmiss_region_path);
 		/* default option: file name */
-		Option_table_add_entry(option_table, (char *)NULL, &file_name,
-			NULL, set_name);
+		Option_table_add_default_string_entry(option_table, &file_name, "FILE_NAME");
 
 		if (return_code = Option_table_multi_parse(option_table, state))
 		{
@@ -19547,7 +19546,7 @@ Executes a GFX UPDATE command.
 static int gfx_write_All(struct Parse_state *state,
 	 void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 3 August  2007
+LAST MODIFIED : 3 August 2007
 
 DESCRIPTION :
 If an zip file is not specified a file selection box is presented to the
@@ -19556,14 +19555,15 @@ Can also write individual groups with the <group> option.
 ==============================================================================*/
 {
 	 FILE *com_file;
-	 char *com_file_name, *data_file_name, *elem_file_name, *file_name, *node_file_name, *region_path;
-	 const char **valid_strings, *write_criterion_string;
+	 char *com_file_name, *data_file_name, *elem_file_name, *file_name,
+		 *node_file_name, *region_path, *root_region_path;
 	 enum FE_write_criterion write_criterion;
-	 int number_of_valid_strings, data_return_code, elem_return_code, 
+	 enum FE_write_recursion write_recursion;
+	 int data_return_code, elem_return_code, 
 			node_return_code, return_code, data_fd,
 			elem_fd, node_fd, com_return_code;
 	 struct Cmiss_command_data *command_data;
-	 struct FE_field_order_info *field_order_info;
+	 struct Multiple_strings field_names;
 	 struct Option_table *option_table;
 	 struct MANAGER(Graphical_material) *graphical_material_manager;
 	 struct MANAGER(Computed_field) *computed_field_manager;
@@ -19599,40 +19599,37 @@ Can also write individual groups with the <group> option.
 			com_return_code = 1;
 			return_code = 1; 
 			region_path = (char *)NULL;
-			field_order_info = (struct FE_field_order_info *)NULL;
+			root_region_path = duplicate_string("/");
 			file_name = (char *)NULL;
 			com_file_name = (char *)NULL;		
 			data_file_name = (char *)NULL;
 			elem_file_name = (char *)NULL;
 			node_file_name = (char *)NULL;
 
+			field_names.number_of_strings = 0;
+			field_names.strings = (char **)NULL;
 			write_criterion = FE_WRITE_COMPLETE_GROUP;
+			write_recursion = FE_WRITE_RECURSIVE;
 			
 			option_table = CREATE(Option_table)();
 			/* complete_group|with_all_listed_fields|with_any_listed_fields */ 
-			write_criterion_string =
-				 ENUMERATOR_STRING(FE_write_criterion)(write_criterion);
-			valid_strings = ENUMERATOR_GET_VALID_STRINGS(FE_write_criterion)(
-				 &number_of_valid_strings,
-				 (ENUMERATOR_CONDITIONAL_FUNCTION(FE_write_criterion) *)NULL,
-				 (void *)NULL);
-			Option_table_add_enumerator(option_table, number_of_valid_strings,
-				 valid_strings, &write_criterion_string);
-			DEALLOCATE(valid_strings);
+			OPTION_TABLE_ADD_ENUMERATOR(FE_write_criterion)(option_table, &write_criterion);
 			/* fields */
-			Option_table_add_entry(option_table, "fields", &field_order_info,
-				 Cmiss_region_get_FE_region(command_data->root_region),
-				 set_FE_fields_FE_region);
+			Option_table_add_multiple_strings_entry(option_table, "fields",
+				&field_names, "FIELD_NAME [& FIELD_NAME [& ...]]|all|none|[all]");
 			/* group */
-			Option_table_add_entry(option_table, "group", &region_path,
-				 command_data->root_region, set_Cmiss_region_path);
+			Option_table_add_string_entry(option_table, "group", &region_path,
+				" RELATIVE_PATH_TO_REGION");
+			/* recursion */
+			OPTION_TABLE_ADD_ENUMERATOR(FE_write_recursion)(option_table, &write_recursion);
+			/* root_region */
+			Option_table_add_set_Cmiss_region_path(option_table, "root",
+				command_data->root_region, &root_region_path);
 			/* default option: file name */
-			Option_table_add_entry(option_table, (char *)NULL, &file_name,
-				 NULL, set_name);			
+			Option_table_add_default_string_entry(option_table, &file_name, "FILE_NAME");
+
 			if (return_code = Option_table_multi_parse(option_table, state))
 			{
-				 STRING_TO_ENUMERATOR(FE_write_criterion)(write_criterion_string,
-						&write_criterion);
 				 if (file_name)
 				 {
 						int length = strlen(file_name);
@@ -19661,18 +19658,59 @@ Can also write individual groups with the <group> option.
 							 node_file_name[length+8]='\0';
 						}
 				 }
-				 if ((!field_order_info ||
-						(0 == get_FE_field_order_info_number_of_fields(field_order_info))) &&
-						(FE_WRITE_COMPLETE_GROUP != write_criterion))
-				 {
+				enum FE_write_fields_mode write_fields_mode = FE_WRITE_ALL_FIELDS;
+				if ((1 == field_names.number_of_strings) && field_names.strings)
+				{
+					if (fuzzy_string_compare(field_names.strings[0], "all"))
+					{
+						write_fields_mode = FE_WRITE_ALL_FIELDS;
+					}
+					else if (fuzzy_string_compare(field_names.strings[0], "none"))
+					{
+						write_fields_mode = FE_WRITE_NO_FIELDS;
+					}
+					else
+					{
+						write_fields_mode = FE_WRITE_LISTED_FIELDS;
+					}
+				}
+				else if (1 < field_names.number_of_strings)
+				{
+					write_fields_mode = FE_WRITE_LISTED_FIELDS;
+				}
+				if ((FE_WRITE_LISTED_FIELDS == write_fields_mode) &&
+					(FE_WRITE_COMPLETE_GROUP != write_criterion))
+				{
+					display_message(WARNING_MESSAGE,
+						"gfx write all:  Must specify fields to use %s",
+						ENUMERATOR_STRING(FE_write_criterion)(write_criterion));
+					return_code = 0;
+					data_return_code = 0;
+					elem_return_code = 0;
+					node_return_code = 0;		
+				}
+				Cmiss_region *root_region = command_data->root_region;
+				if (root_region_path)
+				{
+					if (!Cmiss_region_get_region_from_path(command_data->root_region,
+						root_region_path, &root_region) || (!root_region))
+					{
 						display_message(WARNING_MESSAGE,
-							 "gfx_write_All.  Must specify fields to use %s",
-							 write_criterion_string);
+							"gfx write all:  Invalid root region %s", root_region_path);
 						return_code = 0;
-						data_return_code = 0;
-						elem_return_code = 0;
-						node_return_code = 0;		
-				 }
+					}
+				}
+				Cmiss_region *region = root_region;
+				if (root_region && region_path)
+				{
+					if (!Cmiss_region_get_region_from_path(root_region,
+						region_path, &region) || (!region))
+					{
+						display_message(WARNING_MESSAGE,
+							"gfx write all:  Invalid group or region %s", region_path);
+						return_code = 0;
+					}
+				}
 				 if (!file_name)
 				 {
 /* 						com_file_name = "temp.com"; */
@@ -19824,9 +19862,10 @@ Can also write individual groups with the <group> option.
 				 else
 				 {
 						if (!(data_return_code = write_exregion_file_of_name(temp_data, 
-										 command_data->root_region, region_path,
-										 /*write_elements*/0, /*write_nodes*/0, /*write_data*/1,
-										 write_criterion, field_order_info)))
+							region, root_region,
+							/*write_elements*/0, /*write_nodes*/0, /*write_data*/1,
+							write_fields_mode, field_names.number_of_strings, field_names.strings,
+							write_criterion, write_recursion)))
 						{
 							 display_message(ERROR_MESSAGE,
 									"gfx_write_All.  Could not create temporary data file");
@@ -19841,9 +19880,10 @@ Can also write individual groups with the <group> option.
 				 else
 				 {
 						if (!(elem_return_code = write_exregion_file_of_name(temp_elem, 
-										 command_data->root_region, region_path,
-										 /*write_elements*/1, /*write_nodes*/0, /*write_data*/0,
-										 write_criterion, field_order_info)))
+							region, root_region,
+							/*write_elements*/1, /*write_nodes*/0, /*write_data*/0,
+							write_fields_mode, field_names.number_of_strings, field_names.strings,
+							write_criterion, write_recursion)))
 						{
 							 display_message(ERROR_MESSAGE,
 									"gfx_write_All.  Could not create temporary elem file");
@@ -19858,9 +19898,10 @@ Can also write individual groups with the <group> option.
 				 else
 				 {			
 						if (!(node_return_code = write_exregion_file_of_name(temp_node, 
-										 command_data->root_region, region_path,
-										 /*write_elements*/0, /*write_nodes*/1, /*write_data*/0,
-										 write_criterion, field_order_info)))
+							region, root_region,
+							/*write_elements*/0, /*write_nodes*/1, /*write_data*/0,
+							write_fields_mode, field_names.number_of_strings, field_names.strings,
+							write_criterion, write_recursion)))
 						{
 							 display_message(ERROR_MESSAGE,
 									"gfx_write_All.  Could not create temporary node file");
@@ -19991,9 +20032,17 @@ Can also write individual groups with the <group> option.
 			{
 				 DEALLOCATE(region_path);
 			}
-			if (field_order_info)
+			if (root_region_path)
 			{
-				 DESTROY(FE_field_order_info)(&field_order_info);
+				DEALLOCATE(root_region_path);
+			}
+			if (field_names.strings)
+			{
+				for (int i = 0; i < field_names.number_of_strings; i++)
+				{
+					DEALLOCATE(field_names.strings[i]);
+				}
+				DEALLOCATE(field_names.strings);
 			}
 			if (file_name)
 			{
@@ -20146,7 +20195,7 @@ of the curve, eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 static int gfx_write_elements(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 7 March 2003
+LAST MODIFIED : 30 April 2009
 
 DESCRIPTION :
 If an element file is not specified a file selection box is presented to the
@@ -20155,12 +20204,12 @@ Can also write individual element groups with the <group> option.
 ==============================================================================*/
 {
 	char *file_ext = ".exelem";
-	char *file_name, *region_path;
-	const char **valid_strings, *write_criterion_string;
+	char *file_name, nodes_flag, *region_path, *root_region_path;
 	enum FE_write_criterion write_criterion;
-	int number_of_valid_strings, return_code;
+	enum FE_write_recursion write_recursion;
+	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct FE_field_order_info *field_order_info;
+	struct Multiple_strings field_names;
 	struct Option_table *option_table;
 
 	ENTER(gfx_write_elements);
@@ -20169,45 +20218,95 @@ Can also write individual element groups with the <group> option.
 	{
 		return_code = 1; 
 		region_path = (char *)NULL;
-		field_order_info = (struct FE_field_order_info *)NULL;
+		root_region_path = duplicate_string("/");
+		field_names.number_of_strings = 0;
+		field_names.strings = (char **)NULL;
 		file_name = (char *)NULL;
+		nodes_flag = 0;
 		write_criterion = FE_WRITE_COMPLETE_GROUP;
+		write_recursion = FE_WRITE_RECURSIVE;
 
 		option_table = CREATE(Option_table)();
+		Option_table_add_help(option_table,
+			"Write elements and element fields in EX format to FILE_NAME. "
+			"Output is restricted to the specified <root> region which forms the "
+			"root region in the EX file, and optionally a sub-group or region "
+			"specified with the relative <group> path. "
+			"Output can be restricted to just <fields> listed in required order, or "
+			"\'none\' to list just object identifiers. "
+			"Recursion options control whether sub-groups and sub-regions are output "
+			"with the chosen root region or group. "
+			"Specify <nodes> to include nodes and node fields in the same file.");
 		/* complete_group|with_all_listed_fields|with_any_listed_fields */ 
-		write_criterion_string =
-			ENUMERATOR_STRING(FE_write_criterion)(write_criterion);
-		valid_strings = ENUMERATOR_GET_VALID_STRINGS(FE_write_criterion)(
-			&number_of_valid_strings,
-			(ENUMERATOR_CONDITIONAL_FUNCTION(FE_write_criterion) *)NULL,
-			(void *)NULL);
-		Option_table_add_enumerator(option_table, number_of_valid_strings,
-			valid_strings, &write_criterion_string);
-		DEALLOCATE(valid_strings);
+		OPTION_TABLE_ADD_ENUMERATOR(FE_write_criterion)(option_table, &write_criterion);
 		/* fields */
-		Option_table_add_entry(option_table, "fields", &field_order_info,
-			Cmiss_region_get_FE_region(command_data->root_region),
-			set_FE_fields_FE_region);
+		Option_table_add_multiple_strings_entry(option_table, "fields",
+			&field_names, "FIELD_NAME [& FIELD_NAME [& ...]]|all|none|[all]");
 		/* group */
-		Option_table_add_entry(option_table, "group", &region_path,
-			command_data->root_region, set_Cmiss_region_path);
+		Option_table_add_string_entry(option_table, "group", &region_path,
+			" RELATIVE_PATH_TO_REGION");
+		/* nodes */
+		Option_table_add_char_flag_entry(option_table, "nodes", &nodes_flag);
+		/* recursion */
+		OPTION_TABLE_ADD_ENUMERATOR(FE_write_recursion)(option_table, &write_recursion);
+		/* root_region */
+		Option_table_add_set_Cmiss_region_path(option_table, "root",
+			command_data->root_region, &root_region_path);
 		/* default option: file name */
-		Option_table_add_entry(option_table, (char *)NULL, &file_name,
-			NULL, set_name);
+		Option_table_add_default_string_entry(option_table, &file_name, "FILE_NAME");
 
 		if (return_code = Option_table_multi_parse(option_table, state))
 		{
-			STRING_TO_ENUMERATOR(FE_write_criterion)(write_criterion_string,
-				&write_criterion);
-			if ((!field_order_info ||
-				(0 == get_FE_field_order_info_number_of_fields(field_order_info))) &&
+			enum FE_write_fields_mode write_fields_mode = FE_WRITE_ALL_FIELDS;
+			if ((1 == field_names.number_of_strings) && field_names.strings)
+			{
+				if (fuzzy_string_compare(field_names.strings[0], "all"))
+				{
+					write_fields_mode = FE_WRITE_ALL_FIELDS;
+				}
+				else if (fuzzy_string_compare(field_names.strings[0], "none"))
+				{
+					write_fields_mode = FE_WRITE_NO_FIELDS;
+				}
+				else
+				{
+					write_fields_mode = FE_WRITE_LISTED_FIELDS;
+				}
+			}
+			else if (1 < field_names.number_of_strings)
+			{
+				write_fields_mode = FE_WRITE_LISTED_FIELDS;
+			}
+			if ((FE_WRITE_LISTED_FIELDS == write_fields_mode) &&
 				(FE_WRITE_COMPLETE_GROUP != write_criterion))
 			{
 				display_message(WARNING_MESSAGE,
-					"gfx_write_elements.  Must specify fields to use %s",
-					write_criterion_string);
+					"gfx write elements:  Must list fields to use %s",
+					ENUMERATOR_STRING(FE_write_criterion)(write_criterion));
 				return_code = 0;
 				
+			}
+			Cmiss_region *root_region = command_data->root_region;
+			if (root_region_path)
+			{
+				if (!Cmiss_region_get_region_from_path(command_data->root_region,
+					root_region_path, &root_region) || (!root_region))
+				{
+					display_message(WARNING_MESSAGE,
+						"gfx write elements:  Invalid root region %s", root_region_path);
+					return_code = 0;
+				}
+			}
+			Cmiss_region *region = root_region;
+			if (root_region && region_path)
+			{
+				if (!Cmiss_region_get_region_from_path(root_region,
+					region_path, &region) || (!region))
+				{
+					display_message(WARNING_MESSAGE,
+						"gfx write elements:  Invalid group or region %s", region_path);
+					return_code = 0;
+				}
 			}
 			if (!file_name)
 			{
@@ -20233,10 +20332,10 @@ Can also write individual element groups with the <group> option.
 				/* open the file */
 				if (return_code = check_suffix(&file_name,".exelem"))
 				{
-					return_code = write_exregion_file_of_name(file_name, 
-						command_data->root_region, region_path,
-						/*write_elements*/1, /*write_nodes*/0, /*write_data*/0,
-						write_criterion, field_order_info);
+					return_code = write_exregion_file_of_name(file_name, region, root_region,
+						/*write_elements*/1, (int)nodes_flag, /*write_data*/0,
+						write_fields_mode, field_names.number_of_strings, field_names.strings,
+						write_criterion, write_recursion);
 				}
 			}
 		}
@@ -20245,9 +20344,17 @@ Can also write individual element groups with the <group> option.
 		{
 			DEALLOCATE(region_path);
 		}
-		if (field_order_info)
+		if (root_region_path)
 		{
-			DESTROY(FE_field_order_info)(&field_order_info);
+			DEALLOCATE(root_region_path);
+		}
+		if (field_names.strings)
+		{
+			for (int i = 0; i < field_names.number_of_strings; i++)
+			{
+				DEALLOCATE(field_names.strings[i]);
+			}
+			DEALLOCATE(field_names.strings);
 		}
 		if (file_name)
 		{
@@ -20267,7 +20374,7 @@ Can also write individual element groups with the <group> option.
 static int gfx_write_nodes(struct Parse_state *state,
 	void *use_data, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 7 March 2003
+LAST MODIFIED : 30 April 2009
 
 DESCRIPTION :
 If a nodes file is not specified a file selection box is presented to the user,
@@ -20278,12 +20385,12 @@ If <use_data> is set, writing data, otherwise writing nodes.
 {
 	static char *data_file_ext = ".exdata";
 	static char *node_file_ext = ".exnode";
-	char *file_ext, *file_name, *region_path;
-	const char **valid_strings, *write_criterion_string;
+	char *file_ext, *file_name, *region_path, *root_region_path;
 	enum FE_write_criterion write_criterion;
-	int number_of_valid_strings, return_code;
+	enum FE_write_recursion write_recursion;
+	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct FE_field_order_info *field_order_info;
+	struct Multiple_strings field_names;
 	struct Option_table *option_table;
 
 	ENTER(gfx_write_nodes);
@@ -20291,6 +20398,7 @@ If <use_data> is set, writing data, otherwise writing nodes.
 	{
 		return_code = 1;
 		region_path = (char *)NULL;
+		root_region_path = duplicate_string("/");
 		if (use_data)
 		{
 			file_ext = data_file_ext;
@@ -20299,45 +20407,97 @@ If <use_data> is set, writing data, otherwise writing nodes.
 		{
 			file_ext = node_file_ext;
 		}
-		field_order_info = (struct FE_field_order_info *)NULL;
+		field_names.number_of_strings = 0;
+		field_names.strings = (char **)NULL;
 		file_name = (char *)NULL;
 		write_criterion = FE_WRITE_COMPLETE_GROUP;
+		write_recursion = FE_WRITE_RECURSIVE;
 
 		option_table = CREATE(Option_table)();
+		if (use_data)
+		{
+			Option_table_add_help(option_table, "Write data nodes and data node fields");
+		}
+		else
+		{
+			Option_table_add_help(option_table, "Write nodes and node fields");
+		}
+		Option_table_add_help(option_table,
+			" in EX format to FILE_NAME. "
+			"Output is restricted to the specified <root> region which forms the "
+			"root region in the EX file, and optionally a sub-group or region "
+			"specified with the relative <group> path. "
+			"Output can be restricted to just <fields> listed in required order, or "
+			"\'none\' to list just object identifiers. "
+			"Recursion options control whether sub-groups and sub-regions are output "
+			"with the chosen root region or group.");
 		/* complete_group|with_all_listed_fields|with_any_listed_fields */ 
-		write_criterion_string =
-			ENUMERATOR_STRING(FE_write_criterion)(write_criterion);
-		valid_strings = ENUMERATOR_GET_VALID_STRINGS(FE_write_criterion)(
-			&number_of_valid_strings,
-			(ENUMERATOR_CONDITIONAL_FUNCTION(FE_write_criterion) *)NULL,
-			(void *)NULL);
-		Option_table_add_enumerator(option_table, number_of_valid_strings,
-			valid_strings, &write_criterion_string);
-		DEALLOCATE(valid_strings);
+		OPTION_TABLE_ADD_ENUMERATOR(FE_write_criterion)(option_table, &write_criterion);
 		/* fields */
-		Option_table_add_entry(option_table, "fields", &field_order_info,
-			Cmiss_region_get_FE_region(command_data->root_region),
-			set_FE_fields_FE_region);
+		Option_table_add_multiple_strings_entry(option_table, "fields",
+			&field_names, "FIELD_NAME [& FIELD_NAME [& ...]]|all|none|[all]");
 		/* group */
-		Option_table_add_entry(option_table, "group", &region_path,
-			command_data->root_region, set_Cmiss_region_path);
+		Option_table_add_string_entry(option_table, "group", &region_path,
+			" RELATIVE_PATH_TO_REGION");
+		/* recursion */
+		OPTION_TABLE_ADD_ENUMERATOR(FE_write_recursion)(option_table, &write_recursion);
+		/* root_region */
+		Option_table_add_set_Cmiss_region_path(option_table, "root",
+			command_data->root_region, &root_region_path);
 		/* default option: file name */
-		Option_table_add_entry(option_table, (char *)NULL, &file_name,
-			NULL, set_name);
+		Option_table_add_default_string_entry(option_table, &file_name, "FILE_NAME");
 
 		if (return_code = Option_table_multi_parse(option_table, state))
 		{
-			STRING_TO_ENUMERATOR(FE_write_criterion)(write_criterion_string,
-				&write_criterion);
-			if ((!field_order_info ||
-				(0 == get_FE_field_order_info_number_of_fields(field_order_info))) &&
+			enum FE_write_fields_mode write_fields_mode = FE_WRITE_ALL_FIELDS;
+			if ((1 == field_names.number_of_strings) && field_names.strings)
+			{
+				if (fuzzy_string_compare_same_length(field_names.strings[0], "all"))
+				{
+					write_fields_mode = FE_WRITE_ALL_FIELDS;
+				}
+				else if (fuzzy_string_compare_same_length(field_names.strings[0], "none"))
+				{
+					write_fields_mode = FE_WRITE_NO_FIELDS;
+				}
+				else
+				{
+					write_fields_mode = FE_WRITE_LISTED_FIELDS;
+				}
+			}
+			else if (1 < field_names.number_of_strings)
+			{
+				write_fields_mode = FE_WRITE_LISTED_FIELDS;
+			}
+			if ((FE_WRITE_LISTED_FIELDS == write_fields_mode) &&
 				(FE_WRITE_COMPLETE_GROUP != write_criterion))
 			{
 				display_message(WARNING_MESSAGE,
-					"gfx_write_nodes.  Must specify fields to use %s",
-					write_criterion_string);
+					"gfx write nodes/data:  Must list fields to use %s",
+					ENUMERATOR_STRING(FE_write_criterion)(write_criterion));
 				return_code = 0;
-				
+			}
+			Cmiss_region *root_region = command_data->root_region;
+			if (root_region_path)
+			{
+				if (!Cmiss_region_get_region_from_path(command_data->root_region,
+					root_region_path, &root_region) || (!root_region))
+				{
+					display_message(WARNING_MESSAGE,
+						"gfx write elements:  Invalid root region %s", root_region_path);
+					return_code = 0;
+				}
+			}
+			Cmiss_region *region = root_region;
+			if (root_region && region_path)
+			{
+				if (!Cmiss_region_get_region_from_path(root_region,
+					region_path, &region) || (!region))
+				{
+					display_message(WARNING_MESSAGE,
+						"gfx write elements:  Invalid group or region %s", region_path);
+					return_code = 0;
+				}
 			}
 			if (!file_name)
 			{
@@ -20363,10 +20523,10 @@ If <use_data> is set, writing data, otherwise writing nodes.
 				/* open the file */
 				if (return_code = check_suffix(&file_name, file_ext))
 				{
-					return_code = write_exregion_file_of_name(file_name, command_data->root_region,
-						region_path, /*write_elements*/0, /*write_nodes*/!use_data,
-						/*write_data*/(0 != use_data),
-						write_criterion, field_order_info);
+					return_code = write_exregion_file_of_name(file_name, region, root_region,
+						/*write_elements*/0, /*write_nodes*/!use_data, /*write_data*/(0 != use_data),
+						write_fields_mode, field_names.number_of_strings, field_names.strings,
+						write_criterion, write_recursion);
 				}
 			}
 		}
@@ -20375,9 +20535,17 @@ If <use_data> is set, writing data, otherwise writing nodes.
 		{
 			DEALLOCATE(region_path);
 		}
-		if (field_order_info)
+		if (root_region_path)
 		{
-			DESTROY(FE_field_order_info)(&field_order_info);
+			DEALLOCATE(root_region_path);
+		}
+		if (field_names.strings)
+		{
+			for (int i = 0; i < field_names.number_of_strings; i++)
+			{
+				DEALLOCATE(field_names.strings[i]);
+			}
+			DEALLOCATE(field_names.strings);
 		}
 		if (file_name)
 		{
@@ -20431,8 +20599,7 @@ If <use_data> is set, writing data, otherwise writing nodes.
 		Option_table_add_entry(option_table, "group", &region_path,
 			command_data->root_region, set_Cmiss_region_path);
 		/* default option: file name */
-		Option_table_add_entry(option_table, (char *)NULL, &file_name,
-			NULL, set_name);
+		Option_table_add_default_string_entry(option_table, &file_name, "FILE_NAME");
 
 		if (return_code = Option_table_multi_parse(option_table, state))
 		{

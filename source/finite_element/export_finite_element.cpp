@@ -68,56 +68,6 @@ Module types
 ------------
 */
 
-#if defined (OLD_CODE)
-struct Fwrite_FE_element_group_data
-/*******************************************************************************
-LAST MODIFIED : 7 September 2001
-
-DESCRIPTION :
-==============================================================================*/
-{
-	enum FE_write_criterion write_criterion;
-	struct FE_field_order_info *field_order_info;
-	struct GROUP(FE_element) *element_group;
-}; /* struct File_write_FE_element_group_data */
-
-struct Fwrite_all_FE_element_groups_data
-/*******************************************************************************
-LAST MODIFIED : 7 September 2001
-
-DESCRIPTION :
-==============================================================================*/
-{
-	enum FE_write_criterion write_criterion;
-	struct FE_field_order_info *field_order_info;
-	struct MANAGER(GROUP(FE_element)) *element_group_manager;
-}; /* struct File_write_FE_element_group_data */
-
-struct Fwrite_FE_node_group_data
-/*******************************************************************************
-LAST MODIFIED : 5 September 2001
-
-DESCRIPTION :
-==============================================================================*/
-{
-	enum FE_write_criterion write_criterion;
-	struct FE_field_order_info *field_order_info;
-	struct GROUP(FE_node) *node_group;
-}; /* struct Fwrite_FE_node_group_data */
-
-struct Fwrite_all_FE_node_groups_data
-/*******************************************************************************
-LAST MODIFIED : 5 September 2001
-
-DESCRIPTION :
-==============================================================================*/
-{
-	enum FE_write_criterion write_criterion;
-	struct FE_field_order_info *field_order_info;
-	struct MANAGER(GROUP(FE_node)) *node_group_manager;
-}; /* struct Fwrite_all_FE_node_groups_data */
-#endif /* defined (OLD_CODE) */
-
 struct Write_FE_region_element_data
 {
 	FILE *output_file;
@@ -128,15 +78,6 @@ struct Write_FE_region_element_data
 	struct FE_element *last_element;
 	struct FE_region *fe_region;
 }; /* struct Write_FE_region_element_data */
-
-#if defined (OLD_CODE)
-struct File_write_FE_region_sub
-{
-	FILE *output_file;
-	enum FE_write_criterion write_criterion;
-	struct FE_field_order_info *field_order_info;
-}; /* struct File_write_FE_region_sub */
-#endif /* defined (OLD_CODE) */
 
 struct Write_FE_node_field_values
 {
@@ -161,15 +102,6 @@ struct Write_FE_region_node_data
 	struct FE_field_order_info *field_order_info;
 	struct FE_node *last_node;
 }; /* struct Write_FE_region_node_data */
-
-#if defined (OLD_CODE)
-struct File_write_FE_node_group_sub
-{
-	FILE *output_file;
-	enum FE_write_criterion write_criterion;
-	struct FE_field_order_info *field_order_info;
-}; /* struct File_write_FE_node_group_sub */
-#endif /* defined (OLD_CODE) */
 
 /*
 Module functions
@@ -1748,24 +1680,28 @@ Notes:
 		fprintf(output_file, " Element: ");
 		write_FE_element_identifier(output_file, element);
 		fprintf(output_file,"\n");
-		if (get_FE_element_number_of_faces(element, &number_of_faces) &&
-			(0 < number_of_faces))
+		/* only write faces if writing fields i.e. not with groups */
+		if (!field_order_info || (get_FE_field_order_info_number_of_fields(field_order_info) > 0))
 		{
-			/* write the faces */
-			fprintf(output_file," Faces:\n");
-			for (i = 0; i < number_of_faces; i++)
+			if (get_FE_element_number_of_faces(element, &number_of_faces) &&
+				(0 < number_of_faces))
 			{
-				fprintf(output_file," ");
-				if (get_FE_element_face(element, i, &face) && face)
+				/* write the faces */
+				fprintf(output_file," Faces:\n");
+				for (i = 0; i < number_of_faces; i++)
 				{
-					write_FE_element_identifier(output_file, face);
+					fprintf(output_file," ");
+					if (get_FE_element_face(element, i, &face) && face)
+					{
+						write_FE_element_identifier(output_file, face);
+					}
+					else
+					{
+						/* no face = no number, for compatibility with read_FE_element */
+						fprintf(output_file,"0 0 0");
+					}
+					fprintf(output_file,"\n");
 				}
-				else
-				{
-					/* no face = no number, for compatibility with read_FE_element */
-					fprintf(output_file,"0 0 0");
-				}
-				fprintf(output_file,"\n");
 			}
 		}
 		if (field_order_info)
@@ -2091,29 +2027,6 @@ in the header.
 
 	return (return_code);
 } /* write_FE_region_element */
-
-#if defined (OLD_CODE)
-static int file_write_FE_region_sub(
-	struct FE_region *fe_region, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 10 September 2001
-
-DESCRIPTION :
-Writes an element group to a file.
-==============================================================================*/
-{
-	int return_code;
-	struct File_write_FE_region_sub *data;
-
-	ENTER(file_write_FE_region_sub);
-	data = (struct File_write_FE_region_sub *)data_void;
-	return_code = write_FE_region(data->output_file, fe_region,
-		data->write_criterion, data->field_order_info);
-	LEAVE;
-
-	return (return_code);
-} /* file_write_FE_region_sub */
-#endif /* defined (OLD_CODE) */
 
 static int write_FE_node_field(FILE *output_file,int field_number,
 	struct FE_node *node,struct FE_field *field,int *value_index)
@@ -2724,33 +2637,11 @@ has been selected for output) then the header is written out.
 	return (return_code);
 } /* write_FE_region_node */
 
-#if defined (OLD_CODE)
-static int file_write_FE_node_group_sub(struct GROUP(FE_node) *node_group,
-	void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 6 September 2001
-
-DESCRIPTION :
-Writes a node group to a file.
-==============================================================================*/
-{
-	int return_code;
-	struct File_write_FE_node_group_sub *data;
-
-	ENTER(file_write_FE_node_group_sub);
-	data = (struct File_write_FE_node_group_sub *)data_void;
-	return_code = write_FE_node_group(data->output_file, node_group,
-		data->write_criterion, data->field_order_info);
-	LEAVE;
-
-	return (return_code);
-} /* file_write_FE_node_group_sub */
-#endif /* defined (OLD_CODE) */
-
 static int write_FE_region(FILE *output_file, struct FE_region *fe_region,
 	int write_elements, int write_nodes, int write_data,
-	enum FE_write_criterion write_criterion,
-	struct FE_field_order_info *field_order_info)
+	enum FE_write_fields_mode write_fields_mode,
+	int number_of_field_names, char **field_names, int *field_names_counter,
+	enum FE_write_criterion write_criterion)
 /*******************************************************************************
 LAST MODIFIED : 27 February 2003
 
@@ -2770,6 +2661,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 {
 	int dimension, return_code;
 	struct FE_region *use_fe_region;
+	struct FE_field_order_info *field_order_info = NULL;
 	struct Write_FE_region_element_data write_elements_data;
 	struct Write_FE_region_node_data write_nodes_data;
 
@@ -2777,48 +2669,86 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 	if (output_file && fe_region)
 	{
 		return_code = 1;
-		use_fe_region = fe_region;
-		if (write_data)
+		/* a NULL field_order_info means write all fields, an empty one means write no fields */
+		if (write_fields_mode != FE_WRITE_ALL_FIELDS)
 		{
-			use_fe_region = FE_region_get_data_FE_region(fe_region);
-		}
-		if (write_nodes || write_data)
-		{
-			write_nodes_data.output_file = output_file;
-			write_nodes_data.write_criterion = write_criterion;
-			write_nodes_data.field_order_info = field_order_info;
-			write_nodes_data.last_node = (struct FE_node *)NULL;
-			return_code = FE_region_for_each_FE_node(use_fe_region,
-				write_FE_region_node, &write_nodes_data);
-		}
-		if (write_elements)
-		{
-			write_elements_data.output_file = output_file;
-			write_elements_data.output_number_of_nodes = 0;
-			write_elements_data.output_node_indices = (int *)NULL;
-			write_elements_data.output_number_of_scale_factors = 0;
-			write_elements_data.output_scale_factor_indices = (int *)NULL;
-			write_elements_data.write_criterion = write_criterion;
-			write_elements_data.field_order_info = field_order_info;
-			write_elements_data.fe_region = use_fe_region;
-			write_elements_data.last_element = (struct FE_element *)NULL;
-			/* write 1-D, 2-D then 3-D so lines and faces precede elements */
-			for (dimension = 1; dimension <= 3; dimension++)
+			field_order_info = CREATE(FE_field_order_info)();
+			if ((0 < number_of_field_names) && field_names && field_names_counter)
 			{
-				write_elements_data.dimension = dimension;
-				if (!FE_region_for_each_FE_element(use_fe_region,
-					write_FE_region_element, &write_elements_data))
+				for (int i = 0; (i < number_of_field_names) && return_code; i++)
 				{
-					return_code = 0;
+					if (field_names[i])
+					{
+						struct FE_field *fe_field = FE_region_get_FE_field_from_name(fe_region, field_names[i]);
+						if (fe_field)
+						{
+							++(field_names_counter[i]);
+							return_code = add_FE_field_order_info_field(field_order_info, fe_field);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "write_FE_region.  NULL field name");
+						return_code = 0;
+					}
 				}
 			}
-			DEALLOCATE(write_elements_data.output_node_indices);
-			DEALLOCATE(write_elements_data.output_scale_factor_indices);
+			else if (0 < number_of_field_names)
+			{
+				display_message(ERROR_MESSAGE, "write_FE_region.  Missing field names array");
+				return_code = 0;
+			}
+		}
+
+		if (return_code)
+		{
+			use_fe_region = fe_region;
+			if (write_data)
+			{
+				use_fe_region = FE_region_get_data_FE_region(fe_region);
+			}
+			if (write_nodes || write_data)
+			{
+				write_nodes_data.output_file = output_file;
+				write_nodes_data.write_criterion = write_criterion;
+				write_nodes_data.field_order_info = field_order_info;
+				write_nodes_data.last_node = (struct FE_node *)NULL;
+				return_code = FE_region_for_each_FE_node(use_fe_region,
+					write_FE_region_node, &write_nodes_data);
+			}
+			if (write_elements)
+			{
+				write_elements_data.output_file = output_file;
+				write_elements_data.output_number_of_nodes = 0;
+				write_elements_data.output_node_indices = (int *)NULL;
+				write_elements_data.output_number_of_scale_factors = 0;
+				write_elements_data.output_scale_factor_indices = (int *)NULL;
+				write_elements_data.write_criterion = write_criterion;
+				write_elements_data.field_order_info = field_order_info;
+				write_elements_data.fe_region = use_fe_region;
+				write_elements_data.last_element = (struct FE_element *)NULL;
+				/* write 1-D, 2-D then 3-D so lines and faces precede elements */
+				for (dimension = 1; dimension <= 3; dimension++)
+				{
+					write_elements_data.dimension = dimension;
+					if (!FE_region_for_each_FE_element(use_fe_region,
+						write_FE_region_element, &write_elements_data))
+					{
+						return_code = 0;
+					}
+				}
+				DEALLOCATE(write_elements_data.output_node_indices);
+				DEALLOCATE(write_elements_data.output_scale_factor_indices);
+			}
 		}
 		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE, "write_FE_region.  Failed");
 			return_code = 0;
+		}
+		if (field_order_info)
+		{
+			DESTROY(FE_field_order_info)(&field_order_info);
 		}
 	}
 	else
@@ -2832,244 +2762,139 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 	return (return_code);
 } /* write_FE_region */
 
-static int write_Cmiss_region(FILE *output_file, struct Cmiss_region *region,
-	struct Cmiss_region *root_region, int force_no_master_region,
-	char *write_path, struct Cmiss_region *write_region, int indent_level,
+/***************************************************************************//**
+ * Recursively writes the finite element fields in region tree to file.
+ * Notes:
+ * - the master region for a group must be the parent region.
+ * - element_xi values currently restricted to being in the root_region.
+ * 
+ * @param output_file  The file to write region and field data to.
+ * @param region  The region to write.
+ * @param parent_region_output  Pointer to parent region if just output to same
+ *   file. Caller should set to NULL on first call.
+ * @param root_region  The root region of any data to be written. Need not be
+ *   the true root of region hierarchy, but region paths in file are relative to
+ *   this region.
+ * @param write_elements  If set, write elements and element fields to file.
+ * @param write_nodes  If set, write nodes and node fields to file.
+ * @param write_data  If set, write data and data fields to file. May only use
+ *   if write_elements and write_nodes are 0.
+ * @param write_fields_mode  Controls which fields are written to file.
+ *   If mode is FE_WRITE_LISTED_FIELDS then:
+ *   - Number/list of field_names must be supplied;
+ *   - Field names not used in a region are ignored;
+ *   - Warnings are given for any field names not used in any output region.
+ * @param number_of_field_names  The number of names in the field_names array.
+ * @param field_names  Array of field names.
+ * @param field_names_counter  Array of integers of same length as field_names
+ *   incremented whenever the respective field name is matched.
+ * @param write_criterion  Controls which objects are written. Some modes
+ *   limit output to nodes or objects with any or all listed fields defined.
+ * @param write_recursion  Controls whether sub-regions and sub-groups are
+ *   recursively written.
+ */
+static int write_Cmiss_region(FILE *output_file,
+	struct Cmiss_region *region, struct Cmiss_region *parent_region_output,
+	struct Cmiss_region *root_region,
 	int write_elements, int write_nodes, int write_data,
+	enum FE_write_fields_mode write_fields_mode,
+	int number_of_field_names, char **field_names, int *field_names_counter,
 	enum FE_write_criterion write_criterion,
-	struct FE_field_order_info *field_order_info,
-	struct LIST(Cmiss_region_write_info) *write_info_list, char *path)
-/*******************************************************************************
-LAST MODIFIED : 12 November 2002
-
-DESCRIPTION :
-Writes the contents of <region> to <output_file>. If <write_path> is supplied,
-output is restricted to this path -- relative to <region>, and once the path is
-complete the <write_region> is set to the final region in the path and
-everything below it is output. Up to one of <write_path> and <write_region> may
-be specified, and if both are omitted, everything from <region> down is written
-to the file.
-Where regions have master regions, full output is only made for the master and
-only identifiers of nodes and elements in the servant region are output. If the
-master region will not be written to the file because it is not under
-<root_region> or the <write_path>/<write_region>, servant regions are upgraded
-to full regions without masters for the benefit of output.
-<indent_level> is increased by EXPORT_INDENT_SPACES with every recursive call to
-this function.
-<write_info_list> is used to store current information about how regions have
-been written to date -- whether they are WRITTEN, NOT_WRITTEN or DECLARED; the
-latter indicating that the region headers have been added to the file but the
-content of the region is to be with another path to the region that follows
-the master region being written. This eases writing information for
-reconstructing the DAG when file is imported.
-<write_elements>, <write_nodes>, <write_criterion> and <field_order_info> are
-parameters for <write_FE_region>, called by this function.
-<path> is the full currently-being-output path from <root_region> to <region>.
-Notes:
-* the master region must be a parent of the regions it is master to.
-* element_xi values currently restricted to being in the root_region.
-==============================================================================*/
+	enum FE_write_recursion write_recursion)
 {
-	char *child_path, *child_region_name, *first_path, *master_path;
-	enum Cmiss_region_write_status master_write_status, write_status;
-	enum FE_write_criterion use_write_criterion;
-	int i, j, master_region_not_in_file, number_of_children, return_code;
-	struct Cmiss_region *child_region, *master_region, *write_path_region;
-	struct FE_region *fe_region, *master_fe_region;
+	int return_code;
 
 	ENTER(write_Cmiss_region);
-	if (output_file && region && root_region &&
-		((write_path && (!write_region)) || ((!write_path) && write_region)) &&
-		(0 <= indent_level) && write_info_list && path)
+	if (output_file && region && root_region)
 	{
 		return_code = 1;
-		if (write_path)
+		Cmiss_region *parent_region = Cmiss_region_get_parent(region);
+		/* note outputting as true region if root region is a group */
+		int is_group = (region != root_region) && parent_region &&
+			Cmiss_region_is_group(region);
+
+		/* write region and/or group name */
+		if (!is_group || (!parent_region_output && (parent_region != root_region)))
 		{
-			/* if <write_path> is "" or "/", the following clears it to NULL and
-				 sets write_region to region */
-			if (Cmiss_region_get_child_region_from_path(region, write_path,
-				&write_path_region, &write_path))
+			Cmiss_region *use_region = region;
+			if (is_group)
 			{
-				if ((char *)NULL == write_path)
+				use_region = parent_region;
+			}
+			char *region_path = Cmiss_region_get_relative_path(use_region, root_region);
+			if (region_path && (strlen(region_path) > 0))
+			{
+				char *tidy_path = region_path;
+				if (1 < strlen(tidy_path))
 				{
-					write_region = write_path_region;
+					if (tidy_path[strlen(tidy_path)-1] == CMISS_REGION_PATH_SEPARATOR_CHAR)
+					{
+						tidy_path[strlen(tidy_path)-1] = '\0';
+					}
 				}
+				fprintf(output_file, "Region: %s\n", tidy_path);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"write_Cmiss_region.  Invalid write path");
+				display_message(ERROR_MESSAGE, "write_Cmiss_region.  Could not get region path");
 				return_code = 0;
 			}
+			DEALLOCATE(region_path);
 		}
+		if (is_group)
+		{
+			char *region_path = Cmiss_region_get_relative_path(region, parent_region);
+			if (region_path && (strlen(region_path) > 0))
+			{
+				char *child_region_name = region_path;
+				if (child_region_name[strlen(child_region_name)-1] == CMISS_REGION_PATH_SEPARATOR_CHAR)
+				{
+					child_region_name[strlen(child_region_name)-1] = '\0';
+				}
+				if (child_region_name[0] == CMISS_REGION_PATH_SEPARATOR_CHAR)
+				{
+					child_region_name++;
+				}
+				fprintf(output_file, " Group name: %s\n", child_region_name);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "write_Cmiss_region.  Could not get group name");
+				return_code = 0;
+			}
+			DEALLOCATE(region_path);
+		}
+		DEACCESS(Cmiss_region)(&parent_region);
+
+		/* write finite element fields for this region */
 		if (return_code)
 		{
-			if ((fe_region = Cmiss_region_get_FE_region(region)) &&
-				(return_code = FE_region_get_immediate_master_FE_region(fe_region,
-					&master_fe_region)))
+			enum FE_write_fields_mode use_write_fields_mode = write_fields_mode;
+			if (is_group && parent_region_output)
 			{
-				use_write_criterion = write_criterion;
-				if (master_fe_region && (!force_no_master_region))
-				{
-					use_write_criterion = FE_WRITE_NO_FIELDS;
-				}
-				for (j = 0; j < indent_level; j++)
-				{
-					fputc(' ', output_file);
-				}
-				fprintf(output_file, "<exelem>");
-				return_code = write_FE_region(output_file, fe_region,
-					write_elements, write_nodes, write_data, use_write_criterion, field_order_info);
-				for (j = 0; j < indent_level; j++)
-				{
-					fputc(' ', output_file);
-				}
-				fprintf(output_file, "</exelem>");
+				use_write_fields_mode = FE_WRITE_NO_FIELDS;
 			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"write_Cmiss_region.  Error writing finite element region");
-				return_code = 0;
-			}
+			return_code = write_FE_region(output_file, Cmiss_region_get_FE_region(region),
+				write_elements, write_nodes, write_data,
+				use_write_fields_mode, number_of_field_names, field_names,
+				field_names_counter, write_criterion);
 		}
-		if (return_code)
+
+		/* recursively output child regions */
+		int number_of_children;
+		Cmiss_region_get_number_of_child_regions(region, &number_of_children);
+		for (int i = 0; (i < number_of_children) && return_code; i++)
 		{
-			if (return_code =
-				Cmiss_region_get_number_of_child_regions(region, &number_of_children))
+			Cmiss_region *child_region = Cmiss_region_get_child_region(region, i);
+			if ((write_recursion == FE_WRITE_RECURSIVE) ||
+				((write_recursion == FE_WRITE_RECURSE_SUBGROUPS) &&
+					Cmiss_region_is_group(child_region)))
 			{
-				for (i = 0; (i < number_of_children) && return_code; i++)
-				{
-					child_region = Cmiss_region_get_child_region(region, i);
-					if (return_code = (NULL != child_region) &&
-						Cmiss_region_get_child_region_name(region, i, &child_region_name))
-					{
-						/* determine if child_region is to be written */
-						if (((!write_path) || (child_region == write_path_region)) &&
-							((!write_region) || Cmiss_region_contains_Cmiss_region(
-								write_region, child_region)))
-						{
-							/* get info about whether child_region has already been written */
-							if (return_code = get_Cmiss_region_write_info(write_info_list,
-								child_region, &write_status, &first_path))
-							{
-								/* build the new_path to the child */
-								if (ALLOCATE(child_path, char,
-									strlen(path) + strlen(child_region_name) + 2))
-								{
-									strcpy(child_path, path);
-									strcat(child_path, "/");
-									strcat(child_path, child_region_name);
-								}
-								else
-								{
-									return_code = 0;
-								}
-								master_region = (struct Cmiss_region *)NULL;
-								master_path = (char *)NULL;
-								master_region_not_in_file = 0;
-								if (write_status != CMISS_REGION_WRITTEN)
-								{
-									/* determine if child_region has a master Cmiss_region */
-									if ((fe_region = Cmiss_region_get_FE_region(child_region)) &&
-										(return_code = FE_region_get_immediate_master_FE_region(
-											fe_region, &master_fe_region)) && master_fe_region &&
-										(return_code = FE_region_get_Cmiss_region(master_fe_region,
-											&master_region)) &&
-										(return_code = get_Cmiss_region_write_info(write_info_list,
-											master_region, &master_write_status, &master_path)))
-									{
-										if (CMISS_REGION_WRITTEN != master_write_status)
-										{
-											if (write_path) 
-											{
-												master_region_not_in_file = 1;
-											}
-											else if (write_region)
-											{
-												master_region_not_in_file =
-													!Cmiss_region_contains_Cmiss_region(write_region,
-														master_region);
-											}
-											else
-											{
-												master_region_not_in_file =
-													!Cmiss_region_contains_Cmiss_region(root_region,
-														master_region);
-											}
-										}
-									}
-								}
-								if (return_code)
-								{
-									/* output indent */
-									for (j = 0; j < indent_level; j++)
-									{
-										fputc(' ', output_file);
-									}
-									fprintf(output_file, "<region name=\"%s\"",
-										child_region_name);
-									/* if child_region has already been declared or written, write
-										 its alternative_path to coordinate multiple parentage */
-									if (write_status != CMISS_REGION_NOT_WRITTEN)
-									{
-										fprintf(output_file, " alternative_path=\"%s\"",
-											first_path);
-									}
-									/* if child_region is not already written and has a master
-										 region that is written, it will be fully written now and
-										 we need to output its master_path */
-									if ((CMISS_REGION_WRITTEN != write_status) && master_region &&
-										(CMISS_REGION_WRITTEN == master_write_status))
-									{
-										fprintf(output_file, " master_path=\"%s\"", master_path);
-									}
-									fprintf(output_file, ">\n");
-									/* write child_region if it has not been written yet and has
-										 no master_region or its master_region is either already
-										 written or will not appear in the file */
-									if ((CMISS_REGION_WRITTEN != write_status) &&
-										((!master_region) ||
-											((CMISS_REGION_WRITTEN == master_write_status) ||
-												master_region_not_in_file)))
-									{
-										return_code = write_Cmiss_region(output_file,
-											child_region, root_region,
-											((!master_region) || master_region_not_in_file),
-											write_path, write_region,
-											indent_level + EXPORT_INDENT_SPACES,
-											write_elements, write_nodes, write_data,
-											write_criterion, field_order_info,
-											write_info_list, child_path);
-										write_status = CMISS_REGION_WRITTEN;
-									}
-									else
-									{
-										write_status = CMISS_REGION_DECLARED;
-									}
-									/* output indent */
-									for (j = 0; j < indent_level; j++)
-									{
-										fputc(' ', output_file);
-									}
-									fprintf(output_file, "</region>");
-									if (return_code)
-									{
-										return_code = set_Cmiss_region_write_info(write_info_list,
-											child_region, write_status, path);
-									}
-								}
-								DEALLOCATE(child_path);
-							}
-						}
-						DEALLOCATE(child_region_name);
-					}
-				}
-			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE, "write_Cmiss_region.  Failed");
-				return_code = 0;
+				return_code = write_Cmiss_region(output_file,
+					child_region, /*parent_region_output*/region, root_region,
+					write_elements, write_nodes, write_data,
+					write_fields_mode, number_of_field_names, field_names,
+					field_names_counter, write_criterion, write_recursion);
 			}
 		}
 	}
@@ -3097,10 +2922,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(FE_write_criterion)
 	{
 		case FE_WRITE_COMPLETE_GROUP:
 		{
-			enumerator_string = "complete_group";		} break;
-		case FE_WRITE_NO_FIELDS:
-		{
-			enumerator_string = "no_fields";
+			enumerator_string = "complete_group";
 		} break;
 		case FE_WRITE_WITH_ALL_LISTED_FIELDS:
 		{
@@ -3122,123 +2944,102 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(FE_write_criterion)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(FE_write_criterion)
 
-int write_exregion_file(FILE *output_file,
-	struct Cmiss_region *root_region, char *write_path,
-	int write_elements, int write_nodes, int write_data,
-	enum FE_write_criterion write_criterion,
-	struct FE_field_order_info *field_order_info)
-/*******************************************************************************
-LAST MODIFIED : 16 April 2003
-
-DESCRIPTION :
-Writes an exregion file to <output_file> with <root_region> at the top level of
-the file. If <write_path> is supplied, only its contents are written, except
-that all paths from <root_region> to it are complete in the file.
-If the structure of the file permits it to be written in the old exnode/exelem
-format this is done so; this is only possible if the output hierarchy is
-two-deep and the second level contains only regions which use their parent's
-name space for fields etc. In all other cases, <region> and </region> elements
-are used to start and end regions so that they can be nested.
-The <write_elements>, <write_nodes>, <write_data>, <write_criterion> and
-<field_order_info> control what part of the regions are written:
-May only use <write_data> if <write_elements> and <write_nodes> are 0.
-If <field_order_info> is NULL, all element fields are written in the default,
-alphabetical order.
-If <field_order_info> is empty, only object identifiers are output.
-If <field_order_info> contains fields, they are written in that order.
-Additionally, the <write_criterion> controls output as follows:
-FE_WRITE_COMPLETE_GROUP = write all object in the group (the default);
-FE_WRITE_WITH_ALL_LISTED_FIELDS =
-  write only objects with all listed fields defined;
-FE_WRITE_WITH_ANY_LISTED_FIELDS =
-  write only objects with any listed fields defined.
-==============================================================================*/
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(FE_write_recursion)
 {
-	char *child_region_name;
-	int child_number_of_children, i, number_of_children, region_format,
-		return_code;
-	struct Cmiss_region *child_region, *write_region;
-	struct FE_region *fe_region;
-	struct LIST(Cmiss_region_write_info) *write_info_list;
+	const char *enumerator_string;
+
+	ENTER(ENUMERATOR_STRING(FE_write_recursion));
+	switch (enumerator_value)
+	{
+		case FE_WRITE_RECURSIVE:
+		{
+			enumerator_string = "recursive";
+		} break;
+		case FE_WRITE_RECURSE_SUBGROUPS:
+		{
+			enumerator_string = "recurse_subgroups";
+		} break;
+		case FE_WRITE_NON_RECURSIVE:
+		{
+			enumerator_string = "non_recursive";
+		} break;
+		default:
+		{
+			enumerator_string = (const char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (enumerator_string);
+} /* ENUMERATOR_STRING(FE_write_recursion) */
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(FE_write_recursion)
+
+int write_exregion_file(FILE *output_file,
+	struct Cmiss_region *region, struct Cmiss_region *root_region,
+	int write_elements, int write_nodes, int write_data,
+	enum FE_write_fields_mode write_fields_mode,
+	int number_of_field_names, char **field_names,
+	enum FE_write_criterion write_criterion,
+	enum FE_write_recursion write_recursion)
+{
+	int return_code;
 
 	ENTER(write_exregion_file);
-	write_region = (struct Cmiss_region *)NULL;
-	if (output_file && root_region && 
-		Cmiss_region_get_number_of_child_regions(root_region, &number_of_children)
-		&& ((!write_path) || (Cmiss_region_get_region_from_path(root_region,
-			write_path, &write_region) && write_region)) &&
-			(!write_data || (!write_elements && !write_nodes)))
+	if (output_file && region && root_region &&
+		(!write_data || (!write_elements && !write_nodes)) &&
+		((write_fields_mode != FE_WRITE_LISTED_FIELDS) ||
+			((0 < number_of_field_names) && field_names)))
 	{
-		return_code = 1;
-		/* determine if the region hierarchy can be written in the old format
-			 with one flat list of regions stemming from the root_region and with
-			 the root_region owning all fields, nodes and elements */
-		if (0 < number_of_children)
+		/* check root_region contains region */
+		char *relative_path = Cmiss_region_get_relative_path(region, root_region);
+		if (relative_path)
 		{
-			region_format = 0;
-			for (i = 0; (i < number_of_children) && (!region_format) && return_code;
-				i++)
+			DEALLOCATE(relative_path);
+			int *field_names_counter = NULL;
+			if (0 < number_of_field_names)
 			{
-				child_region = Cmiss_region_get_child_region(root_region, i);
-				if ((return_code = (NULL != child_region)) &&
-					((!write_region) || (write_region == child_region)) &&
-					(return_code = Cmiss_region_get_number_of_child_regions(child_region,
-						&child_number_of_children)))
+				/* count number of times each field name is matched for later warning */
+				if (ALLOCATE(field_names_counter, int, number_of_field_names))
 				{
-					if (0 < child_number_of_children)
+					for (int i = 0; i < number_of_field_names; i++)
 					{
-						region_format = 1;
+						field_names_counter[i] = 0;
 					}
 				}
+			}
+			return_code = write_Cmiss_region(output_file,
+				region, /*parent_region_output*/(Cmiss_region *)NULL, root_region,
+				write_elements, write_nodes, write_data,
+				write_fields_mode, number_of_field_names, field_names, field_names_counter,
+				write_criterion, write_recursion);
+			if (field_names_counter)
+			{
+				if (write_fields_mode == FE_WRITE_LISTED_FIELDS)
+				{
+					for (int i = 0; i < number_of_field_names; i++)
+					{
+						if (field_names_counter[i] == 0)
+						{
+							display_message(WARNING_MESSAGE,
+								"No field named '%s' found in any region written to EX file",
+								field_names[i]);
+						}
+					}
+				}
+				DEALLOCATE(field_names_counter);
+			}
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"write_exregion_file.  Error writing region");
 			}
 		}
 		else
 		{
-			/* cannot output a region with itself as root in old_format */
-			region_format = 1;
-		}
-		if (return_code)
-		{
-			if (region_format)
-			{
-				write_info_list = CREATE(LIST(Cmiss_region_write_info))();
-				fprintf(output_file, "<regionml>\n");
-				return_code = write_Cmiss_region(output_file,
-					root_region, root_region, /*no_master*/1, write_path,
-					/*write_region*/(struct Cmiss_region *)NULL, EXPORT_INDENT_SPACES,
-					write_elements, write_nodes, write_data,
-					write_criterion, field_order_info,
-					write_info_list, /*path*/"");
-				fprintf(output_file, "</regionml>\n");
-				DESTROY(LIST(Cmiss_region_write_info))(&write_info_list);
-			}
-			else
-			{
-				for (i = 0; (i < number_of_children) && return_code; i++)
-				{
-					child_region = Cmiss_region_get_child_region(root_region, i);
-					if ((return_code = (child_region != NULL)) &&
-						((!write_region) || (write_region == root_region) ||
-							(child_region == write_region)) &&
-						(return_code = Cmiss_region_get_child_region_name(root_region,
-							i, &child_region_name)))
-					{
-						fprintf(output_file, " Group name: %s\n", child_region_name);
-						if (fe_region = Cmiss_region_get_FE_region(child_region))
-						{
-							return_code = write_FE_region(output_file, fe_region,
-								write_elements, write_nodes, write_data,
-								write_criterion, field_order_info);
-						}
-						DEALLOCATE(child_region_name);
-					}
-				}
-			}
-		}
-		if (!return_code)
-		{
 			display_message(ERROR_MESSAGE,
-				"write_exregion_file.  Error writing region");
+				"write_exregion_file.  Region is not within root region");
+			return_code = 0;
 		}
 	}
 	else
@@ -3252,17 +3053,13 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 	return (return_code);
 } /* write_exregion_file */
 
-int write_exregion_file_of_name(char *file_name,
-	struct Cmiss_region *root_region, char *write_path,
+int write_exregion_file_of_name(const char *file_name,
+	struct Cmiss_region *region, struct Cmiss_region *root_region,
 	int write_elements, int write_nodes, int write_data,
+	enum FE_write_fields_mode write_fields_mode,
+	int number_of_field_names, char **field_names,
 	enum FE_write_criterion write_criterion,
-	struct FE_field_order_info *field_order_info)
-/*******************************************************************************
-LAST MODIFIED : 18 March 2003
-
-DESCRIPTION :
-Opens <file_name> for writing, calls write_exregion_file and then closes the file.
-==============================================================================*/
+	enum FE_write_recursion write_recursion)	
 {
 	FILE *output_file;
 	int return_code;
@@ -3270,12 +3067,12 @@ Opens <file_name> for writing, calls write_exregion_file and then closes the fil
 	ENTER(write_exregion_file_of_name);
 	if (file_name)
 	{
-		/* open the input file */
 		if (output_file = fopen(file_name, "w"))
 		{
-			return_code = write_exregion_file(output_file,
-				root_region, write_path, write_elements, write_nodes, write_data,
-				write_criterion, field_order_info);
+			return_code = write_exregion_file(output_file, region, root_region,
+				write_elements, write_nodes, write_data,
+				write_fields_mode, number_of_field_names, field_names,
+				write_criterion, write_recursion);
 			fclose(output_file);
 		}
 		else
@@ -3295,310 +3092,3 @@ Opens <file_name> for writing, calls write_exregion_file and then closes the fil
 
 	return (return_code);
 } /* write_exregion_file_of_name */
-
-#if defined (OLD_CODE)
-int write_FE_element_group(FILE *output_file,
-	struct GROUP(FE_element) *element_group,
-	enum FE_write_criterion write_criterion,
-	struct FE_field_order_info *field_order_info)
-/*******************************************************************************
-LAST MODIFIED : 10 September 2001
-
-DESCRIPTION :
-Writes an element group to an <output_file> or the socket (if <output_file> is
-NULL).
-If <field_order_info> is NULL, all element fields are written in the default,
-alphabetical order.
-If <field_order_info> is empty, only element identifiers are output.
-If <field_order_info> contains fields, they are written in that order.
-Additionally, the <write_criterion> controls output as follows:
-FE_WRITE_COMPLETE_GROUP = write all elements in the group (the default);
-FE_WRITE_WITH_ALL_LISTED_FIELDS =
-  write only elements with all listed fields defined;
-FE_WRITE_WITH_ANY_LISTED_FIELDS =
-  write only elements with any listed fields defined.
-==============================================================================*/
-{
-	char *group_name;
-	int dimension, return_code;
-	struct Write_FE_element_group_sub write_data;
-
-	ENTER(write_FE_element_group);
-	if (output_file && element_group)
-	{
-		if (return_code = GET_NAME(GROUP(FE_element))(element_group, &group_name))
-		{
-			fprintf(output_file, " Group name: %s\n", group_name);
-			write_data.output_file = output_file;
-			write_data.output_number_of_nodes = 0;
-			write_data.output_node_indices = (int *)NULL;
-			write_data.output_number_of_scale_factors = 0;
-			write_data.output_scale_factor_indices = (int *)NULL;
-			write_data.write_criterion = write_criterion;
-			write_data.field_order_info = field_order_info;
-			write_data.element_group = element_group;
-			write_data.last_element = (struct FE_element *)NULL;
-			/* write 1-D, 2-D then 3-D so lines and faces precede elements */
-			for (dimension = 1; dimension <= 3; dimension++)
-			{
-				write_data.dimension = dimension;
-				if (!FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-					write_FE_element_group_sub, &write_data, element_group))
-				{
-					return_code = 0;
-				}
-			}
-			DEALLOCATE(write_data.output_node_indices);
-			DEALLOCATE(write_data.output_scale_factor_indices);
-			DEALLOCATE(group_name);
-		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE, "write_FE_element_group.  Failed");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"write_FE_element_group.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* write_FE_element_group */
-
-int file_write_FE_element_group(char *file_name, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 7 September 2001
-
-DESCRIPTION :
-Writes an element group to a file.
-<data_void> should point to a struct Fwrite_FE_element_group_data.
-==============================================================================*/
-{
-	FILE *output_file;
-	int return_code;
-	struct Fwrite_FE_element_group_data *data;
-	struct GROUP(FE_element) *element_group;
-
-	ENTER(file_write_FE_element_group);
-	if (file_name && (data = (struct Fwrite_FE_element_group_data *)data_void) &&
-		(element_group = data->element_group))
-	{
-		/* open the input file */
-		if (output_file = fopen(file_name,"w"))
-		{
-			return_code = write_FE_element_group(output_file, element_group,
-				data->write_criterion, data->field_order_info);
-			fclose(output_file);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Could not create element group file: %s", file_name);
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"file_write_FE_element_group.  Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* file_write_FE_element_group */
-
-int file_write_all_FE_element_groups(char *file_name,void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 7 September 2001
-
-DESCRIPTION :
-Writes all existing element groups to a file.
-<data_void> should point to a struct Fwrite_all_FE_element_groups_data.
-==============================================================================*/
-{
-	FILE *output_file;
-	int return_code;
-	struct File_write_FE_element_group_sub data_sub;
-	struct Fwrite_all_FE_element_groups_data *data;
-	struct MANAGER(GROUP(FE_element)) *element_group_manager;
-
-	ENTER(file_write_all_FE_element_groups);
-	if (file_name && (data =
-		(struct Fwrite_all_FE_element_groups_data *)data_void) &&
-		(element_group_manager = data->element_group_manager))
-	{
-		/* open the input file */
-		if (output_file = fopen(file_name,"w"))
-		{
-			data_sub.output_file = output_file;
-			data_sub.write_criterion = data->write_criterion;
-			data_sub.field_order_info = data->field_order_info;
-			return_code = FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
-				file_write_FE_element_group_sub,
-				(void *)&data_sub, element_group_manager);
-			fclose(output_file);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Could not open element group file: %s", file_name);
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"file_write_all_FE_element_groups.  Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* file_write_all_FE_element_groups */
-
-int write_FE_node_group(FILE *output_file, struct GROUP(FE_node) *node_group,
-	enum FE_write_criterion write_criterion,
-	struct FE_field_order_info *field_order_info)
-/*******************************************************************************
-LAST MODIFIED : 6 September 2001
-
-DESCRIPTION :
-Writes a node group to an <output_file>.
-If <field_order_info> is NULL, all node fields are written in the default,
-alphabetical order.
-If <field_order_info> is empty, only node identifiers are output.
-If <field_order_info> contains fields, they are written in that order.
-Additionally, the <write_criterion> controls output as follows:
-FE_WRITE_COMPLETE_GROUP = write all nodes in the group (the default);
-FE_WRITE_WITH_ALL_LISTED_FIELDS =
-  write only nodes with all listed fields defined;
-FE_WRITE_WITH_ANY_LISTED_FIELDS =
-  write only nodes with any listed fields defined.
-==============================================================================*/
-{
-	char *group_name;
-	int return_code;
-	struct Write_FE_node_group_sub temp_data;
-
-	ENTER(write_FE_node_group);
-	if (output_file && node_group)
-	{
-		if (return_code = GET_NAME(GROUP(FE_node))(node_group, &group_name))
-		{
-			/* file output */
-			fprintf(output_file, " Group name: %s\n", group_name);
-			temp_data.output_file = output_file;
-			temp_data.write_criterion = write_criterion;
-			temp_data.field_order_info = field_order_info;
-			temp_data.last_node = (struct FE_node *)NULL;
-			return_code = FOR_EACH_OBJECT_IN_GROUP(FE_node)(write_FE_node_group_sub,
-				&temp_data, node_group);
-			DEALLOCATE(group_name);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "write_FE_node_group.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* write_FE_node_group */
-
-int file_write_FE_node_group(char *file_name, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 6 September 2001
-
-DESCRIPTION :
-Writes a node group to a file.
-<data_void> should point to a struct Fwrite_FE_node_group_data.
-==============================================================================*/
-{
-	FILE *output_file;
-	int return_code;
-	struct Fwrite_FE_node_group_data *data;
-	struct GROUP(FE_node) *node_group;
-
-	ENTER(file_write_FE_node_group);
-	if (file_name && (data = (struct Fwrite_FE_node_group_data *)data_void) &&
-		(node_group = data->node_group))
-	{
-		/* open the input file */
-		if (output_file = fopen(file_name,"w"))
-		{
-			return_code = write_FE_node_group(output_file, node_group,
-				data->write_criterion, data->field_order_info);
-			fclose(output_file);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Could not create node group file: %s",file_name);
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"file_write_FE_node_group.  Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* file_write_FE_node_group */
-
-int file_write_all_FE_node_groups(char *file_name, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 7 September 2001
-
-DESCRIPTION :
-Writes all existing node groups to a file.
-<data_void> should point to a struct Fwrite_all_FE_node_groups_data.
-==============================================================================*/
-{
-	FILE *output_file;
-	int return_code;
-	struct File_write_FE_node_group_sub data_sub;
-	struct Fwrite_all_FE_node_groups_data *data;
-	struct MANAGER(GROUP(FE_node)) *node_group_manager;
-
-	ENTER(file_write_all_FE_node_groups);
-	if (file_name && (data = (struct Fwrite_all_FE_node_groups_data *)data_void)
-		&& (node_group_manager = data->node_group_manager))
-	{
-		/* open the input file */
-		if (output_file = fopen(file_name,"w"))
-		{
-			data_sub.output_file = output_file;
-			data_sub.write_criterion = data->write_criterion;
-			data_sub.field_order_info = data->field_order_info;
-			return_code = FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_node))(
-				file_write_FE_node_group_sub, (void *)&data_sub, node_group_manager);
-			fclose(output_file);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Could not open node group file: %s",file_name);
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"file_write_all_FE_node_groups.  Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* file_write_all_FE_node_groups */
-
-#endif /* defined (OLD_CODE) */

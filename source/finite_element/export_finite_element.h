@@ -55,23 +55,36 @@ Global/Public types
 -------------------
 */
 
-enum FE_write_criterion
-/*******************************************************************************
-LAST MODIFIED : 7 November 2002
-
-DESCRIPTION :
-Controls output of nodes/elements to exnode/exelem files as follows:
-FE_WRITE_COMPLETE_GROUP = write all object in the group (the default);
-FE_WRITE_WITH_ALL_LISTED_FIELDS =
-  write only objects with all listed fields defined;
-FE_WRITE_WITH_ANY_LISTED_FIELDS =
-  write only objects with any listed fields defined.
-==============================================================================*/
+/**
+ * Enumeration controlling which fields are be output to the EX file.
+ */
+enum FE_write_fields_mode
 {
-	FE_WRITE_COMPLETE_GROUP,
-	FE_WRITE_NO_FIELDS,
-	FE_WRITE_WITH_ALL_LISTED_FIELDS,
-	FE_WRITE_WITH_ANY_LISTED_FIELDS
+	FE_WRITE_ALL_FIELDS, /**< write all fields in the default, alphabetical order */
+	FE_WRITE_NO_FIELDS, /**< write no fields, only object (node, element) identifiers */
+	FE_WRITE_LISTED_FIELDS /**< write listed fields in the supplied order */
+};
+
+/**
+ * Enumeration controlling which objects (nodes, elements) will be output to
+ * the EX file.
+ */
+enum FE_write_criterion
+{
+	FE_WRITE_COMPLETE_GROUP, /**< write all objects in the group */
+	FE_WRITE_WITH_ALL_LISTED_FIELDS, /**< write only objects with all listed fields defined */
+	FE_WRITE_WITH_ANY_LISTED_FIELDS /**< write only objects with any listed fields defined */
+};
+
+/**
+ * Enumeration controlling which objects (nodes, elements) will be output to
+ * the EX file.
+ */
+enum FE_write_recursion
+{
+	FE_WRITE_RECURSIVE, /**< recursively write all sub-regions and sub-groups */
+	FE_WRITE_RECURSE_SUBGROUPS, /**< write sub-groups but not sub-regions */
+	FE_WRITE_NON_RECURSIVE /**< write only the selected region with no sub-groups */
 };
 
 /*
@@ -80,49 +93,53 @@ Global/Public functions
 */
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(FE_write_criterion);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(FE_write_recursion);
 
+/***************************************************************************//**
+ * Writes an EX file with supplied root_region at the top level of the file.
+ *
+ * @param output_file  The file to write region and field data to.
+ * @param region  The region/group to output.
+ * @param root_region  The region which will become the root region in the EX
+ *   file. Need not be the true root of region hierarchy, but must contain
+ *   <region>. 
+ * @param write_elements  If set, write elements and element fields to file.
+ * @param write_nodes  If set, write nodes and node fields to file.
+ * @param write_data  If set, write data and data fields to file. May only use
+ *   if write_elements and write_nodes are 0.
+ * @param write_fields_mode  Controls which fields are written to file.
+ *   If mode is FE_WRITE_LISTED_FIELDS then:
+ *   - Number/list of field_names must be supplied;
+ *   - Field names not used in a region are ignored;
+ *   - Warnings are given for any field names not used in any output region.
+ * @param number_of_field_names  The number of names in the field_names array.
+ * @param field_names  Array of field names.
+ * @param write_criterion  Controls which objects are written. Some modes
+ *   limit output to nodes or objects with any or all listed fields defined.
+ * @param write_recursion  Controls whether sub-regions and sub-groups are
+ *   recursively written.
+ */
 int write_exregion_file(FILE *output_file,
-	struct Cmiss_region *root_region, char *write_path,
+	struct Cmiss_region *region, struct Cmiss_region *root_region,
 	int write_elements, int write_nodes, int write_data,
+	enum FE_write_fields_mode write_fields_mode,
+	int number_of_field_names, char **field_names,
 	enum FE_write_criterion write_criterion,
-	struct FE_field_order_info *field_order_info);
-/*******************************************************************************
-LAST MODIFIED : 7 March 2003
+	enum FE_write_recursion write_recursion);
 
-DESCRIPTION :
-Writes an exregion file to <output_file> with <root_region> at the top level of
-the file. If <write_path> is supplied, only its contents are written, except
-that all paths from <root_region> to it are complete in the file.
-If the structure of the file permits it to be written in the old exnode/exelem
-format this is done so; this is only possible if the output hierarchy is
-two-deep and the second level contains only regions which use their parent's
-name space for fields etc. In all other cases, <region> and </region> elements
-are used to start and end regions so that they can be nested.
-The <write_elements>, <write_nodes>, <write_data>, <write_criterion> and
-<field_order_info> control what part of the regions are written:
-May only use <write_data> if <write_elements> and <write_nodes> are 0.
-If <field_order_info> is NULL, all element fields are written in the default,
-alphabetical order.
-If <field_order_info> is empty, only object identifiers are output.
-If <field_order_info> contains fields, they are written in that order.
-Additionally, the <write_criterion> controls output as follows:
-FE_WRITE_COMPLETE_GROUP = write all object in the group (the default);
-FE_WRITE_WITH_ALL_LISTED_FIELDS =
-  write only objects with all listed fields defined;
-FE_WRITE_WITH_ANY_LISTED_FIELDS =
-  write only objects with any listed fields defined.
-==============================================================================*/
-
-int write_exregion_file_of_name(char *file_name,
-	struct Cmiss_region *root_region, char *write_path,
+/***************************************************************************//**
+ * Opens file with supplied name, calls write_exregion_file with it and closes
+ * file. 
+ * 
+ * @param file_name  Name of file. 
+ * @see write_exregion_file.
+ */
+int write_exregion_file_of_name(const char *file_name,
+	struct Cmiss_region *region, struct Cmiss_region *root_region,
 	int write_elements, int write_nodes, int write_data,
+	enum FE_write_fields_mode write_fields_mode,
+	int number_of_field_names, char **field_names,
 	enum FE_write_criterion write_criterion,
-	struct FE_field_order_info *field_order_info);
-/*******************************************************************************
-LAST MODIFIED : 18 March 2003
-
-DESCRIPTION :
-Opens <file_name> for writing, calls write_exregion_file and then closes the file.
-==============================================================================*/
+	enum FE_write_recursion write_recursion);	
 
 #endif /* !defined (EXPORT_FINITE_ELEMENT_H) */

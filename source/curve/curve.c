@@ -5128,7 +5128,6 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 	char *file_name;
 	FILE *out_file;
 	int comp_no,return_code;
-	struct Cmiss_region *temp_parent_region;
 
 	ENTER(write_Curve);
 	USE_PARAMETER(dummy_void);
@@ -5164,31 +5163,14 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 			{
 				return_code=0;
 			}
-			/* current export code exports only child regions, so make a temporary parent region */
-			temp_parent_region = Cmiss_region_create_share_globals(curve->region);
-			if (Cmiss_region_add_child_region(temp_parent_region, curve->region,
-				/*child_name*/curve->name, /*child_position*/0))
+			sprintf(file_name,"%s.curve.exregion",curve->name);
+			if (!write_exregion_file_of_name(file_name, curve->region, /*root*/curve->region,
+				/*write_elements*/1, /*write_nodes*/1, /*write_data*/0,
+				FE_WRITE_ALL_FIELDS, 0, (char **)NULL,
+				FE_WRITE_COMPLETE_GROUP, FE_WRITE_NON_RECURSIVE))
 			{
-				sprintf(file_name,"%s.curve.exnode",curve->name);
-				if (!write_exregion_file_of_name(file_name, temp_parent_region,
-					(char *)NULL, /*write_elements*/0, /*write_nodes*/1, /*write_data*/0,
-				  FE_WRITE_COMPLETE_GROUP, (struct FE_field_order_info *)NULL))
-				{
-					return_code = 0;
-				}
-				sprintf(file_name,"%s.curve.exelem",curve->name);
-				if (!write_exregion_file_of_name(file_name, temp_parent_region,
-					(char *)NULL, /*write_elements*/1, /*write_nodes*/0, /*write_data*/0,
-				  FE_WRITE_COMPLETE_GROUP, (struct FE_field_order_info *)NULL))
-				{
-					return_code = 0;
-				}
+				return_code = 0;
 			}
-			else
-			{
-				return_code=0;
-			}
-			DEACCESS(Cmiss_region)(&temp_parent_region);
 		}
 		else
 		{
