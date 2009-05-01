@@ -3445,24 +3445,17 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 	if (root_region && input_file)
 	{
 		Cmiss_region_begin_change(root_region);
-		/* set up the root region to be read into by default */
 		/* region is the same as read_region if reading into a true region,
-		 * otherwise it is the parent region of a group */
+		 * otherwise it is the parent region of read_region group */
 		region = ACCESS(Cmiss_region)(root_region);
 		Cmiss_region_begin_change(region);
-		read_region = ACCESS(Cmiss_region)(region);
-		Cmiss_region_begin_change(read_region);
-		fe_region = Cmiss_region_get_FE_region(read_region);
-		if (use_data)
-		{
-			fe_region = FE_region_get_data_FE_region(fe_region);
-		}
-		/* create the initial template node for no fields */
-		template_node = ACCESS(FE_node)(CREATE(FE_node)(1, fe_region, (struct FE_node *)NULL));
-		field_order_info = CREATE(FE_field_order_info)();
+		/* read_region starts as NULL so require initial Region or Group token */
+		read_region = (struct Cmiss_region *)NULL;
+		fe_region = (struct FE_region *)NULL; 
+		field_order_info = (struct FE_field_order_info *)NULL;
+		template_node = (struct FE_node *)NULL;
 		template_element = (struct FE_element *)NULL;
 		element_shape = (struct FE_element_shape *)NULL;
-		
 		input_result = 1;
 		return_code = 1;
 		while (return_code && (1 == input_result))
@@ -3539,17 +3532,29 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 						{
 							if ('R' == first_character_in_token)
 							{
-								read_region = Cmiss_region_get_or_create_region_at_path(root_region, region_path);
-								if (read_region)
+								if (region_path && (CMISS_REGION_PATH_SEPARATOR_CHAR == region_path[0]))
 								{
-									REACCESS(Cmiss_region)(&region, read_region);
-									Cmiss_region_begin_change(region);
+									read_region = Cmiss_region_get_or_create_region_at_path(root_region, region_path);
+									if (read_region)
+									{
+										REACCESS(Cmiss_region)(&region, read_region);
+										Cmiss_region_begin_change(region);
+									}
+									else
+									{
+										location = IO_stream_get_location_string(input_file);
+										display_message(ERROR_MESSAGE,
+											"Could not create region \'%s\'.  %s", region_path, location);
+										DEALLOCATE(location);
+										return_code = 0;
+									}
 								}
 								else
 								{
 									location = IO_stream_get_location_string(input_file);
 									display_message(ERROR_MESSAGE,
-										"Could not create region \'%s\'.  %s", region_path, location);
+										"Missing \'%c\' at start of region path \'%s\'.  %s",
+										CMISS_REGION_PATH_SEPARATOR_CHAR, region_path, location);
 									DEALLOCATE(location);
 									return_code = 0;
 								}
