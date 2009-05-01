@@ -7827,6 +7827,27 @@ Assumes all master_fe_regions are in parents of the owning cmiss_region.
 			}
 		}
 
+		if (return_code && (!merged_global_region) && merge_now)
+		{
+			/* remember that this region has been merged */
+			if (REALLOCATE(matching_regions, *matching_regions_address,
+				struct Cmiss_region *, 2*(*number_of_matching_regions_address + 1)))
+			{
+				matching_regions[2*(*number_of_matching_regions_address)] = region;
+				matching_regions[2*(*number_of_matching_regions_address) + 1] =
+					global_region;
+				*matching_regions_address = matching_regions;
+				(*number_of_matching_regions_address)++;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_regions_merge_FE_regions_private.  "
+					"Could not add region to merged region list");
+				return_code = 0;
+			}
+		}
+		
 		if (return_code && merge_now)
 		{
 			/* merge child regions */
@@ -7900,26 +7921,6 @@ Assumes all master_fe_regions are in parents of the owning cmiss_region.
 			}
 		}
 
-		if (return_code && (!merged_global_region) && merge_now)
-		{
-			/* remember that this region has been merged */
-			if (REALLOCATE(matching_regions, *matching_regions_address,
-				struct Cmiss_region *, 2*(*number_of_matching_regions_address + 1)))
-			{
-				matching_regions[2*(*number_of_matching_regions_address)] = region;
-				matching_regions[2*(*number_of_matching_regions_address) + 1] =
-					global_region;
-				*matching_regions_address = matching_regions;
-				(*number_of_matching_regions_address)++;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Cmiss_regions_merge_FE_regions_private.  "
-					"Could not add region to merged region list");
-				return_code = 0;
-			}
-		}
 		Cmiss_region_end_change(global_region);
 	}
 	else
