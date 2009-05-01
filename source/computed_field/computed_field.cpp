@@ -4016,7 +4016,7 @@ and should not itself be managed.
 					if (return_code)
 					{
 						Computed_field_modify_data field_modify(temp_field,region);
-						if (define_Computed_field_coordinate_system(state,
+						if (return_code = define_Computed_field_coordinate_system(state,
 								(void *)&field_modify,computed_field_package_void))
 						{
 							/* FINITE_ELEMENT computed field wrappers are not defined here -
