@@ -3098,7 +3098,7 @@ Parses a string from the parse <state> into <*string_address>. Outputs the
 			}
 			else
 			{
-				display_message(INFORMATION_MESSAGE, (char *)string_description_void);
+				display_message(INFORMATION_MESSAGE, (const char *)string_description_void);
 				if ((string_address = (char **)string_address_void) &&
 					(*string_address))
 				{
@@ -3123,6 +3123,72 @@ Parses a string from the parse <state> into <*string_address>. Outputs the
 
 	return (return_code);
 } /* set_string */
+
+/***************************************************************************//**
+ * Modifier function for extracting a string which may not be reallocated.
+ * When used as a default, token-less entry, prevents tokens from being silently
+ * ignored.
+ * 
+ * @param state  Current parse state.
+ * @param multiple_strings_address_void  Void pointer giving address of string.
+ * @param string_description_void  Void pointer to string to write as help.  
+ * @return  1 on success, 0 on failure.
+ */
+int set_string_no_realloc(struct Parse_state *state,void *string_address_void,
+	void *string_description_void)
+{
+	char *current_token, **string_address;
+	int return_code;
+
+	ENTER(set_string_no_realloc);
+	if (state && (string_address = (char **)string_address_void) &&
+		string_description_void)
+	{
+		if (current_token = state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
+			{
+				if (*string_address)
+				{
+					display_message(ERROR_MESSAGE, "Already read %s as '%s'",
+						(const char *)string_description_void, *string_address);
+					display_parse_state_location(state);
+					return_code = 0;
+				}
+				else if (*string_address = duplicate_string(current_token))
+				{
+					return_code = shift_Parse_state(state,1);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_string_no_realloc.  Could not allocate memory for string");
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE, (const char *)string_description_void);
+				return_code = 1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Missing string");
+			display_parse_state_location(state);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "set_string_no_realloc.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_string_no_realloc */
 
 int set_int(struct Parse_state *state,void *value_address_void,
 	void *dummy_user_data)
@@ -5858,3 +5924,146 @@ int Option_table_add_string_entry(struct Option_table *option_table,
 	return (return_code);
 } /* Option_table_add_string_entry */
 
+int Option_table_add_default_string_entry(struct Option_table *option_table,
+	char **string_address, const char *string_description)
+{
+	int return_code;
+
+	ENTER(Option_table_add_default_string_entry);
+	if (option_table && string_address && string_description)
+	{
+		if (*string_address)
+		{
+			display_message(ERROR_MESSAGE,
+				"Option_table_add_default_string_entry.  String must initially be NULL");
+			Option_table_set_invalid(option_table);
+			return_code = 0;
+		}
+		else
+		{
+			return_code = Option_table_add_entry(option_table, /*token*/(const char *)NULL,
+				(void *)string_address, (void *)string_description, set_string_no_realloc);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_default_string_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_default_string_entry */
+
+/***************************************************************************//**
+ * Modifier function for extracting one or more strings, separated by and
+ * ampersand &.
+ * 
+ * @param state  Current parse state.
+ * @param multiple_strings_address_void  Address of Multiple_strings structure.
+ * @param strings_description_void  void pointer to string to write as help.  
+ * @return  1 on success, 0 on failure.
+ */
+int set_multiple_strings(struct Parse_state *state,void *multiple_strings_address_void,
+	void *strings_description_void)
+{
+	const char *separator = "&";
+	char *current_token, **new_strings;
+	int finished, last_separator, return_code;
+	struct Multiple_strings *multiple_strings;
+
+	ENTER(set_multiple_strings);
+	if (state && (multiple_strings = (struct Multiple_strings *)multiple_strings_address_void) &&
+		((0 == multiple_strings->number_of_strings) ||
+			(0 < multiple_strings->number_of_strings && multiple_strings->strings)) &&
+		strings_description_void)
+	{
+		last_separator = 1;
+		return_code = 1;
+		finished = 0;
+		while (!finished && (current_token = state->current_token) && return_code)
+		{
+			if ((0 == strcmp(PARSER_HELP_STRING, current_token)) ||
+				(0 == strcmp(PARSER_RECURSIVE_HELP_STRING, current_token)))
+			{
+				display_message(INFORMATION_MESSAGE, " %s", (char *)strings_description_void);
+				finished = 1;
+			}
+			else if (0 == strcmp(current_token, separator))
+			{
+				if (last_separator)
+				{
+					display_message(ERROR_MESSAGE, "Missing string");
+					display_parse_state_location(state);
+					return_code = 0;
+				}
+				else
+				{
+					return_code = shift_Parse_state(state, 1);
+				}
+				last_separator = 1;
+			}
+			else if (!last_separator)
+			{
+				finished = 1;
+			}
+			else
+			{
+				if (REALLOCATE(new_strings, multiple_strings->strings, char *, multiple_strings->number_of_strings + 1))
+				{
+					multiple_strings->strings = new_strings;
+					if (new_strings[multiple_strings->number_of_strings] = duplicate_string(current_token))
+					{
+						multiple_strings->number_of_strings++;
+						return_code = shift_Parse_state(state, 1);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"set_multiple_strings.  Could not allocate memory for string");
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_multiple_strings.  Could not reallocate string array");
+					return_code = 0;
+				}
+				last_separator = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "set_multiple_strings.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_multiple_strings */
+
+int Option_table_add_multiple_strings_entry(struct Option_table *option_table,
+	const char *token, struct Multiple_strings *multiple_strings_address,
+	const char *strings_description)
+{
+	int return_code;
+
+	ENTER(Option_table_add_multiple_strings_entry);
+	if (option_table && token && multiple_strings_address && strings_description)
+	{
+		return_code = Option_table_add_entry(option_table, token,
+			(void *)multiple_strings_address, (void *)strings_description, set_multiple_strings);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_multiple_strings_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_multiple_strings_entry */

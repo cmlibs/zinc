@@ -952,4 +952,44 @@ that do not match other options.  This option must be added last.
 int Option_table_add_string_entry(struct Option_table *option_table,
 	const char *token, char **string_address, const char *string_description);
 
+/***************************************************************************//**
+ * Adds a "default" entry to the option_table which will reads the token into
+ * a string. To prevent other tokens from being silently ignored the string
+ * must initially be NULL and may not be read a second time otherwise an error
+ * is reported.
+ * 
+ * @param option_table  The command option table to add the entry to.
+ * @param string_address  Address of string to be modified. Prior to calling,
+ *   pointed-to string must be NULL.
+ * @param string_description  Text output for this entry in help mode.
+ * @return  1 on success, 0 on failure.
+ */
+int Option_table_add_default_string_entry(struct Option_table *option_table,
+	char **string_address, const char *string_description);
+
+/***************************************************************************//**
+ * Structure to pass to Option_table_add_multiple_strings_entry.
+ * Caller must initialise to zero number_of_strings and NULL strings pointer.
+ */
+struct Multiple_strings
+{
+	int number_of_strings;
+	char **strings;
+};
+
+/***************************************************************************//**
+ * Adds a token to the option_table which if matched reads the following string
+ * or multiple strings if separated by single ampersand & tokens.
+ * 
+ * @param option_table  The command option table to add the entry to.
+ * @param token  The required token for this option.
+ * @param multiple_strings_address  Address of structure for holding a list of
+ *   strings. Must be initialised prior to calling.
+ * @param strings_description  Text output for this entry in help mode.
+ * @return  1 on success, 0 on failure.
+ */
+int Option_table_add_multiple_strings_entry(struct Option_table *option_table,
+	const char *token, struct Multiple_strings *multiple_strings_address,
+	const char *strings_description);
+
 #endif /* !defined (PARSER_H) */
