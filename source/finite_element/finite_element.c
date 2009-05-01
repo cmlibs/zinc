@@ -10052,7 +10052,6 @@ including number of components, value type etc. which should be sufficient to
 allow field1 and field2 to be interchanged without affecting the rest of the
 program. Check this function fits will with FE_fields_match_exact.
 Does not check the fields have the same name as this is a trivial change.
-???RC Made fe_field_type a fundamental propery.
 ==============================================================================*/
 {
 	int return_code;
@@ -10063,6 +10062,7 @@ Does not check the fields have the same name as this is a trivial change.
 		if ((field1->value_type == field2->value_type) &&
 			(field1->fe_field_type == field2->fe_field_type) &&
 			(field1->number_of_components == field2->number_of_components) &&
+			(field1->cm_field_type == field2->cm_field_type) &&
 			Coordinate_systems_match(&(field1->coordinate_system),
 				&(field2->coordinate_system)))
 		{
