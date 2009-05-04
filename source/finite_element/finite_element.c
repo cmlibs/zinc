@@ -26274,6 +26274,7 @@ values_storage are set to zero and NULL, respectively.
 	{
 		if (node_scale_field_info = CREATE(FE_element_node_scale_field_info)())
 		{
+			return_code = 1;
 			number_of_nodes = source_info->number_of_nodes;
 			if (FE_element_node_scale_field_info_set_number_of_nodes(
 				node_scale_field_info, number_of_nodes))
