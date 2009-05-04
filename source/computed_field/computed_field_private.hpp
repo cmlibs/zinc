@@ -70,13 +70,27 @@ class Computed_field_modify_data
 public:
 	struct Computed_field *field;
 	struct Cmiss_region *region;
+	bool no_change;
 	
 	Computed_field_modify_data(struct Computed_field *field,
 		struct Cmiss_region *region) :
 		field(field),
-		region(region)
+		region(region),
+		no_change(false)
 	{
 	}
+
+	/**
+	 * Call if define field function has not modified field
+	 * Notably called by finite_element field type since that field modifies
+	 * FE_field and relies on callbacks to update computed field wrapper.
+	 */
+	void set_no_change() { no_change = true; };
+	
+	/**
+	 * @return true if field has been modified, false if not
+	 */
+	bool is_field_changed() const { return !no_change; };
 };
 
 class Computed_field_type_package

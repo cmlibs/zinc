@@ -1397,6 +1397,9 @@ FE_field being made and/or modified.
 			(field=field_modify->field))
 	{
 		return_code = 1;
+		/* computed field is never modified for type finite_element; FE_field is
+		 * modified and computed field wrapper is updated in response to callback */
+		field_modify->set_no_change();
 		existing_fe_field = (struct FE_field *)NULL;
 		if (computed_field_finite_element_type_string ==
 			Computed_field_get_type_string(field))
