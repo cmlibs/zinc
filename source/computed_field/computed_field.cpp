@@ -166,6 +166,7 @@ extern "C" {
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_composite.h"
+#include "computed_field/computed_field_finite_element.h"
 }
 #include "computed_field/computed_field_private.hpp"
 extern "C" {
@@ -4016,12 +4017,12 @@ and should not itself be managed.
 					if (return_code)
 					{
 						Computed_field_modify_data field_modify(temp_field,region);
-						if (return_code = define_Computed_field_coordinate_system(state,
-								(void *)&field_modify,computed_field_package_void))
-						{
+						if ((return_code = define_Computed_field_coordinate_system(state,
+								(void *)&field_modify,computed_field_package_void)) &&
 							/* FINITE_ELEMENT computed field wrappers are not defined here -
-								 done automatically in response to FE_field manager messages,
-								 so they always return false */
+								 done automatically in response to FE_field manager messages */
+							!Computed_field_is_type_finite_element(temp_field))
+						{
 							if (existing_field)
 							{
 								if (Computed_field_is_read_only(existing_field))

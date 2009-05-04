@@ -1579,10 +1579,6 @@ FE_field being made and/or modified.
 				DEALLOCATE(component_names);
 			}
 		}
-		/* Always return 0 as this ensures the define_Computed_field function
-			does not modify the Computed_field, the Computed_field is instead
-			modified in response to the FE_field manager messages */
-		return_code=0;
 	}
 	else
 	{
