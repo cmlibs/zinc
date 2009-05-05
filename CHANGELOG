@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : CHANGELOG
 #
-# LAST MODIFIED : 20 Dec 2007
+# LAST MODIFIED : 5 May 2009
 # ==========================================================================
 
 This software is the cmgui part of CMISS.
@@ -9,6 +9,48 @@ It is released under the Mozilla Public License v1.1
 
 Further information, help pages, a tracker and a wiki is available at 
 http://www.cmiss.org/cmgui/
+
+v2.6
+5 May 2009
+
+Breaks:
+1609 Command "gfx write nodes/elements/data" 'fields' option now requires field names to be separated by ampersands (&)
+
+Added Functions (selected list):
+866 Added quadratic simplex (tetrahedron) element basis functions.
+883 Implemented offscreen printing for cmgui-wx. (Anti-aliasing not supported yet)
+901 Improved time dependent transformation interface.
+948 Greater support of different DICOM formats using GDCM.
+976 Rendering of full resolution textures about GPU supported sizes by tiling (in certain cases...)
+990 Added scene chooser on graphics windows.
+1019 Added transformation editor of scene objects.
+1022 Added graphics font support in cmgui-wx.
+1026 Added Opengl GLSL support.
+1030 Added 'function' field type for reusing another field's function with a different source field.
+1035 Optimized basis function calculations.
+1037 (Ongoing) Introducing new field API.
+1067 Fields owned by region - can now define computed fields in sub-regions.
+1129 Complete wx interface
+1130 Allowed user-defined shading programs.
+1323 Enforced field ownership and relationships within region.
+1447 (Ongoing) Using environment variable overrides for OpenGL extensions. 
+1486 Added 'alias' field type for importing a field from another region.
+1522 Added absolute value field.
+1527 Beginnings of SWIG API support. 
+1609 Added support for regions and comments in EX file format - read and write.
+1630 Added time notifier and time keeper API.
+1733 Windows support for the -example command line option
+Added cmgui user documentation in docs folder and wiki including 1534 EX file format guide.
+
+Bugs fixed (selected list)
+844 Fixed sub-regions not supporting time
+910 Fixed if a node is labelled with a field that is not defined for the node then it is not rendered.
+1020 Fixed 'gfx destroy lines all' destroys elements too. 
+1069 Fixed merging element fields with no scale factors crashes.
+1580 Fixed set_values on composite field can lead to undefined values.
+1623 Fixed time_keeper fails to notify clients when t = 0.
+1643 Fixed file dialog title text is garbled for open com file dialog.
+1654 Fixed CMGUI fails to continue playing time keeper.
 
 25 June 2008
 API changes:
