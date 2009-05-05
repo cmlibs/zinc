@@ -55,7 +55,7 @@ The region path must always be written as an absolute path from the root region 
 
 Versions of cmgui prior to 2.6 implicitly read data into the root region, and will report an error for the unrecognised "Region" keyword. The first non-comment keyword in post Cmgui 2.6 EX files should be a Region keyword; to maintain compatibility with older files it may alternatively begin with a Group declaration.
 
-With EX files you are free to put many regions (and groups) in the same file, or to keep each region (or group) in separate files. The choice is up to the user, although it is more flexible to use separate files, since commands for reading EX files into cmgui (e.g. gfx read nodes/elements/data) permit the file’s root region to be mapped to any region. For maximum flexibility and to avoid potential merge conflicts, it is recommended that you keep your model data out of the Cmgui root region.
+With EX files you are free to put many regions (and groups) in the same file, or to keep each region (or group) in separate files. The choice is up to the user, although it is more flexible to use separate files, since commands for reading EX files into cmgui (e.g. gfx read nodes/elements/data) permit the file's root region to be mapped to any region. For maximum flexibility and to avoid potential merge conflicts, it is recommended that you keep your model data out of the Cmgui root region.
 
 Cmgui example a/region_io gives several example EX files defining fields in regions and sub-groups.
 
