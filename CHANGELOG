@@ -51,6 +51,7 @@ Bugs fixed (selected list)
 1623 Fixed time_keeper fails to notify clients when t = 0.
 1643 Fixed file dialog title text is garbled for open com file dialog.
 1654 Fixed CMGUI fails to continue playing time keeper.
+1785 Fixed CMGUI fails to render all child scenes of a scene.
 
 25 June 2008
 API changes:

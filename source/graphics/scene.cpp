@@ -7247,14 +7247,14 @@ int Scene_render_opengl(Scene *scene, Render_graphics_opengl *renderer)
 	{
 		renderer->fast_changing = 0;
 		glPushName(0);
-		FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_call_renderer,
+		return_code = FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_call_renderer,
 			(void *)renderer, scene->scene_object_list);
 		glPopName();
 		if (Scene_has_fast_changing_objects(scene))
 		{
 			renderer->fast_changing = 1;
 			glPushName(0);
-			FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_call_renderer,
+			return_code = FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_call_renderer,
 				(void *)renderer, scene->scene_object_list);
 			renderer->fast_changing = 0;
 			glPopName();
@@ -7262,7 +7262,7 @@ int Scene_render_opengl(Scene *scene, Render_graphics_opengl *renderer)
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "build_Scene.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "Scene_render_opengl.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
