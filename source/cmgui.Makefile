@@ -1477,7 +1477,7 @@ $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h : $(OBJS) $(UNEMAP_OBJS) cmgui.Makefile
 	fi	
 	echo '/* This is a generated file.  Do not edit.  Edit cmgui.c or cmgui.imake instead */' > $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h;	  
 	date > date.h
-	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 2.6.0  &/;s/.$$/&\\nCopyright 1996-2009, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h
+	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 2.6.1  &/;s/.$$/&\\nCopyright 1996-2009, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h
 
 $(MAIN_OBJ) : $(MAIN_SRC) $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h $(INTERPRETER_LIB)
 	@set -x; \
