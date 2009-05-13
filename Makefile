@@ -103,6 +103,10 @@ clean-all :
 	-rm -r uidh
 	-rm -r xrch
 
+clean-all-except-uidh :
+	-rm -r object
+	-rm -r xrch
+
 ifdef TARGET
    TARGET_OPTION = $(TARGET)
 endif
