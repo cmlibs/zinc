@@ -692,7 +692,8 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
        $(error cmgui build error wx config not matched for $(WX_DIR)wx-config --libs --unicode=no --debug=$(WX_DEBUG_FLAG) xrc,gl,xml,adv,html,core,base)
      endif
    endif
-   USER_INTERFACE_INC += $(shell $(WX_DIR)wx-config --cxxflags --unicode=no --debug=$(WX_DEBUG_FLAG) --static=$(WX_STATIC_FLAG))
+   WX_USER_INTERFACE_INC := $(shell $(WX_DIR)wx-config --cxxflags --unicode=no --debug=$(WX_DEBUG_FLAG) --static=$(WX_STATIC_FLAG))
+   USER_INTERFACE_INC += $(WX_USER_INTERFACE_INC)
    USER_INTERFACE_LIB += $(GRAPHICS_LIB)
    ifeq ($(OPERATING_SYSTEM),linux)
       ifneq ($(STATIC_LINK),true)
