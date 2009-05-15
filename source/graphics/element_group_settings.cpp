@@ -129,6 +129,7 @@ finite element group rendition.
 	struct Computed_field *orientation_scale_field;
 	struct Computed_field *variable_scale_field;
 	struct Computed_field *label_field;
+	struct Computed_field *visibility_field;
 	/* for element_points and iso_surfaces */
 	enum Use_element_type use_element_type;
 	/* for element_points only */
@@ -716,6 +717,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->orientation_scale_field=(struct Computed_field *)NULL;
 			settings->variable_scale_field=(struct Computed_field *)NULL;
 			settings->label_field=(struct Computed_field *)NULL;
+			settings->visibility_field=(struct Computed_field *)NULL;
 			settings->select_mode=GRAPHICS_SELECT_ON;
 			/* for element_points and iso_surfaces */
 			settings->use_element_type=USE_ELEMENTS;
@@ -854,6 +856,10 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 			if (settings->label_field)
 			{
 				DEACCESS(Computed_field)(&(settings->label_field));
+			}
+			if (settings->visibility_field)
+			{
+				DEACCESS(Computed_field)(&(settings->visibility_field));
 			}
 			if (settings->volume_texture)
 			{
@@ -1039,6 +1045,7 @@ graphics_object is NOT copied; destination->graphics_object is cleared.
 			}
 		}
 		REACCESS(Computed_field)(&(destination->label_field),source->label_field);
+		REACCESS(Computed_field)(&(destination->visibility_field),source->visibility_field);
 		/* for element_points and iso_surfaces */
 		destination->use_element_type=source->use_element_type;
 		/* for element_points only */
@@ -2350,6 +2357,54 @@ as a string and displayed beside the glyph.
 	return (return_code);
 } /* GT_element_settings_set_label_field */
 
+int GT_element_settings_get_visibility_field(struct GT_element_settings *settings,
+	struct Computed_field **visibility_field)
+{
+	int return_code;
+
+	ENTER(GT_element_settings_get_visibility_field);
+	if (settings&&
+		((GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type)||
+			(GT_ELEMENT_SETTINGS_DATA_POINTS==settings->settings_type)))
+	{
+		*visibility_field = settings->visibility_field;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_get_visibility_field.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_get_visibility_field */
+
+int GT_element_settings_set_visibility_field(
+	struct GT_element_settings *settings,struct Computed_field *visibility_field)
+{
+	int return_code;
+
+	ENTER(GT_element_settings_set_visibility_field);
+	if (settings&&
+		((GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type)||
+			(GT_ELEMENT_SETTINGS_DATA_POINTS==settings->settings_type)))
+	{
+		REACCESS(Computed_field)(&(settings->visibility_field), visibility_field);
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_set_visibility_field.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_set_label_field */
+
 struct Graphical_material *GT_element_settings_get_material(
 	struct GT_element_settings *settings)
 /*******************************************************************************
@@ -3213,7 +3268,9 @@ Returns 1 if the <settings> use any embedded_fields.
 				(settings->data_field &&
 					Computed_field_depends_on_embedded_field(settings->data_field)) ||
 				(settings->label_field &&
-					Computed_field_depends_on_embedded_field(settings->label_field))))
+					Computed_field_depends_on_embedded_field(settings->label_field)) ||
+				(settings->visibility_field &&
+					Computed_field_depends_on_embedded_field(settings->visibility_field))))
 		{
 			return_code = 1;
 		}
@@ -3298,6 +3355,11 @@ group are time dependent.
 		}
 		if (settings->label_field && 
 			Computed_field_has_multiple_times(settings->label_field))
+		{
+			time_dependent = 1;
+		}
+		if (settings->visibility_field && 
+			Computed_field_has_multiple_times(settings->visibility_field))
 		{
 			time_dependent = 1;
 		}
@@ -3558,7 +3620,10 @@ used if the settings has no coodinate field of its own.
 					settings->variable_scale_field, conditional_function, user_data)) ||
 			(settings->label_field &&
 				Computed_field_or_ancestor_satisfies_condition(
-					settings->label_field, conditional_function, user_data)))
+					settings->label_field, conditional_function, user_data)) ||
+			(settings->visibility_field &&
+				Computed_field_or_ancestor_satisfies_condition(
+					settings->visibility_field, conditional_function, user_data)))
 		{
 			return_code = 1;
 		}
@@ -4385,7 +4450,8 @@ settings describe EXACTLY the same geometry.
 				(settings->variable_scale_field==
 					second_settings->variable_scale_field)&&
 				(settings->label_field==second_settings->label_field)&&
-				 (settings->font==second_settings->font);
+				 (settings->font==second_settings->font) &&
+				(settings->visibility_field==second_settings->visibility_field);
 		}
 		/* for element_points and iso_surfaces */
 		if (return_code&&
@@ -4877,7 +4943,7 @@ if no coordinate field. Currently only write if we have a field.
 			}
 			else
 			{
-				sprintf(temp_string," range_number_of_iso_values %d",
+				sprintf(temp_string," number_of_iso_values %d",
 					settings->number_of_iso_values);
 				append_string(&settings_string,temp_string,&error);				
 				sprintf(temp_string," first_iso_value %g",
@@ -4933,6 +4999,17 @@ if no coordinate field. Currently only write if we have a field.
 						/* put quotes around name if it contains special characters */
 						make_valid_token(&name);
 						append_string(&settings_string," label ",&error);
+						append_string(&settings_string,name,&error);
+						DEALLOCATE(name);
+					}
+				}
+				if (settings->visibility_field)
+				{
+					if (GET_NAME(Computed_field)(settings->visibility_field,&name))
+					{
+						/* put quotes around name if it contains special characters */
+						make_valid_token(&name);
+						append_string(&settings_string," visibility_field ",&error);
 						append_string(&settings_string,name,&error);
 						DEALLOCATE(name);
 					}
@@ -6354,8 +6431,8 @@ The graphics object is stored with with the settings it was created from.
 										settings_to_object_data->time,
 										settings_to_object_data->wrapper_orientation_scale_field,
 										settings->variable_scale_field, settings->data_field,
-										settings->font, settings->label_field, settings->select_mode,
-										selected_node_list);
+										settings->font, settings->label_field, settings->visibility_field,
+										settings->select_mode,selected_node_list);
 									/* NOT an error if no glyph_set produced == empty group */
 									if (glyph_set)
 									{
@@ -7188,7 +7265,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	struct Modify_g_element_data *modify_g_element_data;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data, set_label_field_data, set_orientation_scale_field_data,
+		set_data_field_data, set_label_field_data, set_visibility_field_data, set_orientation_scale_field_data,
 		set_variable_scale_field_data;
 	Triple glyph_centre, glyph_scale_factors, glyph_size;
 
@@ -7301,6 +7378,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_label_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"label",&(settings->label_field),
 						&set_label_field_data,set_Computed_field_conditional);
+					/* visibility_field */
+					set_visibility_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
+					set_visibility_field_data.conditional_function=
+						(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+					set_visibility_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"visibility_field",&(settings->visibility_field),
+						&set_visibility_field_data,set_Computed_field_conditional);
 					/* material */
 					Option_table_add_entry(option_table,"material",&(settings->material),
 						g_element_command_data->graphical_material_manager,
@@ -7483,7 +7568,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	struct Modify_g_element_data *modify_g_element_data;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data, set_label_field_data, set_orientation_scale_field_data,
+		set_data_field_data, set_label_field_data, set_visibility_field_data, set_orientation_scale_field_data,
 		set_variable_scale_field_data;
 	Triple glyph_centre, glyph_scale_factors, glyph_size;
 
@@ -7596,6 +7681,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_label_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"label",&(settings->label_field),
 						&set_label_field_data,set_Computed_field_conditional);
+					/* visibility */
+					set_visibility_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
+					set_visibility_field_data.conditional_function=
+						(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+					set_visibility_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"visibility_field",&(settings->visibility_field),
+						&set_visibility_field_data,set_Computed_field_conditional);
 					/* material */
 					Option_table_add_entry(option_table,"material",&(settings->material),
 						g_element_command_data->graphical_material_manager,

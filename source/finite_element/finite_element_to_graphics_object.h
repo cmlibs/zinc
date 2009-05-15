@@ -404,7 +404,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field,
 	struct Graphics_font *font, struct Computed_field *label_field,
-	enum Graphics_select_mode select_mode,
+	struct Computed_field *visibility_field, enum Graphics_select_mode select_mode,
 	struct LIST(FE_node) *selected_node_list);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005

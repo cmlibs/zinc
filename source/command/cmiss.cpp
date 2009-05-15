@@ -4633,8 +4633,9 @@ If <use_data> is set, creating data points, otherwise creating node points.
 				if (glyph_set = create_GT_glyph_set_from_FE_region_nodes(fe_region,
 					rc_coordinate_field, glyph, base_size, centre, scale_factors, time,
 					wrapper_orientation_scale_field, variable_scale_field,
-					data_field, command_data->default_font, label_field, GRAPHICS_NO_SELECT,
-					(struct LIST(FE_node) *)NULL))
+						data_field, command_data->default_font, label_field, 
+						/* visibility_field */ NULL, GRAPHICS_NO_SELECT,
+						(struct LIST(FE_node) *)NULL))
 				{
 					if (!GT_OBJECT_ADD(GT_glyph_set)(graphics_object,time,glyph_set))
 					{

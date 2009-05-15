@@ -768,6 +768,23 @@
 												</object>
 											</object>
 
+											<object class="sizeritem">
+				   								<object class = "wxBoxSizer">	
+													<orient>wxHORIZONTAL</orient>
+													<object class="sizeritem">
+														<flag>wxALIGN_CENTRE_VERTICAL</flag>
+														<object class	="wxCheckBox" name="VisibilityFieldCheckBox"> 
+															<label>Visibility field:</label>				  			
+	 													</object>
+													</object>
+													<object class="sizeritem">
+														<object class	="wxPanel" name="VisibilityFieldChooserPanel">
+															<size>300,30</size>
+	 													</object>
+													</object>
+												</object>
+											</object>
+
 											<object class="sizeritem">			
 												<object class="wxStaticLine">
 													<size>300,-1</size>

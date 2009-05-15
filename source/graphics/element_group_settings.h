@@ -927,6 +927,28 @@ Sets the visibility of the graphics described by the settings, where 1 is
 visible, 0 is invisible.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Return the field representing the visibility of the element settings.
+ *
+ * @param settings  The GT_element_settings to get the visbility field from.
+ * @param visibility_field  The address to the visibility field.
+ * @return  1 if GT_element_settings successfully returns the address of the
+ *    visibility field, otherwise 0. 
+ */
+int GT_element_settings_get_visibility_field(struct GT_element_settings *settings,
+	struct Computed_field **visibility_field);
+
+/***************************************************************************//**
+ * Set the field representing the visibility of the element settings.
+ *
+ * @param settings  The GT_element_settings to set the visibility field for.
+ * @param visibility_field  The field to be set as the visibility field
+ * @return  1 if successfully set the visibility field to element settings,
+ *    otherwise 0.
+ */
+int GT_element_settings_set_visibility_field(struct GT_element_settings *settings,
+	struct Computed_field *visibility_field);
+
 struct VT_volume_texture *GT_element_settings_get_volume_texture(
 	struct GT_element_settings *settings);
 /*******************************************************************************

@@ -327,8 +327,9 @@ class wxSceneEditor : public wxFrame
 	wxButton *sceneupbutton, scenedownbutton, *applybutton, *revertbutton;
 	wxCheckBox *nativediscretizationcheckbox,*autocheckbox,	*coordinatefieldcheckbox,
 		*radiusscalarcheckbox, *orientationscalecheckbox,*variablescalecheckbox,
-		*labelcheckbox,*nativediscretizationfieldcheckbox,*reversecheckbox,*datacheckbox,
-		*texturecoordinatescheckbox,*exteriorcheckbox,*facecheckbox, *seedelementcheckbox;	
+		*labelcheckbox,*visibility_field_checkbox,*nativediscretizationfieldcheckbox,
+		*reversecheckbox,*datacheckbox,*texturecoordinatescheckbox,*exteriorcheckbox,
+		*facecheckbox, *seedelementcheckbox;	
 	wxRadioButton *isovaluelistradiobutton, *isovaluesequenceradiobutton;
 	wxPanel *isovalueoptionspane;
 	wxTextCtrl *elementdiscretisationpanel, *nametextfield, *circlediscretisationpanel,
@@ -345,7 +346,7 @@ class wxSceneEditor : public wxFrame
 		*density_field_chooser_panel,*streamline_type_chooser_panel,
 		*stream_vector_chooser_panel , *streamline_data_type_chooser_panel,
 	 	*spectrum_chooser_panel,*data_chooser_panel,*texture_coordinates_chooser_panel,
-		*render_type_chooser_panel, *seed_element_panel;
+		 *render_type_chooser_panel, *seed_element_panel, *visibility_field_chooser_panel;
 	wxWindow *glyphbox,*glyphline;
 	wxChoice *facechoice;
 	wxString TempText;
@@ -388,6 +389,8 @@ class wxSceneEditor : public wxFrame
 	*variable_scale_field_chooser;
 	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 	*label_field_chooser;
+	Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+	*visibility_field_chooser;
 	 DEFINE_MANAGER_CLASS(Graphics_font); 
 	 	 Managed_object_chooser<Graphics_font,MANAGER_CLASS(Graphics_font)>
 	 *font_chooser;	
@@ -559,6 +562,7 @@ public:
 	orientation_scale_field_chooser = NULL;		
 	variable_scale_field_chooser = NULL;
 	label_field_chooser= NULL;
+	visibility_field_chooser= NULL;
 	font_chooser=NULL;
 	use_element_type_chooser = NULL;
 	xi_discretization_mode_chooser = NULL;
@@ -674,6 +678,8 @@ public:
 				 delete variable_scale_field_chooser;
 			if (label_field_chooser)
 				 delete label_field_chooser;
+			if (visibility_field_chooser)
+				 delete visibility_field_chooser;
 			if (use_element_type_chooser)
 				 delete use_element_type_chooser;
 			if (xi_discretization_mode_chooser)
@@ -721,6 +727,8 @@ void Scene_editor_wx_set_manager_in_field_choosers(struct Scene_editor *scene_ed
 			variable_scale_field_chooser->set_manager(scene_editor->field_manager);
 	 if (label_field_chooser != NULL)
 			label_field_chooser->set_manager(scene_editor->field_manager);
+	 if (visibility_field_chooser != NULL)
+		  visibility_field_chooser->set_manager(scene_editor->field_manager);
 	 if (native_discretization_field_chooser != NULL)
 			native_discretization_field_chooser->set_manager(scene_editor->field_manager);
 	 if (xi_point_density_field_chooser != NULL)
@@ -1209,6 +1217,16 @@ Callback from wxChooser<label> when choice is made.
 		&temp_label_field, &font);
 	GT_element_settings_set_label_field(scene_editor->current_settings, 
 		 label_field, font);
+	AutoApplyorNot(scene_editor->gt_element_group,
+	    scene_editor->edit_gt_element_group);
+	RenewLabelonList(scene_editor->current_settings);
+	return 1;
+}
+
+int visibility_field_callback(Computed_field *visibility_field)
+{
+	GT_element_settings_set_visibility_field(scene_editor->current_settings, 
+		 visibility_field);
 	AutoApplyorNot(scene_editor->gt_element_group,
 	    scene_editor->edit_gt_element_group);
 	RenewLabelonList(scene_editor->current_settings);
@@ -2912,7 +2930,6 @@ void EnterGlyphSize(wxCommandEvent &event)
 					AutoApplyorNot(scene_editor->gt_element_group,
 						scene_editor->edit_gt_element_group);
 					RenewLabelonList(scene_editor->current_settings);
-					destroy_Parse_state(&temp_state);
 					GT_element_settings_get_glyph_parameters(
 						scene_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
 						glyph_size, &orientation_scale_field, glyph_scale_factors,
@@ -2920,6 +2937,7 @@ void EnterGlyphSize(wxCommandEvent &event)
 					sprintf(temp_string,"%g*%g*%g",
 						glyph_size[0],glyph_size[1],glyph_size[2]);
 					baseglyphsizetextctrl->ChangeValue(temp_string);
+					destroy_Parse_state(&temp_state);
 				}
 				DEALLOCATE(text_entry);
 			}
@@ -3035,8 +3053,7 @@ void EnterGlyphSize(wxCommandEvent &event)
 	RenewLabelonList(scene_editor->current_settings);
 }
 
-
-   void LabelChecked(wxCommandEvent &event)
+void LabelChecked(wxCommandEvent &event)
 {
 	struct Computed_field *label_field;
 	struct Graphics_font *font;
@@ -3057,6 +3074,31 @@ void EnterGlyphSize(wxCommandEvent &event)
 	 }
 	GT_element_settings_set_label_field(scene_editor->current_settings, 
 		label_field, font);
+	AutoApplyorNot(scene_editor->gt_element_group,
+		scene_editor->edit_gt_element_group);
+	RenewLabelonList(scene_editor->current_settings);
+}
+
+	void VisibilityFieldChecked(wxCommandEvent &event)
+{
+	struct Computed_field *visibility_field;
+
+	visibility_field_checkbox=XRCCTRL(*this,"VisibilityFieldCheckBox",wxCheckBox);
+	visibility_field_chooser_panel = XRCCTRL(*this,"VisibilityFieldChooserPanel",wxPanel);
+	if (visibility_field_checkbox->IsChecked())
+	{
+		GT_element_settings_get_visibility_field(scene_editor->current_settings, 
+			&visibility_field);
+		visibility_field_chooser_panel->Enable();				
+		visibility_field=visibility_field_chooser->get_object();
+	}
+	else
+	{
+		visibility_field_chooser_panel->Disable();		
+		visibility_field=(Computed_field *)NULL;
+	}
+	GT_element_settings_set_visibility_field(scene_editor->current_settings, 
+		visibility_field);
 	AutoApplyorNot(scene_editor->gt_element_group,
 		scene_editor->edit_gt_element_group);
 	RenewLabelonList(scene_editor->current_settings);
@@ -3475,8 +3517,8 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 		char temp_string[50], *vector_temp_string;
 		struct Computed_field *radius_scalar_field, *iso_scalar_field, 
 			*orientation_scale_field, *variable_scale_field,	*label_field, 
-			*xi_point_density_field, *stream_vector_field, *data_field,
-			*texture_coord_field;
+			*visibility_field, *xi_point_density_field, *stream_vector_field,
+			*data_field, *texture_coord_field;
 		float constant_radius,scale_factor,streamline_length,streamline_width;
 		struct GT_object *glyph;
 		enum Glyph_scaling_mode glyph_scaling_mode;
@@ -3932,6 +3974,48 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 			 fonttext->Hide();
 		}
 		
+		/* Visibility field */
+		visibility_field_checkbox=XRCCTRL(*this,"VisibilityFieldCheckBox",wxCheckBox);
+		visibility_field_chooser_panel = XRCCTRL(*this,"VisibilityFieldChooserPanel",wxPanel);
+
+		if (((GT_ELEMENT_SETTINGS_NODE_POINTS==scene_editor->current_settings_type)||
+				(GT_ELEMENT_SETTINGS_DATA_POINTS==scene_editor->current_settings_type)) &&
+			GT_element_settings_get_visibility_field(settings,&visibility_field))
+		{
+			if (visibility_field_chooser == NULL)
+			{
+				visibility_field_chooser =
+					new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
+					(visibility_field_chooser_panel, visibility_field, scene_editor->field_manager,
+						(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL , (void *)NULL, 
+						scene_editor->user_interface);
+				Callback_base< Computed_field* > *visibility_field_callback = 
+					new Callback_member_callback< Computed_field*, 
+					wxSceneEditor, int (wxSceneEditor::*)(Computed_field *) >
+					(this, &wxSceneEditor::visibility_field_callback);
+				visibility_field_chooser->set_callback(visibility_field_callback);
+				visibility_field_chooser_panel->Fit();
+			}
+			visibility_field_checkbox->Show();
+			visibility_field_chooser_panel->Show();
+			if ((struct Computed_field *)NULL!=visibility_field)
+			{
+				visibility_field_chooser->set_object(visibility_field);
+				visibility_field_checkbox->SetValue(1);
+				visibility_field_chooser_panel->Enable();
+			}
+			else
+			{
+				visibility_field_checkbox->SetValue(0);
+				visibility_field_chooser_panel->Disable();
+			}
+		}
+		else
+		{
+			visibility_field_checkbox->Hide();
+			visibility_field_chooser_panel->Hide();
+		}
+
 		/* element_points and iso_surfaces */
 		/*use_element_type*/
 			use_element_type_chooser_panel = 
@@ -4519,6 +4603,7 @@ BEGIN_EVENT_TABLE(wxSceneEditor, wxFrame)
 	 EVT_CHECKBOX(XRCID("OrientationScaleCheckBox"),wxSceneEditor::EnterGlyphScale)
 	 EVT_CHECKBOX(XRCID("VariableScaleCheckBox"),wxSceneEditor::VariableScaleChecked)
 	 EVT_CHECKBOX(XRCID("LabelCheckBox"),wxSceneEditor::LabelChecked)
+	 EVT_CHECKBOX(XRCID("VisibilityFieldCheckBox"),wxSceneEditor::VisibilityFieldChecked)
 	 EVT_TEXT_ENTER(XRCID("DiscretizationTextCtrl"),wxSceneEditor::EnterElementDiscretization)
 	 EVT_CHECKBOX(XRCID("NativeDiscretizationFieldCheckBox"),wxSceneEditor::NativeDiscretizationChecked)
 	 EVT_CHECKBOX(XRCID("SeedElementCheckBox"),wxSceneEditor::SeedElementChecked)
