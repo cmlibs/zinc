@@ -1,6 +1,7 @@
 CMGUI Graphics Window
 =====================
 
+.. _scene editor: http://www.cmiss.org/cmgui/wiki/UsingCMGUITheSceneEditorWindow
 
 The graphics window is where all visualizations are displayed - it also has tools which allow some interactive manipulation of the data being visualized.  The window consists of a control panel on the left hand side, and the display area on the left.  The display area can contain one or more *scene viewers*, or renderings of the selected scene. At the top of the control panel area are a selection of general controls under the "Options" label: view all, save as, and perspective.  The view all button will zoom out the viewing area *(scene viewer)* so that everything in the currently viewed scene is visible.  The save as option provides the ability to save the viewing area as a raster graphic, such as a png or jpg file.  The perspective check box switches convergence on or off in the 3D display.
 
@@ -35,7 +36,7 @@ The graphics window tools
 
 * **Node Tool**
   
-  The node tool allows the selection and editing of individual nodes from within the graphics window.  Selected nodes will turn red - this is a good reason not to use red as a glyph colour if you are planning to edit items in this way.  There are a range of other options to allow the editing, (moving nodes within the scene viewer) deletion, or creation of nodes.  It is also possible to create 1D, 2D or even 3D (lines, surfaces and volumes) elements using the node tool; this functionality is somewhat experimental and is of limited use in most cases.
+  The node tool allows the selection and editing of individual nodes from within the graphics window.  Selected nodes will turn red by default - the selected colour of a node is editable via the `scene editor`_ window.  There are a range of other options to allow the editing, (moving nodes within the scene viewer) deletion, or creation of nodes.  It is also possible to create 1D, 2D or even 3D (lines, surfaces and volumes) elements using the node tool; this functionality is somewhat experimental and is of limited use in most cases.
   
   NOTE: It is somewhat easier to edit nodes (or indeed any of the other editable items) when they are represented by an easily clickable glyph such as a sphere or cube, rather than a point.
 
@@ -52,3 +53,5 @@ The graphics window tools
   The element point tool allows the selection of element points within the scene viewer/s.
 
 | 
+
+All of the tools that allow selection are useful for creating *groups* via the command line.  You can add selected items to a group using the commands
