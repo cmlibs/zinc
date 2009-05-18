@@ -222,8 +222,8 @@ DESCRIPTION :
 			{
 				if (Computed_field_find_element_xi(
 					field->source_fields[1], field->source_fields[0]->values,
-					field->source_fields[0]->number_of_components, &element, xi,
-					element_dimension, region,
+					field->source_fields[0]->number_of_components, location->get_time(),
+					&element, xi, element_dimension, region,
 					/*propagate_field*/0, find_nearest) && element)
 				{
 					/* calculate the third source_field at this new location */
@@ -272,8 +272,9 @@ Evaluate the fields cache at the location
 				second source field to get element_xi which is evaluated with
 				the third source field */
 			if ((return_code = Computed_field_find_element_xi(field->source_fields[1],
-				field->source_fields[0]->values,
-				field->source_fields[0]->number_of_components,
+						field->source_fields[0]->values,
+						field->source_fields[0]->number_of_components,
+						location->get_time(),
 					  &compose_element, compose_xi, element_dimension,
 						region, /*propagate_field*/0, find_nearest))
 				&& compose_element)

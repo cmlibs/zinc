@@ -146,7 +146,8 @@ private:
 
 	int find_element_xi(
 		FE_value *values, int number_of_values, struct FE_element **element,
-		FE_value *xi, int element_dimension, struct Cmiss_region *search_region);
+		FE_value *xi, int element_dimension, double time,
+		struct Cmiss_region *search_region);
 };
 
 Computed_field_finite_element::~Computed_field_finite_element()
@@ -1018,7 +1019,8 @@ Returns 0 with no errors if the field is not grid-based.
 
 int Computed_field_finite_element::find_element_xi(
 	FE_value *values, int number_of_values, struct FE_element **element,
-	FE_value *xi, int element_dimension, struct Cmiss_region *search_region)
+	FE_value *xi, int element_dimension, double time,
+	struct Cmiss_region *search_region)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1032,7 +1034,7 @@ DESCRIPTION :
 		element && xi && search_region)
 	{
 		return_code = Computed_field_perform_find_element_xi(field,
-			values, number_of_values, element, xi, element_dimension, search_region,
+			values, number_of_values, time, element, xi, element_dimension, search_region,
 			/*find_nearest_element*/0);
 	}
 	else
@@ -4030,7 +4032,8 @@ private:
 
 	int find_element_xi(
 		FE_value *values, int number_of_values, struct FE_element **element,
-		FE_value *xi, int element_dimension, struct Cmiss_region *search_region);
+		FE_value *xi, int element_dimension, double time,
+		struct Cmiss_region *search_region);
 };
 
 Computed_field_basis_derivative::~Computed_field_basis_derivative()
@@ -4534,7 +4537,8 @@ Sets the <values> of the computed <field> over the <element>.
 
 int Computed_field_basis_derivative::find_element_xi(
 	FE_value *values, int number_of_values, struct FE_element **element,
-	FE_value *xi, int element_dimension, struct Cmiss_region *search_region)
+	FE_value *xi, int element_dimension, double time,
+	struct Cmiss_region *search_region)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -4548,7 +4552,7 @@ DESCRIPTION :
 		element && xi && search_region)
 	{
 		return_code = Computed_field_perform_find_element_xi(field,
-			values, number_of_values, element, xi, element_dimension, search_region,
+			values, number_of_values, time, element, xi, element_dimension, search_region,
 			/*find_nearest_element*/0);
 	}
 	else

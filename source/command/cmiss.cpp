@@ -6402,7 +6402,7 @@ value searches just elements of that dimension.
 										 graphics_buffer_package,
 										 hint_minimums, hint_maximums, hint_resolution) ||
 									Computed_field_find_element_xi(texture_coordinate_field,
-										values, tex_number_of_components, &element, xi,
+										values, tex_number_of_components, /*time*/0, &element, xi,
 										element_dimension, region, propagate_field,
 										/*find_nearest_location*/0))
 								{

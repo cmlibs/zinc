@@ -50,6 +50,7 @@ public:
 	struct FE_element *element;
 	int valid_values;
 	int number_of_values;
+	double time;
 	FE_value *values;
 	FE_value *working_values;
 	int in_perform_find_element_xi;
@@ -61,6 +62,7 @@ public:
 		element((struct FE_element *)NULL),
 		valid_values(0),
 		number_of_values(0),
+		time(0),
 		values((FE_value *)NULL),
 		working_values((FE_value *)NULL),
 		in_perform_find_element_xi(0)
@@ -124,6 +126,7 @@ matches the <field> in this structure or one of its source fields.
 	FE_value nearest_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	double nearest_element_distance_squared;
 	int start_with_data_xi;
+	double time;
 }; /* Computed_field_iterative_find_element_xi_data */
 
 int Computed_field_iterative_element_conditional(

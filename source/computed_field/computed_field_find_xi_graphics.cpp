@@ -336,6 +336,7 @@ sequential element_xi lookup should now be performed.
 		find_element_xi_data.nearest_element = (struct FE_element *)NULL;
 		find_element_xi_data.nearest_element_distance_squared = 0.0;
 		find_element_xi_data.start_with_data_xi = 0;
+		find_element_xi_data.time = 0;
 		if (ALLOCATE(find_element_xi_data.found_values, FE_value, number_of_values))
 		{
 			cache = (Computed_field_find_element_xi_graphics_cache*)NULL;

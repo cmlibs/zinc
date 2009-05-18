@@ -756,7 +756,7 @@ to modify and destroy it.
 ==============================================================================*/
 
 int Computed_field_find_element_xi(struct Computed_field *field,
-	FE_value *values, int number_of_values, struct FE_element **element, 
+	FE_value *values, int number_of_values, double time, struct FE_element **element, 
 	FE_value *xi, int element_dimension, struct Cmiss_region *search_region,
 	int propagate_field, int find_nearest_location);
 /*******************************************************************************

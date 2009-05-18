@@ -1690,7 +1690,8 @@ private:
 
 	int find_element_xi(
 		FE_value *values, int number_of_values, struct FE_element **element,
-		FE_value *xi, int element_dimension, struct Cmiss_region *search_region);
+		FE_value *xi, int element_dimension, double time,
+		struct Cmiss_region *search_region);
 };
 
 int Computed_field_scale::evaluate_cache_at_location(
@@ -1813,7 +1814,8 @@ DESCRIPTION :
 
 int Computed_field_scale::find_element_xi(
 	FE_value *values, int number_of_values, struct FE_element **element, 
-	FE_value *xi, int element_dimension, struct Cmiss_region *search_region) 
+	FE_value *xi, int element_dimension, double time,
+	struct Cmiss_region *search_region) 
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1848,7 +1850,7 @@ DESCRIPTION :
 			if (return_code)
 			{
 				return_code=Computed_field_find_element_xi(
-					field->source_fields[0],source_values,number_of_values,element,
+					field->source_fields[0],source_values,number_of_values,time,element,
 					xi,element_dimension,search_region,/*propagate_field*/1,
 					/*find_nearest_location*/0);
 			}
@@ -3255,7 +3257,8 @@ private:
 
 	int find_element_xi(
 		FE_value *values, int number_of_values, struct FE_element **element, 
-		FE_value *xi, int element_dimension, struct Cmiss_region *search_region);
+		FE_value *xi, int element_dimension, double time,
+		struct Cmiss_region *search_region);
 };
 
 int Computed_field_offset::evaluate_cache_at_location(
@@ -3363,7 +3366,8 @@ DESCRIPTION :
 
 int Computed_field_offset::find_element_xi(
 	FE_value *values, int number_of_values, struct FE_element **element, 
-	FE_value *xi, int element_dimension, struct Cmiss_region *search_region)
+	FE_value *xi, int element_dimension, double time,
+	struct Cmiss_region *search_region)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -3386,7 +3390,7 @@ DESCRIPTION :
 				source_values[i] = values[i] - field->source_values[i];
 			}
 			return_code=Computed_field_find_element_xi(
-				field->source_fields[0],source_values,number_of_values,element,
+				field->source_fields[0],source_values,number_of_values,time,element,
 				xi,element_dimension,search_region,/*propagate_field*/1,
 				/*find_nearest_location*/0);
 			DEALLOCATE(source_values);

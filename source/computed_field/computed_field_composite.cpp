@@ -149,7 +149,7 @@ private:
 	int find_element_xi(
 		FE_value *values, int number_of_values, 
 		struct FE_element **element, FE_value *xi, int element_dimension,
-		struct Cmiss_region *search_region);
+		double time, struct Cmiss_region *search_region);
 };
 
 Computed_field_composite::~Computed_field_composite()
@@ -409,8 +409,9 @@ Sets the <values> of the computed <field> over the <element>.
 
 int Computed_field_composite::find_element_xi(
 	 FE_value *values, int number_of_values, 
-	struct FE_element **element, FE_value *xi, int element_dimension,
-	struct Cmiss_region *search_region)
+	 struct FE_element **element, FE_value *xi, int element_dimension,
+	 double time,
+	 struct Cmiss_region *search_region)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -446,7 +447,7 @@ Zero is used for any source field values that aren't set from the composite fiel
 				}
 				return_code=Computed_field_find_element_xi(
 					field->source_fields[source_field_number],source_values,
-					number_of_source_values,element, xi, element_dimension, search_region,
+					number_of_source_values, time, element, xi, element_dimension, search_region,
 					/*propagate_field*/1, /*find_nearest_location*/0);
 				DEALLOCATE(source_values);
 			}

@@ -258,7 +258,8 @@ private:
 
 	int find_element_xi(
 		FE_value *values, int number_of_values, struct FE_element **element, 
-		FE_value *xi, int element_dimension, struct Cmiss_region *search_region);
+		FE_value *xi, int element_dimension, double time,
+		struct Cmiss_region *search_region);
 };
 	
 int Computed_field_coordinate_transformation::evaluate(
@@ -420,7 +421,8 @@ Sets the <values> of the computed <field> over the <element>.
 
 int Computed_field_coordinate_transformation::find_element_xi(
 	FE_value *values, int number_of_values, struct FE_element **element, 
-	FE_value *xi, int element_dimension, struct Cmiss_region *search_region) 
+	FE_value *xi, int element_dimension, double time,
+	struct Cmiss_region *search_region) 
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -440,7 +442,7 @@ DESCRIPTION :
 			field->source_fields[0]->number_of_components, source_field_coordinates,
 			/*jacobian*/(float *)NULL) && Computed_field_find_element_xi(
 			field->source_fields[0],source_field_coordinates,
-			field->source_fields[0]->number_of_components,element,
+			field->source_fields[0]->number_of_components, time, element,
 			xi, element_dimension, search_region, /*propagate_field*/1,
 			/*find_nearest_location*/0);
 		if (!return_code)

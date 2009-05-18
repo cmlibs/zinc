@@ -205,7 +205,7 @@ public:
 
 	virtual int find_element_xi(FE_value *values, int number_of_values, 
 		struct FE_element **element, FE_value *xi,
-		int element_dimension, struct Cmiss_region *search_region)
+		int element_dimension, double time, struct Cmiss_region *search_region)
 	{
 		return 0;
 	};

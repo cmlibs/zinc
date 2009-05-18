@@ -6093,7 +6093,7 @@ Creates a node point seeded with the seed_node_coordinate_field at the node.
 				&& Computed_field_evaluate_at_node(settings->seed_node_coordinate_field, node,
 					settings_to_object_data->time, coordinates)
 				&& Computed_field_find_element_xi(settings_to_object_data->rc_coordinate_field,
-					coordinates, number_of_components, &element, xi,
+					coordinates, number_of_components, /*time*/0, &element, xi,
 					element_dimension, settings_to_object_data->region,
 					/*propagate_field*/0, /*find_nearest_location*/0))
 			{

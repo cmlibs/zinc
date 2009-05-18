@@ -396,7 +396,8 @@ private:
 
 	int find_element_xi(
 		FE_value *values, int number_of_values, FE_element **element, 
-		FE_value *xi, int element_dimension, Cmiss_region *search_region);
+		FE_value *xi, int element_dimension, double time,
+		Cmiss_region *search_region);
 };
 
 int Computed_field_integration::integrate_path(FE_element *element,
@@ -1673,7 +1674,8 @@ Evaluate the fields cache at the location
 
 int Computed_field_integration::find_element_xi(
 	FE_value *values, int number_of_values, FE_element **element, 
-	FE_value *xi, int element_dimension, Cmiss_region *search_region)
+	FE_value *xi, int element_dimension, double time,
+	Cmiss_region *search_region)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1687,6 +1689,7 @@ DESCRIPTION :
 	FE_region *fe_region;
 
 	ENTER(Computed_field_integration::find_element_xi);
+	USE_PARAMETER(time);
 	if (field&&values&&(number_of_values==field->number_of_components)&&element&&xi&&
 		search_region && (fe_region = Cmiss_region_get_FE_region(search_region)))
 	{

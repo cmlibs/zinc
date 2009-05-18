@@ -161,7 +161,7 @@ as the <data> field or any of its source fields.
 					while ((!converged) && return_code)
 					{
 						if (Computed_field_evaluate_in_element(data->field, element, data->xi,
-							/*time*/0, (struct FE_element *)NULL, values, derivatives))
+							data->time, (struct FE_element *)NULL, values, derivatives))
 						{
 							/* least-squares approach: make the derivatives / right hand side
 								vector into square system to solve for delta-Xi */
@@ -320,7 +320,7 @@ as the <data> field or any of its source fields.
 #undef MAX_FIND_XI_ITERATIONS
 
 int Computed_field_perform_find_element_xi(struct Computed_field *field,
-	FE_value *values, int number_of_values, struct FE_element **element, 
+	FE_value *values, int number_of_values, double time, struct FE_element **element, 
 	FE_value *xi, int element_dimension, struct Cmiss_region *search_region,
 	int find_nearest_location)
 /*******************************************************************************
@@ -364,8 +364,9 @@ ultimate parent finite_element field.
 				DEALLOCATE(cache->values);
 				DEALLOCATE(cache->working_values);
 			}
-			if (cache->element &&
-				(element_dimension != get_FE_element_dimension(cache->element)))
+			if ((cache->element &&
+				(element_dimension != get_FE_element_dimension(cache->element))) ||
+				(cache->time != time))
 			{
 				cache->valid_values = 0;
 			}
@@ -424,6 +425,7 @@ ultimate parent finite_element field.
 		}
 		if (return_code && !cache->values)
 		{
+			cache->time = time;
 			cache->number_of_values = number_of_values;
 			if (!ALLOCATE(cache->values, FE_value,
 					 number_of_values))
@@ -481,6 +483,7 @@ ultimate parent finite_element field.
 				find_element_xi_data.nearest_element = (struct FE_element *)NULL;
 				find_element_xi_data.nearest_element_distance_squared = 0.0;
 				find_element_xi_data.start_with_data_xi = 0;
+				find_element_xi_data.time = time;
 
 				if (search_region)
 				{

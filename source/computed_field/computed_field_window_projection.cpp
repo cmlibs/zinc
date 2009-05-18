@@ -143,7 +143,8 @@ private:
 
 	int find_element_xi( 
 		FE_value *values, int number_of_values, struct FE_element **element,
-		FE_value *xi, int element_dimension, struct Cmiss_region *search_region);
+		FE_value *xi, int element_dimension, double time,
+		struct Cmiss_region *search_region);
 };
 
 const char *Computed_field_window_projection::projection_type_string(
@@ -879,7 +880,8 @@ Sets the <values> of the computed <field> at <location>.
 
 int Computed_field_window_projection::find_element_xi( 
 	FE_value *values, int number_of_values, struct FE_element **element,
-	FE_value *xi, int element_dimension, struct Cmiss_region *search_region)
+	FE_value *xi, int element_dimension, double time,
+	struct Cmiss_region *search_region)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -912,7 +914,7 @@ DESCRIPTION :
 					source_values[1] = (result[1] / result[3]);
 					source_values[2] = (result[2] / result[3]);
 					return_code=Computed_field_find_element_xi(
-						field->source_fields[0], source_values, 3, element,
+						field->source_fields[0], source_values, 3, time, element,
 						xi, element_dimension, search_region, /*propagate_field*/1,
 						/*find_nearest_location*/0);
 				}

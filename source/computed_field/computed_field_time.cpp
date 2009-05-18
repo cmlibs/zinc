@@ -102,6 +102,11 @@ private:
 	char* get_command_string();
 
 	int has_multiple_times();
+
+	int find_element_xi(
+		FE_value *values, int number_of_values, FE_element **element, 
+		FE_value *xi, int element_dimension, double time,
+		Cmiss_region *search_region);
 };
 
 int Computed_field_time_lookup::evaluate_cache_at_location(
@@ -313,6 +318,55 @@ global time do not matter.
 
 	return (return_code);
 } /* Computed_field_time_lookup::has_multiple_times */
+
+int Computed_field_time_lookup::find_element_xi(
+	FE_value *values, int number_of_values, struct FE_element **element, 
+	FE_value *xi, int element_dimension, double time,
+	struct Cmiss_region *search_region)
+{
+	FE_value *source_values;
+	int i,return_code;
+
+	ENTER(Computed_field_time_lookup::find_element_xi);
+	USE_PARAMETER(time);
+	if (field && element && xi && values &&
+		(number_of_values == field->number_of_components))
+	{
+		return_code = 1;
+		/* reverse the offset */
+		Field_element_xi_location location_no_derivatives(
+			*element, xi, time);
+		if (Computed_field_evaluate_cache_at_location(
+					field->source_fields[1], &location_no_derivatives) &&
+			ALLOCATE(source_values,FE_value,field->number_of_components))
+		{
+			for (i=0;i<field->number_of_components;i++)
+			{
+				source_values[i] = values[i];
+			}
+			return_code=Computed_field_find_element_xi(
+				field->source_fields[0],source_values,number_of_values,
+				field->source_fields[1]->values[0],element,
+				xi,element_dimension,search_region,/*propagate_field*/1,
+				/*find_nearest_location*/0);
+			DEALLOCATE(source_values);
+			Computed_field_clear_cache(field->source_fields[1]);
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_time_lookup::find_element_xi.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_offset::find_element_xi */
 
 } //namespace
 

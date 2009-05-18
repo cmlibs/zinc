@@ -3634,7 +3634,7 @@ to modify and destroy it.
 } /* Computed_field_set_read_write */
 
 int Computed_field_find_element_xi(struct Computed_field *field,
-	FE_value *values, int number_of_values, struct FE_element **element, 
+	FE_value *values, int number_of_values, double time, struct FE_element **element, 
 	FE_value *xi, int element_dimension, struct Cmiss_region *search_region,
 	int propagate_field, int find_nearest_location)
 /*******************************************************************************
@@ -3674,10 +3674,10 @@ pass in pointers to field cache values.
 	{
 		if ((!propagate_field) || 
 			(!(return_code = field->core->find_element_xi(values, number_of_values,
-					element, xi, element_dimension, search_region))))
+					element, xi, element_dimension, time, search_region))))
 		{
 			return_code = Computed_field_perform_find_element_xi(field,
-				values, number_of_values, element, xi, element_dimension, search_region,
+				values, number_of_values, time, element, xi, element_dimension, search_region,
 				find_nearest_location);
 		}
 	}
