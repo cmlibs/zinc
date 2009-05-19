@@ -5042,58 +5042,51 @@ static void Scene_editor_wx_scene_change(
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Scene):
 			{
 				//Transformation has its own callback
-				if (!(scene_editor->transformation_edited))
+				if (!(scene_editor->transformation_edited) && scene_editor->scene_object &&
+					scene_editor->checklistbox &&
+					IS_OBJECT_IN_LIST(Scene)(scene, message->changed_object_list))
 				{
-					if (scene_editor->scene_object)
+					int selection = Scene_get_scene_object_position(scene, 
+						scene_editor->scene_object);
+					if (selection > 0)
 					{
-						if (IS_OBJECT_IN_LIST(Scene)(scene, message->changed_object_list))
+						int number_in_oldlist = scene_editor->checklistbox->GetCount();
+						int number_in_newlist = Scene_get_number_of_scene_objects(scene);
+						if (number_in_oldlist == number_in_newlist)
 						{
-							if (scene_editor->checklistbox)
+							char *name, *list_item_name;
+							int position = 0;
+							struct Scene_object *temp_scene_object = NULL;
+							for (position=1; position<=number_in_newlist; position++)
 							{
-								int selection = Scene_get_scene_object_position(scene, 
-									scene_editor->scene_object);
-								if (selection > 0)
+								temp_scene_object = Scene_get_scene_object_at_position(scene,
+									position);
+								GET_NAME(Scene_object)(temp_scene_object, &name);
+								list_item_name = const_cast<char *>(scene_editor->checklistbox->GetString(position-1).c_str());
+								if (name && strcmp(list_item_name, name) != 0)
 								{
-									int number_in_oldlist = scene_editor->checklistbox->GetCount();
-									int number_in_newlist = Scene_get_number_of_scene_objects(scene);
-									if (number_in_oldlist == number_in_newlist)
-									{
-										char *name, *list_item_name;
-										int position = 0;
-										struct Scene_object *temp_scene_object = NULL;
-										for (position=1; position<=number_in_newlist; position++)
-										{
-											temp_scene_object = Scene_get_scene_object_at_position(scene,
-												position);
-											GET_NAME(Scene_object)(temp_scene_object, &name);
-											list_item_name = const_cast<char *>(scene_editor->checklistbox->GetString(position-1).c_str());
-											if (name && strcmp(list_item_name, name) != 0)
-											{
-												scene_editor->checklistbox->Deselect(wxNOT_FOUND);
-												scene_editor->checklistbox->Delete(position-1);
-												scene_editor->checklistbox->Insert(name, position-1);
-												scene_editor->checklistbox->Check(position-1,
-													(g_VISIBLE == Scene_object_get_visibility(temp_scene_object)));
-											}
-											DEALLOCATE(name);
-										}
-										scene_editor->checklistbox->SetSelection(selection-1);
-									}
-									else
-									{
-										scene_editor->checklistbox->Deselect(wxNOT_FOUND);
-										scene_editor->checklistbox->Clear();
-										for_each_Scene_object_in_Scene(scene,
-											add_scene_object_to_scene_check_box, (void *)scene_editor);
-										scene_editor->checklistbox->SetSelection(selection-1);
-									}
+									scene_editor->checklistbox->Deselect(wxNOT_FOUND);
+									scene_editor->checklistbox->Delete(position-1);
+									scene_editor->checklistbox->Insert(name, position-1);
+									scene_editor->checklistbox->Check(position-1,
+										(g_VISIBLE == Scene_object_get_visibility(temp_scene_object)));
+									scene_editor->checklistbox->SetSelection(selection-1);
 								}
-								else
-								{
-									scene_editor->wx_scene_editor->scene_editor_update_widgets_for_scene(scene);
-								}
+								DEALLOCATE(name);
 							}
 						}
+						else
+						{
+							scene_editor->checklistbox->Deselect(wxNOT_FOUND);
+							scene_editor->checklistbox->Clear();
+							for_each_Scene_object_in_Scene(scene,
+								add_scene_object_to_scene_check_box, (void *)scene_editor);
+							scene_editor->checklistbox->SetSelection(selection-1);
+						}
+					}
+					else
+					{
+						scene_editor->wx_scene_editor->scene_editor_update_widgets_for_scene(scene);
 					}
 				}
 				else
