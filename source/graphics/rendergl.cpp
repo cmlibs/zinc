@@ -2574,16 +2574,18 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 		 * as it will be bound with the standard vertex buffer object 
 		 * rendering code as the position vertex buffer.
 		 */
+#if !defined (GL_PIXEL_PACK_BUFFER_EXT) && defined (GL_PIXEL_PACK_BUFFER_ARB)
+#define GL_PIXEL_PACK_BUFFER_EXT GL_PIXEL_PACK_BUFFER_ARB
+#endif
+
 		glBufferSubData(GL_ARRAY_BUFFER,
 			/*offset*/0,
 			/*size*/sizeof(float)*position_values_per_vertex*position_vertex_count,
 			position_vertex_buffer);
-		
-		glBindBuffer(GL_PIXEL_PACK_BUFFER_EXT, object->position_vertex_buffer_object);						
-		glBufferData(GL_PIXEL_PACK_BUFFER_EXT, sizeof(float)*
-			4*tex_width*tex_height,
-			/*position_vertex_buffer*/NULL, GL_STATIC_DRAW);
-	
+ 		glBindBuffer(GL_PIXEL_PACK_BUFFER_EXT, object->position_vertex_buffer_object);						
+  		glBufferData(GL_PIXEL_PACK_BUFFER_EXT, sizeof(float)*
+  			4*tex_width*tex_height,
+  			/*position_vertex_buffer*/NULL, GL_STATIC_DRAW);
 		object_position_vertex_buffer_object = object->position_vertex_buffer_object;
 		object->position_vertex_buffer_object = object->multipass_vertex_buffer_object;
 		object->position_values_per_vertex = position_values_per_vertex;
@@ -2597,8 +2599,7 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 		/* Could generate more of attributes by adding new framebuffer attachments and copying
 		 * these to other buffers.  Currently no way to determine which attributes
 		 * should be set by the secondary material and used in the final render. */
-		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_2D, fbo_tex_normals, 0); 
-	
+		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_2D, fbo_tex_normals, 0);
 		GLenum dbuffers[] = 
 		{GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT};
 		glDrawBuffers(2, dbuffers);
@@ -2712,7 +2713,7 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 #endif /* defined (NEW_CODE) */
 	
 		glReadBuffer(GL_NONE);
-		glBindBuffer(GL_PIXEL_PACK_BUFFER_EXT, 0 );
+		glBindBuffer(GL_PIXEL_PACK_BUFFER_EXT, 0);
 	
 #if defined (DEBUG)
 		// Read the buffer out to memory so we can see the vertex values.

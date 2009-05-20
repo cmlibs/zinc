@@ -58,6 +58,9 @@ endif # SYSNAME == Linux
 ifeq ($(SYSNAME),win32)
   USE_LIBGDCM = true
 endif  # SYSNAME == win32
+ifeq ($(SYSNAME),Darwin)
+  USE_LIBGDCM = true
+endif  # SYSNAME == Darwin
 ifeq ($(SYSNAME:IRIX%=),)
   USE_LIBGDCM = false
 endif
@@ -297,11 +300,12 @@ ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
       GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
    endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
-
-   ifneq ($(wildcard $(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)),)
-      GRAPHICS_INC += -I$(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)
+   ifneq ($(OPERATING_SYSTEM),darwin)
+   	ifneq ($(wildcard $(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)),)
+      		GRAPHICS_INC += -I$(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)
+   	endif
+   	GRAPHICS_LIB += $(patsubst %,-L%,$(firstword $(wildcard $(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) $(X_LIB))))
    endif
-   GRAPHICS_LIB += $(patsubst %,-L%,$(firstword $(wildcard $(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) $(X_LIB))))
    ifeq ($(OPERATING_SYSTEM),darwin)
       ifneq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
           GRAPHICS_LIB += -framework Carbon -framework AGL -L/System/Library/Frameworks/OpenGL.framework/Libraries/
@@ -711,7 +715,7 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
          USER_INTERFACE_LIB += -lcomctl32 -lctl3d32 -L$(shell $(WX_DIR)wx-config --prefix)/lib -lwxexpat-2.8-i386-mingw32msvc
       else # $(OPERATING_SYSTEM) == win32
          ifeq ($(OPERATING_SYSTEM),darwin)
-            USER_INTERFACE_LIB += -L$(shell $(WX_DIR)wx-config --prefix)/lib -framework QuickTime -framework IOKit -framework Carbon -framework Cocoa -framework System -framework WebKit -lwxexpat-2.8
+            USER_INTERFACE_LIB += -L$(shell $(WX_DIR)wx-config --prefix)/lib -framework QuickTime -framework IOKit -framework Carbon -framework Cocoa -framework System -framework WebKit
          else # $(OPERATING_SYSTEM) == darwin
             USER_INTERFACE_LIB += $(shell $(WX_DIR)wx-config --libs xrc,gl,xml,adv,html,core,base)
          endif # $(OPERATING_SYSTEM) == darwin

@@ -65,12 +65,7 @@ Functions and structures for interfacing with the graphics library.
 #undef GL_NV_vertex_program
 #undef GL_NV_register_combiners2
 #endif /* defined (WIN32_SYSTEM) */
-#else /* defined (MOTIF) || ! defined (DARWIN) */
-#include <OpenGL/gl.h>
-#include <AGL/agl.h>
-#include <OpenGL/glu.h>
-#include <OpenGL/glext.h>
-#endif /* defined (MOTIF) || ! defined (DARWIN) */
+#endif /* defined (MOTIF) */
 #endif /* defined (OPENGL_API) */
 #include "graphics/texture.h"
 #if defined (GTK_USER_INTERFACE)
@@ -78,12 +73,18 @@ Functions and structures for interfacing with the graphics library.
 #include <gdk/gdkgl.h>
 #endif /* defined (UNIX) */
 #endif /* defined (GTK_USER_INTERFACE) */
-# if defined (WX_USER_INTERFACE)
+#if defined (WX_USER_INTERFACE)
+#define GL_GLEXT_PROTOTYPES
 #if defined (UNIX) && !defined (DARWIN)
-#    define GL_GLEXT_PROTOTYPES
-#    include <GL/glext.h>
-#endif /* UNIX */
+#include <GL/glext.h>
+#endif /* defined UNIX && !defined (DARWIN)*/
 #endif /* (WX_USER_INTERFACE) */
+#if defined (UNIX) && defined (DARWIN)
+#include <OpenGL/gl.h>
+#include <AGL/agl.h>
+#include <OpenGL/glu.h>
+#include <OpenGL/glext.h>
+#endif /* defined UNIX && defined (DARWIN) */
 
 struct User_interface;
 

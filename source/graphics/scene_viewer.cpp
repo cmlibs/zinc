@@ -1691,7 +1691,7 @@ the entire scene.
 	double pixel_offset_x, pixel_offset_y;
 	GLdouble temp_matrix[16];
 	int accumulation_count, antialias, return_code;
-	int framebuffer_flag = 0;
+	GLint framebuffer_flag = 0;
 
 	float j2[2][2]=
 		{
@@ -1806,7 +1806,7 @@ the entire scene.
 
 			Scene_viewer_call_next_renderer(rendering_data);
 	
-			if (!framebuffer_flag)
+			if (framebuffer_flag == (GLint)0)
 			{	
 				if (0==accumulation_count)
 				{
@@ -1821,7 +1821,7 @@ the entire scene.
 		}
 		/* We want to ensure that we return white when we accumulate a white
 			background */
-		if (!framebuffer_flag)
+		if (framebuffer_flag == (GLint)0)
 		{	
 			glAccum(GL_RETURN,1.001f);
 		}
@@ -1854,7 +1854,7 @@ depth of field effect.
 	double depth_of_field, dx, dy, focal_depth, pixel_offset_x, pixel_offset_y;
 	GLdouble temp_matrix[16];
 	int accumulation_count, return_code;
-	int framebuffer_flag = 0;
+	GLint framebuffer_flag = 0;
 	float j8[8][2]=
 		{
 			{0.5625,0.4375},
@@ -1930,7 +1930,7 @@ depth of field effect.
 			glMultMatrixd(temp_matrix);
 
 			Scene_viewer_call_next_renderer(rendering_data);
-			if (!framebuffer_flag)
+			if (framebuffer_flag == (GLint)0)
 			{
 				if (0==accumulation_count)
 				{
@@ -1945,7 +1945,7 @@ depth of field effect.
 
 		/* We want to ensure that we return white when we accumulate a white
 			background */
-		if (!framebuffer_flag)
+		if (framebuffer_flag == (GLint)0)
 		{
 			glAccum(GL_RETURN,1.001f);
 		}

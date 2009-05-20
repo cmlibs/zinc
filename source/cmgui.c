@@ -50,6 +50,10 @@ DESCRIPTION :
 #include "command/cmiss_unemap_link.h"
 #endif /* defined (UNEMAP) */
 
+#if defined (WX_USER_INTERFACE) && (DARWIN)
+#include <ApplicationServices/ApplicationServices.h>
+#endif
+
 /*
 Global functions
 ----------------
@@ -112,6 +116,11 @@ Main program for the CMISS Graphical User Interface
 	/* display the version */
 	display_message(INFORMATION_MESSAGE, VERSION "\n");
 
+#if defined (WX_USER_INTERFACE) && (DARWIN)
+	ProcessSerialNumber PSN;
+	GetCurrentProcess(&PSN);
+	TransformProcessType(&PSN,kProcessTransformToForegroundApplication);
+#endif
 #if !defined (WIN32_USER_INTERFACE)
 	if (command_data = CREATE(Cmiss_command_data)(argc, argv, VERSION))
 #else /* !defined (WIN32_USER_INTERFACE) */

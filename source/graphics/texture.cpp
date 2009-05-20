@@ -6807,7 +6807,7 @@ by vertex programs.
 			
 			if (Graphics_library_check_extension(GL_shading_language) && glIsProgram((GLuint)program))
 			{
-				int flag;
+				GLint flag;
 				glGetProgramiv(program,GL_LINK_STATUS, &flag);
 				if (flag == GL_TRUE)
 				{
