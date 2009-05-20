@@ -283,10 +283,10 @@ Create the computed_field representation of the MeanImageFilter.
 	}
 
 #if defined DONOTUSE_TEMPLATETEMPLATES
-	create_filters_multicomponent_multidimensions(
+	create_filters_singlecomponent_multidimensions(
 		Computed_field_mean_image_filter_Functor, this);
 #else
-	create_filters_multicomponent_multidimensions
+	create_filters_singlecomponent_multidimensions
 		< Computed_field_mean_image_filter_Functor, Computed_field_mean_image_filter >
 		(this);
 #endif
