@@ -55,7 +55,8 @@ DESCRIPTION :
  * @param domain_field  The field in which the image data will be embedded.
  * @return Newly created field
 */
-struct Computed_field *Computed_field_create_image(struct Computed_field *domain_field);
+struct Computed_field *Computed_field_create_image(struct Computed_field *domain_field,
+	struct Computed_field *source_field);
 
 int Computed_field_register_type_image(
 	struct Computed_field_package *computed_field_package, 
@@ -65,6 +66,8 @@ LAST MODIFIED : 6 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
+
+struct Texture *Computed_field_get_texture(struct Computed_field *field);
 
 int Computed_field_depends_on_texture(struct Computed_field *field,
 	struct Texture *texture);

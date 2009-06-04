@@ -45,6 +45,7 @@ Implements cmiss fields which wrap images, structured grid data.
 #define CMISS_FIELD_IMAGE_H
 
 #include "api/cmiss_field.h"
+#include "api/cmiss_texture.h"
 
 /*****************************************************************************//**
  * The image field specific handle to a image Cmiss_field.
@@ -117,13 +118,22 @@ typedef struct Cmiss_field_image_storage_information *Cmiss_field_image_storage_
 
 /*****************************************************************************//**
  * Creates a new image based field.  This constructor does not define the
- * actual image data, which should then be set using a Cmiss_field_image_set_*
- * function.
- *
+ * actual image data if no source_field is provided, which should then be set using 
+ * a Cmiss_field_image_set_* function.
+ * If a source_field is provided, an internal texture will be evaluated if source 
+ * field has information about sizes and dimension provide. Domain field is also 
+ * required unless the source field already has texture coordinates field defined.
+ * Texture format will depend on the number of components of the source field.
+ * i.e "1 component field creates a LUMINANCE texture, "
+ *		 "2 component field creates a LIMINANCE_ALPHA texture, "
+ *		 "3 component field creates a RGB texture, "
+ *		 "4 component field creates a RGBA texture. "
  * @param domain_field  The field in which the image data will be embedded.
+ * @param source_field  The source field which provides pixel values to the image.
  * @return Newly created field
 */
-Cmiss_field_id Cmiss_field_create_image(Cmiss_field_id domain_field);
+Cmiss_field_id Cmiss_field_create_image(Cmiss_field_id domain_field, 
+	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
  * If the image_field is of type image field then this function returns
@@ -198,6 +208,14 @@ int Cmiss_field_image_read_file(Cmiss_field_image_id image_field,
  */
 int Cmiss_field_image_write_file(Cmiss_field_image_id image_field,
 	const char *file_name);
+
+/*****************************************************************************//**
+ * A get function that gets the internal cmiss_texture from the image field.
+ * 
+ * @param image_field  The image field to get the texture from.
+ * @return Returns the handle to cmiss texture.
+ */
+Cmiss_texture_id Cmiss_field_image_get_texture(Cmiss_field_image_id image_field);
 
 /*****************************************************************************//**
  * Creates a Cmiss_field_image_storage_information object.
