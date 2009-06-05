@@ -307,8 +307,6 @@ int Computed_field_image::set_Texture_from_field()
 	unsigned char *image_plane, *ptr;
 	unsigned short *two_bytes_image_plane, *two_bytes_ptr;
 	FE_value *data_values, values[3], xi[3];
-	float hint_maximums[3];
-	float hint_resolution[3];
 	float multiplier;
 	float	rgba[4], texture_depth, texture_height,
 		texture_width;
@@ -452,16 +450,10 @@ int Computed_field_image::set_Texture_from_field()
 			}
 			if ((image_plane || two_bytes_image_plane) && data_values)
 			{
-				hint_resolution[0] = image_width;
-				hint_resolution[1] = image_height;
-				hint_resolution[2] = image_depth;
 				field_evaluate_error_count = 0;
 				find_element_xi_error_count = 0;
 				spectrum_render_error_count = 0;
 				total_number_of_pixels = image_width*image_height*image_depth;
-				hint_maximums[0] = texture_width;
-				hint_maximums[1] = texture_height;
-				hint_maximums[2] = texture_depth;
 				for (i = 0; (i < image_depth) && return_code; i++)
 				{
 					/*???debug -- leave in so user knows something is happening! */
