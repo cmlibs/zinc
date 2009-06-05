@@ -120,9 +120,13 @@ typedef struct Cmiss_field_image_storage_information *Cmiss_field_image_storage_
  * Creates a new image based field.  This constructor does not define the
  * actual image data if no source_field is provided, which should then be set using 
  * a Cmiss_field_image_set_* function.
- * If a source_field is provided, an internal texture will be evaluated if source 
- * field has information about sizes and dimension provide. Domain field is also 
- * required unless the source field already has texture coordinates field defined.
+ * If a source_field is provided, an internal texture will be evaluated if it has 
+ * sizes and dimension defined. If domain field is not provided by the user, 
+ * this function will try to take the texture coordinates field from the source 
+ * field and if it is not available, this field will automatically
+ * create a xi field or get the xi field from the source field region as its domain
+ * field. 
+ * It is not mandatory to provide domain_field, source_field or both.
  * Texture format will depend on the number of components of the source field.
  * i.e "1 component field creates a LUMINANCE texture, "
  *		 "2 component field creates a LIMINANCE_ALPHA texture, "

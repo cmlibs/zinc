@@ -53,6 +53,7 @@ extern "C" {
 #include "user_interface/message.h"
 #include "computed_field/computed_field_image.h"
 #include "computed_field/computed_field_find_xi.h"
+#include "computed_field/computed_field_finite_element.h"
 }
 #include <math.h>
 
@@ -76,6 +77,7 @@ public:
 	void *field_manager_callback_id;
 	/* Flag to indicate that the texture needs to be evaluated 
 		 due to changes on the source fields */
+	int redraw_texture;
 
 	Computed_field_image(Computed_field *field) :
 		Computed_field_core(field)
@@ -86,6 +88,7 @@ public:
 		native_texture = 1;
 		number_of_bytes_per_component = 1;
 		field_manager_callback_id = (void *)NULL;
+		redraw_texture = 1;
 	};
 
 	~Computed_field_image()
@@ -146,10 +149,7 @@ public:
 
 	Texture *get_texture()
 	{
-		if (!texture)
-		{
-			create_Texture_from_source_field();
-		}
+		create_Texture_from_source_field();
 		return (texture);
 	}
 
@@ -225,6 +225,7 @@ void Computed_field_image::field_manager_change(
 		if (Computed_field_depends_on_Computed_field_in_list(
 					field, message->changed_object_list))
 		{
+			image_field_core->redraw_texture = 1;
 			image_field_core->set_Texture_from_field();
 		}
 	}
@@ -710,6 +711,7 @@ int Computed_field_image::set_Texture_from_field()
 			{
 				DESTROY(Computed_field_find_element_xi_cache)(&cache);
 			}
+			redraw_texture = 0;
 		}
 		else
 		{
@@ -728,7 +730,7 @@ int Computed_field_image::create_Texture_from_source_field()
 	int return_code;
 	return_code = 0;
 	if (field->number_of_source_fields > 1 && field->source_fields &&
-		field->source_fields[1])
+		field->source_fields[1] && redraw_texture)
 	{
 		if (!texture)
 		{
@@ -1046,7 +1048,6 @@ Computed_field *Computed_field_create_image(Computed_field *domain_field,
 	{
 		texture_coordinate_field = domain_field;
 	}
-
 	if (source_field)
 	{
 		if (!Computed_field_has_up_to_4_numerical_components(
@@ -1070,13 +1071,37 @@ Computed_field *Computed_field_create_image(Computed_field *domain_field,
 			}
 			else
 			{
-				if (!texture_coordinate_field)
+				if (texture_coordinate_field == (struct Computed_field *)NULL &&
+					source_texture_coordinate_field == (struct Computed_field *)NULL)
+				{
+					struct Cmiss_region *field_region = 
+						Computed_field_get_region(source_field);
+					if (field_region)
+					{
+						texture_coordinate_field = FIND_BY_IDENTIFIER_IN_MANAGER(
+							Computed_field,name)((char *)"xi",
+								Cmiss_region_get_Computed_field_manager(field_region));
+						if (texture_coordinate_field &&
+							!Computed_field_is_type_xi_coordinates(texture_coordinate_field,
+								(void *)NULL))
+						{
+							texture_coordinate_field = (struct Computed_field *)NULL;
+						}
+					}
+				}
+				else
 				{
 					texture_coordinate_field = source_texture_coordinate_field;
 				}
 				DEALLOCATE(source_sizes);
 			}
 		}
+	}
+	if (texture_coordinate_field == (struct Computed_field *)NULL)
+	{
+		texture_coordinate_field = CREATE(Computed_field)("temp_image_domain");
+		Computed_field_set_type_xi_coordinates(texture_coordinate_field);
+		Computed_field_set_read_only(texture_coordinate_field);
 	}
 	
 	if (return_code && texture_coordinate_field && 
