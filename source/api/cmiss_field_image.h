@@ -129,7 +129,7 @@ typedef struct Cmiss_field_image_storage_information *Cmiss_field_image_storage_
  * It is not mandatory to provide domain_field, source_field or both.
  * Texture format will depend on the number of components of the source field.
  * i.e "1 component field creates a LUMINANCE texture, "
- *		 "2 component field creates a LIMINANCE_ALPHA texture, "
+ *		 "2 component field creates a LUMINANCE_ALPHA texture, "
  *		 "3 component field creates a RGB texture, "
  *		 "4 component field creates a RGBA texture. "
  * @param domain_field  The field in which the image data will be embedded.
