@@ -39,25 +39,40 @@
 #include "general/debug.h"
 #include "user_interface/message.h"
 
-Cmiss_field_id Cmiss_field_create_composite(Cmiss_field_id *source_fields,
-	int number_of_source_fields)
+Cmiss_field_id Cmiss_field_create_composite(int number_of_source_fields,
+	Cmiss_field_id *source_fields)
 {
-	int *temp_source_field_numbers, *temp_source_value_numbers,i;
+	int *temp_source_field_numbers, *temp_source_value_numbers,i,j,k,
+		number_of_components_per_field,number_of_components;
 	Cmiss_field_id field = NULL;
-
+	
 	ENTER(Cmiss_field_create_composite);
 	
 	if (source_fields && number_of_source_fields > 0)
 	{
-		if (ALLOCATE(temp_source_field_numbers, int, number_of_source_fields)
-			&& ALLOCATE(temp_source_value_numbers, int, number_of_source_fields))
+		number_of_components = 0;
+		for (i=0; i < number_of_source_fields; i++)
 		{
+			number_of_components += 
+				Computed_field_get_number_of_components(source_fields[i]);
+		}
+		if (ALLOCATE(temp_source_field_numbers, int, number_of_components)
+			&& ALLOCATE(temp_source_value_numbers, int, number_of_components))
+		{
+			k = 0;
 			for (i=0; i < number_of_source_fields; i++)
 			{
-				temp_source_field_numbers[i] = i;
-				temp_source_value_numbers[i] = 0;
+				number_of_components_per_field = 
+					Computed_field_get_number_of_components(source_fields[i]);
+				for (j=0;j < number_of_components_per_field;j++)
+				{
+					temp_source_field_numbers[k+j] = i;
+					temp_source_value_numbers[k+j] = j;
+				}
+				k += number_of_components_per_field;
+				
 			}	
-			field = Computed_field_create_composite(number_of_source_fields,
+			field = Computed_field_create_composite(number_of_components,
 				number_of_source_fields, source_fields,
 				0, NULL, temp_source_field_numbers,temp_source_value_numbers);
 			DEALLOCATE(temp_source_field_numbers);
