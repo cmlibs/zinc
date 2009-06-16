@@ -81,8 +81,8 @@ Cmiss_field_id Cmiss_field_create_component(Cmiss_field_id source_field,
 	int component_index);
 
 /*****************************************************************************//**
- * Creates a concatenate vector field built by appending the components of all
- * source fields in order.
+ * Creates a field which concatenates the components of all source fields, in
+ * order, into a single vector.
  *
  * @param number_of_source_fields  The number of source fields in the array.
  * @param source_fields  The array of fields, this field is copying from.
