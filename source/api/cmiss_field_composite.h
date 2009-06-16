@@ -81,14 +81,14 @@ Cmiss_field_id Cmiss_field_create_component(Cmiss_field_id source_field,
 	int component_index);
 
 /*****************************************************************************//**
- * Creates a composite vector field built by appending the components of all
+ * Creates a concatenate vector field built by appending the components of all
  * source fields in order.
  *
  * @param number_of_source_fields  The number of source fields in the array.
  * @param source_fields  The array of fields, this field is copying from.
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_create_composite(int number_of_source_fields,
+Cmiss_field_id Cmiss_field_create_concatenate(int number_of_source_fields,
 	Cmiss_field_id *source_fields);
 
 #endif /* __CMISS_FIELD_COMPOSITE_H__ */

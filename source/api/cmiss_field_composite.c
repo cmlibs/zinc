@@ -39,7 +39,7 @@
 #include "general/debug.h"
 #include "user_interface/message.h"
 
-Cmiss_field_id Cmiss_field_create_composite(int number_of_source_fields,
+Cmiss_field_id Cmiss_field_create_concatenate(int number_of_source_fields,
 	Cmiss_field_id *source_fields)
 {
 	int *temp_source_field_numbers, *temp_source_value_numbers,i,j,k,
@@ -70,7 +70,6 @@ Cmiss_field_id Cmiss_field_create_composite(int number_of_source_fields,
 					temp_source_value_numbers[k+j] = j;
 				}
 				k += number_of_components_per_field;
-				
 			}	
 			field = Computed_field_create_composite(number_of_components,
 				number_of_source_fields, source_fields,
