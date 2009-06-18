@@ -1351,16 +1351,25 @@ Returns the total number of values stored for that field at the node, equals
 sum of (1+num_derivatives)*num_versions for each component.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Allocates and returns a copy of the <number_of_values>-length <values> array
+ * stored at the <node> for all components derivatives and versions of <field>.
+ * It is up to the calling function to DEALLOCATE the returned array. It will
+ * return the values specified at <time> if time sequence is found on nodal 
+ * field. If time is out of its range then it will return either the values at 
+ * minimum or maximum time.
+ *
+ * @param  field  fields value to be returned from. 
+ * @param  node  the node which stores the field values.
+ * @param  time  returns the values at <time> if nodal field has the concept of 
+ *    time, otherwise this argument is ignored.
+ * @param  values  <number_of_values>-length <values> array to be returned, it
+ *   stores all components derivatives and versions of <field> at <node>.
+ * @return  1 if successfully returns a value otherwise 0.
+ */
 int get_FE_nodal_field_FE_value_values(struct FE_field *field,
-	struct FE_node *node,int *number_of_values,FE_value **values);
-/*******************************************************************************
-LAST MODIFIED : 20 September 1999
+	struct FE_node *node,int *number_of_values,FE_value time, FE_value **values);
 
-DESCRIPTION :
-Allocates and returns a copy of the <number_of_values>-length <values> array
-stored at the <node> for all components derivatives and versions of <field>.
-It is up to the calling function to DEALLOCATE the returned array.
-==============================================================================*/
 
 int set_FE_nodal_field_FE_value_values(struct FE_field *field,
 	struct FE_node *node,FE_value *values, int *number_of_values);
@@ -1411,16 +1420,24 @@ Assumes that the nodal fields have been set up, with information to
 place the values.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Allocates and returns a copy of the <number_of_values>-length <values> array
+ * stored at the <node> for all components derivatives and versions of <field>.
+ * It is up to the calling function to DEALLOCATE the returned array. It will
+ * return the values specified at <time> if time sequence is found on nodal 
+ * field. If time is out of its range then it will return either the values at 
+ * minimum or maximum time.
+ *
+ * @param  field  fields value to be returned from. 
+ * @param  node  the node which stores the field values.
+ * @param  time  returns the values at <time> if nodal field has the concept of 
+ *   time, otherwise this argument is ignored.
+ * @param  values  <number_of_values>-length <values> array to be returned, it
+ *   stores all components derivatives and versions of <field> at <node>.
+ * @return  1 if successfully returns a value otherwise 0.
+ */
 int get_FE_nodal_field_int_values(struct FE_field *field,
-	struct FE_node *node,int *number_of_values,int **values);
-/*******************************************************************************
-LAST MODIFIED : 21 September 1999
-
-DESCRIPTION :
-Allocates and returns a copy of the <number_of_values>-length <values> array
-stored at the <node> for all components derivatives and versions of <field>.
-It is up to the calling function to DEALLOCATE the returned array.
-==============================================================================*/
+	struct FE_node *node,int *number_of_values,FE_value time, int **values);
 
 int set_FE_nodal_field_int_values(struct FE_field *field,
 	struct FE_node *node,int *values, int *number_of_values);

@@ -17642,23 +17642,19 @@ sum of <1+num_derivatives>*num_versions for each component.
 } /* get_FE_nodal_field_number_of_values */
 
 int get_FE_nodal_field_FE_value_values(struct FE_field *field,
-	struct FE_node *node,int *number_of_values,FE_value **values)
-/*******************************************************************************
-LAST MODIFIED : 20 September 1999
-
-DESCRIPTION :
-Allocates and returns a copy of the <number_of_values>-length <values> array
-stored at the <node> for all components derivatives and versions of <field>.
-It is up to the calling function to DEALLOCATE the returned array.
-==============================================================================*/
+	struct FE_node *node,int *number_of_values,FE_value time, FE_value **values)
 {
-	int i,j,length,number_of_derivatives,number_of_versions,return_code;
+	int i,j,length,number_of_derivatives,number_of_versions,return_code,
+		time_index_one, time_index_two, size;
 	struct FE_node_field *node_field;
 	struct FE_node_field_component *component;
-	FE_value *dest,*source;
+	FE_value *dest,*source, xi;
+	struct FE_time_sequence *time_sequence;
+	Value_storage *the_value_storage;
 
 	ENTER(get_FE_nodal_field_FE_value_values);
 	return_code=0;
+	time_sequence = (struct FE_time_sequence *)NULL;
 	if (field&&node&&number_of_values&&values&&node->values_storage)
 	{
 		if (field->value_type==FE_VALUE_VALUE)
@@ -17669,19 +17665,50 @@ It is up to the calling function to DEALLOCATE the returned array.
 				*number_of_values=FE_node_field_get_number_of_values(node_field);
 				if (ALLOCATE(*values,FE_value,*number_of_values))
 				{
+					time_sequence = get_FE_node_field_FE_time_sequence(node,field);
+					if (time_sequence)
+					{
+						FE_time_sequence_get_interpolation_for_time(time_sequence,time,&time_index_one,
+							&time_index_two,&xi);
+					}
 					dest= *values;
 					for (i=0;i<field->number_of_components;i++)
 					{
 						component = &(node_field->components[i]);
-						source=(FE_value *)(node->values_storage + component->value);
+						if (time_sequence)
+						{
+							the_value_storage = (node->values_storage + component->value);
+							size = get_Value_storage_size(FE_VALUE_VALUE, time_sequence);
+						}
+						else
+						{
+							source = (FE_value *)(node->values_storage + component->value);
+						}
 						number_of_versions = component->number_of_versions;
 						number_of_derivatives = component->number_of_derivatives;
 						length=(1+number_of_derivatives)*number_of_versions;
 						for (j=length;0<j;j--)
 						{
-							*dest = *source;
-							dest++;
-							source++;
+							if (time_sequence)
+							{
+								source = *(FE_value **)(the_value_storage);
+								if (xi != 0 && time_index_one != time_index_two)
+								{
+									*dest = source[time_index_one]*(1.0 - xi) + source[time_index_two]*xi;
+								}
+								else
+								{
+									*dest = source[time_index_one];
+								}
+								dest++;
+								the_value_storage += size;
+							}
+							else
+							{
+								*dest = *source;
+								dest++;
+								source++;
+							}
 						}
 					}
 					return_code=1;
@@ -17962,7 +17989,7 @@ place the values.
 } /* set_FE_nodal_field_float_values */
 
 int get_FE_nodal_field_int_values(struct FE_field *field,
-	struct FE_node *node,int *number_of_values,int **values)
+	struct FE_node *node,int *number_of_values, FE_value time, int **values)
 /*******************************************************************************
 LAST MODIFIED : 21 September 1999
 
@@ -17972,10 +17999,14 @@ stored at the <node> for all components derivatives and versions of <field>.
 It is up to the calling function to DEALLOCATE the returned array.
 ==============================================================================*/
 {
-	int i,j,length,number_of_derivatives,number_of_versions,return_code;
+	int i,j,length,number_of_derivatives,number_of_versions,return_code,
+		time_index,time_index2,size;
+	FE_value xi;
 	struct FE_node_field *node_field;
 	struct FE_node_field_component *component;
 	int *dest,*source;
+	struct FE_time_sequence *time_sequence;
+	Value_storage *the_value_storage;
 
 	ENTER(get_FE_nodal_field_int_values);
 	return_code=0;
@@ -17989,20 +18020,45 @@ It is up to the calling function to DEALLOCATE the returned array.
 				*number_of_values=FE_node_field_get_number_of_values(node_field);
 				if (ALLOCATE(*values,int,*number_of_values))
 				{
+					time_sequence = get_FE_node_field_FE_time_sequence(node,field);
+					if (time_sequence)
+					{
+							FE_time_sequence_get_interpolation_for_time(time_sequence,time,&time_index,
+								&time_index2,&xi);
+					}
 					return_code=1;
 					dest= *values;
 					for (i=0;i<field->number_of_components;i++)
 					{
 						component = &(node_field->components[i]);
+						if (time_sequence)
+						{
+							the_value_storage = (node->values_storage + component->value);
+							size = get_Value_storage_size(INT_VALUE, time_sequence);
+						}
+						else
+						{
+							source = (int *)(node->values_storage + component->value);
+						}
 						source=(int *)(node->values_storage + component->value);
 						number_of_versions = component->number_of_versions;
 						number_of_derivatives = component->number_of_derivatives;
 						length=(1+number_of_derivatives)*number_of_versions;
 						for (j=length;0<j;j--)
 						{
-							*dest = *source;
-							dest++;
-							source++;
+							if (time_sequence)
+							{
+								source = *(int **)(the_value_storage);
+								*dest = source[time_index];
+								dest++;
+								the_value_storage += size;
+							}
+							else
+							{
+								*dest = *source;
+								dest++;
+								source++;
+							}
 						}
 					}
 				}
@@ -40418,7 +40474,7 @@ Notes:
 										 zero by define_FE_field_at_node */
 									/* first clear all values for fe_field in copy_node */
 									if (get_FE_nodal_field_FE_value_values(fe_field, node,
-										&number_of_values, &values))
+											&number_of_values, time, &values))
 									{
 										for (k = 0; k < number_of_values; k++)
 										{

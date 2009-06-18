@@ -114,6 +114,10 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(FE_write_recursion);
  *   - Warnings are given for any field names not used in any output region.
  * @param number_of_field_names  The number of names in the field_names array.
  * @param field_names  Array of field names.
+ * @param time  Field values at <time> will be written out if field is time 
+ *    dependent. If fields are time dependent but <time> is out of range then
+ *    the values at nearest time will be written out. If fields are not time 
+ *    dependent, this parameter is ignored.
  * @param write_criterion  Controls which objects are written. Some modes
  *   limit output to nodes or objects with any or all listed fields defined.
  * @param write_recursion  Controls whether sub-regions and sub-groups are
@@ -123,13 +127,13 @@ int write_exregion_file(FILE *output_file,
 	struct Cmiss_region *region, struct Cmiss_region *root_region,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
-	int number_of_field_names, char **field_names,
+	int number_of_field_names, char **field_names, FE_value time,
 	enum FE_write_criterion write_criterion,
 	enum FE_write_recursion write_recursion);
 
 /***************************************************************************//**
  * Opens file with supplied name, calls write_exregion_file with it and closes
- * file. 
+ * file.
  * 
  * @param file_name  Name of file. 
  * @see write_exregion_file.
@@ -138,7 +142,7 @@ int write_exregion_file_of_name(const char *file_name,
 	struct Cmiss_region *region, struct Cmiss_region *root_region,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
-	int number_of_field_names, char **field_names,
+	int number_of_field_names, char **field_names, FE_value time,
 	enum FE_write_criterion write_criterion,
 	enum FE_write_recursion write_recursion);	
 

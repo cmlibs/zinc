@@ -777,7 +777,7 @@ Writes out the nodal values. Each component or version starts on a new line.
 					FE_value *value,*values;
 
 					if (get_FE_nodal_field_FE_value_values(field,node,&number_of_values,
-						&values))
+							/*time*/0.0, &values))
 					{
 						value=values;
 						for (i=0;i<number_of_components;i++)
@@ -804,7 +804,7 @@ Writes out the nodal values. Each component or version starts on a new line.
 					int *value,*values;
 
 					if (get_FE_nodal_field_int_values(field,node,&number_of_values,
-						&values))
+							/*time*/0.0, &values))
 					{
 						value=values;
 						for (i=0;i<number_of_components;i++)

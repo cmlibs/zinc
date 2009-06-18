@@ -77,6 +77,7 @@ struct Write_FE_region_element_data
 	struct FE_field_order_info *field_order_info;
 	struct FE_element *last_element;
 	struct FE_region *fe_region;
+	FE_value time;
 }; /* struct Write_FE_region_element_data */
 
 struct Write_FE_node_field_values
@@ -84,6 +85,7 @@ struct Write_FE_node_field_values
 	FILE *output_file;
 	/* store number of values for writing nodal values in columns */
 	int number_of_values;
+	FE_value time;
 };
 
 struct Write_FE_node_field_info_sub
@@ -101,6 +103,7 @@ struct Write_FE_region_node_data
 	enum FE_write_criterion write_criterion;
 	struct FE_field_order_info *field_order_info;
 	struct FE_node *last_node;
+	FE_value time;
 }; /* struct Write_FE_region_node_data */
 
 /*
@@ -2232,17 +2235,16 @@ Writes out the nodal values. Each component or version starts on a new line.
 				case FE_VALUE_VALUE:
 				{
 					FE_value *value,*values;
-
 					if (get_FE_nodal_field_FE_value_values(field,node,&number_of_values,
-						&values))
+							values_data->time, &values))
 					{
 						value=values;
 						for (i=0;i<number_of_components;i++)
 						{
-							number_of_derivatives=
-								get_FE_node_field_component_number_of_derivatives(node,field,i);
 							number_of_versions=
 								get_FE_node_field_component_number_of_versions(node,field,i);
+							number_of_derivatives=
+								get_FE_node_field_component_number_of_derivatives(node,field,i);
 							for (j=number_of_versions;0<j;j--)
 							{
 								for (k=0;k<=number_of_derivatives;k++)
@@ -2261,7 +2263,7 @@ Writes out the nodal values. Each component or version starts on a new line.
 					int *value,*values;
 
 					if (get_FE_nodal_field_int_values(field,node,&number_of_values,
-						&values))
+							values_data->time, &values))
 					{
 						value=values;
 						for (i=0;i<number_of_components;i++)
@@ -2335,7 +2337,7 @@ Writes out the nodal values. Each component or version starts on a new line.
 } /* write_FE_node_field_values */
 
 static int write_FE_node(FILE *output_file,struct FE_node *node,
-	struct FE_field_order_info *field_order_info)
+	struct FE_field_order_info *field_order_info, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 27 February 2003
 
@@ -2355,6 +2357,7 @@ written.
 		fprintf(output_file, " Node: %d\n", get_FE_node_identifier(node));
 		values_data.output_file = output_file;
 		values_data.number_of_values = 0;
+		values_data.time = time;
 		if (field_order_info)
 		{
 			number_of_fields =
@@ -2621,7 +2624,7 @@ has been selected for output) then the header is written out.
 					}
 				}
 			}
-			write_FE_node(output_file, node, field_order_info);
+			write_FE_node(output_file, node, field_order_info, write_nodes_data->time);
 			/* remember the last node to check if header needs to be re-output */
 			write_nodes_data->last_node = node;
 		}
@@ -2641,6 +2644,7 @@ static int write_FE_region(FILE *output_file, struct FE_region *fe_region,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, int *field_names_counter,
+	FE_value time,
 	enum FE_write_criterion write_criterion)
 /*******************************************************************************
 LAST MODIFIED : 27 February 2003
@@ -2713,6 +2717,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				write_nodes_data.write_criterion = write_criterion;
 				write_nodes_data.field_order_info = field_order_info;
 				write_nodes_data.last_node = (struct FE_node *)NULL;
+				write_nodes_data.time = time;
 				return_code = FE_region_for_each_FE_node(use_fe_region,
 					write_FE_region_node, &write_nodes_data);
 			}
@@ -2727,6 +2732,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				write_elements_data.field_order_info = field_order_info;
 				write_elements_data.fe_region = use_fe_region;
 				write_elements_data.last_element = (struct FE_element *)NULL;
+				write_elements_data.time = time;
 				/* write 1-D, 2-D then 3-D so lines and faces precede elements */
 				for (dimension = 1; dimension <= 3; dimension++)
 				{
@@ -2799,6 +2805,7 @@ static int write_Cmiss_region(FILE *output_file,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, int *field_names_counter,
+	FE_value time,
 	enum FE_write_criterion write_criterion,
 	enum FE_write_recursion write_recursion)
 {
@@ -2877,7 +2884,7 @@ static int write_Cmiss_region(FILE *output_file,
 			return_code = write_FE_region(output_file, Cmiss_region_get_FE_region(region),
 				write_elements, write_nodes, write_data,
 				use_write_fields_mode, number_of_field_names, field_names,
-				field_names_counter, write_criterion);
+				field_names_counter, time, write_criterion);
 		}
 
 		/* recursively output child regions */
@@ -2894,7 +2901,7 @@ static int write_Cmiss_region(FILE *output_file,
 					child_region, /*parent_region_output*/region, root_region,
 					write_elements, write_nodes, write_data,
 					write_fields_mode, number_of_field_names, field_names,
-					field_names_counter, write_criterion, write_recursion);
+					field_names_counter, time, write_criterion, write_recursion);
 			}
 		}
 	}
@@ -2979,7 +2986,7 @@ int write_exregion_file(FILE *output_file,
 	struct Cmiss_region *region, struct Cmiss_region *root_region,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
-	int number_of_field_names, char **field_names,
+	int number_of_field_names, char **field_names, FE_value time,
 	enum FE_write_criterion write_criterion,
 	enum FE_write_recursion write_recursion)
 {
@@ -3012,7 +3019,7 @@ int write_exregion_file(FILE *output_file,
 				region, /*parent_region_output*/(Cmiss_region *)NULL, root_region,
 				write_elements, write_nodes, write_data,
 				write_fields_mode, number_of_field_names, field_names, field_names_counter,
-				write_criterion, write_recursion);
+				time, write_criterion, write_recursion);
 			if (field_names_counter)
 			{
 				if (write_fields_mode == FE_WRITE_LISTED_FIELDS)
@@ -3057,7 +3064,7 @@ int write_exregion_file_of_name(const char *file_name,
 	struct Cmiss_region *region, struct Cmiss_region *root_region,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
-	int number_of_field_names, char **field_names,
+	int number_of_field_names, char **field_names, FE_value time,
 	enum FE_write_criterion write_criterion,
 	enum FE_write_recursion write_recursion)	
 {
@@ -3071,7 +3078,7 @@ int write_exregion_file_of_name(const char *file_name,
 		{
 			return_code = write_exregion_file(output_file, region, root_region,
 				write_elements, write_nodes, write_data,
-				write_fields_mode, number_of_field_names, field_names,
+				write_fields_mode, number_of_field_names, field_names, time,
 				write_criterion, write_recursion);
 			fclose(output_file);
 		}
