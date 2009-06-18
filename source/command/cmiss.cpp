@@ -19571,6 +19571,7 @@ Can also write individual groups with the <group> option.
 	 struct LIST(Computed_field) *list_of_fields;
 	 struct List_Computed_field_commands_data list_commands_data;
 	 static char	*command_prefix;
+	 FE_value time;
 #if defined (WX_USER_INTERFACE)
 #if defined (__WIN32__)
 	 char temp_data[L_tmpnam];
@@ -19606,7 +19607,7 @@ Can also write individual groups with the <group> option.
 			data_file_name = (char *)NULL;
 			elem_file_name = (char *)NULL;
 			node_file_name = (char *)NULL;
-
+			time = 0.0;
 			field_names.number_of_strings = 0;
 			field_names.strings = (char **)NULL;
 			write_criterion = FE_WRITE_COMPLETE_GROUP;
@@ -19626,6 +19627,9 @@ Can also write individual groups with the <group> option.
 			/* root_region */
 			Option_table_add_set_Cmiss_region_path(option_table, "root",
 				command_data->root_region, &root_region_path);
+			/* time */
+			Option_table_add_entry(option_table, "time",
+				&time, (void *)NULL, set_FE_value);
 			/* default option: file name */
 			Option_table_add_default_string_entry(option_table, &file_name, "FILE_NAME");
 
@@ -19866,7 +19870,7 @@ Can also write individual groups with the <group> option.
 							region, root_region,
 							/*write_elements*/0, /*write_nodes*/0, /*write_data*/1,
 							write_fields_mode, field_names.number_of_strings, field_names.strings,
-							write_criterion, write_recursion)))
+							time, write_criterion, write_recursion)))
 						{
 							 display_message(ERROR_MESSAGE,
 									"gfx_write_All.  Could not create temporary data file");
@@ -19884,7 +19888,7 @@ Can also write individual groups with the <group> option.
 							region, root_region,
 							/*write_elements*/1, /*write_nodes*/0, /*write_data*/0,
 							write_fields_mode, field_names.number_of_strings, field_names.strings,
-							write_criterion, write_recursion)))
+							time, write_criterion, write_recursion)))
 						{
 							 display_message(ERROR_MESSAGE,
 									"gfx_write_All.  Could not create temporary elem file");
@@ -19902,7 +19906,7 @@ Can also write individual groups with the <group> option.
 							region, root_region,
 							/*write_elements*/0, /*write_nodes*/1, /*write_data*/0,
 							write_fields_mode, field_names.number_of_strings, field_names.strings,
-							write_criterion, write_recursion)))
+							time, write_criterion, write_recursion)))
 						{
 							 display_message(ERROR_MESSAGE,
 									"gfx_write_All.  Could not create temporary node file");
@@ -20212,6 +20216,7 @@ Can also write individual element groups with the <group> option.
 	struct Cmiss_command_data *command_data;
 	struct Multiple_strings field_names;
 	struct Option_table *option_table;
+	FE_value time;
 
 	ENTER(gfx_write_elements);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -20226,7 +20231,7 @@ Can also write individual element groups with the <group> option.
 		nodes_flag = 0;
 		write_criterion = FE_WRITE_COMPLETE_GROUP;
 		write_recursion = FE_WRITE_RECURSIVE;
-
+		time = 0.0;
 		option_table = CREATE(Option_table)();
 		Option_table_add_help(option_table,
 			"Write elements and element fields in EX format to FILE_NAME. "
@@ -20237,7 +20242,12 @@ Can also write individual element groups with the <group> option.
 			"\'none\' to list just object identifiers. "
 			"Recursion options control whether sub-groups and sub-regions are output "
 			"with the chosen root region or group. "
-			"Specify <nodes> to include nodes and node fields in the same file.");
+			"Specify <nodes> to include nodes and node fields in the same file. "
+			"with the chosen root region or group. "
+			"Time option specifies nodes and node fields at time to be output if nodes "
+			"or node fields are time dependent. If time is out of range then the nodal "
+			"values at the nearest valid time will be output. Time is ignored if node "
+			"is not time dependent. ");
 		/* complete_group|with_all_listed_fields|with_any_listed_fields */ 
 		OPTION_TABLE_ADD_ENUMERATOR(FE_write_criterion)(option_table, &write_criterion);
 		/* fields */
@@ -20253,6 +20263,8 @@ Can also write individual element groups with the <group> option.
 		/* root_region */
 		Option_table_add_set_Cmiss_region_path(option_table, "root",
 			command_data->root_region, &root_region_path);
+		/* time */
+		Option_table_add_entry(option_table, "time", &time, (void*)NULL, set_FE_value);
 		/* default option: file name */
 		Option_table_add_default_string_entry(option_table, &file_name, "FILE_NAME");
 
@@ -20336,7 +20348,7 @@ Can also write individual element groups with the <group> option.
 					return_code = write_exregion_file_of_name(file_name, region, root_region,
 						/*write_elements*/1, (int)nodes_flag, /*write_data*/0,
 						write_fields_mode, field_names.number_of_strings, field_names.strings,
-						write_criterion, write_recursion);
+						time, write_criterion, write_recursion);
 				}
 			}
 		}
@@ -20393,11 +20405,13 @@ If <use_data> is set, writing data, otherwise writing nodes.
 	struct Cmiss_command_data *command_data;
 	struct Multiple_strings field_names;
 	struct Option_table *option_table;
+	FE_value time;
 
 	ENTER(gfx_write_nodes);
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		return_code = 1;
+		time = 0.0;
 		region_path = (char *)NULL;
 		root_region_path = duplicate_string("/");
 		if (use_data)
@@ -20431,7 +20445,12 @@ If <use_data> is set, writing data, otherwise writing nodes.
 			"Output can be restricted to just <fields> listed in required order, or "
 			"\'none\' to list just object identifiers. "
 			"Recursion options control whether sub-groups and sub-regions are output "
-			"with the chosen root region or group.");
+			"with the chosen root region or group. "
+			"Time option allow user to specify at which time of nodes and node fields "
+			"to be output if there nodes/node fields are time dependent. If time is out"
+			"of range then the nodal values at the nearest valid time will be output. "
+			"Time is ignored if node is not time dependent. ");
+
 		/* complete_group|with_all_listed_fields|with_any_listed_fields */ 
 		OPTION_TABLE_ADD_ENUMERATOR(FE_write_criterion)(option_table, &write_criterion);
 		/* fields */
@@ -20445,6 +20464,8 @@ If <use_data> is set, writing data, otherwise writing nodes.
 		/* root_region */
 		Option_table_add_set_Cmiss_region_path(option_table, "root",
 			command_data->root_region, &root_region_path);
+		/* time */
+		Option_table_add_entry(option_table, "time", &time, (void*)NULL, set_FE_value);
 		/* default option: file name */
 		Option_table_add_default_string_entry(option_table, &file_name, "FILE_NAME");
 
@@ -20526,7 +20547,7 @@ If <use_data> is set, writing data, otherwise writing nodes.
 				{
 					return_code = write_exregion_file_of_name(file_name, region, root_region,
 						/*write_elements*/0, /*write_nodes*/!use_data, /*write_data*/(0 != use_data),
-						write_fields_mode, field_names.number_of_strings, field_names.strings,
+						write_fields_mode, field_names.number_of_strings, field_names.strings, time,
 						write_criterion, write_recursion);
 				}
 			}
