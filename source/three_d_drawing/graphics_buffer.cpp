@@ -1471,12 +1471,12 @@ public:
 	{
 	};
 
-        void Set_wx_SharedContext()
+	void Set_wx_SharedContext()
 	{
-	    if (!sharedContext)
-	    {
-				 graphics_buffer->package->wxSharedContext = GetContext();
-	    }
+		if (!sharedContext)
+		{
+			graphics_buffer->package->wxSharedContext = GetContext();
+		}
 	}
 };
 
@@ -7866,6 +7866,7 @@ x==============================================================================*
 		if (buffer->canvas)
 		{
 			buffer->canvas->ClearGraphicsBufferReference();
+			delete buffer->canvas;
 		}
 		if (buffer->attrib_list != NULL)
 		{
