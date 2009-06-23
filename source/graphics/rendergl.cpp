@@ -4531,6 +4531,7 @@ static int Graphics_object_render_opengl(
 							graphics_object_item->selected_material);
 						render_GT_object_opengl_immediate(graphics_object_item,
 							/*draw_selected*/1, renderer, rendering_type);
+						renderer->Material_execute((Graphical_material *)NULL);
 					}
 				}
 				else
@@ -4548,8 +4549,11 @@ static int Graphics_object_render_opengl(
 				}
 				render_GT_object_opengl_immediate(graphics_object_item,
 					/*draw_selected*/0, renderer, rendering_type);
+				if (graphics_object_item->default_material)
+				{
+					renderer->Material_execute((Graphical_material *)NULL);
+				}
 			}
-			renderer->Material_execute((Graphical_material *)NULL);
 		}
 		if (graphics_object->nextobject)
 		{

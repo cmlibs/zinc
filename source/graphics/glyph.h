@@ -179,13 +179,15 @@ Creates a graphics object named <name> consisting of a single point at <0,0,0>.
 The point will be drawn with the given <marker_type> and <marker_size>.
 ==============================================================================*/
 
-struct GT_object *make_glyph_sheet(char *name);
+struct GT_object *make_glyph_sheet(char *name, int define_texturepoints);
 /*******************************************************************************
 LAST MODIFIED : 16 July 1998
 
 DESCRIPTION :
 Creates a graphics object named <name> resembling a square sheet spanning from
 coordinate (-0.5,-0.5,0) to (0.5,0.5,0).
+If define_texturepoints is true then texture coordinates will also be defined
+ranging from <0.0,0.0,0.0> to <1.0,1.0,0.0>.
 ==============================================================================*/
 
 struct GT_object *make_glyph_sphere(char *name,int number_of_segments_around,

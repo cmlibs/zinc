@@ -779,8 +779,8 @@ the arrow points in.
 				}
 				if (points&&(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,
 					g_QUADRILATERAL,2,number_of_segments_around+1,points,
-					normalpoints,/*texturepoints*/(Triple *)NULL,
-					/*tangentpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
+					normalpoints,/*tangentpoints*/(Triple *)NULL,
+					/*texturepoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
 				{
 					if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
 					{
@@ -1044,7 +1044,7 @@ lies at <1,0,0>. The radius of the cone is 0.5 at its base.
 				points,normalpoints);
 			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,g_QUADRILATERAL,2,
 				number_of_segments_around+1,points,normalpoints,
-				/*texturepoints*/(Triple *)NULL,/*tangentpoints*/(Triple *)NULL,
+				/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
 				g_NO_DATA,(GTDATA *)NULL)))
 			{
 				DEALLOCATE(points);
@@ -1111,7 +1111,7 @@ solid base.
 					points,normalpoints);
 				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,g_QUADRILATERAL,2,
 							number_of_segments_around+1,points,normalpoints,
-							/*texturepoints*/(Triple *)NULL,/*tangentpoints*/(Triple *)NULL,
+							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
 							g_NO_DATA,(GTDATA *)NULL)))
 				{
 					DEALLOCATE(points);
@@ -1138,7 +1138,7 @@ solid base.
 					points,normalpoints);
 				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,g_QUADRILATERAL,2,
 							number_of_segments_around+1,points,normalpoints,
-							/*texturepoints*/(Triple *)NULL,/*tangentpoints*/(Triple *)NULL,
+							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
 							g_NO_DATA,(GTDATA *)NULL)))
 				{
 					DEALLOCATE(points);
@@ -1330,8 +1330,8 @@ cube centred at <0,0,0>.
 				normalpoint++;
 			}
 			if (!(surface=CREATE(GT_surface)(g_SH_DISCONTINUOUS,g_QUADRILATERAL,6,
-				4,points,normalpoints,/*texturepoints*/(Triple *)NULL,
-				/*tangentpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
+				4,points,normalpoints,/*tangentpoints*/(Triple *)NULL,
+				/*texturepoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
 			{
 				DEALLOCATE(points);
 				DEALLOCATE(normalpoints);
@@ -1809,25 +1809,29 @@ The point will be drawn with the given <marker_type> and <marker_size>.
 	return (glyph);
 } /* make_glyph_point */
 
-struct GT_object *make_glyph_sheet(char *name)
+struct GT_object *make_glyph_sheet(char *name, int define_texturepoints)
 /*******************************************************************************
 LAST MODIFIED : 5 May 1999
 
 DESCRIPTION :
 Creates a graphics object named <name> resembling a square sheet spanning from
 coordinate <-0.5,-0.5,0> to <0.5,0.5,0>.
+If define_texturepoints is true then texture coordinates will also be defined
+ranging from <0.0,0.0,0.0> to <1.0,1.0,0.0>.
 ==============================================================================*/
 {
 	struct GT_object *glyph;
 	struct GT_surface *surface;
-	Triple *point,*points,*normalpoints;
+	Triple *point,*points,*normalpoints, *texturepoints;
 
 	ENTER(make_glyph_sheet);
 	if (name)
 	{
 		surface=(struct GT_surface *)NULL;
+		texturepoints = (Triple *)NULL;
 		if (ALLOCATE(points,Triple,4)&&
-			ALLOCATE(normalpoints,Triple,4))
+			ALLOCATE(normalpoints,Triple,4)&&
+			(!define_texturepoints || ALLOCATE(texturepoints,Triple,4)))
 		{
 			point = points;
 			/* vertices */
@@ -1864,9 +1868,30 @@ coordinate <-0.5,-0.5,0> to <0.5,0.5,0>.
 			(*point)[1] = 0.0;
 			(*point)[2] = 1.0;
 			point++;
-			if (!(surface=CREATE(GT_surface)(g_SH_DISCONTINUOUS,g_QUADRILATERAL,1,
-				4,points,normalpoints,/*texturepoints*/(Triple *)NULL,
-				/*tangentpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
+			/* texture coordinates */
+			if (define_texturepoints)
+			{
+				point = texturepoints;
+				(*point)[0] = 0.0;
+				(*point)[1] = 0.0;
+				(*point)[2] = 0.0;
+				point++;
+				(*point)[0] = 1.0;
+				(*point)[1] = 0.0;
+				(*point)[2] = 0.0;
+				point++;
+				(*point)[0] = 1.0;
+				(*point)[1] = 1.0;
+				(*point)[2] = 0.0;
+				point++;
+				(*point)[0] = 0.0;
+				(*point)[1] = 1.0;
+				(*point)[2] = 0.0;
+				point++;
+			}
+			if (!(surface=CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP,g_QUADRILATERAL,1,
+				4,points,normalpoints,/*tangentpoints*/(Triple *)NULL,texturepoints,
+				g_NO_DATA,(GTDATA *)NULL)))
 			{
 				DEALLOCATE(points);
 				DEALLOCATE(normalpoints);
@@ -2135,7 +2160,7 @@ Creates a list of standard glyphs for the cmgui and unemap applications.
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
-		if (glyph=make_glyph_sheet("sheet"))
+		if (glyph=make_glyph_sheet("sheet", /*define_texturepoints*/0))
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
@@ -2144,6 +2169,10 @@ Creates a list of standard glyphs for the cmgui and unemap applications.
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
 		if (glyph=make_glyph_sphere("sphere_hires",48,24))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_sheet("textured_sheet", /*define_texturepoints*/1))
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
