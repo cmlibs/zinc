@@ -1499,6 +1499,10 @@ Notes:
 							DEALLOCATE(label_bounds_bit_pattern);
 							DEACCESS(FE_node)(&label_bounds_node);
 						}
+						if (visibility_field)
+						{
+							Computed_field_clear_cache(visibility_field);
+						}
 						if (!return_code)
 						{
 							/* This glyph set is only partially complete, so
