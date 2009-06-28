@@ -5,7 +5,7 @@ CMGUI Scene Editor Window
 .. _graphical setting: http://www.cmiss.org/cmgui/wiki/UsingCMGUIGraphicalSettings
 
 
-The scene editor is where you control how visualizatons appear in the graphics window.  From this window you can select which graphical representations and settings are displayed.  You can add, remove, and edit visual elements such as lines, glyphs or surfaces; apply materials or spectra to graphical settings; and alter the order in which graphical representations are drawn.  The window itself is broken into three main panels - the scene objects list, graphical settings list, settings editor (Figure 1)
+The scene editor is where you control how visualizations appear in the graphics window.  From this window you can select which graphical representations and settings are displayed.  You can add, remove, and edit visual elements such as lines, glyphs or surfaces; apply materials or spectra to graphical settings; and alter the order in which graphical representations are drawn.  The window itself is broken into three main panels - the scene objects list, graphical settings list, settings editor (Figure 1)
 
 .. figure:: sceneEditor_Glyphs1.png
    :figwidth: image
@@ -31,7 +31,7 @@ If a scene object made up of elements is selected, the *general settings* button
    :figwidth: image
    :align: center
 
-   **Figure 2: The general settings -** A) This is the general settings panel, showing the settings available.  B) A simple cube rendered in wireframe to show the effect of the *element discretization*.  The three cubes have 2*2*2, 4*4*4 (default), and 10*10*10 discretizations from left to right.  C) The effect of *circle discretization* on the display of `cylinders`_.  These three cubes are rendered with cylinder edges, with the circle discretization set at 3, 6 (default), and 20 from left to right.
+   **Figure 2: The general settings -** A) This is the general settings panel, showing the settings available.  B) A simple cube rendered in wire-frame to show the effect of the *element discretization*.  The three cubes have 2*2*2, 4*4*4 (default), and 10*10*10 discretizations from left to right.  C) The effect of *circle discretization* on the display of `cylinders`_.  These three cubes are rendered with cylinder edges, with the circle discretization set at 3, 6 (default), and 20 from left to right.
    
 | 
 
