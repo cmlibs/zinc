@@ -71,6 +71,10 @@ Cmiss_scene_viewer_input_set_y_position
 Cmiss_scene_viewer_input_get_event_type
 Cmiss_scene_viewer_input_set_event_type
 
+#if defined (WX_USER_INTERFACE)
+create_Cmiss_scene_viewer_wx
+#endif /* defined (WX_USER_INTERFACE) */
+
 #if defined (GTK_USER_INTERFACE)
 create_Cmiss_scene_viewer_gtk
 #endif /* defined (GTK_USER_INTERFACE) */
