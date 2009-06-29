@@ -23,9 +23,9 @@ Scene object list
 
 | 
 
-Below the *scene object list*  Is the *transformation* button.  This button will open up a set of controls that allow you to spatially manipulate the selected scene object.  From these controls you can scale, translate or rotate the object within the scene.
+Below the *scene object list* is the *transformation* button.  This button will open up a set of controls that allow you to spatially manipulate the selected scene object.  From these controls you can scale, translate or rotate the object within the scene.
 
-If a scene object made up of elements is selected, the *general settings* button will become available.  This button opens a series of settings that allow you to edit the coordinate field and discretisation options for the selected object.  The discretization options allow you to change the level of detail objects are represented with in the graphics window (Figure 2).
+If a scene object made up of elements is selected, the *general settings* button will become available.  This button opens a series of settings that allow you to edit the coordinate field and discretization options for the selected object.  The discretization options allow you to change the level of detail objects are represented with in the graphics window (Figure 2).
 
 .. figure:: general_settings_discretization.png
    :figwidth: image
