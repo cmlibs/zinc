@@ -405,7 +405,7 @@ by the escape/backslash character in the input file.
 		allocated_length = 0; /* including space for \0 at end */
 		length = 0;
 		/* pass over leading white space */
-		while (isspace(this_char = IO_stream_getc(input_file)));
+		while (isspace(this_char = IO_stream_getc(input_file))) {}
 		/* determine if string is in quotes and which quote_mark is in use */
 		if (((int)'\'' == this_char) || ((int)'\"' == this_char))
 		{
