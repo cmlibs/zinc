@@ -1539,31 +1539,31 @@ Open the <user_interface>.
 	int screen_number;
 	static MrmRegisterArg identifiers[]=
 	{
-		{"widget_spacing",(XtPointer)NULL},
-		{"menu_font",(XtPointer)NULL},
-		{"heading_font",(XtPointer)NULL},
-		{"normal_font",(XtPointer)NULL},
-		{"normal_non_proportional_font",(XtPointer)NULL},
-		{"button_font",(XtPointer)NULL},
-		{"list_font",(XtPointer)NULL},
-		{"small_font",(XtPointer)NULL}
+		{const_cast<char *>("widget_spacing"),(XtPointer)NULL},
+		{const_cast<char *>("menu_font"),(XtPointer)NULL},
+		{const_cast<char *>("heading_font"),(XtPointer)NULL},
+		{const_cast<char *>("normal_font"),(XtPointer)NULL},
+		{const_cast<char *>("normal_non_proportional_font"),(XtPointer)NULL},
+		{const_cast<char *>("button_font"),(XtPointer)NULL},
+		{const_cast<char *>("list_font"),(XtPointer)NULL},
+		{const_cast<char *>("small_font"),(XtPointer)NULL}
 	};
 	static char *fallback_resources[]=
 	{
-		"*.time_editor_play.accelerators: <KeyPress>f:   ArmAndActivate()",
-		"*.time_editor_play_reverse.accelerators: <KeyPress>b:   ArmAndActivate()",
-		"*.time_editor_stop.accelerators: <KeyPress>s:   ArmAndActivate()",
-		"*.time_editor_step.accelerators: <KeyPress>j:   ArmAndActivate()",
+		const_cast<char *>("*.time_editor_play.accelerators: <KeyPress>f:   ArmAndActivate()"),
+		const_cast<char *>("*.time_editor_play_reverse.accelerators: <KeyPress>b:   ArmAndActivate()"),
+		const_cast<char *>("*.time_editor_stop.accelerators: <KeyPress>s:   ArmAndActivate()"),
+		const_cast<char *>("*.time_editor_step.accelerators: <KeyPress>j:   ArmAndActivate()"),
 		/*SAB #Override is needed for when a drawing area has focus
 		  alternatively could set no traversal for drawing area*/
-		"*.analysis_previous_button.accelerators: #override <Key>p: ArmAndActivate()",
-		"*.analysis_next_button.accelerators: #override <Key>n: ArmAndActivate()",
-		"*.analysis_accept_button.accelerators: #override <Key>a: ArmAndActivate()",
-		"*.analysis_reject_button.accelerators: #override <Key>r: ArmAndActivate()",
-		"*.trace_edit_previous_button.accelerators: #override <Key>p: ArmAndActivate()",
-		"*.trace_edit_next_button.accelerators: #override <Key>n: ArmAndActivate()",
-		"*.trace_edit_accept_button.accelerators: #override <Key>a: ArmAndActivate()",
-		"*.trace_edit_reject_button.accelerators: #override <Key>r: ArmAndActivate()",
+		const_cast<char *>("*.analysis_previous_button.accelerators: #override <Key>p: ArmAndActivate()"),
+		const_cast<char *>("*.analysis_next_button.accelerators: #override <Key>n: ArmAndActivate()"),
+		const_cast<char *>("*.analysis_accept_button.accelerators: #override <Key>a: ArmAndActivate()"),
+		const_cast<char *>("*.analysis_reject_button.accelerators: #override <Key>r: ArmAndActivate()"),
+		const_cast<char *>("*.trace_edit_previous_button.accelerators: #override <Key>p: ArmAndActivate()"),
+		const_cast<char *>("*.trace_edit_next_button.accelerators: #override <Key>n: ArmAndActivate()"),
+		const_cast<char *>("*.trace_edit_accept_button.accelerators: #override <Key>a: ArmAndActivate()"),
+		const_cast<char *>("*.trace_edit_reject_button.accelerators: #override <Key>r: ArmAndActivate()"),
 		NULL /* Must be NULL terminated */
 	};
 #define XmNbuttonFont "buttonFont"
@@ -1585,8 +1585,8 @@ Open the <user_interface>.
 	static XtResource resources[]=
 	{
 		{
-			XmNmenuFont,
-			XmCMenuFont,
+			const_cast<char *>(XmNmenuFont),
+			const_cast<char *>(XmCMenuFont),
 			XmRFontStruct,
 			sizeof(XFontStruct *),
 			XtOffsetOf(User_settings,menu_font),
@@ -1594,8 +1594,8 @@ Open the <user_interface>.
 			const_cast<char*>("*-Helvetica-medium-R-*--*-120-*")
 		},
 		{
-			XmNheadingFont,
-			XmCHeadingFont,
+			const_cast<char *>(XmNheadingFont),
+			const_cast<char *>(XmCHeadingFont),
 			XmRFontStruct,
 			sizeof(XFontStruct *),
 			XtOffsetOf(User_settings,heading_font),
@@ -1603,8 +1603,8 @@ Open the <user_interface>.
 			const_cast<char*>("-*-HELVETICA-BOLD-R-*--*-120-*")
 		},
 		{
-			XmNnormalFont,
-			XmCNormalFont,
+			const_cast<char *>(XmNnormalFont),
+			const_cast<char *>(XmCNormalFont),
 			XmRFontStruct,
 			sizeof(XFontStruct *),
 			XtOffsetOf(User_settings,normal_font),
@@ -1612,8 +1612,8 @@ Open the <user_interface>.
 			const_cast<char*>("*-helvetica-medium-r-normal--14-*-*")
 		},
 		{
-			XmNnormalNonProportionalFont,
-			XmCNormalNonProportionalFont,
+			const_cast<char *>(XmNnormalNonProportionalFont),
+			const_cast<char *>(XmCNormalNonProportionalFont),
 			XmRFontStruct,
 			sizeof(XFontStruct *),
 			XtOffsetOf(User_settings,normal_non_proportional_font),
@@ -1621,8 +1621,8 @@ Open the <user_interface>.
 			const_cast<char*>("*-courier-medium-r-normal--12-*")
 		},
 		{
-			XmNbuttonFont,
-			XmCButtonFont,
+			const_cast<char *>(XmNbuttonFont),
+			const_cast<char *>(XmCButtonFont),
 			XmRFontStruct,
 			sizeof(XFontStruct *),
 			XtOffsetOf(User_settings,button_font),
@@ -1630,8 +1630,8 @@ Open the <user_interface>.
 			const_cast<char*>("*-Helvetica-medium-r-*--*-120-*")
 		},
 		{
-			XmNlistFont,
-			XmCListFont,
+			const_cast<char *>(XmNlistFont),
+			const_cast<char *>(XmCListFont),
 			XmRFontStruct,
 			sizeof(XFontStruct *),
 			XtOffsetOf(User_settings,list_font),
@@ -1639,8 +1639,8 @@ Open the <user_interface>.
 			const_cast<char*>("*-Helvetica-medium-R-*--*-120-*")
 		},
 		{
-			XmNsmallFont,
-			XmCSmallFont,
+			const_cast<char *>(XmNsmallFont),
+			const_cast<char *>(XmCSmallFont),
 			XmRFontStruct,
 			sizeof(XFontStruct *),
 			XtOffsetOf(User_settings,small_font),
@@ -1648,8 +1648,8 @@ Open the <user_interface>.
 			const_cast<char*>("*-Helvetica-medium-R-*--*-120-*")
 		},
 		{
-			XmNwidgetSpacing,
-			XmCWidgetSpacing,
+			const_cast<char *>(XmNwidgetSpacing),
+			const_cast<char *>(XmCWidgetSpacing),
 			XmRInt,
 			sizeof(int),
 			XtOffsetOf(User_settings,widget_spacing),

@@ -1065,7 +1065,7 @@ Sets the current_object in the <scene_editor> for editing. Updates widgets.
 				}
 				else
 				{
-					label_string = XmStringCreateSimple("Unknown child");
+					label_string = XmStringCreateSimple(const_cast<char *>("Unknown child"));
 				}
 				XtVaSetValues(scene_editor->child_button,
 					XmNlabelString, label_string, NULL);
@@ -1165,13 +1165,13 @@ Callback for when the expand toggle button state changes.
 		if (scene_editor_object->expanded)
 		{
 			scene_editor_object->expanded = 0;
-			label_string = XmStringCreateSimple("+");
+			label_string = XmStringCreateSimple(const_cast<char *>("+"));
 			XtUnmanageChild(scene_editor_object->child_form);
 		}
 		else
 		{
 			scene_editor_object->expanded = 1;
-			label_string = XmStringCreateSimple("-");
+			label_string = XmStringCreateSimple(const_cast<char *>("-"));
 			XtManageChild(scene_editor_object->child_form);
 			XmForm_resize(scene_editor_object->child_form);
 		}
@@ -1575,7 +1575,7 @@ to the previous widget, but its widgets and child widgets are not updated.
 ==============================================================================*/
 {
 	Arg args[12];
-	char *expand_label, *name;
+	char *name;
 	int num_args, return_code, update_children, visible;
 	struct Scene *new_scene, *parent_scene;
 	struct Scene_editor_object *scene_editor_object;
@@ -1662,7 +1662,7 @@ to the previous widget, but its widgets and child widgets are not updated.
 						XtSetArg(args[num_args], XmNleftAttachment, XmATTACH_FORM);
 						num_args++;
 						scene_editor_object->form =
-							XmCreateForm(parent_form, "form", args, num_args);
+							XmCreateForm(parent_form, const_cast<char *>("form"), args, num_args);
 						XtManageChild(scene_editor_object->form);
 					}
 					scene_editor_object->previous_widget = *previous_widget_address;
@@ -1706,7 +1706,7 @@ to the previous widget, but its widgets and child widgets are not updated.
 								(XtPointer)User_interface_get_normal_fontlist(scene_editor->user_interface));
 							num_args++;
 							scene_editor_object->visibility_button = XmCreateToggleButton(
-								scene_editor_object->form, "", args, num_args);
+								scene_editor_object->form, const_cast<char *>(""), args, num_args);
 							XtAddCallback(scene_editor_object->visibility_button,
 								XmNvalueChangedCallback,
 								Scene_editor_object_visibility_callback,
@@ -1750,14 +1750,16 @@ to the previous widget, but its widgets and child widgets are not updated.
 							num_args++;
 							if (scene_editor_object->expanded)
 							{
-								expand_label = "-";
+								char expand_label[] = "-";
+								scene_editor_object->expand_button = XmCreatePushButton(
+									scene_editor_object->form, expand_label, args, num_args);
 							}
 							else
 							{
-								expand_label = "+";
+								char expand_label[] = "+";
+								scene_editor_object->expand_button = XmCreatePushButton(
+									scene_editor_object->form, expand_label, args, num_args);
 							}
-							scene_editor_object->expand_button = XmCreatePushButton(
-								scene_editor_object->form, expand_label, args, num_args);
 							XtAddCallback(scene_editor_object->expand_button,
 								XmNactivateCallback,
 								Scene_editor_object_expand_callback,
@@ -1839,7 +1841,7 @@ to the previous widget, but its widgets and child widgets are not updated.
 								num_args++;
 							}
 							scene_editor_object->child_form = XmCreateForm(
-								scene_editor_object->form, "child", args, num_args);
+								scene_editor_object->form, const_cast<char *>("child"), args, num_args);
 						}
 
 						Scene_editor_Scene_update_Scene_editor_objects(
@@ -2002,7 +2004,7 @@ Note on successful return the dialog is put at <*scene_editor_address>.
 				XmNallowShellResize, FALSE, NULL);
 			/* Set up window manager callback for close window message */
 			WM_DELETE_WINDOW = XmInternAtom(XtDisplay(scene_editor->window_shell),
-				"WM_DELETE_WINDOW", False);
+				const_cast<char *>("WM_DELETE_WINDOW"), False);
 			XmAddWMProtocolCallback(scene_editor->window_shell,
 				WM_DELETE_WINDOW, Scene_editor_close_CB, scene_editor);
 			/* Register the shell with the busy signal list */

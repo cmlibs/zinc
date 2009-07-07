@@ -479,7 +479,7 @@ Unlocks netscape so that other processes can interact with it.
 
 #if defined (MOTIF_USER_INTERFACE)
 #if defined (NETSCAPE_HELP)
-static int set_netscape_url(Display *display,Window netscape_window,char *url)
+static int set_netscape_url(Display *display,Window netscape_window,const char *url)
 /*******************************************************************************
 LAST MODIFIED : 24 November 1997
 

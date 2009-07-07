@@ -498,8 +498,8 @@ orthographic up and front directions from the Xdefaults file.
 	static XtResource resources[]=
 	{
 		{
-			XmNgraphicsWindowOrthoUpAxis,
-			XmCGraphicsWindowOrthoUpAxis,
+			const_cast<char*>(XmNgraphicsWindowOrthoUpAxis),
+			const_cast<char*>(XmCGraphicsWindowOrthoUpAxis),
 			XmRString,
 			sizeof(char *),
 			XtOffsetOf(struct Graphics_window_defaults,up_axis_name),
@@ -507,8 +507,8 @@ orthographic up and front directions from the Xdefaults file.
 			const_cast<char*>("Z")
 		},
 		{
-			XmNgraphicsWindowOrthoFrontAxis,
-			XmCGraphicsWindowOrthoFrontAxis,
+			const_cast<char*>(XmNgraphicsWindowOrthoFrontAxis),
+			const_cast<char*>(XmCGraphicsWindowOrthoFrontAxis),
 			XmRString,
 			sizeof(char *),
 			XtOffsetOf(struct Graphics_window_defaults,front_axis_name),
@@ -516,8 +516,8 @@ orthographic up and front directions from the Xdefaults file.
 			const_cast<char*>("-Y")
 		},
 		{
-			XmNgraphicsWindowViewingHeight,
-			XmCGraphicsWindowViewingHeight,
+			const_cast<char*>(XmNgraphicsWindowViewingHeight),
+			const_cast<char*>(XmCGraphicsWindowViewingHeight),
 			XmRInt,
 			sizeof(int),
 			XtOffsetOf(struct Graphics_window_defaults,viewing_height),
@@ -525,8 +525,8 @@ orthographic up and front directions from the Xdefaults file.
 			const_cast<char*>("512")
 		},
 		{
-			XmNgraphicsWindowViewingWidth,
-			XmCGraphicsWindowViewingWidth,
+			const_cast<char*>(XmNgraphicsWindowViewingWidth),
+			const_cast<char*>(XmCGraphicsWindowViewingWidth),
 			XmRInt,
 			sizeof(int),
 			XtOffsetOf(struct Graphics_window_defaults,viewing_width),
@@ -534,8 +534,8 @@ orthographic up and front directions from the Xdefaults file.
 			const_cast<char*>("512")
 		},
 		{
-			XmNgraphicsWindowTranslateRate,
-			XmCGraphicsWindowTranslateRate,
+			const_cast<char*>(XmNgraphicsWindowTranslateRate),
+			const_cast<char*>(XmCGraphicsWindowTranslateRate),
 			XmRFloat,
 			sizeof(float),
 			XtOffsetOf(struct Graphics_window_defaults,translate_rate),
@@ -543,8 +543,8 @@ orthographic up and front directions from the Xdefaults file.
 			const_cast<char*>("1.0")
 		},
 		{
-			XmNgraphicsWindowTumbleRate,
-			XmCGraphicsWindowTumbleRate,
+			const_cast<char*>(XmNgraphicsWindowTumbleRate),
+			const_cast<char*>(XmCGraphicsWindowTumbleRate),
 			XmRFloat,
 			sizeof(float),
 			XtOffsetOf(struct Graphics_window_defaults,tumble_rate),
@@ -552,8 +552,8 @@ orthographic up and front directions from the Xdefaults file.
 			const_cast<char*>("1.5")
 		},
 		{
-			XmNgraphicsWindowZoomRate,
-			XmCGraphicsWindowZoomRate,
+			const_cast<char*>(XmNgraphicsWindowZoomRate),
+				const_cast<char*>(XmCGraphicsWindowZoomRate),
 			XmRFloat,
 			sizeof(float),
 			XtOffsetOf(struct Graphics_window_defaults,zoom_rate),
@@ -3746,53 +3746,53 @@ it.
 	MrmType graphics_window_dialog_class;
 	static MrmRegisterArg callbacks[] =
 	{
-		{"gwin_id_control_panel",(XtPointer)
+		{const_cast<char *>("gwin_id_control_panel"),(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,control_panel)},
-		{"gwin_id_viewing_form",(XtPointer)
+		{const_cast<char *>("gwin_id_viewing_form"),(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,viewing_form)},
-		{"gwin_id_viewing_area1",(XtPointer)
+		{const_cast<char *>("gwin_id_viewing_area1"),(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,viewing_area1)},
-		{"gwin_id_viewing_area2",(XtPointer)
+		{const_cast<char *>("gwin_id_viewing_area2"),(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,viewing_area2)},
-		{"gwin_id_viewing_area3",(XtPointer)
+		{const_cast<char *>("gwin_id_viewing_area3"),(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,viewing_area3)},
-		{"gwin_id_viewing_area4",(XtPointer)
+		{const_cast<char *>("gwin_id_viewing_area4"),(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,viewing_area4)},
-		{"gwin_id_view_all_btn",(XtPointer)
+		{const_cast<char *>("gwin_id_view_all_btn"),(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,view_all_button)},
-		{"gwin_id_print_btn",(XtPointer)
+		{const_cast<char *>("gwin_id_print_btn"),(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,print_button)},
-		{"gwin_id_time_edit_form",(XtPointer)
+		{const_cast<char *>("gwin_id_time_edit_form"),(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,time_edit_form)},
-		{"gwin_id_perspective_btn",(XtPointer)
+		{const_cast<char *>("gwin_id_perspective_btn"),(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,perspective_button)},
-		{"gwin_id_layout_mode_form",(XtPointer)
+		{const_cast<char *>("gwin_id_layout_mode_form"),(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,layout_mode_form)},
-		{"gwin_id_orthographic_form",(XtPointer)
+		{const_cast<char *>("gwin_id_orthographic_form"),(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,orthographic_form)},
-		{"gwin_id_ortho_up_option",(XtPointer)
+		{const_cast<char *>("gwin_id_ortho_up_option"),(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,ortho_up_option)},
-		{"gwin_id_ortho_up_menu",(XtPointer)
+		{const_cast<char *>("gwin_id_ortho_up_menu"),(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,ortho_up_menu)},
-		{"gwin_id_ortho_front_btn",(XtPointer)
+		{const_cast<char *>("gwin_id_ortho_front_btn"),(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,ortho_front_button)},
-		{"gwin_id_interactive_tool_form",(XtPointer)
+		{const_cast<char *>("gwin_id_interactive_tool_form"),(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,interactive_toolbar_form)},
-		{"gwin_destroy_CB",(XtPointer)Graphics_window_destroy_CB},
-		{"gwin_view_all_btn_CB",
+		{const_cast<char *>("gwin_destroy_CB"),(XtPointer)Graphics_window_destroy_CB},
+		{const_cast<char *>("gwin_view_all_btn_CB"),
 			(XtPointer)Graphics_window_view_all_button_CB},
-		{"gwin_print_btn_CB",
+		{const_cast<char *>("gwin_print_btn_CB"),
 			(XtPointer)Graphics_window_print_button_CB},
-		{"gwin_perspective_btn_CB",
+		{const_cast<char *>("gwin_perspective_btn_CB"),
 			(XtPointer)Graphics_window_perspective_button_CB},
-		{"gwin_ortho_up_menu_CB",
+		{const_cast<char *>("gwin_ortho_up_menu_CB"),
 			(XtPointer)Graphics_window_ortho_up_menu_CB},
-		{"gwin_ortho_front_btn_CB",
+		{const_cast<char *>("gwin_ortho_front_btn_CB"),
 			(XtPointer)Graphics_window_ortho_front_button_CB}
 	};
 	static MrmRegisterArg identifiers[] =
 	{
-		{"gwin_structure",(XtPointer)NULL}
+		{const_cast<char *>("gwin_structure"),(XtPointer)NULL}
 	};
 	struct Callback_data callback;
 #endif /* defined (MOTIF_USER_INTERFACE) */
@@ -3954,7 +3954,7 @@ it.
 						user_interface);
 					/* Set up window manager callback for close window message */
 					WM_DELETE_WINDOW=XmInternAtom(
-						XtDisplay(window->window_shell),"WM_DELETE_WINDOW",False);
+						XtDisplay(window->window_shell),const_cast<char *>("WM_DELETE_WINDOW"),False);
 					XmAddWMProtocolCallback(window->window_shell,
 						WM_DELETE_WINDOW,Graphics_window_close_CB,window);
 					/* register callbacks */
@@ -3991,7 +3991,7 @@ it.
 						{
 							/* Get the graphics window from the uid file */
 							if (MrmSUCCESS != MrmFetchWidget(graphics_window_hierarchy,
-									 "graphics_window",window->window_shell,
+									const_cast<char *>("graphics_window"),window->window_shell,
 									 &window->main_window,&graphics_window_dialog_class))
 							{
 								destroy_Shell_list_item_from_shell(
@@ -4024,7 +4024,7 @@ it.
 								}
 								/* create the time editing widget */
 								if (!(window->time_edit_widget=create_edit_var_widget(
-											window->time_edit_form,"Time",0.0,0.0,1.0)))
+												window->time_edit_form,const_cast<char *>("Time"),0.0,0.0,1.0)))
 								{
 									init_widgets=0;
 								}

@@ -725,7 +725,7 @@ and as a child of <parent>.
 			convert_Colour_to_Pixel(display, foreground, &foreground_pixel);
 			convert_Colour_to_Pixel(display, background, &background_pixel);
 			if (MrmSUCCESS == MrmFetchIconLiteral(element_tool_hierarchy,
-				"element_tool_icon",DefaultScreenOfDisplay(display),display,
+					const_cast<char *>("element_tool_icon"),DefaultScreenOfDisplay(display),display,
 				foreground_pixel, background_pixel, &pixmap))
 			{ 
 				image = create_Cmgui_image_from_Pixmap(display, pixmap);
@@ -1076,30 +1076,30 @@ Selects elements in <element_selection> in response to interactive_events.
 	MrmType element_tool_dialog_class;
 	static MrmRegisterArg callback_list[]=
 	{
-		{"elem_tool_id_select_elems_btn",(XtPointer)
+		{const_cast<char *>("elem_tool_id_select_elems_btn"),(XtPointer)
 			DIALOG_IDENTIFY(element_tool,select_elements_button)},
-		{"elem_tool_id_select_faces_btn",(XtPointer)
+		{const_cast<char *>("elem_tool_id_select_faces_btn"),(XtPointer)
 			DIALOG_IDENTIFY(element_tool,select_faces_button)},
-		{"elem_tool_id_select_lines_btn",(XtPointer)
+		{const_cast<char *>("elem_tool_id_select_lines_btn"),(XtPointer)
 			DIALOG_IDENTIFY(element_tool,select_lines_button)},
-		{"elem_tool_id_command_field_btn",(XtPointer)
+		{const_cast<char *>("elem_tool_id_command_field_btn"),(XtPointer)
 			DIALOG_IDENTIFY(element_tool,command_field_button)},
-		{"elem_tool_id_command_field_form",(XtPointer)
+		{const_cast<char *>("elem_tool_id_command_field_form"),(XtPointer)
 			DIALOG_IDENTIFY(element_tool,command_field_form)},
-		{"elem_tool_select_elems_btn_CB",
+		{const_cast<char *>("elem_tool_select_elems_btn_CB"),
 		 (XtPointer)Element_tool_select_elements_button_CB},
-		{"elem_tool_select_faces_btn_CB",
+		{const_cast<char *>("elem_tool_select_faces_btn_CB"),
 		 (XtPointer)Element_tool_select_faces_button_CB},
-		{"elem_tool_select_lines_btn_CB",
+		{const_cast<char *>("elem_tool_select_lines_btn_CB"),
 		 (XtPointer)Element_tool_select_lines_button_CB},
-		{"elem_tool_command_field_btn_CB",
+		{const_cast<char *>("elem_tool_command_field_btn_CB"),
 		 (XtPointer)Element_tool_command_field_button_CB},
-		{"elem_tool_destroy_selected_CB",
+		{const_cast<char *>("elem_tool_destroy_selected_CB"),
 		 (XtPointer)Element_tool_destroy_selected_CB}
 	};
 	static MrmRegisterArg identifier_list[]=
 	{
-		{"elem_tool_structure",(XtPointer)NULL}
+		{const_cast<char *>("elem_tool_structure"),(XtPointer)NULL}
 	};
 	struct Callback_data callback;
 #endif /* defined (MOTIF_USER_INTERFACE) */
@@ -1201,7 +1201,7 @@ Selects elements in <element_selection> in response to interactive_events.
 				{
 					/* Set up window manager callback for close window message */
 					WM_DELETE_WINDOW=XmInternAtom(XtDisplay(element_tool->window_shell),
-						"WM_DELETE_WINDOW",False);
+						const_cast<char *>("WM_DELETE_WINDOW"),False);
 					XmAddWMProtocolCallback(element_tool->window_shell,
 						WM_DELETE_WINDOW,Element_tool_close_CB,element_tool);
 					/* Register the shell with the busy signal list */
@@ -1217,7 +1217,7 @@ Selects elements in <element_selection> in response to interactive_events.
 						{
 							/* fetch element tool widgets */
 							if (MrmSUCCESS==MrmFetchWidget(element_tool_hierarchy,
-									"element_tool",element_tool->window_shell,
+									const_cast<char *>("element_tool"),element_tool->window_shell,
 									&(element_tool->widget),&element_tool_dialog_class))
 							{
 								init_widgets=1;

@@ -2399,7 +2399,7 @@ Fetches the appropriate icon for the interactive tool.
 ==============================================================================*/
 {
 #if defined (MOTIF_USER_INTERFACE)
-	char *icon_name;
+	const char *icon_name;
 	Display *display;
 	Pixel background_pixel, foreground_pixel;
 	Pixmap pixmap;
@@ -2426,7 +2426,7 @@ Fetches the appropriate icon for the interactive tool.
 			convert_Colour_to_Pixel(display, foreground, &foreground_pixel);
 			convert_Colour_to_Pixel(display, background, &background_pixel);
 			if (MrmSUCCESS == MrmFetchIconLiteral(node_tool_hierarchy,
-				icon_name,DefaultScreenOfDisplay(display),display,
+					const_cast<char *>(icon_name),DefaultScreenOfDisplay(display),display,
 				foreground_pixel, background_pixel, &pixmap))
 			{ 
 				image = create_Cmgui_image_from_Pixmap(display, pixmap);
@@ -3273,52 +3273,52 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 	MrmType node_tool_dialog_class;
 	static MrmRegisterArg callback_list[]=
 	{
-		{"node_tool_id_select_btn",(XtPointer)
+		{const_cast<char *>("node_tool_id_select_btn"),(XtPointer)
 			DIALOG_IDENTIFY(node_tool,select_button)},
-		{"node_tool_id_edit_btn",(XtPointer)
+		{const_cast<char *>("node_tool_id_edit_btn"),(XtPointer)
 			DIALOG_IDENTIFY(node_tool,edit_button)},
-		{"node_tool_id_motion_update_btn",(XtPointer)
+		{const_cast<char *>("node_tool_id_motion_update_btn"),(XtPointer)
 			DIALOG_IDENTIFY(node_tool,motion_update_button)},
-		{"node_tool_id_define_btn",(XtPointer)
+		{const_cast<char *>("node_tool_id_define_btn"),(XtPointer)
 			DIALOG_IDENTIFY(node_tool,define_button)},
-		{"node_tool_id_create_btn",(XtPointer)
+		{const_cast<char *>("node_tool_id_create_btn"),(XtPointer)
 			DIALOG_IDENTIFY(node_tool,create_button)},
-		{"node_tool_id_streaming_btn",(XtPointer)
+		{const_cast<char *>("node_tool_id_streaming_btn"),(XtPointer)
 			DIALOG_IDENTIFY(node_tool,streaming_create_button)},
-		{"node_tool_id_constrain_srf_btn",(XtPointer)
+		{const_cast<char *>("node_tool_id_constrain_srf_btn"),(XtPointer)
 		   DIALOG_IDENTIFY(node_tool,constrain_to_surface_button)},
-		{"node_tool_id_node_group_form",(XtPointer)
+		{const_cast<char *>("node_tool_id_node_group_form"),(XtPointer)
 			DIALOG_IDENTIFY(node_tool,node_group_form)},
-		{"node_tool_id_coord_field_form",(XtPointer)
+		{const_cast<char *>("node_tool_id_coord_field_form"),(XtPointer)
 			DIALOG_IDENTIFY(node_tool,coordinate_field_form)},
-		{"node_tool_id_command_field_btn",(XtPointer)
+		{const_cast<char *>("node_tool_id_command_field_btn"),(XtPointer)
 			DIALOG_IDENTIFY(node_tool,command_field_button)},
-		{"node_tool_id_command_field_form",(XtPointer)
+		{const_cast<char *>("node_tool_id_command_field_form"),(XtPointer)
 			DIALOG_IDENTIFY(node_tool,command_field_form)},
-		{"node_tool_select_btn_CB",
+		{const_cast<char *>("node_tool_select_btn_CB"),
 		 (XtPointer)Node_tool_select_button_CB},
-		{"node_tool_edit_btn_CB",
+		{const_cast<char *>("node_tool_edit_btn_CB"),
 		 (XtPointer)Node_tool_edit_button_CB},
-		{"node_tool_motion_update_btn_CB",
+		{const_cast<char *>("node_tool_motion_update_btn_CB"),
 		 (XtPointer)Node_tool_motion_update_button_CB},
-		{"node_tool_define_btn_CB",
+		{const_cast<char *>("node_tool_define_btn_CB"),
 		 (XtPointer)Node_tool_define_button_CB},
-		{"node_tool_create_btn_CB",
+		{const_cast<char *>("node_tool_create_btn_CB"),
 		 (XtPointer)Node_tool_create_button_CB},
-		{"node_tool_streaming_btn_CB",
+		{const_cast<char *>("node_tool_streaming_btn_CB"),
 		 (XtPointer)Node_tool_streaming_create_button_CB},
-		{"node_tool_constrain_srf_btn_CB",
+		{const_cast<char *>("node_tool_constrain_srf_btn_CB"),
 		 (XtPointer)Node_tool_constrain_to_surface_button_CB},
-		{"node_tool_command_field_btn_CB",
+		{const_cast<char *>("node_tool_command_field_btn_CB"),
 		 (XtPointer)Node_tool_command_field_button_CB},
-		{"node_tool_destroy_selected_CB",
+		{const_cast<char *>("node_tool_destroy_selected_CB"),
 		 (XtPointer)Node_tool_destroy_selected_CB},
-		{"node_tool_undefine_selected_CB",
+		{const_cast<char *>("node_tool_undefine_selected_CB"),
 		 (XtPointer)Node_tool_undefine_selected_CB}
 	};
 	static MrmRegisterArg identifier_list[]=
 	{
-		{"node_tool_structure",(XtPointer)NULL}
+		{const_cast<char *>("node_tool_structure"),(XtPointer)NULL}
 	};
 	struct Callback_data callback;
 	struct Cmiss_region *region;
@@ -3459,7 +3459,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				{
 					/* Set up window manager callback for close window message */
 					WM_DELETE_WINDOW=XmInternAtom(XtDisplay(node_tool->window_shell),
-						"WM_DELETE_WINDOW",False);
+						const_cast<char *>("WM_DELETE_WINDOW"),False);
 					XmAddWMProtocolCallback(node_tool->window_shell,
 						WM_DELETE_WINDOW,Node_tool_close_CB,node_tool);
 					/* Register the shell with the busy signal list */
@@ -3475,7 +3475,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 						{
 							/* fetch node tool widgets */
 							if (MrmSUCCESS==MrmFetchWidget(node_tool_hierarchy,
-								"node_tool",node_tool->window_shell,
+									const_cast<char *>("node_tool"),node_tool->window_shell,
 								&(node_tool->widget),&node_tool_dialog_class))
 							{
 								init_widgets=1;

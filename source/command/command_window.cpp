@@ -288,7 +288,7 @@ Stores the id of the command areas.
 			XmDIALOG_HISTORY_LIST);
 		command_window->command_entry=XmCommandGetChild(widget,
 			XmDIALOG_COMMAND_TEXT);
-		Command_window_set_command_prompt(command_window, (char *)NULL);
+		Command_window_set_command_prompt(command_window, (char *)(NULL));
 	}
 	else
 	{
@@ -1204,7 +1204,7 @@ Create the structures and retrieve the command window from the uil file.
 #endif /* defined (DEBUG) */
 						if (display=XtDisplay(command_window->shell))
 						{
-							example_string=(char *)NULL;
+							example_string=(char *)(NULL);
 							result=XGetWindowProperty(display,XtWindow(command_window->shell),
 								XA_CMGUI_COMMAND,0,(65536/sizeof(long)),True,XA_STRING,
 								&property_type,&data_unit,&number_of_units,&bytes_left,
@@ -1213,7 +1213,7 @@ Create the structures and retrieve the command window from the uil file.
 							{
 #if defined (DEBUG)
 								/*???debug */
-								printf("example_string %s\n",(char *)example_string);
+								printf("example_string %s\n",const_cast<char *>(example_string));
 #endif /* defined (DEBUG) */
 								if (!strncmp(example_string,"example:",8))
 								{
@@ -2110,48 +2110,48 @@ Create the structures and retrieve the command window from the uil file.
 	Atom WM_DELETE_WINDOW;
 	MrmType command_window_class;
 	static MrmRegisterArg callback_list[]={
-		{"command_changed",(XtPointer)command_changed},
-		{"command_entered",(XtPointer)command_entered},
-		{"identify_command_box",(XtPointer)identify_command_box},
-		{"identify_output_pane",(XtPointer)identify_output_pane},
-		{"identify_message_pane",(XtPointer)identify_message_pane},
+		{const_cast<char *>("command_changed"),(XtPointer)command_changed},
+		{const_cast<char *>("command_entered"),(XtPointer)command_entered},
+		{const_cast<char *>("identify_command_box"),(XtPointer)identify_command_box},
+		{const_cast<char *>("identify_output_pane"),(XtPointer)identify_output_pane},
+		{const_cast<char *>("identify_message_pane"),(XtPointer)identify_message_pane},
 		/* model menu */
-		{"id_cell_create_button",(XtPointer)id_cell_create_button},
-		{"id_curve_editor_create_button",(XtPointer)id_curve_editor_create_button},
-		{"id_data_viewer_create_button",(XtPointer)id_data_viewer_create_button},
-		{"id_interactive_data_editor_cbut",
+		{const_cast<char *>("id_cell_create_button"),(XtPointer)id_cell_create_button},
+		{const_cast<char *>("id_curve_editor_create_button"),(XtPointer)id_curve_editor_create_button},
+		{const_cast<char *>("id_data_viewer_create_button"),(XtPointer)id_data_viewer_create_button},
+		{const_cast<char *>("id_interactive_data_editor_cbut"),
 			(XtPointer)id_interactive_data_editor_cbut},
-		{"id_element_creator_create_butto",
+		 {const_cast<char *>("id_element_creator_create_butto"),
 			(XtPointer)id_element_creator_create_butto},
-		{"id_element_point_viewer_button",
+		 {const_cast<char *>("id_element_point_viewer_button"),
 			(XtPointer)id_element_point_viewer_create_button},
-		{"id_grid_field_calculator_button",
+		 {const_cast<char *>("id_grid_field_calculator_button"),
 			(XtPointer)id_grid_field_calculator_button},
-		{"id_im_control_create_button",(XtPointer)id_im_control_create_button},
-		{"id_node_viewer_create_button",(XtPointer)id_node_viewer_create_button},
-		{"id_interactive_node_editor_cbut",
+		 {const_cast<char *>("id_im_control_create_button"),(XtPointer)id_im_control_create_button},
+		 {const_cast<char *>("id_node_viewer_create_button"),(XtPointer)id_node_viewer_create_button},
+		 {const_cast<char *>("id_interactive_node_editor_cbut"),
 			(XtPointer)id_interactive_node_editor_cbut},
-		{"id_tracking_editor_create_butto",
+		 {const_cast<char *>("id_tracking_editor_create_butto"),
 			(XtPointer)id_tracking_editor_create_butto},
-		{"id_unemap_create_button",(XtPointer)id_unemap_create_button},
-		{"id_3d_digitizer_create_button",(XtPointer)id_3d_digitizer_create_button},
+		 {const_cast<char *>("id_unemap_create_button"),(XtPointer)id_unemap_create_button},
+		 {const_cast<char *>("id_3d_digitizer_create_button"),(XtPointer)id_3d_digitizer_create_button},
 		/* graphics menu */
-		{"id_three_d_window_create_button",
+		 {const_cast<char *>("id_three_d_window_create_button"),
 			(XtPointer)id_three_d_window_create_button},
-		{"id_material_editor_create_butto",
+		 {const_cast<char *>("id_material_editor_create_butto"),
 			(XtPointer)id_material_editor_create_butto},
-		{"id_scene_editor_create_button",
+		 {const_cast<char *>("id_scene_editor_create_button"),
 			(XtPointer)id_scene_editor_create_butt},
-		{"id_spectrum_editor_create_butto",
+		 {const_cast<char *>("id_spectrum_editor_create_butto"),
 			(XtPointer)id_spectrum_editor_create_butto},
-		{"id_time_editor_create_butto",
+		 {const_cast<char *>("id_time_editor_create_butto"),
 			(XtPointer)id_time_editor_create_butto},
-		{"id_volume_editor_create_button",
+		 {const_cast<char *>("id_volume_editor_create_button"),
 			(XtPointer)id_volume_editor_create_button},
 
-		{"callback_command",(XtPointer)callback_command},
-		{"open_file_and_read",(XtPointer)open_file_and_read},
-		{"command_window_close",(XtPointer)command_window_close}
+		 {const_cast<char *>("callback_command"),(XtPointer)callback_command},
+		 {const_cast<char *>("open_file_and_read"),(XtPointer)open_file_and_read},
+		{const_cast<char *>("command_window_close"),(XtPointer)command_window_close}
 	};
 	static MrmRegisterArg identifier_list[2];
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
@@ -2238,13 +2238,13 @@ Create the structures and retrieve the command window from the uil file.
 				command_window->command_box=(Widget)NULL;
 				command_window->command_history=(Widget)NULL;
 				command_window->command_entry=(Widget)NULL;
-				command_window->command_prompt=XmStringCreateSimple("");
+				command_window->command_prompt=XmStringCreateSimple(const_cast<char *>(""));
 				command_window->output_pane=(Widget)NULL;
 				command_window->message_pane=(Widget)NULL;
 				command_window->window=(Widget)NULL;
 				command_window->shell=(Widget)NULL;
 				/* create the command window shell */
-				if (command_window->shell=XtVaCreatePopupShell("command_window_shell",
+				if (command_window->shell=XtVaCreatePopupShell(const_cast<char *>("command_window_shell"),
 					xmDialogShellWidgetClass,User_interface_get_application_shell(user_interface),
 					XmNtransient,FALSE,
 					NULL))
@@ -2256,23 +2256,23 @@ Create the structures and retrieve the command window from the uil file.
 					XtAddCallback(command_window->shell,XmNdestroyCallback,
 						destroy_Command_window_callback,(XtPointer)command_window);
 					WM_DELETE_WINDOW=XmInternAtom(XtDisplay(command_window->shell),
-						"WM_DELETE_WINDOW",FALSE);
+						const_cast<char *>("WM_DELETE_WINDOW"),FALSE);
 					XmAddWMProtocolCallback(command_window->shell,WM_DELETE_WINDOW,
 						command_window_close,(XtPointer)command_window);
 					/* Register callbacks in UIL */
 					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(command_window_hierarchy,
 						callback_list,XtNumber(callback_list)))
 					{
-						identifier_list[0].name="command_window_structure";
+						identifier_list[0].name=const_cast<char *>("command_window_structure");
 						identifier_list[0].value=(XtPointer)command_window;
-						identifier_list[1].name="execute_command_structure";
+						identifier_list[1].name=const_cast<char *>("execute_command_structure");
 						identifier_list[1].value=(XtPointer)execute_command;
 						if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
 							command_window_hierarchy,identifier_list,
 							XtNumber(identifier_list)))
 						{
 							if (MrmSUCCESS==MrmFetchWidget(command_window_hierarchy,
-								"command_window",command_window->shell,
+									const_cast<char *>("command_window"),command_window->shell,
 								&(command_window->window),&command_window_class))
 							{
 								/*???DB.  Get rid of image processing and unemap if not being
@@ -2725,7 +2725,7 @@ Adds the <command> to the bottom of the list for the <command_window>.
 	{
 #if defined (MOTIF_USER_INTERFACE) /* switch (USER_INTERFACE) */
 		/* create XmString of the command */
-		new_command=XmStringCreateSimple(command);
+		new_command=XmStringCreateSimple(const_cast<char *>(command));
 		/* get the number of items and the maximum number to make sure that we don't
 			overflow the list */
 		XtVaGetValues(command_window->command_box,
@@ -2824,7 +2824,7 @@ Sets the value of the <prompt> for the <command_window>.
 		}
 		else
 		{
-			command_window->command_prompt=XmStringCreateSimple("");
+			command_window->command_prompt=XmStringCreateSimple(const_cast<char *>(""));
 		}
 #elif defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)/* switch (USER_INTERFACE) */
 		if (command_window->command_prompt)
@@ -2886,18 +2886,18 @@ Resets all functions of the command box widget.
 		/* Blank line is used so that arrows work properly */
 		/* delete old blank line */
 		if (XmListItemExists(command_window->command_history,
-			XmStringCreateSimple("")))
+				XmStringCreateSimple(const_cast<char *>(""))))
 		{
 			XmListDeleteItem(command_window->command_history,
-				XmStringCreateSimple(""));
+				XmStringCreateSimple(const_cast<char *>("")));
 		}
 		/* add in new blank line at the bottom */
 		XmListAddItem(command_window->command_history,
-			XmStringCreateSimple(""),0);
+			XmStringCreateSimple(const_cast<char *>("")),0);
 		XmListDeselectAllItems(command_window->command_history);
 		XmListSelectPos(command_window->command_history,0,True);
 		/* Set default prompt */
-		XmCommandSetValue(command_window->command_box,XmStringCreateSimple(""));
+		XmCommandSetValue(command_window->command_box,XmStringCreateSimple(const_cast<char *>("")));
 		if (!XmStringEmpty(command_window->command_prompt))
 		{
 			XmCommandAppendValue(command_window->command_box,
@@ -3024,7 +3024,7 @@ Writes the <message> to the <command_window>.
 		if (output_pane=command_window->output_pane)
 		{
 			text_pos=XmTextGetLastPosition(output_pane);
-			XmTextInsert(output_pane,text_pos,message);
+			XmTextInsert(output_pane,text_pos,const_cast<char *>(message));
 			text_pos=XmTextGetLastPosition(output_pane);
 			XmTextShowPosition(output_pane,text_pos);
 			return_code=1;

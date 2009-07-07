@@ -312,7 +312,7 @@ and as a child of <parent>.
 			convert_Colour_to_Pixel(display, foreground, &foreground_pixel);
 			convert_Colour_to_Pixel(display, background, &background_pixel);
 			if (MrmSUCCESS == MrmFetchIconLiteral(select_tool_hierarchy,
-				"select_tool_icon",DefaultScreenOfDisplay(display),display,
+					const_cast<char *>("select_tool_icon"),DefaultScreenOfDisplay(display),display,
 				foreground_pixel, background_pixel, &pixmap))
 			{ 
 				image = create_Cmgui_image_from_Pixmap(display, pixmap);

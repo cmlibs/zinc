@@ -198,7 +198,7 @@ of the type spectrum_editor->settings_type.
 				XtSetArg(override_arg,XmNuserData,settings);
 				temp_widget=(Widget)NULL;
 				if (MrmSUCCESS==MrmFetchWidgetOverride(spectrum_editor_hierarchy,
-					"spec_ed_settings_item",spectrum_editor->settings_rowcol,NULL,
+						const_cast<char *>("spec_ed_settings_item"),spectrum_editor->settings_rowcol,NULL,
 					&override_arg,1,&temp_widget,&settings_item_class))
 				{
 					XtManageChild(temp_widget);
@@ -290,8 +290,9 @@ of the type spectrum_editor->settings_type.
 			/* recreate the rowcol */
 			XtSetArg(override_arg,XmNuserData,spectrum_editor);
 			temp_widget=(Widget)NULL;
+			
 			if (MrmSUCCESS==MrmFetchWidgetOverride(spectrum_editor_hierarchy,
-				"spec_ed_settings_rowcol",spectrum_editor->settings_scroll,NULL,
+					const_cast<char *>("spec_ed_settings_rowcol"),spectrum_editor->settings_scroll,NULL,
 				&override_arg,1,&temp_widget,&settings_rowcol_class))
 			{
 				/* now insert the new items/widgets */
@@ -966,36 +967,36 @@ Creates a spectrum_editor widget.
 	struct Spectrum_editor *spectrum_editor;
 	static MrmRegisterArg callback_list[]=
 	{
-		{"spec_ed_identify_settings_scr",(XtPointer)
+		{const_cast<char *>("spec_ed_identify_settings_scr"),(XtPointer)
 			DIALOG_IDENTIFY(spectrum_editor,settings_scroll)},
-		{"spec_ed_identify_settings_rc",(XtPointer)
+		{const_cast<char *>("spec_ed_identify_settings_rc"),(XtPointer)
 			DIALOG_IDENTIFY(spectrum_editor,settings_rowcol)},
-		{"spec_ed_id_add_btn",(XtPointer)
+		{const_cast<char *>("spec_ed_id_add_btn"),(XtPointer)
 			DIALOG_IDENTIFY(spectrum_editor,add_button)},
-		{"spec_ed_id_delete_btn",(XtPointer)
+		{const_cast<char *>("spec_ed_id_delete_btn"),(XtPointer)
 			DIALOG_IDENTIFY(spectrum_editor,delete_button)},
-		{"spec_ed_id_up_btn",(XtPointer)
+		{const_cast<char *>("spec_ed_id_up_btn"),(XtPointer)
 			DIALOG_IDENTIFY(spectrum_editor,up_button)},
-		{"spec_ed_id_down_btn",(XtPointer)
+		{const_cast<char *>("spec_ed_id_down_btn"),(XtPointer)
 			DIALOG_IDENTIFY(spectrum_editor,down_button)},
-		{"spec_ed_identify_settings_form",(XtPointer)
+		{const_cast<char *>("spec_ed_identify_settings_form"),(XtPointer)
 			DIALOG_IDENTIFY(spectrum_editor,settings_form)},
-		{"spec_ed_id_viewer_form",(XtPointer)
+		{const_cast<char *>("spec_ed_id_viewer_form"),(XtPointer)
 			DIALOG_IDENTIFY(spectrum_editor,viewer_form)},
-		{"spec_ed_id_opaque_button",(XtPointer)
+		{const_cast<char *>("spec_ed_id_opaque_button"),(XtPointer)
 			DIALOG_IDENTIFY(spectrum_editor,opaque_button)},
-		{"spec_ed_opaque_button_CB",(XtPointer)
+		{const_cast<char *>("spec_ed_opaque_button_CB"),(XtPointer)
 			spectrum_editor_opaque_button_CB},
-		{"spec_ed_modify_CB",(XtPointer)
+		{const_cast<char *>("spec_ed_modify_CB"),(XtPointer)
 			spectrum_editor_modify_CB},
-		{"spec_ed_settings_visibility_CB",(XtPointer)
+		{const_cast<char *>("spec_ed_settings_visibility_CB"),(XtPointer)
 			spectrum_editor_settings_visibility_CB},
-		{"spec_ed_settings_select_CB",(XtPointer)
+		{const_cast<char *>("spec_ed_settings_select_CB"),(XtPointer)
 			spectrum_editor_settings_select_CB}
 	};
 	static MrmRegisterArg identifier_list[]=
 	{
-		{"spec_ed_structure",(XtPointer)NULL}
+		{const_cast<char *>("spec_ed_structure"),(XtPointer)NULL}
 	};
 	struct Colour background_colour = {0.1, 0.1, 0.1},
 		ambient_colour = {0.2, 0.2, 0.2}, black ={0, 0, 0},
@@ -1064,7 +1065,7 @@ Creates a spectrum_editor widget.
 					{
 						/* fetch graphical element editor widget */
 						if (MrmSUCCESS==MrmFetchWidget(spectrum_editor_hierarchy,
-							"spec_ed_widget",spectrum_editor->widget_parent,
+								const_cast<char *>("spec_ed_widget"),spectrum_editor->widget_parent,
 							&(spectrum_editor->widget),
 							&spectrum_editor_dialog_class))
 						{

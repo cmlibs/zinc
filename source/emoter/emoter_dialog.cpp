@@ -2537,15 +2537,15 @@ DESCRIPTION :
 	MrmType emoter_marker_class;
 	static MrmRegisterArg callback_list[]=
 	{
-		{"emoter_id_marker_value_text",(XtPointer)
+		{const_cast<char *>("emoter_id_marker_value_text"),(XtPointer)
 			DIALOG_IDENTIFY(emoter_marker, value_text)},
-		{"emoter_marker_value_text_CB",
+		{const_cast<char *>("emoter_marker_value_text_CB"),
 			(XtPointer)emoter_marker_value_text_CB}
 	};
 	static MrmRegisterArg identifier_list[] =
 	{
-		{"emoter_marker_structure",(XtPointer)NULL},
-		{"emoter_marker_name",(XtPointer)NULL}
+		{const_cast<char *>("emoter_marker_structure"),(XtPointer)NULL},
+		{const_cast<char *>("emoter_marker_name"),(XtPointer)NULL}
 	};
 	XmString label_string;
 #endif /* defined (MOTIF_USER_INTERFACE) */
@@ -2577,7 +2577,7 @@ DESCRIPTION :
 				emoter_marker->index = index;
 
 #if defined (MOTIF_USER_INTERFACE)
-				label_string=XmStringCreateSimple(name);
+				label_string=XmStringCreateSimple(const_cast<char *>(name));
 				identifier_list[0].value=(XtPointer)emoter_marker;
 				identifier_list[1].value=(XtPointer)label_string;
 				if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
@@ -3183,29 +3183,29 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 	MrmType emoter_slider_class;
 	static MrmRegisterArg callback_list[]=
 	{
-		{"emoter_id_emoter_slider",(XtPointer)emoter_id_emoter_slider},
-		{"emoter_slider_CB",(XtPointer)emoter_slider_CB},
-		{"emoter_id_slider_togglebutton",(XtPointer)
+		{const_cast<char *>("emoter_id_emoter_slider"),(XtPointer)emoter_id_emoter_slider},
+		{const_cast<char *>("emoter_slider_CB"),(XtPointer)emoter_slider_CB},
+		{const_cast<char *>("emoter_id_slider_togglebutton"),(XtPointer)
 			DIALOG_IDENTIFY(emoter_slider, toggle_button)},
-		{"emoter_id_slider_selectbutton",(XtPointer)
+		{const_cast<char *>("emoter_id_slider_selectbutton"),(XtPointer)
 			DIALOG_IDENTIFY(emoter_slider, select_button)},
-		{"emoter_slider_toggle_activate",
+		{const_cast<char *>("emoter_slider_toggle_activate"),
 			(XtPointer)emoter_slider_toggle_activate},
-		{"emoter_slider_select_activate",
+		{const_cast<char *>("emoter_slider_select_activate"),
 			(XtPointer)emoter_slider_select_activate},
-		{"emoter_id_slider_value_text",(XtPointer)
+		{const_cast<char *>("emoter_id_slider_value_text"),(XtPointer)
 			DIALOG_IDENTIFY(emoter_slider, value_text)},
-		{"emoter_slider_value_text_CB",
+		{const_cast<char *>("emoter_slider_value_text_CB"),
 			(XtPointer)emoter_slider_value_text_CB},
-		{"emoter_id_slider_anim_pixmap",(XtPointer)
+		{const_cast<char *>("emoter_id_slider_anim_pixmap"),(XtPointer)
 			DIALOG_IDENTIFY(emoter_slider, animated_pixmap)},
-		{"emoter_id_slider_markerrowcol",(XtPointer)
+		{const_cast<char *>("emoter_id_slider_markerrowcol"),(XtPointer)
 			DIALOG_IDENTIFY(emoter_slider, marker_rowcol)}
 		};
 	static MrmRegisterArg identifier_list[] =
 	{
-		{"emoter_slider_structure",(XtPointer)NULL},
-		{"emoter_slider_name",(XtPointer)NULL},
+		{const_cast<char *>("emoter_slider_structure"),(XtPointer)NULL},
+		{const_cast<char *>("emoter_slider_name"),(XtPointer)NULL},
 	};
 	struct Graphics_buffer *graphics_buffer;
 	XmString label_string;
@@ -3265,7 +3265,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 				{
 #if defined (MOTIF_USER_INTERFACE)
 					/* assign and register the identifiers */
-					label_string=XmStringCreateSimple(name);
+					label_string=XmStringCreateSimple((char*)name);
 					identifier_list[0].value=(XtPointer)emoter_slider;
 					identifier_list[1].value=(XtPointer)label_string;
 					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
@@ -3274,7 +3274,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 					{
 						XtSetArg(override_arg,XmNuserData,emoter_slider);
 						if (MrmSUCCESS==MrmFetchWidgetOverride(emoter_dialog_hierarchy,
-							"emoter_slider", parent,NULL,&override_arg,1,
+								const_cast<char *>("emoter_slider"), parent,NULL,&override_arg,1,
 							&emoter_slider->widget, &emoter_slider_class))
 						{
 							XtManageChild(emoter_slider->widget);
@@ -4223,7 +4223,7 @@ DESCRIPTION :
 			(MANAGER_CONDITIONAL_FUNCTION(Graphics_window) *)NULL,
 			(void *)NULL,emoter_dialog->shared->graphics_window_manager))
 		{
-			if ((emoter_dialog->movie=CREATE(Movie_graphics)("emoter_movie",filename, 
+			if ((emoter_dialog->movie=CREATE(Movie_graphics)(const_cast<char *>("emoter_movie"),filename, 
 				X3D_MOVIE_CREATE_FILE_RLE24_SGI_MOVIE3))&&
 				(Movie_graphics_set_Graphics_window(emoter_dialog->movie,
 					graphics_window)))
@@ -4700,9 +4700,9 @@ DESCRIPTION :
 		if ( button_set )
 		{
 			if (!(emoter_dialog->shared->input_sequence = 
-				confirmation_get_string("Input sequence template",
-				"Enter a printf string (time is a float parameter)\ni.e. taketest.%05.0f.exnode",
-				(char *)NULL,emoter_dialog->shell,
+					confirmation_get_string(const_cast<char *>("Input sequence template"),
+						const_cast<char *>("Enter a printf string (time is a float parameter)\ni.e. taketest.%05.0f.exnode"),
+						(char *)NULL,emoter_dialog->shell,
 				emoter_dialog->shared->user_interface)))
 			{
 				XmToggleButtonSetState( widget, False, False );				
@@ -5067,8 +5067,8 @@ DESCRIPTION :
 		slider = marker->slider_parent;
 
 
-		if ( name = confirmation_get_string( "Add Marker",
-			"Specify name for new marker",(char *)NULL,
+		if ( name = confirmation_get_string( const_cast<char *>("Add Marker"),
+				const_cast<char *>("Specify name for new marker"),(char *)NULL,
 			User_interface_get_application_shell(marker->shared->user_interface),
 			marker->shared->user_interface ))
 		{
@@ -5737,57 +5737,57 @@ Create emoter controls.
 	MrmType emoter_dialog_class;
 	static MrmRegisterArg callback_list[]=
 	{
-		{"emoter_dialog_destroy_CB",(XtPointer)emoter_dialog_destroy_CB},
-		{"emoter_id_play_slider",(XtPointer)emoter_id_play_slider},
-		{"emoter_play_slider_CB",(XtPointer)emoter_play_slider_CB},
-		{"emoter_loadslider_CB",(XtPointer)emoter_loadslider_CB},
-		{"emoter_saveslider_CB",(XtPointer)emoter_saveslider_CB},
-		{"emoter_exportslider_CB",(XtPointer)emoter_exportslider_CB},
-		{"emoter_newslider_CB",(XtPointer)emoter_newslider_CB},
-		{"emoter_add_marker_CB",(XtPointer)emoter_add_marker_CB},
-		{"emoter_keyframe_CB",(XtPointer)emoter_keyframe_CB},
-		{"emoter_id_slider_form",(XtPointer)
+		{const_cast<char *>("emoter_dialog_destroy_CB"),(XtPointer)emoter_dialog_destroy_CB},
+		{const_cast<char *>("emoter_id_play_slider"),(XtPointer)emoter_id_play_slider},
+		{const_cast<char *>("emoter_play_slider_CB"),(XtPointer)emoter_play_slider_CB},
+		{const_cast<char *>("emoter_loadslider_CB"),(XtPointer)emoter_loadslider_CB},
+		{const_cast<char *>("emoter_saveslider_CB"),(XtPointer)emoter_saveslider_CB},
+		{const_cast<char *>("emoter_exportslider_CB"),(XtPointer)emoter_exportslider_CB},
+		{const_cast<char *>("emoter_newslider_CB"),(XtPointer)emoter_newslider_CB},
+		{const_cast<char *>("emoter_add_marker_CB"),(XtPointer)emoter_add_marker_CB},
+		{const_cast<char *>("emoter_keyframe_CB"),(XtPointer)emoter_keyframe_CB},
+		{const_cast<char *>("emoter_id_slider_form"),(XtPointer)
 			DIALOG_IDENTIFY(emoter_dialog, slider_form)},
-		{"emoter_id_play_value_text",(XtPointer)
+		{const_cast<char *>("emoter_id_play_value_text"),(XtPointer)
 			DIALOG_IDENTIFY(emoter_dialog, play_value_text)},
-		{"emoter_play_value_text_CB",(XtPointer)
+		{const_cast<char *>("emoter_play_value_text_CB"),(XtPointer)
 			emoter_play_value_text_CB},
-		{"emoter_id_play_max_text",(XtPointer)
+		{const_cast<char *>("emoter_id_play_max_text"),(XtPointer)
 			DIALOG_IDENTIFY(emoter_dialog, play_max_text)},
-		{"emoter_id_play_min_text",(XtPointer)
+		{const_cast<char *>("emoter_id_play_min_text"),(XtPointer)
 			DIALOG_IDENTIFY(emoter_dialog, play_min_text)},
-		{"emoter_id_play_button",(XtPointer)
+		{const_cast<char *>("emoter_id_play_button"),(XtPointer)
 			DIALOG_IDENTIFY(emoter_dialog, play_button)},
-		{"emoter_id_input_seq_button",(XtPointer)
+		{const_cast<char *>("emoter_id_input_seq_button"),(XtPointer)
 			DIALOG_IDENTIFY(emoter_dialog, input_sequence_button)},
-		{"emoter_id_mode_subform",(XtPointer)
+		{const_cast<char *>("emoter_id_mode_subform"),(XtPointer)
 			DIALOG_IDENTIFY(emoter_dialog, mode_subform)},
-		{"emoter_id_mode_text",(XtPointer)
+		{const_cast<char *>("emoter_id_mode_text"),(XtPointer)
 			DIALOG_IDENTIFY(emoter_dialog, mode_text)},
-		{"emoter_id_solid_motion_button",(XtPointer)
+		{const_cast<char *>("emoter_id_solid_motion_button"),(XtPointer)
 			DIALOG_IDENTIFY(emoter_dialog, solid_motion_button)},
-		{"emoter_id_movie_control_form",(XtPointer)
+		{const_cast<char *>("emoter_id_movie_control_form"),(XtPointer)
 			DIALOG_IDENTIFY(emoter_dialog, movie_control_form)},
-		{"emoter_id_movie_framerate_text",(XtPointer)
+		{const_cast<char *>("emoter_id_movie_framerate_text"),(XtPointer)
 			DIALOG_IDENTIFY(emoter_dialog, movie_framerate_text)},
-		{"emoter_play_range_text_CB",(XtPointer)
+		{const_cast<char *>("emoter_play_range_text_CB"),(XtPointer)
 			emoter_play_range_text_CB},
-		{"emoter_playbutton_CB",(XtPointer)emoter_playbutton_CB},
-		{"emoter_mode_show_CB",(XtPointer)emoter_mode_show_CB},
-		{"emoter_mode_text_CB",(XtPointer)emoter_mode_text_CB},
-		{"emoter_mode_up_CB",(XtPointer)emoter_mode_up_CB},
-		{"emoter_mode_down_CB",(XtPointer)emoter_mode_down_CB},
-		{"emoter_solid_motion_CB",(XtPointer)emoter_solid_motion_CB},
-		{"emoter_input_sequence_CB",(XtPointer)emoter_input_sequence_CB},
-		{"emoter_movie_play_CB",(XtPointer)emoter_movie_play_CB},
-		{"emoter_movie_loop_CB",(XtPointer)emoter_movie_loop_CB},
-		{"emoter_movie_every_frame_CB",(XtPointer)emoter_movie_every_frame_CB},
-		{"emoter_movie_framerate_CB",(XtPointer)emoter_movie_framerate_CB},
-		{"emoter_convert_raw_CB",(XtPointer)emoter_convert_raw_CB}
+		{const_cast<char *>("emoter_playbutton_CB"),(XtPointer)emoter_playbutton_CB},
+		{const_cast<char *>("emoter_mode_show_CB"),(XtPointer)emoter_mode_show_CB},
+		{const_cast<char *>("emoter_mode_text_CB"),(XtPointer)emoter_mode_text_CB},
+		{const_cast<char *>("emoter_mode_up_CB"),(XtPointer)emoter_mode_up_CB},
+		{const_cast<char *>("emoter_mode_down_CB"),(XtPointer)emoter_mode_down_CB},
+		{const_cast<char *>("emoter_solid_motion_CB"),(XtPointer)emoter_solid_motion_CB},
+		{const_cast<char *>("emoter_input_sequence_CB"),(XtPointer)emoter_input_sequence_CB},
+		{const_cast<char *>("emoter_movie_play_CB"),(XtPointer)emoter_movie_play_CB},
+		{const_cast<char *>("emoter_movie_loop_CB"),(XtPointer)emoter_movie_loop_CB},
+		{const_cast<char *>("emoter_movie_every_frame_CB"),(XtPointer)emoter_movie_every_frame_CB},
+		{const_cast<char *>("emoter_movie_framerate_CB"),(XtPointer)emoter_movie_framerate_CB},
+		{const_cast<char *>("emoter_convert_raw_CB"),(XtPointer)emoter_convert_raw_CB}
 	};
 	static MrmRegisterArg identifier_list[] =
 	{
-		{"emoter_dialog_structure",(XtPointer)NULL},
+		{const_cast<char *>("emoter_dialog_structure"),(XtPointer)NULL},
 	};
 #endif /* defined (MOTIF_USER_INTERFACE) */
 
@@ -5854,7 +5854,7 @@ Create emoter controls.
 					{
 						/* fetch position window widget */
 						if (MrmSUCCESS==MrmFetchWidget(emoter_dialog_hierarchy,
-							"emoter_dialog_widget", emoter_dialog->shell,
+							const_cast<char *>("emoter_dialog_widget"), emoter_dialog->shell,
 							&(emoter_dialog->widget),
 							&emoter_dialog_class))
 						{

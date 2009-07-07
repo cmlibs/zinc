@@ -71,7 +71,7 @@ FULL_DECLARE_MANAGER_TYPE(Movie_graphics);
 Global functions
 ----------------
 */
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Movie_graphics,name,char *,strcmp)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Movie_graphics,name, const char *,strcmp)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Movie_graphics)
 
@@ -177,7 +177,7 @@ DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Movie_graphics)
 
 DECLARE_INDEXED_LIST_FUNCTIONS(Movie_graphics)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Movie_graphics,name, \
-	char *,strcmp)
+	const char *,strcmp)
 DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Movie_graphics,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Movie_graphics,name)
@@ -224,7 +224,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Movie_graphics,name)
 	return (return_code);
 } /* MANAGER_COPY_WITHOUT_IDENTIFIER(Movie_graphics,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Movie_graphics,name,char *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Movie_graphics,name,const char *)
 {
 	char *destination_name;
 	int return_code;

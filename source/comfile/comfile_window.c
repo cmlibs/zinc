@@ -786,6 +786,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Comfile_window,name,const char *)
 		}
 		else
 		{
+
 			display_message(ERROR_MESSAGE,
 				"MANAGER_COPY_IDENTIFIER(Comfile_window,name).  Insufficient memory");
 			return_code=0;

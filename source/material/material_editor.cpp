@@ -818,33 +818,34 @@ Creates a Material_editor.
 	struct Material_editor *material_editor;
 	static MrmRegisterArg callback_list[]=
 	{
-		{"mat_editor_identify_button",(XtPointer)material_editor_identify_button},
-		{"mat_editor_texture_btn_CB",(XtPointer)
+		{const_cast<char *>("mat_editor_identify_button"),(XtPointer)material_editor_identify_button},
+		{const_cast<char *>("mat_editor_texture_btn_CB"),(XtPointer)
 			material_editor_texture_button_CB},
 	};
+
 	static MrmRegisterArg identifier_list[]=
 	{
-		{"mat_editor_structure",(XtPointer)NULL},
+		{const_cast<char *>("mat_editor_structure"),(XtPointer)NULL},
 #if defined (MATERIAL_EDITOR_NAME)
-		{"material_editor_name_ID",(XtPointer)material_editor_name_ID},
+		{const_cast<char *>("material_editor_name_ID",(XtPointer)material_editor_name_ID},
 #endif /* defined (MATERIAL_EDITOR_NAME) */
-		{"mat_editor_ambient_form_ID",
+		 {const_cast<char *>("mat_editor_ambient_form_ID"),
 		 (XtPointer)material_editor_ambient_form_ID},
-		{"mat_editor_diffuse_form_ID",
+		 {const_cast<char *>("mat_editor_diffuse_form_ID"),
 		 (XtPointer)material_editor_diffuse_form_ID},
-		{"mat_editor_emission_form_ID",
+		 {const_cast<char *>("mat_editor_emission_form_ID"),
 		 (XtPointer)material_editor_emission_form_ID},
-		{"mat_editor_specular_form_ID",
+		 {const_cast<char *>("mat_editor_specular_form_ID"),
 		 (XtPointer)material_editor_specular_form_ID},
-		{"mat_editor_alpha_form_ID",
+		 {const_cast<char *>("mat_editor_alpha_form_ID"),
 		 (XtPointer)material_editor_alpha_form_ID},
-		{"mat_editor_shininess_form_ID",
+		 {const_cast<char *>("mat_editor_shininess_form_ID"),
 		 (XtPointer)material_editor_shininess_form_ID},
-		{"mat_editor_texture_btn_ID",
+		 {const_cast<char *>("mat_editor_texture_btn_ID"),
 		 (XtPointer)material_editor_texture_btn_ID},
-		{"mat_editor_texture_form_ID",
+		 {const_cast<char *>("mat_editor_texture_form_ID"),
 		 (XtPointer)material_editor_texture_form_ID},
-		{"mat_editor_a3d_form_ID",
+		 {const_cast<char *>("mat_editor_a3d_form_ID"),
 		 (XtPointer)material_editor_a3d_form_ID}
 	};
 
@@ -898,8 +899,9 @@ Creates a Material_editor.
 						identifier_list,XtNumber(identifier_list)))
 					{
 						/* fetch position window widget */
+
 						if (MrmSUCCESS==MrmFetchWidget(material_editor_hierarchy,
-							"mat_editor_widget",material_editor->widget_parent,
+								const_cast<char *>("mat_editor_widget"), material_editor->widget_parent,
 							&(material_editor->widget),&material_editor_dialog_class))
 						{
 							/* leave managing up to material_editor_set_material */
@@ -941,7 +943,7 @@ Creates a Material_editor.
 							}
 							if (!(material_editor->alpha_widget=
 								create_edit_var_widget(material_editor->alpha_form,
-								"Alpha",0.0,0.0,1.0)))
+									const_cast<char *>("Alpha"),0.0,0.0,1.0)))
 							{
 								display_message(ERROR_MESSAGE,
 							"CREATE(Material_editor).  Could not create alpha widget");
@@ -949,7 +951,7 @@ Creates a Material_editor.
 							}
 							if (!(material_editor->shininess_widget=
 								create_edit_var_widget(material_editor->shininess_form,
-								"Shininess",0.0,0.0,1.0)))
+									const_cast<char *>("Shininess"),0.0,0.0,1.0)))
 							{
 								display_message(ERROR_MESSAGE,
 					"CREATE(Material_editor).  Could not create shininess widget");

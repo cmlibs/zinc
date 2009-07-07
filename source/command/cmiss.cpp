@@ -24532,8 +24532,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 	static XtResource resources[]=
 	{
 		{
-			XmNbackgroundColour,
-			XmCBackgroundColour,
+			const_cast<char *>(XmNbackgroundColour),
+			const_cast<char *>(XmCBackgroundColour),
 			XmRPixel,
 			sizeof(Pixel),
 			XtOffsetOf(User_settings,background_colour),
@@ -24541,8 +24541,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			const_cast<char *>("black")
 		},
 		{
-			XmNforegroundColour,
-			XmCForegroundColour,
+			const_cast<char *>(XmNforegroundColour),
+			const_cast<char *>(XmCForegroundColour),
 			XmRPixel,
 			sizeof(Pixel),
 			XtOffsetOf(User_settings,foreground_colour),
@@ -24550,8 +24550,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			const_cast<char *>("white")
 		},
 		{
-			XmNexamplesDirectory,
-			XmCExamplesDirectory,
+			const_cast<char *>(XmNexamplesDirectory),
+			const_cast<char *>(XmCExamplesDirectory),
 			XmRString,
 			sizeof(char *),
 			XtOffsetOf(User_settings,examples_directory),
@@ -24559,8 +24559,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			const_cast<char *>("")
 		},
 		{
-			XmNstartupComfile,
-			XmCStartupComfile,
+			const_cast<char *>(XmNstartupComfile),
+			const_cast<char *>(XmCStartupComfile),
 			XmRString,
 			sizeof(char *),
 			XtOffsetOf(User_settings,startup_comfile),
@@ -24568,8 +24568,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			(XtPointer)0
 		},
 		{
-			XmNhelpDirectory,
-			XmCHelpDirectory,
+			const_cast<char *>(XmNhelpDirectory),
+			const_cast<char *>(XmCHelpDirectory),
 			XmRString,
 			sizeof(char *),
 			XtOffsetOf(User_settings,help_directory),
@@ -24577,8 +24577,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			const_cast<char *>("")
 		},
 		{
-			XmNhelpUrl,
-			XmCHelpUrl,
+			const_cast<char *>(XmNhelpUrl),
+			const_cast<char *>(XmCHelpUrl),
 			XmRString,
 			sizeof(char *),
 			XtOffsetOf(User_settings,help_url),
@@ -24592,8 +24592,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 /*???DB.  Put in open_user_interface and always have ? */
 	static MrmRegisterArg callbacks[]=
 	{
-		{"open_file_and_read",(XtPointer)open_file_and_read},
-		{"open_file_and_write",(XtPointer)open_file_and_write}
+		{const_cast<char *>("open_file_and_read"),(XtPointer)open_file_and_read},
+		{const_cast<char *>("open_file_and_write"),(XtPointer)open_file_and_write}
 	};
 #endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Cmgui_command_line_options command_line_options;

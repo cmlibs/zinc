@@ -63,7 +63,7 @@ The properties of a environment map.
 ==============================================================================*/
 {
 	/* the name of the environment map */
-	char *name;
+	const char *name;
 	/* the graphical materials to use for each face of the cube */
 	struct Graphical_material *face_material[6];
 	/* the number of structures that point to this environment map. The
@@ -98,7 +98,7 @@ extern struct LIST(Environment_map) *all_environment_maps;
 Global functions
 ----------------
 */
-struct Environment_map *CREATE(Environment_map)(char *name);
+struct Environment_map *CREATE(Environment_map)(const char *name);
 /*******************************************************************************
 LAST MODIFIED : 25 September 1995
 

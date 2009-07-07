@@ -161,7 +161,7 @@ Set the <environment_map> to face materials.
 Global functions
 ----------------
 */
-struct Environment_map *CREATE(Environment_map)(char *name)
+struct Environment_map *CREATE(Environment_map)(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 1 September 1996
 
@@ -176,6 +176,7 @@ map to the list of all environment maps.
 		"face_materials default default default default default,default";
 #endif /* defined (OLD_CODE) */
 	struct Environment_map *environment_map;
+	char *temp_name
 #if defined (OLD_CODE)
 	struct Parse_state *state;
 #endif /* defined (OLD_CODE) */
@@ -186,16 +187,18 @@ map to the list of all environment maps.
 	{
 		if (name)
 		{
-			if (ALLOCATE(environment_map->name,char,strlen(name)+1))
+			if (ALLOCATE(temp_name,char,strlen(name)+1))
 			{
-				strcpy(environment_map->name,name);
+				strcpy(temp_name,name);
+				environment_map->name = temp_name;
 			}
 		}
 		else
 		{
-			if (ALLOCATE(environment_map->name,char,1))
+			if (ALLOCATE(temp_name,char,1))
 			{
-				*(environment_map->name)='\0';
+				*(temp_name)='\0';
+				environment_map->name = temp_name;
 			}
 		}
 		if (environment_map->name)

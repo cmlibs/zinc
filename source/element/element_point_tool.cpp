@@ -584,7 +584,7 @@ Fetches an icon for the Element_point tool.
 			convert_Colour_to_Pixel(display, foreground, &foreground_pixel);
 			convert_Colour_to_Pixel(display, background, &background_pixel);
 			if (MrmSUCCESS == MrmFetchIconLiteral(element_point_tool_hierarchy,
-				"element_point_tool_icon",DefaultScreenOfDisplay(display),display,
+					const_cast<char *>("element_point_tool_icon"),DefaultScreenOfDisplay(display),display,
 				foreground_pixel, background_pixel, &pixmap))
 			{ 
 				image = create_Cmgui_image_from_Pixmap(display, pixmap);
@@ -847,16 +847,16 @@ Creates an Element_point_tool with Interactive_tool in
 	MrmType element_point_tool_dialog_class;
 	static MrmRegisterArg callback_list[]=
 	{
-		{"elem_pnt_tool_id_cmd_field_btn",(XtPointer)
+		{const_cast<char *>("elem_pnt_tool_id_cmd_field_btn"),(XtPointer)
 			DIALOG_IDENTIFY(element_point_tool,command_field_button)},
-		{"elem_pnt_tool_id_cmd_field_form",(XtPointer)
+		{const_cast<char *>("elem_pnt_tool_id_cmd_field_form"),(XtPointer)
 			DIALOG_IDENTIFY(element_point_tool,command_field_form)},
-		{"elem_pnt_tool_cmd_field_btn_CB",
+		{const_cast<char *>("elem_pnt_tool_cmd_field_btn_CB"),
 		 (XtPointer)Element_point_tool_command_field_button_CB}
 	};
 	static MrmRegisterArg identifier_list[]=
 	{
-		{"elem_pnt_tool_structure",(XtPointer)NULL}
+		{const_cast<char *>("elem_pnt_tool_structure"),(XtPointer)NULL}
 	};
 	struct Callback_data callback;
 #endif /* defined (MOTIF_USER_INTERFACE) */
@@ -938,7 +938,7 @@ Creates an Element_point_tool with Interactive_tool in
 				{
 					/* Set up window manager callback for close window message */
 					WM_DELETE_WINDOW=XmInternAtom(XtDisplay(element_point_tool->window_shell),
-						"WM_DELETE_WINDOW",False);
+						const_cast<char *>("WM_DELETE_WINDOW"),False);
 					XmAddWMProtocolCallback(element_point_tool->window_shell,
 						WM_DELETE_WINDOW,Element_point_tool_close_CB,element_point_tool);
 					/* Register the shell with the busy signal list */
@@ -953,7 +953,7 @@ Creates an Element_point_tool with Interactive_tool in
 						{
 							/* fetch element tool widgets */
 							if (MrmSUCCESS==MrmFetchWidget(element_point_tool_hierarchy,
-									"element_point_tool",element_point_tool->window_shell,
+									const_cast<char *>("element_point_tool"),element_point_tool->window_shell,
 									&(element_point_tool->widget),&element_point_tool_dialog_class))
 							{
 								init_widgets=1;

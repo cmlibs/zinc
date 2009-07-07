@@ -604,7 +604,7 @@ Writes the selected file in the user specified way.
 								{
 									file_open_data->warning_box=(Widget)NULL;
 									if (filedir_hierarchy_open&&(MrmSUCCESS==MrmFetchWidget(
-										filedir_hierarchy,"file_exists_warning_box",
+										filedir_hierarchy,const_cast<char *>("file_exists_warning_box"),
 										file_open_data->warning_shell,
 										&(file_open_data->warning_box),&warning_box_class)))
 									{
@@ -916,7 +916,8 @@ name the <file_operation> is performed on the file with the <arguments>.
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (MOTIF_USER_INTERFACE)
 	Atom WM_DELETE_WINDOW;
-	char *allocated_shell_title,*shell_title,*temp_string;
+	char *allocated_shell_title,*temp_string;
+	const char *shell_title;
 	MrmType selection_class;
 	struct File_open_data *file_open_data;
 	Widget file_selection_child,parent;
@@ -995,11 +996,11 @@ name the <file_operation> is performed on the file with the <arguments>.
 					/* Set up window manager callback for close window message */
 					WM_DELETE_WINDOW=XmInternAtom(
 						XtDisplay(file_open_data->selection_shell),
-						"WM_DELETE_WINDOW",False);
+						const_cast<char *>("WM_DELETE_WINDOW"),False);
 					XmAddWMProtocolCallback(file_open_data->selection_shell,
 						WM_DELETE_WINDOW,close_file_selection,client_data);
 					/* create the file selection box */
-					if (MrmSUCCESS==MrmFetchWidget(filedir_hierarchy,"file_selection_box",
+					if (MrmSUCCESS==MrmFetchWidget(filedir_hierarchy,const_cast<char *>("file_selection_box"),
 						file_open_data->selection_shell,&(file_open_data->selection),
 						&selection_class))
 					{
@@ -1065,7 +1066,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 						else
 						{
 							XmFileSelectionDoSearch(file_open_data->selection,
-								XmStringCreate("*",XmSTRING_DEFAULT_CHARSET));
+								XmStringCreate(const_cast<char *>("*"),XmSTRING_DEFAULT_CHARSET));
 						}
 #endif /* defined (REMEMBER_LAST_DIRECTORY_FOR_FILE_SELECTION) */
 					}
@@ -1411,7 +1412,7 @@ specified file.
 #if defined (OLD_CODE)
 	char first;
 #endif /* defined (OLD_CODE) */
-	char *label,*shell_title;
+	const char *label, *shell_title;
 	/** Commented out print_command as it is currently not used.
 			See the explanation further down the routine about
       printing direct to the printer
@@ -1428,10 +1429,10 @@ specified file.
 	};
 #endif /* defined (OLD_CODE) */
 	static MrmRegisterArg callback_list[]={
-		{"identify_file_selection_label",(XtPointer)identify_file_selection_label},
-		{"identify_file_selection_text",(XtPointer)identify_file_selection_text},
-		{"file_selection_write",(XtPointer)file_selection_write},
-		{"cancel_file_selection",(XtPointer)cancel_file_selection}};
+		{const_cast<char *>("identify_file_selection_label"),(XtPointer)identify_file_selection_label},
+		{const_cast<char *>("identify_file_selection_text"),(XtPointer)identify_file_selection_text},
+		{const_cast<char *>("file_selection_write"),(XtPointer)file_selection_write},
+		{const_cast<char *>("cancel_file_selection"),(XtPointer)cancel_file_selection}};
 #if defined (OLD_CODE)
 	static MrmRegisterArg identifier_list[]=
 	{
@@ -1444,8 +1445,8 @@ specified file.
 	static XtResource resources[]=
 	{
 		{
-			XmNprinterCommand,
-			XmCPrinterCommand,
+			const_cast<char *>(XmNprinterCommand),
+			const_cast<char *>(XmCPrinterCommand),
 			XmRString,
 			sizeof(char *),
 			0,
@@ -1579,7 +1580,7 @@ specified file.
 						/* Set up window manager callback for close window message */
 						WM_DELETE_WINDOW=XmInternAtom(
 							XtDisplay(file_open_data->selection_shell),
-							"WM_DELETE_WINDOW",False);
+							const_cast<char *>("WM_DELETE_WINDOW"),False);
 						XmAddWMProtocolCallback(file_open_data->selection_shell,
 							WM_DELETE_WINDOW,close_file_selection,client_data);
 						/* register the callbacks */
@@ -1588,7 +1589,7 @@ specified file.
 						{
 							/* create the file selection box */
 							if (MrmSUCCESS==MrmFetchWidget(filedir_hierarchy,
-								"file_selection_box",file_open_data->selection_shell,
+									const_cast<char *>("file_selection_box"),file_open_data->selection_shell,
 								&(file_open_data->selection),&selection_class))
 							{
 								/* remove the filter button */
@@ -1695,12 +1696,14 @@ specified file.
 					{
 						if (file_open_data->filter_extension)
 						{
-							if (ALLOCATE(label,char,
+							char *temp_label;
+							if (ALLOCATE(temp_label,char,
 								strlen(file_open_data->filter_extension)+21))
 							{
-								strcpy(label,"File name (");
-								strcat(label,file_open_data->filter_extension);
-								strcat(label," assumed)");
+								strcpy(temp_label,"File name (");
+								strcat(temp_label,file_open_data->filter_extension);
+								strcat(temp_label," assumed)");
+								label = temp_label;
 							}
 							else
 							{
@@ -1723,7 +1726,7 @@ specified file.
 				file_selection_child=XmFileSelectionBoxGetChild(
 					file_open_data->selection,XmDIALOG_SELECTION_LABEL);
 				XtVaSetValues(file_selection_child,
-					XmNlabelString,XmStringCreate(label,XmSTRING_DEFAULT_CHARSET),
+					XmNlabelString,XmStringCreate(const_cast<char *>(label),XmSTRING_DEFAULT_CHARSET),
 					NULL);
 				busy_cursor_on(file_open_data->selection_shell,
 					file_open_data->user_interface );

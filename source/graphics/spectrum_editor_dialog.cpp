@@ -408,25 +408,25 @@ the spectrums contained in the global list.
 	struct Spectrum_editor_dialog *spectrum_editor_dialog=NULL;
 	static MrmRegisterArg callback_list[]=
 	{
-		{"spec_editor_d_identify_button",
+		{const_cast<char *>("spec_editor_d_identify_button"),
 		(XtPointer)spectrum_editor_dialog_identify_button},
-		{"spec_editor_d_control_CB",
+		{const_cast<char *>("spec_editor_d_control_CB"),
 			(XtPointer)spectrum_editor_dialog_control_CB},
-		{"spec_ed_d_autorange_btn_CB",
+		{const_cast<char *>("spec_ed_d_autorange_btn_CB"),
 			(XtPointer)spectrum_editor_dialog_autorange_button_CB}
 	};
 	static MrmRegisterArg identifier_list[]=
 	{
-		{"spec_editor_d_structure",(XtPointer)NULL},
-		{"spec_editor_d_editor_form_ID",
+		{const_cast<char *>("spec_editor_d_structure"),(XtPointer)NULL},
+		{const_cast<char *>("spec_editor_d_editor_form_ID"),
 		(XtPointer)spectrum_editor_dialog_editor_form_ID},
-		{"spec_editor_d_select_form_ID",
+		{const_cast<char *>("spec_editor_d_select_form_ID"),
 		(XtPointer)spectrum_editor_dialog_select_form_ID},
-		{"spec_editor_d_ok_ID",(XtPointer)spectrum_editor_dialog_ok_ID},
-		{"spec_editor_d_apply_ID",(XtPointer)spectrum_editor_dialog_apply_ID},
-		{"spec_editor_d_revert_ID",(XtPointer)spectrum_editor_dialog_revert_ID},
-		{"spec_editor_d_cancel_ID",(XtPointer)spectrum_editor_dialog_cancel_ID},
-		{"spec_ed_d_autorange_scene_ID",(XtPointer)spectrum_editor_dialog_autorange_scene_ID}
+		{const_cast<char *>("spec_editor_d_ok_ID"),(XtPointer)spectrum_editor_dialog_ok_ID},
+		{const_cast<char *>("spec_editor_d_apply_ID"),(XtPointer)spectrum_editor_dialog_apply_ID},
+		{const_cast<char *>("spec_editor_d_revert_ID"),(XtPointer)spectrum_editor_dialog_revert_ID},
+		{const_cast<char *>("spec_editor_d_cancel_ID"),(XtPointer)spectrum_editor_dialog_cancel_ID},
+		{const_cast<char *>("spec_ed_d_autorange_scene_ID"),(XtPointer)spectrum_editor_dialog_autorange_scene_ID}
 	};
 
 	ENTER(CREATE(Spectrum_editor_dialog));
@@ -486,7 +486,7 @@ the spectrums contained in the global list.
 						{
 							/* fetch position window widget */
 							if (MrmSUCCESS==MrmFetchWidget(spectrum_editor_dialog_hierarchy,
-								"spec_editor_dialog_widget",spectrum_editor_dialog->dialog,
+									const_cast<char *>("spec_editor_dialog_widget"),spectrum_editor_dialog->dialog,
 								&(spectrum_editor_dialog->widget),
 								&spectrum_editor_dialog_dialog_class))
 							{
@@ -550,7 +550,7 @@ the spectrums contained in the global list.
 									/* Set up window manager callback for close window message */
 									WM_DELETE_WINDOW=XmInternAtom(
 										XtDisplay(spectrum_editor_dialog->dialog),
-										"WM_DELETE_WINDOW", False);
+										const_cast<char *>("WM_DELETE_WINDOW"), False);
 									XmAddWMProtocolCallback(spectrum_editor_dialog->dialog,
 										WM_DELETE_WINDOW,spectrum_editor_dialog_close_CB,
 										spectrum_editor_dialog);

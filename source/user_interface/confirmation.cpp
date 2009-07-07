@@ -220,7 +220,7 @@ button is clicked.
 	if (user_interface)
 	{
 #if defined (MOTIF_USER_INTERFACE)
-		message_string=XmStringCreateSimple(prompt);
+		message_string=XmStringCreateSimple(const_cast<char *>(prompt));
 		settings_list[0].value=(XtArgVal)message_string;
 		settings_list[1].value=(XtArgVal)title;
 		message_box=(Widget)NULL;
@@ -233,22 +233,22 @@ button is clicked.
 			case WARNING_OK_CANCEL:
 			case WARNING_OK:
 			{
-				message_box=XmCreateWarningDialog(message_parent,title,settings_list,
+				message_box=XmCreateWarningDialog(message_parent,const_cast<char *>(title),settings_list,
 					XtNumber(settings_list));
 			} break;
 			case ERROR_OK:
 			{
-				message_box=XmCreateErrorDialog(message_parent,title,settings_list,
+				message_box=XmCreateErrorDialog(message_parent,const_cast<char *>(title),settings_list,
 					XtNumber(settings_list));
 			} break;
 			case INFORMATION_OK:
 			{
-				message_box=XmCreateInformationDialog(message_parent,title,
+				message_box=XmCreateInformationDialog(message_parent,const_cast<char *>(title),
 					settings_list,XtNumber(settings_list));
 			} break;
 			case QUESTION_YES_NO:
 			{
-				message_box=XmCreateQuestionDialog(message_parent,title,settings_list,
+				message_box=XmCreateQuestionDialog(message_parent,const_cast<char *>(title),settings_list,
 					XtNumber(settings_list));
 			} break;
 		}
@@ -272,8 +272,8 @@ button is clicked.
 			} break;
 			case QUESTION_YES_NO:
 			{
-				ok_label_string=XmStringCreateSimple("Yes");
-				cancel_label_string=XmStringCreateSimple("No");
+				ok_label_string=XmStringCreateSimple(const_cast<char *>("Yes"));
+				cancel_label_string=XmStringCreateSimple(const_cast<char *>("No"));
 				XtVaSetValues(message_box,
 					XmNokLabelString,ok_label_string,
 					XmNcancelLabelString,cancel_label_string,
