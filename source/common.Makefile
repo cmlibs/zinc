@@ -238,7 +238,7 @@ ifeq ($(SYSNAME),Linux)
       COMPILE_DEFINES = -DOPTIMISED
       COMPILE_FLAGS = -fPIC
       STRICT_FLAGS = -Werror
-      CPP_STRICT_FLAGS = -Wno-write-strings -Werror
+      CPP_STRICT_FLAGS = -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
       ifeq ($(PROFILE),true)
@@ -254,7 +254,7 @@ ifeq ($(SYSNAME),Linux)
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
       COMPILE_FLAGS = -fPIC
       STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Werror
-      CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Wno-write-strings -Werror
+      CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
       STRIP =
