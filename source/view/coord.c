@@ -80,10 +80,10 @@ FULL_DECLARE_LIST_TYPE(Coord_data);
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int coord_hierarchy_open=0;
 static MrmHierarchy coord_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Module functions
@@ -862,7 +862,7 @@ DESCRIPTION :
 Modifier function to set the coordinate from a command.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct Cmgui_coordinate *temp_coordinate,**coordinate_address;
 

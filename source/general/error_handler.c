@@ -50,6 +50,10 @@ longjmp .
 #include "general/error_handler.h"
 #include <setjmp.h>
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 /*
 Global variables
 ----------------

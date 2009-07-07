@@ -46,12 +46,16 @@ Function definitions for the user interface.
 #if !defined (USER_INTERFACE_H)
 #define USER_INTERFACE_H
 
-#if defined (MOTIF)
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
+#if defined (MOTIF_USER_INTERFACE)
 #include <X11/Xlib.h>
 #include <X11/Intrinsic.h>
 #include <Xm/Xm.h>
 #include <Mrm/MrmPublic.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
 #include <windowsx.h>
@@ -78,16 +82,16 @@ LAST MODIFIED : 5 March 2002
 DESCRIPTION :
 ==============================================================================*/
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 typedef int (*Property_notify_callback)(XPropertyEvent *,void *,
 	struct User_interface *);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Global Functions
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int x_error_handler(Display *display, XErrorEvent *error);
 /*******************************************************************************
 LAST MODIFIED : 15 September 1999 
@@ -95,12 +99,12 @@ LAST MODIFIED : 15 September 1999
 DESCRIPTION :
 Responds to nonfatal XErrors and allows cmgui to continue.
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 struct Shell_list_item *create_Shell_list_item(
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget *shell_address,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface
 	);
 /*******************************************************************************
@@ -128,7 +132,7 @@ find the appropriate list object and remove it.
 ???DB.  Move in with windowing macros ?
 ==============================================================================*/
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int destroy_Shell_list_item_from_shell(Widget *shell,
 	struct User_interface *user_interface);
 /*******************************************************************************
@@ -139,9 +143,9 @@ This function removes the list_item which refers to <shell> from the shell list
 and frees the memory for the <list_item>.
 ???DB.  Move in with windowing macros ?
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 void destroy_window_shell(Widget widget,XtPointer list_item,
 	XtPointer call_data);
 /*******************************************************************************
@@ -155,12 +159,12 @@ SAB This is probably not a good way to do this, requires XmNuserData to point
 to the User_interface structure.  Prefer to have each window with it's own
 structure which it the calls destroy_Shell_list_item
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 int busy_cursor_on(
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget excluded_shell,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface
 	);
 /*******************************************************************************
@@ -173,9 +177,9 @@ Switchs from the default cursor to the busy cursor for all shells except the
 ==============================================================================*/
 
 int busy_cursor_off(
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget excluded_shell,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface
 	);
 /*******************************************************************************
@@ -189,8 +193,8 @@ Switchs from the busy cursor to the default cursor for all shells except the
 
 #if !defined (WIN32_USER_INTERFACE)
 struct User_interface *CREATE(User_interface)(int *argc_address, char **argv, 
-	struct Event_dispatcher *event_dispatcher, char *class_name, 
-	char *application_name);
+	struct Event_dispatcher *event_dispatcher, const char *class_name, 
+	const char *application_name);
 #else /* !defined (WIN32_USER_INTERFACE) */
 struct User_interface *CREATE(User_interface)(HINSTANCE current_instance,
 	HINSTANCE previous_instance, LPSTR command_line,int initial_main_window_state,
@@ -226,7 +230,7 @@ DESCRIPTION :
 ==============================================================================*/
 #endif /* defined (WX_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 Widget User_interface_get_application_shell(struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
@@ -234,9 +238,9 @@ LAST MODIFIED : 5 March 2002
 DESCRIPTION :
 Returns the application shell widget
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 Display *User_interface_get_display(struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
@@ -244,9 +248,9 @@ LAST MODIFIED : 5 March 2002
 DESCRIPTION :
 Returns the application shell widget
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int User_interface_get_screen_width(struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
@@ -254,9 +258,9 @@ LAST MODIFIED : 5 March 2002
 DESCRIPTION :
 Returns the application shell widget
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int User_interface_get_screen_height(struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
@@ -264,9 +268,9 @@ LAST MODIFIED : 5 March 2002
 DESCRIPTION :
 Returns the application shell widget
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 int User_interface_get_widget_spacing(struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
@@ -274,9 +278,9 @@ LAST MODIFIED : 5 March 2002
 DESCRIPTION :
 Returns the application shell widget
 ==============================================================================*/
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 XFontStruct *User_interface_get_normal_font(struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
@@ -284,9 +288,9 @@ LAST MODIFIED : 5 March 2002
 DESCRIPTION :
 Returns the application shell widget
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 XmFontList User_interface_get_normal_fontlist(struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
@@ -294,9 +298,9 @@ LAST MODIFIED : 5 March 2002
 DESCRIPTION :
 Returns the application shell widget
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 XmFontList User_interface_get_button_fontlist(struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
@@ -304,9 +308,9 @@ LAST MODIFIED : 5 March 2002
 DESCRIPTION :
 Returns the application shell widget
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 Pixmap User_interface_get_no_cascade_pixmap(struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 6 March 2002
@@ -314,7 +318,7 @@ LAST MODIFIED : 6 March 2002
 DESCRIPTION :
 Returns a pixmap to avoid large gaps on the right of cascade buttons (option menus)
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (WIN32_USER_INTERFACE)
 HINSTANCE User_interface_get_instance(struct User_interface *user_interface);
@@ -377,7 +381,7 @@ DESCRIPTION :
 ???DB.  Should we have our own "WINAPI" (size specifier) ?
 ==============================================================================*/
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int set_property_notify_callback(struct User_interface *user_interface,
 	Property_notify_callback property_notify_callback,void *property_notify_data,
 	Widget widget);
@@ -389,9 +393,9 @@ Sets the <property_notify_callback> for the <user_interface>.  This is used for
 communication with other applications.
 ???DB.  At present only one (not a list)
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int MrmOpenHierarchy_binary_string(char *binary_string, int string_length,
 	MrmHierarchy *hierarchy,int *hierarchy_open);
 /*******************************************************************************
@@ -408,9 +412,9 @@ If <*hierarchy_open> then 1 is returned, otherwise the full <uid_file_names> are
 constructed and the <hierarchy> for those files opened.  1 is returned for
 success and 0 for failure.
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int MrmOpenHierarchy_binary_multiple_strings(int number_of_strings, 
 	char **binary_strings, int *string_lengths,
 	MrmHierarchy *hierarchy,int *hierarchy_open);
@@ -429,9 +433,9 @@ If <*hierarchy_open> then 1 is returned, otherwise the full <uid_file_names> are
 constructed and the <hierarchy> for those files opened.  1 is returned for
 success and 0 for failure.
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int install_accelerators(Widget widget, Widget top_widget);
 /*******************************************************************************
 LAST MODIFIED : 24 December 1998
@@ -441,5 +445,5 @@ This travels down the widget tree from <widget> and installs all
 accelerators in any subwidgets of <top_widget> in every appropriate subwidget of
 <widget>.
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #endif /* !defined (USER_INTERFACE_H) */

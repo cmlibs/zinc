@@ -44,6 +44,10 @@ Standard macros for returning random numbers.
 #if !defined (RANDOM_H)
 #define RANDOM_H
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #if defined (UNIX) /* switch (OPERATING_SYSTEM) */
 /* Must #include <stdlib.h> in calling module to use: */
 /* Returns a random number of the given <type> in the range [0.0, 1.0]

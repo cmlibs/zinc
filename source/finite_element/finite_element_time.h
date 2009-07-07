@@ -150,11 +150,11 @@ PROTOTYPE_OBJECT_FUNCTIONS(FE_time_sequence_package);
 PROTOTYPE_OBJECT_FUNCTIONS(FE_time_sequence);
 
 PROTOTYPE_LIST_FUNCTIONS(FE_time_sequence);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_time_sequence,name,char *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_time_sequence,name,const char *);
 
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(FE_time_sequence,name,char *);
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(FE_time_sequence,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(FE_time_sequence);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(FE_time_sequence,name,char *);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(FE_time_sequence,name,const char *);
 
 struct FE_time_sequence *get_FE_time_sequence_matching_FE_time_sequence(
 	struct FE_time_sequence_package *fe_time, struct FE_time_sequence *source_fe_time_seqence);

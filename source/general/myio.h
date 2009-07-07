@@ -45,6 +45,9 @@ Some additions/modifications to stdio.
 #define MYIO_H
 
 #include <stdio.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 
 #if defined (UNIX) && defined (GENERIC_PC)
 #if defined (CYGWIN)

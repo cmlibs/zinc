@@ -43,16 +43,19 @@ group of nodes
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 #include <math.h>
 #include <string.h>
 #include <sys/types.h>
 #include <time.h>
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/PushB.h>
 #include <Xm/ScrollBar.h>
 #include <Xm/Text.h>
 #include <Xm/ToggleB.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 extern "C" {
 #include "command/command.h"
 	/*???DB.  For Execute_command */
@@ -74,16 +77,16 @@ extern "C" {
 #include "user_interface/message.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "curve/curve.h"
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include "curve/curve_editor_dialog.h"
 #include "three_d_drawing/graphics_buffer.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "emoter/emoter_dialog.h"
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static char emoter_dialog_uidh[] =
 #include "emoter/emoter_dialog.uidh"
 	;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 }
 
 /*
@@ -97,10 +100,10 @@ Module constants
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int emoter_dialog_hierarchy_open=0;
 static MrmHierarchy emoter_dialog_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Module types
@@ -135,9 +138,9 @@ DESCRIPTION :
 	struct Scene *viewer_scene;
 	struct Scene_object *transformation_scene_object;
 	struct User_interface *user_interface;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget top_level, *curve_editor_dialog_address;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 }; /* struct Shared_emoter_slider_data */
 
 struct Emoter_combine_slider
@@ -164,9 +167,9 @@ DESCRIPTION :
 	float value;
 	struct Emoter_slider *slider_parent;
 	struct Shared_emoter_slider_data *shared;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget widget, value_text;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 }; /* struct Emoter_marker */
 
 struct Emoter_slider
@@ -187,11 +190,11 @@ DESCRIPTION :
 	struct Shared_emoter_slider_data *shared;
 	struct Scene_viewer *scene_viewer;
 	struct Curve *mode_curve, **timebase_curves;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget slider, widget, animated_pixmap,
 		toggle_button, marker_rowcol,
 		value_text, select_button;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 }; /* struct Emoter_slider */
 
 struct Emoter_dialog
@@ -205,13 +208,13 @@ DESCRIPTION :
 	float time_minimum, time_maximum;
 	struct Shared_emoter_slider_data *shared;
 	void *curve_manager_callback_id;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget shell, widget,
 		play_slider, slider_form, play_value_text,
 		play_max_text, play_min_text, mode_subform,
 		mode_text, solid_motion_button, movie_control_form,
 		play_button, movie_framerate_text, input_sequence_button;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Cmiss_region *minimum_region;
 	struct Shell_list_item *shell_list_item;
 	struct Movie_graphics *movie;
@@ -224,11 +227,11 @@ Module functions
 ----------------
 */
 
-static struct Emoter_slider *create_emoter_slider(char *sequence_filename,
-	char *name,
-#if defined (MOTIF)
+static struct Emoter_slider *create_emoter_slider(const char *sequence_filename,
+	const char *name,
+#if defined (MOTIF_USER_INTERFACE)
 Widget parent,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	float value,
 	struct Shared_emoter_slider_data *shared_data,
 	int index, struct Curve *existing_mode_curve,
@@ -241,7 +244,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 Declared here because of circular recursive function calling.
 ==============================================================================*/
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(emoter_dialog, \
 	Emoter_dialog, slider_form)
 
@@ -292,7 +295,7 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(emoter_slider, \
 
 DECLARE_DIALOG_IDENTIFY_FUNCTION(emoter_marker, \
 	Emoter_marker, value_text)
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static int emoter_update_nodes(struct Shared_emoter_slider_data *shared_data,
 	int solid_body_motion )
@@ -727,7 +730,7 @@ Sets the select state of this <slider> to the <state>
 	if ( slider )
 	{
 		slider->selected = state;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		if ( slider->select_button )
 		{
 			if ( state )
@@ -752,7 +755,7 @@ Sets the select state of this <slider> to the <state>
 
 			}
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		return_code = 1;
 	}
 	else
@@ -784,7 +787,7 @@ Sets the animated state of this <slider> to the <state>
 		if ( slider->animated != state )
 		{
 			slider->animated = state;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			if ( slider->animated_pixmap )
 			{
 				if ( state )
@@ -800,7 +803,7 @@ Sets the animated state of this <slider> to the <state>
 					Scene_viewer_redraw(slider->scene_viewer);
 				}
 			}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 		return_code = 1;
 	}
@@ -826,9 +829,9 @@ Updates all the basis modes from the active
 emoter slider's Curve
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	char value_text_string[30];
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	int slider_position;
 
 	ENTER(emoter_set_slider_value);
@@ -849,7 +852,7 @@ emoter slider's Curve
 		{
 			slider_position = SLIDER_RESOLUTION;
 		}
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		if ( slider_position != emoter_slider->slider_position &&
 			emoter_slider->slider )
 		{
@@ -865,7 +868,7 @@ emoter slider's Curve
 			sprintf(value_text_string, "%6.2f", new_value );
 			XmTextSetString(emoter_slider->value_text, value_text_string);
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
@@ -885,24 +888,24 @@ Shows the <new_value> given in the emoter marker textbox without updating
 any control curves.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	char value_text_string[30];
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(emoter_show_marker_value);
-#if ! defined (MOTIF)
+#if ! defined (MOTIF_USER_INTERFACE)
 	USE_PARAMETER(new_value);
-#endif /* ! defined (MOTIF) */
+#endif /* ! defined (MOTIF_USER_INTERFACE) */
 	if ( emoter_marker )
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		/* Update the text box */
 		if ( emoter_marker->value_text )
 		{
 			sprintf(value_text_string, "%10.1f", new_value );
 			XmTextSetString(emoter_marker->value_text, value_text_string);
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
@@ -978,7 +981,7 @@ Sets the emoter marker according to the <new_value> given.
 	LEAVE;
 } /* emoter_set_marker_value */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_slider_CB(Widget widget,
 	XtPointer emoter_slider_void, XtPointer call_data)
 /*******************************************************************************
@@ -1020,7 +1023,7 @@ Emoter slider scrollbar callback.  Sets the value from the slider
 	}
 	LEAVE;
 } /* update_emoter_slider_callback */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static int DESTROY(Emoter_marker)(struct Emoter_marker **emoter_marker_address)
 /*******************************************************************************
@@ -1146,9 +1149,9 @@ slider
 		DEALLOCATE( emoter_slider->combine_sliders );
 		DEALLOCATE( emoter_slider->emoter_markers );
 		DEALLOCATE( emoter_slider->timebase_curves );
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		DESTROY(Scene_viewer)(&emoter_slider->scene_viewer);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 		if ( emoter_slider->sequence_filename )
 		{
@@ -1235,7 +1238,7 @@ Callback for the emoter dialog - tidies up all details - mem etc
 	return (return_code);
 } /* DESTROY(Emoter_dialog) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_dialog_destroy_CB(Widget w,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -1265,9 +1268,9 @@ Callback for the emoter dialog - tidies up all details - mem etc
 
 	LEAVE;
 } /* emoter_dialog_destroy_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_id_play_slider(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -1305,7 +1308,7 @@ Callback for the play slider which sets the min and max and stores the widget
 
 	LEAVE;
 } /* emoter_id_play_slider */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static void emoter_update_combine_sliders(struct Emoter_slider *slider)
 /*******************************************************************************
@@ -1374,7 +1377,7 @@ Callback for the play slider which sets the min and max and stores the widget
 	LEAVE;
 } /* emoter_update_combine_sliders */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_update_markers(struct Emoter_slider *slider)
 /*******************************************************************************
 LAST MODIFIED : 17 April 1998
@@ -1436,7 +1439,7 @@ Callback for the play slider which sets the min and max and stores the widget
 
 	LEAVE;
 } /* emoter_update_markers */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static void emoter_set_play_slider_value( struct Emoter_dialog *emoter_dialog,
 	float new_value )
@@ -1449,9 +1452,9 @@ Updates all the basis modes from the active
 emoter slider's Curve
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	char value_text_string[30];
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	int slider_position;
 	struct Emoter_slider *active;
 
@@ -1462,7 +1465,7 @@ emoter slider's Curve
 
 		/* Check slider position */
 		slider_position = (int)new_value;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		if ( slider_position != emoter_dialog->play_slider_position
 			&& emoter_dialog->play_slider )
 		{
@@ -1478,7 +1481,7 @@ emoter slider's Curve
 			sprintf(value_text_string, "%8.2f", new_value );
 			XmTextSetString(emoter_dialog->play_value_text, value_text_string);
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 		/* Update the 'combine' sliders from the active slider */
 		if ( active = emoter_dialog->shared->active_slider )
@@ -1486,7 +1489,7 @@ emoter slider's Curve
 			emoter_update_combine_sliders(active);
 		}
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		/* Set the cursor bar in the curve editor if it exists */
 		if ( *(emoter_dialog->shared->curve_editor_dialog_address) )
 		{
@@ -1494,7 +1497,7 @@ emoter slider's Curve
 				*(emoter_dialog->shared->curve_editor_dialog_address),
 				new_value );
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
@@ -1513,9 +1516,9 @@ DESCRIPTION :
 Sets the slider range of the play slider
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	char text_string[30];
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(emoter_set_play_slider_range);
 
@@ -1524,7 +1527,7 @@ Sets the slider range of the play slider
 		emoter_dialog->time_minimum = min;
 		emoter_dialog->time_maximum = max;
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		/* Update the text boxes */
 		if ( emoter_dialog->play_min_text )
 		{
@@ -1546,7 +1549,7 @@ Sets the slider range of the play slider
 				XmNsliderSize, 1,
 				NULL );
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
@@ -1556,7 +1559,7 @@ Sets the slider range of the play slider
 	LEAVE;
 } /* emoter_set_play_slider_range */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_play_slider_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -1609,9 +1612,9 @@ Callback for the play slider which sets the min and max and stores the widget
 
 	LEAVE;
 } /* emoter_play_slider_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_id_emoter_slider(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -1649,9 +1652,9 @@ Callback for the emoter slider which sets the min and max and stores the widget
 
 	LEAVE;
 } /* emoter_id_emoter_slider */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_slider_select_activate(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -1686,7 +1689,7 @@ Callback for the emoter slider which sets the min and max and stores the widget
 
 	LEAVE;
 } /* emoter_slider_select_activate */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static int emoter_slider_make_active(struct Emoter_slider *slider)
 /*******************************************************************************
@@ -1698,15 +1701,15 @@ togglebuttons accordingly.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	int j;
 	struct Emoter_slider *active;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(emoter_slider_make_active);
 	if ( slider )
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		if ( (active = slider->shared->active_slider)
 			&& active->toggle_button )
 		{
@@ -1724,11 +1727,11 @@ togglebuttons accordingly.
 			}
 			emoter_slider_animated( active, 0 );
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 		slider->shared->active_slider = slider;
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		if ( slider->toggle_button )
 		{
 			XtVaSetValues( slider->toggle_button,
@@ -1758,9 +1761,9 @@ togglebuttons accordingly.
 				"emoter_slider_make_active.  Togglebutton widget not set");
 			return_code = 0;
 		}
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 		return_code = 1;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
@@ -1773,7 +1776,7 @@ togglebuttons accordingly.
 	return ( return_code );
 } /* emoter_slider_make_active */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_slider_toggle_activate(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -1807,9 +1810,9 @@ Callback for the emoter slider which sets the min and max and stores the widget
 
 	LEAVE;
 } /* emoter_slider_toggle_activate */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_slider_value_text_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -1851,9 +1854,9 @@ Callback for the emoter slider which responds to updates in the text box.
 
 	LEAVE;
 } /* emoter_slider_value_text_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_marker_value_text_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -1893,7 +1896,7 @@ Callback for the emoter marker which responds to updates in the text box.
 
 	LEAVE;
 } /* emoter_marker_value_text_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 struct read_file_data
 /*******************************************************************************
@@ -2001,7 +2004,7 @@ DESCRIPTION :
 } /* read_file_string */
 
 static struct read_file_data *read_file_open (
-	char *filename, struct IO_stream_package *io_stream_package)
+	const char *filename, struct IO_stream_package *io_stream_package)
 /*******************************************************************************
 LAST MODIFIED : 7 April 1998
 
@@ -2079,7 +2082,7 @@ DESCRIPTION :
 	return (return_code);
 } /* read_file_eof */
 
-static int read_file_eof_marker(struct read_file_data *file_data, char *marker)
+static int read_file_eof_marker(struct read_file_data *file_data, const char *marker)
 /*******************************************************************************
 LAST MODIFIED : 19 April 1998
 
@@ -2112,7 +2115,7 @@ DESCRIPTION :
 	return (return_code);
 } /* read_file_eof */
 
-static int read_file_marker(struct read_file_data *file_data, char *marker)
+static int read_file_marker(struct read_file_data *file_data, const char *marker)
 /*******************************************************************************
 LAST MODIFIED : 17 April 1998
 
@@ -2194,7 +2197,8 @@ DESCRIPTION :
 Creates a control curve which is read from file values.
 ==============================================================================*/
 {
-	char warning[300], *name, *temp_filename;
+	char warning[300], *name;
+	const char *filename_base;
 	FE_value time;
 	float *shape_vector, weight;
 	int i, j, k, n_modes, return_code;
@@ -2207,13 +2211,13 @@ Creates a control curve which is read from file values.
 	{
 		if ( file_data = read_file_open( filename ))
 		{
-			if ( name = strrchr( filename, '/'))
+			if ( filename_base = strrchr( filename, '/'))
 			{
-				name++;
+				filename_base++;
 			}
 			else
 			{
-				name = filename;
+				filename_base = filename;
 			}
 			/* This reads the marker if it is there and continues even
 				if it isn't */
@@ -2233,10 +2237,9 @@ Creates a control curve which is read from file values.
 			}
 			if ( return_code )
 			{
-				if ( ALLOCATE( temp_filename, char, strlen(name)+1))
+				if ( ALLOCATE( name, char, strlen(filename_base)+1))
 				{
-					strcpy(temp_filename, name);
-					name = temp_filename;
+					strcpy(name, filename_base);
 					if ( ALLOCATE( shape_vector, float, shared->number_of_modes ))
 					{
 						while (FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
@@ -2316,6 +2319,7 @@ Creates a control curve which is read from file values.
 							"read_emoter_mode_Curve.  Unable to allocate shape vector");
 						return_code=0;
 					}
+					DEALLOCATE(name);
 				}
 				else
 				{
@@ -2347,7 +2351,7 @@ Creates a control curve which is read from file values.
 #endif /* OLD_CODE */
 
 static struct Curve *read_emoter_curve( struct read_file_data *file_data,
-	char *base_name, struct Shared_emoter_slider_data *shared)
+	const char *base_name, struct Shared_emoter_slider_data *shared)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
 
@@ -2513,11 +2517,11 @@ Reads a control curve from a file.
 	return (curve);
 } /* read_emoter_curve */
 
-static struct Emoter_marker *create_emoter_marker(char *name,
+static struct Emoter_marker *create_emoter_marker(const char *name,
 	float value, 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget parent, 
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	int index,
 	int element_index, int node_index, int end_marker,
 	struct Emoter_slider *slider_parent,
@@ -2528,7 +2532,7 @@ LAST MODIFIED : 16 April 1998
 DESCRIPTION :
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Arg override_arg[2];
 	MrmType emoter_marker_class;
 	static MrmRegisterArg callback_list[]=
@@ -2544,35 +2548,35 @@ DESCRIPTION :
 		{"emoter_marker_name",(XtPointer)NULL}
 	};
 	XmString label_string;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Emoter_marker *emoter_marker;
 
 	ENTER(create_emoter_marker);
 	/* check arguments */
 	if (name && shared_data)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		/* register the callbacks */
 		if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
 			emoter_dialog_hierarchy,callback_list,XtNumber(callback_list)))
 		{
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 			if ( ALLOCATE ( emoter_marker, struct Emoter_marker, 1) &&
 					ALLOCATE( emoter_marker->name, char, strlen(name) + 1))
 			{
 				strcpy( emoter_marker->name, name );
 				emoter_marker->shared = shared_data;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 				emoter_marker->widget = (Widget)NULL;
 				emoter_marker->value_text = (Widget)NULL;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 				emoter_marker->slider_parent = slider_parent;
 				emoter_marker->value = value;
 				emoter_marker->element_index = element_index;
 				emoter_marker->node_index = node_index;
 				emoter_marker->index = index;
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 				label_string=XmStringCreateSimple(name);
 				identifier_list[0].value=(XtPointer)emoter_marker;
 				identifier_list[1].value=(XtPointer)label_string;
@@ -2606,9 +2610,9 @@ DESCRIPTION :
 					emoter_marker=(struct Emoter_marker *)NULL;
 				}
 				XmStringFree(label_string);
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 				USE_PARAMETER(end_marker);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 			}
 			else
 			{
@@ -2616,7 +2620,7 @@ DESCRIPTION :
 					"create_emoter_marker.  Could not allocate emoter marker structure");
 				emoter_marker=(struct Emoter_marker *)NULL;
 			}
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		}
 		else
 		{
@@ -2624,7 +2628,7 @@ DESCRIPTION :
 				"create_emoter_dialog.  Could not register callbacks");
 			emoter_marker=(struct Emoter_marker *)NULL;
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
@@ -2638,7 +2642,7 @@ DESCRIPTION :
 } /* create_emoter_marker */
 
 static int read_emoter_slider_file( struct Emoter_slider *slider,
-	char *filename, float *start_time, float *end_time, int *marker_count,
+	const char *filename, float *start_time, float *end_time, int *marker_count,
 	struct Emoter_dialog *emoter_dialog, void **icon_data,
 	int *icon_width, int *icon_height, int no_confirm )
 /*******************************************************************************
@@ -2676,7 +2680,7 @@ Reads stuff from a file.
 			}
 			else
 			{
-				name = filename;
+				//name = filename;
 				basename = duplicate_string("");
 			}
 			return_code = 1;
@@ -2711,9 +2715,9 @@ Reads stuff from a file.
 							slider->name, temp_string );
 						if ( no_confirm || confirmation_warning_ok_cancel( "Emotionator dependency",
 							warning,
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 								emoter_dialog->shell,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 									shared->user_interface
 #if defined (WX_USER_INTERFACE)
 , shared->execute_command
@@ -2732,9 +2736,9 @@ Reads stuff from a file.
 							}
 							if (slider_to_combine = create_emoter_slider(temp_filename,
 								temp_string,
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 								emoter_dialog->slider_form,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 								1, shared,
 								shared->number_of_sliders,
 								(struct Curve *)NULL,
@@ -2970,9 +2974,9 @@ Reads stuff from a file.
 								filename, n_modes, shared->number_of_modes );
 							return_code = confirmation_warning_ok_cancel("Emotionator warning",
 								warning, 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 								emoter_dialog->shell,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 								 shared->user_interface
 #if defined (WX_USER_INTERFACE)
 , shared->execute_command
@@ -3062,9 +3066,9 @@ Reads stuff from a file.
 														slider->emoter_markers[*marker_count]
 															= create_emoter_marker(temp_string,
 																*end_time, 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 																slider->marker_rowcol,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 																*marker_count - 1,
 																*marker_count + 1, 0, 0,
 																slider, slider->shared);
@@ -3153,11 +3157,11 @@ Reads stuff from a file.
 	return (return_code);
 } /* read_emoter_slider_file */
 
-static struct Emoter_slider *create_emoter_slider(char *sequence_filename,
-	char *name,
-#if defined (MOTIF)
+static struct Emoter_slider *create_emoter_slider(const char *sequence_filename,
+	const char *name,
+#if defined (MOTIF_USER_INTERFACE)
 	Widget parent,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	float value,
 	struct Shared_emoter_slider_data *shared_data,
 	int index, struct Curve *existing_mode_curve,
@@ -3174,7 +3178,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 	struct Emoter_slider *emoter_slider;
 	void *icon_data;
 	int icon_width, icon_height;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Arg override_arg;
 	MrmType emoter_slider_class;
 	static MrmRegisterArg callback_list[]=
@@ -3205,19 +3209,19 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 	};
 	struct Graphics_buffer *graphics_buffer;
 	XmString label_string;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(create_emoter_slider);
 	/* check arguments */
 
 	if (name && shared_data)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		/* register the callbacks */
 		if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
 			emoter_dialog_hierarchy,callback_list,XtNumber(callback_list)))
 		{
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 			if ( ALLOCATE ( emoter_slider, struct Emoter_slider, 1)&&
 				ALLOCATE(emoter_slider->name, char, strlen(name) + 1) &&
 				ALLOCATE(emoter_slider->combine_sliders, struct Emoter_combine_slider *, 1)&&
@@ -3239,7 +3243,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 				emoter_slider->number_of_timebase_curves = 0;
 				emoter_slider->solid_body_motion = 0;
 				emoter_slider->slider_position = -1;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 				emoter_slider->slider = (Widget)NULL;
 				emoter_slider->widget = (Widget)NULL;
 				emoter_slider->toggle_button = (Widget)NULL;
@@ -3247,7 +3251,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 				emoter_slider->value_text = (Widget)NULL;
 				emoter_slider->animated_pixmap = (Widget)NULL;
 				emoter_slider->marker_rowcol = (Widget)NULL;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 				start_time = 0;
 				end_time = 0;
@@ -3259,7 +3263,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 				return_code = 1;
 				if ( return_code )
 				{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 					/* assign and register the identifiers */
 					label_string=XmStringCreateSimple(name);
 					identifier_list[0].value=(XtPointer)emoter_slider;
@@ -3274,7 +3278,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 							&emoter_slider->widget, &emoter_slider_class))
 						{
 							XtManageChild(emoter_slider->widget);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 							if ( sequence_filename )
 							{
 								if ( ALLOCATE( emoter_slider->sequence_filename, char,
@@ -3302,7 +3306,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 								}
 								return_code = 1;
 							}
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 							graphics_buffer = create_Graphics_buffer_X3d(
 								shared_data->graphics_buffer_package,
 								emoter_slider->animated_pixmap,
@@ -3336,22 +3340,22 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 									icon_width, icon_height, icon_data );
 								Scene_viewer_redraw(emoter_slider->scene_viewer);
 							}
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 							emoter_slider->scene_viewer = (struct Scene_viewer *)NULL;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 							emoter_slider->number_of_emoter_markers = marker_count + 1;
 							emoter_slider->emoter_markers[0] = create_emoter_marker (
 								"Start", start_time, 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 								emoter_slider->marker_rowcol,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 								0, 1, 0, 0,
 								emoter_slider, shared_data );
 							emoter_slider->emoter_markers[marker_count] = create_emoter_marker (
 								"End", end_time,
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 								emoter_slider->marker_rowcol,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 								marker_count, marker_count, 1, 1,
 								emoter_slider, shared_data );
 							if ( REALLOCATE( shared_data->sliders,
@@ -3369,7 +3373,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 									"create_emoter_slider.  Unable to Reallocate slider array");
 							}
 							emoter_slider_make_active( emoter_slider );
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 						}
 						else
 						{
@@ -3387,7 +3391,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 						emoter_slider=(struct Emoter_slider *)NULL;
 					}
 					XmStringFree(label_string);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 				}
 				else
 				{
@@ -3403,7 +3407,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 					"create_emoter_slider.  Could not allocate emoter slider structure");
 				emoter_slider=(struct Emoter_slider *)NULL;
 			}	
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		}
 		else
 		{
@@ -3411,7 +3415,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 				"create_emoter_dialog.  Could not register callbacks");
 			emoter_slider=(struct Emoter_slider *)NULL;
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
@@ -3424,7 +3428,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 	return (emoter_slider);
 } /* create_emoter_slider */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_loadslider_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -3477,7 +3481,7 @@ DESCRIPTION :
 
 	LEAVE;
 } /* emoter_loadslider_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static void emoter_save_slider(struct Emoter_slider *slider,
 	char *filename, struct Emoter_dialog *emoter_dialog)
@@ -3742,7 +3746,7 @@ DESCRIPTION :
 	LEAVE;
 } /* emoter_save_slider */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_saveslider_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -3806,7 +3810,7 @@ DESCRIPTION :
 
 	LEAVE;
 } /* emoter_saveslider_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static int emoter_export_nodes(struct Emoter_dialog *emoter_dialog,
 	char *filename)
@@ -3855,7 +3859,7 @@ DESCRIPTION :
 	LEAVE;
 } /* emoter_export_nodes */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_exportslider_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -3894,7 +3898,7 @@ DESCRIPTION :
 
 	LEAVE;
 } /* emoter_exportslider_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static int emoter_autoplay_timeout(void *emoter_dialog_void)
 /*******************************************************************************
@@ -3961,10 +3965,10 @@ Sets the <emoter_dialog> to autoplay if <play> is true or to stop if <play> is f
 							emoter_dialog->shared->user_interface), 0, 1000,
 						emoter_autoplay_timeout, emoter_dialog);
 			}
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			XmToggleButtonSetState(emoter_dialog->play_button,
 				True, False );
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 		else
 		{
@@ -3977,10 +3981,10 @@ Sets the <emoter_dialog> to autoplay if <play> is true or to stop if <play> is f
 				emoter_dialog->autoplay_timeout =
 					(struct Event_dispatcher_timeout_callback *)NULL;
 			}
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			XmToggleButtonSetState(emoter_dialog->play_button,
 				False, False );
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 		return_code = 1;
 	}
@@ -3995,7 +3999,7 @@ Sets the <emoter_dialog> to autoplay if <play> is true or to stop if <play> is f
 	return(return_code);
 } /* emoter_autoplay_CB */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_playbutton_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -4052,9 +4056,9 @@ DESCRIPTION :
 
 	LEAVE;
 } /* emoter_playbutton_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_movie_loop_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -4101,9 +4105,9 @@ DESCRIPTION :
 
 	LEAVE;
 } /* emoter_movie_loop_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_movie_every_frame_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -4150,9 +4154,9 @@ DESCRIPTION :
 
 	LEAVE;
 } /* emoter_movie_every_frame_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_movie_framerate_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -4194,9 +4198,9 @@ DESCRIPTION :
 
 	LEAVE;
 } /* emoter_movie_framerate_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int emoter_create_movie(struct Emoter_dialog *emoter_dialog,
 	char *filename)
 /*******************************************************************************
@@ -4281,9 +4285,9 @@ DESCRIPTION :
 
 	return (return_code);
 } /* emoter_create_movie */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_movie_play_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -4359,7 +4363,7 @@ DESCRIPTION :
 
 	LEAVE;
 } /* emoter_movie_play_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static int emoter_set_mode_limit(struct Emoter_dialog *emoter_dialog,
 	int new_value )
@@ -4370,9 +4374,9 @@ DESCRIPTION :
 
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	char value_text_string[20];
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	int i, *node_numbers, number_of_nodes, return_code;
 	struct FE_node *node;
 	struct FE_region *minimum_fe_region, *root_fe_region;
@@ -4392,13 +4396,13 @@ DESCRIPTION :
 			new_value = 1;
 		}
 		emoter_dialog->shared->mode_limit = new_value;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		if ( emoter_dialog->mode_text )
 		{
 			sprintf(value_text_string, "%5d", new_value );
 			XmTextSetString(emoter_dialog->mode_text, value_text_string);
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		if ( node_numbers = emoter_dialog->shared->em_object->minimum_nodes )
 		{
 			number_of_nodes = new_value;
@@ -4471,7 +4475,7 @@ DESCRIPTION :
 	return( return_code );
 } /* emoter_set_mode_limit */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_mode_text_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -4511,9 +4515,9 @@ DESCRIPTION :
 
 	LEAVE;
 } /* emoter_mode_text_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_mode_up_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -4546,9 +4550,9 @@ DESCRIPTION :
 
 	LEAVE;
 } /* emoter_mode_up_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_mode_down_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -4581,9 +4585,9 @@ DESCRIPTION :
 
 	LEAVE;
 } /* emoter_mode_down_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_mode_show_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -4624,9 +4628,9 @@ DESCRIPTION :
 
 	LEAVE;
 } /* emoter_mode_show_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_solid_motion_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -4668,9 +4672,9 @@ DESCRIPTION :
 
 	LEAVE;
 } /* emoter_solid_motion_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_input_sequence_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -4722,7 +4726,7 @@ DESCRIPTION :
 
 	LEAVE;
 } /* emoter_input_sequence_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static int emoter_convert_active_slider(struct Emoter_dialog *emoter_dialog)
 /*******************************************************************************
@@ -4748,9 +4752,9 @@ DESCRIPTION :
 		shared = emoter_dialog->shared;
 		active = shared->active_slider;
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		busy_cursor_on((Widget)NULL, emoter_dialog->shared->user_interface );
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		number_of_frames = (int)floor( emoter_dialog->time_maximum -
 			emoter_dialog->time_minimum + 1);
 		if ( ALLOCATE( temp_data, float *, number_of_frames ))
@@ -4933,9 +4937,9 @@ DESCRIPTION :
 					"emoter_convert_active_slider.  Unable to allocate raw data array");
 				return_code = 0;
 			}
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			busy_cursor_off((Widget)NULL, emoter_dialog->shared->user_interface );
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
@@ -4948,7 +4952,7 @@ DESCRIPTION :
 	LEAVE;
 } /* emoter_convert_active_slider */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_convert_raw_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -4988,9 +4992,9 @@ DESCRIPTION :
 
 	LEAVE;
 } /* emoter_convert_raw_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_newslider_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -5030,9 +5034,9 @@ DESCRIPTION :
 
 	LEAVE;
 } /* emoter_newsslider_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_add_marker_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -5121,9 +5125,9 @@ DESCRIPTION :
 
 	LEAVE;
 } /* emoter_newsslider_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_keyframe_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -5478,9 +5482,9 @@ DESCRIPTION :
 
 	LEAVE;
 } /* emoter_keyframe_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_play_value_text_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -5520,9 +5524,9 @@ Handles input from the text widget which displays the current frame timecode
 
 	LEAVE;
 } /* emoter_play_value_text_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void emoter_play_range_text_CB(Widget widget,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -5580,7 +5584,7 @@ Handles input from the text widget which displays the current frame timecode
 
 	LEAVE;
 } /* emoter_play_max_text_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static int Curve_update_emoter_sliders(
 	struct Curve *curve, void *emoter_dialog_void)
@@ -5651,9 +5655,9 @@ Adds new control curves combine sliders.
 			{
 				create_emoter_slider((char *)NULL,
 					name,
-#if defined (MOTIF)					
+#if defined (MOTIF_USER_INTERFACE)					
 					emoter_dialog->slider_form,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 					1.0, shared,
 					shared->number_of_sliders,
 					curve, emoter_dialog, /*no_confirm*/0);
@@ -5716,9 +5720,9 @@ Something has changed globally in the control curve manager.
 } /* emoter_curve_manager_message */
 
 static int create_emoter_dialog(struct Emoter_dialog **emoter_dialog_address,
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget parent, 
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Shared_emoter_slider_data *shared_data)
 /*******************************************************************************
 LAST MODIFIED : 15 June 1998
@@ -5729,7 +5733,7 @@ Create emoter controls.
 {
 	int return_code;
 	struct Emoter_dialog *emoter_dialog = NULL;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	MrmType emoter_dialog_class;
 	static MrmRegisterArg callback_list[]=
 	{
@@ -5785,16 +5789,16 @@ Create emoter controls.
 	{
 		{"emoter_dialog_structure",(XtPointer)NULL},
 	};
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(create_emoter_dialog);
 
 	return_code = 0;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	if (MrmOpenHierarchy_binary_string(emoter_dialog_uidh,sizeof(emoter_dialog_uidh),
 		&emoter_dialog_hierarchy,&emoter_dialog_hierarchy_open))
 	{
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		/* allocate memory */
 		if (ALLOCATE(emoter_dialog, struct Emoter_dialog, 1))
 		{
@@ -5812,7 +5816,7 @@ Create emoter controls.
 			emoter_dialog->shell_list_item = (struct Shell_list_item *)NULL;
 			emoter_dialog->autoplay_timeout = 
 				(struct Event_dispatcher_timeout_callback *)NULL;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			emoter_dialog->widget = NULL;
 			emoter_dialog->play_slider = (Widget)NULL;
 			emoter_dialog->slider_form = (Widget)NULL;
@@ -5825,9 +5829,9 @@ Create emoter controls.
 			emoter_dialog->input_sequence_button = (Widget)NULL;
 			emoter_dialog->movie_control_form = (Widget)NULL;
 			emoter_dialog->movie_framerate_text = (Widget)NULL;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			/* make the dialog shell */
 			if (emoter_dialog->shell = XtVaCreatePopupShell(
 				"The Emotionator",topLevelShellWidgetClass,parent,
@@ -5856,7 +5860,7 @@ Create emoter controls.
 						{
 
 							XtManageChild(emoter_dialog->widget);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 							emoter_set_play_slider_range( emoter_dialog,
 								emoter_dialog->time_minimum,
@@ -5872,7 +5876,7 @@ Create emoter controls.
 								(void *)emoter_dialog,
 								emoter_dialog->shared->curve_manager);
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 							XtRealizeWidget(emoter_dialog->shell);
 
 							if ( emoter_dialog->mode_subform )
@@ -5884,11 +5888,11 @@ Create emoter controls.
 								XtUnmanageChild( emoter_dialog->movie_control_form );
 							}
 							XtPopup(emoter_dialog->shell, XtGrabNone);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 							*(emoter_dialog->dialog_address) = emoter_dialog;
 							return_code = 1;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 						}
 						else
 						{
@@ -5917,30 +5921,30 @@ Create emoter controls.
 					"create_emoter_dialog.  Could not create popup shell.");
 				DEALLOCATE(emoter_dialog);
 			}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"create_emoter_dialog.  Could not allocate emoter_dialog structure");
 		}
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"create_emoter_dialog.  Could not open hierarchy");
 	}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	LEAVE;
 
 	return (return_code);
 } /* create_emoter_dialog */
 
 int bring_up_emoter_dialog(struct Emoter_dialog **emoter_dialog_address,
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget parent, 
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Shared_emoter_slider_data *shared_data)
 /*******************************************************************************
 LAST MODIFIED : 6 April 1998
@@ -5959,17 +5963,17 @@ a time.  This implementation may be changed later.
 		/* does it exist */
 		if (*emoter_dialog_address)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			XtPopup((*emoter_dialog_address)->widget,XtGrabNone);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 			return_code=1;
 		}
 		else
 		{
 			return_code = create_emoter_dialog(emoter_dialog_address,
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 				parent, 
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 				shared_data);
 		}
 	}
@@ -6099,14 +6103,14 @@ in existence, then bring it to the front, otherwise create new one.
 		DESTROY(Option_table)(&option_table);
 		if (return_code)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			if (!create_emoter_slider_data->parent)
 			{
 				display_message(ERROR_MESSAGE,
 					"gfx_create_emoter.  Missing parent widget");
 				return_code = 0;
 			}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 			if (!create_emoter_slider_data->user_interface)
 			{
 				display_message(ERROR_MESSAGE,
@@ -6208,12 +6212,12 @@ in existence, then bring it to the front, otherwise create new one.
 								shared_emoter_slider_data->em_object = em_object;
 								shared_emoter_slider_data->active_slider =
 									(struct Emoter_slider *)NULL;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 								shared_emoter_slider_data->curve_editor_dialog_address =
 									create_emoter_slider_data->curve_editor_dialog_address;
 								shared_emoter_slider_data->top_level
 									= create_emoter_slider_data->parent;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 								shared_emoter_slider_data->time = 1;
 								shared_emoter_slider_data->graphics_buffer_package
 									= create_emoter_slider_data->graphics_buffer_package;
@@ -6237,9 +6241,9 @@ in existence, then bring it to the front, otherwise create new one.
 									= create_emoter_slider_data->io_stream_package;
 								return_code=bring_up_emoter_dialog(
 									create_emoter_slider_data->emoter_dialog_address,
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 									create_emoter_slider_data->parent,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 									shared_emoter_slider_data);
 								return_code=1;
 							}
@@ -6343,8 +6347,8 @@ Executes a GFX MODIFY EMOTER command.
 	};
 	struct Emoter_dialog *emoter_dialog;
 	struct Emoter_slider *emoter_slider;
-	struct Graphics_window *graphics_window;
 	struct Shared_emoter_slider_data *shared;
+	struct Graphics_window *graphics_window;
 
 	ENTER(gfx_modify_emoter);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -6488,16 +6492,16 @@ Executes a GFX MODIFY EMOTER command.
 						if (strcmp(input_sequence, "none"))
 						{
 							emoter_dialog->shared->input_sequence = input_sequence;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 							XmToggleButtonSetState(emoter_dialog->input_sequence_button, True, False );
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 						}
 						else
 						{
 							emoter_dialog->shared->input_sequence = (char *)NULL;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 							XmToggleButtonSetState(emoter_dialog->input_sequence_button, False, False );
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 						}
 						face_changed = 1;
 					}
@@ -6525,36 +6529,36 @@ Executes a GFX MODIFY EMOTER command.
 					if (stop)
 					{
 						emoter_autoplay(emoter_dialog, /*play*/0);
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 						XmToggleButtonSetState(emoter_dialog->play_button,
 							False, False );
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 					}
 					if (rigid_body_motion)
 					{
 						emoter_dialog->shared->show_solid_body_motion = 1;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 						XmToggleButtonSetState( emoter_dialog->solid_motion_button,
 							True, False );
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 						face_changed = 1;
 					}
 					if (no_rigid_body_motion)
 					{
 						emoter_dialog->shared->show_solid_body_motion = 0;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 						XmToggleButtonSetState( emoter_dialog->solid_motion_button,
 							False, False );
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 						face_changed = 1;
 					}
 					if (new_flag)
 					{
 						create_emoter_slider((char *)NULL,
 							"new", 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 							emoter_dialog->slider_form,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 							1, emoter_dialog->shared,
 							emoter_dialog->shared->number_of_sliders,
 							(struct Curve *)NULL,
@@ -6572,9 +6576,9 @@ Executes a GFX MODIFY EMOTER command.
 						}
 						create_emoter_slider(filename,
 							temp_filename, 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 							emoter_dialog->slider_form,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 							1, emoter_dialog->shared,
 							emoter_dialog->shared->number_of_sliders,
 							(struct Curve *)NULL,
@@ -6587,13 +6591,13 @@ Executes a GFX MODIFY EMOTER command.
 							save_filename, emoter_dialog);
 						DEALLOCATE(save_filename);
 					}
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 					if (movie_filename)
 					{
 						emoter_create_movie(emoter_dialog, movie_filename);
 						DEALLOCATE(movie_filename);
 					}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 					if (face_changed)
 					{
 						emoter_update_face (emoter_dialog->shared);
@@ -6608,12 +6612,12 @@ Executes a GFX MODIFY EMOTER command.
 						}
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 					}
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 					if (keyframe)
 					{
 						emoter_keyframe_CB(emoter_dialog->widget, NULL, NULL);
 					}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 				}
 			}
 			else

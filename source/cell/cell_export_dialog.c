@@ -45,13 +45,13 @@ The export dialog used to export cell variables to ipcell and ipmatc files
 #if defined (CELL_DISTRIBUTED)
 
 #include <string.h>
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/Xm.h>
 #include <Xm/AtomMgr.h>
 #include <Xm/MwmUtil.h>
 #include <Xm/DialogS.h>
 #include <Xm/Protocols.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "cell/cell_export_dialog.h"
 #include "cell/cell_export_dialog.uidh"
 #include "choose/choose_element_group.h"
@@ -65,10 +65,10 @@ The export dialog used to export cell variables to ipcell and ipmatc files
 Module variables
 ================
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int export_dialog_hierarchy_open=0;
 static MrmHierarchy export_dialog_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Module types

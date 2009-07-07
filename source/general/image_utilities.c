@@ -48,6 +48,10 @@ Utilities for handling images.
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #include "command/parser.h"
 #include "general/debug.h"
 #include "general/enumerator_private.h"

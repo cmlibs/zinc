@@ -66,7 +66,8 @@ Allows the construction field.component name to automatically make a component
 wrapper for field and add it to the manager.
 ==============================================================================*/
 {
-	char *command_string, *current_token, *field_component_name, *temp_name;
+	char *command_string, *field_component_name, *temp_name;
+	const char *current_token;
 	int component_no, i, error, finished, index, number_of_components,
 		number_of_values, return_code;
 	double *values;
@@ -376,7 +377,8 @@ Computed_field_component.
 ???RC.  Does not ACCESS the field (unlike set_Computed_field).
 ==============================================================================*/
 {
-	char *current_token,*field_component_name,*field_name,*temp_name;
+	const char *current_token;
+	char *field_component_name,*field_name,*temp_name;
 	int component_no,i,return_code;
 	struct Computed_field *field;
 	struct Computed_field_component *field_component;

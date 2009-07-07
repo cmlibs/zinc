@@ -49,6 +49,9 @@ interest and set scene_viewer values directly.
 #if !defined (GRAPHICS_WINDOW_H)
 #define GRAPHICS_WINDOW_H
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 #include "general/image_utilities.h"
 #include "general/list.h"
 #include "general/manager.h"
@@ -63,9 +66,9 @@ Global constants
 ----------------
 */
 
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
+#if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
 #define USE_CMGUI_GRAPHICS_WINDOW
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
+#endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
 
 /*
 Global/Public types

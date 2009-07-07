@@ -44,6 +44,9 @@ Management routines for the comfile window.
 extern "C" {
 #include <stdio.h>
 #include <string.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 #include "general/debug.h"
 #include "command/command.h"
 #include "general/indexed_list_private.h"

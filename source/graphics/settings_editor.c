@@ -42,12 +42,12 @@ Provides the widgets to manipulate element group settings.
  *
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/Xm.h>
 #include <Xm/PushBG.h>
 #include <Xm/RowColumn.h>
 #include <Xm/ToggleB.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "choose/choose_computed_field.h"
 #include "choose/choose_graphical_material.h"
 #include "choose/choose_enumerator.h"
@@ -78,10 +78,10 @@ static char settings_editor_uidh[] =
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int settings_editor_hierarchy_open=0;
 static MrmHierarchy settings_editor_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 struct Settings_editor
 /*******************************************************************************

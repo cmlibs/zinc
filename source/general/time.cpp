@@ -41,7 +41,11 @@ Defines the gettimeofday and relevant structure for UNIX and WIN32_SYSTEM
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if defined (WIN32_SYSTEM)
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
+#if defined (WIN32)
 extern "C" {
 #include <windows.h>
 #include "general/time.h"

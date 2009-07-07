@@ -66,6 +66,10 @@ algorithm described in Kenwright. (arrays are shifted by -1)
 #include <math.h>
 
 /* #define DEBUG */
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 
 #if defined (DEBUG)
 #  if defined (UNIX)

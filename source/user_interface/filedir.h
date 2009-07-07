@@ -44,6 +44,10 @@ Routines for opening files using Motif widgets.
 #if !defined (FILEDIR_H)
 #define FILEDIR_H
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #include <stddef.h>
 #include "user_interface/user_interface.h"
 
@@ -88,10 +92,10 @@ used to keep track of the widgets involved.
 	 struct Execute_command *execute_command;
 #endif /*defined (WX_USER_INTERFACE)*/
 	/* private */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget activation,file_list,selection_shell,selection,selection_label,
 		selection_text,warning_box,warning_shell;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	OPENFILENAME open_file_name;
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -103,7 +107,7 @@ used to keep track of the widgets involved.
 Global functions
 ----------------
 */
-struct File_open_data *create_File_open_data(char *filter_extension,
+struct File_open_data *create_File_open_data(const char *filter_extension,
 	enum File_type type,File_operation operation,void *arguments,
 	 int allow_direct_to_printer,struct User_interface *user_interface 
 #if defined (WX_USER_INTERFACE)
@@ -129,9 +133,9 @@ frees the memeory for <**file_open_data> and changes <*file_open_data> to NULL.
 ==============================================================================*/
 
 void open_file_and_read(
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget widget,XtPointer client_data,XtPointer call_data
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	struct File_open_data *file_open_data
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -143,16 +147,16 @@ void open_file_and_read(
 LAST MODIFIED : 20 April 1997
 
 DESCRIPTION :
-Expects a pointer to a File_open_data structure as the <client_data> (MOTIF).
+Expects a pointer to a File_open_data structure as the <client_data> (MOTIF_USER_INTERFACE).
 Displays a list of the file names matching the <filter>.  After the user selects
 a file name the <file_operation> is performed on the file with the <arguments>.
 ???DB.  Make uil callback a different routine ?
 ==============================================================================*/
 
 void open_file_and_write(
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget widget,XtPointer client_data,XtPointer call_data
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	struct File_open_data *file_open_data
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -164,7 +168,7 @@ void open_file_and_write(
 LAST MODIFIED : 21 April 1997
 
 DESCRIPTION :
-Expects a pointer to a File_open_data structure as the <client_data> (MOTIF).
+Expects a pointer to a File_open_data structure as the <client_data> (MOTIF_USER_INTERFACE).
 Prompts the user for the name of file, omitting the <extension>, to write to.
 The <file_operation> with the <user_arguments> and the output directed to the
 specified file.
@@ -181,9 +185,9 @@ Register a callback that gets called when the file dialog is cancelled.
 ==============================================================================*/
 
 #if defined (WX_USER_INTERFACE)
-int filedir_compressing_process_wx_compress(char *com_file_name, char *data_file_name, 
-	 char *elem_file_name, char *node_file_name, int data_return_code, int elem_return_code, 
-	 int node_return_code, char *file_name, char *temp_data ,char *temp_elem, char *temp_node);
+int filedir_compressing_process_wx_compress(const char *com_file_name, const char *data_file_name, 
+	 const char *elem_file_name, const char *node_file_name, int data_return_code, int elem_return_code, 
+	 int node_return_code, const char *file_name, const char *temp_data ,const char *temp_elem, const char *temp_node);
 /*******************************************************************************
 LAST MODIFIED : 17 Aug 2007
 

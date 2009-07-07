@@ -4590,7 +4590,7 @@ LAST MODIFIED : 29 November 1999
 DESCRIPTION :
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct Curve_definition *curve_definition;
 	struct Modifier_entry
@@ -4668,7 +4668,7 @@ LAST MODIFIED : 29 November 1999
 DESCRIPTION :
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct Curve_definition *curve_definition;
 	struct Modifier_entry
@@ -4767,7 +4767,7 @@ DESCRIPTION :
 			{"CURVE_NAME",NULL,NULL,define_Curve_fe_basis_type},
 			{NULL,NULL,NULL,NULL}
 		};
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct Curve_definition curve_definition;
 	struct Curve_command_data *command_data;
@@ -4875,7 +4875,7 @@ DESCRIPTION :
 Executes a GFX DESTROY CURVE command.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct MANAGER(Curve) *curve_manager;
 	struct Curve *curve;
@@ -5027,7 +5027,7 @@ DESCRIPTION :
 Modifier function to set the curve from a command.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct MANAGER(Curve) *curve_manager;
 	struct Curve *temp_curve,**curve_address;

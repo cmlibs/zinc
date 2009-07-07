@@ -42,7 +42,11 @@ DESCRIPTION :
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <stdlib.h>
-#if !defined (WIN32_SYSTEM)
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
+#if !defined (WIN32)
 #include <unistd.h>
 #endif /* !defined (WIN32_SYSTEM) */
 #include <sys/types.h>

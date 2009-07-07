@@ -41,6 +41,9 @@ This provides an object which interfaces between a event_dispatcher and Cmgui
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 extern "C" {
 #include <math.h>
 #include <stdio.h>

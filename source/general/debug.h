@@ -53,6 +53,10 @@ assignments in the ASSERT_IF expression.
 
 #include <stdarg.h>
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 /*
 Macros
 ------
@@ -169,7 +173,7 @@ is swallowed with the call USE_PARAMETER(dummy_void); at the start of function.
 #endif /* defined (USE_PARAMETER_ON) */
 
 #if !defined (OPTIMISED)
-char *allocate(unsigned long int size,char *file_name,int line_number,char *type);
+char *allocate(unsigned long int size, const char *file_name,int line_number,const char *type);
 /*******************************************************************************
 LAST MODIFIED : 7 January 1998
 
@@ -177,7 +181,7 @@ DESCRIPTION :
 Wrapper for malloc.
 ==============================================================================*/
 
-void deallocate(char *ptr,char *file_name,int line_number);
+void deallocate(char *ptr,const char *file_name,int line_number);
 /*******************************************************************************
 LAST MODIFIED : 7 January 1998
 
@@ -185,8 +189,8 @@ DESCRIPTION :
 Wrapper for free.
 ==============================================================================*/
 
-char *reallocate(char *ptr,unsigned long int size,char *file_name,int line_number,
-	char *type);
+char *reallocate(char *ptr,unsigned long int size,const char *file_name,int line_number,
+	const char *type);
 /*******************************************************************************
 LAST MODIFIED : 7 January 1998
 

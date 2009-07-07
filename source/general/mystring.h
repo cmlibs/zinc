@@ -129,7 +129,7 @@ occurred thus do not add to the string, and do not result in further errors.
 It is up to the calling function to deallocate the returned string.
 ==============================================================================*/
 
-int check_suffix(char **string, char *suffix);
+int check_suffix(char **string, const char *suffix);
 /*******************************************************************************
 LAST MODIFIED : 24 September 1998
 
@@ -148,7 +148,7 @@ DESCRIPTION :
 Returns an allocated copy of <source_string>, or NULL in case of error.
 ==============================================================================*/
 
-int string_matches_without_whitespace(char *input_string,char *match_string);
+int string_matches_without_whitespace(char *input_string,const char *match_string);
 /*******************************************************************************
 LAST MODIFIED : 2 September 1999
 

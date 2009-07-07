@@ -72,7 +72,7 @@ Global Functions
 
 struct Node_viewer *CREATE(Node_viewer)(
 	struct Node_viewer **node_viewer_address,
-	char *dialog_title,
+	const char *dialog_title,
 	struct FE_node *initial_node,
 	struct Cmiss_region *root_region, int use_data,
 	struct FE_node_selection *node_selection,

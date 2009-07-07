@@ -44,12 +44,12 @@ hierarchical cascading menu system.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <string.h>
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/Xm.h>
 #include <Xm/PushBG.h>
 #include <Xm/CascadeBG.h>
 #include <Xm/RowColumn.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "choose/chooser.h"

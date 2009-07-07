@@ -42,15 +42,19 @@ Scene input.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 extern "C" {
 #include <math.h>
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/Protocols.h>
 #include <Xm/MwmUtil.h>
 #include <Xm/Xm.h>
 #include <Xm/ToggleBG.h>
 #include "choose/choose_computed_field.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -69,13 +73,13 @@ extern "C" {
 #include "node/node_operations.h"
 #include "node/node_tool.h"
 #include "finite_element/finite_element.h"
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static char node_tool_uidh[] =
 #include "node/node_tool.uidh"
 	;
 #include "motif/image_utilities.h"
 #include "region/cmiss_region_chooser.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "region/cmiss_region.h"
 #include "time/time_keeper.h"
 #include "user_interface/gui_dialog_macros.h"
@@ -97,10 +101,10 @@ Module variables
 ----------------
 */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int node_tool_hierarchy_open=0;
 static MrmHierarchy node_tool_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static char Interactive_tool_node_type_string[] = "node_tool";
 
@@ -183,7 +187,7 @@ changes in node position and derivatives etc.
 	struct FE_element *element;
 	/* number of nodes that have been set in the element being created */
 	int number_of_clicked_nodes;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Display *display;
 	struct Cmiss_region_chooser *cmiss_region_chooser;
 	Widget coordinate_field_form,coordinate_field_widget,create_button,
@@ -192,10 +196,10 @@ changes in node position and derivatives etc.
 		streaming_create_button,command_field_button,command_field_form,
 		command_field_widget;
 	Widget widget,window_shell;
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 	/* without cmiss_region_chooser need somewhere to store the region path */
 	char *current_region_path;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 	wxNodeTool *wx_node_tool;
 	struct MANAGER(Computed_field) *computed_field_manager;
@@ -262,7 +266,7 @@ Module functions
 ----------------
 */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,coordinate_field_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,create_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,constrain_to_surface_button)
@@ -274,7 +278,7 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,select_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,streaming_create_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,command_field_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,command_field_form)
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /* Prototype */
 #if defined (WX_USER_INTERFACE)
@@ -1345,7 +1349,7 @@ try to enforce that the node is created on that element.
 	return (merged_node);
 } /* Node_tool_create_node_at_interaction_volume */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Node_tool_close_CB(Widget widget,void *node_tool_void,
 	void *call_data)
 /*******************************************************************************
@@ -1375,9 +1379,9 @@ Function pops down dialog as a response,
 	}
 	LEAVE;
 } /* Node_tool_close_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Node_tool_create_button_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1404,9 +1408,9 @@ response to interactive events.
 	}
 	LEAVE;
 } /* Node_tool_create_button_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Node_tool_define_button_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1433,9 +1437,9 @@ response to interactive events.
 	}
 	LEAVE;
 } /* Node_tool_define_button_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Node_tool_edit_button_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1462,9 +1466,9 @@ response to interactive events.
 	}
 	LEAVE;
 } /* Node_tool_edit_button_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Node_tool_motion_update_button_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1491,9 +1495,9 @@ during the edit - if off then updates only once at the end.
 	}
 	LEAVE;
 } /* Node_tool_motion_update_button_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Node_tool_select_button_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1520,9 +1524,9 @@ response to interactive events.
 	}
 	LEAVE;
 } /* Node_tool_select_button_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Node_tool_streaming_create_button_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1549,9 +1553,9 @@ ie. streaming in response to interactive events = user drags.
 	}
 	LEAVE;
 } /* Node_tool_streaming_create_button_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Node_tool_constrain_to_surface_button_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1578,9 +1582,9 @@ elements or just halfway between near and far.
 	}
 	LEAVE;
 } /* Node_tool_constrain_to_surface_button_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Node_tool_command_field_button_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1624,9 +1628,9 @@ Callback from toggle button enabling a command_field to be selected.
 	}
 	LEAVE;
 } /* Node_tool_command_field_button_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Node_tool_update_command_field(Widget widget,
 	void *node_tool_void, void *command_field_void)
 /*******************************************************************************
@@ -1656,9 +1660,9 @@ Callback for change of command_field.
 	}
 	LEAVE;
 } /* Node_tool_update_command_field */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Node_tool_update_region(Widget widget,
 	void *node_tool_void,void *region_void)
 /*******************************************************************************
@@ -1685,9 +1689,9 @@ Callback for change of region that we are working in.
 	}
 	LEAVE;
 } /* Node_tool_update_region */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Node_tool_update_coordinate_field(Widget widget,
 	void *node_tool_void,void *coordinate_field_void)
 /*******************************************************************************
@@ -1713,9 +1717,9 @@ Callback for change of coordinate_field.
 	}
 	LEAVE;
 } /* Node_tool_update_coordinate_field */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Node_tool_destroy_selected_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1756,9 +1760,9 @@ Attempts to destroy all the nodes currently in the global selection.
 	}
 	LEAVE;
 } /* Node_tool_destroy_selected_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Node_tool_undefine_selected_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1821,7 +1825,7 @@ Attempts to undefine all the nodes currently in the global selection.
 	}
 	LEAVE;
 } /* Node_tool_undefine_selected_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static void Node_tool_reset(void *node_tool_void)
 /*******************************************************************************
@@ -2394,19 +2398,19 @@ DESCRIPTION :
 Fetches the appropriate icon for the interactive tool.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	char *icon_name;
 	Display *display;
 	Pixel background_pixel, foreground_pixel;
 	Pixmap pixmap;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Cmgui_image *image;
 	struct Node_tool *node_tool;
 
 	ENTER(node_tool_get_icon);
 	if ((node_tool=(struct Node_tool *)node_tool_void))
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		if (MrmOpenHierarchy_binary_string(node_tool_uidh,sizeof(node_tool_uidh),
 			&node_tool_hierarchy,&node_tool_hierarchy_open))
 		{
@@ -2440,13 +2444,13 @@ Fetches the appropriate icon for the interactive tool.
 				"Could not open heirarchy");
 			image = (struct Cmgui_image *)NULL;
 		}
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 		USE_PARAMETER(foreground);
 		USE_PARAMETER(background);
 		USE_PARAMETER(node_tool);
 		display_message(WARNING_MESSAGE, "Node_tool_get_icon.  "
 			"Not implemented for this user interface.");
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
@@ -3134,9 +3138,9 @@ Copies the state of one node tool to another.
 			destination_node_tool->constrain_to_surface= source_node_tool->constrain_to_surface;
 			destination_node_tool->command_field = source_node_tool->command_field;
 			destination_node_tool->element_xi_field = source_node_tool->element_xi_field;
-#if ! defined (MOTIF)
+#if ! defined (MOTIF_USER_INTERFACE)
 			destination_node_tool->current_region_path= source_node_tool->current_region_path;	
-#endif /* ! defined (MOTIF) */
+#endif /* ! defined (MOTIF_USER_INTERFACE) */
 			destination_node_tool->element_create_enabled = source_node_tool->element_create_enabled;
 			destination_node_tool->element_dimension = source_node_tool->element_dimension;
 			Node_tool_set_Cmiss_region(destination_node_tool,
@@ -3202,7 +3206,7 @@ in this region only.
 				node_tool->region);
 			if (node_tool->wx_node_tool)
 				node_tool->wx_node_tool->wx_Node_tool_set_field_chooser_manager();
-#elif defined (MOTIF)
+#elif defined (MOTIF_USER_INTERFACE)
 			struct MANAGER(Computed_field) *computed_field_manager;
 			computed_field_manager = Cmiss_region_get_Computed_field_manager(
 				node_tool->region);
@@ -3263,7 +3267,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 {
 	char *initial_path;
 	const char *tool_display_name,*tool_name;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Atom WM_DELETE_WINDOW;
 	int init_widgets;
 	MrmType node_tool_dialog_class;
@@ -3318,7 +3322,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 	};
 	struct Callback_data callback;
 	struct Cmiss_region *region;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Node_tool *node_tool;
 
@@ -3390,7 +3394,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			Node_tool_set_Cmiss_region(node_tool, node_tool->root_region);
 			node_tool->current_region_path = (char *)NULL;
 			node_tool->tool_position=wxPoint(0,0);
-#elif !defined (MOTIF)
+#elif !defined (MOTIF_USER_INTERFACE)
 			node_tool->current_region_path = (char *)NULL;
 #endif /*defined (WX_USER_INTERFACE)*/
 			node_tool->interactive_tool=CREATE(Interactive_tool)(
@@ -3416,7 +3420,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->gt_element_settings=(struct GT_element_settings *)NULL;
 			node_tool->last_interaction_volume=(struct Interaction_volume *)NULL;
 			node_tool->rubber_band=(struct GT_object *)NULL;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			/* initialise widgets */
 			node_tool->coordinate_field_form=(Widget)NULL;
 			node_tool->coordinate_field_widget=(Widget)NULL;
@@ -3626,11 +3630,11 @@ structure itself.
 	if (node_tool_address&&
 		(node_tool= *node_tool_address))
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		REMOVE_OBJECT_FROM_MANAGER(Interactive_tool)(
 			node_tool->interactive_tool,
 			node_tool->interactive_tool_manager);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		Node_tool_reset((void *)node_tool);
 		REACCESS(GT_object)(&(node_tool->rubber_band),(struct GT_object *)NULL);
 		DEACCESS(Graphical_material)(&(node_tool->rubber_band_material));
@@ -3642,7 +3646,7 @@ structure itself.
 		if (node_tool->wx_node_tool)
 			 node_tool->wx_node_tool->Destroy();
 #endif /*(WX_USER_INTERFACE)*/
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		if (node_tool->window_shell)
 		{
 			destroy_Shell_list_item_from_shell(&(node_tool->window_shell),
@@ -3654,7 +3658,7 @@ structure itself.
 		{
 			 DEALLOCATE(node_tool->current_region_path);
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		DEALLOCATE(*node_tool_address);
 		return_code=1;
 	}
@@ -3681,7 +3685,7 @@ Pops up a dialog for editing settings of the Node_tool.
 	ENTER(Node_tool_pop_up_dialog);
 	if (node_tool)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		XtPopup(node_tool->window_shell, XtGrabNone);
 		/* make sure in addition that it is not shown as an icon */
 		XtVaSetValues(node_tool->window_shell, XmNiconic, False, NULL);
@@ -3732,12 +3736,12 @@ Hides the dialog for editing settings of the Node_tool.
 	ENTER(Node_tool_pop_down_dialog);
 	if (node_tool)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		XtPopdown(node_tool->window_shell);
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 		display_message(ERROR_MESSAGE, "Node_tool_pop_down_dialog.  "
 			"No dialog implemented for this User Interface");
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		return_code = 1;
 	}
 	else
@@ -3797,11 +3801,11 @@ are on.
 		if (coordinate_field != node_tool->coordinate_field)
 		{
 			node_tool->coordinate_field=coordinate_field;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			/* make sure the current field is shown on the widget */
 			CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
 				node_tool->coordinate_field_widget,node_tool->coordinate_field);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 			if (node_tool->wx_node_tool)
 			{
@@ -3860,9 +3864,9 @@ on a mouse button press. Also ensures define is enabled if create is.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	int button_state;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(Node_tool_set_create_enabled);
 	if (node_tool)
@@ -3889,7 +3893,7 @@ on a mouse button press. Also ensures define is enabled if create is.
 		{
 			node_tool->create_enabled=create_enabled;
 			/* make sure button shows current state */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			if (XmToggleButtonGadgetGetState(node_tool->create_button))
 			{
 				button_state=1;
@@ -3903,7 +3907,7 @@ on a mouse button press. Also ensures define is enabled if create is.
 				XmToggleButtonGadgetSetState(node_tool->create_button,
 					/*state*/node_tool->create_enabled,/*notify*/False);
 			}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 	}
 	else
@@ -3955,9 +3959,9 @@ or individually selected existing nodes.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	int button_state;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(Node_tool_set_define_enabled);
 	if (node_tool)
@@ -3986,7 +3990,7 @@ or individually selected existing nodes.
 		if (define_enabled != node_tool->define_enabled)
 		{
 			node_tool->define_enabled=define_enabled;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			/* make sure button shows current state */
 			if (XmToggleButtonGadgetGetState(node_tool->define_button))
 			{
@@ -4001,7 +4005,7 @@ or individually selected existing nodes.
 				XmToggleButtonGadgetSetState(node_tool->define_button,
 					/*state*/node_tool->define_enabled,/*notify*/False);
 			}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 	}
 	else
@@ -4052,9 +4056,9 @@ events, not just at the end of a mouse gesture.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	int button_state;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(Node_tool_set_edit_enabled);
 	if (node_tool)
@@ -4067,7 +4071,7 @@ events, not just at the end of a mouse gesture.
 		if (edit_enabled != node_tool->edit_enabled)
 		{
 			node_tool->edit_enabled=edit_enabled;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			/* make sure button shows current state */
 			if (XmToggleButtonGadgetGetState(node_tool->edit_button))
 			{
@@ -4082,7 +4086,7 @@ events, not just at the end of a mouse gesture.
 				XmToggleButtonGadgetSetState(node_tool->edit_button,
 					/*state*/node_tool->edit_enabled,/*notify*/False);
 			}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 		return_code=1;
 	}
@@ -4192,9 +4196,9 @@ events, not just at the end of a mouse gesture.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	int button_state;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(Node_tool_set_motion_update_enabled);
 	if (node_tool)
@@ -4207,7 +4211,7 @@ events, not just at the end of a mouse gesture.
 		if (motion_update_enabled != node_tool->motion_update_enabled)
 		{
 			node_tool->motion_update_enabled=motion_update_enabled;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			/* make sure button shows current state */
 			if (XmToggleButtonGadgetGetState(node_tool->motion_update_button))
 			{
@@ -4222,7 +4226,7 @@ events, not just at the end of a mouse gesture.
 				XmToggleButtonGadgetSetState(node_tool->motion_update_button,
 					/*state*/node_tool->motion_update_enabled,/*notify*/False);
 			}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 		return_code=1;
 	}
@@ -4253,7 +4257,7 @@ Up to the calling function to DEALLOCATE the returned path.
 	ENTER(Node_tool_get_region_path);
 	if (node_tool && path_address)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		return_code = Cmiss_region_chooser_get_path(node_tool->cmiss_region_chooser,
 			path_address);
 #elif defined (WX_USER_INTERFACE)
@@ -4278,7 +4282,7 @@ Up to the calling function to DEALLOCATE the returned path.
 			*path_address = (char *)NULL;
 			return_code = 0;
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
@@ -4332,7 +4336,7 @@ Sets the <path> to the region/FE_region where nodes created by
 	ENTER(Node_tool_set_region_path);
 	if (node_tool && path)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		Cmiss_region_chooser_set_path(node_tool->cmiss_region_chooser, path);
 		region = (struct Cmiss_region *)NULL;
 		Cmiss_region_chooser_get_region(node_tool->cmiss_region_chooser, &region);
@@ -4356,7 +4360,7 @@ Sets the <path> to the region/FE_region where nodes created by
 				path, &region);
 		}
 		return_code = Node_tool_set_Cmiss_region(node_tool, region);
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 		if (return_code = Cmiss_region_get_region_from_path(node_tool->root_region,
 					path, &region))
 		{
@@ -4367,7 +4371,7 @@ Sets the <path> to the region/FE_region where nodes created by
 			 node_tool->current_region_path = duplicate_string(path);
 			 return_code = Node_tool_set_Cmiss_region(node_tool, region);
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
@@ -4416,9 +4420,9 @@ Sets flag controlling whether existing nodes can be selected.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	int button_state;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(Node_tool_set_select_enabled);
 	if (node_tool)
@@ -4431,7 +4435,7 @@ Sets flag controlling whether existing nodes can be selected.
 		if (select_enabled != node_tool->select_enabled)
 		{
 			node_tool->select_enabled=select_enabled;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			/* make sure button shows current state */
 			if (XmToggleButtonGadgetGetState(node_tool->select_button))
 			{
@@ -4446,7 +4450,7 @@ Sets flag controlling whether existing nodes can be selected.
 				XmToggleButtonGadgetSetState(node_tool->select_button,
 					/*state*/node_tool->select_enabled,/*notify*/False);
 			}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 		return_code=1;
 	}
@@ -4499,9 +4503,9 @@ created as the user drags the mouse around.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	int button_state;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(Node_tool_set_streaming_create_enabled);
 	if (node_tool)
@@ -4514,7 +4518,7 @@ created as the user drags the mouse around.
 		if (streaming_create_enabled != node_tool->streaming_create_enabled)
 		{
 			node_tool->streaming_create_enabled = streaming_create_enabled;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			/* make sure button shows current state */
 			if (XmToggleButtonGadgetGetState(node_tool->streaming_create_button))
 			{
@@ -4529,7 +4533,7 @@ created as the user drags the mouse around.
 				XmToggleButtonGadgetSetState(node_tool->streaming_create_button,
 					/*state*/node_tool->streaming_create_enabled, /*notify*/False);
 			}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 		return_code = 1;
 	}
@@ -4582,9 +4586,9 @@ on the closest surface element or just halfway between near and far.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	int button_state;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(Node_tool_set_constrain_to_surface);
 	if (node_tool)
@@ -4597,7 +4601,7 @@ on the closest surface element or just halfway between near and far.
 		if (constrain_to_surface != node_tool->constrain_to_surface)
 		{
 			node_tool->constrain_to_surface = constrain_to_surface;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			/* make sure button shows current state */
 			if (XmToggleButtonGadgetGetState(node_tool->constrain_to_surface_button))
 			{
@@ -4612,7 +4616,7 @@ on the closest surface element or just halfway between near and far.
 				XmToggleButtonGadgetSetState(node_tool->constrain_to_surface_button,
 					/*state*/node_tool->constrain_to_surface, /*notify*/False);
 			}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 		return_code = 1;
 	}
@@ -4724,9 +4728,9 @@ DESCRIPTION :
 Sets the command_field to be executed when the node is clicked on in the <node_tool>.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	int field_set;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Node_tool_set_command_field);
@@ -4737,7 +4741,7 @@ Sets the command_field to be executed when the node is clicked on in the <node_t
 		if (command_field != node_tool->command_field)
 		{
 			node_tool->command_field = command_field;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			if (command_field)
 			{
 				CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
@@ -4747,7 +4751,7 @@ Sets the command_field to be executed when the node is clicked on in the <node_t
 			XtVaSetValues(node_tool->command_field_button,
 				XmNset, field_set, NULL);
 			XtSetSensitive(node_tool->command_field_widget, field_set);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 	}
 	else

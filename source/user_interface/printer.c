@@ -66,7 +66,7 @@ Open the <printer>.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #define XmNprinterBackgroundColour "printerBackgroundColour"
 #define XmCPrinterBackgroundColour "PrinterBackgroundColour"
 #define XmNprinterForegroundColour "printerForegroundColour"
@@ -159,13 +159,13 @@ Open the <printer>.
 		}
 	};
 	XColor colour;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(open_printer);
 	if (printer&&user_interface)
 	{
 		return_code=0;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 			printer,resources,XtNumber(resources),NULL);
 		colour.pixel=printer->background_colour_pixel;
@@ -183,7 +183,7 @@ Open the <printer>.
 		printer->foreground_colour.green=(float)(colour.green)/65535.;
 		printer->foreground_colour.blue=(float)(colour.blue)/65535.;
 		return_code=1;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{

@@ -83,6 +83,10 @@ endif
 #if !defined (VIEW_H)
 #define VIEW_H
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #include "dof3/dof3.h"
 #include "general/callback_motif.h"
 #include "view/camera.h"

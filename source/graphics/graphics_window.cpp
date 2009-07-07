@@ -47,11 +47,14 @@ interest and set scene_viewer values directly.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 extern "C" {
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/Protocols.h>
 #include <Xm/PushBG.h>
 #include <Xm/DialogS.h>
@@ -61,7 +64,7 @@ extern "C" {
 #include <Mrm/MrmDecls.h>
 #include "choose/choose_enumerator.h"
 #include "colour/edit_var.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "command/parser.h"
 #include "general/debug.h"
 #include "general/geometry.h"
@@ -73,11 +76,11 @@ extern "C" {
 #include "general/photogrammetry.h"
 #include "graphics/colour.h"
 #include "graphics/graphics_window.h"
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static char graphics_window_uidh[] = 
 #include "graphics/graphics_window.uidh"
 	;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 }
 #include "graphics/graphics_window_private.hpp"
 #if defined (WX_USER_INTERFACE)
@@ -124,10 +127,10 @@ extern "C" {
 #include "icon/cross.xpm"
 #include "icon/cross_selected.xpm"
 #endif /* defined (WX_USER_INTERFACE) */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include "interaction/interactive_toolbar_widget.h"
 #include "user_interface/gui_dialog_macros.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 /* for writing bitmap to file: */
@@ -173,7 +176,7 @@ Contains information for a graphics window.
 	struct MANAGER(Graphics_window) *graphics_window_manager;
 	struct Graphics_buffer_package *graphics_buffer_package;
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	/* widgets on the Graphics_window */
 	Widget control_panel,viewing_form,viewing_area1,viewing_area2,viewing_area3,viewing_area4,
 		view_all_button,print_button,time_edit_form,time_edit_widget,
@@ -283,10 +286,10 @@ struct Graphics_window_ortho_axes
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int graphics_window_hierarchy_open=0;
 static MrmHierarchy graphics_window_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Module functions
@@ -296,7 +299,7 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Graphics_window, \
         name,const char *,strcmp)
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Graphics_window)
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
         Graphics_window,control_panel)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
@@ -329,7 +332,7 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
         Graphics_window,ortho_front_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
         Graphics_window,interactive_toolbar_form)
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	struct MANAGER(Interactive_tool) *Graphics_window_get_interactive_tool_manager(struct Graphics_window *window);
 /*******************************************************************************
@@ -341,7 +344,7 @@ Prototype.
 
 
 
-	static int axis_name_to_axis_number(char *axis_name)
+	static int axis_name_to_axis_number(const char *axis_name)
 /*******************************************************************************
 LAST MODIFIED : 16 December 1997
 
@@ -470,7 +473,7 @@ orthographic up and front directions from the Xdefaults file.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #define XmNgraphicsWindowOrthoUpAxis "graphicsWindowOrthoUpAxis"
 #define XmCGraphicsWindowOrthoUpAxis "GraphicsWindowOrthoUpAxis"
 #define XmNgraphicsWindowOrthoFrontAxis "graphicsWindowOrthoFrontAxis"
@@ -558,12 +561,12 @@ orthographic up and front directions from the Xdefaults file.
 			const_cast<char*>("1.0")
 		}
 	};
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(Graphics_window_read_defaults);
 	if (graphics_window)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		up_axis=0;
 		front_axis=0;
 		graphics_window_defaults.up_axis_name=(char *)NULL;
@@ -593,9 +596,9 @@ orthographic up and front directions from the Xdefaults file.
 		graphics_window->default_zoom_rate=
 			graphics_window_defaults.zoom_rate;
 		return_code=1;
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 		return_code=1;	
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
@@ -643,7 +646,7 @@ Called when "close" is selected from the window menu, or it is double clicked.
 } /* Graphics_window_gtk_close_CB */
 #endif /* defined (GTK_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Graphics_window_close_CB(Widget caller,
 	void *graphics_window_void,void *cbs)
 /*******************************************************************************
@@ -681,9 +684,9 @@ If it is not managed, can't destroy it here.
 	}
 	LEAVE;
 } /* Graphics_window_close_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Graphics_window_destroy_CB(Widget caller,
 	XtPointer user_data,XtPointer caller_data)
 /*******************************************************************************
@@ -701,7 +704,7 @@ Keep in case a use is found for it.
 	USE_PARAMETER(caller_data);
 	LEAVE;
 } /* Graphics_window_destroy_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static int Graphics_window_set_interactive_tool(
 	struct Graphics_window *graphics_window,
@@ -719,11 +722,11 @@ toolbar to match the selection.
 	ENTER(Graphics_window_set_interactive_tool);
 	if (graphics_window && graphics_window->scene_viewer_array)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		if (interactive_toolbar_widget_set_current_interactive_tool(
 			graphics_window->interactive_toolbar_widget,interactive_tool))
 		{
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 			graphics_window->interactive_tool=interactive_tool;
 			if (Interactive_tool_is_Transform_tool(interactive_tool))
 			{
@@ -739,7 +742,7 @@ toolbar to match the selection.
 					graphics_window->scene_viewer_array[pane_no],interactive_tool);
 			}
 			return_code=1;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		}
 		else
 		{
@@ -747,7 +750,7 @@ toolbar to match the selection.
 				"Graphics_window_set_interactive_tool.  Could not update toolbar");
 			return_code=0;
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
@@ -760,7 +763,7 @@ toolbar to match the selection.
 	return (return_code);
 } /* Graphics_window_set_interactive_tool */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Graphics_window_update_interactive_tool(Widget widget,
 	void *graphics_window_void,void *interactive_tool_void)
 /*******************************************************************************
@@ -786,9 +789,9 @@ Called when a new tool is chosen in the interactive_toolbar_widget.
 	}
 	LEAVE;
 } /* Graphics_window_update_interactive_tool */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Graphics_window_layout_mode_CB(Widget widget,
 	void *graphics_window_void,void *layout_mode_string_void)
 /*******************************************************************************
@@ -814,9 +817,9 @@ Callback for change of layout_mode from the layout_mode_widget.
 	}
 	LEAVE;
 } /* Graphics_window_layout_mode_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Graphics_window_ortho_front_button_CB(Widget widget,
 	XtPointer window_void,XtPointer call_data)
 /*******************************************************************************
@@ -855,9 +858,9 @@ function cycles to the next orthogonal front axis for the current ortho_up_axis.
 	}
 	LEAVE;
 } /* Graphics_window_ortho_front_button_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Graphics_window_ortho_up_menu_CB(Widget widget,
 	XtPointer window_void,XtPointer call_data)
 /*******************************************************************************
@@ -905,9 +908,9 @@ Callback for a change of up_axis defining the orthographic views.
 	}
 	LEAVE;
 } /* Graphics_window_ortho_up_menu_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Graphics_window_perspective_button_CB(Widget caller,
 	XtPointer *window_void,XmAnyCallbackStruct *caller_data)
 /*******************************************************************************
@@ -948,9 +951,9 @@ Callback for when the perspective toggle button is pressed.
 	}
 	LEAVE;
 } /* Graphics_window_perspective_button_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Graphics_window_time_edit_CB(Widget edit_var,void *window_void,
 	void *current_value)
 /*******************************************************************************
@@ -980,7 +983,7 @@ Callback for change to the time.
 	}
 	LEAVE;
 } /* Graphics_window_time_edit_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static int Graphics_window_time_keeper_callback(struct Time_keeper *time_keeper,
 	enum Time_keeper_event event, void *graphics_window_void)
@@ -991,9 +994,9 @@ DESCRIPTION :
 Updates the time display of the time_slider
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	EDIT_VAR_PRECISION time;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 	struct Graphics_window *window;
 #if defined (WX_USER_INTERFACE)
@@ -1002,12 +1005,12 @@ Updates the time display of the time_slider
 #endif
 
 	ENTER(Graphics_window_time_keeper_callback);
-#if !defined (MOTIF) || (WX_USER_INTERFACE)
+#if !defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 	USE_PARAMETER(event);
-#endif /* !defined (MOTIF) && (WX_USER_INTERFACE) */
+#endif /* !defined (MOTIF_USER_INTERFACE) && (WX_USER_INTERFACE) */
 	if (time_keeper && (window = (struct Graphics_window *)graphics_window_void))
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		switch(event)
 		{
 			case TIME_KEEPER_NEW_TIME:
@@ -1086,7 +1089,7 @@ Updates the time display of the time_slider
 				 }
 			 }
 		}
-#endif /*defined (MOTIF) && (WX_USER_INTERFACE)*/
+#endif /*defined (MOTIF_USER_INTERFACE) && (WX_USER_INTERFACE)*/
 	}
 	else
 	{
@@ -1099,7 +1102,7 @@ Updates the time display of the time_slider
 	return (return_code);
 } /* Graphics_window_time_keeper_callback */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Graphics_window_view_all_button_CB(Widget caller,
 	XtPointer *graphics_window_void,XmAnyCallbackStruct *caller_data)
 /*******************************************************************************
@@ -1129,9 +1132,9 @@ ranges and sets the view parameters so that everything can be seen.
 	}
 	LEAVE;
 } /* Graphics_window_view_all_button_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Graphics_window_print_button_CB(Widget caller,
 	XtPointer *graphics_window_void, XmAnyCallbackStruct *caller_data)
 /*******************************************************************************
@@ -1184,7 +1187,7 @@ wholly from the file name extension
 	}
 	LEAVE;
 } /* Graphics_window_print_button_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Manager Callback Module functions
@@ -1251,7 +1254,7 @@ Modifier function to set the up and front directions for defining the
 orthographic axes.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct Graphics_window_ortho_axes *ortho_axes;
 
@@ -2395,9 +2398,9 @@ a spaceship/submarine, where:
 {
 	char update_flag,view_all_flag;
 	double rotate_angle,rotate_axis[3],rotate_data[4];
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	EDIT_VAR_PRECISION time_value;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	int pane_no,return_code;
 	struct Graphics_window *window;
 	struct Light *light_to_add,*light_to_remove;
@@ -2546,14 +2549,14 @@ a spaceship/submarine, where:
 										Graphics_window_time_keeper_callback, (void *)window,
 										(enum Time_keeper_event)(TIME_KEEPER_NEW_TIME | 
 										TIME_KEEPER_NEW_MINIMUM | TIME_KEEPER_NEW_MAXIMUM ));
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 									time_value = Time_keeper_get_minimum(window->time_keeper);
 									edit_var_set_data(window->time_edit_widget,EDIT_VAR_LOW_LIMIT,
 										time_value);
 									time_value = Time_keeper_get_maximum(window->time_keeper);
 									edit_var_set_data(window->time_edit_widget,EDIT_VAR_HIGH_LIMIT,
 										time_value);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 								}
 								else
 								{
@@ -3721,10 +3724,10 @@ A stereo buffering mode will automatically be chosen when the visual supports
 it.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Atom WM_DELETE_WINDOW;
 	const char **valid_strings;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	char *window_title;
 	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode;
 	enum Graphics_buffer_stereo_mode graphics_buffer_stereo_mode;
@@ -3733,13 +3736,13 @@ it.
 	int ortho_front_axis,ortho_up_axis;
 #endif /*(WX_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	double eye[3],eye_distance,front[3],lookat[3],up[3],view[3];
 	EDIT_VAR_PRECISION time_value;
 	int init_widgets,number_of_valid_strings,ortho_front_axis,ortho_up_axis;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	int pane_no,return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	MrmType graphics_window_dialog_class;
 	static MrmRegisterArg callbacks[] =
 	{
@@ -3792,7 +3795,7 @@ it.
 		{"gwin_structure",(XtPointer)NULL}
 	};
 	struct Callback_data callback;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Graphics_buffer *graphics_buffer;
 	struct Graphics_window *window=NULL;
 
@@ -3906,7 +3909,7 @@ it.
 					return_code=0;
 				}
 			}
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			/* clear widgets yet to be read in and created */
 			window->window_shell=(Widget)NULL;
 			window->main_window=(Widget)NULL;
@@ -4900,7 +4903,7 @@ Graphics_window_destroy_CB.
 			 DESTROY(MANAGER(Interactive_tool))(&window->interactive_tool_manager);
 		}
 #endif /* (WX_USER_INTERFACE) */
-#if defined (MOTIF) /* switch (USER_INTERFACE) */
+#if defined (MOTIF_USER_INTERFACE) /* switch (USER_INTERFACE) */
 		destroy_Shell_list_item_from_shell(&(window->window_shell),
 			window->user_interface);
 		/* destroy the graphics window widget */
@@ -4928,10 +4931,10 @@ Graphics_window_destroy_CB.
 			 and have a already closed graphics window. */
 		if(window->time_keeper)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			Time_keeper_remove_callback(window->time_keeper,
 				Graphics_window_time_keeper_callback, (void *)window);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 			DEACCESS(Time_keeper)(&(window->time_keeper));
 		}
 #if defined (WX_USER_INTERFACE) 
@@ -5354,24 +5357,24 @@ DESCRIPTION :
 Sets the layout mode in effect on the <window>.
 ==============================================================================*/
 {
-#if defined (MOTIF) || defined (WX_USER_INTERFACE)
+#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 	double bottom,clip_factor,far_plane,left,
 		near_plane,radius,right,top;
-#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
+#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 	double eye[3],eye_distance,front[3],lookat[3],up[3],view[3];
 	enum Scene_viewer_projection_mode projection_mode;
 	int new_layout,new_number_of_panes,pane_no,return_code;
-#if defined (MOTIF) || defined (WX_USER_INTERFACE)
+#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 	enum Scene_viewer_transparency_mode transparency_mode;
 	int perturb_lines;
 	struct Colour background_colour;
 	struct Graphics_buffer *graphics_buffer;
 	struct Scene_viewer *first_scene_viewer;
 	unsigned int transparency_layers;
-#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
-#if defined (MOTIF)
+#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#if defined (MOTIF_USER_INTERFACE)
 	Widget viewing_area;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 	wxPanel* current_panel;
 #endif /* defined (WX_USER_INTERFACE) */
@@ -5385,7 +5388,7 @@ Sets the layout mode in effect on the <window>.
 			Graphics_window_layout_mode_get_number_of_panes(layout_mode);
 		if (new_number_of_panes > window->number_of_scene_viewers)
 		{
-#if defined (MOTIF) || defined (WX_USER_INTERFACE)
+#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 			first_scene_viewer = window->scene_viewer_array[0];
 			Scene_viewer_get_lookat_parameters(first_scene_viewer,
 				&(eye[0]),&(eye[1]),&(eye[2]),
@@ -5401,7 +5404,7 @@ Sets the layout mode in effect on the <window>.
 				for (pane_no = window->number_of_scene_viewers ;
 					  return_code && (pane_no < new_number_of_panes) ; pane_no++)
 				{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 					switch (pane_no)
 					{
 						/* First viewing area is pane_no 0 */
@@ -5531,12 +5534,12 @@ Sets the layout mode in effect on the <window>.
 			{
 				return_code = 0;
 			}
-#else /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
+#else /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 			display_message(ERROR_MESSAGE,
 				"Graphics_window_set_layout_mode.  "
 				"More than one scene viewer in the graphics window not implemented for this version.");
 			return_code=0;
-#endif /* defined (MOTIF) || defined (WX_USER_INTERFACE) */
+#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 		}
 		if (return_code)
 		{
@@ -5546,7 +5549,7 @@ Sets the layout mode in effect on the <window>.
 				/* get the number of panes for the new layout */
 				window->number_of_panes=
 					Graphics_window_layout_mode_get_number_of_panes(layout_mode);
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 				/* make sure the current layout mode is displayed on the chooser */
 				choose_enumerator_set_string(window->layout_mode_widget,
 					(char *)Graphics_window_layout_mode_string(layout_mode));
@@ -5608,12 +5611,12 @@ Sets the layout mode in effect on the <window>.
 						window->default_tumble_rate);
 					Scene_viewer_set_zoom_rate(window->scene_viewer_array[0],
 						window->default_zoom_rate);
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 					XtVaSetValues(window->viewing_area1,
 						XmNrightPosition,2,XmNbottomPosition,2,NULL);
 					/* grey-out orthographic view controls */
 					XtSetSensitive(window->orthographic_form,False);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 				}
 			} break;
 			case GRAPHICS_WINDOW_LAYOUT_2D:
@@ -5639,7 +5642,7 @@ Sets the layout mode in effect on the <window>.
 						/*tumble_rate*/0.0);
 					Scene_viewer_set_zoom_rate(window->scene_viewer_array[0],
 						window->default_zoom_rate);
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 					/* single scene viewer with no tumbling, orientation controlled
 						 by orthographic axes */
 					XtUnmanageChild(window->viewing_area2);
@@ -5649,7 +5652,7 @@ Sets the layout mode in effect on the <window>.
 						XmNrightPosition,2,XmNbottomPosition,2,NULL);
 					/* un-grey orthographic view controls */
 					XtSetSensitive(window->orthographic_form,True);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 				}
 				/* set the plan view in pane 0 */
 				if (Scene_viewer_get_lookat_parameters(window->scene_viewer_array[0],
@@ -5704,7 +5707,7 @@ Sets the layout mode in effect on the <window>.
 						Scene_viewer_set_zoom_rate(window->scene_viewer_array[pane_no],
 							window->default_zoom_rate);
 					}
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 					XtVaSetValues(window->viewing_area1,
 						XmNrightPosition,1,XmNbottomPosition,1,NULL);
 					XtVaSetValues(window->viewing_area2,
@@ -5714,7 +5717,7 @@ Sets the layout mode in effect on the <window>.
 					XtManageChild(window->viewing_area4);
 					/* un-grey orthographic view controls */
 					XtSetSensitive(window->orthographic_form,True);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 				}
 				/* four views, 3 tied together as front, side and plan views */
 				/* set the plan view in pane 1 */
@@ -5765,7 +5768,7 @@ Sets the layout mode in effect on the <window>.
 						Scene_viewer_set_zoom_rate(window->scene_viewer_array[pane_no],
 							window->default_zoom_rate);
 					}
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 					XtVaSetValues(window->viewing_area1,
 						XmNrightPosition,1,XmNbottomPosition,2,NULL);
 					XtVaSetValues(window->viewing_area2,
@@ -5775,7 +5778,7 @@ Sets the layout mode in effect on the <window>.
 					XtUnmanageChild(window->viewing_area4);
 					/* un-grey orthographic view controls */
 					XtSetSensitive(window->orthographic_form,True);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 					//XtVaSetValues(window->viewing_area1,
 					//	XmNrightPosition,1,XmNbottomPosition,2,NULL);
@@ -5877,11 +5880,11 @@ Axis numbers are from 1 to 6, where 1=x, 2=y, 3=z, 4=-x, 5=-y and 6=-z.
 ==============================================================================*/
 {
 	int return_code,new_up_axis,new_front_axis;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	int num_children;
 	XmString temp_string;
 	Widget *child_list;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(Graphics_window_set_orthographic_axes);
 	if (window)
@@ -5918,7 +5921,7 @@ Axis numbers are from 1 to 6, where 1=x, 2=y, 3=z, 4=-x, 5=-y and 6=-z.
 		/* update the widgets if values have changed in this function */
 		if (new_up_axis)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			/* get children of the menu so that one may be selected */
 			XtVaGetValues(window->ortho_up_menu,XmNnumChildren,&num_children,
 				XmNchildren,&child_list,NULL);
@@ -5927,17 +5930,17 @@ Axis numbers are from 1 to 6, where 1=x, 2=y, 3=z, 4=-x, 5=-y and 6=-z.
 				XtVaSetValues(window->ortho_up_option,
 					XmNmenuHistory,child_list[window->ortho_up_axis-1],NULL);
 			}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 		if (new_front_axis)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			temp_string=
 				XmStringCreateSimple((char *)axis_name[window->ortho_front_axis]);
 			XtVaSetValues(window->ortho_front_button,
 				XmNlabelString,temp_string,NULL);
 			XmStringFree(temp_string);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 	}
 	else
@@ -6023,7 +6026,7 @@ Must call Graphics_window_view_changed after changing tied pane.
 				/* update perspective button widget if current_pane changed */
 				if (pane_no == window->current_pane)
 				{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 					/* set perspective widgets */
 					if (SCENE_VIEWER_PERSPECTIVE == projection_mode)
 					{
@@ -6043,7 +6046,7 @@ Must call Graphics_window_view_changed after changing tied pane.
 					{
 						XtSetSensitive(window->perspective_button,True);
 					}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (WX_USER_INTERFACE)
 					/* set perspective widgets */
@@ -6225,9 +6228,9 @@ graphics window has only one pane. When multiple panes are used, they are
 separated by 2 pixel borders within the viewing area.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Dimension height,width;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	RECT rect;
 #endif /* defined (WIN32_USER_INTERFACE) */	
@@ -6236,7 +6239,7 @@ separated by 2 pixel borders within the viewing area.
 	ENTER(Graphics_window_get_viewing_area_size);
 	if (window&&viewing_width&&viewing_height)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		XtVaGetValues(window->viewing_form,
 			XmNwidth,&width,
 			XmNheight,&height,NULL);
@@ -6297,15 +6300,15 @@ graphics window has only one pane. When multiple panes are used, they are
 separated by 2 pixel borders within the viewing area.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Dimension old_viewing_height,old_viewing_width,shell_height,shell_width;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Graphics_window_set_viewing_area_size);
 	if (window&&(0<=viewing_width)&&(0<=viewing_height))
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		/* add allowance for two pixel border on scene_viewer */
 		viewing_width += 2;
 		viewing_height += 2;
@@ -6830,11 +6833,11 @@ graphics window on screen.
 		}
 		else
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			/* bring the graphics window to the front so image is not obscured */
 			XRaiseWindow(XtDisplay(window->window_shell),
 				XtWindow(window->window_shell));
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 			/* Always use the window size if grabbing from screen */
 			Graphics_window_get_viewing_area_size(window, &frame_width, 
 				&frame_height);
@@ -8288,8 +8291,8 @@ Which tool that is being modified is passed in <node_tool_void>.
 	
 	return (return_code);
 } /* execute_command_gfx_node_tool */
-#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) || defined
-			  (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined(WX_USER_INTERFACE */
+#endif /* defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined
+			  (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
 
 int modify_Graphics_window(struct Parse_state *state,void *help_mode,
 	void *modify_graphics_window_data_void)
@@ -8406,7 +8409,7 @@ function, and DEACCESS any returned window.
 ???RC set_Object routines could become a macro.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct Graphics_window *window,**window_address;
 	struct MANAGER(Graphics_window) *graphics_window_manager;
@@ -8423,8 +8426,8 @@ function, and DEACCESS any returned window.
 					(graphics_window_manager=
 					(struct MANAGER(Graphics_window) *)graphics_window_manager_void))
 				{
-					if (window=FIND_BY_IDENTIFIER_IN_MANAGER(Graphics_window,name)(
-						current_token,graphics_window_manager))
+					if ((window=FIND_BY_IDENTIFIER_IN_MANAGER(Graphics_window,name)(
+						current_token,graphics_window_manager)))
 					{
 						ACCESS(Graphics_window)(window);
 						if (*window_address)

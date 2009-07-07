@@ -43,12 +43,16 @@ the default button.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 extern "C" {
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <X11/Intrinsic.h>
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
@@ -71,14 +75,14 @@ extern "C" {
 
 #include <Mrm/MrmPublic.h>
 #include <Mrm/MrmDecls.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "general/debug.h"
 #include "user_interface/filedir.h"
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static char filedir_uidh[] =
 #include "user_interface/filedir.uidh"
 	;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 #include "general/mystring.h"
@@ -104,16 +108,16 @@ Code switchs
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int filedir_hierarchy_open=0;
 static MrmHierarchy filedir_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Module functions
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void identify_file_selection_label(Widget *widget_id,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
@@ -138,9 +142,9 @@ Finds the id of a file selection label.
 	}
 	LEAVE;
 } /* identify_file_selection_label */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void identify_file_selection_text(Widget *widget_id,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
@@ -165,10 +169,10 @@ Finds the id of a file selection text.
 	}
 	LEAVE;
 } /* identify_file_selection_text */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (OLD_CODE)
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void destroy_file_selection(Widget widget,XtPointer client_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -205,10 +209,10 @@ Tidys up when the user destroys the file selection shell.
 	}
 	LEAVE;
 } /* destroy_file_selection */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void close_file_selection(Widget widget,XtPointer client_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -253,9 +257,9 @@ Closes the windows associated with the file selection shell.
 	}
 	LEAVE;
 } /* close_file_selection */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void cancel_file_selection(Widget widget,XtPointer client_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -284,9 +288,9 @@ Called in response to pressing the cancel button.
 	}
 	LEAVE;
 } /* cancel_file_selection */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void file_selection_read(Widget widget,XtPointer client_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -355,9 +359,9 @@ Reads the selected file in the user specified way.
 	}
 	LEAVE;
 } /* file_selection_read */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void close_file_exists_warning(Widget widget,
 	XtPointer warning_box_widget,XtPointer call_data)
 /*******************************************************************************
@@ -382,9 +386,9 @@ DESCRIPTION :
 	}
 	LEAVE;
 } /* close_file_exists_warning */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void overwrite_file(Widget widget,XtPointer void_file_open_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -425,9 +429,9 @@ DESCRIPTION :
 	}
 	LEAVE;
 } /* overwrite_file */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void busy_cursor_off_warning_shell(Widget widget,
 	XtPointer file_open_data_void,XtPointer call_data)
 /*******************************************************************************
@@ -456,10 +460,10 @@ except the warning shell.
 
 	LEAVE;
 } /* busy_cursor_off_warning_shell */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (OLD_CODE)
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void busy_cursor_off_selection_shell(Widget widget,
 	XtPointer file_open_data_void,XtPointer call_data)
 /*******************************************************************************
@@ -488,10 +492,10 @@ except the selection shell.
 
 	LEAVE;
 } /* busy_cursor_off_selection_shell */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void busy_cursor_on_selection_shell(Widget widget,
 	XtPointer file_open_data_void,XtPointer call_data)
 /*******************************************************************************
@@ -520,9 +524,9 @@ except the selection shell.
 
 	LEAVE;
 } /* busy_cursor_on_selection_shell */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void file_selection_write(Widget widget,XtPointer client_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -701,13 +705,13 @@ Writes the selected file in the user specified way.
 	}
 	LEAVE;
 } /* file_selection_write */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Global functions
 ----------------
 */
-struct File_open_data *create_File_open_data(char *filter_extension,
+struct File_open_data *create_File_open_data(const char *filter_extension,
 	enum File_type type,File_operation operation,void *arguments,
 	 int allow_direct_to_printer,struct User_interface *user_interface
 #if defined(WX_USER_INTERFACE)
@@ -763,7 +767,7 @@ successful and NULL if unsuccessful.
 			file_open_data->execute_command=execute_command;
 #endif /* defined (WX_USER_INTERFACE) */
 			file_open_data->file_name=(char *)NULL;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			file_open_data->activation=(Widget)NULL;
 			file_open_data->file_list=(Widget)NULL;
 			file_open_data->selection_shell=(Widget)NULL;
@@ -772,7 +776,7 @@ successful and NULL if unsuccessful.
 			file_open_data->selection_text=(Widget)NULL;
 			file_open_data->warning_box=(Widget)NULL;
 			file_open_data->warning_shell=(Widget)NULL;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 			(file_open_data->open_file_name).lStructSize=sizeof(OPENFILENAME);
 			(file_open_data->open_file_name).hwndOwner=(HWND)NULL;
@@ -869,12 +873,12 @@ frees the memory for <**file_open_data> and changes <*file_open_data> to NULL.
 	return_code=1;
 	if (*file_open_data)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		if ((*file_open_data)->selection_shell)
 		{
 			XtDestroyWidget((*file_open_data)->selection_shell);
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		if ((*file_open_data)->filter_extension)
 		{
 			 DEALLOCATE((*file_open_data)->filter_extension);
@@ -888,9 +892,9 @@ frees the memory for <**file_open_data> and changes <*file_open_data> to NULL.
 } /* destroy_File_open_data */
 
 void open_file_and_read(
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget widget,XtPointer client_data,XtPointer call_data
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 	struct File_open_data *file_open_data
 #endif /* defined (WX_USER_INTERFACE) */
@@ -906,23 +910,24 @@ name the <file_operation> is performed on the file with the <arguments>.
 ==============================================================================*/
 {
 #if defined (WX_USER_INTERFACE)
-	char *allocated_shell_title,*filename,*shell_title,*temp_string,*extension;
+	const char *shell_title;
+	char *allocated_shell_title,*filename,*temp_string,*extension;
 	int retry, length;
 #endif /* defined (WX_USER_INTERFACE) */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Atom WM_DELETE_WINDOW;
 	char *allocated_shell_title,*shell_title,*temp_string;
 	MrmType selection_class;
 	struct File_open_data *file_open_data;
 	Widget file_selection_child,parent;
-#endif /*defined (MOTIF) */
+#endif /*defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	char *temp_str;
 	int length,retry;
 #endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(open_file_and_read);
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	USE_PARAMETER(call_data);
 	if (file_open_data=(struct File_open_data *)client_data)
 	{
@@ -964,7 +969,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 					} break;
 					default:
 					{
-						shell_title=(char *)NULL;
+						shell_title=(const char *)NULL;
 					} break;
 				}
 				/* create the dialog shell */
@@ -1119,7 +1124,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 	{
 		display_message(ERROR_MESSAGE,"open_file_and_read.  No file_open_data");
 	}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	if (file_open_data)
 	{
@@ -1190,7 +1195,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 					strcat(allocated_shell_title," file");
 					shell_title=allocated_shell_title;
 				}
-				char *wildcard_extension = "All files (*.*)|*.*|";
+				const char *wildcard_extension = "All files (*.*)|*.*|";
 				if (ALLOCATE(extension,char,
 						strlen(file_open_data->filter_extension)*2+strlen(wildcard_extension)+4))
 				{
@@ -1375,9 +1380,9 @@ name the <file_operation> is performed on the file with the <arguments>.
 } /* open_file_and_read */
 
 void open_file_and_write(
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget widget,XtPointer client_data,XtPointer call_data
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	struct File_open_data *file_open_data
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -1389,7 +1394,7 @@ void open_file_and_write(
 LAST MODIFIED : 9 June 2003
 
 DESCRIPTION :
-Expects a pointer to a File_open_data structure as the <client_data> (MOTIF).
+Expects a pointer to a File_open_data structure as the <client_data> (MOTIF_USER_INTERFACE).
 Prompts the user for the name of file, omitting the <extension>, to write to.
 The <file_operation> with the <user_arguments> and the output directed to the
 specified file.
@@ -1398,9 +1403,10 @@ specified file.
 #if defined (WX_USER_INTERFACE)
 //	char *temp_str;
   int retry;
-	char *shell_title,*temp_string,*extension;
+	const char *shell_title;
+	char *temp_string,*extension;
 #endif /* defined (WX_USER_INTERFACE) */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Atom WM_DELETE_WINDOW;
 #if defined (OLD_CODE)
 	char first;
@@ -1447,14 +1453,14 @@ specified file.
 			const_cast<char *>("print to file")
 		}
 	};
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	char *temp_str;
 	int length,retry;
 #endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(open_file_and_write);
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	USE_PARAMETER(call_data);
 	if (file_open_data=(struct File_open_data *)client_data)
 	{
@@ -1744,7 +1750,7 @@ specified file.
 	{
 		display_message(ERROR_MESSAGE,"open_file_and_write.  No file_open_data");
 	}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	if (file_open_data)
 	{
@@ -1814,7 +1820,7 @@ specified file.
 					strcat(temp_string," file");
 					shell_title=temp_string;
 				}
-				char *wildcard_extension = "All files (*.*)|*.*|";
+				const char *wildcard_extension = "All files (*.*)|*.*|";
 				if (ALLOCATE(extension,char,
 						strlen(file_open_data->filter_extension)*2+strlen(wildcard_extension)+4))
 				{
@@ -1966,9 +1972,9 @@ Register a callback that gets called when the file dialog is cancelled.
 } /* register_file_cancel_callback */
 
 #if defined (WX_USER_INTERFACE)
-int filedir_compressing_process_wx_compress(char *com_file_name, char *data_file_name, 
-	 char *elem_file_name, char *node_file_name, int data_return_code, int elem_return_code, 
-	 int node_return_code, char *file_name, char *temp_data ,char *temp_elem, char *temp_node)
+int filedir_compressing_process_wx_compress(const char *com_file_name, const char *data_file_name, 
+	 const char *elem_file_name, const char *node_file_name, int data_return_code, int elem_return_code, 
+	 int node_return_code, const char *file_name, const char *temp_data ,const char *temp_elem, const char *temp_node)
 /*******************************************************************************
 LAST MODIFIED : 17 Aug 2007
 

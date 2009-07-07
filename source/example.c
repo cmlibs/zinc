@@ -33,9 +33,9 @@ DESCRIPTION :
 Main program
 ------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int main(int argc,char *argv[])
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	LPSTR command_line,int initial_main_window_state)
@@ -52,7 +52,7 @@ Main program for the CMISS Graphical User Interface
 		WINAPI
 #endif /* defined (WIN32_USER_INTERFACE) */
 		return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	static MrmRegisterArg identifiers[]=
 	{
 		{"widget_spacing",(XtPointer)NULL},
@@ -71,19 +71,19 @@ Main program for the CMISS Graphical User Interface
 			""
 		}
 	};
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct VT_volume_texture volume_texture;
 	User_settings user_settings;
 	struct User_interface user_interface;
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	ENTER(main);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	ENTER(WinMain);
 #endif /* defined (WIN32_USER_INTERFACE) */
 	/* open the user interface */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	user_interface.application_context=(XtAppContext)NULL;
 	user_interface.application_name="cmgui";
 	user_interface.application_shell=(Widget)NULL;
@@ -91,7 +91,7 @@ Main program for the CMISS Graphical User Interface
 	user_interface.argv=argv;
 	user_interface.class_name="Cmgui";
 	user_interface.display=(Display *)NULL;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	user_interface.instance=current_instance;
 	user_interface.main_window=(HWND)NULL;
@@ -100,7 +100,7 @@ Main program for the CMISS Graphical User Interface
 #endif /* defined (WIN32_USER_INTERFACE) */
 	if (open_user_interface(&user_interface))
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		identifiers[0].value=(XtPointer)5;
 		/* register the identifiers in the global name table*/
 		if (MrmSUCCESS==MrmRegisterNames(identifiers,XtNumber(identifiers)))
@@ -108,7 +108,7 @@ Main program for the CMISS Graphical User Interface
 			/* retrieve application specific constants */
 			XtVaGetApplicationResources(user_interface.application_shell,
 				&user_settings,resources,XtNumber(resources),NULL);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 			/* create the main window */
 			if (open_create_finite_elements_dialog(
 				(struct Create_finite_elements_dialog **)NULL,&volume_texture,
@@ -124,14 +124,14 @@ Main program for the CMISS Graphical User Interface
 				display_message(ERROR_MESSAGE,"Unable to create dialog");
 				return_code=0;
 			}
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,"Unable to register identifiers");
 			return_code=0;
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{

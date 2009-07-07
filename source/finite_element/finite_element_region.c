@@ -2293,7 +2293,7 @@ Fields can only be removed if not defined on any nodes and element in
 } /* FE_region_remove_FE_field */
 
 struct FE_field *FE_region_get_FE_field_from_name(struct FE_region *fe_region,
-	char *field_name)
+	const char *field_name)
 /*******************************************************************************
 LAST MODIFIED : 15 October 2002
 
@@ -3848,7 +3848,7 @@ DESCRIPTION :
 Used in command parsing to translate a node name into an node from <fe_region>.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int identifier, return_code;
 	struct FE_node *node, **node_address;
 	struct FE_region *fe_region;
@@ -5702,7 +5702,7 @@ A modifier function for specifying a 3-D element (as opposed to a 2-D face or
 1-D line number), used (eg.) to set the seed element for a volume texture.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct CM_element_information cm;
 	struct FE_element *element, **element_address;
@@ -5781,7 +5781,7 @@ A modifier function for specifying a top level element, used, for example, to
 set the seed element for a xi_texture_coordinate computed_field.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct CM_element_information cm;
 	struct FE_element *element, **element_address;

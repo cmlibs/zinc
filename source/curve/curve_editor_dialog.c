@@ -61,10 +61,10 @@ static char curve_editor_dialog_uidh[] =
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int curve_editor_dialog_hierarchy_open=0;
 static MrmHierarchy curve_editor_dialog_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 struct Curve_editor_dialog
 /*******************************************************************************

@@ -44,47 +44,51 @@ Functions and structures for interfacing with the graphics library.
 #if !defined (GRAPHICS_LIBRARY_H)
 #define GRAPHICS_LIBRARY_H
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #if defined (GL_API)
-#if defined (MOTIF)
+#	if defined (MOTIF_USER_INTERFACE)
 /* needed because X and GL use some of the same names and if X isn't included
 	before GL there are errors */
-#include <X11/Intrinsic.h>
-#include <X11/Xlib.h>
-#include <Mrm/MrmPublic.h>
-#endif /* defined (MOTIF) */
-#include <gl/gl.h>
+#		include <X11/Intrinsic.h>
+#		include <X11/Xlib.h>
+#		include <Mrm/MrmPublic.h>
+#	endif /* defined (MOTIF_USER_INTERFACE) */
+#	include <gl/gl.h>
 #endif
 #if defined (OPENGL_API)
-#define GL_GLEXT_PROTOTYPES
-#define GLX_GLXEXT_PROTOTYPES
-#if defined (MOTIF) || ! defined (DARWIN)
-#include <GL/gl.h>
-#include <GL/glu.h>
-#if defined (WIN32_SYSTEM)
-#include <GL/glext.h>
-#undef GL_NV_vertex_program
-#undef GL_NV_register_combiners2
-#endif /* defined (WIN32_SYSTEM) */
-#endif /* defined (MOTIF) */
+#	define GL_GLEXT_PROTOTYPES
+#	define GLX_GLXEXT_PROTOTYPES
+#	if defined (MOTIF_USER_INTERFACE) || ! defined (APPLE)
+#		include <GL/gl.h>
+#		include <GL/glu.h>
+#		if defined (WIN32)
+#			include <GL/glext.h>
+#			undef GL_NV_vertex_program
+#			undef GL_NV_register_combiners2
+#		endif /* defined (WIN32) */
+#	endif /* defined (MOTIF_USER_INTERFACE) || ! defined (APPLE) */
 #endif /* defined (OPENGL_API) */
 #include "graphics/texture.h"
 #if defined (GTK_USER_INTERFACE)
-#if defined (UNIX)
-#include <gdk/gdkgl.h>
-#endif /* defined (UNIX) */
+#	if defined (UNIX)
+#		include <gdk/gdkgl.h>
+#	endif /* defined (UNIX) */
 #endif /* defined (GTK_USER_INTERFACE) */
-#if defined (WX_USER_INTERFACE)
-#define GL_GLEXT_PROTOTYPES
-#if defined (UNIX) && !defined (DARWIN)
-#include <GL/glext.h>
-#endif /* defined UNIX && !defined (DARWIN)*/
-#endif /* (WX_USER_INTERFACE) */
 #if defined (UNIX) && defined (DARWIN)
-#include <OpenGL/gl.h>
-#include <AGL/agl.h>
-#include <OpenGL/glu.h>
-#include <OpenGL/glext.h>
+#	include <OpenGL/gl.h>
+#	include <AGL/agl.h>
+#	include <OpenGL/glu.h>
+#	include <OpenGL/glext.h>
 #endif /* defined UNIX && defined (DARWIN) */
+#if defined (WX_USER_INTERFACE)
+#	define GL_GLEXT_PROTOTYPES
+#	if defined (UNIX) && !defined (APPLE)
+#		include <GL/glext.h>
+#	endif /* defined UNIX && !defined (DARWIN)*/
+#endif /* (WX_USER_INTERFACE) */
 
 struct User_interface;
 

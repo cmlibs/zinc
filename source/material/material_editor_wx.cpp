@@ -46,6 +46,10 @@ extern "C" {
 #define PI 3.1415927
 #define PI_180 (PI/180.0)
 #include <stdio.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #include "three_d_drawing/graphics_buffer.h"
 #include "command/parser.h"
 #include "general/debug.h"

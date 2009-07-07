@@ -44,6 +44,10 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #if !defined (GRAPHICS_BUFFER_H)
 #define GRAPHICS_BUFFER_H
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #include "general/callback.h"
 #include "general/object.h"
 #include "user_interface/user_interface.h"
@@ -53,10 +57,10 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #endif /* defined (GTK_USER_INTERFACE) */
 
 #if defined (OPENGL_API)
-#  if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+#  if defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 #     define GRAPHICS_BUFFER_USE_BUFFERS
 #     define GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS
-#  endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+#  endif /* defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 #endif /* defined (OPENGL_API) */
 
 /*
@@ -272,7 +276,7 @@ will be requested with handle_windows_event.
 ==============================================================================*/
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_X3d(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	Widget parent, int width, int height,
@@ -285,9 +289,9 @@ LAST MODIFIED : 5 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_X3d_from_buffer(
 	Widget parent, int width, int height, 
 	struct Graphics_buffer *buffer_to_match);
@@ -296,7 +300,7 @@ LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (CARBON_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_Carbon(
@@ -498,7 +502,7 @@ DESCRIPTION :
 Returns information about the type of buffer that was created.
 ==============================================================================*/
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 Display *Graphics_buffer_X11_get_display(struct Graphics_buffer *buffer);
 /*******************************************************************************
 LAST MODIFIED : 27 May 2004
@@ -506,7 +510,7 @@ LAST MODIFIED : 27 May 2004
 DESCRIPTION :
 Returns information about the type of buffer that was created.
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 int Graphics_buffer_add_initialise_callback(struct Graphics_buffer *buffer,
 	CMISS_CALLBACK_FUNCTION(Graphics_buffer_callback) initialise_callback, void *user_data);
@@ -552,7 +556,7 @@ DESCRIPTION :
 Closes a Graphics buffer instance
 ==============================================================================*/
 
-#if defined (OPENGL_API) && defined (MOTIF)
+#if defined (OPENGL_API) && defined (MOTIF_USER_INTERFACE)
 int query_glx_extension(char *extName, Display *display, int screen);
 /*******************************************************************************
 LAST MODIFIED : 4 May 2004
@@ -564,7 +568,7 @@ strtok() but the constant string returned by glGetString might be in read-only
 memory.
 ???SAB.  Taken directly from above
 ==============================================================================*/
-#endif /* defined (OPENGL_API) && defined (MOTIF) */
+#endif /* defined (OPENGL_API) && defined (MOTIF_USER_INTERFACE) */
 
 #if defined (WIN32_USER_INTERFACE)
 int Graphics_buffer_win32_use_font_bitmaps(struct Graphics_buffer *buffer,
@@ -578,7 +582,7 @@ required in the win32 case.
 ==============================================================================*/
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 Widget Graphics_buffer_X3d_get_widget(struct Graphics_buffer *buffer);
 /*******************************************************************************
 LAST MODIFIED : 17 November 2005
@@ -587,7 +591,7 @@ DESCRIPTION :
 Private routine to facilitate the compilation of Graphics fonts with only
 a Graphics_buffer.
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #endif /* !defined (GRAPHICS_BUFFER_H) */
 
 #if defined (CARBON_USER_INTERFACE)

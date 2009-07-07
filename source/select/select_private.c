@@ -50,7 +50,7 @@ Variables shared by, but private to select_*.c files.
 Global variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int select_hierarchy_open=0;
 MrmHierarchy select_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */

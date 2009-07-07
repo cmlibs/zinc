@@ -3832,7 +3832,7 @@ Function assumes that <field> is not currently managed, as it would be illegal
 to modify it if it was.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	struct Coordinate_system coordinate_system;
 	int return_code;
 	Computed_field_modify_data *field_modify;
@@ -3939,7 +3939,8 @@ The <field_copy_void> parameter, if set, points to the field we are to modify
 and should not itself be managed.
 ==============================================================================*/
 {
-	char *current_token, *field_name, *region_path;
+	const char *current_token;
+	char *field_name, *region_path;
 	int return_code;
 	struct Computed_field *existing_field,*temp_field;
 	struct Option_table *help_option_table;

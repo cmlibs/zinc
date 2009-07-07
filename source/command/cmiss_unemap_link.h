@@ -62,10 +62,10 @@ typedef struct Unemap_command_data * (*Create_unemap_command_function)(
 	struct Event_dispatcher *event_dispatcher,
 	struct Execute_command *execute_command,
 	struct User_interface *user_interface,
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	struct Node_tool *node_tool,
 	struct Interactive_tool *transform_tool,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct LIST(GT_object) *glyph_list,
 	struct Computed_field_package *computed_field_package,
 	struct MANAGER(FE_basis) *basis_manager,

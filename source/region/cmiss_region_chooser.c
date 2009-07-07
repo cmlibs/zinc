@@ -41,10 +41,10 @@ DESCRIPTION :
  *
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/Xm.h>
 #include <Xm/TextF.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "region/cmiss_region.h"

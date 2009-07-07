@@ -73,6 +73,10 @@ NOTE
  * ***** END LICENSE BLOCK ***** */
 #include <stdlib.h>
 #include <unistd.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #if defined (UNIX)
 #include <sys/param.h>
 #include <sys/utsname.h>
@@ -2665,7 +2669,7 @@ does not wait for cm commands to complete, otherwise it does.
 	struct dsc$descriptor_s command_descriptor;
 	unsigned long flags;
 #endif /* defined (VMS) */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #define XmNcmExecutable "cmExecutable"
 #define XmCCmExecutable "CmExecutable"
 #define XmNmycmExecutable "mycmExecutable"
@@ -2691,7 +2695,7 @@ does not wait for cm commands to complete, otherwise it does.
 			XmRString,
 			"mycm"
 		}};
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(CREATE(CMISS_connection));
 	return_struct=(struct CMISS_connection *)NULL;
@@ -2776,7 +2780,7 @@ does not wait for cm commands to complete, otherwise it does.
 				}
 				if (!attach)
 				{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 					XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 						&cm_executable,cm_resource,XtNumber(cm_resource),NULL);
 					XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
@@ -2784,7 +2788,7 @@ does not wait for cm commands to complete, otherwise it does.
 #else
 					cm_executable="cm";
 					mycm_executable="mycm";
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (UNIX)
 					if (!strcmp(machine,local_machine_name))
 					{
@@ -3152,9 +3156,9 @@ Executes the given command within CMISS.
 						not to do this.  I agree and think that the probable 
 						dangers are your own silly fault */
 					busy_cursor_on(
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 						modal_widget,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 						user_interface);
 #endif /* defined (OLD_CODE) */
 					/* wait for command to complete */
@@ -3171,9 +3175,9 @@ Executes the given command within CMISS.
 					}
 #if defined (OLD_CODE)
 					busy_cursor_off(
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 						modal_widget,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 						user_interface);
 #endif /* defined (OLD_CODE) */
 				}

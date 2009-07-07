@@ -74,7 +74,7 @@ DESCRIPTION:
 ==============================================================================*/
 
 int Console_set_command_prompt(struct Console *console,
-	char *prompt);
+	const char *prompt);
 /*******************************************************************************
 LAST MODIFIED : 27 June 2002
 

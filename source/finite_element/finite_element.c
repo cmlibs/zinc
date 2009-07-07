@@ -5224,7 +5224,7 @@ Returns a pointer to the identifier of the <element_type_node_sequence>.
 	return (identifier);
 } /* FE_element_type_node_sequence_get_identifier */
 
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FE_field,name,char *,strcmp)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FE_field,name,const char *,strcmp)
 
 DECLARE_CHANGE_LOG_MODULE_FUNCTIONS(FE_field)
 
@@ -9743,7 +9743,7 @@ DECLARE_OBJECT_FUNCTIONS(FE_field)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(FE_field)
 
 DECLARE_INDEXED_LIST_FUNCTIONS(FE_field)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(FE_field,name,char *,strcmp)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(FE_field,name,const char *,strcmp)
 DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(FE_field,name)
 
 DECLARE_CHANGE_LOG_FUNCTIONS(FE_field)
@@ -10303,7 +10303,7 @@ DESCRIPTION :
 Modifier function to set the field from the command line.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct FE_field **field_address,*temp_FE_field;
 	struct LIST(FE_field) *fe_field_list;
@@ -10390,7 +10390,7 @@ range of fields available for selection. If the conditional_function is NULL,
 this function works just like set_FE_field.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct FE_field **field_address,*selected_field,*temp_field;
 	struct Set_FE_field_conditional_data *set_field_data;
@@ -10496,7 +10496,7 @@ returned by this function, however, any such structure passed to this function
 may be destroyed here - ie. in the 'all' case.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int i, number_of_fields, return_code;
 	struct FE_field *field;
 	struct FE_field_order_info **field_order_info_address;
@@ -12585,7 +12585,8 @@ component.
 ???RC.  Does not ACCESS the field (unlike set_FE_field, above).
 ==============================================================================*/
 {
-	char *current_token,*field_component_name,*temp_name;
+	const char *current_token;
+	char *field_component_name,*temp_name;
 	int field_component_number,i,return_code;
 	struct FE_field *field;
 	struct FE_field_component *component;
@@ -18956,7 +18957,7 @@ Used in command parsing to create a list of node groups.
 ???DB.  Should it be here ?
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int end_list,number_of_groups,return_code;
 	struct GROUP(FE_node) *group;
 	struct LIST(GROUP(FE_node)) *list;

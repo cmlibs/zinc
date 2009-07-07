@@ -47,10 +47,10 @@ Calls the client-specified callback routine if a different object is chosen.
 #define TEXT_CHOOSE_OBJECT_PRIVATE_H
 
 #include <stdio.h>
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/Xm.h>
 #include <Xm/TextF.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "general/debug.h"
 #include "choose/text_choose_object.h"
 #include "user_interface/message.h"

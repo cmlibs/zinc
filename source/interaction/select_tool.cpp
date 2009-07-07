@@ -61,10 +61,10 @@ static char select_tool_uidh[] =
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int select_tool_hierarchy_open=0;
 static MrmHierarchy select_tool_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static char Interactive_tool_select_type_string[] = "select_tool";
 
@@ -92,9 +92,9 @@ Object storing all the parameters for interactively selecting Any_objects.
 	struct Any_object *last_picked_any_object;
 	struct Interaction_volume *last_interaction_volume;
 	struct GT_object *rubber_band;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Display *display;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 }; /* struct Select_tool */
 
 /*

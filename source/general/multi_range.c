@@ -1162,7 +1162,7 @@ Ranges may overlap and be increasing or decreasing. Typical inputs are:
 3..5,9..1 (has the same result as 1..9)
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int first,last,number_of_characters_read,return_code;
 	struct Multi_range *multi_range;
 

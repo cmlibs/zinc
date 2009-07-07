@@ -2061,7 +2061,7 @@ Converts <field> into type COMPUTED_FIELD_SCALE (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	FE_value *scale_factors, *temp_scale_factors;
 	int i, number_of_scale_factors, previous_number_of_scale_factors, return_code;
 	struct Computed_field *field,*source_field;
@@ -2573,7 +2573,7 @@ Converts <field> into type COMPUTED_FIELD_CLAMP_MAXIMUM (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	FE_value *maximums, *temp_maximums;
 	int i, number_of_maximums, previous_number_of_maximums, return_code;
 	struct Computed_field *field, *source_field;
@@ -3071,7 +3071,7 @@ Converts <field> into type COMPUTED_FIELD_CLAMP_MINIMUM (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	FE_value *minimums, *temp_minimums;
 	int i, number_of_minimums, previous_number_of_minimums, return_code;
 	struct Computed_field *field, *source_field;
@@ -3605,7 +3605,7 @@ Converts <field> into type COMPUTED_FIELD_OFFSET (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	FE_value *offsets, *temp_offsets;
 	int i, number_of_offsets, previous_number_of_offsets, return_code;
 	struct Computed_field *field,*source_field;
@@ -4057,7 +4057,7 @@ Converts <field> into type COMPUTED_FIELD_SUM_COMPONENTS (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	FE_value *weights, *temp_weights;
 	int i, number_of_weights, previous_number_of_weights, return_code;
 	struct Computed_field *field,*source_field;
@@ -4552,7 +4552,7 @@ Converts <field> into type COMPUTED_FIELD_EDIT_MASK (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	FE_value *edit_mask, *temp_edit_mask;
 	int i, number_of_edit_mask, previous_number_of_edit_mask, return_code;
 	struct Computed_field *field,*source_field;

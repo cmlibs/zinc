@@ -1,0 +1,395 @@
+
+# Set the minimum version of cmake required to 2.6
+CMAKE_MINIMUM_REQUIRED( VERSION 2.6 )
+
+#MACRO( GET_AVAILABLE_USER_INTERFACES )
+#	# Get a list of available user interfaces
+#	IF( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
+#		SET( AVAILABLE_USER_INTERFACES motif console gtk wx )
+#	ENDIF( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
+#	IF( ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
+#		SET( AVAILABLE_USER_INTERFACES console gtk wx )
+#	ENDIF( ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
+#	IF( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
+#		SET( AVAILABLE_USER_INTERFACES carbon )
+#	ENDIF( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
+
+#ENDMACRO( GET_AVAILABLE_USER_INTERFACES )
+#
+#MACRO( CHECK_USER_INTERFACE_AVAILABILITY UI )
+#	# Check UI against all UI possible for current platform
+#	SET( UI_AVAILABLE FALSE )
+#	GET_AVAILABLE_USER_INTERFACES( )
+#
+#	LIST( FIND AVAILABLE_USER_INTERFACES ${UI} UI_INDEX )
+#	IF( UI_INDEX GREATER 0 )
+#		SET( UI_AVAILABLE TRUE )
+#	ENDIF( UI_INDEX GREATER 0 )
+#
+#ENDMACRO( CHECK_USER_INTERFACE_AVAILABILITY UI )
+INCLUDE( MacroDefinitions.cmake )
+INCLUDE( FunctionDefinitions.cmake )
+
+# Don't build anything unless the version of CMake is high enough.
+# The matching ELSE/ENDIF should be the last lines in the file.
+# AND CMISS_ROOT environment variable is defined to be a directory
+IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 AND EXISTS $ENV{CMISS_ROOT} )
+
+	# Make sure the environment variable CMISS_ROOT is set
+	# This is the project name and shows up in ides
+	PROJECT( cmgui )
+
+	SET( CMGUI_MAJOR_VERSION "2" )
+	SET( CMGUI_MINOR_VERSION "6" )
+	SET( CMGUI_PATCH_VERSION "1" )
+
+	SET( PRODUCT_PATH $ENV{CMISS_ROOT}/cmgui )
+	SET( PRODUCT_SOURCE ${PRODUCT_PATH}/source )
+
+	# If CMake is the version we're expecting, don't show the
+	# CMAKE_BACKWARDS_COMPATIBILITY option.
+	IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" MATCHES "^2\\.6$" )
+		MARK_AS_ADVANCED( FORCE CMAKE_BACKWARDS_COMPATIBILITY )
+	ELSE( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" MATCHES "^2\\.6$" )
+		MARK_AS_ADVANCED( CLEAR CMAKE_BACKWARDS_COMPATIBILITY )
+	ENDIF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" MATCHES "^2\\.6$" )
+
+	# Set name option
+	SET( TARGET_NAME_FORMAT Verbose CACHE STRING "Do you want a 'Basic' of 'Verbose' target name" )
+
+	# Set user interface
+	SET( USER_INTERFACE wx CACHE STRING "What type of user interface is required" )
+
+	# Set graphics
+	IF( NOT DEFINED GRAPHICS_API )
+		SET( GRAPHICS_API OPENGL_GRAPHICS )
+	ENDIF( NOT DEFINED GRAPHICS_API )
+
+	IF( NOT CMAKE_BUILD_TYPE )
+		SET( CMAKE_BUILD_TYPE "Release" )
+	ENDIF( NOT CMAKE_BUILD_TYPE )
+		
+	# Build options
+	OPTION( BUILD_EXECUTABLE "Build executable ON will build an executable, whereas when set to OFF will build a library" ON )
+	IF( NOT BUILD_EXECUTABLE )
+		OPTION( BUILD_STATIC "Do you want to build a static library" )
+	ENDIF( NOT BUILD_EXECUTABLE )
+	SET( BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "What configuration do you want to build: Debug, Release, MinSizeRel, RelWithDebugInfo" )
+	SET( CMAKE_BUILD_TYPE ${BUILD_TYPE} )
+	OPTION( BUILD_MEMORYCHECK "Do you want to build a memory check version" )
+	OPTION( BUILD_ABI "Do you want to build an ABI version" )
+	#OPTION( BUILD_UNEMAP "Do you want to build a UNEMAP version" )
+
+	IF( ${CMAKE_BUILD_TYPE} MATCHES [Dd]ebug )
+		IF( NOT ${COMPILER_NAME} MATCHES "msvc" )
+			SET( REPORT_GL_ERRORS )
+			SET( USE_PARAMETER_ON )
+		ENDIF( NOT ${COMPILER_NAME} MATCHES "msvc" )
+	ENDIF( ${CMAKE_BUILD_TYPE} MATCHES [Dd]ebug )
+
+	# Library options
+	SET( ITK_DIR $ENV{CMISS_ROOT}/itk/lib/InsightToolkit CACHE STRING "Where are the ITK libraries installed" )
+	MARK_AS_ADVANCED( ITK_DIR )
+	SET( WX_DIR $ENV{CMISS_ROOT}/wxWidgets/bin CACHE STRING "Where is wxWidgets installed" )
+	MARK_AS_ADVANCED( WX_DIR )
+
+	# Use options
+	IF( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
+		SET( USE_GDCM ON )
+	ENDIF( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
+
+	OPTION( USE_UNEMAP "Do you want to use UNEMAP" OFF )
+	OPTION( USE_LINK_CMISS "Do you want to link to cmiss" OFF )
+	OPTION( USE_PERL_INTERPRETER "Do you want to use the perl interpreter" ON )
+	OPTION( USE_IMAGEMAGICK "Do you want to use Image Magick" ON )
+	OPTION( USE_GDCM "Do you want to use libGDCM" ON )
+	OPTION( USE_XML2 "Do you want to use xml2" ON )
+	OPTION( USE_ITK "Do you want to use ITK" ON )
+	OPTION( USE_GTKMAIN "Do you want to use GTK Main" ON )
+
+	MARK_AS_ADVANCED( USE_UNEMAP )
+	MARK_AS_ADVANCED( USE_LINK_CMISS )
+	MARK_AS_ADVANCED( USE_GTKMAIN )
+
+	# Check user interface is of known type
+	CHECK_USER_INTERFACE_AVAILABILITY( ${USER_INTERFACE} )
+	IF( UI_AVAILABLE )
+		MESSAGE( STATUS "User interface: ${USER_INTERFACE}" )
+		DEFINE_TARGET_NAME( )
+		DEFINE_ARCHITECTURE_DIR( )
+		SET_PLATFORM_DEFINES( )
+		# SET_OPERATING_SYSTEM_DEFINES( ) <-- set automatically by cmake
+		SET_USER_INTERFACE_DEFINES( )
+		SET_GRAPHICS_DEFINES( )
+
+		# Start loading in the dependent libraries
+		IF( ${GRAPHICSi_API} MATCHES OPENGL_GRAPHICS )
+			FIND_PACKAGE( OpenGL )
+			IF( OPENGL_FOUND )
+				#MESSAGE( "OpenGL libs: " ${OPENGL_LIBRARIES} )
+				#MESSAGE( "OpenGL includes: " ${OPENGL_INCLUDE_DIRS} )
+				SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${OPENGL_LIBRARIES} )
+			ENDIF( OPENGL_FOUND )
+			IF( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
+				SET( SELECT_DESCRIPTORS )
+			ENDIF( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
+		ENDIF( ${GRAPHICSi_API} MATCHES OPENGL_GRAPHICS )
+
+		#SET( ITK_DIR $ENV{CMISS_ROOT}/itk/lib/InsightToolkit )
+		IF( USE_ITK )
+			FIND_PACKAGE( ITK )
+			IF( ITK_FOUND )
+				#MESSAGE( "ITK libs: " ${ITK_LIBRARIES} )
+				#MESSAGE( "ITK includes: " ${ITK_INCLUDE_DIRS} )
+				SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${ITK_LIBRARIES} )
+				SET( INCLUDE_DIRS ${INCLUDE_DIRS} ${ITK_INCLUDE_DIRS} )
+			ENDIF( ITK_FOUND )
+		ENDIF( USE_ITK )
+
+		IF( USE_IMAGEMAGICK )
+			SET( CMAKE_INCLUDE_PATH $ENV{CMISS_ROOT}/image_libraries/bin/${ARCHITECTURE_DIR} 
+				$ENV{CMISS_ROOT}/image_libraries/include/${ARCHITECTURE_DIR}/ )
+			SET( CMAKE_LIBRARY_PATH $ENV{CMISS_ROOT}/image_libraries/lib/${ARCHITECTURE_DIR}/ )
+			FIND_PACKAGE( ImageMagick REQUIRED MagickCore )
+			#SET( ImageMagick_FIND_COMPONENTS MagickCore )
+			#INCLUDE( /usr/share/cmake/Modules/FindImageMagick.cmake )
+			#MESSAGE( STATUS "${ImageMagick_LIBRARIES}" )
+			IF( ImageMagick_FOUND )
+				#MESSAGE( STATUS "Image magick found " ${ImageMagick_LIBRARIES} )
+				#MESSAGE( STATUS "Image magick inc ${ImageMagick_INCLUDE_DIRS}" )
+				SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${ImageMagick_LIBRARIES} )
+				SET( INCLUDE_DIRS ${INCLUDE_DIRS} ${ImageMagick_INCLUDE_DIRS} )
+				FIND_Package( BZip2 REQUIRED )
+				IF( BZIP2_FOUND )
+					#MESSAGE( STATUS "BZip2 has been found " ${BZIP2_LIBRARIES} )
+					SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${BZIP2_LIBRARIES} )
+				ENDIF( BZIP2_FOUND )
+				FIND_PACKAGE( JPEG REQUIRED )
+				IF( JPEG_FOUND )
+					SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${JPEG_LIBRARIES} )
+				ENDIF( JPEG_FOUND )
+			ENDIF( ImageMagick_FOUND )
+			SET( CMAKE_LIBRARY_PATH )
+			SET( CMAKE_INCLUDE_PATH )
+		ENDIF( USE_IMAGEMAGICK )
+
+		IF( WX_USER_INTERFACE )
+			SET( CMAKE_PREFIX_PATH ${WX_DIR} )
+			# Order of components here is important when linking static libraries
+			FIND_PACKAGE( wxWidgets REQUIRED xrc adv html gl xml core base )
+			IF( wxWidgets_FOUND )
+				#MESSAGE( STATUS "wx definitions: " ${wxWidgets_DEFINITIONS} )
+				#MESSAGE( STATUS "wxWidgets cxx flags: " ${wxWidgets_CXX_FLAGS} " cmake cxx flags: ${CMAKE_CXX_FLAGS}")
+				#FOREACH( LIB ${wxWidgets_LIBRARIES} )
+				#	MESSAGE( STATUS "wxWidgets lib: " ${LIB} )
+				#ENDFOREACH( LIB ${wxWidgets_LIBRARIES} )
+				#MESSAGE( STATUS "wxWidgets lid dirs: ${wxWidgets_LIB_DIRS}" )
+				SET( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${wxWidgets_CXX_FLAGS} )
+				SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${wxWidgets_LIBRARIES} )
+				SET( INCLUDE_DIRS ${INCLUDE_DIRS} ${wxWidgets_INCLUDE_DIRS} )
+				SET( EXTRA_COMPILER_DEFINITIONS ${EXTRA_COMPILER_DEFINITIONS} ${wxWidgets_DEFINITIONS} )
+				WXWIDGETS_SRCS( wxWidgets_GENERATED_SRCS )
+			ENDIF( wxWidgets_FOUND )
+		ENDIF( WX_USER_INTERFACE )
+
+
+		# Included in ITK
+		#FIND_PACKAGE( TIFF )
+		#IF( TIFF_FOUND )
+		#	MESSAGE( STATUS "TIFF has been found " ${TIFF_LIBRARIES} )
+		#	SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${TIFF_LIBRARIES} )
+		#ENDIF( TIFF_FOUND )
+
+		# Included in ITK
+		#FIND_PACKAGE( JPEG )
+		#IF( JPEG_FOUND )
+		#	MESSAGE( STATUS "JPEG has been found " ${JPEG_LIBRARIES} )
+		#	SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${JPEG_LIBRARIES} )
+		#ENDIF( JPEG_FOUND )
+
+		# Don't need this as lib PNG requires it
+		#FIND_PACKAGE( ZLIB )
+		#IF( ZLIB_FOUND )
+		#	MESSAGE( STATUS "ZLib has been found " ${ZLIB_LIBRARIES} )
+		#	SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${ZLIB_LIBRARIES} )
+		#ENDIF( ZLIB_FOUND )
+
+		# Included in ITK
+		#FIND_PACKAGE( PNG )
+		#IF( PNG_FOUND )
+		#	MESSAGE( STATUS "PNG has been found " ${PNG_LIBRARIES} )
+		#	SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${PNG_LIBRARIES} )
+		#ENDIF( PNG_FOUND )
+
+		#FIND_PACKAGE( PCRE )
+		#INCLUDE( FindPCRE.cmake )
+		#IF( PCRE_FOUND )
+		#	#MESSAGE( STATUS "PCRE has been found " ${PCRE_INCLUDE_DIR} " " ${PCRE_LIBRARIES} )
+		#	SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${PCRE_LIBRARIES} )
+		#ENDIF( PCRE_FOUND )
+	
+		IF( USE_XML2 )
+			SET( CMAKE_INCLUDE_PATH $ENV{CMISS_ROOT}/image_libraries/include/${ARCHITECTURE_DIR}/libxml2/ )
+			SET( CMAKE_LIBRARY_PATH $ENV{CMISS_ROOT}/image_libraries/lib/${ARCHITECTURE_DIR}/ )
+			#SET( CMAKE_PREFIX_PATH $ENV{CMISS_ROOT}/image_libraries/lib/${ARCHITECTURE_DIR}
+			#	$ENV{CMISS_ROOT}/image_libraries/include/${ARCHITECTURE_DIR}/libxml2 )
+			FIND_PACKAGE( LibXml2 REQUIRED )
+			IF( LIBXML2_FOUND )
+				MESSAGE( STATUS "WARNING: LibXml2 is finding the wrong header files see below:" )
+				MESSAGE( STATUS "LibXml2 include dir ${LIBXML2_INCLUDE_DIR}" )
+				MESSAGE( STATUS "LibXml2 libraries ${LIBXML2_LIBRARIES}" )
+				#MESSAGE( STATUS ${LIBXML2_DEFINITIONS} )
+				#MESSAGE( STATUS ${LIBXML2_XMLLINT_EXECUTABLE} )
+				#SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${LIBXML2_LIBRARIES} )
+				SET( INCLUDE_DIRS ${INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} )
+				SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${LIBXML2_LIBRARIES} )
+			ENDIF( LIBXML2_FOUND )
+			SET( CMAKE_LIBRARY_PATH )
+			SET( CMAKE_INCLUDE_PATH )
+		ENDIF( USE_XML2 )
+
+		IF( USE_GDCM )
+			SET( CMAKE_PREFIX_PATH $ENV{CMISS_ROOT}/image_libraries/${ARCHITECTURE_DIR}/lib/gdcm-2.0 )
+		  FIND_PACKAGE( GDCM REQUIRED )
+		  #INCLUDE( ${GDCM_USE_FILE} )
+
+			#INCLUDE( $ENV{CMISS_ROOT}/image_libraries/${ARCHITECTURE_DIR}/lib/gdcm-2.0/GDCMConfig.cmake )
+			MESSAGE( STATUS "WARNING: GDCM Issues see below" )
+			MESSAGE( STATUS "GDCM use file: ${GDCM_USE_FILE}" )
+			MESSAGE( STATUS "GDCM_LIBRARIES currently: ${GDCM_LIBRARIES}" )
+			MESSAGE( STATUS "Hard coding to gdcmCWRAPPER gdcmDSED gdcmMSFF gdcmDIST" )
+			SET( GDCM_LIBRARIES gdcmCWRAPPER gdcmDSED gdcmMSFF gdcmDICT )
+			SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${GDCM_LIBRARIES} )
+		ENDIF( USE_GDCM )
+
+		IF( USE_PERL_INTERPRETER )
+			IF( ${CMAKE_BUILD_TYPE} MATCHES "[Dd]ebug" )
+				SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} $ENV{CMISS_ROOT}/perl_interpreter/lib/${ARCHITECTURE_DIR}/libperlinterpreter-debug.a )
+			ELSE( ${CMAKE_BUILD_TYPE} MATCHES "[Dd]ebug" )
+				SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} $ENV{CMISS_ROOT}/perl_interpreter/lib/${ARCHITECTURE_DIR}/libperlinterpreter.a )
+			ENDIF( ${CMAKE_BUILD_TYPE} MATCHES "[Dd]ebug" )
+			SET( INCLUDE_DIRS ${INCLUDE_DIRS} $ENV{CMISS_ROOT}/perl_interpreter/source )
+		ENDIF( USE_PERL_INTERPRETER )
+
+		# Defines API_SRCS
+		INCLUDE( source/api.cmake )
+
+		# Defines COMMAND_SRCS
+		INCLUDE( source/command.cmake )
+
+		# Defines COMPUTED_FIELD_CORE_SRCS, COMPUTED_FIELD_GRAPHICS_SRCS,
+		# COMPUTED_FIELD_SRCS (contains previous two)
+		INCLUDE( source/computed_field.cmake )
+
+		# Defines GENERAL_SRCS
+		INCLUDE( source/general.cmake )
+
+		# Defines GRAPHICS_SRCS
+		INCLUDE( source/graphics.cmake )
+
+		# Defines IMAGE_PROCESSING_SRCS
+		INCLUDE( source/image_processing.cmake )
+
+		# Defines API_INTERFACE_SRCS, CHOOSE_INTERFACE_SRCS, COMFILE_SRCS,
+		# COLOUR_INTERFACE_SRCS, COMMAND_INTERFACE_SRCS,
+		# COMPUTED_FIELD_INTERFACE_SRCS, CURVE_INTERFACE_SRCS, FINITE_ELEMENT_INTERFACE_SRCS,
+		# GENERAL_INTERFACE_SRCS, GRAPHICS_INTERFACE_SRCS,
+		# INTERACTION_INTERFACE_SRCS, IO_DEVICES_INTERFACE_SRCS, LINK_INTERFACE_SRCS, MATERIAL_INTERFACE_SRCS,
+		# MOTIF_INTERFACE_SRCS, NODE_INTERFACE_SRCS, REGION_INTERFACE_SRCS,
+		# SELECT_INTERFACE_SRCS, TRANSFORMATION_INTERFACE_SRCS,
+		# THREE_D_DRAWING_INTERFACE_SRCS, TIME_INTERFACE_SRCS,
+		# USER_INTERFACE_SRCS, USER_INTERFACE_INTERFACE_SRCS, VIEW_INTERFACE_SRCS
+		INCLUDE( source/interfaces.cmake )
+
+		# Defines CURVE_SRCS, ELEMENT_SRCS, EMOTER_SRCS, FINITE_ELEMENT_CORE_SRCS,
+		# FINITE_ELEMENT_GRAPHICS_SRCS,
+		# FINITE_ELEMENT_SRCS (definition includes the previous two), HELP_SRCS
+		# INTERACTION_SRCS, IO_DEVICES_SRCS, NODE_SRCS,
+		# REGION_SRCS, SELECTION_SRCS, THREE_D_DRAWING_SRCS, TIME_SRCS
+		INCLUDE( source/misc.cmake )
+
+		# Defines UNEMAP_SRCS
+		INCLUDE( source/unemap.cmake )
+
+		SET( BASE_SRCS cmgui.c ${API_SRCS} ${COMFILE_SRCS} ${COMMAND_SRCS}
+			${COMPUTED_FIELD_SRCS} ${CURVE_SRCS} ${ELEMENT_SRCS} ${EMOTER_SRCS}
+			${FINITE_ELEMENT_SRCS} ${GENERAL_SRCS} ${GRAPHICS_SRCS} ${HELP_SRCS}
+			${IMAGE_PROCESSING_SRCS} ${INTERACTION_SRCS} ${IO_DEVICES_SRCS}
+			${NODE_SRCS} ${REGION_SRCS} ${SELECTION_SRCS} ${INTERPRETER_SRCS}
+			${THREE_D_DRAWING_SRCS} ${TIME_SRCS} ${USER_INTERFACE_SRCS} )
+
+		IF( WX_USER_INTERFACE )
+			SET( INTERFACE_SRCS ${API_INTERFACE_SRCS} ${COLOUR_INTERFACE_SRCS}
+				${COMMAND_INTERFACE_SRCS} ${COMPUTED_FIELD_INTERFACE_SRCS}
+				${MATERIAL_INTERFACE_SRCS} ${REGION_INTERFACE_SRCS}
+				${TRANSFORMATION_INTERFACE_SRCS} graphics/graphics_window.cpp )
+		ENDIF( WX_USER_INTERFACE )
+
+		# Manually prepend source/ to every source file, yuck!
+		FOREACH( SRC ${BASE_SRCS} ${INTERFACE_SRCS} )
+			SET( SRCS ${SRCS} source/${SRC} )
+			#MESSAGE( "File: source/${SRC}" ) 
+		ENDFOREACH( SRC ${BASE_SRCS} ${INTERFACE_SRCS} )
+
+		INCLUDE_DIRECTORIES( source ${CMAKE_CURRENT_BINARY_DIR}/source
+			${INCLUDE_DIRS} )
+
+		LINK_DIRECTORIES( ${ITK_LIBRARY_DIRS} ${GDCM_LIBRARY_DIRS} )
+
+		#SET( CMAKE_C_FLAGS ${CMAKE_C_FLAGS} -Wall )
+		#MESSAGE( STATUS "c: ${CMAKE_C_FLAGS} , cxx:  ${CMAKE_CXX_FLAGS} " )
+
+		# First crack at getting the version string correct
+		ADD_EXECUTABLE( myversion source/configure/version.cpp )
+
+		GET_TARGET_PROPERTY( EXE_LOC myversion LOCATION )
+
+		MESSAGE( STATUS "EXE LOC: ${EXE_LOC}" )
+		ADD_CUSTOM_COMMAND( OUTPUT ${PROJECT_BINARY_DIR}/source/configure/version.h
+			DEPENDS myversion 
+			COMMAND ${EXE_LOC} 
+			ARGS ${PROJECT_BINARY_DIR}/source/configure/version.h
+			${CMGUI_MAJOR_VERSION} ${CMGUI_MINOR_VERSION} ${CMGUI_PATCH_VERSION} )
+
+		#SET_SOURCE_FILES_PROPERTIES( ${PROJECT_BINARY_DIR}/source/configure/version.h PROPERTIES GENERATED 1 )
+
+		SET_SOURCE_FILES_PROPERTIES( source/cmgui.c PROPERTIES DEPENDS
+			${PROJECT_BINARY_DIR}/source/configure/version.h )
+
+		ADD_DEFINITIONS( -DBUILD_WITH_CMAKE
+			${EXTRA_COMPILER_DEFINITIONS} )
+
+		CONFIGURE_FILE( ${PROJECT_SOURCE_DIR}/source/configure/configure.h.in
+			${PROJECT_BINARY_DIR}/source/configure/configure.h )
+
+		IF( BUILD_EXECUTABLE )
+			MESSAGE( STATUS "Building executable: " )
+			#FOREACH( SRC ${SRCS} )
+			#	MESSAGE( ${SRC} )
+			#ENDFOREACH( SRC ${SRCS} )
+			ADD_EXECUTABLE( ${TARGET_NAME} ${SRCS} ${wxWidgets_GENERATED_SRCS}
+				${PROJECT_BINARY_DIR}/source/configure/version.h )
+		ELSE( BUILD_EXECUTABLE )
+		ENDIF( BUILD_EXECUTABLE )
+
+		TARGET_LINK_LIBRARIES( ${TARGET_NAME} ${DEPENDENT_LIBS} gs )
+
+	ELSE( UI_AVAILABLE )
+		MESSAGE( SEND_ERROR
+			"This user interface '${USER_INTERFACE}' is not available.  "
+			"It must be one of ${AVAILABLE_USER_INTERFACES}." )
+	ENDIF( UI_AVAILABLE )
+
+ELSE( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 AND EXISTS $ENV{CMISS_ROOT} )
+	IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" LESS 2.6 )
+  	MESSAGE( SEND_ERROR
+			"This version of CMake is too old to build this version of cmgui.  "
+			"Please upgrade to CMake 2.6 or higher." )
+	ENDIF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" LESS 2.6 )
+	IF( NOT EXISTS $ENV{CMISS_ROOT} )
+		MESSAGE( SEND_ERROR
+			"The environment variable CMISS_ROOT must be defined and the "
+			"directory must exist" )
+	ENDIF( NOT EXISTS $ENV{CMISS_ROOT} )
+ENDIF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 AND EXISTS $ENV{CMISS_ROOT} )
+

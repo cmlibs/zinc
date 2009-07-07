@@ -60,6 +60,9 @@ return to direct rendering, as described with these routines.
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 extern "C" {
 #include "command/parser.h"
 #include "general/compare.h"
@@ -2278,7 +2281,7 @@ be shared by multiple materials using the same program.
 						else
 						{
 							char tex_string[1000];
-							char *component_labels[] = {"x", "y", "z"};
+							const char *component_labels[] = {"x", "y", "z"};
 							int i;
 
 							/* Normal is calculated from the red intensity,
@@ -4695,7 +4698,7 @@ Shifted from command/cmiss.c now that there is a material package.
 If the material already exists, then behaves like gfx modify material.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int material_is_new,return_code;
 	struct Graphical_material *material;
 	struct Material_package *material_package;
@@ -5237,8 +5240,9 @@ LAST MODIFIED : 4 July 2007
 DESCRIPTION :
 ==============================================================================*/
 {
+	const char *current_token;
 	char bump_mapping_flag, colour_lookup_red_flag, colour_lookup_green_flag,
-		colour_lookup_blue_flag, colour_lookup_alpha_flag, *current_token,
+		colour_lookup_blue_flag, colour_lookup_alpha_flag,
 		lit_volume_finite_difference_normal_flag,
 		lit_volume_intensity_normal_texture_flag, lit_volume_scale_alpha_flag,
 		normal_mode_flag, per_pixel_mode_flag,
@@ -6690,7 +6694,7 @@ Modifier function to set the material from a command.
 ???RC set_Object routines could become a macro.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct Graphical_material *temp_material,**material_address;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
@@ -6783,7 +6787,7 @@ Modifier function to set the material from a command.
 } /* set_Graphical_material */
 
 int Option_table_add_set_Material_entry(
-	struct Option_table *option_table, char *token,
+	struct Option_table *option_table, const char *token,
 	struct Graphical_material **material, struct Material_package *material_package)
 /*******************************************************************************
 LAST MODIFIED : 20 November 2003

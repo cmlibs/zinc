@@ -101,10 +101,10 @@ Contains information required by the select widget of the given object_type. \
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 extern int select_hierarchy_open;
 extern MrmHierarchy select_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Module functions

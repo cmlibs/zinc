@@ -57,8 +57,8 @@ Scroll bar routines.
 	dialog_name ## _get_pos(temp_dialog->scroll_name)
 
 
-#if defined (MOTIF)
-#endif /* defined (MOTIF) */
+#if defined (MOTIF_USER_INTERFACE)
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 /*******************************************************************************
 LAST MODIFIED : 15 January 1997
@@ -90,8 +90,8 @@ int dialog_name ## _set_range(HWND scroll_name, \
 } /* dialog_name ## _set_range */
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF)
-#endif /* defined (MOTIF) */
+#if defined (MOTIF_USER_INTERFACE)
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 /*******************************************************************************
 LAST MODIFIED : 15 January 1997
@@ -122,8 +122,8 @@ int dialog_name ## _set_pos(HWND scroll_name, \
 	return return_code; \
 } /* dialog_name ## _set_pos */
 #endif /* defined (WIN32_USER_INTERFACE) */
-#if defined (MOTIF)
-#endif /* defined (MOTIF) */
+#if defined (MOTIF_USER_INTERFACE)
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 /*******************************************************************************
 LAST MODIFIED : 15 January 1997

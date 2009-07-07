@@ -371,7 +371,7 @@ int Option_table_add_region_path_and_or_field_name_entry(
 	struct Cmiss_region *root_region);
 
 int Cmiss_region_get_child_region_from_path(struct Cmiss_region *root_region,
-	char *path, struct Cmiss_region **child_region_address,
+	const char *path, struct Cmiss_region **child_region_address,
 	char **remaining_path_address);
 /*******************************************************************************
 LAST MODIFIED : 11 November 2002

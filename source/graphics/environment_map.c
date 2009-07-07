@@ -79,7 +79,7 @@ DESCRIPTION :
 Set the <environment_map> to face materials.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int face_no,return_code;
 	struct Environment_map *environment_map;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
@@ -290,7 +290,7 @@ DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Environment_map)
 
 DECLARE_LIST_FUNCTIONS(Environment_map)
 
-DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Environment_map,name,char *,strcmp)
+DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Environment_map,name,const char *,strcmp)
 DECLARE_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Environment_map,name)
 
 int modify_Environment_map(struct Parse_state *state,void *environment_map_void,
@@ -312,7 +312,7 @@ DESCRIPTION :
 			{"face_materials",NULL,NULL,set_Environment_map_face_materials},
 			{NULL,NULL,NULL,NULL}
 		};
-	char *current_token;
+	const char *current_token;
 	int process,return_code;
 	struct Environment_map *environment_map_to_be_modified,
 		*environment_map_to_be_modified_copy;
@@ -648,7 +648,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Environment_map,name)
 	return (return_code);
 } /* MANAGER_COPY_WITHOUT_IDENTIFIER(Environment_map,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Environment_map,name,char *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Environment_map,name,const char *)
 {
 	char *destination_name;
 	int return_code;
@@ -698,7 +698,7 @@ DECLARE_MANAGER_FUNCTIONS(Environment_map)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Environment_map)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Environment_map,name,char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Environment_map,name,const char *)
 
 int file_read_Environment_map_name(struct IO_stream *stream,
 	struct Environment_map **environment_map_address,

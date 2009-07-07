@@ -83,9 +83,9 @@ DESCRIPTION :
 	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Light *viewer_light;
 	struct Light_model *viewer_light_model;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget parent, *curve_editor_dialog_address;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Emoter_dialog **emoter_dialog_address;
 	struct User_interface *user_interface;
 }; /* struct Create_emoter_slider_data */

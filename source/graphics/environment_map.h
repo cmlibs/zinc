@@ -121,13 +121,13 @@ PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Environment_map);
 
 PROTOTYPE_LIST_FUNCTIONS(Environment_map);
 
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Environment_map,name,char *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Environment_map,name,const char *);
 
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Environment_map,name,char *);
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(Environment_map,name,const char *);
 
 PROTOTYPE_MANAGER_FUNCTIONS(Environment_map);
 
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Environment_map,name,char *);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Environment_map,name,const char *);
 
 int modify_Environment_map(struct Parse_state *state,void *environment_map_void,
 	void *modify_environment_map_data_void);

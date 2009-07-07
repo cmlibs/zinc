@@ -71,6 +71,10 @@ Used to be gtypes.h
 #if !defined (GRAPHICS_OBJECT_H)
 #define GRAPHICS_OBJECT_H
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #include "general/geometry.h"
 #include "general/list.h"
 #include "graphics/auxiliary_graphics_types.h"
@@ -416,7 +420,7 @@ DESCRIPTION :
 Returns true if the name of the <gt_object> matches the string <name> exactly.
 ==============================================================================*/
 
-char *get_GT_object_type_string(enum GT_object_type object_type);
+const char *get_GT_object_type_string(enum GT_object_type object_type);
 /*******************************************************************************
 LAST MODIFIED : 13 August 1998
 
@@ -436,7 +440,7 @@ get_GT_object_type_string. For compatibility, also supports converting old
 enumerator numbers (as text) into the new enumerator values, with a warning.
 ==============================================================================*/
 
-char *get_GT_polyline_type_string(enum GT_polyline_type polyline_type);
+const char *get_GT_polyline_type_string(enum GT_polyline_type polyline_type);
 /*******************************************************************************
 LAST MODIFIED : 13 August 1998
 
@@ -456,7 +460,7 @@ get_GT_polyline_type_string. For compatibility, also supports converting old
 enumerator numbers (as text) into the new enumerator values, with a warning.
 ==============================================================================*/
 
-char *get_GT_surface_type_string(enum GT_surface_type surface_type);
+const char *get_GT_surface_type_string(enum GT_surface_type surface_type);
 /*******************************************************************************
 LAST MODIFIED : 13 August 1998
 

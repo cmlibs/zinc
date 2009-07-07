@@ -74,10 +74,10 @@ static char graphical_element_editor_uidh[] =
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int gelem_editor_hierarchy_open=0;
 static MrmHierarchy gelem_editor_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 struct Graphical_element_editor;
 

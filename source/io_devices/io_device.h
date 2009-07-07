@@ -78,9 +78,9 @@ PROTOTYPE_OBJECT_FUNCTIONS(Io_device);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Io_device);
 
 PROTOTYPE_LIST_FUNCTIONS(Io_device);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Io_device,name,char *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Io_device,name,const char *);
 
-struct Io_device *CREATE(Io_device)(char *name);
+struct Io_device *CREATE(Io_device)(const char *name);
 /*******************************************************************************
 LAST MODIFIED : 16 May 2001
 

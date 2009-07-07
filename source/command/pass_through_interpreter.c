@@ -44,6 +44,10 @@ Just passes commands through without interpretation
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #define PCRE_STATIC
 #include <pcre.h>
 #include "command/pass_through_interpreter.h"
@@ -225,7 +229,7 @@ routine can write this to the command window.
   *status = 1;
 }
 
-void interpret_command_(struct Interpreter *interpreter, char *command_string, 
+void interpret_command_(struct Interpreter *interpreter, const char *command_string, 
 	 void *user_data, int *quit,
   execute_command_function_type execute_command_function, int *status)
 /*******************************************************************************
@@ -407,7 +411,7 @@ NOT_IMPLEMENTED
 } /* interpreter_evaluate_string_ */
 
 void interpreter_set_string_(struct Interpreter *interpreter, 
-	 char *variable_name, char *value, int *status)
+	 const char *variable_name, const char *value, int *status)
 /*******************************************************************************
 LAST MODIFIED : 16 January 2007
 
@@ -422,7 +426,7 @@ NOT_IMPLEMENTED
 } /* interpreter_set_string_ */
 
 void interpreter_set_pointer_(struct Interpreter *interpreter,
-	 char *variable_name, char *class_name, void *value,int *status)
+	 const char *variable_name, const char *class_name, void *value,int *status)
 /*******************************************************************************
 LAST MODIFIED : 16 January 2007
 

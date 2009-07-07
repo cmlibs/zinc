@@ -70,8 +70,8 @@ LAST MODIFIED : 1 March 1997
 DESCRIPTION :
 Sets the state of the button
 ==============================================================================*/
-#if defined (MOTIF)
-#endif /* defined (MOTIF) */
+#if defined (MOTIF_USER_INTERFACE)
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 #define DECLARE_GUI_BUTTON_SET_CHECKED(dialog_name,button_name) \
 int GUI_BUTTON_SET_CHECKED(dialog_name,button_name)( \
@@ -130,8 +130,8 @@ LAST MODIFIED : 1 March 1997
 DESCRIPTION :
 Sets the state of the button
 ==============================================================================*/
-#if defined (MOTIF)
-#endif /* defined (MOTIF) */
+#if defined (MOTIF_USER_INTERFACE)
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 #define DECLARE_GUI_BUTTON_GET_CHECKED(dialog_name,button_name) \
 int GUI_BUTTON_GET_CHECKED(dialog_name,button_name)( \

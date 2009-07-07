@@ -420,7 +420,7 @@ Passes the supplied windows event on to the graphics buffer.
 }
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 Cmiss_scene_viewer_id create_Cmiss_scene_viewer_motif(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	Widget parent,
@@ -496,7 +496,7 @@ chosen.
 
 	return (scene_viewer);
 }
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (NEW_CODE)
 Cmiss_scene_viewer_id create_Cmiss_scene_viewer_X11(

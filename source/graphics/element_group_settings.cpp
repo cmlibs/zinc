@@ -43,6 +43,9 @@ appearance of graphical finite element groups.
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 extern "C" {
 #include "general/debug.h"
 }
@@ -470,7 +473,7 @@ Global functions
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(GT_element_settings_type)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(GT_element_settings_type));
 	switch (enumerator_value)
@@ -515,7 +518,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(GT_element_settings_type)
 #endif /* ! defined (WX_USER_INTERFACE) */
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -613,7 +616,7 @@ integer dimension pointed to by <dimension_address_void>.
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Glyph_scaling_mode)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Glyph_scaling_mode));
 	switch (enumerator_value)
@@ -640,7 +643,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Glyph_scaling_mode)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;

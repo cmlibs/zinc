@@ -56,7 +56,7 @@ The different message types.
 	WARNING_MESSAGE
 }; /* enum Message_type */
 
-typedef void (*execute_command_function_type)(char *, void *, int *, int *);
+typedef void (*execute_command_function_type)(const char *, void *, int *, int *);
 
 typedef int (Interpreter_display_message_function)(enum Message_type message_type,
 	const char *format, ... );
@@ -104,7 +104,7 @@ This redirects the output from stdout to a pipe so that the handle_output
 routine can write this to the command window.
 ==============================================================================*/
 
-void interpret_command_(struct Interpreter *interpreter, char *command_string, 
+void interpret_command_(struct Interpreter *interpreter, const char *command_string, 
 	 void *user_data, int *quit,
 	execute_command_function_type execute_command_function, int *status);
 /*******************************************************************************
@@ -125,7 +125,7 @@ NOT_IMPLEMENTED
 ==============================================================================*/
 
 void interpreter_set_string_(struct Interpreter *interpreter, 
-	char *variable_name, char *value, int *status);
+	const char *variable_name, const char *value, int *status);
 /*******************************************************************************
 LAST MODIFIED : 16 January 2007
 
@@ -134,7 +134,7 @@ NOT_IMPLEMENTED
 ==============================================================================*/
 
 void interpreter_set_pointer_(struct Interpreter *interpreter,
-	char *variable_name, char *class_name, void *value,int *status);
+	const char *variable_name, const char *class_name, void *value,int *status);
 /*******************************************************************************
 LAST MODIFIED : 16 January 2007
 

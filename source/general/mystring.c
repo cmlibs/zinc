@@ -636,7 +636,7 @@ Returns true if <string> has a suffix present.
 	return(has_suffix);
 } /* has_suffix */
 
-int check_suffix(char **string, char *suffix)
+int check_suffix(char **string, const char *suffix)
 /*******************************************************************************
 LAST MODIFIED : 22 April 2004
 
@@ -717,7 +717,7 @@ Returns an allocated copy of <source_string>, or NULL in case of error.
 	return (copy_of_string);
 } /* duplicate_string */
 
-int string_matches_without_whitespace(char *input_string,char *match_string)
+int string_matches_without_whitespace(char *input_string,const char *match_string)
 /*******************************************************************************
 LAST MODIFIED : 2 September 1999
 
@@ -727,7 +727,8 @@ in <match_string>. Whitespace characters (space,tab) are only allowed in
 <input_string> where they appear in match_string.
 ==============================================================================*/
 {
-	char *s1,*s2;
+	char *s1;
+	const char *s2;
 	int return_code;
 
 	ENTER(string_matches_without_whitespace);

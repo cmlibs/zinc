@@ -7,6 +7,9 @@ DESCRIPTION:
 Provides the wxWidgets interface to manipulate spectrum settings.
 ==============================================================================*/
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 extern "C" {
 #include <stdio.h>
 #include <math.h>

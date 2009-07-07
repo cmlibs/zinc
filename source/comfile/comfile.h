@@ -44,11 +44,15 @@ Commands and functions for comfiles.
 #if !defined (COMFILE_H)
 #define COMFILE_H
 
-#if defined (MOTIF)
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
+#if defined (MOTIF_USER_INTERFACE)
 #include "comfile/comfile_window.h"
 #elif defined (WX_USER_INTERFACE)
 #include "comfile/comfile_window_wx.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "command/parser.h"
 #include "general/io_stream.h"
 #include "user_interface/user_interface.h"
@@ -65,14 +69,14 @@ LAST MODIFIED : 18 April 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-	char example_flag,*examples_directory,*example_symbol,*file_extension,
-		*file_name;
+	char example_flag,*examples_directory;
+	const char *example_symbol,*file_extension,*file_name;
 	int execute_count;
 	struct Execute_command *execute_command,*set_command;
 	struct IO_stream_package *io_stream_package;
-#if defined (MOTIF) || (WX_USER_INTERFACE)
+#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 	struct MANAGER(Comfile_window) *comfile_window_manager;
-#endif /* defined (MOTIF) || (WX_USER_INTERFACE) */
+#endif /* defined (MOTIF_USER_INTERFACE) || (WX_USER_INTERFACE) */
 	struct User_interface *user_interface;
 }; /* struct Open_comfile_data */
 

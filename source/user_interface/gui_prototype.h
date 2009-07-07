@@ -52,17 +52,17 @@ those steps.
 #if !defined (GUI_PROTOTYPE_H)
 #define GUI_PROTOTYPE_H
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/Xm.h>
 #include <X11/Xlib.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 typedef Widget Dialog_handle;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 typedef HWND Dialog_handle;
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -192,14 +192,14 @@ Global types
 		(WINDOW_DATA_STRUCT(dialog_name) *)NULL
 
 /* Gets dialog information from the dialog handle */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #define DIALOG_INITIALISE_VARIABLES( dialog_name ) \
 	(DIALOG_GET_INFORMATION(dialog_name)(temp_dialog,&temp_data))
 #define DIALOG_WRAPPER_INITIALISE_VARIABLES( dialog_name ) \
 	(DIALOG_WRAPPER_GET_INFORMATION(dialog_name)(dialog,&temp_dialog))
 #define WINDOW_INITIALISE_VARIABLES( dialog_name ) \
 	(WINDOW_GET_INFORMATION(dialog_name)(window,&temp_window,&temp_data))
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 #define DIALOG_INITIALISE_VARIABLES( dialog_name ) \
 	(DIALOG_GET_INFORMATION(dialog_name)(temp_dialog,&temp_data))
@@ -381,11 +381,11 @@ LAST MODIFIED : 15 January 1997
 DESCRIPTION:
 Creates the dialog.
 ==============================================================================*/
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #define PROTOTYPE_DIALOG_CREATE_FUNCTION(dialog_name) \
 struct DIALOG_STRUCT(dialog_name) *DIALOG_CREATE(dialog_name)(Widget parent, \
 	DIALOG_INITIALISATION_STRUCT(dialog_name) *initial_data)
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 #define PROTOTYPE_DIALOG_CREATE_FUNCTION(dialog_name) \
 struct DIALOG_STRUCT(dialog_name) *DIALOG_CREATE(dialog_name)(HWND hwndParent, \
@@ -401,7 +401,7 @@ LAST MODIFIED : 15 January 1997
 DESCRIPTION :
 Gets dialog information from the dialog handle.
 ==============================================================================*/
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #define PROTOTYPE_DIALOG_WRAPPER_GET_INFORMATION_FUNCTION(dialog_name) \
 int DIALOG_WRAPPER_GET_INFORMATION(dialog_name)(Widget dialog, \
 	struct DIALOG_STRUCT(dialog_name) **temp_dialog_address)
@@ -413,7 +413,7 @@ int DIALOG_GET_INFORMATION(dialog_name)( \
 int WINDOW_GET_INFORMATION(dialog_name)(Widget window, \
 	WINDOW_STRUCT(dialog_name) **temp_window_address, \
 	WINDOW_DATA_STRUCT(dialog_name) **temp_data_address)
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 #define PROTOTYPE_DIALOG_WRAPPER_GET_INFORMATION_FUNCTION(dialog_name) \
 int DIALOG_WRAPPER_GET_INFORMATION(dialog_name)(HWND hwndDialog, \

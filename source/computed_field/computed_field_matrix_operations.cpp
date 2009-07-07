@@ -1827,7 +1827,7 @@ Converts <field> into type COMPUTED_FIELD_MATRIX_MULTIPLY (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int i, number_of_rows, return_code;
 	struct Computed_field *field,**source_fields;
 	Computed_field_modify_data *field_modify;
@@ -2420,7 +2420,7 @@ Converts <field> into type COMPUTED_FIELD_PROJECTION (if it is not already)
 and allows its contents to be modified.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	double *projection_matrix, *temp_projection_matrix;
 	int i, number_of_components, number_of_projection_values, return_code,
 		temp_number_of_projection_values;
@@ -2909,7 +2909,7 @@ Converts <field> into type COMPUTED_FIELD_TRANSPOSE (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int source_number_of_rows, return_code;
 	struct Computed_field *field,*source_field;
 	Computed_field_modify_data *field_modify;

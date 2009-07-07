@@ -43,13 +43,13 @@ selected element point, or set it if entered in this dialog.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/Protocols.h>
 #include <Xm/MwmUtil.h>
 #include <Xm/Xm.h>
 #include <Xm/TextF.h>
 #include <Xm/ToggleB.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "choose/choose_enumerator.h"
 #include "choose/text_choose_fe_element.h"
 #include "choose/choose_computed_field.h"
@@ -72,10 +72,10 @@ Module variables
 ----------------
 */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int element_point_viewer_hierarchy_open=0;
 static MrmHierarchy element_point_viewer_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 struct Element_point_viewer
 /*******************************************************************************

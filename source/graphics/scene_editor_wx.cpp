@@ -42,6 +42,9 @@ codes used to build scene editor with wxWidgets.
  *
  * ***** END LICENSE BLOCK ***** */
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif
 extern "C" {
 #include <stdio.h>
 #include "general/debug.h"

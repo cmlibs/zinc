@@ -109,7 +109,7 @@ LAST MODIFIED : 4 August 2004
 DESCRIPTION :
 ==============================================================================*/
 
-int IO_stream_open_for_read(struct IO_stream *stream, char *stream_uri);
+int IO_stream_open_for_read(struct IO_stream *stream, const char *stream_uri);
 /*******************************************************************************
 LAST MODIFIED : 4 August 2004
 

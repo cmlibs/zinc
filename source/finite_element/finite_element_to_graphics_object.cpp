@@ -915,7 +915,7 @@ these are simply returned, since no valid direction can be produced.
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Use_element_type)
 {
-	char *enumerator_string;
+	const char *enumerator_string;
 
 	ENTER(ENUMERATOR_STRING(Use_element_type));
 	switch (enumerator_value)
@@ -934,7 +934,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Use_element_type)
 		} break;
 		default:
 		{
-			enumerator_string = (char *)NULL;
+			enumerator_string = (const char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -5090,7 +5090,8 @@ A modifier function for setting the displacement map.
 ???RC Move to texture? volume_texture?
 ==============================================================================*/
 {
-	char *current_token,*texture_name;
+	const char *current_token;
+	char *texture_name;
 	int return_code;
 	struct Displacement_map *displacement_map;
 

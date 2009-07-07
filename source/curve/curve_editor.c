@@ -71,10 +71,10 @@ typedef struct Curve_drawing_information
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int curve_editor_hierarchy_open=0;
 static MrmHierarchy curve_editor_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 struct Curve_editor
 /*******************************************************************************

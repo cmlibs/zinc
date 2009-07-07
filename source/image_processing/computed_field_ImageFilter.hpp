@@ -42,6 +42,10 @@ equivalent to the scene_viewer assigned to it.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+
+#if !defined (COMPUTED_FIELD_IMAGEFILTER_H)
+#define COMPUTED_FIELD_IMAGEFILTER_H
+
 extern "C" {
 #include "computed_field/computed_field.h"
 }
@@ -1318,4 +1322,7 @@ Evaluate the templated version of this filter
 } /* Computed_field_ImageFilter::update_output_image */
 
 } //CMISS namespace
+
+
+#endif /* COMPUTED_FIELD_IMAGEFILTER_H */
 

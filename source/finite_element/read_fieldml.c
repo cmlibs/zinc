@@ -41,7 +41,10 @@ The function for importing finite element data into CMISS.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if defined (HAVE_XML2)
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+#if defined (USE_XML2)
 #if defined (UNIX)
 #include <ctype.h>
 #endif /* defined (UNIX) */
@@ -5429,4 +5432,4 @@ merge incompatible data will leave the global region in a compromised state.
 
 	return (return_code);
 } /* parse_fieldml_file */
-#endif /* defined (HAVE_XML2) */
+#endif /* defined (USE_XML2) */

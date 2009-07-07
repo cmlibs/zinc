@@ -51,6 +51,10 @@ December 1997. Created MANAGER(Scene).
 #if !defined (SCENE_H)
 #define SCENE_H
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #include "general/any_object.h"
 #include "general/callback.h"
 #include "general/enumerator.h"

@@ -1,0 +1,24 @@
+
+# Defines IMAGE_PROCESSING_SRCS
+
+SET( IMAGE_PROCESSING_SRCS image_processing/computed_field_image_resample.cpp )
+
+IF( USE_ITK )
+	SET( IMAGE_PROCESSING_SRCS ${IMAGE_PROCESSING_SRCS}
+		image_processing/computed_field_threshold_image_filter.cpp
+		image_processing/computed_field_binary_threshold_image_filter.cpp
+		image_processing/computed_field_cannyEdgeDetectionFilter.cpp
+		image_processing/computed_field_meanImageFilter.cpp
+		image_processing/computed_field_sigmoidImageFilter.cpp
+		image_processing/computed_field_discrete_gaussian_image_filter.cpp
+		image_processing/computed_field_curvatureAnisotropicDiffusionImageFilter.cpp
+		image_processing/computed_field_derivativeImageFilter.cpp
+		image_processing/computed_field_rescaleIntensityImageFilter.cpp
+		image_processing/computed_field_connected_threshold_image_filter.cpp
+		image_processing/computed_field_gradient_magnitude_recursive_gaussian_image_filter.cpp
+		image_processing/computed_field_fast_marching_image_filter.cpp
+		image_processing/computed_field_binary_dilate_image_filter.cpp
+		image_processing/computed_field_binary_erode_image_filter.cpp
+		image_processing/computed_field_histogram_image_filter.cpp
+		image_processing/computed_field_ImageFilter.cpp )
+ENDIF( USE_ITK )

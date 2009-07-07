@@ -83,6 +83,10 @@ endif
 #include <math.h>
 #include <stdio.h>
 #include <Xm/ToggleBG.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #include "general/debug.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -97,10 +101,10 @@ static char view_uidh[] =
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int view_hierarchy_open=0;
 static MrmHierarchy view_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Module functions

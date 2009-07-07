@@ -44,6 +44,10 @@ Defines the gettimeofday and relevant structure for UNIX and WIN32_SYSTEM
 #if !defined (GENERAL_TIME_H) /* Distinguish general/time.h and time/time.h */
 #define GENERAL_TIME_H
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #if defined (UNIX) /* switch (OPERATING_SYSTEM) */
 #include <sys/time.h>
 #include <sys/times.h>

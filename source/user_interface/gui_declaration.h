@@ -49,8 +49,8 @@ Window routines.
 #include "user_interface/gui_prototype.h"
 #include "user_interface/message.h"
 
-#if defined (MOTIF)
-#endif /* defined (MOTIF) */
+#if defined (MOTIF_USER_INTERFACE)
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -275,8 +275,8 @@ LAST MODIFIED : 15 January 1997
 DESCRIPTION:
 Creates the dialog.
 ==============================================================================*/
-#if defined (MOTIF)
-#endif /* defined (MOTIF) */
+#if defined (MOTIF_USER_INTERFACE)
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 #define DECLARE_DIALOG_CREATE_FUNCTION(dialog_name) \
 PROTOTYPE_DIALOG_CREATE_FUNCTION(dialog_name) \
@@ -352,7 +352,7 @@ LAST MODIFIED : 15 January 1997
 DESCRIPTION :
 Gets dialog information from the dialog handle.
 ==============================================================================*/
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #define DECLARE_DIALOG_GET_INFORMATION_FUNCTION(dialog_name) \
 PROTOTYPE_DIALOG_GET_INFORMATION_FUNCTION(dialog_name) \
 { \
@@ -405,7 +405,7 @@ PROTOTYPE_DIALOG_WRAPPER_GET_INFORMATION_FUNCTION(dialog_name) \
 \
 	return (return_code); \
 }
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 #define DECLARE_DIALOG_GET_INFORMATION_FUNCTION(dialog_name) \
 PROTOTYPE_DIALOG_GET_INFORMATION_FUNCTION(dialog_name) \
@@ -492,13 +492,13 @@ PROTOTYPE_WINDOW_GET_INFORMATION_FUNCTION(dialog_name) \
 }
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #define DECLARE_LOCAL_GUI_DIALOG_FUNCTIONS(dialog_name) \
 DECLARE_DIALOG_GET_INFORMATION_FUNCTION(dialog_name) \
 DECLARE_DIALOG_WRAPPER_GET_INFORMATION_FUNCTION(dialog_name)
 #define DECLARE_LOCAL_GUI_WINDOW_FUNCTIONS(dialog_name) \
 DECLARE_WINDOW_GET_INFORMATION_FUNCTION(dialog_name)
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 #define DECLARE_LOCAL_GUI_DIALOG_FUNCTIONS(dialog_name) \
 DECLARE_DIALOG_GET_INFORMATION_FUNCTION(dialog_name) \

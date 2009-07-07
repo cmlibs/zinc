@@ -47,6 +47,10 @@ Used to be in graphics_object.h
 #include <stddef.h>
 #include <stdio.h>
 #include <math.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #include "general/debug.h"
 #include "general/io_stream.h"
 #include "general/matrix_vector.h"

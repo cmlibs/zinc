@@ -86,10 +86,10 @@ Note that we just hold a pointer to the time_editor_dialog.
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int time_editor_dialog_hierarchy_open=0;
 static MrmHierarchy time_editor_dialog_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Module functions

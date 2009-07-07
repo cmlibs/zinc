@@ -86,13 +86,13 @@ PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Movie_graphics);
 
 PROTOTYPE_LIST_FUNCTIONS(Movie_graphics);
 
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Movie_graphics,name,char *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Movie_graphics,name,const char *);
 
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Movie_graphics,name,char *);
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(Movie_graphics,name,const char *);
 
 PROTOTYPE_MANAGER_FUNCTIONS(Movie_graphics);
 
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Movie_graphics,name,char *);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Movie_graphics,name,const char *);
 
 struct X3d_movie *Movie_graphics_get_X3d_movie(
 	struct Movie_graphics *movie);

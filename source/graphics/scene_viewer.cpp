@@ -8119,18 +8119,18 @@ scene viewer on screen.
 ==============================================================================*/
 {
 	int number_of_components, return_code;
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 	struct Graphics_buffer *offscreen_buffer;
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 
 	ENTER(Scene_viewer_get_frame_pixels);
 
-#if ! defined (MOTIF) && ! defined (GTK_USER_INTERFACE)
+#if ! defined (MOTIF_USER_INTERFACE) && ! defined (GTK_USER_INTERFACE)
 	USE_PARAMETER(force_onscreen);
-#endif /* ! defined (MOTIF) && ! defined (GTK_USER_INTERFACE) */
+#endif /* ! defined (MOTIF_USER_INTERFACE) && ! defined (GTK_USER_INTERFACE) */
 	if (scene_viewer && width && height)
 	{
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 		if ((!*width) || (!*height))
 		{
 			/* Only use the scene viewer size if either dimension is zero */
@@ -8168,7 +8168,7 @@ scene viewer on screen.
 		}
 		else
 		{
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 			/* Always use the window size if grabbing from screen */
 			*width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
 			*height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
@@ -8193,9 +8193,9 @@ scene viewer on screen.
 					"Scene_viewer_get_frame_pixels.  Unable to allocate pixels");
 				return_code=0;
 			}
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+#if defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 		}
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 	}
 	else
 	{
@@ -8993,7 +8993,7 @@ NOTE: Calling function must not deallocate returned string.
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Scene_viewer_blending_mode)
 
-char *Scene_viewer_buffering_mode_string(
+const char *Scene_viewer_buffering_mode_string(
 	enum Scene_viewer_buffering_mode buffering_mode)
 /*******************************************************************************
 LAST MODIFIED : 14 October 1998
@@ -9003,7 +9003,7 @@ Returns a string label for the <buffering_mode>.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 {
-	char *return_string;
+	const char *return_string;
 
 	ENTER(Scene_viewer_buffering_mode_string);
 	switch (buffering_mode)
@@ -9024,7 +9024,7 @@ NOTE: Calling function must not deallocate returned string.
 		{
 			display_message(ERROR_MESSAGE,
 				"Scene_viewer_buffering_mode_string.  Unknown buffer mode");
-			return_string=(char *)NULL;
+			return_string=(const char *)NULL;
 		}
 	}
 	LEAVE;
@@ -9032,7 +9032,7 @@ NOTE: Calling function must not deallocate returned string.
 	return (return_string);
 } /* Scene_viewer_buffering_mode_string */
 
-char *Scene_viewer_stereo_mode_string(
+const char *Scene_viewer_stereo_mode_string(
 	enum Scene_viewer_stereo_mode stereo_mode)
 /*******************************************************************************
 LAST MODIFIED : 16 September 2002
@@ -9042,7 +9042,7 @@ Returns a string label for the <stereo_mode>.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 {
-	char *return_string;
+	const char *return_string;
 
 	ENTER(Scene_viewer_stereo_mode_string);
 	switch (stereo_mode)
@@ -9059,7 +9059,7 @@ NOTE: Calling function must not deallocate returned string.
 		{
 			display_message(ERROR_MESSAGE,
 				"Scene_viewer_stereo_mode_string.  Unknown stereo mode");
-			return_string=(char *)NULL;
+			return_string=(const char *)NULL;
 		}
 	}
 	LEAVE;
@@ -9067,7 +9067,7 @@ NOTE: Calling function must not deallocate returned string.
 	return (return_string);
 } /* Scene_viewer_stereo_mode_string */
 
-char *Scene_viewer_projection_mode_string(
+const char *Scene_viewer_projection_mode_string(
 	enum Scene_viewer_projection_mode projection_mode)
 /*******************************************************************************
 LAST MODIFIED : 14 October 1998
@@ -9077,7 +9077,7 @@ Returns a string label for the <projection_mode>.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 {
-	char *return_string;
+	const char *return_string;
 
 	ENTER(Scene_viewer_projection_mode_string);
 	switch (projection_mode)
@@ -9098,7 +9098,7 @@ NOTE: Calling function must not deallocate returned string.
 		{
 			display_message(ERROR_MESSAGE,
 				"Scene_viewer_projection_mode_string.  Unknown projection mode");
-			return_string=(char *)NULL;
+			return_string=(const char *)NULL;
 		}
 	}
 	LEAVE;
@@ -9106,7 +9106,7 @@ NOTE: Calling function must not deallocate returned string.
 	return (return_string);
 } /* Scene_viewer_projection_mode_string */
 
-char *Scene_viewer_transparency_mode_string(
+const char *Scene_viewer_transparency_mode_string(
 	enum Scene_viewer_transparency_mode transparency_mode)
 /*******************************************************************************
 LAST MODIFIED : 26 June 2003
@@ -9116,7 +9116,7 @@ Returns a string label for the <transparency_mode>.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 {
-	char *return_string;
+	const char *return_string;
 
 	ENTER(Scene_viewer_transparency_mode_string);
 	switch (transparency_mode)
@@ -9141,7 +9141,7 @@ NOTE: Calling function must not deallocate returned string.
 		{
 			display_message(ERROR_MESSAGE,
 				"Scene_viewer_transparency_mode_string.  Unknown transparency mode");
-			return_string=(char *)NULL;
+			return_string=(const char *)NULL;
 		}
 	}
 	LEAVE;
@@ -9149,7 +9149,7 @@ NOTE: Calling function must not deallocate returned string.
 	return (return_string);
 } /* Scene_viewer_transparency_mode_string */
 
-char *Scene_viewer_viewport_mode_string(
+const char *Scene_viewer_viewport_mode_string(
 	enum Scene_viewer_viewport_mode viewport_mode)
 /*******************************************************************************
 LAST MODIFIED : 04 February 2005
@@ -9159,7 +9159,7 @@ Returns a string label for the <viewport_mode>.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 {
-	char *return_string;
+	const char *return_string;
 
 	ENTER(Scene_viewer_viewport_mode_string);
 	switch (viewport_mode)
@@ -9180,7 +9180,7 @@ NOTE: Calling function must not deallocate returned string.
 		{
 			display_message(ERROR_MESSAGE,
 				"Scene_viewer_viewport_mode_string.  Unknown viewport mode");
-			return_string=(char *)NULL;
+			return_string=(const char *)NULL;
 		}
 	}
 	LEAVE;

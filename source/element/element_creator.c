@@ -65,10 +65,10 @@ Module variables
 ----------------
 */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int element_creator_hierarchy_open=0;
 static MrmHierarchy element_creator_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Module types

@@ -153,13 +153,13 @@ PROTOTYPE_COPY_OBJECT_FUNCTION(Interactive_streamline);
 PROTOTYPE_LIST_FUNCTIONS(Interactive_streamline);
 
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Interactive_streamline,name,
-	char *);
+	const char *);
 
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Interactive_streamline,name,char *);
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(Interactive_streamline,name,const char *);
 
 PROTOTYPE_MANAGER_FUNCTIONS(Interactive_streamline);
 
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Interactive_streamline,name,char *);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Interactive_streamline,name,const char *);
 
 void interactive_streamline_callback(Widget caller,XtPointer window_void,
 	XtPointer caller_data);

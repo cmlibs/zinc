@@ -43,16 +43,16 @@ Old legacy motif callbacks.
  * ***** END LICENSE BLOCK ***** */
 #if ! defined (CALLBACK_MOTIF_H)
 #define CALLBACK_MOTIF_H
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/Xm.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Global Types
 ------------
 */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 /*???DB.  Should have a return_code ? */
 typedef void Callback_procedure(Widget,void *,void *);
 
@@ -67,6 +67,6 @@ Contains all information necessary for a callback.
 	Callback_procedure *procedure;
 	void *data;
 }; /* struct Callback_data */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #endif /* ! defined (CALLBACK_MOTIF_H) */

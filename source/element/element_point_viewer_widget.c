@@ -62,10 +62,10 @@ static char element_point_viewer_widget_uidh[] =
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int element_point_viewer_hierarchy_open=0;
 static MrmHierarchy element_point_viewer_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Module types

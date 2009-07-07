@@ -41,9 +41,13 @@ Management routines for the main command window.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 extern "C" {
 #include <stdio.h>
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <X11/Xmu/Xmu.h>
 #include <X11/Xmu/WinUtil.h>
 #include <Xm/Xm.h>
@@ -54,22 +58,22 @@ extern "C" {
 #include <Xm/List.h>
 #include <Xm/Protocols.h>
 #include <Xm/Text.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "general/debug.h"
 #include "command/command_window.h"
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static char command_window_uidh[] =
 #include "command/command_window.uidh"
 	;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 #include "command/command_window.rc"
 #endif /* defined (WIN32_USER_INTERFACE) */
 #include "command/command.h"
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include "help/help_interface.h"
 #include "user_interface/filedir.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 }
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
@@ -89,7 +93,7 @@ extern "C" {
 Module types
 ------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 struct Menu_bar
 /*******************************************************************************
 LAST MODIFIED : 11 May 2000
@@ -134,7 +138,7 @@ The menu bar at the top of the command window
 	} graphics_menu;
 	Widget help_button;
 }; /* struct Menu_bar */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 enum Command_window_outfile_mode
 /*******************************************************************************
@@ -175,7 +179,7 @@ public:
 	 ~wxCommandLineTextCtrl()
 	 {
 	 };
-	 void Reset(char *command_prompt);
+	 void Reset(const char *command_prompt);
 
 private:
 	 void OnKeyDown(wxKeyEvent& event);
@@ -192,7 +196,7 @@ LAST MODIFIED : 9 November 1998
 DESCRIPTION :
 ==============================================================================*/
 {
-#if defined (MOTIF) /* switch (USER_INTERFACE) */
+#if defined (MOTIF_USER_INTERFACE) /* switch (USER_INTERFACE) */
 	struct Menu_bar main_menu;
 	Widget command_box;
 	Widget command_history;
@@ -248,7 +252,7 @@ DESCRIPTION :
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int command_window_hierarchy_open=0;
 static MrmHierarchy command_window_hierarchy;
 
@@ -257,13 +261,13 @@ static Atom XA_CMGUI_VERSION=0;
 static Atom XA_CMGUI_LOCK=0;
 static Atom XA_CMGUI_COMMAND=0;
 static Atom XA_CMGUI_RESPONSE=0;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Module functions
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void identify_command_box(Widget widget,XtPointer client_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -912,12 +916,12 @@ Called when the Close function is selected from the window manager menu.
 	if (command_window=(struct Command_window *)command_window_structure)
 	{
 		Execute_command_execute_string(command_window->execute_command, "QUIT");
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		/*???DB.  To allow restarting of back end */
 #if !defined (NO_HELP)
 		destroy_help();
 #endif /* !defined (NO_HELP) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
@@ -952,7 +956,7 @@ Destroy the command_window structure and remove the window
 	}
 	LEAVE;
 } /* destroy_Command_window_callback */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (WIN32_USER_INTERFACE)
 WNDPROC old_command_edit_wndproc;
@@ -1147,7 +1151,7 @@ DESCRIPTION:
 } /* Command_window_dialog_proc */
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int command_window_property_notify_callback(XPropertyEvent *event,
 	void *command_window_void,struct User_interface *user_interface)
 /*******************************************************************************
@@ -1286,9 +1290,9 @@ printf("XA_CMGUI_RESPONSE changed\n");
 
 	return (return_code);
 } /* command_window_property_notify_callback */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if ! defined (MOTIF) && defined (GTK_USER_INTERFACE)
+#if ! defined (MOTIF_USER_INTERFACE) && defined (GTK_USER_INTERFACE)
 static void command_entered_gtk(GtkEntry *entry, gpointer command_window_void)
 /*******************************************************************************
 LAST MODIFIED : 17 September 2002
@@ -1326,9 +1330,9 @@ Called when a command is entered in the command entry area.
 	}
 	LEAVE;
 } /* command_entered_gtk */
-#endif /* ! defined (MOTIF) && defined (GTK_USER_INTERFACE) */
+#endif /* ! defined (MOTIF_USER_INTERFACE) && defined (GTK_USER_INTERFACE) */
 
-#if ! defined (MOTIF) && defined (GTK_USER_INTERFACE)
+#if ! defined (MOTIF_USER_INTERFACE) && defined (GTK_USER_INTERFACE)
 static gboolean Command_window_gtk_button_press(GtkWidget *widget,
 	GdkEventButton *event, gpointer command_window_void)
 /*******************************************************************************
@@ -1411,9 +1415,9 @@ Called when a command is entered in the command entry area.
 	LEAVE;
 	return (return_code);
 } /* Command_window_gtk_button_press */
-#endif /* ! defined (MOTIF) && defined (GTK_USER_INTERFACE) */
+#endif /* ! defined (MOTIF_USER_INTERFACE) && defined (GTK_USER_INTERFACE) */
 
-#if ! defined (MOTIF) && defined (GTK_USER_INTERFACE)
+#if ! defined (MOTIF_USER_INTERFACE) && defined (GTK_USER_INTERFACE)
 static void command_window_close_gtk(GtkObject *object, gpointer command_window_void)
 /*******************************************************************************
 LAST MODIFIED : 17 September 2002
@@ -1437,7 +1441,7 @@ Called when the Close function is selected from the window manager menu.
 	}
 	LEAVE;
 } /* command_window_close_gtk */
-#endif /* ! defined (MOTIF) && defined (GTK_USER_INTERFACE) */
+#endif /* ! defined (MOTIF_USER_INTERFACE) && defined (GTK_USER_INTERFACE) */
 
 static int modify_Command_window_out_file_open(struct Parse_state *state,
 	void *dummy,void *command_window_void)
@@ -1535,7 +1539,7 @@ LAST MODIFIED : 11 November 1998
 DESCRIPTION :
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct Command_window *command_window;
 
@@ -1994,7 +1998,7 @@ BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	 EVT_MENU(XRCID("MenuExit"),wxCommandWindow::Exit)
 END_EVENT_TABLE()
 
-void wxCommandLineTextCtrl::Reset(char *command_prompt)
+void wxCommandLineTextCtrl::Reset(const char *command_prompt)
 {
 	 this->ChangeValue(command_prompt);
 	 this->SetInsertionPointEnd(); 
@@ -2102,7 +2106,7 @@ Create the structures and retrieve the command window from the uil file.
 ==============================================================================*/
 {
 	struct Command_window *command_window;
-#if defined (MOTIF) /* switch (USER_INTERFACE) */
+#if defined (MOTIF_USER_INTERFACE) /* switch (USER_INTERFACE) */
 	Atom WM_DELETE_WINDOW;
 	MrmType command_window_class;
 	static MrmRegisterArg callback_list[]={
@@ -2175,7 +2179,7 @@ Create the structures and retrieve the command window from the uil file.
 			command_window->execute_command=execute_command;
 			command_window->out_file=(FILE *)NULL;
 			command_window->out_file_mode=OUTFILE_INVALID;
-#if defined (MOTIF) /* switch (USER_INTERFACE) */
+#if defined (MOTIF_USER_INTERFACE) /* switch (USER_INTERFACE) */
 			if (MrmOpenHierarchy_binary_string(command_window_uidh,sizeof(command_window_uidh),
 				&command_window_hierarchy,&command_window_hierarchy_open))
 			{
@@ -2655,7 +2659,7 @@ DESCRIPTION:
 		delete command_window->wx_command_window;
 		if (command_window->command_prompt)
 			 DEALLOCATE(command_window->command_prompt);
-#elif defined (MOTIF) /* switch (USER_INTERFACE) */
+#elif defined (MOTIF_USER_INTERFACE) /* switch (USER_INTERFACE) */
 		set_property_notify_callback(command_window->user_interface,
 			(Property_notify_callback)NULL, (void *)NULL, (Widget)NULL);
 		destroy_Shell_list_item_from_shell(&(command_window->shell),
@@ -2687,7 +2691,7 @@ DESCRIPTION:
 	return (return_code);
 } /* DESTROY(Command_window) */
 
-int add_to_command_list(char *command,struct Command_window *command_window)
+int add_to_command_list(const char *command,struct Command_window *command_window)
 /*******************************************************************************
 LAST MODIFIED : 16 June 1996
 
@@ -2696,30 +2700,30 @@ Adds the <command> to the bottom of the list for the <command_window>.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	int max_commands,num_commands;
 	XmString new_command;
-#endif /* defined (MOTIF) */
-#if ! defined (MOTIF) && defined (GTK_USER_INTERFACE)
+#endif /* defined (MOTIF_USER_INTERFACE) */
+#if ! defined (MOTIF_USER_INTERFACE) && defined (GTK_USER_INTERFACE)
 #if GTK_MAJOR_VERSION >= 2
 	GtkTextIter end_iterator;
 #else /* GTK_MAJOR_VERSION >= 2 */
 	guint text_length;
 #endif /* GTK_MAJOR_VERSION >= 2 */
-#endif /* ! defined (MOTIF) && defined (GTK_USER_INTERFACE) */
+#endif /* ! defined (MOTIF_USER_INTERFACE) && defined (GTK_USER_INTERFACE) */
 
 
 	ENTER(add_to_command_list);
 /*???debug */
 /* printf("enter add_to_command_list\n  %s\n",command); */
-#if ! defined (MOTIF) && defined (GTK_USER_INTERFACE)
+#if ! defined (MOTIF_USER_INTERFACE) && defined (GTK_USER_INTERFACE)
 #if GTK_MAJOR_VERSION < 2
 	USE_PARAMETER(command);
 #endif /* GTK_MAJOR_VERSION >= 2 */
-#endif /* ! defined (MOTIF) && defined (GTK_USER_INTERFACE) */
+#endif /* ! defined (MOTIF_USER_INTERFACE) && defined (GTK_USER_INTERFACE) */
 	if (command_window)
 	{
-#if defined (MOTIF) /* switch (USER_INTERFACE) */
+#if defined (MOTIF_USER_INTERFACE) /* switch (USER_INTERFACE) */
 		/* create XmString of the command */
 		new_command=XmStringCreateSimple(command);
 		/* get the number of items and the maximum number to make sure that we don't
@@ -2780,7 +2784,7 @@ Adds the <command> to the bottom of the list for the <command_window>.
 } /* add_to_command_list */
 
 int Command_window_set_command_prompt(struct Command_window *command_window,
-	char *prompt)
+	const char *prompt)
 /*******************************************************************************
 LAST MODIFIED : 26 June 2002
 
@@ -2788,18 +2792,18 @@ DESCRIPTION :
 Sets the value of the <prompt> for the <command_window>.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	char *temp;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(set_command_prompt);
-#if ! defined (MOTIF) && defined (GTK_USER_INTERFACE)
+#if ! defined (MOTIF_USER_INTERFACE) && defined (GTK_USER_INTERFACE)
 	USE_PARAMETER(prompt);
 #endif /* switch (GTK_USER_INTERFACE) */
 	if (command_window)
 	{
-#if defined (MOTIF) /* switch (USER_INTERFACE) */
+#if defined (MOTIF_USER_INTERFACE) /* switch (USER_INTERFACE) */
 		if (command_window->command_prompt)
 		{
 			XmStringFree(command_window->command_prompt);
@@ -2878,7 +2882,7 @@ Resets all functions of the command box widget.
 	ENTER(reset_command_box);
 	if (command_window)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		/* Blank line is used so that arrows work properly */
 		/* delete old blank line */
 		if (XmListItemExists(command_window->command_history,
@@ -2921,7 +2925,7 @@ Resets all functions of the command box widget.
 } /* reset_command_box */
 
 int Command_window_set_command_string(struct Command_window *command_window,
-	char *command_string)
+	const char *command_string)
 /*******************************************************************************
 LAST MODIFIED : 27 April 1999
 
@@ -2937,7 +2941,7 @@ Does not override the command prompt.
 	ENTER(Command_window_set_command_string);
 	if (command_window&&command_string)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		XtVaSetValues(command_window->command_entry,
 			XmNvalue,(XtPointer)command_string,NULL);
 #elif defined (WX_USER_INTERFACE)
@@ -2946,7 +2950,7 @@ Does not override the command prompt.
 			 
 			 command_window->wx_command_line_text_ctrl->Reset(command_string);
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		return_code=1;
 	}
 	else
@@ -2960,7 +2964,7 @@ Does not override the command prompt.
 	return (return_code);
 } /* Command_window_set_command_string */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 Widget Command_window_get_message_pane(struct Command_window *command_window)
 /*******************************************************************************
 LAST MODIFIED : 28 February 2002
@@ -2986,8 +2990,8 @@ Returns the message pane widget.
 
 	return (return_widget);
 } /* Command_window_get_message_pane */
-#endif /* defined (MOTIF) */
-int write_command_window(char *message,struct Command_window
+#endif /* defined (MOTIF_USER_INTERFACE) */
+int write_command_window(const char *message,struct Command_window
 *command_window)
 /*******************************************************************************
 LAST MODIFIED : 9 November 1998
@@ -2997,7 +3001,7 @@ Writes the <message> to the <command_window>.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF) /* switch (USER_INTERFACE) */
+#if defined (MOTIF_USER_INTERFACE) /* switch (USER_INTERFACE) */
 	Widget output_pane;
 	XmTextPosition text_pos;
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
@@ -3016,7 +3020,7 @@ Writes the <message> to the <command_window>.
 
 	if (command_window)
 	{
-#if defined (MOTIF) /* switch (USER_INTERFACE) */
+#if defined (MOTIF_USER_INTERFACE) /* switch (USER_INTERFACE) */
 		if (output_pane=command_window->output_pane)
 		{
 			text_pos=XmTextGetLastPosition(output_pane);

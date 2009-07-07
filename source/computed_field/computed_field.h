@@ -117,7 +117,7 @@ struct Computed_field_package is private.
 
 struct List_Computed_field_commands_data
 {
-	char *command_prefix;
+	const char *command_prefix;
 	int listed_fields;
 	struct LIST(Computed_field) *computed_field_list;
 	struct MANAGER(Computed_field) *computed_field_manager;

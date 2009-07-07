@@ -42,6 +42,10 @@ For testing the 3-D drawing widget.
  *
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #include <X11/Intrinsic.h>
 #include <X11/StringDefs.h>
 #include <X11/Shell.h>

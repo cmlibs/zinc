@@ -44,24 +44,28 @@ Routines for waiting for user input.
 #if !defined (CONFIRMATION_H)
 #define CONFIRMATION_H
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #include "user_interface/user_interface.h"
 
 /*
 Global types
 ------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 typedef int (*Confirmation_add_widgets_function)(Widget parent,void *user_data);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Global functions
 ----------------
 */
-int confirmation_warning_ok_cancel(char *title,char *prompt,
-#if defined (MOTIF)
+int confirmation_warning_ok_cancel(const char *title,const char *prompt,
+#if defined (MOTIF_USER_INTERFACE)
 	Widget parent,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface
 #if  defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -76,8 +80,8 @@ before anything else will continue and returns 1 if the OK button
 is clicked and 0 if the cancel button is clicked.
 ==============================================================================*/
 
-#if defined (MOTIF)
-int confirmation_warning_ok_cancel_plus_options(char *title,char *prompt,
+#if defined (MOTIF_USER_INTERFACE)
+int confirmation_warning_ok_cancel_plus_options(const char *title,const char *prompt,
 	Widget parent,Confirmation_add_widgets_function add_widgets,
 	void *add_widgets_user_data,struct User_interface *user_interface
 #if  defined (WX_USER_INTERFACE) 
@@ -92,12 +96,12 @@ This routine supplies a dialog window which requires a response
 before anything else will continue and returns 1 if the OK button
 is clicked and 0 if the cancel button is clicked.
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 int confirmation_error_ok(char *title,char *prompt,
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget parent,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface
 #if  defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -113,9 +117,9 @@ options are supplied.
 ==============================================================================*/
 
 int confirmation_information_ok(char *title,char *prompt,
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget parent,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface
 #if  defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -130,10 +134,10 @@ before anything else will continue and returns as the OK button is clicked.  No
 other options are supplied.
 ==============================================================================*/
 
-int confirmation_warning_ok(char *title,char *prompt,
-#if defined (MOTIF)
+int confirmation_warning_ok(const char *title,const char *prompt,
+#if defined (MOTIF_USER_INTERFACE)
 	Widget parent,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface
 #if  defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -149,9 +153,9 @@ options are supplied.
 ==============================================================================*/
 
 int confirmation_question_yes_no(char *title,char *prompt,
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget parent,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface
 #if  defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -166,7 +170,7 @@ before anything else will continue.  It returns one if the Yes button
 is clicked and No if it isn't.
 ==============================================================================*/
 
-char *confirmation_get_read_filename(char *extension,
+char *confirmation_get_read_filename(const char *extension,
 	struct User_interface *user_interface
 #if  defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -179,7 +183,7 @@ DESCRIPTION :
 This routine supplies a file selection dialog window
 ==============================================================================*/
 
-char *confirmation_get_write_filename(char *extension,
+char *confirmation_get_write_filename(const char *extension,
 	struct User_interface *user_interface
 #if  defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -206,7 +210,7 @@ This routine supplies a file selection dialog window for changing the current
 working directory.  The new directory will be created if necessary.
 ==============================================================================*/
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 char *confirmation_get_string(char *title,char *prompt,char *default_string,
 	Widget parent,
 	struct User_interface *user_interface);
@@ -220,5 +224,5 @@ if the OK button is clicked and NULL if the cancel button is clicked.
 The string <default_string> is supplied as the initial text, the box
 is initially blank if <default_string> is NULL.
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #endif /* !defined (CONFIRMATION_H) */

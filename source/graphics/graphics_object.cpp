@@ -50,6 +50,10 @@ gtObject/gtWindow management routines.
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 extern "C" {
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
@@ -737,7 +741,7 @@ Returns true if the name of the <gt_object> matches the string <name> exactly.
 	return (return_code);
 } /* GT_object_compare_name */
 
-char *get_GT_object_type_string(enum GT_object_type object_type)
+const char *get_GT_object_type_string(enum GT_object_type object_type)
 /*******************************************************************************
 LAST MODIFIED : 13 August 1998
 
@@ -746,7 +750,7 @@ Returns a string describing the object type, suitable for writing to file
 (and reinterpreting it later).
 ==============================================================================*/
 {
-	char *type_string;
+	const char *type_string;
 
 	ENTER(get_GT_object_type_string);
 	switch (object_type)
@@ -791,7 +795,7 @@ Returns a string describing the object type, suitable for writing to file
 		{
 			display_message(ERROR_MESSAGE,
 				"get_GT_object_type_string.  Unknown object type");
-			type_string=(char *)NULL;
+			type_string=(const char *)NULL;
 		}
 	}
 	LEAVE;
@@ -810,7 +814,7 @@ get_GT_object_type_string. For compatibility, also supports converting old
 enumerator numbers (as text) into the new enumerator values, with a warning.
 ==============================================================================*/
 {
-	char *compare_type_string;
+	const char *compare_type_string;
 	int return_code;
 	enum GT_object_type temp_obj_type;
 
@@ -848,7 +852,7 @@ enumerator numbers (as text) into the new enumerator values, with a warning.
 	return (return_code);
 } /* get_GT_object_type_from_string */
 
-char *get_GT_polyline_type_string(enum GT_polyline_type polyline_type)
+const char *get_GT_polyline_type_string(enum GT_polyline_type polyline_type)
 /*******************************************************************************
 LAST MODIFIED : 13 August 1998
 
@@ -857,7 +861,7 @@ Returns a string describing the polyline type, suitable for writing to file
 (and reinterpreting it later).
 ==============================================================================*/
 {
-	char *type_string;
+	const char *type_string;
 
 	ENTER(get_GT_polyline_type_string);
 	switch (polyline_type)
@@ -882,7 +886,7 @@ Returns a string describing the polyline type, suitable for writing to file
 		{
 			display_message(ERROR_MESSAGE,
 				"get_GT_polyline_type_string.  Unknown polyline type");
-			type_string=(char *)NULL;
+			type_string=(const char *)NULL;
 		}
 	}
 	LEAVE;
@@ -901,7 +905,7 @@ get_GT_polyline_type_string. For compatibility, also supports converting old
 enumerator numbers (as text) into the new enumerator values, with a warning.
 ==============================================================================*/
 {
-	char *compare_type_string;
+	const char *compare_type_string;
 	int return_code;
 	enum GT_polyline_type temp_poly_type;
 
@@ -968,7 +972,7 @@ enumerator numbers (as text) into the new enumerator values, with a warning.
 	return (return_code);
 } /* get_GT_polyline_type_from_string */
 
-char *get_GT_surface_type_string(enum GT_surface_type surface_type)
+const char *get_GT_surface_type_string(enum GT_surface_type surface_type)
 /*******************************************************************************
 LAST MODIFIED : 13 August 1998
 
@@ -977,7 +981,7 @@ Returns a string describing the surface type, suitable for writing to file
 (and reinterpreting it later).
 ==============================================================================*/
 {
-	char *type_string;
+	const char *type_string;
 
 	ENTER(get_GT_surface_type_string);
 	switch (surface_type)
@@ -1010,7 +1014,7 @@ Returns a string describing the surface type, suitable for writing to file
 		{
 			display_message(ERROR_MESSAGE,
 				"get_GT_surface_type_string.  Unknown surface type");
-			type_string=(char *)NULL;
+			type_string=(const char *)NULL;
 		}
 	}
 	LEAVE;
@@ -1029,7 +1033,7 @@ get_GT_surface_type_string. For compatibility, also supports converting old
 enumerator numbers (as text) into the new enumerator values, with a warning.
 ==============================================================================*/
 {
-	char *compare_type_string;
+	const char *compare_type_string;
 	int return_code;
 	enum GT_surface_type temp_surf_type;
 
@@ -7128,7 +7132,7 @@ DESCRIPTION :
 Modifier function to set the graphics_object from a command.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct GT_object *graphics_object,**graphics_object_address;
 	struct LIST(GT_object) *graphics_object_list;

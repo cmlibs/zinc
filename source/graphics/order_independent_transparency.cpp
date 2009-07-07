@@ -78,14 +78,14 @@ extern "C" {
 #   endif /* defined GL_EXT_texture_rectangle */
 #endif /* ! defined GL_ARB_texture_rectangle */
 
-static char *required_extensions_default[] = {"GL_ARB_texture_rectangle",
+static const char *required_extensions_default[] = {"GL_ARB_texture_rectangle",
 													"GL_ARB_fragment_program_shadow",
 												  "GL_ARB_depth_texture",
 												  "GL_ARB_shadow"};
 /* Mesa actually does the shadow test automatically but does not expose
 the extension, and ATI on Linux has the extension but does not list it
 in the extensions string. */
-static char *required_extensions_mesa_ati[] = {"GL_ARB_texture_rectangle",
+static const char *required_extensions_mesa_ati[] = {"GL_ARB_texture_rectangle",
 												  "GL_ARB_depth_texture"};
 #if defined GL_ARB_texture_rectangle && defined GL_ARB_vertex_program \
    && defined GL_ARB_fragment_program && defined  GL_ARB_fragment_program_shadow \
@@ -568,7 +568,7 @@ Returns true if the current display is capable of order independent transparency
 #if defined (ORDER_INDEPENDENT_CAPABLE)
 	GLint alpha_bits, depth_bits;
 #endif /* defined (ORDER_INDEPENDENT_CAPABLE) */
-	char **required_extensions;
+	const char **required_extensions;
 	enum Graphics_library_vendor_id vendor_id;
 	int return_code;
 	unsigned int i, number_of_required_extensions;

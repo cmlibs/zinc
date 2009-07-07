@@ -56,6 +56,10 @@ November 1997. Created from Scene description part of Drawing.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <string.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 extern "C" {
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
@@ -4488,7 +4492,7 @@ Iterator function for writing the transformation in effect for <scene_object>
 in an easy-to-interpret matrix multiplication form.
 ==============================================================================*/
 {
-	char *coordinate_symbol="xyzh";
+	const char *coordinate_symbol="xyzh";
 	int i,return_code;
 	gtMatrix transformation_matrix;
 
@@ -8805,7 +8809,7 @@ Modifier function to set the scene from a command.
 ???RC set_Object routines could become a macro.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct Scene *scene,**scene_address;
 	struct MANAGER(Scene) *scene_manager;
@@ -8909,7 +8913,8 @@ GT_element_settings or a whole GT_element_settings so that export commands can
 work on these sub_elements.  These created scenes are not added to the manager.
 ==============================================================================*/
 {
-	char *current_token, *index, *next_index, *string_copy;
+	const char *current_token;
+	char *index, *next_index, *string_copy;
 	int return_code;
 	gtMatrix transformation;
 	struct GT_element_group *gt_element_group;
@@ -9157,7 +9162,7 @@ Parser commands for modifying scenes - lighting, etc.
 	enum Scene_graphical_element_mode graphical_element_mode,
 		old_graphical_element_mode;
 	int number_of_valid_strings,return_code;
-	char *current_token;
+	const char *current_token;
 	struct Option_table *option_table;
 	struct Scene *scene;
 	struct Light *light_to_add,*light_to_remove;

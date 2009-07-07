@@ -250,7 +250,7 @@ message if not already in the middle of changes.
 ==============================================================================*/
 
 struct FE_field *FE_region_get_FE_field_from_name(struct FE_region *fe_region,
-	char *field_name);
+	const char *field_name);
 /*******************************************************************************
 LAST MODIFIED : 15 October 2002
 

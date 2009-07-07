@@ -701,7 +701,7 @@ as an string then <status> will be set to zero and <*result> will be NULL.
 } /* interpreter_evaluate_string_ */
 
 void interpreter_set_string_(struct Interpreter *interpreter, 
-	 char *variable_name, char *value, int *status)
+	 const char *variable_name, char *value, int *status)
 /*******************************************************************************
 LAST MODIFIED : 20 April 2005
 

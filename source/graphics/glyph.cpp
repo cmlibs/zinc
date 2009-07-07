@@ -244,7 +244,8 @@ DESCRIPTION :
 Renders the label_bounds as lines and labels.  
 ==============================================================================*/
 {
-	char *name = "axes_ticks_temporary", **label_strings;
+	const char *name = "axes_ticks_temporary";
+	char **label_strings;
 	FE_value grid_scale;
 	int first, j, label_bounds_offset, last, number_of_major_lines, 
 		number_of_minor_lines, number_of_labels, number_of_ticks, return_code;
@@ -615,7 +616,7 @@ Global functions
 ----------------
 */
 
-struct GT_object *make_glyph_arrow_line(char *name,float head_length,
+struct GT_object *make_glyph_arrow_line(const char *name,float head_length,
 	float half_head_width)
 /*******************************************************************************
 LAST MODIFIED : 3 August 1999
@@ -702,7 +703,7 @@ from the shaft.
 	return (glyph);
 } /* make_glyph_arrow_line */
 
-struct GT_object *make_glyph_arrow_solid(char *name, int primary_axis,
+struct GT_object *make_glyph_arrow_solid(const char *name, int primary_axis,
 	int number_of_segments_around,float shaft_length,float shaft_radius,
 	float cone_radius)
 /*******************************************************************************
@@ -813,8 +814,8 @@ the arrow points in.
 	return (glyph);
 } /* make_glyph_arrow_solid */
 
-struct GT_object *make_glyph_axes(char *name, int make_solid, float head_length,
-	float half_head_width,char **labels, float label_offset,
+struct GT_object *make_glyph_axes(const char *name, int make_solid, float head_length,
+	float half_head_width,const char **labels, float label_offset,
 	struct Graphics_font *font)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
@@ -1019,7 +1020,7 @@ The length and width of the arrow heads are specified by the final parameters.
 	return (glyph);
 } /* make_glyph_axes */
 
-struct GT_object *make_glyph_cone(char *name,int number_of_segments_around)
+struct GT_object *make_glyph_cone(const char *name,int number_of_segments_around)
 /*******************************************************************************
 LAST MODIFIED : 19 October 1998
 
@@ -1082,7 +1083,7 @@ lies at <1,0,0>. The radius of the cone is 0.5 at its base.
 	return (glyph);
 } /* make_glyph_cone */
 
-struct GT_object *make_glyph_cone_solid(char *name,int number_of_segments_around)
+struct GT_object *make_glyph_cone_solid(const char *name,int number_of_segments_around)
 /*******************************************************************************
 LAST MODIFIED : 20 January 2004
 
@@ -1174,7 +1175,7 @@ solid base.
 	return (glyph);
 } /* make_glyph_cone_solid */
 
-struct GT_object *make_glyph_cross(char *name)
+struct GT_object *make_glyph_cross(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 16 July 1999
 
@@ -1256,7 +1257,7 @@ from <0,0,-0.5> to <0,0,+0.5>
 	return (glyph);
 } /* make_glyph_cross */
 
-struct GT_object *make_glyph_cube_solid(char *name)
+struct GT_object *make_glyph_cube_solid(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 20 November 2000
 
@@ -1369,7 +1370,7 @@ cube centred at <0,0,0>.
 	return (glyph);
 } /* make_glyph_cube_solid */
 
-struct GT_object *make_glyph_cube_wireframe(char *name)
+struct GT_object *make_glyph_cube_wireframe(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 20 November 2000
 
@@ -1466,7 +1467,7 @@ wireframe cube centred at <0,0,0>.
 	return (glyph);
 } /* make_glyph_cube_wireframe */
 
-struct GT_object *make_glyph_cylinder(char *name,int number_of_segments_around)
+struct GT_object *make_glyph_cylinder(const char *name,int number_of_segments_around)
 /*******************************************************************************
 LAST MODIFIED : 14 July 1999
 
@@ -1531,7 +1532,7 @@ lies in the direction <1,0,0>. It fits into the unit cube spanning from
 	return (glyph);
 } /* make_glyph_cylinder */
 
-struct GT_object *make_glyph_cylinder_solid(char *name,int number_of_segments_around)
+struct GT_object *make_glyph_cylinder_solid(const char *name,int number_of_segments_around)
 /*******************************************************************************
 LAST MODIFIED : 20 January 2004
 
@@ -1649,7 +1650,7 @@ lies in the direction <1,0,0>. It fits into the unit cube spanning from
 	return (glyph);
 } /* make_glyph_cylinder */
 
-struct GT_object *make_glyph_line(char *name)
+struct GT_object *make_glyph_line(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 14 July 1999
 
@@ -1714,7 +1715,7 @@ Creates a graphics object named <name> consisting of a line from <0,0,0> to
 	return (glyph);
 } /* make_glyph_line */
 
-struct GT_object *make_glyph_mirror(char *name, struct GT_object *mirror_glyph)
+struct GT_object *make_glyph_mirror(const char *name, struct GT_object *mirror_glyph)
 /*******************************************************************************
 LAST MODIFIED : 16 November 2000
 
@@ -1746,7 +1747,7 @@ Makes a glyph with the given <name> that automatically mirrors the given
 	return (glyph);
 } /* make_glyph_mirror */
 
-struct GT_object *make_glyph_point(char *name,gtMarkerType marker_type,
+struct GT_object *make_glyph_point(const char *name,gtMarkerType marker_type,
 	float marker_size)
 /*******************************************************************************
 LAST MODIFIED : 1 December 1998
@@ -1809,7 +1810,7 @@ The point will be drawn with the given <marker_type> and <marker_size>.
 	return (glyph);
 } /* make_glyph_point */
 
-struct GT_object *make_glyph_sheet(char *name, int define_texturepoints)
+struct GT_object *make_glyph_sheet(const char *name, int define_texturepoints)
 /*******************************************************************************
 LAST MODIFIED : 5 May 1999
 
@@ -1929,7 +1930,7 @@ ranging from <0.0,0.0,0.0> to <1.0,1.0,0.0>.
 	return (glyph);
 } /* make_glyph_sheet */
 
-struct GT_object *make_glyph_sphere(char *name,int number_of_segments_around,
+struct GT_object *make_glyph_sphere(const char *name,int number_of_segments_around,
 	int number_of_segments_down)
 /*******************************************************************************
 LAST MODIFIED : 19 October 1998
@@ -2033,7 +2034,7 @@ DESCRIPTION :
 Creates a list of standard glyphs for the cmgui and unemap applications.
 ==============================================================================*/
 {
-	char *labels_xyz[] = {"x","y","z"}, *labels_fsn[] = {"f","s","n"},
+	const char *labels_xyz[] = {"x","y","z"}, *labels_fsn[] = {"f","s","n"},
 		 *labels_123[] = {"1","2","3"};
 	struct GT_object *glyph, *mirror_glyph;
 	struct LIST(GT_object) *glyph_list;
@@ -2073,11 +2074,11 @@ Creates a list of standard glyphs for the cmgui and unemap applications.
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
-		if (glyph=make_glyph_axes("axes",/*make_solid*/0,0.1,0.025,(char **)NULL, 0.1,font))
+		if (glyph=make_glyph_axes("axes",/*make_solid*/0,0.1,0.025,(const char **)NULL, 0.1,font))
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
-		if (glyph=make_glyph_axes("axes_solid",/*make_solid*/1,0.1,0.025,(char **)NULL, 0.1,font))
+		if (glyph=make_glyph_axes("axes_solid",/*make_solid*/1,0.1,0.025,(const char **)NULL, 0.1,font))
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
@@ -2137,7 +2138,7 @@ Creates a list of standard glyphs for the cmgui and unemap applications.
 		}
 		if (glyph=make_glyph_axes("grid_lines",
 				/*make_solid*/0, /*head_length*/0.0, /*half_head_width*/0.0,
-				/*labels*/(char **)NULL, /*label_offset*/0.1, font))
+				/*labels*/(const char **)NULL, /*label_offset*/0.1, font))
 		{
 			Graphics_object_set_glyph_labels_function(glyph, draw_glyph_grid_lines);
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);

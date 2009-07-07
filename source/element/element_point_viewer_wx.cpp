@@ -43,6 +43,9 @@ selected element point, or set it if entered in this dialog.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif
 extern "C" {
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"

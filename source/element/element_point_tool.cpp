@@ -41,24 +41,26 @@ Interactive tool for selecting element/grid points with mouse and other devices.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 extern "C"{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/Protocols.h>
 #include <Xm/MwmUtil.h>
 #include <Xm/Xm.h>
 #include <Xm/ToggleBG.h>
 #include "choose/choose_computed_field.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "command/command.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "element/element_point_tool.h"
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static char element_point_tool_uidh[] =
 #include "element/element_point_tool.uidh"
 	;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
 #include "graphics/scene.h"
@@ -66,9 +68,9 @@ static char element_point_tool_uidh[] =
 #include "interaction/interaction_graphics.h"
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include "motif/image_utilities.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 }
@@ -87,10 +89,10 @@ static char element_point_tool_uidh[] =
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int element_point_tool_hierarchy_open=0;
 static MrmHierarchy element_point_tool_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static char Interactive_tool_element_point_type_string[] = "element_point_tool";
 
@@ -131,12 +133,12 @@ Object storing all the parameters for interactively selecting element points.
 	struct Interaction_volume *last_interaction_volume;
 	struct GT_object *rubber_band;
 	//struct Graphics_window *graphics_window;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Display *display;
 
 	Widget command_field_button, command_field_form, command_field_widget;
 	Widget widget, window_shell;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (WX_USER_INTERFACE)
 	 wxElementPointTool *wx_element_point_tool;
@@ -150,7 +152,7 @@ Module functions
 ----------------
 */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_point_tool,Element_point_tool,command_field_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_point_tool,Element_point_tool,command_field_form)
 
@@ -258,7 +260,7 @@ Callback for change of command_field.
 	}
 	LEAVE;
 } /* Element_point_tool_update_command_field */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static void Element_point_tool_reset(void *element_point_tool_void)
 /*******************************************************************************
@@ -563,18 +565,18 @@ DESCRIPTION :
 Fetches an icon for the Element_point tool.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Display *display;
 	Pixel background_pixel, foreground_pixel;
 	Pixmap pixmap;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Cmgui_image *image;
 	struct Element_point_tool *element_point_tool;
 
 	ENTER(Element_point_tool_get_icon);
 	if ((element_point_tool=(struct Element_point_tool *)element_point_tool_void))
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		if (MrmOpenHierarchy_binary_string(element_point_tool_uidh,sizeof(element_point_tool_uidh),
 			&element_point_tool_hierarchy,&element_point_tool_hierarchy_open))
 		{
@@ -600,13 +602,13 @@ Fetches an icon for the Element_point tool.
 				"Could not open heirarchy");
 			image = (struct Cmgui_image *)NULL;
 		}
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 		USE_PARAMETER(foreground);
 		USE_PARAMETER(background);
 		USE_PARAMETER(element_point_tool);
 		display_message(WARNING_MESSAGE, "Element_point_tool_get_icon.  "
 			"Not implemented for this user interface.");
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
@@ -839,7 +841,7 @@ Creates an Element_point_tool with Interactive_tool in
 <element_point_ranges_selection> in response to interactive_events.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Atom WM_DELETE_WINDOW;
 	int init_widgets;
 	MrmType element_point_tool_dialog_class;
@@ -857,7 +859,7 @@ Creates an Element_point_tool with Interactive_tool in
 		{"elem_pnt_tool_structure",(XtPointer)NULL}
 	};
 	struct Callback_data callback;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Element_point_tool *element_point_tool;
 	struct MANAGER(Computed_field) *computed_field_manager;
 
@@ -907,7 +909,7 @@ Creates an Element_point_tool with Interactive_tool in
 			element_point_tool->last_interaction_volume=
 				(struct Interaction_volume *)NULL;
 			element_point_tool->rubber_band=(struct GT_object *)NULL;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			element_point_tool->display = User_interface_get_display
 				(user_interface);
 
@@ -1063,11 +1065,11 @@ structure itself.
 		REACCESS(Element_point_ranges)(
 			&(element_point_tool->last_picked_element_point),
 			(struct Element_point_ranges *)NULL);
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		REMOVE_OBJECT_FROM_MANAGER(Interactive_tool)(
 			element_point_tool->interactive_tool,
 			element_point_tool->interactive_tool_manager);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		REACCESS(Interaction_volume)(
 			&(element_point_tool->last_interaction_volume),
 			(struct Interaction_volume *)NULL);
@@ -1078,14 +1080,14 @@ structure itself.
 		{
 			DEACCESS(Time_keeper)(&(element_point_tool->time_keeper));
 		}
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		if (element_point_tool->window_shell)
 		{
 			destroy_Shell_list_item_from_shell(&(element_point_tool->window_shell),
 				element_point_tool->user_interface);
 			XtDestroyWidget(element_point_tool->window_shell);
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		DEALLOCATE(*element_point_tool_address);
 		return_code=1;
 	}
@@ -1113,7 +1115,7 @@ Pops up a dialog for editing settings of the Element_point_tool.
 	ENTER(Element_point_tool_pop_up_dialog);
 	if (element_point_tool)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		XtPopup(element_point_tool->window_shell, XtGrabNone);
 		/* make sure in addition that it is not shown as an icon */
 		XtVaSetValues(element_point_tool->window_shell, XmNiconic, False, NULL);
@@ -1164,12 +1166,12 @@ Hides the dialog for editing settings of the Element_point_tool.
 	ENTER(Element_point_tool_pop_down_dialog);
 	if (element_point_tool)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		XtPopdown(element_point_tool->window_shell);
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 		display_message(ERROR_MESSAGE, "Element_point_tool_pop_down_dialog.  "
 			"No dialog implemented for this User Interface");
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		return_code = 1;
 	}
 	else
@@ -1222,9 +1224,9 @@ Sets the command_field to be executed when the element is clicked on in the
 <element_point_tool>.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	int field_set;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Element_point_tool_set_command_field);
@@ -1235,7 +1237,7 @@ Sets the command_field to be executed when the element is clicked on in the
 		if (command_field != element_point_tool->command_field)
 		{
 			element_point_tool->command_field = command_field;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			if (command_field)
 			{
 				CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
@@ -1245,7 +1247,7 @@ Sets the command_field to be executed when the element is clicked on in the
 			XtVaSetValues(element_point_tool->command_field_button,
 				XmNset, field_set, NULL);
 			XtSetSensitive(element_point_tool->command_field_widget, field_set);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 	}
 	else

@@ -941,7 +941,8 @@ Note that fields are not ACCESSed by this function and should not be
 ACCESSed in the initial source_data.
 ==============================================================================*/
 {
-	char *current_token, *field_component_name, *source_string, *temp_name;
+	const char *current_token;
+	char *field_component_name, *source_string, *temp_name;
 	FE_value *temp_source_values, value;
 	int component_no, components_to_add, i, number_of_characters, return_code,
 		source_field_number, source_value_number, *temp_source_field_numbers,
@@ -1439,7 +1440,7 @@ Converts <field> into type COMPUTED_FIELD_CONSTANT (if it is not already)
 and allows its contents to be modified.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	double *values, *temp_values;
 	int i, number_of_values, previous_number_of_values, return_code;
 	struct Computed_field *field;

@@ -47,6 +47,9 @@ This should only be included in cmgui.c and command/cmiss.c
 #define COMMAND_CMISS_H
 
 #include "command/command.h"
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 #include "general/io_stream.h"
 #include "general/manager.h"
 #include "region/cmiss_region.h"
@@ -71,7 +74,7 @@ Global functions
 ----------------
 */
 
-int cmiss_execute_command(char *command_string,void *command_data);
+int cmiss_execute_command(const char *command_string,void *command_data);
 /*******************************************************************************
 LAST MODIFIED : 9 November 1998
 
@@ -79,17 +82,17 @@ DESCRIPTION :
 Execute a <command_string>.
 ==============================================================================*/
 
-#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
-void execute_command(char *command_string,void *command_data_void, int *quit,
+#if defined (F90_INTERPRETER) || defined (USE_PERL_INTERPRETER)
+void execute_command(const char *command_string,void *command_data_void, int *quit,
   int *error);
 /*******************************************************************************
 LAST MODIFIED : 28 March 2000
 
 DESCRIPTION:
 ==============================================================================*/
-#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
+#endif /* defined (F90_INTERPRETER) || defined (USE_PERL_INTERPRETER) */
 
-int cmiss_set_command(char *command_string,void *command_data_void);
+int cmiss_set_command(const char *command_string,void *command_data_void);
 /*******************************************************************************
 LAST MODIFIED : 27 April 1999
 

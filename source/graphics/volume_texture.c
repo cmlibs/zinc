@@ -81,7 +81,7 @@ FULL_DECLARE_MANAGER_TYPE(VT_volume_texture);
 Module functions
 ----------------
 */
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(VT_volume_texture,name,char *,strcmp)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(VT_volume_texture,name,const char *,strcmp)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(VT_volume_texture)
 
@@ -121,7 +121,7 @@ double plane(double *position,double *parameters)
 Global functions
 ----------------
 */
-struct VT_volume_texture *CREATE(VT_volume_texture)(char *name)
+struct VT_volume_texture *CREATE(VT_volume_texture)(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 15 October 1998
 
@@ -391,7 +391,7 @@ DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(VT_volume_texture)
 
 DECLARE_INDEXED_LIST_FUNCTIONS(VT_volume_texture)
 
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(VT_volume_texture,name,char *,
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(VT_volume_texture,name,const char *,
 	strcmp)
 
 DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(VT_volume_texture,name)
@@ -1806,7 +1806,7 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 	return (return_code);
 } /* MANAGER_COPY_WITHOUT_IDENTIFIER(VT_volume_texture,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(VT_volume_texture,name,char *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(VT_volume_texture,name,const char *)
 {
 	char *destination_name;
 	int return_code;
@@ -1857,7 +1857,7 @@ DECLARE_MANAGER_FUNCTIONS(VT_volume_texture)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(VT_volume_texture)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(VT_volume_texture,name,char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(VT_volume_texture,name,const char *)
 
 int list_VT_volume_texture(struct VT_volume_texture *texture)
 /*******************************************************************************
@@ -1918,7 +1918,7 @@ DESCRIPTION :
 Modifier function to set the volume texture from a command.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct VT_volume_texture *temp_texture,**texture_address;
 	struct MANAGER(VT_volume_texture) *volume_texture_manager;
@@ -2139,7 +2139,7 @@ DESCRIPTION :
 Modifier function to set the clipping from a command.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	double *clipping_parameters;
 	int return_code;
 	struct Clipping *clipping,**clipping_address;

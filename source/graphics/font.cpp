@@ -42,6 +42,9 @@ This provides a Cmgui interface to the font contexts of many types.
  *
  * ***** END LICENSE BLOCK ***** */
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 extern "C" {
 #include "general/debug.h"
 #include "general/object.h"
@@ -52,10 +55,10 @@ extern "C" {
 #include "graphics/graphics_library.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/message.h"
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #define GLX_GLXEXT_PROTOTYPES
 #include <GL/glx.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #include <gtk/gtk.h>
 #if ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)
@@ -141,7 +144,7 @@ Module functions
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Graphics_font)
 
 DECLARE_LIST_FUNCTIONS(Graphics_font)
-DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Graphics_font,name,char *,strcmp)
+DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Graphics_font,name,const char *,strcmp)
 DECLARE_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Graphics_font,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Graphics_font,name)
@@ -234,7 +237,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphics_font,name)
 	return (return_code);
 } /* MANAGER_COPY_WITHOUT_IDENTIFIER(Graphics_font,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Graphics_font,name,char *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Graphics_font,name,const char *)
 {
 	char *destination_name;
 	int return_code;
@@ -274,9 +277,9 @@ DECLARE_MANAGER_FUNCTIONS(Graphics_font)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphics_font)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_font,name,char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_font,name,const char *)
 
-struct Graphics_font *CREATE(Graphics_font)(char *name, char *font_string);
+struct Graphics_font *CREATE(Graphics_font)(const char *name, const char *font_string);
 /*******************************************************************************
 LAST MODIFIED : 11 April 2007
 
@@ -373,7 +376,7 @@ allow interfacing to the choose_object widgets.
 
 int Graphics_font_package_define_font(
 	struct Graphics_font_package *font_package,
-	char *font_name, char *font_string)
+	const char *font_name, const char *font_string)
 /*******************************************************************************
 LAST MODIFIED : 11 April 2007
 
@@ -431,7 +434,7 @@ Defines an <alias_name> in the <font_package> which refers to the font
 } /* Graphics_font_package_define_font */
 
 struct Graphics_font *Graphics_font_package_get_font(
-	struct Graphics_font_package *font_package, char *font_name)
+	struct Graphics_font_package *font_package, const char *font_name)
 /*******************************************************************************
 LAST MODIFIED : 11 April 2007
 
@@ -472,7 +475,7 @@ as the user interface dependent font string.
 DECLARE_OBJECT_FUNCTIONS(Graphics_font)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Graphics_font)
 
-struct Graphics_font *CREATE(Graphics_font)(char *name, char *font_string)
+struct Graphics_font *CREATE(Graphics_font)(const char *name, const char *font_string)
 /*******************************************************************************
 LAST MODIFIED : 11 April 2007
 
@@ -501,7 +504,7 @@ DESCRIPTION :
 #if defined (WX_USER_INTERFACE)
 		font->font_settings = NULL;
 		struct Parse_state *state;
-		char *current_token;
+		const char *current_token;
 		if (strcmp(font->font_string,"default"))
 		{
 			 if (state=create_Parse_state(font->font_string))
@@ -626,7 +629,7 @@ Compiles the specified <font> so it can be used by the graphics.  The
 <buffer> is required so that we can determine what API is used by this buffer.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #define XmNgraphicsFont "graphicsFont"
 #define XmCGraphicsFont "GraphicsFont"
 #define XmNgraphicsTextOffsetX "graphicsTextOffsetX"
@@ -634,7 +637,7 @@ Compiles the specified <font> so it can be used by the graphics.  The
 #define XmNgraphicsTextOffsetY "graphicsTextOffsetY"
 #define XmCGraphicsTextOffsetY "GraphicsTextOffsetY"
 	XFontStruct *x_font;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 	HFONT win32_font;
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -661,7 +664,7 @@ Compiles the specified <font> so it can be used by the graphics.  The
 			/* Can have multiple types compiled in at the same time (X and gtk) */
 			switch (Graphics_buffer_get_type(buffer))
 			{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 				case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 #  if defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer)
 				case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
@@ -698,7 +701,7 @@ Compiles the specified <font> so it can be used by the graphics.  The
 						return_code = 0;
 					}
 				} break;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #  if defined GTK_USE_GTKGLAREA
 				case GRAPHICS_BUFFER_GTKGLAREA_TYPE:

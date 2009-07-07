@@ -44,6 +44,10 @@ Definitions for command window structure, and associated functions
 #if !defined (COMMAND_WINDOW_H)
 #define COMMAND_WINDOW_H
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #include "command/command.h"
 #include "general/object.h"
 #include "user_interface/user_interface.h"
@@ -58,9 +62,9 @@ Global constants
 #define CMGUI_COMMAND_PROPERTY "_CMGUI_COMMAND"
 #define CMGUI_RESPONSE_PROPERTY "_CMGUI_RESPONSE"
 
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
+#if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 #define USE_CMGUI_COMMAND_WINDOW
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+#endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 
 /*
 Global types
@@ -88,7 +92,7 @@ LAST MODIFIED : 28 February 2000
 DESCRIPTION:
 ==============================================================================*/
 
-int add_to_command_list(char *command,struct Command_window *command_window);
+int add_to_command_list(const char *command,struct Command_window *command_window);
 /*******************************************************************************
 LAST MODIFIED : 16 June 1996
 
@@ -97,7 +101,7 @@ Adds the <command> to the bottom of the list for the <command_window>.
 ==============================================================================*/
 
 int Command_window_set_command_prompt(struct Command_window *command_window,
-	char *prompt);
+	const char *prompt);
 /*******************************************************************************
 LAST MODIFIED : 27 June 2002
 
@@ -114,7 +118,7 @@ Resets all functions of the command box widget.
 ==============================================================================*/
 
 int Command_window_set_command_string(struct Command_window *command_window,
-	char *command_string);
+	const char *command_string);
 /*******************************************************************************
 LAST MODIFIED : 27 April 1999
 
@@ -125,7 +129,7 @@ responce to a single mouse click on it.
 Does not override the command prompt.
 ==============================================================================*/
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 Widget Command_window_get_message_pane(struct Command_window *command_window);
 /*******************************************************************************
 LAST MODIFIED : 28 February 2002
@@ -133,9 +137,9 @@ LAST MODIFIED : 28 February 2002
 DESCRIPTION :
 Returns the message pane widget.
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-int write_command_window(char *message,struct Command_window *command_window);
+int write_command_window(const char *message,struct Command_window *command_window);
 /*******************************************************************************
 LAST MODIFIED : 16 June 1996
 

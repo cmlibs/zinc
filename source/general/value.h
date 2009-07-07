@@ -46,6 +46,10 @@ checking.
 #if !defined (VALUE_H)
 #define VALUE_H
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #if defined (UNIX)
 #  if defined (CYGWIN)
    /*#include <w32api/winnt.h>*/

@@ -43,19 +43,19 @@ Management routines for the comfile window.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <string.h>
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/Protocols.h>
 #include <Xm/DialogS.h>
 #include <Xm/List.h>
 #include <Xm/MwmUtil.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "general/debug.h"
 #include "comfile/comfile_window.h"
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static char comfile_window_uidh[] =
 #include "comfile/comfile_window.uidh"
 ;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "general/indexed_list_private.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"
@@ -109,10 +109,10 @@ Module variables
 ----------------
 */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int comfile_window_hierarchy_open=0;
 static MrmHierarchy comfile_window_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Module functions
@@ -123,7 +123,7 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Comfile_window, name, char *, strcmp)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Comfile_window)
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void identify_command_list(Widget widget,
 	XtPointer comfile_window_structure,XtPointer call_data)
 /*******************************************************************************
@@ -206,9 +206,9 @@ commands from the comfile into the list.
 	}
 	LEAVE;
 } /* identify_command_list */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void close_comfile_window(Widget widget,
 	XtPointer comfile_window_structure,XtPointer call_data)
 /*******************************************************************************
@@ -246,9 +246,9 @@ If it is not managed, can't destroy it here.
 	}
 	LEAVE;
 } /* close_comfile_window */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void item_selected(Widget widget,XtPointer comfile_window_structure,
 	XtPointer call_data)
 /*******************************************************************************
@@ -290,9 +290,9 @@ Called when a command is selected (clicked).
 	}
 	LEAVE;
 } /* item_selected */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void execute_one(Widget widget,XtPointer comfile_window_structure,
 	XtPointer call_data)
 /*******************************************************************************
@@ -333,9 +333,9 @@ Called when a command is double-clicked.
 	}
 	LEAVE;
 } /* execute_one */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void execute_all(Widget widget,XtPointer comfile_window_structure,
 	XtPointer call_data)
 /*******************************************************************************
@@ -393,9 +393,9 @@ Executes all commands in a comfile window.
 	}
 	LEAVE;
 } /* execute_all */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void execute_selected(Widget widget,XtPointer comfile_window_structure,
 	XtPointer call_data)
 /*******************************************************************************
@@ -462,13 +462,13 @@ Executes selected commands in a comfile window.
 	}
 	LEAVE;
 } /* execute_selected */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Global functions
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 struct Comfile_window *CREATE(Comfile_window)(char *name,
 	char *file_name, struct IO_stream_package *io_stream_package,
 	struct Execute_command *execute_command,
@@ -623,9 +623,9 @@ resource manager hierarchy.
 
 	return (comfile_window);
 } /* CREATE(Comfile_window) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int DESTROY(Comfile_window)(struct Comfile_window **comfile_window_address)
 /*******************************************************************************
 LAST MODIFIED : 18 April 2002
@@ -673,7 +673,7 @@ Comfile_window_destroy_CB.
 
 	return (return_code);
 } /* DESTROY(Comfile_window) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 DECLARE_OBJECT_FUNCTIONS(Comfile_window)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Comfile_window)

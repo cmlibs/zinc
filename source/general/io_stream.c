@@ -42,6 +42,10 @@ streams.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #if defined (GENERIC_PC) && defined (UNIX)
 /* SAB 10 December 2004 Specifying -std=gnu99 on the command line doesn't seem
 	to be sufficient for the cross compiler so I am specifying it here too. */
@@ -244,12 +248,12 @@ DESCRIPTION :
 
 DECLARE_OBJECT_FUNCTIONS(IO_memory_block)
 
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(IO_memory_block,name,char *,strcmp)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(IO_memory_block,name,const char *,strcmp)
 
 DECLARE_INDEXED_LIST_FUNCTIONS(IO_memory_block)
 
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(IO_memory_block,name,
-	char *,strcmp)
+	const	char *,strcmp)
 
 struct IO_stream_package *CREATE(IO_stream_package)(void)
 /*******************************************************************************
@@ -502,14 +506,15 @@ DESCRIPTION :
 	return (io_stream);
 } /* CREATE(IO_stream) */
 
-int IO_stream_open_for_read(struct IO_stream *stream, char *stream_uri)
+int IO_stream_open_for_read(struct IO_stream *stream, const char *stream_uri)
 /*******************************************************************************
 LAST MODIFIED : 23 March 2007
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	char *colon, *filename, *uri_type;
+	const char *filename;
+	char *colon, *uri_type;
 	int file_uri_specifier, return_code;
 
 	ENTER(IO_stream_open);

@@ -40,6 +40,10 @@ DESCRIPTION :
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #if defined (UNIX)
 #include <sys/utsname.h>
 #endif /* UNIX */
@@ -185,7 +189,7 @@ Parses the name, and turns it into a type.
 {
 #if !defined (WINDOWS_DEV_FLAG)
 	enum Machine_type *machine_type_address;
-	char *current_token;
+	const char *current_token;
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 	int return_code;
 

@@ -123,11 +123,11 @@ PROTOTYPE_OBJECT_FUNCTIONS(Light_model);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Light_model);
 
 PROTOTYPE_LIST_FUNCTIONS(Light_model);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Light_model,name,char *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Light_model,name,const char *);
 
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Light_model,name,char *);
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(Light_model,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Light_model);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Light_model,name,char *);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Light_model,name,const char *);
 
 int Light_model_get_ambient(struct Light_model *light_model,
 	struct Colour *ambient);

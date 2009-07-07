@@ -107,11 +107,11 @@ PROTOTYPE_OBJECT_FUNCTIONS(Comfile_window);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Comfile_window);
 
 PROTOTYPE_LIST_FUNCTIONS(Comfile_window);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Comfile_window,name,char *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Comfile_window,name,const char *);
 
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Comfile_window,name,char *);
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(Comfile_window,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Comfile_window);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Comfile_window,name,char *);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Comfile_window,name,const char *);
 
 char *Comfile_window_manager_make_unique_name(
 	struct MANAGER(Comfile_window) *comfile_window_manager, char *file_name);

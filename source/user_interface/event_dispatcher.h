@@ -45,6 +45,10 @@ registered file descriptors to the correct callbacks.
 #if !defined (EVENT_DISPATCHER_H)
 #define EVENT_DISPATCHER_H
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #include "general/object.h"
 #include "general/list.h"
 #if defined (USE_XTAPP_CONTEXT) /* switch (USER_INTERFACE) */

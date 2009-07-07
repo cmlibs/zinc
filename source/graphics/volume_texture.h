@@ -422,7 +422,7 @@ DESCRIPTION :
 Global functions
 ----------------
 */
-struct VT_volume_texture *CREATE(VT_volume_texture)(char *name);
+struct VT_volume_texture *CREATE(VT_volume_texture)(const char *name);
 /*******************************************************************************
 LAST MODIFIED : 25 September 1995
 
@@ -446,13 +446,13 @@ PROTOTYPE_GET_OBJECT_NAME_FUNCTION(VT_volume_texture);
 
 PROTOTYPE_LIST_FUNCTIONS(VT_volume_texture);
 
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(VT_volume_texture,name,char *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(VT_volume_texture,name,const char *);
 
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(VT_volume_texture,name,char *);
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(VT_volume_texture,name,const char *);
 
 PROTOTYPE_MANAGER_FUNCTIONS(VT_volume_texture);
 
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(VT_volume_texture,name,char *);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(VT_volume_texture,name,const char *);
 
 void generate_isosurface(struct VT_volume_texture *texture);
 /*******************************************************************************

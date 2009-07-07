@@ -105,7 +105,7 @@ DESCRIPTION :
 A modifier function for setting exterior flag and face number.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code,*value_address;
 
 	ENTER(set_exterior);
@@ -222,7 +222,7 @@ any x application - incl. for compatibility with win32.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #define XmNdefaultCircleDiscretization "defaultCircleDiscretization"
 #define XmCDefaultCircleDiscretization "DefaultCircleDiscretization"
 #define XmNmaximumCircleDiscretization "maximumCircleDiscretization"
@@ -244,15 +244,15 @@ any x application - incl. for compatibility with win32.
 			"6"
 		}
 	};
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(read_circle_discretization_defaults);
-#if !defined (MOTIF)
+#if !defined (MOTIF_USER_INTERFACE)
 	USE_PARAMETER(user_interface);
-#endif /* !defined (MOTIF) */
+#endif /* !defined (MOTIF_USER_INTERFACE) */
 	if (default_value)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		if (!resources_read)
 		{
 			if (user_interface)
@@ -268,9 +268,9 @@ any x application - incl. for compatibility with win32.
 			}
 		}
 		*default_value=discretization.default_value;
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 		*default_value=6;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		return_code=1;
 	}
 	else
@@ -340,7 +340,7 @@ DESCRIPTION :
 A modifier function for setting number of segments used to draw circles.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	int *circle_discretization;
 	struct User_interface *user_interface;
@@ -431,7 +431,7 @@ any x application - incl. for compatibility with win32.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #define XmNdefaultElementDiscretization "defaultElementDiscretization"
 #define XmCDefaultElementDiscretization "DefaultElementDiscretization"
 #define XmNmaximumElementDiscretization "maximumElementDiscretization"
@@ -453,15 +453,15 @@ any x application - incl. for compatibility with win32.
 			"4"
 		}
 	};
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(read_element_discretization_defaults);
-#if !defined (MOTIF)
+#if !defined (MOTIF_USER_INTERFACE)
 	USE_PARAMETER(user_interface);
-#endif /* !defined (MOTIF) */
+#endif /* !defined (MOTIF_USER_INTERFACE) */
 	if (default_value)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		if (!resources_read)
 		{
 			/* Some functions call this without the user_interface, 
@@ -479,9 +479,9 @@ any x application - incl. for compatibility with win32.
 			}
 		}
 		*default_value=discretization.default_value;
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 		*default_value=4;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		return_code=1;
 	}
 	else
@@ -571,7 +571,7 @@ DESCRIPTION :
 A modifier function for setting discretization in each element direction.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code,multiple_default;
 	struct Element_discretization *element_discretization;
 	struct User_interface *user_interface;

@@ -46,12 +46,12 @@ NOTE :
 #include <stddef.h>
 #include <stdio.h>
 #include <math.h>
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/Xm.h>
 #include <Xm/Text.h>
 #include <X11/Xlib.h>
 #include <Mrm/MrmPublic.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "colour/edit_var.h"
 static char edit_var_uidh[] =
 #include "colour/edit_var.uidh"

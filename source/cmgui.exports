@@ -198,9 +198,9 @@ Cmiss_field_finite_element_define_at_node
 Cmiss_field_evaluate_in_element
 Cmiss_field_get_type_connected_threshold_image_filter
 Cmiss_field_set_type_connected_threshold_image_filter
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
+#if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
 Computed_field_set_type_window_projection
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
+#endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
 
 Cmiss_texture_manager_get_texture
 Cmiss_texture_manager_create_texture_from_file

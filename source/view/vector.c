@@ -58,10 +58,10 @@ static char vector_uidh[] =
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int vector_hierarchy_open=0;
 static MrmHierarchy vector_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 /* initialisation data for the menu choices and their values */
 struct Dof3_data vector_values[VECTOR_NUM_CHOICES] =
 {

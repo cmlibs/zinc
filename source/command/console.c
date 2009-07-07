@@ -43,7 +43,11 @@ Management routines for the main command window.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <stdlib.h>
-#if defined (WIN32_SYSTEM)
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
+#if defined (WIN32)
 #  include <direct.h>
 #else /* !defined (WIN32_SYSTEM) */
 #  include <unistd.h>
@@ -224,7 +228,7 @@ DESCRIPTION:
 	return (return_code);
 } /* DESTROY(console) */
 
-int Console_set_command_prompt(struct Console *console, char *prompt)
+int Console_set_command_prompt(struct Console *console, const char *prompt)
 /*******************************************************************************
 LAST MODIFIED : 27 June 2002
 

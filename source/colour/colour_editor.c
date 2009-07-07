@@ -45,9 +45,9 @@ ranges between 0-1.
 #include <stddef.h>
 #include <stdio.h>
 #include <math.h>
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/Text.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "colour/colour_editor.h"
 static char colour_editor_uidh[] =
 #include "colour/colour_editor.uidh"

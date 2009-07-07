@@ -41,6 +41,11 @@ Functions for opening and closing the user interface.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 extern "C" {
 #include <stddef.h>
 #include <stdlib.h>
@@ -53,7 +58,7 @@ extern "C" {
 #if __GLIBC__ >= 2
 #include <gnu/libc-version.h>
 #endif
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <X11/Intrinsic.h>
 #include <X11/Shell.h>
 #include <X11/Xlib.h>
@@ -63,25 +68,25 @@ extern "C" {
 #include <Xm/Text.h>
 #include <Xm/TextF.h>
 #include <Mrm/MrmPublic.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "general/debug.h"
 #include "general/myio.h"
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #if defined (EXT_INPUT)
 #include "io_devices/input_module.h"
 #endif /* defined (EXT_INPUT) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (LINK_CMISS)
 #include "link/cmiss.h"
 #endif /* defined (LINK_CMISS) */
 }
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #if !defined (USE_XTAPP_CONTEXT)
 extern "C" {
 #include "user_interface/call_work_procedures.h"
 }
 #endif /* !defined (USE_XTAPP_CONTEXT) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 extern "C" {
 #include <gtk/gtk.h>
@@ -123,10 +128,12 @@ DESCRIPTION :
 	int main_window_state,widget_spacing;
 	LPSTR command_line;
 #else /* defined (WIN32_USER_INTERFACE) */
-	char *application_name,**argv,*class_name;
+	const char *application_name;
+	char **argv;
+	const char *class_name;
 	int *argc_address;
 #endif /* defined (WIN32_USER_INTERFACE) */
-#if defined (MOTIF) /* switch (USER_INTERFACE) */
+#if defined (MOTIF_USER_INTERFACE) /* switch (USER_INTERFACE) */
 	Cursor busy_cursor;
 	Display *display;
 	int screen_height,screen_width,widget_spacing;
@@ -148,7 +155,7 @@ DESCRIPTION :
 	struct Event_dispatcher_idle_callback *special_idle_x_callback;
 	struct Event_dispatcher_timeout_callback *timeout_x_callback;
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 	GtkWidget *main_window;
 #if ! defined (USE_GTK_MAIN_STEP)
@@ -180,9 +187,9 @@ Used in conjunction with <busy_cursor_on> and <busy_cursor_off>.
 ???DB.  Move in with windowing macros ?
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget shell;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Shell_stack_item *next;
 }; /* struct Shell_stack_item */
 
@@ -197,31 +204,31 @@ set.
 ???DB.  Moved from user_interface.h
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget *shell_address;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Shell_list_item *previous;
 	struct Shell_list_item *next;
 	/*???DB.  Needed because shells don't have to have UserData */
 	struct User_interface *user_interface;
 }; /* struct Shell_list_item */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 typedef struct User_interface User_settings;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Module variables
 ----------------
 */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #if defined (EXT_INPUT)
 static unsigned long input_module_delay_s;
 static unsigned long input_module_delay_ns;
 	/*???DB.  Is there another way of doing this ? */
 #endif /* defined (EXT_INPUT) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (LINK_CMISS)
 static unsigned long cmiss_link_delay_s;
 static unsigned long cmiss_link_delay_ns;
@@ -238,7 +245,7 @@ Module functions
 ----------------
 */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #if ! defined (USE_XTAPP_CONTEXT)
 static int User_interface_X_query_callback(
 	struct Event_dispatcher_descriptor_set *descriptor_set, void *user_interface_void)
@@ -282,9 +289,9 @@ those processed by the event dispatcher.
 	return (return_code);
 } /* User_interface_X_query_callback */
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #if ! defined (USE_XTAPP_CONTEXT)
 static int User_interface_X_check_callback(
 	struct Event_dispatcher_descriptor_set *descriptor_set,
@@ -324,9 +331,9 @@ DESCRIPTION :
 	return (return_code);
 } /* User_interface_X_check_callback */
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #if ! defined (USE_XTAPP_CONTEXT)
 static int User_interface_X_dispatch_callback(void *user_interface_void)
 /*******************************************************************************
@@ -356,9 +363,9 @@ This function is called to process X connections.
 	return (return_code);
 } /* User_interface_X_callback */
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #if ! defined (USE_XTAPP_CONTEXT)
 static int User_interface_timeout_X_callback(void *user_interface_void)
 /*******************************************************************************
@@ -393,9 +400,9 @@ This function is called to process X connections.
 	return (return_code);
 } /* User_interface_timeout_X_callback */
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #if ! defined (USE_XTAPP_CONTEXT)
 static int User_interface_idle_X_callback(void *user_interface_void)
 /*******************************************************************************
@@ -452,9 +459,9 @@ This function is called to process X connections.
 	return (return_code);
 } /* User_interface_idle_X_callback */
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #if ! defined (USE_XTAPP_CONTEXT)
 struct additional_X_connection
 {
@@ -495,9 +502,9 @@ This function is called to process X connections.
 	return (return_code);
 } /* User_interface_X_callback */
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #if ! defined (USE_XTAPP_CONTEXT)
 static void User_interface_X_connection_callback(Display *display, 
 	XPointer user_interface_void, int file_descriptor, Bool opening, 
@@ -563,7 +570,7 @@ This function is called to register and deregister X connections.
 	LEAVE;
 } /* User_interface_X_connection_callback */
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (GTK_USER_INTERFACE)
 #if ! defined (USE_GTK_MAIN_STEP)
@@ -929,7 +936,7 @@ DESCRIPTION :
 #endif /* ! defined (USE_GTK_MAIN_STEP) */
 #endif /* defined (GTK_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #if defined (EXT_INPUT)
 static int process_external_input(void *user_interface_void)
 /*******************************************************************************
@@ -963,10 +970,10 @@ devices, and then resets the timeout.
 	return (return_code);
 } /* process_external_input */
 #endif /* defined (EXT_INPUT) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (LINK_CMISS)
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int process_cmiss_link(void *user_interface_void)
 /*******************************************************************************
 LAST MODIFIED : 6 March 2002
@@ -1011,7 +1018,7 @@ devices, and then resets the timeout.
 	
 	return (return_code);
 } /* process_cmiss_link */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #endif /* defined (LINK_CMISS) */
 
 #if defined (CARBON_USER_INTERFACE)
@@ -1028,7 +1035,7 @@ static OSStatus User_interface_carbon_application_event_handler(
 Global functions
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int x_error_handler(Display *display, XErrorEvent *error)
 /*******************************************************************************
 LAST MODIFIED : 15 September 1999 
@@ -1042,12 +1049,12 @@ Responds to nonfatal XErrors and allows cmgui to continue.
 	display_message(ERROR_MESSAGE, "x_error_handler:  %s", msg);
 	return(0);	
 } /* x_error_handler */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 struct Shell_list_item *create_Shell_list_item(
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget *shell_address,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 28 October 1998
@@ -1061,25 +1068,25 @@ unsuccessful.
 ==============================================================================*/
 {
 	struct Shell_list_item *list_item;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget shell;
 	Window window;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(create_Shell_list_item);
 #if defined (DEBUG)
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 printf("enter create_Shell_list_item.  shell_address=%p, user_interface=%p, shell=%p\n",
 	shell_address,user_interface,*shell_address);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #endif /* defined (DEBUG) */
 	if (ALLOCATE(list_item,struct Shell_list_item,1))
 	{
 		list_item->user_interface=user_interface;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		/* initialize shell field */
 		list_item->shell_address=shell_address;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		/* add item to list */
 		list_item->previous=(struct Shell_list_item *)NULL;
 		list_item->next=user_interface->shell_list;
@@ -1089,7 +1096,7 @@ printf("enter create_Shell_list_item.  shell_address=%p, user_interface=%p, shel
 			list_item->next->previous=list_item;
 		}
 		user_interface->shell_list=list_item;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		/* set the cursor */
 		if (shell_address&&(shell= *shell_address)&&
 			(user_interface->active_shell_stack)&&
@@ -1098,7 +1105,7 @@ printf("enter create_Shell_list_item.  shell_address=%p, user_interface=%p, shel
 		{
 			XDefineCursor(XtDisplay(shell),window,user_interface->busy_cursor);
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
@@ -1126,10 +1133,10 @@ for the <list_item>.  <*list_item> is set to NULL.
 
 	ENTER(destroy_Shell_list_item);
 #if defined (DEBUG)
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 printf("enter destroy_Shell_list_item.  shell_address=%p, user_interface=%p\n",
 	(*list_item)->shell_address,(*list_item)->user_interface);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #endif /* defined (DEBUG) */
 	if (list_item&&(item= *list_item)&&(user_interface=item->user_interface))
 	{
@@ -1160,7 +1167,7 @@ printf("enter destroy_Shell_list_item.  shell_address=%p, user_interface=%p\n",
 	return (return_code);
 } /* destroy_Shell_list_item */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int destroy_Shell_list_item_from_shell(Widget *shell_address,
 	struct User_interface *user_interface)
 /*******************************************************************************
@@ -1223,9 +1230,9 @@ printf("enter destroy_Shell_list_item_from_shell.  shell_address=%p, user_interf
 
 	return (return_code);
 } /* destroy_Shell_list_item */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 void destroy_window_shell(Widget widget,XtPointer list_item,
 	XtPointer call_data)
 /*******************************************************************************
@@ -1284,12 +1291,12 @@ for the <list_item> and sets <*(list_item->address)> to NULL.
 	}
 	LEAVE;
 } /* destroy_window_shell */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 int busy_cursor_on(
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget excluded_shell,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 24 July 2002
@@ -1301,18 +1308,18 @@ Switchs from the default cursor to the busy cursor for all shells except the
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	struct Shell_list_item *item;
 	struct Shell_stack_item *stack_item;
 	Widget shell;
 	Window window;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(busy_cursor_on);
-#if !defined (MOTIF)
+#if !defined (MOTIF_USER_INTERFACE)
 	USE_PARAMETER(user_interface);
-#endif /* !defined (MOTIF) */
-#if defined (MOTIF)
+#endif /* !defined (MOTIF_USER_INTERFACE) */
+#if defined (MOTIF_USER_INTERFACE)
 	if (user_interface&&(user_interface->busy_cursor))
 	{
 		/* add item to active shell stack */
@@ -1367,18 +1374,18 @@ Switchs from the default cursor to the busy cursor for all shells except the
 	{
 		return_code=0;
 	}
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 	return_code=0;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	LEAVE;
 
 	return (return_code);
 } /* busy_cursor_on */
 
 int busy_cursor_off(
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget excluded_shell,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 24 July 2002
@@ -1390,7 +1397,7 @@ Switchs from the busy cursor to the default cursor for all shells except the
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	struct Shell_list_item *item;
 	struct Shell_stack_item *stack_item,**stack_item_address;
 	Widget shell;
@@ -1398,13 +1405,13 @@ Switchs from the busy cursor to the default cursor for all shells except the
 #if defined (OLD_CODE)
 	XEvent event;
 #endif /* defined (OLD_CODE) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(busy_cursor_off);
-#if !defined (MOTIF)
+#if !defined (MOTIF_USER_INTERFACE)
 	USE_PARAMETER(user_interface);
-#endif /* !defined (MOTIF) */
-#if defined (MOTIF)
+#endif /* !defined (MOTIF_USER_INTERFACE) */
+#if defined (MOTIF_USER_INTERFACE)
 	if (user_interface&&(user_interface->busy_cursor))
 	{
 		if (stack_item=user_interface->active_shell_stack)
@@ -1494,27 +1501,27 @@ Switchs from the busy cursor to the default cursor for all shells except the
 		}
 		return_code=0;
 	}
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 	return_code=0;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	LEAVE;
 
 	return (return_code);
 } /* busy_cursor_off */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #if defined (TEST_TRUE_COLOUR_VISUAL)
 /*???debug.  To test true colour visuals */
 Colormap default_colour_map;
 int default_depth;
 Visual *default_visual;
 #endif /* defined (TEST_TRUE_COLOUR_VISUAL) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if !defined (WIN32_USER_INTERFACE)
 struct User_interface *CREATE(User_interface)(int *argc_address, char **argv, 
-	struct Event_dispatcher *event_dispatcher, char *class_name, 
-	char *application_name)
+	struct Event_dispatcher *event_dispatcher, const char *class_name, 
+	const char *application_name)
 #else /* !defined (WIN32_USER_INTERFACE) */
 struct User_interface *CREATE(User_interface)(HINSTANCE current_instance,
 	HINSTANCE previous_instance, LPSTR command_line,int initial_main_window_state,
@@ -1527,7 +1534,7 @@ DESCRIPTION :
 Open the <user_interface>.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	char bitmap_data;
 	int screen_number;
 	static MrmRegisterArg identifiers[]=
@@ -1650,7 +1657,7 @@ Open the <user_interface>.
 			const_cast<char*>("5")
 		}
 	};
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface;
 
 	ENTER(CREATE(User_interface));
@@ -1659,7 +1666,7 @@ Open the <user_interface>.
 #endif /* defined (WIN32_USER_INTERFACE) */
 	if (ALLOCATE(user_interface, struct User_interface, 1))
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		user_interface->application_context=(XtAppContext)NULL;
 		user_interface->application_shell=(Widget)NULL;
 		user_interface->display=(Display *)NULL;
@@ -1671,7 +1678,7 @@ Open the <user_interface>.
 		user_interface->timeout_x_callback = 
 			(struct Event_dispatcher_timeout_callback *)NULL;
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 		user_interface->instance=current_instance;
 		user_interface->main_window=(HWND)NULL;
@@ -1709,7 +1716,7 @@ Open the <user_interface>.
 				"Could not determine local machine information");
 		}
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		user_interface->no_cascade_pixmap=XmUNSPECIFIED_PIXMAP;
 		/* XtSetLanguageProc(NULL,NULL,NULL); */
 		/* initialize the Motif resource manager */
@@ -1918,7 +1925,7 @@ Open the <user_interface>.
 			DEALLOCATE(user_interface);
 			user_interface = (struct User_interface *)NULL;
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 		user_interface->widget_spacing=5;
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -2040,7 +2047,7 @@ DESCRIPTION :
 			DESTROY(CMISS_connection)(&CMISS);
 		}
 #endif /* defined (LINK_CMISS) */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		if ((user_interface->property_notify_callback)&&
 			(user_interface->property_notify_widget))
 		{
@@ -2081,7 +2088,7 @@ DESCRIPTION :
 				user_interface->main_x_connection_callback);
 		}
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 		if (user_interface->local_machine_info)
 		{
@@ -2150,7 +2157,7 @@ DESCRIPTION :
 	return (return_code);
 } /* User_interface_end_application_loop */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 Widget User_interface_get_application_shell(struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
@@ -2175,9 +2182,9 @@ Returns the application shell widget
 
 	return (widget);
 } /* User_interface_get_application_shell */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 XFontStruct *User_interface_get_normal_font(struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
@@ -2202,9 +2209,9 @@ Returns the application shell widget
 
 	return (normal_font);
 } /* User_interface_get_normal_font */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 XmFontList User_interface_get_normal_fontlist(struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
@@ -2229,9 +2236,9 @@ Returns the application shell widget
 
 	return (normal_fontlist);
 } /* User_interface_get_normal_fontlist */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 XmFontList User_interface_get_button_fontlist(struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
@@ -2256,9 +2263,9 @@ Returns the application shell widget
 
 	return (button_fontlist);
 } /* User_interface_get_button_fontlist */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 Pixmap User_interface_get_no_cascade_pixmap(struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
@@ -2283,9 +2290,9 @@ Returns the application shell widget
 
 	return (pixmap);
 } /* User_interface_get_no_cascade_pixmap */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 Display *User_interface_get_display(struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
@@ -2310,9 +2317,9 @@ Returns the application shell widget
 
 	return (display);
 } /* User_interface_get_display */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int User_interface_get_screen_width(struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
@@ -2337,9 +2344,9 @@ Returns the application shell widget
 
 	return (screen_width);
 } /* User_interface_get_screen_width */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int User_interface_get_screen_height(struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
@@ -2365,9 +2372,9 @@ Returns the application shell widget
 
 	return (screen_height);
 } /* User_interface_get_screen_height */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE)
 int User_interface_get_widget_spacing(struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 24 July 2002
@@ -2393,7 +2400,7 @@ Returns the widget spacing.
 
 	return (widget_spacing);
 } /* User_interface_get_widget_spacing */
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) */
 
 #if defined (WIN32_USER_INTERFACE)
 HINSTANCE User_interface_get_instance(struct User_interface *user_interface)
@@ -2421,7 +2428,7 @@ Returns the application shell widget
 
 	return (instance);
 } /* User_interface_get_instance */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (GTK_USER_INTERFACE)
 GtkWidget *User_interface_get_main_window(struct User_interface *user_interface)
@@ -2539,14 +2546,14 @@ for a response from a modal dialog).
 {
 	int return_code;
 #if defined (OLD_CODE)
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	XEvent event;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 
 	ENTER(application_main_step);
 #if defined (OLD_CODE)
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	/* SAB We want the function not to block after processing a timer
 		event or an input event so I use XtAppProcessEvent instead */
 	XtAppNextEvent(user_interface->application_context,&event);
@@ -2563,7 +2570,7 @@ for a response from a modal dialog).
 	input_module_process(&event,user_interface);
 #endif
 	XtDispatchEvent(&event);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	XtAppProcessEvent(user_interface->application_context, XtIMAll);
 #endif /* defined (OLD_CODE) */
 	Event_dispatcher_do_one_event(user_interface->event_dispatcher);
@@ -2595,9 +2602,9 @@ DESCRIPTION :
 	/* check arguments */
 	if (user_interface)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		return_code=1;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 		while (TRUE==GetMessage(&message,NULL,0,0))
 		{
@@ -2640,7 +2647,7 @@ DESCRIPTION :
 	return (return_code);
 } /* application_main_loop */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void User_interface_property_notify_callback(Widget w, 
 	XtPointer user_interface_void, XEvent *event, Boolean *f)
 /*******************************************************************************
@@ -2673,9 +2680,9 @@ the interface basically the same.
 	LEAVE;
 
 } /* User_interface_property_notify_callback */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int set_property_notify_callback(struct User_interface *user_interface,
 	Property_notify_callback property_notify_callback,void *property_notify_data,
 	Widget widget)
@@ -2725,9 +2732,9 @@ To clear out the callback pass NULL the <property_notify_callback> and
 
 	return (return_code);
 } /* set_property_notify_callback */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int MrmOpenHierarchy_binary_string(char *binary_string, int string_length,
 	MrmHierarchy *hierarchy,int *hierarchy_open)
 /*******************************************************************************
@@ -2802,9 +2809,9 @@ success and 0 for failure.
 
 	return (return_code);
 } /* MrmOpenHierarchy_binary_string */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int MrmOpenHierarchy_binary_multiple_strings(int number_of_strings, 
 	char **binary_strings, int *string_lengths,
 	MrmHierarchy *hierarchy,int *hierarchy_open)
@@ -2923,9 +2930,9 @@ success and 0 for failure.
 
 	return (return_code);
 } /* MrmOpenHierarchy_binary_multiple_strings */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int install_accelerators(Widget widget, Widget top_widget)
 /*******************************************************************************
 LAST MODIFIED : 24 December 1998
@@ -2991,5 +2998,5 @@ accelerators in any subwidgets of <top_widget> in every appropriate subwidget of
 
 	return(return_code);
 } /* install_accelerators */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 

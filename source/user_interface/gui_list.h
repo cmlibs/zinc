@@ -44,15 +44,15 @@ Window routines.
 #if !defined (GUI_LIST_H)
 #define GUI_LIST_H
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #error not implemented
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
 #include "user_interface/gui_prototype.h"
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int dialog_name ## _ ## list_name ## _view_end(DIALOG_PARAM(Command_window)) \
 /***************************************************************************** \
 LAST MODIFIED : 15 January 1997 \
@@ -90,7 +90,7 @@ Adds an item to a list. \
 \
 	return (return_item); \
 } /* dialog_name ## _ ## list_name ## _view_end */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 /*******************************************************************************
 LAST MODIFIED : 15 January 1997
@@ -198,7 +198,7 @@ int dialog_name ## _ ## list_name ## _view_beginning( \
 } /* dialog_name ## _ ## list_name ## _view_beginning */
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int dialog_name ## _ ## list_name ## _add_item(DIALOG_PARAM(Command_window), \
 	char *item) \
 /***************************************************************************** \
@@ -252,7 +252,7 @@ Adds an item to a list. \
 \
 	return (return_code); \
 } /* dialog_name ## _ ## list_name ## _add_item */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 /*******************************************************************************
 LAST MODIFIED : 15 January 1997
@@ -294,7 +294,7 @@ int dialog_name ## _ ## list_name ## _add_item( \
 } /* dialog_name ## _ ## list_name ## _add_item */
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 char *dialog_name ## _ ## list_name ## _get_item(DIALOG_PARAM(Command_window), \
 	int item_index) \
 /***************************************************************************** \
@@ -330,7 +330,7 @@ Returns the text of the specfied item. \
 \
 	return (return_string); \
 } /* dialog_name ## _ ## list_name ## _get_item */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 /*******************************************************************************
 LAST MODIFIED : 15 January 1997
@@ -472,7 +472,7 @@ int *dialog_name ## _ ## list_name ## _get_selected_items( \
 } /* dialog_name ## _ ## list_name ## _get_selected_items */
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 int dialog_name ## _ ## list_name ## _get_selected(DIALOG_PARAM( \
 	Command_window)) \
 /***************************************************************************** \
@@ -510,7 +510,7 @@ Adds an item to a list. \
 \
 	return (return_item); \
 } /* dialog_name ## _ ## list_name ## _get_selected */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 /*******************************************************************************
 LAST MODIFIED : 15 January 1997

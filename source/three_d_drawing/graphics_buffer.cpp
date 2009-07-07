@@ -42,8 +42,12 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
  *
  * ***** END LICENSE BLOCK ***** */
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 extern "C" {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #if defined (SGI)
 /* Not compiling in as not being actively used and only available on O2's and
    cannot compile against Mesa without function pointer tables. */
@@ -56,7 +60,7 @@ extern "C" {
 #include <X11/Xlib.h>
 #include <X11/Intrinsic.h>
 #include "three_d_drawing/ThreeDDraw.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #include <gtk/gtk.h>
 #if ( GTK_MAJOR_VERSION < 2 ) || defined (WIN32_SYSTEM)
@@ -172,10 +176,10 @@ DESCRIPTION :
 {
 	int override_visual_id;
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	GLXContext shared_glx_context;
 	Display *display;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #  if defined (GTK_USE_GTKGLAREA)
 	  GtkWidget *share_glarea;
@@ -219,7 +223,7 @@ DESCRIPTION :
 		  *input_callback_list;
 
 /* For GRAPHICS_BUFFER_GLX_X3D_TYPE */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget drawing_widget;
 	Widget parent;
 	Display *display;
@@ -248,7 +252,7 @@ DESCRIPTION :
 	XVisualInfo *visual_info;
 	Pixmap pixmap;
 	GLXPixmap glx_pixmap;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (GTK_USER_INTERFACE)
 
@@ -393,7 +397,7 @@ contained in the this module only.
 			CREATE(LIST(CMISS_CALLBACK_ITEM(Graphics_buffer_input_callback)))();
 
 /* For GRAPHICS_BUFFER_GLX_X3D_TYPE */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		buffer->drawing_widget = (Widget)NULL;
 		buffer->parent = (Widget)NULL;
 		buffer->display = (Display *)NULL;
@@ -422,7 +426,7 @@ contained in the this module only.
 	   buffer->visual_info = (XVisualInfo *)NULL;
 	   buffer->pixmap = (Pixmap)NULL;
 	   buffer->glx_pixmap = (GLXPixmap)NULL;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (GTK_USER_INTERFACE)
 
@@ -505,7 +509,7 @@ contained in the this module only.
 	return (buffer);
 } /* CREATE(Graphics_buffer) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Graphics_buffer_X3d_initialize_callback(Widget graphics_buffer_widget,
 	XtPointer graphics_buffer_structure, XtPointer call_data)
 /*******************************************************************************
@@ -536,9 +540,9 @@ Sets the initial viewing transform for the graphics_buffer.
 	}
 	LEAVE;
 } /* Graphics_buffer_X3d_initialize_callback */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Graphics_buffer_X3d_resize_callback(Widget graphics_buffer_widget,
 	XtPointer graphics_buffer_structure,XtPointer call_data)
 /*******************************************************************************
@@ -568,9 +572,9 @@ callbacks interested in the graphics_buffers transformations.
 	}
 	LEAVE;
 } /* graphics_buffer_X3d_resize_callback */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Graphics_buffer_X3d_expose_callback(Widget graphics_buffer_widget,
 	XtPointer graphics_buffer_structure,XtPointer call_data)
 /*******************************************************************************
@@ -607,9 +611,9 @@ if there are no more expose events pending.
 	}
 	LEAVE;
 } /* graphics_buffer_X3d_expose_callback */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void Graphics_buffer_X3d_input_callback(Widget graphics_buffer_widget,
 	XtPointer graphics_buffer_structure, XtPointer call_data)
 /*******************************************************************************
@@ -788,9 +792,9 @@ returned to the scene.
 	}
 	LEAVE;
 } /* Graphics_buffer_input_callback */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #  if defined USE_GLX_FBCONFIG
 static int Graphics_buffer_create_from_fb_config(struct Graphics_buffer *buffer,
 	struct Graphics_buffer_package *graphics_buffer_package,
@@ -984,9 +988,9 @@ DESCRIPTION :
 	return (return_code);
 } /* Graphics_buffer_create_from_fb_config */
 #  endif /* defined USE_GLX_FBCONFIG */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #  if defined (GLX_SGIX_pbuffer)
 static int Graphics_buffer_create_from_fb_config_sgi(struct Graphics_buffer *buffer,
 	struct Graphics_buffer_package *graphics_buffer_package,
@@ -1143,9 +1147,9 @@ the equivalent GLX1.3 versions.
 	return (return_code);
 } /* Graphics_buffer_create_from_fb_config_sgi */
 #  endif /* defined (GLX_SGIX_pbuffer) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int Graphics_buffer_create_from_visual_info(struct Graphics_buffer *buffer,
 	struct Graphics_buffer_package *graphics_buffer_package,
 	enum Graphics_buffer_class buffer_class,  Widget x3d_parent_widget,
@@ -1272,7 +1276,7 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Graphics_buffer_create_from_visual_info */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (WX_USER_INTERFACE)
 class wxGraphicsBuffer : public wxGLCanvas
@@ -1809,7 +1813,7 @@ DESCRIPTION :
 } /* Graphics_buffer_create_buffer_wx */
 #endif /* defined (WX_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #if defined (OPENGL_API)
 static void Graphics_buffer_create_buffer_glx(struct Graphics_buffer *buffer,
 	struct Graphics_buffer_package *graphics_buffer_package,
@@ -2717,7 +2721,7 @@ that it is all in one place.
 	LEAVE;
 } /* Graphics_buffer_create_buffer_glx */
 #endif /* defined (OPENGL_API) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (GTK_USER_INTERFACE)
 static void Graphics_buffer_gtkglarea_initialise_callback(GtkWidget *widget,
@@ -3197,17 +3201,17 @@ it to share graphics contexts.
 
 	ENTER(CREATE(Graphics_buffer_package));
 
-#if ! defined (MOTIF)
+#if ! defined (MOTIF_USER_INTERFACE)
 	USE_PARAMETER(user_interface);
-#endif /* ! defined (MOTIF) */
+#endif /* ! defined (MOTIF_USER_INTERFACE) */
 	if (ALLOCATE(package, struct Graphics_buffer_package, 1))
 	{
 		package->override_visual_id = 0;
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		package->shared_glx_context = (GLXContext)NULL;
 		package->display = User_interface_get_display(user_interface);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #  if defined (GTK_USE_GTKGLAREA)
 		package->share_glarea = (GtkWidget *)NULL;
@@ -3249,14 +3253,14 @@ Closes the Graphics buffer package
 	if (package_ptr && (package = *package_ptr))
 	{
 		return_code=1;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		/* Destroy the shared_glx_context as we did not destroy it when closing
 			it's buffer */
 		if (package->shared_glx_context)
 		{
 			glXDestroyContext(package->display, package->shared_glx_context);
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #  if ! defined (GTK_USE_GTKGLAREA)
 		if (package->share_glcontext)
@@ -3336,14 +3340,14 @@ DESCRIPTION :
 
 	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		Graphics_buffer_create_buffer_glx(buffer, graphics_buffer_package,
 			GRAPHICS_BUFFER_OFFSCREEN_CLASS, (Widget)NULL, width, height,
 			buffering_mode, stereo_mode, minimum_colour_buffer_depth,
 			minimum_depth_buffer_depth, /*minimum_alpha_buffer_depth*/0,
 			minimum_accumulation_buffer_depth,
 			/*buffer_to_match*/(struct Graphics_buffer *)NULL);
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 		USE_PARAMETER(width);
 		USE_PARAMETER(height);
 		USE_PARAMETER(buffering_mode);
@@ -3351,7 +3355,7 @@ DESCRIPTION :
 		USE_PARAMETER(minimum_colour_buffer_depth);
 		USE_PARAMETER(minimum_depth_buffer_depth);
 		USE_PARAMETER(minimum_accumulation_buffer_depth);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
 		{
 #if defined (DEBUG)
@@ -3391,14 +3395,14 @@ DESCRIPTION :
 
 	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		Graphics_buffer_create_buffer_glx(buffer, graphics_buffer_package,
 			GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS, (Widget)NULL, width, height,
 			buffering_mode, stereo_mode, minimum_colour_buffer_depth,
 			minimum_depth_buffer_depth, /*minimum_alpha_buffer_depth*/0,
 			minimum_accumulation_buffer_depth,
 			/*buffer_to_match*/(struct Graphics_buffer *)NULL);
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 		USE_PARAMETER(width);
 		USE_PARAMETER(height);
 		USE_PARAMETER(buffering_mode);
@@ -3406,7 +3410,7 @@ DESCRIPTION :
 		USE_PARAMETER(minimum_colour_buffer_depth);
 		USE_PARAMETER(minimum_depth_buffer_depth);
 		USE_PARAMETER(minimum_accumulation_buffer_depth);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
 		{
 #if defined (DEBUG)
@@ -3441,7 +3445,7 @@ DESCRIPTION :
 
 	if (buffer = CREATE(Graphics_buffer)(buffer_to_match->package))
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		Graphics_buffer_create_buffer_glx(buffer, buffer_to_match->package,
 			GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS, (Widget)NULL, width, height,
 			GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
@@ -3461,11 +3465,11 @@ DESCRIPTION :
 			GRAPHICS_BUFFER_ANY_STEREO_MODE,
 			0, 0, 0, width, height,
 			buffer_to_match);
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 		USE_PARAMETER(width);
 		USE_PARAMETER(height);
 		USE_PARAMETER(buffer_to_match);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
 		{
 #if defined (DEBUG)
@@ -3487,7 +3491,7 @@ DESCRIPTION :
 	return (buffer);
 } /* create_Graphics_buffer_offscreen_from_buffer */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_X3d(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	Widget parent, int width, int height,
@@ -3532,9 +3536,9 @@ DESCRIPTION :
 
 	return (buffer);
 } /* create_Graphics_buffer_X3d */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 struct Graphics_buffer *create_Graphics_buffer_X3d_from_buffer(
 	Widget parent, int width, int height,
 	struct Graphics_buffer *buffer_to_match)
@@ -3575,9 +3579,9 @@ DESCRIPTION :
 
 	return (buffer);
 } /* create_Graphics_buffer_X3d_from_buffer */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 Widget Graphics_buffer_X3d_get_widget(struct Graphics_buffer *buffer)
 /*******************************************************************************
 LAST MODIFIED : 17 November 2005
@@ -3605,7 +3609,7 @@ a Graphics_buffer.
 
 	return (widget);
 } /* Graphics_buffer_X3d_get_widget */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (ENABLE_GTK_PBUFFER_RENDERING)
 #if defined (GTK_USER_INTERFACE)
@@ -5936,7 +5940,7 @@ DESCRIPTION :
 #endif /* defined (DEBUG) */
 		switch (buffer->type)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 			{
 				glXMakeCurrent(buffer->display, XtWindow(buffer->drawing_widget),
@@ -5957,7 +5961,7 @@ DESCRIPTION :
 					buffer->context);
 				return_code = 1;
 			} break;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -6104,13 +6108,13 @@ Returns the visual id used by the graphics buffer.
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 			{
 				*visual_id =(int) buffer->visual_info->visualid;
 				return_code = 1;
 			} break;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -6191,13 +6195,13 @@ Returns the depth of the colour buffer used by the graphics buffer.
 		return_code = 1;
 		switch (buffer->type)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 			{
 				glXGetConfig(buffer->display, buffer->visual_info, GLX_BUFFER_SIZE, colour_buffer_depth);
 				return_code = 1;
 			} break;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 			 case GRAPHICS_BUFFER_WX_TYPE:
 			{
@@ -6281,13 +6285,13 @@ Returns the depth of the depth buffer used by the graphics buffer.
 		return_code = 1;
 		switch (buffer->type)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 			{
 				glXGetConfig(buffer->display, buffer->visual_info, GLX_DEPTH_SIZE, depth_buffer_depth);
 				return_code = 1;
 			} break;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 			 case GRAPHICS_BUFFER_WX_TYPE:
 			{
@@ -6357,9 +6361,9 @@ DESCRIPTION :
 Returns the depth of the accumulation buffer used by the graphics buffer.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	int colour_size;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Graphics_buffer_get_accumulation_buffer_depth);
@@ -6368,7 +6372,7 @@ Returns the depth of the accumulation buffer used by the graphics buffer.
 		return_code = 1;
 		switch (buffer->type)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 			{
 				*accumulation_buffer_depth = 0;
@@ -6382,7 +6386,7 @@ Returns the depth of the accumulation buffer used by the graphics buffer.
 				*accumulation_buffer_depth += colour_size;
 				return_code = 1;
 			} break;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 			 case GRAPHICS_BUFFER_WX_TYPE:
 			{
@@ -6468,9 +6472,9 @@ Returns the buffering mode used by the graphics buffer.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	int double_buffer;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(Graphics_buffer_get_buffering_mode);
 #if defined (GTK_USER_INTERFACE)
@@ -6480,7 +6484,7 @@ Returns the buffering mode used by the graphics buffer.
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 			{
  				glXGetConfig(buffer->display, buffer->visual_info, GLX_DOUBLEBUFFER, &double_buffer);
@@ -6494,7 +6498,7 @@ Returns the buffering mode used by the graphics buffer.
 				}
 				return_code = 1;
 			} break;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -6599,9 +6603,9 @@ Returns the stereo mode used by the graphics buffer.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	int stereo;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(Graphics_buffer_get_stereo_mode);
 #if defined (GTK_USER_INTERFACE)
@@ -6611,7 +6615,7 @@ Returns the stereo mode used by the graphics buffer.
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 			{
  				glXGetConfig(buffer->display, buffer->visual_info, GLX_STEREO, &stereo);
@@ -6625,7 +6629,7 @@ Returns the stereo mode used by the graphics buffer.
 				}
 				return_code = 1;
 			} break;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -6736,7 +6740,7 @@ DESCRIPTION :
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 			{
 				glXSwapBuffers(buffer->display, XtWindow(buffer->drawing_widget));
@@ -6754,7 +6758,7 @@ DESCRIPTION :
 				glXSwapBuffers(buffer->display, buffer->glx_pixmap);
 				return_code = 1;
 			} break;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -6832,7 +6836,7 @@ made current) to be the GLX destination.
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #  if defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer)
 			case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
 			{
@@ -6841,7 +6845,7 @@ made current) to be the GLX destination.
 				return_code = 1;
 			} break;
 #  endif /* defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer) */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_make_read_current.  "
@@ -6876,7 +6880,7 @@ Returns the width of buffer represented by <buffer>.
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 			{
 				Dimension xwidth;
@@ -6886,7 +6890,7 @@ Returns the width of buffer represented by <buffer>.
 					NULL);
 				width = xwidth;
 			} break;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -6969,14 +6973,14 @@ Sets the width of buffer represented by <buffer>.
 	int return_code;
 
 	ENTER(Graphics_buffer_set_width);
-#if !defined (MOTIF)
+#if !defined (MOTIF_USER_INTERFACE)
 	USE_PARAMETER(width);
-#endif /* !defined (MOTIF) */
+#endif /* !defined (MOTIF_USER_INTERFACE) */
 	if (buffer)
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 			{
 				Dimension xwidth;
@@ -6987,7 +6991,7 @@ Sets the width of buffer represented by <buffer>.
 					NULL);
 				return_code = 1;
 			} break;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 			case GRAPHICS_BUFFER_WX_TYPE:
 			{
@@ -7031,7 +7035,7 @@ Returns the height of buffer represented by <buffer>.
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 			{
 				Dimension xheight;
@@ -7041,7 +7045,7 @@ Returns the height of buffer represented by <buffer>.
 					NULL);
 				height = xheight;
 			} break;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -7124,14 +7128,14 @@ Sets the height of buffer represented by <buffer>.
 	int return_code;
 
 	ENTER(Graphics_buffer_set_height);
-#if !defined (MOTIF)
+#if !defined (MOTIF_USER_INTERFACE)
 	USE_PARAMETER(height);
-#endif /* !defined (MOTIF) */
+#endif /* !defined (MOTIF_USER_INTERFACE) */
 	if (buffer)
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 			{
 				Dimension xheight;
@@ -7142,7 +7146,7 @@ Sets the height of buffer represented by <buffer>.
 					NULL);
 				return_code = 1;
 			} break;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 			case GRAPHICS_BUFFER_WX_TYPE:
 			{
@@ -7264,7 +7268,7 @@ Returns the border width of buffer represented by <buffer>.
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 			{
 				Dimension xborder_width;
@@ -7274,7 +7278,7 @@ Returns the border width of buffer represented by <buffer>.
 					NULL);
 				border_width = xborder_width;
 			} break;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_border_width.  "
@@ -7305,14 +7309,14 @@ Sets the border width of buffer represented by <buffer>.
 	int return_code;
 
 	ENTER(Graphics_buffer_set_border_width);
-#if !defined (MOTIF)
+#if !defined (MOTIF_USER_INTERFACE)
 	USE_PARAMETER(border_width);
-#endif /* !defined (MOTIF) */
+#endif /* !defined (MOTIF_USER_INTERFACE) */
 	if (buffer)
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 			{
 				Dimension xborder_width;
@@ -7327,7 +7331,7 @@ Sets the border width of buffer represented by <buffer>.
 					XmNtopOffset, xborder_width,NULL);
 				return_code = 1;
 			} break;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_set_border_width.  "
@@ -7365,14 +7369,14 @@ into unmanaged or invisible widgets.
 		return_code = 0;
 		switch (buffer->type)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 			{
 				return_code = XtIsManaged(buffer->drawing_widget)&&
 					XtIsRealized(buffer->drawing_widget)&&
 					XtIsManaged(buffer->parent);
 			} break;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -7440,12 +7444,12 @@ Activates the graphics <buffer>.
 	{
 		switch (buffer->type)
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 			{
 				XtManageChild(buffer->drawing_widget);
 			} break;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
@@ -7526,7 +7530,7 @@ Returns information about the type of buffer that was created.
 	return (buffer_type);
 } /* Graphics_buffer_get_type */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 Display *Graphics_buffer_X11_get_display(struct Graphics_buffer *buffer)
 /*******************************************************************************
 LAST MODIFIED : 27 May 2004
@@ -7552,7 +7556,7 @@ Returns information about the type of buffer that was created.
 
 	return (display);
 } /* Graphics_buffer_get_type */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 int Graphics_buffer_add_initialise_callback(struct Graphics_buffer *buffer,
 	CMISS_CALLBACK_FUNCTION(Graphics_buffer_callback) initialise_callback, void *user_data)
@@ -7686,7 +7690,7 @@ x==============================================================================*
 	if (buffer_ptr && (buffer = *buffer_ptr))
 	{
 		return_code=1;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		/* I have listed everything just to make sure I have considered them all */
 		/* buffer->drawing_widget, handled by window closing */
 		/* buffer->parent, responsibility of shell */
@@ -7746,7 +7750,7 @@ x==============================================================================*
 			{
 				XFreePixmap(buffer->display, buffer->pixmap);
 			}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
 #if ! defined (GTK_USE_GTKGLAREA)
 			if (buffer->glconfig)
@@ -7916,7 +7920,7 @@ x==============================================================================*
 	return (return_code);
 } /* DESTROY(Graphics_buffer) */
 
-#if defined (OPENGL_API) && defined (MOTIF)
+#if defined (OPENGL_API) && defined (MOTIF_USER_INTERFACE)
 int query_glx_extension(char *extName, Display *display, int screen)
 /*******************************************************************************
 LAST MODIFIED : 14 September 1998
@@ -7964,7 +7968,7 @@ memory.
 
 	return (return_code);
 } /* query_glx_extension */
-#endif /* defined (OPENGL_API) && defined (MOTIF) */
+#endif /* defined (OPENGL_API) && defined (MOTIF_USER_INTERFACE) */
 
 
 

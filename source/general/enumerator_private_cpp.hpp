@@ -202,7 +202,8 @@ A modifier function for setting an enumerated type variable to a specified \
 value. \
 ==============================================================================*/ \
 { \
-	char *current_token,*enumerator_string_value; \
+	const char *current_token; \
+	char *enumerator_string_value; \
 	enum enumerator_type *enumerator_address, other_enumerator; \
 	int return_code; \
 \

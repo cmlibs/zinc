@@ -54,9 +54,9 @@ scenes.
 #if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/Xm.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #include "api/cmiss_field_image.h"
 
@@ -379,7 +379,7 @@ will be requested with handle_windows_event.
 ==============================================================================*/
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 Cmiss_scene_viewer_id create_Cmiss_scene_viewer_motif(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	Widget parent,
@@ -399,7 +399,7 @@ out the possible visuals selected for graphics_buffers.  If they are zero then
 the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
 chosen.
 ==============================================================================*/
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 int Cmiss_scene_viewer_destroy(Cmiss_scene_viewer_id *scene_viewer_id_address);
 /*******************************************************************************

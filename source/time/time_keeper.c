@@ -60,13 +60,13 @@ static int Time_keeper_set_play_timeout(struct Time_keeper *time_keeper);
 /* Declaration for circular reference between this and the event handler and
    play private */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 struct Time_keeper_defaults
 {
 	Boolean play_every_frame;
 	float speed;
 };
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 struct Time_keeper_callback_data
 {
@@ -277,7 +277,7 @@ Normally use Time_keeper_stop
 	return (return_code);
 } /* Time_keeper_stop_private */
 
-struct Time_keeper *CREATE(Time_keeper)(char *name,
+struct Time_keeper *CREATE(Time_keeper)(const char *name,
 	struct Event_dispatcher *event_dispatcher,
 	struct User_interface *user_interface)
 /*******************************************************************************
@@ -286,7 +286,7 @@ LAST MODIFIED : 15 March 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #define XmNtimePlaySpeed "timePlaySpeed"
 #define XmCtimePlaySpeed "TimePlaySpeed"
 #define XmNtimePlayEveryFrame "timePlayEveryFrame"
@@ -313,19 +313,19 @@ DESCRIPTION :
 			"false"
 		}
 	};
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Time_keeper *time_keeper;
 
 	ENTER(CREATE(Time_keeper));
-#if !defined (MOTIF)
+#if !defined (MOTIF_USER_INTERFACE)
 	USE_PARAMETER(user_interface);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	if(name)
 	{
 		if (ALLOCATE(time_keeper, struct Time_keeper, 1) &&
 			ALLOCATE(time_keeper->name, char, strlen(name) + 1))
 		{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			time_keeper_defaults.speed = 1.0;
 			time_keeper_defaults.play_every_frame = False;
 			if (user_interface)
@@ -342,10 +342,10 @@ DESCRIPTION :
 			{
 				time_keeper->play_every_frame = 0;
 			}
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 			time_keeper->speed = 1.0;
 			time_keeper->play_every_frame = 0;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 			strcpy(time_keeper->name, name);
 			time_keeper->time_object_info_list = (struct Time_object_info *)NULL;
 			time_keeper->time = 0.0;

@@ -45,6 +45,9 @@ The functions for manipulating graphical textures.
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 extern "C" {
 #include "command/parser.h"
 #include "general/debug.h"
@@ -6891,7 +6894,7 @@ DESCRIPTION :
 Modifier function to set the texture from a command.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct MANAGER(Texture) *texture_manager;
 	struct Texture *temp_texture,**texture_address;

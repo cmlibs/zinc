@@ -43,6 +43,9 @@ Spectrum structures and support code.
  * ***** END LICENSE BLOCK ***** */
 #if !defined(SPECTRUM_H)
 #define SPECTRUM_H
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
@@ -104,13 +107,13 @@ PROTOTYPE_COPY_OBJECT_FUNCTION(Spectrum);
 
 PROTOTYPE_LIST_FUNCTIONS(Spectrum);
 
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Spectrum,name,char *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Spectrum,name,const char *);
 
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Spectrum,name,char *);
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(Spectrum,name,const char *);
 
 PROTOTYPE_MANAGER_FUNCTIONS(Spectrum);
 
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Spectrum,name,char *);
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Spectrum,name,const char *);
 
 struct Spectrum_settings *get_settings_at_position_in_Spectrum(
 	 struct Spectrum *spectrum,int position);
@@ -427,7 +430,7 @@ For each spectrum in manager, list the spectrum commands to the command windows 
 ==============================================================================*/
 
 int Spectrum_list_commands(struct Spectrum *spectrum,
-	char *command_prefix,char *command_suffix);
+	const char *command_prefix,char *command_suffix);
 /*******************************************************************************
 LAST MODIFIED : 5 August 1998
 

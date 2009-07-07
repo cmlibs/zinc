@@ -42,6 +42,10 @@ DESCRIPTION :
  * ***** END LICENSE BLOCK ***** */
 /*SAB I have concatenated the correct version file for each version
   externally in the shell with cat #include "version.h"*/
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/version.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #include "command/cmiss.h"
 #include "general/debug.h"
 #include "user_interface/message.h"

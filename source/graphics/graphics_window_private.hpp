@@ -44,6 +44,10 @@ Private interface for internal methods
 #if !defined (GRAPHICS_WINDOW_PRIVATE_HPP)
 #define GRAPHICS_WINDOW_PRIVATE_HPP
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #if defined (WX_USER_INTERFACE)
 class wxScrolledWindow;
 wxScrolledWindow *Graphics_window_get_interactive_tool_panel(struct Graphics_window *graphics_window);

@@ -1508,7 +1508,7 @@ Removes the callback calling <function> with <user_data> from
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Scene_viewer_blending_mode);
 
-char *Scene_viewer_buffering_mode_string(
+const char *Scene_viewer_buffering_mode_string(
 	enum Scene_viewer_buffering_mode buffering_mode);
 /*******************************************************************************
 LAST MODIFIED : 14 October 1998
@@ -1518,7 +1518,7 @@ Returns a string label for the <buffering_mode>.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 
-char *Scene_viewer_stereo_mode_string(
+const char *Scene_viewer_stereo_mode_string(
 	enum Scene_viewer_stereo_mode stereo_mode);
 /*******************************************************************************
 LAST MODIFIED : 16 September 2002
@@ -1528,7 +1528,7 @@ Returns a string label for the <stereo_mode>.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 
-char *Scene_viewer_input_mode_string(
+const char *Scene_viewer_input_mode_string(
 	enum Scene_viewer_input_mode input_mode);
 /*******************************************************************************
 LAST MODIFIED : 14 October 1998
@@ -1538,7 +1538,7 @@ Returns a string label for the <input_mode>.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 
-char *Scene_viewer_projection_mode_string(
+const char *Scene_viewer_projection_mode_string(
 	enum Scene_viewer_projection_mode projection_mode);
 /*******************************************************************************
 LAST MODIFIED : 14 October 1998
@@ -1548,7 +1548,7 @@ Returns a string label for the <projection_mode>.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 
-char *Scene_viewer_transparency_mode_string(
+const char *Scene_viewer_transparency_mode_string(
 	enum Scene_viewer_transparency_mode transparency_mode);
 /*******************************************************************************
 LAST MODIFIED : 23 November 1998
@@ -1558,7 +1558,7 @@ Returns a string label for the <transparency_mode>.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 
-char *Scene_viewer_viewport_mode_string(
+const char *Scene_viewer_viewport_mode_string(
 	enum Scene_viewer_viewport_mode viewport_mode);
 /*******************************************************************************
 LAST MODIFIED : 14 October 1998

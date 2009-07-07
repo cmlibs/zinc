@@ -44,6 +44,10 @@ separate shell for the view widget.
  * ***** END LICENSE BLOCK ***** */
 #include <stddef.h>
 #include <math.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #include "general/debug.h"
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_window.h"

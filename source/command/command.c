@@ -72,7 +72,7 @@ Global functions
 ----------------
 */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 void callback_command(Widget widget, XtPointer string, XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 15 July 2002
@@ -98,7 +98,7 @@ Allows easy execution of command <string>s from menu buttons.
 	}
 	LEAVE;
 } /* callback_command */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 int read_iod_file_via_selection_box(char *file_name,void *execute_command_void)
 /*******************************************************************************

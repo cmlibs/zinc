@@ -96,7 +96,7 @@ FULL_DECLARE_MANAGER_TYPE(Spectrum);
 Module functions
 ----------------
 */
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Spectrum,name,char *,strcmp)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Spectrum,name,const char *,strcmp)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Spectrum)
 
@@ -108,7 +108,7 @@ DECLARE_OBJECT_FUNCTIONS(Spectrum)
 
 DECLARE_INDEXED_LIST_FUNCTIONS(Spectrum)
 
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Spectrum,name,char *,strcmp)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Spectrum,name,const char *,strcmp)
 
 DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Spectrum,name)
 
@@ -206,7 +206,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Spectrum,name)
 	return (return_code);
 } /* MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Spectrum,name,char *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Spectrum,name,const char *)
 {
 	char *destination_name;
 	int return_code;
@@ -256,7 +256,7 @@ DECLARE_MANAGER_FUNCTIONS(Spectrum)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Spectrum)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Spectrum,name,char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Spectrum,name,const char *)
 
 /*
 Global functions
@@ -916,7 +916,7 @@ A modifier function to set the spectrum by finding in the spectrum manager
 the name given in the next token of the parser
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct Spectrum *temp_spectrum,**spectrum_address;
 	struct MANAGER(Spectrum) *spectrum_manager;
@@ -1089,7 +1089,7 @@ DESCRIPTION :
 A modifier function to set the spectrum minimum.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	float value;
 	int return_code;
 	struct Spectrum *spectrum;
@@ -1165,7 +1165,7 @@ DESCRIPTION :
 A modifier function to set the spectrum maximum.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	float value;
 	int return_code;
 	struct Spectrum *spectrum;
@@ -2001,7 +2001,7 @@ DESCRIPTION :
 Executes a GFX DESTROY SPECTRUM command.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct Spectrum *spectrum;
@@ -2206,7 +2206,7 @@ For each spectrum in manager, list the spectrum commands to the command windows 
 }
 
 int Spectrum_list_commands(struct Spectrum *spectrum,
-	char *command_prefix,char *command_suffix)
+	const char *command_prefix,char *command_suffix)
 /*******************************************************************************
 LAST MODIFIED : 24 Aug 2007
 

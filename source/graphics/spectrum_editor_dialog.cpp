@@ -108,10 +108,10 @@ and deaccess it.
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int spectrum_editor_dialog_hierarchy_open=0;
 static MrmHierarchy spectrum_editor_dialog_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Module functions

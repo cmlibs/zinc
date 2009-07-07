@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*===========================================================================
 FILE : io_device.c
 
 LAST MODIFIED : 17 January 2006
@@ -40,6 +40,9 @@ DESCRIPTION :
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 #if defined (SELECT_DESCRIPTORS)
 #include <unistd.h>
 #include <fcntl.h>
@@ -54,9 +57,9 @@ DESCRIPTION :
 #include "user_interface/event_dispatcher.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
-#if defined (PERL_INTERPRETER)
+#if defined (USE_PERL_INTERPRETER)
 #include "perl_interpreter.h"
-#endif /* defined (PERL_INTERPRETER) */
+#endif /* defined (USE_PERL_INTERPRETER) */
 
 /*******************************************************************************
 LAST MODIFIED : 16 May 2001
@@ -96,7 +99,7 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Io_device);
 Module functions
 ----------------
 */
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Io_device,name,char *,strcmp)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Io_device,name,const char *,strcmp)
 
 #if defined (SELECT_DESCRIPTORS)
 static int Io_device_descriptor_callback(Fdio_id fdio, void *device_void)
@@ -107,9 +110,9 @@ DESCRIPTION :
 Called when this device has file descriptors that are waiting.
 ==============================================================================*/
 {
-#if defined (PERL_INTERPRETER)
+#if defined (USE_PERL_INTERPRETER)
 	char *callback_result;
-#endif /* defined (PERL_INTERPRETER) */
+#endif /* defined (USE_PERL_INTERPRETER) */
 	int return_code;
 	struct Io_device *device;
 
@@ -121,7 +124,7 @@ Called when this device has file descriptors that are waiting.
 	  printf("Callback from %d\n", *filehandle);
 #endif /* defined (DEBUG) */
 
-#if defined (PERL_INTERPRETER)
+#if defined (USE_PERL_INTERPRETER)
 
 	  if (device->perl_action)
 	  {
@@ -137,7 +140,7 @@ Called when this device has file descriptors that are waiting.
 			  free(callback_result);
 		  }
 	  }
-#endif /* defined (PERL_INTERPRETER) */
+#endif /* defined (USE_PERL_INTERPRETER) */
 	  return_code = 1;
 	}
 	else
@@ -161,10 +164,10 @@ DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Io_device)
 
 DECLARE_INDEXED_LIST_FUNCTIONS(Io_device)
 
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Io_device,name,char *, \
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Io_device,name,const char *, \
 	strcmp)
 
-struct Io_device *CREATE(Io_device)(char *name)
+struct Io_device *CREATE(Io_device)(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 16 May 2001
 

@@ -65,10 +65,10 @@ static char poi_uidh[] =
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int poi_hierarchy_open=0;
 static MrmHierarchy poi_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 /* these two variables are set up so that we can force the eye position to be
 	dependant upon the location of the point of interest, and orientation of the
 	coordinate system that the point of interest is dependant upon */

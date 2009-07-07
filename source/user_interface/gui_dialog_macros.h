@@ -47,9 +47,9 @@ controls:
 #define GUI_DIALOG_MACROS_H
 
 #include <stdio.h>
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/Xm.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Global variables

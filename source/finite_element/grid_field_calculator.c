@@ -68,10 +68,10 @@ static char grid_field_calculator_uidh[] =
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int grid_field_calculator_hierarchy_open=0;
 static MrmHierarchy grid_field_calculator_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 struct Grid_field_calculator
 /*******************************************************************************

@@ -1041,7 +1041,7 @@ successful return an Element_point_ranges will be created and the pointer to it
 returned in this location, for the calling function to use or destroy.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	const char **valid_strings,*xi_discretization_mode_string;
 	enum Xi_discretization_mode xi_discretization_mode;
 	float xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];

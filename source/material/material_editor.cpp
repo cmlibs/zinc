@@ -45,6 +45,10 @@ Widgets for editing a graphical material.
 #define PI 3.1415927
 #define PI_180 (PI/180.0)
 #include <stdio.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 extern "C"
 {
 #include "three_d_drawing/graphics_buffer.h"
@@ -114,10 +118,10 @@ deaccess it.
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int material_editor_hierarchy_open=0;
 static MrmHierarchy material_editor_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (GL_API)
 static Matrix Identity=
 {

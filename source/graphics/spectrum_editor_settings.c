@@ -43,13 +43,13 @@ Provides the widgets to manipulate element group settings.
  * ***** END LICENSE BLOCK ***** */
 #include <math.h>
 #include <stdio.h>
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/Xm.h>
 #include <Xm/PushBG.h>
 #include <Xm/ToggleB.h>
 #include <Xm/ToggleBG.h>
 #include <Xm/RowColumn.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "general/callback_motif.h"
 #include "general/debug.h"
 #include "graphics/spectrum.h"
@@ -66,10 +66,10 @@ static char spectrum_editor_settings_uidh[] =
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int spectrum_editor_settings_hierarchy_open=0;
 static MrmHierarchy spectrum_editor_settings_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 struct Spectrum_editor_settings
 /*******************************************************************************

@@ -43,25 +43,28 @@ Eventually use to store parameters for the transform function.
  *
  * ***** END LICENSE BLOCK ***** */
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 extern "C"{
 #include "general/debug.h"
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include "motif/image_utilities.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
 #include "interaction/interactive_tool.h"
 #include "interaction/interactive_tool_private.h"
 #include "graphics/transform_tool.h"
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static char transform_tool_uidh[] =
 #include "graphics/transform_tool.uidh"
 	;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "user_interface/message.h"
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include "user_interface/user_interface.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 }
 
 #if defined (WX_USER_INTERFACE)
@@ -78,10 +81,10 @@ Module variables
 ----------------
 */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int transform_tool_hierarchy_open=0;
 static MrmHierarchy transform_tool_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Module types
@@ -95,12 +98,12 @@ class wxTransformTool;
 
 static char Interactive_tool_transform_type_string[] = "Transform_tool";
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 struct Transform_tool_defaults
 {
 	Boolean free_spin;
 };
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 struct Transform_tool
 /*******************************************************************************
@@ -113,9 +116,9 @@ DESCRIPTION :
 
 	struct User_interface *user_interface;
 	int free_spin_flag;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Display *display;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (WX_USER_INTERFACE)
   wxTransformTool *wx_transform_tool;
@@ -290,18 +293,18 @@ DESCRIPTION :
 Fetches the appropriate icon for the interactive tool.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Display *display;
 	Pixel background_pixel, foreground_pixel;
 	Pixmap pixmap;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Cmgui_image *image;
 	struct Transform_tool *transform_tool;
 
 	ENTER(Transform_tool_get_icon);
 	if ((transform_tool=(struct Transform_tool *)transform_tool_void))
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		if (MrmOpenHierarchy_binary_string(transform_tool_uidh,sizeof(transform_tool_uidh),
 			&transform_tool_hierarchy,&transform_tool_hierarchy_open))
 		{
@@ -327,13 +330,13 @@ Fetches the appropriate icon for the interactive tool.
 				"Could not open heirarchy");
 			image = (struct Cmgui_image *)NULL;
 		}
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 		USE_PARAMETER(foreground);
 		USE_PARAMETER(background);
 		display_message(WARNING_MESSAGE, "Transform_tool_get_icon.  "
 			"Not implemented for this version.");
 		image = (struct Cmgui_image *)NULL;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
@@ -538,7 +541,7 @@ Creates a transform type Interactive_tool which control the transformation of
 scene_viewers.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #define XmNtransformFreeSpin "transformFreeSpin"
 #define XmCtransformFreeSpin "TransformFreeSpin"
 	struct Transform_tool_defaults transform_tool_defaults;
@@ -554,7 +557,7 @@ scene_viewers.
 			const_cast<char*>("false")
 		}
 	};
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Interactive_tool *interactive_tool;
 	struct Transform_tool *transform_tool;
 
@@ -565,7 +568,7 @@ scene_viewers.
 		{			
 			transform_tool->user_interface = user_interface;
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			transform_tool_defaults.free_spin = False;
 			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 				&transform_tool_defaults,resources,XtNumber(resources),NULL);

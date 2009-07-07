@@ -820,7 +820,8 @@ Modifier function for entering a path to a Cmiss_region, starting at
 <root_region>.
 ==============================================================================*/
 {
-	char *current_token, **path_address;
+	const char *current_token;
+	char **path_address;
 	int return_code;
 	struct Cmiss_region *region, *root_region;
 
@@ -1806,7 +1807,7 @@ int Option_table_add_region_path_and_or_field_name_entry(
 } /* Option_table_add_region_path_and_or_field_name_entry */
 
 int Cmiss_region_get_child_region_from_path(struct Cmiss_region *root_region,
-	char *path, struct Cmiss_region **child_region_address,
+	const char *path, struct Cmiss_region **child_region_address,
 	char **remaining_path_address)
 /*******************************************************************************
 LAST MODIFIED : 28 March 2003
@@ -1824,7 +1825,7 @@ For safety, returns NULL in <child_region_address> and either NULL or a valid
 pointer within path in <remaining_path_address> on any error.
 ==============================================================================*/
 {
-	char *child_name;
+	const char *child_name;
 	int return_code;
 
 	ENTER(Cmiss_region_get_child_region_from_path);

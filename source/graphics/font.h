@@ -101,7 +101,7 @@ allow interfacing to the choose_object widgets.
 
 int Graphics_font_package_define_font(
 	struct Graphics_font_package *font_package,
-	char *font_name, char *font_string);
+	const char *font_name, const char *font_string);
 /*******************************************************************************
 LAST MODIFIED : 11 April 2007
 
@@ -111,7 +111,7 @@ user interface dependent <font_string>.
 ==============================================================================*/
 
 struct Graphics_font *Graphics_font_package_get_font(
-	struct Graphics_font_package *font_package, char *font_name);
+	struct Graphics_font_package *font_package, const char *font_name);
 /*******************************************************************************
 LAST MODIFIED : 11 April 2007
 
@@ -126,11 +126,11 @@ PROTOTYPE_OBJECT_FUNCTIONS(Graphics_font);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Graphics_font);
 
 PROTOTYPE_LIST_FUNCTIONS(Graphics_font); 
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Graphics_font,name,char *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Graphics_font,name,const char *);
 
-PROTOTYPE_MANAGER_COPY_FUNCTIONS(Graphics_font,name,char *);
+PROTOTYPE_MANAGER_COPY_FUNCTIONS(Graphics_font,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Graphics_font);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_font,name,char *); 
+PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_font,name,const char *); 
 
 int DESTROY(Graphics_font)(struct Graphics_font **font_address);
 /*******************************************************************************

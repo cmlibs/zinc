@@ -46,6 +46,10 @@ appearance of spectrums.
  * ***** END LICENSE BLOCK ***** */
 #include <math.h>
 #include <stdlib.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #include <stdio.h>
 #include "general/debug.h"
 #include "general/enumerator_private.h"

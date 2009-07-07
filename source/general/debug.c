@@ -45,6 +45,10 @@ Function definitions for debugging.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #include "user_interface/message.h"
 #include "general/debug.h"
 
@@ -365,7 +369,7 @@ is swallowed with the call USE_PARAMETER(dummy_void); at the start of function.
 #endif /* defined (USE_PARAMETER_ON) */
 
 #if !defined (OPTIMISED)
-char *allocate(unsigned long int size,char *filename,int line, char *type)
+char *allocate(unsigned long int size,const char *filename,int line, const char *type)
 /*******************************************************************************
 LAST MODIFIED : 26 November 2001
 
@@ -460,7 +464,7 @@ Wrapper for allocate which keeps track of allocated memory.
 	return (result);
 } /* allocate */
 
-void deallocate(char *ptr,char *filename,int line)
+void deallocate(char *ptr,const char *filename,int line)
 /*******************************************************************************
 LAST MODIFIED : 19 November 2001
 
@@ -514,7 +518,7 @@ Wrapper for deallocate which keeps track of allocated memory.
 	LEAVE;
 } /* deallocate */
 
-char *reallocate(char *ptr,unsigned long int size,char *filename,int line, char *type)
+char *reallocate(char *ptr,unsigned long int size,const char *filename,int line, const char *type)
 /*******************************************************************************
 LAST MODIFIED : 19 November 2001
 

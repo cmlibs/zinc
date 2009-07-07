@@ -167,10 +167,10 @@ The object used to store information about the Cell variable editing dialog.
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int cell_variable_editing_dialog_hierarchy_open=0;
 static MrmHierarchy cell_variable_editing_dialog_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 /* Need to keep a list of the variables that change between calls to the apply
    and reset callbacks */
 static struct Changed_variable *changed_variables =

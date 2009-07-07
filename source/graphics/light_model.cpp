@@ -58,6 +58,10 @@ return to direct rendering, as described with these routines.
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 extern "C" {
 #include "command/parser.h"
 #include "general/debug.h"
@@ -428,7 +432,7 @@ DECLARE_OBJECT_FUNCTIONS(Light_model)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Light_model)
 
 DECLARE_LIST_FUNCTIONS(Light_model)
-DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Light_model,name,char *,strcmp)
+DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Light_model,name,const char *,strcmp)
 DECLARE_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Light_model,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Light_model,name)
@@ -516,7 +520,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Light_model,name)
 	return (return_code);
 } /* MANAGER_COPY_WITHOUT_IDENTIFIER(Light_model,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Light_model,name,char *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Light_model,name,const char *)
 {
 	char *destination_name;
 	int return_code;
@@ -566,7 +570,7 @@ DECLARE_MANAGER_FUNCTIONS(Light_model)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Light_model)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Light_model,name,char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Light_model,name,const char *)
 
 int Light_model_get_ambient(struct Light_model *light_model,
 	struct Colour *ambient)
@@ -862,7 +866,8 @@ Modifies the properties of a light model.
 			{"two_sided",NULL,NULL,set_char_flag},
 			{NULL,NULL,NULL,NULL}
 		};
-	char *current_token,infinite_viewer_flag,local_viewer_flag,
+	const char *current_token;
+	char infinite_viewer_flag,local_viewer_flag,
 		one_sided_flag,two_sided_flag,disable_flag,enable_flag;
 	int process,return_code;
 	struct Colour ambient_colour;
@@ -1149,7 +1154,7 @@ Modifier function to set the light model from a command.
 ???RC set_Object routines could become a macro.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct Light_model *temp_light_model,**light_model_address;
 	struct MANAGER(Light_model) *light_model_manager;

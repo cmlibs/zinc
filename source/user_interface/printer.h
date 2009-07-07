@@ -62,9 +62,9 @@ Printer information.
 	int page_bottom_margin_mm,page_height_mm,page_left_margin_mm,
 		page_right_margin_mm,page_top_margin_mm,page_width_mm;
 	struct Colour background_colour,foreground_colour;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Pixel background_colour_pixel,foreground_colour_pixel;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 }; /* struct Printer */
 
 /*

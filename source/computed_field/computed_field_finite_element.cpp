@@ -1381,7 +1381,8 @@ The actual finite_element wrapper is not made here but in response to the
 FE_field being made and/or modified.
 ==============================================================================*/
 {
-	char**component_names,*current_token,**temp_component_names;
+	char **component_names,**temp_component_names;
+	const char *current_token;
 	const char *cm_field_type_string,**valid_strings,*value_type_string;
 	enum CM_field_type cm_field_type;
 	enum Value_type value_type;
@@ -2795,7 +2796,7 @@ Converts <field> into type COMPUTED_FIELD_NODE_VALUE (if it is not already)
 and allows its contents to be modified.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	const char *nodal_value_type_string;
 	enum FE_nodal_value_type nodal_value_type;
 	int return_code,version_number;
@@ -4804,7 +4805,7 @@ FE_field being made and/or modified.
 {
 	char basis_derivative_help[] =
 		"The basis_derivative calculates a monomial derivative on element based fields.  It is not defined for nodes.  It allows you to calculate an arbitrary derivative by specifying an <order> and a list of <xi_indices> of length order.  This derivative then becomes the \"value\" for the field.";
-	char *current_token;
+	const char *current_token;
 	int i, order, previous_state_index, return_code, *xi_indices, *temp_xi_indices;
 	struct Computed_field *field;
 	Computed_field_modify_data *field_modify;

@@ -35,7 +35,7 @@ WriteMakefile(
       (ABSTRACT_FROM => 'Cmgui_command_data.pm', # retrieve abstract from module
        AUTHOR     => '"Shane Blackett <s.blackett@auckland.ac.nz>"') : ()),
     'LIBS'    => [''], # e.g., '-lm'
-    'DEFINE'    => '-DPERL_INTERPRETER', # e.g., '-DHAVE_SOMETHING'
+    'DEFINE'    => '-DUSE_PERL_INTERPRETER', # e.g., '-DHAVE_SOMETHING'
   # Insert -I. if you add *.h files later:
     'INC'    => "-I$ENV{CMGUI_DEV_SOURCE}", # e.g., '-I/usr/include/other'
 	# Turn off "Manifying" because can't create files with names containing :'s in

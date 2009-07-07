@@ -51,7 +51,7 @@ Interface routines for CMISS commands to work with the help window.
 Global functions
 ----------------
 */
-void do_help(char *help_string,char *help_examples_directory,
+void do_help(const char *help_string,const char *help_examples_directory,
 	struct Execute_command *execute_command,
 	struct User_interface *user_interface);
 /*******************************************************************************

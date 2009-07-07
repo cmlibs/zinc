@@ -115,7 +115,7 @@ DESCRIPTION :
 A modifier function to set the colour rgb values.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	COLOUR_PRECISION blue,green,red;
 	int return_code;
 	struct Colour *colour;

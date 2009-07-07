@@ -41,6 +41,10 @@ Functions for interfacing with the graphics library.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #if defined (OPENGL_API)
 #  if defined (UNIX)
 #    include <dlfcn.h>
@@ -48,7 +52,7 @@ Functions for interfacing with the graphics library.
 #  include <math.h>
 #  include <string.h>
 #  include <stdio.h>
-#  if defined (MOTIF) /* switch (USER_INTERFACE) */
+#  if defined (MOTIF_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #    include <X11/Xlib.h>
 #    include <GL/glu.h>
 #    define GLX_GLXEXT_PROTOTYPES
@@ -96,7 +100,7 @@ Sets up the default light, material and light model for the graphics library.
 ==============================================================================*/
 {
 #if defined(GLX_ARB_get_proc_address)
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Display *display;
 #endif
 #endif /* defined(GLX_ARB_get_proc_address) */
@@ -113,7 +117,7 @@ Sets up the default light, material and light model for the graphics library.
 		glMatrixMode(GL_MODELVIEW);
 
 #if defined(GLX_ARB_get_proc_address)
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		/* Try and load this function while we have the user_interface connection */
 		display = User_interface_get_display(user_interface);
 		if (GLEXTENSION_UNSURE == GLEXTENSIONFLAG(GLX_ARB_get_proc_address))
@@ -128,7 +132,7 @@ Sets up the default light, material and light model for the graphics library.
 				GLEXTENSIONFLAG(GLX_ARB_get_proc_address) = 0;
 			}
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #endif /* defined(GLX_ARB_get_proc_address) */
 #endif
 		initialized=1;

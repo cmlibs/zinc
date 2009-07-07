@@ -273,7 +273,7 @@ DECLARE_MANAGER_FUNCTIONS(Movie_graphics)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Movie_graphics)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Movie_graphics,name,char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Movie_graphics,name,const char *)
 
 struct X3d_movie *Movie_graphics_get_X3d_movie(
 	struct Movie_graphics *movie)
@@ -454,7 +454,7 @@ DESCRIPTION :
 Modifier function to set the movie from a command.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct MANAGER(Movie_graphics) *movie_graphics_manager;
 	struct Movie_graphics *temp_movie,**movie_address;

@@ -58,6 +58,10 @@ problem.
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #include "command/parser.h"
 #include "general/debug.h"
 #include "general/enumerator_private.h"
@@ -546,7 +550,7 @@ DESCRIPTION :
 Set the <light> position from the command options.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	float x,y,z;
 	int return_code;
 	struct Light *light;
@@ -625,7 +629,7 @@ DESCRIPTION :
 Set the <light> direction from the command options.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	float x,y,z;
 	int return_code;
 	struct Light *light;
@@ -704,7 +708,7 @@ DESCRIPTION :
 Set the <light> cutoff from the command options.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	float cutoff;
 	int return_code;
 	struct Light *light;
@@ -2094,7 +2098,7 @@ Modifier function to set the light from a command.
 ???RC set_Object routines could become a macro.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 	struct Light *temp_light,**light_address;
 	struct MANAGER(Light) *light_manager;

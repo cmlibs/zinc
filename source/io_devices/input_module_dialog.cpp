@@ -257,10 +257,10 @@ struct Input_module_calib_sum_position_struct
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int input_module_dialog_hierarchy_open=0;
 static MrmHierarchy input_module_dialog_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Module functions

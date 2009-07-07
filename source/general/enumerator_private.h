@@ -202,7 +202,8 @@ A modifier function for setting an enumerated type variable to a specified \
 value. \
 ==============================================================================*/ \
 { \
-	char *current_token,*enumerator_string_value; \
+	const char *current_token; \
+	char *enumerator_string_value; \
 	enum enumerator_type *enumerator_address, other_enumerator; \
 	int return_code; \
 \
@@ -211,9 +212,9 @@ value. \
 		&&(enumerator_string_value=(char *)enumerator_string_value_void)) \
 	{ \
 		return_code=1; \
-		if (!(current_token=state->current_token)|| \
-			(strcmp(PARSER_HELP_STRING,current_token)&& \
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))) \
+		if (!(state->current_token)|| \
+			(strcmp(PARSER_HELP_STRING,state->current_token)&& \
+				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))) \
 		{ \
 			STRING_TO_ENUMERATOR(enumerator_type)( \
 				enumerator_string_value, enumerator_address); \

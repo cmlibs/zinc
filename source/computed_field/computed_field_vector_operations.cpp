@@ -826,7 +826,7 @@ Converts <field> into type COMPUTED_FIELD_CROSS_PRODUCT (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int dimension, i, number_of_source_fields, return_code,
 		temp_number_of_source_fields;
 	struct Computed_field *field, **source_fields, **temp_source_fields;

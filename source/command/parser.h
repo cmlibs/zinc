@@ -45,6 +45,10 @@ it is nothing but a strings container, and some comparison functions)
 #if !defined (PARSER_H)
 #define PARSER_H
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #if defined (UNIX)
 #include <ctype.h>
 #endif /* defined (UNIX) */
@@ -83,7 +87,7 @@ DESCRIPTION :
 	char **tokens;
 	int number_of_tokens;
 	int current_index;
-	char *current_token;
+	const char *current_token;
 	char *command_string;
 }; /* struct Parse_state */
 
@@ -296,7 +300,7 @@ Parses the options in the <option_table>, giving all options a chance to be
 entered.
 ==============================================================================*/
 
-struct Parse_state *create_Parse_state(char *command_string);
+struct Parse_state *create_Parse_state(const char *command_string);
 /*******************************************************************************
 LAST MODIFIED : 12 June 1996
 
@@ -311,7 +315,7 @@ NB
 ==============================================================================*/
 
 struct Parse_state *create_Parse_state_from_tokens(
-	int number_of_tokens, char **tokens);
+	int number_of_tokens, const char **tokens);
 /*******************************************************************************
 LAST MODIFIED : 31 July 2002
 
@@ -781,7 +785,7 @@ Adds the given <token> to the <option_table>.  The <vector> is filled in with th
 ==============================================================================*/
 
 int Option_table_add_float_entry(struct Option_table *option_table,
-	char *token, float *value);
+	const char *token, float *value);
 /*******************************************************************************
 LAST MODIFIED : 28 June 2006
 
@@ -791,7 +795,7 @@ the token following is assigned to <value>.
 ==============================================================================*/
 
 int Option_table_add_float_vector_entry(struct Option_table *option_table,
-	char *token, float *vector, int *number_of_components);
+	const char *token, float *vector, int *number_of_components);
 /*******************************************************************************
 LAST MODIFIED : 16 July 2007
 
@@ -801,7 +805,7 @@ Adds the given <token> to the <option_table>.  The <vector> is filled in with th
 ==============================================================================*/
 
 int Option_table_add_FE_value_vector_entry(struct Option_table *option_table,
-	char *token, FE_value *vector, int *number_of_components);
+	const char *token, FE_value *vector, int *number_of_components);
 /*******************************************************************************
 LAST MODIFIED : 4 December 2003
 
@@ -831,7 +835,7 @@ Adds the given <token> to the <option_table>.  The <vector> is filled in with th
 ==============================================================================*/
 
 int Option_table_add_variable_length_double_vector_entry(
-	struct Option_table *option_table, char *token, int *number_of_components, 
+	struct Option_table *option_table, const char *token, int *number_of_components, 
 	double **vector);
 /*******************************************************************************
 LAST MODIFIED : 18 February 2005
@@ -853,7 +857,7 @@ number of values specified in the <data>.
 ==============================================================================*/
 
 int Option_table_add_name_entry(struct Option_table *option_table,
-	char *token, char **name);
+	const char *token, char **name);
 /*******************************************************************************
 LAST MODIFIED : 25 March 2004
 
@@ -904,7 +908,7 @@ Data for the Option_table_add_set_names_from_list_entry option table entry.
 };
 
 int Option_table_add_set_names_from_list_entry(struct Option_table *option_table,
-   char *token, struct Set_names_from_list_data *data);
+   const char *token, struct Set_names_from_list_data *data);
 /*******************************************************************************
 LAST MODIFIED : 7 July 2004
 

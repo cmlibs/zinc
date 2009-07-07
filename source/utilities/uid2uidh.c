@@ -45,6 +45,10 @@ DESCRIPTION :
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #if defined (UNIX) && defined (GENERIC_PC)
 #if defined (CYGWIN)
 #include <sys/param.h>

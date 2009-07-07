@@ -56,10 +56,10 @@ some coordinate system, and the returned value is a global one.
 Module variables
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int in_editor_dialog_hierarchy_open=0;
 static MrmHierarchy in_editor_dialog_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Module functions

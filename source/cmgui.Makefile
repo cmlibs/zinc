@@ -28,7 +28,7 @@ PRODUCT_PATH=$(CMISS_ROOT)/cmgui
 PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
 
 ifndef USER_INTERFACE
-   USER_INTERFACE=MOTIF_USER_INTERFACE
+   USER_INTERFACE=WX_USER_INTERFACE
 endif
 
 ifndef GRAPHICS_API
@@ -48,7 +48,7 @@ include $(COMMONMAKEFILE)
 #must be softlinked into the cmgui source directory.
 UNEMAP = false
 LINK_CMISS = false
-PERL_INTERPRETER = true
+USE_PERL_INTERPRETER = true
 IMAGEMAGICK = true
 #Does your version of imagemagick include libgdcm
 USE_LIBGDCM = false
@@ -376,9 +376,9 @@ endif # ! IMAGEMAGICK
 
 ifeq ($(USE_ITK),true)
    ITK_DEFINES = -DUSE_ITK
-   ITK_SRCDIR = $(CMISS_ROOT)/itk/src
-   ITK_BINDIR = $(CMISS_ROOT)/itk/lib/$(LIB_ARCH_DIR)
-   ITK_INC = -I$(ITK_BINDIR) -I$(ITK_SRCDIR)/Code/Algorithms -I$(ITK_SRCDIR)/Code/BasicFilters -I$(ITK_SRCDIR)/Code/Common -I$(ITK_SRCDIR)/Code/Numerics/Statistics -I$(ITK_SRCDIR)/Utilities/vxl/vcl -I$(ITK_SRCDIR)/Utilities/vxl/core -I$(ITK_BINDIR)/Utilities/vxl/vcl -I$(ITK_BINDIR)/Utilities/vxl/core/
+   ITK_SRCDIR = $(CMISS_ROOT)/itk/include/InsightToolkit
+	 ITK_BINDIR = $(CMISS_ROOT)/itk
+	 ITK_INC = -I$(ITK_BINDIR) -I$(ITK_SRCDIR) -I$(ITK_SRCDIR)/Algorithms -I$(ITK_SRCDIR)/BasicFilters -I$(ITK_SRCDIR)/Common -I$(ITK_SRCDIR)/Numerics/Statistics -I$(ITK_SRCDIR)/Utilities/vxl/vcl -I$(ITK_SRCDIR)/Utilities/vxl/core -I$(ITK_BINDIR)/Utilities/vxl/vcl -I$(ITK_BINDIR)/Utilities/vxl/core/
    ITK_LIBPATH_PREFIX = -L
    ITK_LIB_PREFIX = -l 
    ITK_LIB_SUFFIX =
@@ -389,7 +389,7 @@ ifeq ($(USE_ITK),true)
      ITK_LIB_SUFFIX = .lib
      ITK_BIN_CONFIG_DIR = /Release
    endif
-   ITK_LIB = $(ITK_LIBPATH_PREFIX)$(ITK_BINDIR)/bin$(ITK_BIN_CONFIG_DIR) $(ITK_LIB_PREFIX)ITKAlgorithms$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKStatistics$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKBasicFilters$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKCommon$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkvnl$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkvnl_algo$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkvnl$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itknetlib$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itksys$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKDICOMParser$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkzlib$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkzlib$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itktiff$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkjpeg12$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkjpeg16$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKNrrdIO$(ITK_LIB_SUFFIX) 
+   ITK_LIB = $(ITK_LIBPATH_PREFIX)$(ITK_BINDIR)/lib/InsightToolkit$(ITK_BIN_CONFIG_DIR) $(ITK_LIB_PREFIX)ITKAlgorithms$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKStatistics$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKBasicFilters$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKCommon$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkvnl$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkvnl_algo$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkvnl$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkv3p_netlib$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itksys$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKDICOMParser$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkzlib$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkzlib$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itktiff$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkjpeg12$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkjpeg16$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKNrrdIO$(ITK_LIB_SUFFIX) 
 else # $(USE_ITK) == true
    ITK_DEFINES =
    ITK_SRCDIR = 
@@ -399,16 +399,16 @@ else # $(USE_ITK) == true
 endif # $(USE_ITK) == true
 
 
-ifneq ($(PERL_INTERPRETER),true)
+ifneq ($(USE_PERL_INTERPRETER),true)
    INTERPRETER_INC =
    INTERPRETER_DEFINES = 
    INTERPRETER_SRCS =
    INTERPRETER_LIB =
    INTERPRETER_LINK_FLAGS =
-else # ! PERL_INTERPRETER
+else # ! USE_PERL_INTERPRETER
    INTERPRETER_PATH = $(CMISS_ROOT)/perl_interpreter
    INTERPRETER_INC = -I$(INTERPRETER_PATH)/source/
-   INTERPRETER_DEFINES = -DPERL_INTERPRETER
+   INTERPRETER_DEFINES = -DUSE_PERL_INTERPRETER
    INTERPRETER_SRCS =
    INTERPRETER_LIB = \
 	   $(INTERPRETER_PATH)/lib/$(LIB_ARCH_DIR)/libperlinterpreter.a
@@ -417,7 +417,7 @@ else # ! PERL_INTERPRETER
       INTERPRETER_LIB = \
 	      $(INTERPRETER_PATH)/lib/$(LIB_ARCH_DIR)/libperlinterpreter-includeperl.a
    endif # $(OPERATING_SYSTEM) == win32
-endif # ! PERL_INTERPRETER
+endif # ! USE_PERL_INTERPRETER
 
 ifneq ($(UNEMAP), true)
    UNEMAP_DEFINES =
@@ -548,7 +548,7 @@ ifneq ($(USE_XML2),true)
    XML2_LIB =
 else
    XML2_PATH = $(CMISS_ROOT)/image_libraries/
-   XML2_DEFINES = -DHAVE_XML2
+   XML2_DEFINES = -DUSE_XML2
    XML2_INC = -I$(XML2_PATH)/include/$(LIB_ARCH_DIR)/libxml2/
    XML2_LIB = $(XML2_PATH)/lib/$(LIB_ARCH_DIR)/libxml2.a
 ifndef IMAGEMAGICK
@@ -701,12 +701,7 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
    USER_INTERFACE_LIB += $(GRAPHICS_LIB)
    ifeq ($(OPERATING_SYSTEM),linux)
       ifneq ($(STATIC_LINK),true)
-         USER_INTERFACE_LIB += $(shell pkg-config gtk+-2.0 gthread-2.0 --libs) -lXmu  -lXinerama
-         ifeq ($(INSTRUCTION),x86_64)
-	    USER_INTERFACE_LIB +=
-	 else
-	    USER_INTERFACE_LIB += -lXxf86vm
-	 endif 
+         USER_INTERFACE_LIB += $(shell pkg-config gtk+-2.0 gthread-2.0 --libs) -lXmu  -lXinerama -lXxf86vm
       else # $(STATIC_LINK) != true
          USER_INTERFACE_LIB += -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 -lwxexpat-2.6-i686-linux
       endif # $(STATIC_LINK) != true

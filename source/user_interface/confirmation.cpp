@@ -41,6 +41,9 @@ Routines for waiting for user input.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 
 extern "C" {
 #if defined (UNIX)
@@ -53,11 +56,11 @@ extern "C" {
 #endif /* defined (WIN32_SYSTEM) */
 #include <stdio.h>
 #include <string.h>
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/Xm.h>
 #include <Xm/MessageB.h>
 #include <Xm/SelectioB.h>
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "general/debug.h"
 #include "user_interface/user_interface.h"
 #include "user_interface/confirmation.h"
@@ -115,7 +118,7 @@ struct File_confirmation
 Module functions
 ----------------
 */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void confirmation_ok(Widget widget,XtPointer confirmation_void,
 	XtPointer reason)
 /*******************************************************************************
@@ -141,9 +144,9 @@ DESCRIPTION :
 	}
 	LEAVE;
 } /* confirmation_ok */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void confirmation_cancel(Widget widget,XtPointer confirmation_void,
 	XtPointer reason)
 /*******************************************************************************
@@ -169,13 +172,13 @@ DESCRIPTION :
 	}
 	LEAVE;
 } /* confirmation_cancel */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-static int confirmation(enum Confirm_type type,char *title,char *prompt,
-#if defined (MOTIF)
+static int confirmation(enum Confirm_type type,const char *title,const char *prompt,
+#if defined (MOTIF_USER_INTERFACE)
 	Widget parent,Confirmation_add_widgets_function add_widgets_function,
 	void *add_widgets_user_data,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	 struct User_interface *user_interface 
 #if  defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -191,7 +194,7 @@ button is clicked.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	static Arg settings_list[]=
 		{
 			{XmNmessageString,(XtArgVal)0},
@@ -205,18 +208,18 @@ button is clicked.
 	struct Confirmation confirmation;
 	Widget message_box,message_parent,message_shell;
 	XmString message_string,ok_label_string,cancel_label_string;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 	ENTER(confirmation);
-#if !defined (MOTIF)
+#if !defined (MOTIF_USER_INTERFACE)
 	USE_PARAMETER(type);
 	USE_PARAMETER(title);
 	USE_PARAMETER(prompt);
-#endif /* !defined (MOTIF) */
+#endif /* !defined (MOTIF_USER_INTERFACE) */
 	return_code=0;
 	if (user_interface)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		message_string=XmStringCreateSimple(prompt);
 		settings_list[0].value=(XtArgVal)message_string;
 		settings_list[1].value=(XtArgVal)title;
@@ -301,7 +304,7 @@ button is clicked.
 		destroy_Shell_list_item_from_shell(&(message_shell),user_interface);
 		XmStringFree(message_string);
 		return_code=confirmation.response;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 		switch (type)
 		{
@@ -445,7 +448,7 @@ DESCRIPTION :
 } /* confirmation_cancel_filename_callback */
 
 static char *confirmation_get_filename(enum Confirm_filetype type,
-	char *extension,struct User_interface *user_interface
+	const char *extension,struct User_interface *user_interface
 #if defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
 #endif /* defined (WX_USER_INTERFACE) */
@@ -503,9 +506,9 @@ This routine supplies a file selection dialog window
 				case CONFIRM_READ:
 				{
 					open_file_and_read(
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 						(Widget)NULL,(XtPointer)file_open_data,(XtPointer)NULL
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 						file_open_data
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -518,9 +521,9 @@ This routine supplies a file selection dialog window
 				case CONFIRM_WRITE:
 				{
 					open_file_and_write(
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 						(Widget)NULL,(XtPointer)file_open_data,(XtPointer)NULL
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
 						file_open_data
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -534,12 +537,12 @@ This routine supplies a file selection dialog window
 			/*???DB.  For WIN32_USER_INTERFACE the event loop is inside open_file_and_*.  Should
 				probably be moved here ? */
 #endif /* defined (WIN32_USER_INTERFACE) */
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			while (confirmation.dialog_active&&(file_open_data->selection))
 			{
 				application_main_step(user_interface);
 			}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 			if ((confirmation.response)&&(confirmation.filename))
 			{
 				switch (type)
@@ -591,7 +594,7 @@ This routine supplies a file selection dialog window
 	return (filename);
 } /* confirmation_get_filename */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void confirmation_get_string_ok(Widget widget,
 	XtPointer confirmation_void,XtPointer reason)
 /*******************************************************************************
@@ -628,9 +631,9 @@ DESCRIPTION :
 	}
 	LEAVE;
 } /* confirmation_get_string_ok */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static void confirmation_get_string_cancel(Widget widget,
 	XtPointer confirmation_void,XtPointer reason)
 /*******************************************************************************
@@ -656,16 +659,16 @@ DESCRIPTION :
 	}
 	LEAVE;
 } /* confirmation_get_string_cancel */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 /*
 Global functions
 ----------------
 */
-int confirmation_warning_ok_cancel(char *title,char *prompt,
-#if defined (MOTIF)
+int confirmation_warning_ok_cancel(const char *title,const char *prompt,
+#if defined (MOTIF_USER_INTERFACE)
 	Widget parent,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	 struct User_interface *user_interface
 #if defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -684,9 +687,9 @@ is clicked and 0 if the cancel button is clicked.
 
 	ENTER(confirmation_warning_ok_cancel);
 	return_code=confirmation(WARNING_OK_CANCEL,title,prompt,
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		parent,(Confirmation_add_widgets_function)NULL,NULL,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		 user_interface
 #if defined (WX_USER_INTERFACE) 
 		 , execute_command
@@ -697,8 +700,8 @@ is clicked and 0 if the cancel button is clicked.
 	return (return_code);
 } /* confirmation_warning_ok_cancel */
 
-#if defined (MOTIF)
-int confirmation_warning_ok_cancel_plus_options(char *title,char *prompt,
+#if defined (MOTIF_USER_INTERFACE)
+int confirmation_warning_ok_cancel_plus_options(const char *title,const char *prompt,
 	Widget parent,Confirmation_add_widgets_function add_widgets_function,
 	void *add_widgets_user_data,struct User_interface *user_interface)
 /*******************************************************************************
@@ -719,12 +722,12 @@ is clicked and 0 if the cancel button is clicked.
 
 	return (return_code);
 } /* confirmation_warning_ok_cancel_plus_options */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 int confirmation_error_ok(char *title,char *prompt,
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget parent,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface
 #if defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -743,9 +746,9 @@ options are supplied.
 
 	ENTER(confirmation_error_ok);
 	return_code=confirmation(ERROR_OK,title,prompt,
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		parent,(Confirmation_add_widgets_function)NULL,NULL,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		user_interface
 #if defined (WX_USER_INTERFACE) 
 					 , execute_command
@@ -757,9 +760,9 @@ options are supplied.
 } /* confirmation_error_ok */
 
 int confirmation_information_ok(char *title,char *prompt,
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget parent,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface
 #if defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -778,9 +781,9 @@ No other options are supplied.
 
 	ENTER(confirmation_information_ok);
 	return_code=confirmation(INFORMATION_OK,title,prompt,
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		parent,(Confirmation_add_widgets_function)NULL,NULL,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		 user_interface
 #if defined (WX_USER_INTERFACE) 
 					 , execute_command
@@ -791,10 +794,10 @@ No other options are supplied.
 	return (return_code);
 } /* confirmation_information_ok */
 
-int confirmation_warning_ok(char *title,char *prompt,
-#if defined (MOTIF)
+int confirmation_warning_ok(const char *title,const char *prompt,
+#if defined (MOTIF_USER_INTERFACE)
 	Widget parent,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface
 #if defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -813,9 +816,9 @@ options are supplied.
 
 	ENTER(confirmation_warning_ok);
 	return_code=confirmation(WARNING_OK,title,prompt,
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		parent,(Confirmation_add_widgets_function)NULL,NULL,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		 user_interface
 #if defined (WX_USER_INTERFACE) 
 					 , execute_command
@@ -827,9 +830,9 @@ options are supplied.
 } /* confirmation_warning_ok */
 
 int confirmation_question_yes_no(char *title,char *prompt,
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Widget parent,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct User_interface *user_interface
 #if defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -848,9 +851,9 @@ is clicked and No if it isn't.
 
 	ENTER(confirmation_question_yes_no);
 	return_code=confirmation(QUESTION_YES_NO,title,prompt,
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		parent,(Confirmation_add_widgets_function)NULL,NULL,
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		user_interface
 #if defined (WX_USER_INTERFACE) 
 					 , execute_command
@@ -861,7 +864,7 @@ is clicked and No if it isn't.
 	return (return_code);
 } /* confirmation_question_yes_no */
 
-char *confirmation_get_read_filename(char *extension,
+char *confirmation_get_read_filename(const char *extension,
 	struct User_interface *user_interface
 #if defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -887,7 +890,7 @@ This routine supplies a file selection dialog window
 	return (filename);
 } /* confirmation_get_read_filename */
 
-char *confirmation_get_write_filename(char *extension,
+char *confirmation_get_write_filename(const char *extension,
 	struct User_interface *user_interface
 #if defined (WX_USER_INTERFACE) 
 	 , struct Execute_command *execute_command
@@ -941,7 +944,7 @@ working directory.  The new directory will be created if necessary.
 	return (filename);
 } /* confirmation_change_current_working_directory */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 char *confirmation_get_string(char *title,char *prompt,char *default_string,
 	Widget parent,struct User_interface *user_interface)
 /*******************************************************************************
@@ -1000,4 +1003,4 @@ is initially blank if <default_string> is NULL.
 
 	return (confirmation.response);
 } /* confirmation_get_string */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */

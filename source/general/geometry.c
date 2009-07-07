@@ -745,7 +745,8 @@ Sets the coordinate system (including focus for prolate spheroidal and oblate
 spheroidal).
 ==============================================================================*/
 {
-	char *current_token,cylindrical_polar_flag,fibre_flag,
+	const char *current_token;
+	char cylindrical_polar_flag,fibre_flag,
 		normalised_window_coordinates_flag,oblate_spheroidal_flag,
 		prolate_spheroidal_flag,spherical_polar_flag,read_focus,
 		rectangular_cartesian_flag;

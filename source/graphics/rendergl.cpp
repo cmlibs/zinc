@@ -41,6 +41,10 @@ GL rendering calls - API specific.
  * ***** END LICENSE BLOCK ***** */
 #include <stdio.h>
 #include <math.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 extern "C" {
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"

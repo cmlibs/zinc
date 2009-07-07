@@ -54,6 +54,9 @@ A module for supporting command parsing.
 #include <math.h>
 #include <ctype.h>
 #include "command/parser.h"
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/object.h"
@@ -122,7 +125,7 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Assign_variable);
 
 PROTOTYPE_OBJECT_FUNCTIONS(Assign_variable);
 PROTOTYPE_LIST_FUNCTIONS(Assign_variable);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Assign_variable,name,void *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Assign_variable,name,const char *);
 
 static struct LIST(Assign_variable) *assign_variable_list = NULL;
 
@@ -130,7 +133,7 @@ static struct LIST(Assign_variable) *assign_variable_list = NULL;
 Module functions
 ----------------
 */
-static struct Assign_variable *CREATE(Assign_variable)(char *name)
+static struct Assign_variable *CREATE(Assign_variable)(const char *name)
 /*******************************************************************************
 LAST MODIFIED : 10 March 2000
 
@@ -255,7 +258,7 @@ DESCRIPTION :
 	return (return_code);
 }
 
-static int Assign_variable_set_value(struct Assign_variable *variable, char *value)
+static int Assign_variable_set_value(struct Assign_variable *variable, const char *value)
 /*******************************************************************************
 LAST MODIFIED : 10 March 2000
 
@@ -291,9 +294,9 @@ DESCRIPTION :
 } /* Assign_variable_set_value */
 
 DECLARE_OBJECT_FUNCTIONS(Assign_variable)
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Assign_variable,name,void *,strcmp)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Assign_variable,name,const char *,strcmp)
 DECLARE_INDEXED_LIST_FUNCTIONS(Assign_variable)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Assign_variable,name,void *,
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Assign_variable,name,const char *,
 	strcmp)
 
 static int reduce_fuzzy_string(char *reduced_string,const char *string)
@@ -349,7 +352,7 @@ DESCRIPTION :
 Executes a VARIABLE operation command.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	enum Variable_operation_type *operation_type;
 	float value;
 	int number,return_code;
@@ -468,7 +471,7 @@ DESCRIPTION :
 Executes a VARIABLE SHOW command.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int number,return_code;
 
 	ENTER(execute_variable_command_show);
@@ -687,7 +690,8 @@ Now allows a single option to be matched exactly even if longer tokens start
 with the same text.
 ==============================================================================*/
 {
-	char *current_token, *error_message, **token;
+	const char *current_token;
+	char *error_message, **token;
 	int append_error, exact_match_count, first, i, number_of_sub_entries,
 		partial_match_count, return_code;
 	struct Modifier_entry *entry, *matching_entry, *sub_entry;
@@ -1582,7 +1586,8 @@ A modifier function for setting an enumerated type variable to a specified
 value.
 ==============================================================================*/
 {
-	char *current_token,**enumerator_string_address,*enumerator_string_value;
+	const char *current_token;
+	char **enumerator_string_address,*enumerator_string_value;
 	int return_code;
 
 	ENTER(set_enumerator_string);
@@ -1919,7 +1924,7 @@ as working space in which the token is constructed from the source string.
 	return (return_code);
 } /* extract_token */
 
-struct Parse_state *create_Parse_state(char *command_string)
+struct Parse_state *create_Parse_state(const char *command_string)
 /*******************************************************************************
 LAST MODIFIED : 24 November 1998
 
@@ -1936,7 +1941,7 @@ NB
 3 Variables are converted into values;
 ==============================================================================*/
 {
-	char *next_token,**temp_tokens,**tokens,*token_source,*working_string;
+	char *next_token,*token_source,*working_string,**tokens,**temp_tokens;
 	int allocated_tokens,i,number_of_tokens,return_code,still_tokenising;
 	struct Parse_state *state;
 
@@ -1950,9 +1955,9 @@ NB
 			{
 				/* Replace the %z1% variables and $variables in the working_string */
 				strcpy(working_string,command_string);
-#if ! defined (PERL_INTERPRETER)
+#if ! defined (USE_PERL_INTERPRETER)
 				parse_variable(&working_string);
-#endif /* ! defined (PERL_INTERPRETER) */
+#endif /* ! defined (USE_PERL_INTERPRETER) */
 				if (ALLOCATE(state->command_string,char,strlen(working_string)+1))
 				{
 					strcpy(state->command_string,working_string);
@@ -2066,7 +2071,7 @@ NB
 } /* create_Parse_state */
 
 struct Parse_state *create_Parse_state_from_tokens(
-	int number_of_tokens, char **tokens)
+	int number_of_tokens, const char **tokens)
 /*******************************************************************************
 LAST MODIFIED : 31 July 2002
 
@@ -2193,7 +2198,7 @@ Returns 1 if the current_token in <state> is either of
 PARSER_HELP_STRING or PARSER_RECURSIVE_HELP_STRING.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code;
 
 	ENTER(Parse_state_help_mode);
@@ -2635,7 +2640,8 @@ Executes an ASSIGN VARIABLE command.  Does a very small subset of the intended
 use of this command.
 ==============================================================================*/
 {
-	char *begin, *begin2, *current_token, *end, *env_string, *var_name;
+	const char *current_token;
+	char *begin, *begin2, *end, *env_string, *var_name;
 	int return_code;
 	struct Assign_variable *variable;
 	
@@ -2808,7 +2814,8 @@ DESCRIPTION :
 Allocates memory for a name, then copies the passed string into it.
 ==============================================================================*/
 {
-	char *current_token,**name_address;
+	const char *current_token;
+	char **name_address;
 	int return_code;
 
 	ENTER(set_name);
@@ -2890,7 +2897,8 @@ store the number_of_names pointers. The names in this array must either be NULL
 or pointing to allocated strings.
 ==============================================================================*/
 {
-	char *current_token,**names;
+	const char *current_token;
+	char **names;
 	int i,number_of_names,return_code;
 
 	ENTER(set_names);
@@ -2987,7 +2995,7 @@ then the index for that token is set in <data->valid_tokens->index> (these shoul
 all be initialised to zero). 
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int counter, i, return_code, valid_token;
 	struct Set_names_from_list_data *data;
 
@@ -3062,7 +3070,8 @@ Parses a string from the parse <state> into <*string_address>. Outputs the
 <string_description> text in help mode.
 ==============================================================================*/
 {
-	char *current_token, **string_address;
+	const char *current_token;
+	char **string_address;
 	int return_code;
 
 	ENTER(set_string);
@@ -3137,7 +3146,8 @@ Parses a string from the parse <state> into <*string_address>. Outputs the
 int set_string_no_realloc(struct Parse_state *state,void *string_address_void,
 	void *string_description_void)
 {
-	char *current_token, **string_address;
+	const char *current_token;
+	char **string_address;
 	int return_code;
 
 	ENTER(set_string_no_realloc);
@@ -3199,7 +3209,7 @@ DESCRIPTION :
 A modifier function for setting a int.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code,value,*value_address;
 
 	ENTER(set_int);
@@ -3269,7 +3279,7 @@ A modifier function for setting a int.
 In help mode writes the <description_string>.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code, value, *value_address;
 
 	ENTER(set_int_with_description);
@@ -3336,7 +3346,7 @@ If the next token is an integer then the int is set to that value otherwise the
 int is set to 1.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code,value,*value_address;
 
 	ENTER(set_int_optional);
@@ -3398,7 +3408,7 @@ DESCRIPTION :
 A modifier function for setting a int to a non-negative value.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code,value,*value_address;
 
 	ENTER(set_int_non_negative);
@@ -3480,7 +3490,7 @@ DESCRIPTION :
 A modifier function for setting a int to a positive value.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int return_code,value,*value_address;
 
 	ENTER(set_int_positive);
@@ -3563,7 +3573,8 @@ A modifier function for setting an int, and a char flag in the user data to
 indicate that the int has been set.
 ==============================================================================*/
 {
-	char *current_token, *flag_address;
+	const char *current_token;
+	char *flag_address;
 	int value, *value_address;
 	int return_code;
 
@@ -3633,7 +3644,7 @@ number_of_components ints.
 Now prints current contents of the vector with help.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int value,*values_address;
 	int comp_no,number_of_components,return_code;
 
@@ -3724,7 +3735,7 @@ DESCRIPTION :
 A modifier function for setting a float.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	float value,*value_address;
 	int return_code;
 
@@ -3795,7 +3806,8 @@ A modifier function for setting a float, and a char flag in the user data to
 indicate that the float has been set.
 ==============================================================================*/
 {
-	char *current_token, *flag_address;
+	const char *current_token;
+	char *flag_address;
 	float value,*value_address;
 	int return_code;
 
@@ -3867,7 +3879,7 @@ DESCRIPTION :
 A modifier function for setting a float to a positive value.
 ==============================================================================*/
 {
-	char *current_token;
+	const char current_token;
 	float value,*value_address;
 	int return_code;
 
@@ -3875,14 +3887,14 @@ A modifier function for setting a float to a positive value.
 	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		if (state->current_token)
 		{
-			if (strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			if (strcmp(PARSER_HELP_STRING,state->current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
 			{
 				if (value_address=(float *)value_address_void)
 				{
-					if (1==sscanf(current_token," %f ",&value))
+					if (1==sscanf(state->current_token," %f ",&value))
 					{
 						/* make sure that the value value is positive */
 						if (value>0)
@@ -3950,7 +3962,7 @@ DESCRIPTION :
 A modifier function for setting a float to a non_negative value.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	float value,*value_address;
 	int return_code;
 
@@ -4033,7 +4045,7 @@ DESCRIPTION :
 A modifier function for setting a float to a value in [0,1].
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	float value,*value_address;
 	int return_code;
 
@@ -4116,7 +4128,7 @@ DESCRIPTION :
 A modifier function for setting a double.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	double value,*value_address;
 	int return_code;
 
@@ -4189,7 +4201,8 @@ indicate that the double has been set.
 	limits on the double or a string used in the help.
 ==============================================================================*/
 {
-	char *current_token, *flag_address;
+	const char *current_token;
+	char *flag_address;
 	double value,*value_address;
 	int return_code;
 
@@ -4271,7 +4284,8 @@ third component of the float only to 3.
 ???RC The comma case does not work since ',' is a delimiter for the parser.
 ==============================================================================*/
 {
-	char *current_token,separator;
+	const char *current_token;
+	char separator;
 	float value,*values;
 	int i,return_code;
 
@@ -4351,7 +4365,7 @@ number_of_components floats.
 Now prints current contents of the vector with help.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	float value,*values_address;
 	int comp_no,number_of_components,return_code;
 
@@ -4442,7 +4456,7 @@ DESCRIPTION :
 A modifier function for setting a float.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	float value,*value_address;
 	int return_code;
 
@@ -4518,7 +4532,7 @@ help mode is entered.
 Now prints current contents of the vector with help.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	FE_value value, *values;
 	int i, number_of_components, return_code;
 
@@ -4620,7 +4634,7 @@ number_of_components floats.
 Now prints current contents of the vector with help.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	double value,*values_address;
 	int comp_no,number_of_components,return_code;
 
@@ -4718,7 +4732,7 @@ while <values_address_void> should point to a large enough space to store the
 number_of_components floats.
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	double value,**values_address;
 	int allocated_length,comp_no,length_read,return_code,valid_token;
 #define VARIABLE_LENGTH_VECTOR_ALLOCATION (10)
@@ -4843,7 +4857,7 @@ The current values of the vector are not printed with the help text since they
 may not be initialised (calling function could put them in the help text).
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	double *vector;
 	int return_code,i;
 	struct Set_vector_with_help_data *set_vector_data;
@@ -5084,7 +5098,8 @@ Allows the user to specify "special" directories, eg examples.  Allocates the
 memory for the file name string.
 ==============================================================================*/
 {
-	char *current_token,*directory_name,**name_address;
+	const char *current_token;
+	char *directory_name,**name_address;
 	int file_name_length,return_code;
 
 	ENTER(set_file_name);
@@ -5182,7 +5197,7 @@ This routine updates the integer_range based on the current token which can be
 of two forms - # or #..#
 ==============================================================================*/
 {
-	char *current_token;
+	const char *current_token;
 	int first,i,*integer_range,**integer_range_address,j,last,
 		number_of_sub_ranges,return_code;
 
@@ -5502,7 +5517,7 @@ help mode is entered.
 } /* Option_table_add_int_vector_entry */
 
 int Option_table_add_float_entry(struct Option_table *option_table,
-	char *token, float *value)
+	const char *token, float *value)
 /*******************************************************************************
 LAST MODIFIED : 28 June 2006
 
@@ -5531,7 +5546,7 @@ the token following is assigned to <value>.
 } /* Option_table_add_float_entry */
 
 int Option_table_add_float_vector_entry(struct Option_table *option_table,
-	char *token, float *vector, int *number_of_components)
+	const char *token, float *vector, int *number_of_components)
 /*******************************************************************************
 LAST MODIFIED : 16 July 2007
 
@@ -5562,7 +5577,7 @@ help mode is entered.
 } /* Option_table_add_float_vector_entry */
 
 int Option_table_add_FE_value_vector_entry(struct Option_table *option_table,
-	char *token, FE_value *vector, int *number_of_components)
+	const char *token, FE_value *vector, int *number_of_components)
 /*******************************************************************************
 LAST MODIFIED : 4 December 2003
 
@@ -5651,7 +5666,7 @@ Adds the given <token> to the <option_table>.  The <vector> is filled in with th
 } /* Option_table_add_double_vector_entry */
 
 int Option_table_add_variable_length_double_vector_entry(
-	struct Option_table *option_table, char *token, int *number_of_components, 
+	struct Option_table *option_table, const char *token, int *number_of_components, 
 	double **vector)
 /*******************************************************************************
 LAST MODIFIED : 18 February 2005
@@ -5711,7 +5726,7 @@ number of values specified in the <data>.
 } /* Option_table_add_double_vector_with_help_entry */
 
 int Option_table_add_name_entry(struct Option_table *option_table,
-	char *token, char **name)
+	const char *token, char **name)
 /*******************************************************************************
 LAST MODIFIED : 25 March 2004
 
@@ -5741,7 +5756,7 @@ a default option.
 } /* Option_table_add_name_entry */
 
 int Option_table_add_set_names_from_list_entry(struct Option_table *option_table,
-   char *token, struct Set_names_from_list_data *data)
+   const char *token, struct Set_names_from_list_data *data)
 /*******************************************************************************
 LAST MODIFIED : 7 July 2004
 
@@ -5969,7 +5984,8 @@ int set_multiple_strings(struct Parse_state *state,void *multiple_strings_addres
 	void *strings_description_void)
 {
 	const char *separator = "&";
-	char *current_token, **new_strings;
+	const char *current_token;
+	char **new_strings;
 	int finished, last_separator, return_code;
 	struct Multiple_strings *multiple_strings;
 

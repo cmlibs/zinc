@@ -41,24 +41,27 @@ Interactive tool for selecting elements with mouse and other devices.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 extern "C" {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include <Xm/Protocols.h>
 #include <Xm/MwmUtil.h>
 #include <Xm/Xm.h>
 #include <Xm/ToggleBG.h>
 #include "choose/choose_computed_field.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "command/command.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "element/element_operations.h"
 #include "element/element_tool.h"
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static char element_tool_uidh[] =
 #include "element/element_tool.uidh"
 	;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
@@ -67,9 +70,9 @@ static char element_tool_uidh[] =
 #include "interaction/interaction_graphics.h"
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 #include "motif/image_utilities.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #include "region/cmiss_region.h"
 #include "time/time_keeper.h"
 #include "user_interface/gui_dialog_macros.h"
@@ -91,10 +94,10 @@ Module variables
 ----------------
 */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 static int element_tool_hierarchy_open=0;
 static MrmHierarchy element_tool_hierarchy;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 static char Interactive_tool_element_type_string[] = "element_tool";
 
@@ -137,12 +140,12 @@ Object storing all the parameters for interactively selecting elements.
 	struct Interaction_volume *last_interaction_volume;
 	struct GT_object *rubber_band;
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Display *display;
 	Widget select_elements_button,select_faces_button,select_lines_button,
 		command_field_button,command_field_form,command_field_widget;
 	Widget widget,window_shell;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (WX_USER_INTERFACE)
 	 wxElementTool *wx_element_tool;
@@ -155,7 +158,7 @@ Module functions
 ----------------
 */
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_tool,Element_tool, \
 	select_elements_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_tool,Element_tool, \
@@ -398,7 +401,7 @@ need other safeguard controls before allowing this.
 	}
 	LEAVE;
 } /* Element_tool_destroy_selected_CB */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (OPENGL_API)
 static void Element_tool_reset(void *element_tool_void)
@@ -703,18 +706,18 @@ Fetches a ToggleButton with an appropriate icon for the interactive tool
 and as a child of <parent>.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Display *display;
 	Pixel background_pixel, foreground_pixel;
 	Pixmap pixmap;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Cmgui_image *image;
 	struct Element_tool *element_tool;
 
 	ENTER(Element_tool_get_icon);
 	if ((element_tool=(struct Element_tool *)element_tool_void))
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		if (MrmOpenHierarchy_binary_string(element_tool_uidh,sizeof(element_tool_uidh),
 			&element_tool_hierarchy,&element_tool_hierarchy_open))
 		{
@@ -740,13 +743,13 @@ and as a child of <parent>.
 				"Could not open heirarchy");
 			image = (struct Cmgui_image *)NULL;
 		}
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 		USE_PARAMETER(foreground);
 		USE_PARAMETER(background);
 		USE_PARAMETER(element_tool);
 		display_message(WARNING_MESSAGE, "Element_tool_get_icon.  "
 			"Not implemented for this user interface.");
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
@@ -1067,7 +1070,7 @@ Creates an Element_tool with Interactive_tool in <interactive_tool_manager>.
 Selects elements in <element_selection> in response to interactive_events.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	Atom WM_DELETE_WINDOW;
 	int init_widgets;
 	MrmType element_tool_dialog_class;
@@ -1099,7 +1102,7 @@ Selects elements in <element_selection> in response to interactive_events.
 		{"elem_tool_structure",(XtPointer)NULL}
 	};
 	struct Callback_data callback;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Element_tool *element_tool;
 	struct MANAGER(Computed_field) *computed_field_manager;
 
@@ -1167,7 +1170,7 @@ Selects elements in <element_selection> in response to interactive_events.
 			element_tool->last_interaction_volume=(struct Interaction_volume *)NULL;
 			element_tool->rubber_band=(struct GT_object *)NULL;
 
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			element_tool->display = User_interface_get_display(user_interface);
 
 			/* initialise widgets */
@@ -1298,7 +1301,7 @@ Selects elements in <element_selection> in response to interactive_events.
 
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */ 
 			element_tool->wx_element_tool=(wxElementTool *)NULL;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 		else
 		{
@@ -1333,10 +1336,10 @@ structure itself.
 	{
 		REACCESS(FE_element)(&(element_tool->last_picked_element),
 			(struct FE_element *)NULL);
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		REMOVE_OBJECT_FROM_MANAGER(Interactive_tool)(element_tool->interactive_tool,
 			element_tool->interactive_tool_manager);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		REACCESS(Interaction_volume)(&(element_tool->last_interaction_volume),
 			(struct Interaction_volume *)NULL);
 		REACCESS(GT_object)(&(element_tool->rubber_band),(struct GT_object *)NULL);
@@ -1345,14 +1348,14 @@ structure itself.
 		{
 			DEACCESS(Time_keeper)(&(element_tool->time_keeper));
 		}
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		if (element_tool->window_shell)
 		{
 			destroy_Shell_list_item_from_shell(&(element_tool->window_shell),
 				element_tool->user_interface);
 			XtDestroyWidget(element_tool->window_shell);
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 		if (element_tool->wx_element_tool)
 			 element_tool->wx_element_tool->Destroy();
@@ -1383,7 +1386,7 @@ Pops up a dialog for editing settings of the Element_tool.
 	ENTER(Element_tool_pop_up_dialog);
 	if (element_tool)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		XtPopup(element_tool->window_shell, XtGrabNone);
 		/* make sure in addition that it is not shown as an icon */
 		XtVaSetValues(element_tool->window_shell, XmNiconic, False, NULL);
@@ -1433,12 +1436,12 @@ Hides the dialog for editing settings of the Element_tool.
 	ENTER(Element_tool_pop_down_dialog);
 	if (element_tool)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 		XtPopdown(element_tool->window_shell);
-#else /* defined (MOTIF) */
+#else /* defined (MOTIF_USER_INTERFACE) */
 		display_message(ERROR_MESSAGE, "Element_tool_pop_down_dialog.  "
 			"No dialog implemented for this User Interface");
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		return_code = 1;
 	}
 	else
@@ -1487,9 +1490,9 @@ DESCRIPTION :
 Sets flag controlling whether top-level & 3-D elements can be selected.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	int button_state;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Element_tool_set_select_elements_enabled);
@@ -1504,7 +1507,7 @@ Sets flag controlling whether top-level & 3-D elements can be selected.
 		if (select_elements_enabled != element_tool->select_elements_enabled)
 		{
 			element_tool->select_elements_enabled=select_elements_enabled;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			/* make sure button shows current state */
 			if (XmToggleButtonGadgetGetState(element_tool->select_elements_button))
 			{
@@ -1519,7 +1522,7 @@ Sets flag controlling whether top-level & 3-D elements can be selected.
 				XmToggleButtonGadgetSetState(element_tool->select_elements_button,
 					/*state*/element_tool->select_elements_enabled,/*notify*/False);
 			}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 	}
 	else
@@ -1568,9 +1571,9 @@ DESCRIPTION :
 Returns flag controlling whether face & 2-D top-level elements can be selected.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	int button_state;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Element_tool_set_select_faces_enabled);
@@ -1585,7 +1588,7 @@ Returns flag controlling whether face & 2-D top-level elements can be selected.
 		if (select_faces_enabled != element_tool->select_faces_enabled)
 		{
 			element_tool->select_faces_enabled=select_faces_enabled;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			/* make sure button shows current state */
 			if (XmToggleButtonGadgetGetState(element_tool->select_faces_button))
 			{
@@ -1600,7 +1603,7 @@ Returns flag controlling whether face & 2-D top-level elements can be selected.
 				XmToggleButtonGadgetSetState(element_tool->select_faces_button,
 					/*state*/element_tool->select_faces_enabled,/*notify*/False);
 			}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 	}
 	else
@@ -1649,9 +1652,9 @@ DESCRIPTION :
 Returns flag controlling whether line & 1-D top-level elements can be selected.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	int button_state;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Element_tool_set_select_lines_enabled);
@@ -1666,7 +1669,7 @@ Returns flag controlling whether line & 1-D top-level elements can be selected.
 		if (select_lines_enabled != element_tool->select_lines_enabled)
 		{
 			element_tool->select_lines_enabled=select_lines_enabled;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			/* make sure button shows current state */
 			if (XmToggleButtonGadgetGetState(element_tool->select_lines_button))
 			{
@@ -1681,7 +1684,7 @@ Returns flag controlling whether line & 1-D top-level elements can be selected.
 				XmToggleButtonGadgetSetState(element_tool->select_lines_button,
 					/*state*/element_tool->select_lines_enabled,/*notify*/False);
 			}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 	}
 	else
@@ -1733,9 +1736,9 @@ Sets the command_field to be looked up in a web browser when the element is clic
 on in the <element_tool>.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 	int field_set;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	int return_code;
 
 	ENTER(Element_tool_set_command_field);
@@ -1746,7 +1749,7 @@ on in the <element_tool>.
 		if (command_field != element_tool->command_field)
 		{
 			element_tool->command_field = command_field;
-#if defined (MOTIF)
+#if defined (MOTIF_USER_INTERFACE)
 			if (command_field)
 			{
 				CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
@@ -1756,7 +1759,7 @@ on in the <element_tool>.
 			XtVaSetValues(element_tool->command_field_button,
 				XmNset, field_set, NULL);
 			XtSetSensitive(element_tool->command_field_widget, field_set);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 	}
 	else

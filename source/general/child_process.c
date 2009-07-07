@@ -44,6 +44,10 @@ This provides an object which interfaces between a child_process and Cmgui
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
+
 #if defined (UNIX)
 #include <unistd.h>
 #include <sys/types.h>

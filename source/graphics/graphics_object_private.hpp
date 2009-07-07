@@ -74,6 +74,9 @@ Used to be gtypes.h
 #if !defined (GRAPHICS_OBJECT_PRIVATE_H)
 #define GRAPHICS_OBJECT_PRIVATE_H
 
+#if defined (BUILD_WITH_CMAKE)
+#include "configure/configure.h"
+#endif /* defined (BUILD_WITH_CMAKE) */
 extern "C"
 {
 #include "general/geometry.h"

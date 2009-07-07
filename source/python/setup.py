@@ -12,7 +12,7 @@ setup(name="Cmiss",
       ext_modules=[
         Extension("Cmiss.Cmgui_command_data", ["Cmiss/Cmgui_command_data.c"],
           include_dirs=["/usr/people/blackett/cmgui/source"],
-          define_macros=[('PERL_INTERPRETER', '1')],
+          define_macros=[('USE_PERL_INTERPRETER', '1')],
           library_dirs=["/home/blackett/lib"],
           libraries=["cmgui"]),
         Extension("Cmiss.FE_field", ["Cmiss/FE_field.c"],
