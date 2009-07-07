@@ -46,6 +46,8 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 AND EXISTS $ENV{
 	SET( PRODUCT_PATH $ENV{CMISS_ROOT}/cmgui )
 	SET( PRODUCT_SOURCE ${PRODUCT_PATH}/source )
 
+	DEFINE_ARCHITECTURE_DIR( )
+
 	# If CMake is the version we're expecting, don't show the
 	# CMAKE_BACKWARDS_COMPATIBILITY option.
 	IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" MATCHES "^2\\.6$" )
@@ -88,7 +90,7 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 AND EXISTS $ENV{
 	ENDIF( ${CMAKE_BUILD_TYPE} MATCHES [Dd]ebug )
 
 	# Library options
-	SET( ITK_DIR $ENV{CMISS_ROOT}/itk/lib/InsightToolkit CACHE STRING "Where are the ITK libraries installed" )
+	SET( ITK_DIR $ENV{CMISS_ROOT}/itk/${ARCHITECTURE_DIR}/lib/InsightToolkit CACHE STRING "Where are the ITK libraries installed" )
 	MARK_AS_ADVANCED( ITK_DIR )
 	SET( WX_DIR $ENV{CMISS_ROOT}/wxWidgets/bin CACHE STRING "Where is wxWidgets installed" )
 	MARK_AS_ADVANCED( WX_DIR )
@@ -116,7 +118,6 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 AND EXISTS $ENV{
 	IF( UI_AVAILABLE )
 		MESSAGE( STATUS "User interface: ${USER_INTERFACE}" )
 		DEFINE_TARGET_NAME( )
-		DEFINE_ARCHITECTURE_DIR( )
 		SET_PLATFORM_DEFINES( )
 		# SET_OPERATING_SYSTEM_DEFINES( ) <-- set automatically by cmake
 		SET_USER_INTERFACE_DEFINES( )
@@ -339,31 +340,30 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 AND EXISTS $ENV{
 		#SET( CMAKE_C_FLAGS ${CMAKE_C_FLAGS} -Wall )
 		#MESSAGE( STATUS "c: ${CMAKE_C_FLAGS} , cxx:  ${CMAKE_CXX_FLAGS} " )
 
-		# First crack at getting the version string correct
-		ADD_EXECUTABLE( myversion source/configure/version.cpp )
-
-		GET_TARGET_PROPERTY( EXE_LOC myversion LOCATION )
-
-		MESSAGE( STATUS "EXE LOC: ${EXE_LOC}" )
-		ADD_CUSTOM_COMMAND( OUTPUT ${PROJECT_BINARY_DIR}/source/configure/version.h
-			DEPENDS myversion 
-			COMMAND ${EXE_LOC} 
-			ARGS ${PROJECT_BINARY_DIR}/source/configure/version.h
-			${CMGUI_MAJOR_VERSION} ${CMGUI_MINOR_VERSION} ${CMGUI_PATCH_VERSION} )
-
-		#SET_SOURCE_FILES_PROPERTIES( ${PROJECT_BINARY_DIR}/source/configure/version.h PROPERTIES GENERATED 1 )
-
-		SET_SOURCE_FILES_PROPERTIES( source/cmgui.c PROPERTIES DEPENDS
-			${PROJECT_BINARY_DIR}/source/configure/version.h )
-
 		ADD_DEFINITIONS( -DBUILD_WITH_CMAKE
 			${EXTRA_COMPILER_DEFINITIONS} )
 
 		CONFIGURE_FILE( ${PROJECT_SOURCE_DIR}/source/configure/configure.h.in
 			${PROJECT_BINARY_DIR}/source/configure/configure.h )
 
+
 		IF( BUILD_EXECUTABLE )
-			MESSAGE( STATUS "Building executable: " )
+			# First crack at getting the version string correct
+			SET( VERSION_EXE_NAME "version_generator" )
+			ADD_EXECUTABLE( ${VERSION_EXE_NAME} source/configure/version.cpp )
+
+			GET_TARGET_PROPERTY( EXE_LOC ${VERSION_EXE_NAME} LOCATION )
+
+			ADD_CUSTOM_COMMAND( OUTPUT ${PROJECT_BINARY_DIR}/source/configure/version.h
+				DEPENDS ${VERSION_EXE_NAME} )
+
+			ADD_CUSTOM_TARGET( always_update_version_string ALL ${EXE_LOC}
+				${PROJECT_BINARY_DIR}/source/configure/version.h ${CMGUI_MAJOR_VERSION}
+				${CMGUI_MINOR_VERSION} ${CMGUI_PATCH_VERSION} 
+				DEPENDS ${VERSION_EXE_NAME}
+				COMMENT "Generating ${PROJECT_BINARY_DIR}/source/configure/version.h" )
+
+			#MESSAGE( STATUS "Building executable: " )
 			#FOREACH( SRC ${SRCS} )
 			#	MESSAGE( ${SRC} )
 			#ENDFOREACH( SRC ${SRCS} )

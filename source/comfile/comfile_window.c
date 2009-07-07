@@ -119,7 +119,7 @@ Module functions
 ----------------
 */
 
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Comfile_window, name, char *, strcmp)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Comfile_window, name, const char *, strcmp)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Comfile_window)
 
@@ -680,7 +680,7 @@ DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Comfile_window)
 
 DECLARE_INDEXED_LIST_FUNCTIONS(Comfile_window)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Comfile_window, \
-	name,char *,strcmp)
+	name,const char *,strcmp)
 DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Comfile_window,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Comfile_window,name)
@@ -766,7 +766,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Comfile_window,name)
 	return (return_code);
 } /* MANAGER_COPY_WITHOUT_IDENTIFIER(Comfile_window,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Comfile_window,name,char *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Comfile_window,name,const char *)
 {
 	char *destination_name;
 	int return_code;
@@ -809,7 +809,7 @@ DECLARE_MANAGER_FUNCTIONS(Comfile_window)
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Comfile_window)
 
 DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS(Comfile_window,name, \
-	char *,comfile_window_manager)
+	const char *,comfile_window_manager)
 
 char *Comfile_window_manager_make_unique_name(
 	struct MANAGER(Comfile_window) *comfile_window_manager, char *file_name)
