@@ -376,11 +376,11 @@ endif # ! IMAGEMAGICK
 
 ifeq ($(USE_ITK),true)
    ITK_DEFINES = -DUSE_ITK
-   ITK_SRCDIR = $(CMISS_ROOT)/itk/include/InsightToolkit
-	 ITK_BINDIR = $(CMISS_ROOT)/itk
-	 ITK_INC = -I$(ITK_BINDIR) -I$(ITK_SRCDIR) -I$(ITK_SRCDIR)/Algorithms -I$(ITK_SRCDIR)/BasicFilters -I$(ITK_SRCDIR)/Common -I$(ITK_SRCDIR)/Numerics/Statistics -I$(ITK_SRCDIR)/Utilities/vxl/vcl -I$(ITK_SRCDIR)/Utilities/vxl/core -I$(ITK_BINDIR)/Utilities/vxl/vcl -I$(ITK_BINDIR)/Utilities/vxl/core/
+   ITK_SRCDIR = $(CMISS_ROOT)/itk/$(LIB_ARCH_DIR)/include/InsightToolkit
+	 ITK_BINDIR = $(CMISS_ROOT)/itk/$(LIB_ARCH_DIR)
+	 ITK_INC = -I$(ITK_SRCDIR) -I$(ITK_SRCDIR)/Algorithms -I$(ITK_SRCDIR)/BasicFilters -I$(ITK_SRCDIR)/Common -I$(ITK_SRCDIR)/Numerics/Statistics -I$(ITK_SRCDIR)/Utilities/vxl/vcl -I$(ITK_SRCDIR)/Utilities/vxl/core -I$(ITK_BINDIR)/Utilities/vxl/vcl -I$(ITK_BINDIR)/Utilities/vxl/core/
    ITK_LIBPATH_PREFIX = -L
-   ITK_LIB_PREFIX = -l 
+   ITK_LIB_PREFIX = -l
    ITK_LIB_SUFFIX =
    ITK_BIN_CONFIG_DIR = 
    ifeq ($(COMPILER),msvc)
