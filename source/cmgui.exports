@@ -538,7 +538,7 @@ Cmiss_time_keeper_add_time_notifier
 Cmiss_time_keeper_remove_time_notifier
 Cmiss_time_keeper_destroy
 
-/* Carey's internal exports which we should shift to using Cmiss_textures */
+/* Carey's internal exports which we should shift to using Cmiss_field_image */
 create_Cmgui_image_information
 Cmgui_image_information_add_file_name
 Cmgui_image_read
@@ -551,3 +551,15 @@ Cmgui_image_dispatch
 destroy_Cmgui_image_information
 destroy_Cmgui_image
 
+/* Shane's experiment with Interaction volumes */
+create_Interaction_volume_centred_box
+create_Interaction_volume_ray_frustum
+create_Interactive_event
+Interactive_tool_handle_interactive_event
+Scene_viewer_get_graphics_buffer
+Scene_viewer_get_interactive_tool
+access_Interaction_volume
+deaccess_Interaction_volume
+access_Interactive_event
+deaccess_Interactive_event
+Scene_viewer_get_scene
