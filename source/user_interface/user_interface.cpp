@@ -1957,7 +1957,7 @@ Open the <user_interface>.
 		/* Initialise gtkglext, stop the gtkglext calling XmuLookupStandardColormap()
 			which appears to be buggy on NVIDIA and ATI OpenGL, you have to restart the
 			X server after getting BadColor (invalid Colormap parameter) */
-		putenv("GDK_GL_NO_STANDARD_COLORMAP=1");
+		putenv(const_cast<char *>("GDK_GL_NO_STANDARD_COLORMAP=1"));
 		gtk_gl_init(argc_address, &argv);
 #endif
 
