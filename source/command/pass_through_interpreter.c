@@ -89,7 +89,7 @@ Internal data storage for this interpreter.
 	pcre *variable_substitute_regex;
 }; /* struct Interpreter */
 
-char *interpreter_strndup(char *string, const unsigned int maximum_length)
+char *interpreter_strndup(const char *string, const unsigned int maximum_length)
 {
 	char *return_string;
 	unsigned int length = 0;
@@ -309,7 +309,7 @@ back to the main program.
 		}
 		else
 		{
-			current_string = command_string;
+			current_string = (char *)(command_string);
 			return_code = 1;
 			while (return_code && (0 < pcre_exec(interpreter->variable_substitute_regex,
 				/*extra_data*/NULL, current_string, 

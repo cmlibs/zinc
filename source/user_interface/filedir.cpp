@@ -729,7 +729,7 @@ successful and NULL if unsuccessful.
 {
 	struct File_open_data *file_open_data;
 #if defined (WIN32_USER_INTERFACE)
-	char *temp_filter_extension;
+	const char *temp_filter_extension;
 //#elif defined(WX_USER_INTERFACE)
 //	char *shell_title,*temp_string;
 #endif /* defined (SWITCH_USER_INTERFACE) */
