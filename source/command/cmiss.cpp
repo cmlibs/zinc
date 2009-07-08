@@ -26015,7 +26015,8 @@ Returns the root region from the <command_data>.
 	root_region=(struct Cmiss_region *)NULL;
 	if (command_data)
 	{
-		root_region=command_data->root_region;
+		/* API functions return accessed values */
+		root_region=ACCESS(Cmiss_region)(command_data->root_region);
 	}
 	LEAVE;
 
