@@ -376,9 +376,9 @@ endif # ! IMAGEMAGICK
 
 ifeq ($(USE_ITK),true)
    ITK_DEFINES = -DUSE_ITK
-   ITK_SRCDIR = $(CMISS_ROOT)/itk/$(LIB_ARCH_DIR)/include/InsightToolkit
-	 ITK_BINDIR = $(CMISS_ROOT)/itk/$(LIB_ARCH_DIR)
-	 ITK_INC = -I$(ITK_SRCDIR) -I$(ITK_SRCDIR)/Algorithms -I$(ITK_SRCDIR)/BasicFilters -I$(ITK_SRCDIR)/Common -I$(ITK_SRCDIR)/Numerics/Statistics -I$(ITK_SRCDIR)/Utilities/vxl/vcl -I$(ITK_SRCDIR)/Utilities/vxl/core
+   ITK_DIR = $(CMISS_ROOT)/itk/$(LIB_ARCH_DIR)
+   ITK_SRCDIR = $(ITK_DIR)/include/InsightToolkit
+   ITK_INC = -I$(ITK_SRCDIR) -I$(ITK_SRCDIR)/Algorithms -I$(ITK_SRCDIR)/BasicFilters -I$(ITK_SRCDIR)/Common -I$(ITK_SRCDIR)/Numerics/Statistics -I$(ITK_SRCDIR)/Utilities/vxl/vcl -I$(ITK_SRCDIR)/Utilities/vxl/core
    ITK_LIBPATH_PREFIX = -L
    ITK_LIB_PREFIX = -l
    ITK_LIB_SUFFIX =
@@ -389,7 +389,8 @@ ifeq ($(USE_ITK),true)
      ITK_LIB_SUFFIX = .lib
      ITK_BIN_CONFIG_DIR = /Release
    endif
-   ITK_LIB = $(ITK_LIBPATH_PREFIX)$(ITK_BINDIR)/lib/InsightToolkit$(ITK_BIN_CONFIG_DIR) $(ITK_LIB_PREFIX)ITKAlgorithms$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKStatistics$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKBasicFilters$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKCommon$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkvnl_algo$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkvnl$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkv3p_netlib$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkvcl$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itksys$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKDICOMParser$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkzlib$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkzlib$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itktiff$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkjpeg12$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkjpeg16$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKNrrdIO$(ITK_LIB_SUFFIX) 
+   ITK_BINDIR = $(ITK_DIR)/lib/InsightToolkit$(ITK_BIN_CONFIG_DIR)
+   ITK_LIB = $(ITK_LIBPATH_PREFIX)$(ITK_BINDIR) $(ITK_LIB_PREFIX)ITKAlgorithms$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKStatistics$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKBasicFilters$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKCommon$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkvnl_algo$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkvnl$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkv3p_netlib$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkvcl$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itksys$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKDICOMParser$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkzlib$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkzlib$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itktiff$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkjpeg12$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)itkjpeg16$(ITK_LIB_SUFFIX) $(ITK_LIB_PREFIX)ITKNrrdIO$(ITK_LIB_SUFFIX) 
 else # $(USE_ITK) == true
    ITK_DEFINES =
    ITK_SRCDIR = 
@@ -779,7 +780,7 @@ ifeq ($(SYSNAME),AIX)
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
    ifeq ($(COMPILER),msvc)
-     CYGWINPATH = /cygdrive/c/cygwin
+     CYGWINPATH := $(shell cygpath --mixed /)
      GCCLIBGCC = $(patsubst /usr/lib%,$(CYGWINPATH)/lib%,$(shell gcc -mno-cygwin -print-file-name=libgcc.a))
      GCCLIBSTDC++ = $(patsubst /usr/lib%,$(CYGWINPATH)/lib%,$(shell gcc -mno-cygwin -print-file-name=libstdc++.a))
      LIBMINGW32 = $(CYGWINPATH)/lib/mingw/libmingw32.a
