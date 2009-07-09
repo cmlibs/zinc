@@ -45,7 +45,7 @@ Defines the gettimeofday and relevant structure for UNIX and WIN32_SYSTEM
 #include "configure/configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 extern "C" {
 #include <windows.h>
 #include "general/time.h"

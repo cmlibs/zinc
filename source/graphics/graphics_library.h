@@ -64,11 +64,11 @@ Functions and structures for interfacing with the graphics library.
 #	if defined (MOTIF_USER_INTERFACE) || ! defined (APPLE)
 #		include <GL/gl.h>
 #		include <GL/glu.h>
-#		if defined (WIN32)
+#		if defined (WIN32_SYSTEM)
 #			include <GL/glext.h>
 #			undef GL_NV_vertex_program
 #			undef GL_NV_register_combiners2
-#		endif /* defined (WIN32) */
+#		endif /* defined (WIN32_SYSTEM) */
 #	endif /* defined (MOTIF_USER_INTERFACE) || ! defined (APPLE) */
 #endif /* defined (OPENGL_API) */
 #include "graphics/texture.h"

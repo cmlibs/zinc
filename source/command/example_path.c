@@ -46,7 +46,7 @@ DESCRIPTION :
 #include "configure/configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
-#if !defined (WIN32)
+#if !defined (WIN32_SYSTEM)
 #include <unistd.h>
 #endif /* !defined (WIN32_SYSTEM) */
 #include <sys/types.h>

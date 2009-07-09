@@ -47,7 +47,7 @@ Management routines for the main command window.
 #include "configure/configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 #  include <direct.h>
 #else /* !defined (WIN32_SYSTEM) */
 #  include <unistd.h>
