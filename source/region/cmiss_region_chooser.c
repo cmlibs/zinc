@@ -504,7 +504,7 @@ DESCRIPTION :
 Sets <path> of chosen region in the <chooser>.
 ==============================================================================*/
 {
-	char *remaining_path;
+	const char *remaining_path;
 	int i, return_code;
 	struct Cmiss_region *last_region, *region, **regions;
 
