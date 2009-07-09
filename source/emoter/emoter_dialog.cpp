@@ -2654,6 +2654,7 @@ Reads stuff from a file.
 {
 	char *basename, warning[300], *name, *temp_filename, temp_string[300],
 		*char_data;
+	const char *constname;
 	float *shape_vector,total_time;
 	int face_index, face_values, header, i, index, j, n_modes, return_code,
 		solid_body_index, values;
@@ -2672,15 +2673,16 @@ Reads stuff from a file.
 		shared = slider->shared;
 		if (file_data = read_file_open(filename, shared->io_stream_package))
 		{
-			if ( name = strrchr( filename, '/'))
+			if ( constname = strrchr( filename, '/'))
 			{
-				name++;
+				constname++;
 				basename = duplicate_string(filename);
-				basename[name - filename] = 0;
+				basename[constname - filename] = 0;
+				name = duplicate_string(constname);
 			}
 			else
 			{
-				//name = filename;
+				name = duplicate_string(filename);
 				basename = duplicate_string("");
 			}
 			return_code = 1;

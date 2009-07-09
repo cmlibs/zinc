@@ -147,12 +147,14 @@ wrapper for field and add it to the manager.
 								FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(current_token,
 									set_field_data->computed_field_manager)))
 						{
-							if (field_component_name = strchr(current_token, '.'))
+							if (strchr(current_token, '.'))
 							{
+								char *current_token_copy = duplicate_string(current_token);
+								field_component_name = strchr(current_token_copy, '.');
 								*field_component_name = '\0';
 								field_component_name++;
 								if (selected_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
-										name)(current_token, set_field_data->computed_field_manager))
+										name)(current_token_copy, set_field_data->computed_field_manager))
 								{
 									/* get the component number */
 									number_of_components =
@@ -201,7 +203,7 @@ wrapper for field and add it to the manager.
 									else
 									{
 										display_message(ERROR_MESSAGE,
-											"Unknown field component: %s.%s", current_token,
+											"Unknown field component: %s.%s", current_token_copy,
 											field_component_name);
 										selected_field = (struct Computed_field *)NULL;
 									}
@@ -209,8 +211,9 @@ wrapper for field and add it to the manager.
 								else
 								{
 									display_message(ERROR_MESSAGE, "Unknown field : %s",
-										current_token);
+										current_token_copy);
 								}
+								DEALLOCATE(current_token_copy);
 							}
 							else
 							{

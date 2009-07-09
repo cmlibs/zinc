@@ -1034,12 +1034,14 @@ ACCESSed in the initial source_data.
 							source_value_number = 0;
 							shift_Parse_state(state,1);
 						}
-						else if (field_component_name=strchr(current_token,'.'))
+						else if (strchr(current_token,'.'))
 						{
+							const char *current_token_copy = duplicate_string(current_token);
+							field_component_name = strchr(current_token_copy,'.');
 							*field_component_name='\0';
 							field_component_name++;
 							if (field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-								current_token,computed_field_manager))
+								current_token_copy,computed_field_manager))
 							{
 								component_no = -1;
 								for (i=0;(0>component_no)&&(i<field->number_of_components)&&
@@ -1072,7 +1074,7 @@ ACCESSed in the initial source_data.
 									else
 									{
 										display_message(ERROR_MESSAGE,
-											"Unknown field component %s.%s",current_token,
+											"Unknown field component %s.%s",current_token_copy,
 											field_component_name);
 										display_parse_state_location(state);
 										return_code=0;
@@ -1082,10 +1084,11 @@ ACCESSed in the initial source_data.
 							else
 							{
 								display_message(ERROR_MESSAGE,"Unknown field: %s",
-									current_token);
+									current_token_copy);
 								display_parse_state_location(state);
 								return_code=0;
 							}
+							DEALLOCATE(current_token_copy);
 						}
 						else
 						{

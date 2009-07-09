@@ -1808,7 +1808,7 @@ int Option_table_add_region_path_and_or_field_name_entry(
 
 int Cmiss_region_get_child_region_from_path(struct Cmiss_region *root_region,
 	const char *path, struct Cmiss_region **child_region_address,
-	char **remaining_path_address)
+	const char **remaining_path_address)
 /*******************************************************************************
 LAST MODIFIED : 28 March 2003
 
@@ -1825,6 +1825,7 @@ For safety, returns NULL in <child_region_address> and either NULL or a valid
 pointer within path in <remaining_path_address> on any error.
 ==============================================================================*/
 {
+	char *child_name_copy, *remaining_copy;
 	const char *child_name;
 	int return_code;
 
@@ -1833,16 +1834,18 @@ pointer within path in <remaining_path_address> on any error.
 	{
 		return_code = 1;
 		child_name = path;
+		child_name_copy = (char *)NULL;
 		/* skip leading separator */
 		if (child_name[0] == CMISS_REGION_PATH_SEPARATOR_CHAR)
 		{
 			child_name++;
 		}
+		child_name_copy = duplicate_string(child_name);
 		if (*remaining_path_address =
 			strchr(child_name, CMISS_REGION_PATH_SEPARATOR_CHAR))
 		{
-			/* temporarily delimit the string to the first name */
-			**remaining_path_address = '\0';
+			remaining_copy = strchr(child_name_copy, CMISS_REGION_PATH_SEPARATOR_CHAR);
+			*remaining_copy = '\0';
 		}
 		if (('\0' == child_name[0]) && ((char *)NULL == (*remaining_path_address)))
 		{
@@ -1851,16 +1854,12 @@ pointer within path in <remaining_path_address> on any error.
 		else
 		{
 			if (!(*child_region_address =
-				Cmiss_region_get_child_region_from_name(root_region, child_name)))
+				Cmiss_region_get_child_region_from_name(root_region, child_name_copy)))
 			{
 				return_code = 0;
 			}
 		}
-		if (*remaining_path_address)
-		{
-			/* restore the string to how it was */
-			**remaining_path_address = CMISS_REGION_PATH_SEPARATOR_CHAR;
-		}
+		DEALLOCATE(child_name_copy);
 	}
 	else
 	{

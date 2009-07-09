@@ -8946,7 +8946,7 @@ work on these sub_elements.  These created scenes are not added to the manager.
 					}
 					else
 					{
-						if (index = strchr(current_token, '.'))
+						if (strchr(current_token, '.'))
 						{
 							if (ALLOCATE(string_copy, char, strlen(current_token) + 1))
 							{

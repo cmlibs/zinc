@@ -9408,8 +9408,7 @@ DESCRIPTION :
 Executes a GFX REMOVE REGION command.
 ==============================================================================*/
 {
-	const char *current_token;
-	char *region_path;
+	const char *current_token, *region_path;
 	int return_code;
 	struct Cmiss_region *last_region, *parent_region, *region;
 
@@ -9423,14 +9422,6 @@ Executes a GFX REMOVE REGION command.
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
 				/* get region to be removed and the parent_region to remove it from */
-				if( ALLOCATE(region_path,char,strlen(current_token)+1))
-				{
-					strcpy(region_path,current_token);
-				}
-				else
-				{
-					region_path = 0;
-				}
 				last_region = parent_region;
 				while (region_path &&
 					(return_code = Cmiss_region_get_child_region_from_path(
@@ -9440,8 +9431,6 @@ Executes a GFX REMOVE REGION command.
 					parent_region = last_region;
 					last_region = region;
 				}
-				if( region_path )
-					DEALLOCATE(region_path);
 
 				if (return_code)
 				{
