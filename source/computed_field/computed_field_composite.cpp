@@ -1036,7 +1036,7 @@ ACCESSed in the initial source_data.
 						}
 						else if (strchr(current_token,'.'))
 						{
-							const char *current_token_copy = duplicate_string(current_token);
+							char *current_token_copy = duplicate_string(current_token);
 							field_component_name = strchr(current_token_copy,'.');
 							*field_component_name='\0';
 							field_component_name++;
