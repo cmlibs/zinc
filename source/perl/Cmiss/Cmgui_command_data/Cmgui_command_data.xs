@@ -109,11 +109,6 @@ execute_command(Cmiss::Cmgui_command_data cmgui_command_data, char *name)
 
 Cmiss::Region
 Cmiss_command_data_get_root_region(Cmiss::Cmgui_command_data cmgui_command_data)
-	POSTCALL:
-		if (RETVAL)
-		{
-			ACCESS(Cmiss_region)(RETVAL);
-		}
 
 void
 Cmiss_command_data_get_element_selection(Cmiss::Cmgui_command_data cmgui_command_data)
