@@ -611,6 +611,30 @@ orthographic up and front directions from the Xdefaults file.
 	return return_code;
 } /* Graphics_window_read_defaults */
 
+#if defined (WIN32_USER_INTERFACE)
+static int Graphics_window_adjust_sizes_for_window_frame(int *width, int *height)
+{
+	DWORD dwStyle;
+	RECT window_size;
+	window_size.left = 0;
+	window_size.right = *width;
+	window_size.top = 0;
+	window_size.bottom = *height;
+	
+	/* AdjustWindowRect doesn't work for WS_SIZEBOX so attempt to account for this manually */
+	/* This style should match that used by the Window Create function (except for WS_SIZEBOX). */
+	dwStyle = WS_CAPTION | WS_POPUPWINDOW | WS_VISIBLE;
+	AdjustWindowRect(&window_size, dwStyle, /*hasMenu*/false);
+	window_size.right += 2 * (GetSystemMetrics(SM_CXSIZEFRAME) - GetSystemMetrics(SM_CXFIXEDFRAME));
+	window_size.bottom += 2 * (GetSystemMetrics(SM_CYSIZEFRAME) - GetSystemMetrics(SM_CYFIXEDFRAME));
+
+	*width = window_size.right - window_size.left;
+	*height = window_size.bottom - window_size.top;
+	
+	return (1);
+}
+#endif /* defined (WIN32_USER_INTERFACE) */
+
 /*
 Widget Callback Module functions
 --------------------------------
@@ -4368,10 +4392,13 @@ it.
 			/* create the window */
 			if (win32_return_code!=FALSE)
 			{
-				if (window->hWnd=CreateWindow(class_name, window_title,
+				int width = window->default_viewing_width;
+				int height = window->default_viewing_height;
+				Graphics_window_adjust_sizes_for_window_frame(&width, &height);
 
+				if (window->hWnd=CreateWindow(class_name, window_title,
 					WS_CAPTION | WS_POPUPWINDOW | WS_VISIBLE | WS_SIZEBOX,
-					0, 0, window->default_viewing_width, window->default_viewing_height,
+					0, 0, width, height,
 					NULL, NULL, User_interface_get_instance(user_interface), NULL))
 				{
 					if (graphics_buffer = create_Graphics_buffer_win32(
@@ -6363,6 +6390,16 @@ separated by 2 pixel borders within the viewing area.
 			 window->GraphicsWindowTitle->SetMinSize(wxSize(20,20));
 			 window->GraphicsWindowTitle->Layout();
 		}
+#elif defined (WIN32_USER_INTERFACE)
+		Graphics_window_adjust_sizes_for_window_frame(&viewing_width, &viewing_height);
+
+		RECT current_position;
+		GetWindowRect(window->hWnd, &current_position);
+		
+		MoveWindow(window->hWnd,
+			current_position.left, current_position.top,
+			viewing_width, viewing_height, true);
+
 #endif /* switch (USER_INTERFACE) */
 
 		return_code=1;
