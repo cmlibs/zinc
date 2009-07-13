@@ -9423,6 +9423,7 @@ Executes a GFX REMOVE REGION command.
 			{
 				/* get region to be removed and the parent_region to remove it from */
 				last_region = parent_region;
+				region_path = current_token;
 				while (region_path &&
 					(return_code = Cmiss_region_get_child_region_from_path(
 						last_region, region_path, &region, &region_path)) &&
