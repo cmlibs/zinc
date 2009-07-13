@@ -5431,7 +5431,7 @@ Computes iso-surfaces/lines/points graphics from <element>.
 								element_to_iso_scalar_data->data_field,
 								number_in_xi[0],number_in_xi[1],top_level_element,
 								element_to_iso_scalar_data->graphics_object,
-								/*graphics_object_time*/0.0);
+								/*graphics_object_time*/0.0, /*default line width*/0);
 						}
 					} break;
 					default:

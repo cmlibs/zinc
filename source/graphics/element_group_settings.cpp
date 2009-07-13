@@ -5766,7 +5766,7 @@ Converts a finite element into a graphics object with the supplied settings.
 														settings_to_object_data->time,
 														settings->data_field, number_in_xi[0], number_in_xi[1],
 														top_level_element, settings->graphics_object, 
-														/*graphics_object_time*/0.0);
+														/*graphics_object_time*/0.0, settings->line_width);
 												}
 											}
 											else
@@ -5793,7 +5793,7 @@ Converts a finite element into a graphics object with the supplied settings.
 														settings_to_object_data->time,
 														settings->data_field, number_in_xi[0], number_in_xi[1],
 														top_level_element, settings->graphics_object, 
-														/*graphics_object_time*/0.0);
+														/*graphics_object_time*/0.0, settings->line_width);
 												}
 											}
 										}
@@ -8532,6 +8532,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						"The <material> is used to render the surface.  "
 						"You can specify the <scene> the settings is for.  "
 						"You can specify the <position> the settings has in the settings list.  "
+						"You can specify the <line_width>, this option only applies when <use_faces> is specified.  "
 						"You can render a mesh as solid <render_shaded> or as a wireframe <render_wireframe>.  "
 						"If <select_on> is active then the element tool will select the elements the iso_surface was generated from.  "
 						"If <no_select> is active then the iso_surface cannot be selected.  "
@@ -8603,6 +8604,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_int_positive_entry(option_table,
 						"range_number_of_iso_values",
 						&range_number_of_iso_values);
+					Option_table_add_int_non_negative_entry(option_table,"line_width",
+						&(settings->line_width));
 					/* render_type */
 					render_type = settings->render_type;
 					render_type_string = ENUMERATOR_STRING(Render_type)(render_type);

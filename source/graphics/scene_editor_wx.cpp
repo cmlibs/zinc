@@ -1272,6 +1272,19 @@ Callback from wxChooser<Use Element Type> when choice is made.
 	 exteriorcheckbox=XRCCTRL(*this,"ExteriorCheckBox",wxCheckBox);
 	 facecheckbox=XRCCTRL(*this, "FaceCheckBox",wxCheckBox);
 	 facechoice=XRCCTRL(*this, "FaceChoice",wxChoice);
+
+	 if (GT_ELEMENT_SETTINGS_ISO_SURFACES==scene_editor->current_settings_type)
+	 {
+		 linewidthtextctrl=XRCCTRL(*this,"LineWidthTextCtrl",wxTextCtrl);
+		 if (USE_FACES != use_element_type) 
+		 {
+			 linewidthtextctrl->Disable();
+		 }
+		 else
+		 {
+			 linewidthtextctrl->Enable();
+		 }
+	 }
 	 if  (USE_ELEMENTS != use_element_type) 
 	 {
 		 exteriorcheckbox->Enable();
@@ -4339,13 +4352,20 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 		linewidthtext=XRCCTRL(*this,"LineWidthText",wxStaticText);
 		linewidthtextctrl=XRCCTRL(*this,"LineWidthTextCtrl",wxTextCtrl);
 		
-		if (GT_ELEMENT_SETTINGS_LINES==scene_editor->current_settings_type)
+		if (GT_ELEMENT_SETTINGS_LINES==scene_editor->current_settings_type || 
+			GT_ELEMENT_SETTINGS_ISO_SURFACES==scene_editor->current_settings_type)
 		{
 			linewidthtext->Show();
 			linewidthtextctrl->Show();
 			line_width = GT_element_settings_get_line_width(settings);
 			sprintf(temp_string,"%d",line_width);
 			linewidthtextctrl->SetValue(temp_string);
+			linewidthtextctrl->Enable();
+			if (GT_ELEMENT_SETTINGS_ISO_SURFACES==scene_editor->current_settings_type &&
+				USE_FACES != GT_element_settings_get_use_element_type(settings))
+			{
+				linewidthtextctrl->Disable();
+			}
 		}
 		else
 		{

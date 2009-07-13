@@ -55,7 +55,7 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 	struct Computed_field *scalar_field, FE_value iso_value, FE_value time,
 	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,struct FE_element *top_level_element,
-	struct GT_object *graphics_object,FE_value graphics_object_time);
+	struct GT_object *graphics_object,FE_value graphics_object_time, int line_width);
 /*******************************************************************************
 LAST MODIFIED : 7 February 2002
 

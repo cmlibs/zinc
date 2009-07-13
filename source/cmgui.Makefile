@@ -1104,8 +1104,8 @@ FINITE_ELEMENT_CORE_SRCS = \
 	finite_element/finite_element_time.c \
 	finite_element/import_finite_element.c
 FINITE_ELEMENT_GRAPHICS_SRCS = \
-	finite_element/finite_element_to_graphics_object.c \
-	finite_element/finite_element_to_iso_lines.c \
+	finite_element/finite_element_to_graphics_object.cpp \
+	finite_element/finite_element_to_iso_lines.cpp \
 	finite_element/finite_element_to_streamlines.c
 FINITE_ELEMENT_SRCS = \
 	$(FINITE_ELEMENT_CORE_SRCS) \

@@ -44,6 +44,8 @@ value over 2-D elements.
  * ***** END LICENSE BLOCK ***** */
 
 #include <math.h>
+
+extern "C" {
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_iso_lines.h"
@@ -53,6 +55,7 @@ value over 2-D elements.
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_object.h"
 #include "user_interface/message.h"
+}
 
 #define CONTOUR_POLYLINE_REALLOCATE_SIZE 25
 
@@ -232,7 +235,7 @@ of components are expected to be supplied in <data1> and <data2>.
 } /* Contour_lines_add_segment */
 
 int Contour_lines_add_to_graphics_object(struct Contour_lines *contour_lines,
-	struct GT_object *graphics_object,float time,int object_name)
+	struct GT_object *graphics_object,float time,int line_width,int object_name)
 /*******************************************************************************
 LAST MODIFIED : 1 February 2000
 
@@ -268,7 +271,7 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 					memcpy(data,polyline->data,polyline->number_of_points*
 						sizeof(GTDATA)*contour_lines->number_of_data_components);
 				}
-				if (gt_polyline=CREATE(GT_polyline)(g_PLAIN,/*line_width=default*/0,
+				if (gt_polyline=CREATE(GT_polyline)(g_PLAIN,line_width,
 					polyline->number_of_points,point_list,(Triple *)NULL,
 					contour_lines->number_of_data_components,data))
 				{
@@ -901,7 +904,7 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 	struct Computed_field *scalar_field,FE_value iso_value,FE_value time,
 	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,struct FE_element *top_level_element,
-	struct GT_object *graphics_object,FE_value graphics_object_time)
+	struct GT_object *graphics_object,FE_value graphics_object_time, int line_width)
 /*******************************************************************************
 LAST MODIFIED : 7 February 2002
 
@@ -1066,7 +1069,7 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 				Contour_lines_link_ends(contour_lines);
 				get_FE_element_identifier(element, &cm_identifier);
 				if (!Contour_lines_add_to_graphics_object(contour_lines,
-						 graphics_object, graphics_object_time,
+						graphics_object, graphics_object_time, line_width,
 					CM_element_information_to_graphics_name(&cm_identifier)))
 				{
 					display_message(ERROR_MESSAGE,"create_iso_lines_from_FE_element.  "
