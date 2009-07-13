@@ -2758,7 +2758,7 @@ Reads stuff from a file.
 
 					if ( return_code )
 					{
-						if ( ALLOCATE( name, char, strlen( slider->name ) +
+						if ( REALLOCATE( name, name, char, strlen( slider->name ) +
 							strlen( slider_to_combine->name ) + 20 /* Allocate enough for timebase name too */ ))
 						{
 							sprintf(name, "%s in %s", slider_to_combine->name, slider->name );
@@ -2988,10 +2988,8 @@ Reads stuff from a file.
 					}
 					if ( return_code )
 					{
-						if (name && ALLOCATE( temp_filename, char, strlen(name)+1))
+						if (name)
 						{
-							strcpy(temp_filename, name);
-							name = temp_filename;
 							if ( ALLOCATE( shape_vector, float, shared->number_of_modes + slider->solid_body_motion ))
 							{
 								while (FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
