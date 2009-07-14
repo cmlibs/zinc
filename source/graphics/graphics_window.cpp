@@ -5544,6 +5544,8 @@ Sets the layout mode in effect on the <window>.
 								&transparency_mode);
 							Scene_viewer_set_transparency_mode(window->scene_viewer_array[pane_no],
 								transparency_mode);
+							Scene_viewer_set_antialias_mode(
+								window->scene_viewer_array[pane_no],window->antialias_mode);
 						}
 						else
 						{
