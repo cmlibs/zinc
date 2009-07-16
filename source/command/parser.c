@@ -3879,7 +3879,6 @@ DESCRIPTION :
 A modifier function for setting a float to a positive value.
 ==============================================================================*/
 {
-	const char current_token;
 	float value,*value_address;
 	int return_code;
 
@@ -3905,7 +3904,7 @@ A modifier function for setting a float to a positive value.
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"Value must be a positive float: %s\n",current_token);
+								"Value must be a positive float: %s\n",state->current_token);
 							display_parse_state_location(state);
 							return_code=0;
 						}
@@ -3913,7 +3912,7 @@ A modifier function for setting a float to a positive value.
 					else
 					{
 						display_message(ERROR_MESSAGE,"Invalid positive float: %s",
-							current_token);
+							state->current_token);
 						display_parse_state_location(state);
 						return_code=0;
 					}
