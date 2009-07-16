@@ -326,6 +326,7 @@ int Computed_field_image::set_Texture_from_field()
 	if (texture &&  field->number_of_source_fields > 1 &&  field->source_fields)
 	{
 		/* Setup sizes */
+		sizes = (int *)NULL;
 		texture_coordinate_field = field->source_fields[0];
 		source_field = field->source_fields[1];
 		if (Computed_field_get_native_resolution(source_field,

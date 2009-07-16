@@ -3160,19 +3160,25 @@ int Computed_field_core::get_native_resolution(
 LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Inherits its result from the first source field -- if any.
+Inherits its result from the first source field that returns it-- if any.
 ==============================================================================*/
 {
-	int return_code;
+	int i, return_code;
 
 	ENTER(Computed_field_default_get_native_resolution);
 	if (field&&dimension&&sizes&&texture_coordinate_field)
 	{
 		if (field->source_fields && (0 < field->number_of_source_fields))
 		{
-			return_code=Computed_field_get_native_resolution(
-				field->source_fields[0],dimension, sizes, 
-				texture_coordinate_field);
+			i = 0;
+			do
+			{
+				return_code=Computed_field_get_native_resolution(
+					field->source_fields[i],dimension, sizes, 
+					texture_coordinate_field);
+				i++;
+			}
+			while ((!(*sizes))	&& i < field->number_of_source_fields);
 		}
 		else
 		{
