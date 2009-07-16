@@ -198,6 +198,9 @@ struct Material_program
 	enum Material_program_shader_type shader_type;
 	/*! Display list which enables the correct state for this program */
 	GLuint display_list;
+	int number_of_program_values;
+	float *uniform_value;
+	char **uniform_name;
 #endif /* defined (OPENGL_API) */
 
 	/*! Flag indicating whether the program is compiled or not */
@@ -316,6 +319,9 @@ DESCRIPTION :
 		material_program->vertex_program_string = (char *)NULL;
 		material_program->fragment_program_string = (char *)NULL;
 		material_program->display_list = 0;
+		material_program->number_of_program_values = 0;
+		material_program->uniform_value = NULL;
+		material_program->uniform_name = NULL;
 #endif /* defined (OPENGL_API) */
 		material_program->compiled = 0;
 		material_program->access_count = 0;
@@ -421,6 +427,19 @@ Frees the memory for the material_program.
 			{
 				DEALLOCATE(material_program->fragment_program_string);
 				material_program->fragment_program_string = NULL;
+			}
+			if (material_program->number_of_program_values > 0 && 
+				material_program->uniform_value &&
+				material_program->uniform_name)
+			{
+				int i;
+				DEALLOCATE(material_program->uniform_value);
+				for (i=0; i <material_program->number_of_program_values; i++)
+				{
+
+					DEALLOCATE(material_program->uniform_name[i]);
+				}
+				DEALLOCATE(material_program->uniform_name);
 			}
 #endif /* defined (OPENGL_API) */
 			DEALLOCATE(*material_program_address);
@@ -2891,7 +2910,7 @@ material results.
 #if defined (GL_VERSION_2_0)
 	GLint loc1 = -1;
 #endif /* defined (GL_VERSION_2_0) */
-	int return_code;
+	int i, return_code;
 
 	ENTER(direct_render_Graphical_material);
 	if (material)
@@ -3009,7 +3028,6 @@ material results.
 						 }
 						 if (glIsProgram(material->program->glsl_current_program))
 						 {
-						 
 								loc1 = glGetUniformLocation(material->program->glsl_current_program,"texture2");
 								if (loc1 != (GLint)-1)
 									 glUniform1i(loc1,2);
@@ -3019,6 +3037,15 @@ material results.
 								loc1 = glGetUniformLocation(material->program->glsl_current_program,"texture0");
 								if (loc1 != (GLint)-1)
 									 glUniform1i(loc1, 0);
+								for (i=0; i < material->program->number_of_program_values; i++)
+								{
+									loc1 = glGetUniformLocation(material->program->glsl_current_program,
+										material->program->uniform_name[i]);
+									if (loc1 != (GLint)-1)
+									{
+										glUniform1f(loc1, material->program->uniform_value[i]);
+									}
+								}
 						 }
 					}
 			 }
@@ -5156,6 +5183,64 @@ the one in material, it is used for setting up the GUI.
 	 return return_code;
 }
 
+/***************************************************************************//**
+ * Set a value to the uniform qualified variable used in an arbitrary shader.
+ *
+ * @param material  Graphical_material with the arbitrary shaders program.
+ * @param uniform_name  Name of the uniform_qualifier variable.
+ * @param value  Value to be set to the uniform varaible.
+ * @return 1 on success, 0 on failure
+ */
+int Material_set_program_uniform_qualifier_variable_value(
+	Graphical_material* material, const char *uniform_name, float value)
+{
+	int i, return_code;
+
+	ENTER(Material_set_program_uniform_value);
+	return_code = 0;
+#if defined (OPENGL_API)
+	if (material && material->program)
+	{
+		i = 0;
+		while (material->program->number_of_program_values > 0 &&
+			!return_code && i < material->program->number_of_program_values)
+		{
+			if (!strcmp(uniform_name, material->program->uniform_name[i]))
+			{
+				material->program->uniform_value[i] = value;
+				return_code = 1;
+			}
+			i++;
+		}
+		if (!return_code)
+		{
+			if (REALLOCATE(material->program->uniform_value, 
+					material->program->uniform_value,
+					float,material->program->number_of_program_values+1) && 
+				REALLOCATE(material->program->uniform_name,
+					material->program->uniform_name,
+					char *,material->program->number_of_program_values+1))
+			{
+				material->program->uniform_value[material->program->number_of_program_values] 
+					= value;
+				material->program->uniform_name[material->program->number_of_program_values] 
+					= duplicate_string(uniform_name);
+				material->program->number_of_program_values++;
+				return_code = 1;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Material_set_program_uniform_value.  Missing material_program");
+	}
+#endif /* defined (OPENGL_API) */
+	LEAVE;
+
+	return return_code;
+}
+
 /**************************************************************************//**
  * Sets the material to use a #Material_program with user specified strings
  * for the vertex_program and fragment_program.
@@ -5185,6 +5270,30 @@ int Material_set_material_program_strings(struct Graphical_material *material_to
 		Material_program_create_from_program_strings(
 		vertex_program_string, fragment_program_string)))
 	{
+#if defined (OPENGL_API)
+		if (old_program)
+		{
+			int i;
+			material_to_be_modified->program->number_of_program_values = 
+				old_program->number_of_program_values;
+			if (old_program->number_of_program_values > 0 && 
+				old_program->uniform_value &&
+				old_program->uniform_name &&
+				(ALLOCATE(material_to_be_modified->program->uniform_value, float,
+					old_program->number_of_program_values)) &&
+				(ALLOCATE(material_to_be_modified->program->uniform_name, char *,
+					old_program->number_of_program_values)))
+			{
+				for (i=0; i <old_program->number_of_program_values; i++)
+				{
+					material_to_be_modified->program->uniform_value[i] =
+						old_program->uniform_value[i];
+					material_to_be_modified->program->uniform_name[i]=
+						duplicate_string(old_program->uniform_name[i]);	
+				}
+			}
+		}
+#endif /* defined (OPENGL_API) */
 		return_code = 1;
 	}
 	else
@@ -5246,7 +5355,7 @@ DESCRIPTION :
 		lit_volume_finite_difference_normal_flag,
 		lit_volume_intensity_normal_texture_flag, lit_volume_scale_alpha_flag,
 		normal_mode_flag, per_pixel_mode_flag,
-		*fragment_program_string, *vertex_program_string;
+		*fragment_program_string, *vertex_program_string, *uniform_name;
 	/*	enum Spectrum_colour_components spectrum_colour_components; */
 	int /*dimension,*/ lit_volume_normal_scaling_number,
 		number_of_spectrum_components, process, return_code;
@@ -5254,6 +5363,7 @@ DESCRIPTION :
 		*material_to_be_modified_copy;
 	struct Material_package *material_package;
 	struct Option_table *help_option_table, *option_table, *mode_option_table;
+	float uniform_value;
 
 	ENTER(modify_Graphical_material);
 	if (state)
@@ -5361,7 +5471,8 @@ DESCRIPTION :
 					lit_volume_scale_alpha_flag = 0;
 					vertex_program_string = (char *)NULL;
 					fragment_program_string = (char *)NULL;
-
+					uniform_name = (char *)NULL;
+					uniform_value = 0.0;
 					option_table = CREATE(Option_table)();
 					Option_table_add_help(option_table,
 						"The material controls how pixels will be rendered on the "
@@ -5433,7 +5544,9 @@ DESCRIPTION :
 						"rules controlled by each textures combine mode (such as modulate or add). "
 						"Specifying a <vertex_program_string> and <fragment_program_string> allows "
 						"any arbitrary program to be loaded, overriding the one that is generated automatically, "
-						"no checks for consistency with textures or inputs are made.  Both must be specified together.");
+						"no checks for consistency with textures or inputs are made.  Both must be specified together."
+						"Specifying a <uniform_name> and <uniform_value> allows any uniform qualified variables in"
+						"any arbitrary program to be set. At the moment only float type is supported.");
 
 					Option_table_add_entry(option_table, "alpha",
 						&(material_to_be_modified_copy->alpha), NULL,
@@ -5507,6 +5620,10 @@ DESCRIPTION :
 						set_Texture);
 					Option_table_add_name_entry(option_table, "vertex_program_string",
 						&vertex_program_string);
+					Option_table_add_name_entry(option_table, "uniform_name",
+						&uniform_name);
+					Option_table_add_entry(option_table, "uniform_value",
+						&uniform_value, NULL, set_float);
 					if (return_code=Option_table_multi_parse(option_table, state))
 					{
 						if (normal_mode_flag + per_pixel_mode_flag > 1)
@@ -5652,6 +5769,11 @@ DESCRIPTION :
 									lit_volume_scale_alpha_flag, return_code);
 							}
 						}
+						if (uniform_name)
+						{
+							Material_set_program_uniform_qualifier_variable_value(
+								material_to_be_modified_copy,uniform_name, uniform_value);
+						}
 						if (return_code)
 						{
 							if (material_to_be_modified)
@@ -5683,6 +5805,10 @@ DESCRIPTION :
 					if (fragment_program_string)
 					{
 						DEALLOCATE(fragment_program_string);
+					}
+					if (uniform_name)
+					{
+						DEALLOCATE(uniform_name);
 					}
 					DESTROY(Option_table)(&option_table);
 				}

@@ -567,4 +567,15 @@ DESCRIPTION :
 Adds the given <token> to the <option_table>.  The <material> is selected from
 the <material_package> by name.
 ==============================================================================*/
+
+/***************************************************************************//**
+ * Set a value to the uniform qualified variable used in an arbitrary shader.
+ *
+ * @param material  Graphical_material with the arbitrary shaders program.
+ * @param uniform_name  Name of the uniform_qualifier variable.
+ * @param value  Value to be set to the uniform varaible.
+ * @return 1 on success, 0 on failure
+ */
+int Material_set_program_uniform_qualifier_variable_value(
+	struct Graphical_material* material, const char *uniform_name, float value);
 #endif
