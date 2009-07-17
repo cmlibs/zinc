@@ -1002,7 +1002,9 @@ appropriately.
 								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glUniform4f, PFNGLUNIFORM4FPROC)
 									Graphics_library_get_function_ptr("glUniform4f")) &&
 								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glUniform1i, PFNGLUNIFORM1IPROC)
-									Graphics_library_get_function_ptr("glUniform1i"))))
+									Graphics_library_get_function_ptr("glUniform1i")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glUniform1f, PFNGLUNIFORM1FPROC)
+									Graphics_library_get_function_ptr("glUniform1f"))))
 						{
 							return_code = GLEXTENSION_UNAVAILABLE;
 						}

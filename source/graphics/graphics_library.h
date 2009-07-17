@@ -61,7 +61,7 @@ Functions and structures for interfacing with the graphics library.
 #if defined (OPENGL_API)
 #	define GL_GLEXT_PROTOTYPES
 #	define GLX_GLXEXT_PROTOTYPES
-#	if defined (MOTIF_USER_INTERFACE) || ! defined (APPLE)
+#	if defined (MOTIF_USER_INTERFACE) || ! defined (DARWIN)
 #		include <GL/gl.h>
 #		include <GL/glu.h>
 #		if defined (WIN32_SYSTEM)
@@ -85,7 +85,7 @@ Functions and structures for interfacing with the graphics library.
 #endif /* defined UNIX && defined (DARWIN) */
 #if defined (WX_USER_INTERFACE)
 #	define GL_GLEXT_PROTOTYPES
-#	if defined (UNIX) && !defined (APPLE)
+#	if defined (UNIX) && !defined (DARWIN)
 #		include <GL/glext.h>
 #	endif /* defined UNIX && !defined (DARWIN)*/
 #endif /* (WX_USER_INTERFACE) */
@@ -495,6 +495,8 @@ GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_display_lists);
 #      define glUniform4f  (GLHANDLE(glUniform4f))
        GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM1IPROC GLHANDLE(glUniform1i);
 #      define glUniform1i  (GLHANDLE(glUniform1i))
+       GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM1FPROC GLHANDLE(glUniform1f);
+#      define glUniform1f  (GLHANDLE(glUniform1f))
 #    endif /* defined (GL_VERSION_2_0) */
 
 #    if defined (GL_ARB_vertex_program) || defined (GL_ARB_fragment_program)
