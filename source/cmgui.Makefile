@@ -49,7 +49,7 @@ include $(COMMONMAKEFILE)
 UNEMAP = false
 LINK_CMISS = false
 USE_PERL_INTERPRETER = true
-IMAGEMAGICK = true
+USE_IMAGEMAGICK = true
 #Does your version of imagemagick include libgdcm
 USE_LIBGDCM = false
 ifeq ($(SYSNAME),Linux)
@@ -336,11 +336,11 @@ else # LINK_CMISS
    WORMHOLE_LIB = -L${WORMHOLE_PATH}/lib/$(LIB_ARCH_DIR) -lwormhole
 endif # LINK_CMISS
 
-ifneq ($(IMAGEMAGICK),true)
+ifneq ($(USE_IMAGEMAGICK),true)
    IMAGEMAGICK_DEFINES =
    IMAGEMAGICK_LIB = 
-else # ! IMAGEMAGICK
-   IMAGEMAGICK_DEFINES += -DIMAGEMAGICK
+else # ! USE_IMAGEMAGICK
+   IMAGEMAGICK_DEFINES += -DUSE_IMAGEMAGICK
    IMAGEMAGICK_PATH = $(CMISS_ROOT)/image_libraries
    IMAGEMAGICK_INC =  -I$(IMAGEMAGICK_PATH)/include/$(LIB_ARCH_DIR) -I$(IMAGEMAGICK_PATH)/include/$(LIB_ARCH_DIR)/ImageMagick
    MAGICK_LIB_NAME = libMagickCore.a
@@ -372,7 +372,7 @@ endif # USE_XML2
    ifeq ($(SYSNAME),AIX)
       IMAGEMAGICK_LIB += /usr/lib/libiconv.a
    endif # SYSNAME == AIX
-endif # ! IMAGEMAGICK
+endif # ! USE_IMAGEMAGICK
 
 ifeq ($(USE_ITK),true)
    ITK_DEFINES = -DUSE_ITK
@@ -550,9 +550,9 @@ else
    XML2_DEFINES = -DUSE_XML2
    XML2_INC = -I$(XML2_PATH)/include/$(LIB_ARCH_DIR)/libxml2/
    XML2_LIB = $(XML2_PATH)/lib/$(LIB_ARCH_DIR)/libxml2.a
-ifndef IMAGEMAGICK
+ifndef USE_IMAGEMAGICK
    XML2_LIB += $(XML2_PATH)/lib/$(LIB_ARCH_DIR)/libz.a
-endif # IMAGEMAGICK
+endif # USE_IMAGEMAGICK
 endif
 
 STEREO_DISPLAY_DEFINES = -DSTEREO

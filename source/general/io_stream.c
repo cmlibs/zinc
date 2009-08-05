@@ -54,14 +54,14 @@ streams.
 #include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
-#if defined (IMAGEMAGICK)
+#if defined (USE_IMAGEMAGICK)
 /* Should probably separate the inclusion of these libraries from the 
    rest of Imagemagick, do this internally but could put that up to makefile */
 #define HAVE_ZLIB
 #include <zlib.h>
 #define HAVE_BZLIB
 #include <bzlib.h>
-#endif /* defined (IMAGEMAGICK) */
+#endif /* defined (USE_IMAGEMAGICK) */
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/debug.h"
