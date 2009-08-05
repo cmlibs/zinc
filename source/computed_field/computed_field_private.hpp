@@ -195,7 +195,7 @@ public:
 
 	virtual int evaluate_cache_at_location(Field_location* location) = 0;
 
-	virtual int set_values_at_location(Field_location* location, FE_value *values)
+	virtual int set_values_at_location(Field_location* /*location*/, FE_value * /*values*/)
 	{
 		return 0;
 	};
@@ -203,9 +203,9 @@ public:
 	virtual int get_native_discretization_in_element(struct FE_element *element,
 		int *number_in_xi);
 
-	virtual int find_element_xi(FE_value *values, int number_of_values, 
-		struct FE_element **element, FE_value *xi,
-		int element_dimension, double time, struct Cmiss_region *search_region)
+	virtual int find_element_xi(FE_value * /*values*/, int /*number_of_values*/, 
+		struct FE_element ** /*element*/, FE_value * /*xi*/,
+		int /*element_dimension*/, double /*time*/, struct Cmiss_region * /*search_region*/)
 	{
 		return 0;
 	};

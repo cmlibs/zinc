@@ -72,20 +72,20 @@ public:
 		return number_of_derivatives;
 	}
 
-	virtual int check_cache_for_location(Computed_field *field)
+	virtual int check_cache_for_location(Computed_field * /*field*/)
 	{
 		/* Default is that the cache is invalid */
 		return 0;
 	}
 
-	virtual int update_cache_for_location(Computed_field *field)
+	virtual int update_cache_for_location(Computed_field * /*field*/)
 	{
 		/* Don't need to do anything */
 		return 1;
 	}
 
-	virtual int set_values_for_location(Computed_field *field,
-		FE_value *values)
+	virtual int set_values_for_location(Computed_field * /*field*/,
+		FE_value * /*values*/)
 	{
 		/* Default is that the location can't set the values */
 		return 0;

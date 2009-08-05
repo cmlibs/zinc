@@ -6982,7 +6982,7 @@ and other parameters for formats that require them.
 	void *image_data;
 #else /* defined (IMAGEMAGICK) */
 	enum Image_file_format image_file_format;
-	int number_of_bytes_per_component, number_of_components, number_of_files;
+	int number_of_bytes_per_component, number_of_components;
 #endif /* defined (IMAGEMAGICK) */
 
 	ENTER(Cmgui_image_read);

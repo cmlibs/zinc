@@ -732,6 +732,7 @@ if (vertex_index > mc_iso_surface->n_vertices || vertex_index < 0)
 	return (triangle_index);
 } /* compile_mc_vertex_triangle_lists */
 
+#if defined (USE_PARAMETER_ON)
 static struct MC_vertex *check_mc_vertex(struct MC_cell *mc_cell,float v[3],
 	int a)
 /*******************************************************************************
@@ -779,6 +780,7 @@ Compare vertices. If found return mc_vertex else return NULL.
 
 	return (return_value);
 } /* check_mc_vertex */
+#endif /* defined (USE_PARAMETER_ON) */
 
 static void add_mc_triangle(int i,int j,int k,
 	struct MC_iso_surface *mc_iso_surface,int a,float mc_vertices[3][3],int x_min,
@@ -791,7 +793,11 @@ DESCRIPTION :
 Add mc_triangle to mc_cell list and add new vertex if unique
 ==============================================================================*/
 {
-	int n, nn, jj, kk, found;
+	int n, nn, found;
+#if defined (USE_PARAMETER_ON)
+	int jj, kk;
+#endif /* defined (USE_PARAMETER_ON) */
+
 	/* pointers to vertices */
 	struct MC_vertex *v[3];
 	struct MC_triangle *triangle,**temp_triangle_ptrs,**temp_triangle_list;

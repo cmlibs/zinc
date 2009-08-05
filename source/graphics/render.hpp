@@ -85,7 +85,7 @@ public:
 	/***************************************************************************//**
 	 * Execute just the fast changing parts of the scene.
 	 */
-	virtual int Scene_execute_fast_changing(Scene *scene)
+	virtual int Scene_execute_fast_changing(Scene * /*scene*/)
 	{
 		return 1;
 	}
@@ -202,7 +202,7 @@ public:
 	/***************************************************************************//**
 	 * @see Render_graphics::Texture_compile
 	 */
-	virtual int Texture_compile(Texture *texture)
+	virtual int Texture_compile(Texture * /*texture*/)
 	{
 		/* No member objects */
 		return 1;
@@ -211,7 +211,7 @@ public:
 	/***************************************************************************//**
 	 * @see Render_graphics::Light_compile
 	 */
-	virtual int Light_compile(Light *light)
+	virtual int Light_compile(Light * /*light*/)
 	{
 		/* No member objects */
 		return 1;
@@ -220,7 +220,7 @@ public:
 	/***************************************************************************//**
 	 * @see Render_graphics::Light_model_compile
 	 */
-	virtual int Light_model_compile(Light_model *light_model)
+	virtual int Light_model_compile(Light_model * /*light_model*/)
 	{
 		/* No member objects */
 		return 1;
@@ -246,7 +246,7 @@ public:
 	/***************************************************************************//**
 	 * By default this renderer only builds.
 	 */
-	virtual int Scene_execute(Scene *scene)
+	virtual int Scene_execute(Scene * /*scene*/)
 	{
 		return 1;
 	}
@@ -254,7 +254,7 @@ public:
 	/***************************************************************************//**
 	 * By default this renderer only builds.
 	 */
-	virtual int Scene_object_execute(Scene_object *scene_object)
+	virtual int Scene_object_execute(Scene_object * /*scene_object*/)
 	{
 		return 1;
 	}
@@ -262,7 +262,7 @@ public:
 	/***************************************************************************//**
 	 * Graphics objects are the primitives we are building so don't need to propagate.
 	 */
-	virtual int Graphics_object_compile(GT_object *graphics_object)
+	virtual int Graphics_object_compile(GT_object * /*graphics_object*/)
 	{
 		return 1;
 	}
@@ -270,22 +270,22 @@ public:
 	/***************************************************************************//**
 	 * By default this renderer only builds.
 	 */
-	virtual int Graphics_object_execute(GT_object *graphics_object)
+	virtual int Graphics_object_execute(GT_object * /*graphics_object*/)
 	{
 		return 1;
 	}
 	
-	virtual int Graphics_object_render_immediate(GT_object *graphics_object)
+	virtual int Graphics_object_render_immediate(GT_object * /*graphics_object*/)
 	{
 		return 1;
 	}
 	
-	virtual int Graphical_element_group_execute(GT_element_group *graphical_element_group)
+	virtual int Graphical_element_group_execute(GT_element_group * /*graphical_element_group*/)
 	{
 		return 1;
 	}
 	
-	virtual int Material_execute(Graphical_material *material)
+	virtual int Material_execute(Graphical_material * /*material*/)
 	{
 		return 1;
 	}
@@ -295,22 +295,22 @@ public:
 	 * Could implement a Material_compile_members that isn't OpenGL but we don't need
 	 * it at the moment.
 	 */
-	virtual int Material_compile(Graphical_material *material)
+	virtual int Material_compile(Graphical_material * /*material*/)
 	{
 		return 1;
 	}
 
-	virtual int Texture_execute(Texture *texture)
+	virtual int Texture_execute(Texture * /*texture*/)
 	{
 		return 1;
 	}
 
-	virtual int Light_execute(Light *light)
+	virtual int Light_execute(Light * /*light*/)
 	{
 		return 1;
 	}
 
-	virtual int Light_model_execute(Light_model *light_model)
+	virtual int Light_model_execute(Light_model * /*light_model*/)
 	{
 		return 1;
 	}

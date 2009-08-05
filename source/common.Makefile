@@ -171,7 +171,9 @@ ifeq ($(SYSNAME:IRIX%=),)
       STRICT_FLAGS = 
       CPP_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
    else # DEBUG != true
       OPTIMISATION_FLAGS = -g
       COMPILE_FLAGS = -fullwarn -pedantic -woff 1521
@@ -183,7 +185,9 @@ ifeq ($(SYSNAME:IRIX%=),)
 			#     arguments, all or none need to be over-ridden in a derived class
       CPP_STRICT_FLAGS = -diag_error 1000-9999 -diag_suppress 1110,1174,1209,1234,1375,1424,1682,3201,1506,3303,1182
       DIGITAL_MEDIA_NON_STRICT_FLAGS = -diag_warning 1429
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = -diag_warning 1429
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = three_d_drawing/graphics_buffer.c | three_d_drawing/movie_extensions.c
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
    endif # DEBUG != true
    ifeq ($(MIPS),3)
       OPTIMISATION_FLAGS += -mips3
@@ -237,10 +241,14 @@ ifeq ($(SYSNAME),Linux)
       OPTIMISATION_FLAGS = -O3
       COMPILE_DEFINES = -DOPTIMISED
       COMPILE_FLAGS = -fPIC
-      STRICT_FLAGS = -Werror
-      CPP_STRICT_FLAGS = -Werror
-      DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+      STRICT_FLAGS = -W -Wall -Werror
+      CPP_STRICT_FLAGS = -W -Wall -Werror
+      DIGITAL_MEDIA_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch -Wno-unused-parameter
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+			DIGITAL_MEDIA_NON_STRICT_FLAGS_FILES = just_c.filenames
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_FILES = just_cpp.filenames
       ifeq ($(PROFILE),true)
         #Don't strip if profiling
         STRIP =
@@ -253,10 +261,15 @@ ifeq ($(SYSNAME),Linux)
       OPTIMISATION_FLAGS = -g
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
       COMPILE_FLAGS = -fPIC
-      STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Werror
-      CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
-      DIGITAL_MEDIA_NON_STRICT_FLAGS = 
-      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      STRICT_FLAGS = -W -Wall -Werror
+      CPP_STRICT_FLAGS = -W -Wall -Werror
+			TEST_TEST = $(cat just_c.filenames)
+      DIGITAL_MEDIA_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch -Wno-unused-parameter
+      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+			DIGITAL_MEDIA_NON_STRICT_FLAGS_FILES = just_c.filenames
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_FILES = just_cpp.filenames
       STRIP =
       STRIP_SHARED =
    endif # DEBUG != true
@@ -299,7 +312,9 @@ ifeq ($(SYSNAME),AIX)
    STRICT_FLAGS = 
    CPP_STRICT_FLAGS = 
    DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+   DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = 
    DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
    STRIP =
    STRIP_SHARED =
    ifeq ($(ABI),64)
@@ -338,7 +353,9 @@ ifeq ($(SYSNAME),win32)
          STRICT_FLAGS =
          CPP_STRICT_FLAGS =
          DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+      	 DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = 
          DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
          STRIP = 
          STRIP_SHARED = 
       else # DEBUG != true
@@ -349,7 +366,9 @@ ifeq ($(SYSNAME),win32)
          STRICT_FLAGS =
          CPP_STRICT_FLAGS =
          DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+      	 DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = 
          DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
          STRIP =
          STRIP_SHARED =
       endif # DEBUG != true
@@ -378,7 +397,9 @@ ifeq ($(SYSNAME),win32)
          STRICT_FLAGS = -Werror
          CPP_STRICT_FLAGS = -Werror
          DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+      	 DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = 
          DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
          STRIP = strip --strip-unneeded
          STRIP_SHARED = strip --strip-unneeded
       else # DEBUG != true
@@ -388,7 +409,9 @@ ifeq ($(SYSNAME),win32)
          STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Werror
          CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
          DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+				 DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = 
          DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      	 DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
          STRIP =
          STRIP_SHARED =
       endif # DEBUG != true
@@ -439,7 +462,9 @@ ifeq ($(SYSNAME),Darwin)
       STRICT_FLAGS = -Wno-long-double -Werror
       CPP_STRICT_FLAGS = -Wno-long-double -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
       STRIP =
       STRIP_SHARED =
    else  # DEBUG != true
@@ -449,7 +474,9 @@ ifeq ($(SYSNAME),Darwin)
       STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-long-double -Werror
       CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Wno-long-double -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
       STRIP =
       STRIP_SHARED =
    endif # DEBUG != true
@@ -486,23 +513,38 @@ endif # SYSNAME == win32
 	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
-	@case $*.c in  \
-	   $(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
-	      set -x ; $(CC) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.c;; \
-	   * ) \
-	      set -x ; $(CC) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(STRICT_FLAGS) $*.c;; \
-	esac ;
+	@if [ $(SYSNAME) = Linux ]; then \
+		if [ $(shell grep "$*\.c" $(DIGITAL_MEDIA_NON_STRICT_FLAGS_FILES) ) ]; then \
+			set -x ; $(CC) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.c; \
+		else \
+			set -x ; $(CC) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(STRICT_FLAGS) $*.c; \
+		fi ; \
+	else \
+		case $*.c in $(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
+		      set -x ; $(CC) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.c;; \
+			* ) \
+		      set -x ; $(CC) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(STRICT_FLAGS) $*.c;; \
+		esac ; \
+	fi 
 
 %.$(OBJ_SUFFIX): %.cpp %.d
 	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
-	@case $*.cpp in  \
-		$(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
-	  set -x ; $(CPP) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.cpp;; \
-	  * ) \
-	  set -x ; $(CPP) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $*.cpp;; \
-	esac ;
+	@if [ $(SYSNAME) = Linux ]; then \
+		if [ $(shell grep "$*\.cpp" $(DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_FILES) ) ]; then \
+			set -x ; $(CPP) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $(DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS) $*.cpp; \
+		else \
+			set -x ; $(CPP) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $*.cpp; \
+		fi ; \
+	else \
+		case $*.cpp in  \
+			$(DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN) ) \
+		  set -x ; $(CPP) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $(DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS) $*.cpp;; \
+		  * ) \
+		  set -x ; $(CPP) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $*.cpp;; \
+		esac ; \
+	fi
 
 %.$(OBJ_SUFFIX): %.f %.d
 	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \

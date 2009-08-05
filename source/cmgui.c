@@ -126,10 +126,10 @@ Main program for the CMISS Graphical User Interface
 	TransformProcessType(&PSN,kProcessTransformToForegroundApplication);
 #endif
 #if !defined (WIN32_USER_INTERFACE)
-	if (command_data = CREATE(Cmiss_command_data)(argc, argv, VERSION))
+	if ( (command_data = CREATE(Cmiss_command_data)(argc, argv, VERSION)) )
 #else /* !defined (WIN32_USER_INTERFACE) */
-	if (command_data = CREATE(Cmiss_command_data)(argc, argv, VERSION, 
-                           current_instance, previous_instance, command_line, initial_main_window_state))
+	if ( (command_data = CREATE(Cmiss_command_data)(argc, argv, VERSION, 
+                           current_instance, previous_instance, command_line, initial_main_window_state)) )
 #endif /* !defined (WIN32_USER_INTERFACE) */
 	{
 		Cmiss_command_data_main_loop(command_data);

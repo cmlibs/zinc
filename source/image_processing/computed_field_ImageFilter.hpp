@@ -826,7 +826,7 @@ inline void Computed_field_ImageFilter::assign_field_values( itk::Vector< float,
 
 template <class ImageType >
 int Computed_field_ImageFilter::evaluate_output_image(Field_location* location,
-	typename ImageType::Pointer &outputImage, ImageType *dummytemplarg)
+	typename ImageType::Pointer &outputImage, ImageType * /*dummytemplarg*/)
 /*******************************************************************************
 LAST MODIFIED : 4 September 2006
 
@@ -843,13 +843,13 @@ Evaluate the templated version of this filter
 		Field_coordinate_location* coordinate_location = NULL;
 		FE_value* xi = NULL;
 
-		if (element_xi_location = 
-			dynamic_cast<Field_element_xi_location*>(location))
+		if ( (element_xi_location = 
+			dynamic_cast<Field_element_xi_location*>(location)) )
 		{
 			xi = element_xi_location->get_xi();
 		}
-		else if (coordinate_location = 
-			dynamic_cast<Field_coordinate_location*>(location))
+		else if ( (coordinate_location = 
+			dynamic_cast<Field_coordinate_location*>(location)) )
 		{
 			xi = coordinate_location->get_values();
 		}
@@ -922,7 +922,7 @@ location.
 		int return_code;
 		if (!outputImage)
 		{
-			if (return_code = set_filter(location))
+			if ( (return_code = set_filter(location) ) )
 			{
 				return_code = image_filter->evaluate_output_image
 					(location, outputImage,
@@ -984,7 +984,7 @@ inline void Computed_field_ImageFilter::setPixelValues( itk::Vector< float, 4 >&
 template <class ImageType >
 int Computed_field_ImageFilter::create_input_image(Field_location* location, 
 	typename ImageType::Pointer &inputImage,
-	ImageType *dummytemplarg1)
+	ImageType * /*dummytemplarg1*/)
 /*******************************************************************************
 LAST MODIFIED : 25 March 2008
 
@@ -1262,7 +1262,7 @@ for subsequent operations.
 template <class ImageType, class FilterType >
 int Computed_field_ImageFilter::update_output_image(Field_location* location, 
 	typename FilterType::Pointer filter, typename ImageType::Pointer &outputImage,
-	ImageType *dummytemplarg1, FilterType *dummytemplarg2)
+	ImageType * dummytemplarg1, FilterType * /*dummytemplarg2*/)
 /*******************************************************************************
 LAST MODIFIED : 27 March 2008
 
