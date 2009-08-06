@@ -263,7 +263,6 @@ ifeq ($(SYSNAME),Linux)
       COMPILE_FLAGS = -fPIC
       STRICT_FLAGS = -W -Wall -Werror
       CPP_STRICT_FLAGS = -W -Wall -Werror
-			TEST_TEST = $(cat just_c.filenames)
       DIGITAL_MEDIA_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
       DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch -Wno-unused-parameter
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match

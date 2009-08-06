@@ -121,7 +121,7 @@ Creates the interpreter for processing commands.
 
   return_code = 1;
 
-  if (*interpreter = (struct Interpreter *)malloc(sizeof (struct Interpreter)))
+  if ( (*interpreter = (struct Interpreter *)malloc(sizeof (struct Interpreter))) )
   {
 
  	  (*interpreter)->number_of_variables = 0; 
