@@ -329,8 +329,8 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 AND EXISTS $ENV{
 				${TRANSFORMATION_INTERFACE_SRCS} graphics/graphics_window.cpp )
 		ENDIF( WX_USER_INTERFACE )
 
-		FILE( STRINGS ${CMAKE_SOURCE_DIR}/source/just_c.filenames C_NON_STRICT_FILES )
-		FILE( STRINGS ${CMAKE_SOURCE_DIR}/source/just_cpp.filenames CPP_NON_STRICT_FILES )
+		FILE( STRINGS ${CMAKE_SOURCE_DIR}/source/non_strict_c.filenames C_NON_STRICT_FILES )
+		FILE( STRINGS ${CMAKE_SOURCE_DIR}/source/non_strict_cpp.filenames CPP_NON_STRICT_FILES )
 		SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror" )
 		SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror" )
 

@@ -247,8 +247,8 @@ ifeq ($(SYSNAME),Linux)
       DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch -Wno-unused-parameter
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
       DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-			DIGITAL_MEDIA_NON_STRICT_FLAGS_FILES = just_c.filenames
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_FILES = just_cpp.filenames
+			DIGITAL_MEDIA_NON_STRICT_FLAGS_FILES = non_strict_c.filenames
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_FILES = non_strict_cpp.filenames
       ifeq ($(PROFILE),true)
         #Don't strip if profiling
         STRIP =
@@ -267,8 +267,8 @@ ifeq ($(SYSNAME),Linux)
       DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch -Wno-unused-parameter
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
       DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-			DIGITAL_MEDIA_NON_STRICT_FLAGS_FILES = just_c.filenames
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_FILES = just_cpp.filenames
+			DIGITAL_MEDIA_NON_STRICT_FLAGS_FILES = non_strict_c.filenames
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_FILES = non_strict_cpp.filenames
       STRIP =
       STRIP_SHARED =
    endif # DEBUG != true
