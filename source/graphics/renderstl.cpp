@@ -563,6 +563,7 @@ int draw_voltex_stl(Stl_context& stl_context,
 
 	ENTER(draw_voltex_stl);
 	/* Keep a similar interface to all the other render implementations */
+	USE_PARAMETER(number_of_vertices);
 	USE_PARAMETER(number_of_data_components);
 	USE_PARAMETER(material);
 	USE_PARAMETER(spectrum);

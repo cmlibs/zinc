@@ -117,6 +117,7 @@ Colour_editor::Colour_editor(wxPanel* parent, const char *panel_name, enum Colou
 			wxT("CMV")
 	 };
 
+	USE_PARAMETER(colour);
 	 colour_text_choice[0][0] = wxT("Red");
 	 colour_text_choice[0][1] = wxT("Green");
 	 colour_text_choice[0][2] = wxT("Blue");

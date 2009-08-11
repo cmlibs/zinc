@@ -216,6 +216,9 @@ button is clicked.
 	USE_PARAMETER(title);
 	USE_PARAMETER(prompt);
 #endif /* !defined (MOTIF_USER_INTERFACE) */
+#if defined (WX_USER_INTERFACE)
+	USE_PARAMETER(execute_command);
+#endif /* defined (WX_USER_INTERFACE) */
 	return_code=0;
 	if (user_interface)
 	{

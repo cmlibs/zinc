@@ -133,6 +133,7 @@ Not needed but required to construct object.
 	int return_code;
 
 	ENTER(Computed_field_derivative_image_filter::compare);
+	USE_PARAMETER(other_core);
 	display_message(ERROR_MESSAGE,
 		"Computed_field_derivative_image_filter::compare.  Not implemented.");
 	return_code = 0;
@@ -350,6 +351,7 @@ Compare the type specific data
 	int return_code;
 
 	ENTER(Computed_field_derivative::compare);
+	USE_PARAMETER(other_core);
 	if (field && (other = dynamic_cast<Computed_field_derivative*>(field->core)))
 	{
 		if ((xi_index == other->xi_index))

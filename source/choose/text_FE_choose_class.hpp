@@ -313,6 +313,7 @@ Updates the chosen object and text field in response to messages.
  	 typename FE_region_method_class::change_log_change_object_type change; 
 	 FE_object_text_chooser *chooser;
 
+	USE_PARAMETER(fe_region);
 	 if (chooser = static_cast<FE_object_text_chooser *>(text_choose_object_void))
 	 {
 			if (chooser->current_object)
@@ -354,8 +355,9 @@ Updates the chosen object and text field in response to messages.
 		return (return_code);
 	}
 
-	void OnTextEnter(wxCommandEvent& Event)
+	void OnTextEnter(wxCommandEvent& event)
 	{
+		USE_PARAMETER(event);
 		if (update_callback)
 		{
 			 update_callback->callback_function(get_object());

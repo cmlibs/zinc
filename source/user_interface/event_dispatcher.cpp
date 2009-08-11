@@ -1175,6 +1175,11 @@ public:
 #if defined (__WXDEBUG__)
 	 void OnAssertFailure(const wxChar *file, int line, const wxChar* func, const wxChar* cond, const wxChar *msg)
 	 {
+		USE_PARAMETER(file);
+		USE_PARAMETER(line);
+		USE_PARAMETER(func);
+		USE_PARAMETER(cond);
+		USE_PARAMETER(msg);
 	 }
 #endif /* defined (__WXDEBUG__) */
 
@@ -1195,6 +1200,7 @@ LAST MODIFIED : 25 July 2007
 DESCRIPTION :
 ==============================================================================*/
 {
+	USE_PARAMETER(a);
 }
 #endif /* defined (UNIX)  && !defined (DARWIN) */
 

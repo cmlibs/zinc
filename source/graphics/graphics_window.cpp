@@ -1720,6 +1720,7 @@ void graphics_window_set_scene_chooser_selected_item(Scene *scene)
 	 
    void OnViewallpressed(wxCommandEvent& event)
 	 {    
+	USE_PARAMETER(event);
 			if (Graphics_window_view_all(graphics_window))
 			{
 				 Graphics_window_update(graphics_window);
@@ -1738,6 +1739,7 @@ void graphics_window_set_scene_chooser_selected_item(Scene *scene)
 			wxFileDialog *saveImage = new wxFileDialog (this,"Save file","","",
 				 "PNG files (*.png)|*.png|JPEG files (*.jpg)|*.jpg|SGI files (*.sgi)|*.sgi|TIF files (*.tiff)|*.tiff|BMP files (*.bmp)|*.bmp|GIF files (*.gif)|*.gif",wxSAVE,wxDefaultPosition);  
 			
+	USE_PARAMETER(event);
 			if (saveImage->ShowModal() == wxID_OK)
 			{ 
 				 file_name=saveImage->GetFilename();
@@ -1797,6 +1799,7 @@ void graphics_window_set_scene_chooser_selected_item(Scene *scene)
 	 
 	 void OnViewOptionspressed(wxCommandEvent& event)
 	 {  
+		USE_PARAMETER(event);
       view_options = XRCCTRL(*this,"View", wxChoice);
       up_view_options = XRCCTRL(*this,"UpViewOptions", wxChoice);
       front_view_options = XRCCTRL(*this,"FrontViewOptions", wxButton);
@@ -1867,6 +1870,7 @@ void graphics_window_set_scene_chooser_selected_item(Scene *scene)
 void OnPerspectivePressed(wxCommandEvent& event)
 {
 	 enum Scene_viewer_projection_mode projection_mode;
+	USE_PARAMETER(event);
 	 projection_mode = Graphics_window_get_projection_mode(graphics_window, graphics_window->current_pane);
 	 if (SCENE_VIEWER_PERSPECTIVE == projection_mode)
 	 {
@@ -1884,6 +1888,7 @@ void OnTimeEditorButtonPressed(wxCommandEvent& event)
 {
 	 ENTER(OnTimeEditorButtonPressed);
 
+	USE_PARAMETER(event);
 	 graphics_window->time_editor_panel->Show(graphics_window->time_editor_togglebutton->GetValue());
 	 if (graphics_window->GraphicsWindowTitle)
 	 {
@@ -1901,6 +1906,7 @@ void OnTimeEditorButtonPressed(wxCommandEvent& event)
 	 
 	 void OnUpViewOptionspressed(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
       wxString option[6] = { "x", "y", "z","-x", "-y", "-z"};
       up_view_options = XRCCTRL(*this,"UpViewOptions", wxChoice);
       front_view_options = XRCCTRL(*this,"FrontViewOptions", wxButton);
@@ -1926,6 +1932,7 @@ void OnTimeEditorButtonPressed(wxCommandEvent& event)
 	 
 	 void OnFrontViewOptionspressed(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
       wxString option[6] = { "x", "y", "z","-x", "-y", "-z"};
       up_view_options = XRCCTRL(*this,"UpViewOptions", wxChoice);
       front_view_options = XRCCTRL(*this,"FrontViewOptions", wxButton);
@@ -2036,6 +2043,7 @@ void GraphicsWindowSetInteractiveButtonSelected(wxBitmapButton *button, Interact
 
 void OnSplitterPositionChanged(wxSplitterEvent &event)
 {
+	USE_PARAMETER(event);
 	 toolscrolledwindow =XRCCTRL(*this, "ToolPanel", wxScrolledWindow);
 	 toolscrolledwindow->SetSize(toolscrolledwindow->GetSize()+wxSize(0,1));
 	 toolscrolledwindow->SetSize(toolscrolledwindow->GetSize()-wxSize(0,1));
@@ -2048,6 +2056,7 @@ void OnTimeSliderChanged( wxScrollEvent& event)
 	 wxString time_string;
 	 ENTER(OnTimeSliderChanged);
 
+	USE_PARAMETER(event);
 	 value = graphics_window->time_slider->GetValue();
 	 time = (double)(((graphics_window->maximum_time - graphics_window->minimum_time) * (double)value)/ (double)1000) + graphics_window->minimum_time;
 	 time_string.Printf(_T("%f"), time);
@@ -2068,6 +2077,7 @@ void OnTimeTextEntered(wxCommandEvent& event)
 	 float time;
 	 ENTER(OnTimeTextEntered);
 
+	USE_PARAMETER(event);
 	 text_entry = const_cast<char *>(graphics_window->time_text_ctrl->GetValue().c_str());
 	 if (text_entry)
 	 {
@@ -2085,6 +2095,7 @@ void OnTimeForwardPressed(wxCommandEvent& event)
 {
 	 ENTER(OnTimeForwardPressed);
 
+	USE_PARAMETER(event);
 	 Time_keeper_play(graphics_window->time_keeper,TIME_KEEPER_PLAY_FORWARD);
 	 
 	 LEAVE;
@@ -2094,6 +2105,7 @@ void OnTimeStopPressed(wxCommandEvent& event)
 {
 	 ENTER(OnTimeStopPressed);
 
+	USE_PARAMETER(event);
 	 Time_keeper_stop(graphics_window->time_keeper);
 	 
 	 LEAVE;
@@ -2103,6 +2115,7 @@ void OnTimeBackwardPressed(wxCommandEvent& event)
 {
 	 ENTER(OnTimeBackwardPressed);
 
+	USE_PARAMETER(event);
 	 Time_keeper_play(graphics_window->time_keeper, TIME_KEEPER_PLAY_BACKWARD);
 	 
 	 LEAVE;
@@ -2113,6 +2126,7 @@ void OnTimeForwardByStepPressed(wxCommandEvent& event)
 	 float time;
 	 ENTER(OnTimeForwardByStepPressed);
 
+	USE_PARAMETER(event);
 	 time = Time_keeper_get_time(graphics_window->time_keeper);
 	 if ((time + graphics_window->time_step) < graphics_window->maximum_time)
 	 {
@@ -2133,6 +2147,7 @@ void OnTimeBackwardByStepPressed(wxCommandEvent& event)
 	 float time;
 	 ENTER(OnTimeBackwardByStepPressed);
 
+	USE_PARAMETER(event);
 	 time = Time_keeper_get_time(graphics_window->time_keeper);
 	 if ((time - graphics_window->time_step) > graphics_window->minimum_time)
 	 {
@@ -2153,6 +2168,7 @@ void OnTimeFastForwardPressed(wxCommandEvent& event)
 	 float time;
 
 	 ENTER(OnTimeFastForwardPressed);
+	USE_PARAMETER(event);
 	 time = Time_keeper_get_time(graphics_window->time_keeper);
 	 if ((time + 2.0*graphics_window->time_step) < graphics_window->maximum_time)
 	 {
@@ -2173,6 +2189,7 @@ void OnTimeFastBackwardPressed(wxCommandEvent& event)
 	 float time;
 
 	 ENTER(OnTimeFastBackwardPressed);
+	USE_PARAMETER(event);
 	 time = Time_keeper_get_time(graphics_window->time_keeper);
 	 if ((time - 2.0*graphics_window->time_step) > graphics_window->minimum_time)
 	 {
@@ -2191,6 +2208,7 @@ void OnTimeFastBackwardPressed(wxCommandEvent& event)
 void OnTimeHidePressed(wxCommandEvent& event)
 {
 	 ENTER(OnTimeHidePressed);
+	USE_PARAMETER(event);
 	 graphics_window->time_editor_togglebutton->SetValue(0);
 	 graphics_window->time_editor_panel->Show(false);
 	 if (graphics_window->GraphicsWindowTitle)
@@ -2209,6 +2227,7 @@ void OnTimeFramerateTextEntered(wxCommandEvent& event)
 	 float time;
 
 	 ENTER(OnTimeFramerateTextEntered);
+	USE_PARAMETER(event);
 	 text_entry = const_cast<char *>(graphics_window->time_framerate_text_ctrl->GetValue().c_str());
 	 if (text_entry)
 	 {
@@ -2225,6 +2244,7 @@ void OnTimeStepSizeTextEntered(wxCommandEvent& event)
 	 float time;
 
 	 ENTER(OnTimeStepSizeTextEntered);
+	USE_PARAMETER(event);
 	 text_entry = const_cast<char *>(graphics_window->time_step_size_text_ctrl->GetValue().c_str());
 	 if (text_entry)
 	 {
@@ -2238,6 +2258,7 @@ void OnTimeStepSizeTextEntered(wxCommandEvent& event)
 void OnEveryFrameChecked(wxCommandEvent& event)
 {
 	 ENTER(OnEveryFrameChecked);
+	USE_PARAMETER(event);
 	 if (graphics_window->time_play_every_frame_checkbox->GetValue())
 	 {
 			Time_keeper_set_play_every_frame(graphics_window->time_keeper);	
@@ -2297,8 +2318,9 @@ public:
   {
   };
 
-  void OnInteractiveButtonPressed(wxCommandEvent& Event)
+  void OnInteractiveButtonPressed(wxCommandEvent& event)
   {
+		USE_PARAMETER(event);
     graphics_window->wx_graphics_window->GraphicsWindowSetInteractiveButtonSelected
       (this, tool,graphics_window);
    }
@@ -8075,6 +8097,7 @@ and establishing the views in it to the command window to a com file.
 	 int return_code;
 
 	 ENTER(list_Graphics_window_commands);
+	USE_PARAMETER(dummy_void);
 	 if (Process_list_command_class *list_message =
 			new Process_list_command_class())
 	 {
@@ -8099,6 +8122,7 @@ and establishing the views in it to the command window to a com file.
 	 int return_code;
 
 	 ENTER(write_Graphics_window_commands_to_comfile);
+	USE_PARAMETER(dummy_void);
 	 if (Process_write_command_class *write_message =
 			new Process_write_command_class())
 	 {

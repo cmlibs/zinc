@@ -168,6 +168,7 @@ Evaluate the templated version of this filter
 	int return_code;
 
 	ENTER(Computed_field_histogram_image_filter::update_histogram);
+	USE_PARAMETER(dummytemplarg2);
 	if (field && location)
 	{
 		typename ImageType::Pointer inputImage;
@@ -230,6 +231,8 @@ int Computed_field_histogram_image_filter::evaluate_histogram(
 	int i, return_code;
 
 	ENTER(Computed_field_histogram_image_filter::evaluate_histogram);
+	USE_PARAMETER(dummytemplarg);
+	USE_PARAMETER(dummytemplarg2);
 	if (field && location)
 	{
 		Field_element_xi_location* element_xi_location;

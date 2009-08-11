@@ -167,7 +167,11 @@ USE_PARAMETER_ON is defined) to swallow unused parameters to functions which
 would otherwise cause compiler warnings. For example, parameter <dummy_void>
 is swallowed with the call USE_PARAMETER(dummy_void); at the start of function.
 ==============================================================================*/
-#define USE_PARAMETER(dummy) use_parameter(0,dummy)
+#  if !defined(__cplusplus)
+#    define USE_PARAMETER(dummy) use_parameter(0,dummy)
+#  else
+#    define USE_PARAMETER(dummy) (void)dummy;
+#  endif
 #else /* defined (USE_PARAMETER_ON) */
 #define USE_PARAMETER(dummy)
 #endif /* defined (USE_PARAMETER_ON) */

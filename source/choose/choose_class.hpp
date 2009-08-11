@@ -66,6 +66,7 @@ public:
 		User_interface *user_interface) :
 		wxChoice(parent, /*id*/-1, wxPoint(0,0), wxSize(-1,-1))
 	{
+		USE_PARAMETER(user_interface);
 		build_main_menu(number_of_items, items, item_names, current_object);
 
 		Connect(wxEVT_COMMAND_CHOICE_SELECTED,
@@ -83,8 +84,9 @@ public:
 // 	 {
 // 	 }
 
-	void OnChoiceSelected(wxCommandEvent& Event)
+	void OnChoiceSelected(wxCommandEvent& event)
 	{
+		USE_PARAMETER(event);
 		if (callback)
 		{
 			callback->callback_function(get_item());

@@ -3419,7 +3419,7 @@ Evaluate the fields cache at the location
 	 {
 			if (Computed_field_evaluate_source_fields_cache_at_location(field, location))
 			{
-				 for (i = 0; i<17; i++)
+				 for (i = 0; i<16; i++)
 				 {
 						values[i] = (float)(field->source_fields[0]->values[i]);
 				 }

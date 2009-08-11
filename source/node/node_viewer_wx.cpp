@@ -326,6 +326,7 @@ Callback from wxTextChooser when text is entered.
 
 	 void RenewNodeViewer(wxCollapsiblePaneEvent& event)
 	 {
+	USE_PARAMETER(event);
 			wxScrolledWindow *VariableViewer = XRCCTRL(*this,"VariableViewerPanel",wxScrolledWindow);
 			VariableViewer->Layout();	
 			frame = XRCCTRL(*this, "CmguiNodeViewer", wxFrame);
@@ -335,6 +336,7 @@ Callback from wxTextChooser when text is entered.
 
 	void OnOKpressed(wxCommandEvent &event)
 	 {
+	USE_PARAMETER(event);
 			if (Node_viewer_apply_changes(node_viewer))
 			{
 				 DESTROY(Node_viewer)(node_viewer->node_viewer_address);
@@ -343,11 +345,13 @@ Callback from wxTextChooser when text is entered.
 
 	 void OnApplypressed(wxCommandEvent &event)
 	 {
+	USE_PARAMETER(event);
 			Node_viewer_apply_changes(node_viewer);
 	 }
 
 	 void OnRevertpressed(wxCommandEvent &event)
 	 {
+	USE_PARAMETER(event);
 			if (node_viewer->current_node)
 			{
 				 Node_viewer_set_viewer_node(node_viewer);
@@ -363,6 +367,7 @@ Callback from wxTextChooser when text is entered.
 
 	 void OnCancelpressed(wxCommandEvent &event)
 	 {
+	USE_PARAMETER(event);
 			DESTROY(Node_viewer)(node_viewer->node_viewer_address);
 	 }
 
@@ -377,6 +382,7 @@ after a collapsible pane is opened/closed.
 	 {
 			int temp_width, temp_height;
 			
+	USE_PARAMETER(event);
 			frame = XRCCTRL(*this, "CmguiNodeViewer",wxFrame);
 			frame->Freeze();
 			frame->GetSize(&temp_width, &temp_height);
@@ -398,6 +404,7 @@ after a collapsible pane is opened/closed.
 
 void Terminate(wxCloseEvent& event)
 {
+	USE_PARAMETER(event);
 	 DESTROY(Node_viewer)(node_viewer->node_viewer_address);
 } 
 
@@ -557,8 +564,9 @@ public:
   {
   }
 
-  void OnNodeViewerTextCtrlEntered(wxCommandEvent& Event)
+  void OnNodeViewerTextCtrlEntered(wxCommandEvent& event)
   {
+	USE_PARAMETER(event);
 		 node_viewer->wx_node_viewer->NodeViewerTextEntered
 				(this, node_viewer, field, component_number, type, version);
    }

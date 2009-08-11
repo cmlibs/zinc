@@ -241,10 +241,10 @@ ifeq ($(SYSNAME),Linux)
       OPTIMISATION_FLAGS = -O3
       COMPILE_DEFINES = -DOPTIMISED
       COMPILE_FLAGS = -fPIC
-      STRICT_FLAGS = -W -Wall -Werror
-      CPP_STRICT_FLAGS = -W -Wall -Werror
+      STRICT_FLAGS = -W -Wall -Werror -Wno-unused-parameter -Wno-uninitialized
+      CPP_STRICT_FLAGS = -W -Wall -Werror -Wno-unused-parameter -Wno-uninitialized
       DIGITAL_MEDIA_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch -Wno-unused-parameter
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
       DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
 			DIGITAL_MEDIA_NON_STRICT_FLAGS_FILES = non_strict_c.filenames
@@ -264,7 +264,7 @@ ifeq ($(SYSNAME),Linux)
       STRICT_FLAGS = -W -Wall -Werror
       CPP_STRICT_FLAGS = -W -Wall -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch -Wno-unused-parameter
+      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
       DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
 			DIGITAL_MEDIA_NON_STRICT_FLAGS_FILES = non_strict_c.filenames

@@ -67,6 +67,7 @@ transformation_editor;
 	 current_object = scene_object;
 	 auto_apply_flag = auto_apply;
 	 rate_of_change = 0;
+	USE_PARAMETER(panel_name);
 	 transformation_editor_quaternion = new Quaternion();
 	 position_sizer_6_staticbox = new wxStaticBox(transformation_editor_panel, -1, wxEmptyString);
 	 position_sizer_7_staticbox = new wxStaticBox(transformation_editor_panel, -1, wxEmptyString);
@@ -761,6 +762,7 @@ provoked then use this colour editor to do the settings.
 ==============================================================================*/
 {
 	 ENTER(Transformation_editor::OnTransformationEditorTextEntered);
+	USE_PARAMETER(event);
 	 this->transformation_editor_wx_update_position_and_direction();
 	 LEAVE;
 }
@@ -788,6 +790,7 @@ provoked then use this colour editor to do the settings.
 ==============================================================================*/
 {
 	 ENTER(Transformation_editor::OnTransformationEditorSliderChanged);
+	USE_PARAMETER(event);
 	 this->transformation_editor_wx_get_rate_of_change_from_interface_slider();
 	 LEAVE;
 }
@@ -1010,6 +1013,7 @@ provoked then use this colour editor to do the settings.
 ==============================================================================*/
 {
 	 ENTER(Transformation_editor::OnTransformationEditorSliderChanged);
+	USE_PARAMETER(event);
 	 this->transformation_editor_wx_direction_system_choice_changed();
 	 LEAVE;
 }

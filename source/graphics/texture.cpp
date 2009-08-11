@@ -6574,6 +6574,7 @@ int Texture_execute_opengl_texture_object(struct Texture *texture,
 	int return_code;
 
 	ENTER(Texture_execute_opengl_texture_object);
+	USE_PARAMETER(renderer);
 	/* Passed graphics_buffer through here as was using it to 
 		do special compilation for Intel graphics driver, but found
 		a more complete work around in the graphics_buffer creation.
@@ -6681,6 +6682,7 @@ int Texture_execute_opengl_display_list(struct Texture *texture,
 	int return_code;
 
 	ENTER(Texture_execute_opengl_display_list);
+	USE_PARAMETER(renderer);
 	return_code=0;
 	if (texture)
 	{

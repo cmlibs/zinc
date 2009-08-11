@@ -240,6 +240,7 @@ public:
 
 	 void OnFormatFont(wxCommandEvent& event)
 	 {
+			USE_PARAMETER(event);
 			wxFontData fdata;
 			wxFont font;
 			wxColour colour;
@@ -262,6 +263,7 @@ public:
 
 void SingleClickedOnList(wxCommandEvent &event)
 	 {		
+	USE_PARAMETER(event);
 			int number_of_selected_commands;
 			wxArrayInt selected_commands;
 			if (number_of_selected_commands = comfile_listbox->GetSelections(selected_commands))
@@ -279,6 +281,7 @@ void SingleClickedOnList(wxCommandEvent &event)
 
 void DoubleClickedOnList(wxCommandEvent &event)
 	 {
+	USE_PARAMETER(event);
 			int i,number_of_selected_commands;
 			wxArrayInt selected_commands;
 			if (number_of_selected_commands = comfile_listbox->GetSelections(selected_commands))
@@ -296,6 +299,7 @@ void DoubleClickedOnList(wxCommandEvent &event)
 
 void AllClicked(wxCommandEvent &event)
 {
+	USE_PARAMETER(event);
 	 int i,number_of_selected_commands;
 	 /* get the number of selected commands and their positions */
 	 if (number_of_selected_commands = comfile_listbox->GetCount())
@@ -313,7 +317,8 @@ void AllClicked(wxCommandEvent &event)
 }
 
 void SelectedClicked(wxCommandEvent &event)
-{
+{	
+	USE_PARAMETER(event);
 	 wxArrayInt selected_commands;
 	 int i,number_of_selected_commands;
 	 /* get the number of selected commands and their positions */
@@ -333,6 +338,7 @@ void SelectedClicked(wxCommandEvent &event)
 
 void CloseClicked(wxCommandEvent &event)
 {
+	USE_PARAMETER(event);
 	 this->Destroy();
 }
 

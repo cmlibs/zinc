@@ -1776,6 +1776,7 @@ private:
 	 
 	 void SingleClick(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
 			SelectedCommand = history_list->GetStringSelection();
 			command_window->wx_command_line_text_ctrl->Clear();
@@ -1784,6 +1785,7 @@ private:
 	 
 	 void DoubleClick(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			history_list = XRCCTRL(*this, "CommandHistory", wxListBox);
 			SelectedCommand = history_list->GetStringSelection();  
 			number = history_list->GetCount();
@@ -1795,6 +1797,7 @@ private:
 	 
 	 void threeDwindow(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			SelectedCommand = "gfx cre win";
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx cre win");
@@ -1802,12 +1805,14 @@ private:
 	 
 	 void materialeditor(wxCommandEvent &event)
 	 {
+		USE_PARAMETER(event);
 			SelectedCommand = "gfx create graphical_material_editor";
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx create graphical_material_editor");
 	 }
 	 void sceneeditorwindow(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			SelectedCommand = "gfx edit scene";
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx edit scene");
@@ -1815,6 +1820,7 @@ private:
 	 
 	 void opencom(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			SelectedCommand = "open comfile";
 			Execute_command_execute_string(command_window->execute_command,
 				 "open comfile");
@@ -1822,6 +1828,7 @@ private:
 	 
 	 void readcurve(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			SelectedCommand = "gfx read curve";
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx read curve");
@@ -1829,6 +1836,7 @@ private:
 	 
 	 void readdata(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			SelectedCommand = "gfx read data";
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx read data");
@@ -1836,6 +1844,7 @@ private:
 	 
 	 void readelements(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			SelectedCommand = "gfx read elements";
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx read elements");
@@ -1843,6 +1852,7 @@ private:
 
 	 void readnodes(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			SelectedCommand = "gfx read nodes";
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx read nodes");
@@ -1850,6 +1860,7 @@ private:
 
 	 void writeall(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			SelectedCommand = "gfx write all";
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx write all");
@@ -1857,6 +1868,7 @@ private:
 	 
 	 void writecurve(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			SelectedCommand = "gfx write curve all";
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx write curve all");
@@ -1864,6 +1876,7 @@ private:
 	 
 	 void writedata(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			SelectedCommand = "gfx write data";
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx write data");
@@ -1871,6 +1884,7 @@ private:
 	 
 	 void writeelements(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			SelectedCommand = "gfx write elements";
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx write elements");
@@ -1878,6 +1892,7 @@ private:
 	 
 	 void writenodes(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			SelectedCommand = "gfx write nodes";
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx write nodes");
@@ -1885,24 +1900,28 @@ private:
 
 	 void dataviewer(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx create data_viewer");
 	 }
 
 	 void nodeviewer(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx create node_viewer");
 	 }
 
 	 void elementpointviewer(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx create element_point_viewer");
 	 }
 	 
 	 void sceneeditor(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			SelectedCommand = "gfx edit scene";
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx edit scene");
@@ -1910,6 +1929,7 @@ private:
 
 	 void spectrumeditor(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			SelectedCommand = "gfx edit spectrum";
 			Execute_command_execute_string(command_window->execute_command,
 				 "gfx edit spectrum");
@@ -1920,6 +1940,7 @@ private:
 			wxFontData fdata;
 			wxFont font;
 			wxColour colour;
+		USE_PARAMETER(event);
 			history_list = XRCCTRL(*this,"CommandHistory", wxListBox);
 			font = history_list->GetFont();
 			fdata.SetInitialFont(font);
@@ -1940,8 +1961,9 @@ private:
 			}
 	 } 
 	 
-	 void ShowSimpleAboutDialog(wxCommandEvent& WXUNUSED(event))
+	 void ShowSimpleAboutDialog(wxCommandEvent& event)
 	 {
+		USE_PARAMETER(event);
 			wxAboutDialogInfo info;
 			info.SetName(_("cmgui"));
 			info.SetDescription(_("This software is part of CMISS and originally developed at The University of Auckland.\n It is released under the Mozilla Public License v1.1"));
@@ -1955,6 +1977,7 @@ private:
 
 void Terminate(wxCloseEvent& event)
 {
+	USE_PARAMETER(event);
 	 wxMessageDialog *dlg = new wxMessageDialog(NULL,"Are you sure you want to quit cmgui?", 
 			"Exit Confirmation", wxYES_NO|wxICON_QUESTION|wxSTAY_ON_TOP);
 	 if ( dlg->ShowModal() == wxID_YES)
@@ -1965,6 +1988,7 @@ void Terminate(wxCloseEvent& event)
 
 void Exit(wxCommandEvent& event)
 {
+	USE_PARAMETER(event);
 	Execute_command_execute_string(command_window->execute_command, "QUIT");
 } 
 
@@ -2078,6 +2102,7 @@ void wxCommandLineTextCtrl::OnKeyDown(wxKeyEvent& event)
 
 void wxCommandLineTextCtrl::OnCommandEntered(wxCommandEvent& event)
 {
+	USE_PARAMETER(event);
 	 wxString command = this->GetValue();
 	 char *new_string = const_cast<char *>(command.c_str());
 	 Execute_command_execute_string(command_window->execute_command,
@@ -2154,6 +2179,8 @@ Create the structures and retrieve the command window from the uil file.
 		{const_cast<char *>("command_window_close"),(XtPointer)command_window_close}
 	};
 	static MrmRegisterArg identifier_list[2];
+#elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
+	USE_PARAMETER(version_id_string);
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
 	BOOL win32_return_code;
 	static char *class_name="Command_window";

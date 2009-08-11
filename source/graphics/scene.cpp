@@ -372,6 +372,7 @@ int Scene_compile_opengl_display_list(struct Scene *scene,
 	int return_code;
 
 	ENTER(compile_Scene);
+	USE_PARAMETER(execute_function);
 	if (scene)
 	{
 		return_code = 1;

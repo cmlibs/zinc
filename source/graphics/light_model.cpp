@@ -136,6 +136,7 @@ Activates the current light model as part of the rendering loop.
 	GLfloat values[4];
 
 	ENTER(direct_render_Light_model);
+	USE_PARAMETER(renderer);
 	if (light_model)
 	{
 		if (light_model->enabled)

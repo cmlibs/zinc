@@ -5513,6 +5513,7 @@ wrapper for an FE_field.
 {
 	int return_code;
 
+	USE_PARAMETER(dummy_void);
 	ENTER(Computed_field_is_type_finite_element_iterator);
 	if (field)
 	{

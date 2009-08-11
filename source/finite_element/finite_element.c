@@ -35671,39 +35671,6 @@ Note: this function is recursive.
 	return (return_code);
 } /* FE_element_add_faces_not_in_list */
 
-static int FE_element_parent_has_other_parent(
-	struct FE_element_parent *element_parent,void *first_parent_void)
-/*******************************************************************************
-LAST MODIFIED : 18 January 2002
-
-DESCRIPTION :
-Returns true if the parent element referred to by the <element_parent> had
-any ancestor of the same CM_element_type as <first_parent> but not the same.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element *first_parent;
-
-	ENTER(FE_element_parent_has_other_parent);
-	if (element_parent&&element_parent->parent&&
-		(first_parent=(struct FE_element *)first_parent_void))
-	{
-		return_code = ((element_parent->parent->cm.type == first_parent->cm.type)&&
-			(element_parent->parent != first_parent))||
-			FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-				FE_element_parent_has_other_parent,first_parent_void,
-				element_parent->parent->parent_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_parent_has_other_parent.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* FE_element_parent_has_other_parent */
-
 struct FE_element_parent_for_each_element_and_parent_data
 /*******************************************************************************
 LAST MODIFIED : 14 May 2003

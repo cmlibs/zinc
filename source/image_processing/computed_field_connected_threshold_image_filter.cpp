@@ -381,6 +381,7 @@ occurs.
 	struct Computed_field **source_fields;
 
 	ENTER(Computed_field_set_type_connected_threshold_image_filter);
+	USE_PARAMETER(dimension);
 	if (field && source_field &&
 		Computed_field_is_scalar(source_field, (void *)NULL))
 	{

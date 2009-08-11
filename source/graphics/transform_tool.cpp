@@ -190,6 +190,7 @@ public:
 
  	void OnButtonFreeSpin(wxCommandEvent& event)
  	{    
+		USE_PARAMETER(event);
 		button_free_spin = XRCCTRL(*this, "ButtonFreeSpin", wxCheckBox);
     Transform_tool_transform_set_free_spin(transform_tool,button_free_spin->IsChecked());
  	}

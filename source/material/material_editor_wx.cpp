@@ -719,6 +719,7 @@ Callback for the alpha text widgets.
 		float alpha;
 		
 		ENTER(OnMaterialEditorAlphaTextEntered);
+	USE_PARAMETER(event);
 		if (material_editor->material_editor_alpha_text_ctrl)
 		{
 			 text = (char*)material_editor->material_editor_alpha_text_ctrl->GetValue().mb_str(wxConvUTF8);
@@ -749,6 +750,7 @@ Callback for the shininess text widgets.
 			float shininess;
 
 			ENTER(OnMaterialEditorShininessTextEntered);
+	USE_PARAMETER(event);
 			if (material_editor->material_editor_alpha_text_ctrl)
 			{
 				 text = (char*)material_editor->material_editor_shininess_text_ctrl->GetValue().mb_str(wxConvUTF8);
@@ -779,6 +781,7 @@ Callback for the alpha slider.
 		float alpha;
 		
 		ENTER(OnMaterialEditorAlphaSliderChanged);
+	USE_PARAMETER(event);
 		if (material_editor->material_editor_alpha_slider)
 		{
 			 value = material_editor->material_editor_alpha_slider->GetValue();
@@ -801,6 +804,7 @@ Callback for the shininess slider.
 		float shininess;
 		
 		ENTER(OnMaterialEditorShininessSliderChanged);
+	USE_PARAMETER(event);
 		if (material_editor->material_editor_shininess_slider)
 		{
 			 value = material_editor->material_editor_shininess_slider->GetValue();
@@ -823,6 +827,7 @@ Callback for the texture check box
 	 int return_code;
 
 	 ENTER(OnMaterialEditorTextureCheckBoxChecked);
+	USE_PARAMETER(event);
 	 texture = (struct Texture *)NULL;
 	 if (material_editor->material_editor_texture_check_box)
 	 {
@@ -859,6 +864,7 @@ Callback for the texture check box
 	 int return_code;
 
 	 ENTER(OnMaterialEditorSecondTextureCheckBoxChecked);
+	USE_PARAMETER(event);
 	 texture = (struct Texture *)NULL;
 	 if (material_editor->material_editor_second_texture_check_box)
 	 {
@@ -914,6 +920,7 @@ Callback for the texture check box
 	 int return_code;
 
 	 ENTER(OnMaterialEditorThirdTextureCheckBoxChecked);
+	USE_PARAMETER(event);
 	 texture = (struct Texture *)NULL;
 	 if (material_editor->material_editor_third_texture_check_box)
 	 {
@@ -950,6 +957,7 @@ Callback for the texture check box
 	 int return_code;
 
 	 ENTER(OnMaterialEditorFourthTextureCheckBoxChecked);
+	USE_PARAMETER(event);
 	 texture = (struct Texture *)NULL;
 	 if (material_editor->material_editor_fourth_texture_check_box)
 	 {
@@ -977,6 +985,7 @@ Callback for the texture check box
 void OnMaterialEditorApplyButtonPressed(wxCommandEvent& event)
 {
 	 ENTER(OnMateruialEditorApplyButtonPressed)
+	USE_PARAMETER(event);
 	 if (material_editor->current_material && material_editor->edit_material)
 	 {
 			MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
@@ -990,6 +999,7 @@ void OnMaterialEditorApplyButtonPressed(wxCommandEvent& event)
 void OnMaterialEditorOKButtonPressed(wxCommandEvent& event)
 {
 	 ENTER(OnMateruialEditorOKButtonPressed)
+	USE_PARAMETER(event);
 	 if (material_editor->current_material && material_editor->edit_material)
 	 {
 			MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
@@ -1004,12 +1014,14 @@ void OnMaterialEditorOKButtonPressed(wxCommandEvent& event)
 void OnMaterialEditorRevertButtonPressed(wxCommandEvent& event)
 {
 	 ENTER(MateruialEditorRevertButtonPressed)
+	USE_PARAMETER(event);
 	 material_editor_wx_set_material(material_editor, material_editor->current_material);
 	 LEAVE;
 }
 void OnMaterialEditorCancelButtonPressed(wxCommandEvent& event)
 {
 	 ENTER(OnMateruialEditorCancelButtonPressed)
+	USE_PARAMETER(event);
 	 material_editor_wx_set_material(material_editor, material_editor->current_material);
 	 DESTROY(Material_editor_dialog)(material_editor->material_editor_dialog_address);
 	 LEAVE;
@@ -1020,6 +1032,7 @@ void OnMaterialEditorCreateNewMaterial(wxCommandEvent& event)
 	 ENTER(OnMaterialEditorCreateNewMaterial);
 	 Graphical_material *material;
 	 char *text;
+	USE_PARAMETER(event);
 	 wxTextEntryDialog *NewMaterialDialog = new wxTextEntryDialog(this, "Enter name", 
 			"Please Enter Name", "TEMP", wxOK|wxCANCEL|wxCENTRE, wxDefaultPosition);
 	 if (NewMaterialDialog->ShowModal() == wxID_OK)
@@ -1048,6 +1061,7 @@ void OnMaterialEditorDeleteMaterial(wxCommandEvent& event)
 {
 	 ENTER(OnMaterialEditorDeleteMaterial);
 
+	USE_PARAMETER(event);
 	 REMOVE_OBJECT_FROM_MANAGER(Graphical_material)(
 			material_editor->current_material,material_editor->graphical_material_manager);
 	 material_editor->current_material = NULL;
@@ -1062,6 +1076,7 @@ void OnMaterialEditorRenameMaterial(wxCommandEvent& event)
 	 ENTER(OnMaterialEditorRenameMaterial);
 	 //int selection;
 	 char *text;
+	USE_PARAMETER(event);
 	 wxTextEntryDialog *NewMaterialDialog = new wxTextEntryDialog(this, "Enter name", 
 			"Please Enter Name", graphical_material_object_listbox->get_string_selection(),
 			wxOK|wxCANCEL|wxCENTRE, wxDefaultPosition);
@@ -1081,6 +1096,7 @@ void OnMaterialEditorAdvancedSettingsChanged(wxCommandEvent& event)
 {
 	 ENTER(OnMaterialEditorAdvancedSettingsChanged);
 	 int return_code, bump_mapping_flag;
+	USE_PARAMETER(event);
 	 bump_mapping_flag = 0;
 	 if (material_editor->material_editor_per_pixel_checkbox->IsChecked())
 	 {
@@ -1109,6 +1125,7 @@ void OnMaterialEditorAdvancedSettingsChanged(wxCommandEvent& event)
 void CloseMaterialEditor(wxCloseEvent &event)
 {
 	 ENTER(CloseMaterialEditor);
+	USE_PARAMETER(event);
 	 material_editor_wx_set_material(material_editor, material_editor->current_material);
 	 DESTROY(Material_editor_dialog)(material_editor->material_editor_dialog_address);
 	 LEAVE;

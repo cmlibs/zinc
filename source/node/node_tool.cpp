@@ -2717,24 +2717,28 @@ Set the selected option in the Coordinate Field chooser.
 
 	void OnButtonSelectpressed(wxCommandEvent& event)
 	{    
+	USE_PARAMETER(event);
 		button_select = XRCCTRL(*this, "ButtonSelect", wxCheckBox);
 		Node_tool_set_select_enabled(node_tool,button_select->IsChecked());
 	}
 
 	void OnButtonEditpressed(wxCommandEvent& event)
 	{ 
+	USE_PARAMETER(event);
 		button_edit = XRCCTRL(*this, "ButtonEdit", wxCheckBox);
 		Node_tool_set_edit_enabled(node_tool,button_edit->IsChecked());
 	}
 
 	void OnButtonMotionUpdatepressed(wxCommandEvent& event)
 	{    
+	USE_PARAMETER(event);
 		 button_motion_update = XRCCTRL(*this, "ButtonMotionUpdate", wxCheckBox);
 		 Node_tool_set_motion_update_enabled(node_tool,button_motion_update->IsChecked());
 	}
 
 	void OnButtonDefinepressed(wxCommandEvent& event)
 	{    
+	USE_PARAMETER(event);
 		button_define = XRCCTRL(*this, "ButtonDefine", wxCheckBox);
 		Node_tool_set_define_enabled(node_tool,button_define->IsChecked());
 		if (!button_define->IsChecked())
@@ -2747,6 +2751,7 @@ Set the selected option in the Coordinate Field chooser.
 
 	void OnButtonCreatepressed(wxCommandEvent& event)
 	{    	 
+	USE_PARAMETER(event);
 		button_create = XRCCTRL(*this, "ButtonCreate", wxCheckBox);
 		Node_tool_set_create_enabled(node_tool,button_create->IsChecked());
 
@@ -2760,12 +2765,14 @@ Set the selected option in the Coordinate Field chooser.
 
 	void OnButtonStreamingpressed(wxCommandEvent& event)
 	{    
+	USE_PARAMETER(event);
 		button_streaming = XRCCTRL(*this, "ButtonStreaming", wxCheckBox);  
 		Node_tool_set_streaming_create_enabled(node_tool,button_streaming->IsChecked());
 	}
 
 	void OnButtonConstrainpressed(wxCommandEvent& event)
 	{    
+	USE_PARAMETER(event);
 		button_constrain = XRCCTRL(*this, "ButtonConstrain", wxCheckBox ); 	 
 		Node_tool_set_constrain_to_surface(node_tool,button_constrain->IsChecked());
 	}
@@ -2773,6 +2780,7 @@ Set the selected option in the Coordinate Field chooser.
 	void OnButtonDestroypressed(wxCommandEvent& event)
 	{    
 		struct LIST(FE_node) *destroy_node_list;	 
+	USE_PARAMETER(event);
 		button_destroy = XRCCTRL(*this, "ButtonDestroy", wxButton);;
 	 if (destroy_node_list=CREATE(LIST(FE_node))())
 	   {
@@ -2804,6 +2812,7 @@ Set the selected option in the Coordinate Field chooser.
 	struct LIST(FE_node) *node_list;
 	button_undefine = XRCCTRL(*this, "ButtonUndefine", wxButton);  
 
+	USE_PARAMETER(event);
 	if (node_tool->coordinate_field && (fe_field_list=
 	    Computed_field_get_defining_FE_field_list(node_tool->coordinate_field)))
 	  {
@@ -2837,6 +2846,7 @@ Set the selected option in the Coordinate Field chooser.
 
 void OnClearButtonpressed(wxCommandEvent &event)
 {
+	USE_PARAMETER(event);
 	 if (node_tool)
 	 {
 			Node_tool_end_element_creation(node_tool);
@@ -2850,6 +2860,7 @@ void OnClearButtonpressed(wxCommandEvent &event)
 
 void OnCreateElementsPressed(wxCommandEvent &event)
  {
+	USE_PARAMETER(event);
 		create_elements_checkbox = XRCCTRL(*this, "CreateElementsCheckBox", wxCheckBox );
 		if (node_tool)
 		{
@@ -2868,6 +2879,7 @@ void OnDimensionEntered(wxCommandEvent &event)
 		char *value_string;
 		int element_dimension;
 		
+	USE_PARAMETER(event);
 		dimension_textctrl = XRCCTRL(*this, "DimensionTextCtrl", wxTextCtrl);
 		if (node_tool)
 		{
@@ -2936,6 +2948,7 @@ void NodeToolInterfaceRenew(Node_tool *destination_node_tool)
 void NodeCommandFieldChecked(wxCommandEvent &event)
 {
 	struct Computed_field *command_field = (struct Computed_field *)NULL;
+	USE_PARAMETER(event);
 	if (node_command_field_checkbox->IsChecked() &&
 		(command_field = node_command_field_chooser->get_object()))
 	{
@@ -2952,6 +2965,7 @@ void NodeCommandFieldChecked(wxCommandEvent &event)
 void ElementXiFieldChecked(wxCommandEvent &event)
 {
 	struct Computed_field *element_xi_field = (struct Computed_field *)NULL;
+	USE_PARAMETER(event);
 	if (element_xi_field_checkbox->IsChecked() &&
 		(element_xi_field = element_xi_field_chooser->get_object()))
 	{

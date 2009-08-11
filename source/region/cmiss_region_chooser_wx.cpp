@@ -224,6 +224,7 @@ Sets <path> of chosen region in the <chooser>.
 {
 	wxRegionChooser *region_chooser;
 
+	USE_PARAMETER(region_changes);
 	if (region_chooser = static_cast<wxRegionChooser *>(region_chooser_void))
 	{
 		 char *temp;
@@ -233,8 +234,9 @@ Sets <path> of chosen region in the <chooser>.
 	}
 }
 
-void wxRegionChooser::OnChoiceSelected(wxCommandEvent& Event)
+void wxRegionChooser::OnChoiceSelected(wxCommandEvent& event)
 {
+	USE_PARAMETER(event);
 	notify_callback();
 }
 

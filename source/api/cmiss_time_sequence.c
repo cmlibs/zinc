@@ -66,7 +66,7 @@ and returned.
 {
 	FE_value *time_values;
 	int i;
-	struct FE_time_sequence *time_sequence;
+	struct FE_time_sequence *time_sequence = NULL;
 
 	ENTER(Cmiss_time_sequence_package_get_matching_time_sequence);
 

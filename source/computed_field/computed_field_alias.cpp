@@ -134,12 +134,14 @@ private:
 	
 	int check_source_fields_manager(MANAGER(Computed_field) **manager_address)
 	{
+		USE_PARAMETER(manager_address);
 		// nothing to do as source field may be in a different manager
 		return 1;
 	}
 
 	int manage_source_fields(MANAGER(Computed_field) *manager)
 	{
+		USE_PARAMETER(manager);
 		// nothing to do as source field may be in a different manager
 		return 1;
 	};

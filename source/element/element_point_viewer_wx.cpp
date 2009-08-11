@@ -1371,6 +1371,7 @@ DESCRIPTION :
 Callback from wxTextChooser when text is entered.
 ==============================================================================*/
 {
+	USE_PARAMETER(grid_field);
 	 if (element_point_viewer)
 	 {
 			Element_point_viewer_refresh_grid_value_text(element_point_viewer);
@@ -1391,6 +1392,7 @@ LAST MODIFIED : 14 June 2007
 DESCRIPTION :
 ==============================================================================*/
  {
+	USE_PARAMETER(event);
 		wxScrolledWindow *VariableViewer = XRCCTRL(
 			 *this,"ElementVariableViewerPanel",wxScrolledWindow);
 		VariableViewer->Layout();	
@@ -1410,6 +1412,7 @@ Called when entry is made into the point_number_text field.
 	 char *value_string;
 	 int element_point_number;
 	 
+	USE_PARAMETER(event);
 	 if (element_point_viewer)
 	 {
 			/* Get the text string */
@@ -1458,6 +1461,7 @@ Called when entry is made into the discretization_text field.
 	struct Element_discretization discretization,temp_discretization;
 	struct Parse_state *temp_state;
 
+	USE_PARAMETER(event);
 	if (element_point_viewer)
 	{
 		 /* Get the text string */
@@ -1539,6 +1543,7 @@ Called when entry is made into the xi_text field.
 	struct FE_element *element;
 	struct Parse_state *temp_state;
 
+	USE_PARAMETER(event);
 	if (element_point_viewer)
 	{
 		 if ((element = element_point_viewer->element_point_identifier.element) &&
@@ -1585,7 +1590,8 @@ void OnGridValueEntered(wxCommandEvent &event)
 	 int grid_value;
 	 struct Computed_field *grid_field;
 	 struct FE_element_grid_to_Element_point_ranges_list_data grid_to_list_data;
-	 struct FE_field *grid_fe_field;
+	struct FE_field *grid_fe_field;
+	USE_PARAMETER(event);
 	 if (element_point_viewer)
 	 {
 			/* Get the text string */
@@ -1647,12 +1653,14 @@ void OnGridValueEntered(wxCommandEvent &event)
 
 void OnApplypressed(wxCommandEvent &event)
 {
-	 Element_point_viewer_apply_changes(element_point_viewer,/*apply_all*/0);
+	USE_PARAMETER(event);
+	Element_point_viewer_apply_changes(element_point_viewer,/*apply_all*/0);
 }
 
 void OnApplyAllpressed(wxCommandEvent &event)
 {
-	 Element_point_viewer_apply_changes(element_point_viewer,/*apply_all*/1);
+	USE_PARAMETER(event);
+	Element_point_viewer_apply_changes(element_point_viewer,/*apply_all*/1);
 }
 
 void OnRevertpressed(wxCommandEvent &event)
@@ -1663,18 +1671,19 @@ DESCRIPTION :
 Callback for Revert button. Sends global element point values back to the
 editor widget, undoing any modifications.
 ==============================================================================*/
-{
-	 if (element_point_viewer)
-	 {
-			Element_point_viewer_set_viewer_element_point(element_point_viewer);
-			if (element_point_viewer->wx_element_point_viewer && element_point_viewer->collpane)
-			{
-				 FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
-						element_point_viewer_add_collpane,
-						(void *)element_point_viewer,
-						element_point_viewer->computed_field_manager);
-			}
-	 }
+{ 
+	USE_PARAMETER(event);
+	if (element_point_viewer)
+	{
+		Element_point_viewer_set_viewer_element_point(element_point_viewer);
+		if (element_point_viewer->wx_element_point_viewer && element_point_viewer->collpane)
+		{
+			 FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
+					element_point_viewer_add_collpane,
+					(void *)element_point_viewer,
+					element_point_viewer->computed_field_manager);
+		}
+	}
 }
 
 void OnCancelpressed(wxCommandEvent &event)
@@ -1686,7 +1695,8 @@ Callback from the Close button.
 Also called when "close" is selected from the window menu.
 ==============================================================================*/
 {
-	 if (element_point_viewer)
+	USE_PARAMETER(event);
+	if (element_point_viewer)
 	{
 		DESTROY(Element_point_viewer)(
 			element_point_viewer->element_point_viewer_address);
@@ -1710,6 +1720,7 @@ after a collapsible pane is opened/closed.
 {
 	 int temp_width, temp_height;
 	 
+	USE_PARAMETER(event);
 	 frame = XRCCTRL(*this, "CmguiElementPointViewer",wxFrame);
 	 frame->Freeze();
 	 frame->GetSize(&temp_width, &temp_height);
@@ -1731,6 +1742,7 @@ after a collapsible pane is opened/closed.
 
 void Terminate(wxCloseEvent& event)
 {
+	USE_PARAMETER(event);
 	 if (element_point_viewer)
 	 {
 			DESTROY(Element_point_viewer)(
@@ -1965,8 +1977,9 @@ public:
   {
   }
 
-  void OnElementPointViewerTextCtrlEntered(wxCommandEvent& Event)
+  void OnElementPointViewerTextCtrlEntered(wxCommandEvent& event)
   {
+		USE_PARAMETER(event);
 		 element_point_viewer->wx_element_point_viewer->ElementPointViewerTextEntered
 				(this, element_point_viewer, field, component_number);
 	}

@@ -634,7 +634,7 @@ clip plane in the <scene_viewer>.
 ==============================================================================*/
 {
 	double left, right, bottom, top, old_near, old_far;
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Cmiss_scene_viewer_set_near_and_far_plane);
 	if (scene_viewer)

@@ -688,6 +688,7 @@ public:
 
 	 void ElementPointCommandFieldChecked(wxCommandEvent &event)
 	 {
+		USE_PARAMETER(event);
 			struct Computed_field *command_field;
 			elementpointcommandfieldcheckbox = XRCCTRL(*this, "ElementPointCommandFieldCheckBox",wxCheckBox);
 			element_point_command_field_chooser_panel = XRCCTRL(*this, "ElementPointCommandFieldChooserPanel", wxPanel);

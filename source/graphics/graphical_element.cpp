@@ -2309,6 +2309,7 @@ int Graphical_element_group_compile_opengl_display_list(
 	int return_code;
 
 	ENTER(compile_GT_element_group);
+	USE_PARAMETER(renderer);
 	if (gt_element_group)
 	{
 		return_code = 1;
@@ -2347,6 +2348,7 @@ int Graphical_element_group_execute_opengl_display_list(
 	int return_code;
 
 	ENTER(compile_GT_element_group);
+	USE_PARAMETER(renderer);
 	if (gt_element_group)
 	{
 		return_code = 1;

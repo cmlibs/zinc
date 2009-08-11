@@ -1733,6 +1733,7 @@ Callback from wxChooser<Render Type> when choice is made.
 */
 void CollapsiblepaneChangedEvent(wxCollapsiblePaneEvent& event)
 {
+	USE_PARAMETER(event);
 	frame=XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
 	if (frame)
 	{
@@ -1825,6 +1826,7 @@ When changes have been made by the user, renew the label on the list
 	unsigned int selection;
 	char *settings_string;
 	unsigned int check;
+	USE_PARAMETER(settings);
 	graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
 	selection=graphicalitemschecklist->GetSelection();
 	check = graphicalitemschecklist->IsChecked(selection);
@@ -1837,6 +1839,7 @@ When changes have been made by the user, renew the label on the list
 
 void ResetWindow(wxSplitterEvent& event)
 {
+	USE_PARAMETER(event);
 	 frame = 
 			XRCCTRL(*this, "CmguiSceneEditor", wxFrame);
 	 frame->Layout();
@@ -1858,6 +1861,7 @@ void ResetWindow(wxSplitterEvent& event)
 			old_element_discretization;
 		char *text_entry;
 
+	USE_PARAMETER(event);
 		elementdiscretisationpanel=XRCCTRL(*this, "ElementDiscretisationPanel",wxTextCtrl);
 		if (text_entry = duplicate_string(
 					const_cast<char *>(elementdiscretisationpanel->GetValue().c_str())))
@@ -1905,6 +1909,7 @@ void ResetWindow(wxSplitterEvent& event)
 	{
 		Computed_field *temp_native_discretization_field;
 		FE_field *native_discretization_field;
+	USE_PARAMETER(event);
 		nativediscretizationcheckbox = XRCCTRL(*this, "NativeDiscretisationFieldCheckBox",wxCheckBox);
 		FE_chooser_panel = XRCCTRL(*this, "NativeDiscretisationFieldChooser",wxPanel);
 		if (nativediscretizationcheckbox->IsChecked())
@@ -1928,6 +1933,7 @@ void ResetWindow(wxSplitterEvent& event)
 
 	void AutoChecked(wxCommandEvent &event)
 	{
+	USE_PARAMETER(event);
 		autocheckbox = XRCCTRL(*this, "AutoCheckBox", wxCheckBox);
 		applybutton = XRCCTRL(*this, "ApplyButton", wxButton);
 		revertbutton = XRCCTRL(*this,"RevertButton", wxButton);
@@ -1949,11 +1955,13 @@ void ResetWindow(wxSplitterEvent& event)
 
 void RevertClicked(wxCommandEvent &event)
 {
+	USE_PARAMETER(event);
 	Scene_editor_revert_changes(scene_editor);		
 }
 
 void ApplyClicked(wxCommandEvent &event)
 {
+	USE_PARAMETER(event);
 	MANAGER_DEREGISTER(Scene)(
 		scene_editor->scene_manager_callback_id, scene_editor->scene_manager);
 	if (scene_editor->gt_element_group_callback_flag)
@@ -1986,6 +1994,7 @@ void ApplyClicked(wxCommandEvent &event)
 void CircleDiscretisationUpdate(wxCommandEvent &event)
 {
 	 int circle_discretization;
+	USE_PARAMETER(event);
 	 circlediscretisationpanel =	 XRCCTRL(*this, "CircleDiscretisationPanel",wxTextCtrl);
 	 TempText = circlediscretisationpanel->GetValue();
 	 if (TempText)
@@ -2023,6 +2032,7 @@ void Scene_editor_wx_UpdateSettingsType(GT_element_settings *settings)
 
 void Scene_editor_wx_UpdateGraphicalElementSettings(GT_element_settings *settings)
 {
+	USE_PARAMETER(settings);
 	 wxScrolledWindow *sceneeditingpanel = XRCCTRL(*this, "SceneEditing",wxScrolledWindow);
 	 sceneeditingpanel->Freeze();
 	 get_and_set_graphical_element_settings((void *)scene_editor);
@@ -2125,6 +2135,7 @@ void SceneCheckListClicked(wxCommandEvent &event)
 void SceneObjectUpClicked(wxCommandEvent &event)
 {
 	 int selection = scenechecklist->GetSelection();
+	USE_PARAMETER(event);
 	 if (selection>=1)
 	 {
 			struct Scene *parent_scene;
@@ -2147,6 +2158,7 @@ void SceneObjectDownClicked(wxCommandEvent &event)
 {
 	 int selection = scenechecklist->GetSelection();
 	 int number = scenechecklist->GetCount();
+	USE_PARAMETER(event);
 	 if (number>=(selection+2))
 	 {
 			struct Scene *parent_scene;
@@ -2199,6 +2211,7 @@ void AddToSettingList(wxCommandEvent &event)
 	 GT_element_settings *settings;
 	 int return_code;
 	 
+	USE_PARAMETER(event);
 	 if (settings =
 			CREATE(GT_element_settings)(scene_editor->current_settings_type))
 	 {
@@ -2396,6 +2409,7 @@ void AddToSettingList(wxCommandEvent &event)
 void RemoveFromSettingList(wxCommandEvent &event)
 {
 	 unsigned int position;
+	USE_PARAMETER(event);
 	 if 	(scene_editor->edit_gt_element_group)
 	 {
 			graphicalitemschecklist=XRCCTRL(*this,"GraphicalItemsListBox",wxCheckListBox);
@@ -2459,6 +2473,7 @@ void MoveUpInSettingList(wxCommandEvent &event)
 {
 	 int position;
 	 GT_element_settings *settings;
+	USE_PARAMETER(event);
 	 if (scene_editor->edit_gt_element_group)
 	 {
 			if (1 < (position = GT_element_group_get_settings_position(
@@ -2502,6 +2517,7 @@ void MoveUpInSettingList(wxCommandEvent &event)
 		int position;
 		GT_element_settings *settings;
 
+	USE_PARAMETER(event);
 		if 	(scene_editor->edit_gt_element_group)
 			{
 				if (GT_element_group_get_number_of_settings(
@@ -2576,6 +2592,7 @@ void MoveUpInSettingList(wxCommandEvent &event)
 		char *name,new_name[200],*text_entry;
 		wxString temp;
 		int position;
+	USE_PARAMETER(event);
 		GT_element_settings *settings = scene_editor->current_settings;
 		if (scene_editor->current_settings)
 		{
@@ -2625,6 +2642,7 @@ void MoveUpInSettingList(wxCommandEvent &event)
 	void CoordinateFieldChecked(wxCommandEvent &event)
 	{
 		Computed_field *coordinate_field;
+	USE_PARAMETER(event);
 		coordinatefieldcheckbox = XRCCTRL(*this, "CoordinateFieldCheckBox",wxCheckBox);
 		coordinate_field_chooser_panel = XRCCTRL(*this, "CoordinateFieldChooserPanel",wxPanel);
 		if (coordinatefieldcheckbox->IsChecked())
@@ -2649,6 +2667,7 @@ void MoveUpInSettingList(wxCommandEvent &event)
 		float constant_radius, scale_factor;
 		double temp;
 		struct Computed_field *radius_scalar_field;
+	USE_PARAMETER(event);
 		constantradiustextctrl=XRCCTRL(*this, "ConstantRadiusTextCtrl",wxTextCtrl);
 		(constantradiustextctrl->GetValue()).ToDouble(&temp);
 		constant_radius=(float)temp;
@@ -2691,6 +2710,7 @@ void MoveUpInSettingList(wxCommandEvent &event)
 		struct Computed_field *scalar_field;
 #define VARIABLE_LENGTH_ALLOCATION_STEP (10)
 		
+	USE_PARAMETER(event);
 		GT_element_settings_get_iso_surface_parameters(
 			scene_editor->current_settings,&scalar_field,&number_of_iso_values,
 			&current_iso_values,
@@ -2870,6 +2890,7 @@ void MoveUpInSettingList(wxCommandEvent &event)
 	Triple glyph_centre, glyph_scale_factors, glyph_size;
 	centretextctrl=XRCCTRL(*this,"CentreTextCtrl",wxTextCtrl);
 	
+	USE_PARAMETER(event);
 		if (scene_editor->current_settings)
 		{
 			if (GT_element_settings_get_glyph_parameters(
@@ -2923,6 +2944,7 @@ void EnterGlyphSize(wxCommandEvent &event)
 	Triple glyph_centre,glyph_scale_factors,glyph_size;
 	baseglyphsizetextctrl=XRCCTRL(*this,"BaseGlyphSizeTextCtrl",wxTextCtrl);
 
+	USE_PARAMETER(event);
 	if (scene_editor->current_settings)
 	{
 		if (GT_element_settings_get_glyph_parameters(
@@ -2975,6 +2997,7 @@ void EnterGlyphSize(wxCommandEvent &event)
 	struct Parse_state *temp_state;
 	Triple glyph_centre,glyph_scale_factors,glyph_size;
 
+	USE_PARAMETER(event);
 	glyphscalefactorstextctrl=XRCCTRL(*this,"GlyphScaleFactorsTextCtrl",wxTextCtrl);
 	orientation_scale_field_chooser_panel=XRCCTRL(*this,	"OrientationScaleChooserPanel",wxPanel);
 	glyphscalefactorstext	=XRCCTRL(*this,"GlyphScaleFactorsText",wxStaticText);
@@ -3044,6 +3067,7 @@ void EnterGlyphSize(wxCommandEvent &event)
 	struct GT_object *glyph;
 	Triple glyph_centre,glyph_scale_factors,glyph_size;
 
+	USE_PARAMETER(event);
 	GT_element_settings_get_glyph_parameters(
 		 scene_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
 		 glyph_size, &orientation_scale_field, glyph_scale_factors,
@@ -3074,6 +3098,7 @@ void LabelChecked(wxCommandEvent &event)
 	struct Computed_field *label_field;
 	struct Graphics_font *font;
 
+	USE_PARAMETER(event);
 	labelcheckbox=XRCCTRL(*this,"LabelCheckBox",wxCheckBox);
 	label_chooser_panel = XRCCTRL(*this,"LabelChooserPanel",wxPanel);
 	GT_element_settings_get_label_field(scene_editor->current_settings, 
@@ -3099,6 +3124,7 @@ void LabelChecked(wxCommandEvent &event)
 {
 	struct Computed_field *visibility_field;
 
+	USE_PARAMETER(event);
 	visibility_field_checkbox=XRCCTRL(*this,"VisibilityFieldCheckBox",wxCheckBox);
 	visibility_field_chooser_panel = XRCCTRL(*this,"VisibilityFieldChooserPanel",wxPanel);
 	if (visibility_field_checkbox->IsChecked())
@@ -3126,6 +3152,7 @@ void EnterElementDiscretization(wxCommandEvent &event)
 	struct Element_discretization discretization;
 	struct Parse_state *temp_state;
 
+	USE_PARAMETER(event);
 	discretizationtextctrl=XRCCTRL(*this,"DiscretizationTextCtrl",wxTextCtrl);
 
 		if (scene_editor->current_settings)
@@ -3176,6 +3203,7 @@ void EnterElementDiscretization(wxCommandEvent &event)
 
 void NativeDiscretizationChecked(wxCommandEvent &event)
 {
+	USE_PARAMETER(event);
 	nativediscretizationfieldcheckbox=XRCCTRL(*this,"NativeDiscretizationFieldCheckBox",wxCheckBox);
 	native_discretization_field_chooser_panel=XRCCTRL(*this, "NativeDiscretizationFieldChooserPanel",wxPanel);
 	FE_field *temp_native_discretization_field;
@@ -3204,6 +3232,7 @@ void SeedElementChecked(wxCommandEvent &event)
 	 seed_element_panel = XRCCTRL(*this, "SeedElementPanel", wxPanel);
 	 seedelementcheckbox = XRCCTRL(*this, "SeedElementCheckBox", wxCheckBox);
 
+	USE_PARAMETER(event);
 	 if (seedelementcheckbox->IsChecked())
 	 {
 			GT_element_settings_set_seed_element(scene_editor->current_settings, seed_element_chooser->get_object());
@@ -3228,6 +3257,7 @@ void EnterSeedXi(wxCommandEvent &event)
 	struct Parse_state *temp_state;
 	Triple seed_xi;
 
+	USE_PARAMETER(event);
 	xitext=XRCCTRL(*this,"XiText",wxStaticText);
 	xitextctrl=XRCCTRL(*this,"XiTextCtrl",wxTextCtrl);
 	if (GT_element_settings_get_seed_xi(
@@ -3270,6 +3300,7 @@ void EnterLength(wxCommandEvent &event)
 	int reverse_track;
 	struct Computed_field *stream_vector_field;
 	
+	USE_PARAMETER(event);
 	lengthtextctrl=XRCCTRL(*this,"LengthTextCtrl",wxTextCtrl);
 	GT_element_settings_get_streamline_parameters(
 		scene_editor->current_settings,&streamline_type,
@@ -3305,6 +3336,7 @@ void EnterWidth(wxCommandEvent &event)
 	int reverse_track;
 	struct Computed_field *stream_vector_field;
 
+	USE_PARAMETER(event);
 	widthtextctrl=XRCCTRL(*this,"WidthTextCtrl",wxTextCtrl);
 	GT_element_settings_get_streamline_parameters(
 		scene_editor->current_settings,&streamline_type,
@@ -3339,6 +3371,7 @@ void ReverseChecked(wxCommandEvent &event)
 	float streamline_length,streamline_width;
 	int reverse_track;
 	struct Computed_field *stream_vector_field;
+	USE_PARAMETER(event);
 	reversecheckbox=XRCCTRL(*this,"ReverseCheckBox",wxCheckBox);
 	GT_element_settings_get_streamline_parameters(
 		scene_editor->current_settings,&streamline_type,
@@ -3361,6 +3394,7 @@ void EnterLineWidth(wxCommandEvent &event)
 	char *text_entry,temp_string[50];
 	int line_width, new_line_width;
 
+	USE_PARAMETER(event);
 	linewidthtextctrl=XRCCTRL(*this,"LineWidthTextCtrl",wxTextCtrl);
 	line_width = GT_element_settings_get_line_width(scene_editor->current_settings);
 	new_line_width = line_width;
@@ -3393,6 +3427,7 @@ void DataFieldChecked(wxCommandEvent &event)
 {
 	struct Computed_field *data_field;
 	struct Spectrum *spectrum;
+	USE_PARAMETER(event);
 	datacheckbox=XRCCTRL(*this, "DataCheckBox", wxCheckBox);
 	data_chooser_panel=XRCCTRL(*this,"DataChooserPanel",wxPanel);
 	spectrumtext=XRCCTRL(*this, "SpectrumText", wxStaticText);
@@ -3424,6 +3459,7 @@ void DataFieldChecked(wxCommandEvent &event)
 
 void TextureCoordFieldChecked(wxCommandEvent &event)
 {
+	USE_PARAMETER(event);
 	struct Computed_field *texture_coord_field;
 	texturecoordinatescheckbox=XRCCTRL(*this, "TextureCoordinatesCheckBox", wxCheckBox);
 	texture_coordinates_chooser_panel =XRCCTRL(*this, "TextrueCoordinatesChooserPanel", wxPanel);
@@ -3448,6 +3484,7 @@ void TextureCoordFieldChecked(wxCommandEvent &event)
 
 void ExteriorChecked(wxCommandEvent &event)
 {
+	USE_PARAMETER(event);
 	exteriorcheckbox=XRCCTRL(*this,"ExteriorCheckBox",wxCheckBox); 
 	GT_element_settings_set_exterior(scene_editor->current_settings,
 		exteriorcheckbox->IsChecked());
@@ -3460,6 +3497,7 @@ void ExteriorChecked(wxCommandEvent &event)
 void FaceChecked(wxCommandEvent &event)
 {
 	int face;
+	USE_PARAMETER(event);
 	facecheckbox=XRCCTRL(*this, "FaceCheckBox",wxCheckBox);
 	facechoice=XRCCTRL(*this, "FaceChoice",wxChoice);
 	if (facecheckbox->IsChecked()) 
@@ -3481,6 +3519,7 @@ void FaceChecked(wxCommandEvent &event)
 void FaceChosen(wxCommandEvent &event)
 {
 	int face;
+	USE_PARAMETER(event);
 	facechoice=XRCCTRL(*this, "FaceChoice",wxChoice);
 	face = facechoice->GetSelection();
 	GT_element_settings_set_face(scene_editor->current_settings,face);
@@ -4579,6 +4618,7 @@ void SetCoordinateFieldChooser(GT_element_settings *settings)
 void CloseSceneEditor(wxCloseEvent &event)
 {
 	 ENTER(CloseSceneEditor);
+	USE_PARAMETER(event);
 	 DESTROY(Scene_editor)(scene_editor->scene_editor_address);
 	 LEAVE;
 }

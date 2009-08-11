@@ -862,6 +862,7 @@ public:
 
 	void OnButtonElementpressed(wxCommandEvent& event)
 	{    
+	USE_PARAMETER(event);
 		 button_element = XRCCTRL(*this, "ButtonElement", wxCheckBox);
 		 Element_tool_set_select_elements_enabled(element_tool,
 				button_element->IsChecked());
@@ -869,6 +870,7 @@ public:
 
 	void OnButtonFacepressed(wxCommandEvent& event)
 	{ 
+	USE_PARAMETER(event);
 		 button_face = XRCCTRL(*this, "ButtonFace", wxCheckBox);
 		 Element_tool_set_select_faces_enabled(element_tool,
 				button_face->IsChecked());
@@ -876,6 +878,7 @@ public:
 
 	void OnButtonLinepressed(wxCommandEvent& event)
 	{ 
+	USE_PARAMETER(event);
 		 button_line = XRCCTRL(*this, "ButtonLine", wxCheckBox);
 		 Element_tool_set_select_lines_enabled(element_tool,
 				button_line->IsChecked());
@@ -887,6 +890,7 @@ public:
 	int number_not_destroyed;
 	struct LIST(FE_element) *destroy_element_list;
 
+	USE_PARAMETER(event);
 	if (destroy_element_list = CREATE(LIST(FE_element))())
 	{
 		COPY_LIST(FE_element)(destroy_element_list,
@@ -924,6 +928,7 @@ void ElementToolInterfaceRenew(Element_tool *destination_element_tool)
 
 void ElementCommandFieldChecked(wxCommandEvent &event)
 {
+	USE_PARAMETER(event);
 	 struct Computed_field *command_field;
 	 elementcommandfieldcheckbox = XRCCTRL(*this, "ElementCommandFieldCheckBox",wxCheckBox);
 	 element_command_field_chooser_panel = XRCCTRL(*this, "ElementCommandFieldChooserPanel", wxPanel);

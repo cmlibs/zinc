@@ -951,6 +951,7 @@ DESCRIPTION :
 Callback for Spectrum clear colour checkbox changed.
 ==============================================================================*/
 {
+	USE_PARAMETER(event);
 	 if (spectrum_editor->spectrum_overwrite_colour_radiobox->GetSelection() != 
 			Spectrum_get_opaque_colour_flag(spectrum_editor->edit_spectrum))
 	 {
@@ -969,6 +970,7 @@ Callback for Spectrum settings.
 {
 	 struct Spectrum_settings *temp_settings;
 	 int selection;
+	USE_PARAMETER(event);
 	 selection = spectrum_editor->spectrum_settings_checklist->GetSelection();
 	 temp_settings = get_settings_at_position_in_Spectrum(spectrum_editor->edit_spectrum,selection+1);
 	 if (temp_settings)
@@ -996,6 +998,7 @@ DESCRIPTION :
 Callback for Spectrum settings.
 ==============================================================================*/
 {
+	USE_PARAMETER(event);
 	 spectrum_editor_settings_wx_key_presssed(spectrum_editor, "Add");
 }
 
@@ -1007,6 +1010,7 @@ DESCRIPTION :
 Callback for Spectrum settings.
 ==============================================================================*/
 {
+	USE_PARAMETER(event);
 	 spectrum_editor_settings_wx_key_presssed(spectrum_editor, "Del");
 }
 
@@ -1018,6 +1022,7 @@ DESCRIPTION :
 Callback for Spectrum settings.
 ==============================================================================*/
 {
+	USE_PARAMETER(event);
 	 spectrum_editor_settings_wx_key_presssed(spectrum_editor, "Up");
 }
 
@@ -1029,6 +1034,7 @@ DESCRIPTION :
 Callback for Spectrum settings.
 ==============================================================================*/
 {
+	USE_PARAMETER(event);
 	 spectrum_editor_settings_wx_key_presssed(spectrum_editor, "Dn");
 }
 
@@ -1046,6 +1052,7 @@ Callback for the range text widgets.
 	 struct Spectrum_settings *settings;
 	 
 	 ENTER(OnSpectrumSettingRangeValueEntered);
+	USE_PARAMETER(event);
 	 /* check arguments */
 	 selection = spectrum_editor->spectrum_settings_checklist->GetSelection();
 	 if (settings = get_settings_at_position_in_Spectrum(spectrum_editor->edit_spectrum,selection+1))
@@ -1109,6 +1116,7 @@ Callback for the range text widgets.
 	 struct Spectrum_settings *settings;
 
 	 ENTER(OnSpectrumSettingRangeChecked);
+	USE_PARAMETER(event);
 	 selection = spectrum_editor->spectrum_settings_checklist->GetSelection();
 	 if (spectrum_editor && 
 			(settings = get_settings_at_position_in_Spectrum(spectrum_editor->edit_spectrum,selection+1)))
@@ -1152,6 +1160,7 @@ DESCRIPTION :
 Callback for Spectrum settings.
 ==============================================================================*/
 {
+	USE_PARAMETER(event);
 	 spectrum_editor_wx_key_presssed(spectrum_editor, "OK");
 }
 
@@ -1163,6 +1172,7 @@ DESCRIPTION :
 Callback for Spectrum settings.
 ==============================================================================*/
 {
+	USE_PARAMETER(event);
 	 spectrum_editor_wx_key_presssed(spectrum_editor, "Apply");
 }
 
@@ -1174,6 +1184,7 @@ DESCRIPTION :
 Callback for Spectrum settings.
 ==============================================================================*/
 {
+	USE_PARAMETER(event);
 	 spectrum_editor_wx_key_presssed(spectrum_editor, "Revert");
 }
 
@@ -1185,6 +1196,7 @@ DESCRIPTION :
 Callback for Spectrum settings.
 ==============================================================================*/
 {
+	USE_PARAMETER(event);
 	 spectrum_editor_wx_key_presssed(spectrum_editor, "Cancel");
 }
 
@@ -1203,6 +1215,7 @@ Callback for colour settings
 
 	ENTER(OnSpectrumColourMappingChoice);
 
+	USE_PARAMETER(event);
 	selection = spectrum_editor->spectrum_settings_checklist->GetSelection();
 	if (spectrum_editor && 
 		 (settings = get_settings_at_position_in_Spectrum(spectrum_editor->edit_spectrum,selection+1)))
@@ -1289,6 +1302,7 @@ Callback for the colour_value text widgets.
 	 int selection;
 
 	 ENTER(OnSpectrumColourMappingChoice);
+	USE_PARAMETER(event);
 	 selection = spectrum_editor->spectrum_settings_checklist->GetSelection();
 	 if (spectrum_editor && 
 			(settings = get_settings_at_position_in_Spectrum(spectrum_editor->edit_spectrum,selection+1)))
@@ -1337,6 +1351,7 @@ Callback for the settings reverse toggle button.
 	 struct Spectrum_settings *settings;
 	 
 	 ENTER(spectrum_editor_settings_reverse_toggle_CB);
+	USE_PARAMETER(event);
 	 selection = spectrum_editor->spectrum_settings_checklist->GetSelection();
 	 if (spectrum_editor && 
 			(settings = get_settings_at_position_in_Spectrum(spectrum_editor->edit_spectrum,selection+1)))
@@ -1369,6 +1384,7 @@ Callback for the settings type.
 	 char *string_selection;
 
 	 ENTER(OnSpectrumTypeChoice);
+	USE_PARAMETER(event);
 	 selection = spectrum_editor->spectrum_settings_checklist->GetSelection();
 	 if (spectrum_editor && 
 			(settings = get_settings_at_position_in_Spectrum(spectrum_editor->edit_spectrum,selection+1)))
@@ -1422,6 +1438,7 @@ Callback for the exaggeration widgets.
 	 int selection;
 	 
 	 ENTER(OnSpectrumExaggerationSettingsChanged);
+	USE_PARAMETER(event);
 	 selection = spectrum_editor->spectrum_settings_checklist->GetSelection();
 	 if (spectrum_editor && 
 			(settings = get_settings_at_position_in_Spectrum(spectrum_editor->edit_spectrum,selection+1)))
@@ -1469,6 +1486,7 @@ Callback for the component widgets.
 	 struct Spectrum_settings *settings;
 	 
 	 ENTER(OnSpectrumDataValueEntered);
+	USE_PARAMETER(event);
 	 selection = spectrum_editor->spectrum_settings_checklist->GetSelection();
 	 if (spectrum_editor && 
 			(settings = get_settings_at_position_in_Spectrum(spectrum_editor->edit_spectrum,selection+1)))
@@ -1514,6 +1532,7 @@ Callback for the band  widgets.
 	 struct Spectrum_settings *settings;
 	 
 	 ENTER(OnSpectrumBandsValuesEntered);
+	USE_PARAMETER(event);
 	 selection = spectrum_editor->spectrum_settings_checklist->GetSelection();
 	 if (spectrum_editor && 
 			(settings = get_settings_at_position_in_Spectrum(spectrum_editor->edit_spectrum,selection+1)))
@@ -1570,6 +1589,7 @@ void OnSpectrumStepValueEntered(wxCommandEvent &event)
 	 struct Spectrum_settings *settings;
 
 	 ENTER(OnSpectrumStepValueEntered);
+	USE_PARAMETER(event);
 	 selection = spectrum_editor->spectrum_settings_checklist->GetSelection();
 	 if (spectrum_editor && 
 			(settings = get_settings_at_position_in_Spectrum(spectrum_editor->edit_spectrum,selection+1)))
@@ -1606,6 +1626,7 @@ void OnSpectrumAutorangePressed(wxCommandEvent &event)
 	 int range_set;
 
 	 ENTER(OnSpectrumAutorangePressed);
+	USE_PARAMETER(event);
 	 if (spectrum_editor)
 	 {
 			range_set = 0;
@@ -1635,6 +1656,7 @@ void OnSpectrumEditorCreateNewSpectrum(wxCommandEvent& event)
 	 ENTER(OnMaterialEditorCreateNewMaterial);
 	 Spectrum *spectrum;
 	 char *text;
+	USE_PARAMETER(event);
 	 wxTextEntryDialog *NewSpectrumDialog = new wxTextEntryDialog(this, "Enter name", 
 			"Please Enter Name", "TEMP", wxOK|wxCANCEL|wxCENTRE, wxDefaultPosition);
 	 if (NewSpectrumDialog->ShowModal() == wxID_OK)
@@ -1662,6 +1684,7 @@ void OnSpectrumEditorDeleteSpectrum(wxCommandEvent& event)
 {
 	 ENTER(OnSpectrumEditorDeleteSpectrum);
 
+	USE_PARAMETER(event);
 	 REMOVE_OBJECT_FROM_MANAGER(Spectrum)(
 			spectrum_editor->current_spectrum,spectrum_editor->spectrum_manager);
 	 spectrum_editor->current_spectrum = NULL;
@@ -1675,6 +1698,7 @@ void OnSpectrumEditorRenameSpectrum(wxCommandEvent& event)
 {
 	 ENTER(OnSpectrumEditorRenameSpectrum);
 	 char *text;
+	USE_PARAMETER(event);
 	 wxTextEntryDialog *NewSpectrumDialog = new wxTextEntryDialog(this, "Enter name", 
 			"Please Enter Name", spectrum_object_listbox->get_string_selection(),
 			wxOK|wxCANCEL|wxCENTRE, wxDefaultPosition);
@@ -1693,6 +1717,7 @@ void OnSpectrumEditorRenameSpectrum(wxCommandEvent& event)
 void CloseSpectrumEditor(wxCloseEvent &event)
 {
 	 ENTER(CloseSpectrumEditor);
+	USE_PARAMETER(event);
 	 spectrum_editor_wx_set_spectrum(spectrum_editor,
 			spectrum_editor->current_spectrum);
 	 DESTROY(Spectrum_editor_dialog)(spectrum_editor->spectrum_editor_dialog_address);

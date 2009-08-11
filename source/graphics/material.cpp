@@ -6384,6 +6384,7 @@ int Material_compile_opengl_display_list(Graphical_material *material,
 	int return_code;
 
 	ENTER(Material_compile_opengl_display_list);
+	USE_PARAMETER(renderer);
 	if (material)
 	{
 		return_code = 1;

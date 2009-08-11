@@ -2336,6 +2336,7 @@ static int Graphics_object_enable_opengl_client_vertex_arrays(GT_object *object,
 {
 	int return_code;
 	
+	USE_PARAMETER(renderer);
 	if (object && object->vertex_array)
 	{
 		return_code = 1;
@@ -2418,6 +2419,7 @@ static int Graphics_object_disable_opengl_client_vertex_arrays(GT_object *object
 {
 	int return_code;
 	
+	USE_PARAMETER(renderer);
 	if (object && object->vertex_array)
 	{
 		return_code = 1;
@@ -2951,6 +2953,7 @@ static int Graphics_object_enable_opengl_vertex_buffer_object(GT_object *object,
 {
 	int return_code;
 	
+	USE_PARAMETER(renderer);
 	if (object && object->vertex_array)
 	{
 		return_code = 1;
@@ -3016,6 +3019,7 @@ static int Graphics_object_disable_opengl_vertex_buffer_object(GT_object *object
 {
 	int return_code;
 	
+	USE_PARAMETER(renderer);
 	if (object && object->vertex_array)
 	{
 		return_code = 1;
@@ -4306,6 +4310,7 @@ static int Graphics_object_compile_opengl_display_list(GT_object *graphics_objec
 	struct GT_object *graphics_object;
 
 	ENTER(compile_GT_object);
+	USE_PARAMETER(renderer);
 	if (graphics_object_list)
 	{
 		return_code = 1;
@@ -4357,6 +4362,7 @@ static int Graphics_object_execute_opengl_display_list(GT_object *graphics_objec
 	struct GT_object *graphics_object;
 
 	ENTER(compile_GT_object);
+	USE_PARAMETER(renderer);
 	if (graphics_object_list)
 	{
 		return_code = 1;

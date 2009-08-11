@@ -253,6 +253,7 @@ Updates the chosen object and text field in response to messages.
 	 
 	ENTER(TEXT_CHOOSE_FROM_FE_REGION_GLOBAL_OBJECT_CHANGE(FE_element));
 
+	USE_PARAMETER(fe_region);
 	if (chooser = static_cast<wxFeElementTextChooser *>(text_choose_object_void))
 	{
 		if (chooser->current_object) 
@@ -285,6 +286,7 @@ Returns a pointer to the callback item of the text_choose_object_widget.
 
 	ENTER(TEXT_CHOOSE_FROM_FE_REGION_GET_CALLBACK(FE_element)); 
 	
+	USE_PARAMETER(new_object);
 		/* Get the pointer to the data for the text_choose_object dialog */ 
 	//		text_choose_object = wxFeElementTextChooser->GetValue();
 #if defined (NEW_CODE)
@@ -316,6 +318,7 @@ Changes the callback item of the text_choose_object_widget. \
 	int return_code; 
 	ENTER(TEXT_CHOOSE_FROM_FE_REGION_SET_CALLBACK(object_type)); 
 	
+	USE_PARAMETER(new_object);
 	/* Get the pointer to the data for the text_choose_object dialog */ 
 	//	text_choose_object = wxFeElementTextChooser->GetValue();
 #if defined (NEW_CODE)
@@ -380,8 +383,9 @@ Changes the chosen object in the text_choose_object_widget. \
 
 } /* TEXT_CHOOSE_FROM_FE_REGION_SET_OBJECT(object_type) */
 
-void OnTextEnter(wxCommandEvent& Event)
+void OnTextEnter(wxCommandEvent& event)
 {
+	USE_PARAMETER(event);
 	notify_callback();
 }
 
