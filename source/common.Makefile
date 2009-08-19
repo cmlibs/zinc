@@ -170,10 +170,10 @@ ifeq ($(SYSNAME:IRIX%=),)
       COMPILE_DEFINES = -DOPTIMISED
       STRICT_FLAGS = 
       CPP_STRICT_FLAGS = 
-      DIGITAL_MEDIA_NON_STRICT_FLAGS = 
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = 
-      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      NON_STRICT_FLAGS = 
+      CPP_NON_STRICT_FLAGS = 
+      NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
    else # DEBUG != true
       OPTIMISATION_FLAGS = -g
       COMPILE_FLAGS = -fullwarn -pedantic -woff 1521
@@ -184,10 +184,10 @@ ifeq ($(SYSNAME:IRIX%=),)
 			#   1682 is if you have virtual functions with the same name and different
 			#     arguments, all or none need to be over-ridden in a derived class
       CPP_STRICT_FLAGS = -diag_error 1000-9999 -diag_suppress 1110,1174,1209,1234,1375,1424,1682,3201,1506,3303,1182
-      DIGITAL_MEDIA_NON_STRICT_FLAGS = -diag_warning 1429
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = -diag_warning 1429
-      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = three_d_drawing/graphics_buffer.c | three_d_drawing/movie_extensions.c
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      NON_STRICT_FLAGS = -diag_warning 1429
+      CPP_NON_STRICT_FLAGS = -diag_warning 1429
+      NON_STRICT_FLAGS_PATTERN = three_d_drawing/graphics_buffer.c | three_d_drawing/movie_extensions.c
+      CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
    endif # DEBUG != true
    ifeq ($(MIPS),3)
       OPTIMISATION_FLAGS += -mips3
@@ -244,21 +244,22 @@ ifeq ($(SYSNAME),Linux)
       STRICT_FLAGS = -W -Wall -Werror -Wno-unused-parameter
       CPP_STRICT_FLAGS = -W -Wall -Werror -Wno-unused-parameter
 			UNINITIALISED_FLAG = -Wno-uninitialized
-      DIGITAL_MEDIA_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
-      #DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-      #DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-			UNINITIALISED_FLAG_FILENAMES = not_initialised.filenames
+      NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
+      CPP_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
+      #NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      #CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+			UNINITIALISED_FLAG_FILENAMES = wx_not_initialised.filenames
 			NON_STRICT_FILENAMES = wx_non_strict_c.filenames
 			CPP_NON_STRICT_FILENAMES = wx_non_strict_cpp.filenames
 			ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
+				UNINITIALISED_FLAG_FILENAMES = motif_not_initialised.filenames
 				NON_STRICT_FILENAMES = motif_non_strict_c.filenames
 				CPP_NON_STRICT_FILENAMES = motif_non_strict_cpp.filenames
 			endif
 			empty :=
 			space := $(empty) $(empty)
-			DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(NON_STRICT_FILENAMES))))
-			DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(CPP_NON_STRICT_FILENAMES))))
+			NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(NON_STRICT_FILENAMES))))
+			CPP_NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(CPP_NON_STRICT_FILENAMES))))
 			UNINITIALISED_FLAG_PATTERN := $(subst $(space),|,$(strip $(shell cat $(UNINITIALISED_FLAG_FILENAMES))))
       ifeq ($(PROFILE),true)
         #Don't strip if profiling
@@ -275,10 +276,10 @@ ifeq ($(SYSNAME),Linux)
       STRICT_FLAGS = -W -Wall -Werror
       CPP_STRICT_FLAGS = -W -Wall -Werror
 			UNINITILISED_FLAG = 
-      DIGITAL_MEDIA_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
-      #DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-      #DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
+      CPP_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
+      #NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      #CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
 			NON_STRICT_FILENAMES = wx_non_strict_c.filenames
 			CPP_NON_STRICT_FILENAMES = wx_non_strict_cpp.filenames
 			ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
@@ -287,8 +288,8 @@ ifeq ($(SYSNAME),Linux)
 			endif
 			empty :=
 			space := $(empty) $(empty)
-			DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(NON_STRICT_FILENAMES))))
-			DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(CPP_NON_STRICT_FILENAMES))))
+			NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(NON_STRICT_FILENAMES))))
+			CPP_NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(CPP_NON_STRICT_FILENAMES))))
 			UNINITIALISED_FLAG_PATTERN = NONE
       STRIP =
       STRIP_SHARED =
@@ -331,10 +332,10 @@ ifeq ($(SYSNAME),AIX)
    COMPILE_DEFINES = 
    STRICT_FLAGS = 
    CPP_STRICT_FLAGS = 
-   DIGITAL_MEDIA_NON_STRICT_FLAGS = 
-   DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = 
-   DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+   NON_STRICT_FLAGS = 
+   CPP_NON_STRICT_FLAGS = 
+   NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
    STRIP =
    STRIP_SHARED =
    ifeq ($(ABI),64)
@@ -372,10 +373,10 @@ ifeq ($(SYSNAME),win32)
          COMPILE_FLAGS = /MD
          STRICT_FLAGS =
          CPP_STRICT_FLAGS =
-         DIGITAL_MEDIA_NON_STRICT_FLAGS = 
-      	 DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = 
-         DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+         NON_STRICT_FLAGS = 
+      	 CPP_NON_STRICT_FLAGS = 
+         NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
          STRIP = 
          STRIP_SHARED = 
       else # DEBUG != true
@@ -385,10 +386,10 @@ ifeq ($(SYSNAME),win32)
          COMPILE_FLAGS = /MDd /Zi
          STRICT_FLAGS =
          CPP_STRICT_FLAGS =
-         DIGITAL_MEDIA_NON_STRICT_FLAGS = 
-      	 DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = 
-         DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+         NON_STRICT_FLAGS = 
+      	 CPP_NON_STRICT_FLAGS = 
+         NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
          STRIP =
          STRIP_SHARED =
       endif # DEBUG != true
@@ -416,10 +417,10 @@ ifeq ($(SYSNAME),win32)
          COMPILE_FLAGS =
          STRICT_FLAGS = -Werror
          CPP_STRICT_FLAGS = -Werror
-         DIGITAL_MEDIA_NON_STRICT_FLAGS = 
-      	 DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = 
-         DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+         NON_STRICT_FLAGS = 
+      	 CPP_NON_STRICT_FLAGS = 
+         NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
          STRIP = strip --strip-unneeded
          STRIP_SHARED = strip --strip-unneeded
       else # DEBUG != true
@@ -428,10 +429,10 @@ ifeq ($(SYSNAME),win32)
          COMPILE_FLAGS =
          STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Werror
          CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
-         DIGITAL_MEDIA_NON_STRICT_FLAGS = 
-				 DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = 
-         DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
-      	 DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+         NON_STRICT_FLAGS = 
+				 CPP_NON_STRICT_FLAGS = 
+         NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      	 CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
          STRIP =
          STRIP_SHARED =
       endif # DEBUG != true
@@ -481,10 +482,10 @@ ifeq ($(SYSNAME),Darwin)
       COMPILE_FLAGS = -fPIC
       STRICT_FLAGS = -Wno-long-double -Werror
       CPP_STRICT_FLAGS = -Wno-long-double -Werror
-      DIGITAL_MEDIA_NON_STRICT_FLAGS = 
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = 
-      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      NON_STRICT_FLAGS = 
+      CPP_NON_STRICT_FLAGS = 
+      NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
       STRIP =
       STRIP_SHARED =
    else  # DEBUG != true
@@ -493,10 +494,10 @@ ifeq ($(SYSNAME),Darwin)
       COMPILE_FLAGS = -fPIC
       STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-long-double -Werror
       CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Wno-long-double -Werror
-      DIGITAL_MEDIA_NON_STRICT_FLAGS = 
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = 
-      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      NON_STRICT_FLAGS = 
+      CPP_NON_STRICT_FLAGS = 
+      NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
       STRIP =
       STRIP_SHARED =
    endif # DEBUG != true
@@ -534,8 +535,8 @@ endif # SYSNAME == win32
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
 	@NON_STRICT_FLAGS= ; \
-	case $*.c in $(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
-		NON_STRICT_FLAGS="$$NON_STRICT_FLAGS $(DIGITAL_MEDIA_NON_STRICT_FLAGS)" ;; \
+	case $*.c in $(NON_STRICT_FLAGS_PATTERN) ) \
+		NON_STRICT_FLAGS="$$NON_STRICT_FLAGS $(NON_STRICT_FLAGS)" ;; \
 	esac ; \
 	case $*.c in $(UNINITIALISED_FLAG_PATTERN) ) \
 		NON_STRICT_FLAGS="$$NON_STRICT_FLAGS $(UNINITIALISED_FLAG)" ;; \
@@ -547,8 +548,8 @@ endif # SYSNAME == win32
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
 	@CPP_NON_STRICT_FLAGS= ; \
-	case $*.cpp in $(DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN) ) \
-		CPP_NON_STRICT_FLAGS="$$CPP_NON_STRICT_FLAGS $(DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS)" ;; \
+	case $*.cpp in $(CPP_NON_STRICT_FLAGS_PATTERN) ) \
+		CPP_NON_STRICT_FLAGS="$$CPP_NON_STRICT_FLAGS $(CPP_NON_STRICT_FLAGS)" ;; \
 	esac ; \
 	case $*.cpp in $(UNINITIALISED_FLAG_PATTERN) ) \
 		CPP_NON_STRICT_FLAGS="$$CPP_NON_STRICT_FLAGS $(UNINITIALISED_FLAG)" ;; \
