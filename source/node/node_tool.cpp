@@ -3700,6 +3700,7 @@ Pops up a dialog for editing settings of the Node_tool.
 	if (node_tool)
 	{
 #if defined (MOTIF_USER_INTERFACE)
+		USE_PARAMETER(graphics_window);
 		XtPopup(node_tool->window_shell, XtGrabNone);
 		/* make sure in addition that it is not shown as an icon */
 		XtVaSetValues(node_tool->window_shell, XmNiconic, False, NULL);

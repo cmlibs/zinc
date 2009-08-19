@@ -246,6 +246,7 @@ Pops up a dialog for editing settings of the Transform_tool.
 		}
 		
 #else /* (WX_USER_INTERFACE) */
+		USE_PARAMETER(graphics_window);
 		display_message(ERROR_MESSAGE, "Transform_tool_pop_up_dialog.  "
 			"No dialog implemented for this User Interface");
 #endif /* defined (WX_USER_INTERFACE) */
