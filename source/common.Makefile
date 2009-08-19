@@ -241,14 +241,25 @@ ifeq ($(SYSNAME),Linux)
       OPTIMISATION_FLAGS = -O3
       COMPILE_DEFINES = -DOPTIMISED
       COMPILE_FLAGS = -fPIC
-      STRICT_FLAGS = -W -Wall -Werror -Wno-unused-parameter -Wno-uninitialized
-      CPP_STRICT_FLAGS = -W -Wall -Werror -Wno-unused-parameter -Wno-uninitialized
+      STRICT_FLAGS = -W -Wall -Werror -Wno-unused-parameter
+      CPP_STRICT_FLAGS = -W -Wall -Werror -Wno-unused-parameter
+			UNINITIALISED_FLAG = -Wno-uninitialized
       DIGITAL_MEDIA_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
       DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
-      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-			DIGITAL_MEDIA_NON_STRICT_FLAGS_FILES = non_strict_c.filenames
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_FILES = non_strict_cpp.filenames
+      #DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      #DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+			UNINITIALISED_FLAG_FILENAMES = not_initialised.filenames
+			NON_STRICT_FILENAMES = wx_non_strict_c.filenames
+			CPP_NON_STRICT_FILENAMES = wx_non_strict_cpp.filenames
+			ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
+				NON_STRICT_FILENAMES = motif_non_strict_c.filenames
+				CPP_NON_STRICT_FILENAMES = motif_non_strict_cpp.filenames
+			endif
+			empty :=
+			space := $(empty) $(empty)
+			DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(NON_STRICT_FILENAMES))))
+			DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(CPP_NON_STRICT_FILENAMES))))
+			UNINITIALISED_FLAG_PATTERN := $(subst $(space),|,$(strip $(shell cat $(UNINITIALISED_FLAG_FILENAMES))))
       ifeq ($(PROFILE),true)
         #Don't strip if profiling
         STRIP =
@@ -263,12 +274,22 @@ ifeq ($(SYSNAME),Linux)
       COMPILE_FLAGS = -fPIC
       STRICT_FLAGS = -W -Wall -Werror
       CPP_STRICT_FLAGS = -W -Wall -Werror
+			UNINITILISED_FLAG = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
       DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
-      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-			DIGITAL_MEDIA_NON_STRICT_FLAGS_FILES = non_strict_c.filenames
-      DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_FILES = non_strict_cpp.filenames
+      #DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      #DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+			NON_STRICT_FILENAMES = wx_non_strict_c.filenames
+			CPP_NON_STRICT_FILENAMES = wx_non_strict_cpp.filenames
+			ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
+				NON_STRICT_FILENAMES = motif_non_strict_c.filenames
+				CPP_NON_STRICT_FILENAMES = motif_non_strict_cpp.filenames
+			endif
+			empty :=
+			space := $(empty) $(empty)
+			DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(NON_STRICT_FILENAMES))))
+			DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(CPP_NON_STRICT_FILENAMES))))
+			UNINITIALISED_FLAG_PATTERN = NONE
       STRIP =
       STRIP_SHARED =
    endif # DEBUG != true
@@ -512,38 +533,27 @@ endif # SYSNAME == win32
 	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
-	@if [ $(SYSNAME) = Linux ]; then \
-		if [ $(shell grep "$*\.c" $(DIGITAL_MEDIA_NON_STRICT_FLAGS_FILES) ) ]; then \
-			set -x ; $(CC) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.c; \
-		else \
-			set -x ; $(CC) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(STRICT_FLAGS) $*.c; \
-		fi ; \
-	else \
-		case $*.c in $(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
-		      set -x ; $(CC) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.c;; \
-			* ) \
-		      set -x ; $(CC) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(STRICT_FLAGS) $*.c;; \
-		esac ; \
-	fi 
+	@NON_STRICT_FLAGS= ; \
+	case $*.c in $(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
+		NON_STRICT_FLAGS="$$NON_STRICT_FLAGS $(DIGITAL_MEDIA_NON_STRICT_FLAGS)" ;; \
+	esac ; \
+	case $*.c in $(UNINITIALISED_FLAG_PATTERN) ) \
+		NON_STRICT_FLAGS="$$NON_STRICT_FLAGS $(UNINITIALISED_FLAG)" ;; \
+	esac ; \
+  set -x ; $(CC) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(STRICT_FLAGS) $$NON_STRICT_FLAGS $*.c
 
 %.$(OBJ_SUFFIX): %.cpp %.d
 	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
-	@if [ $(SYSNAME) = Linux ]; then \
-		if [ $(shell grep "$*\.cpp" $(DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_FILES) ) ]; then \
-			set -x ; $(CPP) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $(DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS) $*.cpp; \
-		else \
-			set -x ; $(CPP) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $*.cpp; \
-		fi ; \
-	else \
-		case $*.cpp in  \
-			$(DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN) ) \
-		  set -x ; $(CPP) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $(DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS) $*.cpp;; \
-		  * ) \
-		  set -x ; $(CPP) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $*.cpp;; \
-		esac ; \
-	fi
+	@CPP_NON_STRICT_FLAGS= ; \
+	case $*.cpp in $(DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS_PATTERN) ) \
+		CPP_NON_STRICT_FLAGS="$$CPP_NON_STRICT_FLAGS $(DIGITAL_MEDIA_CPP_NON_STRICT_FLAGS)" ;; \
+	esac ; \
+	case $*.cpp in $(UNINITIALISED_FLAG_PATTERN) ) \
+		CPP_NON_STRICT_FLAGS="$$CPP_NON_STRICT_FLAGS $(UNINITIALISED_FLAG)" ;; \
+	esac ; \
+	set -x ; $(CPP) $(CCOFLAG)$(OBJECT_PATH)/$*.$(OBJ_SUFFIX) $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $$CPP_NON_STRICT_FLAGS $*.cpp
 
 %.$(OBJ_SUFFIX): %.f %.d
 	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
