@@ -657,7 +657,7 @@ for the same element, with the given <element_dimension> = number of Xi coords.
 ==============================================================================*/
 {
 	double dhdxi, dh1dxi, perspective;
-	int coordinate_components, i, j, k,return_code;
+	int coordinate_components, i, j, k,return_code = 0;
 	
 	ENTER(Computed_field_evaluate_projection_matrix);
 	if (field)

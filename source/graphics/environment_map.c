@@ -653,8 +653,8 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Environment_map,name)
 
 PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Environment_map,name,const char *)
 {
-	char *destination_name;
-	int return_code;
+	char *destination_name = NULL;
+	int return_code = 0;
 
 	ENTER(MANAGER_COPY_IDENTIFIER(Environment_map,name));
 	/* check arguments */

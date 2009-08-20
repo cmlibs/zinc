@@ -303,8 +303,8 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Interactive_tool,name)
 
 PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Interactive_tool,name,const char *)
 {
-	char *destination_name;
-	int return_code;
+	char *destination_name = NULL;
+	int return_code = 0;
 
 	ENTER(MANAGER_COPY_IDENTIFIER(Interactive_tool,name));
 	if (name&&destination)

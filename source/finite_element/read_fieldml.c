@@ -3250,7 +3250,7 @@ LAST MODIFIED : 10 February 2003
 DESCRIPTION :
 ==============================================================================*/
 {
-	char *attribute_name, *attribute_value, *component_name;
+	char *attribute_name = NULL, *attribute_value = NULL, *component_name = NULL;
 	int i;
 
 	ENTER(fieldml_start_field);
@@ -3458,7 +3458,7 @@ DESCRIPTION :
 	int component, dimension, i, j, *first_simplex, 
 		number_of_polygon_vertices, previous_component, return_code, *type, 
 		*temp_entry, *type_entry, xi_number;
-	struct FE_element_shape *shape;
+	struct FE_element_shape *shape = NULL;
 
 	ENTER(fieldml_read_FE_element_shape);
 

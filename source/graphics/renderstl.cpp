@@ -385,8 +385,8 @@ int draw_surface_stl(Stl_context& stl_context, Triple *surfpts,
 	int number_of_data_components, GTDATA *data,
 	struct Graphical_material *material, struct Spectrum *spectrum)
 {
-	int i, j, return_code;
-	Triple *point;
+	int i, j, return_code = 0;
+	Triple *point = NULL;
 
 	ENTER(draw_surface_stl);
 	/* Keep a similar interface to all the other render implementations */
