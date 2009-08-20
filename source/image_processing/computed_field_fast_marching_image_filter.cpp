@@ -362,7 +362,7 @@ LAST MODIFIED : 22 February 2007
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	int i;
 
 	ENTER(List_Computed_field_fast_marching_image_filter);

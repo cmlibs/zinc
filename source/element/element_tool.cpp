@@ -711,7 +711,7 @@ and as a child of <parent>.
 	Pixel background_pixel, foreground_pixel;
 	Pixmap pixmap;
 #endif /* defined (MOTIF_USER_INTERFACE) */
-	struct Cmgui_image *image;
+	struct Cmgui_image *image = NULL;
 	struct Element_tool *element_tool;
 
 	ENTER(Element_tool_get_icon);

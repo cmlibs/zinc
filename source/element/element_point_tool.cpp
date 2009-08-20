@@ -570,7 +570,7 @@ Fetches an icon for the Element_point tool.
 	Pixel background_pixel, foreground_pixel;
 	Pixmap pixmap;
 #endif /* defined (MOTIF_USER_INTERFACE) */
-	struct Cmgui_image *image;
+	struct Cmgui_image *image = NULL;
 	struct Element_point_tool *element_point_tool;
 
 	ENTER(Element_point_tool_get_icon);

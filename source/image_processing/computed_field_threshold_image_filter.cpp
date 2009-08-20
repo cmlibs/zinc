@@ -294,7 +294,7 @@ LAST MODIFIED : 8 December 2006
 DESCRIPTION : list out the threshold filter options
 ==============================================================================*/
 	{
-		int return_code;
+		int return_code = 0;
 
 		ENTER(List_Computed_field_threshold_image_filter);
 		if (field)

@@ -213,7 +213,7 @@ Computed_field_binary_threshold_image_filter::Computed_field_binary_threshold_im
 */
 int Computed_field_binary_threshold_image_filter::list()
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(List_Computed_field_binary_threshold_image_filter);
 	if (field)

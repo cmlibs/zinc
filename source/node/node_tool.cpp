@@ -784,7 +784,7 @@ NOTE: currently does not tolerate having a variable_scale_field.
 	FE_value a[3],b[3],c[3],coordinates[3],end_coordinates[3],old_coordinates[3],
 		orientation_scale[9],scale_factor;
 	int number_of_orientation_scale_components,return_code;
-	struct FE_node_edit_information *edit_info;
+	struct FE_node_edit_information *edit_info = NULL;
 	Triple size;
 
 	ENTER(FE_node_calculate_delta_vector);
@@ -2404,7 +2404,7 @@ Fetches the appropriate icon for the interactive tool.
 	Pixel background_pixel, foreground_pixel;
 	Pixmap pixmap;
 #endif /* defined (MOTIF_USER_INTERFACE) */
-	struct Cmgui_image *image;
+	struct Cmgui_image *image = NULL;
 	struct Node_tool *node_tool;
 
 	ENTER(node_tool_get_icon);

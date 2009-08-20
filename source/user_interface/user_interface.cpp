@@ -2593,7 +2593,7 @@ DESCRIPTION :
 ???DB.  Should we have our own "WINAPI" (size specifier) ?
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 #if defined (WIN32_USER_INTERFACE)
 	MSG message;
 #endif /* defined (WIN32_USER_INTERFACE) */

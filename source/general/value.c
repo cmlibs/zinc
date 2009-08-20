@@ -165,7 +165,7 @@ Returns the value_type from the string, eg "integer" = INT_VALUE.
 Eeturns UNKNOWN_VALUE without error if value_type_string not recognized.
 ==============================================================================*/
 {
-	const char *compare_type_string;
+	const char *compare_type_string = NULL;
 	enum Value_type value_type;
 
 	ENTER(Value_type_from_string);

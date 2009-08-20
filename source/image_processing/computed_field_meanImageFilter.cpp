@@ -144,7 +144,7 @@ LAST MODIFIED : 30 August 2006
 DESCRIPTION :
 ==============================================================================*/
 {
-	int i, return_code;
+	int i, return_code = 0;
 
 	ENTER(List_Computed_field_mean_image_filter);
 	if (field)

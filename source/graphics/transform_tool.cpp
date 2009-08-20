@@ -511,7 +511,7 @@ the window will spin freely when tumbling.
 ==============================================================================*/
 {
 
-	int return_code;
+	int return_code = 0;
 	struct Transform_tool *transform_tool;
 
 	ENTER(Interactive_tool_transform_set_free_spin);

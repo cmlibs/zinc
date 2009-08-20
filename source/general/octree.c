@@ -419,7 +419,7 @@ DESCRIPTION :
 Adds the specified <object> into the <octree>
 ==============================================================================*/
 {
-	int i, j, return_code;
+	int i, j, return_code = 0;
 
 	ENTER(Octree_branch_add_object);
 	if (branch && object)

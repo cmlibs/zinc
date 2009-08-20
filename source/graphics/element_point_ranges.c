@@ -1700,7 +1700,7 @@ If field and element_point_ranges not identically grid-based, clear
 ==============================================================================*/
 {
 	FE_value *values, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int grid_point_number, return_code, start, stop;
+	int grid_point_number, return_code = 0, start, stop;
 	struct Computed_field *field;
 	struct Element_point_ranges_identifier *destination_identifier, *source_identifier;
 	struct Element_point_ranges_set_grid_values_data *set_grid_values_data;

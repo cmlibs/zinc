@@ -273,7 +273,7 @@ connecting to external "devices" such as Sockets or widget toolkits.
 #if defined (SELECT_DESCRIPTORS)
 	int i;
 #endif /* defined (SELECT_DESCRIPTORS) */
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Io_device_start_detection);
 	if (device && user_interface)
@@ -333,7 +333,7 @@ between the start and end detection are assumed to belong to the <device>.
 	int i, result;
 	struct stat buffer;
 #endif /* defined (SELECT_DESCRIPTORS) */
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Io_device_end_detection);
 	if (device)

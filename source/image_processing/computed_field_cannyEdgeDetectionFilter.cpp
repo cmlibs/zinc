@@ -139,7 +139,7 @@ LAST MODIFIED : 30 August 2006
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(List_Computed_field_canny_edge_detection_image_filter);
 	if (field)

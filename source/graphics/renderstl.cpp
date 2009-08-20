@@ -608,9 +608,9 @@ int draw_voltex_stl(Stl_context& stl_context,
  */
 int makestl(Stl_context& stl_context, gtObject *object, float time)
 {
-	float proportion, *times;
-	int itime, number_of_times, return_code;
-	union GT_primitive_list *primitive_list1, *primitive_list2;
+	float proportion = 0.0f, *times = NULL;
+	int itime, number_of_times, return_code = 0;
+	union GT_primitive_list *primitive_list1 = NULL, *primitive_list2 = NULL;
 
 	ENTER(makestl);
 	return_code = 1;

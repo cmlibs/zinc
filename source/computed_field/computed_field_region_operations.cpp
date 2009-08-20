@@ -320,7 +320,7 @@ DESCRIPTION :
 Lists a description of the region_sum inputs
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(List_Computed_field_region_sum);
 	if (field)
@@ -867,7 +867,7 @@ DESCRIPTION :
 Lists a description of the region_mean inputs
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(List_Computed_field_region_mean);
 	if (field)
@@ -1411,7 +1411,7 @@ DESCRIPTION :
 Lists a description of the region_rms inputs
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(List_Computed_field_region_rms);
 	if (field)

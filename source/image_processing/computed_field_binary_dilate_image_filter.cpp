@@ -226,7 +226,7 @@ LAST MODIFIED : 30 August 2006
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(List_Computed_field_binary_dilate_image_filter);
 	if (field)

@@ -1096,7 +1096,7 @@ scene viewer on screen.
 ==============================================================================*/
 {
 	enum Texture_storage_type internal_storage_type;
-	int return_code;
+	int return_code = 1;
 	switch(storage)
 	{
 		case CMISS_FIELD_IMAGE_STORAGE_PIXEL_FORMAT_LUMINANCE:
@@ -1228,7 +1228,7 @@ LAST MODIFIED : 11 September 2007
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Cmiss_scene_viewer_set_projection_mode);
 	if (input_data)
@@ -1408,7 +1408,7 @@ Returns the set of bit flags showing the whether the modifier inputs
 were active when the event was generated.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Cmiss_scene_viewer_input_get_event_type);
 	if (input_data)
@@ -1458,7 +1458,7 @@ Sets the set of bit flags showing the whether the modifier inputs
 were active when the event was generated.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Cmiss_scene_viewer_input_get_event_type);
 	if (input_data)

@@ -372,7 +372,7 @@ and may be parallelised.
 	// pjb: temporarily removed declaration of F1 as it is not yet used,
 	// otherwise irix compilation will fail
 	//	FE_value F0, F1, Fa, Fb, Fi, Ff;	
-	FE_value F0, Fa, Fb, Fi, Ff;
+	FE_value F0, Fa, Fb, Fi, Ff = 0.0;
 	
 	ALLOCATE(dFdx,FE_value,total_dof);
 

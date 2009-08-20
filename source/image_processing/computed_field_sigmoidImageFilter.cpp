@@ -141,7 +141,7 @@ LAST MODIFIED : 18 October 2006
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(List_Computed_field_sigmoid_image_filter);
 	if (field)

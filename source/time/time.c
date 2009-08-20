@@ -616,7 +616,7 @@ DESCRIPTION :
 Adds a callback routine which is called whenever the current time is changed.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	struct Time_object_callback_data *callback_data, *previous;
 
 	ENTER(Time_object_add_callback);

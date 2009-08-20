@@ -1971,7 +1971,7 @@ LAST MODIFIED : 6 March 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Event_dispatcher_remove_timeout_callback);
 
@@ -2202,7 +2202,7 @@ LAST MODIFIED : 24 October 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 #if defined (USE_GENERIC_EVENT_DISPATCHER)
 	int callback_code, select_code;
 	struct Event_dispatcher_descriptor_set descriptor_set;
