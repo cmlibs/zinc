@@ -331,7 +331,7 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(object_type) \
 			/* access the new object */ \
 			(new_object->access_count)++; \
 		} \
-		if (current_object = *object_address) \
+		if (NULL != (current_object = *object_address)) \
 		{ \
 			/* deaccess the current object */ \
 			(current_object->access_count)--; \
