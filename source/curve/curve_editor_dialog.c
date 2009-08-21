@@ -727,7 +727,7 @@ LAST MODIFIED : 8 November 1999
 DESCRIPTION :
 ==============================================================================*/
 {
-	int num_children,return_code;
+	int num_children,return_code = 0;
 	struct Curve_editor_dialog *curve_editor_dialog;
 	Widget *child_list;
 
