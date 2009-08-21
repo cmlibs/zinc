@@ -1015,9 +1015,9 @@ PROTOTYPE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(object_type, \
 		{ \
 			if (IS_OBJECT_IN_LIST(object_type)(object,manager->object_list)) \
 			{ \
-				if (tmp_object = \
+				if (NULL != (tmp_object = \
 					FIND_BY_IDENTIFIER_IN_LIST(object_type, identifier_field_name)( \
-						new_identifier, manager->object_list)) \
+						new_identifier, manager->object_list))) \
 				{ \
 					if (tmp_object == object) \
 					{ \
@@ -1039,9 +1039,9 @@ PROTOTYPE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(object_type, \
 						 is part changed and/or temporarily out of the manager! */ \
 					MANAGER_BEGIN_CHANGE(object_type)(manager, \
 						MANAGER_CHANGE_IDENTIFIER(object_type), object); \
-					if (identifier_change_data = \
+					if (NULL != (identifier_change_data = \
 						LIST_BEGIN_IDENTIFIER_CHANGE(object_type, \
-							identifier_field_name)(object)) \
+							identifier_field_name)(object))) \
 					{ \
 						if (!(return_code = MANAGER_COPY_IDENTIFIER(object_type, \
 							identifier_field_name)(object, new_identifier))) \
@@ -1147,7 +1147,7 @@ PROTOTYPE_MANAGER_DEREGISTER_FUNCTION(object_type) \
 		{ \
 				item_address= &((*item_address)->next); \
 		} \
-		if (item= *item_address) \
+		if (NULL != (item= *item_address)) \
 		{ \
 			/* found it */ \
 			*item_address=item->next; \

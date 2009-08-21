@@ -544,7 +544,7 @@ Frees memory/deaccess objects in computed_field at <*field_address>.
 				DEALLOCATE(field->command_string);
 			}
 			DEALLOCATE(field->name);
-			if (component_name=field->component_names)
+			if (NULL != (component_name=field->component_names))
 			{
 				for (i=field->number_of_components;i>0;i--)
 				{
@@ -839,8 +839,8 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Computed_field,name)
 		}
 		if (return_code)
 		{
-			if (return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name)(
-				destination, source))
+			if (0 != (return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name)(
+				destination, source)))
 			{
 				/* copy values */
 				DEALLOCATE(destination->name);
@@ -1052,9 +1052,9 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 				if ((new_data->number_of_components == object->number_of_components) ||
 					MANAGED_OBJECT_NOT_IN_USE(Computed_field)(object, manager))
 				{
-					if (tmp_object =
+					if (NULL != (tmp_object =
 						FIND_BY_IDENTIFIER_IN_LIST(Computed_field, name)(
-							new_data->name, manager->object_list))
+							new_data->name, manager->object_list)))
 					{
 						if (tmp_object == object)
 						{
@@ -1103,8 +1103,8 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 								 is part changed and/or temporarily out of the manager! */
 							MANAGER_BEGIN_CHANGE(Computed_field)(manager,
 								MANAGER_CHANGE_OBJECT(Computed_field), object);
-							if (identifier_change_data =
-								LIST_BEGIN_IDENTIFIER_CHANGE(Computed_field, name)(object))
+							if (NULL != (identifier_change_data =
+								LIST_BEGIN_IDENTIFIER_CHANGE(Computed_field, name)(object)))
 							{
 								if (!(MANAGER_COPY_WITH_IDENTIFIER(Computed_field,
 									name)(object, new_data)))
@@ -2313,8 +2313,8 @@ number_of_components
 	ENTER(Computed_field_evaluate_in_element);
 	if (field&&element&&xi&&values)
 	{
-		if (return_code=Computed_field_evaluate_cache_in_element(field,element,xi,
-			time,top_level_element,((FE_value *)NULL != derivatives)))
+		if (0 != (return_code=Computed_field_evaluate_cache_in_element(field,element,xi,
+			time,top_level_element,((FE_value *)NULL != derivatives))))
 		{
 			/* copy values from cache to <values> and <derivatives> */
 			source=field->values;
@@ -2503,7 +2503,7 @@ number_of_components.
 	if (field&&node&&values)
 	{
 		Field_node_location location(node, time);
-		if (return_code=Computed_field_evaluate_cache_at_location(field, &location))
+		if (0 != (return_code=Computed_field_evaluate_cache_at_location(field, &location)))
 		{
 			if (field->values_valid)
 			{
@@ -2556,7 +2556,7 @@ number_of_components.
 	if (field)
 	{
 		 Field_node_location location(NULL, time);
-		 if (return_code=Computed_field_evaluate_cache_at_location(field, &location))
+		 if (0 != (return_code=Computed_field_evaluate_cache_at_location(field, &location)))
 		 {
 				/* copy values from cache to <values> */
 				for (i=0;i<field->number_of_components;i++)
@@ -2690,7 +2690,7 @@ number_of_components.
 	{
 		Field_coordinate_location location(reference_field,
 			number_of_input_values, input_values, time);
-		if (return_code=Computed_field_evaluate_cache_at_location(field, &location))
+		if (0 != (return_code=Computed_field_evaluate_cache_at_location(field, &location)))
 		{
 			/* copy values from cache to <values> */
 			for (i=0;i<field->number_of_components;i++)
@@ -3847,7 +3847,7 @@ to modify it if it was.
 	ENTER(define_Computed_field_coordinate_system);
 	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
-		if (current_token=state->current_token)
+		if (NULL != (current_token=state->current_token))
 		{
 			COPY(Coordinate_system)(&coordinate_system,
 				Computed_field_get_coordinate_system(field_modify->field));
@@ -3864,8 +3864,8 @@ to modify it if it was.
 					DESTROY(Option_table)(&option_table);
 					if(return_code)
 					{
-						if(return_code=define_Computed_field_type(state,field_modify_void,
-							computed_field_package_void))
+						if(0 != (return_code=define_Computed_field_type(state,field_modify_void,
+							computed_field_package_void)))
 						{
 							/* Override the type set by define_Computed_field_type */
 							return_code = Computed_field_set_coordinate_system(
@@ -3958,7 +3958,7 @@ and should not itself be managed.
 		if (computed_field_package_void)
 		{
 			return_code=1;
-			if (current_token=state->current_token)
+			if (NULL != (current_token=state->current_token))
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -3973,7 +3973,7 @@ and should not itself be managed.
 							existing_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 								field_name, Cmiss_region_get_Computed_field_manager(region));
 							/* create temp_field with the supplied name for working on */
-							if (temp_field=CREATE(Computed_field)(field_name))
+							if (NULL != (temp_field=CREATE(Computed_field)(field_name)))
 							{
 								ACCESS(Computed_field)(temp_field);
 								if (existing_field)
@@ -4074,7 +4074,7 @@ and should not itself be managed.
 				else
 				{
 					/* Write out the help */
-					if (temp_field=CREATE(Computed_field)("dummy"))
+					if (NULL != (temp_field=CREATE(Computed_field)("dummy")))
 					{
 						Computed_field_modify_data field_modify(temp_field,root_region);
 						help_option_table = CREATE(Option_table)();
@@ -4192,7 +4192,7 @@ Writes the properties of the <field> to the command window.
 		display_message(INFORMATION_MESSAGE,"field : %s\n",field->name);
 		display_message(INFORMATION_MESSAGE,"  number_of_components = %d\n",
 			field->number_of_components);
-		if (temp_string=Coordinate_system_string(&field->coordinate_system))
+		if (NULL != (temp_string=Coordinate_system_string(&field->coordinate_system)))
 		{
 			display_message(INFORMATION_MESSAGE,"  coordinate_system = %s\n",
 				temp_string);
@@ -4207,7 +4207,7 @@ Writes the properties of the <field> to the command window.
 			display_message(INFORMATION_MESSAGE,"  component names:");
 			for (i=0;i<field->number_of_components;i++)
 			{
-				if (component_name=Computed_field_get_component_name(field,i))
+				if (NULL != (component_name=Computed_field_get_component_name(field,i)))
 				{
 					if (0<i)
 					{
@@ -4255,20 +4255,20 @@ Writes the commands needed to reproduce <field> to the command window.
 	ENTER(list_Computed_field_commands);
 	if (field && (command_prefix = (char *)command_prefix_void))
 	{
-		if (field_name = duplicate_string(field->name))
+		if (NULL != (field_name = duplicate_string(field->name)))
 		{
 			make_valid_token(&field_name);
 			process_message->process_command(
 				 INFORMATION_MESSAGE, "%s%s", command_prefix, field_name);
 			DEALLOCATE(field_name);
 		}
-		if (temp_string = Coordinate_system_string(&field->coordinate_system))
+		if (NULL != (temp_string = Coordinate_system_string(&field->coordinate_system)))
 		{
 			 process_message->process_command(
 					INFORMATION_MESSAGE, " coordinate_system %s",temp_string);
 			DEALLOCATE(temp_string);
 		}
-		if (command_string = field->core->get_command_string())
+		if (NULL != (command_string = field->core->get_command_string()))
 		{
 			process_message->process_command(
 				 INFORMATION_MESSAGE, " %s", command_string);
@@ -4482,7 +4482,7 @@ components and coordinate system.
 			Computed_field_get_type_string(field));
 		display_message(INFORMATION_MESSAGE,", %d component(s)",
 			field->number_of_components);
-		if (temp_string=Coordinate_system_string(&field->coordinate_system))
+		if (NULL != (temp_string=Coordinate_system_string(&field->coordinate_system)))
 		{
 			display_message(INFORMATION_MESSAGE,", %s",temp_string);
 			DEALLOCATE(temp_string);
@@ -4807,8 +4807,8 @@ define_Computed_field_type option table when parsing commands.
 	if (computed_field_package && name && define_Computed_field_type_function &&
 		 define_type_user_data)
 	{
-		if(data = CREATE(Computed_field_type_data)(name,
-			define_Computed_field_type_function, define_type_user_data))
+		if(NULL != (data = CREATE(Computed_field_type_data)(name,
+			define_Computed_field_type_function, define_type_user_data)))
 		{
 			data->define_type_user_data->addref();
 			return_code = ADD_OBJECT_TO_LIST(Computed_field_type_data)(data,
@@ -4845,9 +4845,9 @@ Unregisters each of the computed field types added.
 	ENTER(Computed_field_package_remove_types);
 	if (computed_field_package)
 	{
-		while(data = FIRST_OBJECT_IN_LIST_THAT(Computed_field_type_data)(
+		while(NULL != (data = FIRST_OBJECT_IN_LIST_THAT(Computed_field_type_data)(
 			(LIST_CONDITIONAL_FUNCTION(Computed_field_type_data) *)NULL, (void *)NULL,
-			computed_field_package->computed_field_type_list))
+			computed_field_package->computed_field_type_list)))
 		{
 			data->define_type_user_data->removeref();
 
@@ -4995,8 +4995,8 @@ int Computed_field_set_managed_status(
 
 	ENTER(Computed_field_set_managed_status);
 	if (field &&
-		(managed_status == Computed_field::MANAGED_PUBLIC) ||
-		(managed_status == Computed_field::MANAGED_PRIVATE_VOLATILE))
+		((managed_status == Computed_field::MANAGED_PUBLIC) ||
+		(managed_status == Computed_field::MANAGED_PRIVATE_VOLATILE)))
 	{
 		if (managed_status != field->managed_status)
 		{

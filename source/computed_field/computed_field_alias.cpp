@@ -267,8 +267,8 @@ int Computed_field_alias::evaluate_cache_at_location(
 	ENTER(Computed_field_alias::evaluate_cache_at_location);
 	if (field && location)
 	{
-		if (return_code = Computed_field_evaluate_cache_at_location(
-			original_field(), location))
+		if (0 != (return_code = Computed_field_evaluate_cache_at_location(
+			original_field(), location)))
 		{
 			return_code = Computed_field_evaluate_cache_at_location(
 				original_field(), location);

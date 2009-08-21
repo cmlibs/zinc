@@ -225,7 +225,7 @@ Destroys an object_type index node. \
 	{ \
 		if (*node_address) \
 		{ \
-			if (child=(*node_address)->children) \
+			if (NULL != (child=(*node_address)->children)) \
 			{ \
 				/* not a leaf node */ \
 				for (i=(*node_address)->number_of_indices;i>=0;i--) \
@@ -293,7 +293,7 @@ Duplicates an object_type index node, attaching it to the <parent>. \
 		{ \
 			leaf=1; \
 		} \
-		if (duplicate_node=CREATE_INDEX_NODE(object_type)(leaf)) \
+		if (NULL != (duplicate_node=CREATE_INDEX_NODE(object_type)(leaf))) \
 		{ \
 			duplicate_node->parent=parent; \
 			duplicate_node->number_of_indices=node->number_of_indices; \
@@ -376,9 +376,9 @@ Finds the leaf node that will contain the object with the specified \
 	struct INDEX_NODE(object_type) **child,*node; \
 \
 	ENTER(FIND_LEAF_NODE_IN_INDEX(object_type)); \
-	if (node=index) \
+	if (NULL != (node=index)) \
 	{ \
-		if (child=node->children) \
+		if (NULL != (child=node->children)) \
 		{ \
 			i=node->number_of_indices; \
 			object_index=node->indices; \
@@ -428,7 +428,7 @@ Removes an <object> from the <index>. \
 	/* check the arguments */ \
 	if (index_address&&object) \
 	{ \
-    if (index= *index_address) \
+    if (NULL != (index= *index_address)) \
 		{ \
 			/* find the object within the node */ \
 			i=0; \
@@ -439,8 +439,8 @@ Removes an <object> from the <index>. \
 			} \
   		if (index->children) \
   		{ \
-				if (return_code=REMOVE_OBJECT_FROM_INDEX(object_type)(object, \
-					&(index->children[i]))) \
+				if (0 != (return_code=REMOVE_OBJECT_FROM_INDEX(object_type)(object, \
+					&(index->children[i])))) \
         { \
 					/* shuffle down any NULL children */ \
 					if (!(index->children[i])) \
@@ -544,7 +544,7 @@ Removes each object that <iterator> returns true for. \
 	/* check the arguments */ \
 	if (index_address&&conditional) \
 	{ \
-		if (index= *index_address) \
+		if (NULL != (index= *index_address)) \
 		{ \
 			if (index->children) \
 			{ \
@@ -694,7 +694,7 @@ Adds the <add_index> (and the <add_node>) to the parent of the <node>. \
 \
 	ENTER(ADD_INDEX_TO_NODE_PARENT(object_type)); \
 	return_code=0; \
-	if (parent=node->parent) \
+	if (NULL != (parent=node->parent)) \
 	{ \
 		/* find place in index node */ \
 		index=parent->indices; \
@@ -728,7 +728,7 @@ Adds the <add_index> (and the <add_node>) to the parent of the <node>. \
 		{ \
 			/* node needs splitting */ \
 			/* create a new node */ \
-			if (new_parent=CREATE_INDEX_NODE(object_type)(0)) \
+			if (NULL != (new_parent=CREATE_INDEX_NODE(object_type)(0))) \
 			{ \
 				if (i>B_TREE_ORDER) \
 				{ \
@@ -843,7 +843,7 @@ Adds the <add_index> (and the <add_node>) to the parent of the <node>. \
 	else \
 	{ \
 		/* create new root node */ \
-		if (parent=CREATE_INDEX_NODE(object_type)(0)) \
+		if (NULL != (parent=CREATE_INDEX_NODE(object_type)(0))) \
 		{ \
 			parent->number_of_indices=1; \
 			(parent->indices)[0]=add_index; \
@@ -924,7 +924,7 @@ Adds an <object> to the <index>. \
 		{ \
 			/* leaf node needs splitting */ \
 			/* create a new leaf node */ \
-			if (new_node=CREATE_INDEX_NODE(object_type)(1)) \
+			if (NULL != (new_node=CREATE_INDEX_NODE(object_type)(1))) \
 			{ \
 				if (ADD_INDEX_TO_NODE_PARENT(object_type)( \
 					(leaf_node->indices)[B_TREE_ORDER-1],new_node,leaf_node)) \
@@ -1020,8 +1020,8 @@ Returns true if the <object> is in the <index>. \
 	if (index) \
 	{ \
 		/* search the index for the leaf node for the specified identifier */ \
-		if (leaf_node=FIND_LEAF_NODE_IN_INDEX(object_type)(object->identifier, \
-			index)) \
+		if (NULL != (leaf_node=FIND_LEAF_NODE_IN_INDEX(object_type)(object->identifier, \
+			index))) \
 		{ \
 			leaf_index=leaf_node->indices; \
 			i=leaf_node->number_of_indices; \
@@ -1084,7 +1084,7 @@ If <conditional> is not NULL, the "first" object in the <index> that \
 	/* check the arguments */ \
 	if (index) \
 	{ \
-		if (child=index->children) \
+		if (NULL != (child=index->children)) \
 		{ \
 			i=index->number_of_indices; \
 			object=(struct object_type *)NULL; \
@@ -1159,7 +1159,7 @@ Calls <iterator> for each object in the <index>. \
 	/* check the arguments */ \
 	if (index&&iterator) \
 	{ \
-		if (child=index->children) \
+		if (NULL != (child=index->children)) \
 		{ \
 			i=index->number_of_indices; \
 			return_code=1; \
@@ -1236,7 +1236,7 @@ PROTOTYPE_DESTROY_LIST_FUNCTION(object_type) \
 	ENTER(DESTROY_LIST(object_type)); \
 	if (list_address) \
 	{ \
-		if (list = *list_address) \
+		if (NULL != (list = *list_address)) \
 		{ \
 			/* remove list from DEFINED_LISTS */ \
 			j = 0; \
@@ -1290,8 +1290,8 @@ PROTOTYPE_COPY_LIST_FUNCTION(object_type) \
 		if (source_list->index) \
 		{ \
 			/* duplicate the index - no parent for top index */ \
-			if (index=DUPLICATE_INDEX_NODE(object_type)(source_list->index, \
-				(struct INDEX_NODE(object_type) *)NULL)) \
+			if (NULL != (index=DUPLICATE_INDEX_NODE(object_type)(source_list->index, \
+				(struct INDEX_NODE(object_type) *)NULL))) \
 			{ \
 				/* remove the current contents of the <target_list> */ \
 				DESTROY_INDEX_NODE(object_type)(&(target_list->index)); \
@@ -1448,7 +1448,7 @@ PROTOTYPE_ADD_OBJECT_TO_LIST_FUNCTION( object_type ) \
 		{ \
 			/* list is empty */ \
 			/* create the root node (a leaf node) */ \
-			if (node=CREATE_INDEX_NODE(object_type)(1)) \
+			if (NULL != (node=CREATE_INDEX_NODE(object_type)(1))) \
 			{ \
 				list->index=node; \
 				list->count=1; \
@@ -1603,8 +1603,8 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(object_type,identifier, \
 		if (list->index) \
 		{ \
 			/* search the index for the leaf node for the specified identifier */ \
-			if (leaf_node=FIND_LEAF_NODE_IN_INDEX(object_type)(identifier, \
-				list->index)) \
+			if (NULL != (leaf_node=FIND_LEAF_NODE_IN_INDEX(object_type)(identifier, \
+				list->index))) \
 			{ \
 				index=leaf_node->indices; \
 				i=leaf_node->number_of_indices; \
@@ -1901,7 +1901,7 @@ Should only be declared with manager functions. \
 		if (0 == ITERATION_COUNT(object_type)) \
 		{ \
 			return_code = 1; \
-			if (object = identifier_change_data->object) \
+			if (NULL != (object = identifier_change_data->object)) \
 			{ \
 				for (i = 0; \
 				   i < identifier_change_data->number_of_lists_containing_object; i++) \
