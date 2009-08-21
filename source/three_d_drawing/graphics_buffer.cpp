@@ -7437,7 +7437,7 @@ DESCRIPTION :
 Activates the graphics <buffer>.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Graphics_buffer_awaken);
 	if (buffer)

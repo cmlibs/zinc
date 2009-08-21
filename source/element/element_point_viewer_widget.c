@@ -621,12 +621,12 @@ that the viewer works on the element itself, not a local copy. Hence, only pass
 unmanaged elements in the identifier to this widget.
 ==============================================================================*/
 {
-	int change_conditional_function,return_code;
+	int change_conditional_function,return_code = 0;
 	MANAGER_CONDITIONAL_FUNCTION(Computed_field)
-		*choose_field_conditional_function;
+		*choose_field_conditional_function = NULL;
 	struct CM_element_information element_identifier;
 	struct Computed_field *field;
-	struct FE_element *element,*template_element;
+	struct FE_element *element,*template_element = NULL;
 	struct Element_point_viewer_widget_struct *element_point_viewer;
 
 	ENTER(element_point_viewer_widget_set_element_point);

@@ -654,7 +654,7 @@ DESCRIPTION :
 Sets the curve being edited by the curve editor dialog.
 ==============================================================================*/
 {
-	int num_children,return_code;
+	int num_children,return_code = 0;
 	struct Curve_editor_dialog *curve_editor_dialog;
 	Widget *child_list;
 

@@ -464,7 +464,7 @@ DESCRIPTION :
 Sets colours and XmNeditable flag of <textfield_widget> to match <is_editable>.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Element_point_viewer_set_textfield_edit_status);
 	if (element_point_viewer&&textfield_widget)

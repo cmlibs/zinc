@@ -445,7 +445,7 @@ Unlocks netscape so that other processes can interact with it.
 {
 	Atom property_type;
 	int data_unit,result,return_code;
-	char *data;
+	unsigned char *data;
 	unsigned long bytes_left,number_of_units;
 
 	return_code=0;
@@ -455,7 +455,7 @@ Unlocks netscape so that other processes can interact with it.
 		data=(char *)NULL;
 		result=XGetWindowProperty(display,netscape_window,XA_MOZILLA_LOCK,0,
 			(65536/sizeof(long)),True,XA_STRING,&property_type,&data_unit,
-			&number_of_units,&bytes_left,(unsigned char **)&data);
+			&number_of_units,&bytes_left,&data);
 		if (Success==result)
 		{
 			if (data&&(*data))

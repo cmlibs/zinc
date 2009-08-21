@@ -558,11 +558,11 @@ works on the node itself, not a local copy. Hence, only pass unmanaged nodes to
 this widget.
 ==============================================================================*/
 {
-	int change_conditional_function,return_code;
+	int change_conditional_function,return_code = 0;
 	MANAGER_CONDITIONAL_FUNCTION(Computed_field)
-		*choose_field_conditional_function;
+		*choose_field_conditional_function = NULL;
 	struct Computed_field *field;
-	struct FE_node *template_node;
+	struct FE_node *template_node = NULL;
 	struct Node_viewer_widget_struct *node_viewer;
 
 	ENTER(node_viewer_widget_set_node);
