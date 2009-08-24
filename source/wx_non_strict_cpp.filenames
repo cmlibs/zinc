@@ -16,7 +16,6 @@ comfile/comfile.cpp
 comfile/comfile_window_wx.cpp
 command/cmiss.cpp
 command/command_window.cpp
-computed_field/computed_field_arithmetic_operators.cpp
 computed_field/computed_field_compose.cpp
 computed_field/computed_field_composite.cpp
 computed_field/computed_field_conditional.cpp

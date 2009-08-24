@@ -119,8 +119,8 @@ Evaluate the fields cache at the location.
       field->source_fields[0]->number_of_components))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		if (0 != (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location)))
 		{
 			/* 2. Calculate the field */
 			for (i = 0 ; i < field->number_of_components ; i++)
@@ -506,8 +506,8 @@ Evaluate the fields cache at the location.
 	{
 #endif /* ! defined (OPTIMISED) */
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		if (0 != (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location)))
 		{
 			/* 2. Calculate the field */
 			for (i = 0 ; i < field->number_of_components ; i++)
@@ -885,8 +885,8 @@ Evaluate the fields cache at the location
 		(field->number_of_components == field->source_fields[1]->number_of_components)))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		if (0 != (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location)))
 		{
 			/* 2. Calculate the field */
 			for (i = 0 ; i < field->number_of_components ; i++)
@@ -1266,8 +1266,8 @@ Evaluate the fields cache at the location
 	{
 #endif /* ! defined (OPTIMISED) */
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		if (0 != (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location)))
 		{
 			/* 2. Calculate the field */
 			for (i=0;i<field->number_of_components;i++)
@@ -1711,8 +1711,8 @@ Evaluate the fields cache at the location
 		(field->number_of_components == field->source_fields[0]->number_of_components))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		if (0 != (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location)))
 		{
 			/* 2. Calculate the field */
 			for (i=0;i<field->number_of_components;i++)
@@ -2120,7 +2120,7 @@ already) and allows its contents to be modified.
 					/* field */
 					Option_table_add_entry(option_table, "field", &source_field,
 						&set_source_field_data, set_Computed_field_conditional);
-					if (return_code = Option_table_parse(option_table, state))
+					if (0 != (return_code = Option_table_parse(option_table, state)))
 					{
 						if (source_field)
 						{
@@ -2277,8 +2277,8 @@ Evaluate the fields cache at the location
 		(field->number_of_components == field->source_fields[0]->number_of_components))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		if (0 != (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location)))
 		{
 			/* 2. Calculate the field */
 			if (field->source_fields[0]->derivatives_valid)
@@ -2631,7 +2631,7 @@ already) and allows its contents to be modified.
 					/* field */
 					Option_table_add_entry(option_table, "field", &source_field,
 						&set_source_field_data, set_Computed_field_conditional);
-					if (return_code = Option_table_parse(option_table, state))
+					if (0 != (return_code = Option_table_parse(option_table, state)))
 					{
 						if (source_field)
 						{
@@ -2775,8 +2775,8 @@ Evaluate the fields cache at the location
 		(field->number_of_components == field->source_fields[0]->number_of_components))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		if (0 != (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location)))
 		{
 			/* 2. Calculate the field */
 			if (field->source_fields[0]->derivatives_valid)
@@ -3129,7 +3129,7 @@ already) and allows its contents to be modified.
 					/* field */
 					Option_table_add_entry(option_table, "field", &source_field,
 						&set_source_field_data, set_Computed_field_conditional);
-					if (return_code = Option_table_parse(option_table, state))
+					if (0 != (return_code = Option_table_parse(option_table, state)))
 					{
 						if (source_field)
 						{
@@ -3278,8 +3278,8 @@ Evaluate the fields cache at the location
 		(field->number_of_components == field->source_fields[0]->number_of_components))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		if (0 != (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location)))
 		{
 			/* 2. Calculate the field */
 			for (i=0;i<field->number_of_components;i++)
@@ -3666,7 +3666,7 @@ already) and allows its contents to be modified.
 					/* field */
 					Option_table_add_entry(option_table, "field", &source_field,
 						&set_source_field_data, set_Computed_field_conditional);
-					if (return_code = Option_table_parse(option_table,state))
+					if (0 != (return_code = Option_table_parse(option_table,state)))
 					{
 						if (source_field)
 						{
@@ -3818,8 +3818,8 @@ Evaluate the fields cache at the location
 			field->source_fields[0]->number_of_components))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		if (0 != (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location)))
 		{
 			/* 2. Calculate the field */
 			/* weighted sum of components of source field */
@@ -4115,7 +4115,7 @@ already) and allows its contents to be modified.
 					/* field */
 					Option_table_add_entry(option_table, "field", &source_field,
 						&set_source_field_data, set_Computed_field_conditional);
-					if (return_code = Option_table_parse(option_table, state))
+					if (0 != (return_code = Option_table_parse(option_table, state)))
 					{
 						if (source_field)
 						{
@@ -4257,8 +4257,8 @@ Evaluate the fields cache at the location
 		(dynamic_cast<Computed_field_edit_mask*>(field->core)))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		if (0 != (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location)))
 		{
 			/* 2. Calculate the field */
 			/* exact copy of source field */
@@ -4611,7 +4611,7 @@ already) and allows its contents to be modified.
 					/* field */
 					Option_table_add_entry(option_table, "field", &source_field,
 						&set_source_field_data, set_Computed_field_conditional);
-					if (return_code = Option_table_parse(option_table, state))
+					if (0 != (return_code = Option_table_parse(option_table, state)))
 					{
 						if (source_field)
 						{
@@ -4761,8 +4761,8 @@ Evaluate the fields cache at the element.
       field->source_fields[0]->number_of_components))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		if (0 != (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location)))
 		{
 			/* 2. Calculate the field */
 			for (i = 0 ; i < field->number_of_components ; i++)
@@ -5102,8 +5102,8 @@ Evaluate the fields cache at the element.
       field->source_fields[0]->number_of_components))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		if (0 != (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location)))
 		{
 			/* 2. Calculate the field */
 			for (i = 0 ; i < field->number_of_components ; i++)
@@ -5444,8 +5444,8 @@ Evaluate the fields cache at the element.
       field->source_fields[0]->number_of_components))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		if (0 != (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location)))
 		{
 			/* 2. Calculate the field */
 			for (i = 0 ; i < field->number_of_components ; i++)
@@ -5786,8 +5786,8 @@ Evaluate the fields cache at the element.
       field->source_fields[0]->number_of_components))
 	{
 		/* 1. Precalculate any source fields that this field depends on */
-		if (return_code = 
-			Computed_field_evaluate_source_fields_cache_at_location(field, location))
+		if (0 != (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_location(field, location)))
 		{
 			/* 2. Calculate the field */
 			for (i = 0 ; i < field->number_of_components ; i++)
