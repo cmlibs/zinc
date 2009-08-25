@@ -1762,6 +1762,13 @@ DESCRIPTION :
 				};
 #endif /*defined (DARWIN) */
 #else /* defined (UNIX) */
+				USE_PARAMETER(buffer_to_match);
+				USE_PARAMETER(buffering_mode);
+				USE_PARAMETER(minimum_accumulation_buffer_depth);
+				USE_PARAMETER(minimum_colour_buffer_depth);
+				USE_PARAMETER(minimum_depth_buffer_depth);
+				USE_PARAMETER(stereo_mode);
+								
 				/* The above routine does not work for win32 as it does not have the
 					 member m_vi in wxGLCanvas.
 					 should find a way to get the best buffer, but this default setting should work fine. */
