@@ -411,6 +411,7 @@ ifeq ($(SYSNAME),win32)
       FORTRAN = f77 -c -mno-cygwin -mms-bitfields
       MAKEDEPEND = gcc -MM -MG -mno-cygwin
       CPREPROCESS = gcc -E -P -mno-cygwin
+      WINDRES = windres
       LINK = g++ -mno-cygwin -fnative-struct -mms-bitfields
       ifeq ($(filter-out CONSOLE_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
          LINK += -mconsole 
