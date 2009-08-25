@@ -3722,6 +3722,7 @@ Pops up a dialog for editing settings of the Node_tool.
 			 node_tool->wx_node_tool->Show();
 		}
 #else /* switch (USER_INTERFACE) */
+		USE_PARAMETER(graphics_window);
 		display_message(ERROR_MESSAGE, "Node_tool_pop_up_dialog.  "
 			"No dialog implemented for this User Interface");
 #endif /* switch (USER_INTERFACE) */

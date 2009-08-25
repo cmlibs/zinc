@@ -1138,6 +1138,7 @@ Pops up a dialog for editing settings of the Element_point_tool.
 			 element_point_tool->wx_element_point_tool->Show();
 		}
 #else /* switch (USER_INTERFACE) */
+		USE_PARAMETER(graphics_window);
 		display_message(ERROR_MESSAGE, "Element_point_tool_pop_up_dialog.  "
 			"No dialog implemented for this User Interface");
 #endif /* defined (USER_INTERFACE) */
