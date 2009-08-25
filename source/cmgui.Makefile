@@ -696,6 +696,7 @@ ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
      endif
    endif
    WX_USER_INTERFACE_INC := $(shell $(WX_DIR)wx-config --cxxflags --unicode=no --debug=$(WX_DEBUG_FLAG) --static=$(WX_STATIC_FLAG))
+   WINDRES = $(shell $(WX_DIR)wx-config --rescomp --unicode=no --debug=$(WX_DEBUG_FLAG) --static=$(WX_STATIC_FLAG))
    USER_INTERFACE_INC += $(WX_USER_INTERFACE_INC)
    USER_INTERFACE_LIB += $(GRAPHICS_LIB)
    ifeq ($(OPERATING_SYSTEM),linux)

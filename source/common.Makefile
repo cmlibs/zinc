@@ -174,6 +174,7 @@ ifeq ($(SYSNAME:IRIX%=),)
       CPP_NON_STRICT_FLAGS = 
       NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
       CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      UNINITIALISED_FLAG_PATTERN = NONE # Must specify a pattern that doesn't match */
    else # DEBUG != true
       OPTIMISATION_FLAGS = -g
       COMPILE_FLAGS = -fullwarn -pedantic -woff 1521
@@ -188,6 +189,7 @@ ifeq ($(SYSNAME:IRIX%=),)
       CPP_NON_STRICT_FLAGS = -diag_warning 1429
       NON_STRICT_FLAGS_PATTERN = three_d_drawing/graphics_buffer.c | three_d_drawing/movie_extensions.c
       CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      UNINITIALISED_FLAG_PATTERN = NONE # Must specify a pattern that doesn't match */
    endif # DEBUG != true
    ifeq ($(MIPS),3)
       OPTIMISATION_FLAGS += -mips3
@@ -335,7 +337,8 @@ ifeq ($(SYSNAME),AIX)
    NON_STRICT_FLAGS = 
    CPP_NON_STRICT_FLAGS = 
    NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-      CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+   CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+   UNINITIALISED_FLAG_PATTERN = NONE # Must specify a pattern that doesn't match */
    STRIP =
    STRIP_SHARED =
    ifeq ($(ABI),64)
@@ -361,6 +364,7 @@ ifeq ($(SYSNAME),win32)
       CPREPROCESS = $(CYGWIN_WRAPPER) cl.exe /P
       LINK = $(CYGWIN_WRAPPER) cl.exe
       AR = $(CYGWIN_WRAPPER) lib
+      WINDRES = windres
       AROFLAG = /out:
       ifeq ($(filter-out CONSOLE_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
          LINK +=  
@@ -376,7 +380,8 @@ ifeq ($(SYSNAME),win32)
          NON_STRICT_FLAGS = 
       	 CPP_NON_STRICT_FLAGS = 
          NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-      CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+         CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+         UNINITIALISED_FLAG_PATTERN = NONE # Must specify a pattern that doesn't match */
          STRIP = 
          STRIP_SHARED = 
       else # DEBUG != true
@@ -389,7 +394,8 @@ ifeq ($(SYSNAME),win32)
          NON_STRICT_FLAGS = 
       	 CPP_NON_STRICT_FLAGS = 
          NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
-      CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+         CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+         UNINITIALISED_FLAG_PATTERN = NONE # Must specify a pattern that doesn't match */
          STRIP =
          STRIP_SHARED =
       endif # DEBUG != true
@@ -420,19 +426,29 @@ ifeq ($(SYSNAME),win32)
          NON_STRICT_FLAGS = 
       	 CPP_NON_STRICT_FLAGS = 
          NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-      CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+         CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+         UNINITIALISED_FLAG_PATTERN = NONE # Must specify a pattern that doesn't match */
          STRIP = strip --strip-unneeded
          STRIP_SHARED = strip --strip-unneeded
       else # DEBUG != true
          OPTIMISATION_FLAGS = -g
          COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
          COMPILE_FLAGS =
-         STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Werror
-         CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-unused-parameter -Werror
-         NON_STRICT_FLAGS = 
-				 CPP_NON_STRICT_FLAGS = 
-         NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
-      	 CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+         STRICT_FLAGS = -W -Wall -Werror
+         CPP_STRICT_FLAGS = -W -Wall -Werror
+         NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
+         CPP_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
+         NON_STRICT_FILENAMES = wx_non_strict_c.filenames
+         CPP_NON_STRICT_FILENAMES = wx_non_strict_cpp.filenames
+         ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
+            NON_STRICT_FILENAMES = motif_non_strict_c.filenames
+            CPP_NON_STRICT_FILENAMES = motif_non_strict_cpp.filenames
+         endif
+         empty :=
+         space := $(empty) $(empty)
+         NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(NON_STRICT_FILENAMES))))
+         CPP_NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(CPP_NON_STRICT_FILENAMES))))
+         UNINITIALISED_FLAG_PATTERN = NONE # Must specify a pattern that doesn't match */
          STRIP =
          STRIP_SHARED =
       endif # DEBUG != true
@@ -486,6 +502,7 @@ ifeq ($(SYSNAME),Darwin)
       CPP_NON_STRICT_FLAGS = 
       NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
       CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      UNINITIALISED_FLAG_PATTERN = NONE # Must specify a pattern that doesn't match */
       STRIP =
       STRIP_SHARED =
    else  # DEBUG != true
@@ -498,6 +515,7 @@ ifeq ($(SYSNAME),Darwin)
       CPP_NON_STRICT_FLAGS = 
       NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
       CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      UNINITIALISED_FLAG_PATTERN = NONE # Must specify a pattern that doesn't match */
       STRIP =
       STRIP_SHARED =
    endif # DEBUG != true
@@ -605,7 +623,7 @@ ifeq ($(USER_INTERFACE),WIN32_USER_INTERFACE)
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
 	set -x ; \
-   windres -o $(OBJECT_PATH)/$*.res -O coff $*.rc
+    $(WINDRES) -o $(OBJECT_PATH)/$*.res -O coff $*.rc
 endif # $(USER_INTERFACE) == WIN32_USER_INTERFACE
 
 ifeq ($(USER_INTERFACE),WX_USER_INTERFACE)
@@ -624,7 +642,7 @@ ifeq ($(SYSNAME),win32)
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
 	set -x ; \
-   windres -o $(OBJECT_PATH)/$*.res -O coff $*.rc
+    $(WINDRES) -o $(OBJECT_PATH)/$*.res -O coff $*.rc
 endif # $(SYSNAME) == win32
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
