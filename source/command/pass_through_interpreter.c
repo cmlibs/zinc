@@ -240,7 +240,7 @@ Takes a <command_string>, replaces simple variables and sends the command
 back to the main program.
 ==============================================================================*/
 {
-	char *current_string, *new_name, *new_value, *temporary_string = NULL;
+	char *current_string, *new_name, *new_value = NULL, *temporary_string = NULL;
 	int i, match, match_value_length, return_code;
 	int matches[10 * 3];
 
