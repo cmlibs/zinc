@@ -6379,7 +6379,7 @@ Outputs the information contained by the node field.
 struct Match_FE_element_shape_data
 {
 	int dimension;
-	int *type;
+	const int *type;
 }; /* struct Match_FE_element_shape_data */
 
 static int match_FE_element_shape(struct FE_element_shape *shape,
@@ -6392,7 +6392,8 @@ Checks if the <match_FE_element_shape_data> matchs the <shape>.
 Note a NULL shape type means an unspecified shape of that dimension.
 ==============================================================================*/
 {
-	int *find_type, i, return_code, *shape_type;
+	const int *find_type;
+	int i, return_code, *shape_type;
 	struct Match_FE_element_shape_data *match_data;
 
 	ENTER(match_FE_element_shape);
@@ -6448,7 +6449,7 @@ Note a NULL shape type means an unspecified shape of that dimension.
 } /* match_FE_element_shape */
 
 static struct FE_element_shape *find_FE_element_shape_in_list(int dimension,
-	int *type,struct LIST(FE_element_shape) *list)
+	const int *type,struct LIST(FE_element_shape) *list)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2002
 
@@ -9526,7 +9527,7 @@ Should only call this function for unmanaged fields.
 	return (return_code);
 } /* set_FE_field_external_information */
 
-struct FE_field *CREATE(FE_field)(char *name, struct FE_region *fe_region)
+struct FE_field *CREATE(FE_field)(const char *name, struct FE_region *fe_region)
 /*******************************************************************************
 LAST MODIFIED : 2 April 2003
 
@@ -10762,7 +10763,7 @@ Up to calling function to DEALLOCATE the returned string.
 } /* get_FE_field_component_name */
 
 int set_FE_field_component_name(struct FE_field *field,int component_no,
-	char *component_name)
+	const char *component_name)
 /*******************************************************************************
 LAST MODIFIED : 10 May 2000
 
@@ -14205,7 +14206,7 @@ and <nodal_value_types> for each component, and only 1 version.
 	ENTER(define_FE_field_at_node_simple);
 	if (node && field &&
 		(0 < (number_of_components = get_FE_field_number_of_components(field))) &&
-		(0 <= number_of_derivatives) && derivative_value_types)
+		((0 == number_of_derivatives) || ((0 < number_of_derivatives) && derivative_value_types)))
 	{
 		return_code = 1;
 		if(node_field_creator = CREATE(FE_node_field_creator)(number_of_components))
@@ -21150,7 +21151,7 @@ Some examples of basis descriptions are:
 	return (basis_type);
 } /* FE_basis_string_to_type_array */
 
-char *FE_basis_type_string(enum FE_basis_type basis_type)
+const char *FE_basis_type_string(enum FE_basis_type basis_type)
 /*******************************************************************************
 LAST MODIFIED : 1 April 1999
 
@@ -21161,7 +21162,7 @@ The calling function must not deallocate the returned string.
 #### Must ensure implemented correctly for new FE_basis_types ####
 ==============================================================================*/
 {
-	char *basis_type_string;
+	const char *basis_type_string;
 
 	ENTER(FE_basis_type_string);
 	switch (basis_type)
@@ -21230,7 +21231,7 @@ The calling function must not deallocate the returned string.
 		{
 			display_message(ERROR_MESSAGE,
 				"FE_basis_type_string.  Invalid basis_type");
-			basis_type_string=(char *)NULL;
+			basis_type_string=(const char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -26942,8 +26943,8 @@ field information structure.  Note that the arguments are duplicated.
 	return (node_scale_field_info);
 } /* create_FE_element_node_scale_field_info_from_contents */
 
-struct FE_element_shape *CREATE(FE_element_shape)(int dimension,int *type,
-	struct FE_region *fe_region)
+struct FE_element_shape *CREATE(FE_element_shape)(int dimension,
+	const int *type, struct FE_region *fe_region)
 /*******************************************************************************
 LAST MODIFIED : 8 July 2003
 
@@ -26958,10 +26959,10 @@ it is given a proper shape.
 ==============================================================================*/
 {
 	FE_value *face_to_element, *face_normals, weight;
+	const int *type_entry;
 	int dimension_2,*face,i,j,k,k_set,l,linked_coordinate,linked_k,linked_offset,
 		*linked_offsets,no_error,number_of_faces,number_of_polygon_verticies,offset,
-		*shape_type,simplex_coordinate,simplex_dimension,temp_int,*type_entry,
-		xi_coordinate;
+		*shape_type,simplex_coordinate,simplex_dimension,temp_int, xi_coordinate;
 	struct FE_element_shape *shape;
 
 	ENTER(CREATE(FE_element_shape));
@@ -26978,7 +26979,7 @@ it is given a proper shape.
 			{
 				/* make an unspecified shape = no type array or faces */
 				shape->dimension = dimension;
-				shape->type = type;
+				shape->type = (int *)NULL;
 				shape->number_of_faces = 0;
 				shape->faces = (int *)NULL;
 				shape->face_normals = (FE_value *)NULL;

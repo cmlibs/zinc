@@ -681,7 +681,7 @@ Writes out the <basis> to <output_file>.
 be rewritten for 4-D and above elements.
 ==============================================================================*/
 {
-	char *basis_type_string;
+	const char *basis_type_string;
 	enum FE_basis_type basis_type;
 	int dimension, linked_dimensions, next_xi_number, number_of_polygon_vertices,
 		return_code, xi_number;

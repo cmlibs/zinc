@@ -1643,7 +1643,7 @@ Some examples of basis descriptions are:
 	5-gon for xi1 and xi3.
 ==============================================================================*/
 
-char *FE_basis_type_string(enum FE_basis_type basis_type);
+const char *FE_basis_type_string(enum FE_basis_type basis_type);
 /*******************************************************************************
 LAST MODIFIED : 1 April 1999
 
@@ -2258,8 +2258,8 @@ order dx/dxi1, dx/dxi2, dx/dxi3, dy/dxi1 etc. Note that there will always be
 nine values returned, regardless of the element dimension.
 ==============================================================================*/
 
-struct FE_element_shape *CREATE(FE_element_shape)(int dimension, int *type,
-	struct FE_region *fe_region);
+struct FE_element_shape *CREATE(FE_element_shape)(int dimension,
+	const int *type, struct FE_region *fe_region);
 /*******************************************************************************
 LAST MODIFIED : 8 July 2003
 
@@ -3197,7 +3197,7 @@ Copies the <external_information> into the <field>.
 Should only call this function for unmanaged fields.
 ==============================================================================*/
 
-struct FE_field *CREATE(FE_field)(char *name, struct FE_region *fe_region);
+struct FE_field *CREATE(FE_field)(const char *name, struct FE_region *fe_region);
 /*******************************************************************************
 LAST MODIFIED : 27 February 2003
 
@@ -3383,7 +3383,7 @@ Up to calling function to DEALLOCATE the returned string.
 ==============================================================================*/
 
 int set_FE_field_component_name(struct FE_field *field,int component_no,
-	char *component_name);
+	const char *component_name);
 /*******************************************************************************
 LAST MODIFIED : 10 May 2000
 

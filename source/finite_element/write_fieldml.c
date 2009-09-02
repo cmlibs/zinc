@@ -1346,7 +1346,7 @@ DESCRIPTION :
 Writes out the <basis> to <output_file>.
 ==============================================================================*/
 {
-	char *basis_type_string;
+	const char *basis_type_string;
 	enum FE_basis_type basis_type;
 	FE_element_field_component_modify modify;
 	int dimension, linked_dimensions, next_xi_number, number_of_polygon_vertices,
