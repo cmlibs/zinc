@@ -1101,6 +1101,7 @@ FINITE_ELEMENT_CORE_SRCS = \
 	finite_element/export_finite_element.c \
 	finite_element/finite_element.c \
 	finite_element/finite_element_discretization.c \
+	finite_element/finite_element_helper.cpp \
 	finite_element/finite_element_region.c \
 	finite_element/finite_element_time.c \
 	finite_element/import_finite_element.c
