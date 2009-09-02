@@ -100,7 +100,7 @@ struct FE_element *FE_element_create_with_simplex_shape(
 {
 	ENTER(FE_element_create_with_simplex_shape);
 	FE_element *element = (struct FE_element *)NULL;
-	if (fe_region && (dimension == 2) || (dimension == 3))
+	if (fe_region && ((dimension == 2) || (dimension == 3)))
 	{
 		const int triangle_shape_type[] = { SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE };
 		const int tetrahedron_shape_type[] = { SIMPLEX_SHAPE, 1, 1, SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE };
