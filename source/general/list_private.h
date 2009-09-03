@@ -711,6 +711,7 @@ Should only be declared with manager functions. \
 		DEALLOCATE(*identifier_change_data_address); \
 		*identifier_change_data_address = \
 			(struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) *)NULL; \
+		return_code = 1;					\
 	} \
 	else \
 	{ \
