@@ -1135,7 +1135,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 int Computed_field_finite_element_set_string_at_node(
 	struct Computed_field *field, int component_number, struct FE_node *node, 
-	FE_value time, const char *string)
+	double time, const char *string)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
