@@ -50,7 +50,7 @@ Functions for discretizing finite elements into points and simple sub-domains.
 
 int FE_element_shape_get_xi_points_cell_centres(
 	struct FE_element_shape *element_shape, int *number_in_xi,
-	int *number_of_xi_points_address, Triple **xi_points_address);
+	int *number_of_xi_points_address, FE_value_triple **xi_points_address);
 /*******************************************************************************
 LAST MODIFIED : 20 April 2001
 
@@ -66,7 +66,7 @@ comments for simplex and polygons shapes for more details.
 
 int FE_element_shape_get_xi_points_cell_corners(
 	struct FE_element_shape *element_shape, int *number_in_xi,
-	int *number_of_xi_points_address, Triple **xi_points_address);
+	int *number_of_xi_points_address, FE_value_triple **xi_points_address);
 /*******************************************************************************
 LAST MODIFIED : 20 April 2001
 
@@ -96,7 +96,7 @@ Otherwise the routine returns 0.
 int FE_element_get_xi_points_cell_random(struct FE_element *element,
 	enum Xi_discretization_mode xi_discretization_mode, int *number_in_xi,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
-	int *number_of_xi_points_address, Triple **xi_points_address, FE_value time);
+	int *number_of_xi_points_address, FE_value_triple **xi_points_address, FE_value time);
 /*******************************************************************************
 LAST MODIFIED : 3 May 2001
 
@@ -123,9 +123,10 @@ comments for simplex and polygons shapes for more details.
 
 int FE_element_get_xi_points(struct FE_element *element,
 	enum Xi_discretization_mode xi_discretization_mode,
-	int *number_in_xi, Triple exact_xi,
+	int *number_in_xi, FE_value_triple exact_xi,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
-	int *number_of_xi_points_address, Triple **xi_points_address, FE_value time);
+	int *number_of_xi_points_address, FE_value_triple **xi_points_address, 
+	FE_value time);
 /*******************************************************************************
 LAST MODIFIED : 20 April 2001
 
@@ -142,7 +143,7 @@ is trivial, it is passed and used here to provide a consistent interface.
 
 int FE_element_convert_xi_points_cell_corners_to_top_level(
 	struct FE_element *element, struct FE_element *top_level_element,
-	int *top_level_number_in_xi, int number_of_xi_points, Triple *xi_points,
+	int *top_level_number_in_xi, int number_of_xi_points, FE_value_triple *xi_points,
 	int **top_level_xi_point_numbers_address);
 /*******************************************************************************
 LAST MODIFIED : 23 April 2001
@@ -162,7 +163,7 @@ a return value here indicates that the xi_points have been converted.
 
 int FE_element_get_numbered_xi_point(struct FE_element *element,
 	enum Xi_discretization_mode xi_discretization_mode,
-	int *number_in_xi, Triple exact_xi,
+	int *number_in_xi, FE_value_triple exact_xi,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
 	int xi_point_number, FE_value *xi, FE_value time);
 /*******************************************************************************
@@ -178,7 +179,7 @@ calculation is trivial.
 ==============================================================================*/
 
 int convert_xi_points_from_element_to_parent(int number_of_xi_points,
-	Triple *xi_points,int element_dimension,int parent_dimension,
+	FE_value_triple *xi_points,int element_dimension,int parent_dimension,
 	FE_value *element_to_parent);
 /*******************************************************************************
 LAST MODIFIED : 17 September 1998

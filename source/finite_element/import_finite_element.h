@@ -64,7 +64,7 @@ DESCRIPTION :
 Points to a specific time value which the nodes represent
 ==============================================================================*/
 {
-	float time;
+	FE_value time;
 }; /* FE_import_time_index */
 
 /*

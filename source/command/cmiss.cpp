@@ -2777,7 +2777,7 @@ Executes a GFX MODIFY FLOW_PARTICLES command.
 ==============================================================================*/
 {
 	int return_code;
-	float stepsize,time;
+	FE_value stepsize,time;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field,*stream_vector_field;
 	struct Option_table *option_table;
@@ -2809,7 +2809,7 @@ Executes a GFX MODIFY FLOW_PARTICLES command.
 				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* stepsize */
 			Option_table_add_entry(option_table,"stepsize",&stepsize,
-				NULL,set_float);
+				NULL,set_FE_value);
 			/* time */
 			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
 			/* vector */

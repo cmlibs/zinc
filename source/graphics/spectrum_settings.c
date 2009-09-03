@@ -2464,16 +2464,22 @@ passed in render data.
 				ALLOCATE(values, FE_value, number_of_components);
 				if (settings->component_number > 0)
 				{
+					FE_value dataValue[1];
+					float* tmpPointer = render_data->data + settings->component_number;
+					CAST_TO_FE_VALUE_C(dataValue,tmpPointer,1);
 					Computed_field_evaluate_at_field_coordinates(settings->output_field,
 						settings->input_field, /*Number of values*/1,
-						render_data->data + settings->component_number,
+						dataValue,
 						/*time*/0.0, values);
 				}
 				else
 				{
+					FE_value feData[render_data->number_of_data_components];
+					CAST_TO_FE_VALUE_C(feData,render_data->data,
+						render_data->number_of_data_components);
 					Computed_field_evaluate_at_field_coordinates(settings->output_field,
 						settings->input_field, render_data->number_of_data_components,
-						render_data->data,
+						feData,
 						/*time*/0.0, values);
 				}
 
@@ -3013,7 +3019,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 		transparent_above,transparent_below;
 	enum Spectrum_settings_colour_mapping colour_mapping;
 	int black_band_int,component,number_of_bands,range_components,return_code;
-	float band_ratio,colour_range[2],step_value,range[2];
+	float band_ratio,step_value;
+	FE_value colour_range[2],range[2];
 	struct Modify_spectrum_data *modify_spectrum_data;
 	struct Option_table *option_table, *render_option_table;
 	struct Spectrum_settings *settings;
@@ -3053,8 +3060,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				range_components = 2;
 				colour_range[0] = 0.0;
 				colour_range[1] = 1.0;
-				range[0] = modify_spectrum_data->spectrum_minimum;
-				range[1] = modify_spectrum_data->spectrum_maximum;
+				range[0] = (FE_value)(modify_spectrum_data->spectrum_minimum);
+				range[1] = (FE_value)(modify_spectrum_data->spectrum_maximum);
 				component = Spectrum_settings_get_component_number(settings);
 
 				option_table = CREATE(Option_table)();
@@ -3249,7 +3256,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 		specular,transparent_above,transparent_below;
 	enum Spectrum_settings_colour_mapping colour_mapping;
 	int black_band_int,component,number_of_bands,range_components,return_code;
-	float band_ratio,colour_range[2],exaggeration,step_value,range[2];
+	float band_ratio,exaggeration,step_value;
+	FE_value colour_range[2],range[2];
 	struct Modify_spectrum_data *modify_spectrum_data;
 	struct Option_table *option_table, *render_option_table;
 	struct Spectrum_settings *settings;
@@ -3291,8 +3299,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				range_components = 2;
 				colour_range[0] = 0.0;
 				colour_range[1] = 1.0;
-				range[0] = modify_spectrum_data->spectrum_minimum;
-				range[1] = modify_spectrum_data->spectrum_maximum;
+				range[0] = (FE_value)(modify_spectrum_data->spectrum_minimum);
+				range[1] = (FE_value)(modify_spectrum_data->spectrum_maximum);
 				component = Spectrum_settings_get_component_number(settings);
 				exaggeration = Spectrum_settings_get_exaggeration(settings);
 

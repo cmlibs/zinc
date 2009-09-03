@@ -120,7 +120,7 @@ DESCRIPTION :
 	double *weights;
 	int number_of_modes, number_of_sliders, mode_limit, show_solid_body_motion,
 		movie_playing;
-	float time;
+	FE_value time;
 	struct Colour viewer_background_colour;
 	struct Cmiss_region *region;
 	struct Emoter_slider *active_slider, **sliders;
@@ -150,7 +150,7 @@ LAST MODIFIED : 10 April 1998
 DESCRIPTION :
 ==============================================================================*/
 {
-	float combine_time;
+	FE_value combine_time;
 	struct Emoter_slider *slider;
 	struct Curve *curve, *timebase_curve;
 }; /* struct Emoter_combine_slider */
@@ -164,7 +164,7 @@ DESCRIPTION :
 {
 	char *name;
 	int index, element_index, node_index;
-	float value;
+	FE_value value;
 	struct Emoter_slider *slider_parent;
 	struct Shared_emoter_slider_data *shared;
 #if defined (MOTIF_USER_INTERFACE)
@@ -180,7 +180,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	char *name, *sequence_filename;
-	float maximum,minimum, value;
+	FE_value maximum,minimum, value;
 	int index, slider_position, selected,
 		private_update_face_flag, number_of_combine_sliders,
 		animated, number_of_emoter_markers,
@@ -205,7 +205,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int play_slider_position, movie_loop, movie_every_frame;
-	float time_minimum, time_maximum;
+	FE_value time_minimum, time_maximum;
 	struct Shared_emoter_slider_data *shared;
 	void *curve_manager_callback_id;
 #if defined (MOTIF_USER_INTERFACE)
@@ -232,7 +232,7 @@ static struct Emoter_slider *create_emoter_slider(const char *sequence_filename,
 #if defined (MOTIF_USER_INTERFACE)
 Widget parent,
 #endif /* defined (MOTIF_USER_INTERFACE) */
-	float value,
+	FE_value value,
 	struct Shared_emoter_slider_data *shared_data,
 	int index, struct Curve *existing_mode_curve,
 	struct Emoter_dialog *emoter_dialog, int no_confirm);
@@ -493,7 +493,7 @@ Updates the node locations for the <emoter_slider>
 	return (return_code);
 } /* emoter_update_nodes */
 
-static int emoter_set_mode_value(int mode_number, float new_value,
+static int emoter_set_mode_value(int mode_number, FE_value new_value,
 	struct Shared_emoter_slider_data *shared_data)
 /*******************************************************************************
 LAST MODIFIED : 22 April 1998
@@ -522,8 +522,8 @@ Updates the node locations for the <emoter_slider>
 } /* emoter_set_mode_value */
 
 static void emoter_add_slider_modes( struct Emoter_slider *slider,
-	float *total_shape_vector, struct Shared_emoter_slider_data *shared,
-	float time)
+	FE_value *total_shape_vector, struct Shared_emoter_slider_data *shared,
+	FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
 
@@ -531,7 +531,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int i;
-	float data_start_frame, data_end_frame, marker_start_time, marker_end_time, 
+	FE_value data_start_frame, data_end_frame, marker_start_time, marker_end_time, 
 		*shape_vector, slider_time;
 
 	ENTER(emoter_add_slider_modes);
@@ -588,7 +588,7 @@ DESCRIPTION :
 
 } /* emoter_add_slider_modes */
 
-static float *emoter_sum_all_modes( struct Shared_emoter_slider_data *shared)
+static FE_value *emoter_sum_all_modes( struct Shared_emoter_slider_data *shared)
 /*******************************************************************************
 LAST MODIFIED : 18 April 1998
 
@@ -598,7 +598,7 @@ Returns the vector of mode shapes.
 ==============================================================================*/
 {
 	int i, j;
-	float *total_shape_vector;
+	FE_value *total_shape_vector;
 	struct Emoter_slider *slider;
 
 	ENTER(emoter_sum_all_modes);
@@ -616,7 +616,7 @@ Returns the vector of mode shapes.
 		(shared->sliders[j])->private_update_face_flag = 0;
 	}
 
-	if ( ALLOCATE( total_shape_vector, float, SOLID_BODY_MODES + shared->number_of_modes ))
+	if ( ALLOCATE( total_shape_vector, FE_value, SOLID_BODY_MODES + shared->number_of_modes ))
 	{
 		for ( i = 0 ; i < SOLID_BODY_MODES + shared->mode_limit ; i++ )
 		{
@@ -659,7 +659,7 @@ Returns the vector of mode shapes.
 	{
 		display_message(ERROR_MESSAGE,
 			"emoter_sum_all_modes.  Unable to allocate total shape vector");
-		total_shape_vector = (float *)NULL;
+		total_shape_vector = (FE_value *)NULL;
 	}
 
 	LEAVE;
@@ -676,7 +676,7 @@ Sets the nodes according to all the values of the sliders
 ==============================================================================*/
 {
 	int i;
-	float *total_shape_vector;
+	FE_value *total_shape_vector;
 	struct Graphics_window *graphics_window;
 
 	ENTER(emoter_update_face);
@@ -819,7 +819,7 @@ Sets the animated state of this <slider> to the <state>
 } /* emoter_slider_animated */
 
 static void emoter_set_slider_value( struct Emoter_slider *emoter_slider,
-	float new_value )
+	FE_value new_value )
 /*******************************************************************************
 LAST MODIFIED : 9 April 1998
 
@@ -841,7 +841,7 @@ emoter slider's Curve
 
 		/* Check slider position */
 		slider_position =
-			(int)((float)SLIDER_RESOLUTION*((emoter_slider->value)-
+			(int)((FE_value)SLIDER_RESOLUTION*((emoter_slider->value)-
 			(emoter_slider->minimum))/((emoter_slider->maximum)-
 			(emoter_slider->minimum)));
 		if (slider_position < 0)
@@ -879,7 +879,7 @@ emoter slider's Curve
 } /* emoter_set_slider_value */
 
 static void emoter_show_marker_value( struct Emoter_marker *emoter_marker,
-	float new_value )
+	FE_value new_value )
 /*******************************************************************************
 LAST MODIFIED : 17 April 1998
 
@@ -916,7 +916,7 @@ any control curves.
 } /* emoter_show_marker_value */
 
 static void emoter_set_marker_value( struct Emoter_marker *emoter_marker,
-	float new_value )
+	FE_value new_value )
 /*******************************************************************************
 LAST MODIFIED : 17 April 1998
 
@@ -992,7 +992,7 @@ Emoter slider scrollbar callback.  Sets the value from the slider
 ==============================================================================*/
 {
 	int slider_position;
-	float new_value;
+	FE_value new_value;
 	struct Emoter_slider *emoter_slider;
 
 	ENTER(update_emoter_slider_callback);
@@ -1008,10 +1008,10 @@ Emoter slider scrollbar callback.  Sets the value from the slider
 			emoter_slider->slider_position = slider_position;
 			new_value=
 				((emoter_slider->minimum)*
-				(float)(SLIDER_RESOLUTION-slider_position)+
+				(FE_value)(SLIDER_RESOLUTION-slider_position)+
 				(emoter_slider->maximum)*
-				(float)(slider_position))/
-				(float)SLIDER_RESOLUTION;
+				(FE_value)(slider_position))/
+				(FE_value)SLIDER_RESOLUTION;
 			emoter_set_slider_value( emoter_slider, new_value );
 			emoter_update_face( emoter_slider->shared );
 		}
@@ -1319,7 +1319,7 @@ Callback for the play slider which sets the min and max and stores the widget
 ==============================================================================*/
 {
 	int i;
-	float *combine_vector;
+	FE_value *combine_vector;
 	struct Emoter_slider *combine_slider;
 	struct Curve *timebase_curve,*curve;
 
@@ -1387,7 +1387,7 @@ Callback for the play slider which sets the min and max and stores the widget
 ==============================================================================*/
 {
 	int i, j;
-	float value;
+	FE_value value;
 	struct Emoter_slider *combine_slider;
 	struct Curve *timebase_curve;
 
@@ -1442,7 +1442,7 @@ Callback for the play slider which sets the min and max and stores the widget
 #endif /* defined (MOTIF_USER_INTERFACE) */
 
 static void emoter_set_play_slider_value( struct Emoter_dialog *emoter_dialog,
-	float new_value )
+	FE_value new_value )
 /*******************************************************************************
 LAST MODIFIED : 8 April 1998
 
@@ -1508,7 +1508,7 @@ emoter slider's Curve
 } /* emoter_set_play_slider_value */
 
 static void emoter_set_play_slider_range( struct Emoter_dialog *emoter_dialog,
-	float min, float max )
+	FE_value min, FE_value max )
 /*******************************************************************************
 LAST MODIFIED : 15 April 1998
 
@@ -1823,7 +1823,7 @@ Callback for the emoter slider which responds to updates in the text box.
 ==============================================================================*/
 {
 	char *text_string;
-	float value;
+	FE_value value;
 	struct Emoter_slider *emoter_slider;
 
 	ENTER(emoter_slider_value_text_CB);
@@ -1840,7 +1840,7 @@ Callback for the emoter slider which responds to updates in the text box.
 
 		if ( text_string = XmTextGetString(widget))
 		{
-			sscanf(text_string, "%f", &value );
+			sscanf(text_string, FE_VALUE_INPUT_STRING, &value );
 			emoter_set_slider_value( emoter_slider, value );
 			emoter_update_face( emoter_slider->shared );
 			XtFree ( text_string );
@@ -1867,7 +1867,7 @@ Callback for the emoter marker which responds to updates in the text box.
 ==============================================================================*/
 {
 	char *text_string;
-	float value;
+	FE_value value;
 	struct Emoter_marker *emoter_marker;
 
 	ENTER(emoter_marker_value_text_CB);
@@ -1882,7 +1882,7 @@ Callback for the emoter marker which responds to updates in the text box.
 	{
 		if ( text_string = XmTextGetString(widget))
 		{
-			sscanf(text_string, "%f", &value );
+			sscanf(text_string, FE_VALUE_INPUT_STRING, &value );
 			emoter_set_marker_value( emoter_marker, value );
 			emoter_update_face( emoter_marker->shared );
 			XtFree ( text_string );
@@ -1918,7 +1918,7 @@ DESCRIPTION :
 {
 	int return_code;
 
-	ENTER(read_file_float);
+	ENTER(read_file_FE_value);
 
 	IO_stream_scan(file_data->stream, "%s", file_data->current_token );
 	while ('#' == file_data->current_token[0])
@@ -1937,8 +1937,8 @@ DESCRIPTION :
 	return (return_code);
 } /* read_file_next_token */
 
-static int read_file_float (struct read_file_data *file_data,
-	float *data )
+static int read_file_FE_value (struct read_file_data *file_data,
+	FE_value *data )
 /*******************************************************************************
 LAST MODIFIED : 7 April 1998
 
@@ -1947,9 +1947,9 @@ DESCRIPTION :
 {
 	int return_code;
 
-	ENTER(read_file_float);
+	ENTER(read_file_FE_value);
 
-	sscanf(file_data->current_token, "%f", data);
+	sscanf(file_data->current_token, FE_VALUE_INPUT_STRING, data);
 	read_file_next_token(file_data);
 
 	return_code = 1;
@@ -1957,7 +1957,7 @@ DESCRIPTION :
 	LEAVE;
 
 	return (return_code);
-} /* read_file_float */
+} /* read_file_FE_value */
 
 static int read_file_int (struct read_file_data *file_data,
 	int *data )
@@ -1969,7 +1969,7 @@ DESCRIPTION :
 {
 	int return_code;
 
-	ENTER(read_file_float);
+	ENTER(read_file_FE_value);
 
 	sscanf(file_data->current_token, "%d", data);
 	read_file_next_token(file_data);
@@ -2146,7 +2146,7 @@ the marker is incremented.
 static int read_weights( int file_modes_index, int file_modes,
 	int solid_body_index, int solid_body_modes,
 	struct read_file_data *file_data,
-	int basis_modes, int total_values, float *weights )
+	int basis_modes, int total_values, FE_value *weights )
 /*******************************************************************************
 LAST MODIFIED : 6 March 2000
 
@@ -2154,14 +2154,14 @@ DESCRIPTION :
 Reads a weight vector from the <file>.
 ==============================================================================*/
 {
-	float weight;
+	FE_value weight;
 	int j;
 
 	ENTER(read_weights);
 
 	for ( j = 0 ; j < total_values ; j++ )
 	{
-		read_file_float(file_data, &weight );
+		read_file_FE_value(file_data, &weight );
 		if (solid_body_modes && (j >= solid_body_index) &&
 			(j < solid_body_index + solid_body_modes))
 		{
@@ -2189,7 +2189,7 @@ Reads a weight vector from the <file>.
 static int read_emoter_mode_Curve( struct Curve **emoter_curve_addr,
 	struct MANAGER(Curve) *curve_manager,
 	char *filename, struct Shared_emoter_slider_data *shared,
-	float *number_of_frames)
+	FE_value *number_of_frames)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
 
@@ -2200,7 +2200,7 @@ Creates a control curve which is read from file values.
 	char warning[300], *name;
 	const char *filename_base;
 	FE_value time;
-	float *shape_vector, weight;
+	FE_value *shape_vector, weight;
 	int i, j, k, n_modes, return_code;
 	struct read_file_data *file_data;
 	struct Curve *emoter_curve;
@@ -2240,7 +2240,7 @@ Creates a control curve which is read from file values.
 				if ( ALLOCATE( name, char, strlen(filename_base)+1))
 				{
 					strcpy(name, filename_base);
-					if ( ALLOCATE( shape_vector, float, shared->number_of_modes ))
+					if ( ALLOCATE( shape_vector, FE_value, shared->number_of_modes ))
 					{
 						while (FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
 							name, curve_manager))
@@ -2363,7 +2363,7 @@ Reads a control curve from a file.
 	enum FE_basis_type fe_basis_type;
 	int j, local_node_no, nodes_per_element, elements, derivatives,
 		return_code;
-	float time, total_time, value;
+	FE_value time, total_time, value;
 	struct Curve *curve;
 
 	ENTER(read_emoter_curve);
@@ -2447,11 +2447,11 @@ Reads a control curve from a file.
 						Curve_add_element( curve, j + 1 );
 						if (0==j)
 						{
-							read_file_float( file_data, &total_time );
+							read_file_FE_value( file_data, &total_time );
 							Curve_set_parameter( curve,/*element_no*/1,
 								/*local_node_no*/0,	total_time );
 						}
-						read_file_float( file_data, &time );
+						read_file_FE_value( file_data, &time );
 						total_time += time;
 						Curve_set_parameter( curve,/*element_no*/j+1,
 							/*local_node_no*/1,	total_time );
@@ -2460,24 +2460,24 @@ Reads a control curve from a file.
 								local_node_no < nodes_per_element - 1
 									; local_node_no++ )
 						{
-							read_file_float( file_data, &value );
+							read_file_FE_value( file_data, &value );
 							Curve_set_node_values ( curve,
 								j + 1, local_node_no, &value );
 							if ( derivatives )
 							{
-								read_file_float( file_data, &value );
+								read_file_FE_value( file_data, &value );
 								Curve_set_node_derivatives ( curve,
 									j + 1, local_node_no, &value );
 							}
 							return_code = 1;
 						}
 					}
-					read_file_float( file_data, &value );
+					read_file_FE_value( file_data, &value );
 					Curve_set_node_values ( curve,
 						elements, nodes_per_element - 1, &value );
 					if ( derivatives )
 					{
-						read_file_float( file_data, &value );
+						read_file_FE_value( file_data, &value );
 						Curve_set_node_derivatives ( curve,
 							elements, local_node_no, &value );
 					}
@@ -2518,7 +2518,7 @@ Reads a control curve from a file.
 } /* read_emoter_curve */
 
 static struct Emoter_marker *create_emoter_marker(const char *name,
-	float value, 
+	FE_value value, 
 #if defined (MOTIF_USER_INTERFACE)
 	Widget parent, 
 #endif /* defined (MOTIF_USER_INTERFACE) */
@@ -2642,7 +2642,7 @@ DESCRIPTION :
 } /* create_emoter_marker */
 
 static int read_emoter_slider_file( struct Emoter_slider *slider,
-	const char *filename, float *start_time, float *end_time, int *marker_count,
+	const char *filename, FE_value *start_time, FE_value *end_time, int *marker_count,
 	struct Emoter_dialog *emoter_dialog, void **icon_data,
 	int *icon_width, int *icon_height, int no_confirm )
 /*******************************************************************************
@@ -2655,7 +2655,7 @@ Reads stuff from a file.
 	char *basename, warning[300], *name, *temp_filename, temp_string[300],
 		*char_data;
 	const char *constname;
-	float *shape_vector,total_time;
+	FE_value *shape_vector,total_time;
 	int face_index, face_values, header, i, index, j, n_modes, return_code,
 		solid_body_index, values;
 	unsigned int integer_data;
@@ -2990,7 +2990,7 @@ Reads stuff from a file.
 					{
 						if (name)
 						{
-							if ( ALLOCATE( shape_vector, float, shared->number_of_modes + slider->solid_body_motion ))
+							if ( ALLOCATE( shape_vector, FE_value, shared->number_of_modes + slider->solid_body_motion ))
 							{
 								while (FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
 									name, shared->curve_manager))
@@ -3019,7 +3019,7 @@ Reads stuff from a file.
 										{
 											/* Discard a start marker name, it is already counted and the name will be start */
 											read_file_string(file_data, temp_string);
-											read_file_float(file_data, start_time);
+											read_file_FE_value(file_data, start_time);
 										}
 										total_time= *start_time;
 										*end_time = *start_time;
@@ -3037,7 +3037,7 @@ Reads stuff from a file.
 											{
 												/* Get the next marker */
 												read_file_string(file_data, temp_string);
-												read_file_float(file_data, end_time);
+												read_file_FE_value(file_data, end_time);
 											}
 											read_weights( face_index, n_modes, solid_body_index, 
 												slider->solid_body_motion, file_data, 
@@ -3082,7 +3082,7 @@ Reads stuff from a file.
 													}
 												}
 												read_file_string(file_data, temp_string);
-												read_file_float(file_data, end_time);
+												read_file_FE_value(file_data, end_time);
 											}
 											Curve_add_element( emoter_curve, i );
 											total_time += 1.0;
@@ -3162,7 +3162,7 @@ static struct Emoter_slider *create_emoter_slider(const char *sequence_filename,
 #if defined (MOTIF_USER_INTERFACE)
 	Widget parent,
 #endif /* defined (MOTIF_USER_INTERFACE) */
-	float value,
+	FE_value value,
 	struct Shared_emoter_slider_data *shared_data,
 	int index, struct Curve *existing_mode_curve,
 	struct Emoter_dialog *emoter_dialog, int no_confirm)
@@ -3174,7 +3174,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 ==============================================================================*/
 {
 	int marker_count, return_code;
-	float start_time, end_time;
+	FE_value start_time, end_time;
 	struct Emoter_slider *emoter_slider;
 	void *icon_data;
 	int icon_width, icon_height;
@@ -3494,7 +3494,7 @@ DESCRIPTION :
 {
 	char *char_data;
 	FILE *file;
-	float delta_time, dS_dxi, end_time, start_time, frame_time, value,
+	FE_value delta_time, dS_dxi, end_time, start_time, frame_time, value,
 		derivative, *temp_data;
 	int i, j, k, frame, nodes_per_element, elements, derivatives,
 		number_of_frames, width, height, marker_no, number_of_components;
@@ -3531,7 +3531,7 @@ DESCRIPTION :
 				for ( frame = 0 ; frame < number_of_frames ; frame++ )
 				{
 					frame_time = slider->emoter_markers[0]->value + frame;
-					temp_data = (float *)NULL;
+					temp_data = (FE_value *)NULL;
 
 					if ( frame_time == slider->emoter_markers[marker_no]->value )
 					{
@@ -3539,7 +3539,7 @@ DESCRIPTION :
 							slider->emoter_markers[marker_no]->value );
 						marker_no++;
 					}
-					if ( ALLOCATE( temp_data, float, SOLID_BODY_MODES + emoter_dialog->shared->number_of_modes ))
+					if ( ALLOCATE( temp_data, FE_value, SOLID_BODY_MODES + emoter_dialog->shared->number_of_modes ))
 					{
 						for ( i = 0 ; i < SOLID_BODY_MODES + emoter_dialog->shared->number_of_modes ; i++ )
 						{
@@ -3823,7 +3823,7 @@ DESCRIPTION :
 {
 	char *command;
 	int frame, number_of_frames, return_code;
-	float time;
+	FE_value time;
 	struct Shared_emoter_slider_data *shared;
 
 	ENTER(emoter_saveslider_CB);
@@ -3908,7 +3908,7 @@ DESCRIPTION :
 Sets the <emoter_dialog> to autoplay if <play> is true or to stop if <play> is false.
 ==============================================================================*/
 {
-	float time;
+	FE_value time;
 	int return_code;
 	struct Emoter_dialog *emoter_dialog;
 
@@ -4210,7 +4210,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int frame, number_of_frames, return_code;
-	float time;
+	FE_value time;
 	struct Graphics_window *graphics_window;
 
 	ENTER(emoter_create_movie);
@@ -4701,7 +4701,7 @@ DESCRIPTION :
 		{
 			if (!(emoter_dialog->shared->input_sequence = 
 					confirmation_get_string(const_cast<char *>("Input sequence template"),
-						const_cast<char *>("Enter a printf string (time is a float parameter)\ni.e. taketest.%05.0f.exnode"),
+						const_cast<char *>("Enter a printf string (time is a FE_value parameter)\ni.e. taketest.%05.0f.exnode"),
 						(char *)NULL,emoter_dialog->shell,
 				emoter_dialog->shared->user_interface)))
 			{
@@ -4737,7 +4737,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	char *var_name;
-	float time, **temp_data;
+	FE_value time, **temp_data;
 	int i, j, frame, number_of_frames, solid_body_modes, mode_offset, return_code;
 	struct Emoter_slider *active, *combine_slider;
 	struct Shared_emoter_slider_data *shared;
@@ -4757,7 +4757,7 @@ DESCRIPTION :
 #endif /* defined (MOTIF_USER_INTERFACE) */
 		number_of_frames = (int)floor( emoter_dialog->time_maximum -
 			emoter_dialog->time_minimum + 1);
-		if ( ALLOCATE( temp_data, float *, number_of_frames ))
+		if ( ALLOCATE( temp_data, FE_value *, number_of_frames ))
 		{
 			
 			/* Set up the temporary array */
@@ -5139,7 +5139,7 @@ DESCRIPTION :
 {
 	char *name;
 	int i, combine_index, element, local_node_no, number_of_elements, return_code;
-	float end_time, start_time, time, time_change, value, xi;
+	FE_value end_time, start_time, time, time_change, value, xi;
 	struct Emoter_combine_slider *combine_slider, **new_combine_sliders;
 	struct Emoter_dialog *emoter_dialog;
 	struct Emoter_slider *active, *slider;
@@ -5495,7 +5495,7 @@ Handles input from the text widget which displays the current frame timecode
 ==============================================================================*/
 {
 	char *text_string;
-	float value;
+	FE_value value;
 	struct Emoter_dialog *emoter_dialog;
 
 	ENTER(emoter_play_value_text_CB);
@@ -5537,7 +5537,7 @@ Handles input from the text widget which displays the current frame timecode
 ==============================================================================*/
 {
 	char *text_string_min, *text_string_max;
-	float max, min;
+	FE_value max, min;
 	struct Emoter_dialog *emoter_dialog;
 
 	ENTER(emoter_play_max_text_CB);
@@ -6320,7 +6320,7 @@ Executes a GFX MODIFY EMOTER command.
 		*input_sequence, keyframe, maximum_time_flag, minimum_time_flag, 
 		*movie_filename, new_flag, no_rigid_body_motion, play, rigid_body_motion,
 		*save_filename, *slidername, stop, *temp_filename, time_flag, value_flag;
-	float maximum_time, minimum_time, time, value;
+	FE_value maximum_time, minimum_time, time, value;
 	int face_changed, i, integer_time, modes, return_code;
 	static struct Modifier_entry option_table[]=
 	{
@@ -6337,10 +6337,10 @@ Executes a GFX MODIFY EMOTER command.
 		{"play",NULL,NULL,set_char_flag},
 		{"rigid_body_motion",NULL,NULL,set_char_flag},
 		{"save",NULL,(void *)1,set_name},
-		{"set_maximum_time",NULL,NULL,set_float_and_char_flag},
-		{"set_minimum_time",NULL,NULL,set_float_and_char_flag},
-		{"set_time",NULL,NULL,set_float_and_char_flag},
-		{"set_value",NULL,NULL,set_float_and_char_flag},
+		{"set_maximum_time",NULL,NULL,set_double_and_char_flag},
+		{"set_minimum_time",NULL,NULL,set_double_and_char_flag},
+		{"set_time",NULL,NULL,set_double_and_char_flag},
+		{"set_value",NULL,NULL,set_double_and_char_flag},
 		{"slider",NULL,(void *)1,set_name},
 		{"stop",NULL,NULL,set_char_flag},
 		{NULL,NULL,NULL,NULL}
@@ -6649,7 +6649,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	char *slider_name;
-	float value;
+	FE_value value;
 	int found,i,number_of_children,return_code;
 	struct Emoter_slider *emoter_slider;
 	struct Emoter_dialog *emoter_dialog;

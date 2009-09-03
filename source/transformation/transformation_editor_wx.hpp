@@ -106,7 +106,7 @@ protected:
 	 int rate_of_change;
 	 struct Dof3_data global_direction, global_position;
 	 Quaternion *transformation_editor_quaternion;
-	 float *global_quat;
+	 double *global_quat;
 	 wxPanel *transformation_editor_panel;
 	 wxStaticLine *Transformation_editor_wx_staticline;
 	 wxStaticBox* direction_sizer_8_staticbox;

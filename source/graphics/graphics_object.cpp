@@ -6029,6 +6029,7 @@ same voltex in which case shared vertices will be merged.
 	struct Octree_object *neighbour, *octree_vertex;
 	struct LIST(Octree_object) *neighbours;
 	struct VT_iso_vertex *existing_vertex, *vertex; 
+	FE_value coordinates[3];
 
 	ENTER(GT_voltex_merge_GT_voltex);
 	return_code = 1;
@@ -6048,14 +6049,15 @@ same voltex in which case shared vertices will be merged.
 	for (i = 0 ; i < voltex->number_of_vertices ; i++)
 	{
 		vertex = voltex->vertex_list[i];
+		CAST_TO_FE_VALUE(coordinates,vertex->coordinates,3);
 		Octree_add_objects_near_coordinate_to_list(
 			existing_voltex->vertex_octree,
-			/*dimension*/3, vertex->coordinates,
+			/*dimension*/3, coordinates,
 			/*radius*/0.001, neighbours);
 		if (0 == NUMBER_IN_LIST(Octree_object)(neighbours))
 		{
 			octree_vertex = CREATE(Octree_object)(/*dimension*/3,
-				vertex->coordinates);
+				coordinates);
 			if ((existing_voltex != voltex) || (vertex_count < i))
 			{
 				existing_voltex->vertex_list[vertex_count] = vertex;

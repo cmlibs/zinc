@@ -785,7 +785,7 @@ NOTE: currently does not tolerate having a variable_scale_field.
 		orientation_scale[9],scale_factor;
 	int number_of_orientation_scale_components,return_code;
 	struct FE_node_edit_information *edit_info = NULL;
-	Triple size;
+	FE_value_triple size;
 
 	ENTER(FE_node_calculate_delta_vector);
 	if (node&&(edit_info=(struct FE_node_edit_information *)edit_info_void)&&

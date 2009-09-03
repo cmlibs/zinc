@@ -1379,8 +1379,8 @@ DESCRIPTION :
 								vector1[k]=vertex1[k]-vertex0[k];
 								vector2[k]=vertex2[k]-vertex0[k];
 							}
-							cross_product_float3(vector1, vector2, result);
-							normalize_float3(result);
+							cross_product_FE_value_vector3(vector1, vector2, result);
+							normalize_FE_value3(result);
 							for (k=0;k<3;k++)
 							{
 								vectorsum[k] += result[k];

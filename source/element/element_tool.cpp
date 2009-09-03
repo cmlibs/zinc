@@ -459,7 +459,7 @@ release.
 	struct LIST(FE_element) *element_list;
 	struct LIST(Scene_picked_object) *scene_picked_object_list;
 	struct Scene *scene;
-	Triple *xi_points;
+	FE_value_triple *xi_points;
 
 	ENTER(Element_tool_interactive_event_handler);
 	if (device_id&&event&&(element_tool=

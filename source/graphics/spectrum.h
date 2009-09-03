@@ -383,7 +383,7 @@ Uses the <spectrum> to modify the <material> to represent the <number_of_data_co
 ==============================================================================*/
 
 int Spectrum_value_to_rgba(struct Spectrum *spectrum,int number_of_data_components,
-	float *data, float *rgba);
+	FE_value *data, float *rgba);
 /*******************************************************************************
 LAST MODIFIED : 4 October 2006
 

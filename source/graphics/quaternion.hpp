@@ -78,9 +78,9 @@ public:
 
 	 void interpolated_with_SLERP(const Quaternion &from, const Quaternion &to, const double normalised_time);
 
-	 int quaternion_to_matrix(float *values);
+	 int quaternion_to_matrix(double *values);
 
-	 int matrix_to_quaternion(float *source, float *destination);
+	 int matrix_to_quaternion(double *source, double *destination);
 
 private:
 	 

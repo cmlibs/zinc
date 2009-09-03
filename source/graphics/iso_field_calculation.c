@@ -68,7 +68,7 @@ parameters.
 		struct Iso_field_calculation_plane_struct 
 		{
 			int number_of_coeffs;
-			float *coeffs;
+			FE_value *coeffs;
 		} floats;
 	} parameters;
 }; /* struct Iso_field_calculation_data */

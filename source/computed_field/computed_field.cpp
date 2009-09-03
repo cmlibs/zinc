@@ -1437,7 +1437,7 @@ This is currently that the field is defined and any of the components are non ze
 	FE_value zero_tolerance = 1e-6;
 	int i, number_of_xi_points, number_in_xi, return_code;
 	struct FE_element_shape *shape;
-	Triple *xi_points;
+	FE_value_triple *xi_points;
 
 	ENTER(Computed_field_is_true_in_element);
 	return_code=0;
@@ -1451,7 +1451,7 @@ This is currently that the field is defined and any of the components are non ze
 			if (FE_element_shape_get_xi_points_cell_centres(shape, &number_in_xi,
 					&number_of_xi_points, &xi_points) && (number_of_xi_points > 0))
 			{
-				Field_element_xi_location centre_location(element, xi_points[0], 
+				Field_element_xi_location centre_location(element, *xi_points, 
 					time, /*top_level_element*/(struct FE_element *)NULL);
 				if (Computed_field_evaluate_cache_at_location(field, &centre_location))
 				{

@@ -368,7 +368,7 @@ DESCRIPTION :
 						/*coordinate_field*/(struct Computed_field *)NULL,
 						/*density_field*/(struct Computed_field *)NULL,
 						&maximum_element_point_number,
-						/*xi_points_address*/(Triple **)NULL,
+						/*xi_points_address*/(FE_value_triple **)NULL,
 						data->time);
 					Element_point_ranges_add_range(element_point_ranges,
 						0, maximum_element_point_number - 1);

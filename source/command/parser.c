@@ -3952,6 +3952,88 @@ A modifier function for setting a float to a positive value.
 	return (return_code);
 } /* set_float_positive */
 
+int set_FE_value_positive(struct Parse_state *state,void *value_address_void,
+	void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+A modifier function for setting a FE_value to a positive value.
+==============================================================================*/
+{
+	FE_value value,*value_address;
+	int return_code;
+
+	ENTER(set_FE_value_positive);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,state->current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
+			{
+				if (value_address=(FE_value *)value_address_void)
+				{
+					if (1==sscanf(state->current_token," "FE_VALUE_INPUT_STRING" ",&value))
+					{
+						/* make sure that the value value is positive */
+						if (value>0)
+						{
+							*value_address=value;
+							return_code=shift_Parse_state(state,1);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Value must be a positive FE_value: %s\n",state->current_token);
+							display_parse_state_location(state);
+							return_code=0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Invalid positive FE_vlaue: %s",
+							state->current_token);
+						display_parse_state_location(state);
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_FE_value_positive.  Missing value_address");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," #");
+				if (value_address=(FE_value *)value_address_void)
+				{
+					display_message(INFORMATION_MESSAGE,"[%g]",*value_address);
+				}
+				display_message(INFORMATION_MESSAGE,"{>0}");
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing positive FE_value");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_FE_value_positive.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_FE_value_positive */
+
 int set_float_non_negative(struct Parse_state *state,void *value_address_void,
 	void *dummy_user_data)
 /*******************************************************************************
@@ -4456,7 +4538,7 @@ A modifier function for setting a float.
 ==============================================================================*/
 {
 	const char *current_token;
-	float value,*value_address;
+	FE_value value,*value_address;
 	int return_code;
 
 	ENTER(set_FE_value);
@@ -4468,7 +4550,7 @@ A modifier function for setting a float.
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (value_address=(float *)value_address_void)
+				if (value_address=(FE_value *)value_address_void)
 				{
 					if (1==sscanf(current_token,FE_VALUE_INPUT_STRING,&value))
 					{
@@ -4492,7 +4574,7 @@ A modifier function for setting a float.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," #");
-				if (value_address=(float *)value_address_void)
+				if (value_address=(FE_value *)value_address_void)
 				{
 					display_message(INFORMATION_MESSAGE,"[%g]",*value_address);
 				}
@@ -4552,7 +4634,7 @@ Now prints current contents of the vector with help.
 					{
 						if (current_token = state->current_token)
 						{
-							if (1 == sscanf(current_token, " %f ", &value))
+							if (1 == sscanf(current_token, " "FE_VALUE_INPUT_STRING" ", &value))
 							{
 								values[i] = value;
 								return_code = shift_Parse_state(state, 1);

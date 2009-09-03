@@ -101,7 +101,7 @@ Spherical linear interpolation of two quaternions at time index
 		ENTER(Quaternion::interpolated_with_SLERP);
 		const double tolerance = 0.00000001;
 		double cosOmega = from.x * to.x + from.y * to.y + from.z * to.z + from.w * to.w;
-		float tol[4];
+		double tol[4];
 		if (cosOmega < 0.0)
 		{
 			 cosOmega = -cosOmega;
@@ -140,7 +140,7 @@ Spherical linear interpolation of two quaternions at time index
 		LEAVE;
  }
 
- int Quaternion::quaternion_to_matrix(float *values)
+ int Quaternion::quaternion_to_matrix(double *values)
 /*******************************************************************************
 LAST MODIFIED : 18 Oct 2007
 
@@ -190,7 +190,7 @@ Convert the quaternion to a matrix, the argument values must be allocated before
 		return (return_code);
  }
 
-int Quaternion::matrix_to_quaternion(float *source, float *destination)
+int Quaternion::matrix_to_quaternion(double *source, double *destination)
 /*******************************************************************************
 LAST MODIFIED : 22 Feb 2008
 
@@ -199,7 +199,7 @@ Convert the matrix to a quaternion, the argument values must be allocated before
 ==============================================================================*/
  {
 		int return_code;
-		float trace, s;
+		double trace, s;
 
 		ENTER(Quaternion::matrix_to_quaternion);
 		return_code = 0;

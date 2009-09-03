@@ -104,6 +104,15 @@ Normalizes vector v - of dimension 3 - and returns its length.
 Zero vectors are returned unchanged.
 ==============================================================================*/
 
+FE_value normalize_FE_value3(FE_value *v);
+/*******************************************************************************
+LAST MODIFIED : 15 October 2001
+
+DESCRIPTION :
+Normalizes vector v - of dimension 3 - and returns its length.
+Zero vectors are returned unchanged.
+==============================================================================*/
+
 int normalize_float3(float vector[3]);
 /*******************************************************************************
 LAST MODIFIED : 27 December 1995
@@ -146,6 +155,14 @@ DESCRIPTION :
 Set matrix <a> to the <n> x <n> identity.
 ==============================================================================*/
 
+int identity_matrix_FE_value(int n, FE_value *a);
+/*******************************************************************************
+LAST MODIFIED : 6 April 2001
+
+DESCRIPTION :
+Set matrix <a> to the <n> x <n> identity.
+==============================================================================*/
+
 int identity_matrix_float(int n, float *a);
 /*******************************************************************************
 LAST MODIFIED : 15 November 2001
@@ -155,6 +172,16 @@ Set matrix <a> to the <n> x <n> identity.
 ==============================================================================*/
 
 int multiply_matrix(int m,int s,int n,double *a,double *b,double *c);
+/*******************************************************************************
+LAST MODIFIED : 28 January 1998
+
+DESCRIPTION :
+Returns in the m rows x n columns matrix <c> that is the product of
+m x s matrix <a> and s x n matrix <b>.
+==============================================================================*/
+
+int multiply_matrix_FE_value(int m,int s,int n,FE_value *a,FE_value *b,
+	FE_value *c);
 /*******************************************************************************
 LAST MODIFIED : 28 January 1998
 

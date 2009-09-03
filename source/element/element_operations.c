@@ -383,7 +383,7 @@ DESCRIPTION :
 	int dimension, i, return_code;
 	struct FE_element_and_values_to_array_data *array_data;
 	struct FE_element_shape *element_shape;
-	Triple *xi_points;
+	FE_value_triple *xi_points;
 
 	ENTER(FE_element_and_values_to_array);
 	if (element && get_FE_element_identifier(element, &cm_element_identifier) &&

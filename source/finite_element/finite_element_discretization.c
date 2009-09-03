@@ -245,7 +245,7 @@ Global functions
 
 int FE_element_shape_get_xi_points_cell_centres(
 	struct FE_element_shape *element_shape, int *number_in_xi,
-	int *number_of_xi_points_address, Triple **xi_points_address)
+	int *number_of_xi_points_address, FE_value_triple **xi_points_address)
 /*******************************************************************************
 LAST MODIFIED : 24 April 2001
 
@@ -265,7 +265,7 @@ comments for simplex and polygons shapes for more details.
 		number_in_xi0, number_in_xi1, number_in_xi_around_polygon,
 		number_in_xi_simplex, number_of_polygon_sides,
 		number_of_xi_points, points_per_row, return_code;
-	Triple *xi, *xi_points;
+	FE_value_triple *xi, *xi_points;
 
 	ENTER(FE_element_shape_get_xi_points_cell_centres);
 	if (element_shape && get_FE_element_shape_dimension(element_shape,
@@ -382,7 +382,7 @@ comments for simplex and polygons shapes for more details.
 		}
 		if (return_code && xi_points_address)
 		{
-			if (ALLOCATE(xi_points, Triple, number_of_xi_points))
+			if (ALLOCATE(xi_points, FE_value_triple, number_of_xi_points))
 			{
 				xi = xi_points;
 				switch (element_shape_category)
@@ -688,7 +688,7 @@ comments for simplex and polygons shapes for more details.
 
 int FE_element_shape_get_xi_points_cell_corners(
 	struct FE_element_shape *element_shape, int *number_in_xi,
-	int *number_of_xi_points_address, Triple **xi_points_address)
+	int *number_of_xi_points_address, FE_value_triple **xi_points_address)
 /*******************************************************************************
 LAST MODIFIED : 23 April 2001
 
@@ -708,7 +708,7 @@ comments for simplex and polygons shapes for more details.
 		number_in_xi0, number_in_xi1, number_in_xi_around_polygon,
 		number_in_xi_simplex, number_of_polygon_sides, number_of_xi_points,
 		points_per_row, return_code;
-	Triple *xi, *xi_points;
+	FE_value_triple *xi, *xi_points;
 
 	ENTER(FE_element_shape_get_xi_points_cell_corners);
 	if (element_shape && get_FE_element_shape_dimension(element_shape,
@@ -834,7 +834,7 @@ comments for simplex and polygons shapes for more details.
 		}
 		if (return_code && xi_points_address)
 		{
-			if (ALLOCATE(xi_points, Triple, number_of_xi_points))
+			if (ALLOCATE(xi_points, FE_value_triple, number_of_xi_points))
 			{
 				xi = xi_points;
 				switch (element_shape_category)
@@ -1109,7 +1109,7 @@ static int FE_element_add_xi_points_1d_line_cell_random(
 	enum Xi_discretization_mode xi_discretization_mode, FE_value xi_centre,
 	FE_value delta_xi, struct Computed_field *coordinate_field,
 	struct Computed_field *density_field, int *number_of_xi_points,
-	Triple **xi_points, int *number_of_xi_points_allocated, FE_value time)
+	FE_value_triple **xi_points, int *number_of_xi_points_allocated, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 21 March 2003
 
@@ -1124,10 +1124,10 @@ array is enlarged if necessary and the new points added at random locations.
 {
 	double a[3], length, expected_number;
 	FE_value coordinates[3], density;
-	float centre_xi1, dxi1, jacobian[3];
+	FE_value centre_xi1, dxi1, jacobian[3];
 	int j, number_of_coordinate_components, number_of_points_in_line,
 		return_code;
-	Triple *xi;
+	FE_value_triple *xi;
 
 	ENTER(FE_element_add_xi_points_1d_line_cell_random);
 	if (element && (1 == get_FE_element_dimension(element)) &&
@@ -1223,7 +1223,7 @@ array is enlarged if necessary and the new points added at random locations.
 				if ((*number_of_xi_points + number_of_points_in_line) >
 					(*number_of_xi_points_allocated))
 				{
-					if (REALLOCATE(xi, *xi_points, Triple,
+					if (REALLOCATE(xi, *xi_points, FE_value_triple,
 						*number_of_xi_points + number_of_points_in_line +
 						XI_POINTS_REALLOCATE_SIZE))
 					{
@@ -1287,7 +1287,7 @@ static int FE_element_add_xi_points_2d_square_cell_random(
 	enum Xi_discretization_mode xi_discretization_mode,
 	FE_value *centre_xi, FE_value *dxi, struct Computed_field *coordinate_field,
 	struct Computed_field *density_field, int *number_of_xi_points,
-	Triple **xi_points, int *number_of_xi_points_allocated, FE_value time)
+	FE_value_triple **xi_points, int *number_of_xi_points_allocated, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 21 March 2003
 
@@ -1302,10 +1302,10 @@ array is enlarged if necessary and the new points added at random locations.
 {
 	double a[3], area, b[3], c[3], expected_number;
 	FE_value coordinates[3], density;
-	float centre_xi1, centre_xi2, dxi1, dxi2, jacobian[6];
+	FE_value centre_xi1, centre_xi2, dxi1, dxi2, jacobian[6];
 	int j, number_of_coordinate_components, number_of_points_in_square,
 		return_code;
-	Triple *xi;
+	FE_value_triple *xi;
 
 	ENTER(FE_element_add_xi_points_2d_square_cell_random);
 	if (element && (2 == get_FE_element_dimension(element)) && centre_xi && dxi &&
@@ -1399,7 +1399,7 @@ array is enlarged if necessary and the new points added at random locations.
 				if ((*number_of_xi_points + number_of_points_in_square) >
 					(*number_of_xi_points_allocated))
 				{
-					if (REALLOCATE(xi, *xi_points, Triple,
+					if (REALLOCATE(xi, *xi_points, FE_value_triple,
 						*number_of_xi_points + number_of_points_in_square +
 						XI_POINTS_REALLOCATE_SIZE))
 					{
@@ -1463,7 +1463,7 @@ static int FE_element_add_xi_points_3d_cube_cell_random(
 	enum Xi_discretization_mode xi_discretization_mode,
 	FE_value *centre_xi, FE_value *dxi, struct Computed_field *coordinate_field,
 	struct Computed_field *density_field, int *number_of_xi_points,
-	Triple **xi_points, int *number_of_xi_points_allocated, FE_value time)
+	FE_value_triple **xi_points, int *number_of_xi_points_allocated, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 21 March 2003
 
@@ -1478,9 +1478,9 @@ array is enlarged if necessary and the new points added at random locations.
 {
 	double a[3], b[3], c[3], expected_number, volume;
 	FE_value coordinates[3], density;
-	float centre_xi1, centre_xi2, centre_xi3, dxi1, dxi2, dxi3, jacobian[9];
+	FE_value centre_xi1, centre_xi2, centre_xi3, dxi1, dxi2, dxi3, jacobian[9];
 	int j, number_of_points_in_cube, return_code;
-	Triple *xi;
+	FE_value_triple *xi;
 
 	ENTER(FE_element_add_xi_points_3d_cube_cell_random);
 	if (element && (3 == get_FE_element_dimension(element)) && centre_xi && dxi &&
@@ -1563,7 +1563,7 @@ array is enlarged if necessary and the new points added at random locations.
 				if ((*number_of_xi_points + number_of_points_in_cube) >
 					(*number_of_xi_points_allocated))
 				{
-					if (REALLOCATE(xi, *xi_points, Triple,
+					if (REALLOCATE(xi, *xi_points, FE_value_triple,
 						*number_of_xi_points + number_of_points_in_cube +
 						XI_POINTS_REALLOCATE_SIZE))
 					{
@@ -1625,7 +1625,7 @@ array is enlarged if necessary and the new points added at random locations.
 int FE_element_get_xi_points_cell_random(struct FE_element *element,
 	enum Xi_discretization_mode xi_discretization_mode, int *number_in_xi,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
-	int *number_of_xi_points_address, Triple **xi_points_address, FE_value time)
+	int *number_of_xi_points_address, FE_value_triple **xi_points_address, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 3 December 2001
 
@@ -1656,7 +1656,7 @@ comments for simplex and polygons shapes for more details.
 		number_of_polygon_sides, number_of_xi_points, number_of_xi_points_allocated,
 		return_code;
 	struct FE_element_shape *element_shape;
-	Triple *xi_points;
+	FE_value_triple *xi_points;
 
 	ENTER(FE_element_get_xi_points_cell_random);
 	if (element && get_FE_element_shape(element, &element_shape) &&
@@ -1699,7 +1699,7 @@ comments for simplex and polygons shapes for more details.
 			number_of_xi_points = 0;
 			if (xi_points_address)
 			{
-				*xi_points_address = (Triple *)NULL;
+				*xi_points_address = (FE_value_triple *)NULL;
 				number_of_xi_points_allocated = 0;
 			}
 			/* need to compute all the points at all times, even if just enquiring
@@ -1816,7 +1816,7 @@ comments for simplex and polygons shapes for more details.
 					/* free over-allocated space in the xi_points array */
 					if (number_of_xi_points < number_of_xi_points_allocated)
 					{
-						if (REALLOCATE(xi_points, *xi_points_address, Triple,
+						if (REALLOCATE(xi_points, *xi_points_address, FE_value_triple,
 							number_of_xi_points))
 						{
 							*xi_points_address = xi_points;
@@ -1851,9 +1851,9 @@ comments for simplex and polygons shapes for more details.
 
 int FE_element_get_xi_points(struct FE_element *element,
 	enum Xi_discretization_mode xi_discretization_mode,
-	int *number_in_xi, Triple exact_xi,
+	int *number_in_xi, FE_value_triple exact_xi,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
-	int *number_of_xi_points_address, Triple **xi_points_address, FE_value time)
+	int *number_of_xi_points_address, FE_value_triple **xi_points_address, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 3 December 2001
 
@@ -1871,7 +1871,7 @@ is trivial, it is passed and used here to provide a consistent interface.
 	int return_code;
 	struct CM_element_information identifier;
 	struct FE_element_shape *element_shape;
-	Triple *xi_points;
+	FE_value_triple *xi_points;
 
 	ENTER(FE_element_get_xi_points);
 	if (element && get_FE_element_shape(element, &element_shape) &&
@@ -1909,7 +1909,7 @@ is trivial, it is passed and used here to provide a consistent interface.
 					*number_of_xi_points_address = 1;
 					if (xi_points_address)
 					{
-						if (ALLOCATE(xi_points, Triple, 1))
+						if (ALLOCATE(xi_points, FE_value_triple, 1))
 						{
 							*xi_points_address = xi_points;
 							(*xi_points)[0] = exact_xi[0];
@@ -1952,7 +1952,7 @@ is trivial, it is passed and used here to provide a consistent interface.
 
 int FE_element_convert_xi_points_cell_corners_to_top_level(
 	struct FE_element *element, struct FE_element *top_level_element,
-	int *top_level_number_in_xi, int number_of_xi_points, Triple *xi_points,
+	int *top_level_number_in_xi, int number_of_xi_points, FE_value_triple *xi_points,
 	int **top_level_xi_point_numbers_address)
 /*******************************************************************************
 LAST MODIFIED : 23 April 2001
@@ -2023,7 +2023,7 @@ a return value here indicates that the xi_points have been converted.
 				/* check we have the appropriate number of points */
 				FE_element_shape_get_xi_points_cell_corners(element_shape, number_in_xi,
 					&expected_number_of_xi_points,
-					/*xi_points_address*/(Triple **)NULL) &&
+					/*xi_points_address*/(FE_value_triple **)NULL) &&
 				(expected_number_of_xi_points == number_of_xi_points) &&
 				ALLOCATE(top_level_xi_point_numbers, int, number_of_xi_points))
 			{
@@ -2075,7 +2075,7 @@ a return value here indicates that the xi_points have been converted.
 
 int FE_element_get_numbered_xi_point(struct FE_element *element,
 	enum Xi_discretization_mode xi_discretization_mode,
-	int *number_in_xi, Triple exact_xi,
+	int *number_in_xi, FE_value_triple exact_xi,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
 	int xi_point_number, FE_value *xi, FE_value time)
 /*******************************************************************************
@@ -2094,7 +2094,7 @@ calculation is trivial.
 	int default_behaviour, i, j, k, line_direction, linked_xi_directions[2], m, n,
 		number_of_polygon_sides, number_of_xi_points, return_code;
 	struct FE_element_shape *element_shape;
-	Triple *xi_points;
+	FE_value_triple *xi_points;
 
 	ENTER(FE_element_get_numbered_xi_point);
 	if (element && get_FE_element_shape(element, &element_shape) &&
@@ -2334,7 +2334,7 @@ calculation is trivial.
 } /* FE_element_get_numbered_xi_point */
 
 int convert_xi_points_from_element_to_parent(int number_of_xi_points,
-	Triple *xi_points,int element_dimension,int parent_dimension,
+	FE_value_triple *xi_points,int element_dimension,int parent_dimension,
 	FE_value *element_to_parent)
 /*******************************************************************************
 LAST MODIFIED : 17 September 1998
@@ -2359,7 +2359,7 @@ parent elements where necessary.
 {
 	float final_xi_value;
 	int i,j,k,return_code,rowsize;
-	Triple *xi,xi_value;
+	FE_value_triple *xi,xi_value;
 
 	ENTER(convert_xi_points_from_element_to_parent);
 	if ((0<number_of_xi_points)&&xi_points&&(0<element_dimension)&&

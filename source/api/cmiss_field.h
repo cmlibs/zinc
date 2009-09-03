@@ -128,7 +128,7 @@ See http://www.cmiss.org/cmgui/tracker/657
 ==============================================================================*/
 
 int Cmiss_field_evaluate_at_node(struct Cmiss_field *field,
-	struct Cmiss_node *node, float time, int number_of_values, float *values);
+	struct Cmiss_node *node, double time, int number_of_values, double *values);
 /*******************************************************************************
 LAST MODIFIED : 29 March 2004
 
@@ -141,7 +141,7 @@ greater than or equal to the number of components.
 ==============================================================================*/
 
 int Cmiss_field_set_values_at_node(struct Cmiss_field *field,
-	struct Cmiss_node *node, float time, int number_of_values, float *values);
+	struct Cmiss_node *node, double time, int number_of_values, double *values);
 /*******************************************************************************
 LAST MODIFIED : 21 April 2005
 
@@ -159,9 +159,9 @@ is reached for which its calculation is not reversible, or is not supported yet.
 ==============================================================================*/
 
 int Cmiss_field_evaluate_in_element(struct Cmiss_field *field,
-	struct Cmiss_element *element, float *xi, float time, 
+	struct Cmiss_element *element, double *xi, double time, 
 	struct Cmiss_element *top_level_element, int number_of_values,
-	float *values, int number_of_derivatives, float *derivatives);
+	double *values, int number_of_derivatives, double *derivatives);
 /*******************************************************************************
 LAST MODIFIED : 29 March 2004
 
@@ -186,7 +186,7 @@ number_of_components
 ==============================================================================*/
 
 char *Cmiss_field_evaluate_as_string_at_node(
-	struct Cmiss_field *field, struct Cmiss_node *node, float time);
+	struct Cmiss_field *field, struct Cmiss_node *node, double time);
 /*******************************************************************************
 LAST MODIFIED : 17 January 2007
 
@@ -215,7 +215,7 @@ any other fields, this function is recursively called for them.
 int Cmiss_field_evaluate_at_field_coordinates(
 	Cmiss_field_id field,
 	Cmiss_field_id reference_field, int number_of_input_values,
-	float *input_values, float time, float *values);
+	double *input_values, double time, double *values);
 /*******************************************************************************
 LAST MODIFIED : 25 March 2008
 
@@ -254,7 +254,7 @@ Change the name of a field.
 
 int Cmiss_field_finite_element_set_string_at_node(
 	Cmiss_field_id field, int component_number, Cmiss_node_id node, 
-	float time, const char *string);
+	double time, const char *string);
 /*******************************************************************************
 LAST MODIFIED : 24 May 2006
 

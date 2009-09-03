@@ -39262,13 +39262,13 @@ for the coordinate_field used.
 					case CYLINDRICAL_POLAR:
 					{
 						cartesian_to_cylindrical_polar(node_x,node_y,node_z,
-							&node_1,&node_2,&node_3,(float *)NULL);
+							&node_1,&node_2,&node_3,(FE_value *)NULL);
 					} break;
 					case PROLATE_SPHEROIDAL:
 					{
 						cartesian_to_prolate_spheroidal(node_x,node_y,node_z,
 							coordinate_system->parameters.focus,
-							&node_1,&node_2,&node_3,(float *)NULL);
+							&node_1,&node_2,&node_3,(FE_value *)NULL);
 					} break;
 					case OBLATE_SPHEROIDAL:
 					{

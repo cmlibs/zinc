@@ -1822,7 +1822,7 @@ data, and then changes the correct value in the array structure.
 							 }
 							 else
 							 {
-									if (1==sscanf(value_string,"%g",&value))
+								  if (1==sscanf(value_string,FE_VALUE_INPUT_STRING,&value))
 									{
 										 if (ALLOCATE(values, FE_value, 
 													 Computed_field_get_number_of_components(field)))

@@ -1463,29 +1463,32 @@ were active when the event was generated.
 	ENTER(Cmiss_scene_viewer_input_get_event_type);
 	if (input_data)
 	{
-		input_data->input_modifier = (enum Graphics_buffer_input_modifier)0;
-		int *input_modifier_int = (int*)&input_data->input_modifier;
-		*input_modifier_int = 0;
+		input_data->input_modifier = 
+			static_cast<enum Graphics_buffer_input_modifier>(0);
+		//int *input_modifier_int = reinterpret_cast<int*>(&input_data->input_modifier);
+		int input_modifier_int = 0;
 		if (modifier_flags & CMISS_SCENE_VIEWER_INPUT_MODIFIER_SHIFT)
 		{
-			*input_modifier_int |=
+			input_modifier_int |=
 				GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
 		}
 		if (modifier_flags & CMISS_SCENE_VIEWER_INPUT_MODIFIER_CONTROL)
 		{
-			*input_modifier_int |=
+			input_modifier_int |=
 				GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
 		}
 		if (modifier_flags & CMISS_SCENE_VIEWER_INPUT_MODIFIER_ALT)
 		{
-			*input_modifier_int |=
+			input_modifier_int |=
 				GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
 		}
 		if (modifier_flags & CMISS_SCENE_VIEWER_INPUT_MODIFIER_BUTTON1)
 		{
-			*input_modifier_int |=
+			input_modifier_int |=
 				GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
 		}
+		input_data->input_modifier = 
+			static_cast<enum Graphics_buffer_input_modifier>(input_modifier_int);
 	}
 	else
 	{

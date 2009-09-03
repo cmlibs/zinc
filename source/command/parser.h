@@ -532,6 +532,15 @@ DESCRIPTION :
 A modifier function for setting a float to a positive value.
 ==============================================================================*/
 
+int set_FE_value_positive(struct Parse_state *state,void *value_address_void,
+	void *dummy_user_data);
+/*******************************************************************************
+LAST MODIFIED : 18 June 1996
+
+DESCRIPTION :
+A modifier function for setting a FE_value to a positive value.
+==============================================================================*/
+
 int set_float_non_negative(struct Parse_state *state,void *value_address_void,
 	void *dummy_user_data);
 /*******************************************************************************

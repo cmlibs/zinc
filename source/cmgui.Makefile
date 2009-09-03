@@ -39,6 +39,10 @@ ifndef STATIC_LINK
    STATIC_LINK=false
 endif
 
+ifndef FE_VALUE_IS_DOUBLE
+   FE_VALUE_IS_DOUBLE=false
+endif
+
 COMMONMAKEFILE := common.Makefile
 COMMONMAKEFILE_FOUND = $(wildcard $(COMMONMAKEFILE))
 include $(COMMONMAKEFILE)
@@ -239,6 +243,9 @@ ifeq ($(SYSNAME),Darwin)
    PLATFORM_DEFINES =  -DCMGUI 
    OPERATING_SYSTEM_DEFINES = -DUNIX -DDARWIN
 endif # SYSNAME == Darwin
+ifneq ($(FE_VALUE_IS_DOUBLE),false)
+   FE_VALUE_DEFINES = -DFE_VALUE_IS_DOUBLE
+endif
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    USER_INTERFACE_DEFINES = -DMOTIF_USER_INTERFACE
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
@@ -823,7 +830,7 @@ else # USE_COMPUTED_VARIABLES != true
    endif # SYSNAME == Darwin
 endif # USE_COMPUTED_VARIABLES != true
 
-ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
+ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) $(FE_VALUE_DEFINES) \
 	$(PLATFORM_DEFINES) $(OPERATING_SYSTEM_DEFINES) $(USER_INTERFACE_DEFINES) \
 	$(STEREO_DISPLAY_DEFINES) $(CONNECTIVITY_DEFINES) \
 	$(EXTERNAL_INPUT_DEFINES) \
@@ -1128,7 +1135,7 @@ GENERAL_SRCS = \
 	general/compare.c \
 	general/debug.c \
 	general/error_handler.c \
-	general/geometry.c \
+	general/geometry.cpp \
 	general/heapsort.c \
 	general/image_utilities.c \
 	general/indexed_multi_range.c \
@@ -1714,7 +1721,7 @@ LIB_GENERAL_SRCS = \
 	general/any_object.c \
 	general/compare.c \
 	general/debug.c \
-	general/geometry.c \
+	general/geometry.cpp \
 	general/heapsort.c \
 	general/matrix_vector.c \
 	general/multi_range.c \

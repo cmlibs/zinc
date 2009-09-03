@@ -496,7 +496,9 @@ Writes VRML to represent the value 'data' in accordance with the spectrum.
 	ENTER(spectrum_rendervrml_value);
 	if (spectrum&&material)
 	{
-		Spectrum_value_to_rgba(spectrum,number_of_data_components,data,rgba);
+		FE_value feData[number_of_data_components];
+		CAST_TO_FE_VALUE(feData,data,number_of_data_components);
+		Spectrum_value_to_rgba(spectrum,number_of_data_components,feData,rgba);
 		fprintf(vrml_file,"    %f %f %f,\n",rgba[0],rgba[1],rgba[2]);
 		return_code=1;
 	}

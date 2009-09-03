@@ -125,8 +125,10 @@ Generates a finite_element node at the specified location
 				(struct FE_region *)NULL, data->template_node))
 		{	
 			ACCESS(FE_node)(node);
+			FE_value_triple feCoords;
+			CAST_TO_FE_VALUE(feCoords,coordinates,3);
 			if (Computed_field_set_values_at_node(data->coordinate_field,
-					node, time, coordinates))
+					node, time, feCoords))
 			{
 				if (FE_region_merge_FE_node(data->fe_region, node))
 				{
@@ -214,6 +216,7 @@ to the <render_mode>
 {
 	double area, coordinate_1, coordinate_2, coordinate_3, density, expected_number;
 	FE_value side1[3], side2[3], side3[3], position[3], xi1, xi2;
+	Triple positionT;
 	int element_number, i, j, number_of_points, return_code;
 	struct FE_element *element;
 
@@ -276,7 +279,8 @@ to the <render_mode>
 						position[i] = node1->coordinates[i]
 							+ xi1 * side1[i] + xi2 * side2[i];
 					}
-					if (!FE_region_add_node(data, time, position))
+					CAST_TO_OTHER(positionT,position,float,3);
+					if (!FE_region_add_node(data, time, positionT))
 					{
 						return_code = 0;
 					}
@@ -375,6 +379,7 @@ to the <render_mode>
 {
 	double length, density, expected_number;
 	FE_value position[3], side[3], xi1;
+	Triple positionT;
 	int element_number, i, j, number_of_points, return_code;
 	struct FE_element *element;
 
@@ -420,7 +425,8 @@ to the <render_mode>
 						position[i] = node1->coordinates[i]
 							+ xi1 * side[i];
 					}
-					if (!FE_region_add_node(data, time, position))
+					CAST_TO_OTHER(positionT,position,float,3);
+					if (!FE_region_add_node(data, time, positionT))
 					{
 						return_code = 0;
 					}

@@ -91,21 +91,21 @@ DESCRIPTION :
 		struct
 		{
 			/* line entity */
-			float end[3],start[3];
+			FE_value end[3],start[3];
 		} type_110;
 		struct
 		{
 			/* parametric spline curve entity */
 			int degree_of_continuity,n,number_of_dimensions,spline_type;
 			/*???DB.  Assuming 1 cubic curve */
-			float tu[2],x[4],y[4],z[4];
+			FE_value tu[2],x[4],y[4],z[4];
 		} type_112;
 		struct
 		{
 			/* parametric spline surface entity */
 			int m,n,patch_type,spline_boundary_type;
 			/*???DB.  Assuming 1 bicubic surface */
-			float tu[2],tv[2],x[16],y[16],z[16];
+			FE_value tu[2],tv[2],x[16],y[16],z[16];
 		} type_114;
 		struct
 		{

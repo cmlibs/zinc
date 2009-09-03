@@ -95,7 +95,7 @@ DESCRIPTION :
   enum Coordinate_system_type type;
   union
   {
-    float focus;
+    FE_value focus;
   } parameters;
 }; /* struct Coordinate_system */
 
@@ -123,17 +123,17 @@ Represents a linear transformation  translate + T*x .
 ==============================================================================*/
 {
 	/* translate */
-	float translate_x,translate_y,translate_z;
+	FE_value translate_x,translate_y,translate_z;
 	/* transformation */
-	float txx,txy,txz,tyx,tyy,tyz,tzx,tzy,tzz;
+	FE_value txx,txy,txz,tyx,tyy,tyz,tzx,tzy,tzz;
 } Linear_transformation;
 
 /*
 Global functions
 ----------------
 */
-int linear_transformation(Linear_transformation *linear_transformation,float x,
-	float y,float z,float *result_x,float *result_y,float *result_z);
+int linear_transformation(Linear_transformation *linear_transformation,FE_value x,
+	FE_value y,FE_value z,FE_value *result_x,FE_value *result_y,FE_value *result_z);
 /*******************************************************************************
 LAST MODIFIED : 14 July 1995
 
@@ -141,8 +141,8 @@ DESCRIPTION :
 Performs a <linear_transformation>.
 ==============================================================================*/
 
-int cartesian_to_cylindrical_polar(float x,float y,float z_in,float *r,
-	float *theta,float *z,float *jacobian);
+int cartesian_to_cylindrical_polar(FE_value x,FE_value y,FE_value z_in,FE_value *r,
+	FE_value *theta,FE_value *z,FE_value *jacobian);
 /*******************************************************************************
 LAST MODIFIED : 21 August 1995
 
@@ -153,8 +153,8 @@ y = r*sin(theta)
 z = z_in
 ==============================================================================*/
 
-int cylindrical_polar_to_cartesian(float r,float theta,float z_in,float *x,
-	float *y,float *z,float *jacobian);
+int cylindrical_polar_to_cartesian(FE_value r,FE_value theta,FE_value z_in,FE_value *x,
+	FE_value *y,FE_value *z,FE_value *jacobian);
 /*******************************************************************************
 LAST MODIFIED : 21 August 1995
 
@@ -165,8 +165,8 @@ y = r*sin(theta)
 z = z_in
 ==============================================================================*/
 
-int cartesian_to_spherical_polar(float x,float y,float z,float *r,float *theta,
-	float *phi,float *jacobian);
+int cartesian_to_spherical_polar(FE_value x,FE_value y,FE_value z,FE_value *r,FE_value *theta,
+	FE_value *phi,FE_value *jacobian);
 /*******************************************************************************
 LAST MODIFIED : 17 January 2000
 
@@ -177,8 +177,8 @@ y = r*cos(phi)*sin(theta)
 z = r*sin(phi)
 ==============================================================================*/
 
-int spherical_polar_to_cartesian(float r,float theta,float phi,float *x,
-	float *y,float *z,float *jacobian);
+int spherical_polar_to_cartesian(FE_value r,FE_value theta,FE_value phi,FE_value *x,
+	FE_value *y,FE_value *z,FE_value *jacobian);
 /*******************************************************************************
 LAST MODIFIED : 6 July 1994
 
@@ -189,8 +189,8 @@ y = r*cos(phi)*sin(theta)
 z = r*sin(phi)
 ==============================================================================*/
 
-int cartesian_to_prolate_spheroidal(float x,float y,float z,float focus,
-	float *lambda,float *mu,float *theta,float *jacobian);
+int cartesian_to_prolate_spheroidal(FE_value x,FE_value y,FE_value z,FE_value focus,
+	FE_value *lambda,FE_value *mu,FE_value *theta,FE_value *jacobian);
 /*******************************************************************************
 LAST MODIFIED : 18 October 1995
 
@@ -201,8 +201,8 @@ y = focus*sinh(lambda)*sin(mu)*cos(theta)
 z = focus*sinh(lambda)*sin(mu)*sin(theta)
 ==============================================================================*/
 
-int prolate_spheroidal_to_cartesian(float lambda,float mu,float theta,
-	float focus,float *x,float *y,float *z,float *jacobian);
+int prolate_spheroidal_to_cartesian(FE_value lambda,FE_value mu,FE_value theta,
+	FE_value focus,FE_value *x,FE_value *y,FE_value *z,FE_value *jacobian);
 /*******************************************************************************
 LAST MODIFIED : 17 October 1995
 
@@ -213,7 +213,7 @@ y = focus*sinh(lambda)*sin(mu)*cos(theta)
 z = focus*sinh(lambda)*sin(mu)*sin(theta)
 ==============================================================================*/
 
-int Hammer_projection(float mu,float theta,float *x,float *y,float *jacobian);
+int Hammer_projection(FE_value mu,FE_value theta,FE_value *x,FE_value *y,FE_value *jacobian);
 /*******************************************************************************
 LAST MODIFIED : 19 October 1995
 
@@ -222,7 +222,7 @@ For performing the Hammer projection starting from prolate spheroidal
 coordinates.
 ==============================================================================*/
 
-int polar_projection(float mu,float theta,float *x,float *y,float *jacobian);
+int polar_projection(FE_value mu,FE_value theta,FE_value *x,FE_value *y,FE_value *jacobian);
 /*******************************************************************************
 LAST MODIFIED : 19 October 1995
 
@@ -231,8 +231,8 @@ For performing the polar projection starting from prolate spheroidal
 coordinates.
 ==============================================================================*/
 
-int oblate_spheroidal_to_cartesian(float lambda,float mu,float theta,
-	float focus,float *x,float *y,float *z,float *jacobian);
+int oblate_spheroidal_to_cartesian(FE_value lambda,FE_value mu,FE_value theta,
+	FE_value focus,FE_value *x,FE_value *y,FE_value *z,FE_value *jacobian);
 /*******************************************************************************
 LAST MODIFIED : 8 September 1998
 
@@ -289,10 +289,10 @@ focus for prolate and oblate spheroidal systems.
 
 int convert_Coordinate_system(
   struct Coordinate_system *source_coordinate_system,
-  int number_of_source_coordinates, float *source_coordinates,
+  int number_of_source_coordinates, FE_value *source_coordinates,
   struct Coordinate_system *destination_coordinate_system,
-  int number_of_destinations_coordinates, float *destination_coordinates,
-  float *jacobian);
+  int number_of_destinations_coordinates, FE_value *destination_coordinates,
+  FE_value *jacobian);
 /*******************************************************************************
 LAST MODIFIED : 9 November 2001
 

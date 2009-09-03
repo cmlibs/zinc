@@ -45,12 +45,14 @@ Functions for performing coordinate transformations.
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include "general/enumerator_private_cpp.hpp"
+extern "C" {
 #include "general/debug.h"
-#include "general/enumerator_private.h"
 #include "general/geometry.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
+}
 
 #if defined (OLD_CODE)
 /*
@@ -81,8 +83,8 @@ Initializes pi.
 Global functions
 ----------------
 */
-int linear_transformation(Linear_transformation *linear_transformation,float x,
-	float y,float z,float *result_x,float *result_y,float *result_z)
+int linear_transformation(Linear_transformation *linear_transformation,FE_value x,
+	FE_value y,FE_value z,FE_value *result_x,FE_value *result_y,FE_value *result_z)
 /*******************************************************************************
 LAST MODIFIED : 14 July 1995
 
@@ -117,8 +119,8 @@ Performs a <linear_transformation>.
 	return (return_code);
 } /* linear_transformation */
 
-int cartesian_to_cylindrical_polar(float x,float y,float z_in,float *r,
-	float *theta,float *z,float *jacobian)
+int cartesian_to_cylindrical_polar(FE_value x,FE_value y,FE_value z_in,FE_value *r,
+	FE_value *theta,FE_value *z,FE_value *jacobian)
 /*******************************************************************************
 LAST MODIFIED : 26 March 1997
 
@@ -129,20 +131,20 @@ y = r*sin(theta)
 z = z
 ==============================================================================*/
 {
-	float r2;
+	FE_value r2;
 	int return_code;
 
 	ENTER(cartesian_to_cylindrical_polar);
 	return_code=1;
 	r2=x*x+y*y;
-	*r=(float)sqrt(r2);
+	*r=(FE_value)sqrt(r2);
 	if ((x!=0)||(y!=0))
 	{
-		*theta=(float)atan2(y,x);
+		*theta=(FE_value)atan2(y,x);
 	}
 	else
 	{
-		*theta=(float)0;
+		*theta=(FE_value)0;
 	}
 	*z=z_in;
 	if (jacobian)
@@ -151,31 +153,31 @@ z = z
 		{
 			jacobian[0]=x/(*r);
 			jacobian[1]=y/(*r);
-			jacobian[2]=(float)0;
+			jacobian[2]=(FE_value)0;
 			jacobian[3]= -y/r2;
 			jacobian[4]=x/r2;
-			jacobian[5]=(float)0;
+			jacobian[5]=(FE_value)0;
 		}
 		else
 		{
-			jacobian[0]=(float)0;
-			jacobian[1]=(float)0;
-			jacobian[2]=(float)0;
-			jacobian[3]=(float)0;
-			jacobian[4]=(float)0;
-			jacobian[5]=(float)0;
+			jacobian[0]=(FE_value)0;
+			jacobian[1]=(FE_value)0;
+			jacobian[2]=(FE_value)0;
+			jacobian[3]=(FE_value)0;
+			jacobian[4]=(FE_value)0;
+			jacobian[5]=(FE_value)0;
 		}
-		jacobian[6]=(float)0;
-		jacobian[7]=(float)0;
-		jacobian[8]=(float)1;
+		jacobian[6]=(FE_value)0;
+		jacobian[7]=(FE_value)0;
+		jacobian[8]=(FE_value)1;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* cartesian_to_cylindrical_polar */
 
-int cylindrical_polar_to_cartesian(float r,float theta,float z_in,float *x,
-	float *y,float *z,float *jacobian)
+int cylindrical_polar_to_cartesian(FE_value r,FE_value theta,FE_value z_in,FE_value *x,
+	FE_value *y,FE_value *z,FE_value *jacobian)
 /*******************************************************************************
 LAST MODIFIED : 26 March 1997
 
@@ -190,28 +192,28 @@ z = z_in
 
 	ENTER(cylindrical_polar_to_cartesian);
 	return_code=1;
-	*x=r*(float)cos(theta);
-	*y=r*(float)sin(theta);
+	*x=r*(FE_value)cos(theta);
+	*y=r*(FE_value)sin(theta);
 	*z=z_in;
 	if (jacobian)
 	{
-		jacobian[0]=(float)cos(theta);
-		jacobian[1]= -r*(float)sin(theta);
-		jacobian[2]=(float)0;
-		jacobian[3]=(float)sin(theta);
-		jacobian[4]=r*(float)cos(theta);
-		jacobian[5]=(float)0;
-		jacobian[6]=(float)0;
-		jacobian[7]=(float)0;
-		jacobian[8]=(float)1;
+		jacobian[0]=(FE_value)cos(theta);
+		jacobian[1]= -r*(FE_value)sin(theta);
+		jacobian[2]=(FE_value)0;
+		jacobian[3]=(FE_value)sin(theta);
+		jacobian[4]=r*(FE_value)cos(theta);
+		jacobian[5]=(FE_value)0;
+		jacobian[6]=(FE_value)0;
+		jacobian[7]=(FE_value)0;
+		jacobian[8]=(FE_value)1;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* cylindrical_polar_to_cartesian */
 
-int cartesian_to_spherical_polar(float x,float y,float z,float *r,float *theta,
-	float *phi,float *jacobian)
+int cartesian_to_spherical_polar(FE_value x,FE_value y,FE_value z,FE_value *r,FE_value *theta,
+	FE_value *phi,FE_value *jacobian)
 /*******************************************************************************
 LAST MODIFIED : 18 January 2000
 
@@ -228,62 +230,62 @@ z = r*sin(phi)
 	ENTER(cartesian_to_spherical_polar);
 	return_code=1;
 	r_temp=sqrt(x*x+y*y+z*z);
-	*r=(float)r_temp;
+	*r=(FE_value)r_temp;
 	if (0<r_temp)
 	{
 		sin_phi=(double)z/r_temp;
 		cos_phi=sqrt(x*x+y*y)/r_temp;
-		*phi=(float)atan2(sin_phi,cos_phi);
+		*phi=(FE_value)atan2(sin_phi,cos_phi);
 		if (0<cos_phi)
 		{
 			cos_theta=(double)x/(r_temp*cos_phi);
 			sin_theta=(double)y/(r_temp*cos_phi);
-			*theta=(float)atan2(sin_theta,cos_theta);
+			*theta=(FE_value)atan2(sin_theta,cos_theta);
 			if (jacobian)
 			{
-				jacobian[0]=(float)(cos_phi*cos_theta);
-				jacobian[1]=(float)(cos_phi*sin_theta);
-				jacobian[2]=(float)sin_phi;
-				jacobian[3]=(float)(-sin_theta/(r_temp*cos_phi));
-				jacobian[4]=(float)(cos_theta/(r_temp*cos_phi));
-				jacobian[5]=(float)0;
-				jacobian[6]=(float)(-sin_phi*cos_theta/r_temp);
-				jacobian[7]=(float)(-sin_phi*sin_theta/r_temp);
-				jacobian[8]=(float)(cos_phi/r_temp);
+				jacobian[0]=(FE_value)(cos_phi*cos_theta);
+				jacobian[1]=(FE_value)(cos_phi*sin_theta);
+				jacobian[2]=(FE_value)sin_phi;
+				jacobian[3]=(FE_value)(-sin_theta/(r_temp*cos_phi));
+				jacobian[4]=(FE_value)(cos_theta/(r_temp*cos_phi));
+				jacobian[5]=(FE_value)0;
+				jacobian[6]=(FE_value)(-sin_phi*cos_theta/r_temp);
+				jacobian[7]=(FE_value)(-sin_phi*sin_theta/r_temp);
+				jacobian[8]=(FE_value)(cos_phi/r_temp);
 			}
 		}
 		else
 		{
-			*theta=(float)0;
+			*theta=(FE_value)0;
 			if (jacobian)
 			{
-				jacobian[0]=(float)0;
-				jacobian[1]=(float)0;
-				jacobian[2]=(float)0;
-				jacobian[3]=(float)0;
-				jacobian[4]=(float)0;
-				jacobian[5]=(float)0;
-				jacobian[6]=(float)0;
-				jacobian[7]=(float)0;
-				jacobian[8]=(float)0;
+				jacobian[0]=(FE_value)0;
+				jacobian[1]=(FE_value)0;
+				jacobian[2]=(FE_value)0;
+				jacobian[3]=(FE_value)0;
+				jacobian[4]=(FE_value)0;
+				jacobian[5]=(FE_value)0;
+				jacobian[6]=(FE_value)0;
+				jacobian[7]=(FE_value)0;
+				jacobian[8]=(FE_value)0;
 			}
 		}
 	}
 	else
 	{
-		*theta=(float)0;
-		*phi=(float)0;
+		*theta=(FE_value)0;
+		*phi=(FE_value)0;
 		if (jacobian)
 		{
-			jacobian[0]=(float)0;
-			jacobian[1]=(float)0;
-			jacobian[2]=(float)0;
-			jacobian[3]=(float)0;
-			jacobian[4]=(float)0;
-			jacobian[5]=(float)0;
-			jacobian[6]=(float)0;
-			jacobian[7]=(float)0;
-			jacobian[8]=(float)0;
+			jacobian[0]=(FE_value)0;
+			jacobian[1]=(FE_value)0;
+			jacobian[2]=(FE_value)0;
+			jacobian[3]=(FE_value)0;
+			jacobian[4]=(FE_value)0;
+			jacobian[5]=(FE_value)0;
+			jacobian[6]=(FE_value)0;
+			jacobian[7]=(FE_value)0;
+			jacobian[8]=(FE_value)0;
 		}
 	}
 	LEAVE;
@@ -291,8 +293,8 @@ z = r*sin(phi)
 	return (return_code);
 } /* cartesian_to_spherical_polar */
 
-int spherical_polar_to_cartesian(float r,float theta,float phi,float *x,
-	float *y,float *z,float *jacobian)
+int spherical_polar_to_cartesian(FE_value r,FE_value theta,FE_value phi,FE_value *x,
+	FE_value *y,FE_value *z,FE_value *jacobian)
 /*******************************************************************************
 LAST MODIFIED : 26 March 1997
 
@@ -307,29 +309,29 @@ z = r*sin(phi)
 
 	ENTER(spherical_polar_to_cartesian);
 	return_code=1;
-	*x=r*(float)cos(phi);
-	*y=(*x)*(float)sin(theta);
-	*x *= (float)cos(theta);
-	*z=r*(float)sin(phi);
+	*x=r*(FE_value)cos(phi);
+	*y=(*x)*(FE_value)sin(theta);
+	*x *= (FE_value)cos(theta);
+	*z=r*(FE_value)sin(phi);
 	if (jacobian)
 	{
-		jacobian[0]=(float)(cos(phi)*cos(theta));
-		jacobian[1]= -r*(float)(cos(phi)*sin(theta));
-		jacobian[2]= -r*(float)(sin(phi)*cos(theta));
-		jacobian[3]=(float)(cos(phi)*sin(theta));
-		jacobian[4]=r*(float)(cos(phi)*cos(theta));
-		jacobian[5]= -r*(float)(sin(phi)*sin(theta));
-		jacobian[6]=(float)sin(phi);
-		jacobian[7]=(float)0;
-		jacobian[8]=r*(float)cos(phi);
+		jacobian[0]=(FE_value)(cos(phi)*cos(theta));
+		jacobian[1]= -r*(FE_value)(cos(phi)*sin(theta));
+		jacobian[2]= -r*(FE_value)(sin(phi)*cos(theta));
+		jacobian[3]=(FE_value)(cos(phi)*sin(theta));
+		jacobian[4]=r*(FE_value)(cos(phi)*cos(theta));
+		jacobian[5]= -r*(FE_value)(sin(phi)*sin(theta));
+		jacobian[6]=(FE_value)sin(phi);
+		jacobian[7]=(FE_value)0;
+		jacobian[8]=r*(FE_value)cos(phi);
 	}
 	LEAVE;
 
 	return (return_code);
 } /* spherical_polar_to_cartesian */
 
-int cartesian_to_prolate_spheroidal(float x,float y,float z,float focus,
-	float *lambda,float *mu,float *theta,float *jacobian)
+int cartesian_to_prolate_spheroidal(FE_value x,FE_value y,FE_value z,FE_value focus,
+	FE_value *lambda,FE_value *mu,FE_value *theta,FE_value *jacobian)
 /*******************************************************************************
 LAST MODIFIED : 26 March 1997
 
@@ -382,7 +384,7 @@ z = focus*sinh(lambda)*sin(mu)*sin(theta)
 	}
 	/* sin(mu) */
 	a6=sqrt(a5);
-	*mu=(float)asin(a6);
+	*mu=(FE_value)asin(a6);
 	/* sin(theta) */
 	if ((a7=a4*a6)>0)
 	{
@@ -391,34 +393,34 @@ z = focus*sinh(lambda)*sin(mu)*sin(theta)
 	if (a7>=1)
 	{
 		a7=1;
-		*theta=(float)(PI/2.);
+		*theta=(FE_value)(PI/2.);
 	}
 	else
 	{
 		if (a7<= -1)
 		{
 			a7=1;
-			*theta=(float)(-PI/2.);
+			*theta=(FE_value)(-PI/2.);
 		}
 		else
 		{
-			*theta=(float)asin(a7);
+			*theta=(FE_value)asin(a7);
 		}
 	}
-	*lambda=(float)log(a4+sqrt(1+a3));
+	*lambda=(FE_value)log(a4+sqrt(1+a3));
 	if (x<0)
 	{
-		*mu=(float)PI-(*mu);
+		*mu=(FE_value)PI-(*mu);
 	}
 	if (y<0)
 	{
-		*theta=(float)PI-(*theta);
+		*theta=(FE_value)PI-(*theta);
 	}
 	else
 	{
 		if (*theta<0)
 		{
-			*theta += (float)(2.*PI);
+			*theta += (FE_value)(2.*PI);
 		}
 	}
 	if (jacobian)
@@ -451,26 +453,26 @@ z = focus*sinh(lambda)*sin(mu)*sin(theta)
 			/* a3=cosh(lambda)*sin(mu) */
 			a3 *= a6;
 			/* sinh(lambda)*cos(mu)/(sin(mu)*sin(mu)+sinh(lambda)*sinh(lambda))) */
-			jacobian[0]=(float)(a1/a2);
+			jacobian[0]=(FE_value)(a1/a2);
 			/* cosh(lambda)*sin(mu)*cos(theta)/
 				(sin(mu)*sin(mu)+sinh(lambda)*sinh(lambda))) */
-			jacobian[1]=(float)(a3*a9/a2);
+			jacobian[1]=(FE_value)(a3*a9/a2);
 			/* cosh(lambda)*sin(mu)*sin(theta)/
 				(sin(mu)*sin(mu)+sinh(lambda)*sinh(lambda))) */
-			jacobian[2]=(float)(a3*a7/a2);
+			jacobian[2]=(FE_value)(a3*a7/a2);
 			/* -cosh(lambda)*sin(mu)/(sin(mu)*sin(mu)+sinh(lambda)*sinh(lambda))) */
-			jacobian[3]=(float)(-a3/a2);
+			jacobian[3]=(FE_value)(-a3/a2);
 			/* sinh(lambda)*cos(mu)*cos(theta)/
 				(sin(mu)*sin(mu)+sinh(lambda)*sinh(lambda))) */
-			jacobian[4]=(float)(a1*a9/a2);
+			jacobian[4]=(FE_value)(a1*a9/a2);
 			/* sinh(lambda)*cos(mu)*sin(theta)/
 				(sin(mu)*sin(mu)+sinh(lambda)*sinh(lambda))) */
-			jacobian[5]=(float)(a1*a7/a2);
-			jacobian[6]=(float)0;
+			jacobian[5]=(FE_value)(a1*a7/a2);
+			jacobian[6]=(FE_value)0;
 			/* -sin(theta)/(sinh(lambda)*sin(mu)) */
-			jacobian[7]=(float)(-a7/a5);
+			jacobian[7]=(FE_value)(-a7/a5);
 			/* cos(theta)/(sinh(lambda)*sin(mu)) */
-			jacobian[8]=(float)(a9/a5);
+			jacobian[8]=(FE_value)(a9/a5);
 		}
 		else
 		{
@@ -482,8 +484,8 @@ z = focus*sinh(lambda)*sin(mu)*sin(theta)
 	return (return_code);
 } /* cartesian_to_prolate_spheroidal */
 
-int prolate_spheroidal_to_cartesian(float lambda,float mu,float theta,
-	float focus,float *x,float *y,float *z,float *jacobian)
+int prolate_spheroidal_to_cartesian(FE_value lambda,FE_value mu,FE_value theta,
+	FE_value focus,FE_value *x,FE_value *y,FE_value *z,FE_value *jacobian)
 /*******************************************************************************
 LAST MODIFIED : 26 March 1997
 
@@ -506,29 +508,29 @@ z = focus*sinh(lambda)*sin(mu)*sin(theta)
 	a5=sin((double)theta);
 	a6=cos((double)theta);
 	a7=a1*a3;
-	*x=(float)(a2*a4);
-	*y=(float)(a7*a6);
-	*z=(float)(a7*a5);
+	*x=(FE_value)(a2*a4);
+	*y=(FE_value)(a7*a6);
+	*z=(FE_value)(a7*a5);
 	if (jacobian)
 	{
 		a8=a1*a4;
 		a9=a2*a3;
-		jacobian[0]=(float)a8;
-		jacobian[1]=(float)(-a9);
-		jacobian[2]=(float)0;
-		jacobian[3]=(float)(a9*a6);
-		jacobian[4]=(float)(a8*a6);
-		jacobian[5]=(float)(-a7*a5);
-		jacobian[6]=(float)(a9*a5);
-		jacobian[7]=(float)(a8*a5);
-		jacobian[8]=(float)(a7*a6);
+		jacobian[0]=(FE_value)a8;
+		jacobian[1]=(FE_value)(-a9);
+		jacobian[2]=(FE_value)0;
+		jacobian[3]=(FE_value)(a9*a6);
+		jacobian[4]=(FE_value)(a8*a6);
+		jacobian[5]=(FE_value)(-a7*a5);
+		jacobian[6]=(FE_value)(a9*a5);
+		jacobian[7]=(FE_value)(a8*a5);
+		jacobian[8]=(FE_value)(a7*a6);
 	}
 	LEAVE;
 
 	return (return_code);
 } /* prolate_spheroidal_to_cartesian */
 
-int Hammer_projection(float mu,float theta,float *x,float *y,float *jacobian)
+int Hammer_projection(FE_value mu,FE_value theta,FE_value *x,FE_value *y,FE_value *jacobian)
 /*******************************************************************************
 LAST MODIFIED : 26 March 1997
 
@@ -565,14 +567,14 @@ coordinates.
 		k=1/sqrt(a5);
 		a6=sin(a1);
 		a7=sin(a3);
-		*x=(float)(-k*a2*a7);
-		*y=(float)(k*a6);
+		*x=(FE_value)(-k*a2*a7);
+		*y=(FE_value)(k*a6);
 		if (jacobian)
 		{
-			jacobian[0]=(float)(0.5*k*a6*a7*(1+a5)/a5);
-			jacobian[1]=(float)(-0.25*a2*k*(2*a4+a2*(1+a4*a4))/a5);
-			jacobian[2]=(float)(0.5*k*(2*a2+a4*(1+a2*a2))/a5);
-			jacobian[3]=(float)(0.25*k*a6*a2*a7/a5);
+			jacobian[0]=(FE_value)(0.5*k*a6*a7*(1+a5)/a5);
+			jacobian[1]=(FE_value)(-0.25*a2*k*(2*a4+a2*(1+a4*a4))/a5);
+			jacobian[2]=(FE_value)(0.5*k*(2*a2+a4*(1+a2*a2))/a5);
+			jacobian[3]=(FE_value)(0.25*k*a6*a2*a7/a5);
 		}
 		return_code=1;
 	}
@@ -602,7 +604,7 @@ coordinates.
 	return (return_code);
 } /* Hammer_projection */
 
-int polar_projection(float mu,float theta,float *x,float *y,float *jacobian)
+int polar_projection(FE_value mu,FE_value theta,FE_value *x,FE_value *y,FE_value *jacobian)
 /*******************************************************************************
 LAST MODIFIED : 26 March 1997
 
@@ -619,13 +621,13 @@ y=mu*sin(theta)
 	ENTER(polar_projection);
 	a1=cos((double)theta);
 	a2=sin((double)theta);
-	*x=(float)((double)mu*a1);
-	*y=(float)((double)mu*a2);
+	*x=(FE_value)((double)mu*a1);
+	*y=(FE_value)((double)mu*a2);
 	if (jacobian)
 	{
-		jacobian[0]=(float)a1;
+		jacobian[0]=(FE_value)a1;
 		jacobian[1]= -(*y);
-		jacobian[2]=(float)a2;
+		jacobian[2]=(FE_value)a2;
 		jacobian[3]= *x;
 	}
 	return_code=1;
@@ -634,8 +636,8 @@ y=mu*sin(theta)
 	return (return_code);
 } /* polar_projection */
 
-int oblate_spheroidal_to_cartesian(float lambda,float mu,float theta,
-	float focus,float *x,float *y,float *z,float *jacobian)
+int oblate_spheroidal_to_cartesian(FE_value lambda,FE_value mu,FE_value theta,
+	FE_value focus,FE_value *x,FE_value *y,FE_value *z,FE_value *jacobian)
 /*******************************************************************************
 LAST MODIFIED : 24 November 1999
 
@@ -658,22 +660,22 @@ z = focus*cosh(lambda)*cos(mu)*cos(theta)
 	a5=sin((double)theta);
 	a6=cos((double)theta);
 	a7=a2*a4;
-	*x=(float)(a7*a5);
-	*y=(float)(a1*a3);
-	*z=(float)(a7*a6);
+	*x=(FE_value)(a7*a5);
+	*y=(FE_value)(a1*a3);
+	*z=(FE_value)(a7*a6);
 	if (jacobian)
 	{
 		a8=a1*a4;
 		a9=a2*a3;
-		jacobian[0]=(float)(a8*a5);
-		jacobian[1]=(float)(-a9*a5);
-		jacobian[2]=(float)(a7*a6);
-		jacobian[3]=(float)a9;
-		jacobian[4]=(float)a8;
-		jacobian[5]=(float)0;
-		jacobian[6]=(float)(a8*a6);
-		jacobian[7]=(float)(-a9*a6);
-		jacobian[8]=(float)(-a7*a5);
+		jacobian[0]=(FE_value)(a8*a5);
+		jacobian[1]=(FE_value)(-a9*a5);
+		jacobian[2]=(FE_value)(a7*a6);
+		jacobian[3]=(FE_value)a9;
+		jacobian[4]=(FE_value)a8;
+		jacobian[5]=(FE_value)0;
+		jacobian[6]=(FE_value)(a8*a6);
+		jacobian[7]=(FE_value)(-a9*a6);
+		jacobian[8]=(FE_value)(-a7*a5);
 	}
 	LEAVE;
 
@@ -745,7 +747,6 @@ Sets the coordinate system (including focus for prolate spheroidal and oblate
 spheroidal).
 ==============================================================================*/
 {
-	const char *current_token;
 	char cylindrical_polar_flag,fibre_flag,
 		normalised_window_coordinates_flag,oblate_spheroidal_flag,
 		prolate_spheroidal_flag,spherical_polar_flag,read_focus,
@@ -783,7 +784,7 @@ spheroidal).
 			if (return_code)
 			{
 				read_focus=0;
-				coordinate_system_copy.parameters.focus=(float)1.0;
+				coordinate_system_copy.parameters.focus=(FE_value)1.0;
 				if (cylindrical_polar_flag)
 				{
 					coordinate_system_copy.type=CYLINDRICAL_POLAR;
@@ -821,16 +822,16 @@ spheroidal).
 						"set_Coordinate_system.  Unknown coordinate_system_type");
 					return_code=0;
 				}
-				if (return_code&&read_focus&&(current_token=state->current_token))
+				if (return_code&&read_focus&&state->current_token)
 				{
-					if (fuzzy_string_compare(current_token,"focus")||
-						(!(strcmp(PARSER_HELP_STRING,current_token)&&
-							strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
+					if (fuzzy_string_compare(state->current_token,"focus")||
+						(!(strcmp(PARSER_HELP_STRING,state->current_token)&&
+							strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))))
 					{
 						focus_option_table = CREATE(Option_table)();
 						Option_table_add_entry(focus_option_table,
 							"focus", &coordinate_system_copy.parameters.focus,
-							NULL,set_float_positive);
+							NULL,set_FE_value_positive);
 						return_code=Option_table_parse(focus_option_table, state);
 						DESTROY(Option_table)(&focus_option_table);
 					}
@@ -938,8 +939,8 @@ function.
 	coordinate_system_string=(char *)NULL;
 	if (coordinate_system)
 	{
-		if (coordinate_system_string=duplicate_string(
-			ENUMERATOR_STRING(Coordinate_system_type)(coordinate_system->type)))
+		if ((coordinate_system_string=duplicate_string(
+					ENUMERATOR_STRING(Coordinate_system_type)(coordinate_system->type))))
 		{
 			/* need to deal with focus */
 			error=0;
@@ -952,6 +953,9 @@ function.
 						coordinate_system->parameters.focus);
 					append_string(&coordinate_system_string,global_temp_string,&error);
 				} break;
+				default:
+				{
+				}
 			}
 			if (error)
 			{
@@ -1026,10 +1030,10 @@ focus for prolate and oblate spheroidal systems.
 
 int convert_Coordinate_system(
 	struct Coordinate_system *source_coordinate_system,
-	int number_of_source_coordinates, float *source_coordinates,
+	int number_of_source_coordinates, FE_value *source_coordinates,
 	struct Coordinate_system *destination_coordinate_system,
-	int number_of_destination_coordinates, float *destination_coordinates,
-	float *jacobian)
+	int number_of_destination_coordinates, FE_value *destination_coordinates,
+	FE_value *jacobian)
 /*******************************************************************************
 LAST MODIFIED : 9 November 2001
 
@@ -1040,9 +1044,9 @@ Calculate the <jacobian> if not NULL.
 ???DB.  Can we get rid of most of io_devices/conversion ?
 ==============================================================================*/
 {
-	float *destination_values,local_destination_values[3],local_source_values[3],
+	FE_value *destination_values,local_destination_values[3],local_source_values[3],
 		*jacobian_1,*jacobian_2,*source_values,temp1[9],temp2[9],x,y,z;
-	int return_code;
+	int return_code = 0;
 
 	ENTER(convert_Coordinate_system);
 	if (source_coordinate_system&&(number_of_source_coordinates>0)&&
@@ -1086,8 +1090,8 @@ Calculate the <jacobian> if not NULL.
 		else
 		{
 			/* set to NULL if no input jacobian defined */
-			jacobian_1=(float *)NULL;
-			jacobian_2=(float *)NULL;
+			jacobian_1=(FE_value *)NULL;
+			jacobian_2=(FE_value *)NULL;
 		}
 		switch (source_coordinate_system->type)
 		{
@@ -1126,7 +1130,7 @@ Calculate the <jacobian> if not NULL.
 							3*sizeof(destination_values));
 						if (jacobian)
 						{
-							identity_matrix_float(3, jacobian);
+							identity_matrix_FE_value(3, jacobian);
 						}
 						return_code=1;
 					} break;
@@ -1167,8 +1171,8 @@ Calculate the <jacobian> if not NULL.
 							if (return_code&&jacobian_1&&jacobian_2)
 							{
 								/* jacobian=jacobian_2*jacobian_1 */
-								return_code=multiply_matrix_float(3,3,3,jacobian_2,jacobian_1,
-									jacobian);
+								return_code=multiply_matrix_FE_value(3,3,3,jacobian_2,
+									jacobian_1,jacobian);
 							}
 						}
 					} break;
@@ -1209,8 +1213,8 @@ Calculate the <jacobian> if not NULL.
 							if (return_code&&jacobian_1&&jacobian_2)
 							{
 								/* jacobian=jacobian_2*jacobian_1 */
-								return_code=multiply_matrix_float(3,3,3,jacobian_2,jacobian_1,
-									jacobian);
+								return_code=multiply_matrix_FE_value(3,3,3,jacobian_2,
+									jacobian_1,jacobian);
 							}
 						}
 					} break;
@@ -1228,8 +1232,8 @@ Calculate the <jacobian> if not NULL.
 							if (return_code&&jacobian_1&&jacobian_2)
 							{
 								/* jacobian=jacobian_2*jacobian_1 */
-								return_code=multiply_matrix_float(3,3,3,jacobian_2,jacobian_1,
-									jacobian);
+								return_code=multiply_matrix_FE_value(3,3,3,jacobian_2,
+									jacobian_1,jacobian);
 							}
 						}
 					} break;
@@ -1271,8 +1275,8 @@ Calculate the <jacobian> if not NULL.
 							if (return_code&&jacobian_1&&jacobian_2)
 							{
 								/* jacobian=jacobian_2*jacobian_1 */
-								return_code=multiply_matrix_float(3,3,3,jacobian_2,jacobian_1,
-									jacobian);
+								return_code=multiply_matrix_FE_value(3,3,3,jacobian_2,
+									jacobian_1,jacobian);
 							}
 						}
 					} break;

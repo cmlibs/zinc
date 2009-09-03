@@ -69,19 +69,47 @@ Global types
 */
 /*???DB.  Can only use float because of conflict with Triple in
 	standard_basis_functions */
+#if defined (FE_VALUE_IS_DOUBLE)
+typedef double FE_value;
+/* used when reading FE_values */
+#define FE_VALUE_INPUT_STRING "%lf"
+#else
 typedef float FE_value;
+/* used when reading FE_values */
+#define FE_VALUE_INPUT_STRING "%f"
+#endif
+
+#define CAST_TO_FE_VALUE(FE, OTHER, LENGTH)														\
+	{																																		\
+		int i;																														\
+		for (i=0;i< LENGTH;i++) FE[i] = static_cast<FE_value>(OTHER[i]);	\
+	}
+#define CAST_TO_FE_VALUE_C(FE, OTHER, LENGTH)														\
+	{																																		\
+		int i;																														\
+		for (i=0;i< LENGTH;i++) FE[i] = (FE_value)(OTHER[i]);							\
+	}
+#define CAST_TO_OTHER(OTHER, FE_VALUE, TYPE, LENGTH)										\
+	{																																			\
+		int i;																															\
+		for (i=0;i< LENGTH;i++) OTHER[i] = static_cast< TYPE >(FE_VALUE[i]); \
+	}
+#define CAST_TO_OTHER_C(OTHER, FE_VALUE, TYPE, LENGTH)										\
+	{																																			\
+		int i;																															\
+		for (i=0;i< LENGTH;i++) OTHER[i] = (TYPE)(FE_VALUE[i]);							\
+	}
+
 /* the value that FE_value's are initialized to.  Some machines will have
 	"not a number" which should be used as the initializer */
 #define FE_VALUE_INITIALIZER 0
-/* used when reading FE_values */
-#define FE_VALUE_INPUT_STRING "%f"
 /* necessary if we want to specify %10.2f etc */
 #define FE_VALUE_STRING "13.6e"
 /* Used with FE_VALUE_STRING in export_finite_element to keep numerical output
 	 of arrays to a reasonable page width. A value <= 0 means no columns. */
 #define FE_VALUE_MAX_OUTPUT_COLUMNS 5
 /* used when reading FE_values */
-#define DOUBLE_VALUE_INPUT_STRING "%f"
+#define DOUBLE_VALUE_INPUT_STRING "%lf"
 /* necessary if we want to specify %10.2f etc */
 #define DOUBLE_VALUE_STRING "13.6e"
 /* Used with DOUBLE_VALUE_STRING */
@@ -126,6 +154,10 @@ without knowing which order the types are in.
 }; /* enum Value_type */
 
 #define MAXIMUM_ELEMENT_XI_DIMENSIONS (3)
+
+/* A replacement for the use of Triple for values that really should be FE_value's */
+typedef FE_value FE_value_triple[3];
+typedef FE_value FE_value_tuple[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 
 /*
 Global functions

@@ -146,6 +146,21 @@ Returns the norm/length/magnitude of vector <v>.
 	return (norm);
 } /* norm3 */
 
+FE_value normalize_FE_value3(FE_value *v)
+{
+	FE_value length;
+	ENTER(normalize_FE_value3);
+#if defined (FE_VALUE_IS_DOUBLE)
+	length = normalize3(v);
+#else
+	/* FIXME: difference in normalize methods for float and double. */
+	int return_code = normalize_float3(v);
+	length = (FE_value)return_code;
+#endif
+	LEAVE;
+	return(length);
+}
+
 double normalize3(double *v)
 /*******************************************************************************
 LAST MODIFIED : 15 October 2001
@@ -297,6 +312,19 @@ Copies the contents of m rows x n columns matrix <a> to <a_copy>.
 	return (return_code);
 } /* copy_matrix */
 
+int identity_matrix_FE_value(int n, FE_value *a)
+{
+	int return_code;
+	ENTER(identity_matrix_FE_value);
+#if defined (FE_VALUE_IS_DOUBLE)
+	return_code = identity_matrix(n,a);
+#else
+	return_code = identity_matrix_float(n,a);
+#endif	
+	LEAVE;
+	return(return_code);
+}
+
 int identity_matrix(int n, double *a)
 /*******************************************************************************
 LAST MODIFIED : 6 April 2001
@@ -421,6 +449,20 @@ Set matrix <a> to the <n> x <n> identity.
 
 	return (return_code);
 } /* identity_matrix_float */
+
+int multiply_matrix_FE_value(int m,int s,int n,FE_value *a,FE_value *b,
+	FE_value *c)
+{
+	int return_code;
+	ENTER(multiply_matrix_FE_value);
+#if defined FE_VALUE_IS_DOUBLE
+	return_code = multiply_matrix(m,s,n,a,b,c);
+#else
+	return_code = multiply_matrix_float(m,s,n,a,b,c);
+#endif
+	LEAVE;
+	return(return_code);
+}
 
 int multiply_matrix(int m,int s,int n,double *a,double *b,double *c)
 /*******************************************************************************

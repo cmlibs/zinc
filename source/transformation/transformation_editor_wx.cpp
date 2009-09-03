@@ -77,7 +77,7 @@ transformation_editor;
 	 direction_sizer_7_staticbox = new wxStaticBox(transformation_editor_panel, -1, wxEmptyString);
 	 direction_sizer_8_staticbox = new wxStaticBox(transformation_editor_panel, -1, wxEmptyString);
 	 direction_sizer_13_staticbox = new wxStaticBox(transformation_editor_panel, -1, wxEmptyString);
-	 if (ALLOCATE(global_quat, float, 4))
+	 if (ALLOCATE(global_quat, double, 4))
 	 {
 			global_quat[0] = 1;
 			global_quat[1] = 0;
@@ -440,7 +440,7 @@ transformation encoded in 4x4 <transformation_matrix>.
 	 char temp_str[20], temp_string[50];
 	 int i, j, k, return_code;
 	 Gmatrix gmatrix;
-	 float *values;
+	 double *values;
 	 gtMatrix resolved_transformation_matrix, *matrix; 
 	 gtMatrix default_initial_transformation_matrix =
 		 {
@@ -502,7 +502,7 @@ transformation encoded in 4x4 <transformation_matrix>.
 			else if (direction_system_index == 1)
 			{
 				 k = 0;
-				 if (ALLOCATE(values, float, 16))
+				 if (ALLOCATE(values, double, 16))
 				 {
 						for (i = 0;i < 4; i++)
 						{
@@ -804,12 +804,12 @@ A function in transformation editor to convert the global quaternion to
 global gtmatrix.
 ==============================================================================*/
 {
-	 float *values;
+	 double *values;
 	 int i, j, k;
 
 	 transformation_editor_quaternion->set(
 			global_quat[0],global_quat[1], global_quat[2],global_quat[3]);
-	 if (ALLOCATE(values, float, 16))
+	 if (ALLOCATE(values, double, 16))
 	 {
 			transformation_editor_quaternion->quaternion_to_matrix(values);
 			k = 0;

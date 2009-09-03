@@ -3195,7 +3195,7 @@ DESCRIPTION :
 				coordinate_system.parameters.focus = 0;
 				if (coordinate_system_focus_string)
 				{
-					sscanf(coordinate_system_focus_string, "%f",
+					sscanf(coordinate_system_focus_string, FE_VALUE_INPUT_STRING,
 						&coordinate_system.parameters.focus);
 				}
 				set_FE_field_coordinate_system(fieldml_data->current_field,

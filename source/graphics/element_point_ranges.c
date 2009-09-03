@@ -353,7 +353,7 @@ Element_point_ranges_identifier_is_valid.
 				identifier->number_in_xi, identifier->exact_xi,
 				/*coordinate_field*/(struct Computed_field *)NULL,
 				/*density_field*/(struct Computed_field *)NULL,
-				&number_of_xi_points, /*xi_points_address*/(Triple **)NULL,
+				&number_of_xi_points, /*xi_points_address*/(FE_value_triple **)NULL,
 				/*time*/0) &&
 			(element_point_number < number_of_xi_points));
 	}
@@ -632,7 +632,7 @@ Adds the range from <start> to <stop> to the ranges in <element_point_ranges>.
 			element_point_ranges->id.exact_xi,
 			/*coordinate_field*/(struct Computed_field *)NULL,
 			/*density_field*/(struct Computed_field *)NULL,
-			&maximum_element_point_number, /*xi_points_address*/(Triple **)NULL,
+			&maximum_element_point_number, /*xi_points_address*/(FE_value_triple **)NULL,
 			/*time*/0);
 		if ((0<=start)&&(start<maximum_element_point_number)&&
 			(0<=stop)&&(stop<maximum_element_point_number))
@@ -1244,7 +1244,7 @@ returned in this location, for the calling function to use or destroy.
 									/*coordinate_field*/(struct Computed_field *)NULL,
 									/*density_field*/(struct Computed_field *)NULL,
 									&number_of_xi_points,
-									/*xi_points_address*/(Triple **)NULL,/*time*/0)) ||
+									/*xi_points_address*/(FE_value_triple **)NULL,/*time*/0)) ||
 									(1 > number_of_xi_points))
 								{
 									display_message(WARNING_MESSAGE, "Invalid number in xi");

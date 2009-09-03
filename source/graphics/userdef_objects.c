@@ -1236,13 +1236,13 @@ newly created object is put at <*userdef_address>.
 ==============================================================================*/
 {
 	enum Userdef_type type;
+	int type_int;
 	int i,j,k,return_code;
 	struct GT_userdef **userdef_address;
 	struct Userdef_hair *hair;
 	void *userdef_data;
 	int (*userdef_destroy_function)(void **);
 	int (*userdef_render_function)(void *);
-	int int_for_enum_type;
  
 	ENTER(file_read_userdef);
 	/* check arguments */
@@ -1251,8 +1251,8 @@ newly created object is put at <*userdef_address>.
 		/* make sure the userdef is initially clear */
 		*userdef_address=(struct GT_userdef *)NULL;
 		/* read the type */
-		int_for_enum_type = (int)type;
-		IO_stream_scan(file,"%d",&int_for_enum_type);
+		IO_stream_scan(file,"%d",&type_int);
+		type = (enum Userdef_type)type_int;
 		switch (type)
 		{
 			case USERDEF_HAIR:

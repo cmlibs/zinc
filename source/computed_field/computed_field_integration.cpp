@@ -85,7 +85,7 @@ DESCRIPTION :
 	FE_element *element;
 	/* The values for the xi1 = 0, xi2 = 0, xi3 = 0 corner,
 		a vector of size number_of_components. */
-	float *values;
+	FE_value *values;
 
 	int access_count;
 }; /* Computed_field_element_integration_mapping */
@@ -100,7 +100,7 @@ DESCRIPTION :
 	/* Holds the pointer to the node, can't use node as this is a symbol in the LISTS */
 	FE_node *node_ptr;
 	/* The field values for the node. */
-	float *values;
+	FE_value *values;
 
 	int access_count;
 }; /* Computed_field_node_integration_mapping */
@@ -126,7 +126,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int number_of_values;
-	float *values;
+	FE_value *values;
 }; /* Computed_field_integration_has_values_data */
 
 Computed_field_element_integration_mapping *CREATE(Computed_field_element_integration_mapping)

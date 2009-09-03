@@ -317,6 +317,7 @@ fields used here.
 		return_code, values;
 	struct Node_to_glyph_set_data *node_to_glyph_set_data;
 	Triple *axis1, *axis2, *axis3, *point, *scale;
+	FE_value *data_values;
 
 	ENTER(node_to_glyph_set);
 	/* must set following to 0 = valid if no orientation_scale_field */
@@ -367,7 +368,7 @@ fields used here.
 			if (data_field)
 			{ 
 				required_fields[number_of_fields]=data_field;
-				number_of_fields++;			
+				number_of_fields++;
 			}
 			if (orientation_scale_field)
 			{ 
@@ -401,6 +402,11 @@ fields used here.
 				{
 					*(node_to_glyph_set_data->label) = NULL;
 				}
+				if (data_field)
+				{
+					ALLOCATE(data_values,FE_value,
+						node_to_glyph_set_data->n_data_components);
+				}
 				/* evaluate the fields at the node */
 				if (Computed_field_evaluate_at_node(coordinate_field,node,time,
 						coordinates)&&
@@ -409,7 +415,7 @@ fields used here.
 					((!variable_scale_field) || Computed_field_evaluate_at_node(
 						 variable_scale_field, node, time, variable_scale)) &&
 					((!data_field)||Computed_field_evaluate_at_node(data_field,node,
-						time, node_to_glyph_set_data->data))&&
+						time, data_values))&&
 					((!label_defined) || (*(node_to_glyph_set_data->label) =
 						Computed_field_evaluate_as_string_at_node(label_field,
 							/*component_number*/-1, node, time)))&&
@@ -444,6 +450,8 @@ fields used here.
 					
 					if (node_to_glyph_set_data->data_field)
 					{
+						CAST_TO_OTHER(node_to_glyph_set_data->data,data_values,
+							float,node_to_glyph_set_data->n_data_components);
 						node_to_glyph_set_data->data +=
 							node_to_glyph_set_data->n_data_components;
 					}
@@ -460,6 +468,9 @@ fields used here.
 						 into a tensor so that they can be used for adding grids and axes to the glyph */
 					if (node_to_glyph_set_data->label_bounds)
 					{
+						int nComponents = node_to_glyph_set_data->label_bounds_components;
+						FE_value *fieldValues;
+						ALLOCATE(fieldValues,FE_value,nComponents);
 						dimension = node_to_glyph_set_data->label_bounds_dimension;
 						values = node_to_glyph_set_data->label_bounds_values;
 						vector = node_to_glyph_set_data->label_bounds_vector;
@@ -516,10 +527,15 @@ fields used here.
 								if (!(Computed_field_evaluate_at_node(
 												node_to_glyph_set_data->label_bounds_field,
 												node_to_glyph_set_data->label_bounds_node, time,
-												node_to_glyph_set_data->label_bounds)))
+												fieldValues)))
 								{
 									display_message(WARNING_MESSAGE,
 										"node_to_glyph_set.  Unable to evaluate label field when evaluating label bounds.");
+								}
+								else
+								{
+									CAST_TO_OTHER(node_to_glyph_set_data->label_bounds,
+										fieldValues,float,nComponents);
 								}
 							}
 							else
@@ -529,6 +545,7 @@ fields used here.
 							}
 							node_to_glyph_set_data->label_bounds += node_to_glyph_set_data->label_bounds_components;
 						}
+						DEALLOCATE(fieldValues);
 					}
 				}
 				else
@@ -536,6 +553,10 @@ fields used here.
 					display_message(ERROR_MESSAGE,
 						"node_to_glyph_set.  Error calculating node fields");
 					return_code=0;
+				}
+				if (data_field)
+				{
+					DEALLOCATE(data_values);
 				}
 			}
 		}
@@ -1616,10 +1637,11 @@ Notes:
 			{
 				xi=((FE_value)i)/distance;
 				/* evaluate the fields */
+				FE_value feData[n_data_components];
 				if (Computed_field_evaluate_in_element(coordinate_field,element,&xi,
 					time,top_level_element,coordinates,(FE_value *)NULL)&&
 					((!data_field)||Computed_field_evaluate_in_element(
-					data_field,element,&xi,time,top_level_element,data,
+					data_field,element,&xi,time,top_level_element,feData,
 					(FE_value *)NULL)))
 				{
 					(*point)[0]=coordinates[0];
@@ -1628,6 +1650,7 @@ Notes:
 					point++;
 					if (data_field)
 					{
+						CAST_TO_OTHER(data,feData,GTDATA,n_data_components);
 						data+=n_data_components;
 					}
 				}
@@ -1724,18 +1747,23 @@ int FE_element_add_line_to_vertex_array(
 				texture_coordinate_field,element,&xi,time,top_level_element,
 				texture_coordinates,(FE_value *)NULL)))
 			{
+				float floatField[3];
+				CAST_TO_OTHER(floatField,coordinates,float,3);
 				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
-					3, coordinates);
+					3, floatField);
 				if (data_field)
 				{
+					float floatData[number_of_data_values];
+					CAST_TO_OTHER(floatData,data_buffer,float,number_of_data_values);
 					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-						number_of_data_values, data_buffer);
+						number_of_data_values, floatData);
 				}
 				if (texture_coordinate_field)
 				{
+					CAST_TO_OTHER(floatField,texture_coordinates,float,3);
 					array->add_float_attribute(
 						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
-						3, texture_coordinates);
+						3, floatField);
 				}
 			}
 		}
@@ -1870,10 +1898,11 @@ Notes:
 			{
 				xi=(float)i/(float)number_of_segments_along;
 				/* evaluate the fields */
+				FE_value feData[n_data_components];
 				if (Computed_field_evaluate_in_element(coordinate_field,element,&xi,
 					time,top_level_element,coordinates,derivative_xi)&&
 					((!data_field)||Computed_field_evaluate_in_element(
-					data_field,element,&xi,time,top_level_element,data,
+					data_field,element,&xi,time,top_level_element,feData,
 					(FE_value *)NULL)) &&
 					((!radius_field) ||
 						Computed_field_evaluate_in_element(radius_field,element,&xi,
@@ -1917,6 +1946,7 @@ Notes:
 					/* store the data and then we are done with it */
 					if (data_field)
 					{
+						CAST_TO_OTHER(data,feData,GTDATA,n_data_components);
 						datum=data;
 						for (j=number_of_segments_around;j>=0;j--)
 						{
@@ -2925,10 +2955,11 @@ normals are used.
 				xi[0]=(*normal)[0];
 				xi[1]=(*normal)[1];
 				/* evaluate the fields */
+				FE_value feData[n_data_components];
 				if (!(Computed_field_evaluate_in_element(coordinate_field,element,xi,
 					time,top_level_element,coordinates,derivative_xi)&&
 					((!data_field)||Computed_field_evaluate_in_element(
-					data_field,element,xi,time,top_level_element,data,
+					data_field,element,xi,time,top_level_element,feData,
 					(FE_value *)NULL))))
 				{
 					return_code = 0;
@@ -3051,6 +3082,7 @@ normals are used.
 					normal++;
 					if (data_field)
 					{
+						CAST_TO_OTHER(data,feData,GTDATA,n_data_components);
 						data+=n_data_components;
 					}
 					if (texture_coordinate_field)
@@ -3406,7 +3438,7 @@ faces.
 #if defined (DEBUG)
 	int bad_triangle;
 #endif /* defined (DEBUG) */
-	Triple *xi_points;
+	FE_value_triple *xi_points;
 
 	int displacement_number_of_components, tex_x_i, tex_y_i, tex_width_texels,
 		tex_height_texels, tex_number_of_components;
@@ -3439,7 +3471,7 @@ faces.
 					 xi_points[0],time,(struct FE_element *)NULL,
 					 winding_coordinate, winding_coordinate_derivatives))
 			{
-				cross_product_float3(winding_coordinate_derivatives + 0,
+				cross_product_FE_value_vector3(winding_coordinate_derivatives + 0,
 					winding_coordinate_derivatives + 3,result);
 				if ((result[0] * winding_coordinate_derivatives[6] + 
 						result[1] * winding_coordinate_derivatives[7] + 
@@ -3874,12 +3906,15 @@ faces.
 													/* texture coordinates */
 													if (texture_coordinate_field)
 													{
+														FE_value feTextureCoords[3];
 														Computed_field_evaluate_in_element(
 															texture_coordinate_field,
 															element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
 															xi,time,(struct FE_element *)NULL,
-															vertex_list[i+n_vertices*v_count]->texture_coordinates,
-															(FE_value *)NULL);
+															feTextureCoords,(FE_value *)NULL);
+														CAST_TO_OTHER(vertex_list[i+
+																n_vertices*v_count]->texture_coordinates,
+															feTextureCoords,float,3);
 														if (tex_number_of_components < 3)
 														{
 															vertex_list[i+n_vertices*v_count]->texture_coordinates[2]
@@ -3911,12 +3946,18 @@ faces.
 														dot product (Q(xi1,2,3)=M.G.T) <I think this is
 														actually Q=G.M.T> */
 													index=i+n_vertices*v_count;
-													if (Computed_field_evaluate_in_element(
-														coordinate_field,
-														element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
-														xi,time,(struct FE_element *)NULL,
-														(FE_value *)(vertex_list[index]->coordinates),
-														coordinate_field_derivatives))
+
+													FE_value feCoords[3];
+													int return_code = 
+														Computed_field_evaluate_in_element(
+															coordinate_field,
+															element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
+															xi,time,(struct FE_element *)NULL,
+															feCoords,coordinate_field_derivatives);
+													CAST_TO_OTHER(vertex_list[index]->coordinates,
+														feCoords,float,3);
+
+													if (return_code)
 													{
 														/* record original xi values of these for 2 & 3d
 															texture mapping applications */
@@ -3978,15 +4019,21 @@ faces.
 														}
 														if (data_field)
 														{
+															FE_value feData[n_data_components];
 															if (!(ALLOCATE(vertex_list[index]->data, float, n_data_components) &&
 																Computed_field_evaluate_in_element(data_field,
 																element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
 																xi,time,(struct FE_element *)NULL,
-																vertex_list[index]->data, (FE_value *)NULL)))
+																feData, (FE_value *)NULL)))
 															{
 																display_message(ERROR_MESSAGE,
 																	"create_GT_voltex_from_FE_element.  Error calculating data field");
 																DESTROY(GT_voltex)(&voltex);
+															}
+															else
+															{
+																CAST_TO_OTHER(vertex_list[index]->data,feData,
+																	float,n_data_components);
 															}
 														}
 													}
@@ -4038,7 +4085,7 @@ faces.
 											vector1[k] = vertex1[k]-vertex0[k];
 											vector2[k] = vertex2[k]-vertex0[k];
 										}
-										cross_product_float3(vector1,vector2,result);
+										cross_product_FE_value_vector3(vector1,vector2,result);
 										rmag=sqrt((double)(result[0]*result[0]+
 												result[1]*result[1]+result[2]*result[2]));
 #if defined (OLD_CODE)
@@ -4324,6 +4371,7 @@ Note:
 							 orientation_scale field very often requires the evaluation of the
 							 same coordinate_field with derivatives, meaning that values for
 							 the coordinate_field will already be cached = more efficient. */
+						FE_value feData[n_data_components];
 						if (((!orientation_scale_field) ||
 							Computed_field_evaluate_in_element(orientation_scale_field,
 							element, xi, time, top_level_element, orientation_scale,
@@ -4335,7 +4383,7 @@ Note:
 							Computed_field_evaluate_in_element(coordinate_field,element,xi,
 							time,top_level_element,coordinates,(FE_value *)NULL)&&
 							((!data_field) || Computed_field_evaluate_in_element(
-							data_field, element, xi, time, top_level_element, data,
+							data_field, element, xi, time, top_level_element, feData,
 							(FE_value *)NULL)) && ((!label_field) || (*label =
 							Computed_field_evaluate_as_string_in_element(label_field,
 							/*component_number*/-1, element, xi, time, top_level_element))) &&
@@ -4369,6 +4417,7 @@ Note:
 
 							if (data_field)
 							{
+								CAST_TO_OTHER(data,feData,GTDATA,n_data_components);
 								data += n_data_components;
 							}
 							if (names)
@@ -5195,7 +5244,7 @@ fields defined over it.
 		return_code, top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct Element_to_glyph_set_data *element_to_glyph_set_data;
 	struct FE_element *top_level_element;
-	Triple *xi_points;
+	FE_value_triple *fe_xi_points;
 
 	ENTER(element_to_glyph_set);
 	if (element && (element_to_glyph_set_data=
@@ -5228,8 +5277,14 @@ fields defined over it.
 					element_to_glyph_set_data->exact_xi,
 					element_to_glyph_set_data->coordinate_field,
 					element_to_glyph_set_data->xi_point_density_field,
-					&number_of_xi_points, &xi_points, element_to_glyph_set_data->time))
+					&number_of_xi_points, &fe_xi_points, element_to_glyph_set_data->time))
 				{
+					Triple xi_points[number_of_xi_points];
+					int xii;
+					for (xii=0;xii<number_of_xi_points;xii++)
+					{
+						CAST_TO_OTHER(xi_points[xii],fe_xi_points[xii],float,3);
+					}
 					if (glyph_set = create_GT_glyph_set_from_FE_element(
 						element, top_level_element,
 						element_to_glyph_set_data->coordinate_field,
@@ -5261,7 +5316,7 @@ fields defined over it.
 					{
 						return_code=0;
 					}
-					DEALLOCATE(xi_points);
+					DEALLOCATE(fe_xi_points);
 				}
 				else
 				{

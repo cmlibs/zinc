@@ -87,7 +87,7 @@ as the <data> field or any of its source fields.
 		number_of_xi_points_created[MAXIMUM_ELEMENT_XI_DIMENSIONS], return_code;
 	struct Computed_field_iterative_find_element_xi_data *data;
 	struct FE_element_shape *shape;
-	Triple *xi_points;
+	FE_value_triple *xi_points;
 
 	ENTER(Computed_field_iterative_element_conditional);
 	if (element && (data = (struct Computed_field_iterative_find_element_xi_data *)data_void))

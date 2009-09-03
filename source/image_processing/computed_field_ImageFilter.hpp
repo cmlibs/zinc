@@ -1044,7 +1044,7 @@ for subsequent operations.
 				inputImage->SetRegions(region);
 				inputImage->Allocate();
 			
-				float pixel_xi[3];
+				FE_value pixel_xi[3];
 				
 				for (i = 0 ; i < 3 ; i++)
 				{

@@ -82,7 +82,7 @@ Internally this just decrements the reference count.
 } /* Cmiss_field_destroy */
 
 int Cmiss_field_evaluate_at_node(struct Cmiss_field *field,
-	struct Cmiss_node *node, float time, int number_of_values, float *values)
+	struct Cmiss_node *node, double time, int number_of_values, double *values)
 /*******************************************************************************
 LAST MODIFIED : 29 March 2004
 
@@ -100,8 +100,12 @@ greater than or equal to the number of components.
 	if (field && node && values &&
 		(number_of_values >= Computed_field_get_number_of_components(field)))
 	{
-		return_code = Computed_field_evaluate_at_node(field, node, time, values);
+		FE_value feValues[number_of_values];
+		return_code = Computed_field_evaluate_at_node(field, node,
+			(FE_value)time, feValues);
 		Computed_field_clear_cache(field);
+		CAST_TO_OTHER_C(values,feValues,double,
+			Computed_field_get_number_of_components(field));
 	}
 	else
 	{
@@ -115,7 +119,7 @@ greater than or equal to the number of components.
 } /* Cmiss_field_set_values_at_node */
 
 int Cmiss_field_set_values_at_node(struct Cmiss_field *field,
-	struct Cmiss_node *node, float time, int number_of_values, float *values)
+	struct Cmiss_node *node, double time, int number_of_values, double *values)
 /*******************************************************************************
 LAST MODIFIED : 21 April 2005
 
@@ -138,7 +142,10 @@ is reached for which its calculation is not reversible, or is not supported yet.
 	if (field && node && values &&
 		(number_of_values >= Computed_field_get_number_of_components(field)))
 	{
-		return_code = Computed_field_set_values_at_node(field, node, time, values);
+		FE_value feValues[number_of_values];
+		CAST_TO_FE_VALUE_C(feValues,values,number_of_values);
+		return_code = Computed_field_set_values_at_node(field, node,
+			(FE_value)time, feValues);
 	}
 	else
 	{
@@ -152,9 +159,9 @@ is reached for which its calculation is not reversible, or is not supported yet.
 } /* Cmiss_field_set_values_at_node */
 
 int Cmiss_field_evaluate_in_element(struct Cmiss_field *field,
-	struct Cmiss_element *element, float *xi, float time, 
+	struct Cmiss_element *element, double *xi, double time, 
 	struct Cmiss_element *top_level_element, int number_of_values,
-	float *values, int number_of_derivatives, float *derivatives)
+	double *values, int number_of_derivatives, double *derivatives)
 /*******************************************************************************
 LAST MODIFIED : 29 March 2004
 
@@ -186,9 +193,19 @@ number_of_components
 		&& (!derivatives || (number_of_derivatives >= 
 		Computed_field_get_number_of_components(field) * get_FE_element_dimension(element))))
 	{
-		return_code = Computed_field_evaluate_in_element(field, element, xi, time,
-			top_level_element, values, derivatives);
+		int nComp = Computed_field_get_number_of_components(field);
+		int nDeriv = Computed_field_get_number_of_components(field) *
+			get_FE_element_dimension(element);
+		int nDimen = get_FE_element_dimension(element);
+		FE_value xiFE[nDimen];
+		CAST_TO_FE_VALUE_C(xiFE,xi,nDimen);
+		FE_value feValues[nComp];
+		FE_value feDerivatives[nDeriv];
+		return_code = Computed_field_evaluate_in_element(field, element, xiFE,
+			(FE_value)time, top_level_element, feValues, feDerivatives);
 		Computed_field_clear_cache(field);
+		CAST_TO_OTHER_C(derivatives,feDerivatives,double,nDeriv);
+		CAST_TO_OTHER_C(values,feValues,double,nComp);
 	}
 	else
 	{
@@ -202,7 +219,7 @@ number_of_components
 } /* Cmiss_field_evaluate_in_element */
 
 char *Cmiss_field_evaluate_as_string_at_node(
-	struct Cmiss_field *field, struct Cmiss_node *node, float time)
+	struct Cmiss_field *field, struct Cmiss_node *node, double time)
 /*******************************************************************************
 LAST MODIFIED : 17 January 2007
 
@@ -269,7 +286,7 @@ any other fields, this function is recursively called for them.
 int Cmiss_field_evaluate_at_field_coordinates(
 	Cmiss_field_id field,
 	Cmiss_field_id reference_field, int number_of_input_values,
-	FE_value *input_values, FE_value time, FE_value *values)
+	double *input_values, double time, double *values)
 /*******************************************************************************
 LAST MODIFIED : 25 March 2008
 
@@ -286,9 +303,14 @@ number_of_components.
 	ENTER(Cmiss_field_evaluate_at_field_coordinates);
 	if (field&&reference_field&&number_of_input_values&&input_values&&values)
 	{
+		FE_value in[number_of_input_values];
+		CAST_TO_FE_VALUE_C(in,input_values,number_of_input_values);
+		int nComp = Computed_field_get_number_of_components(field);
+		FE_value out[nComp];
 		return_code = Computed_field_evaluate_at_field_coordinates(field,
-			reference_field, number_of_input_values, input_values,
-			time, values);
+			reference_field, number_of_input_values, in,
+			(FE_value)time, out);
+		CAST_TO_OTHER_C(values,out,double,nComp);
 	}
 	else
 	{

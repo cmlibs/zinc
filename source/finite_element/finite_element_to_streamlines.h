@@ -288,7 +288,7 @@ Adds a new flow particle structure to the start of the Streampoint list
 
 int update_flow_particle_list(struct Streampoint *point,
 	struct Computed_field *coordinate_field,
-	struct Computed_field *stream_vector_field,FE_value step,float time);
+	struct Computed_field *stream_vector_field,FE_value step,FE_value time);
 /*******************************************************************************
 LAST MODIFIED : 17 March 1999
 

@@ -1888,7 +1888,7 @@ Uses the <spectrum> to modify the <material> to represent the <number_of_data_co
 } /* Spectrum_render_value_on_material */
 
 int Spectrum_value_to_rgba(struct Spectrum *spectrum,int number_of_data_components,
-	float *data, float *rgba)
+	FE_value *data, float *rgba)
 /*******************************************************************************
 LAST MODIFIED : 4 October 2006
 
@@ -1912,7 +1912,9 @@ Uses the <spectrum> to calculate RGBA components to represent the
 			rgba[3] = 1.0;
 		}
 		render_data.rgba = rgba;
-		render_data.data = data;
+		float fData[number_of_data_components];
+		CAST_TO_OTHER(fData,data,float,number_of_data_components);
+		render_data.data = fData;
 		render_data.number_of_data_components = number_of_data_components;
 		
 		return_code = FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
@@ -2504,7 +2506,9 @@ Rebuilds the display_list for <spectrum> if it is not current.
 			colour_table_ptr = colour_table;
 
 			render_data.rgba = rgba;
-			render_data.data = data;
+			float fData[number_of_data_components];
+			CAST_TO_OTHER(fData,data,float,number_of_data_components);
+			render_data.data = fData;
 			render_data.number_of_data_components = number_of_data_components;
 
 			FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
@@ -2558,6 +2562,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 			}
 
 			/* Finished using the spectrum for now (clear computed field cache) */
+			CAST_TO_OTHER(fData,data,float,number_of_data_components);
 			FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
 				Spectrum_settings_disable,(void *)&render_data,
 				spectrum->list_of_settings);

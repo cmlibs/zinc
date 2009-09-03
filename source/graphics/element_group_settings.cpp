@@ -5474,7 +5474,7 @@ Converts a finite element into a graphics object with the supplied settings.
 	struct GT_surface *surface;
 	struct GT_voltex *voltex;
 	struct Multi_range *ranges;
-	Triple *xi_points;
+	FE_value_triple *fe_xi_points;
 
 	ENTER(FE_element_to_graphics_object);
 	if (element && (settings_to_object_data =
@@ -5837,7 +5837,7 @@ Converts a finite element into a graphics object with the supplied settings.
 								element_point_ranges_identifier.exact_xi,
 								settings_to_object_data->rc_coordinate_field,
 								settings->xi_point_density_field,
-								&number_of_xi_points, &xi_points,
+								&number_of_xi_points, &fe_xi_points,
 								settings_to_object_data->time))
 							{
 								get_FE_element_identifier(element, &cm);
@@ -5849,7 +5849,7 @@ Converts a finite element into a graphics object with the supplied settings.
 								{
 									FE_element_convert_xi_points_cell_corners_to_top_level(
 										element, top_level_element, top_level_number_in_xi,
-										number_of_xi_points, xi_points, &top_level_xi_point_numbers);
+										number_of_xi_points, fe_xi_points, &top_level_xi_point_numbers);
 								}
 								if (top_level_xi_point_numbers)
 								{
@@ -5893,6 +5893,12 @@ Converts a finite element into a graphics object with the supplied settings.
 								scale_factors[1] = (FE_value)(settings->glyph_scale_factors[1]);
 								scale_factors[2] = (FE_value)(settings->glyph_scale_factors[2]);
 								/* NOT an error if no glyph_set produced == empty selection */
+								Triple xi_points[number_of_xi_points];
+								int xii;
+								for (xii=0;xii<number_of_xi_points;xii++)
+								{
+									CAST_TO_OTHER(xi_points[xii],fe_xi_points[xii],float,3);
+								}
 								if ((0 < number_of_xi_points) &&
 									(glyph_set = create_GT_glyph_set_from_FE_element(
 										use_element, top_level_element,
@@ -5914,7 +5920,7 @@ Converts a finite element into a graphics object with the supplied settings.
 								{
 									DEALLOCATE(top_level_xi_point_numbers);
 								}
-								DEALLOCATE(xi_points);
+								DEALLOCATE(fe_xi_points);
 							}
 							else
 							{

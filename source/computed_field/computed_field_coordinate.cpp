@@ -82,7 +82,7 @@ Note the order of derivatives:
 ==============================================================================*/
 {
 	FE_value *source;
-	float coordinates[3],derivatives[9],*destination,x,y,z,*jacobian,temp[9];
+	FE_value coordinates[3],derivatives[9],*destination,x,y,z,*jacobian,temp[9];
 	int field_components,i,j,return_code;
 	
 	ENTER(Computed_field_extract_rc);
@@ -95,7 +95,7 @@ Note the order of derivatives:
 		{
 			if (i<field_components)
 			{
-				coordinates[i] = (float)field->values[i];
+				coordinates[i] = field->values[i];
 			}
 			else
 			{
@@ -113,7 +113,7 @@ Note the order of derivatives:
 				{
 					if ((i<field_components)&&(j<element_dimension))
 					{
-						*destination = (float)(*source);
+						*destination = *source;
 						source++;
 					}
 					else
@@ -128,7 +128,7 @@ Note the order of derivatives:
 		}
 		else
 		{
-			jacobian=(float *)NULL;
+			jacobian=NULL;
 		}
 
 		switch (field->coordinate_system.type)
@@ -165,35 +165,35 @@ Note the order of derivatives:
 				{
 					for (i=0;i<9;i++)
 					{
-						rc_derivatives[i]=(FE_value)(derivatives[i]);
+						rc_derivatives[i]=static_cast<FE_value>(derivatives[i]);
 					}
 					/* clear jacobian to avoid derivative conversion below */
-					jacobian=(FE_value *)NULL;
+					jacobian=NULL;
 				}
 			} break;
 		}
-		rc_coordinates[0]=(FE_value)x;
-		rc_coordinates[1]=(FE_value)y;
-		rc_coordinates[2]=(FE_value)z;
+		rc_coordinates[0]=x;
+		rc_coordinates[1]=y;
+		rc_coordinates[2]=z;
 		if (jacobian)
 		{
 			for (i=0;i<3;i++)
 			{
 				/* derivative of x with respect to xi[i] */
-				rc_derivatives[i]=(FE_value)(
+				rc_derivatives[i]=
 					jacobian[0]*derivatives[0+i]+
 					jacobian[1]*derivatives[3+i]+
-					jacobian[2]*derivatives[6+i]);
+					jacobian[2]*derivatives[6+i];
 				/* derivative of y with respect to xi[i] */
-				rc_derivatives[3+i]=(FE_value)(
+				rc_derivatives[3+i]=
 					jacobian[3]*derivatives[0+i]+
 					jacobian[4]*derivatives[3+i]+
-					jacobian[5]*derivatives[6+i]);
+					jacobian[5]*derivatives[6+i];
 				/* derivative of z with respect to xi[i] */
-				rc_derivatives[6+i]=(FE_value)(
+				rc_derivatives[6+i]=
 					jacobian[6]*derivatives[0+i]+
 					jacobian[7]*derivatives[3+i]+
-					jacobian[8]*derivatives[6+i]);
+					jacobian[8]*derivatives[6+i];
 			}
 		}
 		return_code=1;
@@ -394,7 +394,7 @@ Sets the <values> of the computed <field> over the <element>.
 			if (convert_Coordinate_system(&(field->coordinate_system),
 					3,values,&(field->source_fields[0]->coordinate_system),
 					field->source_fields[0]->number_of_components,
-					source_values,/*jacobian*/(float *)NULL))
+					source_values,/*jacobian*/(FE_value *)NULL))
 			{
 				return_code=Computed_field_set_values_at_location(
 					field->source_fields[0],location,source_values);
@@ -440,7 +440,7 @@ DESCRIPTION :
 		return_code=convert_Coordinate_system(&(field->coordinate_system),
 			number_of_values,values, &(field->source_fields[0]->coordinate_system),
 			field->source_fields[0]->number_of_components, source_field_coordinates,
-			/*jacobian*/(float *)NULL) && Computed_field_find_element_xi(
+			/*jacobian*/(FE_value *)NULL) && Computed_field_find_element_xi(
 			field->source_fields[0],source_field_coordinates,
 			field->source_fields[0]->number_of_components, time, element,
 			xi, element_dimension, search_region, /*propagate_field*/1,
@@ -761,7 +761,7 @@ the converted vectors are not available.
 				field->source_fields[1]->number_of_components,
 				field->source_fields[1]->values,
 				&(field->source_fields[0]->coordinate_system),3,cx,
-				/*jacobian*/(float *)NULL)&&
+				/*jacobian*/(FE_value *)NULL)&&
 			convert_Coordinate_system(&(field->source_fields[0]->coordinate_system),
 				3,cx,&(field->coordinate_system),3,x,jacobian)))
 		{

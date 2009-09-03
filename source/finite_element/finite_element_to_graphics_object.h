@@ -240,7 +240,7 @@ If the dimension is less than 3, <exterior> and <face_number> may be used.
 	struct FE_region *fe_region;
 	struct Graphics_font *font;
 	struct GT_object *glyph,*graphics_object;
-	Triple exact_xi;
+	FE_value_triple exact_xi;
 }; /* struct Element_to_glyph_set_data */
 
 enum Collapsed_element_type
