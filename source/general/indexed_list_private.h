@@ -1838,7 +1838,8 @@ Should only be declared with manager functions. \
 			display_message(ERROR_MESSAGE, \
 				"LIST_BEGIN_IDENTIFIER_CHANGE(" #object_type "," #identifier \
 				").  Not allowed during list iteration"); \
-			DEALLOCATE(identifier_change_data); \
+			identifier_change_data = (struct LIST_IDENTIFIER_CHANGE_DATA( \
+				object_type,identifier) *)NULL; \
 		} \
 	} \
 	else \

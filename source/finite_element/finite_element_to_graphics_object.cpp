@@ -1637,7 +1637,7 @@ Notes:
 			{
 				xi=((FE_value)i)/distance;
 				/* evaluate the fields */
-				FE_value feData[n_data_components];
+				FE_value *feData = new FE_value[n_data_components];
 				if (Computed_field_evaluate_in_element(coordinate_field,element,&xi,
 					time,top_level_element,coordinates,(FE_value *)NULL)&&
 					((!data_field)||Computed_field_evaluate_in_element(
@@ -1659,6 +1659,7 @@ Notes:
 					/* error evaluating fields */
 					DESTROY(GT_polyline)(&polyline);
 				}
+				delete[] feData;
 			}
 			/* clear Computed_field caches so elements not accessed */
 			Computed_field_clear_cache(coordinate_field);
@@ -1753,10 +1754,11 @@ int FE_element_add_line_to_vertex_array(
 					3, floatField);
 				if (data_field)
 				{
-					float floatData[number_of_data_values];
+					float *floatData = new float[number_of_data_values];
 					CAST_TO_OTHER(floatData,data_buffer,float,number_of_data_values);
 					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
 						number_of_data_values, floatData);
+					delete[] floatData;
 				}
 				if (texture_coordinate_field)
 				{
@@ -1898,7 +1900,7 @@ Notes:
 			{
 				xi=(float)i/(float)number_of_segments_along;
 				/* evaluate the fields */
-				FE_value feData[n_data_components];
+				FE_value *feData = new FE_value[n_data_components];
 				if (Computed_field_evaluate_in_element(coordinate_field,element,&xi,
 					time,top_level_element,coordinates,derivative_xi)&&
 					((!data_field)||Computed_field_evaluate_in_element(
@@ -1976,6 +1978,7 @@ Notes:
 				point += number_of_segments_around+1;
 				derivative += number_of_segments_around+1;
 				texture_coordinate += number_of_segments_around+1;
+				delete[] feData;
 			}
 
 			if (surface)
@@ -2861,6 +2864,7 @@ normals are used.
 			number_of_points_in_xi1,number_of_points_in_xi2, points,
 			normalpoints, tangentpoints, texturepoints, n_data_components,data)))
 		{
+			FE_value *feData = new FE_value[n_data_components];
 			/* for selective editing of GT_object primitives, record element ID */
 			get_FE_element_identifier(element, &cm);
 			GT_surface_set_integer_identifier(surface, CM_element_information_to_graphics_name(&cm));
@@ -2955,7 +2959,6 @@ normals are used.
 				xi[0]=(*normal)[0];
 				xi[1]=(*normal)[1];
 				/* evaluate the fields */
-				FE_value feData[n_data_components];
 				if (!(Computed_field_evaluate_in_element(coordinate_field,element,xi,
 					time,top_level_element,coordinates,derivative_xi)&&
 					((!data_field)||Computed_field_evaluate_in_element(
@@ -3298,6 +3301,7 @@ normals are used.
 					}
 				}
 			}
+			delete[] feData;
 		}
 		else
 		{
@@ -3440,8 +3444,7 @@ faces.
 #endif /* defined (DEBUG) */
 	FE_value_triple *xi_points;
 
-	int displacement_number_of_components, tex_x_i, tex_y_i, tex_width_texels,
-		tex_height_texels, tex_number_of_components;
+	int displacement_number_of_components, tex_number_of_components;
 	double intensity1,intensity2,intensity3;
 	int outside_block;
 
@@ -3885,19 +3888,6 @@ faces.
 															intensity2=0;
 															intensity3=0;
 														}
-														/* ignore border */
-														if ((tex_x_i>0)&&(tex_x_i<tex_width_texels)&&
-															(tex_y_i>0)&&(tex_y_i<tex_height_texels))
-														{
-															/* For 12, 13 and 23 we displace after evaluation in
-																the direction of the derivative cross products */
-															if ((1==displacement_map_xi_direction)||
-																(2==displacement_map_xi_direction)||
-																(3==displacement_map_xi_direction))
-															{
-																xi[displacement_map_xi_direction-1] += intensity1;
-															}
-														}
 														/* Keep intensity2 and intensity3 in case we do some
 															other displacement stuff with them */
 														USE_PARAMETER(intensity2);
@@ -4019,7 +4009,7 @@ faces.
 														}
 														if (data_field)
 														{
-															FE_value feData[n_data_components];
+															FE_value *feData = new FE_value[n_data_components];
 															if (!(ALLOCATE(vertex_list[index]->data, float, n_data_components) &&
 																Computed_field_evaluate_in_element(data_field,
 																element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
@@ -4035,6 +4025,7 @@ faces.
 																CAST_TO_OTHER(vertex_list[index]->data,feData,
 																	float,n_data_components);
 															}
+															delete[] feData;
 														}
 													}
 													else
@@ -4371,7 +4362,7 @@ Note:
 							 orientation_scale field very often requires the evaluation of the
 							 same coordinate_field with derivatives, meaning that values for
 							 the coordinate_field will already be cached = more efficient. */
-						FE_value feData[n_data_components];
+						FE_value *feData = new FE_value[n_data_components];
 						if (((!orientation_scale_field) ||
 							Computed_field_evaluate_in_element(orientation_scale_field,
 							element, xi, time, top_level_element, orientation_scale,
@@ -4435,6 +4426,7 @@ Note:
 							/* error evaluating fields */
 							DESTROY(GT_glyph_set)(&glyph_set);
 						}
+						delete[] feData;
 					}
 				}
 				/* clear Computed_field caches so elements not accessed */
@@ -5279,7 +5271,7 @@ fields defined over it.
 					element_to_glyph_set_data->xi_point_density_field,
 					&number_of_xi_points, &fe_xi_points, element_to_glyph_set_data->time))
 				{
-					Triple xi_points[number_of_xi_points];
+					Triple *xi_points = new Triple[number_of_xi_points];
 					int xii;
 					for (xii=0;xii<number_of_xi_points;xii++)
 					{
@@ -5316,6 +5308,7 @@ fields defined over it.
 					{
 						return_code=0;
 					}
+					delete[] xi_points;
 					DEALLOCATE(fe_xi_points);
 				}
 				else

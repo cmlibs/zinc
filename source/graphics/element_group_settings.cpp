@@ -5893,7 +5893,7 @@ Converts a finite element into a graphics object with the supplied settings.
 								scale_factors[1] = (FE_value)(settings->glyph_scale_factors[1]);
 								scale_factors[2] = (FE_value)(settings->glyph_scale_factors[2]);
 								/* NOT an error if no glyph_set produced == empty selection */
-								Triple xi_points[number_of_xi_points];
+								Triple *xi_points = new Triple[number_of_xi_points];
 								int xii;
 								for (xii=0;xii<number_of_xi_points;xii++)
 								{
@@ -5921,6 +5921,7 @@ Converts a finite element into a graphics object with the supplied settings.
 									DEALLOCATE(top_level_xi_point_numbers);
 								}
 								DEALLOCATE(fe_xi_points);
+								delete[] xi_points;
 							}
 							else
 							{

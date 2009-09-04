@@ -2474,13 +2474,15 @@ passed in render data.
 				}
 				else
 				{
-					FE_value feData[render_data->number_of_data_components];
+					FE_value *feData;
+					ALLOCATE(feData, FE_value,render_data->number_of_data_components);
 					CAST_TO_FE_VALUE_C(feData,render_data->data,
 						render_data->number_of_data_components);
 					Computed_field_evaluate_at_field_coordinates(settings->output_field,
 						settings->input_field, render_data->number_of_data_components,
 						feData,
 						/*time*/0.0, values);
+					DEALLOCATE(feData);
 				}
 
 				for (i = 0 ; i < number_of_components ; i++)

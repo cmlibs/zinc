@@ -1912,7 +1912,7 @@ Uses the <spectrum> to calculate RGBA components to represent the
 			rgba[3] = 1.0;
 		}
 		render_data.rgba = rgba;
-		float fData[number_of_data_components];
+		float *fData = new float[number_of_data_components];
 		CAST_TO_OTHER(fData,data,float,number_of_data_components);
 		render_data.data = fData;
 		render_data.number_of_data_components = number_of_data_components;
@@ -1921,7 +1921,7 @@ Uses the <spectrum> to calculate RGBA components to represent the
 			Spectrum_settings_activate,(void *)&render_data,
 			spectrum->list_of_settings);
 
-
+		delete[] fData;
 	}
 	else
 	{
@@ -2506,7 +2506,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 			colour_table_ptr = colour_table;
 
 			render_data.rgba = rgba;
-			float fData[number_of_data_components];
+			float *fData = new float[number_of_data_components];
 			CAST_TO_OTHER(fData,data,float,number_of_data_components);
 			render_data.data = fData;
 			render_data.number_of_data_components = number_of_data_components;
@@ -2630,6 +2630,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 
 			return_code = 1;
 			DEALLOCATE(colour_table);
+			delete[] fData;
 		}
 		else
 		{

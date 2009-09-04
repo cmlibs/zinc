@@ -97,7 +97,7 @@ Default version assumes all valid enumerator values are sequential from 0. \
 		     ENUMERATOR_STRING(enumerator_type)(static_cast<enum enumerator_type >(enumerator_value)); \
 		        enumerator_value++)		\
 		{ \
-			if ((!conditional_function) || \
+			if ((NULL == conditional_function) || \
 			    conditional_function(static_cast<enum enumerator_type >(enumerator_value), user_data)) \
 			{ \
 				(*number_of_valid_strings)++; \
@@ -111,7 +111,7 @@ Default version assumes all valid enumerator values are sequential from 0. \
 					ENUMERATOR_STRING(enumerator_type)(static_cast<enum enumerator_type >(enumerator_value))); \
 				enumerator_value++) \
 			{ \
-				if ((!conditional_function) || \
+				if ((NULL == conditional_function) || \
 				    conditional_function(static_cast<enum enumerator_type >(enumerator_value), user_data)) \
 				{ \
 					valid_strings[i] = enumerator_string; \

@@ -153,9 +153,13 @@ FE_value normalize_FE_value3(FE_value *v)
 #if defined (FE_VALUE_IS_DOUBLE)
 	length = normalize3(v);
 #else
-	/* FIXME: difference in normalize methods for float and double. */
-	int return_code = normalize_float3(v);
-	length = (FE_value)return_code;
+	/* FIXME: difference in normalize methods for float and double.
+	 * Some C compilers require type declarations before functions. */
+	{
+		int return_code;
+		return_code = normalize_float3(v);
+		length = (FE_value)return_code;
+	}
 #endif
 	LEAVE;
 	return(length);

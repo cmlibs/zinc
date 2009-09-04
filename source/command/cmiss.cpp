@@ -6904,6 +6904,10 @@ Modifies the properties of a texture.
 					NULL, set_file_name);
 				return_code = Option_table_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
+				//				if (data->image_file_name)
+				//{
+				// DEALLOCATE(data->image_file_name);
+				//}
 			}
 			else
 			{

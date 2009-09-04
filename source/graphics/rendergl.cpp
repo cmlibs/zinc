@@ -2303,7 +2303,7 @@ static int Graphics_object_create_colour_buffer_from_data(GT_object *object,
 			}
 			colour_vertex = *colour_buffer;
 			data_vertex = data_buffer;
-			FE_value feData[data_values_per_vertex];
+			FE_value *feData = new FE_value[data_values_per_vertex];
 			for (i = 0 ; i < data_vertex_count ; i++)
 			{
 				CAST_TO_FE_VALUE(feData,data_vertex,(int)data_values_per_vertex);
@@ -2316,6 +2316,7 @@ static int Graphics_object_create_colour_buffer_from_data(GT_object *object,
 			
 			*colour_vertex_count = data_vertex_count;
 			*colour_values_per_vertex = 4;
+			delete[] feData;
 			return_code = 1;
 		}
 		else
