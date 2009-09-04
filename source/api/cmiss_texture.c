@@ -746,7 +746,7 @@ equal to the number_of_components.
 ==============================================================================*/
 {
 	struct Cmgui_image *cmgui_image;
-	int number_of_components, return_code;
+	int number_of_components = 0, return_code;
 	unsigned char *frame_pixels;
 	unsigned int bytes_per_pixel, i, frame_bytes, width_bytes;
 
