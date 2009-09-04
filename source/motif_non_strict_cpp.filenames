@@ -39,6 +39,7 @@ finite_element/finite_element_to_graphics_object.cpp
 finite_element/finite_element_to_iso_lines.cpp
 finite_element/finite_element_to_streamlines.cpp
 finite_element/import_finite_element.cpp
+general/geometry.cpp
 graphics/decimate_voltex.cpp
 graphics/element_group_settings.cpp
 graphics/font.cpp

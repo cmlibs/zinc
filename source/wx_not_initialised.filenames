@@ -28,10 +28,11 @@ finite_element/finite_element_to_streamlines.cpp
 finite_element/import_finite_element.cpp
 finite_element/snake.c
 finite_element/write_fieldml.c
-general/geometry.c
+general/geometry.cpp
 general/image_utilities.c
 general/io_stream.c
 general/matrix_vector.c
+graphics/auxiliary_graphics_types.c
 graphics/decimate_voltex.cpp
 graphics/defined_graphics_objects.c
 graphics/element_group_settings.cpp
@@ -41,6 +42,7 @@ graphics/graphical_element.cpp
 graphics/graphics_object.cpp
 graphics/graphics_window.cpp
 graphics/iso_field_calculation.c
+graphics/light.c
 graphics/material.cpp
 graphics/mcubes.c
 graphics/render_to_finite_elements.cpp
@@ -59,6 +61,7 @@ graphics/tile_graphics_objects.cpp
 graphics/userdef_objects.c
 graphics/volume_texture.c
 image_processing/computed_field_image_resample.cpp
+image_processing/computed_field_threshold_image_filter.cpp
 interaction/interactive_event.cpp
 material/material_editor_wx.cpp
 node/node_operations.c

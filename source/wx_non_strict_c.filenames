@@ -23,7 +23,6 @@ finite_element/snake.c
 finite_element/write_fieldml.c
 general/any_object.c
 general/child_process.c
-general/geometry.c
 general/image_utilities.c
 general/indexed_multi_range.c
 general/integration.c

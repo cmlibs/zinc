@@ -705,6 +705,9 @@ transformation encoded in 4x4 <transformation_matrix>.
 			}
 			matrix_euler(&gmatrix, &direction);
 	 }
+	 position.data[0] = 0.0;
+	 position.data[1] = 0.0;
+	 position.data[2] = 0.0;
 	 text = NULL;
 	 text = (char*)Transformation_editor_wx_position_text_ctrl_1->GetValue().mb_str(wxConvUTF8);
 	 if (text)

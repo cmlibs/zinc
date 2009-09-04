@@ -35,7 +35,7 @@ finite_element/import_finite_element.cpp
 finite_element/read_fieldml.c
 finite_element/snake.c
 finite_element/write_fieldml.c
-general/geometry.c
+general/geometry.cpp
 general/image_utilities.c
 general/io_stream.c
 general/matrix_vector.c

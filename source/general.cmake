@@ -8,7 +8,7 @@ SET( GENERAL_SRCS
 	general/compare.c
 	general/debug.c
 	general/error_handler.c
-	general/geometry.c
+	general/geometry.cpp
 	general/heapsort.c
 	general/image_utilities.c
 	general/indexed_multi_range.c

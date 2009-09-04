@@ -1069,7 +1069,7 @@ Temporary.
 ==============================================================================*/
 {
 	char cmd;
-	int return_code,v1,v2,r;
+	int return_code,v1,v2,r = 0;
 	struct Multi_range *multi_range;
 
 	ENTER(Multi_range_test);
