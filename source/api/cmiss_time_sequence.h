@@ -45,7 +45,7 @@ The public interface to Cmiss_time_sequence.
 #define __CMISS_TIME_SEQUENCE_H__
 
 #include "general/object.h"
-#include "api/cmiss_function_base.h"
+typedef double Scalar;
 
 /*
 Global types
