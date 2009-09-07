@@ -123,7 +123,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 	
 	ENTER(Expand_element_range);
 	
-	if (data = (Computed_field_find_element_xi_graphics_cache *)data_void)
+	if ((data = (Computed_field_find_element_xi_graphics_cache *)data_void))
 	{
 		/* Expand the element number range */
 		if (get_FE_element_identifier(element, &cm_information) &&
@@ -172,7 +172,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 	
 	ENTER(Render_element_as_texture);
 	
-	if (data = (struct Render_element_data *)data_void)
+	if ((data = (struct Render_element_data *)data_void))
 	{
 		/* Code the element number into the colour */
 		if (get_FE_element_identifier(element, &cm_information) &&
@@ -353,8 +353,8 @@ sequential element_xi lookup should now be performed.
 				}
 				/* Get the element number range so we can spread the colour range
 					as widely as possible */
-				if (first_element = FE_region_get_first_FE_element_that(fe_region,
-					(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, NULL))
+				if ((first_element = FE_region_get_first_FE_element_that(fe_region,
+							(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, NULL)))
 				{
 					cache = new Computed_field_find_element_xi_graphics_cache;
 					*cache_ptr = CREATE(Computed_field_find_element_xi_cache)(cache);
@@ -380,11 +380,11 @@ sequential element_xi lookup should now be performed.
 					{
 						hint_resolution[1] = 1024;
 					}
-					if (cache->graphics_buffer = create_Graphics_buffer_offscreen(
+					if ((cache->graphics_buffer = create_Graphics_buffer_offscreen(
 							 graphics_buffer_package, (int)hint_resolution[0], (int)hint_resolution[1],
 						GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
 						/*minimum_colour_buffer_depth*/0, /*minimum_depth_buffer_depth*/0,
-						/*minimum_accumulation_buffer_depth*/0))
+							 /*minimum_accumulation_buffer_depth*/0)))
 					{
 						data.field = field;
 						data.bit_shift = cache->bit_shift;
@@ -487,8 +487,8 @@ sequential element_xi lookup should now be performed.
 				cm.type = CM_ELEMENT;
 				if (scaled_number)
 				{
-					if (*element = FE_region_get_FE_element_from_identifier(
-						fe_region, &cm))
+					if ((*element = FE_region_get_FE_element_from_identifier(
+								 fe_region, &cm)))
 					{
 						first_element = *element;
 #if defined (DEBUG)
@@ -584,8 +584,8 @@ sequential element_xi lookup should now be performed.
 								cm.number = scaled_number + cache->minimum_element_number - 1;
 								if (scaled_number)
 								{
-									if (*element = FE_region_get_FE_element_from_identifier(
-										fe_region, &cm))
+									if ((*element = FE_region_get_FE_element_from_identifier(
+												 fe_region, &cm)))
 									{
 										if (Computed_field_iterative_element_conditional(
 											*element, (void *)&find_element_xi_data))

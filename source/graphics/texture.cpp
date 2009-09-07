@@ -6874,7 +6874,9 @@ by vertex programs.
 				"GL_ARB_vertex_program or GL_ARB_fragment_program extension unavailable.");
 			return_code=0;
 		}
-#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+#else /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+		USE_PARAMETER(program);
+#endif
 	}
 	else
 	{

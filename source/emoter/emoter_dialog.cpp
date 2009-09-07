@@ -677,7 +677,6 @@ Sets the nodes according to all the values of the sliders
 {
 	int i;
 	FE_value *total_shape_vector;
-	struct Graphics_window *graphics_window;
 
 	ENTER(emoter_update_face);
 
@@ -696,19 +695,19 @@ Sets the nodes according to all the values of the sliders
 
 			emoter_update_nodes( shared, shared->show_solid_body_motion );
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
+			struct Graphics_window *graphics_window;
 			/*			(*(emoter_dialog->shared->execute_command->function))(
 						"open comfile redraw execute",
 						emoter_dialog->shared->execute_command->data);*/
 			/* SAB This would be better implemented by adding a special
 				manager message to the Scene Manager and then calling that. */
-			if (graphics_window=FIRST_OBJECT_IN_MANAGER_THAT(Graphics_window)(
+			if ((graphics_window=FIRST_OBJECT_IN_MANAGER_THAT(Graphics_window)(
 				(MANAGER_CONDITIONAL_FUNCTION(Graphics_window) *)NULL,
-				(void *)NULL,shared->graphics_window_manager))
+				(void *)NULL,shared->graphics_window_manager)))
 			{
 				Graphics_window_update_now(graphics_window);
 			}
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
-
 			DEALLOCATE( total_shape_vector );
 		}
 	}
@@ -6348,7 +6347,6 @@ Executes a GFX MODIFY EMOTER command.
 	struct Emoter_dialog *emoter_dialog;
 	struct Emoter_slider *emoter_slider;
 	struct Shared_emoter_slider_data *shared;
-	struct Graphics_window *graphics_window;
 
 	ENTER(gfx_modify_emoter);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -6602,6 +6600,7 @@ Executes a GFX MODIFY EMOTER command.
 					{
 						emoter_update_face (emoter_dialog->shared);
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
+						struct Graphics_window *graphics_window;
 						/* SAB This would be better implemented by adding a special
 							manager message to the Scene Manager and then calling that. */
 						if (graphics_window=FIRST_OBJECT_IN_MANAGER_THAT(Graphics_window)(

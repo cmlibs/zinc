@@ -1342,7 +1342,7 @@ DESCRIPTION :
 Called when a command is entered in the command entry area.
 ==============================================================================*/
 {
-	gboolean return_code;
+	gboolean return_code = FALSE;;
 #if GTK_MAJOR_VERSION >= 2
 	gchar *selected_text;
 	gint buffer_x, buffer_y;

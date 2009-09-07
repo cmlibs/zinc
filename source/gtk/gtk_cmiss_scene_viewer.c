@@ -79,7 +79,7 @@ Clear the scene viewer reference when it is no longer valid.
 	USE_PARAMETER(scene_viewer);
 	USE_PARAMETER(dummy_void);
 	ENTER(gtk_cmiss_scene_viewer_destroy_callback);
-	if (gtk_cmiss_scene_viewer = (GtkCmissSceneViewer *)gtk_cmiss_scene_viewer_void)
+	if ((gtk_cmiss_scene_viewer = (GtkCmissSceneViewer *)gtk_cmiss_scene_viewer_void))
 	{
 		gtk_cmiss_scene_viewer->cmiss_scene_viewer = (Cmiss_scene_viewer_id)NULL;
 	}

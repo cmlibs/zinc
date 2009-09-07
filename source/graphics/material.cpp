@@ -5194,11 +5194,12 @@ the one in material, it is used for setting up the GUI.
 int Material_set_program_uniform_qualifier_variable_value(
 	Graphical_material* material, const char *uniform_name, float value)
 {
-	int i, return_code;
+	int return_code;
 
 	ENTER(Material_set_program_uniform_value);
 	return_code = 0;
 #if defined (OPENGL_API)
+	int i;
 	if (material && material->program)
 	{
 		i = 0;
@@ -5235,7 +5236,11 @@ int Material_set_program_uniform_qualifier_variable_value(
 		display_message(ERROR_MESSAGE,
 			"Material_set_program_uniform_value.  Missing material_program");
 	}
-#endif /* defined (OPENGL_API) */
+#else /* defined (OPENGL_API) */
+	USE_PARAMETER(material);
+	USE_PARAMETER(uniform_name);
+	USE_PARAMETER(value);
+#endif 
 	LEAVE;
 
 	return return_code;

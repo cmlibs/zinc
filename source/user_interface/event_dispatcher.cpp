@@ -966,7 +966,7 @@ LAST MODIFIED : 10 July 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-	gboolean return_code;
+	gboolean return_code = FALSE;
 	struct Event_dispatcher_idle_callback *idle_callback;
 
 	ENTER(Event_dispatcher_gtk_idle_callback);
