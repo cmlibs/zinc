@@ -119,6 +119,9 @@ extern "C" {
 #include "element/element_tool.h"
 #include "emoter/emoter_dialog.h"
 #include "finite_element/export_cm_files.h"
+#if defined (USE_NETGEN)
+#include "finite_element/generate_mesh_netgen.h"
+#endif /* defined (USE_NETGEN) */
 #include "finite_element/export_finite_element.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_conversion.h"
@@ -276,6 +279,7 @@ extern "C" {
 Module types
 ------------
 */
+
 
 struct Cmiss_command_data
 /*******************************************************************************
@@ -12182,6 +12186,69 @@ Executes a GFX EXPORT WAVEFRONT command.
 	return (return_code);
 } /* gfx_export_wavefront */
 
+#if defined (USE_NETGEN)
+static int execute_command_gfx_mesh(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 4 Sep 2009
+
+DESCRIPTION :
+Executes a GFX mesh command.
+==============================================================================*/
+{ 
+     int return_code;
+     char *region_path;	
+     FE_value time;
+     struct Cmiss_region *region;
+     struct FE_region *fe_region;
+     struct Cmiss_command_data* command_data;
+     ENTER(execute_command_gfx_mesh);
+     USE_PARAMETER(dummy_to_be_modified);
+     if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
+     {
+	Cmiss_region_get_root_region_path(&region_path);
+	//fe_field = (struct FE_field *)NULL;
+	if (command_data->default_time_keeper)
+	{
+	    time = Time_keeper_get_time(command_data->default_time_keeper);
+	}
+	else
+	{
+	    time = 0;
+	}
+
+	//option_table = CREATE(Option_table)();
+	///* egroup */
+	//Option_table_add_entry(option_table, "egroup", &region_path,
+	//	command_data->root_region, set_Cmiss_region_path);
+	///* field */
+	//Option_table_add_set_FE_field_from_FE_region(
+	//	option_table, "field" ,&fe_field,
+	//	Cmiss_region_get_FE_region(command_data->root_region));
+	///* time */
+	//Option_table_add_entry(option_table, "time", &time, NULL, set_FE_value);
+	//return_code = Option_table_multi_parse(option_table, state);
+	return_code=1;
+        if (return_code)
+	{
+	   if (Cmiss_region_get_region_from_path(command_data->root_region,
+	       region_path, &region) &&
+	       (fe_region = Cmiss_region_get_FE_region(region)))
+               {
+                  return_code = generate_mesh_netgen(fe_region); 
+               }
+           else {return return_code;}
+        }
+     }
+     //Cmiss_region_get_Computed_field_manager(region);
+     //fe_region = Cmiss_region_get_FE_region(region);
+     //ENTER(execute_command_gfx_mesh);
+     LEAVE;
+
+     return (return_code);
+} /* execute_command_gfx_mesh */
+#endif /* defined (USE_NETGEN) */
+
 static int execute_command_gfx_export(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -19142,6 +19209,7 @@ Executes a GFX SET command.
 	return (return_code);
 } /* execute_command_gfx_set */
 
+
 static int execute_command_gfx_smooth(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -19194,7 +19262,8 @@ Executes a GFX SMOOTH command.
 			{
 				if (fe_field)
 				{
-					return_code = FE_region_smooth_FE_field(fe_region, fe_field, time);
+                                        ////////////////////////////////////
+					return_code = FE_region_smooth_FE_field(fe_region, fe_field, time);                                        
 				}
 				else
 				{
@@ -21052,6 +21121,10 @@ Executes a GFX command.
 				command_data_void, execute_command_gfx_select);
 			Option_table_add_entry(option_table, "set", NULL,
 				command_data_void, execute_command_gfx_set);
+#if defined (USE_NETGEN)
+			Option_table_add_entry(option_table, "mesh", NULL,
+				command_data_void, execute_command_gfx_mesh);
+#endif /* defined (USE_NETGEN) */
 			Option_table_add_entry(option_table, "smooth", NULL,
 				command_data_void, execute_command_gfx_smooth);
 			Option_table_add_entry(option_table, "timekeeper", NULL,
