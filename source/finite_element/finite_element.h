@@ -3920,6 +3920,16 @@ is no native_discretization field or it is not defined over the element; in
 either case the top_level_number_in_xi used is returned.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Checks if the element is 2-D and exterior i.e. a face of exactly one parent
+ * element, and if so whether the standard element/face mapping gives it an
+ * inward normal.
+ * 
+ * @param element  The element to test.
+ * @return  1 if element is an exterior face with inward normal, 0 otherwise.
+ */
+int FE_element_is_exterior_face_with_inward_normal(struct FE_element *element);
+
 int FE_element_or_parent_contains_node(struct FE_element *element,
 	void *node_void);
 /*******************************************************************************

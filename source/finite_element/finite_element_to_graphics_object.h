@@ -514,21 +514,17 @@ The optional <top_level_element> may be provided as a clue to Computed_fields
 to say which parent element they should be evaluated on as necessary.
 ==============================================================================*/
 
+/****************************************************************************//**
+ * Sorts out how standard, polygon and simplex elements are segmented, based on
+ * numbers of segments requested for "square" elements.
+ */
 int get_surface_element_segmentation(struct FE_element *element,
 	int number_of_segments_in_xi1_requested,
-	int number_of_segments_in_xi2_requested,int reverse_normals,
+	int number_of_segments_in_xi2_requested,
 	int *number_of_points_in_xi1,int *number_of_points_in_xi2,
 	int *number_of_points,int *number_of_polygon_vertices,
 	gtPolygonType *polygon_type,enum Collapsed_element_type *collapsed_element,
-	char *modified_reverse_normals,
 	enum FE_element_shape_type *shape_type_address);
-/*******************************************************************************
-LAST MODIFIED : 13 March 2003
-
-DESCRIPTION :
-Sorts out how standard, polygon and simplex elements are segmented, based on
-numbers of segments requested for "square" elements.
-==============================================================================*/
 
 struct GT_surface *create_GT_surface_from_FE_element(
 	struct FE_element *element,struct Computed_field *coordinate_field,

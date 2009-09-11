@@ -37855,6 +37855,81 @@ either case the top_level_number_in_xi used is returned.
 	return (return_code);
 } /* get_FE_element_discretization */
 
+/***************************************************************************//**
+ * Return whether the shape-face mapping for the supplied face number gives the
+ * face an inward normal.
+ * 
+ * @param shape  The shape - must be 3 dimensional.
+ * @param face_number  Face index from 0 to (shape->number_of_faces - 1).
+ * @return  1 if face has inward normal, 0 otherwise.
+ */
+int FE_element_shape_face_has_inward_normal(struct FE_element_shape *shape,
+	int face_number)
+{
+	ENTER(FE_element_shape_face_has_inward_normal);
+	int return_code = 0;
+	if (shape && (3 == shape->dimension) &&
+		(0 <= face_number) && (face_number <= shape->number_of_faces))
+	{
+		FE_value *face_to_element = shape->face_to_element +
+			face_number*shape->dimension*shape->dimension;
+		FE_value face_xi1[3], face_xi2[3], actual_face_normal[3];
+		face_xi1[0] = face_to_element[1];
+		face_xi1[1] = face_to_element[4];
+		face_xi1[2] = face_to_element[7];
+		face_xi2[0] = face_to_element[2];
+		face_xi2[1] = face_to_element[5];
+		face_xi2[2] = face_to_element[8];
+		cross_product_FE_value_vector3(face_xi1, face_xi2, actual_face_normal);
+		FE_value *outward_face_normal = shape->face_normals + face_number*shape->dimension;
+		FE_value result = actual_face_normal[0]*outward_face_normal[0] +
+			actual_face_normal[1]*outward_face_normal[1] +
+			actual_face_normal[2]*outward_face_normal[2];
+		if (result < 0.0)
+		{
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_shape_face_has_inward_normal.  Invalid argument(s)");
+	}
+	LEAVE;
+	
+	return (return_code);
+}
+
+int FE_element_is_exterior_face_with_inward_normal(struct FE_element *element)
+{
+	ENTER(FE_element_is_exterior_face_with_inward_normal);
+	int return_code = 0;
+	if (element)
+	{
+		if ((get_FE_element_dimension(element) == 2) &&
+			(1 == NUMBER_IN_LIST(FE_element_parent)(element->parent_list)))
+		{
+			struct FE_element_parent *element_parent =
+				FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
+					(LIST_CONDITIONAL_FUNCTION(FE_element_parent) *)NULL, (void *)NULL,
+					element->parent_list);
+			if (NULL != element_parent)
+			{
+				return_code = FE_element_shape_face_has_inward_normal(
+					element_parent->parent->shape, element_parent->face_number);
+			}
+		}				
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_is_exterior_face_with_inward_normal.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
 int FE_element_or_parent_contains_node(struct FE_element *element,
 	void *node_void)
 /*******************************************************************************
@@ -43138,4 +43213,3 @@ and <basis_type>.  This does not support mixed basis types in the tensor product
 
 	return (return_code);
 } /* FE_element_define_tensor_product_basis */
-

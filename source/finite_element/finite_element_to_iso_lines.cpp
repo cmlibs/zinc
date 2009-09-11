@@ -913,7 +913,6 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 <scalar_field> at <iso_value>.
 ==============================================================================*/
 {
-	char modified_reverse_normals,reverse_normals=0;
 	enum Collapsed_element_type collapsed_element;
 	enum FE_element_shape_type shape_type1;
 	FE_value coordinates[3],*data,*datum,distance1,distance2,*scalar,*scalars,
@@ -949,9 +948,9 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 		coordinates[2]=0.0;
 		get_surface_element_segmentation(element,
 			number_of_segments_in_xi1_requested,number_of_segments_in_xi2_requested,
-			reverse_normals,&number_of_points_in_xi1,&number_of_points_in_xi2,
+			&number_of_points_in_xi1,&number_of_points_in_xi2,
 			&number_of_points,&number_of_polygon_vertices,&polygon_type,
-			&collapsed_element,&modified_reverse_normals,&shape_type1);
+			&collapsed_element,&shape_type1);
 		simplex_element=(SIMPLEX_SHAPE== shape_type1);
 		points=(Triple *)NULL;
 		scalars=(FE_value *)NULL;

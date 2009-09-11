@@ -2591,19 +2591,11 @@ to say which parent element they should be evaluated on as necessary.
 
 int get_surface_element_segmentation(struct FE_element *element,
 	int number_of_segments_in_xi1_requested,
-	int number_of_segments_in_xi2_requested,int reverse_normals,
+	int number_of_segments_in_xi2_requested,
 	int *number_of_points_in_xi1,int *number_of_points_in_xi2,
 	int *number_of_points,int *number_of_polygon_vertices,
 	gtPolygonType *polygon_type,enum Collapsed_element_type *collapsed_element,
-	char *modified_reverse_normals,
 	enum FE_element_shape_type *shape_type_address)
-/*******************************************************************************
-LAST MODIFIED : 13 March 2003
-
-DESCRIPTION :
-Sorts out how standard, polygon and simplex elements are segmented, based on
-numbers of segments requested for "square" elements.
-==============================================================================*/
 {
 	int i, number_of_faces, return_code;
 	struct FE_element *faces[4];
@@ -2620,7 +2612,6 @@ numbers of segments requested for "square" elements.
 			return_code = 1;
 			*collapsed_element = ELEMENT_NOT_COLLAPSED;
 			*number_of_polygon_vertices = 0;
-			*modified_reverse_normals = reverse_normals;
 			switch (*shape_type_address)
 			{
 				case POLYGON_SHAPE:
@@ -2660,17 +2651,6 @@ numbers of segments requested for "square" elements.
 					*number_of_points=
 						(*number_of_points_in_xi1*(*number_of_points_in_xi1+1))/2;
 					*polygon_type=g_TRIANGLE;
-					/* to get the surface colouring right, the points need to be given in a
-						 certain order to GL_TRIANGLE_STRIP.  To keep the lighting correct,
-						 the normals need to be reversed */
-					if (reverse_normals)
-					{
-						*modified_reverse_normals=0;
-					}
-					else
-					{
-						*modified_reverse_normals=1;
-					}
 				} break;
 				default:
 				{
@@ -2748,6 +2728,11 @@ numbers of segments requested for "square" elements.
 	return (return_code);
 } /* get_surface_element_segmentation */
 
+/* GRC temporary */
+#if defined (USE_NETGEN)
+#  define FIX_INWARD_NORMALS 1
+#endif
+
 struct GT_surface *create_GT_surface_from_FE_element(
 	struct FE_element *element,struct Computed_field *coordinate_field,
 	struct Computed_field *texture_coordinate_field,
@@ -2810,6 +2795,11 @@ normals are used.
 		((!texture_coordinate_field)||
 		(3>=Computed_field_get_number_of_components(texture_coordinate_field))))
 	{
+#if defined (FIX_INWARD_NORMALS)
+		const int reverse_winding = FE_element_is_exterior_face_with_inward_normal(element);
+#else
+		const int reverse_winding = 0;
+#endif
 		/* clear coordinates and derivatives not set if coordinate field is not
 			 3 component */
 		coordinates[1]=0.0;
@@ -2824,9 +2814,14 @@ normals are used.
 		texture_values[2]=0.0;
 		get_surface_element_segmentation(element,
 			number_of_segments_in_xi1_requested,number_of_segments_in_xi2_requested,
-			reverse_normals,&number_of_points_in_xi1,&number_of_points_in_xi2,
+			&number_of_points_in_xi1,&number_of_points_in_xi2,
 			&number_of_points,&number_of_polygon_vertices,&polygon_type,
-			&collapsed_element,&modified_reverse_normals, &shape_type);
+			&collapsed_element, &shape_type);
+		modified_reverse_normals = reverse_normals;
+		if (reverse_winding)
+		{
+			modified_reverse_normals = !modified_reverse_normals;
+		}
 		/* create the GT_surface */
 		surface=(struct GT_surface *)NULL;
 		points=(Triple *)NULL;
@@ -2874,6 +2869,9 @@ normals are used.
 			distance=(FE_value)(number_of_points_in_xi1-1);
 			if (SIMPLEX_SHAPE == shape_type)
 			{
+#if !defined (FIX_INWARD_NORMALS)
+				// This original winding for triangles was backward so normals had to be reversed
+				modified_reverse_normals = !modified_reverse_normals;
 				for (i=0;i<number_of_points_in_xi1;i++)
 				{
 					(*point_a)[0]=(float)i/distance;
@@ -2889,6 +2887,37 @@ normals are used.
 					}
 					point_b++;
 				}
+#else /* defined (FIX_INWARD_NORMALS) */
+				if (reverse_winding)
+				{
+					for (i=0;i<number_of_points_in_xi1;i++)
+					{
+						(*point_a)[0]=(float)i/distance;
+						point_a++;
+					}
+					for (j=number_of_points_in_xi2-1;j>0;j--)
+					{
+						for (i=0;i<j;i++)
+						{
+							(*point_a)[0]=(*point_b)[0];
+							point_a++;
+							point_b++;
+						}
+						point_b++;
+					}
+				}
+				else
+				{
+					for (j=0;j<number_of_points_in_xi2;j++)
+					{
+						for (i=number_of_points_in_xi1-j-1;i>=0;i--)
+						{
+							(*point_a)[0]=(float)i/distance;
+							point_a++;
+						}
+					}
+				}
+#endif /* defined (FIX_INWARD_NORMALS) */
 				point=normalpoints;
 				distance=(float)(number_of_points_in_xi2-1);
 				for (j=0;j<number_of_points_in_xi2;j++)
@@ -2921,7 +2950,14 @@ normals are used.
 				distance=(float)(number_of_points_in_xi2-1);
 				for (j=0;j<number_of_points_in_xi2;j++)
 				{
-					xi2=(float)j/distance;
+					if (reverse_winding)
+					{
+						xi2=(float)(number_of_points_in_xi2-1-j)/distance;
+					}
+					else
+					{
+						xi2=(float)j/distance;
+					}
 					for (i=0;i<number_of_points_in_xi1;i++)
 					{
 						(*point)[1]=xi2;
