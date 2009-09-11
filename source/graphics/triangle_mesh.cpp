@@ -169,7 +169,7 @@ void Triangle_mesh::add_quadrilateral(const Triangle_vertex *v1, const Triangle_
 	if (lensq1 > lensq2)
 	{
 		add_triangle(v1, v2, v3);
-		add_triangle(v2, v3, v4);
+		add_triangle(v3, v2, v4);
 	}
 	else
 	{
