@@ -119,9 +119,9 @@ extern "C" {
 #include "element/element_tool.h"
 #include "emoter/emoter_dialog.h"
 #include "finite_element/export_cm_files.h"
-//#if defined (USE_NETGEN)
+#if defined (USE_NETGEN)
 #include "finite_element/generate_mesh_netgen.h"
-//#endif /* defined (USE_NETGEN) */
+#endif /* defined (USE_NETGEN) */
 #include "finite_element/export_finite_element.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_conversion.h"
