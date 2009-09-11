@@ -167,7 +167,10 @@ extern "C" {
 #include "graphics/rendervrml.h"
 #include "graphics/renderwavefront.h"
 #include "graphics/scene.h"
+#include "finite_element/finite_element_helper.h"
 }
+#include "graphics/triangle_mesh.hpp"
+#include "graphics/render_triangularisation.hpp"
 #include "graphics/scene.hpp"
 extern "C" {
 #if defined (MOTIF_USER_INTERFACE) 
@@ -12296,6 +12299,190 @@ Executes a GFX EXPORT command.
 	return (return_code);
 } /* execute_command_gfx_export */
 
+
+void create_triangle_mesh(struct Cmiss_region *region, Triangle_mesh *trimesh)
+{
+	struct FE_region *fe_region = Cmiss_region_get_FE_region(region);
+   // for efficiency cache changes until all finished
+   FE_region_begin_change(fe_region);
+
+   // create a 3-D coordinate field
+   FE_field *coordinate_field = FE_field_create_coordinate_3d(fe_region, "coordinates");
+	
+   const Mesh_triangle_list  triangle_list = trimesh->get_triangle_list();
+   Mesh_triangle_list_const_iterator triangle_iter;
+   const Triangle_vertex_set vertex_set = trimesh->get_vertex_set();
+   Triangle_vertex_set_const_iterator vertex_iter;
+   // create template node with 3-D coordinate field parameters
+   struct FE_node *template_node;
+   int identifier = 1;
+   struct FE_node *node;
+   int number_of_values_confirmed;
+   FE_value coordinates[3];
+   float coord1, coord2, coord3;
+   for (vertex_iter = vertex_set.begin(); vertex_iter!=vertex_set.end(); ++vertex_iter)
+   {
+	   identifier = (*vertex_iter)->get_identifier();
+	   (*vertex_iter)->get_coordinates(&coord1, &coord2, &coord3);
+	   template_node = CREATE(FE_node)(/*cm_node_identifier*/identifier, fe_region, /*template_node*/NULL);
+	   define_FE_field_at_node_simple(template_node, coordinate_field, /*number_of_derivatives*/0, /*derivative_value_types*/NULL);
+
+	   // create a node from the template  
+	   coordinates[0] = coord1;
+	   coordinates[1] = coord2;
+	   coordinates[2] = coord3;
+	   node = CREATE(FE_node)(identifier, /*fe_region*/NULL, template_node);
+	   ACCESS(FE_node)(node);
+	   set_FE_nodal_field_FE_value_values(coordinate_field, node, coordinates, &number_of_values_confirmed);
+	   FE_region_merge_FE_node(fe_region, node);
+	   DEACCESS(FE_node)(&node);
+
+	   DESTROY(FE_node)(&template_node);
+   }
+   // establish mode which automates creation of shared faces
+   FE_region_begin_define_faces(fe_region);
+
+   struct CM_element_information element_identifier;
+   FE_element *element;
+   FE_element *template_element;
+   const Triangle_vertex *vertex1, *vertex2, *vertex3;
+   
+   // create a triangle template element with linear simplex field
+   for (triangle_iter = triangle_list.begin(); triangle_iter!=triangle_list.end(); ++triangle_iter)
+   {
+	   (*triangle_iter)->get_vertexes(&vertex1, &vertex2, &vertex3);
+	   template_element = FE_element_create_with_simplex_shape(fe_region, /*dimension*/2);
+	   set_FE_element_number_of_nodes(template_element, 3);
+	   FE_element_define_field_simple(template_element, coordinate_field, LINEAR_SIMPLEX);
+
+	   // make an element based on the template & fill node list
+	   element_identifier.type = CM_ELEMENT;
+	   element_identifier.number = FE_region_get_next_FE_element_identifier(fe_region, CM_ELEMENT, 1);
+	   element = CREATE(FE_element)(&element_identifier, (struct FE_element_shape *)NULL,
+			   (struct FE_region *)NULL, template_element);
+	   ACCESS(FE_element)(element);
+	   set_FE_element_node(element, 0, FE_region_get_FE_node_from_identifier(fe_region,vertex1->get_identifier()));
+	   set_FE_element_node(element, 1, FE_region_get_FE_node_from_identifier(fe_region,vertex2->get_identifier()));
+	   set_FE_element_node(element, 2, FE_region_get_FE_node_from_identifier(fe_region,vertex3->get_identifier()));
+	   FE_region_merge_FE_element_and_faces_and_nodes(fe_region, element);
+
+	   DEACCESS(FE_element)(&element);
+
+   	DEACCESS(FE_element)(&template_element);
+   }
+   // must remember to end define faces mode
+   FE_region_end_define_faces(fe_region);
+
+   DEACCESS(FE_field)(&coordinate_field);
+
+   FE_region_end_change(fe_region);
+}
+
+static int gfx_mesh_graphics(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+{
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Option_table *option_table;
+	struct Scene *scene;
+	struct Cmiss_region *region;
+	char *region_path;
+	ENTER(gfx_mesh_graphics);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+		Cmiss_region_get_root_region_path(&region_path);
+		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		{
+			scene = ACCESS(Scene)(command_data->default_scene);
+			option_table = CREATE(Option_table)();
+			
+			Option_table_add_entry(option_table, "region", &region_path,
+				command_data->root_region, set_Cmiss_region_path);
+			Option_table_add_entry(option_table, "scene", &scene,
+				command_data->scene_manager, set_Scene_including_sub_objects);
+			if (return_code = Option_table_multi_parse(option_table,state))
+			{
+				float tolerance = 0.000001;
+				double centre_x, centre_y, centre_z, size_x, size_y, size_z;
+				build_Scene(scene);
+				Scene_get_graphics_range(scene, 
+						&centre_x, &centre_y, &centre_z, &size_x, &size_y, &size_z);
+				if (size_x !=0 && size_y!=0 && size_z!=0)
+				{
+					tolerance = tolerance * (float)sqrt(
+							size_x*size_x + size_y*size_y + size_z*size_z);
+				}
+				Render_graphics_triangularisation renderer(NULL, tolerance);
+				if (renderer.Scene_compile(scene))
+				{
+					return_code =
+						renderer.Scene_execute(scene);
+					Triangle_mesh *trimesh = renderer.get_triangle_mesh();
+					if (Cmiss_region_get_region_from_path(command_data->root_region,
+						region_path, &region))
+					{
+						create_triangle_mesh(region, trimesh);
+					}
+					/* should not be deleted here */
+					delete trimesh;
+				}
+			}
+			DEALLOCATE(region_path);
+			DESTROY(Option_table)(&option_table);
+			DEACCESS(Scene)(&scene);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"gfx_export_triangle_mesh.  Invalid argument(s)");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"gfx_export_triangle_mesh.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_mesh_graphics */
+
+static int execute_command_gfx_mesh(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 4 March 2003
+
+DESCRIPTION :
+Executes a GFX EXPORT command.
+==============================================================================*/
+{
+	int return_code;
+	struct Option_table *option_table;
+
+	ENTER(execute_command_gfx_export);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state && command_data_void)
+	{
+		option_table = CREATE(Option_table)();
+		Option_table_add_entry(option_table,"graphics",NULL,
+			command_data_void, gfx_mesh_graphics);
+		return_code = Option_table_parse(option_table,state);
+		DESTROY(Option_table)(&option_table);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"execute_command_gfx_export.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_command_gfx_export */
+
+
 int gfx_evaluate(struct Parse_state *state, void *dummy_to_be_modified,
 	void *command_data_void)
 /*******************************************************************************
@@ -21092,6 +21279,8 @@ Executes a GFX command.
 				command_data_void, gfx_evaluate);
 			Option_table_add_entry(option_table, "export", NULL,
 				command_data_void, execute_command_gfx_export);
+			Option_table_add_entry(option_table, "mesh", NULL,
+				command_data_void, execute_command_gfx_mesh);
 #if defined (OLD_CODE)
 			Option_table_add_entry(option_table, "filter", NULL,
 				command_data_void, execute_command_gfx_filter);
