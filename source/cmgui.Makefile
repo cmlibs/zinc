@@ -1020,6 +1020,7 @@ GRAPHICS_SRCS = \
 	graphics/renderstl.cpp \
 	graphics/rendervrml.c \
 	graphics/renderwavefront.c \
+	graphics/render_triangularisation.cpp \
 	graphics/quaternion.cpp\
 	graphics/selected_graphic.c \
 	graphics/spectrum.cpp \
@@ -1027,6 +1028,7 @@ GRAPHICS_SRCS = \
 	graphics/texture.c \
 	graphics/texture_line.c \
 	graphics/transform_tool.cpp \
+	graphics/triangle_mesh.cpp \
 	graphics/userdef_objects.c \
 	graphics/volume_texture.c
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)

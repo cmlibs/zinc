@@ -391,11 +391,11 @@ int maketriangle_mesh(Triangle_mesh& trimesh, gtObject *object, float time)
 				} break;
 				case g_VOLTEX:
 				{
-					struct GT_voltex *voltex;
+					GT_voltex *voltex = primitive_list1->gt_voltex.first;
 
-					if (voltex = primitive_list1->gt_voltex.first)
+					if (NULL != voltex)
 					{
-						while (voltex)
+						while (NULL != voltex)
 						{
 							draw_voltex_triangle_mesh(trimesh,
 								voltex->number_of_vertices, voltex->vertex_list,
@@ -421,16 +421,17 @@ int maketriangle_mesh(Triangle_mesh& trimesh, gtObject *object, float time)
 				case g_SURFACE:
 				{
 					struct GT_surface *interpolate_surface,*surface,*surface_2;
+					surface = primitive_list1->gt_surface.first;
 
-					if (surface = primitive_list1->gt_surface.first)
+					if (NULL != surface)
 					{
 						if (proportion>0)
 						{
 							surface_2 = primitive_list2->gt_surface.first;
-							while (surface&&surface_2)
+							while ((NULL != surface) && (NULL != surface_2))
 							{
-								if (interpolate_surface=morph_GT_surface(proportion,
-									surface,surface_2))
+								interpolate_surface = morph_GT_surface(proportion, surface, surface_2);
+								if (NULL != interpolate_surface)
 								{
 									draw_surface_triangle_mesh(trimesh,
 										interpolate_surface->pointlist,
