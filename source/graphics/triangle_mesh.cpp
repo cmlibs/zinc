@@ -121,7 +121,6 @@ Triangle_mesh::~Triangle_mesh()
 		Triangle_vertex *vertex = (*vertex_iter);
 		delete vertex;
 	}
-	printf("here");
 }
 
 const Triangle_vertex *Triangle_mesh::add_vertex(const float *coordinates)

@@ -119,9 +119,9 @@ extern "C" {
 #include "element/element_tool.h"
 #include "emoter/emoter_dialog.h"
 #include "finite_element/export_cm_files.h"
-#if defined (USE_NETGEN)
+//#if defined (USE_NETGEN)
 #include "finite_element/generate_mesh_netgen.h"
-#endif /* defined (USE_NETGEN) */
+//#endif /* defined (USE_NETGEN) */
 #include "finite_element/export_finite_element.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_conversion.h"
@@ -12189,69 +12189,6 @@ Executes a GFX EXPORT WAVEFRONT command.
 	return (return_code);
 } /* gfx_export_wavefront */
 
-#if defined (USE_NETGEN)
-static int execute_command_gfx_mesh(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 4 Sep 2009
-
-DESCRIPTION :
-Executes a GFX mesh command.
-==============================================================================*/
-{ 
-     int return_code;
-     char *region_path;	
-     FE_value time;
-     struct Cmiss_region *region;
-     struct FE_region *fe_region;
-     struct Cmiss_command_data* command_data;
-     ENTER(execute_command_gfx_mesh);
-     USE_PARAMETER(dummy_to_be_modified);
-     if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
-     {
-	Cmiss_region_get_root_region_path(&region_path);
-	//fe_field = (struct FE_field *)NULL;
-	if (command_data->default_time_keeper)
-	{
-	    time = Time_keeper_get_time(command_data->default_time_keeper);
-	}
-	else
-	{
-	    time = 0;
-	}
-
-	//option_table = CREATE(Option_table)();
-	///* egroup */
-	//Option_table_add_entry(option_table, "egroup", &region_path,
-	//	command_data->root_region, set_Cmiss_region_path);
-	///* field */
-	//Option_table_add_set_FE_field_from_FE_region(
-	//	option_table, "field" ,&fe_field,
-	//	Cmiss_region_get_FE_region(command_data->root_region));
-	///* time */
-	//Option_table_add_entry(option_table, "time", &time, NULL, set_FE_value);
-	//return_code = Option_table_multi_parse(option_table, state);
-	return_code=1;
-        if (return_code)
-	{
-	   if (Cmiss_region_get_region_from_path(command_data->root_region,
-	       region_path, &region) &&
-	       (fe_region = Cmiss_region_get_FE_region(region)))
-               {
-                  return_code = generate_mesh_netgen(fe_region); 
-               }
-           else {return return_code;}
-        }
-     }
-     //Cmiss_region_get_Computed_field_manager(region);
-     //fe_region = Cmiss_region_get_FE_region(region);
-     //ENTER(execute_command_gfx_mesh);
-     LEAVE;
-
-     return (return_code);
-} /* execute_command_gfx_mesh */
-#endif /* defined (USE_NETGEN) */
-
 static int execute_command_gfx_export(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -12299,7 +12236,7 @@ Executes a GFX EXPORT command.
 	return (return_code);
 } /* execute_command_gfx_export */
 
-
+#if defined (USE_NETGEN)
 void create_triangle_mesh(struct Cmiss_region *region, Triangle_mesh *trimesh)
 {
 	struct FE_region *fe_region = Cmiss_region_get_FE_region(region);
@@ -12396,11 +12333,13 @@ static int gfx_mesh_graphics(struct Parse_state *state,
 		{
 			scene = ACCESS(Scene)(command_data->default_scene);
 			option_table = CREATE(Option_table)();
-			
+			char triangle_flag = 0;
 			Option_table_add_entry(option_table, "region", &region_path,
 				command_data->root_region, set_Cmiss_region_path);
 			Option_table_add_entry(option_table, "scene", &scene,
 				command_data->scene_manager, set_Scene_including_sub_objects);
+			Option_table_add_entry(option_table, "triangle", &triangle_flag,
+				(void *)NULL, set_char_flag);
 			if (return_code = Option_table_multi_parse(option_table,state))
 			{
 				float tolerance = 0.000001;
@@ -12422,7 +12361,14 @@ static int gfx_mesh_graphics(struct Parse_state *state,
 					if (Cmiss_region_get_region_from_path(command_data->root_region,
 						region_path, &region))
 					{
-						create_triangle_mesh(region, trimesh);
+						if (triangle_flag)
+						{
+							create_triangle_mesh(region, trimesh);
+						}
+						else
+						{
+							generate_mesh_netgen(Cmiss_region_get_FE_region(region), trimesh);
+						}
 					}
 					/* should not be deleted here */
 					delete trimesh;
@@ -12481,7 +12427,7 @@ Executes a GFX EXPORT command.
 
 	return (return_code);
 } /* execute_command_gfx_export */
-
+#endif /* defined (USE_NETGEN) */
 
 int gfx_evaluate(struct Parse_state *state, void *dummy_to_be_modified,
 	void *command_data_void)
@@ -21279,8 +21225,6 @@ Executes a GFX command.
 				command_data_void, gfx_evaluate);
 			Option_table_add_entry(option_table, "export", NULL,
 				command_data_void, execute_command_gfx_export);
-			Option_table_add_entry(option_table, "mesh", NULL,
-				command_data_void, execute_command_gfx_mesh);
 #if defined (OLD_CODE)
 			Option_table_add_entry(option_table, "filter", NULL,
 				command_data_void, execute_command_gfx_filter);

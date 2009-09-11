@@ -41,6 +41,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include "graphics/triangle_mesh.hpp"
 extern "C" {
 #include <stdio.h>
 #include <stddef.h>
@@ -61,132 +62,16 @@ namespace nglib {
 }
 
 
-struct mesh_para{
-int nothing_now;
-};
-
-struct triangular_mesh{
-int nothing_now;
-};
-
-/*
-Module types
-------------
-*/
 
 /***************************************************************************//**
- * create  tet mesh
+ * export surface to netgen and take the mesh back to cmgui
  */
-//void create_test_tet_mesh(struct FE_region *fe_region, Ng_Mesh * mesh)
-//{
-//	using namespace nglib;
-//        // for efficiency cache changes until all finished
-//}/*create_test_tet_mesh*/
-
-//FE_element* FE_element_create_with_simplex_shape(struct FE_region *fe_region, int dimension)
-//{
-//  struct CM_element_information element_identifier;
-//  struct FE_element *element;
-//  struct FE_element_shape *element_shape;
-
-//  ENTER(create_FE_element_with_tetrahedron_shape);
-//  element = (struct FE_element *)NULL;
-//  if (fe_region)
-//  {
-//      int tetrahedron_shape_type[] = { SIMPLEX_SHAPE, 1, 1, SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE };
-//      element_shape = CREATE(FE_element_shape)(dimension, tetrahedron_shape_type, fe_region);
-//      ACCESS(FE_element_shape)(element_shape);
-//      element_identifier.type = CM_ELEMENT;
-//      element_identifier.number = 1;
-//      element = CREATE(FE_element)(&element_identifier, element_shape, fe_region, (struct FE_element *)NULL);
-//      DEACCESS(FE_element_shape)(&element_shape);
-//  }
-//  else
-//  {
-//      display_message(ERROR_MESSAGE,
-//          "create_FE_element_with_tetrahedron_shape.  Invalid argument(s)");
-//  }
-//  LEAVE;
-
-//  return (element);
-//} /* FE_element_create_with_simplex_shape */
-
-
-//struct FE_field *create_coordinate_field(struct FE_region* fe_region)
-//{
-//  struct Coordinate_system coordinate_system;
-//  struct FE_field *coordinate_field;
-//  char name[]="coordinates";
-
-//  // create FE_field for interpolated coordinates
-//  coordinate_field = CREATE(FE_field)(name, fe_region);
-//  set_FE_field_type_general(coordinate_field);
-//  set_FE_field_number_of_components(coordinate_field, 3);
-//  set_FE_field_value_type(coordinate_field, FE_VALUE_VALUE);
-//  set_FE_field_CM_field_type(coordinate_field, CM_COORDINATE_FIELD);
-//  coordinate_system.type = RECTANGULAR_CARTESIAN;
-//  set_FE_field_coordinate_system(coordinate_field, &coordinate_system);
-//  return (coordinate_field);
-//}
-
-/*FE_field *FE_field_create_coordinate_3d(struct FE_region* fe_region,
-	char *name)
-{
-	FE_field *return_field = NULL;
-	
-	ENTER(FE_field_create_coordinate_3d);
-	if (name)
-	{
-		// create FE_field for interpolated coordinates
-		FE_field *coordinate_field = CREATE(FE_field)(name, fe_region);
-		
-		// add a reference count
-		ACCESS(FE_field)(coordinate_field);
-
-		// this field has real values (as opposed to integer, string)
-		set_FE_field_value_type(coordinate_field, FE_VALUE_VALUE);
-
-		// 3 components named x, y, z; rectangular cartesian
-		const int number_of_components = 3;
-		set_FE_field_number_of_components(coordinate_field, number_of_components);
-                const char *component_names[] = { "x", "y", "z" };
-		for (int i = 0; i < number_of_components; i++)
-		{
-			set_FE_field_component_name(coordinate_field, i, (char*)component_names[i]);
-		}
-		Coordinate_system coordinate_system;
-		coordinate_system.type = RECTANGULAR_CARTESIAN;
-		set_FE_field_coordinate_system(coordinate_field, &coordinate_system);
-
-		// field type 'general' is nodal-interpolated.
-		set_FE_field_type_general(coordinate_field);
-
-		// set flag indicating this is a coordinate field type
-		// (helps cmgui automatically choose this field for that purpose)
-		set_FE_field_CM_field_type(coordinate_field, CM_COORDINATE_FIELD);
-
-		// see if a matching field exists in fe_region, or add this one
-		return_field = FE_region_merge_FE_field(fe_region, coordinate_field);
-		ACCESS(FE_field)(return_field);
-
-		// remove reference count to clean up (handles return_field != coordinate_field)
-		DEACCESS(FE_field)(&coordinate_field);
-	}
-	LEAVE;
-
-	return (return_field);
-}*/
-
-
-/***************************************************************************//**
- * export mesh to netgen
- */
-int generate_mesh_netgen(struct FE_region *fe_region)//(struct mesh_para* mesh_para,struct triangular_mesh* triangular_mesh)
+int generate_mesh_netgen(struct FE_region *fe_region, void *trimesh_void)//(struct mesh_para* mesh_para,struct triangular_mesh* triangular_mesh)
 {
    ENTER(generate_mesh_netgen);
    using namespace nglib;
    //if(mesh_para==NULL||triangular_mesh==NULL) return -1;
-   
+   Triangle_mesh *trimesh = static_cast<Triangle_mesh *>(trimesh_void);
    int return_code;
    Ng_Mesh * mesh;
    Ng_STL_Geometry * geom;
@@ -200,12 +85,38 @@ int generate_mesh_netgen(struct FE_region *fe_region)//(struct mesh_para* mesh_p
    ////////////////////////////////
 
    Ng_Init();
-   //geom=Ng_STL_NewGeometry();
-  
+   geom=Ng_STL_NewGeometry(); 
+
+
+   const Mesh_triangle_list  triangle_list = trimesh->get_triangle_list();
+   Mesh_triangle_list_const_iterator triangle_iter;
+
+   float coord1[3], coord2[3],coord3[3];
+	double dcoord1[3], dcoord2[3], dcoord3[3];
+
+   const Triangle_vertex *vertex1, *vertex2, *vertex3;
+
+   for (triangle_iter = triangle_list.begin(); triangle_iter!=triangle_list.end(); ++triangle_iter)
+   {
+	(*triangle_iter)->get_vertexes(&vertex1,&vertex2,&vertex3);
+	vertex1->get_coordinates(coord1, coord1+1,coord1+2);
+	vertex2->get_coordinates(coord2, coord2+1,coord2+2);
+	vertex3->get_coordinates(coord3, coord3+1,coord3+2);
+	dcoord1[0] = (double)coord1[0];
+	dcoord1[1] = (double)coord1[1];
+	dcoord1[2] = (double)coord1[2];
+	dcoord2[0] = (double)coord2[0];
+	dcoord2[1] = (double)coord2[1];
+	dcoord2[2] = (double)coord2[2];
+	dcoord3[0] = (double)coord3[0];
+	dcoord3[1] = (double)coord3[1];
+	dcoord3[2] = (double)coord3[2];
+       Ng_STL_AddTriangle(geom, dcoord1, dcoord2, dcoord3);//no normal now
+   }
 
    ////////////////////////////////
    //for testing
-   geom=Ng_STL_LoadGeometry("part1.stl");
+   //geom=Ng_STL_LoadGeometry("part1.stl");
    ////////////////////////////////
 
    return_code=Ng_STL_InitSTLGeometry(geom);
@@ -218,14 +129,14 @@ int generate_mesh_netgen(struct FE_region *fe_region)//(struct mesh_para* mesh_p
    return_code=Ng_STL_GenerateSurfaceMesh(geom, mesh, &mp);
    if(return_code!=NG_OK) return return_code;
  
+   ///////////////////////////////////////////////////////////////////////////
    //this line might be delted in the future
    Ng_SaveMesh (mesh, "surface.vol");
- 
    return_code=Ng_GenerateVolumeMesh(mesh,&mp);
    if(return_code!=NG_OK) return return_code;
-   
    //this line might be delted in the future
    Ng_SaveMesh (mesh, "volume.vol");
+   ///////////////////////////////////////////////////////////////////////////
 
    FE_region_begin_change(fe_region);
 
@@ -233,29 +144,11 @@ int generate_mesh_netgen(struct FE_region *fe_region)//(struct mesh_para* mesh_p
    FE_field *coordinate_field = FE_field_create_coordinate_3d(fe_region,(char*)"coordinate");
     
    ACCESS(FE_field)(coordinate_field);
-   //// create a scalar field
-   //char name[]="scalar";
-   //FE_field *temp_field = CREATE(FE_field)(name, fe_region);
-   //ACCESS(FE_field)(temp_field);
-   //set_FE_field_value_type(temp_field, FE_VALUE_VALUE);
-   //set_FE_field_number_of_components(temp_field, 1);
-   //set_FE_field_type_general(temp_field);
-   //set_FE_field_CM_field_type(temp_field, CM_GENERAL_FIELD);
-   //FE_field *scalar_field = FE_region_merge_FE_field(fe_region, temp_field);
-   //ACCESS(FE_field)(scalar_field);
-   //DEACCESS(FE_field)(&temp_field);
 	
    // create and fill nodes
    struct FE_node *template_node = CREATE(FE_node)(/*cm_node_identifier*/1, fe_region, /*template_node*/NULL);
    return_code = define_FE_field_at_node_simple(template_node, coordinate_field, /*number_of_derivatives*/0, /*derivative_value_types*/NULL);
    
-   // set field values
-   //return_code=set_FE_nodal_FE_value_value(template_node, coordinate_field,
-   //    /*component_number*/0, /*version*/0, FE_NODAL_VALUE, /*time*/0, 0);
-   //return_code=set_FE_nodal_FE_value_value(template_node, coordinate_field,
-   //    /*component_number*/1, /*version*/0, FE_NODAL_VALUE, /*time*/0, 0);
-   //return_code=set_FE_nodal_FE_value_value(template_node, coordinate_field,
-   //    /*component_number*/2, /*version*/0, FE_NODAL_VALUE, /*time*/0, 0);         
 	
    const int number_of_nodes = Ng_GetNP(mesh);
    FE_value coordinates[3];

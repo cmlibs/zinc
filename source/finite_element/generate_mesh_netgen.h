@@ -41,7 +41,7 @@
 #if !defined (GENERATE_MESN_NETGEN_H)
 #define GENERATE_MESH_NETGEN_H
 
-int generate_mesh_netgen(struct FE_region *fe_region);
+int generate_mesh_netgen(struct FE_region *fe_region, void *trimesh_void);
 
 #endif /* GENERATE_MESH_NETGEN_H */
 
