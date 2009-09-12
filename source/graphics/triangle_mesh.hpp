@@ -177,12 +177,14 @@ public:
 	}
 
 	/***************************************************************************//**
-	 * Adds a quadrilateral split into two triangles along the shortest diagonal
-	 * (assuming coordinates are rectangular cartesian).
+	 * Adds a quadrilateral symmetrically split into four triangles meeting at a new
+	 * centre vertex at the average of the coordinates of the four corner vertices.
 	 * @param v1,v2,v3,v4  Vertices in following order (for normal towards reader):
-	 *   3--4
-	 *   |  |
-	 *   1--2
+	 *   3---4
+	 *   |\ /|
+	 *   | c |
+	 *   |/ \|
+	 *   1---2
 	 */
 	void add_quadrilateral(const Triangle_vertex *v1, const Triangle_vertex *v2,
 		const Triangle_vertex *v3, const Triangle_vertex *v4);

@@ -153,28 +153,15 @@ const Mesh_triangle *Triangle_mesh::add_triangle(const Triangle_vertex *vertex1,
 void Triangle_mesh::add_quadrilateral(const Triangle_vertex *v1, const Triangle_vertex *v2,
 	const Triangle_vertex *v3, const Triangle_vertex *v4)
 {
-	// split across shortest diagonal to get best triangle shapes
-	float diag1[3];
-	diag1[0] = v4->coordinates[0] - v1->coordinates[0];
-	diag1[1] = v4->coordinates[1] - v1->coordinates[1];
-	diag1[2] = v4->coordinates[2] - v1->coordinates[2];
-	float lensq1 = diag1[0]*diag1[0] + diag1[1]*diag1[1] + diag1[2]*diag1[2];
-	float diag2[3];
-	diag2[0] = v3->coordinates[0] - v2->coordinates[0];
-	diag2[1] = v3->coordinates[1] - v2->coordinates[1];
-	diag2[2] = v3->coordinates[2] - v2->coordinates[2];
-	float lensq2 = diag2[0]*diag2[0] + diag2[1]*diag2[1] + diag2[2]*diag2[2];
-
-	if (lensq1 > lensq2)
-	{
-		add_triangle(v1, v2, v3);
-		add_triangle(v3, v2, v4);
-	}
-	else
-	{
-		add_triangle(v1, v2, v4);
-		add_triangle(v3, v1, v4);
-	}
+	float centre[3];
+	centre[0] = 0.25*(v1->coordinates[0] + v2->coordinates[0] + v3->coordinates[0] + v4->coordinates[0]);
+	centre[1] = 0.25*(v1->coordinates[1] + v2->coordinates[1] + v3->coordinates[1] + v4->coordinates[1]);
+	centre[2] = 0.25*(v1->coordinates[2] + v2->coordinates[2] + v3->coordinates[2] + v4->coordinates[2]);
+	const Triangle_vertex *vc = add_vertex(centre);
+	add_triangle(v1, v2, vc);
+	add_triangle(v2, v4, vc);
+	add_triangle(v4, v3, vc);
+	add_triangle(v3, v1, vc);
 }
 
 void Triangle_mesh::set_vertex_identifiers(int first_identifier)
