@@ -37866,14 +37866,17 @@ either case the top_level_number_in_xi used is returned.
 int FE_element_shape_face_has_inward_normal(struct FE_element_shape *shape,
 	int face_number)
 {
+	int return_code;
+	
 	ENTER(FE_element_shape_face_has_inward_normal);
-	int return_code = 0;
+	return_code = 0;
 	if (shape && (3 == shape->dimension) &&
 		(0 <= face_number) && (face_number <= shape->number_of_faces))
 	{
-		FE_value *face_to_element = shape->face_to_element +
-			face_number*shape->dimension*shape->dimension;
+		FE_value *face_to_element, *outward_face_normal, result;
 		FE_value face_xi1[3], face_xi2[3], actual_face_normal[3];
+		face_to_element = shape->face_to_element +
+			face_number*shape->dimension*shape->dimension;
 		face_xi1[0] = face_to_element[1];
 		face_xi1[1] = face_to_element[4];
 		face_xi1[2] = face_to_element[7];
@@ -37881,8 +37884,8 @@ int FE_element_shape_face_has_inward_normal(struct FE_element_shape *shape,
 		face_xi2[1] = face_to_element[5];
 		face_xi2[2] = face_to_element[8];
 		cross_product_FE_value_vector3(face_xi1, face_xi2, actual_face_normal);
-		FE_value *outward_face_normal = shape->face_normals + face_number*shape->dimension;
-		FE_value result = actual_face_normal[0]*outward_face_normal[0] +
+		outward_face_normal = shape->face_normals + face_number*shape->dimension;
+		result = actual_face_normal[0]*outward_face_normal[0] +
 			actual_face_normal[1]*outward_face_normal[1] +
 			actual_face_normal[2]*outward_face_normal[2];
 		if (result < 0.0)
@@ -37902,8 +37905,9 @@ int FE_element_shape_face_has_inward_normal(struct FE_element_shape *shape,
 
 int FE_element_is_exterior_face_with_inward_normal(struct FE_element *element)
 {
+	int return_code;
 	ENTER(FE_element_is_exterior_face_with_inward_normal);
-	int return_code = 0;
+	return_code = 0;
 	if (element)
 	{
 		if ((get_FE_element_dimension(element) == 2) &&
