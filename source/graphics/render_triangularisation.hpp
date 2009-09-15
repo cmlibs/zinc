@@ -60,6 +60,8 @@ public:
 	{
 	}
 
+	virtual ~Render_graphics_triangularisation();
+
 	/***************************************************************************//**
 	 * Execute the Graphics_object.
 	 */

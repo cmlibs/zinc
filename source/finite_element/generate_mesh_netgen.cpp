@@ -92,26 +92,26 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *trimesh_void)//(stru
    Mesh_triangle_list_const_iterator triangle_iter;
 
    float coord1[3], coord2[3],coord3[3];
-	double dcoord1[3], dcoord2[3], dcoord3[3];
+	 double dcoord1[3], dcoord2[3], dcoord3[3];
 
    const Triangle_vertex *vertex1, *vertex2, *vertex3;
 
    for (triangle_iter = triangle_list.begin(); triangle_iter!=triangle_list.end(); ++triangle_iter)
    {
-	(*triangle_iter)->get_vertexes(&vertex1,&vertex2,&vertex3);
-	vertex1->get_coordinates(coord1, coord1+1,coord1+2);
-	vertex2->get_coordinates(coord2, coord2+1,coord2+2);
-	vertex3->get_coordinates(coord3, coord3+1,coord3+2);
-	dcoord1[0] = (double)coord1[0];
-	dcoord1[1] = (double)coord1[1];
-	dcoord1[2] = (double)coord1[2];
-	dcoord2[0] = (double)coord2[0];
-	dcoord2[1] = (double)coord2[1];
-	dcoord2[2] = (double)coord2[2];
-	dcoord3[0] = (double)coord3[0];
-	dcoord3[1] = (double)coord3[1];
-	dcoord3[2] = (double)coord3[2];
-       Ng_STL_AddTriangle(geom, dcoord1, dcoord2, dcoord3);//no normal now
+		 (*triangle_iter)->get_vertexes(&vertex1,&vertex2,&vertex3);
+		 vertex1->get_coordinates(coord1, coord1+1,coord1+2);
+		 vertex2->get_coordinates(coord2, coord2+1,coord2+2);
+		 vertex3->get_coordinates(coord3, coord3+1,coord3+2);
+		 dcoord1[0] = (double)coord1[0];
+		 dcoord1[1] = (double)coord1[1];
+		 dcoord1[2] = (double)coord1[2];
+		 dcoord2[0] = (double)coord2[0];
+		 dcoord2[1] = (double)coord2[1];
+		 dcoord2[2] = (double)coord2[2];
+		 dcoord3[0] = (double)coord3[0];
+		 dcoord3[1] = (double)coord3[1];
+		 dcoord3[2] = (double)coord3[2];
+		 Ng_STL_AddTriangle(geom, dcoord1, dcoord2, dcoord3);//no normal now
    }
 
    ////////////////////////////////
@@ -130,12 +130,8 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *trimesh_void)//(stru
    if(return_code!=NG_OK) return return_code;
  
    ///////////////////////////////////////////////////////////////////////////
-   //this line might be delted in the future
-   Ng_SaveMesh (mesh, "surface.vol");
    return_code=Ng_GenerateVolumeMesh(mesh,&mp);
    if(return_code!=NG_OK) return return_code;
-   //this line might be delted in the future
-   Ng_SaveMesh (mesh, "volume.vol");
    ///////////////////////////////////////////////////////////////////////////
 
    FE_region_begin_change(fe_region);
@@ -149,18 +145,18 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *trimesh_void)//(stru
    struct FE_node *template_node = CREATE(FE_node)(/*cm_node_identifier*/1, fe_region, /*template_node*/NULL);
    return_code = define_FE_field_at_node_simple(template_node, coordinate_field, /*number_of_derivatives*/0, /*derivative_value_types*/NULL);
    
-	
    const int number_of_nodes = Ng_GetNP(mesh);
    FE_value coordinates[3];
    double coor_tmp[3];
+	 int initial_identifier = FE_region_get_last_FE_nodes_idenifier(fe_region)+1;
    int i;
-   for (i = 0 ; i < number_of_nodes; i++)
+   for (i = 0; i < number_of_nodes; i++)
    {
        Ng_GetPoint (mesh, i+1/*index in netgen starts from 1*/, coor_tmp);
        coordinates[0] = coor_tmp[0];
        coordinates[1] = coor_tmp[1];
        coordinates[2] = coor_tmp[2];
-       int identifier = i + 1;
+       int identifier = i + initial_identifier;
        struct FE_node *node = CREATE(FE_node)(identifier, /*fe_region*/NULL, template_node);
        FE_region_merge_FE_node(fe_region, node);
        ACCESS(FE_node)(node);
@@ -182,8 +178,8 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *trimesh_void)//(stru
    FE_element_define_field_simple(template_element, coordinate_field, LINEAR_SIMPLEX);
 
    const int number_of_elements = Ng_GetNE(mesh);
-   int nodal_idx[4];
-   for (i = 0 ; i < number_of_elements; i++)
+   int nodal_idx[4];   
+	 for (i = 0 ; i < number_of_elements; i++)
    {
        Ng_GetVolumeElement (mesh, i+1, nodal_idx);
        element_identifier.type = CM_ELEMENT;
@@ -209,7 +205,8 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *trimesh_void)//(stru
 
    FE_region_end_change(fe_region);
 
- 
+	 if (mesh)
+		 Ng_DeleteMesh (mesh); 
    Ng_Exit();
    LEAVE;
    return return_code;

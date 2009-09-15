@@ -12370,8 +12370,6 @@ static int gfx_mesh_graphics(struct Parse_state *state,
 							generate_mesh_netgen(Cmiss_region_get_FE_region(region), trimesh);
 						}
 					}
-					/* should not be deleted here */
-					delete trimesh;
 				}
 			}
 			DEALLOCATE(region_path);

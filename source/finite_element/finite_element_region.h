@@ -651,6 +651,8 @@ DESCRIPTION :
 Returns the number of FE_nodes in <fe_region>.
 ==============================================================================*/
 
+int FE_region_get_last_FE_nodes_idenifier(struct FE_region *fe_region);
+
 struct FE_node *FE_region_node_string_to_FE_node(
 	struct FE_region *fe_region, char *node_string);
 /*******************************************************************************

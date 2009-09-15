@@ -483,7 +483,6 @@ int maketriangle_mesh(Triangle_mesh& trimesh, gtObject *object, float time)
 				} break;
 				default:
 				{
-					display_message(WARNING_MESSAGE,"maketriangle_mesh.  Invalid object type");
 					return_code=1;
 				} break;
 			}
@@ -691,12 +690,15 @@ int render_gt_element_group_triangularisation(GT_element_group *graphical_elemen
 	return return_code;
 }
 
+Render_graphics_triangularisation::~Render_graphics_triangularisation()
+{
+	delete trimesh;
+}
+
 int Render_graphics_triangularisation::Scene_execute(Scene *scene)
 {
 	USE_PARAMETER(scene);
-// 	printf("1");
  	render_scene_triangularisation(scene, trimesh);
-// 	//trimesh.list();
 	return 1;
 }
 
@@ -705,14 +707,3 @@ Triangle_mesh *Render_graphics_triangularisation::get_triangle_mesh()
 	return trimesh;
 }
 
-// int Render_graphics_triangularisation::Scene_object_compile(Scene_object *scene_object)
-// {
-// 	printf("2");
-// 	return render_scene_object_triangularisation(scene_object);
-// }
-
-// int Render_graphics_triangularisation::Graphical_element_group_compile(GT_element_group *graphical_element_group)
-// {
-// 	printf("3");
-// 	return render_gt_element_group_triangularisation(graphical_element_group);
-// }

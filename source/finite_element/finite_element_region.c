@@ -3775,6 +3775,40 @@ A true return code is only obtained if all nodes from <node_list> are removed.
 	return (return_code);
 } /* FE_region_remove_FE_node_list */
 
+int FE_region_get_last_FE_nodes_idenifier(struct FE_region *fe_region)
+{
+	int number_of_nodes, i, identifier;
+	struct FE_region *master_fe_region;
+
+	ENTER(FE_region_get_last_FE_nodes_idenifier);
+	if (fe_region)
+	{
+		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
+		number_of_nodes = NUMBER_IN_LIST(FE_node)(master_fe_region->fe_node_list);
+		identifier = 1;
+		i = 0;
+		while (i < number_of_nodes)
+		{
+			if (FIND_BY_IDENTIFIER_IN_LIST(FE_node, cm_node_identifier)(
+						identifier, master_fe_region->fe_node_list))
+			{
+				i++;
+			}
+			identifier++;
+		}
+		identifier = identifier - 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_get_last_FE_nodes_idenifier.  Invalid argument(s)");
+		identifier = 0;
+	}
+	LEAVE;
+
+	return (identifier);
+} /* FE_region_get_last_FE_nodes_idenifier */
+
 int FE_region_get_number_of_FE_nodes(struct FE_region *fe_region)
 /*******************************************************************************
 LAST MODIFIED : 23 January 2003
