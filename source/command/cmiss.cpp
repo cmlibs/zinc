@@ -12240,79 +12240,82 @@ Executes a GFX EXPORT command.
 void create_triangle_mesh(struct Cmiss_region *region, Triangle_mesh *trimesh)
 {
 	struct FE_region *fe_region = Cmiss_region_get_FE_region(region);
-   // for efficiency cache changes until all finished
-   FE_region_begin_change(fe_region);
-
-   // create a 3-D coordinate field
-   FE_field *coordinate_field = FE_field_create_coordinate_3d(fe_region, "coordinates");
+	// for efficiency cache changes until all finished
+	FE_region_begin_change(fe_region);
 	
-   const Mesh_triangle_list  triangle_list = trimesh->get_triangle_list();
-   Mesh_triangle_list_const_iterator triangle_iter;
-   const Triangle_vertex_set vertex_set = trimesh->get_vertex_set();
-   Triangle_vertex_set_const_iterator vertex_iter;
-   // create template node with 3-D coordinate field parameters
-   struct FE_node *template_node;
-   int identifier = 1;
-   struct FE_node *node;
-   int number_of_values_confirmed;
-   FE_value coordinates[3];
-   float coord1, coord2, coord3;
-   for (vertex_iter = vertex_set.begin(); vertex_iter!=vertex_set.end(); ++vertex_iter)
-   {
-	   identifier = (*vertex_iter)->get_identifier();
-	   (*vertex_iter)->get_coordinates(&coord1, &coord2, &coord3);
-	   template_node = CREATE(FE_node)(/*cm_node_identifier*/identifier, fe_region, /*template_node*/NULL);
-	   define_FE_field_at_node_simple(template_node, coordinate_field, /*number_of_derivatives*/0, /*derivative_value_types*/NULL);
-
-	   // create a node from the template  
-	   coordinates[0] = coord1;
-	   coordinates[1] = coord2;
-	   coordinates[2] = coord3;
-	   node = CREATE(FE_node)(identifier, /*fe_region*/NULL, template_node);
-	   ACCESS(FE_node)(node);
-	   set_FE_nodal_field_FE_value_values(coordinate_field, node, coordinates, &number_of_values_confirmed);
-	   FE_region_merge_FE_node(fe_region, node);
-	   DEACCESS(FE_node)(&node);
-
-	   DESTROY(FE_node)(&template_node);
-   }
-   // establish mode which automates creation of shared faces
-   FE_region_begin_define_faces(fe_region);
-
-   struct CM_element_information element_identifier;
-   FE_element *element;
-   FE_element *template_element;
-   const Triangle_vertex *vertex1, *vertex2, *vertex3;
-   
-   // create a triangle template element with linear simplex field
-   for (triangle_iter = triangle_list.begin(); triangle_iter!=triangle_list.end(); ++triangle_iter)
-   {
-	   (*triangle_iter)->get_vertexes(&vertex1, &vertex2, &vertex3);
-	   template_element = FE_element_create_with_simplex_shape(fe_region, /*dimension*/2);
-	   set_FE_element_number_of_nodes(template_element, 3);
-	   FE_element_define_field_simple(template_element, coordinate_field, LINEAR_SIMPLEX);
-
-	   // make an element based on the template & fill node list
-	   element_identifier.type = CM_ELEMENT;
-	   element_identifier.number = FE_region_get_next_FE_element_identifier(fe_region, CM_ELEMENT, 1);
-	   element = CREATE(FE_element)(&element_identifier, (struct FE_element_shape *)NULL,
-			   (struct FE_region *)NULL, template_element);
-	   ACCESS(FE_element)(element);
-	   set_FE_element_node(element, 0, FE_region_get_FE_node_from_identifier(fe_region,vertex1->get_identifier()));
-	   set_FE_element_node(element, 1, FE_region_get_FE_node_from_identifier(fe_region,vertex2->get_identifier()));
-	   set_FE_element_node(element, 2, FE_region_get_FE_node_from_identifier(fe_region,vertex3->get_identifier()));
-	   FE_region_merge_FE_element_and_faces_and_nodes(fe_region, element);
-
-	   DEACCESS(FE_element)(&element);
-
+	// create a 3-D coordinate field
+	FE_field *coordinate_field = FE_field_create_coordinate_3d(fe_region, "coordinates");
+	
+	const Mesh_triangle_list  triangle_list = trimesh->get_triangle_list();
+	Mesh_triangle_list_const_iterator triangle_iter;
+	const Triangle_vertex_set vertex_set = trimesh->get_vertex_set();
+	Triangle_vertex_set_const_iterator vertex_iter;
+	// create template node with 3-D coordinate field parameters
+	struct FE_node *template_node;
+	int identifier = 1;
+	struct FE_node *node;
+	int number_of_values_confirmed;
+	FE_value coordinates[3];
+	float coord1, coord2, coord3;
+	int initial_identifier = FE_region_get_last_FE_nodes_idenifier(fe_region);
+	int i = 0;
+	for (vertex_iter = vertex_set.begin(); vertex_iter!=vertex_set.end(); ++vertex_iter)
+	{
+		identifier = initial_identifier+(*vertex_iter)->get_identifier();
+		(*vertex_iter)->get_coordinates(&coord1, &coord2, &coord3);
+		template_node = CREATE(FE_node)(/*cm_node_identifier*/identifier, fe_region, /*template_node*/NULL);
+		define_FE_field_at_node_simple(template_node, coordinate_field, /*number_of_derivatives*/0, /*derivative_value_types*/NULL);
+		
+		// create a node from the template  
+		coordinates[0] = coord1;
+		coordinates[1] = coord2;
+		coordinates[2] = coord3;
+		node = CREATE(FE_node)(identifier, /*fe_region*/NULL, template_node);
+		ACCESS(FE_node)(node);
+		set_FE_nodal_field_FE_value_values(coordinate_field, node, coordinates, &number_of_values_confirmed);
+		FE_region_merge_FE_node(fe_region, node);
+		DEACCESS(FE_node)(&node);
+		
+		DESTROY(FE_node)(&template_node);
+		i++;
+	}
+	// establish mode which automates creation of shared faces
+	FE_region_begin_define_faces(fe_region);
+	
+	struct CM_element_information element_identifier;
+	FE_element *element;
+	FE_element *template_element;
+	const Triangle_vertex *vertex1, *vertex2, *vertex3;
+  
+	// create a triangle template element with linear simplex field
+	for (triangle_iter = triangle_list.begin(); triangle_iter!=triangle_list.end(); ++triangle_iter)
+	{
+		(*triangle_iter)->get_vertexes(&vertex1, &vertex2, &vertex3);
+		template_element = FE_element_create_with_simplex_shape(fe_region, /*dimension*/2);
+		set_FE_element_number_of_nodes(template_element, 3);
+		FE_element_define_field_simple(template_element, coordinate_field, LINEAR_SIMPLEX);
+		
+		// make an element based on the template & fill node list
+		element_identifier.type = CM_ELEMENT;
+		element_identifier.number = FE_region_get_next_FE_element_identifier(fe_region, CM_ELEMENT, 1);
+		element = CREATE(FE_element)(&element_identifier, (struct FE_element_shape *)NULL,
+			(struct FE_region *)NULL, template_element);
+		ACCESS(FE_element)(element);
+		set_FE_element_node(element, 0, FE_region_get_FE_node_from_identifier(fe_region,initial_identifier+vertex1->get_identifier()));
+		set_FE_element_node(element, 1, FE_region_get_FE_node_from_identifier(fe_region,initial_identifier+vertex2->get_identifier()));
+		set_FE_element_node(element, 2, FE_region_get_FE_node_from_identifier(fe_region,initial_identifier+vertex3->get_identifier()));
+		FE_region_merge_FE_element_and_faces_and_nodes(fe_region, element);
+		
+		DEACCESS(FE_element)(&element);
+		
    	DEACCESS(FE_element)(&template_element);
-   }
-   // must remember to end define faces mode
-   FE_region_end_define_faces(fe_region);
-
-   DEACCESS(FE_field)(&coordinate_field);
-
-   FE_region_end_change(fe_region);
+	}
+	// must remember to end define faces mode
+	FE_region_end_define_faces(fe_region);
+	
+	DEACCESS(FE_field)(&coordinate_field);
+	
+	FE_region_end_change(fe_region);
 }
 
 static int gfx_mesh_graphics(struct Parse_state *state,

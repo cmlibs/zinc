@@ -95,7 +95,6 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *trimesh_void)//(stru
 	 double dcoord1[3], dcoord2[3], dcoord3[3];
 
    const Triangle_vertex *vertex1, *vertex2, *vertex3;
-
    for (triangle_iter = triangle_list.begin(); triangle_iter!=triangle_list.end(); ++triangle_iter)
    {
 		 (*triangle_iter)->get_vertexes(&vertex1,&vertex2,&vertex3);

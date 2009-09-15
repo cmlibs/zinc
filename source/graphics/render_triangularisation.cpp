@@ -129,7 +129,7 @@ int draw_surface_triangle_mesh(Triangle_mesh& trimesh, Triple *surfpts,
 				int number_of_points = npts1*npts2;
 				if (polygon_type == g_TRIANGLE)
 				{
-					number_of_points = npts2*(npts2+1)/2;
+					number_of_points = npts1*(npts1+1)/2;
 				}
 				const Triangle_vertex **tri_vertex = new const Triangle_vertex*[number_of_points];
 				for (int i = 0; i < number_of_points; i++)
@@ -157,19 +157,27 @@ int draw_surface_triangle_mesh(Triangle_mesh& trimesh, Triple *surfpts,
 					} break;
 					case g_TRIANGLE:
 					{
-						for (int j = 0; j < npts2-1; j++)
+						int iter = 0;
+						for (int j=npts1-1; j>0 ; j--)
 						{
-							for (int i = 0; i < j-1; i++)
+							for (int i=j-1; i>0 ; i--)
 							{
 								trimesh.add_triangle(
-									tri_vertex[j*npts2+i],
-									tri_vertex[j*npts2+i+1],
-									tri_vertex[(j+1)*npts2+i]);
+									tri_vertex[iter],
+									tri_vertex[iter+1],
+									tri_vertex[iter+j+1]);
 								trimesh.add_triangle(
-									tri_vertex[j*npts2+i+1],
-									tri_vertex[(j+1)*npts2+i+1],
-									tri_vertex[(j+1)*npts2+i]);
+									tri_vertex[iter+1],
+									tri_vertex[iter+j+2],
+									tri_vertex[iter+j+1]);
+								iter++;
 							}
+							trimesh.add_triangle(
+								tri_vertex[iter],
+								tri_vertex[iter+1],
+								tri_vertex[iter+j+1]);
+							iter++;
+							iter++;
 						}
 						return_code=1;
 					} break;
@@ -253,9 +261,9 @@ int draw_surface_triangle_mesh(Triangle_mesh& trimesh, Triple *surfpts,
 							Triple *temp_point = point;
 							for (j=0; j<npts2; j++)
 							{
-								centre[0] += (*temp_point)[0];
-								centre[1] += (*temp_point)[1];
-								centre[2] += (*temp_point)[2];
+								centre[0] += (*temp_point)[i*npts2+0];
+								centre[1] += (*temp_point)[i*npts2+1];
+								centre[2] += (*temp_point)[i*npts2+2];
 								temp_point++;
 							}
 							centre[0] /= (float)npts2;
@@ -267,7 +275,6 @@ int draw_surface_triangle_mesh(Triangle_mesh& trimesh, Triple *surfpts,
 							}
 						}
 					}
-
 				}
 			} break;
 			default:
@@ -632,40 +639,7 @@ int write_scene_triangle_mesh(Triangle_mesh& trimesh, struct Scene *scene)
 
 int render_scene_triangularisation(struct Scene *scene, Triangle_mesh *trimesh)
 {
-// 	double centre_x, centre_y, centre_z, size_x, size_y, size_z;
-// 	Scene_get_graphics_range(scene, 
-// 		&centre_x, &centre_y, &centre_z, &size_x, &size_y, &size_z);
-// 	if (size_x !=0 && size_y!=0 && size_z!=0)
-// 	{
-// 		tolerance = tolerance * (float)sqrt(
-// 			size_x*size_x + size_y*size_y + size_z*size_z);
-// 	}
-// 	float coordinates[][3] =
-// 	{
-// 		{ 0.0, 0.0, 0.0 },
-// 		{ 1.0, 0.0, 0.0 },
-// 		{ 1.1, 0.0, 0.0 },
-// 		{ 1.01, 0.0, 0.0 },
-// 		{ 1.001, 0.0, 0.0 },
-// 		{ 1.0001, 0.0, 0.0 },
-// 		{ 1.000099, 0.0, 0.0 },
-// 		{ 1.00001, 0.0, 0.0 },
-// 		{ 37.2, 0.0, -5.0 },
-// 		{ 37.2, 0.0, -5.0 },
-// 		{ 37.2, 1.0, -5.0 }
-// 	};
-
-// 	const int number_of_points = sizeof(coordinates) / sizeof(float[3]);
-// 	for (int i = 0; i < number_of_points; i++)
-// 	{
-// 		trimesh.add_vertex(coordinates[i]);
-// 	}
-	
-
-	//Triangle_mesh trimesh(tolerance);
 	write_scene_triangle_mesh(*trimesh, scene);
-//	trimesh.list();
-
 	return 1;
 }
 
@@ -675,7 +649,6 @@ int render_scene_object_triangularisation(struct Scene_object *scene_object)
 	Triangle_mesh trimesh(tolerance);
 	Scene_object_to_triangle_mesh(scene_object,
 		static_cast<void*>(&trimesh));
-	///trimesh.list();
 	return 1;
 }
 
@@ -686,7 +659,6 @@ int render_gt_element_group_triangularisation(GT_element_group *graphical_elemen
 	int return_code = for_each_settings_in_GT_element_group(
 		graphical_element_group, GT_element_settings_graphics_to_triangle_mesh,
 		static_cast<void*>(&trimesh));
-	//trimesh.list();
 	return return_code;
 }
 
