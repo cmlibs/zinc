@@ -65,6 +65,7 @@ extern "C" {
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_to_iso_lines.h"
+#include "finite_element/finite_element_to_iso_surfaces.h"
 #include "finite_element/finite_element_to_streamlines.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/element_group_settings.h"
@@ -2238,9 +2239,11 @@ CREATE to define a valid iso_surface.
 		{
 			if (iso_values)
 			{
-				if (REALLOCATE(settings->iso_values, settings->iso_values, double,
+				double *temp_values;
+				if (REALLOCATE(temp_values, settings->iso_values, double,
 						number_of_iso_values))
 				{
+					settings->iso_values = temp_values;
 					settings->number_of_iso_values = number_of_iso_values;
 					for (i = 0 ; i < number_of_iso_values ; i++)
 					{
@@ -5728,6 +5731,86 @@ Converts a finite element into a graphics object with the supplied settings.
 									}
 								}
 							} break;
+							case g_SURFACE:
+							{
+								if (3 == element_dimension)
+								{
+									if (settings_to_object_data->existing_graphics)
+									{
+										surface = GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME(GT_surface)
+											(settings_to_object_data->existing_graphics, time,
+												element_graphics_name);
+									}
+									else
+									{
+										surface = (struct GT_surface *)NULL;
+									}
+									if (draw_element)
+									{
+										if (NULL != surface)
+										{
+											if (!GT_OBJECT_ADD(GT_surface)(
+												settings->graphics_object, time, surface))
+											{
+												DESTROY(GT_surface)(&surface);
+												return_code = 0;
+											}
+										}
+										else
+										{
+											if (settings->iso_values)
+											{
+												for (i = 0 ; (i < settings->number_of_iso_values) && return_code ; i++)
+												{
+													return_code = create_iso_surfaces_from_FE_element_new(element,
+														settings_to_object_data->time, number_in_xi,
+														settings->iso_values[i],
+														settings_to_object_data->rc_coordinate_field,
+														settings->data_field, settings->iso_scalar_field,
+														settings->texture_coordinate_field,
+														settings->graphics_object,
+														settings->render_type);
+												}
+											}
+											else
+											{
+												double iso_value_range;
+												if (settings->number_of_iso_values > 1)
+												{
+													iso_value_range =
+														(settings->last_iso_value - settings->first_iso_value)
+														/ (double)(settings->number_of_iso_values - 1);
+												}
+												else
+												{
+													iso_value_range = 0;
+												}
+												for (i = 0 ; (i < settings->number_of_iso_values) && return_code; i++)
+												{
+													double iso_value = 
+														settings->first_iso_value +
+														(double)i * iso_value_range;
+													return_code = create_iso_surfaces_from_FE_element_new(element,
+														settings_to_object_data->time, number_in_xi,
+														iso_value,
+														settings_to_object_data->rc_coordinate_field,
+														settings->data_field, settings->iso_scalar_field,
+														settings->texture_coordinate_field,
+														settings->graphics_object,
+														settings->render_type);
+												}
+											}
+										}
+									}
+									else
+									{
+										if (surface)
+										{
+											DESTROY(GT_surface)(&surface);
+										}
+									}
+								}
+							} break;
 							case g_POLYLINE:
 							{
 								if (2 == element_dimension)
@@ -6302,7 +6385,7 @@ The graphics object is stored with with the settings it was created from.
 										{
 											case USE_ELEMENTS:
 											{
-												graphics_object_type = g_VOLTEX;
+												graphics_object_type = g_VOLTEX; // GRC future: g_SURFACE
 												if (first_element = FE_region_get_first_FE_element_that(
 														 fe_region, FE_element_is_top_level, (void *)NULL))
 												{

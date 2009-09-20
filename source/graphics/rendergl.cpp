@@ -3993,7 +3993,18 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 							case g_SH_DISCONTINUOUS_STRIP:
 							case g_SH_DISCONTINUOUS_TEXMAP:
 							case g_SH_DISCONTINUOUS_STRIP_TEXMAP:
+							case g_WIREFRAME_SH_DISCONTINUOUS_TEXMAP:
 							{
+								if (surface->surface_type == g_WIREFRAME_SH_DISCONTINUOUS_TEXMAP)
+								{
+									glPushAttrib(GL_POLYGON_BIT);
+									glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+									wireframe_flag = 1;
+								}
+								else
+								{
+									wireframe_flag = 0;
+								}
 								strip=((g_SH_DISCONTINUOUS_STRIP_TEXMAP==surface->surface_type)
 									||(g_SH_DISCONTINUOUS_STRIP==surface->surface_type));
 								if (proportion>0)
@@ -4057,6 +4068,10 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										}
 										surface=surface->ptrnext;
 									}
+								}
+								if (wireframe_flag)
+								{
+									glPopAttrib();
 								}
 								return_code=1;
 							} break;
