@@ -4955,8 +4955,24 @@ will produce the range of all the graphics objects.
 								} break;
 								case g_TRIANGLE:
 								{
-									number_of_positions=(surface->n_pts1)*
-										(surface->n_pts1+1)/2;
+									switch (surface->surface_type)
+									{
+									case g_SH_DISCONTINUOUS:
+									case g_SH_DISCONTINUOUS_TEXMAP:
+									case g_SH_DISCONTINUOUS_STRIP:
+									case g_SH_DISCONTINUOUS_STRIP_TEXMAP:
+									case g_WIREFRAME_SH_DISCONTINUOUS_TEXMAP:
+										number_of_positions=(surface->n_pts1)*(surface->n_pts2);
+										break;
+									case g_SHADED:
+									case g_SHADED_TEXMAP:
+									case g_WIREFRAME_SHADED_TEXMAP:
+										number_of_positions=(surface->n_pts1)*(surface->n_pts1+1)/2;
+										break;
+									default:
+										number_of_positions = 0;
+										break;
+									}
 								} break;
 							}
 							if ((position=surface->pointlist)&&(0<number_of_positions))
@@ -5291,6 +5307,9 @@ valid.
 							{
 								case g_SH_DISCONTINUOUS:
 								case g_SH_DISCONTINUOUS_TEXMAP:
+								case g_SH_DISCONTINUOUS_STRIP:
+								case g_SH_DISCONTINUOUS_STRIP_TEXMAP:
+								case g_WIREFRAME_SH_DISCONTINUOUS_TEXMAP:
 								{
 									while (surface)
 									{
