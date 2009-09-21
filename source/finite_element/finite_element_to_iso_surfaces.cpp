@@ -619,7 +619,7 @@ int Isosurface_builder::do_it()
 	// (further optimisation: reset to value of last plane)
 	bool iso_surface_crosses_element = false;
 	bool first_point = true;
-	bool first_scalar_over;
+	bool first_scalar_over = false;
 
 	for (int k = number_in_xi3; (k >= 0) && return_code; k--)
 	{
