@@ -46,7 +46,7 @@ The data structures used for representing textures.
 
 #include <stdio.h>
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 #include "api/cmiss_texture.h"
 #include "general/enumerator.h"

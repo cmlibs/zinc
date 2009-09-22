@@ -2364,7 +2364,7 @@ DESCRIPTION :
 Frees the memory for the volume vertex and sets <*vertex_address> to NULL.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	struct VT_iso_vertex *vertex;
 
 	ENTER(DESTROY(VT_iso_vertex));
@@ -2379,12 +2379,12 @@ Frees the memory for the volume vertex and sets <*vertex_address> to NULL.
 			DEALLOCATE(vertex->data);
 		}
 		DEALLOCATE(*vertex_address);
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"DESTROY(VT_iso_vertex).  Invalid argument");
-		return_code=0;
 	}
 	LEAVE;
 
@@ -2399,18 +2399,18 @@ DESCRIPTION :
 Normalises the normal for the vertex.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(VT_iso_vertex_calculate_normal);
 	if (vertex)
 	{
 		normalize_float3(vertex->normal);
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"VT_iso_vertex_calculate_normal.  Invalid argument(s)");
-		return_code = 0;
 	}
 	LEAVE;
 
@@ -2454,18 +2454,18 @@ DESCRIPTION :
 Frees the memory for the volume triangle and sets <*triangle_address> to NULL.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(DESTROY(VT_iso_triangle));
 	if (triangle_address)
 	{
 		DEALLOCATE(*triangle_address);
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"DESTROY(VT_iso_triangle).  Invalid argument");
-		return_code=0;
 	}
 	LEAVE;
 

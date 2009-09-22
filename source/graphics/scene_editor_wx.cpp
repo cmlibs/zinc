@@ -43,7 +43,7 @@ codes used to build scene editor with wxWidgets.
  * ***** END LICENSE BLOCK ***** */
 
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif
 extern "C" {
 #include <stdio.h>
@@ -957,7 +957,7 @@ DESCRIPTION :
 Callback from wxChooser<Scene> when choice is made.
 ==============================================================================*/
 	{
-		 int return_code;
+		int return_code = 0;
 
 		if (scene_editor)
 		{
@@ -1009,13 +1009,11 @@ Callback from wxChooser<Scene> when choice is made.
 									 NULL);
 					}
 			 }
-
 		}
 		else
 		{
 			 display_message(ERROR_MESSAGE,
 					"setting type callback.  Invalid argument(s)");
-			 return_code =  0;
 		}
 		return (return_code);	
 	}
@@ -2667,7 +2665,7 @@ void MoveUpInSettingList(wxCommandEvent &event)
 		float constant_radius, scale_factor;
 		double temp;
 		struct Computed_field *radius_scalar_field;
-	USE_PARAMETER(event);
+		USE_PARAMETER(event);
 		constantradiustextctrl=XRCCTRL(*this, "ConstantRadiusTextCtrl",wxTextCtrl);
 		(constantradiustextctrl->GetValue()).ToDouble(&temp);
 		constant_radius=(float)temp;
@@ -2701,10 +2699,10 @@ void MoveUpInSettingList(wxCommandEvent &event)
 	void EnterIsoScalar(wxCommandEvent &event)
 	{
 		double *current_iso_values,decimation_threshold, *iso_values,
-			current_first_iso_value, current_last_iso_value, first_iso_value,
-			last_iso_value;
+			current_first_iso_value, current_last_iso_value, first_iso_value = 0.0,
+			last_iso_value = 0.0;
 		char *text_entry, temp_string[50], *vector_temp_string;
-		int allocated_length, changed_value, error, i, length,
+		int allocated_length, changed_value = 0, error, i, length,
 			new_number_of_iso_values, number_of_iso_values,
 			offset, valid_value;
 		struct Computed_field *scalar_field;

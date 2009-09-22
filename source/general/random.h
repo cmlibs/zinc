@@ -45,7 +45,7 @@ Standard macros for returning random numbers.
 #define RANDOM_H
 
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 #if defined (UNIX) /* switch (OPERATING_SYSTEM) */

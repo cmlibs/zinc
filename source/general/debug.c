@@ -46,7 +46,7 @@ Function definitions for debugging.
 #include <stdlib.h>
 #include <string.h>
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 #include "user_interface/message.h"

@@ -539,7 +539,7 @@ DESCRIPTION :
 Adds a callback routine which is called whenever the current time is changed.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	struct Time_keeper_callback_data *callback_data, *previous;
 
 	ENTER(Time_keeper_add_callback);
@@ -565,6 +565,7 @@ Adds a callback routine which is called whenever the current time is changed.
 			{
 				time->callback_list = callback_data;
 			}
+			return_code = 1;
 		}
 		else
 		{

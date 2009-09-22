@@ -46,7 +46,7 @@ The functions for manipulating graphical textures.
 #include <string.h>
 #include <math.h>
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 extern "C" {
 #include "command/parser.h"
@@ -2575,7 +2575,7 @@ dimension then the corresponding default physical size is changed from
 the initial 0 to 1.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Texture_update_default_physical_size);
 	if (texture)
@@ -2595,12 +2595,12 @@ the initial 0 to 1.
 		{
 			texture->width = 1;
 		}
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE, "Texture_update_default_physical_size.  "
 			"Invalid argument(s)");
-		return_code = 0;
 	}
 	LEAVE;
 

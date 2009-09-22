@@ -340,7 +340,7 @@ then set values - that way the field will never be left in an invalid state.
 Calls Computed_field_clear_cache before clearing the type.
 ==============================================================================*/
 {
-	int i,return_code;
+	int i,return_code = 0;
 
 	ENTER(Computed_field_clear_type);
 	if (field)
@@ -380,6 +380,7 @@ Calls Computed_field_clear_cache before clearing the type.
 			DEALLOCATE(field->source_values);
 		}
 		field->number_of_source_values=0;
+		return_code = 1;
 	}
 	else
 	{
@@ -1434,7 +1435,7 @@ Returns true if <field> is determined to be "true" at the centre of <element>.
 This is currently that the field is defined and any of the components are non zero.
 ==============================================================================*/
 {
-	FE_value zero_tolerance = 1e-6;
+	FE_value zero_tolerance = (FE_value)1e-6;
 	int i, number_of_xi_points, number_in_xi, return_code;
 	struct FE_element_shape *shape;
 	FE_value_triple *xi_points;
@@ -1663,7 +1664,7 @@ Returns true if <field> is determined to be "true" at <node>.  This is currently
 that the field is defined and any of the components are non zero.
 ==============================================================================*/
 {
-	FE_value zero_tolerance = 1e-6;
+	FE_value zero_tolerance = (FE_value)1e-6;
 	int i, return_code;
 
 	ENTER(Computed_field_is_true_at_node);
@@ -4732,7 +4733,7 @@ Frees memory/deaccess objects in computed_field_package at <*package_address>.
 Cancels any further messages from managers.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	struct Computed_field_package *computed_field_package;
 
 	ENTER(DESTROY(Computed_field_package));
@@ -4743,12 +4744,12 @@ Cancels any further messages from managers.
 			&computed_field_package->computed_field_type_list);
 		computed_field_package->simple_package->removeref();
 		DEALLOCATE(*package_address);
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"DESTROY(Computed_field_package).  Missing field");
-		return_code=0;
 	}
 	LEAVE;
 
@@ -4839,7 +4840,7 @@ DESCRIPTION :
 Unregisters each of the computed field types added.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	struct Computed_field_type_data *data;
 
 	ENTER(Computed_field_package_remove_types);
@@ -4854,12 +4855,12 @@ Unregisters each of the computed field types added.
 			REMOVE_OBJECT_FROM_LIST(Computed_field_type_data)(data,
 				computed_field_package->computed_field_type_list);
 		}
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_package_add_type.  Invalid arguments");
-		return_code = 0;
 	}
 	LEAVE;
 

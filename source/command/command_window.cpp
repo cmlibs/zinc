@@ -42,7 +42,7 @@ Management routines for the main command window.
  *
  * ***** END LICENSE BLOCK ***** */
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 extern "C" {
@@ -230,16 +230,16 @@ DESCRIPTION :
 	/* the information written to the command window can also be directed to a
 		file */
 #if defined (WX_USER_INTERFACE)
-	 wxCommandWindow *wx_command_window;
-	 wxCommandLineTextCtrl *wx_command_line_text_ctrl;
-	 wxFrame *frame;
-	 wxPanel *lower_panel;
-	 wxTextCtrl *output_window;
-	 wxListBox *history_window;
-	 char *command_prompt;
-// #if defined(__WIN32__)
-// 	 wxIcon icon("/cmgui_windows_icon.ico");
-// #endif
+	wxCommandWindow *wx_command_window;
+	wxCommandLineTextCtrl *wx_command_line_text_ctrl;
+	wxFrame *frame;
+	wxPanel *lower_panel;
+	wxTextCtrl *output_window;
+	wxListBox *history_window;
+	char *command_prompt;
+//#	if defined(WIN32_SYSTEM)
+//		wxIcon icon(wxIcon(cmiss_icon));
+//#	endif
 #endif
 	FILE *out_file;
 	enum Command_window_outfile_mode out_file_mode;
@@ -1665,9 +1665,9 @@ public:
   {
 		 wxXmlInit_command_window();
 		 command_window->wx_command_window = NULL;
+		 this->SetIcon(cmiss_icon_xpm);
 		 wxXmlResource::Get()->LoadFrame(this,
 				(wxWindow *)NULL, _T("CmguiCommandWindow"));
-		 this->SetIcon(cmiss_icon_xpm);
 		 output_list = XRCCTRL(*this,"OutputWindow", wxTextCtrl);
 		 mouse_event_data.left = 0;
 		 mouse_event_data.d_click = 0;

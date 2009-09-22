@@ -49,7 +49,7 @@ Utilities for handling images.
 #include <sys/stat.h>
 
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 #include "command/parser.h"
@@ -1392,7 +1392,7 @@ since textures are required to be in powers of two.
 				printer_page_width_mm = page_width_mm -
 					page_left_margin_mm - page_right_margin_mm;
 				/* the default postscript unit is a 72nd of an inch */
-				scale_mm_to_default = 72./25.4;
+				scale_mm_to_default = (float)(72./25.4);
 				if (image_height*(float)printer_page_width_mm <
 					image_width*(float)printer_page_height_mm)
 				{
@@ -5811,18 +5811,18 @@ Used to specify the io_stream_package for raw file formats read with Cmgui_image
 Clears 'valid' flag of cmgui_image_information if not correctly set.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Cmgui_image_information_set_io_stream_package);
 	if (cmgui_image_information && io_stream_package)
 	{
 		cmgui_image_information->io_stream_package = io_stream_package;
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Cmgui_image_information_set_io_stream_package.  Missing information");
-		return_code = 0;
 	}
 	LEAVE;
 

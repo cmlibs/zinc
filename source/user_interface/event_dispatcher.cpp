@@ -42,7 +42,7 @@ This provides an object which interfaces between a event_dispatcher and Cmgui
  *
  * ***** END LICENSE BLOCK ***** */
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 extern "C" {
 #include <math.h>

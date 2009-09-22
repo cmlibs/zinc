@@ -51,7 +51,7 @@ gtObject/gtWindow management routines.
 #include <stdio.h>
 #include <math.h>
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 extern "C" {
@@ -539,7 +539,7 @@ with each primitive plus the void *<user_data> supplied here. A true result
 from the conditional_function causes the primitive to be removed.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(GT_object_remove_primitives_at_time_number);
 	if (graphics_object)
@@ -586,6 +586,7 @@ from the conditional_function causes the primitive to be removed.
 				{
 					graphics_object->vertex_array->clear_buffers();
 				}
+				return_code = 1;
 			} break;
 			case g_SURFACE:
 			{
@@ -3442,18 +3443,18 @@ DESCRIPTION :
 Sets the integer identifier used by the graphics to distinguish this object.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(GT_surface_set_integer_identifier);
 	if (surface)
 	{
 		surface->object_name = identifier;
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_surface_set_integer_identifier.  Invalid argument(s)");
-		return_code = 0;
 	}
 	LEAVE;
 
@@ -3631,18 +3632,18 @@ DESCRIPTION :
 Sets the integer identifier used by the graphics to distinguish this object.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(GT_voltex_set_integer_identifier);
 	if (voltex)
 	{
 		voltex->object_name = identifier;
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_voltex_set_integer_identifier.  Invalid argument(s)");
-		return_code = 0;
 	}
 	LEAVE;
 
@@ -4192,7 +4193,7 @@ changes.  As the GT_object is not private, this relies on modules that change a
 GT_object calling GT_object_changed.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	struct Graphics_object_callback_data *callback_data, *previous;
 
 	ENTER(GT_object_add_callback);
@@ -4217,6 +4218,7 @@ GT_object calling GT_object_changed.
 			{
 				graphics_object->update_callback_list = callback_data;
 			}
+			return_code = 1;
 		}
 		else
 		{
@@ -5721,7 +5723,7 @@ with each primitive plus the void *<user_data> supplied here. A true result
 from the conditional_function causes the primitive to be removed.
 ==============================================================================*/
 {
-	int return_code, time_number;
+	int return_code = 0, time_number;
 
 	ENTER(GT_object_remove_primitives_at_time);
 	if (graphics_object)
@@ -5760,7 +5762,6 @@ from the conditional_function causes the primitive to be removed.
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_object_remove_primitives_at_time.  Invalid argument(s)");
-		return_code = 0;
 	}
 	LEAVE;
 
@@ -6288,7 +6289,7 @@ If a GT_voltex is contained in the <graphics_object> then normals are
 calculated for each of the VT_iso_vertices using the surrounding triangles.
 ==============================================================================*/
 {
-	int i, return_code;
+	int i, return_code = 0;
 
 	ENTER(GT_voltex_normalise_normals);
 	if (voltex)
@@ -6297,12 +6298,12 @@ calculated for each of the VT_iso_vertices using the surrounding triangles.
 		{
 			VT_iso_vertex_normalise_normal(voltex->vertex_list[i]);
 		}
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_voltex_normalise_normals.  Invalid argument(s)");
-		return_code = 0;
 	}
 	LEAVE;
 
@@ -6318,7 +6319,7 @@ If a GT_voltex is contained in the <graphics_object> then normals are
 normalised for each of the VT_iso_vertices using the surrounding triangles.
 ==============================================================================*/
 {
-	int return_code, time_number;
+	int return_code = 0, time_number;
 	struct GT_voltex *voltex;
 
 	ENTER(GT_object_normalise_GT_voltex_normals);
@@ -6336,6 +6337,7 @@ normalised for each of the VT_iso_vertices using the surrounding triangles.
 					GT_voltex_normalise_normals(voltex);
 					voltex = voltex->ptrnext;
 				}
+				return_code = 1;
 			}
 			else
 			{
@@ -6353,7 +6355,6 @@ normalised for each of the VT_iso_vertices using the surrounding triangles.
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_object_normalise_GT_voltex_normals.  Invalid argument(s)");
-		return_code = 0;
 	}
 	LEAVE;
 
@@ -7428,7 +7429,7 @@ struct Graphics_vertex_buffer *
 int DESTROY(Graphics_vertex_buffer)(
 	struct Graphics_vertex_buffer **buffer_address)
 {
-	int return_code;
+	int return_code = 0;
 	struct Graphics_vertex_buffer *buffer;
 	if (buffer_address && (buffer = *buffer_address))
 	{
@@ -7437,12 +7438,12 @@ int DESTROY(Graphics_vertex_buffer)(
 			DEALLOCATE(buffer->memory);
 		}
 		DEALLOCATE(*buffer_address);
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"DESTROY(Graphics_vertex_buffer)  "
 			"Invalid object.");
-		return_code = 0;
 	}
 	return (return_code);
 }

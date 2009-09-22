@@ -44,7 +44,7 @@ the default button.
  *
  * ***** END LICENSE BLOCK ***** */
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 extern "C" {
@@ -1223,7 +1223,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 	{
 		 wxString file_name=ReadData->GetPath();
 		 file_open_data->file_name=(char*)file_name.mb_str();
-#if defined (__WIN32__)
+#if defined (WIN32_SYSTEM)
 		 char *drive_name = NULL;
 		 char *first = NULL;	
 		 char *last = NULL;	
@@ -1291,7 +1291,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 					 }
 				}
 		 }
-#else /*defined (__WIN32__)*/
+#else /*defined (WIN32_SYSTEM)*/
 		 if (file_open_data->operation)
 		 {
 				if ((file_open_data->operation)((file_open_data->file_name)
@@ -1371,7 +1371,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 		 {
 				free(old_directory);
 		 }
-#endif /* !defined (__WIN32__)*/
+#endif /* !defined (WIN32_SYSTEM)*/
 	}
 	DEALLOCATE(allocated_shell_title);
 	DEALLOCATE(extension);
@@ -1858,7 +1858,7 @@ specified file.
 	{
 	  wxString file_name=SaveData->GetPath();
 		file_open_data->file_name=(char*)file_name.mb_str();
-#if defined (__WIN32__)
+#if defined (WIN32_SYSTEM)
 		 char *drive_name = NULL;
 		 char *first = NULL;	
 		 char *last = NULL;	
@@ -1925,7 +1925,7 @@ specified file.
 					 }
 				}
 		 }
-#else /*defined (__WIN32__)*/
+#else /*defined (WIN32_SYSTEM)*/
 		 if (file_open_data->operation)
 		 {
 				if ((file_open_data->operation)((file_open_data->file_name)
@@ -1938,7 +1938,7 @@ specified file.
 					 retry=1;
 				}
 		 }
-#endif /* !defined (__WIN32__)*/
+#endif /* !defined (WIN32_SYSTEM)*/
 	}
 #endif /* defined (WX_USER_INTERFACE) */
 	LEAVE;

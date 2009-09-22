@@ -44,7 +44,7 @@ Eventually use to store parameters for the transform function.
  * ***** END LICENSE BLOCK ***** */
 
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 extern "C"{
 #include "general/debug.h"

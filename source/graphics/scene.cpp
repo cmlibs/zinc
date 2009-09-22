@@ -57,7 +57,7 @@ November 1997. Created from Scene description part of Drawing.
 #include <stdio.h>
 #include <string.h>
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 extern "C" {
@@ -7846,7 +7846,7 @@ Scene_object has a Time_object.
 ==============================================================================*/
 {
 	char *graphics_object_name, *time_object_name;
-	int return_code;
+	int return_code = 0;
 	struct Scene_object *scene_object;
 	struct Time_object *time;
 	
@@ -7888,12 +7888,12 @@ Scene_object has a Time_object.
 					Scene_object_update_time_behaviour, (void *)time,
 					scene->scene_object_list);
 				DEACCESS(Time_object)(&time);
+				return_code = 1;
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"Scene_update_time_behaviour.  Unable to find Scene_object for graphics_object");
-				return_code=0;
 			}
 		}
 	}
@@ -7901,7 +7901,6 @@ Scene_object has a Time_object.
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_update_time_behaviour.  Invalid argument(s)");
-		return_code=0;
 	}
 	LEAVE;
 

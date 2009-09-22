@@ -45,7 +45,7 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #define GRAPHICS_BUFFER_H
 
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 #include "general/callback.h"

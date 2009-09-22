@@ -1,24 +1,44 @@
 
 # Defines IMAGE_PROCESSING_SRCS
 
-SET( IMAGE_PROCESSING_SRCS image_processing/computed_field_image_resample.cpp )
+SET( IMAGE_PROCESSING_SRCS
+	source/image_processing/computed_field_image_resample.cpp )
+SET( IMAGE_PROCESSING_HDRS
+	source/image_processing/computed_field_image_resample.h )
 
 IF( USE_ITK )
 	SET( IMAGE_PROCESSING_SRCS ${IMAGE_PROCESSING_SRCS}
-		image_processing/computed_field_threshold_image_filter.cpp
-		image_processing/computed_field_binary_threshold_image_filter.cpp
-		image_processing/computed_field_cannyEdgeDetectionFilter.cpp
-		image_processing/computed_field_meanImageFilter.cpp
-		image_processing/computed_field_sigmoidImageFilter.cpp
-		image_processing/computed_field_discrete_gaussian_image_filter.cpp
-		image_processing/computed_field_curvatureAnisotropicDiffusionImageFilter.cpp
-		image_processing/computed_field_derivativeImageFilter.cpp
-		image_processing/computed_field_rescaleIntensityImageFilter.cpp
-		image_processing/computed_field_connected_threshold_image_filter.cpp
-		image_processing/computed_field_gradient_magnitude_recursive_gaussian_image_filter.cpp
-		image_processing/computed_field_fast_marching_image_filter.cpp
-		image_processing/computed_field_binary_dilate_image_filter.cpp
-		image_processing/computed_field_binary_erode_image_filter.cpp
-		image_processing/computed_field_histogram_image_filter.cpp
-		image_processing/computed_field_ImageFilter.cpp )
+		source/image_processing/computed_field_threshold_image_filter.cpp
+		source/image_processing/computed_field_binary_threshold_image_filter.cpp
+		source/image_processing/computed_field_cannyEdgeDetectionFilter.cpp
+		source/image_processing/computed_field_meanImageFilter.cpp
+		source/image_processing/computed_field_sigmoidImageFilter.cpp
+		source/image_processing/computed_field_discrete_gaussian_image_filter.cpp
+		source/image_processing/computed_field_curvatureAnisotropicDiffusionImageFilter.cpp
+		source/image_processing/computed_field_derivativeImageFilter.cpp
+		source/image_processing/computed_field_rescaleIntensityImageFilter.cpp
+		source/image_processing/computed_field_connected_threshold_image_filter.cpp
+		source/image_processing/computed_field_gradient_magnitude_recursive_gaussian_image_filter.cpp
+		source/image_processing/computed_field_fast_marching_image_filter.cpp
+		source/image_processing/computed_field_binary_dilate_image_filter.cpp
+		source/image_processing/computed_field_binary_erode_image_filter.cpp
+		source/image_processing/computed_field_histogram_image_filter.cpp
+		source/image_processing/computed_field_ImageFilter.cpp )
+	SET( IMAGE_PROCESSING_HDRS ${IMAGE_PROCESSING_HDRS}
+		source/image_processing/computed_field_binary_dilate_image_filter.h
+		source/image_processing/computed_field_binary_erode_image_filter.h
+		source/image_processing/computed_field_binary_threshold_image_filter.h
+		source/image_processing/computed_field_cannyEdgeDetectionFilter.h
+		source/image_processing/computed_field_connected_threshold_image_filter.h
+		source/image_processing/computed_field_curvatureAnisotropicDiffusionImageFilter.h
+		source/image_processing/computed_field_derivativeImageFilter.h
+		source/image_processing/computed_field_discrete_gaussian_image_filter.h
+		source/image_processing/computed_field_fast_marching_image_filter.h
+		source/image_processing/computed_field_gradient_magnitude_recursive_gaussian_image_filter.h
+		source/image_processing/computed_field_histogram_image_filter.h
+		source/image_processing/computed_field_ImageFilter.hpp
+		source/image_processing/computed_field_meanImageFilter.h
+		source/image_processing/computed_field_rescaleIntensityImageFilter.h
+		source/image_processing/computed_field_sigmoidImageFilter.h
+		source/image_processing/computed_field_threshold_image_filter.h )
 ENDIF( USE_ITK )

@@ -1660,7 +1660,7 @@ Calculates the range of the spectrum from the settings it contains and updates
 the minimum and maximum contained inside it.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	struct Spectrum_calculate_range_iterator_data data;
 
 	ENTER(spectrum_calculate_range);
@@ -1677,6 +1677,7 @@ the minimum and maximum contained inside it.
 			spectrum->minimum = data.min;
 			spectrum->maximum = data.max;
 		}
+		return_code = 1;
 	}
 	else
 	{
@@ -1790,7 +1791,7 @@ Expands the range of this spectrum by adjusting the range of each settings
 it contains.  The ratios of the different settings are preserved.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	struct Spectrum_rerange_data data;
 
 	ENTER(spectrum_set_minimum_and_maximum);
@@ -1814,6 +1815,7 @@ it contains.  The ratios of the different settings are preserved.
 				as the fix minimum and fix maximum flags may have overrided our rerange. */
 			Spectrum_calculate_range(spectrum);
 		}
+		return_code = 1;
 	}
 	else
 	{

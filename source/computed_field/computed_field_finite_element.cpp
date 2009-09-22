@@ -5884,7 +5884,7 @@ DESCRIPTION :
 This function registers the finite_element related types of Computed_fields.
 ==============================================================================*/
 {
-	Computed_field_finite_element_package *return_ptr;
+	Computed_field_finite_element_package *return_ptr = 0;
 	Computed_field_finite_element_package 
 		*computed_field_finite_element_package = 
 		new Computed_field_finite_element_package;

@@ -4170,7 +4170,7 @@ DESCRIPTION :
 Destroys the scene_viewer_package.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	struct Cmiss_scene_viewer_package *scene_viewer_package;
 
 	ENTER(DESTROY(Cmiss_scene_viewer_package));
@@ -4197,12 +4197,12 @@ Destroys the scene_viewer_package.
 		DEACCESS(Light_model)(&scene_viewer_package->default_light_model);
 		DEACCESS(Scene)(&scene_viewer_package->scene);
 		DEALLOCATE(*scene_viewer_package_address);
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"DESTROY(Cmiss_scene_viewer_package).  "
 			"Invalid argument(s)");
-		return_code=0;
 	}
 	LEAVE;
 

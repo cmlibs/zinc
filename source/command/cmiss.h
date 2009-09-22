@@ -48,7 +48,7 @@ This should only be included in cmgui.c and command/cmiss.c
 
 #include "command/command.h"
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 #include "general/io_stream.h"
 #include "general/manager.h"

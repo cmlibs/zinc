@@ -43,7 +43,7 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
  * ***** END LICENSE BLOCK ***** */
 
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 extern "C" {
@@ -6835,37 +6835,38 @@ Sets this buffer to be the GLX source and the current ThreeDWindow (the one last
 made current) to be the GLX destination.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Graphics_buffer_make_read_current);
 
 	if (buffer)
 	{
-		switch (buffer->type)
-		{
 #if defined (MOTIF_USER_INTERFACE)
 #  if defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer)
+		switch (buffer->type)
+		{
 			case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
 			{
 				glXMakeContextCurrent(buffer->display, glXGetCurrentDrawable(),
 					buffer->glx_pbuffer, glXGetCurrentContext());
 				return_code = 1;
 			} break;
-#  endif /* defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer) */
-#endif /* defined (MOTIF_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_make_read_current.  "
 					"Graphics_bufffer type unknown or not supported.");
-				return_code = 0;
 			} break;
 		}
+#  endif /* defined (USE_GLX_PBUFFER) || defined (GLX_SGIX_dmbuffer) || defined (GLX_SGIX_pbuffer) */
+#else
+		display_message(ERROR_MESSAGE,"Graphics_buffer_make_read_current.  "
+			"Graphics_bufffer type unknown or not supported.");
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"Graphics_buffer_make_read_current.  "
 			"Graphics_bufffer missing.");
-		return_code = 0;
 	}
 	LEAVE;
 
@@ -7190,25 +7191,25 @@ DESCRIPTION :
 Returns the x origin of buffer represented by <buffer>.
 ==============================================================================*/
 {
-	int origin_x;
+	int origin_x = 0;
 
 	ENTER(Graphics_buffer_get_origin_x);
 	if (buffer)
 	{
+#if defined (CARBON_USER_INTERFACE)
 		switch (buffer->type)
 		{
-#if defined (CARBON_USER_INTERFACE)
 			case GRAPHICS_BUFFER_CARBON_TYPE:
 			{
 				// Respect the values we have been given
 				origin_x = buffer->clip_width - buffer->width;
 			} break;
-#endif /* defined (CARBON_USER_INTERFACE) */
 			default:
 			{
 				origin_x = 0;
 			} break;
 		}
+#endif /* defined (CARBON_USER_INTERFACE) */
 	}
 	else
 	{
@@ -7229,25 +7230,25 @@ DESCRIPTION :
 Returns the y origin of buffer represented by <buffer>.
 ==============================================================================*/
 {
-	int origin_y;
+	int origin_y = 0;
 
 	ENTER(Graphics_buffer_get_origin_y);
 	if (buffer)
 	{
+#if defined (CARBON_USER_INTERFACE)
 		switch (buffer->type)
 		{
-#if defined (CARBON_USER_INTERFACE)
 			case GRAPHICS_BUFFER_CARBON_TYPE:
 			{
 				// Respect the values we have been given
 				origin_y = buffer->clip_height - buffer->height;
 			} break;
-#endif /* defined (CARBON_USER_INTERFACE) */
 			default:
 			{
 				origin_y = 0;
 			} break;
 		}
+#endif /* defined (CARBON_USER_INTERFACE) */
 	}
 	else
 	{
@@ -7268,14 +7269,14 @@ DESCRIPTION :
 Returns the border width of buffer represented by <buffer>.
 ==============================================================================*/
 {
-	int border_width;
+	int border_width = 0;
 
 	ENTER(Graphics_buffer_get_border_width);
 	if (buffer)
 	{
+#if defined (MOTIF_USER_INTERFACE)
 		switch (buffer->type)
 		{
-#if defined (MOTIF_USER_INTERFACE)
 			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 			{
 				Dimension xborder_width;
@@ -7285,7 +7286,6 @@ Returns the border width of buffer represented by <buffer>.
 					NULL);
 				border_width = xborder_width;
 			} break;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_border_width.  "
@@ -7293,6 +7293,7 @@ Returns the border width of buffer represented by <buffer>.
 				border_width = 0;
 			} break;
 		}
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{
@@ -7313,7 +7314,7 @@ DESCRIPTION :
 Sets the border width of buffer represented by <buffer>.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Graphics_buffer_set_border_width);
 #if !defined (MOTIF_USER_INTERFACE)
@@ -7321,9 +7322,9 @@ Sets the border width of buffer represented by <buffer>.
 #endif /* !defined (MOTIF_USER_INTERFACE) */
 	if (buffer)
 	{
+#if defined (MOTIF_USER_INTERFACE)
 		switch (buffer->type)
 		{
-#if defined (MOTIF_USER_INTERFACE)
 			case GRAPHICS_BUFFER_GLX_X3D_TYPE:
 			{
 				Dimension xborder_width;
@@ -7338,14 +7339,17 @@ Sets the border width of buffer represented by <buffer>.
 					XmNtopOffset, xborder_width,NULL);
 				return_code = 1;
 			} break;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_set_border_width.  "
 					"Graphics_bufffer type unknown or not supported.");
-				return_code = 0;
 			} break;
 		}
+#else
+		display_message(ERROR_MESSAGE,"Graphics_buffer_set_border_width.  "
+			"Graphics_bufffer type unknown or not supported.");
+
+#endif /* defined (MOTIF_USER_INTERFACE) */
 	}
 	else
 	{

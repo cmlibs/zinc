@@ -45,7 +45,7 @@ Functions and structures for interfacing with the graphics library.
 #define GRAPHICS_LIBRARY_H
 
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 #if defined (GL_API)
@@ -62,6 +62,9 @@ Functions and structures for interfacing with the graphics library.
 #	define GL_GLEXT_PROTOTYPES
 #	define GLX_GLXEXT_PROTOTYPES
 #	if defined (MOTIF_USER_INTERFACE) || ! defined (DARWIN)
+#		if defined (WIN32_SYSTEM)
+#			include <windows.h>
+#		endif
 #		include <GL/gl.h>
 #		include <GL/glu.h>
 #		if defined (WIN32_SYSTEM)

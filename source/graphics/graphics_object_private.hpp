@@ -75,7 +75,7 @@ Used to be gtypes.h
 #define GRAPHICS_OBJECT_PRIVATE_H
 
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 extern "C"
 {

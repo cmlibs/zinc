@@ -66,7 +66,7 @@ Finds the minimum of the passed values.
 	int i;
 
 	ENTER(min);
-	return_value=1.0e30;
+	return_value=FLT_MAX;
 	for (i=0;i<number;i++)
 	{
 		if (return_value>=data[i])
@@ -91,7 +91,7 @@ Finds the maximum of the passed values.
 	int i;
 
 	ENTER(max);
-	return_value=-1.0e30;
+	return_value=-FLT_MAX;
 	for (i=0;i<number;i++)
 	{
 		if (return_value<=data[i])

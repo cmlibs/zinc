@@ -43,7 +43,7 @@ streams.
  *
  * ***** END LICENSE BLOCK ***** */
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 #if defined (GENERIC_PC) && defined (UNIX)
@@ -54,6 +54,7 @@ streams.
 #include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #if defined (USE_IMAGEMAGICK)
 /* Should probably separate the inclusion of these libraries from the 
    rest of Imagemagick, do this internally but could put that up to makefile */
@@ -68,6 +69,10 @@ streams.
 #include "general/indexed_list_private.h"
 #include "user_interface/message.h"
 #include "general/io_stream.h"
+#if !defined (HAVE_VFSCANF)
+#	include "general/alt_vfscanf.h"
+#endif /* !defined (HAVE_VFSCANF) */
+
 
 /* SAB 16 Sept 2004
 	Unfortunately sscanf does a strlen on the buffer.  If the buffer is large
@@ -906,7 +911,13 @@ Equivalent to a standard C fscanf or sscanf on the stream.
 			case IO_STREAM_FILE_TYPE:
 			{
 				va_start(arguments, format);
+#if defined (HAVE_VFSCANF)
 				return_code = vfscanf(stream->file_handle, format, arguments);
+#else
+				return_code = alt_vfscanf(stream->file_handle, format, arguments);
+				//display_message(ERROR_MESSAGE,
+				//	"IO_stream_scan. vfscanf not available on this platform.");
+#endif /* defined (HAVE_VFSCANF) */
 				va_end(arguments);
 			} break;
 			case IO_STREAM_GZIP_FILE_TYPE:
@@ -1723,7 +1734,7 @@ LAST MODIFIED : 23 August 2004
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(IO_stream_close);
 
@@ -1736,12 +1747,14 @@ DESCRIPTION :
 			{
 				fclose(stream->file_handle);
 				stream->type = IO_STREAM_UNKNOWN_TYPE;
+				return_code = 1;
 			} break;
 #if defined (HAVE_ZLIB)
 			case IO_STREAM_GZIP_FILE_TYPE:
 			{
 				gzclose(stream->gzip_file_handle);
 				stream->type = IO_STREAM_UNKNOWN_TYPE;
+				return_code = 1;
 			} break;
 #endif /* defined (HAVE_ZLIB) */
 #if defined (HAVE_BZLIB)
@@ -1749,6 +1762,7 @@ DESCRIPTION :
 			{
 				BZ2_bzclose(stream->bz2_file_handle);
 				stream->type = IO_STREAM_UNKNOWN_TYPE;
+				return_code = 1;
 			} break;
 #endif /* defined (HAVE_BZLIB) */
 			case IO_STREAM_MEMORY_TYPE:
@@ -1758,6 +1772,7 @@ DESCRIPTION :
 					DEACCESS(IO_memory_block)(&stream->memory_block);
 				}
 				stream->type = IO_STREAM_UNKNOWN_TYPE;
+				return_code = 1;
 			} break;
 #if defined (HAVE_BZLIB)
 			case IO_STREAM_BZ2_MEMORY_TYPE:
@@ -1772,6 +1787,7 @@ DESCRIPTION :
 					DEALLOCATE(stream->bz2_memory_stream);
 				}
 				stream->type = IO_STREAM_UNKNOWN_TYPE;
+				return_code = 1;
 			} break;
 #endif /* defined (HAVE_BZLIB) */
 			default:

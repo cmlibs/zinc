@@ -48,7 +48,7 @@ interest and set scene_viewer values directly.
  *
  * ***** END LICENSE BLOCK ***** */
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 extern "C" {
 #include <stdlib.h>
@@ -5930,7 +5930,7 @@ such as GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC.
 Axis numbers are from 1 to 6, where 1=x, 2=y, 3=z, 4=-x, 5=-y and 6=-z.
 ==============================================================================*/
 {
-	int return_code,new_up_axis,new_front_axis;
+	int return_code = 0,new_up_axis,new_front_axis;
 #if defined (MOTIF_USER_INTERFACE)
 	int num_children;
 	XmString temp_string;
@@ -5993,6 +5993,7 @@ Axis numbers are from 1 to 6, where 1=x, 2=y, 3=z, 4=-x, 5=-y and 6=-z.
 			XmStringFree(temp_string);
 #endif /* defined (MOTIF_USER_INTERFACE) */
 		}
+		return_code = 1;
 	}
 	else
 	{

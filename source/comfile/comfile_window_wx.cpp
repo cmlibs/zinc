@@ -45,7 +45,7 @@ extern "C" {
 #include <stdio.h>
 #include <string.h>
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 #include "general/debug.h"
 #include "command/command.h"

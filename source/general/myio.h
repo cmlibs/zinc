@@ -46,7 +46,7 @@ Some additions/modifications to stdio.
 
 #include <stdio.h>
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 #if defined (UNIX) && defined (GENERIC_PC)

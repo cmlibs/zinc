@@ -42,7 +42,7 @@ The function for importing finite element data into CMISS.
  *
  * ***** END LICENSE BLOCK ***** */
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 #if defined (USE_XML2)
 #if defined (UNIX)

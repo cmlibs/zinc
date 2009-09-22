@@ -52,7 +52,7 @@ December 1997. Created MANAGER(Scene).
 #define SCENE_H
 
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 #include "general/any_object.h"

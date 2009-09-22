@@ -44,7 +44,7 @@ selected element point, or set it if entered in this dialog.
  *
  * ***** END LICENSE BLOCK ***** */
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif
 extern "C" {
 #include "computed_field/computed_field.h"

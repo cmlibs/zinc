@@ -42,7 +42,7 @@ Routines for waiting for user input.
  *
  * ***** END LICENSE BLOCK ***** */
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 extern "C" {
@@ -559,12 +559,12 @@ This routine supplies a file selection dialog window
 					{
 						if (confirmation.filename)
 						{
-							mkdir(confirmation.filename
+							_mkdir(confirmation.filename
 #if defined (UNIX)
 								,S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH
 #endif /* defined (UNIX) */
 								);
-							if (0==chdir(confirmation.filename))
+							if (0==_chdir(confirmation.filename))
 							{
 								filename=confirmation.filename;
 							}

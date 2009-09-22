@@ -40,7 +40,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 #include <stddef.h>
@@ -559,7 +559,7 @@ to change the interactive tool settings.
 }
 #endif /*(WX_USER_INTERFACE)*/
 
-#if defined (WX_USER_INTERFACE) && defined (__WIN32__)
+#if defined (WX_USER_INTERFACE) && defined (WIN32_SYSTEM)
 char *CMISS_set_directory_and_filename_WIN32(char *file_name,
 	struct Cmiss_command_data *command_data)
 /*******************************************************************************
@@ -2164,8 +2164,10 @@ DESCRIPTION :
 		(data = (struct Interpreter_command_element_selection_callback_data *)data_void))
 	{
 		callback_result = (char *)NULL;
+#if defined (USE_PERL_INTERPRETER)
 		interpreter_evaluate_string(data->interpreter,
 			  data->perl_action, &callback_result, &return_code);
+#endif /* defined (USE_PERL_INTERPRETER) */
 		if (callback_result)
 		{
 			DEALLOCATE(callback_result);
@@ -4028,8 +4030,10 @@ DESCRIPTION :
 		(data = (struct Interpreter_command_node_selection_callback_data *)data_void))
 	{
 		callback_result = (char *)NULL;
+#if defined (USE_PERL_INTERPRETER)
 		interpreter_evaluate_string(data->interpreter,
 			  data->perl_action, &callback_result, &return_code);
+#endif /* defined (USE_PERL_INTERPRETER) */
 		if (callback_result)
 		{
 			DEALLOCATE(callback_result);
@@ -8519,11 +8523,13 @@ Executes an ATTACH command.
 				{
 					Io_device_end_detection(device);
 				}
+#if defined (USE_PERL_INTERPRETER)
 				if (perl_action)
 				{
 					Io_device_set_perl_action(device, command_data->interpreter,
 						perl_action);
 				}
+#endif /* defined (USE_PERL_INTERPRETER) */
 			}
 			if (perl_action)
 			{
@@ -17008,13 +17014,13 @@ instruction to read in the mesh.
 						return_code = 0;
 					}
 				}
-#if defined (WX_USER_INTERFACE) && defined (__WIN32__)
+#if defined (WX_USER_INTERFACE) && defined (WIN32_SYSTEM)
 			if (file_name)
 			{
 				 file_name = CMISS_set_directory_and_filename_WIN32(file_name, 
 						command_data); 
 			}
-#endif /* defined (__WIN32__)*/
+#endif /* defined (WIN32_SYSTEM)*/
 				if (return_code)
 				{
 					/* open the file */
@@ -17120,13 +17126,13 @@ user, otherwise the elements file is read.
 					return_code = 0;
 				}
 			}
-#if defined (WX_USER_INTERFACE) && defined (__WIN32__)
+#if defined (WX_USER_INTERFACE) && defined (WIN32_SYSTEM)
 			if (file_name)
 			{
 				 file_name = CMISS_set_directory_and_filename_WIN32(file_name,
 						command_data); 
 			}
-#endif /* defined (__WIN32__)*/
+#endif /* defined (WIN32_SYSTEM)*/
 
 			if (return_code)
 			{
@@ -17396,13 +17402,13 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 				}
 				if (return_code)
 				{
-#if defined (WX_USER_INTERFACE) && defined (__WIN32__)
+#if defined (WX_USER_INTERFACE) && defined (WIN32_SYSTEM)
 			if (file_name)
 			{
 				 file_name = CMISS_set_directory_and_filename_WIN32(file_name,
 						command_data); 
 			}
-#endif /* defined (__WIN32__)*/
+#endif /* defined (WIN32_SYSTEM)*/
 					/* open the file */
 					if (use_data)
 					{
@@ -19834,15 +19840,15 @@ Can also write individual groups with the <group> option.
 	 static const char	*command_prefix;
 	 FE_value time;
 #if defined (WX_USER_INTERFACE)
-#if defined (__WIN32__)
+#if defined (WIN32_SYSTEM)
 	 char temp_data[L_tmpnam];
 	 char temp_elem[L_tmpnam];
 	 char temp_node[L_tmpnam];
-#else /* (__WIN32__) */
+#else /* (WIN32_SYSTEM) */
 	 char temp_data[] = "dataXXXXXX";
 	 char temp_elem[] = "elemXXXXXX";
 	 char temp_node[] = "nodeXXXXXX";
-#endif /* (__WIN32__) */
+#endif /* (WIN32_SYSTEM) */
 #else /* (WX_USER_INTERFACE) */
 	 char *temp_data;
 	 char *temp_elem;
@@ -20023,7 +20029,7 @@ Can also write individual groups with the <group> option.
 							 , command_data->execute_command);
 #endif /*defined (WX_USER_INTERFACE) */
 				 }
-#if defined (WX_USER_INTERFACE) && defined (__WIN32__)
+#if defined (WX_USER_INTERFACE) && defined (WIN32_SYSTEM)
 				 if (com_file_name)
 				 {
 						com_file_name = CMISS_set_directory_and_filename_WIN32(com_file_name,
@@ -20044,7 +20050,7 @@ Can also write individual groups with the <group> option.
 						node_file_name = CMISS_set_directory_and_filename_WIN32(node_file_name,
 							 command_data);
 				 }
-#endif /* defined (WX_USER_INTERFACE) && defined (__WIN32__) */
+#endif /* defined (WX_USER_INTERFACE) && defined (WIN32_SYSTEM) */
 				 if (com_return_code)
 				 {
 						com_return_code = check_suffix(&com_file_name,".com");
@@ -20062,7 +20068,7 @@ Can also write individual groups with the <group> option.
 						node_return_code = check_suffix(&node_file_name,".exnode");
 				 }
 #if defined (WX_USER_INTERFACE) 
-#if defined (__WIN32__)
+#if defined (WIN32_SYSTEM)
 				 /* 	Non MS-windows platform does not have mkstemp implemented,
 						therefore tmpnam is used.*/
 				 if (data_return_code)
@@ -20103,7 +20109,7 @@ Can also write individual groups with the <group> option.
 				 {		
 							 node_fd = mkstemp((char *)temp_node);
 				 }
-#endif /* (__WIN32__) */
+#endif /* (WIN32_SYSTEM) */
 #else /* (WX_USER_INTERFACE) */
 				 /* Non wx_user_interface won't be able to stored the file in
 						a zip file at the moment */
@@ -20253,7 +20259,7 @@ Can also write individual groups with the <group> option.
 							 elem_file_name, node_file_name, data_return_code, elem_return_code, 
 							 node_return_code, file_name, temp_data, temp_elem, temp_node);
 				 }
-#if !defined (__WIN32__)
+#if !defined (WIN32_SYSTEM)
 				 if (unlink(temp_data) == -1) 
 				 {
 						display_message(ERROR_MESSAGE,
@@ -20274,7 +20280,7 @@ Can also write individual groups with the <group> option.
 						display_message(ERROR_MESSAGE,
 							 "compressing_process_wx_compress.  Could not unlink temporary com file");
 				 }
-#endif /*!definde (__WIN32__)*/
+#endif /*!definde (WIN32_SYSTEM)*/
 #endif /* defined (WX_USER_INTERFACE) */
 				 if (com_file_name)
 				 {
@@ -20594,13 +20600,13 @@ Can also write individual element groups with the <group> option.
 					return_code = 0;
 				}
 			}
-#if defined (WX_USER_INTERFACE) && defined (__WIN32__)
+#if defined (WX_USER_INTERFACE) && defined (WIN32_SYSTEM)
 			if (file_name)
 			{
 				 file_name = CMISS_set_directory_and_filename_WIN32(file_name,
 						command_data);
 			}
-#endif /* defined (WX_USER_INTERFACE) && (__WIN32__) */
+#endif /* defined (WX_USER_INTERFACE) && (WIN32_SYSTEM) */
 			if (return_code)
 			{
 				/* open the file */
@@ -20795,13 +20801,13 @@ If <use_data> is set, writing data, otherwise writing nodes.
 					return_code = 0;
 				}
 			}
-#if defined (WX_USER_INTERFACE) && defined (__WIN32__)
+#if defined (WX_USER_INTERFACE) && defined (WIN32_SYSTEM)
 			if (file_name)
 			{
 				 file_name = CMISS_set_directory_and_filename_WIN32(file_name,
 						command_data); 
 			}
-#endif /* defined (WX_USER_INTERFACE) && defined (__WIN32__) */
+#endif /* defined (WX_USER_INTERFACE) && defined (WIN32_SYSTEM) */
 			if (return_code)
 			{
 				/* open the file */
@@ -20899,13 +20905,13 @@ If <use_data> is set, writing data, otherwise writing nodes.
 					return_code = 0;
 				}
 			}
-#if defined (WX_USER_INTERFACE) && defined (__WIN32__)
+#if defined (WX_USER_INTERFACE) && defined (WIN32_SYSTEM)
 			if (file_name)
 			{
 				 file_name = CMISS_set_directory_and_filename_WIN32(file_name,
 						command_data); 
 			}
-#endif /* defined (WX_USER_INTERFACE) && defined (__WIN32__) */
+#endif /* defined (WX_USER_INTERFACE) && defined (WIN32_SYSTEM) */
 			if (return_code)
 			{
 				/* open the file */
@@ -21887,13 +21893,13 @@ Executes a CELL WRITE IPCELL command.
               return_code = 0;
             }
           }
-#if defined (WX_USER_INTERFACE) && defined (__WIN32__)
+#if defined (WX_USER_INTERFACE) && defined (WIN32_SYSTEM)
 			if (file_name)
 			{
 				 file_name = CMISS_set_directory_and_filename_WIN32(file_name,
 						command_data); 
 			}
-#endif /* defined (WX_USER_INTERFACE) && defined (__WIN32__) */
+#endif /* defined (WX_USER_INTERFACE) && defined (WIN32_SYSTEM) */
           if (file_name)
           {
             if (check_suffix(&file_name,".ipcell"))
@@ -24157,7 +24163,7 @@ Execute a <command_string>. If there is a command
 ==============================================================================*/
 {
 	char **token;
-	int i,return_code;
+	int i,return_code = 0;
 	struct Cmiss_command_data *command_data;
 	struct Option_table *option_table;
 	struct Parse_state *state;
@@ -25959,7 +25965,7 @@ DESCRIPTION :
 Clean up the command_data, deallocating all the associated memory and resources.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 #if defined (F90_INTERPRETER) || defined (USE_PERL_INTERPRETER)
 	int status;
 #endif /* defined (F90_INTERPRETER) || defined (USE_PERL_INTERPRETER) */
@@ -26227,12 +26233,12 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		}
 
 		DEALLOCATE(*command_data_address);
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"DESTROY(Cmiss_command_data).  "
 			"Invalid arguments");
-		return_code=0;
 	}
 	
 	/* Write out any memory blocks still ALLOCATED when MEMORY_CHECKING is

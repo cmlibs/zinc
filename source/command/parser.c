@@ -55,7 +55,7 @@ A module for supporting command parsing.
 #include <ctype.h>
 #include "command/parser.h"
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 #include "general/debug.h"
 #include "general/mystring.h"

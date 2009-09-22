@@ -43,7 +43,7 @@ DESCRIPTION :
 #include <stdio.h>
 #include <stdlib.h>
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 #if !defined (WIN32_SYSTEM)
