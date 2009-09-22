@@ -239,10 +239,17 @@ ifeq ($(SYSNAME),Linux)
    ifeq ($(PROFILE),true)
       LINK += -pg
    endif
+	# Is the compiler a version that will not compile without the no strict aliasing (NSA) flag?
+	NSA_COMPILER_VERSION := $(shell $(CC) -dumpversion | grep "4\.[12]\.[0-9]")
+	ifneq (,$(NSA_COMPILER_VERSION))
+	 	NO_STRICT_ALIASING_FLAG := -fno-strict-aliasing
+	else
+	 	NO_STRICT_ALIASING_FLAG :=
+	endif
    ifneq ($(DEBUG),true)
       OPTIMISATION_FLAGS = -O3
       COMPILE_DEFINES = -DOPTIMISED
-      COMPILE_FLAGS = -fPIC
+      COMPILE_FLAGS = -fPIC $(NO_STRICT_ALIASING_FLAG) 
       STRICT_FLAGS = -W -Wall -Werror -Wno-unused-parameter
       CPP_STRICT_FLAGS = -W -Wall -Werror -Wno-unused-parameter
 			UNINITIALISED_FLAG = -Wno-uninitialized
@@ -274,7 +281,7 @@ ifeq ($(SYSNAME),Linux)
    else  # DEBUG != true
       OPTIMISATION_FLAGS = -g
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
-      COMPILE_FLAGS = -fPIC
+      COMPILE_FLAGS = -fPIC $(NO_STRICT_ALIASING_FLAG) 
       STRICT_FLAGS = -W -Wall -Werror
       CPP_STRICT_FLAGS = -W -Wall -Werror
 			UNINITILISED_FLAG = 
