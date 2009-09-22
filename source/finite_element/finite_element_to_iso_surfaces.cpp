@@ -261,6 +261,12 @@ public:
 		return new_vertex;
 	}
 	
+	/**
+	 *      3
+	 *     / \
+	 *    /   \
+	 *   1-----2
+	 */
 	void add_triangle(const Iso_vertex *v1,	const Iso_vertex *v2, const Iso_vertex *v3)
 	{
 		// ignore degenerate triangles
@@ -271,6 +277,105 @@ public:
 			return;
 		}
 		triangle_list.push_back(new Iso_triangle(v1, v2, v3));
+	}
+
+	/**
+	 *   4-----3
+	 *   |     |
+	 *   |     |
+	 *   1-----2
+	 */
+	void add_quadrilateral(const Iso_vertex *v1,	const Iso_vertex *v2,
+		const Iso_vertex *v3, const Iso_vertex *v4)
+	{
+		// cut quadrilateral across the shortest diagonal
+		if (square_distance3(v1->coordinates, v3->coordinates) <
+			square_distance3(v2->coordinates, v4->coordinates))
+		{
+			add_triangle(v1, v2, v3);
+			add_triangle(v1, v3, v4);
+		}
+		else
+		{
+			add_triangle(v1, v2, v4);
+			add_triangle(v2, v3, v4);
+		}
+	}
+
+	/**
+	 *   5----4
+	 *   |     \
+	 *   |      3
+	 *   |     /
+	 *   1----2
+	 */
+	void add_pentagon(const Iso_vertex *v1,	const Iso_vertex *v2,
+		const Iso_vertex *v3, const Iso_vertex *v4, const Iso_vertex *v5)
+	{
+		// cut pentagon across the shortest diagonal
+		FE_value distance13 = square_distance3(v1->coordinates, v3->coordinates);
+		FE_value distance24 = square_distance3(v2->coordinates, v4->coordinates);
+		FE_value distance35 = square_distance3(v3->coordinates, v5->coordinates);
+		FE_value distance41 = square_distance3(v4->coordinates, v1->coordinates);
+		FE_value distance52 = square_distance3(v5->coordinates, v2->coordinates);
+		if ((distance13 < distance24) && (distance13 < distance35) &&
+			(distance13 < distance41) && (distance13 < distance52))
+		{
+			add_triangle(v1, v2, v3);
+			add_quadrilateral(v1, v3, v4, v5);
+		}
+		else if ((distance24 < distance35) && (distance24 < distance41) &&
+			(distance24 < distance52))
+		{
+			add_triangle(v2, v3, v4);
+			add_quadrilateral(v1, v2, v4, v5);
+		}
+		else if ((distance35 < distance41) && (distance35 < distance52))
+		{
+			add_triangle(v3, v4, v5);
+			add_quadrilateral(v1, v2, v3, v5);
+		}
+		else if (distance41 < distance52)
+		{
+			add_triangle(v1, v4, v5);
+			add_quadrilateral(v1, v2, v3, v4);
+		}
+		else
+		{
+			add_triangle(v1, v2, v5);
+			add_quadrilateral(v2, v3, v4, v5);
+		}
+	}
+
+	/**
+	 *    5----4
+	 *   /      \
+	 *  6        3
+	 *   \      /
+	 *    1----2
+	 */
+	void add_hexagon(const Iso_vertex *v1,	const Iso_vertex *v2, const Iso_vertex *v3,
+		const Iso_vertex *v4, const Iso_vertex *v5, const Iso_vertex *v6)
+	{
+		// cut hexagon into two quads across the shortest opposite diagonal
+		FE_value distance14 = square_distance3(v1->coordinates, v4->coordinates);
+		FE_value distance25 = square_distance3(v2->coordinates, v5->coordinates);
+		FE_value distance36 = square_distance3(v3->coordinates, v6->coordinates);
+		if ((distance14 < distance25) && (distance14 < distance36))
+		{
+			add_quadrilateral(v1, v2, v3, v4);
+			add_quadrilateral(v1, v4, v5, v6);
+		}
+		else if (distance25 < distance36)
+		{
+			add_quadrilateral(v1, v2, v5, v6);
+			add_quadrilateral(v2, v3, v4, v5);
+		}
+		else
+		{
+			add_quadrilateral(v1, v2, v3, v6);
+			add_quadrilateral(v3, v4, v5, v6);
+		}
 	}
 
 private:
@@ -499,38 +604,28 @@ void Isosurface_builder::cross_tetrahedron(const Point_index& p1,
 		Point_index mp3 = mp[tet_case[unrotated_case][3]];
 		Point_index mp4 = mp[tet_case[unrotated_case][4]];
 		const Iso_vertex *v1, *v2, *v3, *v4;
-		if (final_case == 1)
+		switch (final_case)
 		{
+		case 1:
 			v1 = get_line_crossing(Point_index_pair(mp1, mp2));
 			v2 = get_line_crossing(Point_index_pair(mp1, mp3));
 			v3 = get_line_crossing(Point_index_pair(mp1, mp4));
 			mesh.add_triangle(v1,v3,v2);
-		}
-		else if (final_case == 2)
-		{
-			v1 = get_line_crossing(Point_index_pair(mp1, mp3));
-			v2 = get_line_crossing(Point_index_pair(mp1, mp4));
+			break;
+		case 2:
+			// 1, 2 > iso_value 
+			v1 = get_line_crossing(Point_index_pair(mp1, mp4));
+			v2 = get_line_crossing(Point_index_pair(mp1, mp3));
 			v3 = get_line_crossing(Point_index_pair(mp2, mp3));
 			v4 = get_line_crossing(Point_index_pair(mp2, mp4));
-			// cut quadrilateral across the shortest diagonal
-			if (square_distance3(v1->coordinates, v4->coordinates) <
-				square_distance3(v2->coordinates, v3->coordinates))
-			{
-				mesh.add_triangle(v1,v4,v2);
-				mesh.add_triangle(v1,v3,v4);
-			}
-			else
-			{
-				mesh.add_triangle(v1,v3,v2);
-				mesh.add_triangle(v2,v3,v4);
-			}
-		}
-		else if (final_case == 3)
-		{
+			mesh.add_quadrilateral(v1, v2, v3, v4);
+			break;
+		case 3:
 			v1 = get_line_crossing(Point_index_pair(mp1, mp4));
 			v2 = get_line_crossing(Point_index_pair(mp2, mp4));
 			v3 = get_line_crossing(Point_index_pair(mp3, mp4));
 			mesh.add_triangle(v1,v3,v2);
+			break;
 		}
 	}
 	LEAVE;
@@ -576,6 +671,76 @@ int Isosurface_builder::cross_cube(int i, int j, int k)
 
 int Isosurface_builder::cross_octahedron(int i, int j, int k)
 {
+	// first column is final case in standard orientation
+	// columns 1-6 are indexes of initial vertices in order to rotate to final case
+	static const int oct_case[64][7] =
+	{
+		{  0, 0, 0, 0, 0, 0, 0 }, //  0
+		{  1, 0, 1, 2, 3, 4, 5 }, //  1 : 0 over = standard case
+		{  1, 1, 2, 0, 5, 3, 4 }, //  2
+		{  3, 0, 1, 2, 3, 4, 5 }, //  3 : 0,1 over (adj) = standard case
+		{  1, 2, 0, 1, 4, 5, 3 }, //  4
+		{  3, 0, 2, 4, 1, 3, 5 }, //  5 
+		{  3, 1, 2, 0, 5, 3, 4 }, //  6
+		{  7, 0, 1, 2, 3, 4, 5 }, //  7 : 0,1,2 over (adj) = standard case
+		{  1, 3, 1, 0, 5, 4, 2 }, //  8
+		{  3, 0, 3, 1, 4, 2, 5 }, //  9
+		{  3, 1, 3, 5, 0, 2, 4 }, // 10
+		{  7, 0, 3, 1, 4, 2, 5 }, // 11
+		{ 33, 2, 0, 1, 4, 5, 3 }, // 12
+		{ 35, 2, 0, 1, 4, 5, 3 }, // 13
+		{ 35, 2, 1, 5, 0, 4, 3 }, // 14
+		{ 15, 0, 1, 2, 3, 4, 5 }, // 15 : 0,1,2,3 over (adj) = standard case
+		{  1, 4, 0, 2, 3, 5, 1 }, // 16
+		{  3, 0, 4, 3, 2, 1, 5 }, // 17
+		{ 33, 1, 2, 0, 5, 3, 4 }, // 18
+		{ 35, 1, 0, 3, 2, 5, 4 }, // 19
+		{  3, 2, 4, 0, 5, 1, 3 }, // 20
+		{  7, 0, 2, 4, 1, 3, 5 }, // 21
+		{ 35, 1, 2, 0, 5, 3, 4 }, // 22
+		{ 15, 2, 0, 1, 4, 5, 3 }, // 23
+		{  3, 3, 4, 5, 0, 1, 2 }, // 24
+		{  7, 0, 4, 3, 2, 1, 5 }, // 25
+		{ 35, 1, 3, 5, 0, 2, 4 }, // 26
+		{ 15, 0, 3, 1, 4, 2, 5 }, // 27
+		{ 35, 2, 4, 0, 5, 1, 3 }, // 28
+		{ 15, 4, 0, 2, 3, 5, 1 }, // 29
+		{ 51, 1, 2, 0, 5, 3, 4 }, // 30 
+		{ 31, 0, 1, 2, 3, 4, 5 }, // 31 : 0,1,2,3,4 over = standard case
+		{  1, 5, 2, 1, 4, 3, 0 }, // 32
+		{ 33, 0, 1, 2, 3, 4, 5 }, // 33 : 0,5 over (opp) = standard case
+		{  3, 1, 5, 2, 3, 0, 4 }, // 34
+		{ 35, 0, 1, 2, 3, 4, 5 }, // 35 : 0,1,5 over (opp) = standard case
+		{  3, 2, 5, 4, 1, 0, 3 }, // 36
+		{ 35, 0, 2, 4, 1, 3, 5 }, // 37
+		{  7, 1, 5, 2, 3, 0, 4 }, // 38
+		{ 15, 2, 1, 5, 0, 4, 3 }, // 39
+		{  3, 3, 5, 1, 4, 0, 2 }, // 40
+		{ 35, 0, 3, 1, 4, 2, 5 }, // 41
+		{  7, 1, 3, 5, 0, 2, 4 }, // 42
+		{ 15, 3, 1, 0, 5, 4, 2 }, // 43
+		{ 35, 2, 5, 4, 1, 0, 3 }, // 44
+		{ 51, 0, 2, 4, 1, 3, 5 }, // 45  
+		{ 15, 1, 5, 2, 3, 0, 4 }, // 46
+		{ 31, 1, 2, 0, 5, 3, 4 }, // 47
+		{  3, 4, 5, 3, 2, 0, 1 }, // 48
+		{ 35, 0, 4, 3, 2, 1, 5 }, // 49
+		{ 35, 1, 5, 2, 3, 0, 4 }, // 50
+		{ 51, 0, 1, 2, 3, 4, 5 }, // 51 : 0,1,4,5 over (opp) = standard case
+		{  7, 2, 5, 4, 1, 0, 3 }, // 52
+		{ 15, 2, 4, 0, 5, 1, 3 }, // 53
+		{ 15, 2, 5, 4, 1, 0, 3 }, // 54
+		{ 31, 2, 0, 1, 4, 5, 3 }, // 55
+		{  7, 3, 4, 5, 0, 1, 2 }, // 56
+		{ 15, 4, 3, 0, 5, 2, 1 }, // 57
+		{ 15, 5, 3, 4, 1, 2, 0 }, // 58
+		{ 31, 3, 1, 0, 5, 4, 2 }, // 59
+		{ 15, 4, 5, 3, 2, 0, 1 }, // 60
+		{ 31, 4, 0, 2, 3, 5, 1 }, // 61
+		{ 31, 5, 1, 3, 2, 4, 0 }, // 62
+		{  0, 0, 0, 0, 0, 0, 0 }  // 63
+	};
+
 	ENTER(Isosurface_builder::cross_octahedron);
 	int return_code = 1;
 	Point_index p[6];
@@ -585,23 +750,117 @@ int Isosurface_builder::cross_octahedron(int i, int j, int k)
 	p[3].set(i    , j    , k + 1);
 	p[4].set(i + 1, j    , k + 1);
 	p[5].set(i    , j + 1, k + 1);
-	bool first_above = (get_scalar(p[0]) > iso_value);
-	int n;
-	for (n = 1; n < 6; n++)
+	int unrotated_case =	
+		((get_scalar(p[0]) > iso_value) ?  1 : 0) +
+		((get_scalar(p[1]) > iso_value) ?  2 : 0) +
+		((get_scalar(p[2]) > iso_value) ?  4 : 0) +
+		((get_scalar(p[3]) > iso_value) ?  8 : 0) +
+		((get_scalar(p[4]) > iso_value) ? 16 : 0) +
+		((get_scalar(p[5]) > iso_value) ? 32 : 0);
+	int final_case = oct_case[unrotated_case][0];
+	if (0 < final_case)
 	{
-		if ((get_scalar(p[n]) > iso_value) != first_above)
+		Point_index mp0 = p[oct_case[unrotated_case][1]];
+		Point_index mp1 = p[oct_case[unrotated_case][2]];
+		Point_index mp2 = p[oct_case[unrotated_case][3]];
+		Point_index mp3 = p[oct_case[unrotated_case][4]];
+		Point_index mp4 = p[oct_case[unrotated_case][5]];
+		Point_index mp5 = p[oct_case[unrotated_case][6]];
+		const Iso_vertex *v1, *v2, *v3, *v4, *v5, *v6;
+		switch (final_case)
 		{
+		case 1:
+			// 0 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp0, mp1));
+			v2 = get_line_crossing(Point_index_pair(mp0, mp2));
+			v3 = get_line_crossing(Point_index_pair(mp0, mp4));
+			v4 = get_line_crossing(Point_index_pair(mp0, mp3));
+			mesh.add_quadrilateral(v1, v2, v3, v4);
+			break;
+		case 3:
+			// 0,1 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp0, mp2));
+			v2 = get_line_crossing(Point_index_pair(mp0, mp4));
+			v3 = get_line_crossing(Point_index_pair(mp0, mp3));
+			v4 = get_line_crossing(Point_index_pair(mp1, mp3));
+			v5 = get_line_crossing(Point_index_pair(mp1, mp5));
+			v6 = get_line_crossing(Point_index_pair(mp1, mp2));
+			mesh.add_hexagon(v1, v2, v3, v4, v5, v6);
+			break;
+		case 7:
+			// 0,1,2 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp0, mp4));
+			v2 = get_line_crossing(Point_index_pair(mp0, mp3));
+			v3 = get_line_crossing(Point_index_pair(mp1, mp3));
+			v4 = get_line_crossing(Point_index_pair(mp1, mp5));
+			v5 = get_line_crossing(Point_index_pair(mp2, mp5));
+			v6 = get_line_crossing(Point_index_pair(mp2, mp4));
+			mesh.add_hexagon(v1, v2, v3, v4, v5, v6);
+			break;
+		case 15:
+			// 0,1,2,3 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp0, mp4));
+			v2 = get_line_crossing(Point_index_pair(mp3, mp4));
+			v3 = get_line_crossing(Point_index_pair(mp3, mp5));
+			v4 = get_line_crossing(Point_index_pair(mp1, mp5));
+			v5 = get_line_crossing(Point_index_pair(mp2, mp5));
+			v6 = get_line_crossing(Point_index_pair(mp2, mp4));
+			mesh.add_hexagon(v1, v2, v3, v4, v5, v6);
+			break;
+		case 31:
+			// 0,1,2,3,4 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp5, mp1));
+			v2 = get_line_crossing(Point_index_pair(mp5, mp2));
+			v3 = get_line_crossing(Point_index_pair(mp5, mp4));
+			v4 = get_line_crossing(Point_index_pair(mp5, mp3));
+			mesh.add_quadrilateral(v1, v2, v3, v4);
+			break;
+		case 33:
+			// 0,5 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp0, mp1));
+			v2 = get_line_crossing(Point_index_pair(mp0, mp2));
+			v3 = get_line_crossing(Point_index_pair(mp0, mp4));
+			v4 = get_line_crossing(Point_index_pair(mp0, mp3));
+			mesh.add_quadrilateral(v1, v2, v3, v4);
+			v1 = get_line_crossing(Point_index_pair(mp5, mp1));
+			v2 = get_line_crossing(Point_index_pair(mp5, mp3));
+			v3 = get_line_crossing(Point_index_pair(mp5, mp4));
+			v4 = get_line_crossing(Point_index_pair(mp5, mp2));
+			mesh.add_quadrilateral(v1, v2, v3, v4);
+			break;
+		case 35:
+			// 0,1,5 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp0, mp2));
+			v2 = get_line_crossing(Point_index_pair(mp0, mp4));
+			v3 = get_line_crossing(Point_index_pair(mp0, mp3));
+			v4 = get_line_crossing(Point_index_pair(mp1, mp3));
+			v5 = get_line_crossing(Point_index_pair(mp1, mp2));
+			mesh.add_pentagon(v1, v2, v3, v4, v5);
+			v1 = v5;
+			v2 = v4;
+			v3 = get_line_crossing(Point_index_pair(mp5, mp3));
+			v4 = get_line_crossing(Point_index_pair(mp5, mp4));
+			v5 = get_line_crossing(Point_index_pair(mp5, mp2));
+			mesh.add_pentagon(v1, v2, v3, v4, v5);
+			break;
+		case 51:
+			// 0,1,4,5 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp2, mp0));
+			v2 = get_line_crossing(Point_index_pair(mp2, mp4));
+			v3 = get_line_crossing(Point_index_pair(mp2, mp5));
+			v4 = get_line_crossing(Point_index_pair(mp2, mp1));
+			mesh.add_quadrilateral(v1, v2, v3, v4);
+			v1 = get_line_crossing(Point_index_pair(mp3, mp0));
+			v2 = get_line_crossing(Point_index_pair(mp3, mp1));
+			v3 = get_line_crossing(Point_index_pair(mp3, mp5));
+			v4 = get_line_crossing(Point_index_pair(mp3, mp4));
+			mesh.add_quadrilateral(v1, v2, v3, v4);
+			break;
+		default:
+			display_message(ERROR_MESSAGE,
+				"Isosurface_builder::cross_octahedron.  Unknown case");
 			break;
 		}
-	}
-	if (n < 6)
-	{
-		// GRC temp: subdivide into 4 tetrahedra. Note: non-symmetric
-		// Future: handle as special case
-		cross_tetrahedron(p[0], p[5], p[1], p[3]);
-		cross_tetrahedron(p[0], p[5], p[2], p[1]);
-		cross_tetrahedron(p[0], p[5], p[4], p[2]);
-		cross_tetrahedron(p[0], p[5], p[3], p[4]);
 	}
 	LEAVE;
 
@@ -729,7 +988,7 @@ int create_iso_surfaces_from_FE_element_new(struct FE_element *element,
 	struct Computed_field *texture_coordinate_field,
 	struct GT_object *graphics_object, enum Render_type render_type)
 {
-	ENTER(create_iso_surfaces_from_FE_element2);
+	ENTER(create_iso_surfaces_from_FE_element_new);
 	int return_code = 0;
 	if ((NULL != element) && (3 == get_FE_element_dimension(element)) &&
 		Computed_field_has_3_components(coordinate_field, NULL) &&
@@ -826,9 +1085,9 @@ int create_iso_surfaces_from_FE_element_new(struct FE_element *element,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"create_iso_surfaces_from_FE_element2.  Invalid argument(s)");
+			"create_iso_surfaces_from_FE_element_new.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* create_iso_surfaces_from_FE_element2 */
+} /* create_iso_surfaces_from_FE_element_new */
