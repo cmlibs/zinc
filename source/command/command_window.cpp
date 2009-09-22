@@ -1665,9 +1665,9 @@ public:
   {
 		 wxXmlInit_command_window();
 		 command_window->wx_command_window = NULL;
-		 this->SetIcon(cmiss_icon_xpm);
 		 wxXmlResource::Get()->LoadFrame(this,
 				(wxWindow *)NULL, _T("CmguiCommandWindow"));
+		 this->SetIcon(cmiss_icon_xpm);
 		 output_list = XRCCTRL(*this,"OutputWindow", wxTextCtrl);
 		 mouse_event_data.left = 0;
 		 mouse_event_data.d_click = 0;
