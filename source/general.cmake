@@ -21,11 +21,9 @@ SET( GENERAL_SRCS
 	source/general/mystring.c
 	source/general/octree.c
 	source/general/statistics.c
-	source/general/alt_vfscanf.c
 	source/general/time.cpp
 	source/general/value.c )
 SET( GENERAL_HDRS
-	source/general/alt_vfscanf.h
 	source/general/any_object.h
 	source/general/any_object_definition.h
 	source/general/any_object_private.h
@@ -73,7 +71,12 @@ SET( GENERAL_HDRS
 	source/general/statistics.h
 	source/general/time.h
 	source/general/value.h )
-
+IF( NOT HAVE_VFSCANF )
+	SET( GENERAL_SRCS ${GENERAL_SRCS}
+		source/general/alt_vfscanf.c )
+	SET( GENERAL_HDRS ${GENERAL_HDRS}
+		source/general/alt_vfscanf.h )
+ENDIF( NOT HAVE_VFSCANF )
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	SET( GENERAL_SRCS ${GENERAL_SRCS} source/general/photogrammetry.c )
 	SET( GENERAL_HDRS ${GENERAL_HDRS} source/general/photogrammetry.h )

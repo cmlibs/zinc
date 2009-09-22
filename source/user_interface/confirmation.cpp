@@ -559,12 +559,12 @@ This routine supplies a file selection dialog window
 					{
 						if (confirmation.filename)
 						{
-							_mkdir(confirmation.filename
+							mkdir(confirmation.filename
 #if defined (UNIX)
 								,S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH
 #endif /* defined (UNIX) */
 								);
-							if (0==_chdir(confirmation.filename))
+							if (0==chdir(confirmation.filename))
 							{
 								filename=confirmation.filename;
 							}
