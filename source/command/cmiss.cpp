@@ -12236,7 +12236,6 @@ Executes a GFX EXPORT command.
 	return (return_code);
 } /* execute_command_gfx_export */
 
-#if defined (USE_NETGEN)
 void create_triangle_mesh(struct Cmiss_region *region, Triangle_mesh *trimesh)
 {
 	struct FE_region *fe_region = Cmiss_region_get_FE_region(region);
@@ -12336,13 +12335,16 @@ static int gfx_mesh_graphics(struct Parse_state *state,
 		{
 			scene = ACCESS(Scene)(command_data->default_scene);
 			option_table = CREATE(Option_table)();
-			char triangle_flag = 0;
+			int triangle_flag = 0;
+			char clear = 0;
 			Option_table_add_entry(option_table, "region", &region_path,
 				command_data->root_region, set_Cmiss_region_path);
 			Option_table_add_entry(option_table, "scene", &scene,
 				command_data->scene_manager, set_Scene_including_sub_objects);
-			Option_table_add_entry(option_table, "triangle", &triangle_flag,
-				(void *)NULL, set_char_flag);
+			Option_table_add_switch(option_table,"triangle","tetrahedral",
+				&triangle_flag);
+			Option_table_add_entry(option_table,"clear_region",
+				&clear,(void *)NULL,set_char_flag);
 			if (return_code = Option_table_multi_parse(option_table,state))
 			{
 				float tolerance = 0.000001;
@@ -12361,6 +12363,40 @@ static int gfx_mesh_graphics(struct Parse_state *state,
 					return_code =
 						renderer.Scene_execute(scene);
 					Triangle_mesh *trimesh = renderer.get_triangle_mesh();
+					if (clear)
+					{
+						Cmiss_region *last_region = command_data->root_region;
+						const char *temp_region_path = region_path;
+						Cmiss_region *parent_region = NULL;
+						while (temp_region_path &&
+							(return_code = Cmiss_region_get_child_region_from_path(
+								 last_region, region_path, &region, &temp_region_path)) &&
+							(region != last_region))
+						{
+							parent_region = last_region;
+							last_region = region;
+						}
+						
+						if (return_code)
+						{
+							if (region != parent_region)
+							{
+								int pos;
+								Cmiss_region_get_child_region_number(parent_region, region, &pos);
+								return_code =
+									Cmiss_region_remove_child_region(parent_region, region);
+								if (return_code)
+								{
+									struct Cmiss_region *temp_region = Cmiss_region_create_share_globals(
+										command_data->root_region);
+									Cmiss_region_add_child_region(
+										command_data->root_region, temp_region, region_path, pos);
+									DEACCESS(Cmiss_region)(&temp_region);
+								}
+							}
+						}
+
+					}
 					if (Cmiss_region_get_region_from_path(command_data->root_region,
 						region_path, &region))
 					{
@@ -12370,8 +12406,18 @@ static int gfx_mesh_graphics(struct Parse_state *state,
 						}
 						else
 						{
+#if defined (USE_NETGEN)
 							generate_mesh_netgen(Cmiss_region_get_FE_region(region), trimesh);
+#else 
+							display_message(ERROR_MESSAGE,
+								"gfx_mesh_graphics. Does not support tetrahedral mesh yet. To use this feature"
+								" please compile cmgui with Netgen");	
+#endif /* defined (USE_NETGEN) */
 						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "gfx_mesh_graphics. Unknown region: %s", region_path);
 					}
 				}
 			}
@@ -12382,13 +12428,13 @@ static int gfx_mesh_graphics(struct Parse_state *state,
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"gfx_export_triangle_mesh.  Invalid argument(s)");
+				"gfx_mesh_graphics.  Invalid argument(s)");
 			return_code=0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_export_triangle_mesh.  Missing state");
+		display_message(ERROR_MESSAGE,"gfx_mesh_graphics.  Missing state");
 		return_code=0;
 	}
 	LEAVE;
@@ -12428,7 +12474,6 @@ Executes a GFX EXPORT command.
 
 	return (return_code);
 } /* execute_command_gfx_export */
-#endif /* defined (USE_NETGEN) */
 
 int gfx_evaluate(struct Parse_state *state, void *dummy_to_be_modified,
 	void *command_data_void)
@@ -21255,10 +21300,9 @@ Executes a GFX command.
 				command_data_void, execute_command_gfx_select);
 			Option_table_add_entry(option_table, "set", NULL,
 				command_data_void, execute_command_gfx_set);
-#if defined (USE_NETGEN)
 			Option_table_add_entry(option_table, "mesh", NULL,
 				command_data_void, execute_command_gfx_mesh);
-#endif /* defined (USE_NETGEN) */
+
 			Option_table_add_entry(option_table, "smooth", NULL,
 				command_data_void, execute_command_gfx_smooth);
 			Option_table_add_entry(option_table, "timekeeper", NULL,
