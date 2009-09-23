@@ -435,6 +435,59 @@ private:
 	{
 		plane_scalars[(p.k & 1)*plane_size + p.j*(number_in_xi1 + 1) + p.i] = scalar_value;
 	}
+	
+	/***************************************************************************//**
+	 * Get the mean scalar value of four points, used to get the interpolated scalar
+	 * value at the centre of a quadrilateral. Adds scalars from maximum to minimum
+	 * so result is identical for different ordering of the same points, needed to
+	 * ensure same ambiguity resolution case used for neighbouring faces, where even
+	 * small numerical rounding differences can leave holes in surface.
+	 */
+	double get_scalar_mean4(const Point_index& p1, const Point_index& p2,
+		const Point_index& p3, const Point_index& p4)
+	{
+		double s1 = get_scalar(p1);
+		double s2 = get_scalar(p2);
+		double s3 = get_scalar(p3);
+		double s4 = get_scalar(p4);
+		if (s4 > s3)
+		{
+			double temp = s3;
+			s3 = s4;
+			s4 = temp;
+		}
+		if (s3 > s2)
+		{
+			double temp = s2;
+			s2 = s3;
+			s3 = temp;
+		}
+		if (s2 > s1)
+		{
+			double temp = s1;
+			s1 = s2;
+			s2 = temp;
+		}
+		if (s4 > s3)
+		{
+			double temp = s3;
+			s3 = s4;
+			s4 = temp;
+		}
+		if (s3 > s2)
+		{
+			double temp = s2;
+			s2 = s3;
+			s3 = temp;
+		}
+		if (s4 > s3)
+		{
+			double temp = s3;
+			s3 = s4;
+			s4 = temp;
+		}
+		return (s1 + s2 + s3 + s4)*0.25;
+	}
 
 	void get_xi(const Point_index& p, FE_value *xi) const
 	{
@@ -449,6 +502,11 @@ private:
 	int cross_cube(int i, int j, int k);
 
 	int cross_octahedron(int i, int j, int k);
+
+	int cross_triangle_wedge(
+		const Point_index& p0, const Point_index& p1, const Point_index& p2,
+		const Point_index& p3, const Point_index& p4, const Point_index& p5);
+
 };
 
 Isosurface_builder::Isosurface_builder(FE_element *element, FE_value time,
@@ -574,18 +632,18 @@ void Isosurface_builder::cross_tetrahedron(const Point_index& p1,
 		{ 0, 0, 0, 0, 0 }, // [nothing]   > iso_value
 		{ 1, 0, 1, 2, 3 }, // p1          > iso_value
 		{ 1, 1, 0, 3, 2 }, //    p2       > iso_value
-		{ 2, 0, 1, 2, 3 }, // p1 p2       > iso_value
+		{ 3, 0, 1, 2, 3 }, // p1 p2       > iso_value
 		{ 1, 2, 0, 1, 3 }, //       p3    > iso_value
-		{ 2, 0, 2, 3, 1 }, // p1    p3    > iso_value
-		{ 2, 1, 2, 0, 3 }, //    p2 p3    > iso_value
-		{ 3, 0, 1, 2, 3 }, // p1 p2 p3    > iso_value
+		{ 3, 0, 2, 3, 1 }, // p1    p3    > iso_value
+		{ 3, 1, 2, 0, 3 }, //    p2 p3    > iso_value
+		{ 7, 0, 1, 2, 3 }, // p1 p2 p3    > iso_value
 		{ 1, 3, 0, 2, 1 }, //          p4 > iso_value
-		{ 2, 0, 3, 1, 2 }, // p1       p4 > iso_value
-		{ 2, 1, 3, 2, 0 }, //    p2    p4 > iso_value
-		{ 3, 0, 3, 1, 2 }, // p1 p2    p4 > iso_value
-		{ 2, 2, 3, 0, 1 }, //       p3 p4 > iso_value
-		{ 3, 0, 2, 3, 1 }, // p1    p3 p4 > iso_value
-		{ 3, 1, 3, 2, 0 }, //    p2 p3 p4 > iso_value
+		{ 3, 0, 3, 1, 2 }, // p1       p4 > iso_value
+		{ 3, 1, 3, 2, 0 }, //    p2    p4 > iso_value
+		{ 7, 0, 3, 1, 2 }, // p1 p2    p4 > iso_value
+		{ 3, 2, 3, 0, 1 }, //       p3 p4 > iso_value
+		{ 7, 0, 2, 3, 1 }, // p1    p3 p4 > iso_value
+		{ 7, 1, 3, 2, 0 }, //    p2 p3 p4 > iso_value
 		{ 0, 0, 0, 0, 0 }, // p1 p2 p3 p4 > iso_value
 	}
 	
@@ -612,7 +670,7 @@ void Isosurface_builder::cross_tetrahedron(const Point_index& p1,
 			v3 = get_line_crossing(Point_index_pair(mp1, mp4));
 			mesh.add_triangle(v1,v3,v2);
 			break;
-		case 2:
+		case 3:
 			// 1, 2 > iso_value 
 			v1 = get_line_crossing(Point_index_pair(mp1, mp4));
 			v2 = get_line_crossing(Point_index_pair(mp1, mp3));
@@ -620,7 +678,7 @@ void Isosurface_builder::cross_tetrahedron(const Point_index& p1,
 			v4 = get_line_crossing(Point_index_pair(mp2, mp4));
 			mesh.add_quadrilateral(v1, v2, v3, v4);
 			break;
-		case 3:
+		case 7:
 			v1 = get_line_crossing(Point_index_pair(mp1, mp4));
 			v2 = get_line_crossing(Point_index_pair(mp2, mp4));
 			v3 = get_line_crossing(Point_index_pair(mp3, mp4));
@@ -858,7 +916,292 @@ int Isosurface_builder::cross_octahedron(int i, int j, int k)
 			break;
 		default:
 			display_message(ERROR_MESSAGE,
-				"Isosurface_builder::cross_octahedron.  Unknown case");
+				"Isosurface_builder::cross_octahedron.  Unknown case %d", final_case);
+			return_code = 0;
+			break;
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+/**
+ *      3_____5
+ *      |\   /|
+ *      | \ / |
+ *      |  4  |
+ *      0..|..2
+ *       \ | /
+ *        \|/
+ *         1
+ */
+int Isosurface_builder::cross_triangle_wedge(
+	const Point_index& p0, const Point_index& p1, const Point_index& p2,
+	const Point_index& p3, const Point_index& p4, const Point_index& p5)
+{
+	// first column is final case in standard orientation
+	// columns 1-6 are indexes of initial vertices in order to rotate to final case
+	static const int tri_case[64][7] =
+	{
+		{  0, 0, 0, 0, 0, 0, 0 }, //  0
+		{  1, 0, 1, 2, 3, 4, 5 }, //  1 : 0 over = standard case
+		{  1, 1, 2, 0, 4, 5, 3 }, //  2
+		{  3, 0, 1, 2, 3, 4, 5 }, //  3 : 0,1 over = standard case
+		{  1, 2, 0, 1, 5, 3, 4 }, //  4
+		{  3, 2, 0, 1, 5, 3, 4 }, //  5
+		{  3, 1, 2, 0, 4, 5, 3 }, //  6
+		{  7, 0, 1, 2, 3, 4, 5 }, //  7 : 0,1,2 over = standard case
+		{  1, 3, 5, 4, 0, 2, 1 }, //  8
+		{  9, 0, 1, 2, 3, 4, 5 }, //  9 : 0,3 over = standard case
+		{ 33, 1, 2, 0, 4, 5, 3 }, // 10
+		{ 11, 0, 1, 2, 3, 4, 5 }, // 11 : 0,1,3 over = standard case
+		{ 17, 2, 0, 1, 5, 3, 4 }, // 12
+		{ 19, 2, 0, 1, 5, 3, 4 }, // 13
+		{ 35, 1, 2, 0, 4, 5, 3 }, // 14
+		{ 15, 0, 1, 2, 3, 4, 5 }, // 15 : 0,1,2,3 over = standard case
+		{  1, 4, 3, 5, 1, 0, 2 }, // 16
+		{ 17, 0, 1, 2, 3, 4, 5 }, // 17 : 0,4 over = standard case
+		{  9, 1, 2, 0, 4, 5, 3 }, // 18
+		{ 19, 0, 1, 2, 3, 4, 5 }, // 19 : 0,1,4 over = standard case
+		{ 33, 2, 0, 1, 5, 3, 4 }, // 20
+		{ 35, 2, 0, 1, 5, 3, 4 }, // 21
+		{ 11, 1, 2, 0, 4, 5, 3 }, // 22
+		{ 15, 1, 2, 0, 4, 5, 3 }, // 23
+		{  3, 4, 3, 5, 1, 0, 2 }, // 24
+		{ 19, 4, 3, 5, 1, 0, 2 }, // 25
+		{ 11, 4, 3, 5, 1, 0, 2 }, // 26
+		{ 27, 0, 1, 2, 3, 4, 5 }, // 27 : 0,1,3,4 over = standard case
+		{ 35, 4, 3, 5, 1, 0, 2 }, // 28
+		{ 51, 2, 0, 1, 5, 3, 4 }, // 29
+		{ 43, 1, 2, 0, 4, 5, 3 }, // 30 
+		{ 31, 0, 1, 2, 3, 4, 5 }, // 31 : 0,1,2,3,4 over = standard case
+		{  1, 5, 4, 3, 2, 1, 0 }, // 32
+		{ 33, 0, 1, 2, 3, 4, 5 }, // 33 : 0,5 over = standard case
+		{ 17, 1, 2, 0, 4, 5, 3 }, // 34
+		{ 35, 0, 1, 2, 3, 4, 5 }, // 35 : 0,1,5 over = standard case
+		{  9, 2, 0, 1, 5, 3, 4 }, // 36
+		{ 11, 2, 0, 1, 5, 3, 4 }, // 37
+		{ 19, 1, 2, 0, 4, 5, 3 }, // 38
+		{ 15, 2, 0, 1, 5, 3, 4 }, // 39
+		{  3, 3, 5, 4, 0, 2, 1 }, // 40
+		{ 11, 3, 5, 4, 0, 2, 1 }, // 41
+		{ 35, 3, 5, 4, 0, 2, 1 }, // 42
+		{ 43, 0, 1, 2, 3, 4, 5 }, // 43 : 0,1,3,5 over = standard case
+		{ 19, 3, 5, 4, 0, 2, 1 }, // 44
+		{ 27, 2, 0, 1, 5, 3, 4 }, // 45
+		{ 51, 1, 2, 0, 4, 5, 3 }, // 46
+		{ 31, 2, 0, 1, 5, 3, 4 }, // 47
+		{  3, 5, 4, 3, 2, 1, 0 }, // 48
+		{ 35, 5, 4, 3, 2, 1, 0 }, // 49
+		{ 19, 5, 4, 3, 2, 1, 0 }, // 50
+		{ 51, 0, 1, 2, 3, 4, 5 }, // 51 : 0,1,4,5 over = standard case
+		{ 11, 5, 4, 3, 2, 1, 0 }, // 52
+		{ 43, 2, 0, 1, 5, 3, 4 }, // 53
+		{ 27, 1, 2, 0, 4, 5, 3 }, // 54
+		{ 31, 1, 2, 0, 4, 5, 3 }, // 55
+		{  7, 5, 4, 3, 2, 1, 0 }, // 56
+		{ 15, 3, 5, 4, 0, 2, 1 }, // 57
+		{ 15, 4, 3, 5, 1, 0, 2 }, // 58
+		{ 31, 4, 3, 5, 1, 0, 2 }, // 59
+		{ 15, 5, 4, 3, 2, 1, 0 }, // 60
+		{ 31, 3, 5, 4, 0, 2, 1 }, // 61
+		{ 31, 5, 4, 3, 2, 1, 0 }, // 62
+		{  0, 0, 0, 0, 0, 0, 0 }  // 63
+	};
+	
+	ENTER(Isosurface_builder::cross_triangle_wedge);
+	int return_code = 1;
+	int unrotated_case =	
+		((get_scalar(p0) > iso_value) ?  1 : 0) +
+		((get_scalar(p1) > iso_value) ?  2 : 0) +
+		((get_scalar(p2) > iso_value) ?  4 : 0) +
+		((get_scalar(p3) > iso_value) ?  8 : 0) +
+		((get_scalar(p4) > iso_value) ? 16 : 0) +
+		((get_scalar(p5) > iso_value) ? 32 : 0);
+	int final_case = tri_case[unrotated_case][0];
+	if (0 < final_case)
+	{
+		Point_index mp[6] = { p0, p1, p2, p3, p4, p5 };
+		Point_index mp0 = mp[tri_case[unrotated_case][1]];
+		Point_index mp1 = mp[tri_case[unrotated_case][2]];
+		Point_index mp2 = mp[tri_case[unrotated_case][3]];
+		Point_index mp3 = mp[tri_case[unrotated_case][4]];
+		Point_index mp4 = mp[tri_case[unrotated_case][5]];
+		Point_index mp5 = mp[tri_case[unrotated_case][6]];
+		const Iso_vertex *v1, *v2, *v3, *v4, *v5, *v6, *v7;
+		switch (final_case)
+		{
+		case 1: // 0 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp0, mp1));
+			v2 = get_line_crossing(Point_index_pair(mp0, mp3));
+			v3 = get_line_crossing(Point_index_pair(mp0, mp2));
+			mesh.add_triangle(v1, v2, v3);
+			break;
+		case 3: // 0,1 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp0, mp2));
+			v2 = get_line_crossing(Point_index_pair(mp1, mp2));
+			v3 = get_line_crossing(Point_index_pair(mp1, mp4));
+			v4 = get_line_crossing(Point_index_pair(mp0, mp3));
+			mesh.add_quadrilateral(v1, v2, v3, v4);
+			break;
+		case 7: // 0,1,2 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp0, mp3));
+			v2 = get_line_crossing(Point_index_pair(mp2, mp5));
+			v3 = get_line_crossing(Point_index_pair(mp1, mp4));
+			mesh.add_triangle(v1, v2, v3);
+			break;
+		case 9: // 0,3 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp0, mp1));
+			v2 = get_line_crossing(Point_index_pair(mp3, mp4));
+			v3 = get_line_crossing(Point_index_pair(mp3, mp5));
+			v4 = get_line_crossing(Point_index_pair(mp0, mp2));
+			mesh.add_quadrilateral(v1, v2, v3, v4);
+			break;
+		case 11: // 0,1,3 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp0, mp2));
+			v2 = get_line_crossing(Point_index_pair(mp1, mp2));
+			v3 = get_line_crossing(Point_index_pair(mp1, mp4));
+			v4 = get_line_crossing(Point_index_pair(mp3, mp4));
+			v5 = get_line_crossing(Point_index_pair(mp3, mp5));
+			mesh.add_pentagon(v1, v2, v3, v4, v5);
+			break;
+		case 15: // 0,1,2,3 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp1, mp4));
+			v2 = get_line_crossing(Point_index_pair(mp3, mp4));
+			v3 = get_line_crossing(Point_index_pair(mp3, mp5));
+			v4 = get_line_crossing(Point_index_pair(mp2, mp5));
+			mesh.add_quadrilateral(v1, v2, v3, v4);
+			break;
+		case 17: // 0,4 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp0, mp3));
+			v2 = get_line_crossing(Point_index_pair(mp0, mp2));
+			v3 = get_line_crossing(Point_index_pair(mp0, mp1));
+			v4 = get_line_crossing(Point_index_pair(mp4, mp1));
+			v5 = get_line_crossing(Point_index_pair(mp4, mp5));
+			v6 = get_line_crossing(Point_index_pair(mp4, mp3));
+			// resolve ambiguity
+			if (get_scalar_mean4(p0, p1, p3, p4) > iso_value)
+			{
+				mesh.add_hexagon(v1, v2, v3, v4, v5, v6);
+			}
+			else
+			{
+				mesh.add_triangle(v1, v2, v3);
+				mesh.add_triangle(v4, v5, v6);
+			}
+			break;
+		case 19: // 0,1,4 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp0, mp2));
+			v2 = get_line_crossing(Point_index_pair(mp1, mp2));
+			v3 = get_line_crossing(Point_index_pair(mp4, mp5));
+			v4 = get_line_crossing(Point_index_pair(mp4, mp3));
+			v5 = get_line_crossing(Point_index_pair(mp0, mp3));
+			mesh.add_pentagon(v1, v2, v3, v4, v5);
+			break;
+		case 27: // 0,1,3,4 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp0, mp2));
+			v2 = get_line_crossing(Point_index_pair(mp1, mp2));
+			v3 = get_line_crossing(Point_index_pair(mp4, mp5));
+			v4 = get_line_crossing(Point_index_pair(mp3, mp5));
+			mesh.add_quadrilateral(v1, v2, v3, v4);
+			break;
+		case 31: // 0,1,2,3,4 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp5, mp2));
+			v2 = get_line_crossing(Point_index_pair(mp5, mp4));
+			v3 = get_line_crossing(Point_index_pair(mp5, mp3));
+			mesh.add_triangle(v1, v2, v3);
+			break;
+		case 33: // 0,5 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp0, mp2));
+			v2 = get_line_crossing(Point_index_pair(mp0, mp1));
+			v3 = get_line_crossing(Point_index_pair(mp0, mp3));
+			v4 = get_line_crossing(Point_index_pair(mp5, mp3));
+			v5 = get_line_crossing(Point_index_pair(mp5, mp4));
+			v6 = get_line_crossing(Point_index_pair(mp5, mp2));
+			// resolve ambiguity
+			if (get_scalar_mean4(p0, p2, p3, p5) > iso_value)
+			{
+				mesh.add_hexagon(v1, v2, v3, v4, v5, v6);
+			}
+			else
+			{
+				mesh.add_triangle(v1, v2, v3);
+				mesh.add_triangle(v4, v5, v6);
+			}
+			break;
+		case 35: // 0,1,5 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp0, mp3));
+			v2 = get_line_crossing(Point_index_pair(mp0, mp2));
+			v3 = get_line_crossing(Point_index_pair(mp1, mp2));
+			v4 = get_line_crossing(Point_index_pair(mp1, mp4));
+			v5 = get_line_crossing(Point_index_pair(mp5, mp2));
+			v6 = get_line_crossing(Point_index_pair(mp5, mp3));
+			v7 = get_line_crossing(Point_index_pair(mp5, mp4));
+			// resolve ambiguities
+			{
+				double mean1245 = get_scalar_mean4(p1, p2, p4, p5);
+				double mean0235 = get_scalar_mean4(p0, p2, p3, p5);
+				if ((mean1245 > iso_value) && (mean0235 > iso_value))
+				{
+					mesh.add_quadrilateral(v1, v6, v7, v4);
+					mesh.add_triangle(v2, v3, v5);
+				}
+				else // both faces non-positive crossing
+				{
+					mesh.add_quadrilateral(v1, v2, v3, v4);
+					if (mean1245 > iso_value)
+					{
+						mesh.add_quadrilateral(v3, v5, v7, v4);
+					}
+					else if (mean0235 > iso_value)
+					{
+						mesh.add_quadrilateral(v2, v1, v6, v5);
+					}
+					mesh.add_triangle(v5, v6, v7);
+				}
+			}
+			break;
+		case 43: // 0,1,3,5 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp5, mp2));
+			v2 = get_line_crossing(Point_index_pair(mp0, mp2));
+			v3 = get_line_crossing(Point_index_pair(mp1, mp2));
+			v4 = get_line_crossing(Point_index_pair(mp1, mp4));
+			v5 = get_line_crossing(Point_index_pair(mp3, mp4));
+			v6 = get_line_crossing(Point_index_pair(mp5, mp4));
+			// resolve ambiguity
+			if (get_scalar_mean4(p1, p2, p4, p5) > iso_value)
+			{
+				mesh.add_triangle(v1, v2, v3);
+				mesh.add_triangle(v4, v5, v6);
+			}
+			else
+			{
+				mesh.add_hexagon(v1, v2, v3, v4, v5, v6);
+			}
+			break;
+		case 51: // 0,1,4,5 > iso_value
+			v1 = get_line_crossing(Point_index_pair(mp0, mp2));
+			v2 = get_line_crossing(Point_index_pair(mp1, mp2));
+			v3 = get_line_crossing(Point_index_pair(mp5, mp2));
+			v4 = get_line_crossing(Point_index_pair(mp5, mp3));
+			v5 = get_line_crossing(Point_index_pair(mp4, mp3));
+			v6 = get_line_crossing(Point_index_pair(mp0, mp3));
+			// resolve ambiguity
+			if (get_scalar_mean4(p0, p2, p3, p5) > iso_value)
+			{
+				mesh.add_triangle(v1, v2, v3);
+				mesh.add_triangle(v4, v5, v6);
+			}
+			else
+			{
+				mesh.add_hexagon(v1, v2, v3, v4, v5, v6);
+			}
+			break;
+		default:
+			display_message(ERROR_MESSAGE,
+				"Isosurface_builder::cross_triangle_wedge.  Unknown case %d", final_case);
+			return_code = 0;
 			break;
 		}
 	}
@@ -950,15 +1293,39 @@ int Isosurface_builder::do_it()
 						}
 						else if (simplex12)
 						{
-							// not implemented
+							if (i < (mod_number_in_xi1 - 1))
+							{
+								cross_triangle_wedge(
+									Point_index(i + 1, j, k    ), Point_index(i + 1, j + 1, k    ), Point_index(i, j + 1, k    ),
+									Point_index(i + 1, j, k + 1), Point_index(i + 1, j + 1, k + 1), Point_index(i, j + 1, k + 1));
+							}
+							cross_triangle_wedge(
+								Point_index(i, j, k    ), Point_index(i + 1, j, k    ), Point_index(i, j + 1, k    ),
+								Point_index(i, j, k + 1), Point_index(i + 1, j, k + 1), Point_index(i, j + 1, k + 1));
 						}
 						else if (simplex23)
 						{
-							// not implemented
+							if (j < (mod_number_in_xi2 - 1))
+							{
+								cross_triangle_wedge(
+									Point_index(i    , j + 1, k), Point_index(i    , j + 1, k + 1), Point_index(i    , j, k + 1),
+									Point_index(i + 1, j + 1, k), Point_index(i + 1, j + 1, k + 1), Point_index(i + 1, j, k + 1));
+							}
+							cross_triangle_wedge(
+								Point_index(i    , j, k), Point_index(i    , j + 1, k), Point_index(i    , j, k + 1),
+								Point_index(i + 1, j, k), Point_index(i + 1, j + 1, k), Point_index(i + 1, j, k + 1));
 						}
 						else if (simplex13)
 						{
-							// not implemented
+							if (i < (mod_number_in_xi1 - 1))
+							{
+								cross_triangle_wedge(
+									Point_index(i + 1, j    , k), Point_index(i, j    , k + 1), Point_index(i + 1, j    , k + 1),
+									Point_index(i + 1, j + 1, k), Point_index(i, j + 1, k + 1), Point_index(i + 1, j + 1, k + 1));
+							}
+							cross_triangle_wedge(
+								Point_index(i, j    , k), Point_index(i, j    , k + 1), Point_index(i + 1, j    , k),
+								Point_index(i, j + 1, k), Point_index(i, j + 1, k + 1), Point_index(i + 1, j + 1, k));
 						}
 					}
 				}
