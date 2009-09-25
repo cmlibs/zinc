@@ -1963,7 +1963,7 @@ Not exposed in the API as this is really just a multiply with constant
 {
 	int i,number_of_source_fields,number_of_source_values;
 	FE_value *source_values;
-	Computed_field *field, **source_fields;
+	Computed_field *field, **source_fields = 0;
 
 	ENTER(Computed_field_create_scale);
 	if ( source_field && (0 < source_field->number_of_components) &&
@@ -2269,8 +2269,8 @@ DESCRIPTION :
 Evaluate the fields cache at the location
 ==============================================================================*/
 {
-	FE_value *temp, *temp2;
-	int element_dimension, i, j, return_code;
+	FE_value *temp = 0, *temp2 = 0;
+	int element_dimension = -1, i, j, return_code;
 
 	ENTER(Computed_field_clamp_maximum::evaluate_cache_at_location);
 	if (field && location && (field->number_of_source_fields == 1) && 
@@ -2475,7 +2475,7 @@ field rather than constant maximums before it is exposed in the API.
 {
 	int i,number_of_source_fields,number_of_source_values;
 	FE_value *source_values;
-	Computed_field *field, **source_fields;
+	Computed_field *field, **source_fields = 0;
 
 	ENTER(Computed_field_create_clamp_maximum);
 	if (source_field&&maximums&&
@@ -2767,8 +2767,8 @@ DESCRIPTION :
 Evaluate the fields cache at the location
 ==============================================================================*/
 {
-	FE_value *temp, *temp2;
-	int element_dimension, i, j, return_code;
+	FE_value *temp = 0, *temp2 = 0;
+	int element_dimension = -1, i, j, return_code;
 
 	ENTER(Computed_field_clamp_minimum::evaluate_cache_at_location);
 	if (field && location && (field->number_of_source_fields == 1) && 
@@ -2973,7 +2973,7 @@ field rather than constant minimums before it is exposed in the API.
 {
 	int i,number_of_source_fields,number_of_source_values;
 	FE_value *source_values;
-	Computed_field *field, **source_fields;
+	Computed_field *field, **source_fields = 0;
 
 	ENTER(Computed_field_create_clamp_minimum);
 	if (source_field&&minimums&&
@@ -3503,7 +3503,7 @@ Not exposed in the API is this is just an add with constant field.
 {
 	int i,number_of_source_fields,number_of_source_values;
 	FE_value *source_values;
-	Computed_field *field, **source_fields;
+	Computed_field *field, **source_fields = 0;
 
 	ENTER(Computed_field_create_offset);
 	if (source_field&&offsets&&
@@ -3959,7 +3959,7 @@ although its cache may be lost.
 {
 	int i, number_of_source_fields, number_of_source_values;
 	FE_value *source_values;
-	Computed_field *field, **source_fields;
+	Computed_field *field, **source_fields = 0;
 
 	ENTER(Computed_field_create_sum_components);
 	if ( source_field && (0 < source_field->number_of_components) &&
@@ -4451,7 +4451,7 @@ although its cache may be lost.
 {
 	int i, number_of_source_fields, number_of_source_values;
 	FE_value *source_values;
-	Computed_field *field, **source_fields;
+	Computed_field *field, **source_fields = 0;
 
 	ENTER(Computed_field_create_edit_mask);
 	if ( source_field && (0 < source_field->number_of_components) &&

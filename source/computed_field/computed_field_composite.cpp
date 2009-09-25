@@ -229,7 +229,7 @@ DESCRIPTION :
 Evaluate the fields cache at the location
 ==============================================================================*/
 {
-	FE_value *destination, *source;
+	FE_value *destination = 0, *source;
 	int component_number, number_of_derivatives, i, j, return_code,
 		source_field_number;
 
@@ -944,8 +944,8 @@ ACCESSed in the initial source_data.
 	const char *current_token;
 	char *field_component_name, *source_string, *temp_name;
 	FE_value *temp_source_values, value;
-	int component_no, components_to_add, i, number_of_characters, return_code,
-		source_field_number, source_value_number, *temp_source_field_numbers,
+	int component_no, components_to_add = -1, i, number_of_characters, return_code,
+		source_field_number, source_value_number = -1, *temp_source_field_numbers,
 		*temp_source_value_numbers;
 	struct Computed_field *field, **temp_source_fields;
 	struct Computed_field_composite_source_data *source_data;

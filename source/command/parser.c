@@ -188,7 +188,7 @@ LAST MODIFIED : 10 March 2000
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	struct Assign_variable *variable;
 
 	if (variable_address && (variable = *variable_address))
@@ -4615,7 +4615,7 @@ Now prints current contents of the vector with help.
 {
 	const char *current_token;
 	FE_value value, *values;
-	int i, number_of_components, return_code;
+	int i, number_of_components, return_code = 0;
 
 	ENTER(set_FE_value_array);
 	if (state && number_of_components_address_void)
@@ -5882,7 +5882,7 @@ LAST MODIFIED : 21 September 2006
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	int* expected_parameters;
 
 	ENTER(set_nothing);

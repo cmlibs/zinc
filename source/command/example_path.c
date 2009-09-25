@@ -85,7 +85,7 @@ needs cmgui and/or cm. The requirements are comma separated.  This too must
 be DEALLOCATED by the calling function.
 ==============================================================================*/
 {
-	char *return_string;
+	char *return_string = 0;
 #if defined (UNIX)
 #define BLOCKSIZE (100)
 	char end[3] = {04, 10, 00}, *error_message, *filename, last_char, *new_string,

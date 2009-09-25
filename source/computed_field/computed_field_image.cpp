@@ -305,13 +305,13 @@ Compare the type specific data
 
 int Computed_field_image::set_Texture_from_field()
 {
-	unsigned char *image_plane, *ptr;
-	unsigned short *two_bytes_image_plane, *two_bytes_ptr;
+	unsigned char *image_plane, *ptr = 0;
+	unsigned short *two_bytes_image_plane, *two_bytes_ptr = 0;
 	FE_value *data_values, values[3], xi[3];
 	float multiplier;
 	float	rgba[4], texture_depth, texture_height,
 		texture_width;
-	int image_width, image_height, image_depth, bytes_per_pixel, i,
+	int image_width = -1, image_height = -1, image_depth = -1, bytes_per_pixel, i,
 		image_width_bytes, j, k, number_of_components, dimension, *sizes,
 		return_code, tex_number_of_components,
 		use_pixel_location, texture_dimension, l;
@@ -760,7 +760,7 @@ Evaluate the fields cache at the location
 {
 	double texture_values[4];
 	FE_value texture_coordinate[3];
-	int i, number_of_components, return_code;
+	int i, number_of_components, return_code = 0;
 	ENTER(Computed_field_image::evaluate_cache_at_location);
 	if (field && location)
 	{
@@ -1591,7 +1591,7 @@ int Cmiss_field_image_storage_information_set_file_format(
 	Cmiss_field_image_storage_information_id storage_information,
 	enum Cmiss_field_image_storage_file_format format)
 {
-	enum Image_file_format cmgui_file_format;
+	enum Image_file_format cmgui_file_format = JPG_FILE_FORMAT;
 	int return_code;
 
 	return_code = 1;

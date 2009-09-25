@@ -464,9 +464,9 @@ Foley and van Damm p592.
 {
 	 ENTER(Colour_editor::colour_editor_wx_conversion);
 
-	 COLOUR_PRECISION temp_delta,temp_f,temp_old0,temp_p,temp_q,temp_t,temp_max,
+	 COLOUR_PRECISION temp_delta,temp_f,temp_old0,temp_p = 0,temp_q = 0,temp_t = 0,temp_max,
 			temp_min;
-	 int temp_i;
+	 int temp_i = 0;
 	 
 	 if (new_mode==old_mode)
 	 {

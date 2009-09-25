@@ -337,7 +337,7 @@ ultimate parent finite_element field.
 	Computed_field_find_element_xi_base_cache *cache;
 	struct Computed_field_iterative_find_element_xi_data find_element_xi_data;
 	struct FE_region *fe_region;
-	int i, number_of_xi, return_code;
+	int i, number_of_xi = -1, return_code;
 
 	ENTER(Computed_field_perform_find_element_xi);
 	fe_region = (struct FE_region *)NULL;

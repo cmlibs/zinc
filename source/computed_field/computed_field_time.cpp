@@ -807,7 +807,7 @@ Converts <field> into type COMPUTED_FIELD_TIME_VALUE (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	struct Computed_field *field;
 	Computed_field_time_package *computed_field_time_package;
 	Computed_field_modify_data *field_modify;

@@ -640,7 +640,7 @@ DESCRIPTION :
 Changes the command prompt provided to the user.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(set_command_prompt);
 	if (prompt && command_data)
@@ -1392,7 +1392,7 @@ Executes a GFX CREATE CYLINDERS command.
 	struct Element_to_cylinder_data element_to_cylinder_data;
 	struct Computed_field *coordinate_field, *data_field, *radius_field,
 		*texture_coordinate_field;
-	struct FE_region *fe_region;
+	struct FE_region *fe_region = 0;
 	struct Graphical_material *material;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
@@ -1751,7 +1751,7 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 	struct Element_discretization discretization;
 	struct Element_to_glyph_set_data element_to_glyph_set_data;
 	struct FE_field *native_discretization_field;
-	struct FE_region *fe_region;
+	struct FE_region *fe_region = 0;
 	struct Graphical_material *material;
 	struct GT_object *glyph,*graphics_object;
 	struct Spectrum *spectrum;
@@ -2275,7 +2275,7 @@ Executes a GFX CREATE GROUP command.
 ==============================================================================*/
 {
 	char *from_region_path, *name, *region_path;
-	int return_code, object_type;
+	int return_code = 0, object_type;
 	struct CM_element_type_Multi_range_data element_data;
 	struct Cmiss_region *base_region, *from_region, *region, *root_region;
 	struct FE_region *fe_region, *from_fe_region;
@@ -3082,7 +3082,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 {
 	char exterior_flag, *graphics_object_name, *region_path, *surface_data_region_path;
 	const char *render_type_string, *use_element_type_string, **valid_strings;
-	enum GT_object_type graphics_object_type;
+	enum GT_object_type graphics_object_type = g_POLYLINE;
 	enum Render_type render_type;
 	enum Use_element_type use_element_type;
 	float time;
@@ -3096,7 +3096,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 	struct Element_to_iso_scalar_data element_to_iso_scalar_data;
 	struct FE_element *first_element;
 	struct FE_field *native_discretization_field;
-	struct FE_region *fe_region, *surface_data_fe_region;
+	struct FE_region *fe_region = 0, *surface_data_fe_region;
 	struct Graphical_material *material;
 	struct GT_object *graphics_object;
 	struct MANAGER(Computed_field) *computed_field_manager;
@@ -3709,7 +3709,7 @@ Executes a GFX CREATE LINES command.
 	struct Element_discretization discretization;
 	struct Element_to_polyline_data element_to_polyline_data;
 	struct Computed_field *coordinate_field,*data_field;
-	struct FE_region *fe_region;
+	struct FE_region *fe_region = 0;
 	struct Graphical_material *material;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
@@ -4430,7 +4430,7 @@ If <use_data> is set, creating data points, otherwise creating node points.
 	struct Computed_field *coordinate_field, *data_field, *label_field,
 		*orientation_scale_field, *rc_coordinate_field, *variable_scale_field,
 		*wrapper_orientation_scale_field;
-	struct FE_region *fe_region;
+	struct FE_region *fe_region = 0;
 	struct Graphical_material *material;
 	struct GT_glyph_set *glyph_set;
 	struct GT_object *glyph,*graphics_object;
@@ -4742,7 +4742,7 @@ Executes a GFX CREATE REGION command.
 ==============================================================================*/
 {
 	char *name;
-	int return_code;
+	int return_code = 0;
 	struct Cmiss_region *region, *root_region;
 
 	ENTER(gfx_create_region);
@@ -5923,7 +5923,7 @@ Executes a GFX CREATE SURFACES command.
 	struct Computed_field *coordinate_field,*data_field,*texture_coordinate_field;
 	struct Element_discretization discretization;
 	struct Element_to_surface_data element_to_surface_data;
-	struct FE_region *fe_region;
+	struct FE_region *fe_region = 0;
 	struct Graphical_material *material;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
@@ -6681,7 +6681,7 @@ MAXIMUM_ELEMENT_XI_DIMENSIONS to be set.
 ==============================================================================*/
 {
 	const char *current_token;
-	int return_code, value, *value_address;
+	int return_code = 0, value, *value_address;
 
 	ENTER(set_element_dimension_or_all);
 	USE_PARAMETER(dummy_user_data);
@@ -7758,7 +7758,7 @@ editor at a time.  This implementation may be changed later.
 ==============================================================================*/
 {
 	const char *current_token;
-	int return_code;
+	int return_code = 0;
 	struct Cmiss_command_data *command_data;
 
 	ENTER(gfx_create_graphical_time_editor);
@@ -8428,7 +8428,7 @@ Executes an ATTACH command.
 {
 	const char *current_token;
 	char end_detection, *perl_action, start_detection;
-	int return_code;
+	int return_code = 0;
 	struct Io_device *device;
 	static struct Option_table *option_table;
 	struct Cmiss_command_data *command_data;
@@ -14143,7 +14143,7 @@ Executes a GFX LIST TRANSFORMATION.
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct Scene *scene;
-	struct Scene_object *scene_object;
+	struct Scene_object *scene_object = 0;
 	static struct Modifier_entry option_table[]=
 	{
 		{"commands",NULL,NULL,set_char_flag},
@@ -14544,7 +14544,7 @@ be specified at once.
 		*modify_region_path, remove_flag, selected_flag;
 	enum CM_element_type cm_element_type;
 	FE_value time;
-	int number_not_removed, return_code;
+	int number_not_removed, return_code = 0;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *conditional_field;
 	struct Cmiss_region *region;
@@ -15167,7 +15167,7 @@ use node_manager and node_selection.
 	char add_flag, all_flag, *from_region_path, *modify_region_path,
 		remove_flag, selected_flag;
 	FE_value time;
-	int number_not_removed, return_code;
+	int number_not_removed, return_code = 0;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *conditional_field;
 	struct Cmiss_region *region;
@@ -17066,7 +17066,7 @@ user, otherwise the elements file is read.
 		return_code;
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *region, *top_region;
-	struct FE_region *fe_region;
+	struct FE_region *fe_region = 0;
 	struct IO_stream *input_file;
 	struct Option_table *option_table;
 
@@ -23303,7 +23303,7 @@ DESCRIPTION :
 Executes a OPEN URL command.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 	struct Cmiss_command_data *command_data;
 
 	ENTER(execute_command_open_url);
@@ -24348,7 +24348,7 @@ DESCRIPTION :
 Display a cmgui error message.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(display_error_message);
 	if (command_window_void)
@@ -24378,7 +24378,7 @@ DESCRIPTION :
 Display a cmgui information message.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(display_error_message);
 	if (command_window_void)
@@ -24406,7 +24406,7 @@ Display a cmgui warning message.
 ???DB.  write_output is for the command_window - needs a better name.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(display_warning_message);
 	if (command_window_void)
@@ -25943,7 +25943,7 @@ DESCRIPTION :
 Process events until some events request the program to finish.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Cmiss_command_data_main_loop);
 	/* main processing / loop */

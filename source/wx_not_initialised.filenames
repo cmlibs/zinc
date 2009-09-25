@@ -1,17 +1,3 @@
-colour/colour_editor_wx.cpp
-comfile/comfile_window_wx.cpp
-command/cmiss.cpp
-command/example_path.c
-command/parser.c
-computed_field/computed_field.cpp
-computed_field/computed_field_arithmetic_operators.cpp
-computed_field/computed_field_composite.cpp
-computed_field/computed_field_find_xi.cpp
-computed_field/computed_field_finite_element.cpp
-computed_field/computed_field_image.cpp
-computed_field/computed_field_integration.cpp
-computed_field/computed_field_lookup.cpp
-computed_field/computed_field_time.cpp
 curve/curve.c
 element/element_operations.c
 element/element_point_viewer_wx.cpp

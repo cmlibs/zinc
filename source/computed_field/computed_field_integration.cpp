@@ -1428,7 +1428,7 @@ Evaluate the fields cache at the location
 	FE_value element_to_top_level[9],initial_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int coordinate_dimension, element_dimension, i, j, k, return_code, 
-		top_level_element_dimension;
+		top_level_element_dimension = -1;
 	CM_element_information cm;
 	Computed_field *coordinate_field, *integrand;
 

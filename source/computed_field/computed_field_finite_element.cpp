@@ -2299,7 +2299,7 @@ DESCRIPTION :
 Check the fe_field
 ==============================================================================*/
 {
-	int comp_no,return_code;
+	int comp_no,return_code = 0;
 
 	ENTER(Computed_field_node_value_is_defined_at_node);
 	if (field && location)
@@ -3726,7 +3726,7 @@ Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	FE_value *temp;
-	int element_dimension, i, j, return_code;
+	int element_dimension, i, j, return_code = 0;
 
 	ENTER(Computed_field_xi_coordinates::evaluate_cache_at_location);
 	if (field && location)
@@ -4419,7 +4419,7 @@ Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	enum Value_type value_type;
-	int return_code;
+	int return_code = 0;
 
 	ENTER(Computed_field_basis_derivative::evaluate_cache_at_location);
 	if (field && location)
