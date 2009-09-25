@@ -391,14 +391,15 @@ class Isosurface_builder
 private:
 	FE_element *element;
 	FE_value time;
-	int number_in_xi1, number_in_xi2, number_in_xi3;
+	int number_in_xi1, number_in_xi2, number_in_xi3, number_of_polygon_vertices;
 	FE_value delta_xi1, delta_xi2, delta_xi3;
 	double iso_value;
 	Computed_field *coordinate_field, *data_field, *scalar_field,
 		*texture_coordinate_field;
 	int plane_size;
 	double *plane_scalars;
-	bool cube, simplex12, simplex13, simplex23, tetrahedron;
+	bool cube, polygon12, polygon13, polygon23, simplex12, simplex13, simplex23,
+		tetrahedron;
 public:
 	Iso_mesh mesh;
 
@@ -442,8 +443,9 @@ private:
 	 * so result is identical for different ordering of the same points, needed to
 	 * ensure same ambiguity resolution case used for neighbouring faces, where even
 	 * small numerical rounding differences can leave holes in surface.
+	 * @return  true if the mean scalar is greater than the iso_value; 
 	 */
-	double get_scalar_mean4(const Point_index& p1, const Point_index& p2,
+	bool ambiguous_quad_resolves_over(const Point_index& p1, const Point_index& p2,
 		const Point_index& p3, const Point_index& p4)
 	{
 		double s1 = get_scalar(p1);
@@ -486,7 +488,7 @@ private:
 			s3 = s4;
 			s4 = temp;
 		}
-		return (s1 + s2 + s3 + s4)*0.25;
+		return ((s1 + s2 + s3 + s4)*0.25 > iso_value);
 	}
 
 	void get_xi(const Point_index& p, FE_value *xi) const
@@ -518,6 +520,7 @@ Isosurface_builder::Isosurface_builder(FE_element *element, FE_value time,
 		number_in_xi1(number_in_xi1_requested),
 		number_in_xi2(number_in_xi2_requested),
 		number_in_xi3(number_in_xi3_requested),
+		number_of_polygon_vertices(1),
 		iso_value(iso_value),
 		coordinate_field(coordinate_field),
 		data_field(data_field),
@@ -531,13 +534,14 @@ Isosurface_builder::Isosurface_builder(FE_element *element, FE_value time,
 	get_FE_element_shape_xi_shape_type(element_shape, /*xi_number*/1, &shape_type2);
 	get_FE_element_shape_xi_shape_type(element_shape, /*xi_number*/2, &shape_type3);
 	
-	// GRC add support for polygon shape
-	/* Check for simplices */
 	simplex12 = (SIMPLEX_SHAPE == shape_type1) && (SIMPLEX_SHAPE == shape_type2);
-	simplex23 = (SIMPLEX_SHAPE == shape_type2) && (SIMPLEX_SHAPE == shape_type3);
 	simplex13 = (SIMPLEX_SHAPE == shape_type3) && (SIMPLEX_SHAPE == shape_type1);
+	simplex23 = (SIMPLEX_SHAPE == shape_type2) && (SIMPLEX_SHAPE == shape_type3);
 	tetrahedron = simplex12 && simplex23;
-	cube = (!simplex12) && (!simplex23) && (!simplex13);
+	polygon12 = (POLYGON_SHAPE == shape_type1) && (POLYGON_SHAPE == shape_type2);
+	polygon13 = (POLYGON_SHAPE == shape_type1) && (POLYGON_SHAPE == shape_type3);
+	polygon23 = (POLYGON_SHAPE == shape_type2) && (POLYGON_SHAPE == shape_type3);
+	cube = (!simplex12) && (!simplex13) && (!simplex23);
 
 	if (simplex12)
 	{
@@ -551,6 +555,23 @@ Isosurface_builder::Isosurface_builder(FE_element *element, FE_value time,
 	{
 		number_in_xi3 = number_in_xi2;
 	}
+
+	if (polygon12 || polygon13 || polygon23)
+	{
+		int linked_xi1 = (polygon12 || polygon13) ? 0 : 1;
+		int linked_xi2 = polygon12 ? 1 : 2;
+		get_FE_element_shape_xi_linkage_number(element_shape,
+			linked_xi1, linked_xi2, &number_of_polygon_vertices);
+		if (0 == linked_xi1)
+		{
+			number_in_xi1 *= number_of_polygon_vertices;
+		}
+		else
+		{
+			number_in_xi2 *= number_of_polygon_vertices;
+		}
+	}
+	
 	// precalculate scalings from index to xi
 	delta_xi1 = 1.0 / number_in_xi1;
 	delta_xi2 = 1.0 / number_in_xi2;
@@ -596,10 +617,22 @@ const Iso_vertex *Isosurface_builder::compute_line_crossing(
 	//crossing_coords[0] = (double)point_coords[mp1][0]*inverse_r + (double)point_coords[mp2][0]*r;
 	//crossing_coords[1] = (double)point_coords[mp1][1]*inverse_r + (double)point_coords[mp2][1]*r;
 	//crossing_coords[2] = (double)point_coords[mp1][2]*inverse_r + (double)point_coords[mp2][2]*r;
+#ifdef OLD_CODE
 	// temp: evaluate coordinates at the found xi:
 	Computed_field_evaluate_in_element(coordinate_field, element, vertex.xi,
 		time, /*top_level_element*/(struct FE_element *)NULL, vertex.coordinates,
 		/*derivatives*/(FE_value *)NULL);
+#endif
+	FE_value coordinates_a[3], coordinates_b[3];
+	Computed_field_evaluate_in_element(coordinate_field, element, xi_a,
+		time, /*top_level_element*/(struct FE_element *)NULL, coordinates_a,
+		/*derivatives*/(FE_value *)NULL);
+	Computed_field_evaluate_in_element(coordinate_field, element, xi_b,
+		time, /*top_level_element*/(struct FE_element *)NULL, coordinates_b,
+		/*derivatives*/(FE_value *)NULL);
+	vertex.coordinates[0] = coordinates_a[0]*inverse_r + coordinates_b[0]*r;
+	vertex.coordinates[1] = coordinates_a[1]*inverse_r + coordinates_b[1]*r;
+	vertex.coordinates[2] = coordinates_a[2]*inverse_r + coordinates_b[2]*r;
 	const Iso_vertex* new_vertex = mesh.add_vertex(pp, vertex);
 	LEAVE;
 	
@@ -713,14 +746,11 @@ int Isosurface_builder::cross_cube(int i, int j, int k)
 	}
 	if (n < 8)
 	{
-		// GRC temp: subdivide into 6 tetrahedra. Note: non-symmetric
+		// GRC temp: subdivide into 2 triangle wedges. Note: non-symmetric
+		// Note: non-symmetry messes up evaluation of iso-surface of xi1 in polygons
 		// Future: divide into pyramids with centre point sample
-		cross_tetrahedron(p[0], p[1], p[2], p[4]);
-		cross_tetrahedron(p[1], p[6], p[2], p[4]);
-		cross_tetrahedron(p[1], p[6], p[3], p[2]);
-		cross_tetrahedron(p[1], p[6], p[5], p[3]);
-		cross_tetrahedron(p[1], p[6], p[4], p[5]);
-		cross_tetrahedron(p[3], p[5], p[7], p[6]);
+		cross_triangle_wedge(p[1], p[3], p[2], p[5], p[7], p[6]);
+		cross_triangle_wedge(p[0], p[1], p[2], p[4], p[5], p[6]);
 	}
 	LEAVE;
 
@@ -1080,8 +1110,7 @@ int Isosurface_builder::cross_triangle_wedge(
 			v4 = get_line_crossing(Point_index_pair(mp4, mp1));
 			v5 = get_line_crossing(Point_index_pair(mp4, mp5));
 			v6 = get_line_crossing(Point_index_pair(mp4, mp3));
-			// resolve ambiguity
-			if (get_scalar_mean4(p0, p1, p3, p4) > iso_value)
+			if (ambiguous_quad_resolves_over(p0, p1, p3, p4))
 			{
 				mesh.add_hexagon(v1, v2, v3, v4, v5, v6);
 			}
@@ -1119,8 +1148,7 @@ int Isosurface_builder::cross_triangle_wedge(
 			v4 = get_line_crossing(Point_index_pair(mp5, mp3));
 			v5 = get_line_crossing(Point_index_pair(mp5, mp4));
 			v6 = get_line_crossing(Point_index_pair(mp5, mp2));
-			// resolve ambiguity
-			if (get_scalar_mean4(p0, p2, p3, p5) > iso_value)
+			if (ambiguous_quad_resolves_over(p0, p2, p3, p5))
 			{
 				mesh.add_hexagon(v1, v2, v3, v4, v5, v6);
 			}
@@ -1138,11 +1166,10 @@ int Isosurface_builder::cross_triangle_wedge(
 			v5 = get_line_crossing(Point_index_pair(mp5, mp2));
 			v6 = get_line_crossing(Point_index_pair(mp5, mp3));
 			v7 = get_line_crossing(Point_index_pair(mp5, mp4));
-			// resolve ambiguities
 			{
-				double mean1245 = get_scalar_mean4(p1, p2, p4, p5);
-				double mean0235 = get_scalar_mean4(p0, p2, p3, p5);
-				if ((mean1245 > iso_value) && (mean0235 > iso_value))
+				bool mean1245_over = ambiguous_quad_resolves_over(p1, p2, p4, p5);
+				bool mean0235_over = ambiguous_quad_resolves_over(p0, p2, p3, p5);
+				if (mean1245_over && mean0235_over)
 				{
 					mesh.add_quadrilateral(v1, v6, v7, v4);
 					mesh.add_triangle(v2, v3, v5);
@@ -1150,11 +1177,11 @@ int Isosurface_builder::cross_triangle_wedge(
 				else // both faces non-positive crossing
 				{
 					mesh.add_quadrilateral(v1, v2, v3, v4);
-					if (mean1245 > iso_value)
+					if (mean1245_over)
 					{
 						mesh.add_quadrilateral(v3, v5, v7, v4);
 					}
-					else if (mean0235 > iso_value)
+					else if (mean0235_over)
 					{
 						mesh.add_quadrilateral(v2, v1, v6, v5);
 					}
@@ -1169,8 +1196,8 @@ int Isosurface_builder::cross_triangle_wedge(
 			v4 = get_line_crossing(Point_index_pair(mp1, mp4));
 			v5 = get_line_crossing(Point_index_pair(mp3, mp4));
 			v6 = get_line_crossing(Point_index_pair(mp5, mp4));
-			// resolve ambiguity
-			if (get_scalar_mean4(p1, p2, p4, p5) > iso_value)
+			// fails on polygon slice:
+			if (ambiguous_quad_resolves_over(p1, p2, p4, p5))
 			{
 				mesh.add_triangle(v1, v2, v3);
 				mesh.add_triangle(v4, v5, v6);
@@ -1187,8 +1214,7 @@ int Isosurface_builder::cross_triangle_wedge(
 			v4 = get_line_crossing(Point_index_pair(mp5, mp3));
 			v5 = get_line_crossing(Point_index_pair(mp4, mp3));
 			v6 = get_line_crossing(Point_index_pair(mp0, mp3));
-			// resolve ambiguity
-			if (get_scalar_mean4(p0, p2, p3, p5) > iso_value)
+			if (ambiguous_quad_resolves_over(p0, p2, p3, p5))
 			{
 				mesh.add_triangle(v1, v2, v3);
 				mesh.add_triangle(v4, v5, v6);
