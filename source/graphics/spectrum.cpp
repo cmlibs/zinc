@@ -2430,8 +2430,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 	enum Spectrum_colour_components colour_components;
 	int i, indices[3], number_of_data_components, number_of_texture_components,
 		number_of_values, return_code, table_size;
-	FE_value data[3];
-	float rgba[4];
+	float data[3], rgba[4];
 	unsigned char *colour_table, *colour_table_ptr;
 	struct Spectrum_render_data render_data;
 	enum Texture_storage_type storage;
@@ -2508,9 +2507,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 			colour_table_ptr = colour_table;
 
 			render_data.rgba = rgba;
-			float *fData = new float[number_of_data_components];
-			CAST_TO_OTHER(fData,data,float,number_of_data_components);
-			render_data.data = fData;
+			render_data.data = data;
 			render_data.number_of_data_components = number_of_data_components;
 
 			FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
@@ -2564,7 +2561,6 @@ Rebuilds the display_list for <spectrum> if it is not current.
 			}
 
 			/* Finished using the spectrum for now (clear computed field cache) */
-			CAST_TO_OTHER(fData,data,float,number_of_data_components);
 			FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
 				Spectrum_settings_disable,(void *)&render_data,
 				spectrum->list_of_settings);
@@ -2632,7 +2628,6 @@ Rebuilds the display_list for <spectrum> if it is not current.
 
 			return_code = 1;
 			DEALLOCATE(colour_table);
-			delete[] fData;
 		}
 		else
 		{
