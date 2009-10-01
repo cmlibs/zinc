@@ -19853,9 +19853,9 @@ Can also write individual groups with the <group> option.
 	 char temp_node[] = "nodeXXXXXX";
 #endif /* (WIN32_SYSTEM) */
 #else /* (WX_USER_INTERFACE) */
-	 char *temp_data;
-	 char *temp_elem;
-	 char *temp_node;
+	 char *temp_data = NULL;
+	 char *temp_elem = NULL;
+	 char *temp_node = NULL;
 #endif /* (WX_USER_INTERFACE) */
 
 	 ENTER(gfx_write_all);
