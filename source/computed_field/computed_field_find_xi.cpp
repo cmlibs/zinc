@@ -648,11 +648,13 @@ Frees memory/deaccess cache at <*cache_address>.
 			display_message(ERROR_MESSAGE,
 				"DESTROY(Computed_field_find_element_xi_cache).  "
 				"This cache cannot be destroyed.");
+			return_code = 0;
 		}
 		else
 		{
 			delete (*cache_address)->cache_data;
 			DEALLOCATE(*cache_address);
+			return_code = 1;
 		}
 	}
 	else

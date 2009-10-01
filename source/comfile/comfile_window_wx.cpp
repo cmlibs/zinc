@@ -623,7 +623,7 @@ Up to the calling routine to deallocate the returned string.
 	ENTER(Comfile_window_manager_make_unique_name);
 	if (comfile_window_manager && file_name)
 	{
-		if (return_name = duplicate_string(file_name))
+		if ((return_name = duplicate_string(file_name)))
 		{
 			error = 0;
 			length = strlen(file_name);
@@ -632,6 +632,8 @@ Up to the calling routine to deallocate the returned string.
 		else
 		{
 			error = 1;
+			length = 0;
+			number = 0;
 		}
 		while (return_name && ((struct Comfile_window *)NULL !=
 			FIND_BY_IDENTIFIER_IN_MANAGER(Comfile_window,name)(

@@ -691,7 +691,7 @@ varying integration and the behaviour is significantly different.
 	Computed_field_element_integration_mapping *mapping_neighbour;
 	Computed_field_element_integration_mapping_fifo *fifo_node;
 	Computed_field_node_integration_mapping *node_map;
-	FE_element *integrate_element, **neighbour_elements;
+	FE_element *integrate_element = NULL, **neighbour_elements;
 	FE_element_shape *shape;
 	FE_field *fe_field;
 	FE_node **element_field_nodes_array;

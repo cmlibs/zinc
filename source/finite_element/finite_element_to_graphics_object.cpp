@@ -3473,15 +3473,14 @@ faces.
 	struct FE_element **element_block,**element_block_ptr;
 	struct FE_element_shape *shape;
 	struct GT_voltex *voltex;
-	struct VT_iso_triangle **triangle_list;
-	struct VT_iso_vertex **vertex_list;
+	struct VT_iso_triangle **triangle_list;	struct VT_iso_vertex **vertex_list;
 #if defined (DEBUG)
 	int bad_triangle;
 #endif /* defined (DEBUG) */
 	FE_value_triple *xi_points;
 
-	int displacement_number_of_components, tex_number_of_components;
-	double intensity1,intensity2,intensity3;
+	int tex_number_of_components;
+	double intensity1;
 	int outside_block;
 
 	ENTER(create_GT_voltex_from_FE_element);
@@ -3892,25 +3891,12 @@ faces.
 													/* displacement map */
 													if (displacement_field)
 													{
-														displacement_number_of_components=
-															Computed_field_get_number_of_components(
-																displacement_field);
 														Computed_field_evaluate_in_element(
 															displacement_field,
 															element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
 															xi,time,(struct FE_element *)NULL,
 															colour_data,(FE_value *)NULL);
 														intensity1 = colour_data[0];
-														intensity2 = 0;
-														intensity3 = 0;
-														if (displacement_number_of_components > 1)
-														{
-															intensity2 = colour_data[1];
-															if (displacement_number_of_components > 2)
-															{
-																intensity3 = colour_data[2];
-															}
-														}
 														/* stop any boundary displacement */
 														if ((xi[0]+a==0)||(xi[0]+a==n_xi[0])||
 															(xi[1]+b==0)||(xi[1]+b==n_xi[1]))
@@ -3921,13 +3907,7 @@ faces.
 																(xi[0]+a), (xi[1]+b), (xi[2]+c));
 #endif /* defined (DEBUG) */
 															intensity1=0;
-															intensity2=0;
-															intensity3=0;
 														}
-														/* Keep intensity2 and intensity3 in case we do some
-															other displacement stuff with them */
-														USE_PARAMETER(intensity2);
-														USE_PARAMETER(intensity3);
 													}
 													/* texture coordinates */
 													if (texture_coordinate_field)

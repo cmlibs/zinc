@@ -2432,7 +2432,7 @@ Only writes the geometry field.
 								line_index, 1, &object_name);
 
 							unsigned int index_start, index_count;
-							float *position_vertex, *data_vertex, *normal_vertex;
+							float *position_vertex, *data_vertex;
 							
 							object->vertex_array->get_unsigned_integer_attribute(
 								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
@@ -2453,12 +2453,6 @@ Only writes the geometry field.
 								data_values_per_vertex = 0;
 								data_vertex = NULL;
 							}
-							if (normal_buffer)
-							{
-								normal_vertex = normal_buffer +
-									normal_values_per_vertex * index_start;
-							}
-							USE_PARAMETER(normal_vertex);
 							draw_polyline_vrml(vrml_file, position_vertex,
 								data_values_per_vertex, data_vertex,
 								object->default_material,object->spectrum,

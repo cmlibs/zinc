@@ -44,6 +44,7 @@ ranges between 0-1.
  * ***** END LICENSE BLOCK ***** */
 extern "C"
 {
+#include <float.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <math.h>
@@ -826,6 +827,7 @@ Copies <colour> into the value in the <colour_editor_widget>.
 			colour_editor_wx_update_panel_colour();
 			colour_editor_panel->Thaw();
 			colour_editor_panel->Update();
+			return_code=1;
 	 } 
 	 else
 	 {

@@ -930,7 +930,7 @@ Do not allow copy if:
 
 PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Computed_field,name,const char *)
 {
-	char *destination_name;
+	char *destination_name = NULL;
 	int return_code;
 
 	ENTER(MANAGER_COPY_IDENTIFIER(Computed_field,name));
@@ -3949,7 +3949,7 @@ and should not itself be managed.
 	const char *current_token;
 	char *field_name, *region_path;
 	int return_code;
-	struct Computed_field *existing_field,*temp_field;
+	struct Computed_field *existing_field = NULL,*temp_field;
 	struct Option_table *help_option_table;
 	struct Cmiss_region *region, *root_region;
 
@@ -4927,6 +4927,7 @@ for matrix operations.
 		}
 		else
 		{
+			return_code = 0;
 			field_to_wrap = (Computed_field ***)NULL;
 			if (1 == (*field_one)->number_of_components)
 			{

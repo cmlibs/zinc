@@ -557,11 +557,12 @@ already) and allows its contents to be modified.
 		set_result_field_data, set_reference_field_data;
 
 	ENTER(define_Computed_field_type_function);
+	computed_field_function_package =
+	  (Computed_field_function_package *)
+	  computed_field_function_package_void;
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
 			(field=field_modify->field) &&
-		(computed_field_function_package =
-			(Computed_field_function_package *)
-			computed_field_function_package_void))
+	    (computed_field_function_package != NULL))
 	{
 		USE_PARAMETER(computed_field_function_package);
 		return_code = 1;

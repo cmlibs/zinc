@@ -1564,6 +1564,7 @@ DESCRIPTION :
 	if (option_table)
 	{
 		option_table->valid = 0;
+		return_code=1;
 	}
 	else
 	{
@@ -4815,7 +4816,7 @@ number_of_components floats.
 {
 	const char *current_token;
 	double value,**values_address;
-	int allocated_length,comp_no,length_read,return_code,valid_token;
+	int allocated_length = 0,comp_no,length_read,return_code,valid_token;
 #define VARIABLE_LENGTH_VECTOR_ALLOCATION (10)
 
 	ENTER(set_variable_length_double_vector);

@@ -753,7 +753,7 @@ Sets the <values> of the computed <field> over the <element>.
 	FE_value *grid_values;
 	int element_dimension, i, j, k, grid_map_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		indices[MAXIMUM_ELEMENT_XI_DIMENSIONS], *grid_int_values, offset,
-		return_code;
+		return_code = 0;
 	struct FE_element_shape *element_shape;
 #if defined (OLD_CODE)
 	enum Value_type value_type;
@@ -3560,11 +3560,12 @@ and allows its contents to be modified.
 	struct Set_Computed_field_conditional_data set_field_data;
 
 	ENTER(define_Computed_field_type_embedded);
+	computed_field_finite_element_package =
+	  (Computed_field_finite_element_package *)
+	  computed_field_finite_element_package_void;
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
 			(field=field_modify->field) &&
-		(computed_field_finite_element_package =
-			(Computed_field_finite_element_package *)
-			computed_field_finite_element_package_void))
+	    (computed_field_finite_element_package != NULL))
 	{
 		USE_PARAMETER(computed_field_finite_element_package);
 		return_code = 1;

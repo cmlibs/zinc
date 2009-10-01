@@ -6364,9 +6364,11 @@ value searches just elements of that dimension.
 					if (number_of_bytes_per_component == 2)
 					{
 						 two_bytes_ptr = (unsigned short *)two_bytes_image_plane;
+						 ptr = (unsigned char *)NULL;
 					}
 					else
 					{
+						 two_bytes_ptr = (unsigned short *)NULL;
 						 ptr = (unsigned char *)image_plane;
 					}
 					values[2] = texture_depth * ((float)i + 0.5) / (float)image_depth;
@@ -9426,7 +9428,7 @@ Executes a GFX REMOVE REGION command.
 ==============================================================================*/
 {
 	const char *current_token, *region_path;
-	int return_code;
+	int return_code = 1;
 	struct Cmiss_region *last_region, *parent_region, *region;
 
 	ENTER(gfx_remove_region);
@@ -12707,7 +12709,7 @@ DESCRIPTION :
 Executes a GFX LIST ALL_COMMANDS.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 1;
 	static const char	*command_prefix, *current_token;
 	struct Cmiss_command_data *command_data;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
@@ -19034,6 +19036,7 @@ Sets a transformation matrix from the command line.
 			{
 				return_code=1;
 				i=0;
+				j=0;
 				while ((i<4)&&return_code&&current_token)
 				{
 					j=0;
@@ -23969,7 +23972,7 @@ DESCRIPTION:
 ==============================================================================*/
 {
 	char **token;
-	int i,return_code;
+	int i,return_code = 1;
 	struct Cmiss_command_data *command_data;
 	struct Option_table *option_table;
 	struct Parse_state *state;
