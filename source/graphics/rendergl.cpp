@@ -2250,9 +2250,6 @@ preference to normal materials.
 					}
 					if (number_of_texture_coordinates)
 					{
-						printf("%d %d coord %lf %lf %lf\n", i, j,
-							vertex->texture_coordinates[0],
-							vertex->texture_coordinates[1], vertex->texture_coordinates[2]);
 						glTexCoord3fv(vertex->texture_coordinates);
 					}
 					glNormal3fv(vertex->normal);
