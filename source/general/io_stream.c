@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : io_stream.c
 
-LAST MODIFIED : 23 March 2007
+LAST MODIFIED : 
 
 DESCRIPTION :
 A class to provide a consistent IO interface to files, memory, gzip and bzip
