@@ -359,9 +359,9 @@ else # ! USE_IMAGEMAGICK
    IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/$(MAGICK_LIB_NAME) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libtiff.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libpng.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libjpeg.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a
    ifeq ($(USE_LIBGDCM), true)
       ifeq ($(COMPILER),msvc)
-         IMAGEMAGICK_LIB += $(foreach lib, gdcmCWRAPPER gdcmMSFF gdcmDSED gdcmzlib gdcmmd5 gdcmDICT gdcmCommon gdcmIOD gdcmopenjpeg gdcmjpeg8 gdcmjpeg16 gdcmjpeg12 gdcmexpat, $(IMAGEMAGICK_PATH)/$(LIB_ARCH_DIR)/lib/lib$(lib).a)
+         IMAGEMAGICK_LIB += $(foreach lib, gdcmCWRAPPER gdcmMSFF gdcmDSED gdcmzlib gdcmDICT gdcmCommon gdcmIOD gdcmopenjpeg gdcmjpeg8 gdcmjpeg16 gdcmjpeg12 gdcmexpat, $(IMAGEMAGICK_PATH)/$(LIB_ARCH_DIR)/lib/lib$(lib).a)
       else
-         IMAGEMAGICK_LIB += -L$(IMAGEMAGICK_PATH)/$(LIB_ARCH_DIR)/lib -lgdcmCWRAPPER -lgdcmMSFF -lgdcmDSED -lgdcmzlib -lgdcmmd5 -lgdcmDICT -lgdcmCommon -lgdcmIOD -lgdcmopenjpeg -lgdcmjpeg8 -lgdcmjpeg16 -lgdcmjpeg12 -lgdcmexpat
+         IMAGEMAGICK_LIB += -L$(IMAGEMAGICK_PATH)/$(LIB_ARCH_DIR)/lib -lgdcmCWRAPPER -lgdcmMSFF -lgdcmDSED -lgdcmzlib -lgdcmDICT -lgdcmCommon -lgdcmIOD -lgdcmopenjpeg -lgdcmjpeg8 -lgdcmjpeg16 -lgdcmjpeg12 -lgdcmexpat
          ifeq ($(SYSNAME),Linux)
             IMAGEMAGICK_LIB += -lgdcmuuid
          endif
