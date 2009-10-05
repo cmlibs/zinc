@@ -23,7 +23,6 @@ INCLUDE( FunctionDefinitions )
 # AND CMISS_ROOT environment variable is defined to be a directory
 IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 
-	# Make sure the environment variable CMISS_ROOT is set
 	# This is the project name and shows up in ides
 	PROJECT( cmgui )
 
@@ -68,7 +67,13 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 	# Build options
 	OPTION( BUILD_EXECUTABLE "Build executable ON will build an executable, whereas when set to OFF will build a library" ON )
 	IF( NOT BUILD_EXECUTABLE )
-		OPTION( BUILD_STATIC "Do you want to build a static library" )
+		SET( LIBRARY_TYPE_STRING "STATIC" )
+		IF( DEFINED BUILD_LIBRARY_TYPE )
+			SET( LIBRARY_TYPE_STRING ${BUILD_LIBRARY_TYPE} )
+		ENDIF( DEFINED BUILD_LIBRARY_TYPE )
+		SET( BUILD_LIBRARY_TYPE ${LIBRARY_TYPE_STRING} CACHE STRING "What type of library is required [SHARED | STATIC | MODULE ]" )
+		SET( CMAKE_INSTALL_PREFIX ${CMISS_INSTALL_PREFIX} )
+		#OPTION( BUILD_STATIC "Do you want to build a static library" ON )
 	ENDIF( NOT BUILD_EXECUTABLE )
 	SET( BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "What configuration do you want to build: Debug, Release, MinSizeRel, RelWithDebugInfo" )
 	SET( CMAKE_BUILD_TYPE ${BUILD_TYPE} )
@@ -88,23 +93,25 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 	# Library options
 	#SET( ITK_DIR ${CMISS_ROOT_LOCATION}/itk/${ARCHITECTURE_DIR}/lib/InsightToolkit CACHE STRING "Where are the ITK libraries installed" )
 	#MARK_AS_ADVANCED( ITK_DIR )
-	SET( WX_DIR ${CMISS_ROOT_LOCATION}/wxWidgets/bin CACHE STRING "Where is wxWidgets installed" )
+	#SET( WX_DIR ${CMISS_ROOT_LOCATION}/wxWidgets/bin CACHE STRING "Where is wxWidgets installed" )
+	SET( WX_DIR ${CMISS_INSTALL_PREFIX} CACHE STRING "Where is wxWidgets installed" )
 
 	# Find external libraries
 	SET( CMAKE_INCLUDE_PATH ${CMISS_ROOT_LOCATION}/image_libraries/bin/${ARCHITECTURE_DIR} 
 		${CMISS_ROOT_LOCATION}/image_libraries/include/${ARCHITECTURE_DIR}/ )
 	SET( CMAKE_LIBRARY_PATH ${CMISS_ROOT_LOCATION}/image_libraries/lib/${ARCHITECTURE_DIR}/ )
 	FIND_PACKAGE( ImageMagick COMPONENTS MagickCore )
-	SET( ITK_DIR ${CMISS_INSTALL_PREFIX}/lib/InsightToolkit )
-	FIND_PACKAGE( ITK )
+	# SET( ITK_DIR ${CMISS_INSTALL_PREFIX}/lib/InsightToolkit ) # <-- without -fPIC
+	SET( ITK_DIR ${CMISS_ROOT_LOCATION}/itk/x86_64-linux/lib/InsightToolkit/ ) # <-- with -fPIC
+	FIND_PACKAGE( ITK QUIET )
 	SET( CMAKE_INCLUDE_PATH ${CMISS_INSTALL_PREFIX}/include/libxml2 )
 	SET( CMAKE_LIBRARY_PATH ${CMISS_INSTALL_PREFIX}/lib )
-	FIND_PACKAGE( LibXml2 )
+	FIND_PACKAGE( LibXml2 QUIET )
 	SET( CMAKE_INCLUDE_PATH ${CMISS_INSTALL_PREFIX}/include )
-	FIND_PACKAGE( NETGEN )
+	FIND_PACKAGE( NETGEN QUIET )
 	IF( WX_USER_INTERFACE )
 		SET( CMAKE_PREFIX_PATH ${WX_DIR} )
-		FIND_PACKAGE( wxWidgets COMPONENTS xrc adv html gl xml core base )
+		FIND_PACKAGE( wxWidgets QUIET COMPONENTS xrc adv html gl xml core base )
 		SET( CAN_USE_USER_INTERFACE ${wxWidgets_FOUND} )
 	ENDIF( WX_USER_INTERFACE )
 	SET( CMAKE_PREFIX_PATH )
@@ -319,7 +326,8 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 	INCLUDE( source/computed_field.cmake )
 
 	# Defines FINITE_ELEMENT_CORE_SRCS, FINITE_ELEMENT_GRAPHICS_SRCS, 
-	# FINITE_ELEMENT_SRCS (definition includes the previous two)
+	# FINITE_ELEMENT_ADDITIONAL_SRCS, FINITE_ELEMENT_SRCS 
+	# (group definition which includes the previous three)
 	INCLUDE( source/finite_element.cmake )
 
 	# Defines GENERAL_SRCS
@@ -482,19 +490,181 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 		
 		ADD_EXECUTABLE( ${TARGET_NAME} ${BASE_SRCS} ${BASE_HDRS} ${INTERFACE_SRCS} ${INTERFACE_HDRS}
 			${ICON_RESOURCES} ${CONFIGURED_HEADERS} )
+
+		TARGET_LINK_LIBRARIES( ${TARGET_NAME} ${DEPENDENT_LIBS} )
+
+		IF( NOT (${TARGET_NAME_FORMAT} MATCHES "[Bb]asic") )
+			SET_TARGET_PROPERTIES( ${TARGET_NAME} PROPERTIES RELEASE_POSTFIX "-optimised" )
+			SET_TARGET_PROPERTIES( ${TARGET_NAME} PROPERTIES DEBUG_POSTFIX "-debug" )
+		ENDIF( NOT (${TARGET_NAME_FORMAT} MATCHES "[Bb]asic") )
+
 	ELSE( BUILD_EXECUTABLE )
 		# Do library build stuff
+		SET( BASE_SRCS ${COMFILE_SRCS} ${COMMAND_SRCS}
+			${COMPUTED_FIELD_SRCS} ${CURVE_SRCS} ${ELEMENT_SRCS} ${EMOTER_SRCS}
+			${FINITE_ELEMENT_SRCS} ${GENERAL_SRCS} ${GRAPHICS_SRCS}
+			${HELP_SRCS} ${IMAGE_PROCESSING_SRCS} ${INTERACTION_SRCS}
+			${IO_DEVICES_SRCS} ${NODE_SRCS} ${SELECTION_SRCS}
+			${INTERPRETER_SRCS} ${THREE_D_DRAWING_SRCS} ${TIME_SRCS}
+			${USER_INTERFACE_SRCS} )
+    IF( WX_USER_INTERFACE )
+			SET( INTERFACE_SRCS ${API_INTERFACE_SRCS} ${COLOUR_INTERFACE_SRCS}
+				${COMFILE_INTERFACE_SRCS}
+				${COMMAND_INTERFACE_SRCS} ${COMPUTED_FIELD_INTERFACE_SRCS}
+				${GRAPHICS_INTERFACE_SRCS}
+				${MATERIAL_INTERFACE_SRCS} ${NODE_INTERFACE_SRCS}
+				${REGION_INTERFACE_SRCS}
+				${TRANSFORMATION_INTERFACE_SRCS} )
+    ENDIF( WX_USER_INTERFACE )
+
 		# Defines GENERAL_LIB_SRCS
 		INCLUDE( source/general_lib.cmake )
 
+		# Defines CORE_FIELDS_LIB_SRCS
+		INCLUDE( source/core_fields_lib.cmake )
+
+		# Defines CMGUI_LIB_SRCS
+		INCLUDE( source/cmgui_lib.cmake )
+		
+		LIST( REMOVE_ITEM CMGUI_LIB_SRCS ${CORE_FIELDS_LIB_SRCS} ${GENERAL_LIB_SRCS} )
+		MESSAGE( STATUS "files: ${COMMAND_SRCS}" )
+
+		# Define PASS_THROUGH_LIB_SRCS
+		SET( PASS_THROUGH_LIB_SRCS "source/command/pass_through_interpreter.c" )
+	
+		SET_FILES_COMPILE_FLAGS( "${GENERAL_LIB_SRCS}" )
+		SET_FILES_COMPILE_FLAGS( "${CORE_FIELDS_LIB_SRCS}" )
+		SET_FILES_COMPILE_FLAGS( "${CMGUI_LIB_SRCS}" )
+
+		SET( TARGET_CMGUI_LIB "cmgui" )
+		SET( TARGET_CMGUI_GENERAL_LIB "cmgui_general" )
+		SET( TARGET_CMGUI_CORE_FIELDS_LIB "cmgui_core_fields" )
+		SET( TARGET_CMGUI_PASS_THROUGH_LIB "cmgui_pass_through" )
+		SET( INSTALL_LIBRARY_TYPE "ARCHIVE" )
+		IF( ${BUILD_LIBRARY_TYPE} MATCHES "SHARED" )
+			SET( INSTALL_LIBRARY_TYPE "LIBRARY" )
+		ELSEIF( ${BUILD_LIBRARY_TYPE} MATCHES "MODULE" )
+			SET( INSTALL_LIBRARY_TYPE "LIBRARY" )
+		ENDIF( ${BUILD_LIBRARY_TYPE} MATCHES "SHARED" )
+
+		ADD_LIBRARY( ${TARGET_CMGUI_LIB} ${BUILD_LIBRARY_TYPE} ${CMGUI_LIB_SRCS} ${CMGUI_LIB_HDRS} )
+		ADD_LIBRARY( ${TARGET_CMGUI_GENERAL_LIB} ${BUILD_LIBRARY_TYPE} ${GENERAL_LIB_SRCS} )
+		ADD_LIBRARY( ${TARGET_CMGUI_CORE_FIELDS_LIB} ${BUILD_LIBRARY_TYPE} ${CORE_FIELDS_LIB_SRCS} )
+		ADD_LIBRARY( ${TARGET_CMGUI_PASS_THROUGH_LIB} ${BUILD_LIBRARY_TYPE} ${PASS_THROUGH_LIB_SRCS} )
+
+		TARGET_LINK_LIBRARIES( ${TARGET_CMGUI_LIB} ${DEPENDENT_LIBS} )
+		TARGET_LINK_LIBRARIES( ${TARGET_CMGUI_CORE_FIELDS_LIB} /home/hsorby/development/cmiss/image_libraries/lib/x86_64-linux/libbz2.a )
+
+		SET_TARGET_PROPERTIES( ${TARGET_CMGUI_LIB} PROPERTIES DEBUG_POSTFIX "d" 
+			VERSION "${CMGUI_MAJOR_VERSION}.${CMGUI_MINOR_VERSION}.${CMGUI_PATCH_VERSION}"
+			SOVERSION ${CMGUI_MAJOR_VERSION} )
+		SET_TARGET_PROPERTIES( ${TARGET_CMGUI_GENERAL_LIB} PROPERTIES DEBUG_POSTFIX "d" 
+			VERSION "${CMGUI_MAJOR_VERSION}.${CMGUI_MINOR_VERSION}.${CMGUI_PATCH_VERSION}"
+			SOVERSION ${CMGUI_MAJOR_VERSION} )
+		SET_TARGET_PROPERTIES( ${TARGET_CMGUI_CORE_FIELDS_LIB} PROPERTIES DEBUG_POSTFIX "d" 
+			VERSION "${CMGUI_MAJOR_VERSION}.${CMGUI_MINOR_VERSION}.${CMGUI_PATCH_VERSION}"
+			SOVERSION ${CMGUI_MAJOR_VERSION} )
+		SET_TARGET_PROPERTIES( ${TARGET_CMGUI_PASS_THROUGH_LIB} PROPERTIES DEBUG_POSTFIX "d" 
+			VERSION "${CMGUI_MAJOR_VERSION}.${CMGUI_MINOR_VERSION}.${CMGUI_PATCH_VERSION}"
+			SOVERSION ${CMGUI_MAJOR_VERSION} )
+
+		GET_TARGET_PROPERTY( TARGET_CMGUI_GENERAL_LIB_OUTPUT_NAME
+			${TARGET_CMGUI_GENERAL_LIB} LOCATION )
+		# This is not working for me.  I am trying to get the actual name on disk
+		# of the library  being created but I'm just getting the target name.
+		CONFIGURE_FILE( ${PROJECT_SOURCE_DIR}/source/configure/LIBCMGUIConfig.cmake.in
+			${PROJECT_BINARY_DIR}/source/configure/LIBCMGUIConfig.cmake )
+		
+		INSTALL( TARGETS ${TARGET_CMGUI_LIB} ${INSTALL_LIBRARY_TYPE}
+			DESTINATION lib )
+		INSTALL( TARGETS ${TARGET_CMGUI_GENERAL_LIB} ${INSTALL_LIBRARY_TYPE}
+			DESTINATION lib )
+		INSTALL( TARGETS ${TARGET_CMGUI_CORE_FIELDS_LIB} ${INSTALL_LIBRARY_TYPE}
+			DESTINATION lib )
+		INSTALL( TARGETS ${TARGET_CMGUI_PASS_THROUGH_LIB} ${INSTALL_LIBRARY_TYPE}
+			DESTINATION lib )
+
+		# Install headers for cmgui
+		SET( CMGUI_LIB_API_INSTALL_HDRS
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_command_data.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_element.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_field.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_field_composite.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_field_image.h
+		#	${CMAKE_SOURCE_DIR}/source/api/cmiss_finite_element.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_node.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_region.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_scene_viewer.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_texture.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_time.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_time_keeper.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_value.h )
+#		SET( CMGUI_LIB_COMPUTED_FIELD_INSTALL_HDRS
+#			${CMAKE_SOURCE_DIR}/source/computed_field/computed_field.h )
+#		SET( CMGUI_LIB_COMMAND_INSTALL_HDRS
+#			${CMAKE_SOURCE_DIR}/source/command/cmiss.h
+#			${CMAKE_SOURCE_DIR}/source/command/parser.h
+#			${CMAKE_SOURCE_DIR}/source/command/command.h )
+#		SET( CMGUI_LIB_GENERAL_INSTALL_HDRS
+#			${CMAKE_SOURCE_DIR}/source/general/callback.h
+#			${CMAKE_SOURCE_DIR}/source/general/io_stream.h
+#			${CMAKE_SOURCE_DIR}/source/general/list.h
+#			${CMAKE_SOURCE_DIR}/source/general/manager.h
+#			${CMAKE_SOURCE_DIR}/source/general/value.h )
+#		SET( CMGUI_LIB_GRAPHICS_INSTALL_HDRS
+#			${CMAKE_SOURCE_DIR}/source/graphics/colour.h
+#			${CMAKE_SOURCE_DIR}/source/graphics/light.h
+#			${CMAKE_SOURCE_DIR}/source/graphics/light_model.h )
+#		SET( CMGUI_LIB_INTERACTION_INSTALL_HDRS
+#			${CMAKE_SOURCE_DIR}/source/interaction/interactive_tool.h )
+#		SET( CMGUI_LIB_REGION_INSTALL_HDRS
+#			${CMAKE_SOURCE_DIR}/source/region/cmiss_region.h )
+
+		# Install headers for cmgui_general
+		SET( GENERAL_LIB_API_INSTALL_HDRS	${CMAKE_SOURCE_DIR}/source/api/cmiss_core.h )
+
+		# Install headers for cmgui_core_fields
+		SET( CORE_FIELDS_LIB_API_INSTALL_HDRS ${CMAKE_SOURCE_DIR}/source/api/cmiss_element.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_node.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_time_sequence.h )
+#		SET( CORE_FIELDS_LIB_GENERAL_INSTALL_HDRS
+#			${CMAKE_SOURCE_DIR}/source/general/object.h )
+
+		# Install headers for pass_through_interpreter
+		SET( PASS_THROUGH_LIB_COMMAND_INSTALL_HDRS 
+			${CMAKE_SOURCE_DIR}/source/command/pass_through_interpreter.h )
+
+		# Files that always need to be installed
+		INSTALL( FILES ${PROJECT_BINARY_DIR}/source/configure/LIBCMGUIConfig.cmake
+			${PROJECT_BINARY_DIR}/source/configure/cmgui_configure.h
+			DESTINATION include/cmgui/configure )
+		# Api directory installs
+		INSTALL( FILES ${CMGUI_LIB_API_INSTALL_HDRS}
+			${GENERAL_LIB_API_INSTALL_HDRS}
+			${CORE_FIELDS_LIB_INSTALL_HDRS}
+			DESTINATION include/cmgui/api )
+		# Computed field installs
+#		INSTALL( FILES ${CMGUI_LIB_COMPUTED_FIELD_INSTALL_HDRS}
+#			DESTINATION include/cmgui/computed_field )
+#		# Command directory installs
+#		INSTALL( FILES ${CMGUI_LIB_COMMAND_INSTALL_HDRS}
+#			${PASS_THROUGH_LIB_COMMAND_INSTALL_HDRS}
+#			DESTINATION include/cmgui/command )
+#		# General directory installs
+#		INSTALL( FILES ${CMGUI_LIB_GENERAL_INSTALL_HDRS}
+#			${CORE_FIELDS_LIB_GENERAL_INSTALL_HDRS}
+#			DESTINATION include/cmgui/general )
+#		# Graphic directory installs
+#		INSTALL( FILES ${CMGUI_LIB_GRAPHIC_INSTALL_HDRS}
+#			DESTINATION include/cmgui/graphic )
+#		# Interaction directory installs
+#		INSTALL( FILES ${CMGUI_LIB_INTERACTION_INSTALL_HDRS}
+#			DESTINATION include/cmgui/interaction )
+#		# Region directory installs
+#		INSTALL( FILES ${CMGUI_LIB_REGION_INSTALL_HDRS}
+#			DESTINATION include/cmgui/region )
+
 	ENDIF( BUILD_EXECUTABLE )
-
-	TARGET_LINK_LIBRARIES( ${TARGET_NAME} ${DEPENDENT_LIBS} )
-
-	IF( NOT (${TARGET_NAME_FORMAT} MATCHES "[Bb]asic") )
-		SET_TARGET_PROPERTIES( ${TARGET_NAME} PROPERTIES RELEASE_POSTFIX "-optimised" )
-		SET_TARGET_PROPERTIES( ${TARGET_NAME} PROPERTIES DEBUG_POSTFIX "-debug" )
-	ENDIF( NOT (${TARGET_NAME_FORMAT} MATCHES "[Bb]asic") )
 
 
 ELSE( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )

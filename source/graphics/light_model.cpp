@@ -835,7 +835,7 @@ DESCRIPTION :
 Modifies the properties of a light model.
 ==============================================================================*/
 {
-	auto struct Modifier_entry
+	struct Modifier_entry
 		help_option_table[]=
 		{
 			{"LIGHT_MODEL_NAME",NULL,NULL,modify_Light_model},

@@ -145,8 +145,7 @@ be DEALLOCATED by the calling function.
 						string_size = 2 * BLOCKSIZE;
 						last_char = 0xff;
 						index = 0;
-						if (return_string = ALLOCATE(return_string, char,
-							2 * BLOCKSIZE))
+						if (ALLOCATE(return_string, char, 2 * BLOCKSIZE))
 						{
 							while((last_char != 0) && return_string)
 							{

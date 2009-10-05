@@ -62,6 +62,9 @@ typedef struct Cmiss_command_data *Cmiss_command_data_id;
 struct manager_Cmiss_texture;
 typedef struct manager_Cmiss_texture *Cmiss_texture_manager_id;
 
+struct Cmiss_scene_viewer_package;
+typedef struct Cmiss_scene_viewer_package *Cmiss_scene_viewer_package_id;
+
 /*******************************************************************************
 LAST MODIFIED : 13 August 2002
 
@@ -150,5 +153,14 @@ Cmiss_time_keeper_id Cmiss_command_data_get_time_keeper(
  */
 Cmiss_texture_manager_id Cmiss_command_data_get_texture_manager(
  Cmiss_command_data_id command_data);
+
+/**
+ * Returns a handle to a scene viewer package
+ *
+ * @param command_data The Cmiss command data object
+ * @return The scene viewer package
+ */
+Cmiss_scene_viewer_package_id Cmiss_command_data_get_scene_viewer_package(
+	Cmiss_command_data_id command_data);
 
 #endif /* __CMISS_COMMAND_H__ */

@@ -58,6 +58,7 @@
 #include <Xm/List.h>
 #endif /* defined (MOTIF_USER_INTERFACE) */
 extern "C" {
+#include "api/cmiss_command_data.h"
 #include "api/cmiss_region.h"
 #include "api/cmiss_scene_viewer.h"
 #include "api/cmiss_scene_viewer_private.h"

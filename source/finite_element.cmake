@@ -1,6 +1,7 @@
 
 # Defines FINITE_ELEMENT_CORE_SRCS, FINITE_ELEMENT_GRAPHICS_SRCS, 
-# FINITE_ELEMENT_SRCS (definition includes the previous two)
+# FINITE_ELEMENT_ADDITIONAL_SRCS, FINITE_ELEMENT_SRCS 
+# (group definition which includes the previous three)
 
 SET( FINITE_ELEMENT_CORE_SRCS
 	source/finite_element/export_finite_element.cpp
@@ -33,9 +34,7 @@ SET( FINITE_ELEMENT_GRAPHICS_HDRS
 	source/finite_element/finite_element_to_iso_surfaces.h
 	source/finite_element/finite_element_to_streamlines.h )
 
-SET( FINITE_ELEMENT_SRCS
-	${FINITE_ELEMENT_CORE_SRCS}
-	${FINITE_ELEMENT_GRAPHICS_SRCS}
+SET( FINITE_ELEMENT_ADDITIONAL_SRCS
 	source/finite_element/export_cm_files.c
 	source/finite_element/finite_element_adjacent_elements.c
 	source/finite_element/finite_element_conversion.c
@@ -43,9 +42,7 @@ SET( FINITE_ELEMENT_SRCS
 	source/finite_element/read_fieldml.c
 	source/finite_element/snake.c
 	source/finite_element/write_fieldml.c )
-SET(  FINITE_ELEMENT_HDRS
-	${FINITE_ELEMENT_CORE_HDRS}
-	${FINITE_ELEMENT_GRAPHICS_HDRS}
+SET( FINITE_ELEMENT_ADDITIONAL_HDRS
 	source/finite_element/export_cm_files.h
 	source/finite_element/finite_element_adjacent_elements.h
 	source/finite_element/finite_element_conversion.h
@@ -53,6 +50,15 @@ SET(  FINITE_ELEMENT_HDRS
 	source/finite_element/read_fieldml.h
 	source/finite_element/snake.h
 	source/finite_element/write_fieldml.h )
+
+SET( FINITE_ELEMENT_SRCS
+	${FINITE_ELEMENT_CORE_SRCS}
+	${FINITE_ELEMENT_GRAPHICS_SRCS}
+	${FINITE_ELEMENT_ADDITIONAL_SRCS} )
+SET(  FINITE_ELEMENT_HDRS
+	${FINITE_ELEMENT_CORE_HDRS}
+	${FINITE_ELEMENT_GRAPHICS_HDRS}
+	${FINITE_ELEMENT_ADDITIONAL_HDRS} )
 
 IF( USE_NETGEN )
 	SET( FINITE_ELEMENT_SRCS

@@ -233,8 +233,9 @@ DESCRIPTION :
 Returns the texture manager from the <command_data>.
 ==============================================================================*/
 
-struct Cmiss_scene_viewer_package *Cmiss_command_data_get_scene_viewer_package(
-	struct Cmiss_command_data *command_data);
+// Moving to api/cmiss_command_data.h
+//struct Cmiss_scene_viewer_package *Cmiss_command_data_get_scene_viewer_package(
+//	struct Cmiss_command_data *command_data);
 /*******************************************************************************
 LAST MODIFIED : 7 November 2006
 

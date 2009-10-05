@@ -1,18 +1,17 @@
 
 # Defines API_SRCS
 
-SET( API_SRCS source/api/cmiss_command_data.c
+SET( API_SRCS 
+	source/api/cmiss_command_data.c
 	source/api/cmiss_field.c
+	source/api/cmiss_field_composite.c
 	source/api/cmiss_core.c
 	source/api/cmiss_element.c
 	source/api/cmiss_node.c
 	source/api/cmiss_region.c
+	source/api/cmiss_time.c
+	source/api/cmiss_time_keeper.c
 	source/api/cmiss_time_sequence.c )
-
-IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
-	SET( API_SRCS ${API_SRCS} source/api/cmiss_scene_viewer.cpp source/api/cmiss_texture.c )
-ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
-
 SET( API_HDRS
 	source/api/cmiss_command_data.h
 	source/api/cmiss_core.h
@@ -42,6 +41,9 @@ SET( API_HDRS
 	source/api/cmiss_value_matrix.h )
 	
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
+	SET( API_SRCS ${API_SRCS}
+		source/api/cmiss_scene_viewer.cpp
+		source/api/cmiss_texture.c )
 	SET( API_HDRS ${API_HDRS}
 		source/api/cmiss_scene_viewer.h
 		source/api/cmiss_scene_viewer_private.h

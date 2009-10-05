@@ -45,7 +45,7 @@ Just passes commands through without interpretation
 #include <stdio.h>
 #include <string.h>
 #if defined (BUILD_WITH_CMAKE)
-#include "configure/configure.h"
+#include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 #define PCRE_STATIC
