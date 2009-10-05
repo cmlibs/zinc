@@ -81,23 +81,23 @@ typedef float FE_value;
 
 #define CAST_TO_FE_VALUE(FE, OTHER, LENGTH)														\
 	{																																		\
-		int i;																														\
-		for (i=0;i< LENGTH;i++) FE[i] = static_cast<FE_value>(OTHER[i]);	\
+		int cast_i;																														\
+		for (cast_i=0;cast_i< LENGTH;cast_i++) FE[cast_i] = static_cast<FE_value>(OTHER[cast_i]);	\
 	}
 #define CAST_TO_FE_VALUE_C(FE, OTHER, LENGTH)														\
 	{																																		\
-		int i;																														\
-		for (i=0;i< LENGTH;i++) FE[i] = (FE_value)(OTHER[i]);							\
+		int cast_i;																														\
+		for (cast_i=0;cast_i< LENGTH;cast_i++) FE[cast_i] = (FE_value)(OTHER[cast_i]);							\
 	}
 #define CAST_TO_OTHER(OTHER, FE_VALUE, TYPE, LENGTH)										\
 	{																																			\
-		int i;																															\
-		for (i=0;i< LENGTH;i++) OTHER[i] = static_cast< TYPE >(FE_VALUE[i]); \
+		int cast_i;																															\
+		for (cast_i=0;cast_i< LENGTH;cast_i++) OTHER[cast_i] = static_cast< TYPE >(FE_VALUE[cast_i]); \
 	}
 #define CAST_TO_OTHER_C(OTHER, FE_VALUE, TYPE, LENGTH)										\
 	{																																			\
-		int i;																															\
-		for (i=0;i< LENGTH;i++) OTHER[i] = (TYPE)(FE_VALUE[i]);							\
+		int cast_i;																															\
+		for (cast_i=0;cast_i< LENGTH;cast_i++) OTHER[cast_i] = (TYPE)(FE_VALUE[cast_i]);							\
 	}
 
 /* the value that FE_value's are initialized to.  Some machines will have
