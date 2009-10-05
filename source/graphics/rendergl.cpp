@@ -428,7 +428,8 @@ public:
 		}
 #endif /* defined (OLD_CODE) */
 		
-		if (return_code = Render_immediate::Scene_compile(scene))
+		return_code = Render_immediate::Scene_compile(scene);
+		if (return_code)
 		{
 			Callback_member_callback< Scene*, Render_graphics_opengl_display_list,
 				int (Render_graphics_opengl_display_list::*)(Scene*) >
@@ -457,7 +458,8 @@ public:
 	{
 		int return_code;
 		
-		if (return_code = Render_immediate::Graphical_element_group_compile(graphical_element_group))
+		return_code = Render_immediate::Graphical_element_group_compile(graphical_element_group);
+		if (return_code)
 		{
 			Callback_member_callback< GT_element_group*, Render_graphics_opengl_display_list,
 				int (Render_graphics_opengl_display_list::*)(GT_element_group*) >
@@ -484,7 +486,8 @@ public:
 	{
 		int return_code;
 		
-		if (return_code = Render_immediate::Graphics_object_compile(graphics_object))
+		return_code = Render_immediate::Graphics_object_compile(graphics_object);
+		if (return_code)
 		{
 			Callback_member_callback< GT_object*, Render_graphics_opengl_display_list,
 				int (Render_graphics_opengl_display_list::*)(GT_object*) >
@@ -510,7 +513,8 @@ public:
 	{
 		int return_code;
 		
-		if (return_code = Render_immediate::Material_compile(material))
+		return_code = Render_immediate::Material_compile(material);
+		if (return_code)
 		{
 			Callback_member_callback< Graphical_material*, Render_graphics_opengl_display_list,
 				int (Render_graphics_opengl_display_list::*)(Graphical_material*) >
@@ -536,7 +540,8 @@ public:
 	{
 		int return_code;
 		
-		if (return_code = Render_immediate::Texture_compile(texture))
+		return_code = Render_immediate::Texture_compile(texture);
+		if (return_code)
 		{
 			Callback_member_callback< Texture*, Render_graphics_opengl_display_list,
 				int (Render_graphics_opengl_display_list::*)(Texture*) >
@@ -656,8 +661,8 @@ are selected, or all points if <selected_name_ranges> is NULL.
 		temp_axis3, temp_point;
 
 	ENTER(draw_glyphsetGL);
-	if (((0 == number_of_points) || (0 < number_of_points) && point_list &&
-		axis1_list && axis2_list && axis3_list && scale_list) && glyph)
+	if (((0 == number_of_points) || ((0 < number_of_points) && point_list &&
+		axis1_list && axis2_list && axis3_list && scale_list)) && glyph)
 	{
 		if ((0==number_of_points) ||
 			(draw_selected&&((!names) || (!some_selected)))||
@@ -694,7 +699,8 @@ are selected, or all points if <selected_name_ranges> is NULL.
 				{
 					datum=data;
 				}
-				if (name=names)
+				name = names;
+				if (name)
 				{
 					/* make space for picking name on name stack */
 					glPushName(0);
@@ -1075,7 +1081,8 @@ are selected, or all points if <selected_name_ranges> is NULL.
 									temp_glyph = glyph;
 								}
 								renderer->Graphics_object_execute(temp_glyph);
-								if (glyph_labels_function = Graphics_object_get_glyph_labels_function(glyph))
+								glyph_labels_function = Graphics_object_get_glyph_labels_function(glyph);
+								if (glyph_labels_function)
 								{
 									return_code = (*glyph_labels_function)(*scale,
 										label_bounds_dimension, label_bounds_components, label_bound,
@@ -1324,10 +1331,15 @@ simultaneously.
 						}
 						glEnd();
 					} break;
+					default:
+					{
+						/* Do nothing, satisfy warnings */
+					} break;					
 				}
 			}
 			/* output text at each point, if supplied */
-			if (text_string = text)
+			text_string = text;
+			if (text_string)
 			{
 				point=point_list;
 				datum=data;
@@ -1360,7 +1372,8 @@ simultaneously.
 				}
 			}
 			/* picking */
-			if (name=names)
+			name = names;
+			if (name)
 			{
 				point=point_list;
 				datum=data;
@@ -1448,6 +1461,10 @@ simultaneously.
 						}
 						name++;
 					} break;
+					default:
+					{
+						/* Do nothing, satisfy warnings */
+					} break;					
 				}
 				glPopName();
 			}
@@ -1847,6 +1864,10 @@ DESCRIPTION :
 					glEnd();
 				}
 			} break;
+			default:
+			{
+				/* Do nothing, satisfy warnings */
+			} break;					
 		}
 #endif /* defined (OPENGL_API) */
 		if (data)
@@ -2229,6 +2250,9 @@ preference to normal materials.
 					}
 					if (number_of_texture_coordinates)
 					{
+						printf("%d %d coord %lf %lf %lf\n", i, j,
+							vertex->texture_coordinates[0],
+							vertex->texture_coordinates[1], vertex->texture_coordinates[2]);
 						glTexCoord3fv(vertex->texture_coordinates);
 					}
 					glNormal3fv(vertex->normal);
@@ -2405,6 +2429,10 @@ static int Graphics_object_enable_opengl_client_vertex_arrays(GT_object *object,
 						/*Client vertex array*/*texture_coordinate0_buffer);					
 				}
 			} break;
+			default:
+			{
+				/* Do nothing, satisfy warnings */
+			} break;
 		}
 	}
 	else
@@ -2447,6 +2475,10 @@ static int Graphics_object_disable_opengl_client_vertex_arrays(GT_object *object
 				{
 					glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 				}
+			} break;
+			default:
+			{
+				/* Do nothing, satisfy warnings */
 			} break;
 		}
 	}
@@ -2508,6 +2540,10 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 			
 			tex_width = line_length;
 			tex_height = line_count;
+		} break;
+		default:
+		{
+			/* Do nothing */
 		} break;
 	}
 
@@ -2700,6 +2736,10 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 				glEnd();
 			} break;
 #endif //defined (NEW_CODE)
+			default:
+			{
+				/* Do nothing */
+			} break;
 		}
 	
 		glClientActiveTexture(GL_TEXTURE1);
@@ -2936,7 +2976,11 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 						"Multipass rendering not compiled in this version.");
 #endif /* defined (GL_VERSION_2_0) && defined (GL_EXT_framebuffer_object) */
 				}
-			}
+			} break;
+			default:
+			{
+				/* Do nothing */
+			} break;
 		}
 	}
 	else
@@ -3004,6 +3048,10 @@ static int Graphics_object_enable_opengl_vertex_buffer_object(GT_object *object,
 						/*No offset in vertex array*/(void *)0);
 				}
 			} break;
+			default:
+			{
+				/* Do nothing */
+			} break;
 		}
 	}
 	else
@@ -3048,6 +3096,10 @@ static int Graphics_object_disable_opengl_vertex_buffer_object(GT_object *object
 				}
 				/* Reset to normal client vertex arrays */
 				glBindBuffer(GL_ARRAY_BUFFER, 0);
+			} break;
+			default:
+			{
+				/* Do nothing */
 			} break;
 		}
 	}
@@ -3188,7 +3240,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 			{
 				case g_GLYPH_SET:
 				{
-					if (glyph_set = primitive_list1->gt_glyph_set.first)
+					glyph_set = primitive_list1->gt_glyph_set.first;
+					if (glyph_set)
 					{
 #if defined (OPENGL_API)
 						/* store the transform attribute group to save current matrix mode
@@ -3209,8 +3262,9 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 							glyph_set_2 = primitive_list2->gt_glyph_set.first;
 							while (glyph_set&&glyph_set_2)
 							{
-								if (interpolate_glyph_set=morph_GT_glyph_set(proportion,
-									glyph_set,glyph_set_2))
+								interpolate_glyph_set=morph_GT_glyph_set(proportion,
+										glyph_set,glyph_set_2);
+								if (interpolate_glyph_set)
 								{
 									if (picking_names)
 									{
@@ -3288,7 +3342,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 				} break;
 				case g_POINT:
 				{
-					if (point = primitive_list1->gt_point.first)
+					point = primitive_list1->gt_point.first;
+					if (point)
 					{
 						draw_pointsetGL(1, point->position, &(point->text),
 							point->marker_type,
@@ -3305,7 +3360,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 				} break;
 				case g_POINTSET:
 				{
-					if (point_set = primitive_list1->gt_pointset.first)
+					point_set = primitive_list1->gt_pointset.first;
+					if (point_set)
 					{
 #if defined (OPENGL_API)
 						/* disable lighting so rendered in flat diffuse colour */
@@ -3318,8 +3374,9 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 							point_set_2 = primitive_list2->gt_pointset.first;
 							while (point_set&&point_set_2)
 							{
-								if (interpolate_point_set=morph_GT_pointset(proportion,
-									point_set,point_set_2))
+								interpolate_point_set=morph_GT_pointset(proportion,
+									point_set,point_set_2);
+								if (interpolate_point_set)
 								{
 									draw_pointsetGL(interpolate_point_set->n_pts,
 										interpolate_point_set->pointlist,
@@ -3418,15 +3475,16 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 				{
 					/*???debug */
 					/*printf("g_POLYLINE time=%g proportion=%g\n",time,proportion);*/
-					if (line = primitive_list1->gt_polyline.first)
+					line = primitive_list1->gt_polyline.first;
+					if (line)
 					{
 						if (proportion>0)
 						{
 							line_2 = primitive_list2->gt_polyline.first;
 						}
 #if defined (OPENGL_API)
-						if (lighting_off=((g_PLAIN == line->polyline_type)||
-							(g_PLAIN_DISCONTINUOUS == line->polyline_type)))
+						if (0 != (lighting_off=((g_PLAIN == line->polyline_type)||
+							(g_PLAIN_DISCONTINUOUS == line->polyline_type))))
 						{
 							/* disable lighting so rendered in flat diffuse colour */
 							/*???RC glPushAttrib and glPopAttrib are *very* slow */
@@ -3454,8 +3512,9 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										if ((name_selected&&draw_selected)||
 											((!name_selected)&&(!draw_selected)))
 										{
-											if (interpolate_line=morph_GT_polyline(proportion,line,
-												line_2))
+											interpolate_line=morph_GT_polyline(proportion,
+												line,line_2);
+											if (interpolate_line)
 											{
 												if (picking_names)
 												{
@@ -3530,8 +3589,9 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										if ((name_selected&&draw_selected)||
 											((!name_selected)&&(!draw_selected)))
 										{
-											if (interpolate_line=morph_GT_polyline(proportion,line,
-												line_2))
+											interpolate_line=morph_GT_polyline(proportion,line,
+												line_2);
+											if (interpolate_line)
 											{
 												if (picking_names)
 												{
@@ -3604,10 +3664,11 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 				case g_POLYLINE_VERTEX_BUFFERS:
 				{
 					GT_polyline_vertex_buffers *line;
-					if (line = primitive_list1->gt_polyline_vertex_buffers)
+					line = primitive_list1->gt_polyline_vertex_buffers;
+					if (line)
 					{
-						if (lighting_off=((g_PLAIN == line->polyline_type)||
-							(g_PLAIN_DISCONTINUOUS == line->polyline_type)))
+						if (0 != (lighting_off=((g_PLAIN == line->polyline_type)||
+							(g_PLAIN_DISCONTINUOUS == line->polyline_type))))
 						{
 							/* disable lighting so rendered in flat diffuse colour */
 							/*???RC glPushAttrib and glPopAttrib are *very* slow */
@@ -3838,7 +3899,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 				} break;
 				case g_SURFACE:
 				{
-					if (surface = primitive_list1->gt_surface.first)
+					surface = primitive_list1->gt_surface.first;
+					if (surface)
 					{
 #if defined (OPENGL_API)
 						if (picking_names)
@@ -3877,8 +3939,9 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										if ((name_selected&&draw_selected)||
 											((!name_selected)&&(!draw_selected)))
 										{
-											if (interpolate_surface=morph_GT_surface(proportion,
-												surface,surface_2))
+											interpolate_surface=morph_GT_surface(proportion,
+												surface,surface_2);
+											if (interpolate_surface)
 											{
 												if (picking_names)
 												{
@@ -4018,8 +4081,9 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										if ((name_selected&&draw_selected)||
 											((!name_selected)&&(!draw_selected)))
 										{
-											if (interpolate_surface=morph_GT_surface(proportion,
-												surface,surface_2))
+											interpolate_surface=morph_GT_surface(proportion,
+												surface,surface_2);
+											if (interpolate_surface)
 											{
 												if (picking_names)
 												{
@@ -4107,7 +4171,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 						glPushName(0);
 					}
 #endif /* defined (OPENGL_API) */
-					if (nurbs = primitive_list1->gt_nurbs.first)
+					nurbs = primitive_list1->gt_nurbs.first;
+					if (nurbs)
 					{
 						return_code = 1;
 						while(return_code && nurbs)
@@ -4150,7 +4215,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 					glPushAttrib(GL_TRANSFORM_BIT);
 					glEnable(GL_NORMALIZE);
 #endif /* defined (OPENGL_API) */
-					if (userdef = primitive_list1->gt_userdef.first)
+					userdef = primitive_list1->gt_userdef.first;
+					if (userdef)
 					{
 						if (userdef->render_function)
 						{
@@ -4253,8 +4319,8 @@ static int Graphics_object_compile_members_opengl(GT_object *graphics_object_lis
 						{
 							for (i = 0 ; i < graphics_object->number_of_times ; i++)
 							{
-								if (glyph_set =
-									graphics_object->primitive_lists[i].gt_glyph_set.first)
+								glyph_set = graphics_object->primitive_lists[i].gt_glyph_set.first;
+								if (glyph_set)
 								{
 									renderer->Graphics_object_compile(glyph_set->glyph);
 									if (glyph_set->font)
@@ -4273,8 +4339,8 @@ static int Graphics_object_compile_members_opengl(GT_object *graphics_object_lis
 						{
 							for (i = 0 ; i < graphics_object->number_of_times ; i++)
 							{
-								if (point =
-									graphics_object->primitive_lists[i].gt_point.first)
+								point = graphics_object->primitive_lists[i].gt_point.first;
+								if (point)
 								{
 									if (point->font)
 									{
@@ -4292,8 +4358,8 @@ static int Graphics_object_compile_members_opengl(GT_object *graphics_object_lis
 						{
 							for (i = 0 ; i < graphics_object->number_of_times ; i++)
 							{
-								if (point_set =
-									graphics_object->primitive_lists[i].gt_pointset.first)
+								point_set = graphics_object->primitive_lists[i].gt_pointset.first;
+								if (point_set)
 								{
 									if (point_set->font)
 									{
@@ -4302,6 +4368,10 @@ static int Graphics_object_compile_members_opengl(GT_object *graphics_object_lis
 								}
 							}
 						}
+					} break;
+					default:
+					{
+						/* Do nothing, satisfy warnings */
 					} break;
 				}
 			}

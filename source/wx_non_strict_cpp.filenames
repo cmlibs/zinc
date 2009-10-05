@@ -60,7 +60,6 @@ graphics/graphics_window.cpp
 graphics/light_model.cpp
 graphics/material.cpp
 graphics/render_to_finite_elements.cpp
-graphics/rendergl.cpp
 graphics/renderstl.cpp
 graphics/rendervrml.cpp
 graphics/renderwavefront.cpp
