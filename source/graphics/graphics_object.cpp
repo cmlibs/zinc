@@ -1811,7 +1811,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 			}
 			if (point)
 			{
-				if (surface=CREATE(GT_surface)(initial->surface_type,initial->polygon,
+				if (surface=CREATE(GT_surface)(initial->surface_type,initial->render_type,initial->polygon,
 					initial->n_pts1,initial->n_pts2,point,normallist,tangentlist,texturelist,
 					initial->n_data_components,data))
 				{
@@ -2212,7 +2212,7 @@ Creates a new GT_surface which is the interpolation of two GT_surfaces.
 		}
 		if (point)
 		{
-			if (surface=CREATE(GT_surface)(initial->surface_type,initial->polygon,
+			if (surface=CREATE(GT_surface)(initial->surface_type,initial->render_type,initial->polygon,
 				initial->n_pts1,initial->n_pts2,point,normallist,tangentlist,texturelist,
 				initial->n_data_components,data))
 			{
@@ -3349,7 +3349,8 @@ Sets the integer identifier used by the graphics to distinguish this object.
 } /* GT_polyline_set_integer_identifier */
 
 struct GT_surface *CREATE(GT_surface)(enum GT_surface_type surface_type,
-	gtPolygonType polytype,int n_pts1,int n_pts2,Triple *pointlist,
+	enum Render_type render_type, gtPolygonType polytype,
+	int n_pts1,int n_pts2,Triple *pointlist,
 	Triple *normallist, Triple *tangentlist, Triple *texturelist,
 	int n_data_components,GTDATA *data)
 /*******************************************************************************
@@ -3365,6 +3366,7 @@ Allocates memory and assigns fields for a graphics surface.
 	if (ALLOCATE(surface,struct GT_surface,1))
 	{
 		surface->surface_type=surface_type;
+		surface->render_type=render_type;
 		surface->polygon=polytype;
 		surface->n_pts1=n_pts1;
 		surface->n_pts2=n_pts2;
@@ -4963,12 +4965,10 @@ will produce the range of all the graphics objects.
 									case g_SH_DISCONTINUOUS_TEXMAP:
 									case g_SH_DISCONTINUOUS_STRIP:
 									case g_SH_DISCONTINUOUS_STRIP_TEXMAP:
-									case g_WIREFRAME_SH_DISCONTINUOUS_TEXMAP:
 										number_of_positions=(surface->n_pts1)*(surface->n_pts2);
 										break;
 									case g_SHADED:
 									case g_SHADED_TEXMAP:
-									case g_WIREFRAME_SHADED_TEXMAP:
 										number_of_positions=(surface->n_pts1)*(surface->n_pts1+1)/2;
 										break;
 									default:
@@ -5311,7 +5311,6 @@ valid.
 								case g_SH_DISCONTINUOUS_TEXMAP:
 								case g_SH_DISCONTINUOUS_STRIP:
 								case g_SH_DISCONTINUOUS_STRIP_TEXMAP:
-								case g_WIREFRAME_SH_DISCONTINUOUS_TEXMAP:
 								{
 									while (surface)
 									{

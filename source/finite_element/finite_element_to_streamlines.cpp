@@ -1539,9 +1539,9 @@ in that region.
 					ALLOCATE(normalpoints,Triple,surface_points_per_step*number_of_stream_points)
 					&&((g_NO_DATA==gt_data_type)||data))
 				{
-					if (surface=CREATE(GT_surface)(g_SHADED_TEXMAP,g_QUADRILATERAL,
-						surface_points_per_step,number_of_stream_points,points,
-						normalpoints, /*tangentpoints*/(Triple *)NULL,
+					if (surface=CREATE(GT_surface)(g_SHADED_TEXMAP,RENDER_TYPE_SHADED,
+						g_QUADRILATERAL,surface_points_per_step,number_of_stream_points,
+						points, normalpoints, /*tangentpoints*/(Triple *)NULL,
 						/*texturepoints*/(Triple *)NULL,gt_data_type,data))
 					{
 						point = points;

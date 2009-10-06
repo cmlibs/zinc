@@ -174,8 +174,6 @@ without knowing which order the types are in.
 	g_SH_DISCONTINUOUS_TEXMAP, /* old 7 */
 	g_SH_DISCONTINUOUS_STRIP,
 	g_SH_DISCONTINUOUS_STRIP_TEXMAP,
-	g_WIREFRAME_SHADED_TEXMAP,
-	g_WIREFRAME_SH_DISCONTINUOUS_TEXMAP,
 	g_SURFACE_TYPE_AFTER_LAST
 };
 
@@ -815,7 +813,8 @@ Sets the integer identifier used by the graphics to distinguish this object.
 ==============================================================================*/
 
 struct GT_surface *CREATE(GT_surface)(enum GT_surface_type surface_type,
-	gtPolygonType polytype,int n_pts1,int n_pts2,Triple *pointlist,
+	enum Render_type render_type, gtPolygonType polytype,
+	int n_pts1,int n_pts2,Triple *pointlist,
 	Triple *normallist, Triple *tangentlist, Triple *texturelist,
 	int n_data_components,GTDATA *data);
 /*******************************************************************************

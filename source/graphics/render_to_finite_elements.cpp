@@ -620,7 +620,6 @@ DESCRIPTION :
 		{
 			case g_SHADED:
 			case g_SHADED_TEXMAP:
-			case g_WIREFRAME_SHADED_TEXMAP:
 			{
 				switch (polygon_type)
 				{
@@ -674,7 +673,6 @@ DESCRIPTION :
 				{
 					case g_SHADED:
 					case g_SHADED_TEXMAP:
-					case g_WIREFRAME_SHADED_TEXMAP:
 					{
 						switch (polygon_type)
 						{

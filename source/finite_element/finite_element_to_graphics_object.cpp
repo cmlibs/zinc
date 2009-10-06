@@ -1828,7 +1828,6 @@ Notes:
 		end_aligned_normal[3], facet_angle, jacobian[9], length, normal_1, normal_2,
 		normal_3, *radius_array, radius_derivative, radius_value, sin_theta,
 		tex_coordinates[3], theta, theta_change, xi, x, y;
-	enum GT_surface_type surface_type;
 	float texture_coordinate1;
 	GTDATA *data, *datum;
 	int facet_offset,i,j,k,n_data_components,number_of_points;
@@ -1869,23 +1868,12 @@ Notes:
 					"create_cylinder_from_FE_element.  Could allocate data");
 			}
 		}
-		switch (render_type)
-		{
-			case RENDER_TYPE_WIREFRAME:
-			{
-				surface_type = g_WIREFRAME_SHADED_TEXMAP;
-			} break;
-			default:
-			{
-				surface_type = g_SHADED_TEXMAP;
-			} break;
-		}
 		if ((data||(!n_data_components))&&
 			ALLOCATE(points,Triple,number_of_points)&&
 			ALLOCATE(normalpoints,Triple,number_of_points)&&
 			ALLOCATE(texturepoints,Triple,number_of_points)&&
 			ALLOCATE(radius_array,FE_value,3*(number_of_segments_along+1))&&
-			(surface=CREATE(GT_surface)(surface_type,g_QUADRILATERAL,
+			(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,render_type,g_QUADRILATERAL,
 				number_of_segments_around+1,number_of_segments_along+1,
 				points,normalpoints,(Triple *)NULL,texturepoints,n_data_components,data)))
 		{
@@ -2773,7 +2761,6 @@ normals are used.
 	char modified_reverse_normals,special_normals;
 	enum Collapsed_element_type collapsed_element;
 	enum FE_element_shape_type shape_type;
-	enum GT_surface_type surface_type;
 	FE_value coordinates[3],derivative_xi[6],texture_values[3],xi[2],xi2,
 		texture_derivative[6], texture_determinant;
 	float distance;
@@ -2839,23 +2826,12 @@ normals are used.
 					"create_GT_surface_from_FE_element.  Could allocate data");
 			}
 		}
-		switch (render_type)
-		{
-			case RENDER_TYPE_WIREFRAME:
-			{
-				surface_type = g_WIREFRAME_SHADED_TEXMAP;
-			} break;
-			default:
-			{
-				surface_type = g_SHADED_TEXMAP;
-			} break;
-		}
 		if ((data||(0==n_data_components))&&
 			ALLOCATE(points,Triple,number_of_points)&&
 			ALLOCATE(normalpoints,Triple,number_of_points)&&
 			(!texture_coordinate_field || (ALLOCATE(tangentpoints,Triple,number_of_points)&&
 			ALLOCATE(texturepoints,Triple,number_of_points)))&&
-			(surface=CREATE(GT_surface)(surface_type,polygon_type,
+			(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,render_type,polygon_type,
 			number_of_points_in_xi1,number_of_points_in_xi2, points,
 			normalpoints, tangentpoints, texturepoints, n_data_components,data)))
 		{

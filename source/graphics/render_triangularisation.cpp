@@ -124,7 +124,6 @@ int draw_surface_triangle_mesh(Triangle_mesh& trimesh, Triple *surfpts,
 		{
 			case g_SHADED:
 			case g_SHADED_TEXMAP:
-			case g_WIREFRAME_SHADED_TEXMAP:
 			{
 				int number_of_points = npts1*npts2;
 				if (polygon_type == g_TRIANGLE)

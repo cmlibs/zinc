@@ -1707,7 +1707,8 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 static int draw_surface_vrml(FILE *vrml_file,Triple *surfpts, Triple *normalpts,
 	Triple *texturepts, int number_of_data_components, GTDATA *data,
 	struct Graphical_material *material,struct Spectrum *spectrum,int npts1,
-	int npts2,enum GT_surface_type surface_type,gtPolygonType polygon_type,
+	int npts2,enum GT_surface_type surface_type,enum Render_type render_type,
+	gtPolygonType polygon_type,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
 LAST MODIFIED : 9 July 1999
@@ -1729,7 +1730,6 @@ DESCRIPTION :
 		{
 			case g_SHADED:
 			case g_SHADED_TEXMAP:
-			case g_WIREFRAME_SHADED_TEXMAP:
 			{
 				switch (polygon_type)
 				{
@@ -1774,7 +1774,7 @@ DESCRIPTION :
 				write_texture_vrml(vrml_file, texture);
 			}
 			fprintf(vrml_file,"}\n");
-			if (g_WIREFRAME_SHADED_TEXMAP==surface_type)
+			if (RENDER_TYPE_WIREFRAME == render_type)
 			{
 				fprintf(vrml_file,"  geometry IndexedLineSet {\n");
 			}
@@ -1794,7 +1794,7 @@ DESCRIPTION :
 			}
 			fprintf(vrml_file,"      ]\n");
 			fprintf(vrml_file,"    }\n");
-			if (g_WIREFRAME_SHADED_TEXMAP!=surface_type)
+			if (RENDER_TYPE_SHADED == render_type)
 			{
 				if (triple=normalpts)
 				{
@@ -1821,7 +1821,7 @@ DESCRIPTION :
 				spectrum_end_rendervrml(vrml_file, spectrum);
 			}
 			/* texture coordinates */
-			if (g_WIREFRAME_SHADED_TEXMAP!=surface_type)
+			if (RENDER_TYPE_SHADED == render_type)
 			{
 				if (triple=texturepts)
 				{
@@ -1842,14 +1842,13 @@ DESCRIPTION :
 			{
 				case g_SHADED:
 				case g_SHADED_TEXMAP:
-				case g_WIREFRAME_SHADED_TEXMAP:
 				{
 					switch (polygon_type)
 					{
 						case g_QUADRILATERAL:
 						{
 							index=0;
-							if (g_WIREFRAME_SHADED_TEXMAP==surface_type)
+							if (RENDER_TYPE_WIREFRAME == render_type)
 							{
 								for (j=0;j<npts2-1;j++)
 								{
@@ -1883,7 +1882,7 @@ DESCRIPTION :
 							/* triangle strip */
 							index_1=0;
 							index_2=index_1+npts1;
-							if (g_WIREFRAME_SHADED_TEXMAP==surface_type)
+							if (RENDER_TYPE_WIREFRAME == render_type)
 							{
 								for (i=npts1-1;i>0;i--)
 								{
@@ -1933,7 +1932,7 @@ DESCRIPTION :
 				case g_SH_DISCONTINUOUS:
 				case g_SH_DISCONTINUOUS_TEXMAP:
 				{
-					if (g_WIREFRAME_SHADED_TEXMAP==surface_type)
+					if (RENDER_TYPE_WIREFRAME == render_type)
 					{
 						/* npts1 = number of polygons */
 						for (i=0;i<npts1;i++)
@@ -1970,7 +1969,7 @@ DESCRIPTION :
 				} break;
 			}
 			fprintf(vrml_file,"    ]\n");
-			if (g_WIREFRAME_SHADED_TEXMAP==surface_type)
+			if (RENDER_TYPE_WIREFRAME == render_type)
 			{
 				fprintf(vrml_file,"  } #IndexedLineSet\n");
 			}
@@ -2495,7 +2494,7 @@ Only writes the geometry field.
 										interpolate_surface->data,object->default_material,
 										object->spectrum,interpolate_surface->n_pts1,
 										interpolate_surface->n_pts2,surface->surface_type,
-										surface->polygon,vrml_prototype_list);
+										surface->render_type,surface->polygon,vrml_prototype_list);
 									DESTROY(GT_surface)(&interpolate_surface);
 								}
 								surface=surface->ptrnext;
@@ -2510,8 +2509,8 @@ Only writes the geometry field.
 									surface->normallist,surface->texturelist,
 									surface->n_data_components,surface->data,
 									object->default_material,object->spectrum,surface->n_pts1,
-									surface->n_pts2,surface->surface_type,surface->polygon,
-									vrml_prototype_list);
+									surface->n_pts2,surface->surface_type,surface->render_type,
+									surface->polygon,vrml_prototype_list);
 								surface=surface->ptrnext;
 							}
 						}

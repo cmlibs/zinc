@@ -3113,8 +3113,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 	Graphics_object_rendering_type rendering_type)
 {
 	float proportion,*times;
-	int itime, name_selected, number_of_times, picking_names, return_code, strip,
-		wireframe_flag;
+	int itime, name_selected, number_of_times, picking_names, return_code, strip;
 #if defined (OPENGL_API)
 	int lighting_off, line_width;
 #endif /* defined (OPENGL_API) */
@@ -3904,6 +3903,12 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 						{
 							glPushName(0);
 						}
+						bool wireframe_flag = (surface->render_type == RENDER_TYPE_WIREFRAME);
+						if (wireframe_flag)
+						{
+							glPushAttrib(GL_POLYGON_BIT);
+							glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+						}
 #endif /* defined (OPENGL_API) */
 						if (proportion>0)
 						{
@@ -3913,18 +3918,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 						{
 							case g_SHADED:
 							case g_SHADED_TEXMAP:
-							case g_WIREFRAME_SHADED_TEXMAP:
 							{
-								if (surface->surface_type == g_WIREFRAME_SHADED_TEXMAP)
-								{
-									glPushAttrib(GL_POLYGON_BIT);
-									glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
-									wireframe_flag = 1;
-								}
-								else
-								{
-									wireframe_flag = 0;
-								}
 								if (proportion>0)
 								{
 									while (surface&&surface_2)
@@ -4043,28 +4037,13 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										surface=surface->ptrnext;
 									}
 								}
-								if (wireframe_flag)
-								{
-									glPopAttrib();
-								}
 								return_code=1;
 							} break;
 							case g_SH_DISCONTINUOUS:
 							case g_SH_DISCONTINUOUS_STRIP:
 							case g_SH_DISCONTINUOUS_TEXMAP:
 							case g_SH_DISCONTINUOUS_STRIP_TEXMAP:
-							case g_WIREFRAME_SH_DISCONTINUOUS_TEXMAP:
 							{
-								if (surface->surface_type == g_WIREFRAME_SH_DISCONTINUOUS_TEXMAP)
-								{
-									glPushAttrib(GL_POLYGON_BIT);
-									glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
-									wireframe_flag = 1;
-								}
-								else
-								{
-									wireframe_flag = 0;
-								}
 								strip=((g_SH_DISCONTINUOUS_STRIP_TEXMAP==surface->surface_type)
 									||(g_SH_DISCONTINUOUS_STRIP==surface->surface_type));
 								if (proportion>0)
@@ -4130,10 +4109,6 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										surface=surface->ptrnext;
 									}
 								}
-								if (wireframe_flag)
-								{
-									glPopAttrib();
-								}
 								return_code=1;
 							} break;
 							default:
@@ -4144,6 +4119,10 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 							} break;
 						}
 #if defined (OPENGL_API)
+						if (wireframe_flag)
+						{
+							glPopAttrib();
+						}
 						if (picking_names)
 						{
 							glPopName();

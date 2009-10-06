@@ -403,7 +403,6 @@ int draw_surface_stl(Stl_context& stl_context, Triple *surfpts,
 		{
 			case g_SHADED:
 			case g_SHADED_TEXMAP:
-			case g_WIREFRAME_SHADED_TEXMAP:
 			{
 				switch (polygon_type)
 				{

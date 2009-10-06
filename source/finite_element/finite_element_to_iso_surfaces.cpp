@@ -1961,11 +1961,9 @@ int create_iso_surfaces_from_FE_element_new(struct FE_element *element,
 				{
 					return_code = 0;
 				}
-				const GT_surface_type surface_type = (render_type == RENDER_TYPE_WIREFRAME) ?
-					g_WIREFRAME_SH_DISCONTINUOUS_TEXMAP : g_SH_DISCONTINUOUS_TEXMAP;
 				if (return_code)
 				{
-					GT_surface *surface = CREATE(GT_surface)(surface_type, /*polygon_type*/g_TRIANGLE,
+					GT_surface *surface = CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP, render_type, g_TRIANGLE,
 						/*number_of_points_in_xi1*/number_of_triangles, /*number_of_points_in_xi2*/3, points,
 						normalpoints, tangentpoints, texturepoints, n_data_components, data);
 					if (!GT_OBJECT_ADD(GT_surface)(graphics_object, time, surface))
