@@ -1127,7 +1127,7 @@ Creates a spectrum_editor widget.
 										{
 											ACCESS(GT_object)(spectrum_editor->graphics_object);
 											if (cylinder_surface=CREATE(GT_surface)(
-												g_SHADED_TEXMAP, g_QUADRILATERAL,
+												g_SHADED_TEXMAP, RENDER_TYPE_SHADED, g_QUADRILATERAL,
 												surface_discretise_xi2, surface_discretise_xi1,
 												points, normalpoints, /*tangentpoints*/(Triple *)NULL,
 												/*texturepoints*/(Triple *)NULL,
