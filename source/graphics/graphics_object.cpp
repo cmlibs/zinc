@@ -4116,6 +4116,12 @@ change to any material in use in the linked graphics objects.
 					/* need to rebuild display list when spectrum in use */
 					graphics_object->compile_status = GRAPHICS_NOT_COMPILED;
 				}
+				else if ((graphics_object->object_type == g_POLYLINE_VERTEX_BUFFERS) &&
+					(graphics_object->secondary_material))
+				{
+					/* vertex positions are calculated from the secondary material so need to be updated */
+					graphics_object->compile_status = GRAPHICS_NOT_COMPILED;					
+				}
 				else
 				{
 					if (GRAPHICS_NOT_COMPILED != graphics_object->compile_status)
