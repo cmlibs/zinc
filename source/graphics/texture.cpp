@@ -102,6 +102,11 @@ enum Texture_compile_state
 	TEXTURE_COMPILE_STATE_TEXTURE_OBJECT_COMPILED
 };
 
+typedef enum
+{
+	CMISS_TEXTURE_LUMINANCE_SIZE = 1
+} Cmiss_texture_graphics_parameter_id;
+
 DECLARE_LIST_TYPES(Texture_property);
 
 PROTOTYPE_OBJECT_FUNCTIONS(Texture_property);
@@ -491,11 +496,25 @@ DESCRIPTION :
 	{
 		case TEXTURE_LUMINANCE:
 		{
-			*format=GL_LUMINANCE;
+			if (number_of_bytes_per_component == 2)
+			{
+				*format=GL_LUMINANCE;
+			}
+			else
+			{
+				*format=GL_LUMINANCE;
+			}
 		} break;
 		case TEXTURE_LUMINANCE_ALPHA:
 		{
-			*format=GL_LUMINANCE_ALPHA;
+			if (number_of_bytes_per_component == 2)
+			{
+				*format=GL_LUMINANCE16_ALPHA16;
+			}
+			else
+			{
+				*format=GL_LUMINANCE_ALPHA;
+			}
 		} break;
 		case TEXTURE_RGB:
 		{
@@ -556,7 +575,8 @@ DESCRIPTION :
 	
 #if defined (OPENGL_API)
 static int Texture_get_hardware_storage_format(
-	enum Texture_compression_mode compression_mode, int number_of_components)
+	enum Texture_compression_mode compression_mode, int number_of_components,
+	int number_of_bytes_per_component)
 /*******************************************************************************
 LAST MODIFIED : 8 August 2002
 
@@ -571,7 +591,37 @@ DESCRIPTION :
 	{
 		case TEXTURE_UNCOMPRESSED:
 		{
-			return_code = number_of_components;
+			switch (number_of_components)
+			{
+				case 1:
+				{
+					if (number_of_bytes_per_component == 2)
+						return_code = GL_LUMINANCE16;
+					else
+						return_code = number_of_components;
+				} break;
+				case 2:
+				{
+					if (number_of_bytes_per_component == 2)
+						return_code = GL_LUMINANCE16_ALPHA16;
+					else
+						return_code = number_of_components;
+				} break;
+				case 3:
+				{
+					return_code = number_of_components;
+				} break;
+				case 4:
+				{
+					return_code = number_of_components;
+				} break;
+				default:
+				{
+					display_message(WARNING_MESSAGE, "Texture_get_hardware_storage_format.  "
+						"Texture compression not supported for this number of components.");
+					return_code = number_of_components;
+				} break;
+			}
 		} break;
 		case TEXTURE_COMPRESSED_UNSPECIFIED:
 		{
@@ -1088,7 +1138,8 @@ tiles (and <texture_tiling> wasn't NULL.
 		Texture_get_type_and_format_from_storage_type(texture->storage,
 			texture->number_of_bytes_per_component, &type, &format);
 		hardware_texture_format = Texture_get_hardware_storage_format(
-			texture->compression_mode, number_of_components);
+			texture->compression_mode, number_of_components,
+			texture->number_of_bytes_per_component);
 
 		max_texture_size = 0;
 		if (texture->dimension > 2)
@@ -2259,7 +2310,8 @@ Directly outputs the commands setting up the <texture>.
 				number_of_components =
 					Texture_storage_type_get_number_of_components(texture->storage);
 				hardware_storage_format = Texture_get_hardware_storage_format
-					(texture->compression_mode, number_of_components);
+					(texture->compression_mode, number_of_components,
+					texture->number_of_bytes_per_component);
 
 				if (0 < (reduction_flag = Texture_get_hardware_reduction_or_tiling(texture,
 					 reductions, renderer->allow_texture_tiling, &renderer->texture_tiling)))
@@ -5569,6 +5621,70 @@ parameters.
 	return (size);
 } /* Texture_get_graphics_storage_size */
 
+int Cmiss_texture_get_graphics_parameter(Cmiss_texture_id texture,
+	Cmiss_texture_graphics_parameter_id graphics_parameter)
+/*******************************************************************************
+LAST MODIFIED : 12 October 2009
+
+DESCRIPTION :
+Returns information from the graphics system about the storage.
+These will only be defined if they have been rendered.
+==============================================================================*/
+{
+	int return_value;
+	GLenum texture_target;
+
+	ENTER(Cmiss_texture_get_graphics_parameter);
+	if (texture)
+	{
+		texture_target = Texture_get_target_enum(texture);
+		if (texture_target && texture->texture_id)
+		{
+			GLenum gl_parameter;
+			GLint gl_value;
+			
+			/* get the corresponding value */
+			switch (graphics_parameter)
+			{
+			/* LUMINANCE is deprecated in OpenGL.
+			 */
+			case CMISS_TEXTURE_LUMINANCE_SIZE:
+			{
+				gl_parameter = GL_TEXTURE_LUMINANCE_SIZE;
+			} break;
+			default:
+			{
+				gl_parameter = 0;
+			}
+			}
+			if (gl_parameter)
+			{
+				glBindTexture(texture_target, texture->texture_id);
+				glGetTexLevelParameteriv(texture_target, (GLint)0,
+				  gl_parameter, &gl_value);
+				return_value = gl_value;
+			}
+			else
+			{
+				return_value = 0;
+			}
+		}
+		else
+		{
+			return_value = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Texture_get_graphics_storage_size.  "
+			"Invalid argument(s)");
+		return_value = 0;
+	}
+	LEAVE;
+
+	return (return_value);
+} /* Texture_get_graphics_storage_size */
+
 int Texture_get_original_size(struct Texture *texture,
 	int *original_width_texels, int *original_height_texels, 
 	int *original_depth_texels)
@@ -6302,6 +6418,20 @@ Writes the properties of the <texture> to the command window.
 			"rendered depth (texels) = %d\n", texture->rendered_width_texels,
 			texture->rendered_height_texels, texture->rendered_depth_texels);
 
+		switch (texture->storage)
+		{
+		case TEXTURE_LUMINANCE:
+		{
+			int red_size = Cmiss_texture_get_graphics_parameter(texture,
+				CMISS_TEXTURE_LUMINANCE_SIZE);
+			display_message(INFORMATION_MESSAGE,"  pixel_storage_size %d\n",
+				red_size);
+		} break;
+		default:
+		{
+		} break;		
+		}
+		
 		/* write the colour */
 		display_message(INFORMATION_MESSAGE,
 			"  colour : red = %.3g, green = %.3g, blue = %.3g\n",
