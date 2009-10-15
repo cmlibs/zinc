@@ -2640,7 +2640,7 @@ void MoveUpInSettingList(wxCommandEvent &event)
 	void CoordinateFieldChecked(wxCommandEvent &event)
 	{
 		Computed_field *coordinate_field;
-	USE_PARAMETER(event);
+		USE_PARAMETER(event);
 		coordinatefieldcheckbox = XRCCTRL(*this, "CoordinateFieldCheckBox",wxCheckBox);
 		coordinate_field_chooser_panel = XRCCTRL(*this, "CoordinateFieldChooserPanel",wxPanel);
 		if (coordinatefieldcheckbox->IsChecked())
@@ -2696,19 +2696,21 @@ void MoveUpInSettingList(wxCommandEvent &event)
 		RenewLabelonList(scene_editor->current_settings);
  	}
 
-	void EnterIsoScalar(wxCommandEvent &event)
-	{
-		double *current_iso_values,decimation_threshold, *iso_values,
+void EnterIsoScalar(wxCommandEvent &event)
+{
+		double *current_iso_values = NULL ,decimation_threshold, *iso_values = NULL,
 			current_first_iso_value, current_last_iso_value, first_iso_value = 0.0,
 			last_iso_value = 0.0;
-		char *text_entry, temp_string[50], *vector_temp_string;
+		char *text_entry, temp_string[50], *vector_temp_string = NULL;
 		int allocated_length, changed_value = 0, error, i, length,
 			new_number_of_iso_values, number_of_iso_values,
 			offset, valid_value;
-		struct Computed_field *scalar_field;
+		struct Computed_field *scalar_field = NULL;
 #define VARIABLE_LENGTH_ALLOCATION_STEP (10)
 		
 	USE_PARAMETER(event);
+	if (scene_editor && scene_editor->current_settings)
+	{
 		GT_element_settings_get_iso_surface_parameters(
 			scene_editor->current_settings,&scalar_field,&number_of_iso_values,
 			&current_iso_values,
@@ -2716,12 +2718,12 @@ void MoveUpInSettingList(wxCommandEvent &event)
 			&decimation_threshold);
 		isovaluelistradiobutton=XRCCTRL(*this,"IsoValueListRadioButton",wxRadioButton);
 		isovaluesequenceradiobutton=XRCCTRL(*this,"IsoValueSequenceRadioButton",wxRadioButton);
-
+		
 		isoscalartextctrl=XRCCTRL(*this,"IsoScalarTextCtrl",wxTextCtrl);
 		isovaluesequencenumbertextctrl=XRCCTRL(*this,"IsoValueSequenceNumberTextCtrl",wxTextCtrl);
 		isovaluesequencefirsttextctrl=XRCCTRL(*this,"IsoValueSequenceFirstTextCtrl",wxTextCtrl);
 		isovaluesequencelasttextctrl=XRCCTRL(*this,"IsoValueSequenceLastTextCtrl",wxTextCtrl);
-
+		
 		if (isovaluelistradiobutton->GetValue())
 		{
 			isoscalartextctrl->Enable();
@@ -2874,8 +2876,8 @@ void MoveUpInSettingList(wxCommandEvent &event)
 				"wx_settings_editor_enter_iso_scalar.  Missing iso value option.");
 			
 		}
-
 	}
+}
 
 	void EnterGlyphCentre(wxCommandEvent &event)
 	{
