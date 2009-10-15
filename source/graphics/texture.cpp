@@ -5632,11 +5632,14 @@ These will only be defined if they have been rendered.
 ==============================================================================*/
 {
 	int return_value;
+#if defined (OPENGL_API)
 	GLenum texture_target;
+#endif
 
 	ENTER(Cmiss_texture_get_graphics_parameter);
 	if (texture)
 	{
+#if defined (OPENGL_API)
 		texture_target = Texture_get_target_enum(texture);
 		if (texture_target && texture->texture_id)
 		{
@@ -5673,6 +5676,9 @@ These will only be defined if they have been rendered.
 		{
 			return_value = 0;
 		}
+#else
+		return_value = 0;
+#endif
 	}
 	else
 	{
