@@ -5677,6 +5677,7 @@ These will only be defined if they have been rendered.
 			return_value = 0;
 		}
 #else
+		USE_PARAMETER(graphics_parameter);
 		return_value = 0;
 #endif
 	}
