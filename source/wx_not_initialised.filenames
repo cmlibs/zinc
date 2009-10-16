@@ -1,6 +1,3 @@
-curve/curve.c
-element/element_operations.c
-element/element_point_viewer_wx.cpp
 emoter/em_cmgui.c
 emoter/emoter_dialog.cpp
 finite_element/export_cm_files.c

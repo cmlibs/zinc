@@ -47,8 +47,6 @@ The public interface to the Cmiss fields.
 
 #include "api/cmiss_node.h"
 #include "api/cmiss_element.h"
-#include "general/object.h"
-#include "general/value.h"
 
 /*******************************************************************************
  Automatic scalar broadcast
@@ -547,7 +545,7 @@ used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
 int Cmiss_field_get_type_sum_components(Cmiss_field_id field,
-	Cmiss_field_id *source_field, FE_value **weights);
+	Cmiss_field_id *source_field, double **weights);
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -557,7 +555,7 @@ If the field is of type FIELD_SUM_COMPONENTS, the
 ==============================================================================*/
 
 int Cmiss_field_set_type_sum_components(Cmiss_field_id field,
-	Cmiss_field_id source_field, FE_value *weights);
+	Cmiss_field_id source_field, double *weights);
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 

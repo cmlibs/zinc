@@ -187,8 +187,8 @@ Creates and returns an element list that is the intersection of:
 Up to the calling function to destroy the returned element list.
 ==============================================================================*/
 {
-	int i, element_number, elements_in_region, elements_in_selection, elements_in_ranges,
-		number_of_ranges, return_code, selected, start, stop;
+	int i, element_number, elements_in_region, elements_in_selection = 0, elements_in_ranges = 0,
+		number_of_ranges = 0, return_code, selected, start, stop;
 	struct CM_element_information element_id;
 	struct FE_element *element;
 	struct FE_element_fe_region_selection_ranges_condition_data data;

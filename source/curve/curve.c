@@ -2587,7 +2587,7 @@ of the original.
 ==============================================================================*/
 {
 	int return_code,node_no,number_of_components,nodes_per_element;
-	FE_value *values,*derivatives,parameter1,parameter2,xi,sf;
+	FE_value *values = 0,*derivatives,parameter1,parameter2,xi,sf;
 	struct FE_node *destination,*source;
 	struct FE_element *element1,*element2,*original_element;
 
@@ -4375,7 +4375,7 @@ DESCRIPTION :
 	enum Curve_extend_mode extend_mode;
 	enum FE_basis_type new_fe_basis_type;
 	FE_value *max_value,*min_value,parameter_grid,value_grid;
-	int comp_no,existing_number_of_components,new_number_of_components,
+	int comp_no,existing_number_of_components,new_number_of_components = 0,
 		number_of_components,number_of_valid_strings,return_code;
 	struct Curve *temp_curve;
 	struct Curve_definition *curve_definition;
@@ -4591,7 +4591,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	const char *current_token;
-	int return_code;
+	int return_code = 0;
 	struct Curve_definition *curve_definition;
 	struct Modifier_entry
 		help_option_table[]=
@@ -5206,7 +5206,7 @@ appropriateness to curve usage.
 {
 	char *file_name;
 	enum FE_basis_type fe_basis_type;
-	int number_of_components,return_code;
+	int number_of_components = 0,return_code = 0;
 	struct Cmiss_region *child_region;
 	struct Curve *curve;
 	struct FE_basis *fe_basis;

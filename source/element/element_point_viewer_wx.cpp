@@ -1112,7 +1112,7 @@ public:
 				 XRCCTRL(*this,"XiTextCtrl", wxTextCtrl);
 			Element_point_viewer_refresh_xi_text(element_point_viewer);
 
-			struct Computed_field *grid_field;
+			struct Computed_field *grid_field = 0;
 			struct MANAGER(Computed_field) *computed_field_manager;
 			if (computed_field_manager = Computed_field_package_get_computed_field_manager(
 						 element_point_viewer->computed_field_package))
@@ -1995,7 +1995,7 @@ DESCRIPTION :
 Updates the value on the text ctrl.
 ==============================================================================*/
 {
-	char *value_string;
+	char *value_string = 0;
 	FE_value time, *xi;
 	int number_of_components;
 	struct FE_element *element,*top_level_element;
