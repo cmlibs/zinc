@@ -123,7 +123,7 @@ Cmiss_field_id Cmiss_field_create_subtract(
  * @return Newly created field
  */
 Cmiss_field_id Cmiss_field_create_sum_components(
-	Cmiss_field_id source_field, FE_value *weights);
+	Cmiss_field_id source_field, double *weights);
 
 /*****************************************************************************//**
  * Creates a field where the field components are the natural logarithm 

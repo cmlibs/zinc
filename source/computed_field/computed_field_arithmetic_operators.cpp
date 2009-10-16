@@ -3944,7 +3944,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_sum_components(
-	struct Computed_field *source_field, FE_value *weights)
+	struct Computed_field *source_field, double *weights)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -4005,7 +4005,7 @@ although its cache may be lost.
 } /* Computed_field_create_sum_components */
 
 int Computed_field_get_type_sum_components(struct Computed_field *field,
-	struct Computed_field **source_field, FE_value **weights)
+	struct Computed_field **source_field, double **weights)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -4019,7 +4019,7 @@ If the field is of type COMPUTED_FIELD_SUM_COMPONENTS, the
 	ENTER(Computed_field_get_type_sum_components);
 	if (field && (dynamic_cast<Computed_field_sum_components*>(field->core)))
 	{
-		if (ALLOCATE(*weights, FE_value,
+		if (ALLOCATE(*weights, double,
 			field->source_fields[0]->number_of_components))
 		{
 			*source_field = field->source_fields[0];
@@ -4058,7 +4058,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	const char *current_token;
-	FE_value *weights, *temp_weights;
+	double *weights, *temp_weights;
 	int i, number_of_weights, previous_number_of_weights, return_code;
 	struct Computed_field *field,*source_field;
 	Computed_field_modify_data *field_modify;
@@ -4078,7 +4078,7 @@ already) and allows its contents to be modified.
 			Computed_field_has_numerical_components;
 		set_source_field_data.conditional_function_user_data = (void *)NULL;
 		source_field = (struct Computed_field *)NULL;
-		weights = (FE_value *)NULL;
+		weights = (double *)NULL;
 		previous_number_of_weights = 0;
 		if (computed_field_sum_components_type_string ==
 			Computed_field_get_type_string(field))
@@ -4100,8 +4100,8 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();					
 				Option_table_add_entry(option_table, "field", &source_field,
 					&set_source_field_data, set_Computed_field_conditional);
-				Option_table_add_entry(option_table, "weights", weights,
-					&previous_number_of_weights, set_FE_value_array);
+				Option_table_add_double_vector_entry(option_table,
+					"weights", weights, &previous_number_of_weights);
 				return_code = Option_table_multi_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 			}
@@ -4120,7 +4120,7 @@ already) and allows its contents to be modified.
 						if (source_field)
 						{
 							number_of_weights = source_field->number_of_components;
-							if (REALLOCATE(temp_weights, weights, FE_value,
+							if (REALLOCATE(temp_weights, weights, double,
 								number_of_weights))
 							{
 								weights = temp_weights;
@@ -4157,8 +4157,8 @@ already) and allows its contents to be modified.
 			{
 				option_table = CREATE(Option_table)();
 				number_of_weights = source_field->number_of_components;
-				Option_table_add_entry(option_table, "weights", weights,
-					&number_of_weights, set_FE_value_array);
+				Option_table_add_double_vector_entry(option_table,
+					"weights", weights, &number_of_weights);
 				return_code = Option_table_multi_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 			}
