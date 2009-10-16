@@ -217,6 +217,8 @@ object.
 	/** A buffer allocated large enough for evaluating the data field */
 	FE_value *data_copy_buffer;
 
+	struct Iso_surface_specification *iso_surface_specification;
+	
 	/* additional values for passing to element_to_graphics_object */
 	struct GT_element_settings *settings;
 };

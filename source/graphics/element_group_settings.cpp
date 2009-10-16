@@ -5758,48 +5758,11 @@ Converts a finite element into a graphics object with the supplied settings.
 										}
 										else
 										{
-											if (settings->iso_values)
-											{
-												for (i = 0 ; (i < settings->number_of_iso_values) && return_code ; i++)
-												{
-													return_code = create_iso_surfaces_from_FE_element_new(element,
-														settings_to_object_data->time, number_in_xi,
-														settings->iso_values[i],
-														settings_to_object_data->rc_coordinate_field,
-														settings->data_field, settings->iso_scalar_field,
-														settings->texture_coordinate_field,
-														settings->graphics_object,
-														settings->render_type);
-												}
-											}
-											else
-											{
-												double iso_value_range;
-												if (settings->number_of_iso_values > 1)
-												{
-													iso_value_range =
-														(settings->last_iso_value - settings->first_iso_value)
-														/ (double)(settings->number_of_iso_values - 1);
-												}
-												else
-												{
-													iso_value_range = 0;
-												}
-												for (i = 0 ; (i < settings->number_of_iso_values) && return_code; i++)
-												{
-													double iso_value = 
-														settings->first_iso_value +
-														(double)i * iso_value_range;
-													return_code = create_iso_surfaces_from_FE_element_new(element,
-														settings_to_object_data->time, number_in_xi,
-														iso_value,
-														settings_to_object_data->rc_coordinate_field,
-														settings->data_field, settings->iso_scalar_field,
-														settings->texture_coordinate_field,
-														settings->graphics_object,
-														settings->render_type);
-												}
-											}
+											return_code = create_iso_surfaces_from_FE_element_new(element,
+												settings_to_object_data->time, number_in_xi,
+												settings_to_object_data->iso_surface_specification,
+												settings->graphics_object,
+												settings->render_type);
 										}
 									}
 									else
@@ -6385,7 +6348,8 @@ The graphics object is stored with with the settings it was created from.
 										{
 											case USE_ELEMENTS:
 											{
-												graphics_object_type = g_VOLTEX; // GRC future: g_SURFACE
+												graphics_object_type = g_VOLTEX;
+												//graphics_object_type = g_SURFACE; // GRC for new isosurfaces
 												if (first_element = FE_region_get_first_FE_element_that(
 														 fe_region, FE_element_is_top_level, (void *)NULL))
 												{
@@ -6562,10 +6526,24 @@ The graphics object is stored with with the settings it was created from.
 								} break;
 								case GT_ELEMENT_SETTINGS_ISO_SURFACES:
 								{
-									return_code = FE_region_for_each_FE_element(fe_region,
-										
+									if (g_SURFACE == GT_object_get_type(settings->graphics_object))
+									{
+										settings_to_object_data->iso_surface_specification =
+											Iso_surface_specification_create(
+												settings->number_of_iso_values, settings->iso_values,
+												settings->first_iso_value, settings->last_iso_value,
+												settings_to_object_data->rc_coordinate_field,
+												settings->data_field,
+												settings->iso_scalar_field,
+												settings->texture_coordinate_field);
+									}
+									return_code = FE_region_for_each_FE_element(fe_region,									
 										FE_element_to_graphics_object, 
 										settings_to_object_data_void);
+									if (g_SURFACE == GT_object_get_type(settings->graphics_object))
+									{
+										Iso_surface_specification_destroy(&settings_to_object_data->iso_surface_specification);
+									}
 									/* If the isosurface is a volume we can decimate and
 										then normalise, otherwise if it is a polyline
 										representing a isolines, skip over. */

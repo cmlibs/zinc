@@ -338,6 +338,8 @@ rendering.
 			settings_to_object_data.selected_node_list =
 				FE_node_selection_get_node_list(gt_element_group->node_selection);
 
+			settings_to_object_data.iso_surface_specification = NULL;
+			
 			return_code = FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
 				GT_element_settings_to_graphics_object,(void *)&settings_to_object_data,
 				gt_element_group->list_of_settings);
