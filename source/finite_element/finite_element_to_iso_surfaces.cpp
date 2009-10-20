@@ -61,7 +61,7 @@ struct Iso_surface_specification
 {
 public:
 	double first_iso_value, *iso_values, iso_value_range, last_iso_value;
-	int number_of_iso_values;
+	int number_of_data_components, number_of_iso_values;
 	struct Computed_field *coordinate_field, *data_field, *scalar_field,
 		*texture_coordinate_field;
 
@@ -175,11 +175,9 @@ public:
 	FE_value coordinates[3];
 	FE_value normal[3];
 	FE_value texture_coordinates[3];
-	int number_of_data_components; // GRC point to shared object for this?
-	GTDATA *data;
+	FE_value *data;
 
 	Iso_vertex() :
-		number_of_data_components(0),
 		data(NULL)
 	{
 		xi[0] = 0.0;
@@ -195,47 +193,24 @@ public:
 		texture_coordinates[1] = 0.0;
 		texture_coordinates[2] = 0.0;
 	}
-
-	Iso_vertex(const Iso_vertex& in_vertex) :
-		data(NULL)
-	{
-		operator=(in_vertex);
-	}
 	
 	~Iso_vertex()
 	{
 		delete[] data;
 	}
-	
-	void operator=(const Iso_vertex& in_vertex)
+
+	/** takes ownership of supplied data array */
+	void set_data(FE_value *in_data)
 	{
-		xi[0] = in_vertex.xi[0];
-		xi[1] = in_vertex.xi[1];
-		xi[2] = in_vertex.xi[2];
-		coordinates[0] = in_vertex.coordinates[0];
-		coordinates[1] = in_vertex.coordinates[1];
-		coordinates[2] = in_vertex.coordinates[2];
-		normal[0] = in_vertex.normal[0];
-		normal[1] = in_vertex.normal[1];
-		normal[2] = in_vertex.normal[2];
-		texture_coordinates[0] = in_vertex.texture_coordinates[0];
-		texture_coordinates[1] = in_vertex.texture_coordinates[1];
-		texture_coordinates[2] = in_vertex.texture_coordinates[2];
-		number_of_data_components = in_vertex.number_of_data_components;
-		delete data;
-		if (NULL != in_vertex.data)
-		{
-			data = new GTDATA[number_of_data_components];
-			for (int i = 0; i < number_of_data_components; i++)
-			{
-				data[i] = in_vertex.data[i];
-			}
-		}
-		else
-		{
-			data = NULL;
-		}
+		// note: not expecting to set twice
+		data = in_data;
 	}
+
+private:
+	// following methods are private and undefined to prevent copy
+	Iso_vertex(const Iso_vertex& in_vertex);
+
+	void operator=(const Iso_vertex& in_vertex);
 };
 
 inline FE_value square_distance3(const FE_value *c1, const FE_value *c2)
@@ -300,11 +275,11 @@ public:
 		return NULL;
 	}
 
-	const Iso_vertex *add_vertex(const Point_index_pair& pp, const Iso_vertex& vertex)
+	/** transfers ownership of vertex to mesh */
+	const Iso_vertex *add_vertex(const Point_index_pair& pp, Iso_vertex* vertex)
 	{
-		Iso_vertex *new_vertex = new Iso_vertex(vertex);
-		vertex_map[pp] = new_vertex;
-		return new_vertex;
+		vertex_map[pp] = vertex;
+		return vertex;
 	}
 	
 	/**
@@ -632,6 +607,7 @@ private:
 	double current_iso_value;
 	Computed_field *coordinate_field, *data_field, *scalar_field,
 		*texture_coordinate_field;
+	const int number_of_data_components;
 	int plane_size;
 	double *plane_scalars;
 	bool cube, polygon12, polygon13, polygon23, simplex12, simplex13, simplex23,
@@ -807,6 +783,7 @@ Isosurface_builder::Isosurface_builder(FE_element *element, FE_value time,
 		data_field(specification.data_field),
 		scalar_field(specification.scalar_field),
 		texture_coordinate_field(specification.texture_coordinate_field),
+		number_of_data_components(specification.number_of_data_components),
 		last_mesh_number(-1)
 {
 	enum FE_element_shape_type shape_type1, shape_type2, shape_type3;
@@ -892,7 +869,7 @@ const Iso_vertex *Isosurface_builder::compute_line_crossing(
 	const Point_index_pair& pp)
 {
 	ENTER(Isosurface_builder::compute_line_crossing);
-	Iso_vertex vertex;
+	Iso_vertex *vertex = new Iso_vertex();
 	double scalar_a = get_scalar(pp.pa);
 	double scalar_b = get_scalar(pp.pb);
 	double r = (current_iso_value - scalar_a) / (scalar_b - scalar_a);
@@ -900,18 +877,26 @@ const Iso_vertex *Isosurface_builder::compute_line_crossing(
 	FE_value xi_a[3], xi_b[3];
 	get_xi(pp.pa, xi_a);
 	get_xi(pp.pb, xi_b);
-	vertex.xi[0] = xi_a[0]*inverse_r + xi_b[0]*r;
-	vertex.xi[1] = xi_a[1]*inverse_r + xi_b[1]*r;
-	vertex.xi[2] = xi_a[2]*inverse_r + xi_b[2]*r;
+	vertex->xi[0] = xi_a[0]*inverse_r + xi_b[0]*r;
+	vertex->xi[1] = xi_a[1]*inverse_r + xi_b[1]*r;
+	vertex->xi[2] = xi_a[2]*inverse_r + xi_b[2]*r;
 	// future: option to iterate to get exact xi crossing for non-linear fields
-	Computed_field_evaluate_in_element(coordinate_field, element, vertex.xi,
-		time, /*top_level_element*/(struct FE_element *)NULL, vertex.coordinates,
+	Computed_field_evaluate_in_element(coordinate_field, element, vertex->xi,
+		time, /*top_level_element*/(struct FE_element *)NULL, vertex->coordinates,
 		/*derivatives*/(FE_value *)NULL);
 	if (NULL != texture_coordinate_field)
 	{
-		Computed_field_evaluate_in_element(texture_coordinate_field, element, vertex.xi,
-			time, /*top_level_element*/(struct FE_element *)NULL, vertex.texture_coordinates,
+		Computed_field_evaluate_in_element(texture_coordinate_field, element, vertex->xi,
+			time, /*top_level_element*/(struct FE_element *)NULL, vertex->texture_coordinates,
 			/*derivatives*/(FE_value *)NULL);
+	}
+	if (NULL != data_field)
+	{
+		FE_value *data = new FE_value[number_of_data_components];
+		Computed_field_evaluate_in_element(data_field, element, vertex->xi,
+			time, /*top_level_element*/(struct FE_element *)NULL, data,
+			/*derivatives*/(FE_value *)NULL);
+		vertex->set_data(data);
 	}
 	const Iso_vertex* new_vertex = get_mesh().add_vertex(pp, vertex);
 	LEAVE;
@@ -1937,19 +1922,23 @@ int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
 			Triple *normalpoints = NULL;
 			Triple *texturepoints = NULL;
 			Triple *tangentpoints = NULL;
-			int n_data_components = 0;
-			GTDATA *data = NULL;
+			GTDATA *datavalues = NULL;
 			ALLOCATE(points, Triple, number_of_triangles*3);
 			ALLOCATE(normalpoints, Triple, number_of_triangles*3);
 			if (NULL != texture_coordinate_field)
 			{
 				ALLOCATE(texturepoints, Triple, number_of_triangles*3);
 			}
+			if (NULL != data_field)
+			{
+				ALLOCATE(datavalues, GTDATA, number_of_triangles*3*number_of_data_components);
+			}
 			if ((NULL != points) && (NULL != normalpoints))
 			{
 				Triple *point = points;
 				Triple *normal = normalpoints;
 				Triple *texture = texturepoints;
+				GTDATA *data = datavalues;
 				for (Iso_triangle_list_const_iterator triangle_iter = triangle_list.begin(); triangle_iter != triangle_list.end(); triangle_iter++)
 				{
 					const Iso_triangle *triangle = *triangle_iter;
@@ -2000,6 +1989,16 @@ int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
 						(*texture)[2] = (float)v3->texture_coordinates[2];
 						texture++;
 					}
+					if (NULL != data)
+					{
+						for (int j = 0; j < number_of_data_components; j++)
+						{
+							data[                              j] = v1->data[j];
+							data[  number_of_data_components + j] = v2->data[j];
+							data[2*number_of_data_components + j] = v3->data[j];
+						}
+						data += number_of_data_components*3;
+					}
 				}
 			}
 			else
@@ -2010,7 +2009,7 @@ int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
 			{
 				GT_surface *surface = CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP, render_type, g_TRIANGLE,
 					/*number_of_points_in_xi1*/number_of_triangles, /*number_of_points_in_xi2*/3, points,
-					normalpoints, tangentpoints, texturepoints, n_data_components, data);
+					normalpoints, tangentpoints, texturepoints, number_of_data_components, datavalues);
 				if (!GT_OBJECT_ADD(GT_surface)(graphics_object, time, surface))
 				{
 					DESTROY(GT_surface)(&surface);
@@ -2059,6 +2058,8 @@ struct Iso_surface_specification *Iso_surface_specification_create(
 			specification->scalar_field = ACCESS(Computed_field)(scalar_field);
 			specification->texture_coordinate_field =
 				(NULL != texture_coordinate_field) ? ACCESS(Computed_field)(texture_coordinate_field) : NULL;
+			specification->number_of_data_components = (NULL != data_field) ?
+				Computed_field_get_number_of_components(data_field) : 0;
 			specification->iso_values = NULL;
 			specification->first_iso_value = first_iso_value;
 			specification->last_iso_value = last_iso_value;
