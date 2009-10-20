@@ -2635,6 +2635,7 @@ pass unmanaged elements in the element_point_identifier to this widget.
 // 					 "Missing widget data");
 // 				return_code = 0;
 // 		 }
+		 return_code = 1;
 	}
 	else
 	{
@@ -2717,7 +2718,6 @@ Creates the array of cells containing field component names and values.
 		
 	return (return_code);
 } /* element_point_field_viewer_widget_setup_components */
-
 int element_point_viewer_widget_set_element_point(
 	Element_point_viewer *element_point_viewer,
 	struct Element_point_ranges_identifier *element_point_identifier,
@@ -2736,7 +2736,6 @@ unmanaged elements in the identifier to this widget.
 			*choose_field_conditional_function;
 	 struct CM_element_information element_identifier;
 	 struct Computed_field *field;
-	 struct FE_element *element,*template_element;
 	 
 	 ENTER(element_point_viewer_widget_set_element_point);
 	 if (element_point_viewer && element_point_identifier&&
@@ -2744,57 +2743,58 @@ unmanaged elements in the identifier to this widget.
 				 Element_point_ranges_identifier_element_point_number_is_valid(
 						element_point_identifier,element_point_number)))
 	 {
-			change_conditional_function=0;
-			if (element = element_point_identifier->element)
-			{
-				 field=element_point_viewer->current_field;
-				 if (!(element_point_viewer->template_element) ||
-						(!equivalent_computed_fields_at_elements(element,
-							 element_point_viewer->template_element)))
-				 {
-						choose_field_conditional_function=
-							 Computed_field_is_defined_in_element_conditional;
-						change_conditional_function=1;
-						if ((!field)||
-							 (!Computed_field_is_defined_in_element(field,element)))
-						{
-							 field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-									choose_field_conditional_function,(void *)element,
-									Computed_field_package_get_computed_field_manager(
-										 element_point_viewer->computed_field_package));
-						}
-						get_FE_element_identifier(element, &element_identifier);
-						template_element = CREATE(FE_element)(&element_identifier,
-							 (struct FE_element_shape *)NULL, (struct FE_region *)NULL, element);
-				 }
-			}
-			else
-			{
-				 field=(struct Computed_field *)NULL;
+		 struct FE_element *element = NULL, *template_element = NULL;
+		 change_conditional_function=0;
+		 if (element = element_point_identifier->element)
+		 {
+			 field=element_point_viewer->current_field;
+			 if (!(element_point_viewer->template_element) ||
+				 (!equivalent_computed_fields_at_elements(element,
+					 element_point_viewer->template_element)))
+			 {
 				 choose_field_conditional_function=
-						(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+					 Computed_field_is_defined_in_element_conditional;
 				 change_conditional_function=1;
-				 template_element=(struct FE_element *)NULL;
-			}
-			COPY(Element_point_ranges_identifier)(
-				 &(element_point_viewer->element_point_identifier),
-				 element_point_identifier);
-			element_point_viewer->element_point_number=element_point_number;
-			if (change_conditional_function)
-			{
-				 REACCESS(FE_element)(&(element_point_viewer->template_element),
-						template_element);
-// 				 CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(Computed_field)(
+				 if ((!field)||
+					 (!Computed_field_is_defined_in_element(field,element)))
+				 {
+					 field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+						 choose_field_conditional_function,(void *)element,
+						 Computed_field_package_get_computed_field_manager(
+							 element_point_viewer->computed_field_package));
+				 }
+				 get_FE_element_identifier(element, &element_identifier);
+				 template_element = CREATE(FE_element)(&element_identifier,
+					 (struct FE_element_shape *)NULL, (struct FE_region *)NULL, element);
+			 }
+		 }
+		 else
+		 {
+			 field=(struct Computed_field *)NULL;
+			 choose_field_conditional_function=
+				 (MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+			 change_conditional_function=1;
+			 template_element=(struct FE_element *)NULL;
+		 }
+		 COPY(Element_point_ranges_identifier)(
+			 &(element_point_viewer->element_point_identifier),
+			 element_point_identifier);
+		 element_point_viewer->element_point_number=element_point_number;
+		 if (change_conditional_function)
+		 {
+			 REACCESS(FE_element)(&(element_point_viewer->template_element),
+				 template_element);
+			 // 				 CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(Computed_field)(
 // 						element_point_viewer->choose_field_widget,
 // 						choose_field_conditional_function,
 // 						(void *)element_point_viewer->template_element,field);
-			}
-// 			element_point_viewer_set_element_point_field(
-// 				 element_point_viewer,
-// 				 &(element_point_viewer->element_point_identifier),
-// 				 element_point_number,field);
+		 }
+		 // 			element_point_viewer_set_element_point_field(
+		 // 				 element_point_viewer,
+		 // 				 &(element_point_viewer->element_point_identifier),
+		 // 				 element_point_number,field);
+		 return_code = 1;
 	 }
-	 
 	 else
 	 {
 			display_message(ERROR_MESSAGE,

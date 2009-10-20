@@ -1923,7 +1923,7 @@ boundary node will be adjusted to enforce continuity. Otherwise, the specified
 {
 	FE_value dparam1,dparam2,*parameters,sf1,sf2,slope,sf;
 	int return_code,first,last;
-	struct FE_element *element1,*element2;
+	struct FE_element *element1 = NULL ,*element2 = NULL;
 
 	ENTER(Curve_enforce_continuity);
 	if (curve)
