@@ -59,16 +59,29 @@ Global types
 
 struct Iso_surface_specification
 {
+public:
+	double first_iso_value, *iso_values, iso_value_range, last_iso_value;
 	int number_of_iso_values;
-	double *iso_values;
 	struct Computed_field *coordinate_field, *data_field, *scalar_field,
 		*texture_coordinate_field;
+
+public:
+	double get_iso_value(int iso_value_number) const;
 };
 
 /*
 Module types and functions
 --------------------------
 */
+
+inline double Iso_surface_specification::get_iso_value(int iso_value_number) const
+{
+	if (NULL != iso_values)
+	{
+		return iso_values[iso_value_number];
+	}
+	return (first_iso_value + (double)iso_value_number * iso_value_range);
+}
 
 namespace {
 
@@ -612,9 +625,9 @@ private:
 	FE_element *element;
 	FE_value time;
 	int number_in_xi1, number_in_xi2, number_in_xi3, number_of_polygon_vertices;
+	const Iso_surface_specification& specification;
 	FE_value delta_xi1, delta_xi2, delta_xi3;
 	const int number_of_iso_values;
-	const double *iso_values;
 	int current_iso_value_number;
 	double current_iso_value;
 	Computed_field *coordinate_field, *data_field, *scalar_field,
@@ -630,7 +643,7 @@ private:
 public:
 	Isosurface_builder(FE_element *element, FE_value time,
 		int requested_number_in_xi1, int requested_number_in_xi2, int requested_number_in_xi3,
-		Iso_surface_specification& specification);
+		const Iso_surface_specification& specification);
 
 	~Isosurface_builder();
 
@@ -782,14 +795,14 @@ private:
 
 Isosurface_builder::Isosurface_builder(FE_element *element, FE_value time,
 	int requested_number_in_xi1, int requested_number_in_xi2, int requested_number_in_xi3,
-	Iso_surface_specification& specification) :
+	const Iso_surface_specification& specification) :
 		element(element), time(time),
 		number_in_xi1(requested_number_in_xi1),
 		number_in_xi2(requested_number_in_xi2),
 		number_in_xi3(requested_number_in_xi3),
 		number_of_polygon_vertices(1),
+		specification(specification),
 		number_of_iso_values(specification.number_of_iso_values),
-		iso_values(specification.iso_values),
 		coordinate_field(specification.coordinate_field),
 		data_field(specification.data_field),
 		scalar_field(specification.scalar_field),
@@ -891,26 +904,15 @@ const Iso_vertex *Isosurface_builder::compute_line_crossing(
 	vertex.xi[1] = xi_a[1]*inverse_r + xi_b[1]*r;
 	vertex.xi[2] = xi_a[2]*inverse_r + xi_b[2]*r;
 	// future: option to iterate to get exact xi crossing for non-linear fields
-	// likewise should eventually recalculate coordinates at exact xi; linearly interpolate for now
-	//crossing_coords[0] = (double)point_coords[mp1][0]*inverse_r + (double)point_coords[mp2][0]*r;
-	//crossing_coords[1] = (double)point_coords[mp1][1]*inverse_r + (double)point_coords[mp2][1]*r;
-	//crossing_coords[2] = (double)point_coords[mp1][2]*inverse_r + (double)point_coords[mp2][2]*r;
-#ifdef OLD_CODE
-	// temp: evaluate coordinates at the found xi:
 	Computed_field_evaluate_in_element(coordinate_field, element, vertex.xi,
 		time, /*top_level_element*/(struct FE_element *)NULL, vertex.coordinates,
 		/*derivatives*/(FE_value *)NULL);
-#endif
-	FE_value coordinates_a[3], coordinates_b[3];
-	Computed_field_evaluate_in_element(coordinate_field, element, xi_a,
-		time, /*top_level_element*/(struct FE_element *)NULL, coordinates_a,
-		/*derivatives*/(FE_value *)NULL);
-	Computed_field_evaluate_in_element(coordinate_field, element, xi_b,
-		time, /*top_level_element*/(struct FE_element *)NULL, coordinates_b,
-		/*derivatives*/(FE_value *)NULL);
-	vertex.coordinates[0] = coordinates_a[0]*inverse_r + coordinates_b[0]*r;
-	vertex.coordinates[1] = coordinates_a[1]*inverse_r + coordinates_b[1]*r;
-	vertex.coordinates[2] = coordinates_a[2]*inverse_r + coordinates_b[2]*r;
+	if (NULL != texture_coordinate_field)
+	{
+		Computed_field_evaluate_in_element(texture_coordinate_field, element, vertex.xi,
+			time, /*top_level_element*/(struct FE_element *)NULL, vertex.texture_coordinates,
+			/*derivatives*/(FE_value *)NULL);
+	}
 	const Iso_vertex* new_vertex = get_mesh().add_vertex(pp, vertex);
 	LEAVE;
 	
@@ -1802,15 +1804,6 @@ int Isosurface_builder::sweep()
 	int return_code = 1;
 	double scalar_value;
 	FE_value scalar_FE_value, xi[3];
-	// optimisation:
-	// don't check cell crossings until two scalars on opposite side of iso_value
-	bool first_point = true;
-	bool *iso_surface_crosses_element = new bool[number_of_iso_values];
-	bool *first_scalar_over = new bool[number_of_iso_values];
-	for (int v = 0; v < number_of_iso_values; v++)
-	{
-		iso_surface_crosses_element[v] = false;
-	}
 
 	for (int k = number_in_xi3; (k >= 0) && return_code; k--)
 	{
@@ -1843,29 +1836,14 @@ int Isosurface_builder::sweep()
 				{
 					scalar_value = static_cast<double>(scalar_FE_value);
 					set_scalar(i, j, k, scalar_value);
-
-					if (first_point)
-					{
-						for (int v = 0; v < number_of_iso_values; v++)
-						{
-							first_scalar_over[v] = scalar_value > iso_values[v];
-						}
-						first_point = false;
-					}
 					
 					for (int v = 0; v < number_of_iso_values; v++)
 					{
 						current_iso_value_number = v;
-						current_iso_value = iso_values[v];
+						current_iso_value = specification.get_iso_value(v);
 
-						if ((!iso_surface_crosses_element[v]) && 
-							((scalar_value > current_iso_value) != first_scalar_over[v]))
-						{
-							iso_surface_crosses_element[v] = true;
-						}
-
-						if (iso_surface_crosses_element[v] && (i < mod_number_in_xi1) &&
-							(j < mod_number_in_xi2) && (k < number_in_xi3))
+						if ((i < mod_number_in_xi1) && (j < mod_number_in_xi2) &&
+							(k < number_in_xi3))
 						{
 							if (cube)
 							{
@@ -1955,34 +1933,29 @@ int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
 		const int number_of_triangles = triangle_list.size();
 		if (0 < number_of_triangles)
 		{
-			Triple *normalpoints, *points;
-			ALLOCATE(points, Triple, number_of_triangles*3);
-			ALLOCATE(normalpoints, Triple, number_of_triangles*3);
-			Triple *tangentpoints = NULL;
+			Triple *points = NULL;
+			Triple *normalpoints = NULL;
 			Triple *texturepoints = NULL;
+			Triple *tangentpoints = NULL;
 			int n_data_components = 0;
 			GTDATA *data = NULL;
+			ALLOCATE(points, Triple, number_of_triangles*3);
+			ALLOCATE(normalpoints, Triple, number_of_triangles*3);
+			if (NULL != texture_coordinate_field)
+			{
+				ALLOCATE(texturepoints, Triple, number_of_triangles*3);
+			}
 			if ((NULL != points) && (NULL != normalpoints))
 			{
 				Triple *point = points;
 				Triple *normal = normalpoints;
-				// GRC fill points and calc normals
+				Triple *texture = texturepoints;
 				for (Iso_triangle_list_const_iterator triangle_iter = triangle_list.begin(); triangle_iter != triangle_list.end(); triangle_iter++)
 				{
 					const Iso_triangle *triangle = *triangle_iter;
 					const Iso_vertex* v1 = triangle->v1;
 					const Iso_vertex* v2 = triangle->v2;
 					const Iso_vertex* v3 = triangle->v3;
-					// calculate normal from vertices:
-					FE_value axis1[3], axis2[3], facet_normal[3];
-					axis1[0] = v2->coordinates[0] - v1->coordinates[0];
-					axis1[1] = v2->coordinates[1] - v1->coordinates[1];
-					axis1[2] = v2->coordinates[2] - v1->coordinates[2];
-					axis2[0] = v3->coordinates[0] - v1->coordinates[0];
-					axis2[1] = v3->coordinates[1] - v1->coordinates[1];
-					axis2[2] = v3->coordinates[2] - v1->coordinates[2];
-					cross_product_FE_value_vector3(axis1, axis2, facet_normal);
-					normalize_FE_value3(facet_normal);
 					(*point)[0] = (float)v1->coordinates[0]; 
 					(*point)[1] = (float)v1->coordinates[1]; 
 					(*point)[2] = (float)v1->coordinates[2];
@@ -1995,12 +1968,37 @@ int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
 					(*point)[1] = (float)v3->coordinates[1]; 
 					(*point)[2] = (float)v3->coordinates[2];
 					point++;
+					// calculate facet normal:
+					FE_value axis1[3], axis2[3], facet_normal[3];
+					axis1[0] = v2->coordinates[0] - v1->coordinates[0];
+					axis1[1] = v2->coordinates[1] - v1->coordinates[1];
+					axis1[2] = v2->coordinates[2] - v1->coordinates[2];
+					axis2[0] = v3->coordinates[0] - v1->coordinates[0];
+					axis2[1] = v3->coordinates[1] - v1->coordinates[1];
+					axis2[2] = v3->coordinates[2] - v1->coordinates[2];
+					cross_product_FE_value_vector3(axis1, axis2, facet_normal);
+					normalize_FE_value3(facet_normal);
 					for (int i = 0; i < 3; i++)
 					{
 						(*normal)[0] = (float)facet_normal[0];
 						(*normal)[1] = (float)facet_normal[1];
 						(*normal)[2] = (float)facet_normal[2];
 						normal++;
+					}
+					if (NULL != texture)
+					{
+						(*texture)[0] = (float)v1->texture_coordinates[0]; 
+						(*texture)[1] = (float)v1->texture_coordinates[1]; 
+						(*texture)[2] = (float)v1->texture_coordinates[2];
+						texture++;
+						(*texture)[0] = (float)v2->texture_coordinates[0]; 
+						(*texture)[1] = (float)v2->texture_coordinates[1]; 
+						(*texture)[2] = (float)v2->texture_coordinates[2];
+						texture++;
+						(*texture)[0] = (float)v3->texture_coordinates[0]; 
+						(*texture)[1] = (float)v3->texture_coordinates[1]; 
+						(*texture)[2] = (float)v3->texture_coordinates[2];
+						texture++;
 					}
 				}
 			}
@@ -2061,42 +2059,22 @@ struct Iso_surface_specification *Iso_surface_specification_create(
 			specification->scalar_field = ACCESS(Computed_field)(scalar_field);
 			specification->texture_coordinate_field =
 				(NULL != texture_coordinate_field) ? ACCESS(Computed_field)(texture_coordinate_field) : NULL;
-			if (0 == number_of_iso_values)
+			specification->iso_values = NULL;
+			specification->first_iso_value = first_iso_value;
+			specification->last_iso_value = last_iso_value;
+			specification->iso_value_range = 0;
+			if (NULL != iso_values)
 			{
-				specification->iso_values = NULL;
+				if (0 < number_of_iso_values)
+				{
+					specification->iso_values = new double[number_of_iso_values];
+					memcpy(specification->iso_values, iso_values, number_of_iso_values*sizeof(double));
+				}
 			}
-			else
+			else if (1 < number_of_iso_values)
 			{
-				ALLOCATE(specification->iso_values, double, number_of_iso_values);
-				if (NULL != specification->iso_values)
-				{
-					if (NULL != iso_values)
-					{
-						memcpy(specification->iso_values, iso_values, number_of_iso_values*sizeof(double));
-					}
-					else
-					{
-						double iso_value_range;
-						if (number_of_iso_values > 1)
-						{
-							iso_value_range = (last_iso_value - first_iso_value)
-								/ (double)(number_of_iso_values - 1);
-						}
-						else
-						{
-							iso_value_range = 0;
-						}
-						for (int i = 0 ; i < number_of_iso_values ; i++)
-						{
-							specification->iso_values[i] =
-								first_iso_value + (double)i * iso_value_range;
-						}
-					}
-				}
-				else
-				{
-					Iso_surface_specification_destroy(&specification);
-				}
+				specification->iso_value_range = (last_iso_value - first_iso_value)
+					/ (double)(number_of_iso_values - 1);
 			}
 		}
 	}
@@ -2120,7 +2098,7 @@ int Iso_surface_specification_destroy(
 	if ((NULL != specification_address) &&
 		(NULL != (specification = *specification_address)))
 	{
-		DEALLOCATE(specification->iso_values);
+		delete[] specification->iso_values;
 		DEACCESS(Computed_field)(&specification->coordinate_field);
 		REACCESS(Computed_field)(&specification->data_field, NULL);
 		DEACCESS(Computed_field)(&specification->scalar_field);
@@ -2151,47 +2129,13 @@ int create_iso_surfaces_from_FE_element_new(struct FE_element *element,
 		(0 < number_in_xi[0]) && (0 < number_in_xi[1]) && (0 < number_in_xi[2]) &&
 		(NULL != specification) && (NULL != graphics_object))
 	{
-#if defined (TEST_OPTIMISATION)
-		const int max_simultaneous_iso_values = 1000; 
-		if (specification->number_of_iso_values < max_simultaneous_iso_values)
+		Isosurface_builder iso_builder(element, time,
+			number_in_xi[0], number_in_xi[1], number_in_xi[2], *specification);
+		return_code = iso_builder.sweep();
+		if (return_code)
 		{
-#endif /* TEST_OPTIMISATION */
-			Isosurface_builder iso_builder(element, time,
-				number_in_xi[0], number_in_xi[1], number_in_xi[2], *specification);
-			return_code = iso_builder.sweep();
-			if (return_code)
-			{
-				return_code = iso_builder.fill_graphics(graphics_object, render_type);
-			}
-#if defined (TEST_OPTIMISATION)
+			return_code = iso_builder.fill_graphics(graphics_object, render_type);
 		}
-		else
-		{
-			int number_of_blocks = (specification->number_of_iso_values + max_simultaneous_iso_values - 1) / max_simultaneous_iso_values;
-			return_code = 1;
-			for (int i = 0; (i < number_of_blocks) && return_code; i++)
-			{
-				int number_of_iso_values = max_simultaneous_iso_values;
-				if (i == (number_of_blocks - 1))
-				{
-					number_of_iso_values = specification->number_of_iso_values - (i*max_simultaneous_iso_values);
-				}
-				Iso_surface_specification *new_specification = Iso_surface_specification_create(
-					number_of_iso_values, specification->iso_values + i*max_simultaneous_iso_values,
-					/*first_iso_value*/0.0, /*last_iso_value*/0.0,
-					specification->coordinate_field, specification->data_field,
-					specification->scalar_field, specification->texture_coordinate_field);
-				Isosurface_builder iso_builder(element, time,
-					number_in_xi[0], number_in_xi[1], number_in_xi[2], *new_specification);
-				return_code = iso_builder.sweep();
-				if (return_code)
-				{
-					return_code = iso_builder.fill_graphics(graphics_object, render_type);
-				}
-				Iso_surface_specification_destroy(&new_specification);
-			}
-		}
-#endif /* TEST_OPTIMISATION */
 	}
 	else
 	{

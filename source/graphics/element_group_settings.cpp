@@ -6526,37 +6526,40 @@ The graphics object is stored with with the settings it was created from.
 								} break;
 								case GT_ELEMENT_SETTINGS_ISO_SURFACES:
 								{
-									if (g_SURFACE == GT_object_get_type(settings->graphics_object))
+									if (0 < settings->number_of_iso_values)
 									{
-										settings_to_object_data->iso_surface_specification =
-											Iso_surface_specification_create(
-												settings->number_of_iso_values, settings->iso_values,
-												settings->first_iso_value, settings->last_iso_value,
-												settings_to_object_data->rc_coordinate_field,
-												settings->data_field,
-												settings->iso_scalar_field,
-												settings->texture_coordinate_field);
-									}
-									return_code = FE_region_for_each_FE_element(fe_region,									
-										FE_element_to_graphics_object, 
-										settings_to_object_data_void);
-									if (g_SURFACE == GT_object_get_type(settings->graphics_object))
-									{
-										Iso_surface_specification_destroy(&settings_to_object_data->iso_surface_specification);
-									}
-									/* If the isosurface is a volume we can decimate and
-										then normalise, otherwise if it is a polyline
-										representing a isolines, skip over. */
-									if (g_VOLTEX == GT_object_get_type(settings->graphics_object))
-									{
-										/* Decimate */
-										if (settings->decimation_threshold > 0.0)
+										if (g_SURFACE == GT_object_get_type(settings->graphics_object))
 										{
-											GT_object_decimate_GT_voltex(settings->graphics_object,
-												settings->decimation_threshold);
+											settings_to_object_data->iso_surface_specification =
+												Iso_surface_specification_create(
+													settings->number_of_iso_values, settings->iso_values,
+													settings->first_iso_value, settings->last_iso_value,
+													settings_to_object_data->rc_coordinate_field,
+													settings->data_field,
+													settings->iso_scalar_field,
+													settings->texture_coordinate_field);
 										}
-										/* Normalise normals now that the entire mesh has been calculated */
-										GT_object_normalise_GT_voltex_normals(settings->graphics_object);
+										return_code = FE_region_for_each_FE_element(fe_region,									
+											FE_element_to_graphics_object, 
+											settings_to_object_data_void);
+										if (g_SURFACE == GT_object_get_type(settings->graphics_object))
+										{
+											Iso_surface_specification_destroy(&settings_to_object_data->iso_surface_specification);
+										}
+										/* If the isosurface is a volume we can decimate and
+											then normalise, otherwise if it is a polyline
+											representing a isolines, skip over. */
+										if (g_VOLTEX == GT_object_get_type(settings->graphics_object))
+										{
+											/* Decimate */
+											if (settings->decimation_threshold > 0.0)
+											{
+												GT_object_decimate_GT_voltex(settings->graphics_object,
+													settings->decimation_threshold);
+											}
+											/* Normalise normals now that the entire mesh has been calculated */
+											GT_object_normalise_GT_voltex_normals(settings->graphics_object);
+										}
 									}
 								} break;
 								case GT_ELEMENT_SETTINGS_VOLUMES:
