@@ -117,9 +117,12 @@ int draw_surface_triangle_mesh(Triangle_mesh& trimesh, Triple *surfpts,
 	USE_PARAMETER(data);
 	USE_PARAMETER(material);
 	USE_PARAMETER(spectrum);
-	if (surfpts && (1<npts1) && (1<npts2))
+	bool continuous = (surface_type == g_SHADED) || (surface_type == g_SHADED_TEXMAP);
+	if (surfpts && (continuous && (1 < npts1) && (1 < npts2)) ||
+		(!continuous && (0 < npts1) && (2 < npts2)))
 	{
 		point=surfpts;
+		const Triangle_vertex **tri_vertex = NULL;
 		switch (surface_type)
 		{
 			case g_SHADED:
@@ -130,7 +133,7 @@ int draw_surface_triangle_mesh(Triangle_mesh& trimesh, Triple *surfpts,
 				{
 					number_of_points = npts1*(npts1+1)/2;
 				}
-				const Triangle_vertex **tri_vertex = new const Triangle_vertex*[number_of_points];
+				tri_vertex = new const Triangle_vertex*[number_of_points];
 				for (int i = 0; i < number_of_points; i++)
 				{
 					tri_vertex[i] = trimesh.add_vertex(*point);
@@ -193,11 +196,7 @@ int draw_surface_triangle_mesh(Triangle_mesh& trimesh, Triple *surfpts,
 			case g_SH_DISCONTINUOUS_STRIP_TEXMAP:
 			{
 				int number_of_points = npts1*npts2;
-				if (polygon_type == g_TRIANGLE)
-				{
-					number_of_points = npts2*(npts2+1)/2;
-				}
-				const Triangle_vertex **tri_vertex = new const Triangle_vertex*[number_of_points];
+				tri_vertex = new const Triangle_vertex*[number_of_points];
 				for (int i = 0; i < number_of_points; i++)
 				{
 					tri_vertex[i] = trimesh.add_vertex(*point);
@@ -283,6 +282,7 @@ int draw_surface_triangle_mesh(Triangle_mesh& trimesh, Triple *surfpts,
 				return_code=0;
 			} break;
 		}
+		delete[] tri_vertex;
 	}
 	else
 	{
