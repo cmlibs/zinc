@@ -439,6 +439,9 @@ ifneq ($(UNEMAP), true)
 else # UNEMAP != true
    # for all nodal stuff UNEMAP_DEFINES = -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_NODES 
    UNEMAP_DEFINES = -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_3D -DNOT_ACQUISITION_ONLY
+ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
+	 UNEMAP_DEFINES += -DMOTIF
+endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
    UNEMAP_SRCS = \
 	   unemap_application/acquisition.c \
 	    unemap_application/acquisition_window.c \
