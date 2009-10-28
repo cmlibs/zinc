@@ -44,9 +44,12 @@ extern "C" {
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_discretization.h"
+#include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_to_iso_surfaces.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
+#include "graphics/volume_texture.h"
 }
 extern "C" {
 #include "user_interface/message.h"
@@ -660,6 +663,8 @@ private:
 		}
 		return (vertex);
 	}
+
+	bool reverse_winding();
 
 	double get_scalar(const Point_index& p) const
 	{
@@ -1906,10 +1911,46 @@ int Isosurface_builder::sweep()
 	return (return_code);
 }
 
+bool Isosurface_builder::reverse_winding()
+{
+	FE_element_shape *shape;
+	FE_value result[3], winding_coordinate[3], winding_coordinate_derivatives[9];
+	FE_value_triple *xi_points;
+	int number_in_xi[3], number_of_xi_points_created[3];
+
+	/* Determine whether xi forms a LH or RH coordinate system in this element */
+	bool reverse_winding = 0;
+	get_FE_element_shape(element, &shape);
+	number_in_xi[0] = 1;
+	number_in_xi[1] = 1;
+	number_in_xi[2] = 1;
+	if (FE_element_shape_get_xi_points_cell_centres(shape, 
+			number_in_xi, number_of_xi_points_created, &xi_points))
+	{
+		if (Computed_field_evaluate_in_element(
+				 coordinate_field, element,
+				 xi_points[0],time,(struct FE_element *)NULL,
+				 winding_coordinate, winding_coordinate_derivatives))
+		{
+			cross_product_FE_value_vector3(winding_coordinate_derivatives + 0,
+				winding_coordinate_derivatives + 3,result);
+			if ((result[0] * winding_coordinate_derivatives[6] + 
+					result[1] * winding_coordinate_derivatives[7] + 
+					result[2] * winding_coordinate_derivatives[8]) < 0)
+			{
+				reverse_winding = 1;
+			}
+		}
+		DEALLOCATE(xi_points);
+	}
+	return (reverse_winding);
+}
+
 int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
 	enum Render_type render_type)
 {
 	int return_code = 1;
+	bool reverse = reverse_winding();
 	for (Iso_mesh_map_const_iterator mesh_iter = mesh_map.begin();
 		mesh_iter != mesh_map.end(); mesh_iter++)
 	{
@@ -1943,8 +1984,8 @@ int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
 				{
 					const Iso_triangle *triangle = *triangle_iter;
 					const Iso_vertex* v1 = triangle->v1;
-					const Iso_vertex* v2 = triangle->v2;
-					const Iso_vertex* v3 = triangle->v3;
+					const Iso_vertex* v2 = reverse ? triangle->v3 : triangle->v2;
+					const Iso_vertex* v3 = reverse ? triangle->v2 : triangle->v3;
 					(*point)[0] = (float)v1->coordinates[0]; 
 					(*point)[1] = (float)v1->coordinates[1]; 
 					(*point)[2] = (float)v1->coordinates[2];
@@ -2010,9 +2051,20 @@ int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
 				GT_surface *surface = CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP, render_type, g_TRIANGLE,
 					/*number_of_points_in_xi1*/number_of_triangles, /*number_of_points_in_xi2*/3, points,
 					normalpoints, tangentpoints, texturepoints, number_of_data_components, datavalues);
-				if (!GT_OBJECT_ADD(GT_surface)(graphics_object, time, surface))
+				if (NULL != surface)
 				{
-					DESTROY(GT_surface)(&surface);
+					/* for selective editing of GT_object primitives, record element ID */
+					struct CM_element_information cm;
+					get_FE_element_identifier(element, &cm);
+					GT_surface_set_integer_identifier(surface, CM_element_information_to_graphics_name(&cm));
+					if (!GT_OBJECT_ADD(GT_surface)(graphics_object, time, surface))
+					{
+						DESTROY(GT_surface)(&surface);
+						return_code = 0;
+					}
+				}
+				else
+				{
 					return_code = 0;
 				}
 			}
@@ -2020,6 +2072,8 @@ int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
 			{
 				DEALLOCATE(points);
 				DEALLOCATE(normalpoints);
+				DEALLOCATE(texturepoints);
+				DEALLOCATE(datavalues);
 			}
 		}
 	}
