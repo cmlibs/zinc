@@ -1664,7 +1664,8 @@ DESCRIPTION :
 static int draw_surfaceGL(Triple *surfpts, Triple *normalpoints, Triple *tangentpoints,
 	Triple *texturepoints, int npts1, int npts2, gtPolygonType polygon_type,
 	int number_of_data_components, GTDATA *data, 
-	struct Graphical_material *material, struct Spectrum *spectrum)
+	struct Graphical_material *material, struct Spectrum *spectrum,
+	struct Spectrum_render_data *render_data)
 /*******************************************************************************
 LAST MODIFIED : 19 November 2007
 
@@ -1678,15 +1679,13 @@ DESCRIPTION :
 #if defined GL_VERSION_1_3
 	Triple *tangent_point_1, *tangent_point_2;
 #endif /* defined GL_VERSION_1_3 */
-	struct Spectrum_render_data *render_data;
 
 	ENTER(draw_surfaceGL);
 #if ! defined GL_VERSION_1_3
 	USE_PARAMETER(tangentpoints);
 #endif /* ! defined GL_VERSION_1_3 */
 	/* checking arguments */
-	if (surfpts&&(1<npts1)&&(1<npts2)&&((!data)||(render_data=
-		spectrum_start_renderGL(spectrum,material,number_of_data_components))))
+	if (surfpts&&(1<npts1)&&(1<npts2) &&	(NULL == data) || (NULL != render_data))
 	{
 #if defined (OPENGL_API)
 #if defined GL_VERSION_1_3
@@ -1870,10 +1869,6 @@ DESCRIPTION :
 			} break;					
 		}
 #endif /* defined (OPENGL_API) */
-		if (data)
-		{
-			spectrum_end_renderGL(spectrum,render_data);
-		}
 		return_code=1;
 	}
 	else
@@ -1897,8 +1892,12 @@ DESCRIPTION :
 static int draw_dc_surfaceGL(Triple *surfpts, Triple *normal_points, 
 	Triple *tangent_points, Triple *texture_points, 
 	int npolys,int npp,gtPolygonType polygon_type,int strip,
+#if defined (OPENGL_API)
+	GLenum& gl_surface_mode,
+#endif /* defined (OPENGL_API) */
 	int number_of_data_components,GTDATA *data,
-	struct Graphical_material *material,struct Spectrum *spectrum)
+	struct Graphical_material *material,struct Spectrum *spectrum,
+	struct Spectrum_render_data *render_data)
 /*******************************************************************************
 LAST MODIFIED : 9 June 1999
 
@@ -1914,14 +1913,11 @@ polygon is drawn for each of the <npolys>.
 #endif /* defined (OPENGL_API) */
 	GTDATA *data_item;
 	int i,j,return_code;
-	struct Spectrum_render_data *render_data;
 	Triple *normal_point, *point, *texture_point;
 
 	ENTER(draw_data_dc_surfaceGL);
 	USE_PARAMETER(tangent_points);
-	/* checking arguments */
-	if (surfpts&&(0<npolys)&&(2<npp)&&((!data)||(render_data=
-		spectrum_start_renderGL(spectrum,material,number_of_data_components))))
+	if (surfpts&&(0<npolys)&&(2<npp) &&	(NULL == data) || (NULL != render_data)) 
 	{
 		if (data)
 		{
@@ -1968,7 +1964,15 @@ polygon is drawn for each of the <npolys>.
 		}
 		for (i=0;i<npolys;i++)
 		{
-			glBegin(mode);
+			if (mode != gl_surface_mode)
+			{
+				if (gl_surface_mode != GL_POINTS)
+				{
+					glEnd();
+				}
+				gl_surface_mode = mode;
+				glBegin(gl_surface_mode);
+			}
 			for (j=0;j<npp;j++)
 			{
 				if (data)
@@ -1991,13 +1995,8 @@ polygon is drawn for each of the <npolys>.
 
 
 			}
-			glEnd();
 		}
 #endif /* defined (OPENGL_API) */
-		if (data)
-		{
-			spectrum_end_renderGL(spectrum,render_data);
-		}
 		return_code=1;
 	}
 	else
@@ -3137,7 +3136,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 		return_code = 1;
 		spectrum=get_GT_object_spectrum(object);
 		/* determine if picking names are to be output */
-		picking_names=(GRAPHICS_NO_SELECT != GT_object_get_select_mode(object));
+		picking_names = renderer->picking &&
+			(GRAPHICS_NO_SELECT != GT_object_get_select_mode(object));
 		/* determine which material to use */
 		if (draw_selected)
 		{
@@ -3909,6 +3909,11 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 							glPushAttrib(GL_POLYGON_BIT);
 							glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
 						}
+						struct Spectrum_render_data *spectrum_render_data = NULL;
+						if (surface->data)
+						{
+							spectrum_render_data = spectrum_start_renderGL(spectrum,material,surface->n_data_components);
+						}
 #endif /* defined (OPENGL_API) */
 						if (proportion>0)
 						{
@@ -3949,6 +3954,9 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 														/* Need to select the texture target */
 														Texture_tiling_activate_tile(object->texture_tiling,
 															tile_surface->tile_number);
+#if defined (OPENGL_API)
+														GLenum gl_surface_mode = GL_POINTS; // Not a valid surface primitive
+#endif /* defined (OPENGL_API) */
 														draw_dc_surfaceGL(tile_surface->pointlist,
 															tile_surface->normallist,
 															tile_surface->tangentlist,
@@ -3956,9 +3964,18 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 															tile_surface->n_pts1,
 															tile_surface->n_pts2,
 															tile_surface->polygon,  /*strip*/0,
+#if defined (OPENGL_API)
+															gl_surface_mode,
+#endif /* defined (OPENGL_API) */
 															tile_surface->n_data_components,
 															tile_surface->data,
-															material, spectrum);
+															material, spectrum, spectrum_render_data);
+#if defined (OPENGL_API)
+														if (gl_surface_mode != GL_POINTS)
+														{
+															glEnd();
+														}
+#endif /* defined (OPENGL_API) */
 														tile_surface_2 = tile_surface;
 														tile_surface = tile_surface->ptrnext;
 														DESTROY(GT_surface)(&tile_surface_2);
@@ -3975,7 +3992,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 														interpolate_surface->polygon,
 														interpolate_surface->n_data_components,
 														interpolate_surface->data,
-														material, spectrum);
+														material, spectrum, spectrum_render_data);
 												}
 												DESTROY(GT_surface)(&interpolate_surface);
 											}
@@ -4009,6 +4026,9 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 												{
 													Texture_tiling_activate_tile(object->texture_tiling,
 														tile_surface->tile_number);
+#if defined (OPENGL_API)
+													GLenum gl_surface_mode = GL_POINTS; // Not a valid surface primitive
+#endif /* defined (OPENGL_API) */
 													draw_dc_surfaceGL(tile_surface->pointlist,
 														tile_surface->normallist,
 														tile_surface->tangentlist,
@@ -4016,9 +4036,18 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 														tile_surface->n_pts1,
 														tile_surface->n_pts2,
 														tile_surface->polygon, /*strip*/0,
+#if defined (OPENGL_API)
+														gl_surface_mode,
+#endif /* defined (OPENGL_API) */
 														tile_surface->n_data_components,
 														tile_surface->data,
-														material, spectrum);
+														material, spectrum, spectrum_render_data);
+#if defined (OPENGL_API)
+													if (gl_surface_mode != GL_POINTS)
+													{
+														glEnd();
+													}
+#endif /* defined (OPENGL_API) */
 													tile_surface_2 = tile_surface;
 													tile_surface = tile_surface->ptrnext;
 													DESTROY(GT_surface)(&tile_surface_2);
@@ -4031,7 +4060,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 													surface->texturelist, surface->n_pts1,
 													surface->n_pts2, surface->polygon,
 													surface->n_data_components, surface->data,
-													material, spectrum);
+													material, spectrum, spectrum_render_data);
 											}
 										}
 										surface=surface->ptrnext;
@@ -4044,6 +4073,9 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 							case g_SH_DISCONTINUOUS_TEXMAP:
 							case g_SH_DISCONTINUOUS_STRIP_TEXMAP:
 							{
+#if defined (OPENGL_API)
+								GLenum gl_surface_mode = GL_POINTS; // Not a valid surface primitive
+#endif /* defined (OPENGL_API) */
 								strip=((g_SH_DISCONTINUOUS_STRIP_TEXMAP==surface->surface_type)
 									||(g_SH_DISCONTINUOUS_STRIP==surface->surface_type));
 								if (proportion>0)
@@ -4063,8 +4095,15 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 											{
 												if (picking_names)
 												{
+#if defined (OPENGL_API)
+													if (gl_surface_mode != GL_POINTS)
+													{
+														glEnd();
+														gl_surface_mode = GL_POINTS;
+													}
 													/* put out name for picking - cast to GLuint */
 													glLoadName((GLuint)interpolate_surface->object_name);
+#endif /* defined (OPENGL_API) */
 												}
 												draw_dc_surfaceGL(interpolate_surface->pointlist,
 													interpolate_surface->normallist,
@@ -4073,9 +4112,12 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 													interpolate_surface->n_pts1,
 													interpolate_surface->n_pts2,
 													interpolate_surface->polygon,strip,
+#if defined (OPENGL_API)
+													gl_surface_mode,
+#endif /* defined (OPENGL_API) */
 													interpolate_surface->n_data_components,
 													interpolate_surface->data,
-													material,spectrum);
+													material, spectrum, spectrum_render_data);
 												DESTROY(GT_surface)(&interpolate_surface);
 											}
 										}
@@ -4096,19 +4138,36 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										{
 											if (picking_names)
 											{
+#if defined (OPENGL_API)
+												if (gl_surface_mode != GL_POINTS)
+												{
+													glEnd();
+													gl_surface_mode = GL_POINTS;
+												}
 												/* put out name for picking - cast to GLuint */
 												glLoadName((GLuint)surface->object_name);
+#endif /* defined (OPENGL_API) */
 											}
 											draw_dc_surfaceGL(surface->pointlist,surface->normallist,  
 												surface->tangentlist,
 
 												surface->texturelist,surface->n_pts1,surface->n_pts2,
-												surface->polygon,strip, surface->n_data_components,
-												surface->data,material,spectrum);
+												surface->polygon,strip,
+#if defined (OPENGL_API)
+												gl_surface_mode,
+#endif /* defined (OPENGL_API) */
+												surface->n_data_components, surface->data,
+												material, spectrum, spectrum_render_data);
 										}
 										surface=surface->ptrnext;
 									}
 								}
+#if defined (OPENGL_API)
+								if (gl_surface_mode != GL_POINTS)
+								{
+									glEnd();
+								}
+#endif /* defined (OPENGL_API) */
 								return_code=1;
 							} break;
 							default:
@@ -4119,6 +4178,10 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 							} break;
 						}
 #if defined (OPENGL_API)
+						if (spectrum_render_data)
+						{
+							spectrum_end_renderGL(spectrum,spectrum_render_data);
+						}
 						if (wireframe_flag)
 						{
 							glPopAttrib();
@@ -4578,7 +4641,7 @@ static int Graphics_object_render_opengl(
 	if (graphics_object)
 	{
 		return_code=1;
-		if (graphics_object->nextobject)
+		if (renderer->picking && (NULL != graphics_object->nextobject))
 		{
 			glPushName(0);
 		}
@@ -4586,7 +4649,7 @@ static int Graphics_object_render_opengl(
 		for (graphics_object_item=graphics_object;graphics_object_item != NULL;
 			graphics_object_item=graphics_object_item->nextobject)
 		{
-			if (0<graphics_object_no)
+			if (renderer->picking && (0<graphics_object_no))
 			{
 				glLoadName((GLuint)graphics_object_no);
 			}
@@ -4629,7 +4692,7 @@ static int Graphics_object_render_opengl(
 				}
 			}
 		}
-		if (graphics_object->nextobject)
+		if (renderer->picking && (NULL != graphics_object->nextobject))
 		{
 			glPopName();
 		}
