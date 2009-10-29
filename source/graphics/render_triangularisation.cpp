@@ -188,7 +188,6 @@ int draw_surface_triangle_mesh(Triangle_mesh& trimesh, Triple *surfpts,
 						return_code = 1;
 					}
 				}
-				delete[] tri_vertex;
 			} break;
 			case g_SH_DISCONTINUOUS:
 			case g_SH_DISCONTINUOUS_STRIP:
