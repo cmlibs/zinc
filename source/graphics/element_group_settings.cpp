@@ -6348,8 +6348,8 @@ The graphics object is stored with with the settings it was created from.
 										{
 											case USE_ELEMENTS:
 											{
-												graphics_object_type = g_VOLTEX;
-												//graphics_object_type = g_SURFACE; // GRC for new isosurfaces
+												//graphics_object_type = g_VOLTEX; // for old isosurfaces
+												graphics_object_type = g_SURFACE; // for new isosurfaces
 												if (first_element = FE_region_get_first_FE_element_that(
 														 fe_region, FE_element_is_top_level, (void *)NULL))
 												{
