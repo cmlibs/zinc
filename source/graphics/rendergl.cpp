@@ -1661,31 +1661,25 @@ DESCRIPTION :
 	return (return_code);
 } /* draw_dc_polylineGL */
 
+/**
+ * Outputs quadrilateral surfaces as a series of OpenGL quad strips, and
+ * triangle surfaces as a series of triangle strips.
+ */
 static int draw_surfaceGL(Triple *surfpts, Triple *normalpoints, Triple *tangentpoints,
 	Triple *texturepoints, int npts1, int npts2, gtPolygonType polygon_type,
 	int number_of_data_components, GTDATA *data, 
 	struct Graphical_material *material, struct Spectrum *spectrum,
 	struct Spectrum_render_data *render_data)
-/*******************************************************************************
-LAST MODIFIED : 19 November 2007
-
-DESCRIPTION :
-==============================================================================*/
 {
-	GTDATA *data_1,*data_2;
-	int i,j,return_code;
-	Triple *surface_point_1,*surface_point_2, *normal_point_1, *normal_point_2,
-		*texture_point_1, *texture_point_2;
-#if defined GL_VERSION_1_3
-	Triple *tangent_point_1, *tangent_point_2;
-#endif /* defined GL_VERSION_1_3 */
+	int return_code;
 
 	ENTER(draw_surfaceGL);
 #if ! defined GL_VERSION_1_3
 	USE_PARAMETER(tangentpoints);
 #endif /* ! defined GL_VERSION_1_3 */
 	/* checking arguments */
-	if (surfpts&&(1<npts1)&&(1<npts2) &&	(NULL == data) || (NULL != render_data))
+	if (surfpts && (1 < npts1) && (1 < npts2) &&
+		(NULL == data) || (NULL != render_data))
 	{
 #if defined (OPENGL_API)
 #if defined GL_VERSION_1_3
@@ -1702,163 +1696,106 @@ DESCRIPTION :
 		{
 			case g_QUADRILATERAL:
 			{
-				for (i=0;i<npts1-1;i++)
+				/* For standard OpenGL polygon winding with normals out of the page,
+				 * expect points in sequence:
+				 *   7-8-9
+				 *   | | |
+				 *   4-5-6
+				 *   | | |
+				 *   1-2-3
+				 * The first quad strip is the left column from bottom to top:
+				 *   1,2,4,5,7,8
+				 */
+				const int number_of_strips = npts1 - 1;
+				const int points_per_strip = 2*npts2;
+				int i, index, j;
+				for (i = 0; i < number_of_strips; i++)
 				{
+					index = i;
 					glBegin(GL_QUAD_STRIP);
-					for (j=0;j<npts2;j++)
+					for (j = 0; j < points_per_strip; j++)
 					{
 						if (normalpoints)
 						{
-							glNormal3fv(normalpoints[i+npts1*j]);
+							glNormal3fv(normalpoints[index]);
 						}
-#if defined GL_VERSION_1_3
+	#if defined GL_VERSION_1_3
 						if (tangentpoints)
 						{
-							glMultiTexCoord3fv(GL_TEXTURE1_ARB,tangentpoints[i+npts1*j]);
+							glMultiTexCoord3fv(GL_TEXTURE1_ARB, tangentpoints[index]);
 						}
-#endif /* defined GL_VERSION_1_3 */
+	#endif /* defined GL_VERSION_1_3 */
 						if (texturepoints)
 						{
-							glTexCoord3fv(texturepoints[i+npts1*j]);
-						}
-						/* putting the spectrum render after the definition of the texture
-							coordinates allows the spectrum to override them */
-						if (data)
-						{
-							spectrum_renderGL_value(spectrum,material,render_data,data+
-								number_of_data_components*(i+npts1*j));
-						}
-						glVertex3fv(surfpts[i+npts1*j]);
-						if (normalpoints)
-						{
-							glNormal3fv(normalpoints[i+npts1*j+1]);
-						}
-#if defined GL_VERSION_1_3
-						if (tangentpoints)
-						{
-							glMultiTexCoord3fv(GL_TEXTURE1_ARB,tangentpoints[i+npts1*j+1]);
-						}
-#endif /* defined GL_VERSION_1_3 */
-						if (texturepoints)
-						{
-							glTexCoord3fv(texturepoints[i+npts1*j+1]);
+							glTexCoord3fv(texturepoints[index]);
 						}
 						if (data)
 						{
-							spectrum_renderGL_value(spectrum,material,render_data,data+
-								number_of_data_components*(i+npts1*j+1));
+							spectrum_renderGL_value(spectrum, material, render_data,
+								data + index*number_of_data_components);
 						}
-						glVertex3fv(surfpts[i+npts1*j+1]);
+						glVertex3fv(surfpts[index]);
+						if (j & 1)
+						{
+							index += number_of_strips;
+						}
+						else
+						{
+							index++;
+						}
 					}
 					glEnd();
 				}
 			} break;
 			case g_TRIANGLE:
 			{
-				surface_point_1=surfpts;
-				surface_point_2=surfpts+npts1;
-				if (normalpoints)
+				/* For standard OpenGL polygon winding with normals out of the page,
+				 * expect points in sequence:
+				 *   6
+				 *   |\
+				 *   4-5
+				 *   |\|\
+				 *   1-2-3
+				 * The first triangle strip is the left column from bottom to top:
+				 *   1,2,4,5,6
+				 */
+				const int number_of_strips = npts1 - 1;
+				int i, index, j, points_per_strip;
+				for (i = 0; i < number_of_strips; i++)
 				{
-					normal_point_1=normalpoints;
-					normal_point_2=normalpoints+npts1;
-				}
-#if defined GL_VERSION_1_3
-				if (tangentpoints)
-				{
-					tangent_point_1=tangentpoints;
-					tangent_point_2=tangentpoints+npts1;
-				}
-#endif /* defined GL_VERSION_1_3 */
-				if (texturepoints)
-				{
-					texture_point_1 = texturepoints;
-					texture_point_2 = texturepoints+npts1;				
-				}
-				if (data)
-				{
-					data_1=data;
-					data_2=data+npts1*number_of_data_components;
-				}
-				for (i=npts1-1;i>0;i--)
-				{
+					index = i;
+					points_per_strip = (npts1 - i)*2 - 1;
 					glBegin(GL_TRIANGLE_STRIP);
-					if (normalpoints)
-					{
-						glNormal3fv(*normal_point_1);
-						normal_point_1++;
-					}
-#if defined GL_VERSION_1_3
-					if (tangentpoints)
-					{
-						glMultiTexCoord3fv(GL_TEXTURE1_ARB,*tangent_point_1);
-						tangent_point_1++;
-					}
-#endif /* defined GL_VERSION_1_3 */
-					if (texturepoints)
-					{
-						glTexCoord3fv(*texture_point_1);
-						texture_point_1++;
-					}
-					if (data)
-					{
-						spectrum_renderGL_value(spectrum,material,render_data,
-							data_1);
-						data_1 += number_of_data_components;
-					}
-					glVertex3fv(*surface_point_1);
-					surface_point_1++;
-					for (j=i;j>0;j--)
+					for (j = 0; j < points_per_strip; j++)
 					{
 						if (normalpoints)
 						{
-							glNormal3fv(*normal_point_2);
-							normal_point_2++;
+							glNormal3fv(normalpoints[index]);
 						}
-#if defined GL_VERSION_1_3
+	#if defined GL_VERSION_1_3
 						if (tangentpoints)
 						{
-							glMultiTexCoord3fv(GL_TEXTURE1_ARB,*tangent_point_2);
-							tangent_point_2++;
+							glMultiTexCoord3fv(GL_TEXTURE1_ARB, tangentpoints[index]);
 						}
-#endif /* defined GL_VERSION_1_3 */
+	#endif /* defined GL_VERSION_1_3 */
 						if (texturepoints)
 						{
-							glTexCoord3fv(*texture_point_2);
-							texture_point_2++;
+							glTexCoord3fv(texturepoints[index]);
 						}
 						if (data)
 						{
-							spectrum_renderGL_value(spectrum,material,render_data,
-								data_2);
-							data_2 += number_of_data_components;
+							spectrum_renderGL_value(spectrum, material, render_data,
+								data + index*number_of_data_components);
 						}
-						glVertex3fv(*surface_point_2);
-						surface_point_2++;
-						if (normalpoints)
+						glVertex3fv(surfpts[index]);
+						if (j & 1)
 						{
-							glNormal3fv(*normal_point_1);
-							normal_point_1++;
+							index += (number_of_strips - (j >> 1));
 						}
-#if defined GL_VERSION_1_3
-						if (tangentpoints)
+						else
 						{
-							glMultiTexCoord3fv(GL_TEXTURE1_ARB,*tangent_point_1);
-							tangent_point_1++;
+							index++;
 						}
-#endif /* defined GL_VERSION_1_3 */
-						if (texturepoints)
-						{
-							glTexCoord3fv(*texture_point_1);
-							texture_point_1++;
-						}
-						if (data)
-						{
-							spectrum_renderGL_value(spectrum,material,render_data,
-								data_1);
-							data_1 += number_of_data_components;
-						}
-						glVertex3fv(*surface_point_1);
-						surface_point_1++;
 					}
 					glEnd();
 				}

@@ -2716,11 +2716,6 @@ int get_surface_element_segmentation(struct FE_element *element,
 	return (return_code);
 } /* get_surface_element_segmentation */
 
-/* GRC temporary */
-#if defined (USE_NETGEN)
-#  define FIX_INWARD_NORMALS 1
-#endif
-
 struct GT_surface *create_GT_surface_from_FE_element(
 	struct FE_element *element,struct Computed_field *coordinate_field,
 	struct Computed_field *texture_coordinate_field,
@@ -2753,15 +2748,12 @@ to specify normal.  I didn't do it because this is the only place that collapsed
 normals are used.
 ???DB.  Always calculates texture coordinates.  Calculate as required ?  Finite
 	element graphical object ?
-???DB.  18 September 1993.  Only the side with the normal pointing out is
-	textured correctly (even in TWOSIDE mode).  For 2-D finite elements which
-	are faces of 3-D finite elements make the normals point out of the element.
 ==============================================================================*/
 {
-	char modified_reverse_normals,special_normals;
+	char modified_reverse_normals, special_normals;
 	enum Collapsed_element_type collapsed_element;
 	enum FE_element_shape_type shape_type;
-	FE_value coordinates[3],derivative_xi[6],texture_values[3],xi[2],xi2,
+	FE_value coordinates[3], derivative_xi[6], texture_values[3],
 		texture_derivative[6], texture_determinant;
 	float distance;
 	GTDATA *data;
@@ -2771,8 +2763,8 @@ normals are used.
 		number_of_points_in_xi1,number_of_points_in_xi2,number_of_polygon_vertices,
 		return_code;
 	struct CM_element_information cm;
-	Triple *normal,*normalpoints,*point,*point_a,*point_b,*points,
-		*tangent,*tangentpoints,*texturepoints,*texture_coordinate;
+	Triple *normal, *normalpoints, *point, *points, *tangent, *tangentpoints,
+		*texturepoints, *texture_coordinate;
 
 	ENTER(create_GT_surface_from_FE_element);
 	if (element && (2 == get_FE_element_dimension(element)) &&
@@ -2782,11 +2774,12 @@ normals are used.
 		((!texture_coordinate_field)||
 		(3>=Computed_field_get_number_of_components(texture_coordinate_field))))
 	{
-#if defined (FIX_INWARD_NORMALS)
+		modified_reverse_normals = reverse_normals;
 		const int reverse_winding = FE_element_is_exterior_face_with_inward_normal(element);
-#else
-		const int reverse_winding = 0;
-#endif
+		if (reverse_winding)
+		{
+			modified_reverse_normals = !modified_reverse_normals;
+		}
 		/* clear coordinates and derivatives not set if coordinate field is not
 			 3 component */
 		coordinates[1]=0.0;
@@ -2804,11 +2797,6 @@ normals are used.
 			&number_of_points_in_xi1,&number_of_points_in_xi2,
 			&number_of_points,&number_of_polygon_vertices,&polygon_type,
 			&collapsed_element, &shape_type);
-		modified_reverse_normals = reverse_normals;
-		if (reverse_winding)
-		{
-			modified_reverse_normals = !modified_reverse_normals;
-		}
 		/* create the GT_surface */
 		surface=(struct GT_surface *)NULL;
 		points=(Triple *)NULL;
@@ -2823,10 +2811,11 @@ normals are used.
 			if (!ALLOCATE(data,GTDATA,number_of_points*n_data_components))
 			{
 				display_message(ERROR_MESSAGE,
-					"create_GT_surface_from_FE_element.  Could allocate data");
+					"create_GT_surface_from_FE_element.  Could not allocate data");
 			}
 		}
-		if ((data||(0==n_data_components))&&
+		FE_value *xi_points = new FE_value[2*number_of_points];
+		if ((NULL != xi_points) && (data || (0 == n_data_components)) &&
 			ALLOCATE(points,Triple,number_of_points)&&
 			ALLOCATE(normalpoints,Triple,number_of_points)&&
 			(!texture_coordinate_field || (ALLOCATE(tangentpoints,Triple,number_of_points)&&
@@ -2839,105 +2828,92 @@ normals are used.
 			/* for selective editing of GT_object primitives, record element ID */
 			get_FE_element_identifier(element, &cm);
 			GT_surface_set_integer_identifier(surface, CM_element_information_to_graphics_name(&cm));
-			/* calculate the xi coordinates and store in "normals" */
-			point_a=normalpoints;
-			point_b=point_a;
-			distance=(FE_value)(number_of_points_in_xi1-1);
+			/* calculate the xi coordinates and store in xi_points array */
+			const FE_value xi_distance1 = (FE_value)(number_of_points_in_xi1 - 1);
+			const FE_value xi_distance2 = (FE_value)(number_of_points_in_xi2 - 1);
+			FE_value *xi1, xi1_value, *xi2, xi2_value;
 			if (SIMPLEX_SHAPE == shape_type)
 			{
-#if !defined (FIX_INWARD_NORMALS)
-				// This original winding for triangles was backward so normals had to be reversed
-				modified_reverse_normals = !modified_reverse_normals;
-				for (i=0;i<number_of_points_in_xi1;i++)
-				{
-					(*point_a)[0]=(float)i/distance;
-					point_a++;
-				}
-				for (j=number_of_points_in_xi2-1;j>0;j--)
-				{
-					for (i=0;i<j;i++)
-					{
-						(*point_a)[0]=(*point_b)[0];
-						point_a++;
-						point_b++;
-					}
-					point_b++;
-				}
-#else /* defined (FIX_INWARD_NORMALS) */
+				/* Standard triangle case lists points in order: 
+				 *   6
+				 *   |\
+				 *   4-5
+				 *   |\|\
+				 *   1-2-3
+				 * Reverse winding reverses xi1 coordinate in rows: 3,2,1,5,4,6
+				 */
 				if (reverse_winding)
 				{
-					for (i=0;i<number_of_points_in_xi1;i++)
+					for (i = 0; i < number_of_points_in_xi1; i++)
 					{
-						(*point_a)[0]=(float)i/distance;
-						point_a++;
-					}
-					for (j=number_of_points_in_xi2-1;j>0;j--)
-					{
-						for (i=0;i<j;i++)
+						xi1_value = (FE_value)(number_of_points_in_xi1 - 1 - i)/xi_distance1;
+						xi1 = xi_points + 2*i;
+						for (j = 0; j <= i; j++)
 						{
-							(*point_a)[0]=(*point_b)[0];
-							point_a++;
-							point_b++;
+							*xi1 = xi1_value;
+							xi1 += 2*(number_of_points_in_xi2 - 1 - j);
 						}
-						point_b++;
 					}
 				}
 				else
 				{
-					for (j=0;j<number_of_points_in_xi2;j++)
+					for (i = 0; i < number_of_points_in_xi1; i++)
 					{
-						for (i=number_of_points_in_xi1-j-1;i>=0;i--)
+						xi1_value = (FE_value)i/xi_distance1;
+						xi1 = xi_points + 2*i;
+						for (j = 0; j < number_of_points_in_xi2 - i; j++)
 						{
-							(*point_a)[0]=(float)i/distance;
-							point_a++;
+							*xi1 = xi1_value;
+							xi1 += 2*(number_of_points_in_xi1 - j);
 						}
 					}
 				}
-#endif /* defined (FIX_INWARD_NORMALS) */
-				point=normalpoints;
-				distance=(float)(number_of_points_in_xi2-1);
-				for (j=0;j<number_of_points_in_xi2;j++)
+				xi2 = xi_points + 1;
+				for (j = 0; j < number_of_points_in_xi2; j++)
 				{
-					xi2=(float)j/distance;
-					for (i=number_of_points_in_xi1-j;i>0;i--)
+					xi2_value = (FE_value)j/xi_distance2;
+					for (i = number_of_points_in_xi1 - j; i > 0; i--)
 					{
-						(*point)[1]=xi2;
-						point++;
+						*xi2 = xi2_value;
+						xi2 += 2;
 					}
 				}
 			}
 			else
 			{
-				for (i=0;i<number_of_points_in_xi1;i++)
-				{
-					(*point_a)[0]=(float)i/distance;
-					point_a++;
-				}
-				for (j=1;j<number_of_points_in_xi2;j++)
-				{
-					for (i=0;i<number_of_points_in_xi1;i++)
-					{
-						(*point_a)[0]=(*point_b)[0];
-						point_a++;
-						point_b++;
-					}
-				}
-				point=normalpoints;
-				distance=(float)(number_of_points_in_xi2-1);
-				for (j=0;j<number_of_points_in_xi2;j++)
+				/* Standard quadrilateral case lists points in order: 
+				 *   7-8-9
+				 *   | | |
+				 *   4-5-6
+				 *   | | |
+				 *   1-2-3
+				 * Reverse winding reverses xi1 coordinate in rows: 3,2,1,6,5,4,9,8,7
+				 */
+				for (i = 0; i < number_of_points_in_xi1; i++)
 				{
 					if (reverse_winding)
 					{
-						xi2=(float)(number_of_points_in_xi2-1-j)/distance;
+						xi1_value = (FE_value)(number_of_points_in_xi1 - 1 - i)/xi_distance1;
 					}
 					else
 					{
-						xi2=(float)j/distance;
+						xi1_value = (FE_value)i/xi_distance1;
 					}
-					for (i=0;i<number_of_points_in_xi1;i++)
+					xi1 = xi_points + 2*i;
+					for (j = 0; j < number_of_points_in_xi2; j++)
 					{
-						(*point)[1]=xi2;
-						point++;
+						*xi1 = xi1_value;
+						xi1 += 2*number_of_points_in_xi1;
+					}
+				}
+				xi2 = xi_points + 1;
+				for (j = 0; j < number_of_points_in_xi2; j++)
+				{
+					xi2_value = (FE_value)j/xi_distance2;
+					for (i = number_of_points_in_xi1; i > 0 ; i--)
+					{
+						*xi2 = xi2_value;
+						xi2 += 2;
 					}
 				}
 			}
@@ -2965,11 +2941,9 @@ normals are used.
 			}
 			i=0;
 			return_code = 1;
+			FE_value *xi = xi_points;
 			while ((i<number_of_points)&&surface)
 			{
-				/* extract xi from the normals */
-				xi[0]=(*normal)[0];
-				xi[1]=(*normal)[1];
 				/* evaluate the fields */
 				if (!(Computed_field_evaluate_in_element(coordinate_field,element,xi,
 					time,top_level_element,coordinates,derivative_xi)&&
@@ -3113,6 +3087,7 @@ normals are used.
 					/* error evaluating fields */
 					DESTROY(GT_surface)(&surface);
 				}
+				xi += 2;
 				i++;
 			}
 			/* clear Computed_field caches so elements not accessed */
@@ -3125,6 +3100,7 @@ normals are used.
 			{
 				if (special_normals)
 				{
+					const int sign = modified_reverse_normals ? -1 : 1;
 					if (number_of_polygon_vertices>0)
 					{
 						normal=normalpoints+number_of_points_in_xi1-2;
@@ -3137,12 +3113,12 @@ normals are used.
 							derivative_xi[0]=(*normal)[0];
 							derivative_xi[2]=(*normal)[1];
 							derivative_xi[4]=(*normal)[2];
-							(*normal)[0]=derivative_xi[2]*derivative_xi[5]-
-								derivative_xi[3]*derivative_xi[4];
-							(*normal)[1]=derivative_xi[4]*derivative_xi[1]-
-								derivative_xi[5]*derivative_xi[0];
-							(*normal)[2]=derivative_xi[0]*derivative_xi[3]-
-								derivative_xi[1]*derivative_xi[2];
+							(*normal)[0] = sign*(derivative_xi[2]*derivative_xi[5] -
+								derivative_xi[3]*derivative_xi[4]);
+							(*normal)[1] = sign*(derivative_xi[4]*derivative_xi[1] -
+								derivative_xi[5]*derivative_xi[0]);
+							(*normal)[2] = sign*(derivative_xi[0]*derivative_xi[3] -
+								derivative_xi[1]*derivative_xi[2]);
 							derivative_xi[1]=derivative_xi[0];
 							derivative_xi[3]=derivative_xi[2];
 							derivative_xi[5]=derivative_xi[4];
@@ -3161,12 +3137,12 @@ normals are used.
 						derivative_xi[1]=(*normal)[0];
 						derivative_xi[3]=(*normal)[1];
 						derivative_xi[5]=(*normal)[2];
-						(*normal)[0]=derivative_xi[2]*derivative_xi[5]-
-							derivative_xi[3]*derivative_xi[4];
-						(*normal)[1]=derivative_xi[4]*derivative_xi[1]-
-							derivative_xi[5]*derivative_xi[0];
-						(*normal)[2]=derivative_xi[0]*derivative_xi[3]-
-							derivative_xi[1]*derivative_xi[2];
+						(*normal)[0] = sign*(derivative_xi[2]*derivative_xi[5] -
+							derivative_xi[3]*derivative_xi[4]);
+						(*normal)[1] = sign*(derivative_xi[4]*derivative_xi[1] -
+							derivative_xi[5]*derivative_xi[0]);
+						(*normal)[2] = sign*(derivative_xi[0]*derivative_xi[3] -
+							derivative_xi[1]*derivative_xi[2]);
 						derivative_xi[0]=(*normal)[0];
 						derivative_xi[1]=(*normal)[1];
 						derivative_xi[2]=(*normal)[2];
@@ -3189,12 +3165,12 @@ normals are used.
 						derivative_xi[1]=(*normal)[0];
 						derivative_xi[3]=(*normal)[1];
 						derivative_xi[5]=(*normal)[2];
-						(*normal)[0]=derivative_xi[2]*derivative_xi[5]-
-							derivative_xi[3]*derivative_xi[4];
-						(*normal)[1]=derivative_xi[4]*derivative_xi[1]-
-							derivative_xi[5]*derivative_xi[0];
-						(*normal)[2]=derivative_xi[0]*derivative_xi[3]-
-							derivative_xi[1]*derivative_xi[2];
+						(*normal)[0] = sign*(derivative_xi[2]*derivative_xi[5] -
+							derivative_xi[3]*derivative_xi[4]);
+						(*normal)[1] = sign*(derivative_xi[4]*derivative_xi[1] -
+							derivative_xi[5]*derivative_xi[0]);
+						(*normal)[2] = sign*(derivative_xi[0]*derivative_xi[3] -
+							derivative_xi[1]*derivative_xi[2]);
 						derivative_xi[0]=(*normal)[0];
 						derivative_xi[1]=(*normal)[1];
 						derivative_xi[2]=(*normal)[2];
@@ -3218,12 +3194,12 @@ normals are used.
 						derivative_xi[0]=(*normal)[0];
 						derivative_xi[2]=(*normal)[1];
 						derivative_xi[4]=(*normal)[2];
-						(*normal)[0]=derivative_xi[2]*derivative_xi[5]-
-							derivative_xi[3]*derivative_xi[4];
-						(*normal)[1]=derivative_xi[4]*derivative_xi[1]-
-							derivative_xi[5]*derivative_xi[0];
-						(*normal)[2]=derivative_xi[0]*derivative_xi[3]-
-							derivative_xi[1]*derivative_xi[2];
+						(*normal)[0] = sign*(derivative_xi[2]*derivative_xi[5] -
+							derivative_xi[3]*derivative_xi[4]);
+						(*normal)[1] = sign*(derivative_xi[4]*derivative_xi[1] -
+							derivative_xi[5]*derivative_xi[0]);
+						(*normal)[2] = sign*(derivative_xi[0]*derivative_xi[3] -
+							derivative_xi[1]*derivative_xi[2]);
 						derivative_xi[0]=(*normal)[0];
 						derivative_xi[1]=(*normal)[1];
 						derivative_xi[2]=(*normal)[2];
@@ -3248,12 +3224,12 @@ normals are used.
 						derivative_xi[0]=(*normal)[0];
 						derivative_xi[2]=(*normal)[1];
 						derivative_xi[4]=(*normal)[2];
-						(*normal)[0]=derivative_xi[2]*derivative_xi[5]-
-							derivative_xi[3]*derivative_xi[4];
-						(*normal)[1]=derivative_xi[4]*derivative_xi[1]-
-							derivative_xi[5]*derivative_xi[0];
-						(*normal)[2]=derivative_xi[0]*derivative_xi[3]-
-							derivative_xi[1]*derivative_xi[2];
+						(*normal)[0] = sign*(derivative_xi[2]*derivative_xi[5] -
+							derivative_xi[3]*derivative_xi[4]);
+						(*normal)[1] = sign*(derivative_xi[4]*derivative_xi[1] -
+							derivative_xi[5]*derivative_xi[0]);
+						(*normal)[2] = sign*(derivative_xi[0]*derivative_xi[3] -
+							derivative_xi[1]*derivative_xi[2]);
 						derivative_xi[0]=(*normal)[0];
 						derivative_xi[1]=(*normal)[1];
 						derivative_xi[2]=(*normal)[2];
@@ -3332,6 +3308,7 @@ normals are used.
 				DEALLOCATE(data);
 			}
 		}
+		delete[] xi_points;
 		if (!surface)
 		{
 			display_message(ERROR_MESSAGE,

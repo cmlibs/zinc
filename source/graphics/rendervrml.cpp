@@ -1886,21 +1886,20 @@ DESCRIPTION :
 							{
 								for (i=npts1-1;i>0;i--)
 								{
-									/* -1 finishes of the polygon vertex index list */
-									fprintf(vrml_file,"      %d,%d,%d,%d,-1\n",index_1,index_2,
-										index_1+1,index_1);
-									index_1++;
 									for (j=i-1;j>0;j--)
 									{
 										/* -1 finishes of the polygon vertex index list */
-										fprintf(vrml_file,"      %d,%d,%d,%d,-1\n",index_1,index_2,
-											index_2+1,index_1);
-										index_2++;
-										fprintf(vrml_file,"      %d,%d,%d,%d,-1\n",index_1,index_2,
-											index_1+1,index_1);
+										fprintf(vrml_file,"      %d,%d,%d,%d,-1\n",
+											index_1, index_1 + 1, index_2, index_1);
 										index_1++;
+										fprintf(vrml_file,"      %d,%d,%d,%d,-1\n",
+											index_1, index_2 + 1, index_2, index_1);
+										index_2++;
 									}
-									index_1++;
+									/* -1 finishes of the polygon vertex index list */
+									fprintf(vrml_file,"      %d,%d,%d,%d,-1\n",
+										index_1, index_1 + 1, index_2, index_1);
+									index_1 += 2;
 									index_2++;
 								}
 							}
@@ -1908,21 +1907,20 @@ DESCRIPTION :
 							{
 								for (i=npts1-1;i>0;i--)
 								{
-									/* -1 finishes of the polygon vertex index list */
-									fprintf(vrml_file,"      %d,%d,%d,-1\n",index_1,index_2,
-										index_1+1);
-									index_1++;
 									for (j=i-1;j>0;j--)
 									{
 										/* -1 finishes of the polygon vertex index list */
-										fprintf(vrml_file,"      %d,%d,%d,-1\n",index_1,index_2,
-											index_2+1);
-										index_2++;
-										fprintf(vrml_file,"      %d,%d,%d,-1\n",index_1,index_2,
-											index_1+1);
+										fprintf(vrml_file,"      %d,%d,%d,-1\n",
+											index_1, index_1 + 1, index_2);
 										index_1++;
+										fprintf(vrml_file,"      %d,%d,%d,-1\n",
+											index_1, index_2 + 1, index_2);
+										index_2++;
 									}
-									index_1++;
+									/* -1 finishes of the polygon vertex index list */
+									fprintf(vrml_file,"      %d,%d,%d,-1\n",
+										index_1, index_1 + 1, index_2);
+									index_1 += 2;
 									index_2++;
 								}
 							}
@@ -1939,28 +1937,27 @@ DESCRIPTION :
 						{
 							fprintf(vrml_file,"      ");
 							/* npts2 = number of vertices per polygon */
-							index=i+npts2*npts1;
 							for (j=npts2;j>0;j--)
 							{
-								index -= npts1;
 								fprintf(vrml_file,"%d,",index);
+								index++;
 							}
 							/* -1 finishes of the polygon vertex index list */
-							fprintf(vrml_file,"%d,-1\n",i+(npts2-1)*npts1);
+							fprintf(vrml_file,"%d,-1\n",i*npts2);
 						}
 					}
 					else
 					{
 						/* npts1 = number of polygons */
+						index = 0;
 						for (i=0;i<npts1;i++)
 						{
 							fprintf(vrml_file,"      ");
 							/* npts2 = number of vertices per polygon */
-							index=i+npts2*npts1;
 							for (j=npts2;j>0;j--)
 							{
-								index -= npts1;
 								fprintf(vrml_file,"%d,",index);
+								index++;
 							}
 							/* -1 finishes of the polygon vertex index list */
 							fprintf(vrml_file,"-1\n");

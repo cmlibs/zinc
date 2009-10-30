@@ -635,6 +635,12 @@ DESCRIPTION :
 					} break;
 				}
 			} break;
+			case g_SH_DISCONTINUOUS:
+			case g_SH_DISCONTINUOUS_TEXMAP:
+			{
+				number_of_points = npts1*npts2;
+				return_code = 1;
+			} break;
 		}
 		if (return_code)
 		{
@@ -712,6 +718,38 @@ DESCRIPTION :
 									index_1++;
 									index_2++;
 								}
+							} break;
+						}
+					} break;
+					case g_SH_DISCONTINUOUS:
+					case g_SH_DISCONTINUOUS_TEXMAP:
+					{
+						index = 0;
+						switch (polygon_type)
+						{
+							case g_QUADRILATERAL:
+							{
+								for (i = 0; i<npts1; i++)
+								{
+									FE_region_add_square(data, time, number_of_data_components,
+										&nodes[index], &nodes[index+1], &nodes[index+2], &nodes[index+3]);
+									index += 4;
+								}
+							} break;
+							case g_TRIANGLE:
+							{
+								for (i = 0; i < npts1; i++)
+								{
+									FE_region_add_triangle(data, time, number_of_data_components,
+										&nodes[index], &nodes[index + 1], &nodes[index + 2]);
+									index += 3;
+								}
+							} break;
+							default:
+							{
+								display_message(ERROR_MESSAGE,
+									"render_surface_to_finite_elements.  Unsupported discontinuous polygon_type");
+								return_code = 0;
 							} break;
 						}
 					} break;
