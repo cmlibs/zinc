@@ -253,8 +253,8 @@ Sends <callback> with the object and call_data in <callback_data>. \
   struct CMISS_CALLBACK_ITEM(callback_type) *other_callback; \
 \
 	ENTER(CMISS_CALLBACK_MATCHES(callback_type)); \
-	if (callback&&(other_callback= \
-		(struct CMISS_CALLBACK_ITEM(callback_type) *)other_callback_void)) \
+	if ((callback&&(other_callback=																			 \
+				(struct CMISS_CALLBACK_ITEM(callback_type) *)other_callback_void))) \
 	{ \
 		return_code=((callback->function == other_callback->function)&& \
 			(callback->user_data == other_callback->user_data)); \
@@ -322,8 +322,8 @@ Adds a callback = <function> + <user_data> to end of <callback_list>. \
 	ENTER(CMISS_CALLBACK_LIST_ADD_CALLBACK(callback_type)); \
 	if (callback_list && function) \
 	{ \
-		if (callback = \
-			CREATE(CMISS_CALLBACK_ITEM(callback_type))(function, user_data)) \
+		if ((callback =																										 \
+				CREATE(CMISS_CALLBACK_ITEM(callback_type))(function, user_data))) \
 		{ \
 			if (FIRST_OBJECT_IN_LIST_THAT(CMISS_CALLBACK_ITEM(callback_type))( \
 				CMISS_CALLBACK_MATCHES(callback_type), (void *)callback, \
@@ -382,8 +382,8 @@ Adds a callback = <function> + <user_data> to front of <callback_list>. \
 	ENTER(CMISS_CALLBACK_LIST_ADD_CALLBACK_TO_FRONT(callback_type)); \
 	if (callback_list && function) \
 	{ \
-		if (callback = \
-			CREATE(CMISS_CALLBACK_ITEM(callback_type))(function, user_data)) \
+		if ((callback =																										 \
+				CREATE(CMISS_CALLBACK_ITEM(callback_type))(function, user_data))) \
 		{ \
 			if (FIRST_OBJECT_IN_LIST_THAT(CMISS_CALLBACK_ITEM(callback_type))( \
 				CMISS_CALLBACK_MATCHES(callback_type), (void *)callback, \
@@ -444,9 +444,9 @@ Removes a callback = <function> + <user_data> from <callback_list>. \
 	{ \
 		callback.function=function; \
 		callback.user_data=user_data; \
-		if (existing_callback= \
+		if ((existing_callback=																					 \
 			FIRST_OBJECT_IN_LIST_THAT(CMISS_CALLBACK_ITEM(callback_type))( \
-				CMISS_CALLBACK_MATCHES(callback_type),(void *)&callback,callback_list)) \
+				CMISS_CALLBACK_MATCHES(callback_type),(void *)&callback,callback_list))) \
 		{ \
          if (existing_callback->access_count == 1) \
          { \

@@ -103,7 +103,7 @@ Add <object> to the <any_object_list>. \
 	ENTER(ADD_OBJECT_TO_LIST(ANY_OBJECT(object_type))); \
 	if (object&&any_object_list) \
 	{ \
-		if (any_object=CREATE(ANY_OBJECT(object_type))(object)) \
+		if ((any_object=CREATE(ANY_OBJECT(object_type))(object)))	\
 		{ \
 			if (ADD_OBJECT_TO_LIST(Any_object)(any_object,any_object_list)) \
 			{ \
@@ -152,8 +152,8 @@ Removes <object> from the <any_object_list>. \
 	ENTER(REMOVE_OBJECT_FROM_LIST(ANY_OBJECT(object_type))); \
 	if (object&&any_object_list) \
 	{ \
-		if (any_object= \
-			IS_OBJECT_IN_LIST(ANY_OBJECT(object_type))(object,any_object_list)) \
+		if ((any_object=																										\
+				IS_OBJECT_IN_LIST(ANY_OBJECT(object_type))(object,any_object_list))) \
 		{ \
 			if (REMOVE_OBJECT_FROM_LIST(Any_object)(any_object,any_object_list)) \
 			{ \
@@ -200,8 +200,8 @@ If <object> is in <any_object_list>, return its Any_object structure.
 	ENTER(IS_OBJECT_IN_LIST(ANY_OBJECT(object_type))); \
 	if (object&&any_object_list) \
 	{ \
-		if (any_object=FIND_BY_IDENTIFIER_IN_LIST(Any_object,subobject)( \
-			(void *)object,any_object_list)) \
+		if ((any_object=FIND_BY_IDENTIFIER_IN_LIST(Any_object,subobject)( \
+					 (void *)object,any_object_list))) \
 		{ \
 			if (ANY_OBJECT_TYPE_STRING(object_type) != any_object->type_string) \
 			{ \
@@ -417,9 +417,9 @@ object of <object_type> if <conditional_function> is NULL. \
 	{ \
 		conditional_data.conditional_function = conditional_function; \
 		conditional_data.user_data = user_data; \
-		if (any_object=FIRST_OBJECT_IN_LIST_THAT(Any_object)( \
+		if ((any_object=FIRST_OBJECT_IN_LIST_THAT(Any_object)(					 \
 			ANY_OBJECT_CONDITIONAL(object_type),(void *)&conditional_data, \
-			any_object_list)) \
+			any_object_list)))																						 \
 		{ \
 			object = (struct object_type *)any_object->subobject; \
 		} \

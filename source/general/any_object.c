@@ -118,8 +118,8 @@ to the same subobject. Hence, find by identifier and check type_string matches.
 	ENTER(REMOVE_OBJECT_FROM_LIST(Any_object));
 	if (object&&list)
 	{
-		if (temp_any_object=FIND_BY_IDENTIFIER_IN_LIST(Any_object,subobject)(
-			object->subobject,list))
+		if ((temp_any_object=FIND_BY_IDENTIFIER_IN_LIST(Any_object,subobject)(
+					 object->subobject,list)))
 		{
 			if (object->type_string == temp_any_object->type_string)
 			{
@@ -201,8 +201,8 @@ to the same subobject. Hence, find by identifier and check type_string matches.
 	ENTER(ADD_OBJECT_TO_LIST(Any_object));
 	if (object&&list)
 	{
-		if (temp_any_object=FIND_BY_IDENTIFIER_IN_LIST(Any_object,subobject)(
-			object->subobject,list))
+		if ((temp_any_object=FIND_BY_IDENTIFIER_IN_LIST(Any_object,subobject)(
+					 object->subobject,list)))
 		{
 			if (object->type_string == temp_any_object->type_string)
 			{
@@ -238,7 +238,7 @@ to the same subobject. Hence, find by identifier and check type_string matches.
 			{
 				/* list is empty */
 				/* create the root node (a leaf node) */
-				if (node=CREATE_INDEX_NODE(Any_object)(1))
+				if ((node=CREATE_INDEX_NODE(Any_object)(1)))
 				{
 					list->index=node;
 					list->count=1;
@@ -283,8 +283,8 @@ the same subobject. Hence, find by identifier and check type_string matches.
 	ENTER(IS_OBJECT_IN_LIST(Any_object));
 	if (object&&list)
 	{
-		if (temp_any_object=FIND_BY_IDENTIFIER_IN_LIST(Any_object,subobject)(
-			object->subobject,list))
+		if ((temp_any_object=FIND_BY_IDENTIFIER_IN_LIST(Any_object,subobject)(
+					 object->subobject,list)))
 		{
 			if (object->type_string == temp_any_object->type_string)
 			{
