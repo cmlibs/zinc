@@ -293,6 +293,14 @@ DESCRIPTION :
 	int height;
 	int x;
 	int y;
+    /* Work around bug in firefox 3.0 and 3.5 where mouse coordinates are always given with respect
+     * to the containing window, rather than the last SetWindow call.
+     * Try to discern the offset of the containing window by assuming we will get a full
+     * window redraw before any mouse events.
+     * See https://tracker.physiomeproject.org/show_bug.cgi?id=921
+     */
+	int mouse_x;
+	int mouse_y;
 	/* For offscreen rendering */
 	int offscreen_width;
 	int offscreen_height;
@@ -455,6 +463,8 @@ contained in the this module only.
 		 buffer->height = 0;
 		 buffer->x = 0;
 		 buffer->y = 0;
+		 buffer->mouse_x = 0;
+		 buffer->mouse_y = 0;
 		 buffer->offscreen_width = 0;
 		 buffer->offscreen_height = 0;
 #ifdef WGL_ARB_pbuffer
@@ -5009,7 +5019,6 @@ are performed but the graphics window will render into the supplied device conte
    so declaring here if the headers are too old,
    however the actual function and dll was available in windows 98 */
 extern "C" {
-	bob
   WINGDIAPI BOOL  WINAPI AlphaBlend(HDC,int,int,int,int,HDC,int,int,int,int,BLENDFUNCTION);
 }
 #endif /* defined (WIN32_USER_INTERFACE) && (defined (__CYGWIN__) || defined (__MINGW__)) */
@@ -5021,8 +5030,8 @@ int Graphics_buffer_handle_windows_event(struct Graphics_buffer *buffer,
 LAST MODIFIED : 5 June 2007
 
 DESCRIPTION:
-Handle an external windows event.  Used to try and support windowless plugin
-mode with zinc.  Requiring development.
+Handle an external windows event.  Used to support windowless plugin
+mode with zinc.
 ==============================================================================*/
 {
   int return_code;
@@ -5056,6 +5065,16 @@ mode with zinc.  Requiring development.
 		  	          buffer->expose_callback_list, buffer, NULL);
 			  buffer->offscreen_render_required = 0;
 		  }
+
+ 	          /* Work around bug in firefox.  See definition of mouse_x.
+   	           */
+          if (((drc->left == buffer->x) || (drc->left == buffer->x - 1))
+        	&& ((drc->top == buffer->y) || (drc->top == buffer->y - 1)) &&
+        	((drc->right - drc->left) >= buffer->width) && ((drc->bottom - drc->top) >= buffer->height))
+          {
+        	  buffer->mouse_x = buffer->x;
+        	  buffer->mouse_y = buffer->y;
+          }
 
 		  wglMakeCurrent( buffer->hDC, buffer->hRC );
 
@@ -5097,7 +5116,7 @@ mode with zinc.  Requiring development.
 
 			  int width = right - x;
 			  int height = bottom - y;
-
+	                  
 			  if ((width > 0) && (height > 0))
 			  {
 #if defined (DEBUG)
@@ -5112,7 +5131,7 @@ mode with zinc.  Requiring development.
 						  if (GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND == buffer->buffering_mode)
 						  {
 #if defined (DEBUG)
-							  printf ("Going to blend %d %d %d %d (rgba %d %d %d %d)\n",
+							  printf ("Going to blend %d %d %d %d (bgra %d %d %d %d)\n",
 								  x - buffer->x, buffer->offscreen_height - height - y + buffer->y,
 								  width, height,
 								  ((unsigned char *)buffer->device_independent_bitmap_pixels)
@@ -5134,16 +5153,79 @@ mode with zinc.  Requiring development.
 								  };
 
 							  AlphaBlend(hdc, x, y, width, height,
-								  buffer->hDC, x - buffer->x,
-								  buffer->offscreen_height - height - y + buffer->y, width, height,
-								  blendfunction);
+								 buffer->hDC, x - buffer->x,
+								 buffer->offscreen_height - height - y + buffer->y, width, height,
+								 blendfunction);
+
 						  }
 						  else
 						  {
+#if defined (DEBUG)
+#if defined (DRAW_A_TEST_LINE)
+							  {
+								  int i;
+								  for (i = 0 ; i < 50 ; i++)
+									  if (ERROR_INVALID_PARAMETER ==SetPixel(buffer->hDC,
+										  x - buffer->x + i, 
+										  buffer->offscreen_height - height - y + buffer->y + i, RGB(255, 200, 10)))
+										  printf("Error writing pixel to %p", buffer->hDC);
+							  }
+#endif // defined (DRAW_A_TEST_LINE)
+
+							  printf ("Going to bitblt %d %d %d %d (bgra %d %d %d %d)\n",
+								  x - buffer->x, buffer->offscreen_height - height - y + buffer->y,
+								  width, height,
+								  ((unsigned char *)buffer->device_independent_bitmap_pixels)
+								  [4 * buffer->offscreen_width * (buffer->offscreen_height - height - y + buffer->y)],
+								  ((unsigned char *)buffer->device_independent_bitmap_pixels)
+								  [4 * buffer->offscreen_width * (buffer->offscreen_height - height - y + buffer->y) + 1],
+								  ((unsigned char *)buffer->device_independent_bitmap_pixels)
+								  [4 * buffer->offscreen_width * (buffer->offscreen_height - height - y + buffer->y) + 2],
+								  ((unsigned char *)buffer->device_independent_bitmap_pixels)
+								  [4 * buffer->offscreen_width * (buffer->offscreen_height - height - y + buffer->y) + 3]);
+							  
+#if defined (WRITE_EVERY_PIXEL)
+							  {
+								  int i, j;
+								  unsigned int repeat = 0;
+								  unsigned long current, previous = 0;
+								  for (i = 0 ; i < buffer->offscreen_width ; i++)
+									  for (j = 0 ; j < buffer->offscreen_height ; j++)
+									  {
+										  current = ((unsigned long *)buffer->device_independent_bitmap_pixels)
+											 [i + buffer->offscreen_width * j];
+										  if (current == previous)
+										  {
+											  repeat++;
+										  }
+										  else
+										  {
+											  if (repeat > 0)
+												  printf("   Pixels %0lX %d\n", previous, repeat);
+											  previous = current;
+											  repeat = 1;
+										  }
+									  }
+								  if (repeat > 0)
+									  printf("   Pixels %0lX %d\n", previous, repeat);
+							  }
+#endif // defined (WRITE_EVERY_PIXEL)
+#endif /* defined (DEBUG) */
+
+							  
 							  BitBlt(hdc, x, y, width, height,
 								  buffer->hDC, x - buffer->x,
 								  buffer->offscreen_height - height - y + buffer->y,
 								  SRCCOPY);
+
+#if defined (DRAW_A_TEST_LINE)
+							  {
+								  int i;
+								  for (i = 0 ; i < 50 ; i++)
+									  if (ERROR_INVALID_PARAMETER == SetPixel(hdc, x+i, y+i, RGB(200, 20, 200)))
+										  printf("Error writing pixel to %p", hdc);
+							  }
+ #endif /* defined (DRAW_A_TEST_LINE) */
 						  }
 					  } break;
 					  case GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE:
@@ -5263,14 +5345,16 @@ mode with zinc.  Requiring development.
 	  case WM_MBUTTONUP:
 	  {
 #if defined (DEBUG)
-		  printf ("Graphics_buffer_handle_windows_event WM_MOUSEMOVE\n");
+		  printf ("Graphics_buffer_handle_windows_event WM_BUTTON %d %d %d %d\n",
+				  GET_X_LPARAM(second_message), GET_Y_LPARAM(second_message),
+				  buffer->mouse_x, buffer->mouse_y);
 #endif /* defined (DEBUG) */
 
 		  LPARAM offset_coordinates;
 
 		  offset_coordinates = MAKELPARAM(
-			  GET_X_LPARAM(second_message) - buffer->x,
-			  GET_Y_LPARAM(second_message) - buffer->y);
+			  GET_X_LPARAM(second_message) - buffer->mouse_x,
+			  GET_Y_LPARAM(second_message) - buffer->mouse_y);
 
 		  return_code = Graphics_buffer_win32_button_callback(&message_identifier,
 			  buffer, first_message, offset_coordinates);
@@ -7816,6 +7900,9 @@ x==============================================================================*
 			In the intel workaround case we only want to destroy it at the end. */
 		if (buffer->hRC && (buffer->hRC != buffer->package->wgl_shared_context))
 		{
+#if defined (DEBUG)
+			printf("wglDeleteContext %p\n", buffer->hRC);	
+#endif //defined (DEBUG)
 			wglDeleteContext(buffer->hRC);
 		}
 		switch (buffer->type)
@@ -7852,13 +7939,13 @@ x==============================================================================*
 				}
 			} break;
 		}
-		if (buffer->hidden_accelerated_window)
-		{
-			DestroyWindow(buffer->hidden_accelerated_window);
-		}
 		if (buffer->hidden_graphics_buffer)
 		{
 			DESTROY(Graphics_buffer)(&buffer->hidden_graphics_buffer);
+		}
+		if (buffer->hidden_accelerated_window)
+		{
+			DestroyWindow(buffer->hidden_accelerated_window);
 		}
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (CARBON_USER_INTERFACE)
