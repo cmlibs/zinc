@@ -118,7 +118,7 @@ to the same subobject. Hence, find by identifier and check type_string matches.
 	ENTER(REMOVE_OBJECT_FROM_LIST(Any_object));
 	if (object&&list)
 	{
-		if ((temp_any_object=FIND_BY_IDENTIFIER_IN_LIST(Any_object,subobject)(
+		if (NULL != (temp_any_object=FIND_BY_IDENTIFIER_IN_LIST(Any_object,subobject)(
 					 object->subobject,list)))
 		{
 			if (object->type_string == temp_any_object->type_string)
@@ -201,7 +201,7 @@ to the same subobject. Hence, find by identifier and check type_string matches.
 	ENTER(ADD_OBJECT_TO_LIST(Any_object));
 	if (object&&list)
 	{
-		if ((temp_any_object=FIND_BY_IDENTIFIER_IN_LIST(Any_object,subobject)(
+		if (NULL != (temp_any_object=FIND_BY_IDENTIFIER_IN_LIST(Any_object,subobject)(
 					 object->subobject,list)))
 		{
 			if (object->type_string == temp_any_object->type_string)
@@ -238,7 +238,7 @@ to the same subobject. Hence, find by identifier and check type_string matches.
 			{
 				/* list is empty */
 				/* create the root node (a leaf node) */
-				if ((node=CREATE_INDEX_NODE(Any_object)(1)))
+				if (NULL != (node=CREATE_INDEX_NODE(Any_object)(1)))
 				{
 					list->index=node;
 					list->count=1;
@@ -283,7 +283,7 @@ the same subobject. Hence, find by identifier and check type_string matches.
 	ENTER(IS_OBJECT_IN_LIST(Any_object));
 	if (object&&list)
 	{
-		if ((temp_any_object=FIND_BY_IDENTIFIER_IN_LIST(Any_object,subobject)(
+		if (NULL != (temp_any_object=FIND_BY_IDENTIFIER_IN_LIST(Any_object,subobject)(
 					 object->subobject,list)))
 		{
 			if (object->type_string == temp_any_object->type_string)
@@ -369,7 +369,7 @@ Destroys the Any_object.
 	struct Any_object *any_object;
 
 	ENTER(DESTROY(Any_object));
-	if (any_object_address && (any_object = *any_object_address))
+	if (any_object_address && (NULL != (any_object = *any_object_address)))
 	{
 		/* call cleanup function for subobject if provided */
 		if (any_object->any_object_cleanup_function)
@@ -436,7 +436,7 @@ in it.
 
 	ENTER(ensure_Any_object_is_in_list);
 	if (any_object&&
-		(any_object_list=(struct LIST(Any_object) *)any_object_list_void))
+		(NULL != (any_object_list=(struct LIST(Any_object) *)any_object_list_void)))
 	{
 		if (IS_OBJECT_IN_LIST(Any_object)(any_object,any_object_list))
 		{
@@ -473,7 +473,7 @@ in it.
 
 	ENTER(ensure_Any_object_is_not_in_list);
 	if (any_object&&
-		(any_object_list=(struct LIST(Any_object) *)any_object_list_void))
+		(NULL != (any_object_list=(struct LIST(Any_object) *)any_object_list_void)))
 	{
 		if (IS_OBJECT_IN_LIST(Any_object)(any_object,any_object_list))
 		{
