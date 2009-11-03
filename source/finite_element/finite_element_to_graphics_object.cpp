@@ -2939,6 +2939,7 @@ normals are used.
 			{
 				special_normals=0;
 			}
+			const FE_value special_normal_sign = reverse_winding ? -1.0 : 1.0;
 			i=0;
 			return_code = 1;
 			FE_value *xi = xi_points;
@@ -3023,7 +3024,8 @@ normals are used.
 					}
 					if (special_normals)
 					{
-						if (ELEMENT_COLLAPSED_XI1_0==collapsed_element)
+						if (((ELEMENT_COLLAPSED_XI1_0==collapsed_element) && (!reverse_winding)) ||
+							((ELEMENT_COLLAPSED_XI1_1==collapsed_element) && reverse_winding))
 						{
 							if (0==i%number_of_points_in_xi1)
 							{
@@ -3045,9 +3047,10 @@ normals are used.
 								(*normal)[2]=derivative_xi[5];
 							}
 						}
-						else if (ELEMENT_COLLAPSED_XI1_1==collapsed_element)
+						else if (((ELEMENT_COLLAPSED_XI1_1==collapsed_element) && (!reverse_winding)) ||
+							((ELEMENT_COLLAPSED_XI1_0==collapsed_element) && reverse_winding))
 						{
-							if (number_of_points_in_xi2-1==i%number_of_points_in_xi1)
+							if (0 == (i + 1)%number_of_points_in_xi1)
 							{
 								/* save xi1 derivatives, get normal from cross product of
 									these */
@@ -3100,7 +3103,6 @@ normals are used.
 			{
 				if (special_normals)
 				{
-					const int sign = modified_reverse_normals ? -1 : 1;
 					if (number_of_polygon_vertices>0)
 					{
 						normal=normalpoints+number_of_points_in_xi1-2;
@@ -3113,11 +3115,11 @@ normals are used.
 							derivative_xi[0]=(*normal)[0];
 							derivative_xi[2]=(*normal)[1];
 							derivative_xi[4]=(*normal)[2];
-							(*normal)[0] = sign*(derivative_xi[2]*derivative_xi[5] -
+							(*normal)[0] = special_normal_sign*(derivative_xi[2]*derivative_xi[5] -
 								derivative_xi[3]*derivative_xi[4]);
-							(*normal)[1] = sign*(derivative_xi[4]*derivative_xi[1] -
+							(*normal)[1] = special_normal_sign*(derivative_xi[4]*derivative_xi[1] -
 								derivative_xi[5]*derivative_xi[0]);
-							(*normal)[2] = sign*(derivative_xi[0]*derivative_xi[3] -
+							(*normal)[2] = special_normal_sign*(derivative_xi[0]*derivative_xi[3] -
 								derivative_xi[1]*derivative_xi[2]);
 							derivative_xi[1]=derivative_xi[0];
 							derivative_xi[3]=derivative_xi[2];
@@ -3125,7 +3127,8 @@ normals are used.
 							normal++;
 						}
 					}
-					else if (ELEMENT_COLLAPSED_XI1_0==collapsed_element)
+					else if (((ELEMENT_COLLAPSED_XI1_0==collapsed_element) && (!reverse_winding)) ||
+						((ELEMENT_COLLAPSED_XI1_1==collapsed_element) && reverse_winding))
 					{
 						/* calculate the normals for the xi1=0 edge */
 						normal=normalpoints+((number_of_points_in_xi2-1)*
@@ -3137,12 +3140,12 @@ normals are used.
 						derivative_xi[1]=(*normal)[0];
 						derivative_xi[3]=(*normal)[1];
 						derivative_xi[5]=(*normal)[2];
-						(*normal)[0] = sign*(derivative_xi[2]*derivative_xi[5] -
-							derivative_xi[3]*derivative_xi[4]);
-						(*normal)[1] = sign*(derivative_xi[4]*derivative_xi[1] -
-							derivative_xi[5]*derivative_xi[0]);
-						(*normal)[2] = sign*(derivative_xi[0]*derivative_xi[3] -
-							derivative_xi[1]*derivative_xi[2]);
+						(*normal)[0] = special_normal_sign*(derivative_xi[3]*derivative_xi[4] -
+							derivative_xi[2]*derivative_xi[5]);
+						(*normal)[1] = special_normal_sign*(derivative_xi[5]*derivative_xi[0] -
+							derivative_xi[4]*derivative_xi[1]);
+						(*normal)[2] = special_normal_sign*(derivative_xi[1]*derivative_xi[2] -
+							derivative_xi[0]*derivative_xi[3]);
 						derivative_xi[0]=(*normal)[0];
 						derivative_xi[1]=(*normal)[1];
 						derivative_xi[2]=(*normal)[2];
@@ -3165,11 +3168,11 @@ normals are used.
 						derivative_xi[1]=(*normal)[0];
 						derivative_xi[3]=(*normal)[1];
 						derivative_xi[5]=(*normal)[2];
-						(*normal)[0] = sign*(derivative_xi[2]*derivative_xi[5] -
+						(*normal)[0] = special_normal_sign*(derivative_xi[2]*derivative_xi[5] -
 							derivative_xi[3]*derivative_xi[4]);
-						(*normal)[1] = sign*(derivative_xi[4]*derivative_xi[1] -
+						(*normal)[1] = special_normal_sign*(derivative_xi[4]*derivative_xi[1] -
 							derivative_xi[5]*derivative_xi[0]);
-						(*normal)[2] = sign*(derivative_xi[0]*derivative_xi[3] -
+						(*normal)[2] = special_normal_sign*(derivative_xi[0]*derivative_xi[3] -
 							derivative_xi[1]*derivative_xi[2]);
 						derivative_xi[0]=(*normal)[0];
 						derivative_xi[1]=(*normal)[1];
@@ -3182,24 +3185,25 @@ normals are used.
 							(*normal)[2]=derivative_xi[2];
 						}
 					}
-					else if (ELEMENT_COLLAPSED_XI1_1==collapsed_element)
+					else if (((ELEMENT_COLLAPSED_XI1_1==collapsed_element) && (!reverse_winding)) ||
+						((ELEMENT_COLLAPSED_XI1_0==collapsed_element) && reverse_winding))
 					{
 						/* calculate the normals for the xi1=1 edge */
-						normal=normalpoints+(number_of_points_in_xi1*
-							number_of_points_in_xi2-1);
+						normal = normalpoints +
+							(number_of_points_in_xi1*number_of_points_in_xi2 - 1);
 						derivative_xi[1]=(*normal)[0];
 						derivative_xi[3]=(*normal)[1];
 						derivative_xi[5]=(*normal)[2];
-						normal=normalpoints+(number_of_points_in_xi1-1);
+						normal = normalpoints + (number_of_points_in_xi1 - 1);
 						derivative_xi[0]=(*normal)[0];
 						derivative_xi[2]=(*normal)[1];
 						derivative_xi[4]=(*normal)[2];
-						(*normal)[0] = sign*(derivative_xi[2]*derivative_xi[5] -
-							derivative_xi[3]*derivative_xi[4]);
-						(*normal)[1] = sign*(derivative_xi[4]*derivative_xi[1] -
-							derivative_xi[5]*derivative_xi[0]);
-						(*normal)[2] = sign*(derivative_xi[0]*derivative_xi[3] -
-							derivative_xi[1]*derivative_xi[2]);
+						(*normal)[0] = special_normal_sign*(derivative_xi[3]*derivative_xi[4] -
+							derivative_xi[2]*derivative_xi[5]);
+						(*normal)[1] = special_normal_sign*(derivative_xi[5]*derivative_xi[0] -
+							derivative_xi[4]*derivative_xi[1]);
+						(*normal)[2] = special_normal_sign*(derivative_xi[1]*derivative_xi[2] -
+							derivative_xi[0]*derivative_xi[3]);
 						derivative_xi[0]=(*normal)[0];
 						derivative_xi[1]=(*normal)[1];
 						derivative_xi[2]=(*normal)[2];
@@ -3224,11 +3228,11 @@ normals are used.
 						derivative_xi[0]=(*normal)[0];
 						derivative_xi[2]=(*normal)[1];
 						derivative_xi[4]=(*normal)[2];
-						(*normal)[0] = sign*(derivative_xi[2]*derivative_xi[5] -
+						(*normal)[0] = special_normal_sign*(derivative_xi[2]*derivative_xi[5] -
 							derivative_xi[3]*derivative_xi[4]);
-						(*normal)[1] = sign*(derivative_xi[4]*derivative_xi[1] -
+						(*normal)[1] = special_normal_sign*(derivative_xi[4]*derivative_xi[1] -
 							derivative_xi[5]*derivative_xi[0]);
-						(*normal)[2] = sign*(derivative_xi[0]*derivative_xi[3] -
+						(*normal)[2] = special_normal_sign*(derivative_xi[0]*derivative_xi[3] -
 							derivative_xi[1]*derivative_xi[2]);
 						derivative_xi[0]=(*normal)[0];
 						derivative_xi[1]=(*normal)[1];
