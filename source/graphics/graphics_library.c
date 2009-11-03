@@ -75,6 +75,9 @@ Functions for interfacing with the graphics library.
 #      include <gdk/x11/gdkglx.h>
 #    endif /* defined (GTK_USE_GTKGLAREA) */
 #  endif /* switch (USER_INTERFACE) */
+#  if defined (WIN32_SYSTEM)
+#    include <windows.h>  /* For LoadLibrary */
+#  endif // defined (WIN32_SYSTEM)
 #endif /* defined (OPENGL_API) */
 #include <stdio.h>
 #include <stdlib.h>
