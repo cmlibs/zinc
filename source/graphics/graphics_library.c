@@ -116,6 +116,14 @@ Sets up the default light, material and light model for the graphics library.
 #if defined (OPENGL_API)
 		glMatrixMode(GL_MODELVIEW);
 
+#if defined (WIN32_SYSTEM)
+		//Ensure we have a reference count for this dll
+		HMODULE dll = LoadLibrary("opengl32.dll");
+		if (!dll)
+		{
+			display_message(ERROR_MESSAGE, "Failed to get reference to opengl32.dll");			
+		}
+#endif // defined (WIN32_SYSTEM)
 #if defined(GLX_ARB_get_proc_address)
 #if defined (MOTIF_USER_INTERFACE)
 		/* Try and load this function while we have the user_interface connection */
