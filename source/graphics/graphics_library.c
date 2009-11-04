@@ -75,9 +75,6 @@ Functions for interfacing with the graphics library.
 #      include <gdk/x11/gdkglx.h>
 #    endif /* defined (GTK_USE_GTKGLAREA) */
 #  endif /* switch (USER_INTERFACE) */
-#  if defined (WIN32_SYSTEM)
-#    include <windows.h>  /* For LoadLibrary */
-#  endif // defined (WIN32_SYSTEM)
 #endif /* defined (OPENGL_API) */
 #include <stdio.h>
 #include <stdlib.h>
@@ -120,11 +117,13 @@ Sets up the default light, material and light model for the graphics library.
 		glMatrixMode(GL_MODELVIEW);
 
 #if defined (WIN32_SYSTEM)
-		//Ensure we have a reference count for this dll
-		HMODULE dll = LoadLibrary("opengl32.dll");
-		if (!dll)
 		{
-			display_message(ERROR_MESSAGE, "Failed to get reference to opengl32.dll");			
+			//Ensure we have a reference count for this dll
+			HMODULE dll = LoadLibrary("opengl32.dll");
+			if (!dll)
+			{
+				display_message(ERROR_MESSAGE, "Failed to get reference to opengl32.dll");			
+			}
 		}
 #endif // defined (WIN32_SYSTEM)
 #if defined(GLX_ARB_get_proc_address)
