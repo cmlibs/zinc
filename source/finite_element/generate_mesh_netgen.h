@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : finite_element_helper.h
+ * FILE : generate_mesh_netgen.h
  *
  * Convenience functions for making simple finite element fields.
  */
@@ -41,7 +41,14 @@
 #if !defined (GENERATE_MESN_NETGEN_H)
 #define GENERATE_MESH_NETGEN_H
 
-int generate_mesh_netgen(struct FE_region *fe_region, void *trimesh_void);
+struct Generate_netgen_parameters;
+struct Generate_netgen_parameters * create_netgen_parameters();
+int release_netgen_parameters(struct Generate_netgen_parameters *para);
+int set_netgen_parameters_secondorder(struct Generate_netgen_parameters *para, double secondorder);
+int set_netgen_parameters_trimesh(struct Generate_netgen_parameters *para, void *trimesh);
+int set_netgen_parameters_fineness(struct Generate_netgen_parameters *para, double fineness);
+int set_netgen_parameters_maxh(struct Generate_netgen_parameters *para, double maxh);
+int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void);
 
 #endif /* GENERATE_MESH_NETGEN_H */
 

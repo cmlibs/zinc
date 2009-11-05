@@ -34122,7 +34122,7 @@ Gets node <node_number>, from 0 to number_of_nodes-1 of <element> in <node>.
 } /* get_FE_element_node */
 
 int set_FE_element_node(struct FE_element *element,int node_number,
-	struct FE_node *node)
+  struct FE_node *node)
 /*******************************************************************************
 LAST MODIFIED : 11 February 2003
 
@@ -34132,22 +34132,22 @@ Sets node <node_number>, from 0 to number_of_nodes-1 of <element> to <node>.
 Should only be called for unmanaged elements.
 ==============================================================================*/
 {
-	int return_code;
+  int return_code;
 
-	ENTER(set_FE_element_node);
-	if (element && node)
-	{
-		return_code = FE_element_node_scale_field_info_set_node(
-			element->information, node_number, node);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_FE_element_node.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+  ENTER(set_FE_element_node);
+  if (element && node)
+  {
+      return_code = FE_element_node_scale_field_info_set_node(
+          element->information, node_number, node);
+  }
+  else
+  {
+      display_message(ERROR_MESSAGE,"set_FE_element_node.  Invalid argument(s)");
+      return_code=0;
+  }
+  LEAVE;
 
-	return (return_code);
+  return (return_code);
 } /* set_FE_element_node */
 
 int set_FE_element_number_of_scale_factor_sets(struct FE_element *element,

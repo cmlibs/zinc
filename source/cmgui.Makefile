@@ -54,7 +54,7 @@ UNEMAP = false
 LINK_CMISS = false
 USE_PERL_INTERPRETER = true
 USE_IMAGEMAGICK = true
-USE_NETGEN = false
+USE_NETGEN = true
 #Does your version of imagemagick include libgdcm
 USE_LIBGDCM = false
 ifeq ($(SYSNAME),Linux)
@@ -404,8 +404,8 @@ else # $(USE_ITK) == true
 endif # $(USE_ITK) == true
 
 ifeq ($(USE_NETGEN),true)
-	NETGEN_INC = -I$(CMISS_ROOT)/netgen/include
-	NETGEN_LIB = $(CMISS_ROOT)/netgen/lib/libnglib.a
+	NETGEN_INC = -I/home/hzha201/CMISS/netgen/include
+	NETGEN_LIB = /home/hzha201/CMISS/netgen/lib/libnglib.a
 	NETGEN_DEFINES = -DUSE_NETGEN
 else
 	NETGEN_INC =

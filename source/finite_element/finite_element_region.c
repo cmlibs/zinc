@@ -6029,7 +6029,7 @@ Smooths node-based <fe_field> over its nodes and elements in <fe_region>.
 	struct FE_region_smooth_FE_element_data smooth_element_data;
 	struct FE_region_smooth_FE_node_data smooth_node_data;
 
-	ENTER(FE_region_smooth_FE_field);
+	ENTER(FE_region_smooth_FE_field);       
 	if (fe_region && fe_field)
 	{
 		/* get the ultimate master FE_region; only it has fields */

@@ -12334,6 +12334,9 @@ static int gfx_mesh_graphics(struct Parse_state *state,
 	struct Option_table *option_table;
 	struct Scene *scene;
 	struct Cmiss_region *region;
+        double maxh=-1;
+        double fineness=-1;
+        double secondorder=-1;
 	char *region_path;
 	ENTER(gfx_mesh_graphics);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -12414,9 +12417,30 @@ static int gfx_mesh_graphics(struct Parse_state *state,
 							create_triangle_mesh(region, trimesh);
 						}
 						else
-						{
-#if defined (USE_NETGEN)
-							generate_mesh_netgen(Cmiss_region_get_FE_region(region), trimesh);
+						{    
+#if defined (USE_NETGEN)                                
+                                                        struct Generate_netgen_parameters *generate_netgen_para=NULL;
+                                                        generate_netgen_para=create_netgen_parameters();
+                                                        
+                                                        if(maxh==-1) 
+                                                             set_netgen_parameters_maxh(generate_netgen_para,100000.0);
+                                                        else
+                                                             set_netgen_parameters_maxh(generate_netgen_para,maxh);
+
+                                                        if(fineness==-1) 
+                                                             set_netgen_parameters_fineness(generate_netgen_para,0.5);
+                                                        else
+                                                             set_netgen_parameters_fineness(generate_netgen_para,fineness);
+
+                                                        if(secondorder==-1) 
+                                                             set_netgen_parameters_secondorder(generate_netgen_para,0);
+                                                        else
+                                                             set_netgen_parameters_secondorder(generate_netgen_para,secondorder);   
+
+                                                        set_netgen_parameters_trimesh(generate_netgen_para, trimesh);
+							generate_mesh_netgen(Cmiss_region_get_FE_region(region), generate_netgen_para);
+                                                        release_netgen_parameters(generate_netgen_para);
+                                                        
 #else 
 							display_message(ERROR_MESSAGE,
 								"gfx_mesh_graphics. Does not support tetrahedral mesh yet. To use this feature"
