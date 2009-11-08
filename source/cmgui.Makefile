@@ -347,7 +347,7 @@ ifneq ($(USE_IMAGEMAGICK),true)
    IMAGEMAGICK_LIB = 
 else # ! USE_IMAGEMAGICK
    IMAGEMAGICK_DEFINES += -DUSE_IMAGEMAGICK
-   IMAGEMAGICK_PATH = $(CMISS_ROOT)/image_libraries
+   IMAGEMAGICK_PATH = $(CMISS_ROOT)/third_party
    IMAGEMAGICK_INC =  -I$(IMAGEMAGICK_PATH)/include/$(LIB_ARCH_DIR) -I$(IMAGEMAGICK_PATH)/include/$(LIB_ARCH_DIR)/ImageMagick
    MAGICK_LIB_NAME = libMagickCore.a
    ifeq ($(SYSNAME),AIX)
@@ -564,7 +564,7 @@ ifneq ($(USE_XML2),true)
    XML2_INC =
    XML2_LIB =
 else
-   XML2_PATH = $(CMISS_ROOT)/image_libraries/
+   XML2_PATH = $(CMISS_ROOT)/third_party/
    XML2_DEFINES = -DUSE_XML2
    XML2_INC = -I$(XML2_PATH)/include/$(LIB_ARCH_DIR)/libxml2/
    XML2_LIB = $(XML2_PATH)/lib/$(LIB_ARCH_DIR)/libxml2.a

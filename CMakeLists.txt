@@ -1,4 +1,40 @@
 
+ # ***** BEGIN LICENSE BLOCK *****
+ # Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ #
+ # The contents of this file are subject to the Mozilla Public License Version
+ # 1.1 (the "License"); you may not use this file except in compliance with
+ # the License. You may obtain a copy of the License at
+ # http://www.mozilla.org/MPL/
+ #
+ # Software distributed under the License is distributed on an "AS IS" basis,
+ # WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ # for the specific language governing rights and limitations under the
+ # License.
+ #
+ # The Original Code is cmgui
+ #
+ # The Initial Developer of the Original Code is
+ # Auckland Uniservices Ltd, Auckland, New Zealand.
+ # Portions created by the Initial Developer are Copyright (C) 2005
+ # the Initial Developer. All Rights Reserved.
+ #
+ # Contributor(s): 
+ #
+ # Alternatively, the contents of this file may be used under the terms of
+ # either the GNU General Public License Version 2 or later (the "GPL"), or
+ # the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ # in which case the provisions of the GPL or the LGPL are applicable instead
+ # of those above. If you wish to allow use of your version of this file only
+ # under the terms of either the GPL or the LGPL, and not to allow others to
+ # use your version of this file under the terms of the MPL, indicate your
+ # decision by deleting the provisions above and replace them with the notice
+ # and other provisions required by the GPL or the LGPL. If you do not delete
+ # the provisions above, a recipient may use your version of this file under
+ # the terms of any one of the MPL, the GPL or the LGPL.
+ #
+ # ***** END LICENSE BLOCK ***** */
+
 # Set the minimum version of cmake required to 2.6
 CMAKE_MINIMUM_REQUIRED( VERSION 2.6 )
 
@@ -24,7 +60,7 @@ INCLUDE( FunctionDefinitions )
 IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 
 	# This is the project name and shows up in ides
-	PROJECT( cmgui )
+	PROJECT( cmgui_project )
 
 	SET( CMGUI_MAJOR_VERSION "2" )
 	SET( CMGUI_MINOR_VERSION "6" )
@@ -60,9 +96,9 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 		SET( GRAPHICS_API OPENGL_GRAPHICS )
 	ENDIF( NOT DEFINED GRAPHICS_API )
 
-	IF( NOT CMAKE_BUILD_TYPE )
-		SET( CMAKE_BUILD_TYPE "Release" )
-	ENDIF( NOT CMAKE_BUILD_TYPE )
+	IF( NOT DEFINED CMISS_BUILD_TYPE )
+		SET( CMISS_BUILD_TYPE "Release" )
+	ENDIF( NOT DEFINED CMISS_BUILD_TYPE )
 		
 	# Build options
 	OPTION( BUILD_EXECUTABLE "Build executable ON will build an executable, whereas when set to OFF will build a library" ON )
@@ -72,23 +108,25 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 			SET( LIBRARY_TYPE_STRING ${BUILD_LIBRARY_TYPE} )
 		ENDIF( DEFINED BUILD_LIBRARY_TYPE )
 		SET( BUILD_LIBRARY_TYPE ${LIBRARY_TYPE_STRING} CACHE STRING "What type of library is required [SHARED | STATIC | MODULE ]" )
-		SET( CMAKE_INSTALL_PREFIX ${CMISS_INSTALL_PREFIX} )
 		#OPTION( BUILD_STATIC "Do you want to build a static library" ON )
 	ENDIF( NOT BUILD_EXECUTABLE )
-	SET( BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "What configuration do you want to build: Debug, Release, MinSizeRel, RelWithDebugInfo" )
-	SET( CMAKE_BUILD_TYPE ${BUILD_TYPE} )
+	SET( CMISS_BUILD_TYPE ${CMISS_BUILD_TYPE} CACHE STRING "What configuration do you want to build: Debug, Release, MinSizeRel, RelWithDebugInfo" )
+	SET( CMAKE_BUILD_TYPE ${CMISS_BUILD_TYPE} CACHE INTERNAL "Internalise CMAKE_BUILD_TYPE, manipulate via CMISS_BUILD_TYPE" FORCE )
+	SET( CMISS_INSTALL_PREFIX ${CMISS_INSTALL_PREFIX} CACHE STRING "Where are your Cmgui dependent libraries installed?" )
+	SET( CMAKE_INSTALL_PREFIX ${CMISS_INSTALL_PREFIX} CACHE INTERNAL "Internalise CMAKE_INSTALL_PREFIX, manipulate via CMISS_INSTALL_PREFIX" FORCE )
+	
 	OPTION( BUILD_MEMORYCHECK "Do you want to build a memory check version" )
 	OPTION( BUILD_ABI "Do you want to build an ABI version" )
 	OPTION( FE_VALUE_IS_DOUBLE "Double or floats for FE_value?" FALSE )
 	MARK_AS_ADVANCED( FE_VALUE_IS_DOUBLE )
 	#OPTION( BUILD_UNEMAP "Do you want to build a UNEMAP version" )
 
-	IF( ${CMAKE_BUILD_TYPE} MATCHES "[Dd]ebug" )
+	IF( ${CMISS_BUILD_TYPE} MATCHES "[Dd]ebug" )
 		SET( USE_PARAMETER_ON TRUE )
 		IF( NOT ${COMPILER_NAME} MATCHES "msvc" )
 			SET( REPORT_GL_ERRORS )
 		ENDIF( NOT ${COMPILER_NAME} MATCHES "msvc" )
-	ENDIF( ${CMAKE_BUILD_TYPE} MATCHES "[Dd]ebug" )
+	ENDIF( ${CMISS_BUILD_TYPE} MATCHES "[Dd]ebug" )
 
 	# Library options
 	SET( ITK_DIR ${CMISS_ROOT_LOCATION}/itk/${ARCHITECTURE_DIR}/lib/InsightToolkit CACHE STRING "Where are the ITK libraries installed" )
@@ -97,9 +135,9 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 	SET( WX_DIR ${CMISS_INSTALL_PREFIX} CACHE STRING "Where is wxWidgets installed" )
 
 	# Find external libraries
-	SET( CMAKE_INCLUDE_PATH ${CMISS_ROOT_LOCATION}/image_libraries/bin/${ARCHITECTURE_DIR} 
-		${CMISS_ROOT_LOCATION}/image_libraries/include/${ARCHITECTURE_DIR}/ )
-	SET( CMAKE_LIBRARY_PATH ${CMISS_ROOT_LOCATION}/image_libraries/lib/${ARCHITECTURE_DIR}/ )
+	SET( CMAKE_INCLUDE_PATH ${CMISS_ROOT_LOCATION}/third_party/bin/${ARCHITECTURE_DIR} 
+		${CMISS_ROOT_LOCATION}/third_party/include/${ARCHITECTURE_DIR}/ )
+	SET( CMAKE_LIBRARY_PATH ${CMISS_ROOT_LOCATION}/third_party/lib/${ARCHITECTURE_DIR}/ )
 	FIND_PACKAGE( ImageMagick COMPONENTS MagickCore )
 	# SET( ITK_DIR ${CMISS_INSTALL_PREFIX}/lib/InsightToolkit ) # <-- without -fPIC
 	#SET( ITK_DIR ${CMISS_ROOT_LOCATION}/itk/x86_64-linux/lib/InsightToolkit/ ) # <-- with -fPIC
@@ -109,6 +147,7 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 	FIND_PACKAGE( LibXml2 QUIET )
 	SET( CMAKE_INCLUDE_PATH ${CMISS_INSTALL_PREFIX}/include )
 	FIND_PACKAGE( NETGEN QUIET )
+	FIND_PACKAGE( LibPerlInterpreter QUIET )
 	IF( WX_USER_INTERFACE )
 		SET( CMAKE_PREFIX_PATH ${WX_DIR} )
 		FIND_PACKAGE( wxWidgets QUIET COMPONENTS xrc adv html gl xml core base )
@@ -125,9 +164,9 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 
 	OPTION( USE_UNEMAP "Do you want to use UNEMAP" OFF )
 	OPTION( USE_LINK_CMISS "Do you want to link to cmiss" OFF )
-	OPTION( USE_PERL_INTERPRETER "Do you want to use the perl interpreter" ON )
+	OPTION( USE_PERLINTERPRETER "Do you want to use the perl interpreter" ${LIBPERLINTERPRETER_FOUND} )
 	OPTION( USE_IMAGEMAGICK "Do you want to use Image Magick" ${ImageMagick_FOUND} )
-	OPTION( USE_GDCM "Do you want to use libGDCM" ON )
+	OPTION( USE_GDCM "Do you want to use libGDCM" OFF )
 	OPTION( USE_XML2 "Do you want to use xml2" ${LIBXML2_FOUND} )
 	OPTION( USE_ITK "Do you want to use ITK" ${ITK_FOUND} )
 	OPTION( USE_GTKMAIN "Do you want to use GTK Main" ${GTK_USER_INTERFACE} )
@@ -176,9 +215,9 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 	ENDIF( USE_ITK )
 
 	IF( USE_IMAGEMAGICK )
-		SET( CMAKE_INCLUDE_PATH ${CMISS_ROOT_LOCATION}/image_libraries/bin/${ARCHITECTURE_DIR} 
-			${CMISS_ROOT_LOCATION}/image_libraries/include/${ARCHITECTURE_DIR}/ )
-		SET( CMAKE_LIBRARY_PATH ${CMISS_ROOT_LOCATION}/image_libraries/lib/${ARCHITECTURE_DIR}/ )
+		SET( CMAKE_INCLUDE_PATH ${CMISS_ROOT_LOCATION}/third_party/bin/${ARCHITECTURE_DIR} 
+			${CMISS_ROOT_LOCATION}/third_party/include/${ARCHITECTURE_DIR}/ )
+		SET( CMAKE_LIBRARY_PATH ${CMISS_ROOT_LOCATION}/third_party/lib/${ARCHITECTURE_DIR}/ )
 		FIND_PACKAGE( ImageMagick REQUIRED MagickCore )
 		#SET( ImageMagick_FIND_COMPONENTS MagickCore )
 		#INCLUDE( /usr/share/cmake/Modules/FindImageMagick.cmake )
@@ -265,11 +304,11 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 	IF( USE_XML2 )
 		SET( CMAKE_INCLUDE_PATH ${CMISS_INSTALL_PREFIX}/include )
 		SET( CMAKE_LIBRARY_PATH ${CMISS_INSTALL_PREFIX}/lib )
-		#SET( CMAKE_PREFIX_PATH ${CMISS_ROOT_LOCATION}/image_libraries/lib/${ARCHITECTURE_DIR}
-		#	${CMISS_ROOT_LOCATION}/image_libraries/include/${ARCHITECTURE_DIR}/libxml2 )
+		#SET( CMAKE_PREFIX_PATH ${CMISS_ROOT_LOCATION}/third_party/lib/${ARCHITECTURE_DIR}
+		#	${CMISS_ROOT_LOCATION}/third_party/include/${ARCHITECTURE_DIR}/libxml2 )
 		FIND_PACKAGE( LibXml2 REQUIRED )
 		IF( LIBXML2_FOUND )
-			MESSAGE( STATUS "WARNING: LibXml2 is finding the wrong header files see below:" )
+			MESSAGE( STATUS "WARNING: LibXml2 could be finding the wrong header files check below:" )
 			MESSAGE( STATUS "LibXml2 include dir ${LIBXML2_INCLUDE_DIR}" )
 			MESSAGE( STATUS "LibXml2 libraries ${LIBXML2_LIBRARIES}" )
 			#MESSAGE( STATUS ${LIBXML2_DEFINITIONS} )
@@ -282,11 +321,11 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 	ENDIF( USE_XML2 )
 
 	IF( USE_GDCM )
-		SET( CMAKE_PREFIX_PATH ${CMISS_ROOT_LOCATION}/image_libraries/${ARCHITECTURE_DIR}/lib/gdcm-2.0 )
+		SET( CMAKE_PREFIX_PATH ${CMISS_ROOT_LOCATION}/third_party/${ARCHITECTURE_DIR}/lib/gdcm-2.0 )
 		FIND_PACKAGE( GDCM REQUIRED )
 		#INCLUDE( ${GDCM_USE_FILE} )
 
-		#INCLUDE( ${CMISS_ROOT_LOCATION}/image_libraries/${ARCHITECTURE_DIR}/lib/gdcm-2.0/GDCMConfig.cmake )
+		#INCLUDE( ${CMISS_ROOT_LOCATION}/third_party/${ARCHITECTURE_DIR}/lib/gdcm-2.0/GDCMConfig.cmake )
 		MESSAGE( STATUS "WARNING: GDCM Issues see below" )
 		MESSAGE( STATUS "GDCM use file: ${GDCM_USE_FILE}" )
 		MESSAGE( STATUS "GDCM_LIBRARIES currently: ${GDCM_LIBRARIES}" )
@@ -295,17 +334,23 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 		SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${GDCM_LIBRARIES} )
 	ENDIF( USE_GDCM )
 
-	IF( USE_PERL_INTERPRETER )
-		IF( ${CMAKE_BUILD_TYPE} MATCHES "[Dd]ebug" )
-			SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${CMISS_ROOT_LOCATION}/perl_interpreter/lib/${ARCHITECTURE_DIR}/libperlinterpreter-debug${CMAKE_STATIC_LIBRARY_SUFFIX} )
-		ELSE( ${CMAKE_BUILD_TYPE} MATCHES "[Dd]ebug" )
-			SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${CMISS_ROOT_LOCATION}/perl_interpreter/lib/${ARCHITECTURE_DIR}/libperlinterpreter${CMAKE_STATIC_LIBRARY_SUFFIX} )
-		ENDIF( ${CMAKE_BUILD_TYPE} MATCHES "[Dd]ebug" )
-		IF( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
-			SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} crypt )
-		ENDIF( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
-		SET( INCLUDE_DIRS ${INCLUDE_DIRS} ${CMISS_ROOT_LOCATION}/perl_interpreter/source )
-	ENDIF( USE_PERL_INTERPRETER )
+	IF( USE_PERLINTERPRETER )
+		FIND_PACKAGE( LibPerlInterpreter REQUIRED )
+		IF( LIBPERLINTERPRETER_FOUND )
+			MESSAGE( STATUS "perl interperter libs: ${LIBPERLINTERPRETER_LIBRARIES}" )
+			SET( INCLUDE_DIRS ${INCLUDE_DIRS} ${LIBPERLINTERPRETER_INCLUDE_DIR} )
+			SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${LIBPERLINTERPRETER_LIBRARIES} )
+			IF( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
+				SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} crypt )
+			ENDIF( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
+		ENDIF( LIBPERLINTERPRETER_FOUND )
+		#IF( ${CMISS_BUILD_TYPE} MATCHES "[Dd]ebug" )
+		#	SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${CMISS_ROOT_LOCATION}/perl_interpreter/lib/${ARCHITECTURE_DIR}/libperlinterpreter-debug${CMAKE_STATIC_LIBRARY_SUFFIX} )
+		#ELSE( ${CMISS_BUILD_TYPE} MATCHES "[Dd]ebug" )
+		#	SET( DEPENDENT_LIBS ${DEPENDENT_LIBS} ${CMISS_ROOT_LOCATION}/perl_interpreter/lib/${ARCHITECTURE_DIR}/libperlinterpreter${CMAKE_STATIC_LIBRARY_SUFFIX} )
+		#ENDIF( ${CMISS_BUILD_TYPE} MATCHES "[Dd]ebug" )
+		#SET( INCLUDE_DIRS ${INCLUDE_DIRS} ${CMISS_ROOT_LOCATION}/perl_interpreter/source )
+	ENDIF( USE_PERLINTERPRETER )
 
 	IF( USE_NETGEN )
 		SET( CMAKE_INCLUDE_PATH ${CMISS_INSTALL_PREFIX}/include )
@@ -365,10 +410,10 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 	IF( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
 		SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -W -Wall -Werror" )
 		SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Werror" )
-		IF( ${CMAKE_BUILD_TYPE} MATCHES [Rr]elease )
+		IF( ${CMISS_BUILD_TYPE} MATCHES [Rr]elease )
 			SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-parameter" )
 			SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter" )
-		ENDIF( ${CMAKE_BUILD_TYPE} MATCHES [Rr]elease )
+		ENDIF( ${CMISS_BUILD_TYPE} MATCHES [Rr]elease )
 	ENDIF( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
 	
 	INCLUDE_DIRECTORIES( source ${CMAKE_CURRENT_BINARY_DIR}/source
@@ -511,7 +556,7 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 			${IO_DEVICES_SRCS} ${NODE_SRCS} ${SELECTION_SRCS}
 			${INTERPRETER_SRCS} ${THREE_D_DRAWING_SRCS} ${TIME_SRCS}
 			${USER_INTERFACE_SRCS} )
-    IF( WX_USER_INTERFACE )
+		IF( WX_USER_INTERFACE )
 			SET( INTERFACE_SRCS ${API_INTERFACE_SRCS} ${COLOUR_INTERFACE_SRCS}
 				${COMFILE_INTERFACE_SRCS}
 				${COMMAND_INTERFACE_SRCS} ${COMPUTED_FIELD_INTERFACE_SRCS}
@@ -519,7 +564,7 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 				${MATERIAL_INTERFACE_SRCS} ${NODE_INTERFACE_SRCS}
 				${REGION_INTERFACE_SRCS}
 				${TRANSFORMATION_INTERFACE_SRCS} )
-    ENDIF( WX_USER_INTERFACE )
+		ENDIF( WX_USER_INTERFACE )
 
 		# Defines GENERAL_LIB_SRCS
 		INCLUDE( source/general_lib.cmake )
@@ -557,7 +602,7 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 		ADD_LIBRARY( ${TARGET_CMGUI_PASS_THROUGH_LIB} ${BUILD_LIBRARY_TYPE} ${PASS_THROUGH_LIB_SRCS} )
 
 		TARGET_LINK_LIBRARIES( ${TARGET_CMGUI_LIB} ${DEPENDENT_LIBS} )
-		TARGET_LINK_LIBRARIES( ${TARGET_CMGUI_CORE_FIELDS_LIB} /home/hsorby/development/cmiss/image_libraries/lib/x86_64-linux/libbz2.a )
+		TARGET_LINK_LIBRARIES( ${TARGET_CMGUI_CORE_FIELDS_LIB} /home/hsorby/development/cmiss/third_party/lib/x86_64-linux/libbz2.a )
 
 		SET_TARGET_PROPERTIES( ${TARGET_CMGUI_LIB} PROPERTIES DEBUG_POSTFIX "d" 
 			VERSION "${CMGUI_MAJOR_VERSION}.${CMGUI_MINOR_VERSION}.${CMGUI_PATCH_VERSION}"
