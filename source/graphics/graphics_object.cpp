@@ -6040,15 +6040,15 @@ Version for objects using the auxiliary_object_name in place of object_name. \
 DECLARE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_AUXILIARY_FUNCTION( \
 	GT_glyph_set,g_GLYPH_SET,gt_glyph_set)
 
+/***************************************************************************//**
+ * Merge the vertices from <voltex> into <existing_voltex>. These can be the
+ * same voltex in which case shared vertices will be merged.
+ * 
+ * @param vertex_radius_tolerance  Absolute radius within which two vertices
+ * are merged into one. Previous version had constant = 0.001.
+ */
 static int GT_voltex_merge_GT_voltex(struct GT_voltex *existing_voltex,
-	struct GT_voltex *voltex)
-/*******************************************************************************
-LAST MODIFIED : 26 October 2005
-
-DESCRIPTION :
-Merge the vertices from <voltex> into <existing_voltex>.  These can be the
-same voltex in which case shared vertices will be merged.
-==============================================================================*/
+	struct GT_voltex *voltex, float vertex_radius_tolerance)
 {
 	int i, j, k, number_of_triangles, return_code, vertex_count;
 	struct Octree_object *neighbour, *octree_vertex;
@@ -6078,7 +6078,7 @@ same voltex in which case shared vertices will be merged.
 		Octree_add_objects_near_coordinate_to_list(
 			existing_voltex->vertex_octree,
 			/*dimension*/3, coordinates,
-			/*radius*/0.001, neighbours);
+			vertex_radius_tolerance, neighbours);
 		if (0 == NUMBER_IN_LIST(Octree_object)(neighbours))
 		{
 			octree_vertex = CREATE(Octree_object)(/*dimension*/3,
@@ -6203,7 +6203,7 @@ any co-located vertices are merged, stitching the two voltexes together.
 				existing_voltex = graphics_object->primitive_lists[time_number - 1].
 					gt_voltex.first;
 				return_code = GT_voltex_merge_GT_voltex(existing_voltex,
- 					voltex);
+ 					voltex, /*vertex_radius_tolerance*/0.001);
 				DESTROY(GT_voltex)(&voltex);
 			}
 			else
@@ -6218,7 +6218,7 @@ any co-located vertices are merged, stitching the two voltexes together.
 			{
 				voltex->vertex_octree = CREATE(Octree)();
 				/* Merge the voltex with itself to match colocated vertices */
-				GT_voltex_merge_GT_voltex(voltex, voltex);
+				GT_voltex_merge_GT_voltex(voltex, voltex, /*vertex_radius_tolerance*/0.001);
 			}
 			return_code=GT_OBJECT_ADD(GT_voltex)(graphics_object, /*time*/0,
 				voltex);
@@ -6365,6 +6365,302 @@ normalised for each of the VT_iso_vertices using the surrounding triangles.
 
 	return (return_code);
 } /* GT_object_normalise_GT_voltex_normals */
+
+/***************************************************************************//**
+ * Creates a GT_voltex representation of the triangles in the supplied surface
+ * list.
+ * @param surface_list  Linked list of GT_surface to convert. Note: only
+ * supports surface types g_SH_DISCONTINUOUS and g_SH_DISCONTINUOUS_TEXMAP.
+ * @return  The newly created GT_voltex.
+ */
+struct GT_voltex *GT_voltex_create_from_GT_surface(
+	struct GT_surface *surface_list)
+{
+	ENTER(GT_voltex_create_from_GT_surface);
+	int vertex_count = 0;
+	VT_iso_vertex **vertex_list = NULL;
+	int triangle_count = 0;
+	VT_iso_triangle **triangle_list = NULL;
+	GT_surface *surface = surface_list;
+	int return_code = 1;
+	while ((NULL != surface) && return_code)
+	{
+		switch (surface->surface_type)
+		{
+		case g_SH_DISCONTINUOUS:
+		case g_SH_DISCONTINUOUS_TEXMAP:
+			{
+				if (surface->polygon == g_TRIANGLE)
+				{
+					triangle_count += surface->n_pts1;
+					vertex_count += 3*(surface->n_pts1);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"GT_voltex_create_from_GT_surface.  Unsupported polygon type");
+					return_code = 0;
+				}
+			} break;
+		default:
+			{
+				display_message(ERROR_MESSAGE,
+					"GT_voltex_create_from_GT_surface.  Unsupported surface type");
+				return_code = 0;
+			} break;
+		}
+		surface = surface->ptrnext;
+	}
+	GT_voltex *voltex = NULL;
+	int n_data_components = 0;
+	int n_texture_coordinates = 0;
+	if (return_code && (triangle_count > 0))
+	{
+		ALLOCATE(vertex_list, VT_iso_vertex *, vertex_count);
+		if (NULL != vertex_list)
+		{
+			for (int i = 0; i < vertex_count; i++)
+			{
+				vertex_list[i] = NULL;
+			}
+		}
+		ALLOCATE(triangle_list, VT_iso_triangle *, triangle_count);
+		if (NULL != triangle_list)
+		{
+			for (int i = 0; i < triangle_count; i++)
+			{
+				triangle_list[i] = NULL;
+			}
+		}
+		n_data_components = surface_list->n_data_components;
+		if (NULL != surface_list->texturelist)
+		{
+			n_texture_coordinates = 3;
+		}
+		GT_voltex_type voltex_type = (surface_list->render_type == RENDER_TYPE_SHADED) ?
+			g_VOLTEX_SHADED_TEXMAP : g_VOLTEX_WIREFRAME_SHADED_TEXMAP;
+		voltex = CREATE(GT_voltex)(vertex_count, vertex_list,
+			triangle_count, triangle_list, n_data_components,
+			n_texture_coordinates, voltex_type);
+	}
+	if (voltex)
+	{
+		surface = surface_list;
+		int triangle_index = 0;
+		int vertex_index = 0;
+		while ((NULL != surface) && return_code)
+		{
+			int number_of_points = surface->n_pts1*surface->n_pts2;
+			for (int i = 0; i < number_of_points; i++)
+			{
+				VT_iso_vertex *vertex = VT_iso_vertex_create_and_set(
+					surface->pointlist[i], surface->normallist[i],
+					n_texture_coordinates ? surface->texturelist[i] : NULL,
+					n_data_components, surface->data + i*n_data_components);
+				if (NULL != vertex)
+				{
+					vertex_list[vertex_index + i] = vertex;
+				}
+				else
+				{
+					return_code = 0;
+					break;
+				}
+			}
+			if (return_code)
+			{
+				switch (surface->surface_type)
+				{
+				case g_SH_DISCONTINUOUS:
+				case g_SH_DISCONTINUOUS_TEXMAP:
+					{
+						for (int i = 0; i < surface->n_pts1; i++)
+						{
+							if (g_TRIANGLE == surface->polygon)
+							{
+								VT_iso_triangle *triangle =
+									VT_iso_triangle_create_and_set(vertex_list + vertex_index);
+								if (NULL != triangle)
+								{
+									triangle_list[triangle_index] = triangle;
+								}
+								else
+								{
+									return_code = 0;
+									break;
+								}
+								vertex_index += 3;
+								triangle_index++;
+							}
+						}
+					} break;
+				}
+			}
+			surface = surface->ptrnext;
+		}
+		if (!return_code)
+		{
+			DESTROY(GT_voltex)(&voltex);
+		}
+	}
+	LEAVE;
+	
+	return (voltex);
+}
+
+/***************************************************************************//**
+ * Creates a GT_surface representation of the triangles in the supplied voltex.
+ * @param voltex  A single GT_voltex
+ * @return  The newly created GT_surface.
+ */
+struct GT_surface *GT_surface_create_from_GT_voltex(
+	struct GT_voltex *voltex)
+{
+	ENTER(GT_surface_create_from_GT_voltex);
+	GT_surface *surface = NULL;
+	// Does not support linked list of voltex so make it an error
+	if ((NULL != voltex) && (NULL == voltex->ptrnext))
+	{
+		int number_of_triangles = voltex->number_of_triangles;
+		Triple *points = NULL;
+		Triple *normalpoints = NULL;
+		Triple *texturepoints = NULL;
+		Triple *tangentpoints = NULL;
+		GTDATA *datavalues = NULL;
+		ALLOCATE(points, Triple, number_of_triangles*3);
+		ALLOCATE(normalpoints, Triple, number_of_triangles*3);
+		if (voltex->n_texture_coordinates)
+		{
+			ALLOCATE(texturepoints, Triple, number_of_triangles*3);
+		}
+		int n_data_components = voltex->n_data_components;
+		if (n_data_components)
+		{
+			ALLOCATE(datavalues, GTDATA, number_of_triangles*3*n_data_components);
+		}
+		if ((NULL != points) && (NULL != normalpoints))
+		{
+			int index = 0;
+			for (int i = 0; i < number_of_triangles; i++)
+			{
+				const VT_iso_triangle *triangle = voltex->triangle_list[i];
+				for (int j = 0; j < 3; j++)
+				{
+					const VT_iso_vertex *vertex = triangle->vertices[j];
+					points[index][0] = vertex->coordinates[0];
+					points[index][1] = vertex->coordinates[1];
+					points[index][2] = vertex->coordinates[2];
+					normalpoints[index][0] = vertex->normal[0];
+					normalpoints[index][1] = vertex->normal[1];
+					normalpoints[index][2] = vertex->normal[2];
+					if (voltex->n_texture_coordinates)
+					{
+						texturepoints[index][0] = vertex->texture_coordinates[0];
+						texturepoints[index][1] = vertex->texture_coordinates[1];
+						texturepoints[index][2] = vertex->texture_coordinates[2];
+					}
+					if (voltex->n_data_components)
+					{
+						for (int k = 0; k < n_data_components; k++)
+						{
+							datavalues[index*n_data_components + k] = vertex->data[k];
+						}
+					}
+					index++;
+				}
+			}
+			Render_type render_type = (voltex->voltex_type == g_VOLTEX_SHADED_TEXMAP) ?
+					RENDER_TYPE_SHADED : RENDER_TYPE_WIREFRAME;
+			surface = CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP, render_type, g_TRIANGLE,
+				/*number_of_points_in_xi1*/number_of_triangles, /*number_of_points_in_xi2*/3, points,
+				normalpoints, tangentpoints, texturepoints, n_data_components, datavalues);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_surface_create_from_GT_voltex.  Invalid argument(s)");
+	}
+	LEAVE;
+	
+	return (surface);
+}
+
+int GT_object_decimate_GT_surface(struct GT_object *graphics_object,
+	double threshold_distance)
+{
+	int return_code;
+
+	ENTER(GT_object_decimate_GT_surface);
+	return_code = 0;
+	if (graphics_object && (g_SURFACE == graphics_object->object_type))
+	{
+		float time = 0.0;
+		int time_number = GT_object_get_time_number(graphics_object, time);
+		if (0 < time_number)
+		{
+			if (graphics_object->primitive_lists)
+			{
+				// get range of coordinates to choose vertex tolerance
+				struct Graphics_object_range_struct range;
+				range.first = 0;
+				get_graphics_object_range(graphics_object, (void *)&range);
+				float size[3];
+				size[0] = range.maximum[0] - range.minimum[0];
+				size[1] = range.maximum[1] - range.minimum[1];
+				size[2] = range.maximum[2] - range.minimum[2];
+				float mag = sqrt(size[0]*size[0] + size[1]*size[1] + size[2]*size[2]);
+				float vertex_radius_tolerance = mag * 1.0e-5;
+				if (0.1*threshold_distance < vertex_radius_tolerance)
+				{
+					vertex_radius_tolerance = 0.1*threshold_distance;
+				}
+			
+				GT_surface *old_surface =
+					graphics_object->primitive_lists[time_number - 1].gt_surface.first;
+				GT_voltex *voltex = GT_voltex_create_from_GT_surface(old_surface);
+				// merge GT_voltex into itself to share coincident vertices
+				if (!voltex->vertex_octree)
+				{
+					voltex->vertex_octree = CREATE(Octree)();
+				}
+				GT_voltex_merge_GT_voltex(voltex, voltex, vertex_radius_tolerance);
+				GT_voltex_decimate_triangles(voltex, threshold_distance);
+				GT_voltex_normalise_normals(voltex);
+				GT_surface *new_surface = GT_surface_create_from_GT_voltex(voltex);
+				if (NULL != new_surface)
+				{
+					// replace old surface(s) with new decimated surface
+					GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(GT_surface)(
+						graphics_object, time_number,
+						(GT_object_primitive_object_name_conditional_function *)NULL,
+						(void *)NULL);
+					return_code =
+						GT_OBJECT_ADD(GT_surface)(graphics_object, time, new_surface);
+				}
+				DESTROY(GT_voltex)(&voltex);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"GT_object_decimate_GT_surface.  Invalid primitive_lists");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"GT_object_decimate_GT_surface.  Graphics object does not contain a voltex.");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_object_decimate_GT_surface.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_object_decimate_GT_surface */
 
 enum Graphics_select_mode GT_object_get_select_mode(
 	struct GT_object *graphics_object)

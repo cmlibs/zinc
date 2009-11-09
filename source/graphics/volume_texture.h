@@ -502,6 +502,19 @@ DESCRIPTION :
 Frees the memory for the volume vertex and sets <*vertex_address> to NULL.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Creates and fills a VT_iso_vertex with the supplied values.
+ * @param coordinates  Array of 3 coordinates. Compulsory.
+ * @param normal  Array of 3 normal components. Compulsory.
+ * @param texture_coordinates  Optional pointer to up to 3 texture coordinates.
+ * @param n_data_components  Number of data components to follow.
+ * @param data  Pointer to n_data_components data values for vertex.
+ * @param return  Newly created and set VT_iso_vertex.
+ */
+struct VT_iso_vertex *VT_iso_vertex_create_and_set(
+	float *coordinates, float *normal, float *texture_coordinates,
+	int n_data_components, float *data);
+
 int VT_iso_vertex_normalise_normal(struct VT_iso_vertex *vertex);
 /*******************************************************************************
 LAST MODIFIED : 28 October 2005
@@ -524,5 +537,14 @@ LAST MODIFIED : 9 November 2005
 DESCRIPTION :
 Frees the memory for the volume triangle and sets <*triangle_address> to NULL.
 ==============================================================================*/
+
+/***************************************************************************//**
+ * Creates and fills a VT_iso_triangle using the supplied values. Adds back
+ * references to triangle from each vertex.
+ * @param vertices  Array of 3 VT_iso_vertex. 
+ * @param return  Newly created and set VT_iso_triangle.
+ */
+struct VT_iso_triangle *VT_iso_triangle_create_and_set(
+	struct VT_iso_vertex **vertices);
 
 #endif

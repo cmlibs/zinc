@@ -6545,6 +6545,12 @@ The graphics object is stored with with the settings it was created from.
 										if (g_SURFACE == GT_object_get_type(settings->graphics_object))
 										{
 											Iso_surface_specification_destroy(&settings_to_object_data->iso_surface_specification);
+											/* Decimate */
+											if (settings->decimation_threshold > 0.0)
+											{
+												GT_object_decimate_GT_surface(settings->graphics_object,
+													settings->decimation_threshold);
+											}
 										}
 										/* If the isosurface is a volume we can decimate and
 											then normalise, otherwise if it is a polyline

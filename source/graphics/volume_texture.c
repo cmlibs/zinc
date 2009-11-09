@@ -2391,6 +2391,50 @@ Frees the memory for the volume vertex and sets <*vertex_address> to NULL.
 	return (return_code);
 } /* DESTROY(VT_iso_vertex) */
 
+struct VT_iso_vertex *VT_iso_vertex_create_and_set(
+	float *coordinates, float *normal, float *texture_coordinates,
+	int n_data_components, float *data)
+{
+	int i;
+	struct VT_iso_vertex *vertex;
+	
+	vertex = CREATE(VT_iso_vertex)();
+	if ((NULL != vertex) && (NULL != coordinates) && (NULL != normal) &&
+		((0 == n_data_components) || (NULL != data)))
+	{
+		for (i = 0; i < 3; i++)
+		{
+			vertex->coordinates[i] = coordinates[i];
+			vertex->normal[i] = normal[i];
+			if (NULL != texture_coordinates)
+			{
+				vertex->texture_coordinates[i] = texture_coordinates[i];
+			}
+		}
+		if (n_data_components)
+		{
+			ALLOCATE(vertex->data, float, n_data_components);
+			if (vertex->data)
+			{
+				for (i = 0; i < n_data_components; i++)
+				{
+					vertex->data[i] = data[i];
+				}
+			}
+			else
+			{
+				DESTROY(VT_iso_vertex)(&vertex);
+			}
+		}
+	}
+	else
+	{
+		DESTROY(VT_iso_vertex)(&vertex);
+	}
+
+	return (vertex);
+}
+
 int VT_iso_vertex_normalise_normal(struct VT_iso_vertex *vertex)
 /*******************************************************************************
 LAST MODIFIED : 28 October 2005
@@ -2472,3 +2516,48 @@ Frees the memory for the volume triangle and sets <*triangle_address> to NULL.
 	return (return_code);
 } /* DESTROY(VT_iso_triangle) */
 
+struct VT_iso_triangle *VT_iso_triangle_create_and_set(
+	struct VT_iso_vertex **vertices)
+{
+	int i;
+	struct VT_iso_triangle *triangle;
+	struct VT_iso_triangle **temp_vt_triangles;
+	struct VT_iso_vertex *vertex;
+	
+	triangle = CREATE(VT_iso_triangle)();
+	if ((NULL != triangle) && (NULL != vertices))
+	{
+		for (i = 0; i < 3; i++)
+		{
+			vertex = vertices[i];
+			if (NULL != vertex)
+			{
+				triangle->vertices[i] = vertex;
+				temp_vt_triangles = NULL;
+				if (REALLOCATE(temp_vt_triangles, vertex->triangles,
+					struct VT_iso_triangle *, vertex->number_of_triangles+1))
+				{
+					vertex->triangles = temp_vt_triangles;
+					vertex->triangles[vertex->number_of_triangles] = triangle;
+					vertex->number_of_triangles++;
+				}
+				else
+				{
+					DESTROY(VT_iso_triangle)(&triangle);
+					break;
+				}
+			}
+			else
+			{
+				DESTROY(VT_iso_triangle)(&triangle);
+				break;
+			}
+		}
+	}
+	else
+	{
+		DESTROY(VT_iso_triangle)(&triangle);
+	}
+	
+	return (triangle);
+}

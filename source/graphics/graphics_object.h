@@ -1241,6 +1241,23 @@ If a GT_voltex is contained in the <graphics_object> then normals are
 normalised for each of the VT_iso_vertices using the surrounding triangles.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Performs polygon reduction by converting surface into a GT_voltex and using
+ * its decimation function, then converting back to a GT_surface which will
+ * replace all previous GT_surface objects in graphics_object.
+ * 
+ * @param graphics_object  Graphics object of type g_SURFACE. Note that only
+ * a few surface types are supported in the conversion to voltex; see
+ * GT_voltex_create_from_GT_surface().
+ * @param threshold_distance  Parameter controlling decimation; see
+ * GT_voltex_decimate_triangles().
+ * @return  1 on success, 0 on failure. On success the previous surface list in
+ * graphics_object is replaced by a single discontinuous triangle surface which
+ * cannot be selectively edited by graphics name / element number.
+ */
+int GT_object_decimate_GT_surface(struct GT_object *graphics_object,
+	double threshold_distance);
+
 enum Graphics_select_mode GT_object_get_select_mode(
 	struct GT_object *graphics_object);
 /*******************************************************************************
