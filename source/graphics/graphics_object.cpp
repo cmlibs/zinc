@@ -6416,7 +6416,7 @@ struct GT_voltex *GT_voltex_create_from_GT_surface(
 	int n_texture_coordinates = 0;
 	if (return_code && (triangle_count > 0))
 	{
-		ALLOCATE(vertex_list, VT_iso_vertex *, vertex_count);
+		ALLOCATE(vertex_list, struct VT_iso_vertex *, vertex_count);
 		if (NULL != vertex_list)
 		{
 			for (int i = 0; i < vertex_count; i++)
@@ -6424,7 +6424,7 @@ struct GT_voltex *GT_voltex_create_from_GT_surface(
 				vertex_list[i] = NULL;
 			}
 		}
-		ALLOCATE(triangle_list, VT_iso_triangle *, triangle_count);
+		ALLOCATE(triangle_list, struct VT_iso_triangle *, triangle_count);
 		if (NULL != triangle_list)
 		{
 			for (int i = 0; i < triangle_count; i++)
