@@ -405,7 +405,7 @@ endif # $(USE_ITK) == true
 
 ifeq ($(USE_NETGEN),true)
 	NETGEN_INC = -I$(CMISS_ROOT)/netgen/include
-	NETGEN_LIB = -I$(CMISS_ROOT)/netgen/lib/libnglib.a
+	NETGEN_LIB = $(CMISS_ROOT)/netgen/lib/libnglib.a
 	NETGEN_DEFINES = -DUSE_NETGEN
 else
 	NETGEN_INC =
