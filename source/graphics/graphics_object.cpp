@@ -6603,7 +6603,9 @@ int GT_object_decimate_GT_surface(struct GT_object *graphics_object,
 			{
 				// get range of coordinates to choose vertex tolerance
 				struct Graphics_object_range_struct range;
-				range.first = 0;
+				range.first = 1;
+				range.minimum[0] = range.minimum[1] = range.minimum[2] = 0.0;
+				range.maximum[0] = range.maximum[1] = range.maximum[2] = 0.0;
 				get_graphics_object_range(graphics_object, (void *)&range);
 				float size[3];
 				size[0] = range.maximum[0] - range.minimum[0];
