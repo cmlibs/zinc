@@ -910,83 +910,74 @@ const Iso_vertex *Isosurface_builder::compute_line_crossing(
 }
 
 /***************************************************************************//**
- *
- * @param p0..p3  Point index locations of tetrahedral vertices with winding: 
+ * @param p0..p3  Point index locations of tetrahedron vertices with winding: 
  * 
- *       4---3
+ *       3---2
  *      / \.'|
  *     / .'\ |
  *    /.'   \|
- *   1-------2
- * 
- * @return  1 on success, 0 on failure
+ *   0-------1
  */
-void Isosurface_builder::cross_tetrahedron(const Point_index& p1,
-	const Point_index& p2, const Point_index& p3, const Point_index& p4)
+void Isosurface_builder::cross_tetrahedron(const Point_index& p0,
+	const Point_index& p1, const Point_index& p2, const Point_index& p3)
 {
-	// first column is final case = number of points > iso_value, or 0 for no crossings
-	// columns 1-4 are indexes of initial vertices in order to rotate to final case:
-	// 0 : ignore
-	// 1 : p1 > iso_value
-	// 2 : p1, p2 > iso_value
-	// 3 : p1, p2, p3 > iso_value
-	static const int tet_case[16][5] =
+	// first column is final case in standard orientation
+	// columns 1-4 are indexes of initial vertices in order to rotate to final case
+	// column 5 is 1 for inverse case: reverse polygon winding
+	static const unsigned char tet_case[16][6] =
 	{
-		{ 0, 0, 0, 0, 0 }, // [nothing]   > iso_value
-		{ 1, 0, 1, 2, 3 }, // p1          > iso_value
-		{ 1, 1, 0, 3, 2 }, //    p2       > iso_value
-		{ 3, 0, 1, 2, 3 }, // p1 p2       > iso_value
-		{ 1, 2, 0, 1, 3 }, //       p3    > iso_value
-		{ 3, 0, 2, 3, 1 }, // p1    p3    > iso_value
-		{ 3, 1, 2, 0, 3 }, //    p2 p3    > iso_value
-		{ 7, 0, 1, 2, 3 }, // p1 p2 p3    > iso_value
-		{ 1, 3, 0, 2, 1 }, //          p4 > iso_value
-		{ 3, 0, 3, 1, 2 }, // p1       p4 > iso_value
-		{ 3, 1, 3, 2, 0 }, //    p2    p4 > iso_value
-		{ 7, 0, 3, 1, 2 }, // p1 p2    p4 > iso_value
-		{ 3, 2, 3, 0, 1 }, //       p3 p4 > iso_value
-		{ 7, 0, 2, 3, 1 }, // p1    p3 p4 > iso_value
-		{ 7, 1, 3, 2, 0 }, //    p2 p3 p4 > iso_value
-		{ 0, 0, 0, 0, 0 }, // p1 p2 p3 p4 > iso_value
-	}
+		{ 0, 0, 0, 0, 0, 0 }, //  0
+		{ 1, 0, 1, 2, 3, 0 }, //  1 : 0 over = standard case
+		{ 1, 1, 0, 3, 2, 0 }, //  2
+		{ 3, 0, 1, 2, 3, 0 }, //  3 : 0,1 over = standard case
+		{ 1, 2, 0, 1, 3, 0 }, //  4
+		{ 3, 0, 2, 3, 1, 0 }, //  5
+		{ 3, 1, 2, 0, 3, 0 }, //  6
+		{ 1, 3, 0, 2, 1, 1 }, //  7 : 0,1,2 over = case 1 inverse
+		{ 1, 3, 0, 2, 1, 0 }, //  8
+		{ 3, 0, 3, 1, 2, 0 }, //  9
+		{ 3, 1, 3, 2, 0, 0 }, // 10
+		{ 1, 2, 0, 1, 3, 1 }, // 11
+		{ 3, 2, 3, 0, 1, 0 }, // 12
+		{ 1, 1, 0, 3, 2, 1 }, // 13
+		{ 1, 0, 1, 2, 3, 1 }, // 14
+		{ 0, 0, 0, 0, 0, 0 }  // 15
+	};
 	
 	ENTER(Isosurface_builder::cross_tetrahedron);
 	int unrotated_case =	
-		((get_scalar(p1) > current_iso_value) ? 1 : 0) +
-		((get_scalar(p2) > current_iso_value) ? 2 : 0) +
-		((get_scalar(p3) > current_iso_value) ? 4 : 0) +
-		((get_scalar(p4) > current_iso_value) ? 8 : 0);
+		((get_scalar(p0) > current_iso_value) ? 1 : 0) +
+		((get_scalar(p1) > current_iso_value) ? 2 : 0) +
+		((get_scalar(p2) > current_iso_value) ? 4 : 0) +
+		((get_scalar(p3) > current_iso_value) ? 8 : 0);
 	int final_case = tet_case[unrotated_case][0];
 	if (0 < final_case)
 	{
-		Point_index mp[4] = { p1, p2, p3, p4 };
-		Point_index mp1 = mp[tet_case[unrotated_case][1]];
-		Point_index mp2 = mp[tet_case[unrotated_case][2]];
-		Point_index mp3 = mp[tet_case[unrotated_case][3]];
-		Point_index mp4 = mp[tet_case[unrotated_case][4]];
+		Point_index mp[4] = { p0, p1, p2, p3 };
+		Point_index mp0 = mp[tet_case[unrotated_case][1]];
+		Point_index mp1 = mp[tet_case[unrotated_case][2]];
+		Point_index mp2 = mp[tet_case[unrotated_case][3]];
+		Point_index mp3 = mp[tet_case[unrotated_case][4]];
 		const Iso_vertex *v1, *v2, *v3, *v4;
 		Iso_mesh& mesh = get_mesh();
 		switch (final_case)
 		{
-		case 1:
-			v1 = get_line_crossing(Point_index_pair(mp1, mp2));
-			v2 = get_line_crossing(Point_index_pair(mp1, mp3));
-			v3 = get_line_crossing(Point_index_pair(mp1, mp4));
-			mesh.add_triangle(v1,v3,v2);
+		case 1: // 0 > iso_value, with inverse 
+			v1 = get_line_crossing(Point_index_pair(mp0, mp1));
+			v2 = get_line_crossing(Point_index_pair(mp0, mp3));
+			v3 = get_line_crossing(Point_index_pair(mp0, mp2));
+			mesh.add_triangle(v1, v2, v3, /*inverse*/(0 != tet_case[unrotated_case][5]));
 			break;
-		case 3:
-			// 1, 2 > iso_value 
-			v1 = get_line_crossing(Point_index_pair(mp1, mp4));
-			v2 = get_line_crossing(Point_index_pair(mp1, mp3));
-			v3 = get_line_crossing(Point_index_pair(mp2, mp3));
-			v4 = get_line_crossing(Point_index_pair(mp2, mp4));
+		case 3: // 0, 1 > iso_value 
+			v1 = get_line_crossing(Point_index_pair(mp0, mp3));
+			v2 = get_line_crossing(Point_index_pair(mp0, mp2));
+			v3 = get_line_crossing(Point_index_pair(mp1, mp2));
+			v4 = get_line_crossing(Point_index_pair(mp1, mp3));
 			mesh.add_quadrilateral(v1, v2, v3, v4);
 			break;
-		case 7:
-			v1 = get_line_crossing(Point_index_pair(mp1, mp4));
-			v2 = get_line_crossing(Point_index_pair(mp2, mp4));
-			v3 = get_line_crossing(Point_index_pair(mp3, mp4));
-			mesh.add_triangle(v1,v3,v2);
+		default:
+			display_message(ERROR_MESSAGE,
+				"Isosurface_builder::cross_tetrahedron.  Unknown case %d (unrotated %d)", final_case, unrotated_case);
 			break;
 		}
 	}
@@ -1033,23 +1024,20 @@ inline int Isosurface_builder::cross_cube(int i, int j, int k)
 		Iso_mesh& mesh = get_mesh();
 		switch (final_case)
 		{
-		case 1:
-			// 0 > iso_value, with inverse
+		case 1: // 0 > iso_value, with inverse
 			v1 = get_line_crossing(Point_index_pair(mp0, mp1));
 			v2 = get_line_crossing(Point_index_pair(mp0, mp4));
 			v3 = get_line_crossing(Point_index_pair(mp0, mp2));
 			mesh.add_triangle(v1, v2, v3, inverse);
 			break;
-		case 3:
-			// 0,1 > iso_value, with inverse
+		case 3: // 0,1 > iso_value, with inverse
 			v1 = get_line_crossing(Point_index_pair(mp0, mp4));
 			v2 = get_line_crossing(Point_index_pair(mp0, mp2));
 			v3 = get_line_crossing(Point_index_pair(mp1, mp3));
 			v4 = get_line_crossing(Point_index_pair(mp1, mp5));
 			mesh.add_quadrilateral(v1, v2, v3, v4, inverse);
 			break;
-		case 7:
-			// 0,1,2 > iso_value, with inverse
+		case 7: // 0,1,2 > iso_value, with inverse
 			v1 = get_line_crossing(Point_index_pair(mp0, mp4));
 			v2 = get_line_crossing(Point_index_pair(mp2, mp6));
 			v3 = get_line_crossing(Point_index_pair(mp2, mp3));
@@ -1376,7 +1364,9 @@ int Isosurface_builder::cross_octahedron(int i, int j, int k)
 	return (return_code);
 }
 
-/**
+/***************************************************************************//**
+ * @param p0..p4  Point index locations of pyramid vertices with winding:
+ *  
  *        4\ 
  *       /.\ \
  *      /.  \  \
