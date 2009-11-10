@@ -933,14 +933,14 @@ void Isosurface_builder::cross_tetrahedron(const Point_index& p0,
 		{ 1, 2, 0, 1, 3, 0 }, //  4
 		{ 3, 0, 2, 3, 1, 0 }, //  5
 		{ 3, 1, 2, 0, 3, 0 }, //  6
-		{ 1, 3, 0, 2, 1, 1 }, //  7 : 0,1,2 over = case 1 inverse
+		{ 1, 3, 0, 2, 1, 1 }, //  7
 		{ 1, 3, 0, 2, 1, 0 }, //  8
 		{ 3, 0, 3, 1, 2, 0 }, //  9
 		{ 3, 1, 3, 2, 0, 0 }, // 10
 		{ 1, 2, 0, 1, 3, 1 }, // 11
 		{ 3, 2, 3, 0, 1, 0 }, // 12
 		{ 1, 1, 0, 3, 2, 1 }, // 13
-		{ 1, 0, 1, 2, 3, 1 }, // 14
+		{ 1, 0, 1, 2, 3, 1 }, // 14 : 1,2,3 over = case 1 inverse
 		{ 0, 0, 0, 0, 0, 0 }  // 15
 	};
 	
@@ -962,13 +962,13 @@ void Isosurface_builder::cross_tetrahedron(const Point_index& p0,
 		Iso_mesh& mesh = get_mesh();
 		switch (final_case)
 		{
-		case 1: // 0 > iso_value, with inverse 
+		case 1: // 0 > iso_value, with inverse
 			v1 = get_line_crossing(Point_index_pair(mp0, mp1));
 			v2 = get_line_crossing(Point_index_pair(mp0, mp3));
 			v3 = get_line_crossing(Point_index_pair(mp0, mp2));
 			mesh.add_triangle(v1, v2, v3, /*inverse*/(0 != tet_case[unrotated_case][5]));
 			break;
-		case 3: // 0, 1 > iso_value 
+		case 3: // 0, 1 > iso_value
 			v1 = get_line_crossing(Point_index_pair(mp0, mp3));
 			v2 = get_line_crossing(Point_index_pair(mp0, mp2));
 			v3 = get_line_crossing(Point_index_pair(mp1, mp2));
@@ -986,6 +986,17 @@ void Isosurface_builder::cross_tetrahedron(const Point_index& p0,
 
 static Marching_cube mcube;
 
+/***************************************************************************//**
+ * @param i, j, k  Index location of unit cube, vertices with following winding:
+ *
+ *     6-------7
+ *    /:      /|
+ *   4-------5 |
+ *   | :     | |
+ *   | 2- - -|-3
+ *   |:      |/
+ *   0-------1
+ */
 inline int Isosurface_builder::cross_cube(int i, int j, int k)
 {
 	ENTER(Isosurface_builder::cross_cube);
@@ -1164,76 +1175,91 @@ inline int Isosurface_builder::cross_cube(int i, int j, int k)
 	return (return_code);
 }
 
+/***************************************************************************//**
+ * @param i, j, k  Index location origin A of unit cube containing octahedron,
+ * vertices 0..5 used with following numbering and winding: 
+ *
+ *     5-------B
+ *    /:      /|
+ *   3-------4 |
+ *   | :     | |
+ *   | 1- - -|-2
+ *   |:      |/
+ *   A-------0
+ *   
+ * Octahedron is cube with A and B corner tetrahedra removed. 
+ */
 int Isosurface_builder::cross_octahedron(int i, int j, int k)
 {
 	// first column is final case in standard orientation
 	// columns 1-6 are indexes of initial vertices in order to rotate to final case
-	static const int oct_case[64][7] =
+	// column 7 is 1 for inverse case: reverse polygon winding
+	static const int oct_case[64][8] =
 	{
-		{  0, 0, 0, 0, 0, 0, 0 }, //  0
-		{  1, 0, 1, 2, 3, 4, 5 }, //  1 : 0 over = standard case
-		{  1, 1, 2, 0, 5, 3, 4 }, //  2
-		{  3, 0, 1, 2, 3, 4, 5 }, //  3 : 0,1 over (adj) = standard case
-		{  1, 2, 0, 1, 4, 5, 3 }, //  4
-		{  3, 0, 2, 4, 1, 3, 5 }, //  5 
-		{  3, 1, 2, 0, 5, 3, 4 }, //  6
-		{  7, 0, 1, 2, 3, 4, 5 }, //  7 : 0,1,2 over (adj) = standard case
-		{  1, 3, 1, 0, 5, 4, 2 }, //  8
-		{  3, 0, 3, 1, 4, 2, 5 }, //  9
-		{  3, 1, 3, 5, 0, 2, 4 }, // 10
-		{  7, 0, 3, 1, 4, 2, 5 }, // 11
-		{ 33, 2, 0, 1, 4, 5, 3 }, // 12
-		{ 35, 2, 0, 1, 4, 5, 3 }, // 13
-		{ 35, 2, 1, 5, 0, 4, 3 }, // 14
-		{ 15, 0, 1, 2, 3, 4, 5 }, // 15 : 0,1,2,3 over (adj) = standard case
-		{  1, 4, 0, 2, 3, 5, 1 }, // 16
-		{  3, 0, 4, 3, 2, 1, 5 }, // 17
-		{ 33, 1, 2, 0, 5, 3, 4 }, // 18
-		{ 35, 1, 0, 3, 2, 5, 4 }, // 19
-		{  3, 2, 4, 0, 5, 1, 3 }, // 20
-		{  7, 0, 2, 4, 1, 3, 5 }, // 21
-		{ 35, 1, 2, 0, 5, 3, 4 }, // 22
-		{ 15, 2, 0, 1, 4, 5, 3 }, // 23
-		{  3, 3, 4, 5, 0, 1, 2 }, // 24
-		{  7, 0, 4, 3, 2, 1, 5 }, // 25
-		{ 35, 1, 3, 5, 0, 2, 4 }, // 26
-		{ 15, 0, 3, 1, 4, 2, 5 }, // 27
-		{ 35, 2, 4, 0, 5, 1, 3 }, // 28
-		{ 15, 4, 0, 2, 3, 5, 1 }, // 29
-		{ 51, 1, 2, 0, 5, 3, 4 }, // 30 
-		{ 31, 0, 1, 2, 3, 4, 5 }, // 31 : 0,1,2,3,4 over = standard case
-		{  1, 5, 2, 1, 4, 3, 0 }, // 32
-		{ 33, 0, 1, 2, 3, 4, 5 }, // 33 : 0,5 over (opp) = standard case
-		{  3, 1, 5, 2, 3, 0, 4 }, // 34
-		{ 35, 0, 1, 2, 3, 4, 5 }, // 35 : 0,1,5 over (opp) = standard case
-		{  3, 2, 5, 4, 1, 0, 3 }, // 36
-		{ 35, 0, 2, 4, 1, 3, 5 }, // 37
-		{  7, 1, 5, 2, 3, 0, 4 }, // 38
-		{ 15, 2, 1, 5, 0, 4, 3 }, // 39
-		{  3, 3, 5, 1, 4, 0, 2 }, // 40
-		{ 35, 0, 3, 1, 4, 2, 5 }, // 41
-		{  7, 1, 3, 5, 0, 2, 4 }, // 42
-		{ 15, 3, 1, 0, 5, 4, 2 }, // 43
-		{ 35, 2, 5, 4, 1, 0, 3 }, // 44
-		{ 51, 0, 2, 4, 1, 3, 5 }, // 45  
-		{ 15, 1, 5, 2, 3, 0, 4 }, // 46
-		{ 31, 1, 2, 0, 5, 3, 4 }, // 47
-		{  3, 4, 5, 3, 2, 0, 1 }, // 48
-		{ 35, 0, 4, 3, 2, 1, 5 }, // 49
-		{ 35, 1, 5, 2, 3, 0, 4 }, // 50
-		{ 51, 0, 1, 2, 3, 4, 5 }, // 51 : 0,1,4,5 over (opp) = standard case
-		{  7, 2, 5, 4, 1, 0, 3 }, // 52
-		{ 15, 2, 4, 0, 5, 1, 3 }, // 53
-		{ 15, 2, 5, 4, 1, 0, 3 }, // 54
-		{ 31, 2, 0, 1, 4, 5, 3 }, // 55
-		{  7, 3, 4, 5, 0, 1, 2 }, // 56
-		{ 15, 4, 3, 0, 5, 2, 1 }, // 57
-		{ 15, 5, 3, 4, 1, 2, 0 }, // 58
-		{ 31, 3, 1, 0, 5, 4, 2 }, // 59
-		{ 15, 4, 5, 3, 2, 0, 1 }, // 60
-		{ 31, 4, 0, 2, 3, 5, 1 }, // 61
-		{ 31, 5, 1, 3, 2, 4, 0 }, // 62
-		{  0, 0, 0, 0, 0, 0, 0 }  // 63
+		{  0, 0, 0, 0, 0, 0, 0, 0 }, //  0
+		{  1, 0, 1, 2, 3, 4, 5, 0 }, //  1 : 0 over = standard case
+		{  1, 1, 2, 0, 5, 3, 4, 0 }, //  2
+		{  3, 0, 1, 2, 3, 4, 5, 0 }, //  3 : 0,1 over (adj) = standard case
+		{  1, 2, 0, 1, 4, 5, 3, 0 }, //  4
+		{  3, 0, 2, 4, 1, 3, 5, 0 }, //  5 
+		{  3, 1, 2, 0, 5, 3, 4, 0 }, //  6
+		{  7, 0, 1, 2, 3, 4, 5, 0 }, //  7 : 0,1,2 over (adj) = standard case
+		{  1, 3, 1, 0, 5, 4, 2, 0 }, //  8
+		{  3, 0, 3, 1, 4, 2, 5, 0 }, //  9
+		{  3, 1, 3, 5, 0, 2, 4, 0 }, // 10
+		{  7, 0, 3, 1, 4, 2, 5, 0 }, // 11
+		{ 33, 2, 0, 1, 4, 5, 3, 0 }, // 12
+		{ 35, 2, 0, 1, 4, 5, 3, 0 }, // 13
+		{ 35, 2, 1, 5, 0, 4, 3, 0 }, // 14
+		{  3, 4, 5, 3, 2, 0, 1, 1 }, // 15
+		{  1, 4, 0, 2, 3, 5, 1, 0 }, // 16
+		{  3, 0, 4, 3, 2, 1, 5, 0 }, // 17
+		{ 33, 1, 2, 0, 5, 3, 4, 0 }, // 18
+		{ 35, 1, 0, 3, 2, 5, 4, 0 }, // 19
+		{  3, 2, 4, 0, 5, 1, 3, 0 }, // 20
+		{  7, 0, 2, 4, 1, 3, 5, 0 }, // 21
+		{ 35, 1, 2, 0, 5, 3, 4, 0 }, // 22
+		{  3, 3, 5, 1, 4, 0, 2, 1 }, // 23
+		{  3, 3, 4, 5, 0, 1, 2, 0 }, // 24
+		{  7, 0, 4, 3, 2, 1, 5, 0 }, // 25
+		{ 35, 1, 3, 5, 0, 2, 4, 0 }, // 26
+		{  3, 2, 5, 4, 1, 0, 3, 1 }, // 27
+		{ 35, 2, 4, 0, 5, 1, 3, 0 }, // 28
+		{  3, 1, 5, 2, 3, 0, 4, 1 }, // 29
+		{ 33, 0, 1, 2, 3, 4, 5, 1 }, // 30 : 1,2,3,4 over = case 33 inverse
+		{  1, 5, 2, 1, 4, 3, 0, 1 }, // 31
+		{  1, 5, 2, 1, 4, 3, 0, 0 }, // 32
+		{ 33, 0, 1, 2, 3, 4, 5, 0 }, // 33 : 0,5 over (opp) = standard case
+		{  3, 1, 5, 2, 3, 0, 4, 0 }, // 34
+		{ 35, 0, 1, 2, 3, 4, 5, 0 }, // 35 : 0,1,5 over (opp) = standard case
+		{  3, 2, 5, 4, 1, 0, 3, 0 }, // 36
+		{ 35, 0, 2, 4, 1, 3, 5, 0 }, // 37
+		{  7, 1, 5, 2, 3, 0, 4, 0 }, // 38
+		{  3, 3, 4, 5, 0, 1, 2, 1 }, // 39
+		{  3, 3, 5, 1, 4, 0, 2, 0 }, // 40
+		{ 35, 0, 3, 1, 4, 2, 5, 0 }, // 41
+		{  7, 1, 3, 5, 0, 2, 4, 0 }, // 42
+		{  3, 2, 4, 0, 5, 1, 3, 1 }, // 43
+		{ 35, 2, 5, 4, 1, 0, 3, 0 }, // 44
+		{ 33, 1, 2, 0, 5, 3, 4, 1 }, // 45
+		{  3, 0, 4, 3, 2, 1, 5, 1 }, // 46
+		{  1, 4, 0, 2, 3, 5, 1, 1 }, // 47
+		{  3, 4, 5, 3, 2, 0, 1, 0 }, // 48
+		{ 35, 0, 4, 3, 2, 1, 5, 0 }, // 49
+		{ 35, 1, 5, 2, 3, 0, 4, 0 }, // 50
+		{ 33, 2, 0, 1, 4, 5, 3, 1 }, // 51
+		{  7, 2, 5, 4, 1, 0, 3, 0 }, // 52
+		{  3, 1, 3, 5, 0, 2, 4, 1 }, // 53
+		{  3, 0, 3, 1, 4, 2, 5, 1 }, // 54
+		{  1, 3, 1, 0, 5, 4, 2, 1 }, // 55
+		{  7, 3, 4, 5, 0, 1, 2, 0 }, // 56
+		{  3, 1, 2, 0, 5, 3, 4, 1 }, // 57
+		{  3, 0, 2, 4, 1, 3, 5, 1 }, // 58
+		{  1, 2, 0, 1, 4, 5, 3, 1 }, // 59
+		{  3, 0, 1, 2, 3, 4, 5, 1 }, // 60 : 2,3,4,5 over = case 3 inverse
+		{  1, 1, 2, 0, 5, 3, 4, 1 }, // 61
+		{  1, 0, 1, 2, 3, 4, 5, 1 }, // 62 : 1,2,3,4,5 over = case 1 inverse
+		{  0, 0, 0, 0, 0, 0, 0, 0 }  // 63
 	};
 
 	ENTER(Isosurface_builder::cross_octahedron);
@@ -1255,6 +1281,7 @@ int Isosurface_builder::cross_octahedron(int i, int j, int k)
 	int final_case = oct_case[unrotated_case][0];
 	if (0 < final_case)
 	{
+		bool inverse = (0 != oct_case[unrotated_case][7]);
 		Point_index mp0 = p[oct_case[unrotated_case][1]];
 		Point_index mp1 = p[oct_case[unrotated_case][2]];
 		Point_index mp2 = p[oct_case[unrotated_case][3]];
@@ -1265,26 +1292,24 @@ int Isosurface_builder::cross_octahedron(int i, int j, int k)
 		Iso_mesh& mesh = get_mesh();
 		switch (final_case)
 		{
-		case 1:
-			// 0 > iso_value
+		case 1: // 0 > iso_value, with inverse
 			v1 = get_line_crossing(Point_index_pair(mp0, mp1));
 			v2 = get_line_crossing(Point_index_pair(mp0, mp2));
 			v3 = get_line_crossing(Point_index_pair(mp0, mp4));
 			v4 = get_line_crossing(Point_index_pair(mp0, mp3));
-			mesh.add_quadrilateral(v1, v2, v3, v4);
+			mesh.add_quadrilateral(v1, v2, v3, v4, inverse);
 			break;
-		case 3:
-			// 0,1 > iso_value
+		case 3: // 0,1 > iso_value, with inverse
 			v1 = get_line_crossing(Point_index_pair(mp0, mp2));
 			v2 = get_line_crossing(Point_index_pair(mp0, mp4));
 			v3 = get_line_crossing(Point_index_pair(mp0, mp3));
 			v4 = get_line_crossing(Point_index_pair(mp1, mp3));
 			v5 = get_line_crossing(Point_index_pair(mp1, mp5));
 			v6 = get_line_crossing(Point_index_pair(mp1, mp2));
-			mesh.add_hexagon(v1, v2, v3, v4, v5, v6);
+			mesh.add_quadrilateral(v1, v2, v5, v6, inverse);
+			mesh.add_quadrilateral(v2, v3, v4, v5, inverse);
 			break;
-		case 7:
-			// 0,1,2 > iso_value
+		case 7: // 0,1,2 > iso_value
 			v1 = get_line_crossing(Point_index_pair(mp0, mp4));
 			v2 = get_line_crossing(Point_index_pair(mp0, mp3));
 			v3 = get_line_crossing(Point_index_pair(mp1, mp3));
@@ -1293,68 +1318,36 @@ int Isosurface_builder::cross_octahedron(int i, int j, int k)
 			v6 = get_line_crossing(Point_index_pair(mp2, mp4));
 			mesh.add_hexagon(v1, v2, v3, v4, v5, v6);
 			break;
-		case 15:
-			// 0,1,2,3 > iso_value
-			v1 = get_line_crossing(Point_index_pair(mp0, mp4));
-			v2 = get_line_crossing(Point_index_pair(mp3, mp4));
-			v3 = get_line_crossing(Point_index_pair(mp3, mp5));
-			v4 = get_line_crossing(Point_index_pair(mp1, mp5));
-			v5 = get_line_crossing(Point_index_pair(mp2, mp5));
-			v6 = get_line_crossing(Point_index_pair(mp2, mp4));
-			mesh.add_hexagon(v1, v2, v3, v4, v5, v6);
-			break;
-		case 31:
-			// 0,1,2,3,4 > iso_value
-			v1 = get_line_crossing(Point_index_pair(mp5, mp1));
-			v2 = get_line_crossing(Point_index_pair(mp5, mp2));
-			v3 = get_line_crossing(Point_index_pair(mp5, mp4));
-			v4 = get_line_crossing(Point_index_pair(mp5, mp3));
-			mesh.add_quadrilateral(v1, v2, v3, v4);
-			break;
-		case 33:
-			// 0,5 > iso_value
+		case 33: // 0,5 > iso_value, with inverse
 			v1 = get_line_crossing(Point_index_pair(mp0, mp1));
 			v2 = get_line_crossing(Point_index_pair(mp0, mp2));
 			v3 = get_line_crossing(Point_index_pair(mp0, mp4));
 			v4 = get_line_crossing(Point_index_pair(mp0, mp3));
-			mesh.add_quadrilateral(v1, v2, v3, v4);
-			v1 = get_line_crossing(Point_index_pair(mp5, mp1));
-			v2 = get_line_crossing(Point_index_pair(mp5, mp3));
-			v3 = get_line_crossing(Point_index_pair(mp5, mp4));
-			v4 = get_line_crossing(Point_index_pair(mp5, mp2));
-			mesh.add_quadrilateral(v1, v2, v3, v4);
+			mesh.add_quadrilateral(v1, v2, v3, v4, inverse);
+			v1 = get_line_crossing(Point_index_pair(mp1, mp5));
+			v2 = get_line_crossing(Point_index_pair(mp3, mp5));
+			v3 = get_line_crossing(Point_index_pair(mp4, mp5));
+			v4 = get_line_crossing(Point_index_pair(mp2, mp5));
+			mesh.add_quadrilateral(v1, v2, v3, v4, inverse);
 			break;
 		case 35:
 			// 0,1,5 > iso_value
 			v1 = get_line_crossing(Point_index_pair(mp0, mp2));
 			v2 = get_line_crossing(Point_index_pair(mp0, mp4));
-			v3 = get_line_crossing(Point_index_pair(mp0, mp3));
-			v4 = get_line_crossing(Point_index_pair(mp1, mp3));
+			v3 = get_line_crossing(Point_index_pair(mp4, mp5));
+			v4 = get_line_crossing(Point_index_pair(mp2, mp5));
 			v5 = get_line_crossing(Point_index_pair(mp1, mp2));
 			mesh.add_pentagon(v1, v2, v3, v4, v5);
-			v1 = v5;
-			v2 = v4;
-			v3 = get_line_crossing(Point_index_pair(mp5, mp3));
-			v4 = get_line_crossing(Point_index_pair(mp5, mp4));
-			v5 = get_line_crossing(Point_index_pair(mp5, mp2));
+			v1 = v3;
+			//v2 = v2;
+			v3 = get_line_crossing(Point_index_pair(mp0, mp3));
+			v4 = get_line_crossing(Point_index_pair(mp1, mp3));
+			v5 = get_line_crossing(Point_index_pair(mp3, mp5));
 			mesh.add_pentagon(v1, v2, v3, v4, v5);
-			break;
-		case 51:
-			// 0,1,4,5 > iso_value
-			v1 = get_line_crossing(Point_index_pair(mp2, mp0));
-			v2 = get_line_crossing(Point_index_pair(mp2, mp4));
-			v3 = get_line_crossing(Point_index_pair(mp2, mp5));
-			v4 = get_line_crossing(Point_index_pair(mp2, mp1));
-			mesh.add_quadrilateral(v1, v2, v3, v4);
-			v1 = get_line_crossing(Point_index_pair(mp3, mp0));
-			v2 = get_line_crossing(Point_index_pair(mp3, mp1));
-			v3 = get_line_crossing(Point_index_pair(mp3, mp5));
-			v4 = get_line_crossing(Point_index_pair(mp3, mp4));
-			mesh.add_quadrilateral(v1, v2, v3, v4);
 			break;
 		default:
 			display_message(ERROR_MESSAGE,
-				"Isosurface_builder::cross_octahedron.  Unknown case %d", final_case);
+				"Isosurface_builder::cross_octahedron.  Unknown case %d (unrotated %d)", final_case, unrotated_case);
 			return_code = 0;
 			break;
 		}
