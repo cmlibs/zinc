@@ -794,9 +794,7 @@ Add mc_triangle to mc_cell list and add new vertex if unique
 ==============================================================================*/
 {
 	int n, nn, found;
-#if defined (USE_PARAMETER_ON)
-	int jj, kk;
-#endif /* defined (USE_PARAMETER_ON) */
+	//int jj = 0, kk = 0;// <== \todo someone is intending to use these?
 
 	/* pointers to vertices */
 	struct MC_vertex *v[3];
@@ -816,8 +814,8 @@ Add mc_triangle to mc_cell list and add new vertex if unique
 	for (n=0;n<3;n++)
 	{
 		found=0;
-		USE_PARAMETER(jj);
-		USE_PARAMETER(kk);
+		//USE_PARAMETER(jj);
+		//USE_PARAMETER(kk);
 		USE_PARAMETER(check_mc_vertex);
 		if (!found)
 		{

@@ -2316,7 +2316,7 @@ are passed to this function.
 {
 	enum FE_field_type fe_field_type;
 	enum Global_to_element_map_type component_type;
-	int field_no, i, j, node_index, number_of_components, 
+	int field_no, i, j, node_index, number_of_components = 0, 
 		number_of_nodes_in_component, number_of_fields,
 		number_of_fields_in_header, number_of_nodes, number_of_scale_factor_sets,
 		number_of_scale_factors, return_code, *scale_factor_set_in_use,

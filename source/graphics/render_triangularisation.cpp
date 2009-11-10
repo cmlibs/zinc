@@ -118,7 +118,7 @@ int draw_surface_triangle_mesh(Triangle_mesh& trimesh, Triple *surfpts,
 	USE_PARAMETER(material);
 	USE_PARAMETER(spectrum);
 	bool continuous = (surface_type == g_SHADED) || (surface_type == g_SHADED_TEXMAP);
-	if (surfpts && (continuous && (1 < npts1) && (1 < npts2)) ||
+	if ((surfpts && (continuous && (1 < npts1) && (1 < npts2))) ||
 		(!continuous && (0 < npts1) && (2 < npts2)))
 	{
 		point=surfpts;

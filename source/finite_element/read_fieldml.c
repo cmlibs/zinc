@@ -702,7 +702,7 @@ DESCRIPTION :
 							{
 #if defined (USE_PARAMETER_ON)
 								FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-								struct FE_element *element;
+								struct FE_element *element = 0;
 #endif /* defined (USE_PARAMETER_ON) */
 
 								if (number_of_values==number_of_components)
@@ -838,7 +838,7 @@ DESCRIPTION :
 							case STRING_VALUE:
 							{
 #if defined (USE_PARAMETER_ON)
-								char *the_string;
+								char *the_string = 0;
 #endif /* defined (USE_PARAMETER_ON) */
 
 								if (number_of_values==number_of_components)
