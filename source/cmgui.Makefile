@@ -54,7 +54,7 @@ UNEMAP = false
 LINK_CMISS = false
 USE_PERL_INTERPRETER = true
 USE_IMAGEMAGICK = true
-USE_NETGEN= false
+USE_NETGEN = true
 #Does your version of imagemagick include libgdcm
 USE_LIBGDCM = false
 ifeq ($(SYSNAME),Linux)
@@ -404,8 +404,14 @@ else # $(USE_ITK) == true
 endif # $(USE_ITK) == true
 
 ifeq ($(USE_NETGEN),true)
-	NETGEN_INC = -I$(CMISS_ROOT)/netgen/include
-	NETGEN_LIB = $(CMISS_ROOT)/netgen/lib/libnglib.a
+	NETGEN_LIB_PREFIX = lib
+	NETGEN_LIB_SUFFIX = .a
+	ifeq ($(COMPILER),msvc)
+		NETGEN_LIB_PREFIX = 
+		NETGEN_LIB_SUFFIX = .lib
+	endif
+	NETGEN_INC = -I$(CMISS_ROOT)/third_party/$(LIB_ARCH_DIR)/include
+	NETGEN_LIB = $(CMISS_ROOT)/third_party/$(LIB_ARCH_DIR)/lib/$(NETGEN_LIB_PREFIX)nglib$(NETGEN_LIB_SUFFIX)
 	NETGEN_DEFINES = -DUSE_NETGEN
 else
 	NETGEN_INC =
