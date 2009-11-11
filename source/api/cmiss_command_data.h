@@ -47,7 +47,7 @@ The public interface to the some of the internal functions of cmiss.
 #include "api/cmiss_field.h"
 #include "api/cmiss_time_keeper.h"
 /* If this is going to be in the API then it needs to have an interface there */
-#include "general/object.h"
+//#include "general/object.h"
 #if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
