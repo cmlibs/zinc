@@ -7205,6 +7205,33 @@ should be DEALLOCATED when finished with).
 	return (return_value);
 } /* Texture_get_property */
 
+int Texture_clear_all_properties(struct Texture *texture)
+{
+	int return_code;
+
+	ENTER(Texture_clear_all_properties);
+	if (texture)
+	{
+		if (texture->property_list)
+		{
+			return_code = REMOVE_ALL_OBJECTS_FROM_LIST(Texture_property)(texture->property_list);
+		}
+		else
+		{
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_get_property.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_clear_all_properties */
+
 #if defined (OPENGL_API)
 unsigned int Texture_create_float_texture(int width, int height, char* buffer,
 	int alpha, int fallback_to_shorts)

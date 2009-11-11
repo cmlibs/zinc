@@ -800,6 +800,14 @@ If the <property> is defined for the <texture>, then a copy is returned (and
 should be DEALLOCATED when finished with).
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Clear the property list of a texture.
+ * 
+ * @param texture Object to clear
+ * @return Returns 1 if successful or 0 if not.
+ */
+int Texture_clear_all_properties(struct Texture *texture);
+
 #if defined (OPENGL_API)
 /***************************************************************************//**
  * Create a float texture of the specified with and height.

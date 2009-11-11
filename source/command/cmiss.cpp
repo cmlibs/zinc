@@ -7463,6 +7463,8 @@ Modifies the properties of a texture.
 										file_number_series_data.increment,
 										image_data.crop_left_margin, image_data.crop_bottom_margin,
 										image_data.crop_width, image_data.crop_height);
+									/* Delete any existing properties as we are modifying */
+									Texture_clear_all_properties(texture);
 									/* Calling get_proprety with wildcard ensures they
 										will be available to the iterator, as well as
 										any other properties */
