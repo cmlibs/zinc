@@ -636,38 +636,24 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 		# Install headers for cmgui
 		SET( CMGUI_LIB_API_INSTALL_HDRS
 			${CMAKE_SOURCE_DIR}/source/api/cmiss_command_data.h
-			${CMAKE_SOURCE_DIR}/source/api/cmiss_element.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_fdio.h
 			${CMAKE_SOURCE_DIR}/source/api/cmiss_field.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_field_alias.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_field_arithmetic_operators.h
 			${CMAKE_SOURCE_DIR}/source/api/cmiss_field_composite.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_field_conditional.h
 			${CMAKE_SOURCE_DIR}/source/api/cmiss_field_image.h
-		#	${CMAKE_SOURCE_DIR}/source/api/cmiss_finite_element.h
-			${CMAKE_SOURCE_DIR}/source/api/cmiss_node.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_field_image_processing.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_field_logical_operators.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_field_trigonometry.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_graphics_window.h
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_idle.h
 			${CMAKE_SOURCE_DIR}/source/api/cmiss_region.h
 			${CMAKE_SOURCE_DIR}/source/api/cmiss_scene_viewer.h
 			${CMAKE_SOURCE_DIR}/source/api/cmiss_texture.h
 			${CMAKE_SOURCE_DIR}/source/api/cmiss_time.h
 			${CMAKE_SOURCE_DIR}/source/api/cmiss_time_keeper.h
-			${CMAKE_SOURCE_DIR}/source/api/cmiss_value.h )
-#		SET( CMGUI_LIB_COMPUTED_FIELD_INSTALL_HDRS
-#			${CMAKE_SOURCE_DIR}/source/computed_field/computed_field.h )
-#		SET( CMGUI_LIB_COMMAND_INSTALL_HDRS
-#			${CMAKE_SOURCE_DIR}/source/command/cmiss.h
-#			${CMAKE_SOURCE_DIR}/source/command/parser.h
-#			${CMAKE_SOURCE_DIR}/source/command/command.h )
-#		SET( CMGUI_LIB_GENERAL_INSTALL_HDRS
-#			${CMAKE_SOURCE_DIR}/source/general/callback.h
-#			${CMAKE_SOURCE_DIR}/source/general/io_stream.h
-#			${CMAKE_SOURCE_DIR}/source/general/list.h
-#			${CMAKE_SOURCE_DIR}/source/general/manager.h
-#			${CMAKE_SOURCE_DIR}/source/general/value.h )
-#		SET( CMGUI_LIB_GRAPHICS_INSTALL_HDRS
-#			${CMAKE_SOURCE_DIR}/source/graphics/colour.h
-#			${CMAKE_SOURCE_DIR}/source/graphics/light.h
-#			${CMAKE_SOURCE_DIR}/source/graphics/light_model.h )
-#		SET( CMGUI_LIB_INTERACTION_INSTALL_HDRS
-#			${CMAKE_SOURCE_DIR}/source/interaction/interactive_tool.h )
-#		SET( CMGUI_LIB_REGION_INSTALL_HDRS
-#			${CMAKE_SOURCE_DIR}/source/region/cmiss_region.h )
+			${CMAKE_SOURCE_DIR}/source/api/cmiss_timer.h )
 
 		# Install headers for cmgui_general
 		SET( GENERAL_LIB_API_INSTALL_HDRS	${CMAKE_SOURCE_DIR}/source/api/cmiss_core.h )
@@ -676,8 +662,6 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 		SET( CORE_FIELDS_LIB_API_INSTALL_HDRS ${CMAKE_SOURCE_DIR}/source/api/cmiss_element.h
 			${CMAKE_SOURCE_DIR}/source/api/cmiss_node.h
 			${CMAKE_SOURCE_DIR}/source/api/cmiss_time_sequence.h )
-#		SET( CORE_FIELDS_LIB_GENERAL_INSTALL_HDRS
-#			${CMAKE_SOURCE_DIR}/source/general/object.h )
 
 		# Install headers for pass_through_interpreter
 		SET( PASS_THROUGH_LIB_COMMAND_INSTALL_HDRS 
@@ -692,26 +676,6 @@ IF( "${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 2.5 )
 			${GENERAL_LIB_API_INSTALL_HDRS}
 			${CORE_FIELDS_LIB_INSTALL_HDRS}
 			DESTINATION include/cmgui/api )
-		# Computed field installs
-#		INSTALL( FILES ${CMGUI_LIB_COMPUTED_FIELD_INSTALL_HDRS}
-#			DESTINATION include/cmgui/computed_field )
-#		# Command directory installs
-#		INSTALL( FILES ${CMGUI_LIB_COMMAND_INSTALL_HDRS}
-#			${PASS_THROUGH_LIB_COMMAND_INSTALL_HDRS}
-#			DESTINATION include/cmgui/command )
-#		# General directory installs
-#		INSTALL( FILES ${CMGUI_LIB_GENERAL_INSTALL_HDRS}
-#			${CORE_FIELDS_LIB_GENERAL_INSTALL_HDRS}
-#			DESTINATION include/cmgui/general )
-#		# Graphic directory installs
-#		INSTALL( FILES ${CMGUI_LIB_GRAPHIC_INSTALL_HDRS}
-#			DESTINATION include/cmgui/graphic )
-#		# Interaction directory installs
-#		INSTALL( FILES ${CMGUI_LIB_INTERACTION_INSTALL_HDRS}
-#			DESTINATION include/cmgui/interaction )
-#		# Region directory installs
-#		INSTALL( FILES ${CMGUI_LIB_REGION_INSTALL_HDRS}
-#			DESTINATION include/cmgui/region )
 
 	ENDIF( BUILD_EXECUTABLE )
 

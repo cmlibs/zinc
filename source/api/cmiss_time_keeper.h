@@ -44,7 +44,6 @@ rewind and fast forward.
 #ifndef __CMISS_TIME_KEEPER_H__
 #define __CMISS_TIME_KEEPER_H__
 
-#include "general/object.h"
 #include "api/cmiss_time.h"
 
 /***************************************************************************//**

@@ -44,7 +44,6 @@ The public interface to Cmiss_time_sequence.
 #ifndef __CMISS_TIME_SEQUENCE_H__
 #define __CMISS_TIME_SEQUENCE_H__
 
-#include "general/object.h"
 typedef double Scalar;
 
 /*
@@ -81,7 +80,7 @@ Global functions
 ----------------
 */
 
-Cmiss_time_sequence_package_id CREATE(Cmiss_time_sequence_package)(void);
+Cmiss_time_sequence_package_id Cmiss_time_sequence_package_create(void);
 /*******************************************************************************
 LAST MODIFIED : 11 November 2004
 

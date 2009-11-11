@@ -73,21 +73,21 @@ Cmiss_scene_viewer_input_get_event_type
 Cmiss_scene_viewer_input_set_event_type
 
 #if defined (WX_USER_INTERFACE)
-create_Cmiss_scene_viewer_wx
+Cmiss_scene_viewer_create_wx
 #endif /* defined (WX_USER_INTERFACE) */
 
 #if defined (GTK_USER_INTERFACE)
-create_Cmiss_scene_viewer_gtk
+Cmiss_scene_viewer_create_gtk
 #endif /* defined (GTK_USER_INTERFACE) */
 
 #if defined (WIN32_USER_INTERFACE)
 Cmiss_scene_viewer_handle_windows_event
-create_Cmiss_scene_viewer_win32
+Cmiss_scene_viewer_create_win32
 Cmiss_scene_viewer_win32_set_window_size
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-create_Cmiss_command_data
-destroy_Cmiss_command_data
+Cmiss_command_data_create
+Cmiss_command_data_destroy
 Cmiss_command_data_get_root_region
 Cmiss_command_data_get_node_selection
 Cmiss_command_data_get_element_selection
@@ -270,8 +270,8 @@ create_FE_time_sequence_package
 Cmiss_time_sequence_set_value
 Cmiss_time_sequence_package_get_matching_time_sequence
 
-create_Cmiss_node
-create_Cmiss_node_from_template
+Cmiss_node_create
+Cmiss_node_from_template_create
 access_FE_node
 deaccess_FE_node
 create_FE_node_field_creator
@@ -279,11 +279,11 @@ destroy_FE_node_field_creator
 Cmiss_node_get_identifier
 list_for_each_FE_node
 list_number_FE_node
-destroy_Cmiss_node
+Cmiss_node_destroy
 
 FE_element_to_any_element_string
 get_FE_element_dimension
-create_Cmiss_element_with_line_shape
+Cmiss_element_create_with_line_shape
 access_FE_element
 deaccess_FE_element
 Cmiss_element_get_identifier
@@ -293,7 +293,7 @@ list_number_FE_element
 Cmiss_element_get_dimension
 Cmiss_element_get_dimension
 Cmiss_element_get_region
-destroy_Cmiss_element
+Cmiss_element_destroy
 
 create_IO_stream_package
 destroy_IO_stream_package

@@ -44,8 +44,6 @@ The public interface to time callbacks
 #ifndef __API_CMISS_TIMER_H__
 #define __API_CMISS_TIMER_H__
 
-#include "general/object.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
@@ -88,7 +86,7 @@ DESCRIPTION :
 Sets a timer callback.
 ==============================================================================*/
 
-int DESTROY(Cmiss_timer_callback)(Cmiss_timer_package_id pkg,
+int Cmiss_timer_callback_destroy(Cmiss_timer_package_id pkg,
 	Cmiss_timer_callback_id *callback);
 /*******************************************************************************
 LAST MODIFIED : 11 April 2005
@@ -97,7 +95,7 @@ DESCRIPTION :
 Destroys a timer callback, causing it to not be called any longer.
 ==============================================================================*/
 
-int DESTROY(Cmiss_timer_package)(Cmiss_timer_package_id *pkg);
+int Cmiss_timer_package_destroy(Cmiss_timer_package_id *pkg);
 /*******************************************************************************
 LAST MODIFIED : 11 April 2005
 

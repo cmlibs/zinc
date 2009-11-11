@@ -33,12 +33,7 @@ SET( API_HDRS
 	source/api/cmiss_time.h
 	source/api/cmiss_timer.h
 	source/api/cmiss_time_keeper.h
-	source/api/cmiss_time_sequence.h
-	source/api/cmiss_value.h
-	source/api/cmiss_value_derivative_matrix.h
-	source/api/cmiss_value_element_xi.h
-	source/api/cmiss_value_fe_value.h
-	source/api/cmiss_value_matrix.h )
+	source/api/cmiss_time_sequence.h )
 	
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	SET( API_SRCS ${API_SRCS}

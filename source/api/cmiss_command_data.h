@@ -46,8 +46,6 @@ The public interface to the some of the internal functions of cmiss.
 
 #include "api/cmiss_field.h"
 #include "api/cmiss_time_keeper.h"
-/* If this is going to be in the API then it needs to have an interface there */
-//#include "general/object.h"
 #if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -78,10 +76,10 @@ Global functions
 */
 
 #if !defined (WIN32_USER_INTERFACE)
-struct Cmiss_command_data *CREATE(Cmiss_command_data)(int argc,char *argv[],
+struct Cmiss_command_data *Cmiss_command_data_create(int argc,char *argv[],
 	char *version_string);
 #else /* !defined (WIN32_USER_INTERFACE) */
-struct Cmiss_command_data *CREATE(Cmiss_command_data)(int argc,char *argv[],
+struct Cmiss_command_data *Cmiss_command_data_create(int argc,char *argv[],
 	char *version_string, HINSTANCE current_instance, 
         HINSTANCE previous_instance, LPSTR command_line,int initial_main_window_state);
 #endif /* !defined (WIN32_USER_INTERFACE) */
@@ -92,7 +90,7 @@ DESCRIPTION :
 Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 ==============================================================================*/
 
-int DESTROY(Cmiss_command_data)(struct Cmiss_command_data **command_data_address);
+int Cmiss_command_data_destroy(struct Cmiss_command_data **command_data_address);
 /*******************************************************************************
 LAST MODIFIED : 13 August 2002
 

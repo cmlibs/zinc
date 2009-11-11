@@ -46,8 +46,6 @@ scenes.
 #ifndef __CMISS_TEXTURE_H__
 #define __CMISS_TEXTURE_H__
 
-#include "general/object.h"
-
 /*
 Global types
 ------------

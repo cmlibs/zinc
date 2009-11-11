@@ -121,7 +121,7 @@ Global functions
 ----------------
 */
 
-Cmiss_element_id create_Cmiss_element_with_line_shape(int element_identifier,
+Cmiss_element_id Cmiss_element_create_with_line_shape(int element_identifier,
 	Cmiss_region_id region, int dimension);
 /*******************************************************************************
 LAST MODIFIED : 1 December 2004
@@ -165,7 +165,7 @@ DESCRIPTION :
 Returns the region the <element> belongs to.
 ==============================================================================*/
 
-int destroy_Cmiss_element(Cmiss_element_id *element_id_address);
+int Cmiss_element_destroy(Cmiss_element_id *element_id_address);
 /*******************************************************************************
 LAST MODIFIED : 17 January 2007
 

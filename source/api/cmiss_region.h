@@ -44,7 +44,6 @@ The public interface to the Cmiss_regions.
 #ifndef __CMISS_REGION_H__
 #define __CMISS_REGION_H__
 
-#include "general/object.h"
 #include "api/cmiss_node.h"
 #include "api/cmiss_element.h"
 #include "api/cmiss_field.h"

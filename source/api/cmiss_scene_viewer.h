@@ -279,7 +279,7 @@ Global functions
  * @return  Cmiss_scene_viewer_id if successfully create the scene viewer,
  *    otherwise NULL.
  */
-Cmiss_scene_viewer_id create_Cmiss_scene_viewer_wx(
+Cmiss_scene_viewer_id Cmiss_scene_viewer_create_wx(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	void *parent_void,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
@@ -289,7 +289,7 @@ Cmiss_scene_viewer_id create_Cmiss_scene_viewer_wx(
 #endif /* defined (WX_USER_INTERFACE) */
 
 #if defined (GTK_USER_INTERFACE)
-Cmiss_scene_viewer_id create_Cmiss_scene_viewer_gtk(
+Cmiss_scene_viewer_id Cmiss_scene_viewer_create_gtk(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	GtkContainer *scene_viewer_widget,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
@@ -311,7 +311,7 @@ chosen.
 #endif /* defined (GTK_USER_INTERFACE) */
 
 #if defined (CARBON_USER_INTERFACE)
-Cmiss_scene_viewer_id create_Cmiss_scene_viewer_Carbon(
+Cmiss_scene_viewer_id Cmiss_scene_viewer_create_Carbon(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	CGrafPtr port, int port_x, int port_y,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
@@ -333,7 +333,7 @@ chosen.
 #endif /* defined (CARBON_USER_INTERFACE) */
 
 #if defined (WIN32_USER_INTERFACE)
-Cmiss_scene_viewer_id create_Cmiss_scene_viewer_win32(
+Cmiss_scene_viewer_id Cmiss_scene_viewer_create_win32(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	HWND hWnd, HDC hDC,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
@@ -380,7 +380,7 @@ will be requested with handle_windows_event.
 #endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (MOTIF_USER_INTERFACE)
-Cmiss_scene_viewer_id create_Cmiss_scene_viewer_motif(
+Cmiss_scene_viewer_id Cmiss_scene_viewer_create_motif(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	Widget parent,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,

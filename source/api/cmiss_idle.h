@@ -44,8 +44,6 @@ The public interface to idle callbacks
 #ifndef __API_CMISS_IDLE_H__
 #define __API_CMISS_IDLE_H__
 
-#include "general/object.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
@@ -83,7 +81,7 @@ DESCRIPTION :
 Sets an idle callback.
 ==============================================================================*/
 
-int DESTROY(Cmiss_idle_callback)(Cmiss_idle_package_id pkg,
+int Cmiss_idle_callback_destroy(Cmiss_idle_package_id pkg,
 	Cmiss_idle_callback_id *callback);
 /*******************************************************************************
 LAST MODIFIED : 21 March 2005
@@ -92,7 +90,7 @@ DESCRIPTION :
 Destroys an idle callback, causing it to not be called any longer.
 ==============================================================================*/
 
-int DESTROY(Cmiss_idle_package)(Cmiss_idle_package_id *pkg);
+int Cmiss_idle_package_destroy(Cmiss_idle_package_id *pkg);
 /*******************************************************************************
 LAST MODIFIED : 21 March 2005
 

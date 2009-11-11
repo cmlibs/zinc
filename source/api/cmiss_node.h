@@ -44,8 +44,6 @@ The public interface to Cmiss_node.
 #ifndef __CMISS_NODE_H__
 #define __CMISS_NODE_H__
 
-#include "general/object.h"
-
 /*
 Global types
 ------------
@@ -143,7 +141,7 @@ DESCRIPTION :
 Returns the integer identifier of the <node>.
 ==============================================================================*/
 
-struct Cmiss_node_field_creator *CREATE(Cmiss_node_field_creator)(
+struct Cmiss_node_field_creator *Cmiss_node_field_creator_create(
 	int number_of_components);
 /*******************************************************************************
 LAST MODIFIED : 16 November 2001
@@ -154,7 +152,7 @@ number_of_derivatives and their types at a node.
 By default each component has 1 version and no derivatives.
 ==============================================================================*/
 
-int DESTROY(Cmiss_node_field_creator)(
+int Cmiss_node_field_creator_destroy(
 	struct Cmiss_node_field_creator **node_field_creator_address);
 /*******************************************************************************
 LAST MODIFIED : 16 November 2001
@@ -189,7 +187,7 @@ DESCRIPTION:
 Specifies the <number_of_versions> for <component_number> specified.
 ==============================================================================*/
 
-Cmiss_node_id create_Cmiss_node(int node_identifier,
+Cmiss_node_id Cmiss_node_create(int node_identifier,
 	Cmiss_region_id region);
 /*******************************************************************************
 LAST MODIFIED : 8 November 2004
@@ -201,7 +199,7 @@ A blank node with the given identifier but no fields is returned.
 The new node is set to belong to the ultimate master FE_region of <region>.
 ==============================================================================*/
 
-Cmiss_node_id create_Cmiss_node_from_template(int node_identifier,
+Cmiss_node_id Cmiss_node_from_template_create(int node_identifier,
 	Cmiss_node_id template_node);
 /*******************************************************************************
 LAST MODIFIED : 1 November 2004
@@ -213,7 +211,7 @@ The node copies all the fields and values of the <template_node> and will
 belong to the same region.
 ==============================================================================*/
 
-int destroy_Cmiss_node(Cmiss_node_id *node_id_address);
+int Cmiss_node_destroy(Cmiss_node_id *node_id_address);
 /*******************************************************************************
 LAST MODIFIED : 1 November 2004
 

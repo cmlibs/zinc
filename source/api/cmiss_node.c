@@ -73,7 +73,7 @@ Returns the integer identifier of the <node>.
 /* Note that Cmiss_node_set_identifier is not here as the function does 
 	not currently exist in finite_element.[ch] either. */
 
-Cmiss_node_id create_Cmiss_node(int node_identifier,
+Cmiss_node_id Cmiss_node_create(int node_identifier,
 	Cmiss_region_id region)
 /*******************************************************************************
 LAST MODIFIED : 10 November 2004
@@ -99,7 +99,7 @@ The new node is set to belong to the ultimate master FE_region of <region>.
 	return (node);
 } /* create_Cmiss_node */
 
-Cmiss_node_id create_Cmiss_node_from_template(int node_identifier,
+Cmiss_node_id Cmiss_node_from_template_create(int node_identifier,
 	Cmiss_node_id template_node)
 /*******************************************************************************
 LAST MODIFIED : 10 November 2004
@@ -113,7 +113,7 @@ belong to the same region.
 {
 	Cmiss_node_id node;
 
-	ENTER(create_Cmiss_node_from_template);
+	ENTER(Cmiss_node_from_template_create);
 	node = ACCESS(FE_node)(CREATE(FE_node)(node_identifier, (struct FE_region *)NULL, 
 			template_node));
 	LEAVE;
@@ -121,7 +121,7 @@ belong to the same region.
 	return (node);
 } /* create_Cmiss_node_from_template */
 
-int destroy_Cmiss_node(Cmiss_node_id *node_id_address)
+int Cmiss_node_destroy(Cmiss_node_id *node_id_address)
 /*******************************************************************************
 LAST MODIFIED : 10 November 2004
 
@@ -131,7 +131,7 @@ Frees the memory for the node, sets <*node_address> to NULL.
 {
 	int return_code;
 
-	ENTER(destroy_Cmiss_node);
+	ENTER(Cmiss_node_destroy);
 	return_code = DEACCESS(FE_node)(node_id_address);
 	LEAVE;
 

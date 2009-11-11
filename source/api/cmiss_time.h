@@ -41,8 +41,6 @@ to Cmgui.
 #ifndef __CMISS_TIME_H__
 #define __CMISS_TIME_H__
 
-#include "general/object.h"
-
 /***************************************************************************//**
  * A handle to cmiss time notifier. This notifier provides a concept of time to
  * Cmgui, it will notify its client when time has changed if a callback is setup 

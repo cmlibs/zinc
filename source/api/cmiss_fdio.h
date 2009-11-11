@@ -48,7 +48,6 @@ The public interface to the Cmiss_IO object.
 extern "C" {
 #endif /* __cplusplus */
 
-#include "general/object.h"
 #if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
