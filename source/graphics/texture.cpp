@@ -1165,8 +1165,16 @@ tiles (and <texture_tiling> wasn't NULL.
 		}
 		else
 		{
-			if (cmiss_max_texture_size = getenv("CMISS_MAX_TEXTURE_SIZE"))
-			{
+#if defined (WIN32_SYSTEM)
+		  char env_buffer[1024];
+		  cmiss_max_texture_size = NULL;
+		  if (GetEnvironmentVariable("CMISS_MAX_TEXTURE_SIZE",
+		      env_buffer, sizeof(env_buffer))
+		      && (cmiss_max_texture_size = env_buffer))
+#else /* defined (WIN32_SYSTEM) */
+		  if (cmiss_max_texture_size = getenv("CMISS_MAX_TEXTURE_SIZE"))	
+#endif /* defined (WIN32_SYSTEM) */
+		  {
 				if (sscanf(cmiss_max_texture_size, "%d", &max_texture_size_int))
 				{
 					max_texture_size = max_texture_size_int;
