@@ -199,7 +199,7 @@ A blank node with the given identifier but no fields is returned.
 The new node is set to belong to the ultimate master FE_region of <region>.
 ==============================================================================*/
 
-Cmiss_node_id Cmiss_node_from_template_create(int node_identifier,
+Cmiss_node_id Cmiss_node_create_from_template(int node_identifier,
 	Cmiss_node_id template_node);
 /*******************************************************************************
 LAST MODIFIED : 1 November 2004
