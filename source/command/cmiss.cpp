@@ -12328,131 +12328,237 @@ void create_triangle_mesh(struct Cmiss_region *region, Triangle_mesh *trimesh)
 	FE_region_end_change(fe_region);
 }
 
-static int gfx_mesh_graphics(struct Parse_state *state,
+static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 {
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct Option_table *option_table;
-	struct Scene *scene;
-	struct Cmiss_region *region;
 	char *region_path;
 
-	ENTER(gfx_mesh_graphics);
+	ENTER(gfx_mesh_graphics_tetrahedral);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
 		Cmiss_region_get_root_region_path(&region_path);
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (NULL != (command_data=(struct Cmiss_command_data *)command_data_void))
 		{
+						
+			double maxh=100000;
+			double fineness=0.5;
+			int secondorder=0;    
+			struct Scene *scene;
+			struct Option_table *option_table;
 			scene = ACCESS(Scene)(command_data->default_scene);
 			option_table = CREATE(Option_table)();
-			int triangle_flag = 0;
 			char clear = 0;
 			Option_table_add_entry(option_table, "region", &region_path,
 				command_data->root_region, set_Cmiss_region_path);
 			Option_table_add_entry(option_table, "scene", &scene,
 				command_data->scene_manager, set_Scene_including_sub_objects);
-			Option_table_add_switch(option_table,"triangle","tetrahedral",
-				&triangle_flag);
 			Option_table_add_entry(option_table,"clear_region",
 				&clear,(void *)NULL,set_char_flag);
-			if (return_code = Option_table_multi_parse(option_table,state))
+			Option_table_add_entry(option_table,"mesh_global_size",
+				&maxh,(void *)NULL,set_double);
+			Option_table_add_entry(option_table,"fineness",
+				&fineness,(void *)NULL,set_double);
+			Option_table_add_entry(option_table,"secondorder",
+				&secondorder,(void *)NULL,set_int);
+
+			if ((return_code = Option_table_multi_parse(option_table,state)))
 			{
-				float tolerance = 0.000001;
-				double centre_x, centre_y, centre_z, size_x, size_y, size_z;
-				build_Scene(scene);
-				Scene_get_graphics_range(scene, 
+#if defined (USE_NETGEN)
+				Triangle_mesh *trimesh = NULL;
+				if (scene)
+				{
+					float tolerance = 0.000001;
+					double centre_x, centre_y, centre_z, size_x, size_y, size_z;
+					build_Scene(scene);
+					Scene_get_graphics_range(scene, 
 						&centre_x, &centre_y, &centre_z, &size_x, &size_y, &size_z);
-				if (size_x !=0 && size_y!=0 && size_z!=0)
-				{
-					tolerance = tolerance * (float)sqrt(
-							size_x*size_x + size_y*size_y + size_z*size_z);
-				}
-				Render_graphics_triangularisation renderer(NULL, tolerance);
-				if (renderer.Scene_compile(scene))
-				{
-					return_code =
-						renderer.Scene_execute(scene);
-					Triangle_mesh *trimesh = renderer.get_triangle_mesh();
-					if (clear)
+					if (size_x !=0 && size_y!=0 && size_z!=0)
 					{
-						Cmiss_region *last_region = command_data->root_region;
-						const char *temp_region_path = region_path;
-						Cmiss_region *parent_region = NULL;
-						while (temp_region_path &&
-							(return_code = Cmiss_region_get_child_region_from_path(
-								 last_region, region_path, &region, &temp_region_path)) &&
-							(region != last_region))
+						tolerance = tolerance * (float)sqrt(
+							size_x*size_x + size_y*size_y + size_z*size_z);
+					}
+					Render_graphics_triangularisation renderer(NULL, tolerance);
+					if (renderer.Scene_compile(scene))
+					{
+						return_code =
+							renderer.Scene_execute(scene);
+						trimesh = renderer.get_triangle_mesh();
+						struct Cmiss_region *region = NULL;
+						if (clear)
 						{
-							parent_region = last_region;
-							last_region = region;
-						}
-						
-						if (return_code)
-						{
-							if (region != parent_region)
+							Cmiss_region *last_region = command_data->root_region;
+							const char *temp_region_path = region_path;
+							Cmiss_region *parent_region = NULL;
+							while (temp_region_path &&
+								(return_code = Cmiss_region_get_child_region_from_path(
+									 last_region, region_path, &region, &temp_region_path)) &&
+								(region != last_region))
 							{
-								int pos;
-								Cmiss_region_get_child_region_number(parent_region, region, &pos);
-								return_code =
-									Cmiss_region_remove_child_region(parent_region, region);
-								if (return_code)
+								parent_region = last_region;
+								last_region = region;
+							}
+							
+							if (return_code)
+							{
+								if (region != parent_region)
 								{
-									struct Cmiss_region *temp_region = Cmiss_region_create_share_globals(
-										command_data->root_region);
-									Cmiss_region_add_child_region(
-										command_data->root_region, temp_region, region_path, pos);
-									DEACCESS(Cmiss_region)(&temp_region);
+									int pos;
+									Cmiss_region_get_child_region_number(parent_region, region, &pos);
+									return_code =
+										Cmiss_region_remove_child_region(parent_region, region);
+									if (return_code)
+									{
+										struct Cmiss_region *temp_region = Cmiss_region_create_share_globals(
+											command_data->root_region);
+										Cmiss_region_add_child_region(
+											command_data->root_region, temp_region, region_path, pos);
+										DEACCESS(Cmiss_region)(&temp_region);
+									}
 								}
 							}
 						}
-
+						if (trimesh && Cmiss_region_get_region_from_path(command_data->root_region,
+								region_path, &region))
+						{
+							struct Generate_netgen_parameters *generate_netgen_para=NULL;
+							generate_netgen_para=create_netgen_parameters();
+							set_netgen_parameters_maxh(generate_netgen_para,maxh);
+							set_netgen_parameters_fineness(generate_netgen_para,fineness);
+							set_netgen_parameters_secondorder(generate_netgen_para,secondorder);   
+							set_netgen_parameters_trimesh(generate_netgen_para, trimesh);
+							generate_mesh_netgen(Cmiss_region_get_FE_region(region), generate_netgen_para);
+							release_netgen_parameters(generate_netgen_para);        
+							
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE, "gfx_mesh_graphics_tetrahedral."
+								"Unknown region: %s", region_path);
+						}
 					}
-					if (Cmiss_region_get_region_from_path(command_data->root_region,
-						region_path, &region))
+				}
+#else
+				USE_PARAMETER(scene);
+				USE_PARAMETER(region_path);
+				display_message(ERROR_MESSAGE,
+					"gfx_mesh_graphics. Does not support tetrahedral mesh yet. To use this feature"
+					" please compile cmgui with Netgen");	
+				return_code = 0;
+#endif /* defined (USE_NETGEN) */
+			}
+			DEALLOCATE(region_path);
+			DESTROY(Option_table)(&option_table);
+			DEACCESS(Scene)(&scene);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"gfx_mesh_graphics_tetrahedral.  Invalid argument(s)");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"gfx_mesh_graphics_tetrahedral.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_mesh_graphics */
+
+static int gfx_mesh_graphics_triangle(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+{
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Option_table *option_table;
+	struct Cmiss_region *region;
+	char *region_path;
+
+	ENTER(gfx_mesh_graphics_triangle);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+		Cmiss_region_get_root_region_path(&region_path);
+		if (NULL != (command_data=(struct Cmiss_command_data *)command_data_void))
+		{
+			struct Scene *scene;
+			Triangle_mesh *trimesh = NULL;
+			scene = ACCESS(Scene)(command_data->default_scene);
+			option_table = CREATE(Option_table)();
+			char clear = 0;
+			Option_table_add_entry(option_table, "scene", &scene,
+				command_data->scene_manager, set_Scene_including_sub_objects);
+			Option_table_add_entry(option_table, "region", &region_path,
+				command_data->root_region, set_Cmiss_region_path);
+			Option_table_add_entry(option_table,"clear_region",
+				&clear,(void *)NULL,set_char_flag);
+			if ((return_code = Option_table_multi_parse(option_table,state)))
+			{
+				if (scene)
+				{
+					float tolerance = 0.000001;
+					double centre_x, centre_y, centre_z, size_x, size_y, size_z;
+					build_Scene(scene);
+					Scene_get_graphics_range(scene, 
+						&centre_x, &centre_y, &centre_z, &size_x, &size_y, &size_z);
+					if (size_x !=0 && size_y!=0 && size_z!=0)
 					{
-						if (triangle_flag)
+						tolerance = tolerance * (float)sqrt(
+							size_x*size_x + size_y*size_y + size_z*size_z);
+					}
+					Render_graphics_triangularisation renderer(NULL, tolerance);
+					if (renderer.Scene_compile(scene))
+					{
+						return_code =
+							renderer.Scene_execute(scene);
+						trimesh = renderer.get_triangle_mesh();
+				 
+						if (clear)
+						{
+							Cmiss_region *last_region = command_data->root_region;
+							const char *temp_region_path = region_path;
+							Cmiss_region *parent_region = NULL;
+							while (temp_region_path &&
+								(return_code = Cmiss_region_get_child_region_from_path(
+									 last_region, region_path, &region, &temp_region_path)) &&
+								(region != last_region))
+							{
+								parent_region = last_region;
+								last_region = region;
+							}
+							if (return_code)
+							{
+								if (region != parent_region)
+								{
+									int pos;
+									Cmiss_region_get_child_region_number(parent_region, region, &pos);
+									return_code =
+										Cmiss_region_remove_child_region(parent_region, region);
+									if (return_code)
+									{
+										struct Cmiss_region *temp_region = Cmiss_region_create_share_globals(
+											command_data->root_region);
+										Cmiss_region_add_child_region(
+											command_data->root_region, temp_region, region_path, pos);
+										DEACCESS(Cmiss_region)(&temp_region);
+									}
+								}
+							}
+						}
+						if (trimesh && Cmiss_region_get_region_from_path(command_data->root_region,
+								region_path, &region))
 						{
 							create_triangle_mesh(region, trimesh);
 						}
 						else
-						{    
-#if defined (USE_NETGEN)
-							double maxh=-1;
-							double fineness=-1;
-							double secondorder=-1;    
-							struct Generate_netgen_parameters *generate_netgen_para=NULL;
-							generate_netgen_para=create_netgen_parameters();
-              
-							if(maxh==-1) 
-								set_netgen_parameters_maxh(generate_netgen_para,100000.0);
-							else
-								set_netgen_parameters_maxh(generate_netgen_para,maxh);
-							
-							if(fineness==-1) 
-								set_netgen_parameters_fineness(generate_netgen_para,0.5);
-							else
-								set_netgen_parameters_fineness(generate_netgen_para,fineness);
-
-							if(secondorder==-1) 
-								set_netgen_parameters_secondorder(generate_netgen_para,0);
-							else
-								set_netgen_parameters_secondorder(generate_netgen_para,secondorder);   
-							
-							set_netgen_parameters_trimesh(generate_netgen_para, trimesh);
-							generate_mesh_netgen(Cmiss_region_get_FE_region(region), generate_netgen_para);
-							release_netgen_parameters(generate_netgen_para);        
-#else 
-							display_message(ERROR_MESSAGE,
-								"gfx_mesh_graphics. Does not support tetrahedral mesh yet. To use this feature"
-								" please compile cmgui with Netgen");	
-#endif /* defined (USE_NETGEN) */
+						{
+							display_message(ERROR_MESSAGE, "gfx_mesh_graphics_triangle. Unknown region: %s", region_path);
 						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE, "gfx_mesh_graphics. Unknown region: %s", region_path);
 					}
 				}
 			}
@@ -12463,13 +12569,47 @@ static int gfx_mesh_graphics(struct Parse_state *state,
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"gfx_mesh_graphics.  Invalid argument(s)");
+				"gfx_mesh_graphics_triangle.  Invalid argument(s)");
 			return_code=0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_mesh_graphics.  Missing state");
+		display_message(ERROR_MESSAGE,"gfx_mesh_graphics_triangle.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_mesh_graphics */
+
+
+static int gfx_mesh_graphics(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+{
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Option_table *option_table;
+
+	ENTER(gfx_mesh_graphics);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state && (command_data=(struct Cmiss_command_data *)command_data_void))
+	{
+		return_code = 1;
+
+		option_table = CREATE(Option_table)();
+		Option_table_add_entry(option_table,"tetrahedral", NULL, 
+			(void *)command_data, gfx_mesh_graphics_tetrahedral);
+		Option_table_add_entry(option_table,"triangle", NULL, 
+			(void *)command_data, gfx_mesh_graphics_triangle);
+		return_code = Option_table_parse(option_table, state);
+		
+		DESTROY(Option_table)(&option_table);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+				"gfx_mesh_graphics.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
