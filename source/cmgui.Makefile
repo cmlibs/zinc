@@ -825,11 +825,13 @@ API_SRCS = \
 	api/cmiss_field_composite.c \
 	api/cmiss_core.c \
 	api/cmiss_element.c \
+	api/cmiss_idle.c \
 	api/cmiss_node.c \
 	api/cmiss_region.c \
 	api/cmiss_time.c \
 	api/cmiss_time_keeper.c \
-	api/cmiss_time_sequence.c
+	api/cmiss_time_sequence.c \
+	api/cmiss_timer.c
 ifeq ($(GRAPHICS_API), OPENGL_GRAPHICS)
    API_SRCS += \
 	   api/cmiss_scene_viewer.c \

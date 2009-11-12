@@ -66,7 +66,7 @@ Global functions
 */
 
 #if defined (WX_USER_INTERFACE)
-Cmiss_scene_viewer_id create_Cmiss_scene_viewer_wx(
+Cmiss_scene_viewer_id Cmiss_scene_viewer_create_wx(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	void *parent_void,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
@@ -140,7 +140,7 @@ Cmiss_scene_viewer_id create_Cmiss_scene_viewer_wx(
 #endif /* defined (WX_USER_INTERFACE) */
 
 #if defined (GTK_USER_INTERFACE)
-Cmiss_scene_viewer_id create_Cmiss_scene_viewer_gtk(
+Cmiss_scene_viewer_id Cmiss_scene_viewer_create_gtk(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	GtkContainer *scene_viewer_widget,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
@@ -225,7 +225,7 @@ chosen.
 #endif /* create_Cmiss_scene_viewer_gtk */
 
 #if defined (CARBON_USER_INTERFACE)
-Cmiss_scene_viewer_id create_Cmiss_scene_viewer_Carbon(
+Cmiss_scene_viewer_id Cmiss_scene_viewer_create_Carbon(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	CGrafPtr port, int port_x, int port_y,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
@@ -305,7 +305,7 @@ chosen.
 #endif /* defined (CARBON_USER_INTERFACE) */
 
 #if defined (WIN32_USER_INTERFACE)
-Cmiss_scene_viewer_id create_Cmiss_scene_viewer_win32(
+Cmiss_scene_viewer_id Cmiss_scene_viewer_create_win32(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	HWND hWnd, HDC hDC,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
@@ -421,7 +421,7 @@ Passes the supplied windows event on to the graphics buffer.
 #endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (MOTIF_USER_INTERFACE)
-Cmiss_scene_viewer_id create_Cmiss_scene_viewer_motif(
+Cmiss_scene_viewer_id Cmiss_scene_viewer_create_motif(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	Widget parent,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
@@ -499,7 +499,7 @@ chosen.
 #endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (NEW_CODE)
-Cmiss_scene_viewer_id create_Cmiss_scene_viewer_X11(
+Cmiss_scene_viewer_id Cmiss_scene_viewer_create_X11(
 	struct Cmiss_scene_viewer_package *cmiss_scene_viewer_package,
 	Window window,
 	enum Cmiss_scene_viewer_buffering_mode buffer_mode,

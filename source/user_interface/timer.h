@@ -60,6 +60,10 @@ extern "C" {
 
 Timer_package_id CREATE(Timer_package)(struct Event_dispatcher *event_dispatcher);
 
+int DESTROY(Timer_package)(Timer_package_id *pkg);
+
+int DESTROY(Timer_callback)(Timer_package_id pkg, Timer_callback_id *callback);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */

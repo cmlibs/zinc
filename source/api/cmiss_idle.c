@@ -1,10 +1,10 @@
 /*******************************************************************************
-FILE : idle.h
+FILE : api/cmiss_idle.c
 
-LAST MODIFIED : 21 March 2005
+LAST MODIFIED : 13 November 2009
 
 DESCRIPTION :
-The private interface to idle callback functions of cmgui.
+The public interface to idle callbacks
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -41,30 +41,18 @@ The private interface to idle callback functions of cmgui.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __IDLE_H__
-#define __IDLE_H__
 
-#include "event_dispatcher.h"
 #include "api/cmiss_idle.h"
+#include "general/object.h"
+#include "user_interface/idle.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* __cplusplus */
+int Cmiss_idle_callback_destroy(Cmiss_idle_package_id pkg,
+	Cmiss_idle_callback_id *callback)
+{
+	return DESTROY(Idle_callback)(pkg, callback);
+}
 
-#define Idle_package Cmiss_idle_package
-#define Idle_package_id Cmiss_idle_package_id
-#define Idle_callback Cmiss_idle_callback
-#define Idle_callback_id Cmiss_idle_callback_id
-#define Idle_package_add_callback Cmiss_idle_package_add_callback
-#define Idle_callback_function Cmiss_idle_callback_function
-
-Idle_package_id CREATE(Idle_package)(struct Event_dispatcher *event_dispatcher);
-
-int DESTROY(Idle_package)(Idle_package_id *pkg);
-
-int DESTROY(Idle_callback)(Idle_package_id pkg, Idle_callback_id *callback);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif /* __cplusplus */
-#endif /* __IDLE_H__ */
+int Cmiss_idle_package_destroy(Cmiss_idle_package_id *pkg)
+{
+	return DESTROY(Idle_package)(pkg);
+}

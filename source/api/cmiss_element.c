@@ -134,7 +134,7 @@ Should only be called for unmanaged elements.
 	return (return_code);
 } /* Cmiss_element_set_node */
 
-Cmiss_element_id create_Cmiss_element_with_line_shape(int element_identifier,
+Cmiss_element_id Cmiss_element_create_with_line_shape(int element_identifier,
 	Cmiss_region_id region, int dimension)
 /*******************************************************************************
 LAST MODIFIED : 1 December 2004
@@ -158,7 +158,7 @@ Creates an element that has a line shape product of the specified <dimension>.
 	return (element);
 } /* create_Cmiss_element */
 
-int destroy_Cmiss_element(Cmiss_element_id *element_id_address)
+int Cmiss_element_destroy(Cmiss_element_id *element_id_address)
 /*******************************************************************************
 LAST MODIFIED : 10 November 2004
 

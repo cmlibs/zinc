@@ -7,11 +7,13 @@ SET( API_SRCS
 	source/api/cmiss_field_composite.c
 	source/api/cmiss_core.c
 	source/api/cmiss_element.c
+	source/api/cmiss_idle.c
 	source/api/cmiss_node.c
 	source/api/cmiss_region.c
 	source/api/cmiss_time.c
 	source/api/cmiss_time_keeper.c
-	source/api/cmiss_time_sequence.c )
+	source/api/cmiss_time_sequence.c
+	source/api/cmiss_timer.c )
 SET( API_HDRS
 	source/api/cmiss_command_data.h
 	source/api/cmiss_core.h

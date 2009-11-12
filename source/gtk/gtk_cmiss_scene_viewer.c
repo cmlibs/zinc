@@ -224,7 +224,7 @@ DESCRIPTION:
 	gtk_cmiss_scene_viewer = gtk_type_new(gtk_cmiss_scene_viewer_get_type());
 #endif /* GTK_MAJOR_VERSION >= 2 */
 
-	gtk_cmiss_scene_viewer->cmiss_scene_viewer = create_Cmiss_scene_viewer_gtk(
+	gtk_cmiss_scene_viewer->cmiss_scene_viewer = Cmiss_scene_viewer_create_gtk(
 		scene_viewer_package,
 		GTK_CONTAINER(gtk_cmiss_scene_viewer), CMISS_SCENE_VIEWER_BUFFERING_DOUBLE,
 		CMISS_SCENE_VIEWER_STEREO_MONO, /*minimum_colour_buffer_depth*/0, 

@@ -44,6 +44,7 @@ The public interface to the Cmiss_finite_elements.
 #include <stdarg.h>
 #include "api/cmiss_time_sequence.h"
 #include "general/debug.h"
+#include "general/object.h"
 #include "finite_element/finite_element.h"
 #include "user_interface/message.h"
 
@@ -51,6 +52,11 @@ The public interface to the Cmiss_finite_elements.
 Global functions
 ----------------
 */
+
+Cmiss_time_sequence_package_id Cmiss_time_sequence_package_create(void)
+{
+	return CREATE(Cmiss_time_sequence_package)();
+}
 
 Cmiss_time_sequence_id Cmiss_time_sequence_package_get_matching_time_sequence(
 	Cmiss_time_sequence_package_id time_sequence_package,
