@@ -1678,8 +1678,8 @@ static int draw_surfaceGL(Triple *surfpts, Triple *normalpoints, Triple *tangent
 	USE_PARAMETER(tangentpoints);
 #endif /* ! defined GL_VERSION_1_3 */
 	/* checking arguments */
-	if ((surfpts && (1 < npts1) && (1 < npts2) &&
-		(NULL == data)) || (NULL != render_data))
+	if (surfpts && (1<npts1) &&(1<npts2) && 
+		((NULL == data) || (NULL != render_data)))
 	{
 #if defined (OPENGL_API)
 #if defined GL_VERSION_1_3
@@ -1854,7 +1854,7 @@ polygon is drawn for each of the <npolys>.
 
 	ENTER(draw_data_dc_surfaceGL);
 	USE_PARAMETER(tangent_points);
-	if ((surfpts&&(0<npolys)&&(2<npp) &&	(NULL == data)) || (NULL != render_data)) 
+	if (surfpts&&(0<npolys)&&(2<npp) &&	((NULL == data) || (NULL != render_data))) 
 	{
 		if (data)
 		{

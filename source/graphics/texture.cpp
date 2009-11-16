@@ -1147,7 +1147,8 @@ tiles (and <texture_tiling> wasn't NULL.
 		max_texture_size = 0;
 		if (texture->dimension > 2)
 		{
-			if (cmiss_max_texture_size = getenv("CMISS_MAX_3D_TEXTURE_SIZE"))
+			cmiss_max_texture_size = getenv("CMISS_MAX_3D_TEXTURE_SIZE");
+			if (cmiss_max_texture_size)
 			{
 				if (sscanf(cmiss_max_texture_size, "%d", &max_texture_size_int))
 				{
@@ -1175,7 +1176,8 @@ tiles (and <texture_tiling> wasn't NULL.
 		      env_buffer, sizeof(env_buffer))
 		      && (cmiss_max_texture_size = env_buffer))
 #else /* defined (WIN32_SYSTEM) */
-		  if (cmiss_max_texture_size = getenv("CMISS_MAX_TEXTURE_SIZE"))	
+		  cmiss_max_texture_size = getenv("CMISS_MAX_TEXTURE_SIZE");
+		  if (cmiss_max_texture_size)	
 #endif /* defined (WIN32_SYSTEM) */
 		  {
 				if (sscanf(cmiss_max_texture_size, "%d", &max_texture_size_int))
@@ -2543,9 +2545,10 @@ Directly outputs the commands setting up the <texture>.
 							}
 							if (return_code)
 							{
-								if (reduced_image = Texture_get_resized_image(texture,
-										texture->rendered_width_texels, texture->rendered_height_texels,
-										texture->rendered_depth_texels, texture->resize_filter_mode))
+								reduced_image = Texture_get_resized_image(texture,
+									texture->rendered_width_texels, texture->rendered_height_texels,
+									texture->rendered_depth_texels, texture->resize_filter_mode);
+								if (reduced_image)
 								{
 									rendered_image = reduced_image;
 								}
@@ -2699,9 +2702,10 @@ A modifier function to set the texture storage type.
 	ENTER(set_Texture_storage);
 	if (state && state->current_token && (!dummy_user_data))
 	{
-		if (storage_type_address=(enum Texture_storage_type *)enum_storage_void_ptr)
+		storage_type_address=(enum Texture_storage_type *)enum_storage_void_ptr;
+		if (storage_type_address)
 		{
-			if (current_token=state->current_token)
+			if (NULL != (current_token=state->current_token))
 			{
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -3358,7 +3362,8 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 	ENTER(DESTROY(Texture));
 	if (texture_address)
 	{
-		if (texture= *texture_address)
+		texture= *texture_address;
+		if (texture)
 		{
 			if (texture->access_count<=0)
 			{
@@ -3486,7 +3491,7 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Texture,name)
 		}
 		if (return_code)
 		{
-			if (return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Texture,name)(destination,source))
+			if (0 != (return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Texture,name)(destination,source)))
 			{
 				/* copy values */
 				DEALLOCATE(destination->name);
@@ -4095,7 +4100,8 @@ Sets the texture filter: linear or nearest.
 		}
 		else
 		{
-			if (type_string = ENUMERATOR_STRING(Texture_filter_mode)(filter_mode))
+			type_string = ENUMERATOR_STRING(Texture_filter_mode)(filter_mode);
+			if (type_string)
 			{
 				display_message(ERROR_MESSAGE,  "Texture_set_filter_mode.  "
 					"Texture filter mode %s was not compiled into this executable.", type_string);
@@ -4307,10 +4313,11 @@ Up to the calling function to DESTROY the returned Cmgui_image.
 		source = texture->image;
 		for (i = 0; (i < texture->original_depth_texels) && return_code; i++)
 		{
-			if (next_cmgui_image = Cmgui_image_constitute(
+			next_cmgui_image = Cmgui_image_constitute(
 				texture->original_width_texels, texture->original_height_texels,
 				number_of_components, texture->number_of_bytes_per_component,
-				width_bytes, source))
+				width_bytes, source);
+			if (next_cmgui_image)
 			{
 				if (cmgui_image)
 				{
@@ -5257,6 +5264,8 @@ is constant from the half texel location to the edge.
 					offset = bytes_per_pixel;
 					switch (texture->wrap_mode)
 					{
+						case TEXTURE_CLAMP_BORDER_WRAP:
+						/* We should handle this correctly as a border clamp, but lets do something anyway */
 						case TEXTURE_CLAMP_WRAP:
 						case TEXTURE_CLAMP_EDGE_WRAP:
 						{
@@ -5300,6 +5309,8 @@ is constant from the half texel location to the edge.
 								}
 							}
 						} break;
+						case TEXTURE_MIRRORED_REPEAT_WRAP:
+						/* We should handle this correctly as a mirror, but lets do something anyway */
 						case TEXTURE_REPEAT_WRAP:
 						{
 							for (i = 0; i < dimension; i++)
@@ -5741,7 +5752,8 @@ parameters.
 			GLint texture_size;
 			GLenum texture_target;
 
-			if (texture_target = Texture_get_target_enum(texture))
+			texture_target = Texture_get_target_enum(texture);
+			if (texture_target)
 			{
 				/* get the compressed texture size */
 				glBindTexture(texture_target, texture->texture_id);
@@ -6346,7 +6358,8 @@ Sets how textures coordinates outside [0,1] are handled.
 		}
 		else
 		{
-			if (type_string = ENUMERATOR_STRING(Texture_wrap_mode)(wrap_mode))
+			type_string = ENUMERATOR_STRING(Texture_wrap_mode)(wrap_mode);
+			if (type_string)
 			{
 				display_message(ERROR_MESSAGE,  "Texture_set_wrap_mode.  "
 					"Texture wrap mode %s was not compiled into this executable.", type_string);
@@ -6391,7 +6404,8 @@ I think it is best to write a separate function if you want to write a
 		cmgui_image_information = CREATE(Cmgui_image_information)();
 		Cmgui_image_information_add_file_name(cmgui_image_information,
 			(char *)filename);
-		if (cmgui_image = Texture_get_image(texture))
+		cmgui_image = Texture_get_image(texture);
+		if (cmgui_image)
 		{
 			if (Cmgui_image_write(cmgui_image, cmgui_image_information))
 			{
@@ -6636,7 +6650,8 @@ The command is started with the string pointed to by <command_prefix>.
 	if (texture&&(command_prefix=(char *)command_prefix_void))
 	{
 		display_message(INFORMATION_MESSAGE,command_prefix);
-		if (name=duplicate_string(texture->name))
+		name=duplicate_string(texture->name);
+		if (name)
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
@@ -7197,7 +7212,8 @@ Modifier function to set the texture from a command.
 	ENTER(set_Texture);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		current_token=state->current_token;
+		if (current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -7216,8 +7232,9 @@ Modifier function to set the texture from a command.
 					}
 					else
 					{
-						if (temp_texture=FIND_BY_IDENTIFIER_IN_MANAGER(Texture,name)(
-							current_token,texture_manager))
+						temp_texture=FIND_BY_IDENTIFIER_IN_MANAGER(Texture,name)(
+							current_token,texture_manager);
+						if (temp_texture)
 						{
 							if (*texture_address!=temp_texture)
 							{
@@ -7244,9 +7261,11 @@ Modifier function to set the texture from a command.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," TEXTURE_NAME|none");
-				if (texture_address=(struct Texture **)texture_address_void)
+				texture_address=(struct Texture **)texture_address_void;
+				if (texture_address)
 				{
-					if (temp_texture= *texture_address)
+					temp_texture= *texture_address;
+					if (temp_texture)
 					{
 						display_message(INFORMATION_MESSAGE,"[%s]",temp_texture->name);
 					}
@@ -7295,8 +7314,9 @@ Sets the <property> and <value> string for the <texture>.
 		{
 			texture->property_list = CREATE(LIST(Texture_property))();
 		}
-		if (texture_property = FIND_BY_IDENTIFIER_IN_LIST(Texture_property,name)(
-			(char *)property, texture->property_list))
+		texture_property = FIND_BY_IDENTIFIER_IN_LIST(Texture_property,name)(
+			(char *)property, texture->property_list);
+		if (texture_property)
 		{
 			DEALLOCATE(texture_property->value);
 			texture_property->value = duplicate_string(value);

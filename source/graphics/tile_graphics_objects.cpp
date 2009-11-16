@@ -645,8 +645,9 @@ static struct GT_surface *tile_create_or_get_tile_bin(
 	}
 	else
 	{
-		if (return_surface = tile_create_GT_surface(template_surface,
-			initial_points, bin_number, polygon_size))
+		return_surface = tile_create_GT_surface(template_surface,
+					initial_points, bin_number, polygon_size);
+		if (return_surface)
 		{
 			tiles[bin_number] = return_surface;
 		}
@@ -1149,9 +1150,10 @@ tiles.
 				texture_tiling, /*with_modulus*/1, overlap_range);
 			if ((vertex1 >= 0) && (vertex1 < number_of_tiles))
 			{
-				if (new_surface = tile_create_or_get_tile_bin(
-						 triangle_tiles, vertex1, size,
-						 /*polygon_size*/3, current_surface))
+				new_surface = tile_create_or_get_tile_bin(
+					triangle_tiles, vertex1, size,
+					/*polygon_size*/3, current_surface);
+				if (new_surface)
 				{
 					if (tile_copy_polygon(new_surface,
 							3 * new_surface->n_pts1,
@@ -1342,9 +1344,10 @@ tiles.
 						{
 							vertex1 = tile_select_tile_bin(texturepoints[index1],
 							texture_tiling, /*with_modulus*/1, overlap_range);
-							if (current_surface = tile_create_or_get_tile_bin(
+							current_surface = tile_create_or_get_tile_bin(
 								surface_tiles, vertex1, initial_points,
-								/*polygon_size*/4, surface))
+								/*polygon_size*/4, surface);
+							if (current_surface)
 							{
 								index = 4 * current_surface->n_pts1;
 								return_code = tile_copy_quad_strip_to_dc(
@@ -1409,9 +1412,10 @@ tiles.
 							{
 								vertex1 = tile_select_tile_bin(texturepoints[index1],
 									texture_tiling, /*with_modulus*/1, overlap_range);
-								if (current_surface = tile_create_or_get_tile_bin(
-										 triangle_tiles, vertex1, initial_points,
-										 /*polygon_size*/3, surface))
+								current_surface = tile_create_or_get_tile_bin(
+									triangle_tiles, vertex1, initial_points,
+									/*polygon_size*/3, surface);
+								if (current_surface)
 								{
 									index = 3 * current_surface->n_pts1;
 									tile_copy_vertices_to_triangle(
@@ -1450,6 +1454,11 @@ tiles.
 					index1++;
 				}
 			} break;
+			default:
+			{
+				/* Surface type not handled */
+				return_code = 0;
+			}
 		}
 		current_surface = (struct GT_surface *)NULL;
 		return_surface = (struct GT_surface *)NULL;

@@ -69,8 +69,6 @@ graphics/scene_viewer.cpp
 graphics/spectrum.cpp
 graphics/spectrum_editor_dialog_wx.cpp
 graphics/spectrum_editor_wx.cpp
-graphics/texture.cpp
-graphics/tile_graphics_objects.cpp
 graphics/transform_tool.cpp
 image_processing/computed_field_connected_threshold_image_filter.cpp
 image_processing/computed_field_fast_marching_image_filter.cpp

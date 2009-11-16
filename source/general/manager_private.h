@@ -859,9 +859,9 @@ PROTOTYPE_MANAGER_MODIFY_FUNCTION(object_type,identifier_field_name) \
 		{ \
 			if (IS_OBJECT_IN_LIST(object_type)(object, manager->object_list)) \
 			{ \
-				if (tmp_object = \
-					FIND_BY_IDENTIFIER_IN_LIST(object_type, identifier_field_name)( \
-						new_data->identifier_field_name, manager->object_list)) \
+				tmp_object = FIND_BY_IDENTIFIER_IN_LIST(object_type, identifier_field_name)( \
+					new_data->identifier_field_name, manager->object_list); \
+				if (tmp_object) \
 				{ \
 					if (tmp_object == object) \
 					{ \
@@ -883,11 +883,11 @@ PROTOTYPE_MANAGER_MODIFY_FUNCTION(object_type,identifier_field_name) \
 						 is part changed and/or temporarily out of the manager! */ \
 					MANAGER_BEGIN_CHANGE(object_type)(manager, \
 						MANAGER_CHANGE_OBJECT(object_type), object); \
-					if (identifier_change_data = \
-						LIST_BEGIN_IDENTIFIER_CHANGE(object_type, \
-							identifier_field_name)(object)) \
+					identifier_change_data = LIST_BEGIN_IDENTIFIER_CHANGE(object_type, \
+							identifier_field_name)(object); \
+					if (identifier_change_data) \
 					{ \
-						if (!(return_code = MANAGER_COPY_WITH_IDENTIFIER(object_type, \
+						if (0 == (return_code = MANAGER_COPY_WITH_IDENTIFIER(object_type, \
 							identifier_field_name)(object, new_data))) \
 						{ \
 							display_message(ERROR_MESSAGE, \
