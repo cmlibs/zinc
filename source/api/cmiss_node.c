@@ -99,7 +99,7 @@ The new node is set to belong to the ultimate master FE_region of <region>.
 	return (node);
 } /* create_Cmiss_node */
 
-Cmiss_node_id Cmiss_node_from_template_create(int node_identifier,
+Cmiss_node_id Cmiss_node_create_from_template(int node_identifier,
 	Cmiss_node_id template_node)
 /*******************************************************************************
 LAST MODIFIED : 10 November 2004
@@ -113,13 +113,13 @@ belong to the same region.
 {
 	Cmiss_node_id node;
 
-	ENTER(Cmiss_node_from_template_create);
+	ENTER(Cmiss_node_create_from_template);
 	node = ACCESS(FE_node)(CREATE(FE_node)(node_identifier, (struct FE_region *)NULL, 
 			template_node));
 	LEAVE;
 
 	return (node);
-} /* create_Cmiss_node_from_template */
+} /* Cmiss_node_create_from_template */
 
 int Cmiss_node_destroy(Cmiss_node_id *node_id_address)
 /*******************************************************************************
