@@ -53,6 +53,8 @@ extern "C" {
 }
 #include "graphics/graphics_object_private.hpp"
 
+const float small_tolerance = 1e-5;
+
 static struct GT_surface *tile_create_GT_surface(struct GT_surface *original_surface,
 	int size, int tile_number, int polygon_size)
 {
@@ -67,6 +69,7 @@ static struct GT_surface *tile_create_GT_surface(struct GT_surface *original_sur
 		current_surface->object_name = original_surface->object_name;
 		current_surface->n_data_components = original_surface->n_data_components;
 		current_surface->surface_type = g_SH_DISCONTINUOUS_TEXMAP;
+		current_surface->render_type = RENDER_TYPE_SHADED;
 		current_surface->ptrnext = (struct GT_surface *)NULL;
 		switch (polygon_size)
 		{
@@ -392,10 +395,10 @@ static int tile_copy_quad_strip_to_dc(struct GT_surface *new_surface,
 	{
 		if (k < 0)
 		{
-			overlap_range = (float)texture_tiling->overlap * 
+			overlap_range = 2.0 * (float)texture_tiling->overlap * 
 				texture_tiling->tile_coordinate_range[k] /
 				(float)texture_tiling->tile_size[k];
-			texture_tile = (int)floor((texturepoints[i+npts1*j][k] - 0.5 * overlap_range) /
+			texture_tile = (int)floor((texturepoints[i+npts1*j][k]) /
 				(texture_tiling->tile_coordinate_range[k] - overlap_range));
 			/* Need to handle the boundaries specially */
 			texture_offset = texture_tile *
@@ -565,10 +568,10 @@ static int tile_copy_polygon(struct GT_surface *new_surface,
 						texture_average += texturetri[index+i][k2];
 					}
 					texture_average /= (float)surface->n_pts2;
-					overlap_range = (float)texture_tiling->overlap * 
+					overlap_range = 2.0 * (float)texture_tiling->overlap * 
 						texture_tiling->tile_coordinate_range[k2] /
 						(float)texture_tiling->tile_size[k2];
-					texture_tile = (int)floor((texture_average - 0.5 * overlap_range) /
+					texture_tile = (int)floor((texture_average) /
 						(texture_tiling->tile_coordinate_range[k2] - overlap_range));
 					/* Need to handle the boundaries specially */
 					texture_offset =
@@ -663,6 +666,8 @@ static int scale_texture_coordinates(struct GT_surface *surface,
 	{
 		for (k = 0 ; k < texture_tiling->dimension ; k++)
 		{
+			if (texture_tiling->texture_tiles[k] > 1)
+			{
 			/* These polygons may come from different repeats of the
 				same tile so we have to work out the offset each time */
 			texture_average = 0.0;
@@ -671,16 +676,16 @@ static int scale_texture_coordinates(struct GT_surface *surface,
 				texture_average += texturepoints[j][k];
 			}
 			texture_average /= (float)surface->n_pts2;
-			overlap_range = (float)texture_tiling->overlap * 
+			overlap_range = 2.0 * (float)texture_tiling->overlap * 
 				texture_tiling->tile_coordinate_range[k] /
 				(float)texture_tiling->tile_size[k];
-			texture_tile = (int)floor((texture_average - 0.5 * overlap_range) /
+			texture_tile = (int)floor((texture_average) /
 				(texture_tiling->tile_coordinate_range[k] - overlap_range));
 
-			/* Need to handle the boundaries specially */
 			texture_offset =
 				texture_tile *
-				(texture_tiling->tile_coordinate_range[k] - overlap_range);
+				(texture_tiling->tile_coordinate_range[k] - overlap_range)
+				- 0.5 * overlap_range;
 			texture_scaling = 
 				texture_tiling->coordinate_scaling[k];
 
@@ -688,6 +693,17 @@ static int scale_texture_coordinates(struct GT_surface *surface,
 			{
 				texturepoints[j][k] = (texturepoints[j][k] - texture_offset)
 					* texture_scaling;
+				float texture_min = 0.0;		
+				if (texturepoints[j][k] < texture_min + small_tolerance)
+				{
+					texturepoints[j][k] = texture_min;
+				}
+				float texture_max = texture_scaling * (texture_tiling->tile_coordinate_range[k]);
+				if (texturepoints[j][k] > texture_max - small_tolerance)
+				{
+					texturepoints[j][k] = texture_max - small_tolerance;
+				}
+			}
 			}
 		}
 		texturepoints += surface->n_pts2;
@@ -705,8 +721,15 @@ static int tile_select_tile_bin(Triple texture_point,
 	{
 		case 1:
 		{
-			tilex = (int)floor((texture_point[0] - 0.5 * overlap_range[0]) / 
-				(texture_tiling->tile_coordinate_range[0] - overlap_range[0]));
+			if (texture_tiling->texture_tiles[0] > 1)
+			{
+				tilex = (int)floor((texture_point[0]) / 
+					(texture_tiling->tile_coordinate_range[0] - overlap_range[0]));
+			}
+			else
+			{
+				tilex = 0;
+			}
 			if (with_modulus)
 			{
 				if (tilex < 0)
@@ -726,10 +749,24 @@ static int tile_select_tile_bin(Triple texture_point,
 		} break;
 		case 2:
 		{
-			tilex = (int)floor((texture_point[0] - 0.5 * overlap_range[0]) / 
-				(texture_tiling->tile_coordinate_range[0] - overlap_range[0]));
-			tiley = (int)floor((texture_point[1] - 0.5 * overlap_range[1]) / 
-				(texture_tiling->tile_coordinate_range[1] - overlap_range[1]));
+			if (texture_tiling->texture_tiles[0] > 1)
+			{
+				tilex = (int)floor((texture_point[0]) / 
+					(texture_tiling->tile_coordinate_range[0] - overlap_range[0]));
+			}
+			else
+			{
+				tilex = 0;
+			}
+			if (texture_tiling->texture_tiles[1] > 1)
+			{
+				tiley = (int)floor((texture_point[1]) / 
+					(texture_tiling->tile_coordinate_range[1] - overlap_range[1]));
+			}
+			else
+			{
+				tiley = 0;
+			}
 			if (with_modulus)
 			{
 				if (tilex < 0)
@@ -738,7 +775,7 @@ static int tile_select_tile_bin(Triple texture_point,
 					if (tilex != 0)
 					{
 						tilex = texture_tiling->texture_tiles[0] - tilex;
-				}			
+					}			
 				}
 				else
 				{
@@ -762,12 +799,33 @@ static int tile_select_tile_bin(Triple texture_point,
 		} break;
 		case 3:
 		{
-			tilex = (int)floor((texture_point[0] - 0.5 * overlap_range[0]) / 
-				(texture_tiling->tile_coordinate_range[0] - overlap_range[0]));
-			tiley = (int)floor((texture_point[1] - 0.5 * overlap_range[1]) / 
-				(texture_tiling->tile_coordinate_range[1] - overlap_range[1]));
-			tilez = (int)floor((texture_point[2] - 0.5 * overlap_range[2]) / 
-				(texture_tiling->tile_coordinate_range[2] - overlap_range[2]));
+			if (texture_tiling->texture_tiles[0] > 1)
+			{
+				tilex = (int)floor((texture_point[0]) / 
+					(texture_tiling->tile_coordinate_range[0] - overlap_range[0]));
+			}
+			else
+			{
+				tilex = 0;
+			}
+			if (texture_tiling->texture_tiles[1] > 1)
+			{
+				tiley = (int)floor((texture_point[1]) / 
+					(texture_tiling->tile_coordinate_range[1] - overlap_range[1]));
+			}
+			else
+			{
+				tiley = 0;
+			}
+			if (texture_tiling->texture_tiles[2] > 1)
+			{
+				tilez = (int)floor((texture_point[2]) / 
+					(texture_tiling->tile_coordinate_range[2] - overlap_range[2]));
+			}
+			else
+			{
+				tilez = 0;
+			}
 			if (with_modulus)
 			{
 				if (tilex < 0)
@@ -851,213 +909,224 @@ tiles.
 #if defined (DEBUG)
 			printf("direction %d\n", k);
 #endif /* defined (DEBUG) */
-			new_surface = tile_create_GT_surface(current_surface,
-				size, 0, /*polygon_size*/3);
-								
-			for (l = 0 ; return_code && (l < current_surface->n_pts1) ; l++)
+			if (texture_tiling->texture_tiles[k] > 1)
 			{
-				index = 3 * l;
-				texturetri = current_surface->texturelist;
-
-				vertexk[0] = (texturetri[index][k] - 0.5 * overlap_range[k]) / 
-					(texture_tiling->tile_coordinate_range[k] - overlap_range[k]);
-				vertexk[1] = (texturetri[index+1][k] - 0.5 * overlap_range[k]) / 
-					(texture_tiling->tile_coordinate_range[k] - overlap_range[k]);
-				vertexk[2] = (texturetri[index+2][k] - 0.5 * overlap_range[k]) / 
-					(texture_tiling->tile_coordinate_range[k] - overlap_range[k]);
+				new_surface = tile_create_GT_surface(current_surface,
+					size, 0, /*polygon_size*/3);
+									
+				for (l = 0 ; return_code && (l < current_surface->n_pts1) ; l++)
+				{
+					index = 3 * l;
+					texturetri = current_surface->texturelist;
+	
+					vertexk[0] = (texturetri[index][k]) / 
+						(texture_tiling->tile_coordinate_range[k] - overlap_range[k]);
+					vertexk[1] = (texturetri[index+1][k]) / 
+						(texture_tiling->tile_coordinate_range[k] - overlap_range[k]);
+					vertexk[2] = (texturetri[index+2][k]) / 
+						(texture_tiling->tile_coordinate_range[k] - overlap_range[k]);
 #if defined (DEBUG)
-				printf(" tricoordinates %g %g %g\n",
-					texturetri[index][k], texturetri[index+1][k], texturetri[index+2][k]);
-				printf(" vertexk %g %g %g\n",
-					vertexk[0], vertexk[1], vertexk[2]);
+					printf(" tricoordinates %g %g %g\n",
+						texturetri[index][k], texturetri[index+1][k], texturetri[index+2][k]);
+					printf(" vertexk %g %g %g\n",
+						vertexk[0], vertexk[1], vertexk[2]);
 #endif /* defined (DEBUG) */
-				if ((vertexk[1] >= vertexk[0]) && (vertexk[2] >= vertexk[0]))
-				{
-					vertexstart = 0;
-					vertexi = 1;
-					vertexj = 2;
-				}
-				else
-				{
-					if ((vertexk[2] >= vertexk[1]) && (vertexk[0] >= vertexk[1]))
+					if ((vertexk[1] >= vertexk[0]) && (vertexk[2] >= vertexk[0]))
 					{
-						vertexstart = 1;
-						vertexi = 2;
-						vertexj = 0;
+						vertexstart = 0;
+						vertexi = 1;
+						vertexj = 2;
 					}
 					else
 					{
-						vertexstart = 2;
-						vertexi = 0;
-						vertexj = 1;
-					}
-				}
-
-#if defined (DEBUG)
-				printf(" vertexstart %d %g %g %g\n",
-					vertexstart, vertexk[vertexstart],
-					vertexk[vertexi], vertexk[vertexj]);
-#endif /* defined (DEBUG) */
-
-				nextcuti = floor(vertexk[vertexstart] + 1.00001);
-				nextcutj = nextcuti;
-				/* Which side did we last step on */
-				stepindex = -1;
-				if (nextcuti > vertexk[vertexi])
-				{
-					nextcuti = vertexk[vertexi];
-					/* Don't step the other side */
-					stepindex = 1;
-				}
-				if (nextcutj > vertexk[vertexj])
-				{
-					nextcutj = vertexk[vertexj];
-					/* Don't step the other side */
-					stepindex = 0;
-				}
-				/* What was the previous xi on the step side */
-				xi0 = 0.0;
-
-				finished = 0;
-				while (!finished)
-				{
-					if (vertexk[vertexi] > vertexk[vertexstart])
-					{
-						xii = (nextcuti - vertexk[vertexstart]) /
-							(vertexk[vertexi] - vertexk[vertexstart]);
-					}
-					else
-					{
-						xii = 1.0;
-					}
-					if (vertexk[vertexj] - vertexk[vertexstart])
-					{
-						xij = (nextcutj - vertexk[vertexstart]) /
-							(vertexk[vertexj] - vertexk[vertexstart]);
-					}
-					else
-					{
-						xij = 1.0;
-					}
-
-#if defined (DEBUG)
-					float lastcut;
-					if (stepindex == 0)
-					{
-						lastcut = vertexk[vertexstart] +
-							xi0 * (vertexk[vertexi] - vertexk[vertexstart]);
-					}
-					else
-					{
-						lastcut = vertexk[vertexstart] +
-							xi0 * (vertexk[vertexj] - vertexk[vertexstart]);
-					}
-					printf(" triangle %d (%g %g %g) %g %g %g\n",
-						stepindex, lastcut,
-						nextcuti, nextcutj,
-						vertexk[vertexi], vertexk[vertexj], xi0);
-#endif /* defined (DEBUG) */
-
-					index_new = 3 * new_surface->n_pts1;
-					if (tile_interpolate_triangle(new_surface,
-							index_new, current_surface, index,
-							vertexstart, vertexi, vertexj,
-							xi0, xii, xij, stepindex))
-					{
-						new_surface->n_pts1++;
-					}
-					else
-					{
-						return_code = 0;
-						finished = 1;
-					}
-
-					/* Test != as initially -1 and either step 
-						would be OK */
-					if (((stepindex != 0) && (nextcuti < vertexk[vertexi]) && (nextcuti <= nextcutj)) ||
-						((stepindex != 1) && (nextcutj < vertexk[vertexj]) && (nextcutj <= nextcuti)))
-					{
-						if ((stepindex != 0) && (nextcuti < vertexk[vertexi]) && (nextcuti <= nextcutj))
+						if ((vertexk[2] >= vertexk[1]) && (vertexk[0] >= vertexk[1]))
 						{
-							nextcuti++;
-							stepindex = 0;
-							xi0 = xii;
-							if (nextcuti > vertexk[vertexi])
-							{
-								nextcuti = vertexk[vertexi];
-							}
+							vertexstart = 1;
+							vertexi = 2;
+							vertexj = 0;
 						}
 						else
 						{
-							nextcutj++;
-							stepindex = 1;
-							xi0 = xij;
-							if (nextcutj > vertexk[vertexj])
-							{
-								nextcutj = vertexk[vertexj];
-							}
+							vertexstart = 2;
+							vertexi = 0;
+							vertexj = 1;
 						}
 					}
-					else
-					{
-						finished = 1;
-						if ((nextcuti != vertexk[vertexi])
-							|| (nextcutj != vertexk[vertexj]))
-						{
+	
 #if defined (DEBUG)
-							printf("  not finished %g %g  %g %g\n",
-								nextcuti, nextcutj,
-								vertexk[vertexi], vertexk[vertexj]);
+					printf(" vertexstart %d %g %g %g\n",
+						vertexstart, vertexk[vertexstart],
+						vertexk[vertexi], vertexk[vertexj]);
 #endif /* defined (DEBUG) */
-							/* Add the remainder to the old list */
-							if (nextcuti < vertexk[vertexi])
+	
+					nextcuti = floor(vertexk[vertexstart] + 1.0 + small_tolerance);
+					nextcutj = nextcuti;					
+					/* Which side did we last step on */
+					stepindex = -1;
+					if (nextcuti > vertexk[vertexi])
+					{
+						nextcuti = vertexk[vertexi];
+						/* Don't step the other side */
+						stepindex = 1;
+					}
+					if (nextcutj > vertexk[vertexj])
+					{
+						nextcutj = vertexk[vertexj];
+						/* Don't step the other side */
+						stepindex = 0;
+					}
+					/* What was the previous xi on the step side */
+					xi0 = 0.0;
+	
+					finished = 0;
+					while (!finished)
+					{
+						if (fabs(vertexk[vertexi] - vertexk[vertexstart]) > small_tolerance)
+						{
+							xii = (nextcuti - vertexk[vertexstart]) /
+								(vertexk[vertexi] - vertexk[vertexstart]);
+							if (xii > 1.0 - small_tolerance)
 							{
-								stepindex = 0;
-								xi0 = xii;
-								nextcuti = vertexk[vertexi];
 								xii = 1.0;
 							}
-							else
-							{
-								stepindex = 1;
-								xi0 = xij;
-								nextcutj = vertexk[vertexj];
-								xij = 1.0;
-							}
-							/* Put this in the queue for the current surface */
-							index_new = 3 * current_surface->n_pts1;
-							if (tile_interpolate_triangle(current_surface,
-									index_new, current_surface, index,
-									vertexstart, vertexi, vertexj,
-									xi0, xii, xij, stepindex))
-							{
-								current_surface->n_pts1++;
-							}
-							else
-							{
-								finished = 1;
-								return_code = 0;
-							}
 						}
-#if defined (DEBUG)
 						else
 						{
-							printf("  finished %g %g  %g %g\n",
-								nextcuti, nextcutj,
-								vertexk[vertexi], vertexk[vertexj]);
+							xii = 1.0;
 						}
+						if (fabs(vertexk[vertexj] - vertexk[vertexstart]) > small_tolerance)
+						{
+							xij = (nextcutj - vertexk[vertexstart]) /
+								(vertexk[vertexj] - vertexk[vertexstart]);
+							if (xij > 1.0 - small_tolerance)
+							{
+								xij = 1.0;
+							}
+						}
+						else
+						{
+							xij = 1.0;
+						}
+	
+#if defined (DEBUG)
+						float lastcut;
+						if (stepindex == 0)
+						{
+							lastcut = vertexk[vertexstart] +
+								xi0 * (vertexk[vertexi] - vertexk[vertexstart]);
+						}
+						else
+						{
+							lastcut = vertexk[vertexstart] +
+								xi0 * (vertexk[vertexj] - vertexk[vertexstart]);
+						}
+						printf(" triangle %d (%g %g %g) %g %g %g\n",
+							stepindex, lastcut,
+							nextcuti, nextcutj,
+							vertexk[vertexi], vertexk[vertexj], xi0);
 #endif /* defined (DEBUG) */
+	
+						index_new = 3 * new_surface->n_pts1;
+						if (tile_interpolate_triangle(new_surface,
+								index_new, current_surface, index,
+								vertexstart, vertexi, vertexj,
+								xi0, xii, xij, stepindex))
+						{
+							new_surface->n_pts1++;
+						}
+						else
+						{
+							return_code = 0;
+							finished = 1;
+						}
+	
+						/* Test != as initially -1 and either step 
+							would be OK */
+						if (((stepindex != 0) && (nextcuti < vertexk[vertexi]) && (nextcuti <= nextcutj)) ||
+							((stepindex != 1) && (nextcutj < vertexk[vertexj]) && (nextcutj <= nextcuti)))
+						{
+							if ((stepindex != 0) && (nextcuti < vertexk[vertexi]) && (nextcuti <= nextcutj))
+							{
+								nextcuti++;
+								stepindex = 0;
+								xi0 = xii;
+								if (nextcuti > vertexk[vertexi] - small_tolerance)
+								{
+									nextcuti = vertexk[vertexi];
+								}
+							}
+							else
+							{
+								nextcutj++;
+								stepindex = 1;
+								xi0 = xij;
+								if (nextcutj > vertexk[vertexj] - small_tolerance)
+								{
+									nextcutj = vertexk[vertexj];
+								}
+							}
+						}
+						else
+						{
+							finished = 1;
+							if ((nextcuti != vertexk[vertexi])
+								|| (nextcutj != vertexk[vertexj]))
+							{
+#if defined (DEBUG)
+								printf("  not finished %g %g  %g %g\n",
+									nextcuti, nextcutj,
+									vertexk[vertexi], vertexk[vertexj]);
+#endif /* defined (DEBUG) */
+								/* Add the remainder to the old list */
+								if (nextcuti < vertexk[vertexi])
+								{
+									stepindex = 0;
+									xi0 = xii;
+									nextcuti = vertexk[vertexi];
+									xii = 1.0;
+								}
+								else
+								{
+									stepindex = 1;
+									xi0 = xij;
+									nextcutj = vertexk[vertexj];
+									xij = 1.0;
+								}
+								/* Put this in the queue for the current surface */
+								index_new = 3 * current_surface->n_pts1;
+								if (tile_interpolate_triangle(current_surface,
+										index_new, current_surface, index,
+										vertexstart, vertexi, vertexj,
+										xi0, xii, xij, stepindex))
+								{
+									current_surface->n_pts1++;
+								}
+								else
+								{
+									finished = 1;
+									return_code = 0;
+								}
+							}
+#if defined (DEBUG)
+							else
+							{
+								printf("  finished %g %g  %g %g\n",
+									nextcuti, nextcutj,
+									vertexk[vertexi], vertexk[vertexj]);
+							}
+#endif /* defined (DEBUG) */
+						}
 					}
 				}
+				if (current_surface != surface)
+				{
+					/* Destroy this if it is a local temporary, 
+						otherwise leave it up to the calling routine who
+						created it. */
+					DESTROY(GT_surface)(&current_surface);
+				}
+				current_surface = new_surface;
 			}
-			if (current_surface != surface)
-			{
-				/* Destroy this if it is a local temporary, 
-					otherwise leave it up to the calling routine who
-					created it. */
-				DESTROY(GT_surface)(&current_surface);
-			}
-			current_surface = new_surface;
 		}
 							
 		/* Put the triangles in their appropriate bin */
@@ -1121,6 +1190,74 @@ tiles.
 	return (return_code);
 } /* tile_and_bin_GT_surface */
 
+#if defined (DEBUG)
+static int write_GT_surface(struct GT_surface *surface)
+{
+	struct GT_surface *current_surface = surface;
+	
+	while (current_surface)
+	{
+		int i, j, k;
+		printf("GT_surface_type %d\n", current_surface->surface_type);
+		printf("Render_type %d\n", current_surface->render_type);
+		printf("gtPolygonType %d\n", current_surface->polygon);
+		printf("n_data_components %d\n", current_surface->n_data_components);
+		printf("n_pts1 %d\n", current_surface->n_pts1);
+		printf("n_pts2 %d\n", current_surface->n_pts2);
+		Triple *point = current_surface->pointlist;
+		Triple *normal = current_surface->normallist;
+		Triple *tangent = current_surface->tangentlist;
+		Triple *texture = current_surface->texturelist;
+		GTDATA *data = current_surface->data;
+		for (i = 0 ; i < current_surface->n_pts1 ; i++)
+		{
+			for (j = 0 ; j < current_surface->n_pts2 ; j++)
+			{
+				if (point)
+				{
+					printf("point %f %f %f\n", (*point)[0], (*point)[1], (*point)[2]);
+					point++;
+				}
+				if (normal)
+				{
+					printf("normal %f %f %f\n", (*normal)[0], (*normal)[1], (*normal)[2]);
+					normal++;
+				}
+				if (tangent)
+				{
+					printf("tangent %f %f %f\n", (*tangent)[0], (*tangent)[1], (*tangent)[2]);
+					tangent++;
+				}
+				if (texture)
+				{
+					printf("texture %f %f %f\n", (*texture)[0], (*texture)[1], (*texture)[2]);
+					texture++;
+				}
+				if (data)
+				{
+					printf("data");
+					for (k = 0 ; k < current_surface->n_data_components ; k++)
+					{
+						printf(" %f", *data);
+						data++;
+					}
+					printf("\n");
+				}
+			}
+		}
+		/* store integer object_name eg. element number from which this object came */
+		printf("object_name %d\n", current_surface->object_name);
+		printf("tile_number %d\n", current_surface->tile_number);
+		printf("allocated_size %d\n", current_surface->allocated_size);
+
+		printf("ptrnext %p\n\n", current_surface->ptrnext);
+		current_surface = current_surface->ptrnext;
+	}
+
+	return (1);
+}
+#endif // defined (DEBUG)
+
 struct GT_surface *tile_GT_surface(struct GT_surface *surface, 
 	struct Texture_tiling *texture_tiling)
 /*******************************************************************************
@@ -1148,20 +1285,20 @@ tiles.
 		npts1 = surface->n_pts1;
 		npts2 = surface->n_pts2;
 		number_of_tiles = texture_tiling->texture_tiles[0];
-		overlap_range[0] = (float)texture_tiling->overlap * 
+		overlap_range[0] = 2.0 * (float)texture_tiling->overlap * 
 			texture_tiling->tile_coordinate_range[0] /
 			(float)texture_tiling->tile_size[0];
 		if (texture_tiling->dimension > 1)
 		{
 			number_of_tiles *= texture_tiling->texture_tiles[1];
-			overlap_range[1] = (float)texture_tiling->overlap * 
+			overlap_range[1] = 2.0 * (float)texture_tiling->overlap * 
 				texture_tiling->tile_coordinate_range[1] /
 				(float)texture_tiling->tile_size[1];
 		}
 		if (texture_tiling->dimension > 2)
 		{
 			number_of_tiles *= texture_tiling->texture_tiles[2];
-			overlap_range[2] = (float)texture_tiling->overlap * 
+			overlap_range[2] = 2.0 * (float)texture_tiling->overlap * 
 				texture_tiling->tile_coordinate_range[2] /
 				(float)texture_tiling->tile_size[2];
 		}
@@ -1329,6 +1466,7 @@ tiles.
 					return_surface = surface_tiles[i];
 				}
 				current_surface = surface_tiles[i];
+				index = current_surface->n_pts1 * current_surface->n_pts2;
 				scale_texture_coordinates(current_surface,
 					texture_tiling);
 				if (index != current_surface->allocated_size)
@@ -1336,6 +1474,12 @@ tiles.
 					tile_reallocate_GT_surface(current_surface,
 						index);
 				}
+#if defined (DEBUG)
+				/* Writing every surface is helpful when using valgrind so that it traps
+				 * earlier.  i.e. now rather than in the opengl render.
+				 */
+				write_GT_surface(current_surface);				
+#endif // defined (DEBUG)
 			}
 			if (triangle_tiles[i])
 			{
@@ -1356,6 +1500,9 @@ tiles.
 					tile_reallocate_GT_surface(current_surface,
 						index);
 				}
+#if defined (DEBUG)
+				write_GT_surface(current_surface);				
+#endif // defined (DEBUG)
 			}
 		}
 		DEALLOCATE(surface_tiles);

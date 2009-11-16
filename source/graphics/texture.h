@@ -214,6 +214,8 @@ If defined it should be used to compile any graphics objects.
 	int *tile_size;
 	/* Array of size dimension recording the texture coordinate size of a single tile */
 	float *tile_coordinate_range;
+	/* Array of size dimension recording the texture coordinate size of the entire texture */
+	float *image_coordinate_range;
 	/* Array of size dimension recording the scaling to be applied to each texture coordinate */
 	float *coordinate_scaling;
 	/* Recording the bound texture id for each tile */

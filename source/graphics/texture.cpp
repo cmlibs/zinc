@@ -354,6 +354,8 @@ DESCRIPTION :
 		ALLOCATE(texture_tiling->tile_size, int, dimension) &&
 		ALLOCATE(texture_tiling->tile_coordinate_range, float,
 			dimension) &&
+		ALLOCATE(texture_tiling->image_coordinate_range, float,
+			dimension) &&
 		ALLOCATE(texture_tiling->coordinate_scaling, float,
 			dimension))
 	{
@@ -407,6 +409,7 @@ DESCRIPTION :
 		DEALLOCATE(texture_tiling->tile_size);
 		DEALLOCATE(texture_tiling->texture_tiles);
 		DEALLOCATE(texture_tiling->tile_coordinate_range);
+		DEALLOCATE(texture_tiling->image_coordinate_range);
 		DEALLOCATE(texture_tiling->coordinate_scaling);
 		DEALLOCATE(*texture_tiling_address);
 		return_code = 1;
@@ -1372,11 +1375,29 @@ tiles (and <texture_tiling> wasn't NULL.
 				(*texture_tiling)->texture_target = Texture_get_target_enum(texture);
 				switch (texture->filter_mode)
 				{
+					/* These overlaps are now added to each tile, so the total overlap will
+					 * be twice these numbers. */
 					case TEXTURE_LINEAR_FILTER:
+					{
+						(*texture_tiling)->overlap = 1;
+					} break;
 					case TEXTURE_LINEAR_MIPMAP_NEAREST_FILTER:
 					case TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER:
 					{
-						(*texture_tiling)->overlap = 1;
+						/* If we are mipmapping then the edge pixels can depend on many more
+						 * of the border pixels, depending on how much you have zoomed out.
+						 * If we are edge clamping this isn't really a problem.  If we aren't
+						 * edge clamping then we need to increase the edge clamp in our tile.
+						 * 30 is an arbitrary amount of zooming out.
+						 */
+						if (texture->wrap_mode == TEXTURE_CLAMP_EDGE_WRAP)
+						{
+							(*texture_tiling)->overlap = 1;							
+						}
+						else
+						{
+							(*texture_tiling)->overlap = 15;
+						}
 					} break;
 					default:
 					{
@@ -1398,13 +1419,15 @@ tiles (and <texture_tiling> wasn't NULL.
 						(float)texture->original_width_texels);
 					(*texture_tiling)->coordinate_scaling[0] = 
 						(*texture_tiling)->texture_tiles[0];
-					if (((*texture_tiling)->texture_tiles[0] > 1) &&
-						(floor((float)texture->width_texels/
-						((*texture_tiling)->tile_size[0] - (*texture_tiling)->overlap))
-						>= (*texture_tiling)->texture_tiles[0]))
+					while (((*texture_tiling)->texture_tiles[0] > 1) &&
+						(ceil((float)texture->width_texels/
+						(float)((*texture_tiling)->tile_size[0] - 2 * (*texture_tiling)->overlap))
+						> (*texture_tiling)->texture_tiles[0]))
 					{
 						(*texture_tiling)->texture_tiles[0]++;
 					}					
+					(*texture_tiling)->image_coordinate_range[0] = 
+						texture->width;
 				}
 				if (texture->dimension > 1)
 				{
@@ -1416,13 +1439,15 @@ tiles (and <texture_tiling> wasn't NULL.
 						(float)texture->original_height_texels);
 					(*texture_tiling)->coordinate_scaling[1] = 
 						(*texture_tiling)->texture_tiles[1];
-					if (((*texture_tiling)->texture_tiles[1] > 1) &&
-						(floor((float)texture->height_texels/
-						((*texture_tiling)->tile_size[1] - (*texture_tiling)->overlap))
-						>= (*texture_tiling)->texture_tiles[1]))
+					while (((*texture_tiling)->texture_tiles[1] > 1) &&
+						(ceil((float)texture->height_texels/
+						(float)((*texture_tiling)->tile_size[1] - 2 * (*texture_tiling)->overlap))
+						> (*texture_tiling)->texture_tiles[1]))
 					{
 						(*texture_tiling)->texture_tiles[1]++;
 					}
+					(*texture_tiling)->image_coordinate_range[1] = 
+						texture->height;
 				}
 				if (texture->dimension > 2)
 				{
@@ -1434,13 +1459,15 @@ tiles (and <texture_tiling> wasn't NULL.
 						(float)texture->original_depth_texels);
 					(*texture_tiling)->coordinate_scaling[2] = 
 						(*texture_tiling)->texture_tiles[2];
-					if (((*texture_tiling)->texture_tiles[2] > 1) &&
-						(floor((float)texture->depth_texels/
-						((*texture_tiling)->tile_size[2] - (*texture_tiling)->overlap))
+					while (((*texture_tiling)->texture_tiles[2] > 1) &&
+						(ceil((float)texture->depth_texels/
+						(float)((*texture_tiling)->tile_size[2] - 2 * (*texture_tiling)->overlap))
 						>= (*texture_tiling)->texture_tiles[2]))
 					{
 						(*texture_tiling)->texture_tiles[2]++;
 					}
+					(*texture_tiling)->image_coordinate_range[2] = 
+						texture->depth;
 				}
 				number_of_tiles = 1;
 				for (i = 0 ; i < texture->dimension ; i++)
@@ -1863,10 +1890,11 @@ and overwritten.
 {
 	int bytes_per_pixel, copy_row_width_bytes, end_x, end_y, end_z, i,
 		number_of_components, number_of_bytes_per_component, overlap_bytes,
+		pad_x_start, pad_x_end, pad_y_start, pad_y_end, pad_z_start, pad_z_end,
 		return_code, source_row_width_bytes, tile_row_width_bytes,
-		start_x, start_y, start_z, tile_size, tile_x, tile_y, tile_z, y, z;
+		start_x, start_y, start_z, tile_x, tile_y, tile_z, y, z;
 	Triple cropped_size;
-	unsigned char *destination, *source;
+	unsigned char *destination, *destination_y_start, *destination_z_start, *source;
 
 	ENTER(Texture_get_image_tile);
 	if (texture && texture_tiling)
@@ -1879,18 +1907,18 @@ and overwritten.
 			number_of_bytes_per_component * number_of_components;
 		source_row_width_bytes = 4*((texture->width_texels*bytes_per_pixel + 3)/4);
 		cropped_size[0] = texture_tiling->tile_size[0]
-			- texture_tiling->overlap;
+			- 2 * texture_tiling->overlap;
 		overlap_bytes = texture_tiling->overlap * bytes_per_pixel;
 		for (i = 1 ; i < texture_tiling->dimension ; i++)
 		{
 			cropped_size[i] = texture_tiling->tile_size[i]
-				- texture_tiling->overlap;
+				- 2 * texture_tiling->overlap;
 		}
 		tile_row_width_bytes = 
 			4*((texture_tiling->tile_size[0]*bytes_per_pixel + 3)/4);
 		if (!*tile_image)
 		{
-			tile_size = tile_row_width_bytes;
+			unsigned int tile_size = tile_row_width_bytes;
 			for (i = 1 ; i < texture_tiling->dimension ; i++)
 			{
 				tile_size *= texture_tiling->tile_size[i];
@@ -1905,28 +1933,71 @@ and overwritten.
 		}
 		if (return_code)
 		{
-			tile_x = tile_number % texture_tiling->texture_tiles[0];
-			start_x = (int)(tile_x * cropped_size[0]);
-			end_x = start_x + texture_tiling->tile_size[0];
-			if (end_x > texture->width_texels)
+			if (texture_tiling->texture_tiles[0] > 1)
 			{
-				end_x = texture->width_texels;
-				copy_row_width_bytes = 
-					4*(((end_x - start_x)*bytes_per_pixel + 3)/4);
+				tile_x = tile_number % texture_tiling->texture_tiles[0];
+				start_x = (int)(tile_x * cropped_size[0] - texture_tiling->overlap);
+				end_x = start_x + texture_tiling->tile_size[0];
+				if (start_x < 0)
+				{
+					pad_x_start = -start_x;
+					start_x = 0;
+				}
+				else
+				{
+					pad_x_start = 0;
+				}
+				if (end_x > texture->width_texels)
+				{
+					pad_x_end = end_x - texture->width_texels;
+					end_x = texture->width_texels;
+					copy_row_width_bytes = (end_x - start_x)*bytes_per_pixel;
+				}
+				else
+				{
+					pad_x_end = 0;
+					if (pad_x_start == 0)
+					{
+						copy_row_width_bytes = tile_row_width_bytes;
+					}
+					else
+					{
+						copy_row_width_bytes = (end_x - start_x)*bytes_per_pixel;
+					}
+				}
 			}
 			else
 			{
+				tile_x = 0;
+				start_x = 0;
+				end_x = texture->width_texels;
+				pad_x_start = 0;
+				pad_x_end = 0;
 				copy_row_width_bytes = tile_row_width_bytes;
 			}
-			if (texture_tiling->dimension > 1)
+			if ((texture_tiling->dimension > 1) && (texture_tiling->texture_tiles[1] > 1))
 			{
 				tile_y = (tile_number / texture_tiling->texture_tiles[0])
 					% texture_tiling->texture_tiles[1];
-				start_y = (int)(tile_y * cropped_size[1]);
+				start_y = (int)(tile_y * cropped_size[1] - texture_tiling->overlap);
 				end_y = start_y + texture_tiling->tile_size[1];
+				if (start_y < 0)
+				{
+					pad_y_start = -start_y;
+					start_y = 0;
+				}
+				else
+				{
+					pad_y_start = 0;
+				}
 				if (end_y > texture->height_texels)
 				{
+					pad_y_end = end_y - texture->height_texels;
 					end_y = texture->height_texels;
+				}
+				else
+				{
+					pad_y_end = 0;
 				}
 			}
 			else
@@ -1934,17 +2005,33 @@ and overwritten.
 				tile_y = 0;
 				start_y = 0;
 				end_y = texture->height_texels;
+				pad_y_start = 0;
+				pad_y_end = 0;
 			}
-			if (texture_tiling->dimension > 2)
+			if ((texture_tiling->dimension > 2) && (texture_tiling->texture_tiles[2] > 1))
 			{
 				tile_z = (tile_number / (texture_tiling->texture_tiles[0] *
 						texture_tiling->texture_tiles[1]))
 					% texture_tiling->texture_tiles[2];
-				start_z = (int)(tile_z * cropped_size[2]);
+				start_z = (int)(tile_z * cropped_size[2] - texture_tiling->overlap);
 				end_z = start_z + texture_tiling->tile_size[2];
+				if (start_z < 0)
+				{
+					pad_z_start = -start_z;
+					start_z = 0;
+				}
+				else
+				{
+					pad_z_start = 0;
+				}
 				if (end_z > texture->depth_texels)
 				{
+					pad_z_end = end_z - texture->depth_texels;
 					end_z = texture->depth_texels;
+				}
+				else
+				{
+					pad_z_end = 0;
 				}
 			}
 			else
@@ -1952,6 +2039,8 @@ and overwritten.
 				tile_z = 0;
 				start_z = 0;
 				end_z = texture->depth_texels;
+				pad_z_start = 0;
+				pad_z_end = 0;
 			}
 #if defined (DEBUG)
 			printf ("Rendering tile %d, tile_x %d, tile_y %d, tile_z %d\n",
@@ -1962,23 +2051,80 @@ and overwritten.
 			(start_y + start_z * texture->height_texels) +
 			start_x * bytes_per_pixel;
 		destination = *tile_image;
+		destination_z_start = destination;
+		destination += pad_z_start * texture_tiling->tile_size[1] * tile_row_width_bytes;		
 		for (z = start_z ; z < end_z ; z++)
 		{
+			destination_y_start = destination;
+			destination += pad_y_start * tile_row_width_bytes;
 			for (y = start_y ; y < end_y ; y++)
 			{
-				memcpy(destination, source, copy_row_width_bytes);
-				if (copy_row_width_bytes != tile_row_width_bytes)
+				for (i = 0 ; i < pad_x_start ; i++)
 				{
-					/* Duplicate an edge which is clamp to edge */
-					memcpy(destination + copy_row_width_bytes,
-						source + copy_row_width_bytes - overlap_bytes,
-						overlap_bytes);					
+					/* Repeat the first pixel, edge_clamping */
+					memcpy(destination, source, bytes_per_pixel);
+					destination += bytes_per_pixel;
+				}
+				memcpy(destination, source, copy_row_width_bytes);
+				destination += copy_row_width_bytes;
+				for (i = 0 ; i < pad_x_end ; i++)
+				{
+					/* Repeat the last pixel, edge_clamping */
+					memcpy(destination, source + copy_row_width_bytes - bytes_per_pixel, bytes_per_pixel);
+					destination += bytes_per_pixel;
 				}
 				source += source_row_width_bytes;
+				{
+					int row_padding = tile_row_width_bytes - (copy_row_width_bytes + (pad_x_start + pad_x_end) * bytes_per_pixel);
+					memset(destination, 0, row_padding);
+					destination += row_padding;
+				}
+			}
+			if (pad_y_start > 0)
+			{
+				unsigned char *destination_first_row = destination_y_start + tile_row_width_bytes * pad_y_start;
+				for (i = 0 ; i < pad_y_start ; i++)
+				{
+					/* Repeat the first row, edge_clamping,
+					 * easier to do after we have already padded the row so copy from destination */
+					memcpy(destination_y_start, destination_first_row,	tile_row_width_bytes);
+					destination_y_start += tile_row_width_bytes;
+				}
+			}
+			for (i = 0 ; i < pad_y_end ; i++)
+			{
+				/* Repeat the last row, edge_clamping, copy from destination */
+				unsigned char *destination_last_row = destination - tile_row_width_bytes; 
+				memcpy(destination, destination_last_row, tile_row_width_bytes);
 				destination += tile_row_width_bytes;
 			}
 			source += source_row_width_bytes * (texture->height_texels -
 				texture_tiling->tile_size[1]);
+#if defined (DEBUG)
+			unsigned char *expected_destination = *tile_image + tile_row_width_bytes * texture_tiling->tile_size[1] * (z - start_z + 1); 
+			if (destination != expected_destination)
+			{
+				printf("destination mismatch %p %p %ld\n", destination, expected_destination,
+					destination - expected_destination);
+			}
+#endif // defined (DEBUG)			
+		}
+		for (i = 0 ; i < pad_z_start ; i++)
+		{
+			/* Repeat the first row, edge_clamping,
+			 * easier to do after we have already padded the row so copy from destination */
+			unsigned char *destination_first_depth = destination_z_start + 
+				tile_row_width_bytes * texture_tiling->tile_size[1] * pad_z_start;
+			memcpy(destination_z_start, destination_first_depth,
+				tile_row_width_bytes * texture_tiling->tile_size[1]);
+			destination_z_start += tile_row_width_bytes * texture_tiling->tile_size[1];
+		}
+		for (i = 0 ; i < pad_z_end ; i++)
+		{
+			/* Repeat the last row, edge_clamping, copy from destination */
+			unsigned char *destination_last_depth = destination - tile_row_width_bytes * texture_tiling->tile_size[1]; 
+			memcpy(destination, destination_last_depth, tile_row_width_bytes * texture_tiling->tile_size[1]);
+			destination += tile_row_width_bytes * texture_tiling->tile_size[1];
 		}
 	}
 	else
