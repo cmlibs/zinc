@@ -2145,6 +2145,7 @@ struct Interpreter_command_element_selection_callback_data
 	struct Interpreter *interpreter;
 }; /* struct Interpreter_command_element_selection_callback_data */
 
+#if defined (USE_PERL_INTERPRETER)
 static void interpreter_command_element_selection_callback(
 	struct FE_element_selection *element_selection,
 	struct FE_element_selection_changes *element_selection_changes,
@@ -2165,10 +2166,8 @@ DESCRIPTION :
 		(data = (struct Interpreter_command_element_selection_callback_data *)data_void))
 	{
 		callback_result = (char *)NULL;
-#if defined (USE_PERL_INTERPRETER)
 		interpreter_evaluate_string(data->interpreter,
 			  data->perl_action, &callback_result, &return_code);
-#endif /* defined (USE_PERL_INTERPRETER) */
 		if (callback_result)
 		{
 			DEALLOCATE(callback_result);
@@ -2184,6 +2183,7 @@ DESCRIPTION :
 
 	return;
 } /* interpreter_command_element_selection_callback */
+#endif /* defined (USE_PERL_INTERPRETER) */
 
 static int gfx_create_element_selection_callback(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -2197,7 +2197,9 @@ Executes a GFX CREATE ELEMENT_SELECTION_CALLBACK command.
 	char *perl_action;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct Interpreter_command_element_selection_callback_data *data;
+#if defined (USE_PERL_INTERPRETER)
+	struct Interpreter_command_element_selection_callback_data *data = 0;
+#endif /* defined (USE_PERL_INTERPRETER) */
 	struct Option_table *option_table;
 
 	ENTER(gfx_create_element_selection_callback);
@@ -4011,6 +4013,7 @@ struct Interpreter_command_node_selection_callback_data
 	struct Interpreter *interpreter;
 }; /* struct Interpreter_command_node_selection_callback_data */
 
+#if defined (USE_PERL_INTERPRETER)
 static void interpreter_command_node_selection_callback(
 	struct FE_node_selection *node_selection,
 	struct FE_node_selection_changes *node_selection_changes,
@@ -4031,10 +4034,8 @@ DESCRIPTION :
 		(data = (struct Interpreter_command_node_selection_callback_data *)data_void))
 	{
 		callback_result = (char *)NULL;
-#if defined (USE_PERL_INTERPRETER)
 		interpreter_evaluate_string(data->interpreter,
 			  data->perl_action, &callback_result, &return_code);
-#endif /* defined (USE_PERL_INTERPRETER) */
 		if (callback_result)
 		{
 			DEALLOCATE(callback_result);
@@ -4050,6 +4051,7 @@ DESCRIPTION :
 
 	return;
 } /* interpreter_command_node_selection_callback */
+#endif /* defined (USE_PERL_INTERPRETER) */
 
 static int gfx_create_node_selection_callback(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -4063,7 +4065,9 @@ Executes a GFX CREATE NODE_SELECTION_CALLBACK command.
 	char *perl_action;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct Interpreter_command_node_selection_callback_data *data;
+#if defined (USE_PERL_INTERPRETER)
+	struct Interpreter_command_node_selection_callback_data *data = 0;
+#endif /* defined (USE_PERL_INTERPRETER) */
 	struct Option_table *option_table;
 
 	ENTER(gfx_create_node_selection_callback);
