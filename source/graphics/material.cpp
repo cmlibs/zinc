@@ -64,6 +64,7 @@ return to direct rendering, as described with these routines.
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
 extern "C" {
+#include "api/cmiss_material.h"
 #include "command/parser.h"
 #include "general/compare.h"
 #include "general/debug.h"
@@ -267,6 +268,8 @@ The properties of a material.
 	/* the graphics state program that represents this material */
 	struct Material_program *program;
 	 int access_count, per_pixel_lighting_flag, bump_mapping_flag;
+
+	struct MANAGER(Graphical_material) *material_manager;
 }; /* struct Graphical_material */
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Graphical_material);
@@ -3566,6 +3569,7 @@ Allocates memory and assigns fields for a material.
 			material->lit_volume_normal_scaling[2] = 1.0;
 			material->lit_volume_normal_scaling[3] = 1.0;
 			material->program = (struct Material_program *)NULL;
+			material->material_manager = (struct MANAGER(Graphical_material) *)NULL;
 #if defined (OPENGL_API)
 			material->display_list=0;
 			material->brightness_texture_id=0;
@@ -3863,7 +3867,12 @@ DECLARE_MANAGER_FUNCTIONS(Graphical_material)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphical_material)
 
+DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS( \
+	Graphical_material, name, const char *, material_manager)
+
+#if defined (OLD_CODE)
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Graphical_material,name,const char *)
+#endif /* defined (OLD_CODE) */
 
 const char *Graphical_material_name(struct Graphical_material *material)
 /*******************************************************************************
@@ -6947,3 +6956,19 @@ the <material_package> by name.
 
 	return (return_code);
 } /* Option_table_add_double_vector_with_help_entry */
+
+int Cmiss_graphical_material_set_name(
+	Cmiss_graphical_material_id material, const char *name)
+{
+	int return_code = 0;
+
+	ENTER(Cmiss_graphical_material_set_name);
+	if (material && material->material_manager && name)
+	{
+		return_code = MANAGER_MODIFY_IDENTIFIER(Graphical_material, name)
+			(material, name, material->material_manager);
+	}
+	LEAVE;
+
+	return return_code;
+}

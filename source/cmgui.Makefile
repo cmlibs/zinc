@@ -826,6 +826,7 @@ API_SRCS = \
 	api/cmiss_core.c \
 	api/cmiss_element.c \
 	api/cmiss_idle.c \
+	api/cmiss_material.c \
 	api/cmiss_node.c \
 	api/cmiss_region.c \
 	api/cmiss_time.c \
@@ -1014,6 +1015,7 @@ GENERAL_INTERFACE_SRCS = \
 	general/postscript.c
 GRAPHICS_SRCS = \
 	graphics/auxiliary_graphics_types.c \
+	graphics/cmiss_rendition.cpp \
 	graphics/colour.c \
 	graphics/complex.c \
 	graphics/decimate_voltex.c \

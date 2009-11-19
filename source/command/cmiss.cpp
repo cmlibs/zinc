@@ -163,6 +163,7 @@ extern "C" {
 #include "graphics/renderalias.h"
 #endif /* defined (NEW_ALIAS) */
 #endif /* defined (MOTIF_USER_INTERFACE) */
+#include "graphics/cmiss_rendition.h"
 #include "graphics/render_to_finite_elements.h"
 #include "graphics/renderstl.h"
 #include "graphics/rendervrml.h"
@@ -397,6 +398,7 @@ DESCRIPTION :
 #if defined (UNEMAP)
 	struct Unemap_command_data *unemap_command_data;
 #endif /* defined (UNEMAP) */
+	struct Cmiss_graphics_package *graphics_package;
 }; /* struct Cmiss_command_data */
 
 typedef struct
@@ -25101,6 +25103,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 		command_data->graphics_buffer_package=(struct Graphics_buffer_package *)NULL;
 		command_data->scene_viewer_package=(struct Cmiss_scene_viewer_package *)NULL;
+		command_data->graphics_package = (struct Cmiss_graphics_package *)NULL;
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		command_data->graphics_window_manager=(struct MANAGER(Graphics_window) *)NULL;
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
@@ -25720,7 +25723,21 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #if defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE)
 		command_data->movie_graphics_manager = CREATE(MANAGER(Movie_graphics))();
 #endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE) */
-
+		/* graphics_package */
+		command_data->default_time_keeper=ACCESS(Time_keeper)(
+			CREATE(Time_keeper)("default", command_data->event_dispatcher,
+				command_data->user_interface));
+		command_data->graphics_package = 
+			Cmiss_graphics_package_create(
+				command_data->glyph_list,
+				Material_package_get_material_manager(command_data->material_package),
+				Material_package_get_default_material(command_data->material_package),
+				command_data->default_font, command_data->light_manager,
+				command_data->spectrum_manager,command_data->default_spectrum,
+				command_data->texture_manager, command_data->element_point_ranges_selection,
+				command_data->element_selection, command_data->node_selection,
+				command_data->data_selection,
+				command_data->default_time_keeper);
 		/* scene manager */
 		/*???RC & SAB.   LOTS of managers need to be created before this 
 		  and the User_interface too */
@@ -25754,9 +25771,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			}
 		}
 
-		command_data->default_time_keeper=ACCESS(Time_keeper)(
-			CREATE(Time_keeper)("default", command_data->event_dispatcher,
-				command_data->user_interface));
 		if(command_data->default_scene)
 		{
 			Scene_enable_time_behaviour(command_data->default_scene,
@@ -26286,6 +26300,10 @@ Clean up the command_data, deallocating all the associated memory and resources.
 
 		DEACCESS(Scene)(&(command_data->default_scene));
 		DESTROY(MANAGER(Scene))(&command_data->scene_manager);
+		if (command_data->graphics_package)
+		{
+			DESTROY(Cmiss_graphics_package)(&command_data->graphics_package);
+		}
 		DESTROY(Time_keeper)(&command_data->default_time_keeper);
 		if (command_data->computed_field_package)
 		{
@@ -26708,6 +26726,22 @@ Returns the scene viewer data from the <command_data>.
 	LEAVE;
 
 	return (cmiss_scene_viewer_package);
+}
+
+struct Cmiss_graphics_package *Cmiss_command_data_get_graphics_package(
+	struct Cmiss_command_data *command_data)
+{
+	struct Cmiss_graphics_package *graphics_package;
+
+	ENTER(Cmiss_command_package_get_graphics_package);
+	graphics_package=(struct Cmiss_graphics_package *)NULL;
+	if (command_data)
+	{
+		graphics_package = command_data->graphics_package;
+	}
+	LEAVE;
+
+	return (graphics_package);
 }
 
 struct MANAGER(Graphics_window) *Cmiss_command_data_get_graphics_window_manager(
