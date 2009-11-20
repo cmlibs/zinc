@@ -177,18 +177,3 @@ int Cmiss_graphical_material_set_specular(
 
 	return Graphical_material_set_specular(material, &colour);
 }
-
-int Cmiss_graphical_material_set_texture(
-	Cmiss_graphical_material_id material, Cmiss_texture_id texture)
-{
-	int return_code = 0;
-
-	ENTER(Cmiss_graphical_material_set_texture);
-	if (material)
-	{
-		Graphical_material_set_texture(material, texture);
-	}
-	LEAVE;
-
-	return return_code;
-}

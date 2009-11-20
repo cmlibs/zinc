@@ -268,7 +268,10 @@ The properties of a material.
 	/* the graphics state program that represents this material */
 	struct Material_program *program;
 	 int access_count, per_pixel_lighting_flag, bump_mapping_flag;
-
+	/* this flag is for external API uses. If a material is set to be volatile
+		 then this material will be removed from the manager after destroy.
+	 */
+	int volatile_flag;
 	struct MANAGER(Graphical_material) *material_manager;
 }; /* struct Graphical_material */
 
@@ -3569,6 +3572,7 @@ Allocates memory and assigns fields for a material.
 			material->lit_volume_normal_scaling[2] = 1.0;
 			material->lit_volume_normal_scaling[3] = 1.0;
 			material->program = (struct Material_program *)NULL;
+			material->volatile_flag=0;
 			material->material_manager = (struct MANAGER(Graphical_material) *)NULL;
 #if defined (OPENGL_API)
 			material->display_list=0;
@@ -6957,8 +6961,51 @@ the <material_package> by name.
 	return (return_code);
 } /* Option_table_add_double_vector_with_help_entry */
 
+int Cmiss_graphical_material_set_texture(
+	Graphical_material *material, Texture *texture)
+{
+	int return_code = 0;
+
+	ENTER(Cmiss_graphical_material_set_texture);
+	if (material)
+	{
+		Graphical_material_set_texture(material, texture);
+		if (material->material_manager&&IS_MANAGED(Graphical_material)(material,
+			material->material_manager))
+		{
+			MANAGER_BEGIN_CHANGE(Graphical_material)(material->material_manager,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Graphical_material), material);
+			MANAGER_END_CHANGE(Graphical_material)(material->material_manager);
+			return_code = 1;
+		}
+	}
+	LEAVE;
+
+	return return_code;
+}
+
+int Cmiss_graphical_material_destroy(Graphical_material **material)
+{
+	int return_code = 0;
+
+	ENTER(Cmiss_graphical_material_destroy);
+	if (material)
+	{
+		DEACCESS(Graphical_material)(material);
+		if ((*material)->volatile_flag && (*material)&&(*material)->material_manager)
+		{
+			REMOVE_OBJECT_FROM_MANAGER(Graphical_material)(
+				*material, (*material)->material_manager);
+		}
+		return_code = 1;
+	}
+	LEAVE;
+
+	return return_code;
+}
+
 int Cmiss_graphical_material_set_name(
-	Cmiss_graphical_material_id material, const char *name)
+	Graphical_material *material, const char *name)
 {
 	int return_code = 0;
 
@@ -6967,6 +7014,26 @@ int Cmiss_graphical_material_set_name(
 	{
 		return_code = MANAGER_MODIFY_IDENTIFIER(Graphical_material, name)
 			(material, name, material->material_manager);
+	}
+	LEAVE;
+
+	return return_code;
+}
+
+int Cmiss_graphical_material_set_volatile(
+	Graphical_material *material, int volatile_flag)
+{
+	int return_code;
+	
+	ENTER(Cmiss_graphical_material_set_volatile);
+	if (material)
+	{
+		material->volatile_flag = volatile_flag;
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
 	}
 	LEAVE;
 

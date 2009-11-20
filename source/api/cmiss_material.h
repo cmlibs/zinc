@@ -213,6 +213,17 @@ int Cmiss_graphical_material_set_texture(
 	Cmiss_graphical_material_id material, Cmiss_texture_id texture);
 
 /***************************************************************************//**
+ * The volatile flag determine how the material is destroyed. If a material 
+ * is volatile upon destroyed, it will also be removed from the graphics_package 
+ * but if volatile flag is 0 then material will remain in the graphics_package.
+ *
+ * @param material  handle to the" cmiss graphical material.
+ * @return  1 if successfully set the volatile flag, otherwise 0.
+ */
+int Cmiss_graphical_material_set_volatile(
+	Cmiss_graphical_material_id material, int volatile_flag);
+
+/***************************************************************************//**
  * Destroy the material.
  *
  * @param material  handle to the "to be destroyed" cmiss graphical material.
