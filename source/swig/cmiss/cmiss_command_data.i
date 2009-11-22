@@ -58,7 +58,7 @@ struct Cmiss_command_data;
 /* Cmiss_command functions */
 extern int Cmiss_command_data_execute_command(struct Cmiss_command_data 
 	*command_data, const char *command);
-extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, 
+extern struct Cmiss_command_data *Cmiss_command_data_create(int argc, 
 	char *argv[], char *version_string);
 extern struct Cmiss_region *Cmiss_command_data_get_root_region(
 	struct Cmiss_command_data *command_data);
@@ -76,7 +76,7 @@ typedef struct Cmiss_command_data
 				           
 				char* cmgui_argv[] = {strdup("cmgui"), NULL};
 			
-				command_data = create_Cmiss_command_data(
+				command_data = Cmiss_command_data_create(
 					(sizeof(cmgui_argv)/sizeof(char *) - 1),
 					cmgui_argv, "0.0"); 
 		
@@ -101,6 +101,6 @@ typedef struct Cmiss_command_data
 /*%include "api/cmiss_command_data.h"*/
 //extern int Cmiss_command_data_execute_command(struct Cmiss_command_data 
 //	*command_data, const char *command);
-extern struct Cmiss_command_data *create_Cmiss_command_data(int argc, 
+extern struct Cmiss_command_data *Cmiss_command_data_create(int argc, 
 	char *argv[], char *version_string);
 
