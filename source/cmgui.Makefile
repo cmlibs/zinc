@@ -825,6 +825,7 @@ API_SRCS = \
 	api/cmiss_field_composite.c \
 	api/cmiss_core.c \
 	api/cmiss_element.c \
+	api/cmiss_graphics_package.c \
 	api/cmiss_idle.c \
 	api/cmiss_material.c \
 	api/cmiss_node.c \

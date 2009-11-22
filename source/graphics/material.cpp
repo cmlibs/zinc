@@ -6961,12 +6961,12 @@ the <material_package> by name.
 	return (return_code);
 } /* Option_table_add_double_vector_with_help_entry */
 
-int Cmiss_graphical_material_set_texture(
+int Cmiss_graphics_material_set_texture(
 	Graphical_material *material, Texture *texture)
 {
 	int return_code = 0;
 
-	ENTER(Cmiss_graphical_material_set_texture);
+	ENTER(Cmiss_graphics_material_set_texture);
 	if (material)
 	{
 		Graphical_material_set_texture(material, texture);
@@ -6984,32 +6984,36 @@ int Cmiss_graphical_material_set_texture(
 	return return_code;
 }
 
-int Cmiss_graphical_material_destroy(Graphical_material **material)
+int Cmiss_graphics_material_destroy(Graphical_material **material_address)
 {
 	int return_code = 0;
+	struct Graphical_material *material;
 
-	ENTER(Cmiss_graphical_material_destroy);
-	if (material)
+	ENTER(Cmiss_graphics_material_destroy);
+	if (material_address && (material = *material_address))
 	{
-		DEACCESS(Graphical_material)(material);
-		if ((*material)->volatile_flag && (*material)&&(*material)->material_manager)
+		(material->access_count)--;
+		if (material->volatile_flag && material->material_manager)
 		{
-			REMOVE_OBJECT_FROM_MANAGER(Graphical_material)(
-				*material, (*material)->material_manager);
+			return_code = REMOVE_OBJECT_FROM_MANAGER(Graphical_material)(
+				material, material->material_manager);
 		}
-		return_code = 1;
+		else if (!material->material_manager && (0 >= material->access_count))
+		{
+			return_code = DESTROY(Graphical_material)(material_address);
+		}
 	}
 	LEAVE;
 
 	return return_code;
 }
 
-int Cmiss_graphical_material_set_name(
+int Cmiss_graphics_material_set_name(
 	Graphical_material *material, const char *name)
 {
 	int return_code = 0;
 
-	ENTER(Cmiss_graphical_material_set_name);
+	ENTER(Cmiss_graphics_material_set_name);
 	if (material && material->material_manager && name)
 	{
 		return_code = MANAGER_MODIFY_IDENTIFIER(Graphical_material, name)
@@ -7020,12 +7024,12 @@ int Cmiss_graphical_material_set_name(
 	return return_code;
 }
 
-int Cmiss_graphical_material_set_volatile(
+int Cmiss_graphics_material_set_volatile(
 	Graphical_material *material, int volatile_flag)
 {
 	int return_code;
 	
-	ENTER(Cmiss_graphical_material_set_volatile);
+	ENTER(Cmiss_graphics_material_set_volatile);
 	if (material)
 	{
 		material->volatile_flag = volatile_flag;

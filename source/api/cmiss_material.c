@@ -49,9 +49,10 @@ The public interface to the material.
 #include "graphics/cmiss_rendition.h"
 #include "graphics/texture.h"
 
-Cmiss_graphical_material_id Cmiss_graphical_material_create(
+Cmiss_graphics_material_id Cmiss_graphics_material_create(
 	Cmiss_graphics_package_id graphics_package)
 {
+	Cmiss_graphics_material_id material = NULL;
 	struct MANAGER(Graphical_material) *material_manager =
 		Cmiss_graphics_package_get_material_manager(graphics_package);
 	int i = 0;
@@ -75,7 +76,6 @@ Cmiss_graphical_material_id Cmiss_graphical_material_create(
 			
 	if (temp_string)
 	{
-		Cmiss_graphical_material_id material;
 		if (NULL != (material = CREATE(Graphical_material)(temp_string)))
 		{
 			if (ADD_OBJECT_TO_MANAGER(Graphical_material)(
@@ -90,27 +90,11 @@ Cmiss_graphical_material_id Cmiss_graphical_material_create(
 		}
 		DEALLOCATE(temp_string);
 	}
-	return NULL;
+	return material;
 }
 
-Cmiss_graphical_material_id Cmiss_graphical_material_get_with_name(
-	Cmiss_graphics_package_id graphics_package, const char *name)
-{
-	Cmiss_graphical_material_id material = NULL;
-
-	if (graphics_package && name)
-	{
-		struct MANAGER(Graphical_material) *material_manager =
-			Cmiss_graphics_package_get_material_manager(graphics_package);
-		material = FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material, name)(
-			name, material_manager);
-	}
-
-	return ACCESS(Graphical_material)(material);
-}
-
-int Cmiss_graphical_material_set_alpha(
-	Cmiss_graphical_material_id material, float alpha)
+int Cmiss_graphics_material_set_alpha(
+	Cmiss_graphics_material_id material, float alpha)
 {
 	if (material)
 	{
@@ -119,8 +103,8 @@ int Cmiss_graphical_material_set_alpha(
 	return 0;
 }
 
-int Cmiss_graphical_material_set_shininess(
-	Cmiss_graphical_material_id material, float shininess)
+int Cmiss_graphics_material_set_shininess(
+	Cmiss_graphics_material_id material, float shininess)
 {
 	if (material)
 	{
@@ -129,8 +113,8 @@ int Cmiss_graphical_material_set_shininess(
 	return 0;
 }
 
-int Cmiss_graphical_material_set_ambient(
-	Cmiss_graphical_material_id material, float red, float green, float blue)
+int Cmiss_graphics_material_set_ambient(
+	Cmiss_graphics_material_id material, float red, float green, float blue)
 {
 	struct Colour colour;
 	
@@ -141,8 +125,8 @@ int Cmiss_graphical_material_set_ambient(
 	return Graphical_material_set_ambient(material, &colour);
 }
 
-int Cmiss_graphical_material_set_diffuse(
-	Cmiss_graphical_material_id material, float red, float green, float blue)
+int Cmiss_graphics_material_set_diffuse(
+	Cmiss_graphics_material_id material, float red, float green, float blue)
 {
 
 	struct Colour colour;
@@ -154,8 +138,8 @@ int Cmiss_graphical_material_set_diffuse(
 	return Graphical_material_set_diffuse(material, &colour);
 }
 
-int Cmiss_graphical_material_set_emission(
-	Cmiss_graphical_material_id material, float red, float green, float blue)
+int Cmiss_graphics_material_set_emission(
+	Cmiss_graphics_material_id material, float red, float green, float blue)
 {
 	struct Colour colour;
 
@@ -166,8 +150,8 @@ int Cmiss_graphical_material_set_emission(
 	return Graphical_material_set_emission(material, &colour);
 }
 
-int Cmiss_graphical_material_set_specular(
-	Cmiss_graphical_material_id material, float red, float green, float blue)
+int Cmiss_graphics_material_set_specular(
+	Cmiss_graphics_material_id material, float red, float green, float blue)
 {
 	struct Colour colour;
 
