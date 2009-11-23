@@ -163,7 +163,6 @@ extern "C" {
 #include "graphics/renderalias.h"
 #endif /* defined (NEW_ALIAS) */
 #endif /* defined (MOTIF_USER_INTERFACE) */
-#include "graphics/cmiss_rendition.h"
 #include "graphics/render_to_finite_elements.h"
 #include "graphics/renderstl.h"
 #include "graphics/rendervrml.h"
@@ -398,7 +397,6 @@ DESCRIPTION :
 #if defined (UNEMAP)
 	struct Unemap_command_data *unemap_command_data;
 #endif /* defined (UNEMAP) */
-	struct Cmiss_graphics_package *graphics_package;
 }; /* struct Cmiss_command_data */
 
 typedef struct
@@ -2147,7 +2145,6 @@ struct Interpreter_command_element_selection_callback_data
 	struct Interpreter *interpreter;
 }; /* struct Interpreter_command_element_selection_callback_data */
 
-#if defined (USE_PERL_INTERPRETER)
 static void interpreter_command_element_selection_callback(
 	struct FE_element_selection *element_selection,
 	struct FE_element_selection_changes *element_selection_changes,
@@ -2168,8 +2165,10 @@ DESCRIPTION :
 		(data = (struct Interpreter_command_element_selection_callback_data *)data_void))
 	{
 		callback_result = (char *)NULL;
+#if defined (USE_PERL_INTERPRETER)
 		interpreter_evaluate_string(data->interpreter,
 			  data->perl_action, &callback_result, &return_code);
+#endif /* defined (USE_PERL_INTERPRETER) */
 		if (callback_result)
 		{
 			DEALLOCATE(callback_result);
@@ -2185,7 +2184,6 @@ DESCRIPTION :
 
 	return;
 } /* interpreter_command_element_selection_callback */
-#endif /* defined (USE_PERL_INTERPRETER) */
 
 static int gfx_create_element_selection_callback(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -2199,9 +2197,7 @@ Executes a GFX CREATE ELEMENT_SELECTION_CALLBACK command.
 	char *perl_action;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-#if defined (USE_PERL_INTERPRETER)
-	struct Interpreter_command_element_selection_callback_data *data = 0;
-#endif /* defined (USE_PERL_INTERPRETER) */
+	struct Interpreter_command_element_selection_callback_data *data;
 	struct Option_table *option_table;
 
 	ENTER(gfx_create_element_selection_callback);
@@ -4015,7 +4011,6 @@ struct Interpreter_command_node_selection_callback_data
 	struct Interpreter *interpreter;
 }; /* struct Interpreter_command_node_selection_callback_data */
 
-#if defined (USE_PERL_INTERPRETER)
 static void interpreter_command_node_selection_callback(
 	struct FE_node_selection *node_selection,
 	struct FE_node_selection_changes *node_selection_changes,
@@ -4036,8 +4031,10 @@ DESCRIPTION :
 		(data = (struct Interpreter_command_node_selection_callback_data *)data_void))
 	{
 		callback_result = (char *)NULL;
+#if defined (USE_PERL_INTERPRETER)
 		interpreter_evaluate_string(data->interpreter,
 			  data->perl_action, &callback_result, &return_code);
+#endif /* defined (USE_PERL_INTERPRETER) */
 		if (callback_result)
 		{
 			DEALLOCATE(callback_result);
@@ -4053,7 +4050,6 @@ DESCRIPTION :
 
 	return;
 } /* interpreter_command_node_selection_callback */
-#endif /* defined (USE_PERL_INTERPRETER) */
 
 static int gfx_create_node_selection_callback(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -4067,9 +4063,7 @@ Executes a GFX CREATE NODE_SELECTION_CALLBACK command.
 	char *perl_action;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-#if defined (USE_PERL_INTERPRETER)
-	struct Interpreter_command_node_selection_callback_data *data = 0;
-#endif /* defined (USE_PERL_INTERPRETER) */
+	struct Interpreter_command_node_selection_callback_data *data;
 	struct Option_table *option_table;
 
 	ENTER(gfx_create_node_selection_callback);
@@ -7469,8 +7463,6 @@ Modifies the properties of a texture.
 										file_number_series_data.increment,
 										image_data.crop_left_margin, image_data.crop_bottom_margin,
 										image_data.crop_width, image_data.crop_height);
-									/* Delete any existing properties as we are modifying */
-									Texture_clear_all_properties(texture);
 									/* Calling get_proprety with wildcard ensures they
 										will be available to the iterator, as well as
 										any other properties */
@@ -12340,9 +12332,9 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	char *region_path;
+        if(dummy_to_be_modified!=NULL) dummy_to_be_modified=NULL;
 
-	ENTER(gfx_mesh_graphics_tetrahedral);
-	USE_PARAMETER(dummy_to_be_modified);
+	ENTER(gfx_mesh_graphics_triangle);
 	if (state)
 	{
 		Cmiss_region_get_root_region_path(&region_path);
@@ -12351,7 +12343,8 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 						
 			double maxh=100000;
 			double fineness=0.5;
-			int secondorder=0;    
+			int secondorder=0;   
+                        char meshsize_filename[200]; 
 			struct Scene *scene;
 			struct Option_table *option_table;
 			scene = ACCESS(Scene)(command_data->default_scene);
@@ -12363,14 +12356,16 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 				command_data->scene_manager, set_Scene_including_sub_objects);
 			Option_table_add_entry(option_table,"clear_region",
 				&clear,(void *)NULL,set_char_flag);
-			Option_table_add_entry(option_table,"mesh_global_size",
+			Option_table_add_entry(option_table,"meshglobalsize",
 				&maxh,(void *)NULL,set_double);
 			Option_table_add_entry(option_table,"fineness",
 				&fineness,(void *)NULL,set_double);
 			Option_table_add_entry(option_table,"secondorder",
 				&secondorder,(void *)NULL,set_int);
+			Option_table_add_entry(option_table,"meshsize_filename",
+				meshsize_filename,(void *)NULL,set_string);
 
-			if ((return_code = Option_table_multi_parse(option_table,state)))
+			if (return_code = Option_table_multi_parse(option_table,state))
 			{
 #if defined (USE_NETGEN)
 				Triangle_mesh *trimesh = NULL;
@@ -12434,6 +12429,8 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 							set_netgen_parameters_maxh(generate_netgen_para,maxh);
 							set_netgen_parameters_fineness(generate_netgen_para,fineness);
 							set_netgen_parameters_secondorder(generate_netgen_para,secondorder);   
+                                                        set_netgen_parameters_meshsize_filename(generate_netgen_para, meshsize_filename);
+							
 							set_netgen_parameters_trimesh(generate_netgen_para, trimesh);
 							generate_mesh_netgen(Cmiss_region_get_FE_region(region), generate_netgen_para);
 							release_netgen_parameters(generate_netgen_para);        
@@ -12441,8 +12438,7 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE, "gfx_mesh_graphics_tetrahedral."
-								"Unknown region: %s", region_path);
+							display_message(ERROR_MESSAGE, "gfx_mesh_graphics_triangle. Unknown region: %s", region_path);
 						}
 					}
 				}
@@ -12462,13 +12458,13 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"gfx_mesh_graphics_tetrahedral.  Invalid argument(s)");
+				"gfx_mesh_graphics_triangle.  Invalid argument(s)");
 			return_code=0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_mesh_graphics_tetrahedral.  Missing state");
+		display_message(ERROR_MESSAGE,"gfx_mesh_graphics_triangle.  Missing state");
 		return_code=0;
 	}
 	LEAVE;
@@ -12503,7 +12499,7 @@ static int gfx_mesh_graphics_triangle(struct Parse_state *state,
 				command_data->root_region, set_Cmiss_region_path);
 			Option_table_add_entry(option_table,"clear_region",
 				&clear,(void *)NULL,set_char_flag);
-			if ((return_code = Option_table_multi_parse(option_table,state)))
+			if (return_code = Option_table_multi_parse(option_table,state))
 			{
 				if (scene)
 				{
@@ -12562,8 +12558,37 @@ static int gfx_mesh_graphics_triangle(struct Parse_state *state,
 							create_triangle_mesh(region, trimesh);
 						}
 						else
-						{
-							display_message(ERROR_MESSAGE, "gfx_mesh_graphics_triangle. Unknown region: %s", region_path);
+						{    
+#if defined (USE_NETGEN)
+							double maxh=-1;
+							double fineness=-1;
+							double secondorder=-1;    
+							struct Generate_netgen_parameters *generate_netgen_para=NULL;
+							generate_netgen_para=create_netgen_parameters();
+              
+							if(maxh==-1) 
+								set_netgen_parameters_maxh(generate_netgen_para,100000.0);
+							else
+								set_netgen_parameters_maxh(generate_netgen_para,maxh);
+							
+							if(fineness==-1) 
+								set_netgen_parameters_fineness(generate_netgen_para,0.5);
+							else
+								set_netgen_parameters_fineness(generate_netgen_para,fineness);
+
+							if(secondorder==-1) 
+								set_netgen_parameters_secondorder(generate_netgen_para,0);
+							else
+								set_netgen_parameters_secondorder(generate_netgen_para,secondorder);   
+							
+							set_netgen_parameters_trimesh(generate_netgen_para, trimesh);
+							generate_mesh_netgen(Cmiss_region_get_FE_region(region), generate_netgen_para);
+							release_netgen_parameters(generate_netgen_para);        
+#else 
+							display_message(ERROR_MESSAGE,
+								"gfx_mesh_graphics. Does not support tetrahedral mesh yet. To use this feature"
+								" please compile cmgui with Netgen");	
+#endif /* defined (USE_NETGEN) */
 						}
 					}
 				}
@@ -25103,7 +25128,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 		command_data->graphics_buffer_package=(struct Graphics_buffer_package *)NULL;
 		command_data->scene_viewer_package=(struct Cmiss_scene_viewer_package *)NULL;
-		command_data->graphics_package = (struct Cmiss_graphics_package *)NULL;
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		command_data->graphics_window_manager=(struct MANAGER(Graphics_window) *)NULL;
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
@@ -25723,21 +25747,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #if defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE)
 		command_data->movie_graphics_manager = CREATE(MANAGER(Movie_graphics))();
 #endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE) */
-		/* graphics_package */
-		command_data->default_time_keeper=ACCESS(Time_keeper)(
-			CREATE(Time_keeper)("default", command_data->event_dispatcher,
-				command_data->user_interface));
-		command_data->graphics_package = 
-			Cmiss_graphics_package_create(
-				command_data->glyph_list,
-				Material_package_get_material_manager(command_data->material_package),
-				Material_package_get_default_material(command_data->material_package),
-				command_data->default_font, command_data->light_manager,
-				command_data->spectrum_manager,command_data->default_spectrum,
-				command_data->texture_manager, command_data->element_point_ranges_selection,
-				command_data->element_selection, command_data->node_selection,
-				command_data->data_selection,
-				command_data->default_time_keeper);
+
 		/* scene manager */
 		/*???RC & SAB.   LOTS of managers need to be created before this 
 		  and the User_interface too */
@@ -25771,6 +25781,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			}
 		}
 
+		command_data->default_time_keeper=ACCESS(Time_keeper)(
+			CREATE(Time_keeper)("default", command_data->event_dispatcher,
+				command_data->user_interface));
 		if(command_data->default_scene)
 		{
 			Scene_enable_time_behaviour(command_data->default_scene,
@@ -26300,10 +26313,6 @@ Clean up the command_data, deallocating all the associated memory and resources.
 
 		DEACCESS(Scene)(&(command_data->default_scene));
 		DESTROY(MANAGER(Scene))(&command_data->scene_manager);
-		if (command_data->graphics_package)
-		{
-			DESTROY(Cmiss_graphics_package)(&command_data->graphics_package);
-		}
 		DESTROY(Time_keeper)(&command_data->default_time_keeper);
 		if (command_data->computed_field_package)
 		{
@@ -26726,22 +26735,6 @@ Returns the scene viewer data from the <command_data>.
 	LEAVE;
 
 	return (cmiss_scene_viewer_package);
-}
-
-struct Cmiss_graphics_package *Cmiss_command_data_get_graphics_package(
-	struct Cmiss_command_data *command_data)
-{
-	struct Cmiss_graphics_package *graphics_package;
-
-	ENTER(Cmiss_command_package_get_graphics_package);
-	graphics_package=(struct Cmiss_graphics_package *)NULL;
-	if (command_data)
-	{
-		graphics_package = command_data->graphics_package;
-	}
-	LEAVE;
-
-	return (graphics_package);
 }
 
 struct MANAGER(Graphics_window) *Cmiss_command_data_get_graphics_window_manager(
