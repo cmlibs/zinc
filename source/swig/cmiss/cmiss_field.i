@@ -64,11 +64,11 @@ Swig interface file for wrapping api/cmiss_field_x headers
 
 extern int Cmiss_field_get_number_of_components(Cmiss_field_id field);
 extern int Cmiss_field_evaluate_at_node(Cmiss_field_id field,
-	struct Cmiss_node *node, float time, int number_of_values, float *values);
+	struct Cmiss_node *node, double time, int number_of_values, double *values);
 extern int Cmiss_field_get_name(Cmiss_field_id field, char **name);
 extern int Cmiss_field_set_name(Cmiss_field_id field, const char *name);
 extern int Cmiss_field_set_values_at_node(Cmiss_field_id field,
-	struct Cmiss_node *node, float time, int number_of_values, float *values);
+	struct Cmiss_node *node, double time, int number_of_values, double *values);
 extern int Cmiss_field_is_defined_at_node(Cmiss_field_id field, struct Cmiss_node *node);
 //extern int Cmiss_field_destroy(Cmiss_field_id *field);
 %}
@@ -94,9 +94,9 @@ typedef struct Cmiss_field
 		int set_name(const char *name);	 
 		int get_name(char **name);
 		int evaluate_at_node(struct Cmiss_node *node, 
-			float time, int number_of_values, float *values);
+			double time, int number_of_values, double *values);
 		int set_values_at_node(struct Cmiss_node *node, 
-			float time, int number_of_values, float *values);
+			double time, int number_of_values, double *values);
 		int is_defined_at_node(struct Cmiss_node *node);
 		//int destroy();  
 	}

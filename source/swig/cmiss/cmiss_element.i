@@ -65,7 +65,7 @@ typedef struct Cmiss_element
 	%extend {
 	    ~Cmiss_element()
 	    {
-	       destroy_Cmiss_element(&$self);
+	       Cmiss_element_destroy(&$self);
 	    }
 	}
 } *Cmiss_element_id;
