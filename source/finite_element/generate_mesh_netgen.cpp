@@ -66,24 +66,14 @@ namespace nglib {
 using namespace nglib;
 // Netgen Meshing Parameters class
 
-
 struct Generate_netgen_parameters
 {   
    double maxh;
    double fineness;
    int secondorder;
    Triangle_mesh *trimesh; 
-   char *meshsize_filename;
 };/*struct Generate_netgen_parameters*/
 
-/***************************************************************************//**
- * Calls set_netgen_parameters_trimesh for setting the triangular surface mesh 
- * 
- * @param para Pointer to a parameter set for netgen.
- * @param trimesh Pointer to a triangular surface mesh for netgen.
- * @return  1 if setting is successful
- *   0 if setting is failed
- */
 int set_netgen_parameters_trimesh(struct Generate_netgen_parameters *para, void *trimesh)
 {
     ENTER(set_netgen_parameters_trimesh);
@@ -100,14 +90,6 @@ int set_netgen_parameters_trimesh(struct Generate_netgen_parameters *para, void 
     return return_code;
 }
 
-/***************************************************************************//**
- * Calls set_netgen_parameters_trimesh for setting the fineness of volumetric mesh
- * 
- * @param para Pointer to a parameter set for netgen.
- * @param fineness is the fineness of volumetric mesh
- * @return  1 if setting is successful
- *   0 if setting is failed
- */
 int set_netgen_parameters_fineness(struct Generate_netgen_parameters *para, double fineness)
 {
     ENTER(set_netgen_parameters_fineness);
@@ -122,14 +104,6 @@ int set_netgen_parameters_fineness(struct Generate_netgen_parameters *para, doub
     return return_code;
 }
 
-/***************************************************************************//**
- * Calls set_netgen_parameters_maxh for setting the maximum length of volumetric element 
- * 
- * @param para Pointer to a parameter set for netgen.
- * @param maxh is the maximum length of volumetric element
- * @return  1 if setting is successful
- *   0 if setting is failed
- */
 int set_netgen_parameters_maxh(struct Generate_netgen_parameters *para, double maxh)
 {
     ENTER(set_netgen_parameters_maxh);
@@ -144,15 +118,7 @@ int set_netgen_parameters_maxh(struct Generate_netgen_parameters *para, double m
     return return_code;
 }
 
-/***************************************************************************//**
- * Calls set_netgen_parameters_secondorder for setting the secondorder switch
- * 
- * @param para Pointer to a parameter set for netgen.
- * @param secondorder is switch for secondorder
- * @return  1 if setting is successful
- *   0 if setting is failed
- */
-int set_netgen_parameters_secondorder(struct Generate_netgen_parameters *para, double secondorder)
+int set_netgen_parameters_secondorder(struct Generate_netgen_parameters *para, int secondorder)
 {
     ENTER(set_netgen_parameters_secondorder);
     int return_code=0;
@@ -166,36 +132,6 @@ int set_netgen_parameters_secondorder(struct Generate_netgen_parameters *para, d
     return return_code;
 }
 
-/***************************************************************************//**
- * Calls set_netgen_parameters_meshsize_filename for setting mesh size file name
- * 
- * @param para Pointer to a parameter set for netgen.
- * @param meshsize_filename is mesh size file name
- * @return  1 if setting is successful
- *   0 if setting is failed
- */
-int set_netgen_parameters_meshsize_filename(struct Generate_netgen_parameters *para, char* meshsize_filename)
-{
-    ENTER(set_netgen_parameters_meshsize_filename);
-    int return_code=0;
-
-    if(para==NULL) return return_code;
-     
-    para->meshsize_filename=meshsize_filename;
-    return_code=1;
-    
-    LEAVE;
-    return return_code;
-}
-
-
-/***************************************************************************//**
- * Calls create_netgen_parameters for creating a parameter set for netgen.
- * 
- * @param para Pointer to a parameter set for netgen.
- * @return  1 if creating is successful
- *   0 if creating is failed
- */
 struct Generate_netgen_parameters * create_netgen_parameters()
 {
     ENTER(create_netgen_parameters);
@@ -207,13 +143,6 @@ struct Generate_netgen_parameters * create_netgen_parameters()
     return para;
 }
 
-/***************************************************************************//**
- * Calls release_netgen_parameters for releasing a parameter set for netgen.
- * 
- * @param para Pointer to a parameter set for netgen.
- * @return  1 if releasing is successful
- *   0 if releasing is failed
- */
 int release_netgen_parameters(struct Generate_netgen_parameters *para)
 {
     ENTER(release_netgen_parameters);
@@ -227,17 +156,6 @@ int release_netgen_parameters(struct Generate_netgen_parameters *para)
     return return_code;
 }
 
-/***************************************************************************//**
- * Calls generate_mesh_netgen for invoking netgen and will visualize the 3D mesh automatically.
- * 
- * @param fe_region Pointer to finite element which must be initialised to contain the
- *   meshing object. It will not change in this call.
- * @param netgen_para_void Pointer to parameters for the specification of meshing. It comes with 
- *   such information:pointer to the triangular surface mesh, parameters to control the quality of
- *   volume mesh 
- * @return  1 if meshsing is successful
- *   0 if meshing is failed
- */
 int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)//(struct FE_region *fe_region, void *netgen_para_void)
 {
    ENTER(generate_mesh_netgen);
@@ -251,7 +169,6 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)//(
    mp->maxh=generate_netgen_para->maxh;
    mp->fineness=generate_netgen_para->fineness;
    mp->secondorder=generate_netgen_para->secondorder;
-   mp->meshsize_filename=generate_netgen_para->meshsize_filename;
 
    /*******************************
    *for testing
@@ -272,20 +189,20 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)//(
    const Triangle_vertex *vertex1, *vertex2, *vertex3;
    for (triangle_iter = triangle_list.begin(); triangle_iter!=triangle_list.end(); ++triangle_iter)
    {
-	(*triangle_iter)->get_vertexes(&vertex1/*point 1*/,&vertex2/*point 2*/,&vertex3/*point 3*/);
-	vertex1->get_coordinates(coord1, coord1+1,coord1+2);
-	vertex2->get_coordinates(coord2, coord2+1,coord2+2);
-	vertex3->get_coordinates(coord3, coord3+1,coord3+2);
-	dcoord1[0] = (double)coord1[0];
-	dcoord1[1] = (double)coord1[1];
-	dcoord1[2] = (double)coord1[2];
-	dcoord2[0] = (double)coord2[0];
-	dcoord2[1] = (double)coord2[1];
-	dcoord2[2] = (double)coord2[2];
-	dcoord3[0] = (double)coord3[0];
-	dcoord3[1] = (double)coord3[1];
-	dcoord3[2] = (double)coord3[2];    
-        Ng_STL_AddTriangle(geom/*new geometry*/, dcoord1/*point 1*/, dcoord2/*point 2*/, dcoord3/*point 3*/);
+		 (*triangle_iter)->get_vertexes(&vertex1/*point 1*/,&vertex2/*point 2*/,&vertex3/*point 3*/);
+		 vertex1->get_coordinates(coord1, coord1+1,coord1+2);
+		 vertex2->get_coordinates(coord2, coord2+1,coord2+2);
+		 vertex3->get_coordinates(coord3, coord3+1,coord3+2);
+		 dcoord1[0] = (double)coord1[0];
+		 dcoord1[1] = (double)coord1[1];
+		 dcoord1[2] = (double)coord1[2];
+		 dcoord2[0] = (double)coord2[0];
+		 dcoord2[1] = (double)coord2[1];
+		 dcoord2[2] = (double)coord2[2];
+		 dcoord3[0] = (double)coord3[0];
+		 dcoord3[1] = (double)coord3[1];
+ 		 dcoord3[2] = (double)coord3[2];    
+		 Ng_STL_AddTriangle(geom/*new geometry*/, dcoord1/*point 1*/, dcoord2/*point 2*/, dcoord3/*point 3*/);
    }
 
    ////////////////////////////////
@@ -294,25 +211,40 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)//(
    ////////////////////////////////
 
    return_code=Ng_STL_InitSTLGeometry(geom);
-   if(return_code!=NG_OK) {Ng_Exit();return 0;}
-
+   if(return_code!=NG_OK)
+	 {
+		 Ng_Exit();
+		 return 0;
+	 }
    mesh = Ng_NewMesh (); 
    return_code=Ng_STL_MakeEdges(geom, mesh, mp);
-   if(return_code!=NG_OK) {Ng_Exit();return 0;}
+   if(return_code!=NG_OK)
+	 {
+		 Ng_Exit();
+		 return 0;
+	 }
 
    return_code=Ng_STL_GenerateSurfaceMesh(geom, mesh, mp);
-   if(return_code!=NG_OK) {Ng_Exit();return 0;}
+   if(return_code!=NG_OK)
+	 {
+		 Ng_Exit();
+		 return 0;
+	 }
  
 
    /**************************************************************
    * export the surface mesh and volume mesh in netgen format
-   * this line might be delted in the future
+   * this line might be deleted in the future
    **************************************************************/
    //Ng_SaveMesh (mesh, "surface.vol");
    ///////////////////////////////////////////////////////////////////////////
 
-   //return_code=Ng_GenerateVolumeMesh(mesh,mp);
-   //if(return_code!=NG_OK) {Ng_Exit();return 0;}
+   return_code=Ng_GenerateVolumeMesh(mesh,mp);
+   if(return_code!=NG_OK)
+	 {
+		 Ng_Exit();
+		 return 0;
+	 }
    
    //Ng_SaveMesh (mesh, "volume.vol");
 
@@ -326,8 +258,10 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)//(
    ACCESS(FE_field)(coordinate_field);
 	
    /* create and fill nodes*/
-   struct FE_node *template_node = CREATE(FE_node)(/*cm_node_identifier*/1, fe_region, /*template_node*/NULL);
-   return_code = define_FE_field_at_node_simple(template_node, coordinate_field, /*number_of_derivatives*/0, /*derivative_value_types*/NULL);
+   struct FE_node *template_node = CREATE(FE_node)(
+		 /*cm_node_identifier*/1, fe_region, /*template_node*/NULL);
+   return_code = define_FE_field_at_node_simple(
+		 template_node, coordinate_field, /*number_of_derivatives*/0, /*derivative_value_types*/NULL);
    
    const int number_of_nodes = Ng_GetNP(mesh);
    FE_value coordinates[3];
@@ -336,17 +270,18 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)//(
    int i;
    for (i = 0; i < number_of_nodes; i++)
    {
-       Ng_GetPoint (mesh, i+1/*index in netgen starts from 1*/, coor_tmp);
-       coordinates[0] = coor_tmp[0];
-       coordinates[1] = coor_tmp[1];
-       coordinates[2] = coor_tmp[2];
-       int identifier = i + initial_identifier;
-       struct FE_node *node = CREATE(FE_node)(identifier, /*fe_region*/NULL, template_node);
-       FE_region_merge_FE_node(fe_region, node);
-       ACCESS(FE_node)(node);
-       int number_of_values_confirmed;
-       return_code=set_FE_nodal_field_FE_value_values(coordinate_field, node, coordinates, &number_of_values_confirmed);
-       DEACCESS(FE_node)(&node);
+		 Ng_GetPoint (mesh, i+1/*index in netgen starts from 1*/, coor_tmp);
+		 coordinates[0] = coor_tmp[0];
+		 coordinates[1] = coor_tmp[1];
+		 coordinates[2] = coor_tmp[2];
+		 int identifier = i + initial_identifier;
+		 struct FE_node *node = CREATE(FE_node)(identifier, /*fe_region*/NULL, template_node);
+		 FE_region_merge_FE_node(fe_region, node);
+		 ACCESS(FE_node)(node);
+		 int number_of_values_confirmed;
+		 return_code=set_FE_nodal_field_FE_value_values(
+			 coordinate_field, node, coordinates, &number_of_values_confirmed);
+		 DEACCESS(FE_node)(&node);
    }
    DESTROY(FE_node)(&template_node);
 
@@ -365,18 +300,18 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)//(
    int nodal_idx[4];   
 	 for (i = 0 ; i < number_of_elements; i++)
    {
-       Ng_GetVolumeElement (mesh, i+1, nodal_idx);
-       element_identifier.type = CM_ELEMENT;
-       element_identifier.number = FE_region_get_next_FE_element_identifier(fe_region, CM_ELEMENT, i);
-       element = CREATE(FE_element)(&element_identifier, (struct FE_element_shape *)NULL,
-	        (struct FE_region *)NULL, template_element);
-       ACCESS(FE_element)(element);
-       return_code=set_FE_element_node(element, 0, FE_region_get_FE_node_from_identifier(fe_region,nodal_idx[0]));
-       return_code=set_FE_element_node(element, 1, FE_region_get_FE_node_from_identifier(fe_region,nodal_idx[1]));
-       return_code=set_FE_element_node(element, 2, FE_region_get_FE_node_from_identifier(fe_region,nodal_idx[2]));
-       return_code=set_FE_element_node(element, 3, FE_region_get_FE_node_from_identifier(fe_region,nodal_idx[3]));
-       FE_region_merge_FE_element_and_faces_and_nodes(fe_region, element);
-       DEACCESS(FE_element)(&element);
+		 Ng_GetVolumeElement (mesh, i+1, nodal_idx);
+		 element_identifier.type = CM_ELEMENT;
+		 element_identifier.number = FE_region_get_next_FE_element_identifier(fe_region, CM_ELEMENT, i);
+		 element = CREATE(FE_element)(&element_identifier, (struct FE_element_shape *)NULL,
+			 (struct FE_region *)NULL, template_element);
+		 ACCESS(FE_element)(element);
+		 return_code=set_FE_element_node(element, 0, FE_region_get_FE_node_from_identifier(fe_region,nodal_idx[0]));
+		 return_code=set_FE_element_node(element, 1, FE_region_get_FE_node_from_identifier(fe_region,nodal_idx[1]));
+		 return_code=set_FE_element_node(element, 2, FE_region_get_FE_node_from_identifier(fe_region,nodal_idx[2]));
+		 return_code=set_FE_element_node(element, 3, FE_region_get_FE_node_from_identifier(fe_region,nodal_idx[3]));
+		 FE_region_merge_FE_element_and_faces_and_nodes(fe_region, element);
+		 DEACCESS(FE_element)(&element);
    }
    DEACCESS(FE_element)(&template_element);            
 
@@ -389,12 +324,11 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)//(
 
    FE_region_end_change(fe_region);
 
-   if (mesh)
-       Ng_DeleteMesh (mesh); 
-
+	 if (mesh)
+		 Ng_DeleteMesh (mesh); 
    Ng_Exit();
    LEAVE;
-   return 1;
+   return return_code;
 } /* generate_mesh_netgen */
 
 
