@@ -111,6 +111,9 @@
       <object class = "wxMenuItem" name="AboutCmgui">
         <label>About cmgui</label>
       </object>
+      <object class = "wxMenuItem" name="BugReport">
+        <label>Report a bug</label>
+      </object>
 	</object>
   </object>
 

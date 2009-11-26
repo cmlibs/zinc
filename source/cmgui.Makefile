@@ -9,6 +9,8 @@
 # Makefile for cmgui (the front end to CMISS)
 # ==========================================================================
 
+CMISS_VERSION_STRING=2.6.1
+
 ifneq ($(WIN32_NATIVE_COMPILE),true)
    SHELL=/bin/sh
 else # $(WIN32_NATIVE_COMPILE) != true
@@ -100,23 +102,30 @@ else # $(ABI) != 64
 endif # $(ABI) != 64
 
 TARGET_USER_INTERFACE_SUFFIX :=
+INTERFACE_BUILD_NAME := 
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    TARGET_USER_INTERFACE_SUFFIX := -motif
+	 INTERFACE_BUILD_NAME := motif
 endif # $(USER_INTERFACE) == 	MOTIF_USER_INTERFACE
 ifeq ($(USER_INTERFACE), WIN32_USER_INTERFACE)
    TARGET_USER_INTERFACE_SUFFIX := -win32
+	 INTERFACE_BUILD_NAME := win32
 endif # $(USER_INTERFACE) == 	WIN32_USER_INTERFACE
 ifeq ($(USER_INTERFACE), CONSOLE_USER_INTERFACE)
    TARGET_USER_INTERFACE_SUFFIX := -console
+	 INTERFACE_BUILD_NAME := console
 endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE
 ifeq ($(USER_INTERFACE), GTK_USER_INTERFACE)
    TARGET_USER_INTERFACE_SUFFIX := -gtk
+	 INTERFACE_BUILD_NAME := gtk
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)
    TARGET_USER_INTERFACE_SUFFIX := -wx
+	 INTERFACE_BUILD_NAME := wx
 endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 ifeq ($(USER_INTERFACE), CARBON_USER_INTERFACE)
    TARGET_USER_INTERFACE_SUFFIX := -carbon
+	 INTERFACE_BUILD_NAME := carbon
 endif # $(USER_INTERFACE) == CARBON_USER_INTERFACE
 
 TARGET_COMPILER_SUFFIX :=
@@ -1332,13 +1341,27 @@ endif # $(USER_INTERFACE) == WX_USER_INTERFACE
 clobber : clean
 	-rm $(BIN_PATH)/$(BIN_TARGET)
 
+SVN_REVISION :=
+SVN_REVISION := $(shell svn info | grep "Revision")
+OPTIMISATION_STRING =
+ifneq ($(DEBUG),true)
+   OPTIMISATION_STRING = release
+else # $(DEBUG) != true
+   OPTIMISATION_STRING = debug
+endif # $(DEBUG) != true 
 $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h : $(OBJS) $(UNEMAP_OBJS) cmgui.Makefile
 	if [ ! -d $(OBJECT_PATH) ]; then \
 		mkdir -p $(OBJECT_PATH); \
 	fi	
 	echo '/* This is a generated file.  Do not edit.  Edit cmgui.c or cmgui.imake instead */' > $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h;	  
 	date > date.h
-	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 2.6.1  &/;s/.$$/&\\nCopyright 1996-2009, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h
+
+	echo >> $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h	"#define CMISS_NAME_STRING "\"CMISS\(cmgui\)\"
+	echo >> $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h	"#define CMISS_VERSION_STRING "\"$(CMISS_VERSION_STRING)\"
+	sed 's/"//;s/./#define CMISS_DATE_STRING "&/;s/.$$/&\"/' < date.h >> $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h
+	echo >> $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h	"#define CMISS_COPYRIGHT_STRING "\"Copyright 1996-2009, Auckland UniServices Ltd.\"
+	echo >> $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h	"#define CMISS_SVN_REVISION_STRING "\"$(SVN_REVISION)\"
+	echo >> $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h  "#define CMISS_BUILD_STRING "\"$(INSTRUCTION) $(SYSNAME) $(INTERFACE_BUILD_NAME) $(OPTIMISATION_STRING)\"
 
 $(MAIN_OBJ) : $(MAIN_SRC) $(OBJECT_PATH)/version.$(OBJ_SUFFIX).h $(INTERPRETER_LIB)
 	@set -x; \

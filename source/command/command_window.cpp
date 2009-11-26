@@ -60,6 +60,7 @@ extern "C" {
 #include <Xm/Text.h>
 #endif /* defined (MOTIF_USER_INTERFACE) */
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "command/command_window.h"
 #if defined (MOTIF_USER_INTERFACE)
 static char command_window_uidh[] =
@@ -77,6 +78,7 @@ static char command_window_uidh[] =
 }
 #if defined (WX_USER_INTERFACE)
 #include "wx/wx.h"
+#include "license.h"
 #include "wx/xrc/xmlres.h"
 #include "command/command_window.xrch"
 #include "icon/cmiss_icon.xpm"
@@ -1657,6 +1659,8 @@ class wxCommandWindow : public wxFrame
 	wxTextCtrl *output_list;
 	int number;
 	struct TextCtrlMouseEventData mouse_event_data;
+	const char *name_string, *version_string, *date_string,
+		*copyright_string, *build_string, *revision_string;
 
 public:
 
@@ -1673,6 +1677,12 @@ public:
 		 mouse_event_data.d_click = 0;
 		 mouse_event_data.x = 0;
 		 mouse_event_data.y = 0;
+		 name_string = NULL;
+		 version_string = NULL;
+		 date_string= NULL;
+		 copyright_string = NULL;
+		 build_string = NULL;
+		 revision_string = NULL;
 		 output_list->Connect(wxEVT_LEFT_DOWN,
 				wxMouseEventHandler(wxCommandWindow::OnOutputLeftClick), NULL, this);
 		 output_list->Connect(wxEVT_LEFT_DCLICK,
@@ -1686,7 +1696,31 @@ public:
 
   ~wxCommandWindow()
   {
-  };  
+		if (name_string)
+		{
+			DEALLOCATE(name_string);
+		}
+		if (version_string)
+		{
+			DEALLOCATE(version_string);
+		}
+		if (date_string)
+		{
+			DEALLOCATE(date_string);
+		}
+		if (copyright_string)
+		{
+			DEALLOCATE(copyright_string);
+		}
+		if (build_string)
+		{
+			DEALLOCATE(build_string);
+		}
+		if (revision_string)
+		{
+			DEALLOCATE(revision_string);
+		}
+  }; 
 
 	 void OutputListTripleClickEvent()
 	 {
@@ -1771,6 +1805,18 @@ public:
 			history_list->SetSelection(history_list->GetCount()-1);
 			history_list->Thaw(); 
 	 }
+
+	void SetCmguiStrings(const char *name_string_in, const char *version_string_in,
+		const char *date_string_in, const char *copyright_string_in,
+		const char *build_string_in, const char *revision_string_in)
+	{
+		name_string = duplicate_string(name_string_in);
+		version_string = duplicate_string(version_string_in);
+		date_string = duplicate_string(date_string_in);
+		copyright_string = duplicate_string(copyright_string_in);
+		build_string = duplicate_string(build_string_in);
+		revision_string = duplicate_string(revision_string_in);
+	}
 
 private:
 	 
@@ -1963,17 +2009,41 @@ private:
 	 
 	 void ShowSimpleAboutDialog(wxCommandEvent& event)
 	 {
-		USE_PARAMETER(event);
-			wxAboutDialogInfo info;
-			info.SetName(_("cmgui"));
-			info.SetDescription(_("This software is part of CMISS and originally developed at The University of Auckland.\n It is released under the Mozilla Public License v1.1"));
-			info.SetCopyright(_T("Copyright held partially by Auckland UniServices Ltd."));
-			info.SetWebSite(_("http://www.cmiss.org/cmgui"));
-
-			info.SetLicense(_T( "This software is of CMISS and originally developed at The University of Auckland.\n\nThe strengths of this development are field storage including many finite element basis types,\n3D visualisation and a mathematical field abstraction layer.\n\nIt includes some modules which are being deprecated and phased out, and some which under active development.\n\ncmgui is released under the Mozilla Public License v1.1.\nCopyright held partially by Auckland UniServices Ltd.\n\nIt is developed and built with the following sources.\n\nImageMagick-5.3.3\nCopyright (C) 2000 ImageMagick Studio\nhttp://www.imagemagick.org\n\nTiff\nCopyright (c) 1988-1997 Sam Leffler\nCopyright (c) 1991-1997 Silicon Graphics, Inc.\nhttp://www.libtiff.org\n\nJPEG\nThis software is copyright (C) 1991-1998, Thomas G. Lane.\nhttp://www.ijg.org\n\nzlib\n(C) 1995-1998 Jean-loup Gailly and Mark Adler\nftp://ftp.uu.net/pub/archiving/zip/zlib/zlib-1.1.3,gz\n\npnglib\nCopyright (c) 2000 Glenn Randers-Pehrso\n\nlibxml2\nCopyright (C) 1998-2002 Daniel Veillard.\n\nwxWidgets\ncopyright (C) 1998-2005 Julian Smart, Robert Roebling et al\nhttp://wxwidgets.org/\n\nITK\nCopyright (c) 1999-2003 Insight Software Consortium\n\nExternal Contributors/Dependencies:\nZest\nSpark Dental"));
-
-			wxAboutBox(info);
+		 char *temp_string;
+		 const char *license_string = "\nThis software is part of CMISS and originally developed \nat The University of Auckland.\n";
+		 USE_PARAMETER(event);
+		 wxAboutDialogInfo info;
+		 info.SetName(_T("cmgui"));
+		 if (ALLOCATE(temp_string, char, strlen(copyright_string) + strlen(license_string) + 1))
+		 {
+			 strcpy(temp_string, copyright_string);
+			 strcat(temp_string, license_string);
+			 info.SetDescription(_T(temp_string));
+			 DEALLOCATE(temp_string);
+		 }
+		 if (ALLOCATE(temp_string, char, strlen(build_string) + strlen(revision_string) + strlen(date_string) + 23))
+		 {
+			 strcpy(temp_string, "Build_information: ");
+			 strcat(temp_string, build_string);
+			 strcat(temp_string, "\n");
+			 strcat(temp_string, revision_string);
+			 strcat(temp_string, "\n");
+			 strcat(temp_string, date_string);
+			 info.SetCopyright(_T(temp_string));
+			 DEALLOCATE(temp_string);
+		 }
+		 info.SetVersion(_T(version_string));
+		 info.SetWebSite(_T("http://www.cmiss.org/cmgui"));
+		 info.SetLicense(CMISS_LICENSE_STRING);
+		 wxAboutBox(info);
 	 }
+
+	void ShowBugReport(wxCommandEvent& event)
+	{
+		USE_PARAMETER(event);
+		wxLaunchDefaultBrowser(
+ 			_T("https://tracker.physiomeproject.org/enter_bug.cgi?product=cmgui&format=software"));
+	}
 
 void Terminate(wxCloseEvent& event)
 {
@@ -2018,6 +2088,7 @@ BEGIN_EVENT_TABLE(wxCommandWindow, wxFrame)
 	 EVT_MENU(XRCID("GraphicsSpectrumeditor"),wxCommandWindow::spectrumeditor)
 	 EVT_MENU(XRCID("FontCmgui"),wxCommandWindow::OnFormatFont)
 	 EVT_MENU(XRCID("AboutCmgui"),wxCommandWindow::ShowSimpleAboutDialog)
+	 EVT_MENU(XRCID("BugReport"),wxCommandWindow::ShowBugReport)
 	 EVT_CLOSE(wxCommandWindow::Terminate)
 	 EVT_MENU(XRCID("MenuExit"),wxCommandWindow::Exit)
 END_EVENT_TABLE()
@@ -2120,9 +2191,11 @@ Global functions
 ----------------
 */
 
+
 struct Command_window *CREATE(Command_window)(
 	struct Execute_command *execute_command,struct User_interface *user_interface,
-	char *version_id_string)
+	const char *name_string, const char *version_string,const char *date_string,
+	const char *copyright_string, const char *build_string, const char *revision_string)
 /*******************************************************************************
 LAST MODIFIED : 9 May 2000
 
@@ -2180,12 +2253,12 @@ Create the structures and retrieve the command window from the uil file.
 	};
 	static MrmRegisterArg identifier_list[2];
 #elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
-	USE_PARAMETER(version_id_string);
+	USE_PARAMETER(version_string);
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
 	BOOL win32_return_code;
 	static char *class_name="Command_window";
 	WNDCLASSEX class_information;
-	USE_PARAMETER(version_id_string);
+	USE_PARAMETER(version_string);
 #elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #if GTK_MAJOR_VERSION >= 2
 	GtkTextIter end_iterator;
@@ -2194,8 +2267,16 @@ Create the structures and retrieve the command window from the uil file.
 #endif /* switch (USER_INTERFACE) */
 
 #if defined (GTK_USER_INTERFACE)
-	USE_PARAMETER(version_id_string);
+	USE_PARAMETER(version_string);
 #endif /* switch (GTK_USER_INTERFACE) */
+#if !defined(WX_USER_INTERFACE)
+	USE_PARAMETER(name_string);
+	USE_PARAMETER(date_string);
+	USE_PARAMETER(copyright_string);
+	USE_PARAMETER(build_string);
+	USE_PARAMETER(revision_string);
+#endif /* switch (WX_USER_INTERFACE) */
+
 	ENTER(CREATE(Command_window));
 	/* check arguments */
 	if (execute_command&&user_interface)
@@ -2320,8 +2401,8 @@ Create the structures and retrieve the command window from the uil file.
 									CMGUI_RESPONSE_PROPERTY,False);
 								XChangeProperty(User_interface_get_display(user_interface),
 									XtWindow(command_window->shell),XA_CMGUI_VERSION,XA_STRING,8,
-									PropModeReplace,(unsigned char *)version_id_string,
-									strlen(version_id_string));
+									PropModeReplace,(unsigned char *)version_string,
+									strlen(version_string));
 #if defined (OLD_CODE)								
 								XGetWindowAttributes(User_interface_get_display(user_interface),
 									XtWindow(command_window->shell),&window_attributes);
@@ -2639,6 +2720,8 @@ Create the structures and retrieve the command window from the uil file.
 			  XRCCTRL(*command_window->wx_command_window, "CmguiCommandWindow", wxFrame);
 			command_window->frame->SetSize(wxSize(400,600)); 
 			command_window->frame->SetMinSize(wxSize(1,1));
+			command_window->wx_command_window->SetCmguiStrings(name_string, version_string, date_string,
+				copyright_string, build_string, revision_string);
 			wxSplitterWindow *splitter_window =
 				 XRCCTRL(*command_window->wx_command_window, "CommandSplitterWindow", 
 						wxSplitterWindow);

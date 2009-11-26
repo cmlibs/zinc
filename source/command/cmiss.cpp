@@ -24917,11 +24917,14 @@ Parses command line options from <state>.
 
 #if !defined (WIN32_USER_INTERFACE)
 struct Cmiss_command_data *CREATE(Cmiss_command_data)(int argc,char *argv[], 
-	char *version_string)
+	const char *name_string, const char *version_string,const char *date_string,
+	const char *copyright_string, const char *build_string, const char *revision_string)
 #else /* !defined (WIN32_USER_INTERFACE) */
 struct Cmiss_command_data *CREATE(Cmiss_command_data)(int argc,char *argv[], 
-	char *version_string, HINSTANCE current_instance,
-	HINSTANCE previous_instance, LPSTR command_line,int initial_main_window_state)
+	const char *name_string, const char *version_string,const char *date_string,
+	const char *copyright_string, const char *build_string, const char *revision_string,
+	HINSTANCE current_instance, HINSTANCE previous_instance, LPSTR command_line,
+	int initial_main_window_state)
 #endif /* !defined (WIN32_USER_INTERFACE) */
 /*******************************************************************************
 LAST MODIFIED : 3 April 2003
@@ -24932,8 +24935,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 {
 	char *cm_examples_directory,*cm_parameters_file_name,*comfile_name,
 		*example_id,*examples_directory,*examples_environment,*execute_string,
-		*version_command_id,
-		version_id_string[100],*version_ptr,version_temp[20];
+		*version_command_id;
+	const char *version_string_to_pass;
 	char global_temp_string[1000];
 	float default_light_direction[3]={0.0,-0.5,-1.0};
 	int i, number_of_startup_materials, return_code;
@@ -25924,13 +25927,19 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				{
 #endif /* defined (MOTIF_USER_INTERFACE) */
 					/* create the main window */
+#if defined (MOTIF_USER_INTERFACE)
+					/* MOTIF uses the version string for a specific purpose
+						 therefore we will setup the version string differently */
+					char version_temp[50], version_id_string[100];
 					/* construct the version ID string which is exported in the command
 						windows version atom */
 					strcpy(version_id_string,"cmiss*");
 					/* version number */
-					if (version_ptr=strstr(version_string,"version "))
+					if (version_string && date_string)
 					{
-						strncpy(version_temp,version_ptr+8,11);
+						strcpy(version_temp, version_string);
+						strcat(version_temp, "  ");
+						strcat(version_temp, date_string);
 						version_temp[11] = 0;
 						strcat(version_id_string,version_temp);
 					}
@@ -25953,7 +25962,10 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 							strcat(version_id_string, "cm ");
 						}
 					}
-
+					version_string_to_pass = version_id_string;
+#else /* defined (MOTIF_USER_INTERFACE) */
+					version_string_to_pass = version_string;
+#endif
 					if (!server_mode)
 					{
 #if defined(USE_CMGUI_COMMAND_WINDOW) 
@@ -25972,7 +25984,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 						else
 						{
 							if (command_window=CREATE(Command_window)(command_data->execute_command,
-									command_data->user_interface,version_id_string))
+									command_data->user_interface,name_string, version_string_to_pass,
+									date_string, copyright_string, build_string, revision_string))
 							{
 								command_data->command_window=command_window;
 								if (!batch_mode)

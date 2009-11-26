@@ -78,7 +78,8 @@ Global functions
 */
 struct Command_window *CREATE(Command_window)(
 	struct Execute_command *execute_command,struct User_interface *user_interface,
-	char *version_id_string);
+	const char *name_string, const char *version_string,const char *date_string,
+	const char *copyright_string, const char *build_string, const char *revision_string);
 /*******************************************************************************
 LAST MODIFIED : 24 July 1998
 

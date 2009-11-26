@@ -103,11 +103,14 @@ for editing or entering. If there is no command_window, does nothing.
 
 #if !defined (WIN32_USER_INTERFACE)
 struct Cmiss_command_data *CREATE(Cmiss_command_data)(int argc,char *argv[],
-	char *version_string);
+	const char *name_string, const char *version_string,const char *date_string,
+	const char *copyright_string, const char *build_string, const char *revision_string);
 #else /* !defined (WIN32_USER_INTERFACE) */
 struct Cmiss_command_data *CREATE(Cmiss_command_data)(int argc,char *argv[],
-	char *version_string, HINSTANCE current_instance, 
-        HINSTANCE previous_instance, LPSTR command_line,int initial_main_window_state);
+	const char *name_string, const char *version_string, const char *date_string,
+	const char *copyright_string, const char *build_string, const char *revision_string, 
+	HINSTANCE current_instance, HINSTANCE previous_instance, 
+	LPSTR command_line,int initial_main_window_state);
 #endif /* !defined (WIN32_USER_INTERFACE) */
 /*******************************************************************************
 LAST MODIFIED : 19 December 2002

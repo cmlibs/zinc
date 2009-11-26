@@ -60,14 +60,16 @@ Global functions
 struct Cmiss_command_data *Cmiss_command_data_create(int argc,char *argv[],
 	char *version_string)
 {
-	return CREATE(Cmiss_command_data)(argc, argv, version_string);
+	return CREATE(Cmiss_command_data)(argc, argv, version_string, NULL
+		, NULL, NULL, NULL, NULL);
 }
 #else /* !defined (WIN32_USER_INTERFACE) */
 struct Cmiss_command_data *Cmiss_command_data_create(int argc,char *argv[],
 	char *version_string, HINSTANCE current_instance, 
 	HINSTANCE previous_instance, LPSTR command_line,int initial_main_window_state)
 {
-	return CREATE(Cmiss_command_data)(argc, argv, version_string, current_instance,
+	return CREATE(Cmiss_command_data)(argc, argv, version_string, NULL, NULL,
+		NULL, NULL, NULL, current_instance,
 		previous_instance, command_line, initial_main_window_state);
 }
 #endif /* !defined (WIN32_USER_INTERFACE) */

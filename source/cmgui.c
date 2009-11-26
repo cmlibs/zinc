@@ -118,7 +118,10 @@ Main program for the CMISS Graphical User Interface
 #endif /* !defined (WIN32_USER_INTERFACE) */
 
 	/* display the version */
-	display_message(INFORMATION_MESSAGE, VERSION "\n");
+	display_message(INFORMATION_MESSAGE, "%s version %s %s\n%s\n"
+		"Build information: %s %s\n", CMISS_NAME_STRING, CMISS_VERSION_STRING, 
+		CMISS_DATE_STRING, CMISS_COPYRIGHT_STRING, CMISS_BUILD_STRING,
+		CMISS_SVN_REVISION_STRING);
 
 #if defined (WX_USER_INTERFACE) && (DARWIN)
 	ProcessSerialNumber PSN;
@@ -126,10 +129,14 @@ Main program for the CMISS Graphical User Interface
 	TransformProcessType(&PSN,kProcessTransformToForegroundApplication);
 #endif
 #if !defined (WIN32_USER_INTERFACE)
-	if ( (command_data = CREATE(Cmiss_command_data)(argc, argv, VERSION)) )
+	if ((command_data = CREATE(Cmiss_command_data)(argc, argv, CMISS_NAME_STRING, CMISS_VERSION_STRING, 
+				CMISS_DATE_STRING, CMISS_COPYRIGHT_STRING, CMISS_BUILD_STRING,
+				CMISS_SVN_REVISION_STRING)))
 #else /* !defined (WIN32_USER_INTERFACE) */
-	if ( (command_data = CREATE(Cmiss_command_data)(argc, argv, VERSION, 
-                           current_instance, previous_instance, command_line, initial_main_window_state)) )
+	if ((command_data = CREATE(Cmiss_command_data)(argc, argv, CMISS_NAME_STRING, CMISS_VERSION_STRING, 
+				CMISS_DATE_STRING, CMISS_COPYRIGHT_STRING, CMISS_BUILD_STRING,
+				CMISS_SVN_REVISION_STRING, 
+				current_instance, previous_instance, command_line, initial_main_window_state)))
 #endif /* !defined (WIN32_USER_INTERFACE) */
 	{
 		Cmiss_command_data_main_loop(command_data);
