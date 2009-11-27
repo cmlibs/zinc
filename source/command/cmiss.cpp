@@ -12353,6 +12353,7 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 			double fineness=0.5;
 			int secondorder=0;    
 			struct Scene *scene;
+			char meshsize_file[200];
 			struct Option_table *option_table;
 			scene = ACCESS(Scene)(command_data->default_scene);
 			option_table = CREATE(Option_table)();
@@ -12369,6 +12370,8 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 				&fineness,(void *)NULL,set_double);
 			Option_table_add_entry(option_table,"secondorder",
 				&secondorder,(void *)NULL,set_int);
+			Option_table_add_entry(option_table,"meshsize_file",
+				meshsize_file,(void *)NULL,set_string);
 
 			if ((return_code = Option_table_multi_parse(option_table,state)))
 			{
@@ -12435,6 +12438,7 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 							set_netgen_parameters_fineness(generate_netgen_para,fineness);
 							set_netgen_parameters_secondorder(generate_netgen_para,secondorder);   
 							set_netgen_parameters_trimesh(generate_netgen_para, trimesh);
+							set_netgen_parameters_meshsize_filename(generate_netgen_para, meshsize_file);
 							generate_mesh_netgen(Cmiss_region_get_FE_region(region), generate_netgen_para);
 							release_netgen_parameters(generate_netgen_para);        
 							

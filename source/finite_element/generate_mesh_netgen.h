@@ -114,5 +114,14 @@ int set_netgen_parameters_maxh(struct Generate_netgen_parameters *para, double m
  */
 int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void);
 
+/***************************************************************************//**
+ * Calls set_netgen_parameters_meshsize_filename for setting mesh size file name
+ * 
+ * @param para  Pointer to a parameter set for netgen.
+ * @param meshsize_filename  is mesh size file name
+ * @return  1 if setting is successful
+ *   0 if setting is failed
+ */
+int set_netgen_parameters_meshsize_filename(struct Generate_netgen_parameters *para, char* meshsize_filename);
 #endif /* GENERATE_MESH_NETGEN_H */
 

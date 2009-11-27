@@ -50,6 +50,7 @@ extern "C" {
 #include <stdlib.h>
 #include <math.h>
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "finite_element/generate_mesh_netgen.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
@@ -68,10 +69,11 @@ using namespace nglib;
 
 struct Generate_netgen_parameters
 {   
-   double maxh;
-   double fineness;
-   int secondorder;
-   Triangle_mesh *trimesh; 
+	double maxh;
+	double fineness;
+	int secondorder;
+	Triangle_mesh *trimesh; 
+	char* meshsize_filename;
 };/*struct Generate_netgen_parameters*/
 
 int set_netgen_parameters_trimesh(struct Generate_netgen_parameters *para, void *trimesh)
@@ -132,6 +134,101 @@ int set_netgen_parameters_secondorder(struct Generate_netgen_parameters *para, i
     return return_code;
 }
 
+int set_netgen_parameters_meshsize_filename(struct Generate_netgen_parameters *para, char* meshsize_filename)
+{
+    int return_code=0;
+
+    ENTER(set_netgen_parameters_meshsize_filename);
+    if(para)
+		{
+			para->meshsize_filename=duplicate_string(meshsize_filename);
+			return_code=1;
+		}
+    LEAVE;
+
+    return return_code;
+}
+
+/***************************************************************************//**
+ * brief Locally restrict the mesh element size at the given point
+ *
+ * Unlike the function #Ng_RestrictMeshSizeGlobal, this function 
+ * allows the user to locally restrict the maximum allowable mesh 
+ * size at a given point.
+ *
+ * The point is specified via its three cartesian co-ordinates.
+ *
+ * <b>Note</b>: This function only limits the <b>Maximum</b> size 
+ * of the elements around the specified point.
+ *
+ * @param mesh  Pointer to an existing Netgen Mesh structure of 
+ *               type #Ng_Mesh
+ * @param p  Pointer to an Array of type <i>double</i>, containing 
+ *             the three co-ordinates of the point in the form: \n
+ *             - p[0] = X co-ordinate
+ *             - p[1] = Y co-ordinate
+ *             - p[2] = Z co-ordinate
+ * @param h  Variable of type <i>double</i>, specifying the maximum
+ *             allowable mesh size at that point
+ */
+int set_netgen_restrict_meshsizepoint(Ng_Mesh *mesh, double *p, double h)
+{
+    ENTER(set_netgen_restrict_meshsizepoint);
+    int return_code=0;
+
+    if(mesh)
+		{
+			Ng_RestrictMeshSizePoint(mesh, p,h);
+			return_code=1;
+    }
+
+    LEAVE;
+    return return_code;
+}
+
+/***************************************************************************//**
+ *
+ *  Similar to the function set_netgen_restrict_meshsize_Point, this function 
+ *  allows the size of elements within a mesh to be locally limited.
+ *
+ *  However, rather than limit the mesh size at a single point, this 
+ *  utility restricts the local mesh size within a 3D Box region, specified 
+ *  via the co-ordinates of the two diagonally opposite points of a cuboid.
+ *
+ *  <b>Note</b>: This function only limits the <b>Maximum</b> size 
+ *  of the elements within the specified region.
+ *
+ *  @param mesh Pointer to an existing Netgen Mesh structure of 
+ *              type #Ng_Mesh
+ *  @param pmin Pointer to an Array of type <i>double</i>, containing 
+ *             the three co-ordinates of the first point of the cuboid: \n
+ *              - pmin[0] = X co-ordinate
+ *              - pmin[1] = Y co-ordinate
+ *              - pmin[2] = Z co-ordinate
+ *  @param pmax Pointer to an Array of type <i>double</i>, containing 
+ *              the three co-ordinates of the opposite point of the 
+ *              cuboid: \n
+
+ *              - pmax[0] = X co-ordinate
+ *              - pmax[1] = Y co-ordinate
+ *              - pmax[2] = Z co-ordinate
+ *  @param h    Variable of type <i>double</i>, specifying the maximum
+ *              allowable mesh size at that point
+ */
+int set_netgen_restrict_meshsizebox(Ng_Mesh *mesh, double *pmin, double *pmax, double h)
+{
+    ENTER(set_netgen_restrict_meshsizebox);
+    int return_code=0;
+
+    if(mesh)
+		{     
+			Ng_RestrictMeshSizeBox(mesh, pmin, pmax,h);
+			return_code=1;
+		}
+    LEAVE;
+    return return_code;
+}
+
 struct Generate_netgen_parameters * create_netgen_parameters()
 {
     ENTER(create_netgen_parameters);
@@ -145,18 +242,24 @@ struct Generate_netgen_parameters * create_netgen_parameters()
 
 int release_netgen_parameters(struct Generate_netgen_parameters *para)
 {
-    ENTER(release_netgen_parameters);
     int return_code=0;
 
-    if(para==NULL) return return_code;
-    delete para;
-    return_code=1;
-    
+    ENTER(release_netgen_parameters);
+    if(para)
+		{
+			if (para->meshsize_filename)
+			{
+				DEALLOCATE(para->meshsize_filename);
+			}
+			delete para;
+			return_code=1;
+		}
     LEAVE;
+
     return return_code;
 }
 
-int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)//(struct FE_region *fe_region, void *netgen_para_void)
+int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)
 {
    ENTER(generate_mesh_netgen);
    
@@ -169,13 +272,7 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)//(
    mp->maxh=generate_netgen_para->maxh;
    mp->fineness=generate_netgen_para->fineness;
    mp->secondorder=generate_netgen_para->secondorder;
-
-   /*******************************
-   *for testing
-   *mp.maxh=100000;
-   *mp.fineness = 0.5;
-   *mp.secondorder = 0;
-   ******************************/
+   mp->meshsize_filename=generate_netgen_para->meshsize_filename;
 
    Ng_Init();
    geom=Ng_STL_NewGeometry(); 
@@ -205,11 +302,6 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)//(
 		 Ng_STL_AddTriangle(geom/*new geometry*/, dcoord1/*point 1*/, dcoord2/*point 2*/, dcoord3/*point 3*/);
    }
 
-   ////////////////////////////////
-   //for testing
-   //geom=Ng_STL_LoadGeometry("part1.stl");
-   ////////////////////////////////
-
    return_code=Ng_STL_InitSTLGeometry(geom);
    if(return_code!=NG_OK)
 	 {
@@ -230,14 +322,6 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)//(
 		 Ng_Exit();
 		 return 0;
 	 }
- 
-
-   /**************************************************************
-   * export the surface mesh and volume mesh in netgen format
-   * this line might be deleted in the future
-   **************************************************************/
-   //Ng_SaveMesh (mesh, "surface.vol");
-   ///////////////////////////////////////////////////////////////////////////
 
    return_code=Ng_GenerateVolumeMesh(mesh,mp);
    if(return_code!=NG_OK)
@@ -245,10 +329,6 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)//(
 		 Ng_Exit();
 		 return 0;
 	 }
-   
-   //Ng_SaveMesh (mesh, "volume.vol");
-
-   /**************************************************************/
 
    FE_region_begin_change(fe_region);
 

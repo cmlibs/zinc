@@ -56,7 +56,7 @@ UNEMAP = false
 LINK_CMISS = false
 USE_PERL_INTERPRETER = true
 USE_IMAGEMAGICK = true
-USE_NETGEN = false
+USE_NETGEN = true
 #Does your version of imagemagick include libgdcm
 USE_LIBGDCM = false
 ifeq ($(SYSNAME),Linux)
