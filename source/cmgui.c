@@ -118,7 +118,7 @@ Main program for the CMISS Graphical User Interface
 #endif /* !defined (WIN32_USER_INTERFACE) */
 
 	/* display the version */
-	display_message(INFORMATION_MESSAGE, "%s version %s %s\n%s\n"
+	display_message(INFORMATION_MESSAGE, "%s version %s  %s\n%s\n"
 		"Build information: %s %s\n", CMISS_NAME_STRING, CMISS_VERSION_STRING, 
 		CMISS_DATE_STRING, CMISS_COPYRIGHT_STRING, CMISS_BUILD_STRING,
 		CMISS_SVN_REVISION_STRING);
