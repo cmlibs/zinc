@@ -1523,7 +1523,7 @@ DESCRIPTION :
 			 if (Graphics_library_check_extension(GL_EXT_framebuffer_object))
 			 {
 				 GLint buffer_size;
-				 glGenFramebuffersEXT (1,&buffer->fbo);
+				 glGenFramebuffersEXT(1,&buffer->fbo);
 				 glGenRenderbuffersEXT(1, &buffer->depthbuffer);
 				 glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE_EXT, &buffer_size);
 				 if (height > buffer_size)
@@ -6121,46 +6121,52 @@ DESCRIPTION :
 			{
 				return_code = 0;
 			} break;
-			 case GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE:
+			case GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE:
 			{
 #if defined (OPENGL_API) && defined (GL_EXT_framebuffer_object)
-			 if (Graphics_library_check_extension(GL_EXT_framebuffer_object))
-			 {
-				 if (buffer->fbo && buffer->depthbuffer && buffer->img)
-				 glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, buffer->fbo);
-				 glBindRenderbufferEXT(GL_RENDERBUFFER_EXT,buffer->depthbuffer);
-				 glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT,
-					 buffer->framebuffer_width, buffer->framebuffer_height);
-				 glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT,
-					 GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, buffer->img, 0);
-				 glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, 
-					 GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, buffer->depthbuffer);
-				 GLenum status;
-				 status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-				 switch(status) 
-				 {                                          
-					 case GL_FRAMEBUFFER_COMPLETE_EXT:
-					 {
-						 return_code = 1;
-					 }    
-					 break;
-					 case GL_FRAMEBUFFER_UNSUPPORTED_EXT:
-					 {
-						 display_message(ERROR_MESSAGE, 
-							 "Graphics_buffer_make_current."  
-							 "Framebuffer object format not supported.\n");
-						 return_code = 0;
-					 } 
-					 break;
-					 default:
-					 {
-						 display_message(ERROR_MESSAGE, 
-							 "Graphics_buffer_make_current." 
-							 "Framebuffer object not supported.\n");
-						 return_code = 0;
-					 }
-				 }
-			 }
+				if (Graphics_library_check_extension(GL_EXT_framebuffer_object))
+				{
+					if (buffer->fbo && buffer->depthbuffer && buffer->img)
+					{
+						glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, buffer->fbo);
+						glBindRenderbufferEXT(GL_RENDERBUFFER_EXT,buffer->depthbuffer);
+						glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT,
+							buffer->framebuffer_width, buffer->framebuffer_height);
+						glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT,
+							GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, buffer->img, 0);
+						glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, 
+							GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, buffer->depthbuffer);
+						GLenum status;
+						status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+						switch(status) 
+						{                                          
+							case GL_FRAMEBUFFER_COMPLETE_EXT:
+							{
+								return_code = 1;
+							}    
+							break;
+							case GL_FRAMEBUFFER_UNSUPPORTED_EXT:
+							{
+								display_message(ERROR_MESSAGE,
+									"Graphics_buffer_make_current."
+									"Framebuffer object format not supported.\n");
+								return_code = 0;
+							} 
+							break;
+							default:
+							{
+								display_message(ERROR_MESSAGE, 
+									"Graphics_buffer_make_current." 
+									"Framebuffer object not supported.\n");
+								return_code = 0;
+							}
+						}
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
 #endif
 			} break;
 #endif /* defined (WX_USER_INTERFACE) */

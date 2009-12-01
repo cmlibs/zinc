@@ -6746,6 +6746,15 @@ graphics window on screen.
 		}
 		if (!force_onscreen)
 		{
+			if (GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE ==
+				Graphics_buffer_get_type(offscreen_buffer))
+			{
+				for (pane = 0 ; pane < number_of_panes ; pane++)
+				{
+					Scene_viewer_redraw_now(
+						Graphics_window_get_Scene_viewer(window,pane));
+				}
+			}
 			number_of_components =
 				Texture_storage_type_get_number_of_components(storage);
 			if (ALLOCATE(*frame_data, unsigned char,
