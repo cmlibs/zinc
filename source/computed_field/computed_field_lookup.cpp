@@ -935,6 +935,7 @@ DESCRIPTION :
 			display_message(INFORMATION_MESSAGE, "    region : %s\n", region_path);
 			DEALLOCATE(region_path);
 		}
+		return_code = 1;
 	}
 	else
 	{
