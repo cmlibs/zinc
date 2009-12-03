@@ -83,7 +83,7 @@ public:
 	int xi_index;
 	int derivative_operator_order;
        
-	Computed_field_derivative_image_filter(Computed_field *field,
+	Computed_field_derivative_image_filter(Computed_field *source_field, 
 		int xi_index, int derivative_operator_order);
 
 	~Computed_field_derivative_image_filter()
@@ -104,9 +104,11 @@ public:
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	virtual void create_functor();
+
+	Computed_field_core *copy()
 	{
-		return new Computed_field_derivative_image_filter(new_parent, xi_index, derivative_operator_order);
+		return new Computed_field_derivative_image_filter(field->source_fields[0], xi_index, derivative_operator_order);
 	}
 
 	char *get_type_string()
@@ -230,8 +232,8 @@ and generate the outputImage.
 }; /* template < class ImageType > class Computed_field_derivative_image_filter_Functor */
 
 Computed_field_derivative_image_filter::Computed_field_derivative_image_filter(
-	Computed_field *field, int xi_index, int derivative_operator_order) : 
-	Computed_field_ImageFilter(field), 
+	Computed_field *source_field, int xi_index, int derivative_operator_order) : 
+	Computed_field_ImageFilter(source_field), 
 	xi_index(xi_index), derivative_operator_order(derivative_operator_order)
 /*******************************************************************************
 LAST MODIFIED : 2 July 2007
@@ -239,6 +241,10 @@ LAST MODIFIED : 2 July 2007
 DESCRIPTION :
 Create the ITK implementation for a Computed_field_derivative.
 ==============================================================================*/
+{
+}
+
+void Computed_field_derivative_image_filter::create_functor()
 {
 #if defined DONOTUSE_TEMPLATETEMPLATES
 	create_filters_singlecomponent_multidimensions(
@@ -266,8 +272,8 @@ public:
 
 	Computed_field_derivative_image_filter *derivative_image_filter;
 
-	Computed_field_derivative(Computed_field *field, int xi_index) : 
-		Computed_field_core(field), xi_index(xi_index)
+	Computed_field_derivative(int xi_index) : 
+		Computed_field_core(), xi_index(xi_index)
 	{
 		/* Only construct the image filter version if it is required */
 		derivative_image_filter = (Computed_field_derivative_image_filter *)NULL;
@@ -282,7 +288,7 @@ public:
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent);
+	Computed_field_core *copy();
 
 	char *get_type_string()
 	{
@@ -312,7 +318,7 @@ private:
 
 };
 
-Computed_field_core* Computed_field_derivative::copy(Computed_field* new_parent)
+Computed_field_core* Computed_field_derivative::copy()
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -320,21 +326,7 @@ DESCRIPTION :
 Copy the type specific data used by this type.
 ==============================================================================*/
 {
-	Computed_field_derivative* core;
-
-	ENTER(Computed_field_derivative::copy);
-	if (new_parent)
-	{
-		core = new Computed_field_derivative(new_parent, xi_index);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_derivative::copy.  "
-			"Invalid arguments.");
-		core = (Computed_field_derivative*)NULL;
-	}
-	LEAVE;
+	Computed_field_derivative* core = new Computed_field_derivative(xi_index);
 
 	return (core);
 } /* Computed_field_derivative::copy */
@@ -506,11 +498,23 @@ Evaluate the fields cache at the location
 				{
 					/* Hard coding the default first order operator for now */
 					derivative_image_filter = new 
-						Computed_field_derivative_image_filter(field, xi_index,
-							/*derivative_operator_order*/1);
+						Computed_field_derivative_image_filter(field->source_fields[0],
+							xi_index, /*derivative_operator_order*/1);
+					// GRC: following attaches another core to the same field
+					if (derivative_image_filter)
+					{
+						derivative_image_filter->attach_to_field(field);
+					}
 				}
-				return_code = derivative_image_filter->evaluate_cache_at_location(
-					location);
+				if (derivative_image_filter)
+				{
+					return_code = derivative_image_filter->evaluate_cache_at_location(
+						location);
+				}
+				else
+				{
+					return_code = 0;
+				}
 			}
 			
 			if (sizes)
@@ -602,54 +606,19 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_derivative(struct Computed_field *field,
+struct Computed_field *Computed_field_create_derivative(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, int xi_index)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_DERIVATIVE with the supplied
-<source_field> and <xi_index>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
+	Computed_field *field = Computed_field_create_generic(field_factory,
+		/*check_source_field_regions*/true,
+		source_field->number_of_components,
+		/*number_of_source_fields*/1, &source_field,
+		/*number_of_source_values*/0, NULL,
+		new Computed_field_derivative(xi_index));
 
-	ENTER(Computed_field_set_type_derivative);
-	if (field && source_field)
-	{
-		return_code=1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->number_of_components = source_field->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_derivative(field, xi_index);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_derivative.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_derivative */
+	return (field);
+}
 
 int Computed_field_get_type_derivative(struct Computed_field *field,
 	struct Computed_field **source_field, int *xi_index)
@@ -695,24 +664,24 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code, xi_index;
-	struct Computed_field *field,*source_field;
+	struct Computed_field *source_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_derivative);
 	USE_PARAMETER(computed_field_derivatives_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
 		source_field = (struct Computed_field *)NULL;
 		xi_index = 1;
-		if (computed_field_derivative_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_derivative_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code=Computed_field_get_type_derivative(field,
+			return_code=Computed_field_get_type_derivative(field_modify->get_field(),
 				&source_field, &xi_index);
 			xi_index++;
 		}
@@ -741,7 +710,7 @@ already) and allows its contents to be modified.
 
 			/* field */
 			set_source_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_source_field_data.conditional_function =
 				Computed_field_has_numerical_components;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -755,8 +724,9 @@ already) and allows its contents to be modified.
 			/* no errors,not asking for help */
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_derivative(field,
-					source_field, xi_index - 1);
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_derivative(field_modify->get_field_factory(),
+						source_field, xi_index - 1));
 			}
 			if (!return_code)
 			{
@@ -793,14 +763,14 @@ char computed_field_curl_type_string[] = "curl";
 class Computed_field_curl : public Computed_field_core
 {
 public:
-	Computed_field_curl(Computed_field *field) : Computed_field_core(field)
+	Computed_field_curl() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_curl(new_parent);
+		return new Computed_field_curl();
 	}
 
 	char *get_type_string()
@@ -1064,71 +1034,33 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_curl(struct Computed_field *field,
-	struct Computed_field *vector_field,struct Computed_field *coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CURL, combining a vector and
-coordinate field to return the curl scalar.
-Sets the number of components to 3.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-<vector_field> and <coordinate_field> must both have exactly 3 components.
-The vector field must also be RECTANGULAR_CARTESIAN.
-Note that an error will be reported on calculation if the xi-dimension of the
-element and the number of components in coordinate_field & vector_field differ.
-==============================================================================*/
+struct Computed_field *Computed_field_create_curl(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *vector_field, struct Computed_field *coordinate_field)
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_curl);
-	if (field&&vector_field&&(3==vector_field->number_of_components)&&
-		coordinate_field&&(3==coordinate_field->number_of_components))
+	struct Computed_field *field = NULL;
+	if (vector_field && (3 == vector_field->number_of_components) &&
+		coordinate_field && (3 == coordinate_field->number_of_components) &&
+		(RECTANGULAR_CARTESIAN == vector_field->coordinate_system.type))
 	{
-		/* only support RC vector fields */
-		if (RECTANGULAR_CARTESIAN==vector_field->coordinate_system.type)
-		{
-			return_code=1;
-			/* 1. make dynamic allocations for any new type-specific data */
-			number_of_source_fields=2;
-			if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-			{
-				/* 2. free current type-specific data */
-				Computed_field_clear_type(field);
-				/* 3. establish the new type */
-				field->number_of_components=3;
-				source_fields[0]=ACCESS(Computed_field)(vector_field);
-				source_fields[1]=ACCESS(Computed_field)(coordinate_field);
-				field->source_fields=source_fields;
-				field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_curl(field);
-			}
-			else
-			{
-				DEALLOCATE(source_fields);
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_curl.  Vector field must be RC");
-			return_code=0;
-		}
+		Computed_field *source_fields[2];
+		source_fields[0] = vector_field;
+		source_fields[1] = coordinate_field;
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			vector_field->number_of_components,
+			/*number_of_source_fields*/2, source_fields,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_curl());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_curl.  Invalid argument(s)");
-		return_code=0;
+			"Computed_field_create_curl.  Invalid argument(s)");
 	}
-	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_curl */
+	return (field);
+}
 
 int Computed_field_get_type_curl(struct Computed_field *field,
 	struct Computed_field **vector_field,struct Computed_field **coordinate_field)
@@ -1173,7 +1105,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *coordinate_field,*field,*vector_field;
+	struct Computed_field *coordinate_field,*vector_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
@@ -1181,17 +1113,17 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_curl);
 	USE_PARAMETER(computed_field_derivatives_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
 		coordinate_field = (struct Computed_field *)NULL;
 		vector_field = (struct Computed_field *)NULL;
-		if (computed_field_curl_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_curl_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code=Computed_field_get_type_curl(field,
+			return_code=Computed_field_get_type_curl(field_modify->get_field(),
 				&vector_field,&coordinate_field);
 		}
 		if (return_code)
@@ -1209,7 +1141,7 @@ already) and allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* coordinate */
 			set_coordinate_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_3_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -1217,7 +1149,7 @@ already) and allows its contents to be modified.
 				(void *)&set_coordinate_field_data,set_Computed_field_conditional);
 			/* vector */
 			set_vector_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_vector_field_data.conditional_function=
 				Computed_field_has_3_components;
 			set_vector_field_data.conditional_function_user_data=(void *)NULL;
@@ -1228,8 +1160,9 @@ already) and allows its contents to be modified.
 			/* no errors,not asking for help */
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_curl(field,
-					vector_field,coordinate_field);
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_curl(field_modify->get_field_factory(),
+						vector_field, coordinate_field));
 			}
 			if (!return_code)
 			{
@@ -1270,14 +1203,14 @@ char computed_field_divergence_type_string[] = "divergence";
 class Computed_field_divergence : public Computed_field_core
 {
 public:
-	Computed_field_divergence(Computed_field *field) : Computed_field_core(field)
+	Computed_field_divergence() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_divergence(new_parent);
+		return new Computed_field_divergence();
 	}
 
 	char *get_type_string()
@@ -1542,74 +1475,35 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_divergence(struct Computed_field *field,
-	struct Computed_field *vector_field,struct Computed_field *coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_DIVERGENCE, combining a vector and
-coordinate field to return the divergence scalar.
-Sets the number of components to 1.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-The number of components of <vector_field> and <coordinate_field> must be the
-same and less than or equal to 3
-The vector field must also be RECTANGULAR_CARTESIAN.
-Note that an error will be reported on calculation if the xi-dimension of the
-element and the number of components in coordinate_field & vector_field differ.
-==============================================================================*/
+struct Computed_field *Computed_field_create_divergence(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *vector_field, struct Computed_field *coordinate_field)
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_divergence);
-	if (field&&vector_field&&coordinate_field&&
-		(3>=coordinate_field->number_of_components)&&
-		(vector_field->number_of_components==
-			coordinate_field->number_of_components))
+	struct Computed_field *field = NULL;
+	if (vector_field && coordinate_field &&
+		(3 >= coordinate_field->number_of_components) &&
+		(vector_field->number_of_components ==
+			coordinate_field->number_of_components) &&
+		(RECTANGULAR_CARTESIAN == vector_field->coordinate_system.type))
 	{
-		/* only support RC vector fields */
-		if (RECTANGULAR_CARTESIAN==vector_field->coordinate_system.type)
-		{
-			return_code=1;
-			/* 1. make dynamic allocations for any new type-specific data */
-			number_of_source_fields=2;
-			if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-			{
-				/* 2. free current type-specific data */
-				Computed_field_clear_type(field);
-				/* 3. establish the new type */
-				field->number_of_components=1;
-				source_fields[0]=ACCESS(Computed_field)(vector_field);
-				source_fields[1]=ACCESS(Computed_field)(coordinate_field);
-				field->source_fields=source_fields;
-				field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_divergence(field);
-			}
-			else
-			{
-				DEALLOCATE(source_fields);
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_divergence.  Vector field must be RC");
-			return_code=0;
-		}
+		Computed_field *source_fields[2];
+		source_fields[0] = vector_field;
+		source_fields[1] = coordinate_field;
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			/*number_of_components*/1,
+			/*number_of_source_fields*/2, source_fields,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_divergence());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_divergence.  Invalid argument(s)");
-		return_code=0;
+			"Computed_field_create_divergence.  Invalid argument(s)");
 	}
-	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_divergence */
+	return (field);
+}
 
 int Computed_field_get_type_divergence(struct Computed_field *field,
 	struct Computed_field **vector_field,struct Computed_field **coordinate_field)
@@ -1654,7 +1548,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *coordinate_field,*field,*vector_field;
+	struct Computed_field *coordinate_field,*vector_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
@@ -1662,17 +1556,17 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_divergence);
 	USE_PARAMETER(computed_field_derivatives_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
 		coordinate_field=(struct Computed_field *)NULL;
 		vector_field=(struct Computed_field *)NULL;
-		if (computed_field_divergence_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_divergence_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code=Computed_field_get_type_divergence(field,
+			return_code=Computed_field_get_type_divergence(field_modify->get_field(),
 				&vector_field,&coordinate_field);
 		}
 		if (return_code)
@@ -1690,7 +1584,7 @@ already) and allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* coordinate */
 			set_coordinate_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -1698,7 +1592,7 @@ already) and allows its contents to be modified.
 				(void *)&set_coordinate_field_data,set_Computed_field_conditional);
 			/* vector */
 			set_vector_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_vector_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_vector_field_data.conditional_function_user_data=(void *)NULL;
@@ -1709,8 +1603,9 @@ already) and allows its contents to be modified.
 			/* no errors,not asking for help */
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_divergence(field,
-					vector_field,coordinate_field);
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_divergence(field_modify->get_field_factory(),
+						vector_field, coordinate_field));
 			}
 			if (!return_code)
 			{
@@ -1751,14 +1646,14 @@ char computed_field_gradient_type_string[] = "gradient";
 class Computed_field_gradient : public Computed_field_core
 {
 public:
-	Computed_field_gradient(Computed_field *field) : Computed_field_core(field)
+	Computed_field_gradient() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_gradient(new_parent);
+		return new Computed_field_gradient();
 	}
 
 	char *get_type_string()
@@ -1994,65 +1889,34 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_gradient(struct Computed_field *field,
-	struct Computed_field *source_field,struct Computed_field *coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Converts <field> to type 'gradient' which returns the gradient of <source_field>
-w.r.t. <coordinate_field>. Calculation will only succeed in any element with
-xi-dimension equal to the number of components in the <coordinate_field>.
-Sets the number of components to the product of the number of components in the
-<source_field> and <coordinate_field>.
-Note the <source_field> does not have to be a scalar. If it has more than 1
-component, all the derivatives of its first component w.r.t. the components of
-<coordinate_field> will be returned first, followed by those of the second
-component, etc. Hence, this function can return the standard gradient of a
-scalar source_field, and the deformation gradient if a deformed coordinate field
-is passed as the source_field.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
+struct Computed_field *Computed_field_create_gradient(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *source_field, struct Computed_field *coordinate_field)
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_gradient);
-	if (field && source_field && coordinate_field &&
+	struct Computed_field *field = NULL;
+	if (source_field && coordinate_field &&
 		(3 >= coordinate_field->number_of_components))
 	{
-		return_code=1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=2;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->number_of_components = source_field->number_of_components *
-				coordinate_field->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			source_fields[1]=ACCESS(Computed_field)(coordinate_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_gradient(field);
-		}
-		else
-		{
-			return_code=0;
-		}
+		int number_of_components = source_field->number_of_components *
+			coordinate_field->number_of_components;
+		Computed_field *source_fields[2];
+		source_fields[0] = source_field;
+		source_fields[1] = coordinate_field;
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			number_of_components,
+			/*number_of_source_fields*/2, source_fields,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_gradient());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_gradient.  Invalid argument(s)");
-		return_code=0;
+			"Computed_field_create_gradient.  Invalid argument(s)");
 	}
-	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_gradient */
+	return (field);
+}
 
 int Computed_field_get_type_gradient(struct Computed_field *field,
 	struct Computed_field **source_field,struct Computed_field **coordinate_field)
@@ -2097,7 +1961,7 @@ to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *coordinate_field,*field,*source_field;
+	struct Computed_field *coordinate_field,*source_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
@@ -2105,17 +1969,17 @@ to be modified.
 
 	ENTER(define_Computed_field_type_gradient);
 	USE_PARAMETER(computed_field_derivatives_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
 		coordinate_field=(struct Computed_field *)NULL;
 		source_field=(struct Computed_field *)NULL;
-		if (computed_field_gradient_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_gradient_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code = Computed_field_get_type_gradient(field,
+			return_code = Computed_field_get_type_gradient(field_modify->get_field(),
 				&source_field, &coordinate_field);
 		}
 		if (return_code)
@@ -2133,7 +1997,7 @@ to be modified.
 			option_table = CREATE(Option_table)();
 			/* coordinate */
 			set_coordinate_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -2141,7 +2005,7 @@ to be modified.
 				(void *)&set_coordinate_field_data,set_Computed_field_conditional);
 			/* field */
 			set_source_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_source_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -2152,8 +2016,9 @@ to be modified.
 			/* no errors,not asking for help */
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_gradient(field,
-					source_field,coordinate_field);
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_gradient(field_modify->get_field_factory(),
+						source_field, coordinate_field));
 			}
 			if (!return_code)
 			{

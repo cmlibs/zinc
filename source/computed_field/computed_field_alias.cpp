@@ -85,9 +85,19 @@ class Computed_field_alias : public Computed_field_core
 public:
 	void *other_field_manager_callback_id;
 
-	Computed_field_alias(Computed_field* field) : Computed_field_core(field),
+	Computed_field_alias() : Computed_field_core(),
 		other_field_manager_callback_id(NULL)
 	{
+	}
+
+	virtual bool attach_to_field(Computed_field *parent)
+	{
+		if (Computed_field_core::attach_to_field(parent))
+		{
+			check_alias_from_other_manager();
+			return true;
+		}
+		return false;
 	}
 
 	~Computed_field_alias()
@@ -115,7 +125,11 @@ private:
 
 	void check_alias_from_other_manager(void);
 
-	Computed_field_core* copy(Computed_field* new_parent);
+	Computed_field_core* copy()
+	{
+		Computed_field_alias* core = new Computed_field_alias();
+		return (core);
+	};
 
 	char* get_type_string()
 	{
@@ -208,32 +222,6 @@ void Computed_field_alias::check_alias_from_other_manager(void)
 	}
 	LEAVE;
 } /* Computed_field_alias::check_alias_from_other_manager */
-
-/***************************************************************************//**
- * Copy the type specific data used by this type.
- */
-Computed_field_core* Computed_field_alias::copy(Computed_field *new_parent)
-{
-	Computed_field_alias* core;
-
-	ENTER(Computed_field_alias::copy);
-	if (new_parent)
-	{
-		core = new Computed_field_alias(new_parent);
-		// this function is used to modify fields already in the manager
-		// so must check if callbacks needed from another manager
-		core->check_alias_from_other_manager();
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_alias::copy.  Invalid argument.");
-		core = (Computed_field_alias*)NULL;
-	}
-	LEAVE;
-
-	return (core);
-} /* Computed_field_alias::copy */
 
 /***************************************************************************//**
  * Compare the type specific data.
@@ -404,51 +392,31 @@ char *Computed_field_alias::get_command_string()
 
 } //namespace
 
-/**
- * @see Cmiss_field_create_alias
- */
-Computed_field *Computed_field_create_alias(Computed_field *original_field)
+Computed_field *Cmiss_field_create_alias(Cmiss_field_factory_id field_factory,
+	Computed_field *original_field)
 {
-	int number_of_source_fields;
-	Computed_field *field, **source_fields;
+	Computed_field *field;
 
 	ENTER(Computed_field_create_alias);
 	field = (Computed_field *)NULL;
-	if (original_field)
+	// GRC original_field->manager check will soon be unnecessary
+	if (field_factory && original_field && (NULL != original_field->manager))
 	{
-		int return_code = 1;
-		if (!original_field->manager)
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_create_alias.  Original field must be in a region");
-			return_code = 0;
-		}
-		if (return_code)
-		{
-			/* 1. make dynamic allocations for any new type-specific data */
-			number_of_source_fields = 1;
-			if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-			{
-				/* 2. create new field */
-				field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-				/* 3. establish the new type */
-				field->number_of_components = original_field->number_of_components;
-				source_fields[0] = ACCESS(Computed_field)(original_field);
-				field->source_fields=source_fields;
-				field->number_of_source_fields=number_of_source_fields;
-				field->core = new Computed_field_alias(field);
-			}
-		}
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/false, original_field->number_of_components,
+			/*number_of_source_fields*/1, &original_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_alias());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_alias.  Invalid argument(s)");
+			"Cmiss_field_create_alias.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (field);
-} /* Computed_field_create_alias */
+} /* Cmiss_field_create_alias */
 
 /*****************************************************************************//**
  * Command modifier function for defining a field as type computed_field_alias
@@ -465,13 +433,11 @@ int define_Computed_field_type_alias(Parse_state *state,
 	void *field_modify_void, void *computed_field_alias_package_void)
 {
 	int return_code;
-	Computed_field *field;
 	Computed_field_alias_package *computed_field_alias_package;
 	Computed_field_modify_data *field_modify;
 
 	ENTER(define_Computed_field_type_alias);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field) &&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void) &&
 		(computed_field_alias_package =
 			(Computed_field_alias_package *)computed_field_alias_package_void))
 	{
@@ -507,7 +473,7 @@ int define_Computed_field_type_alias(Parse_state *state,
 				else
 				{
 					// relative path
-					root_region = field_modify->region;
+					root_region = field_modify->get_region();
 				}
 				if (Cmiss_region_get_partial_region_path(root_region,
 					original_field_path_and_name, &region, &region_path, &remainder))
@@ -534,8 +500,9 @@ int define_Computed_field_type_alias(Parse_state *state,
 			}
 			if (return_code)
 			{
-				return_code = Computed_field_copy_type_specific_and_deaccess(field, 
-					Computed_field_create_alias(original_field));
+				return_code = field_modify->update_field_and_deaccess(
+					Cmiss_field_create_alias(field_modify->get_field_factory(),
+						original_field));
 			}
 			if (original_field)
 			{

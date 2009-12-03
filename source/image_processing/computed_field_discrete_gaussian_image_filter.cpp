@@ -72,7 +72,7 @@ public:
 	int maxKernelWidth;
        
 
-	Computed_field_discrete_gaussian_image_filter(Computed_field *field,
+	Computed_field_discrete_gaussian_image_filter(Computed_field *source_field,
 		double variance, int maxKernelWidth);
 
 	~Computed_field_discrete_gaussian_image_filter()
@@ -80,9 +80,12 @@ public:
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	virtual void create_functor();
+
+	Computed_field_core *copy()
 	{
-		return new Computed_field_discrete_gaussian_image_filter(new_parent, variance, maxKernelWidth);
+		return new Computed_field_discrete_gaussian_image_filter(field->source_fields[0],
+			variance, maxKernelWidth);
 	}
 
 	char *get_type_string()
@@ -250,15 +253,19 @@ and generate the outputImage.
 }; /* template < class ImageType > class Computed_field_discrete_gaussian_image_filter_Functor */
 
 Computed_field_discrete_gaussian_image_filter::Computed_field_discrete_gaussian_image_filter(
-	Computed_field *field, double variance, int maxKernelWidth) : 
-        Computed_field_ImageFilter(field), 
-        variance(variance), maxKernelWidth(maxKernelWidth)
+	Computed_field *source_field, double variance, int maxKernelWidth) : 
+	Computed_field_ImageFilter(source_field), 
+	variance(variance), maxKernelWidth(maxKernelWidth)
 /*******************************************************************************
 LAST MODIFIED : 12 September 2006
 
 DESCRIPTION :
 Create the computed_field representation of the DiscreteGaussianImageFilter.
 ==============================================================================*/
+{
+}
+
+void Computed_field_discrete_gaussian_image_filter::create_functor()
 {
 #if defined DONOTUSE_TEMPLATETEMPLATES
 	create_filters_singlecomponent_multidimensions(
@@ -285,57 +292,29 @@ Cmiss_field_discrete_gaussian_image_filter_id Cmiss_field_discrete_gaussian_imag
 	}
 }
 
-Computed_field *Cmiss_field_create_discrete_gaussian_image_filter(
+struct Computed_field *Cmiss_field_create_discrete_gaussian_image_filter(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, double variance, int maxKernelWidth)
 {
-	int number_of_source_fields;
-	Computed_field *field, **source_fields;
-
-	ENTER(Cmiss_field_create_discrete_gaussian_image_filter);
-	if ( source_field &&
-		Computed_field_is_scalar(source_field, (void *)NULL))
+	Computed_field *field = NULL;
+	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
 	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields = 1;
-		if (ALLOCATE(source_fields, struct Computed_field *,
-			number_of_source_fields))
-		{
-			/* 2. create new field */
-			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-			/* 3. establish the new type */
-			field->number_of_components = source_field->number_of_components;
-			source_fields[0] = ACCESS(Computed_field)(source_field);
-			field->source_fields = source_fields;
-			field->number_of_source_fields = number_of_source_fields;			
-			Computed_field_ImageFilter* filter_core = new Computed_field_discrete_gaussian_image_filter(field, variance, maxKernelWidth);
-			if (filter_core->functor)
-			{
-				field->core = filter_core;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_create_discrete_gaussian_image_filter.  "
-					"Unable to create image filter.");
-				field = (Computed_field *)NULL;
-			}
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			field = (Computed_field *)NULL;
-		}
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_discrete_gaussian_image_filter(source_field,
+				variance, maxKernelWidth));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_discrete_gaussian_image_filter.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
+			"Cmiss_field_create_discrete_gaussian_image_filter.  Invalid argument(s)");
 	}
-	LEAVE;
 
 	return (field);
-} /* Cmiss_field_create_discrete_gaussian_image_filter */
+}
 
 int Computed_field_get_type_discrete_gaussian_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, double *variance, int *maxKernelWidth)
@@ -383,26 +362,26 @@ already) and allows its contents to be modified.
 	int return_code;
 	double variance;
 	int maxKernelWidth;
-	struct Computed_field *field, *source_field;
+	struct Computed_field *source_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_discrete_gaussian_image_filter);
 	USE_PARAMETER(computed_field_simple_package_void);
-	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void) &&
-			(field=field_modify->field))
+	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code = 1;
 		/* get valid parameters for projection field */
 		source_field = (struct Computed_field *)NULL;
 		variance = 1;
 		maxKernelWidth = 4;
-		if (computed_field_discrete_gaussian_image_filter_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_discrete_gaussian_image_filter_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
 			return_code =
-				Computed_field_get_type_discrete_gaussian_image_filter(field, &source_field,
+				Computed_field_get_type_discrete_gaussian_image_filter(field_modify->get_field(), &source_field,
 					&variance, &maxKernelWidth);
 		}
 		if (return_code)
@@ -419,7 +398,7 @@ already) and allows its contents to be modified.
 
 			/* field */
 			set_source_field_data.computed_field_manager =
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_source_field_data.conditional_function = Computed_field_is_scalar;
 			set_source_field_data.conditional_function_user_data = (void *)NULL;
 			Option_table_add_entry(option_table, "field", &source_field,
@@ -447,8 +426,9 @@ already) and allows its contents to be modified.
 			}
 			if (return_code)
 			{
-				return_code = Computed_field_copy_type_specific_and_deaccess(field,
+				return_code = field_modify->update_field_and_deaccess(
 					Cmiss_field_create_discrete_gaussian_image_filter(
+						field_modify->get_field_factory(),
 						source_field, variance, maxKernelWidth));				
 			}
 			

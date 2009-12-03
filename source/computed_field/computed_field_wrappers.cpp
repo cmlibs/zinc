@@ -52,6 +52,7 @@ extern "C" {
 #include "general/debug.h"
 #include "user_interface/message.h"
 }
+#include "computed_field/computed_field_private.hpp"
 
 struct Computed_field *Computed_field_begin_wrap_coordinate_field(
 	struct Computed_field *coordinate_field)
@@ -73,7 +74,6 @@ wrapped.
 {
 	enum Coordinate_system_type type;
 	struct Computed_field *wrapper_field;
-	struct Coordinate_system rc_coordinate_system;
 
 	ENTER(Computed_field_begin_wrap_coordinate_field);
 	if (coordinate_field&&(3>=
@@ -86,20 +86,15 @@ wrapped.
 		}
 		else
 		{
-			/* make RC wrapper for the coordinate_field */
+			Cmiss_field_factory *field_factory =
+				Cmiss_field_factory_create(Computed_field_get_region(coordinate_field));
+			struct Coordinate_system rc_coordinate_system;
 			rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-			if ((wrapper_field=CREATE(Computed_field)("rc_wrapper"))&&
-				Computed_field_set_coordinate_system(wrapper_field,
-				&rc_coordinate_system)&&
-				Computed_field_set_type_coordinate_transformation(
-				wrapper_field,coordinate_field))
-			{
-				ACCESS(Computed_field)(wrapper_field);
-			}
-			else
-			{
-				DESTROY(Computed_field)(&wrapper_field);
-			}
+			Cmiss_field_factory_set_coordinate_system(field_factory,
+				rc_coordinate_system);
+			wrapper_field = Computed_field_create_coordinate_transformation(field_factory,
+				coordinate_field);
+			Cmiss_field_factory_destroy(&field_factory);
 		}
 	}
 	else
@@ -142,47 +137,35 @@ Must call Computed_field_end_wrap to clean up the returned field after use.
 	{
 		coordinate_system_type=get_coordinate_system_type(
 			Computed_field_get_coordinate_system(orientation_scale_field));
-		if ((3>=Computed_field_get_number_of_components(orientation_scale_field))&&
-			(FIBRE==coordinate_system_type))
+		if ((RECTANGULAR_CARTESIAN == coordinate_system_type) ||
+			((1 == Computed_field_get_number_of_components(orientation_scale_field)) &&
+				(FIBRE != coordinate_system_type)))
 		{
-			/* make FIBRE_AXES wrapper */
-			if ((wrapper_field=CREATE(Computed_field)("fibre_axes_wrapper"))&&
-				Computed_field_set_type_fibre_axes(wrapper_field,
-					orientation_scale_field,coordinate_field))
-			{
-				ACCESS(Computed_field)(wrapper_field);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_begin_wrap_orientation_scale_field.  "
-					"Unable to make fibre_axes wrapper for field");
-				DESTROY(Computed_field)(&wrapper_field);
-			}
+			/* RC fields and non-fibre scalars are already OK */
+			wrapper_field = ACCESS(Computed_field)(orientation_scale_field);
 		}
-		else if ((1==Computed_field_get_number_of_components(
-			orientation_scale_field))||
-			(RECTANGULAR_CARTESIAN==coordinate_system_type))
+		else if ((FIBRE == coordinate_system_type) &&
+			(3>=Computed_field_get_number_of_components(orientation_scale_field)))
 		{
-			/* scalar or RC fields are already OK */
-			wrapper_field=ACCESS(Computed_field)(orientation_scale_field);
+			/* make fibre_axes wrapper from fibre field */
+			Cmiss_field_factory *field_factory =
+				Cmiss_field_factory_create(Computed_field_get_region(coordinate_field));
+			wrapper_field = Computed_field_create_fibre_axes(field_factory,
+					orientation_scale_field, coordinate_field);
+			Cmiss_field_factory_destroy(&field_factory);
 		}
 		else
 		{
-			/* make RC_VECTOR wrapper for the orientation_scale_field */
-			if ((wrapper_field=CREATE(Computed_field)("rc_wrapper"))&&
-				Computed_field_set_type_vector_coordinate_transformation(wrapper_field,
-					orientation_scale_field,coordinate_field))
-			{
-				ACCESS(Computed_field)(wrapper_field);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_begin_wrap_orientation_scale_field.  "
-					"Unable to make rc_component wrapper for field");
-				DESTROY(Computed_field)(&wrapper_field);
-			}
+			/* make vector_coordinate_transformation wrapper of non-RC vector field */
+			Cmiss_field_factory *field_factory =
+				Cmiss_field_factory_create(Computed_field_get_region(coordinate_field));
+			struct Coordinate_system rc_coordinate_system;
+			rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
+			Cmiss_field_factory_set_coordinate_system(field_factory,
+				rc_coordinate_system);
+			wrapper_field = Computed_field_create_vector_coordinate_transformation(
+				field_factory, orientation_scale_field, coordinate_field);
+			Cmiss_field_factory_destroy(&field_factory);
 		}
 	}
 	else

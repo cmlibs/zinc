@@ -72,7 +72,7 @@ public:
 	int direction;
        
 
-	Computed_field_derivative_image_filter(Computed_field *field,
+	Computed_field_derivative_image_filter(Computed_field *source_field,
 		int order, int direction);
 
 	~Computed_field_derivative_image_filter()
@@ -80,9 +80,12 @@ public:
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	virtual void create_functor();
+
+	Computed_field_core *copy()
 	{
-		return new Computed_field_derivative_image_filter(new_parent, order, direction);
+		return new Computed_field_derivative_image_filter(field->source_fields[0],
+			order, direction);
 	}
 
 	char *get_type_string()
@@ -250,15 +253,19 @@ and generate the outputImage.
 }; /* template < class ImageType > class Computed_field_derivative_image_filter_Functor */
 
 Computed_field_derivative_image_filter::Computed_field_derivative_image_filter(
-	Computed_field *field, int order, int direction) : 
-        Computed_field_ImageFilter(field), 
-        order(order), direction(direction)
+	Computed_field *source_field, int order, int direction) : 
+	Computed_field_ImageFilter(source_field), 
+	order(order), direction(direction)
 /*******************************************************************************
 LAST MODIFIED : 12 September 2006
 
 DESCRIPTION :
 Create the computed_field representation of the DerivativeImageFilter.
 ==============================================================================*/
+{
+}
+
+void Computed_field_derivative_image_filter::create_functor()
 {
 #if defined DONOTUSE_TEMPLATETEMPLATES
 	create_filters_singlecomponent_multidimensions(
@@ -272,67 +279,30 @@ Create the computed_field representation of the DerivativeImageFilter.
 
 } //namespace
 
-int Computed_field_set_type_derivative_image_filter(struct Computed_field *field,
+struct Computed_field *Cmiss_field_create_derivative_image_filter(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, int order, int direction)
-/*******************************************************************************
-LAST MODIFIED : 18 October 2006
-
-DESCRIPTION :
-Converts <field> to type DERIVATIVE.  The <min> <max> 
-<alpha> and <beta> are the parameters of the derivative function
-==============================================================================*/
 {
-	int number_of_source_fields, return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_derivative_image_filter);
-	if (field && source_field &&
-		Computed_field_is_scalar(source_field, (void *)NULL))
+	Computed_field *field = NULL;
+	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
 	{
-		return_code = 1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields = 1;
-		if (ALLOCATE(source_fields, struct Computed_field *,
-			number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->number_of_components = source_field->number_of_components;
-			source_fields[0] = ACCESS(Computed_field)(source_field);
-			field->source_fields = source_fields;
-			field->number_of_source_fields = number_of_source_fields;			
-			Computed_field_ImageFilter* filter_core = new Computed_field_derivative_image_filter(field, order, direction);
-			if (filter_core->functor)
-			{
-				field->core = filter_core;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_derivative_image_filter.  "
-					"Unable to create image filter.");
-				return_code = 0;
-			}
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			return_code = 0;
-		}
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_derivative_image_filter(source_field, order, direction));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_derivative_image_filter.  Invalid argument(s)");
-		return_code = 0;
+			"Cmiss_field_create_derivative_image_filter.  Invalid argument(s)");
 	}
-	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_derivative_image_filter */
+	return (field);
+}
 
-int Computed_field_get_type_derivative_image_filter(struct Computed_field *field,
+int Cmiss_field_get_type_derivative_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, int *order, int *direction)
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
@@ -345,7 +315,7 @@ used by it are returned - otherwise an error is reported.
 	Computed_field_derivative_image_filter* core;
 	int return_code;
 
-	ENTER(Computed_field_get_type_derivative_image_filter);
+	ENTER(Cmiss_field_get_type_derivative_image_filter);
 	if (field && (core = dynamic_cast<Computed_field_derivative_image_filter*>(field->core))
 		&& source_field)
 	{
@@ -357,13 +327,13 @@ used by it are returned - otherwise an error is reported.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_derivative_image_filter.  Invalid argument(s)");
+			"Cmiss_field_get_type_derivative_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_get_type_derivative_image_filter */
+} /* Cmiss_field_get_type_derivative_image_filter */
 
 int define_Computed_field_type_derivative_image_filter(struct Parse_state *state,
 	void *field_modify_void, void *computed_field_simple_package_void)
@@ -378,15 +348,14 @@ already) and allows its contents to be modified.
 	int return_code;
         int order;
 	int direction;
-	struct Computed_field *field, *source_field;
+	struct Computed_field *source_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_derivative_image_filter);
 	USE_PARAMETER(computed_field_simple_package_void);
-	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void) &&
-			(field=field_modify->field))
+	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code = 1;
 		/* get valid parameters for projection field */
@@ -394,11 +363,12 @@ already) and allows its contents to be modified.
 		order = 1;
 		direction=1;
 
-		if (computed_field_derivative_image_filter_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_derivative_image_filter_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
 			return_code =
-				Computed_field_get_type_derivative_image_filter(field, &source_field,
+				Cmiss_field_get_type_derivative_image_filter(field_modify->get_field(), &source_field,
 					&order, &direction);
 		}
 		if (return_code)
@@ -415,7 +385,7 @@ already) and allows its contents to be modified.
 
 			/* field */
 			set_source_field_data.computed_field_manager =
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_source_field_data.conditional_function = Computed_field_is_scalar;
 			set_source_field_data.conditional_function_user_data = (void *)NULL;
 			Option_table_add_entry(option_table, "field", &source_field,
@@ -443,8 +413,10 @@ already) and allows its contents to be modified.
 			}
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_derivative_image_filter(
-					field, source_field, order, direction);				
+				return_code = field_modify->update_field_and_deaccess(
+					Cmiss_field_create_derivative_image_filter(
+						field_modify->get_field_factory(),
+						source_field, order, direction));
 			}
 			
 			if (!return_code)

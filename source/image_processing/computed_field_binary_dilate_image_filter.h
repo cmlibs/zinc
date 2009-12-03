@@ -45,12 +45,6 @@ DESCRIPTION :
 
 #include "api/cmiss_field.h"
 
-/* API functions are prefixed with Cmiss */
-#define Computed_field_set_type_binary_dilate_image_filter \
-	Cmiss_field_set_type_binary_dilate_image_filter
-#define Computed_field_get_type_binary_dilate_image_filter \
-	Cmiss_field_get_type_binary_dilate_image_filter
-
 int Computed_field_register_types_binary_dilate_image_filter(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
@@ -59,19 +53,18 @@ LAST MODIFIED : 13 July 2007
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_binary_dilate_image_filter(struct Computed_field *field,
-	struct Computed_field *source_field,
-	int radius, double dilate_value);
-/*******************************************************************************
-LAST MODIFIED : 13 July 2007
+/***************************************************************************//**
+ * Creates a field performing ITK binary dilate image filter on scalar source
+ * field image. Sets number of components to same number as <source_field>.
+ * The <radius> and <dilate_value> specify the radius of pixels to use
+ * for dilation and what pixel value to use for dilation
+ * 
+ */
+struct Computed_field *Cmiss_field_create_binary_dilate_image_filter(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *source_field, int radius, double dilate_value);
 
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_BINARYDILATEFILTER, returning the value of
-<binary_dilate_image_filter> at the time/parameter value given by scalar <source_field>.
-Sets number of components to same number as <binary_dilate_image_filter>.
-==============================================================================*/
-
-int Computed_field_get_type_binary_dilate_image_filter(struct Computed_field *field,
+int Cmiss_field_get_type_binary_dilate_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field,
 	int *radius, double *dilate_value);
 /*******************************************************************************

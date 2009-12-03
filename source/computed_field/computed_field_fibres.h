@@ -44,28 +44,26 @@ Computed fields for extracting fibre axes from fibre angles in elements.
 #if !defined (COMPUTED_FIELD_FIBRES_H)
 #define COMPUTED_FIELD_FIBRES_H
 
-int Computed_field_set_type_fibre_axes(struct Computed_field *field,
-	struct Computed_field *fibre_field,struct Computed_field *coordinate_field);
-/*******************************************************************************
-LAST MODIFIED : 18 October 2000
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_FIBRE_AXES, combining a fibre and
-coordinate field to return the 3, 3-component fibre axis vectors:
-fibre  = fibre direction,
-sheet  = fibre normal in the plane of the sheet,
-normal = normal to the fibre sheet.
-Sets the number of components to 9.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-
-Both the fibre and coordinate fields must have no more than 3 components. The
-fibre field is expected to have a FIBRE coordinate_system, although this is not
-enforced.
-???RC To enforce the fibre field to have a FIBRE coordinate_system, must make
-the MANAGER_COPY_NOT_IDENTIFIER fail if it would change the coordinate_system
-while the field is in use. Not sure if we want that restriction.
-==============================================================================*/
+/***************************************************************************//**
+ * Creates a "fibre axes" field type which returns a 9-component (3 x 3 vector)
+ * field representing an orthonormal coordinate system which is rotated by
+ * 3 Euler angles supplied by a fibre field. Three resulting 3 axes are:
+ * fibre  = fibre direction
+ * sheet  = fibre normal in the plane of the sheet
+ * normal = normal to the fibre sheet
+ * Both the fibre and coordinate fields must have no more than 3 components. The
+ * fibre field is expected to have a FIBRE coordinate_system, although this is
+ * not enforced.
+ * Note that this initial orientation of the coordinate system (i.e. for all
+ * Euler angles zero) is right handed coordinate system:
+ * fibre axis = aligned with d(coordinates)/dxi1
+ * sheet axis = in plane of fibre axis and d(coordinates)/dxi2 but corrected to
+ * be closest vector to d(coordinates)/dxi2 which is normal to fibre axes.
+ * normal axis = cross product fibre (x) sheet
+ */
+struct Computed_field *Computed_field_create_fibre_axes(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *fibre_field, struct Computed_field *coordinate_field);
 
 int Computed_field_register_types_fibres(
 	struct Computed_field_package *computed_field_package);

@@ -9692,21 +9692,18 @@ Executes a GFX DESTROY FIELD command.
 						(field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 							field_name, Cmiss_region_get_Computed_field_manager(region))))
 					{
+						ACCESS(Computed_field)(field);
 						if (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(field,
 							Cmiss_region_get_Computed_field_manager(region)))
 						{
+							Computed_field_set_managed_status(field, COMPUTED_FIELD_MANAGED_PRIVATE_VOLATILE);
 							if (Computed_field_is_type_finite_element(field))
 							{
-								/* computed fielf wrapper is destroyed in response to FE_field */
+								// also clean up FE_field
 								fe_field = (struct FE_field *)NULL;
 								Computed_field_get_type_finite_element(field, &fe_field);
 								return_code = FE_region_remove_FE_field(
 									FE_field_get_FE_region(fe_field), fe_field);
-							}
-							else
-							{
-								return_code = REMOVE_OBJECT_FROM_MANAGER(Computed_field)(
-									field, Cmiss_region_get_Computed_field_manager(region));
 							}
 							if (!return_code)
 							{
@@ -9720,6 +9717,7 @@ Executes a GFX DESTROY FIELD command.
 								"Cannot destroy field in use : %s",current_token);
 							return_code=0;
 						}
+						DEACCESS(Computed_field)(&field);
 					}
 					else
 					{

@@ -45,8 +45,6 @@
 
 #include "api/cmiss_field_alias.h"
 
-#define Computed_field_create_alias Cmiss_field_create_alias
-
 /*****************************************************************************//**
  * Sets up command data for alias field.
  * 

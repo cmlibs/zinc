@@ -50,26 +50,28 @@ LAST MODIFIED : 26 October 2000
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_integration(struct Computed_field *field,
-	struct FE_element *seed_element, struct FE_region *fe_region,
-	struct Computed_field *integrand, 
-	int magnitude_coordinates, struct Computed_field *coordinate_field);
-/*******************************************************************************
-LAST MODIFIED : 19 July 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_INTEGRATION.
-The seed element is set to the number given and the mapping calculated.
-Sets the number of components to be the same as the <integrand> field.
-The <integrand> is the value that is integrated over each element and the
-<coordinate_field> is used to define the arc length differential for each element.
-Currently only two gauss points are supported, a linear integration.
-If <magnitude_coordinates> is false then the resulting field has the same number
-of components as the <coordinate_field> and each component is the integration
-with respect to each of the components, if <magnitude_components> is true then
-the field will have a single component and the magnitude of the <coordinate_field>
-derivatives are used to calculate arc lengths at each gauss pointa.
-=============================================================================*/
+/*****************************************************************************//**
+ * Creates a field that computes an integration.
+ * The seed element is set to the number given and the mapping calculated.
+ * Sets the number of components to be the same as the <integrand> field.
+ * The <integrand> is the value that is integrated over each element and the
+ * <coordinate_field> is used to define the arc length differential for each
+ * element. Currently only two gauss points are supported, a linear integration.
+ * If <magnitude_coordinates> is false then the resulting field has the same
+ * number of components as the <coordinate_field> and each component is the
+ * integration with respect to each of the components, if <magnitude_components>
+ * is true then the field will have a single component and the magnitude of the
+ * <coordinate_field> derivatives are used to calculate arc lengths at each
+ * gauss point.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_integration(
+	struct Cmiss_field_factory *field_factory,
+	FE_element *seed_element,
+	FE_region *fe_region, Computed_field *integrand, 
+	int magnitude_coordinates, Computed_field *coordinate_field);
 
 int Computed_field_get_type_integration(struct Computed_field *field,
 	struct FE_element **seed_element, struct Computed_field **integrand,

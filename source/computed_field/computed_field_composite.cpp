@@ -95,14 +95,14 @@ public:
 	int *source_value_numbers;
 	FE_value** source_pointers;
 
-	Computed_field_composite(Computed_field *field,
-		int *source_field_numbers_in, int *source_value_numbers_in) : Computed_field_core(field)
+	Computed_field_composite(int number_of_components,
+		int *source_field_numbers_in, int *source_value_numbers_in) : Computed_field_core()
 	{
 		int i;
-		source_field_numbers = new int[field->number_of_components];
-		source_value_numbers = new int[field->number_of_components];
+		source_field_numbers = new int[number_of_components];
+		source_value_numbers = new int[number_of_components];
 		source_pointers = (FE_value**)NULL;
-		for (i = 0 ; i < field->number_of_components ; i++)
+		for (i = 0 ; i < number_of_components ; i++)
 		{
 			source_field_numbers[i] = source_field_numbers_in[i];
 			source_value_numbers[i] = source_value_numbers_in[i];
@@ -115,9 +115,9 @@ public:
 
 private:
 
-	Computed_field_core* copy(Computed_field* new_field)
+	Computed_field_core* copy()
 	{
-		return (new Computed_field_composite(new_field,
+		return (new Computed_field_composite(field->number_of_components,
 			source_field_numbers, source_value_numbers));
 	}
 
@@ -644,44 +644,16 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_composite(
+	struct Cmiss_field_factory *field_factory,
 	int number_of_components,
 	int number_of_source_fields,struct Computed_field **source_fields,
-	int number_of_source_values,FE_value *source_values,
+	int number_of_source_values, double *source_values,
 	int *source_field_numbers,int *source_value_numbers)
-/*******************************************************************************
-LAST MODIFIED : 13 May 2008
-
-DESCRIPTION :
-Converts <field> into a composite field which returns a combination of field
-components and constants in a given order.
-The <number_of_source_fields> <source_fields> may be zero if the field is
-purely constant, but fields may not be repeated.
-The <number_of_source_values> <source_values> may similarly be omitted.
-The <source_field_numbers> and <source_value_numbers> must each contain
-<number_of_components> integers. For each component the <source_field_number>
-says which <source_field> to use, and the <source_value_number> specifies the
-component number. If the <source_field_number> is -1 for any component, the
-<source_value_number> is the offset into the <source_values>.
-
-Note: rigorous checking is performed to ensure that no values are invalid and
-that the <source_fields> are presented in the order they are first used in the
-<source_field_numbers>, and also that <source_values> are used in the order
-they are given and that none are used more than once.
-
-Some of these restrictions are enforced to ensure type-specific contents can be
-compared easily -- otherwise there would be more than one way to describe the
-same source data.
-
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	FE_value *temp_source_values;
 	int i, j, return_code, source_field_number, source_value_number;
-	Computed_field *field, *source_field, **temp_source_fields;
+	Computed_field *field, *source_field;
 
-	ENTER(Computed_field_set_type_composite);
-
+	ENTER(Computed_field_create_composite);
 	field = (Computed_field *)NULL;
 	if ((0<number_of_components) &&
 		((0==number_of_source_fields) ||
@@ -701,7 +673,7 @@ although its cache may be lost.
 					if (source_fields[j] == source_fields[i])
 					{
 						display_message(ERROR_MESSAGE,
-							"Computed_field_set_type_composite.  Repeated source field");
+							"Computed_field_create_composite.  Repeated source field");
 						return_code=0;
 					}
 				}
@@ -709,7 +681,7 @@ although its cache may be lost.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_composite.  Missing source field");
+					"Computed_field_create_composite.  Missing source field");
 				return_code=0;
 			}
 		}
@@ -730,7 +702,7 @@ although its cache may be lost.
 					if (source_value_number != source_value_numbers[i])
 					{
 						display_message(ERROR_MESSAGE,
-							"Computed_field_set_type_composite.  "
+							"Computed_field_create_composite.  "
 							"Source value numbers out of order");
 						return_code=0;
 					}
@@ -750,7 +722,7 @@ although its cache may be lost.
 							(source_value_numbers[i] >= source_field->number_of_components))
 						{
 							display_message(ERROR_MESSAGE,
-								"Computed_field_set_type_composite.  "
+								"Computed_field_create_composite.  "
 								"Component %d is out of range for field %s",
 								source_value_numbers[i],source_field->name);
 							return_code=0;
@@ -759,7 +731,7 @@ although its cache may be lost.
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"Computed_field_set_type_composite.  "
+							"Computed_field_create_composite.  "
 							"source fields not used in order");
 						return_code=0;
 					}
@@ -767,7 +739,7 @@ although its cache may be lost.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Computed_field_set_type_composite.  "
+						"Computed_field_create_composite.  "
 						"Invalid source field number %d",source_field_numbers[i]);
 					return_code=0;
 				}
@@ -775,71 +747,41 @@ although its cache may be lost.
 			if (source_field_number < number_of_source_fields)
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_composite.  Not all source fields used");
+					"Computed_field_create_composite.  Not all source fields used");
 				return_code=0;
 			}
 			if (source_value_number < number_of_source_values)
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_composite.  Not all source values used");
+					"Computed_field_create_composite.  Not all source values used");
 				return_code=0;
 			}
 		}
 		if (return_code)
 		{
-			/* 1. make dynamic allocations for any new type-specific data */
-			temp_source_fields = (struct Computed_field **)NULL;
-			temp_source_values = (FE_value *)NULL;
-			if (((0 == number_of_source_fields) || ALLOCATE(temp_source_fields,
-				struct Computed_field *,number_of_source_fields)) &&
-				((0 == number_of_source_values) || ALLOCATE(temp_source_values,
-					FE_value,number_of_source_values)))
-			{
-				field = CREATE(Computed_field)("");
-				/* 3. establish the new type */
-				field->number_of_components = number_of_components;
-				for (i=0;i<number_of_source_fields;i++)
-				{
-					temp_source_fields[i] = ACCESS(Computed_field)(source_fields[i]);
-				}
-				field->source_fields = temp_source_fields;
-				field->number_of_source_fields = number_of_source_fields;			
-				for (i=0;i<number_of_source_values;i++)
-				{
-					temp_source_values[i] = source_values[i];
-				}
-				field->source_values = temp_source_values;
-				field->number_of_source_values = number_of_source_values;			
-
-				field->core = new Computed_field_composite(field,
-					source_field_numbers, source_value_numbers);
-
-				ACCESS(Computed_field)(field);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_composite.  Not enough memory");
-				DEALLOCATE(temp_source_fields);
-				DEALLOCATE(temp_source_values);
-				return_code=0;
-			}
+			field = Computed_field_create_generic(field_factory,
+				/*check_source_field_regions*/true,
+				number_of_components,
+				number_of_source_fields, source_fields,
+				number_of_source_values, source_values,
+				new Computed_field_composite(number_of_components,
+					source_field_numbers, source_value_numbers));
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_composite.  Invalid argument(s)");
+			"Computed_field_create_composite.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (field);
-} /* Computed_field_set_type_composite */
+} /* Computed_field_create_composite */
 
 int Computed_field_get_type_composite(struct Computed_field *field,
 	int *number_of_components,
 	int *number_of_source_fields,struct Computed_field ***source_fields,
-	int *number_of_source_values,FE_value **source_values,
+	int *number_of_source_values, double **source_values,
 	int **source_field_numbers,int **source_value_numbers)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
@@ -867,13 +809,13 @@ Note returned fields are not allocated in arrays.
 		*number_of_source_fields = field->number_of_source_fields;
 		*source_fields = (struct Computed_field **)NULL;
 		*number_of_source_values = field->number_of_source_values;
-		*source_values = (FE_value *)NULL;
+		*source_values = (double *)NULL;
 		*source_field_numbers = (int *)NULL;
 		*source_value_numbers = (int *)NULL;
 		if (((0 == field->number_of_source_fields) || ALLOCATE(*source_fields,
 			struct Computed_field *, field->number_of_source_fields)) &&
 			((0 == field->number_of_source_values) || ALLOCATE(*source_values,
-				FE_value, field->number_of_source_values)) &&
+				double, field->number_of_source_values)) &&
 			ALLOCATE(*source_field_numbers, int, field->number_of_components) &&
 			ALLOCATE(*source_value_numbers, int, field->number_of_components))
 		{
@@ -926,7 +868,7 @@ Data structure filled by set_Computed_field_composite_source_data.
 	int number_of_source_fields;
 	struct Computed_field **source_fields;
 	int number_of_source_values;
-	FE_value *source_values;
+	double *source_values;
 	int *source_field_numbers;
 	int *source_value_numbers;
 }; /* struct Computed_field_composite_source_data */
@@ -942,8 +884,8 @@ ACCESSed in the initial source_data.
 ==============================================================================*/
 {
 	const char *current_token;
-	char *field_component_name, *source_string, *temp_name;
-	FE_value *temp_source_values, value;
+	char *field_component_name, *temp_name;
+	double *temp_source_values, value;
 	int component_no, components_to_add = -1, i, number_of_characters, return_code,
 		source_field_number, source_value_number = -1, *temp_source_field_numbers,
 		*temp_source_value_numbers;
@@ -975,7 +917,7 @@ ACCESSed in the initial source_data.
 				if (source_data->source_values)
 				{
 					DEALLOCATE(source_data->source_values);
-					source_data->source_values = (FE_value *)NULL;
+					source_data->source_values = (double *)NULL;
 				}
 				if (source_data->source_field_numbers)
 				{
@@ -992,13 +934,13 @@ ACCESSed in the initial source_data.
 					/* first try to find a number in the token */
 					if (strchr("+-0123456789",current_token[0]))
 					{
-						if ((1 == sscanf(current_token, FE_VALUE_INPUT_STRING "%n",
+						if ((1 == sscanf(current_token, "%lf%n",
 							&value, &number_of_characters)) &&
 							((int)strlen(current_token) == number_of_characters))
 						{
 							shift_Parse_state(state,1);
 							if (REALLOCATE(temp_source_values, source_data->source_values,
-								FE_value, source_data->number_of_source_values+1))
+								double, source_data->number_of_source_values+1))
 							{
 								source_data->source_values = temp_source_values;
 								temp_source_values[source_data->number_of_source_values] =
@@ -1173,25 +1115,6 @@ ACCESSed in the initial source_data.
 			{
 				display_message(INFORMATION_MESSAGE," #|FIELD[.COMPONENT_NAME] "
 					"#|FIELD[.COMPONENT_NAME] #|FIELD[.COMPONENT_NAME] ... ");
-				if (0<source_data->number_of_components)
-				{
-					Computed_field_composite* composite_core;
-					
-					if ((field = Computed_field_create_composite(
-						source_data->number_of_components,
-						source_data->number_of_source_fields,source_data->source_fields,
-						source_data->number_of_source_values,source_data->source_values,
-						source_data->source_field_numbers,
-						source_data->source_value_numbers))&&
-						(composite_core = dynamic_cast<Computed_field_composite*>(field->core)) &&
-						(source_string=composite_core->get_source_string(/*commands*/1)))
-					{
-						display_message(INFORMATION_MESSAGE,"[%s]",source_string);
-						DEALLOCATE(source_string);
-
-						DESTROY(Computed_field)(&field);
-					}
-				}
 			}
 		}
 		else
@@ -1224,15 +1147,13 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field;
 	Computed_field_modify_data *field_modify;
 	struct Computed_field_composite_source_data source_data;
 	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_type_composite);
 	USE_PARAMETER(computed_field_composite_package_void);
-	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void) &&
-			(field=field_modify->field))
+	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -1240,13 +1161,14 @@ already) and allows its contents to be modified.
 		source_data.number_of_source_fields = 0;
 		source_data.source_fields = (struct Computed_field **)NULL;
 		source_data.number_of_source_values = 0;
-		source_data.source_values = (FE_value *)NULL;
+		source_data.source_values = (double *)NULL;
 		source_data.source_field_numbers = (int *)NULL;
 		source_data.source_value_numbers = (int *)NULL;
-		if (computed_field_composite_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_composite_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code = Computed_field_get_type_composite(field,
+			return_code = Computed_field_get_type_composite(field_modify->get_field(),
 				&(source_data.number_of_components),
 				&(source_data.number_of_source_fields), &(source_data.source_fields),
 				&(source_data.number_of_source_values), &(source_data.source_values),
@@ -1272,16 +1194,20 @@ already) and allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* default option: composite field definition */
 			Option_table_add_entry(option_table, (char *)NULL, &source_data,
-				Cmiss_region_get_Computed_field_manager(field_modify->region),
+				field_modify->get_field_manager(),
 				set_Computed_field_composite_source_data);
-			return_code = Option_table_multi_parse(option_table,state) &&
-				Computed_field_copy_type_specific_and_deaccess(field, 
-				Computed_field_create_composite(
-				source_data.number_of_components,
-				source_data.number_of_source_fields, source_data.source_fields,
-				source_data.number_of_source_values, source_data.source_values,
-				source_data.source_field_numbers,
-				source_data.source_value_numbers));
+			return_code=Option_table_multi_parse(option_table,state);
+			/* no errors,not asking for help */
+			if (return_code)
+			{
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_composite(field_modify->get_field_factory(),
+						source_data.number_of_components,
+						source_data.number_of_source_fields, source_data.source_fields,
+						source_data.number_of_source_values, source_data.source_values,
+						source_data.source_field_numbers,
+						source_data.source_value_numbers));
+			}
 			DESTROY(Option_table)(&option_table);
 		}
 		/* clean up the source data */
@@ -1314,6 +1240,7 @@ already) and allows its contents to be modified.
 } /* define_Computed_field_type_composite */
 
 struct Computed_field *Computed_field_create_constant(
+	struct Cmiss_field_factory *field_factory,
 	int number_of_values, double *values)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -1327,47 +1254,41 @@ convenience function for building a composite field which has <number_of_values>
 <values>.
 ==============================================================================*/
 {
-	FE_value *fe_value_values;
 	int i, *source_field_numbers, *source_value_numbers;
-	Computed_field *field;
+	Computed_field *field = NULL;
 
 	ENTER(Computed_field_create_constant);
 	if ((0 < number_of_values) && values)
 	{
 		ALLOCATE(source_field_numbers, int, number_of_values);
 		ALLOCATE(source_value_numbers, int, number_of_values);
-		ALLOCATE(fe_value_values, FE_value, number_of_values);
 		if (source_field_numbers && source_value_numbers)
 		{
 			for (i = 0; i < number_of_values; i++)
 			{
 				source_field_numbers[i] = -1;
 				source_value_numbers[i] = i;
-				fe_value_values[i] = values[i];
 			}
-			field = Computed_field_create_composite(
+			field = Computed_field_create_composite(field_factory,
 				/*number_of_components*/number_of_values,
 				/*number_of_source_fields*/0,
 				/*source_fields*/(struct Computed_field **)NULL,
 				/*number_of_source_values*/number_of_values,
-				/*source_values*/fe_value_values,
+				/*source_values*/values,
 				source_field_numbers, source_value_numbers);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_create_constant.  Not enough memory");
-			field = (Computed_field *)NULL;
 		}
 		DEALLOCATE(source_field_numbers);
 		DEALLOCATE(source_value_numbers);
-		DEALLOCATE(fe_value_values);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_create_constant.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
@@ -1446,26 +1367,26 @@ and allows its contents to be modified.
 	const char *current_token;
 	double *values, *temp_values;
 	int i, number_of_values, previous_number_of_values, return_code;
-	struct Computed_field *field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_type_constant);
 	USE_PARAMETER(computed_field_composite_package_void);
-	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void) &&
-			(field=field_modify->field))
+	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code = 1;
 		previous_number_of_values = 0;
 		values = (double *)NULL;
-		if (Computed_field_is_constant(field))
+		
+		Computed_field *field = field_modify->get_field();
+		if (field && Computed_field_is_constant(field))
 		{
 			previous_number_of_values = field->number_of_source_values;
 			if (ALLOCATE(values, double, previous_number_of_values))
 			{
 				for (i = 0; i < previous_number_of_values; i++)
 				{
-					values[i] = field->source_values[i];
+					values[i] = static_cast<double>(field->source_values[i]);
 				}
 			}
 			else
@@ -1538,9 +1459,9 @@ and allows its contents to be modified.
 					&number_of_values, set_double_vector);
 				if (return_code = Option_table_multi_parse(option_table, state))
 				{
-					return_code = Computed_field_copy_type_specific_and_deaccess(field,
-						Computed_field_create_constant(
-						number_of_values, values));
+					return_code = field_modify->update_field_and_deaccess(
+						Computed_field_create_constant(field_modify->get_field_factory(),
+							number_of_values, values));
 				}
 				DESTROY(Option_table)(&option_table);
 			}
@@ -1571,44 +1492,6 @@ and allows its contents to be modified.
 
 	return (return_code);
 } /* define_Computed_field_type_constant */
-
-int Computed_field_set_type_component(struct Computed_field *field,
-	struct Computed_field *source_field, int component_number)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Changes <field> into type composite returning the single field component.
-Since a component field performs a subset of the capabilities of the composite
-field type but the latter is somewhat complicated to set up, this is a
-convenience function for building a composite field for a scalar component.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int return_code, source_field_number;
-
-	ENTER(Computed_field_set_type_component);
-	if (field && source_field && (0 <= component_number) &&
-		(component_number < source_field->number_of_components))
-	{
-		source_field_number = 0;
-		return_code = Computed_field_copy_type_specific_and_deaccess(field,
-			Computed_field_create_composite(/*number_of_components*/1,
-			/*number_of_source_fields*/1, /*source_fields*/&source_field,
-			/*number_of_source_values*/0, /*source_values*/(FE_value *)NULL,
-			&source_field_number, &component_number));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_component.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_component */
 
 int Computed_field_is_component_wrapper(struct Computed_field *field,
 	void *field_component_void)
@@ -1656,6 +1539,7 @@ DESCRIPTION :
 Returns a composite field that computes <component_number> of <field>. First
 tries to find one in the manager that does this, otherwise makes one of name
 'field.component_name', adds it to the manager and returns it.
+Returned field is ACCESSed once.
 ==============================================================================*/
 {
 	char *component_field_name, *component_name;
@@ -1670,9 +1554,13 @@ tries to find one in the manager that does this, otherwise makes one of name
 		field_component.field = field;
 		field_component.component_no = component_number;
 		/* try to find an existing wrapper for this component */
-		if (!(component_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+		if (component_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 			Computed_field_is_component_wrapper, &field_component,
-			computed_field_manager)))
+			computed_field_manager))
+		{
+			ACCESS(Computed_field)(component_field);
+		}
+		else
 		{
 			if (component_name =
 				Computed_field_get_component_name(field, component_number))
@@ -1681,16 +1569,11 @@ tries to find one in the manager that does this, otherwise makes one of name
 					strlen(field->name) + strlen(component_name) + 2))
 				{
 					sprintf(component_field_name, "%s.%s", field->name, component_name);
-					if (component_field = CREATE(Computed_field)(component_field_name))
-					{
-						if (!(Computed_field_set_type_component(component_field, field,
-							component_number) &&
-							ADD_OBJECT_TO_MANAGER(Computed_field)(component_field,
-								computed_field_manager)))
-						{
-							DESTROY(Computed_field)(&component_field);
-						}
-					}
+					Cmiss_region* region = Computed_field_get_region(field);
+					Cmiss_field_factory *field_factory = Cmiss_field_factory_create(region);
+					Cmiss_field_factory_set_field_name(field_factory, component_field_name);
+					component_field = Computed_field_create_component(field_factory, field, component_number);
+					Cmiss_field_factory_destroy(&field_factory);
 					DEALLOCATE(component_field_name);
 				}
 				DEALLOCATE(component_name);
@@ -1712,7 +1595,9 @@ tries to find one in the manager that does this, otherwise makes one of name
 	return (component_field);
 } /* Computed_field_manager_get_component_wrapper */
 
-Computed_field *Cmiss_field_create_identity(Computed_field *source_field)
+Computed_field *Cmiss_field_create_identity(
+	struct Cmiss_field_factory *field_factory,
+	Computed_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 21 April 2008
 
@@ -1722,7 +1607,7 @@ Changes <field> into type composite with one input field, the <source_field>.
 {
 	int i, number_of_values, *source_field_numbers,
 		*source_value_numbers;
-	Computed_field *field;
+	Computed_field *field = NULL;
 
 	ENTER(Computed_field_create_identity);
 	if (source_field)
@@ -1738,17 +1623,16 @@ Changes <field> into type composite with one input field, the <source_field>.
 				source_value_numbers[i] = i;
 			}
 			field =
-				Computed_field_create_composite(
+				Computed_field_create_composite(field_factory,
 				/*number_of_components*/number_of_values,
 				/*number_of_source_fields*/1, /*source_fields*/&source_field,
-				/*number_of_source_values*/0, /*source_values*/(FE_value *)NULL,
+				/*number_of_source_values*/0, /*source_values*/(double *)NULL,
 				source_field_numbers, source_value_numbers);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_create_identity.  Not enough memory");
-			field = (Computed_field *)NULL;
 		}
 		DEALLOCATE(source_field_numbers);
 		DEALLOCATE(source_value_numbers);
@@ -1757,15 +1641,15 @@ Changes <field> into type composite with one input field, the <source_field>.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_create_identity.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
 	return (field);
 } /* Computed_field_create_identity */
 
-Computed_field *Cmiss_field_create_component(Computed_field *source_field,
-	int component_number)
+Computed_field *Cmiss_field_create_component(
+	struct Cmiss_field_factory *field_factory,
+	Computed_field *source_field, int component_number)
 /*******************************************************************************
 
 DESCRIPTION :
@@ -1773,32 +1657,31 @@ Changes <field> into type composite with one input field, the <source_field>
 and the component index <component_number>.
 ==============================================================================*/
 {
-	int number_of_values, *source_field_numbers,
+	int number_of_components, *source_field_numbers,
 		*source_value_numbers;
-	Computed_field *field;
+	Computed_field *field = NULL;
 
 	ENTER(Computed_field_create_component);
 	if (source_field)
 	{
-		number_of_values = 1;
-		ALLOCATE(source_field_numbers, int, number_of_values);
-		ALLOCATE(source_value_numbers, int, number_of_values);
+		number_of_components = 1;
+		ALLOCATE(source_field_numbers, int, number_of_components);
+		ALLOCATE(source_value_numbers, int, number_of_components);
 		if (source_field_numbers && source_value_numbers)
 		{
 			source_field_numbers[0] = 0;
 			source_value_numbers[0] = component_number;
 			field =
-				Computed_field_create_composite(
-				/*number_of_components*/number_of_values,
+				Computed_field_create_composite(field_factory,
+				number_of_components,
 				/*number_of_source_fields*/1, /*source_fields*/&source_field,
-				/*number_of_source_values*/0, /*source_values*/(FE_value *)NULL,
+				/*number_of_source_values*/0, /*source_values*/(double *)NULL,
 				source_field_numbers, source_value_numbers);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_create_component.  Not enough memory");
-			field = (Computed_field *)NULL;
 		}
 		DEALLOCATE(source_field_numbers);
 		DEALLOCATE(source_value_numbers);
@@ -1807,7 +1690,6 @@ and the component index <component_number>.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_create_component.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 

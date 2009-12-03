@@ -10733,6 +10733,24 @@ Returns the FE_region that <fe_field> belongs to.
 	return (access_count);
 } /* FE_field_get_access_count */
 
+int FE_node_get_access_count(struct FE_node *fe_node)
+{
+	if (fe_node)
+	{
+		return fe_node->access_count;
+	}
+	return 0;
+}
+
+int FE_element_get_access_count(struct FE_element *fe_element)
+{
+	if (fe_element)
+	{
+		return fe_element->access_count;
+	}
+	return 0;
+}
+
 char *get_FE_field_component_name(struct FE_field *field,int component_no)
 /*******************************************************************************
 LAST MODIFIED : 10 May 2000
@@ -11266,25 +11284,6 @@ Should only call this function for unmanaged fields.
 
 	return (return_code);
 } /* set_FE_field_number_of_times */
-
-int get_FE_field_access_count(struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 17 August 1999
-
-DESCRIPTION :Debug function. May be naughty.
-==============================================================================*/
-{
-	int access_count;
-	if (field)
-	{
-		access_count=field->access_count;
-	}
-	else
-	{
-		access_count=-1;
-	}
-	return (access_count);
-}
 
 enum CM_field_type get_FE_field_CM_field_type(struct FE_field *field)
 /*******************************************************************************
@@ -18464,33 +18463,6 @@ afterwards. FE_region should be the only object that needs to call this.
 
 	return (return_code);
 } /* set_FE_node_identifier */
-
-int get_FE_node_access_count(struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 26 September 2000
-
-DESCRIPTION :
-Returns the acccess count of the <node>.
-Useful for drawing the access count as a field when trying to debug why things
-cannot be destroyed.
-==============================================================================*/
-{
-	int access_count;
-
-	ENTER(get_FE_node_identifier);
-	if (node)
-	{
-		access_count=node->access_count;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_FE_node_access_count.  Invalid node");
-		access_count=0;
-	}
-	LEAVE;
-
-	return (access_count);
-} /* get_FE_node_access_count */
 
 struct FE_field *get_FE_node_default_coordinate_field(struct FE_node *node)
 /*******************************************************************************

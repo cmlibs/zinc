@@ -60,15 +60,18 @@ char computed_field_string_constant_type_string[] = "string_constant";
 class Computed_field_string_constant : public Computed_field_core
 {
 public:
-	/* This array is of size equal to the number of components of the field */
+	int number_of_strings;
 	char **string_constant_array;
 
-	Computed_field_string_constant(Computed_field *field,
-		char** string_constant_array_in) : Computed_field_core(field)
+	Computed_field_string_constant(int number_of_strings,
+		char** string_constant_array_in) :
+		Computed_field_core(),
+		number_of_strings(number_of_strings),
+		string_constant_array(NULL)
 	{
 		int i;
-		string_constant_array = new char*[field->number_of_components];
-		for (i = 0 ; i < field->number_of_components ; i++)
+		string_constant_array = new char*[number_of_strings];
+		for (i = 0 ; i < number_of_strings ; i++)
 		{
 			string_constant_array[i] = 
 				duplicate_string(string_constant_array_in[i]);
@@ -76,12 +79,25 @@ public:
 
 	};
 
+	virtual bool attach_to_field(Computed_field *parent)
+	{
+		if (Computed_field_core::attach_to_field(parent))
+		{
+			if (string_constant_array &&
+				(number_of_strings == field->number_of_components))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
 	~Computed_field_string_constant();
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_string_constant(new_parent,
+		return new Computed_field_string_constant(number_of_strings,
 			string_constant_array);
 	}
 
@@ -120,7 +136,7 @@ Clear the type specific data used by this type.
 		{
 			DEALLOCATE(string_constant_array[i]);
 		}
-		delete string_constant_array;
+		delete[] string_constant_array;
 	}
 	else
 	{
@@ -342,40 +358,18 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_string_constant(struct Computed_field *field,
+struct Computed_field *Computed_field_create_string_constant(
+	struct Cmiss_field_factory *field_factory,
 	int number_of_components, char **string_constant_array)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_STRING_CONSTANT with the supplied
-<number_of_components> and the string values from <string_constant_array>.
-==============================================================================*/
 {
-	int return_code;
+	Computed_field *field = Computed_field_create_generic(field_factory,
+		/*check_source_field_regions*/true, number_of_components,
+		/*number_of_source_fields*/0, NULL,
+		/*number_of_source_values*/0, NULL,
+		new Computed_field_string_constant(number_of_components,
+			string_constant_array));
 
-	ENTER(Computed_field_set_type_string_constant);
-	if (field&&number_of_components&&string_constant_array)
-	{
-		return_code=1;
-		/* 2. free current type-specific data */
-		Computed_field_clear_type(field);
-		/* 3. establish the new type */
-		field->number_of_source_fields=0;
-		field->number_of_source_values = 0;
-		field->number_of_components=number_of_components;
-		field->core = new Computed_field_string_constant(field,
-			string_constant_array);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_string_constant.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
+	return (field);
 } /* Computed_field_set_type_string_constant */
 
 int Computed_field_get_type_string_constant(struct Computed_field *field,
@@ -441,26 +435,34 @@ already) and allows its contents to be modified.
 {
 	int return_code;
 	Computed_field_modify_data *field_modify;
-	struct Computed_field *field;
 
 	ENTER(define_Computed_field_type_string_constant);
 	USE_PARAMETER(dummy_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
-		if (!(strcmp(PARSER_HELP_STRING,state->current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+		if (state->current_token)
 		{
-			/* error */
-			display_message(INFORMATION_MESSAGE,
-				" <STRINGS>");
+			if (!(strcmp(PARSER_HELP_STRING,state->current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+			{
+				/* error */
+				display_message(INFORMATION_MESSAGE,
+					" <STRINGS>");
+			}
+			else
+			{
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_string_constant(field_modify->get_field_factory(),
+						/*number_of_components*/state->number_of_tokens - state->current_index,
+						/*string_constant_array*/state->tokens + state->current_index));	
+			}
 		}
 		else
 		{
-			Computed_field_set_type_string_constant(field,
-				state->number_of_tokens - state->current_index,
-				state->tokens + state->current_index);	
+			display_message(ERROR_MESSAGE,
+				"gfx define field NAME string_constant.  Missing string(s)");
+			return_code = 0;
 		}
 	}
 	else

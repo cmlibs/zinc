@@ -1530,16 +1530,6 @@ node is temporarily removed from all the indexed lists it is in and re-added
 afterwards. FE_region should be the only object that needs to call this.
 ==============================================================================*/
 
-int get_FE_node_access_count(struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 26 September 2000
-
-DESCRIPTION :
-Returns the acccess count of the <node>.
-Useful for drawing the access count as a field when trying to debug why things
-cannot be destroyed.
-==============================================================================*/
-
 struct FE_field *get_FE_node_default_coordinate_field(struct FE_node *node);
 /*******************************************************************************
 LAST MODIFIED : 3 November 1998
@@ -3364,13 +3354,20 @@ DESCRIPTION :
 Returns the FE_region that <fe_field> belongs to.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * @return  number of objects using fe_field.
+ */
 int FE_field_get_access_count(struct FE_field *fe_field);
-/*******************************************************************************
-LAST MODIFIED : 10 March 2003
 
-DESCRIPTION :
-Returns the number of objects using the <fe_field>.
-==============================================================================*/
+/***************************************************************************//**
+ * @return  number of objects using fe_node.
+ */
+int FE_node_get_access_count(struct FE_node *fe_node);
+
+/***************************************************************************//**
+ * @return  number of objects using fe_element.
+ */
+int FE_element_get_access_count(struct FE_element *fe_element);
 
 char *get_FE_field_component_name(struct FE_field *field,int component_no);
 /*******************************************************************************
@@ -3468,13 +3465,6 @@ Sets data in this memory to 0, pointers to NULL.
 
 MUST have called set_FE_field_time_value_type() before calling this function.
 Should only call this function for unmanaged fields.
-==============================================================================*/
-
-int get_FE_field_access_count(struct FE_field *field);
-/*******************************************************************************
-LAST MODIFIED : 17 August 1999
-
-DESCRIPTION :Debug function. May be naughty.
 ==============================================================================*/
 
 enum CM_field_type get_FE_field_CM_field_type(struct FE_field *field);

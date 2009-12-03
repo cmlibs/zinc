@@ -51,6 +51,62 @@ LAST MODIFIED : 6 July 2000
 DESCRIPTION :
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Creates a field returning the values of source vector field normalised to
+ * unit length.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param source_field  Source field to normalise.
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_normalise(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *source_field);
+
+/***************************************************************************//**
+ * Creates a vector field with (dimension) components whose values are given by
+ * the cross product of the (dimension-1) source fields. 
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param dimension  Dimension of the cross product = number of components of
+ * resulting field. Only 2, 3 and 4 dimensions supported.
+ * @param source_fields  Array of (dimension-1) fields with number of components
+ * equal to (dimension).
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_cross_product(
+	struct Cmiss_field_factory *field_factory,
+	int dimension, struct Computed_field **source_fields);
+
+/***************************************************************************//**
+ * Creates a scalar field whose value is the dot product of the two supplied
+ * source fields, which must have equal numbers of components. 
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param source_field_one  First source field.
+ * @param source_field_two  Second source field.
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_dot_product(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *source_field_one,
+	struct Computed_field *source_field_two);
+
+
+
+
+/***************************************************************************//**
+ * Creates a scalar field returning the magnitude of the vector source field. 
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param source_field  Source field to normalise.
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_magnitude(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *source_field);
+
+
 int Computed_field_set_type_dot_product(struct Computed_field *field,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);

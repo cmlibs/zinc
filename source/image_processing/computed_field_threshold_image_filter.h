@@ -52,6 +52,7 @@ int Computed_field_register_types_threshold_image_filter(
 	struct Computed_field_package *computed_field_package);
 
 struct Computed_field *Cmiss_field_create_threshold_image_filter(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, 
 	enum General_threshold_filter_mode threshold_mode, 
 	double outside_value, double below_value, double above_value);

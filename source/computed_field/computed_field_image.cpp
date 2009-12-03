@@ -77,20 +77,44 @@ public:
 	void *field_manager_callback_id;
 	/* Flag to indicate that the texture needs to be evaluated 
 		 due to changes on the source fields */
-	int redraw_texture;
+	bool need_evaluate_texture;
 
-	Computed_field_image(Computed_field *field) :
-		Computed_field_core(field)
+	Computed_field_image(Texture *texture_in = NULL) :
+		Computed_field_core(),
+		texture(NULL)
 	{
-		texture = ACCESS(Texture)(CREATE(Texture)(field->name));
+		if (texture_in)
+		{
+			texture = ACCESS(Texture)(texture_in);
+		}
 		maximum = 1.0;
 		minimum = 0.0;
 		native_texture = 1;
 		number_of_bytes_per_component = 1;
 		field_manager_callback_id = (void *)NULL;
-		redraw_texture = 1;
+		need_evaluate_texture = false;
 	};
 
+	virtual bool attach_to_field(Computed_field *parent)
+	{
+		if (Computed_field_core::attach_to_field(parent))
+		{
+			if (texture_is_evaluated_from_source_field())
+			{
+				need_evaluate_texture = true;
+			}
+			if (NULL == texture)
+			{
+				texture = ACCESS(Texture)(CREATE(Texture)(field->name));
+			}
+			if (texture)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+		
 	~Computed_field_image()
 	{
 		if (texture)
@@ -112,44 +136,56 @@ public:
 		}
 	}
 
+	/**
+	 * Warning: assumes core is either unattached to field, or caller holds one accessed
+	 * reference to field containing this core,
+	 * otherwise check on whether number of components can change is dangerous.
+	 */
 	int set_texture(Texture *texture_in)
 	{
 		int return_code;
-		int new_number_of_components;
-		if (field->number_of_source_fields > 1 && field->source_fields)
+		if (field)
 		{
-			new_number_of_components = Computed_field_get_number_of_components(
-				field->source_fields[1]);
-		}
-		else if (texture_in)
-		{
-			new_number_of_components = Texture_get_number_of_components(texture_in);
+			int new_number_of_components;
+			if (texture_is_evaluated_from_source_field())
+			{
+				new_number_of_components = Computed_field_get_number_of_components(
+					field->source_fields[1]);
+			}
+			else if (texture_in)
+			{
+				new_number_of_components = Texture_get_number_of_components(texture_in);
+			}
+			else
+			{
+				new_number_of_components = field->number_of_components;
+			}
+			if ((field->number_of_components == new_number_of_components)
+				|| MANAGED_OBJECT_NOT_IN_USE(Computed_field)(field, field->manager))
+			{
+				REACCESS(Texture)(&texture, texture_in);
+				field->number_of_components = new_number_of_components;
+				return_code = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "Cmiss_field_image::set_texture.  "
+					"New texture has a different number of components but this "
+					"cannot change when a field is in use.");
+				return_code = 0;
+			}
 		}
 		else
 		{
-			new_number_of_components = field->number_of_components;
-		}
-		if ((field->number_of_components == new_number_of_components)
-			|| (!field->manager)
-			|| MANAGED_OBJECT_NOT_IN_USE(Computed_field)(field, field->manager))
-		{
+			// just called from copy() - copy texture reference
 			REACCESS(Texture)(&texture, texture_in);
-			field->number_of_components = new_number_of_components;
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "Cmiss_field_image::set_texture.  "
-				"New texture has a different number of components but this "
-				"cannot change when a field is in use.");
-			return_code = 0;
 		}
 		return (return_code);
 	}
 
 	Texture *get_texture()
 	{
-		create_Texture_from_source_field();
+		check_evaluate_texture();
 		return (texture);
 	}
 
@@ -174,14 +210,20 @@ public:
 
 private:
 
-	int set_Texture_from_field();
+	int evaluate_texture_from_source_field();
 
-	int create_Texture_from_source_field();
+	void check_evaluate_texture()
+	{
+		if (need_evaluate_texture)
+		{
+			evaluate_texture_from_source_field();
+		}
+	}
 
 	static void field_manager_change(
 		MANAGER_MESSAGE(Computed_field) *message, void *image_field_core_void);
 
-	Computed_field_core *copy(Computed_field* new_parent);
+	Computed_field_core *copy();
 
 	char *get_type_string()
 	{
@@ -198,6 +240,20 @@ private:
 
 	int get_native_resolution(int *dimension,
 		int **sizes, Computed_field **texture_coordinate_field);
+
+	bool texture_is_evaluated_from_source_field()
+	{
+		return (field && (field->number_of_source_fields > 1));
+	}
+	
+	virtual void field_is_managed(void)
+	{
+		if (texture_is_evaluated_from_source_field())
+		{
+			field_manager_callback_id = MANAGER_REGISTER(Computed_field)(
+				field_manager_change, (void *)this, field->manager);
+		}
+	}
 };
 
 inline Computed_field *Computed_field_cast(
@@ -219,14 +275,12 @@ void Computed_field_image::field_manager_change(
 	Computed_field_image *image_field_core =
 		reinterpret_cast<Computed_field_image *>(image_field_core_void);
 	Computed_field *field;
-	if (message && image_field_core && (field = image_field_core->field) &&
-		(field->number_of_source_fields > 1) && field->source_fields)
+	if (message && image_field_core && (NULL != (field = image_field_core->field)))
 	{
 		if (Computed_field_depends_on_Computed_field_in_list(
 					field, message->changed_object_list))
 		{
-			image_field_core->redraw_texture = 1;
-			image_field_core->set_Texture_from_field();
+			image_field_core->need_evaluate_texture = true;
 		}
 	}
 	else
@@ -237,7 +291,7 @@ void Computed_field_image::field_manager_change(
 	LEAVE;
 } /* Computed_field_image::field_manager_change */
 
-Computed_field_core* Computed_field_image::copy(Computed_field* new_parent)
+Computed_field_core* Computed_field_image::copy()
 /*******************************************************************************
 LAST MODIFIED : 24 June 2008
 
@@ -245,25 +299,10 @@ DESCRIPTION :
 Copy the type specific data used by this type.
 ==============================================================================*/
 {
-	Computed_field_image* core;
-
-	ENTER(Computed_field_image::copy);
-	if (new_parent)
-	{
-		core = new Computed_field_image(new_parent);
-		core->set_texture(texture);
-		core->set_native_texture_flag(native_texture);
-		core->set_output_range(minimum, maximum);
-		core->set_number_of_bytes_per_component(number_of_bytes_per_component);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_image::copy.  "
-			"Invalid arguments.");
-		core = (Computed_field_image*)NULL;
-	}
-	LEAVE;
+	Computed_field_image* core = new Computed_field_image(texture);
+	core->set_native_texture_flag(native_texture);
+	core->set_output_range(minimum, maximum);
+	core->set_number_of_bytes_per_component(number_of_bytes_per_component);
 
 	return (core);
 } /* Computed_field_image::copy */
@@ -303,7 +342,7 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_image::compare */
 
-int Computed_field_image::set_Texture_from_field()
+int Computed_field_image::evaluate_texture_from_source_field()
 {
 	unsigned char *image_plane, *ptr = 0;
 	unsigned short *two_bytes_image_plane, *two_bytes_ptr = 0;
@@ -322,8 +361,8 @@ int Computed_field_image::set_Texture_from_field()
 	struct Computed_field *texture_coordinate_field, *source_field, *source_texture_coordinate_field;
 	enum Texture_storage_type specify_format;
 
-	ENTER(Computed_field_image::set_Texture_from_field);
-	if (texture &&  field->number_of_source_fields > 1 &&  field->source_fields)
+	ENTER(Computed_field_image::evaluate_texture_from_source_field);
+	if (texture && texture_is_evaluated_from_source_field())
 	{
 		/* Setup sizes */
 		sizes = (int *)NULL;
@@ -384,7 +423,7 @@ int Computed_field_image::set_Texture_from_field()
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_image::set_Texture_from_field.  Invalid texture_coordinate field.");
+				"Computed_field_image::evaluate_texture_from_source_field.  Invalid texture_coordinate field.");
 			return_code = 0;
 		}
 
@@ -409,7 +448,7 @@ int Computed_field_image::set_Texture_from_field()
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_image::set_Texture_from_field. No texture format supports"
+				"Computed_field_image::evaluate_texture_from_source_field. No texture format supports"
 				"the number of components in source field.");
 			return_code = 0;
 		}
@@ -417,7 +456,7 @@ int Computed_field_image::set_Texture_from_field()
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_image::set_Texture_from_field.  Invalid argument(s)");
+			"Computed_field_image::evaluate_texture_from_source_field.  Invalid argument(s)");
 		return_code = 0;
 		
 	}
@@ -589,7 +628,7 @@ int Computed_field_image::set_Texture_from_field()
 										default:
 										{
 											 display_message(ERROR_MESSAGE,
-													"Computed_field_image::set_Texture_from_field.  Unsupported storage type");
+													"Computed_field_image::evaluate_texture_from_source_field.  Unsupported storage type");
 											 return_code = 0;
 										} break;
 								 }
@@ -645,7 +684,7 @@ int Computed_field_image::set_Texture_from_field()
 										default:
 										{
 											 display_message(ERROR_MESSAGE,
-													"Computed_field_image::set_Texture_from_field.  Unsupported storage type");
+													"Computed_field_image::evaluate_texture_from_source_field.  Unsupported storage type");
 											 return_code = 0;
 										} break;
 								 }
@@ -659,7 +698,7 @@ int Computed_field_image::set_Texture_from_field()
 									 image_width_bytes, (unsigned char *)two_bytes_image_plane))
 						 {
 								display_message(ERROR_MESSAGE,
-									 "Computed_field_image::set_Texture_from_field.  Could not set texture block");
+									 "Computed_field_image::evaluate_texture_from_source_field.  Could not set texture block");
 								return_code = 0;
 						 }
 					}
@@ -670,7 +709,7 @@ int Computed_field_image::set_Texture_from_field()
 									 image_width_bytes, image_plane))
 						 {
 								display_message(ERROR_MESSAGE,
-									 "Computed_field_image::set_Texture_from_field.  Could not set texture block");
+									 "Computed_field_image::evaluate_texture_from_source_field.  Could not set texture block");
 								return_code = 0;
 						 }
 					}
@@ -679,19 +718,19 @@ int Computed_field_image::set_Texture_from_field()
 				Computed_field_clear_cache(texture_coordinate_field);
 				if (0 < field_evaluate_error_count)
 				{
-					display_message(WARNING_MESSAGE, "Computed_field_image::set_Texture_from_field.  "
+					display_message(WARNING_MESSAGE, "Computed_field_image::evaluate_texture_from_source_field.  "
 						"Field could not be evaluated in element for %d out of %d pixels",
 						field_evaluate_error_count, total_number_of_pixels);
 				}
 				if (0 < spectrum_render_error_count)
 				{
-					display_message(WARNING_MESSAGE, "Computed_field_image::set_Texture_from_field.  "
+					display_message(WARNING_MESSAGE, "Computed_field_image::evaluate_texture_from_source_field.  "
 						"Spectrum could not be evaluated for %d out of %d pixels",
 						spectrum_render_error_count, total_number_of_pixels);
 				}
 				if (0 < find_element_xi_error_count)
 				{
-					display_message(WARNING_MESSAGE, "Computed_field_image::set_Texture_from_field.  "
+					display_message(WARNING_MESSAGE, "Computed_field_image::evaluate_texture_from_source_field.  "
 						"Unable to find element:xi for %d out of %d pixels",
 						find_element_xi_error_count, total_number_of_pixels);
 				}
@@ -700,7 +739,7 @@ int Computed_field_image::set_Texture_from_field()
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_image::set_Texture_from_field.  Not enough memory");
+					"Computed_field_image::evaluate_texture_from_source_field.  Not enough memory");
 				return_code = 0;
 			}
 			DEALLOCATE(data_values);
@@ -712,43 +751,19 @@ int Computed_field_image::set_Texture_from_field()
 			{
 				DESTROY(Computed_field_find_element_xi_cache)(&cache);
 			}
-			redraw_texture = 0;
+			need_evaluate_texture = false;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_image::set_Texture_from_field.  Could not allocate image in texture");
+				"Computed_field_image::evaluate_texture_from_source_field.  Could not allocate image in texture");
 			return_code = 0;
 		}
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_image::set_Texture_from_field */
-
-int Computed_field_image::create_Texture_from_source_field()
-{
-	int return_code;
-	return_code = 0;
-	if (field->number_of_source_fields > 1 && field->source_fields &&
-		field->source_fields[1] && redraw_texture)
-	{
-		if (!texture)
-		{
-			texture = ACCESS(Texture)(CREATE(Texture)(field->name));
-		}
-		if (set_Texture_from_field())
-		{
-			if (!field_manager_callback_id && field->manager)
-			{
-				field_manager_callback_id = MANAGER_REGISTER(Computed_field)(
-					field_manager_change, (void *)this,field->manager);
-			}
-			return_code = 1;
-		}
-	}
-	return return_code;
-} /* Computed_field_image::create_Texture_from_source_field */
+} /* Computed_field_image::evaluate_texture_from_source_field */
 
 int Computed_field_image::evaluate_cache_at_location(Field_location* location)
 /*******************************************************************************
@@ -764,10 +779,7 @@ Evaluate the fields cache at the location
 	ENTER(Computed_field_image::evaluate_cache_at_location);
 	if (field && location)
 	{
-		if (!texture)
-		{
-			create_Texture_from_source_field();
-		}
+		check_evaluate_texture();
 		if (texture)
 		{
 			/* 1. Precalculate any source fields that this field depends on */
@@ -814,6 +826,12 @@ Evaluate the fields cache at the location
 			}
 			field->derivatives_valid = 0;
 		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_image::evaluate_cache_at_location.  No texture");
+			return_code = 0;
+		}
 	}
 	else
 	{
@@ -846,10 +864,7 @@ the <field>. These parameters will be used in image processing.
 	if (field)
 	{
 		return_code = 1;
-		if (!texture)
-		{
-			create_Texture_from_source_field();
-		}
+		check_evaluate_texture();
 		if (native_texture && texture)
 		{
 			Texture_get_size(texture, &w, &h, &d);
@@ -975,7 +990,7 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		if (field->number_of_source_fields > 1 && field->source_fields[1])
+		if (texture_is_evaluated_from_source_field())
 		{
 			append_string(&command_string, " field ", &error);
 			if (GET_NAME(Computed_field)(field->source_fields[1], &field_name))
@@ -1034,23 +1049,21 @@ Cmiss_field_image_id Cmiss_field_image_cast(Cmiss_field_id field)
 	}
 }
 
-Computed_field *Computed_field_create_image(Computed_field *domain_field,
-	Computed_field *source_field)
+Computed_field *Computed_field_create_image(
+	struct Cmiss_field_factory *field_factory,
+	Computed_field *domain_field, Computed_field *source_field)
 {
-	int number_of_components, number_of_source_fields;
-	Computed_field *field, **source_fields, *source_texture_coordinate_field,
-		*texture_coordinate_field;
-	int source_dimension, *source_sizes, return_code;
-
-	ENTER(Computed_field_create_image);
-	texture_coordinate_field = (struct Computed_field *)NULL;
-	return_code = 1;
+	Computed_field *field = NULL;
+	int return_code = 1;
+	Computed_field *texture_coordinate_field = NULL;
 	if (domain_field)
 	{
-		texture_coordinate_field = domain_field;
+		texture_coordinate_field = ACCESS(Computed_field)(domain_field);
 	}
 	if (source_field)
 	{
+		Computed_field *source_texture_coordinate_field = NULL;
+		int source_dimension, *source_sizes;
 		if (!Computed_field_has_up_to_4_numerical_components(
 					source_field, (void*)NULL))
 		{
@@ -1083,8 +1096,12 @@ Computed_field *Computed_field_create_image(Computed_field *domain_field,
 							Computed_field,name)((char *)"xi",
 								Cmiss_region_get_Computed_field_manager(field_region));
 						if (texture_coordinate_field &&
-							!Computed_field_is_type_xi_coordinates(texture_coordinate_field,
+							Computed_field_is_type_xi_coordinates(texture_coordinate_field,
 								(void *)NULL))
+						{
+							ACCESS(Computed_field)(texture_coordinate_field);
+						}
+						else
 						{
 							texture_coordinate_field = (struct Computed_field *)NULL;
 						}
@@ -1092,7 +1109,7 @@ Computed_field *Computed_field_create_image(Computed_field *domain_field,
 				}
 				else
 				{
-					texture_coordinate_field = source_texture_coordinate_field;
+					REACCESS(Computed_field)(&texture_coordinate_field, source_texture_coordinate_field);
 				}
 				DEALLOCATE(source_sizes);
 			}
@@ -1100,57 +1117,89 @@ Computed_field *Computed_field_create_image(Computed_field *domain_field,
 	}
 	if (texture_coordinate_field == (struct Computed_field *)NULL)
 	{
-		texture_coordinate_field = CREATE(Computed_field)("temp_image_domain");
-		Computed_field_set_type_xi_coordinates(texture_coordinate_field);
+		Cmiss_field_factory *temp_field_factory =
+			Cmiss_field_factory_create(Cmiss_field_factory_get_region(field_factory));
+		Cmiss_field_factory_set_field_name(temp_field_factory, "temp_image_domain");
+		texture_coordinate_field = Computed_field_create_xi_coordinates(temp_field_factory);
 		Computed_field_set_read_only(texture_coordinate_field);
+		Cmiss_field_factory_destroy(&temp_field_factory);
 	}
-	
 	if (return_code && texture_coordinate_field && 
-		3>=texture_coordinate_field->number_of_components)
+		(3 >= texture_coordinate_field->number_of_components))
 	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_components = 1;
+		int number_of_components = 1;
+		int number_of_source_fields = 1;
+		Computed_field *source_fields[2];
+		source_fields[0] = texture_coordinate_field;
 		if (source_field)
 		{
-			number_of_source_fields=2;
-			number_of_components = 
+			number_of_components =
 				Computed_field_get_number_of_components(source_field);
+			number_of_source_fields = 2;
+			source_fields[1] = source_field;
 		}
-		else
-		{
-			number_of_source_fields=1;
-		}
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. create new field */
-			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-			/* 3. establish the new type */
-			field->number_of_components = number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(texture_coordinate_field);
-			if (source_field)
-			{
-				source_fields[1] = ACCESS(Computed_field)(source_field);
-			}
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			field->core = new Computed_field_image(field);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			field = (Computed_field *)NULL;
-		}
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			number_of_components,
+			number_of_source_fields, source_fields,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_image());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_create_image.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
 	}
+	REACCESS(Computed_field)(&texture_coordinate_field, NULL);
 	LEAVE;
 
 	return (field);
-} /* Computed_field_create_image */
+}
+
+/***************************************************************************//**
+ * Variant constructor for Computed_field_image taking an input texture instead
+ * of a source field.
+ * Needed to get number of components from input texture. 
+ */
+static Computed_field *Computed_field_create_sample_texture_internal(
+	struct Cmiss_field_factory *field_factory,
+	Computed_field *domain_field, struct Texture *texture_in)
+{
+	Computed_field *field = NULL;
+	Computed_field *texture_coordinate_field = NULL;
+	if (domain_field)
+	{
+		texture_coordinate_field = ACCESS(Computed_field)(domain_field);
+	}
+	if (texture_coordinate_field == (struct Computed_field *)NULL)
+	{
+		Cmiss_field_factory *temp_field_factory =
+			Cmiss_field_factory_create(Cmiss_field_factory_get_region(field_factory));
+		Cmiss_field_factory_set_field_name(temp_field_factory, "temp_image_domain");
+		texture_coordinate_field = Computed_field_create_xi_coordinates(temp_field_factory);
+		Computed_field_set_read_only(texture_coordinate_field);
+		Cmiss_field_factory_destroy(&temp_field_factory);
+	}
+	if (texture_in && texture_coordinate_field && 
+		(3 >= texture_coordinate_field->number_of_components))
+	{
+		int number_of_components = Texture_get_number_of_components(texture_in);
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			number_of_components,
+			/*number_of_source_fields*/1, &texture_coordinate_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_image(texture_in));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_create_sample_texture_internal.  Invalid argument(s)");
+	}
+	REACCESS(Computed_field)(&texture_coordinate_field, NULL);
+
+	return (field);
+}
 
 Cmiss_texture *Cmiss_field_image_get_texture(Cmiss_field_image_id image_field)
 {
@@ -1181,7 +1230,7 @@ returned.
 		&& texture)
 	{
 		*texture_coordinate_field = field->source_fields[0];
-		if (field->number_of_source_fields > 1 && field->source_fields)
+		if (field->number_of_source_fields > 1) // texture_is_evaluated_from_source_field()
 		{
 			*source_field = field->source_fields[1];
 			/* do not return a texture here as it is generated 
@@ -1223,7 +1272,7 @@ Maintains legacy version that is set with a texture.
 	char native_texture_flag, not_native_texture_flag;
 	float minimum, maximum;
 	int native_texture, return_code;
-	struct Computed_field *field,*source_field,*texture_coordinate_field;
+	struct Computed_field *source_field,*texture_coordinate_field;
 	Computed_field_image_package
 		*computed_field_image_package;
 	Computed_field_modify_data *field_modify;
@@ -1234,7 +1283,6 @@ Maintains legacy version that is set with a texture.
 
 	ENTER(define_Computed_field_type_image);
 	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void) &&
-			(field=field_modify->field)&&
 		(computed_field_image_package=
 		(Computed_field_image_package *)
 		computed_field_image_package_void))
@@ -1248,10 +1296,11 @@ Maintains legacy version that is set with a texture.
 		source_field = (struct Computed_field *)NULL;
 		texture = (struct Texture *)NULL;
 		number_of_bytes_per_component = 1; 
-		if (computed_field_image_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_image_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code = Computed_field_get_type_image(field,
+			return_code = Computed_field_get_type_image(field_modify->get_field(),
 				&texture_coordinate_field, &source_field, &texture, &minimum, &maximum,
 				&native_texture);
 		}
@@ -1307,7 +1356,7 @@ Maintains legacy version that is set with a texture.
 
 			/* coordinates */
 			set_source_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_source_field_data.conditional_function =
 				Computed_field_has_numerical_components;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -1388,18 +1437,29 @@ Maintains legacy version that is set with a texture.
 			}
 			if (return_code)
 			{
-				return_code = Computed_field_copy_type_specific_and_deaccess(field,
-					Computed_field_create_image(texture_coordinate_field, source_field));
-			}
-			if (return_code)
-			{
-				Computed_field_image *image_field_core =
-					dynamic_cast<Computed_field_image*>(field->core);
-				image_field_core->set_texture(texture);
-				image_field_core->set_output_range(minimum, maximum);
-				image_field_core->set_native_texture_flag(native_texture);
-				image_field_core->set_number_of_bytes_per_component(
-					number_of_bytes_per_component);
+				Computed_field *field = NULL;
+				if (texture)
+				{
+					field = Computed_field_create_sample_texture_internal(
+						field_modify->get_field_factory(),
+						texture_coordinate_field, texture);
+				}
+				else
+				{
+					field = Computed_field_create_image(
+						field_modify->get_field_factory(),
+						texture_coordinate_field, source_field);
+				}
+				if (field)
+				{
+					Computed_field_image *image_field_core =
+						dynamic_cast<Computed_field_image*>(field->core);
+					image_field_core->set_output_range(minimum, maximum);
+					image_field_core->set_native_texture_flag(native_texture);
+					image_field_core->set_number_of_bytes_per_component(
+						number_of_bytes_per_component);
+				}
+				return_code = field_modify->update_field_and_deaccess(field);
 			}
 			if (!return_code)
 			{
@@ -1484,21 +1544,15 @@ Texture *Computed_field_get_texture(struct Computed_field *field)
 	texture = (struct Texture *)NULL;
 	if (field)
 	{
-		if (computed_field_image_type_string ==
-			Computed_field_get_type_string(field))
+		Computed_field_image* image = dynamic_cast<Computed_field_image*>(field->core);
+		if (NULL != image)
 		{
-			Computed_field_image* image;
-			if (image = dynamic_cast<Computed_field_image*>(
-						 field->core))
-			{
-				texture = image->get_texture();
-			}
+			texture = image->get_texture();
 		}
 		if (!texture)
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_get_texture.  Computed field does not have"
-				"a texture.");
+				"Computed_field_get_texture.  Field does not have a texture.");
 		}
 	}
 	else
@@ -1522,35 +1576,22 @@ Returns true if the field or recursively any source fields are sample
 texture fields which reference <texture>.
 ==============================================================================*/
 {
-	int i,return_code;
+	int return_code = 0;
 
 	ENTER(Computed_field_depends_on_texture);
 	if (field)
 	{
-		return_code=0;
-		if (computed_field_image_type_string ==
-			Computed_field_get_type_string(field))
+		Computed_field_image* image =
+			dynamic_cast<Computed_field_image*>(field->core);
+		if ((NULL != image) && (image->texture == texture))
 		{
-			Computed_field_image* image;
-			if ((image = dynamic_cast<Computed_field_image*>(
-					  field->core)) && (image->texture == texture))
-			{
-				return_code = 1;
-			}
-			else
-			{
-				for (i=0;(i<field->number_of_source_fields)&&(!return_code);i++)
-				{
-					return_code=Computed_field_depends_on_texture(
-						field->source_fields[i], texture);
-				}
-			}
+			return_code = 1;
 		}
 		else
 		{
-			for (i=0;(i<field->number_of_source_fields)&&(!return_code);i++)
+			for (int i=0;(i<field->number_of_source_fields)&&(!return_code);i++)
 			{
-				return_code=Computed_field_depends_on_texture(
+				return_code = Computed_field_depends_on_texture(
 					field->source_fields[i], texture);
 			}
 		}
@@ -1559,7 +1600,6 @@ texture fields which reference <texture>.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_depends_on_texture.  Invalid argument(s)");
-		return_code=0;
 	}
 	LEAVE;
 

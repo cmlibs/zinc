@@ -73,25 +73,37 @@ char computed_field_region_sum_type_string[] = "region_sum";
 
 class Computed_field_region_sum : public Computed_field_core
 {
-//These parameters are protected to this file using a NULL namespace
-public:
-	char *region_path;
-	struct Cmiss_region *region;
-	FE_region *fe_region;
+protected:
+	Cmiss_region *region;
+	int number_of_values;
 	FE_value current_time;
 
-	Computed_field_region_sum(Computed_field* field, char *region_path,
-		Cmiss_region* region) : 
-		Computed_field_core(field), region_path(duplicate_string(region_path)),
-		region(ACCESS(Cmiss_region)(region)), fe_region(Cmiss_region_get_FE_region(region))
-	{		
+public:
+	Computed_field_region_sum(Cmiss_region* region) : 
+		Computed_field_core(),
+		region(ACCESS(Cmiss_region)(region)),
+		number_of_values(0)
+	{
 		current_time = 0.0;
 	};
 
 	~Computed_field_region_sum();
 
+	virtual void inherit_source_field_attributes()
+	{
+		if (field)
+		{
+			Computed_field_set_coordinate_system_from_sources(field);
+		}
+	}
+	
+	Cmiss_region *get_region()
+	{
+		return region;
+	}
+
 private:
-	Computed_field_core *copy(Computed_field* new_parent);
+	Computed_field_core *copy();
 
 	char *get_type_string()
 	{
@@ -105,11 +117,12 @@ private:
 	static int accumulate_nodal_values(struct FE_node *node,
 		void *computed_field_region_sum_void);
 
-	int evaluate_cache_at_location(Field_location* location);
-
 	int list();
 
 	char* get_command_string();
+	
+protected:
+	int evaluate_cache_at_location(Field_location* location);
 };
 
 Computed_field_region_sum::~Computed_field_region_sum()
@@ -127,10 +140,6 @@ Clear the type specific data used by this type.
 		{
 			DEACCESS(Cmiss_region)(&region);
 		}
-		if (region_path)
-		{
-			DEALLOCATE(region_path);
-		}
 	}
 	else
 	{
@@ -140,7 +149,7 @@ Clear the type specific data used by this type.
 	LEAVE;
 } /* Computed_field_region_sum::~Computed_field_region_sum */
 
-Computed_field_core *Computed_field_region_sum::copy(Computed_field *new_parent)
+Computed_field_core *Computed_field_region_sum::copy()
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -148,18 +157,7 @@ DESCRIPTION :
 Copy the type specific data used by this type.
 ==============================================================================*/
 {
-	Computed_field_region_sum* core;
-	ENTER(Computed_field_region_sum::copy_type_specific);
-	if (new_parent)
-	{
-		core = new Computed_field_region_sum(new_parent,
-			region_path, region);
-	}
-	else
-	{
-		core = (Computed_field_region_sum*)NULL;
-	}
-	LEAVE;
+	Computed_field_region_sum* core = new Computed_field_region_sum(region);
 
 	return (core);
 } /* Computed_field_region_sum::copy */
@@ -173,13 +171,13 @@ Compare the type specific data.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_region_sum *other;
 
-	ENTER(Computed_field_region_sum::type_specific_contents_match);
-	if (field && (other = dynamic_cast<Computed_field_region_sum*>(other_core)))
+	ENTER(Computed_field_region_mean::type_specific_contents_match);
+	Computed_field_region_sum *other =
+		dynamic_cast<Computed_field_region_sum*>(other_core);
+	if (other)
 	{
-		if ((region == other->region) &&
-			(!strcmp(region_path, other->region_path)))
+		if (region == other->region)
 		{
 			return_code = 1;
 		}
@@ -211,7 +209,8 @@ Checks if <field->source_fields> exists at the first node in <fe_region>
 	if (field && location)
 	{
 		return_code=1;
-		if (FE_region_get_first_FE_node_that(fe_region,
+		// GRC this is expensive; better to always return 1
+		if (FE_region_get_first_FE_node_that(Cmiss_region_get_FE_region(region),
 			 FE_node_has_Computed_field_defined, field->source_fields[0]))
 		{
 			return_code=1;
@@ -257,6 +256,7 @@ storing the sums. Each components are treated separately.
 				region_sum->field->values[i] +=
 					region_sum->field->source_fields[0]->values[i];			
 			}
+			region_sum->number_of_values++;
 			region_sum->field->derivatives_valid = 0;
 		}
 		return_code = 1;
@@ -274,7 +274,7 @@ storing the sums. Each components are treated separately.
 } /* Computed_field_region_sum::accumulate_nodal_values */
 
 int Computed_field_region_sum::evaluate_cache_at_location(
-    Field_location* location)
+	Field_location* location)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -287,7 +287,7 @@ Evaluate the fields cache at the location
 	ENTER(Computed_field_region_sum::evaluate_cache_at_location);
 	if (field && location)
 	{
-		
+		number_of_values = 0;
 		// initialise values
 		for (i = 0 ; i < field->number_of_components ; i++)
 		{
@@ -296,7 +296,7 @@ Evaluate the fields cache at the location
 		current_time = location->get_time();
 		
 		// sum field values over nodes in the region
-		return_code = FE_region_for_each_FE_node(fe_region,
+		return_code = FE_region_for_each_FE_node(Cmiss_region_get_FE_region(region),
 		   Computed_field_region_sum::accumulate_nodal_values, this);
 	}
 	else
@@ -310,7 +310,6 @@ Evaluate the fields cache at the location
 
 	return (return_code);
 } /* Computed_field_region_sum::evaluate_cache_at_location */
-
 
 int Computed_field_region_sum::list()
 /*******************************************************************************
@@ -327,8 +326,13 @@ Lists a description of the region_sum inputs
 	{
 		display_message(INFORMATION_MESSAGE,"    field being summed :");
 		display_message(INFORMATION_MESSAGE," %s\n", field->source_fields[0]->name);
-		display_message(INFORMATION_MESSAGE,"    region being summed :");
-		display_message(INFORMATION_MESSAGE," %s\n", region_path);
+		if (region != Computed_field_get_region(field))
+		{
+			char *group_name = Cmiss_region_get_name(region);
+			display_message(INFORMATION_MESSAGE,"    group being summed :");
+			display_message(INFORMATION_MESSAGE," %s\n", group_name);
+			DEALLOCATE(group_name);
+		}
 	}
 	else
 	{
@@ -349,7 +353,7 @@ DESCRIPTION :
 Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	char *command_string, *group_name, *field_name;
+	char *command_string, *field_name;
 	int error;
 
 	ENTER(Computed_field_region_sum::get_command_string);
@@ -366,9 +370,10 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		append_string(&command_string, " region ", &error);
-		if (group_name = duplicate_string(region_path))
+		if (region != Computed_field_get_region(field))
 		{
+			char *group_name = Cmiss_region_get_name(region);
+			append_string(&command_string, " group ", &error);
 			make_valid_token(&group_name);
 			append_string(&command_string, group_name, &error);
 			DEALLOCATE(group_name);
@@ -386,79 +391,61 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_region_sum(struct Computed_field *field,
-	struct Computed_field *operate_field,
-	struct Cmiss_region *operate_region, char *region_path)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_REGION_SUM, this field calculates the
-sum of a field over all nodes in a region. If the field has components, the
-sum of each component is calculated.
-==============================================================================*/
+struct Computed_field *Computed_field_create_region_sum(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *source_field, struct Cmiss_region *group)
 {
-	int number_of_source_fields, return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_region_sum);
-	if (field&&operate_field&&operate_region&&region_path)
+	Computed_field *field = NULL;
+	Cmiss_region *region = Computed_field_get_region(source_field);
+	if (group && (group != region))
 	{
-		return_code = 1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields = 1;
-		if (ALLOCATE(source_fields, struct Computed_field *,
-			number_of_source_fields))
+		Cmiss_region *group_parent = Cmiss_region_get_parent(group);
+		if (group_parent != region)
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->number_of_components=operate_field->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(operate_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-
-			field->core = new Computed_field_region_sum(field,
-				region_path, operate_region);
+			display_message(ERROR_MESSAGE,
+				"Computed_field_create_region_sum.  Invalid group");
+			region = NULL;
 		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			return_code = 0;
-		}
+		DEACCESS(Cmiss_region)(&group_parent);
 	}
-	else
+	if (region)
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_region_sum.  Invalid argument(s)");
-		return_code = 0;
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_region_sum(region));
 	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_region_sum */
+	return (field);
+}
 
 int Computed_field_get_type_region_sum(struct Computed_field *field,
-	struct Computed_field **operate_field,
-	struct Cmiss_region **operate_region, char **region_path)
+	struct Computed_field **source_field, struct Cmiss_region **group)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_REGION_SUM, the function returns the field
-and region to operate on.
+If the field is of type COMPUTED_FIELD_REGION_SUM, the function returns the
+source field and group to sum.
 ==============================================================================*/
 {
 	int return_code;
-	Computed_field_region_sum* region_sum_core;
 
 	ENTER(Computed_field_get_type_region_sum);
-	if (field && (region_sum_core = dynamic_cast<Computed_field_region_sum*>(field->core)) &&
-		operate_field && operate_region)
+	Computed_field_region_sum* region_sum_core =
+		dynamic_cast<Computed_field_region_sum*>(field->core);
+	if (field && region_sum_core && source_field && group)
 	{
-		*operate_field = field->source_fields[0];
-		*operate_region = region_sum_core->region;
-		*region_path = region_sum_core->region_path;
+		*source_field = field->source_fields[0];
+		if (Computed_field_get_region(field) != region_sum_core->get_region())
+		{
+			*group = region_sum_core->get_region();
+		}
+		else
+		{
+			*group = NULL;
+		}
 		return_code = 1;
 	}
 	else
@@ -470,7 +457,7 @@ and region to operate on.
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_get_type_region_sum */
+}
 
 int define_Computed_field_type_region_sum(struct Parse_state *state,
 	void *field_modify_void, void *computed_field_region_operations_package_void)
@@ -482,56 +469,57 @@ Converts <field> into type COMPUTED_FIELD_OPERATION_SUM (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-	char *operate_region_path;
+	char *group_name;
 	int return_code;
-	struct Computed_field *field, *operate_field;
+	struct Computed_field *source_field;
 	Computed_field_region_operations_package *computed_field_region_operations_package;
 	Computed_field_modify_data *field_modify;
-	struct Coordinate_system *coordinate_system_ptr;
-	struct Cmiss_region *operate_region;
+	struct Cmiss_region *group;
 	struct Option_table *option_table;
-	struct Set_Computed_field_conditional_data set_operate_field_data;
+	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_region_sum);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
 		(computed_field_region_operations_package =
 			(Computed_field_region_operations_package *)
 			computed_field_region_operations_package_void))
 	{
 		return_code = 1;
-		operate_region = (struct Cmiss_region *)NULL;
-		operate_region_path = (char *)NULL;
-		operate_field = (struct Computed_field *)NULL;
-		/* get valid parameters for composite field */
-		if (computed_field_region_sum_type_string ==
-			Computed_field_get_type_string(field))
+		group = field_modify->get_region();
+		group_name = (char *)NULL;
+		source_field = (struct Computed_field *)NULL;
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_region_sum_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code = Computed_field_get_type_region_sum(field, 
-				&operate_field, &operate_region, &operate_region_path);
+			return_code = Computed_field_get_type_region_sum(field_modify->get_field(), 
+				&source_field, &group);
 		}
 		if (return_code)
 		{
 			/* must access objects for set functions */
-			
-			if (operate_field)
+			if (source_field)
 			{
-				ACCESS(Computed_field)(operate_field);
+				ACCESS(Computed_field)(source_field);
 			}
-
+			if (group)
+			{
+				group_name = Cmiss_region_get_name(group);
+			}
+			
 			option_table = CREATE(Option_table)();
 			/* group */
-			Option_table_add_set_Cmiss_region_path(option_table, "region", 
-				 computed_field_region_operations_package->root_region, &operate_region_path);
+			Option_table_add_set_Cmiss_region_path(option_table, "group",
+				/*root_region*/field_modify->get_region(), &group_name);
 			/* texture_coordinates_field */
-			set_operate_field_data.computed_field_manager =
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
-			set_operate_field_data.conditional_function = 
+			set_source_field_data.computed_field_manager =
+				field_modify->get_field_manager();
+			set_source_field_data.conditional_function = 
 				Computed_field_has_numerical_components;
-			set_operate_field_data.conditional_function_user_data = 
+			set_source_field_data.conditional_function_user_data = 
 				(void *)NULL;
 			Option_table_add_entry(option_table, "field", 
-				&operate_field, &set_operate_field_data, 
+				&source_field, &set_source_field_data, 
 				set_Computed_field_conditional);
 			
 			return_code = Option_table_multi_parse(option_table, state);
@@ -539,33 +527,27 @@ already) and allows its contents to be modified.
 			/* no errors,not asking for help */
 			if (return_code)
 			{
-				if (operate_region_path)
+				if (group_name)
 				{
 					if (!(Cmiss_region_get_region_from_path(
-						computed_field_region_operations_package->root_region, 
-						operate_region_path, &operate_region)))
+						/*root_region*/field_modify->get_region(), group_name, &group)))
 					{
 						display_message(ERROR_MESSAGE,
-							"define_Computed_field_type_region_sum.  Unable to find region %s",
-							operate_region_path);
+							"define_Computed_field_type_region_sum.  Unable to find group %s",
+							group_name);
+						return_code = 0;
 					}
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE, "You must specify a region path (group)");
+					group = NULL;
 				}
 			}
 			if (return_code)
 			{
-				if (return_code=Computed_field_set_type_region_sum(field,
-					operate_field, operate_region, operate_region_path))
-				{
-					/* Set default coordinate system */
-					/* Inherit from third source field */
-					coordinate_system_ptr = 
-						Computed_field_get_coordinate_system(operate_field);
-					Computed_field_set_coordinate_system(field, coordinate_system_ptr);
-				}
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_region_sum(field_modify->get_field_factory(),
+						source_field, group));
 			}
 			if (!return_code)
 			{
@@ -578,13 +560,13 @@ already) and allows its contents to be modified.
 						"define_Computed_field_type_region_sum.  Failed");
 				}
 			}
-			if (operate_region_path)
+			if (group_name)
 			{
-				DEALLOCATE(operate_region_path);
+				DEALLOCATE(group_name);
 			}
-			if (operate_field)
+			if (source_field)
 			{
-				DEACCESS(Computed_field)(&operate_field);
+				DEACCESS(Computed_field)(&source_field);
 			}
 			DESTROY(Option_table)(&option_table);
 		}
@@ -601,47 +583,27 @@ already) and allows its contents to be modified.
 } /* define_Computed_field_type_region_sum */
 
 
-
-
 namespace {
 
 char computed_field_region_mean_type_string[] = "region_mean";
 
-class Computed_field_region_mean : public Computed_field_core
+class Computed_field_region_mean : public Computed_field_region_sum
 {
-//These parameters are protected to this file using a NULL namespace
 public:
-	char *region_path;
-	struct Cmiss_region *region;
-	FE_region *fe_region;
-	FE_value current_time;
-	int number_of_values;
-
-	Computed_field_region_mean(Computed_field* field, char *region_path,
-		Cmiss_region* region) : 
-		Computed_field_core(field), region_path(duplicate_string(region_path)),
-		region(ACCESS(Cmiss_region)(region)), fe_region(Cmiss_region_get_FE_region(region))
+	Computed_field_region_mean(Cmiss_region* region) :
+		Computed_field_region_sum(region)
 	{		
-		current_time = 0.0;
-		number_of_values = 0;
 	};
 
-	~Computed_field_region_mean();
-
 private:
-	Computed_field_core *copy(Computed_field* new_parent);
+	Computed_field_core *copy();
 
 	char *get_type_string()
 	{
-		return(computed_field_region_mean_type_string);
+		return (computed_field_region_mean_type_string);
 	}
 
 	int compare(Computed_field_core* other_field);
-
-	int is_defined_at_location(Field_location* location);
-
-	static int accumulate_nodal_values(struct FE_node *node,
-		void *computed_field_region_mean_void);
 
 	int evaluate_cache_at_location(Field_location* location);
 
@@ -650,35 +612,7 @@ private:
 	char* get_command_string();
 };
 
-Computed_field_region_mean::~Computed_field_region_mean()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Clear the type specific data used by this type.
-==============================================================================*/
-{
-	ENTER(Computed_field_region_mean::~Computed_field_region_mean);
-	if (field)
-	{
-		if (region)
-		{
-			DEACCESS(Cmiss_region)(&region);
-		}
-		if (region_path)
-		{
-			DEALLOCATE(region_path);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_region_mean::~Computed_field_region_mean.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Computed_field_region_mean::~Computed_field_region_mean */
-
-Computed_field_core *Computed_field_region_mean::copy(Computed_field *new_parent)
+Computed_field_core *Computed_field_region_mean::copy()
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -686,18 +620,7 @@ DESCRIPTION :
 Copy the type specific data used by this type.
 ==============================================================================*/
 {
-	Computed_field_region_mean* core;
-	ENTER(Computed_field_region_mean::copy_type_specific);
-	if (new_parent)
-	{
-		core = new Computed_field_region_mean(new_parent,
-			region_path, region);
-	}
-	else
-	{
-		core = (Computed_field_region_mean*)NULL;
-	}
-	LEAVE;
+	Computed_field_region_mean* core = new Computed_field_region_mean(region);
 
 	return (core);
 } /* Computed_field_region_mean::copy */
@@ -711,13 +634,13 @@ Compare the type specific data.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_region_mean *other;
 
 	ENTER(Computed_field_region_mean::type_specific_contents_match);
-	if (field && (other = dynamic_cast<Computed_field_region_mean*>(other_core)))
+	Computed_field_region_mean *other =
+		dynamic_cast<Computed_field_region_mean*>(other_core);
+	if (other)
 	{
-		if ((region == other->region) &&
-			(!strcmp(region_path, other->region_path)))
+		if (region == other->region)
 		{
 			return_code = 1;
 		}
@@ -735,129 +658,23 @@ Compare the type specific data.
 	return (return_code);
 } /* Computed_field_region_mean::compare */
 
-int Computed_field_region_mean::is_defined_at_location(Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Checks if <field->source_fields> exists at the first node in <fe_region>
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_region_mean::is_defined_at_location);
-	if (field && location)
-	{
-		return_code=1;
-		if (FE_region_get_first_FE_node_that(fe_region,
-			 FE_node_has_Computed_field_defined, field->source_fields[0]))
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_region_mean::is_defined_at_location */
-
-int Computed_field_region_mean::accumulate_nodal_values(struct FE_node *node,
-	void *computed_field_region_mean_void)
-/*******************************************************************************
-LAST MODIFIED : 1 May 2007
-
-DESCRIPTION :
-For the current node, the value of the source field is added to the field
-storing the sums. Each components are treated separately. Als the number of
-nodes summed is recorded.
-==============================================================================*/
-{
-	int i, return_code;
-	Computed_field_region_mean *region_mean;
-
-	ENTER(Computed_field_region_mean::accumulate_nodal_values);
-	if (node && (region_mean = 
-		static_cast<Computed_field_region_mean*>(computed_field_region_mean_void)))
-	{
-		Field_node_location nodal_location(node, region_mean->current_time);
-	
-		if (Computed_field_evaluate_cache_at_location(
-			region_mean->field->source_fields[0], &nodal_location))
-		{
-			for (i = 0 ; i < region_mean->field->number_of_components ; i++)
-			{
-				region_mean->field->values[i] +=
-					region_mean->field->source_fields[0]->values[i];			
-			}
-			region_mean->number_of_values ++;
-			region_mean->field->derivatives_valid = 0;
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_region_mean::accumulate_nodal_values.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_region_mean::accumulate_nodal_values */
-
 int Computed_field_region_mean::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
+	Field_location* location)
 {
-	int i, return_code;
-
-	ENTER(Computed_field_region_mean::evaluate_cache_at_location);
-	if (field && location)
+	int return_code =
+		Computed_field_region_sum::evaluate_cache_at_location(location);
+	if (return_code)
 	{
-		// initialise values
-		number_of_values = 0;
-		for (i = 0 ; i < field->number_of_components ; i++)
+		if (number_of_values > 0)
 		{
-	  	field->values[i] = 0;
-		}
-		current_time = location->get_time();
-		
-		// Sum the field values over a region
-		return_code = FE_region_for_each_FE_node(fe_region,
-		   Computed_field_region_mean::accumulate_nodal_values, this);
-		
-		// Divide the total sums for each component by the total number of nodes
-		// to get the mean for the region
-		for (i = 0 ; i < field->number_of_components ; i++)
-		{
-	  	field->values[i] = field->values[i]/number_of_values;
+			for (int i = 0 ; i < field->number_of_components ; i++)
+			{
+		  	field->values[i] = field->values[i]/number_of_values;
+			}
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_region_mean::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
 	return (return_code);
-} /* Computed_field_region_mean::evaluate_cache_at_location */
-
+}
 
 int Computed_field_region_mean::list()
 /*******************************************************************************
@@ -874,8 +691,13 @@ Lists a description of the region_mean inputs
 	{
 		display_message(INFORMATION_MESSAGE,"    field being averaged :");
 		display_message(INFORMATION_MESSAGE," %s\n", field->source_fields[0]->name);
-		display_message(INFORMATION_MESSAGE,"    region being averaged :");
-		display_message(INFORMATION_MESSAGE," %s\n", region_path);
+		if (region != Computed_field_get_region(field))
+		{
+			char *group_name = Cmiss_region_get_name(region);
+			display_message(INFORMATION_MESSAGE,"    group being averaged :");
+			display_message(INFORMATION_MESSAGE," %s\n", group_name);
+			DEALLOCATE(group_name);
+		}
 	}
 	else
 	{
@@ -896,7 +718,7 @@ DESCRIPTION :
 Returns allocated command string for reproducing field.
 ==============================================================================*/
 {
-	char *command_string, *group_name, *field_name;
+	char *command_string, *field_name;
 	int error;
 
 	ENTER(Computed_field_region_mean::get_command_string);
@@ -913,9 +735,10 @@ Returns allocated command string for reproducing field.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		append_string(&command_string, " region ", &error);
-		if (group_name = duplicate_string(region_path))
+		if (region != Computed_field_get_region(field))
 		{
+			char *group_name = Cmiss_region_get_name(region);
+			append_string(&command_string, " group ", &error);
 			make_valid_token(&group_name);
 			append_string(&command_string, group_name, &error);
 			DEALLOCATE(group_name);
@@ -933,79 +756,62 @@ Returns allocated command string for reproducing field.
 
 } //namespace
 
-int Computed_field_set_type_region_mean(struct Computed_field *field,
-	struct Computed_field *operate_field,
-	struct Cmiss_region *operate_region, char *region_path)
-/*******************************************************************************
-LAST MODIFIED : 6 June 2007
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_REGION_MEAN this field calculates the
-mean of a field over all nodes in a region. If the field has components, the
-mean of each component is calculated.
-==============================================================================*/
+struct Computed_field *Computed_field_create_region_mean(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *source_field, struct Cmiss_region *group)
 {
-	int number_of_source_fields, return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_region_mean);
-	if (field&&operate_field&&operate_region&&region_path)
+	Computed_field *field = NULL;
+	Cmiss_region *region = Computed_field_get_region(source_field);
+	if (group && (group != region))
 	{
-		return_code = 1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields = 1;
-		if (ALLOCATE(source_fields, struct Computed_field *,
-			number_of_source_fields))
+		Cmiss_region *group_parent = Cmiss_region_get_parent(group);
+		if (group_parent != region)
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->number_of_components=operate_field->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(operate_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-
-			field->core = new Computed_field_region_mean(field,
-				region_path, operate_region);
+			display_message(ERROR_MESSAGE,
+				"Computed_field_create_region_mean.  Invalid group");
+			region = NULL;
 		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			return_code = 0;
-		}
+		DEACCESS(Cmiss_region)(&group_parent);
 	}
-	else
+	if (region)
 	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_region_mean.  Invalid argument(s)");
-		return_code = 0;
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_region_mean(region));
 	}
-	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_region_mean */
+	return (field);
+}
 
 int Computed_field_get_type_region_mean(struct Computed_field *field,
-	struct Computed_field **operate_field,
-	struct Cmiss_region **operate_region, char **region_path)
+	struct Computed_field **source_field, struct Cmiss_region **group)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_REGION_SUM, the function returns the field
-and region to operate on.
+If the field is of type COMPUTED_FIELD_REGION_MEAN, the function returns the
+source field and group to sum.
 ==============================================================================*/
 {
 	int return_code;
-	Computed_field_region_mean* region_mean_core;
 
 	ENTER(Computed_field_get_type_region_mean);
-	if (field && (region_mean_core = dynamic_cast<Computed_field_region_mean*>(field->core)) &&
-		operate_field && operate_region)
+	Computed_field_region_mean* region_mean_core =
+		dynamic_cast<Computed_field_region_mean*>(field->core);
+	if (field && region_mean_core && source_field && group)
 	{
-		*operate_field = field->source_fields[0];
-		*operate_region = region_mean_core->region;
-		*region_path = region_mean_core->region_path;
+		*source_field = field->source_fields[0];
+		if (Computed_field_get_region(field) != region_mean_core->get_region())
+		{
+			*group = region_mean_core->get_region();
+		}
+		else
+		{
+			*group = NULL;
+		}
 		return_code = 1;
 	}
 	else
@@ -1017,7 +823,7 @@ and region to operate on.
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_get_type_region_mean */
+}
 
 int define_Computed_field_type_region_mean(struct Parse_state *state,
 	void *field_modify_void, void *computed_field_region_operations_package_void)
@@ -1025,60 +831,61 @@ int define_Computed_field_type_region_mean(struct Parse_state *state,
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_region_mean (if it is not 
+Converts <field> into type COMPUTED_FIELD_OPERATION_SUM (if it is not 
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
-	char *operate_region_path;
+	char *group_name;
 	int return_code;
-	struct Computed_field *field, *operate_field;
+	struct Computed_field *source_field;
 	Computed_field_region_operations_package *computed_field_region_operations_package;
 	Computed_field_modify_data *field_modify;
-	struct Coordinate_system *coordinate_system_ptr;
-	struct Cmiss_region *operate_region;
+	struct Cmiss_region *group;
 	struct Option_table *option_table;
-	struct Set_Computed_field_conditional_data set_operate_field_data;
+	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_region_mean);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
 		(computed_field_region_operations_package =
 			(Computed_field_region_operations_package *)
 			computed_field_region_operations_package_void))
 	{
 		return_code = 1;
-		operate_region = (struct Cmiss_region *)NULL;
-		operate_region_path = (char *)NULL;
-		operate_field = (struct Computed_field *)NULL;
-		/* get valid parameters for composite field */
-		if (computed_field_region_mean_type_string ==
-			Computed_field_get_type_string(field))
+		group = field_modify->get_region();
+		group_name = (char *)NULL;
+		source_field = (struct Computed_field *)NULL;
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_region_mean_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code = Computed_field_get_type_region_mean(field, 
-				&operate_field, &operate_region, &operate_region_path);
+			return_code = Computed_field_get_type_region_mean(field_modify->get_field(), 
+				&source_field, &group);
 		}
 		if (return_code)
 		{
 			/* must access objects for set functions */
-			
-			if (operate_field)
+			if (source_field)
 			{
-				ACCESS(Computed_field)(operate_field);
+				ACCESS(Computed_field)(source_field);
 			}
-
+			if (group)
+			{
+				group_name = Cmiss_region_get_name(group);
+			}
+			
 			option_table = CREATE(Option_table)();
 			/* group */
-			Option_table_add_set_Cmiss_region_path(option_table, "region", 
-				 computed_field_region_operations_package->root_region, &operate_region_path);
+			Option_table_add_set_Cmiss_region_path(option_table, "group",
+				/*root_region*/field_modify->get_region(), &group_name);
 			/* texture_coordinates_field */
-			set_operate_field_data.computed_field_manager =
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
-			set_operate_field_data.conditional_function = 
+			set_source_field_data.computed_field_manager =
+				field_modify->get_field_manager();
+			set_source_field_data.conditional_function = 
 				Computed_field_has_numerical_components;
-			set_operate_field_data.conditional_function_user_data = 
+			set_source_field_data.conditional_function_user_data = 
 				(void *)NULL;
 			Option_table_add_entry(option_table, "field", 
-				&operate_field, &set_operate_field_data, 
+				&source_field, &set_source_field_data, 
 				set_Computed_field_conditional);
 			
 			return_code = Option_table_multi_parse(option_table, state);
@@ -1086,33 +893,27 @@ already) and allows its contents to be modified.
 			/* no errors,not asking for help */
 			if (return_code)
 			{
-				if (operate_region_path)
+				if (group_name)
 				{
 					if (!(Cmiss_region_get_region_from_path(
-						computed_field_region_operations_package->root_region, 
-						operate_region_path, &operate_region)))
+						/*root_region*/field_modify->get_region(), group_name, &group)))
 					{
 						display_message(ERROR_MESSAGE,
-							"define_Computed_field_type_region_mean.  Unable to find region %s",
-							operate_region_path);
+							"define_Computed_field_type_region_mean.  Unable to find group %s",
+							group_name);
+						return_code = 0;
 					}
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE, "You must specify a region path (group)");
+					group = NULL;
 				}
 			}
 			if (return_code)
 			{
-				if (return_code=Computed_field_set_type_region_mean(field,
-					operate_field, operate_region, operate_region_path))
-				{
-					/* Set default coordinate system */
-					/* Inherit from third source field */
-					coordinate_system_ptr = 
-						Computed_field_get_coordinate_system(operate_field);
-					Computed_field_set_coordinate_system(field, coordinate_system_ptr);
-				}
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_region_mean(field_modify->get_field_factory(),
+						source_field, group));
 			}
 			if (!return_code)
 			{
@@ -1125,13 +926,13 @@ already) and allows its contents to be modified.
 						"define_Computed_field_type_region_mean.  Failed");
 				}
 			}
-			if (operate_region_path)
+			if (group_name)
 			{
-				DEALLOCATE(operate_region_path);
+				DEALLOCATE(group_name);
 			}
-			if (operate_field)
+			if (source_field)
 			{
-				DEACCESS(Computed_field)(&operate_field);
+				DEACCESS(Computed_field)(&source_field);
 			}
 			DESTROY(Option_table)(&option_table);
 		}
@@ -1146,556 +947,6 @@ already) and allows its contents to be modified.
 
 	return (return_code);
 } /* define_Computed_field_type_region_mean */
-
-
-
-
-namespace {
-
-char computed_field_region_rms_type_string[] = "region_rms";
-
-class Computed_field_region_rms : public Computed_field_core
-{
-//These parameters are protected to this file using a NULL namespace
-public:
-	char *region_path;
-	struct Cmiss_region *region;
-	FE_region *fe_region;
-	FE_value current_time;
-	int number_of_values;
-
-	Computed_field_region_rms(Computed_field* field, char *region_path,
-		Cmiss_region* region) : 
-		Computed_field_core(field), region_path(duplicate_string(region_path)),
-		region(ACCESS(Cmiss_region)(region)), fe_region(Cmiss_region_get_FE_region(region))
-	{		
-		current_time = 0.0;
-		number_of_values = 0;
-	};
-
-	~Computed_field_region_rms();
-
-private:
-	Computed_field_core *copy(Computed_field* new_parent);
-
-	char *get_type_string()
-	{
-		return(computed_field_region_rms_type_string);
-	}
-
-	int compare(Computed_field_core* other_field);
-
-	int is_defined_at_location(Field_location* location);
-
-	static int accumulate_nodal_values(struct FE_node *node,
-		void *computed_field_region_rms_void);
-
-	int evaluate_cache_at_location(Field_location* location);
-
-	int list();
-
-	char* get_command_string();
-};
-
-Computed_field_region_rms::~Computed_field_region_rms()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Clear the type specific data used by this type.
-==============================================================================*/
-{
-	ENTER(Computed_field_region_rms::~Computed_field_region_rms);
-	if (field)
-	{
-		if (region)
-		{
-			DEACCESS(Cmiss_region)(&region);
-		}
-		if (region_path)
-		{
-			DEALLOCATE(region_path);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_region_rms::~Computed_field_region_rms.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Computed_field_region_rms::~Computed_field_region_rms */
-
-Computed_field_core *Computed_field_region_rms::copy(Computed_field *new_parent)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Copy the type specific data used by this type.
-==============================================================================*/
-{
-	Computed_field_region_rms* core;
-	ENTER(Computed_field_region_rms::copy_type_specific);
-	if (new_parent)
-	{
-		core = new Computed_field_region_rms(new_parent,
-			region_path, region);
-	}
-	else
-	{
-		core = (Computed_field_region_rms*)NULL;
-	}
-	LEAVE;
-
-	return (core);
-} /* Computed_field_region_rms::copy */
-
-int Computed_field_region_rms::compare(Computed_field_core *other_core)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Compare the type specific data.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field_region_rms *other;
-
-	ENTER(Computed_field_region_rms::type_specific_contents_match);
-	if (field && (other = dynamic_cast<Computed_field_region_rms*>(other_core)))
-	{
-		if ((region == other->region) &&
-			(!strcmp(region_path, other->region_path)))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_region_rms::compare */
-
-int Computed_field_region_rms::is_defined_at_location(Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Checks if <field->source_fields> exists at the first node in <fe_region>
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_region_rms::is_defined_at_location);
-	if (field && location)
-	{
-		return_code=1;
-		if (FE_region_get_first_FE_node_that(fe_region,
-			 FE_node_has_Computed_field_defined, field->source_fields[0]))
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_region_rms::is_defined_at_location */
-
-int Computed_field_region_rms::accumulate_nodal_values(struct FE_node *node,
-	void *computed_field_region_rms_void)
-/*******************************************************************************
-LAST MODIFIED : 1 May 2007
-
-DESCRIPTION :
-For the current node, the value of the source field is added to the field
-storing the sums. Each components are treated separately. Als the number of
-nodes summed is recorded.
-==============================================================================*/
-{
-	int i, return_code;
-	Computed_field_region_rms *region_rms;
-
-	ENTER(Computed_field_region_rms::accumulate_nodal_values);
-	if (node && (region_rms = 
-		static_cast<Computed_field_region_rms*>(computed_field_region_rms_void)))
-	{
-		Field_node_location nodal_location(node, region_rms->current_time);
-	
-		if (Computed_field_evaluate_cache_at_location(
-			region_rms->field->source_fields[0], &nodal_location))
-		{
-
-			for (i=0; i<region_rms->field->source_fields[0]->number_of_components;
-				i++)
-			{
-				region_rms->field->values[0] +=
-					region_rms->field->source_fields[0]->values[i] *
-					region_rms->field->source_fields[0]->values[i];			
-			}
-			region_rms->number_of_values ++;
-			region_rms->field->derivatives_valid = 0;
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_region_rms::accumulate_nodal_values.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_region_rms::accumulate_nodal_values */
-
-int Computed_field_region_rms::evaluate_cache_at_location(
-    Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache at the location
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_region_rms::evaluate_cache_at_location);
-	if (field && location)
-	{
-		// initialise values
-		number_of_values = 0;
-		field->values[0] = 0;
-		current_time = location->get_time();
-		
-		// Sum the field values over a region
-		return_code = FE_region_for_each_FE_node(fe_region,
-		   Computed_field_region_rms::accumulate_nodal_values, this);
-		
-		// Calculates the RMS
-		field->values[0] = sqrt(field->values[0]/number_of_values);
-		
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_region_rms::evaluate_cache_at_location.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_region_rms::evaluate_cache_at_location */
-
-
-int Computed_field_region_rms::list()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Lists a description of the region_rms inputs
-==============================================================================*/
-{
-	int return_code = 0;
-
-	ENTER(List_Computed_field_region_rms);
-	if (field)
-	{
-		display_message(INFORMATION_MESSAGE,"    field being root-mean-squared :");
-		display_message(INFORMATION_MESSAGE," %s\n", field->source_fields[0]->name);
-		display_message(INFORMATION_MESSAGE,"    region being root-mean-squared :");
-		display_message(INFORMATION_MESSAGE," %s\n", region_path);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"list_Computed_field_region_rms.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* list_Computed_field_region_rms */
-
-char *Computed_field_region_rms::get_command_string()
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Returns allocated command string for reproducing field.
-==============================================================================*/
-{
-	char *command_string, *group_name, *field_name;
-	int error;
-
-	ENTER(Computed_field_region_rms::get_command_string);
-	command_string = (char *)NULL;
-	if (field)
-	{
-		error = 0;
-		append_string(&command_string,
-			computed_field_region_rms_type_string, &error);
-		append_string(&command_string, " field ", &error);
-		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
-		{
-			make_valid_token(&field_name);
-			append_string(&command_string, field_name, &error);
-			DEALLOCATE(field_name);
-		}
-		append_string(&command_string, " region ", &error);
-		if (group_name = duplicate_string(region_path))
-		{
-			make_valid_token(&group_name);
-			append_string(&command_string, group_name, &error);
-			DEALLOCATE(group_name);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_region_rms::get_command_string.  Invalid field");
-	}
-	LEAVE;
-
-	return (command_string);
-} /* Computed_field_region_rms::get_command_string */
-
-} //namespace
-
-int Computed_field_set_type_region_rms(struct Computed_field *field,
-	struct Computed_field *operate_field,
-	struct Cmiss_region *operate_region, char *region_path)
-/*******************************************************************************
-LAST MODIFIED : 6 June 2007
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_region_rms this field calculates the
-mean of a field over all nodes in a region. If the field has components, the
-components are treated as a vector, i.e., the rms of each component field is NOT
-calculated.
-==============================================================================*/
-{
-	int number_of_source_fields, return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_region_rms);
-	if (field&&operate_field&&operate_region&&region_path)
-	{
-		return_code = 1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields = 1;
-		if (ALLOCATE(source_fields, struct Computed_field *,
-			number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->number_of_components=1;
-			source_fields[0]=ACCESS(Computed_field)(operate_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			field->source_fields[0]->number_of_components = 
-				operate_field->number_of_components;
-				
-			field->core = new Computed_field_region_rms(field,
-				region_path, operate_region);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_region_rms.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_region_rms */
-
-int Computed_field_get_type_region_rms(struct Computed_field *field,
-	struct Computed_field **operate_field,
-	struct Cmiss_region **operate_region, char **region_path)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_REGION_SUM, the function returns the field
-and region to operate on.
-==============================================================================*/
-{
-	int return_code;
-	Computed_field_region_rms* region_rms_core;
-
-	ENTER(Computed_field_get_type_region_rms);
-	if (field && (region_rms_core = dynamic_cast<Computed_field_region_rms*>(field->core)) &&
-		operate_field && operate_region)
-	{
-		*operate_field = field->source_fields[0];
-		*operate_region = region_rms_core->region;
-		*region_path = region_rms_core->region_path;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_region_rms.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_region_rms */
-
-int define_Computed_field_type_region_rms(struct Parse_state *state,
-	void *field_modify_void, void *computed_field_region_operations_package_void)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_region_rms (if it is not 
-already) and allows its contents to be modified.
-==============================================================================*/
-{
-	char *operate_region_path;
-	int return_code;
-	struct Computed_field *field, *operate_field;
-	Computed_field_region_operations_package *computed_field_region_operations_package;
-	Computed_field_modify_data *field_modify;
-	struct Coordinate_system *coordinate_system_ptr;
-	struct Cmiss_region *operate_region;
-	struct Option_table *option_table;
-	struct Set_Computed_field_conditional_data set_operate_field_data;
-
-	ENTER(define_Computed_field_type_region_rms);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
-		(computed_field_region_operations_package =
-			(Computed_field_region_operations_package *)
-			computed_field_region_operations_package_void))
-	{
-		return_code = 1;
-		operate_region = (struct Cmiss_region *)NULL;
-		operate_region_path = (char *)NULL;
-		operate_field = (struct Computed_field *)NULL;
-		/* get valid parameters for composite field */
-		if (computed_field_region_rms_type_string ==
-			Computed_field_get_type_string(field))
-		{
-			return_code = Computed_field_get_type_region_rms(field, 
-				&operate_field, &operate_region, &operate_region_path);
-		}
-		if (return_code)
-		{
-			/* must access objects for set functions */
-			
-			if (operate_field)
-			{
-				ACCESS(Computed_field)(operate_field);
-			}
-
-			option_table = CREATE(Option_table)();
-			/* group */
-			Option_table_add_set_Cmiss_region_path(option_table, "region", 
-				 computed_field_region_operations_package->root_region, &operate_region_path);
-			/* texture_coordinates_field */
-			set_operate_field_data.computed_field_manager =
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
-			set_operate_field_data.conditional_function = 
-				Computed_field_has_numerical_components;
-			set_operate_field_data.conditional_function_user_data = 
-				(void *)NULL;
-			Option_table_add_entry(option_table, "field", 
-				&operate_field, &set_operate_field_data, 
-				set_Computed_field_conditional);
-			
-			return_code = Option_table_multi_parse(option_table, state);
-			
-			/* no errors,not asking for help */
-			if (return_code)
-			{
-				if (operate_region_path)
-				{
-					if (!(Cmiss_region_get_region_from_path(
-						computed_field_region_operations_package->root_region, 
-						operate_region_path, &operate_region)))
-					{
-						display_message(ERROR_MESSAGE,
-							"define_Computed_field_type_region_rms.  Unable to find region %s",
-							operate_region_path);
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "You must specify a region path (group)");
-				}
-			}
-			if (return_code)
-			{
-				if (return_code=Computed_field_set_type_region_rms(field,
-					operate_field, operate_region, operate_region_path))
-				{
-					/* Set default coordinate system */
-					/* Inherit from third source field */
-					coordinate_system_ptr = 
-						Computed_field_get_coordinate_system(operate_field);
-					Computed_field_set_coordinate_system(field, coordinate_system_ptr);
-				}
-			}
-			if (!return_code)
-			{
-				if ((!state->current_token) ||
-					(strcmp(PARSER_HELP_STRING, state->current_token)&&
-						strcmp(PARSER_RECURSIVE_HELP_STRING, state->current_token)))
-				{
-					/* error */
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_region_rms.  Failed");
-				}
-			}
-			if (operate_region_path)
-			{
-				DEALLOCATE(operate_region_path);
-			}
-			if (operate_field)
-			{
-				DEACCESS(Computed_field)(&operate_field);
-			}
-			DESTROY(Option_table)(&option_table);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_region_rms.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_region_rms */
-
-
-
 
 int Computed_field_register_types_region_operations(
 	struct Computed_field_package *computed_field_package, 
@@ -1712,7 +963,7 @@ Registering the region operations.
 		*computed_field_region_operations_package = 
 		new Computed_field_region_operations_package;
 
-	ENTER(Computed_field_register_types_region_sum);
+	ENTER(Computed_field_register_types_region_operations);
 	if (computed_field_package && root_region)
 	{
 		computed_field_region_operations_package->root_region = root_region;
@@ -1724,18 +975,14 @@ Registering the region operations.
 			computed_field_region_mean_type_string, 
 			define_Computed_field_type_region_mean,
 			computed_field_region_operations_package);
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_region_rms_type_string, 
-			define_Computed_field_type_region_rms,
-			computed_field_region_operations_package);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_region_sum.  Invalid argument(s)");
+			"Computed_field_register_types_region_operations.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_register_types_region_sum */
+}

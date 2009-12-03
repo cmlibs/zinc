@@ -75,7 +75,7 @@ public:
 	double marginalScale;
 	int totalPixels;
        
-	Computed_field_histogram_image_filter(Computed_field *field,
+	Computed_field_histogram_image_filter(Computed_field *source_field,
 		int *numberOfBins, double marginalScale);
 
 	~Computed_field_histogram_image_filter()
@@ -98,6 +98,8 @@ public:
 		ImageType *dummytemplarg, HistogramGeneratorType *dummytemplarg2);
 
 private:
+	virtual void create_functor();
+
 	int get_native_resolution(
 		int *native_dimension, int **native_sizes, 
 		struct Computed_field **native_texture_coordinate_field)
@@ -129,9 +131,9 @@ private:
 		return (return_code);
 	} /* Computed_field_default_get_native_resolution */
 
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_histogram_image_filter(new_parent,
+		return new Computed_field_histogram_image_filter(field->source_fields[0],
 			numberOfBins, marginalScale);
 	}
 
@@ -764,8 +766,8 @@ Evaluate the fields cache at the location
 } /* Computed_field_ImageFilter::create_filters_multicomponent_multidimensions */
 
 Computed_field_histogram_image_filter::Computed_field_histogram_image_filter(
-	Computed_field *field, int *numberOfBinsIn, double marginalScale) : 
-	Computed_field_ImageFilter(field), marginalScale(marginalScale)
+	Computed_field *source_field, int *numberOfBinsIn, double marginalScale) : 
+	Computed_field_ImageFilter(source_field), marginalScale(marginalScale)
 /*******************************************************************************
 LAST MODIFIED : 25 March 2008
 
@@ -774,7 +776,7 @@ Create the computed_field representation of the RescaleIntensityImageFilter.
 ==============================================================================*/
 {
 	int i;
-	sourceNumberOfComponents = field->source_fields[0]->number_of_components;
+	sourceNumberOfComponents = source_field->number_of_components;
 	numberOfBins = new int [sourceNumberOfComponents];
 	for (i = 0 ; i < sourceNumberOfComponents ; i++)
 	{
@@ -790,7 +792,10 @@ Create the computed_field representation of the RescaleIntensityImageFilter.
 			totalPixels *= sizes[i];
 		}
 	}
+}
 
+void Computed_field_histogram_image_filter::create_functor()
+{
 	create_histogram_filters_multicomponent_multidimensions
 		< Computed_field_histogram_image_filter >
 		(this);
@@ -798,68 +803,31 @@ Create the computed_field representation of the RescaleIntensityImageFilter.
 
 } //namespace
 
-int Computed_field_set_type_histogram_image_filter(struct Computed_field *field,
+struct Computed_field *Cmiss_field_create_histogram_image_filter(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, int *numberOfBins, double marginalScale)
-/*******************************************************************************
-LAST MODIFIED : 18 October 2006
-
-DESCRIPTION :
-Converts <field> to type histogram.  The <numberOfBins> states how many
-bins to divide the minimum and maximum range, the <marginalScale> adds 
-1/marginalScale to the upper value.
-==============================================================================*/
 {
-	int number_of_source_fields, return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_histogram_image_filter);
-	if (field && source_field)
+	Computed_field *field = NULL;
+	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
 	{
-		return_code = 1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields = 1;
-		if (ALLOCATE(source_fields, struct Computed_field *,
-			number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			/* Always 1 component returned from a histogram */
-			field->number_of_components = 1;
-			source_fields[0] = ACCESS(Computed_field)(source_field);
-			field->source_fields = source_fields;
-			field->number_of_source_fields = number_of_source_fields;			
-			Computed_field_ImageFilter* filter_core = new Computed_field_histogram_image_filter(field, numberOfBins, marginalScale);
-			if (filter_core->functor)
-			{
-				field->core = filter_core;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_histogram_image_filter.  "
-					"Unable to create image filter.");
-				return_code = 0;
-			}
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			return_code = 0;
-		}
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			/*number_of_components*/1,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_histogram_image_filter(source_field,
+				numberOfBins, marginalScale));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_histogram_image_filter.  Invalid argument(s)");
-		return_code = 0;
+			"Cmiss_field_create_histogram_image_filter.  Invalid argument(s)");
 	}
-	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_histogram_image_filter */
+	return (field);
+}
 
-int Computed_field_get_type_histogram_image_filter(struct Computed_field *field,
+int Cmiss_field_get_type_histogram_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, int **numberOfBins, double *marginalScale)
 /*******************************************************************************
 LAST MODIFIED : 25 March 2008
@@ -872,7 +840,7 @@ used by it are returned - otherwise an error is reported.
 	Computed_field_histogram_image_filter* core;
 	int i, return_code;
 
-	ENTER(Computed_field_get_type_histogram_image_filter);
+	ENTER(Cmiss_field_get_type_histogram_image_filter);
 	if (field && (core = dynamic_cast<Computed_field_histogram_image_filter*>(field->core))
 		&& source_field &&
 		ALLOCATE(*numberOfBins, int, core->sourceNumberOfComponents))
@@ -888,13 +856,13 @@ used by it are returned - otherwise an error is reported.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_histogram_image_filter.  Invalid argument(s)");
+			"Cmiss_field_get_type_histogram_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_get_type_histogram_image_filter */
+} /* Cmiss_field_get_type_histogram_image_filter */
 
 int define_Computed_field_type_histogram_image_filter(struct Parse_state *state,
 	void *field_modify_void, void *computed_field_simple_package_void)
@@ -909,15 +877,14 @@ already) and allows its contents to be modified.
 	int i, original_number_of_components, previous_state_index, return_code;
 	int *numberOfBins;
 	double marginalScale;
-	struct Computed_field *field, *source_field;
+	struct Computed_field *source_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_histogram_image_filter);
 	USE_PARAMETER(computed_field_simple_package_void);
-	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void) &&
-			(field=field_modify->field))
+	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code = 1;
 		/* get valid parameters for projection field */
@@ -925,11 +892,12 @@ already) and allows its contents to be modified.
 		numberOfBins = (int *)NULL;
 		marginalScale = 10.0;
 		original_number_of_components = 0;
-		if (computed_field_histogram_image_filter_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_histogram_image_filter_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
 			return_code =
-				Computed_field_get_type_histogram_image_filter(field, &source_field,
+				Cmiss_field_get_type_histogram_image_filter(field_modify->get_field(), &source_field,
 					&numberOfBins, &marginalScale);
 			original_number_of_components = source_field->number_of_components;
 		}
@@ -952,7 +920,7 @@ already) and allows its contents to be modified.
 
 				/* field */
 				set_source_field_data.computed_field_manager =
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_source_field_data.conditional_function = Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data = (void *)NULL;
 				Option_table_add_entry(option_table, "field", &source_field,
@@ -979,7 +947,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* field */
 				set_source_field_data.computed_field_manager =
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_source_field_data.conditional_function = Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data = (void *)NULL;
 				Option_table_add_entry(option_table, "field", &source_field,
@@ -1030,8 +998,10 @@ already) and allows its contents to be modified.
 
 				if (return_code)
 				{
-					return_code = Computed_field_set_type_histogram_image_filter(
-						field, source_field, numberOfBins, marginalScale);				
+					return_code = field_modify->update_field_and_deaccess(
+						Cmiss_field_create_histogram_image_filter(
+							field_modify->get_field_factory(),
+							source_field, numberOfBins, marginalScale));
 				}
 			
 				if (!return_code)

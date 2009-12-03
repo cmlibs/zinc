@@ -137,7 +137,7 @@ public:
 	/* cache for matrix, eigenvalues and eigenvectors */
 	double *a, *d, *v;
 
-	Computed_field_eigenvalues(Computed_field *field) : Computed_field_core(field)
+	Computed_field_eigenvalues() : Computed_field_core()
 	{
 		a = (double*)NULL;
 		d = (double*)NULL;
@@ -147,9 +147,9 @@ public:
 	~Computed_field_eigenvalues();
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_eigenvalues(new_parent);
+		return new Computed_field_eigenvalues();
 	}
 
 	char *get_type_string()
@@ -481,68 +481,30 @@ List conditional function version of Computed_field_is_type_eigenvalues.
 
 } //namespace
 
-int Computed_field_set_type_eigenvalues(struct Computed_field *field,
+Computed_field *Computed_field_create_eigenvalues(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Converts <field> to type 'eigenvalues' which performs a full eigenanalysis on
-the symmetric matrix in <source_field> and returns the n eigenvalues, where
-<source_field> must have n x n components.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int number_of_source_fields, return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_eigenvalues);
-	if (field && source_field)
+	struct Computed_field *field = NULL;
+	if (field_factory && source_field &&
+		Computed_field_is_square_matrix(source_field, (void *)NULL))
 	{
-		if (Computed_field_is_square_matrix(source_field, (void *)NULL))
-		{
-			/* 1. make dynamic allocations for any new type-specific data */
-			number_of_source_fields = 1;
-			if (ALLOCATE(source_fields,struct Computed_field *,
-				number_of_source_fields))
-			{
-				/* 2. free current type-specific data */
-				Computed_field_clear_type(field);
-				/* 3. establish the new type */
-				field->number_of_components =
-					Computed_field_get_square_matrix_size(source_field);
-				source_fields[0] = ACCESS(Computed_field)(source_field);
-				field->source_fields = source_fields;
-				field->number_of_source_fields = number_of_source_fields;
-				field->core = new Computed_field_eigenvalues(field);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_eigenvalues.  Not enough memory");
-				DEALLOCATE(source_fields);
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Computed_field_set_type_eigenvalues.  "
-				"Field %s cannot hold a square matrix",source_field->name);
-			return_code = 0;
-		}
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			/*number_of_components*/Computed_field_get_square_matrix_size(source_field),
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_eigenvalues());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_eigenvalues.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_eigenvalues.  Invalid argument(s)");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_eigenvalues */
+	return (field);
+}
 
 int Computed_field_get_type_eigenvalues(struct Computed_field *field,
 	struct Computed_field **source_field)
@@ -585,22 +547,22 @@ contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field, *source_field;
+	struct Computed_field *source_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_eigenvalues);
 	USE_PARAMETER(computed_field_matrix_operations_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		source_field = (struct Computed_field *)NULL;
-		if (computed_field_eigenvalues_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_eigenvalues_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code = Computed_field_get_type_eigenvalues(field, &source_field);
+			return_code = Computed_field_get_type_eigenvalues(field_modify->get_field(), &source_field);
 		}
 		if (return_code)
 		{
@@ -615,11 +577,16 @@ contents to be modified.
 				Computed_field_is_square_matrix;
 			set_source_field_data.conditional_function_user_data = (void *)NULL;
 			set_source_field_data.computed_field_manager =
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			Option_table_add_entry(option_table, "field", &source_field,
 				&set_source_field_data, set_Computed_field_conditional);
-			return_code = Option_table_multi_parse(option_table, state) &&
-				Computed_field_set_type_eigenvalues(field, source_field);
+			return_code = Option_table_multi_parse(option_table, state);
+			if (return_code)
+			{
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_eigenvalues(field_modify->get_field_factory(),
+						source_field));
+			}
 			DESTROY(Option_table)(&option_table);
 			if (source_field)
 			{
@@ -645,14 +612,14 @@ char computed_field_eigenvectors_type_string[] = "eigenvectors";
 class Computed_field_eigenvectors : public Computed_field_core
 {
 public:
-	Computed_field_eigenvectors(Computed_field *field) : Computed_field_core(field)
+	Computed_field_eigenvectors() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_eigenvectors(new_parent);
+		return new Computed_field_eigenvectors();
 	}
 
 	char *get_type_string()
@@ -847,67 +814,32 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_eigenvectors(struct Computed_field *field,
+Computed_field *Computed_field_create_eigenvectors(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *eigenvalues_field)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Converts <field> to type 'eigenvectors' extracting the eigenvectors out of the
-source <eigenvalues_field>. Sets the number of components equal to n x n, where
-n is the number of components in the <eigenvalues_field>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int n, number_of_source_fields, return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_eigenvectors);
-	if (field && eigenvalues_field)
+	struct Computed_field *field = NULL;
+	if (field_factory && eigenvalues_field &&
+		Computed_field_is_type_eigenvalues(eigenvalues_field))
 	{
-		if (Computed_field_is_type_eigenvalues(eigenvalues_field))
-		{
-			/* 1. make dynamic allocations for any new type-specific data */
-			number_of_source_fields = 1;
-			if (ALLOCATE(source_fields, struct Computed_field *,
-				number_of_source_fields))
-			{
-				/* 2. free current type-specific data */
-				Computed_field_clear_type(field);
-				/* 3. establish the new type */
-				n = eigenvalues_field->number_of_components;
-				field->number_of_components = n * n;
-				source_fields[0] = ACCESS(Computed_field)(eigenvalues_field);
-				field->source_fields = source_fields;
-				field->number_of_source_fields = number_of_source_fields;			
-			field->core = new Computed_field_eigenvectors(field);
-				return_code = 1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_eigenvectors.  Not enough memory");
-				return_code = 0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Computed_field_set_type_eigenvectors.  "
-				"Must be given an eigenvalues source field");
-			return_code = 0;
-		}
+		int n = eigenvalues_field->number_of_components;
+		int number_of_components = n * n;
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			number_of_components,
+			/*number_of_source_fields*/1, &eigenvalues_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_eigenvectors());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_eigenvectors.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_eigenvectors.  Invalid argument(s)");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_eigenvectors */
+	return (field);
+}
 
 int Computed_field_get_type_eigenvectors(struct Computed_field *field,
 	struct Computed_field **eigenvalues_field)
@@ -950,23 +882,23 @@ its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field, *source_field;
+	struct Computed_field *source_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_eigenvectors);
 	USE_PARAMETER(computed_field_matrix_operations_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
 		source_field = (struct Computed_field *)NULL;
-		if (computed_field_eigenvectors_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_eigenvectors_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code=Computed_field_get_type_eigenvectors(field, &source_field);
+			return_code=Computed_field_get_type_eigenvectors(field_modify->get_field(), &source_field);
 		}
 		if (return_code)
 		{
@@ -980,14 +912,19 @@ its contents to be modified.
 			  "An eigenvectors field returns vectors corresponding to each eigenvalue from a source eigenvalues field.  For example, if 3 eigenvectors have been computed for a (3 * 3) matrix = 9 component field, the eigenvectors will be a 9 component field with the eigenvector corresponding to the first eigenvalue in the first 3 components, the second eigenvector in the next 3 components, and so on.  See a/large_strain for an example of using the eigenvalues and eigenvectors fields.");
 			/* field */
 			set_source_field_data.computed_field_manager =
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_source_field_data.conditional_function =
 				Computed_field_is_type_eigenvalues_conditional;
 			set_source_field_data.conditional_function_user_data = (void *)NULL;
 			Option_table_add_entry(option_table, "eigenvalues", &source_field,
 				&set_source_field_data, set_Computed_field_conditional);
-			return_code = Option_table_multi_parse(option_table,state) &&
-				Computed_field_set_type_eigenvectors(field, source_field);
+			return_code = Option_table_multi_parse(option_table, state);
+			if (return_code)
+			{
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_eigenvectors(field_modify->get_field_factory(),
+						source_field));
+			}
 			if (source_field)
 			{
 				DEACCESS(Computed_field)(&source_field);
@@ -1017,7 +954,7 @@ public:
 	double *a, *b;
 	int *indx;
 
-	Computed_field_matrix_invert(Computed_field *field) : Computed_field_core(field)
+	Computed_field_matrix_invert() : Computed_field_core()
 	{
 		a = (double*)NULL;
 		b = (double*)NULL;
@@ -1027,9 +964,9 @@ public:
 	~Computed_field_matrix_invert();
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_matrix_invert(new_parent);
+		return new Computed_field_matrix_invert();
 	}
 
 	char *get_type_string()
@@ -1322,68 +1259,30 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_matrix_invert(struct Computed_field *field,
+Computed_field *Computed_field_create_matrix_invert(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Converts <field> to type 'matrix_invert' which performs a full eigenanalysis on
-the symmetric matrix in <source_field> and returns the n matrix_invert, where
-<source_field> must have n x n components.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int number_of_source_fields, return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_matrix_invert);
-	if (field && source_field)
+	struct Computed_field *field = NULL;
+	if (field_factory && source_field &&
+		Computed_field_is_square_matrix(source_field, (void *)NULL))
 	{
-		if (Computed_field_is_square_matrix(source_field, (void *)NULL))
-		{
-			/* 1. make dynamic allocations for any new type-specific data */
-			number_of_source_fields = 1;
-			if (ALLOCATE(source_fields,struct Computed_field *,
-				number_of_source_fields))
-			{
-				/* 2. free current type-specific data */
-				Computed_field_clear_type(field);
-				/* 3. establish the new type */
-				field->number_of_components =
-					Computed_field_get_number_of_components(source_field);
-				source_fields[0] = ACCESS(Computed_field)(source_field);
-				field->source_fields = source_fields;
-				field->number_of_source_fields = number_of_source_fields;
-				field->core = new Computed_field_matrix_invert(field);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_matrix_invert.  Not enough memory");
-				DEALLOCATE(source_fields);
-				return_code = 0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Computed_field_set_type_matrix_invert.  "
-				"Field %s cannot hold a square matrix", source_field->name);
-			return_code = 0;
-		}
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			Computed_field_get_number_of_components(source_field),
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_matrix_invert());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_matrix_invert.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_eigenvalues.  Invalid argument(s)");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_matrix_invert */
+	return (field);
+}
 
 int Computed_field_get_type_matrix_invert(struct Computed_field *field,
 	struct Computed_field **source_field)
@@ -1426,22 +1325,22 @@ contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field, *source_field;
+	struct Computed_field *source_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_matrix_invert);
 	USE_PARAMETER(computed_field_matrix_operations_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code = 1;
 		source_field = (struct Computed_field *)NULL;
-		if (computed_field_matrix_invert_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_matrix_invert_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code = Computed_field_get_type_matrix_invert(field, &source_field);
+			return_code = Computed_field_get_type_matrix_invert(field_modify->get_field(), &source_field);
 		}
 		if (return_code)
 		{
@@ -1456,11 +1355,16 @@ contents to be modified.
 				Computed_field_is_square_matrix;
 			set_source_field_data.conditional_function_user_data = (void *)NULL;
 			set_source_field_data.computed_field_manager =
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			Option_table_add_entry(option_table, "field", &source_field,
 				&set_source_field_data, set_Computed_field_conditional);
-			return_code = Option_table_multi_parse(option_table, state) &&
-				Computed_field_set_type_matrix_invert(field, source_field);
+			return_code = Option_table_multi_parse(option_table, state);
+			if (return_code)
+			{
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_matrix_invert(field_modify->get_field_factory(),
+						source_field));
+			}
 			DESTROY(Option_table)(&option_table);
 			if (source_field)
 			{
@@ -1488,17 +1392,17 @@ class Computed_field_matrix_multiply : public Computed_field_core
 public:
 	int number_of_rows;
 
-	Computed_field_matrix_multiply(Computed_field *field,
+	Computed_field_matrix_multiply(
 		int number_of_rows) :
-		Computed_field_core(field), number_of_rows(number_of_rows)
+		Computed_field_core(), number_of_rows(number_of_rows)
 									 
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_matrix_multiply(new_parent, number_of_rows);
+		return new Computed_field_matrix_multiply(number_of_rows);
 	}
 
 	char *get_type_string()
@@ -1702,86 +1606,48 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_matrix_multiply(struct Computed_field *field,
-	int number_of_rows,struct Computed_field *source_field1,
+Computed_field *Computed_field_create_matrix_multiply(
+	struct Cmiss_field_factory *field_factory,
+	int number_of_rows, struct Computed_field *source_field1,
 	struct Computed_field *source_field2)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_MATRIX_MULTIPLY producing the result
-<source_field1> x <source_field2>, with <number_of_rows> rows in both
-<source_field1> and the result. From the <number_of_rows> the columns in
-<source_field1>, rows in <source_field2> and then columns in <source_field2>
-are implied and checked.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int n, number_of_source_fields, return_code, s;
-	struct Computed_field **temp_source_fields;
-
-	ENTER(Computed_field_set_type_matrix_multiply);
-	if (field && (0 < number_of_rows) && source_field1 && source_field2)
+	Computed_field *field = NULL;
+	if (field_factory && (0 < number_of_rows) && source_field1 && source_field2)
 	{
-		if ((n = source_field1->number_of_components) &&
-			(0 == (n % number_of_rows)) && (s = n/number_of_rows))
+		int nc1 = source_field1->number_of_components;
+		int nc2 = source_field2->number_of_components;
+		int s = 0;
+		if ((0 == (nc1 % number_of_rows)) &&
+			(0 < (s = nc1/number_of_rows)) &&
+			(0 == (nc2 % s)) &&
+			(0 < (nc2 / s)))
 		{
-			if ((n = source_field2->number_of_components) &&
-				(0 == (n % s)) && (n /= s))
-			{
-				/* 1. make dynamic allocations for any new type-specific data */
-				number_of_source_fields=2;
-				if (ALLOCATE(temp_source_fields,struct Computed_field *,
-					number_of_source_fields))
-				{
-					/* 2. free current type-specific data */
-					Computed_field_clear_type(field);
-					/* 3. establish the new type */
-					field->number_of_components = number_of_rows*n;
-					temp_source_fields[0]=ACCESS(Computed_field)(source_field1);
-					temp_source_fields[1]=ACCESS(Computed_field)(source_field2);
-					field->source_fields=temp_source_fields;
-					field->number_of_source_fields=number_of_source_fields;
-					field->core = new Computed_field_matrix_multiply(field,
-						number_of_rows);
-					return_code=1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_set_type_matrix_multiply.  "
-						"Unable to allocate memory");
-					DEALLOCATE(temp_source_fields);
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_matrix_multiply.  "
-					"Field %s has wrong number of components",source_field2->name);
-				return_code=0;
-			}
+			int result_number_of_columns = nc2 / s;
+			Computed_field *source_fields[2];
+			source_fields[0] = source_field1;
+			source_fields[1] = source_field2;
+			field = Computed_field_create_generic(field_factory,
+				/*check_source_field_regions*/true,
+				/*number_of_components*/number_of_rows * result_number_of_columns,
+				/*number_of_source_fields*/2, source_fields,
+				/*number_of_source_values*/0, NULL,
+				new Computed_field_matrix_multiply(number_of_rows));
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_set_type_matrix_multiply.  "
-				"Field %s has wrong number of components",source_field1->name);
-			return_code=0;
+				"Fields are of invalid size for multiplication");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_set_type_matrix_multiply.  Invalid argument(s)");
-		return_code=0;
 	}
-	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_matrix_multiply */
+	return (field);
+}
 
 int Computed_field_get_type_matrix_multiply(struct Computed_field *field,
 	int *number_of_rows, struct Computed_field **source_field1,
@@ -1829,7 +1695,7 @@ already) and allows its contents to be modified.
 {
 	const char *current_token;
 	int i, number_of_rows, return_code;
-	struct Computed_field *field,**source_fields;
+	struct Computed_field **source_fields;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_field_array_data;
@@ -1837,8 +1703,7 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_matrix_multiply);
 	USE_PARAMETER(computed_field_matrix_operations_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		if (ALLOCATE(source_fields,struct Computed_field *,2))
@@ -1847,10 +1712,11 @@ already) and allows its contents to be modified.
 			number_of_rows = 1;
 			source_fields[0] = (struct Computed_field *)NULL;
 			source_fields[1] = (struct Computed_field *)NULL;
-			if (computed_field_matrix_multiply_type_string ==
-				Computed_field_get_type_string(field))
+			if ((NULL != field_modify->get_field()) &&
+				(computed_field_matrix_multiply_type_string ==
+					Computed_field_get_type_string(field_modify->get_field())))
 			{
-				return_code=Computed_field_get_type_matrix_multiply(field,
+				return_code=Computed_field_get_type_matrix_multiply(field_modify->get_field(),
 					&number_of_rows,&(source_fields[0]),&(source_fields[1]));
 			}
 			if (return_code)
@@ -1878,7 +1744,7 @@ already) and allows its contents to be modified.
 							Computed_field_has_numerical_components;
 						set_field_data.conditional_function_user_data=(void *)NULL;
 						set_field_data.computed_field_manager=
-							Cmiss_region_get_Computed_field_manager(field_modify->region);
+							field_modify->get_field_manager();
 						set_field_array_data.number_of_fields=2;
 						set_field_array_data.conditional_data= &set_field_data;
 						Option_table_add_entry(option_table,"fields",source_fields,
@@ -1905,15 +1771,17 @@ already) and allows its contents to be modified.
 								Computed_field_has_numerical_components;
 							set_field_data.conditional_function_user_data=(void *)NULL;
 							set_field_data.computed_field_manager=
-								Cmiss_region_get_Computed_field_manager(field_modify->region);
+								field_modify->get_field_manager();
 							set_field_array_data.number_of_fields=2;
 							set_field_array_data.conditional_data= &set_field_data;
 							Option_table_add_entry(option_table,"fields",source_fields,
 								&set_field_array_data,set_Computed_field_array);
-							if (return_code=Option_table_multi_parse(option_table,state))
+							return_code = Option_table_multi_parse(option_table, state);
+							if (return_code)
 							{
-								return_code = Computed_field_set_type_matrix_multiply(field,
-									number_of_rows,source_fields[0],source_fields[1]);
+								return_code = field_modify->update_field_and_deaccess(
+									Computed_field_create_matrix_multiply(field_modify->get_field_factory(),
+										number_of_rows, source_fields[0], source_fields[1]));
 							}
 							DESTROY(Option_table)(&option_table);
 						}
@@ -1965,17 +1833,19 @@ char computed_field_projection_type_string[] = "projection";
 class Computed_field_projection : public Computed_field_core
 {
 public:
+	int matrix_rows, matrix_columns;
 	double *projection_matrix;
 
-	Computed_field_projection(Computed_field *field,
-		double* projection_matrix_in) : Computed_field_core(field)
+	Computed_field_projection(int matrix_columns, int matrix_rows,
+		double* projection_matrix_in) :
+		Computed_field_core(),
+		matrix_rows(matrix_rows),
+		matrix_columns(matrix_columns),
+		projection_matrix(NULL)
 	{
-		int i;
-		int number_of_projection_values = 
-			(field->source_fields[0]->number_of_components + 1)
-			* (field->number_of_components + 1);
+		int number_of_projection_values = matrix_rows * matrix_columns;
 		projection_matrix = new double[number_of_projection_values];
-		for (i = 0 ; i < number_of_projection_values ; i++)
+		for (int i = 0 ; i < number_of_projection_values ; i++)
 		{
 			projection_matrix[i] = projection_matrix_in[i];
 		}
@@ -1984,9 +1854,9 @@ public:
 	~Computed_field_projection();
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_projection(new_parent, projection_matrix);
+		return new Computed_field_projection(matrix_rows, matrix_columns, projection_matrix);
 	}
 
 	char *get_type_string()
@@ -2017,7 +1887,7 @@ Clear the type specific data used by this type.
 	ENTER(Computed_field_projection::~Computed_field_projection);
 	if (field)
 	{
-		DEALLOCATE(projection_matrix);
+		delete[] projection_matrix;
 	}
 	else
 	{
@@ -2151,7 +2021,7 @@ for the same element, with the given <number_of_derivatives> = number of Xi coor
 						* field->source_fields[0]->derivatives[j *number_of_derivatives + k];
 				}
 
-				/* Calculate the perspective reciprocal derivative using chaing rule */
+				/* Calculate the perspective reciprocal derivative using chain rule */
 				dh1dxi = (-1.0) / (perspective * perspective) * dhdxi;
 
 				/* Calculate the derivatives of the perspective scaled transformed
@@ -2304,59 +2174,33 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_projection(struct Computed_field *field,
+struct Computed_field *Computed_field_create_projection(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, int number_of_components, 
 	double *projection_matrix)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_PROJECTION, returning the <source_field>
-with each component multiplied by the perspective <projection_matrix>.
-The <projection_matrix> array must be of size
-<source_field->number_of_components + 1> * <field->number_of_components + 1>.
-The source vector is appended with a 1 to make
-source_field->number_of_components + 1 components. The extra calculated value
-is a perspective value which divides through each of the other components.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_projection);
-	if (field&&source_field&&projection_matrix)
+	Computed_field *field = NULL;
+	if (field_factory && source_field && projection_matrix &&
+		(0 < number_of_components))
 	{
-		return_code=1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->number_of_components=number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			field->core = new Computed_field_projection(field, projection_matrix);
-		}
-		else
-		{
-			return_code=0;
-		}
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_projection(
+				/*matrix_rows*/(number_of_components + 1),
+				/*matrix_columns*/(source_field->number_of_components + 1),
+				projection_matrix));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_projection.  Invalid argument(s)");
-		return_code=0;
+			"Computed_field_create_projection.  Invalid argument(s)");
 	}
-	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_projection */
+	return (field);
+}
 
 int Computed_field_get_type_projection(struct Computed_field *field,
 	struct Computed_field **source_field, int *number_of_components,
@@ -2424,27 +2268,27 @@ and allows its contents to be modified.
 	double *projection_matrix, *temp_projection_matrix;
 	int i, number_of_components, number_of_projection_values, return_code,
 		temp_number_of_projection_values;
-	struct Computed_field *field, *source_field;
+	struct Computed_field *source_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_projection);
 	USE_PARAMETER(computed_field_matrix_operations_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code = 1;
 		set_source_field_data.conditional_function =
 			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 		set_source_field_data.conditional_function_user_data = (void *)NULL;
 		set_source_field_data.computed_field_manager =
-			Cmiss_region_get_Computed_field_manager(field_modify->region);
+			field_modify->get_field_manager();
 		source_field = (struct Computed_field *)NULL;
 		projection_matrix = (double *)NULL;
-		if (dynamic_cast<Computed_field_projection*>(field->core))
+		if ((NULL != field_modify->get_field()) &&
+			(NULL != (dynamic_cast<Computed_field_projection*>(field_modify->get_field()->core))))
 		{
-			if (return_code = Computed_field_get_type_projection(field,
+			if (return_code = Computed_field_get_type_projection(field_modify->get_field(),
 				&source_field, &number_of_components, &projection_matrix))
 			{
 				number_of_projection_values = (source_field->number_of_components + 1)
@@ -2490,97 +2334,97 @@ and allows its contents to be modified.
 				return_code = Option_table_multi_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 			}
-
-			/* keep the number_of_projection_values to maintain any current ones */
-			temp_number_of_projection_values = number_of_projection_values;
-			/* parse the field... */
-			if (return_code)
+			else
 			{
-				/* ... only if the "field" token is next or no source_field */
-				if ((current_token = state->current_token) &&
-					fuzzy_string_compare(current_token, "field"))
+				/* keep the number_of_projection_values to maintain any current ones */
+				temp_number_of_projection_values = number_of_projection_values;
+				/* parse the field... */
+				if (return_code)
 				{
-					option_table = CREATE(Option_table)();
-					/* field */
-					Option_table_add_entry(option_table, "field", &source_field,
-						&set_source_field_data, set_Computed_field_conditional);
-					return_code = Option_table_parse(option_table, state);
-					DESTROY(Option_table)(&option_table);
-				}
-				if (return_code && (!source_field))
-				{
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_projection.  Must specify field first");
-					return_code = 0;
-				}
-			}
-
-			/* parse the number_of_components... */
-			if (return_code && (current_token = state->current_token))
-			{
-				/* ... only if the "number_of_components" token is next */
-				if (fuzzy_string_compare(current_token, "number_of_components"))
-				{
-					option_table = CREATE(Option_table)();					
-					Option_table_add_entry(option_table, "number_of_components",
-						&number_of_components, NULL, set_int_positive);
-					return_code = Option_table_parse(option_table, state);
-					DESTROY(Option_table)(&option_table);
-				}
-			}
-
-			/* ensure projection matrix is correct size; set new values to zero */
-			if (return_code)
-			{
-				number_of_projection_values = (source_field->number_of_components + 1)
-					* (number_of_components + 1);
-				if (temp_number_of_projection_values != number_of_projection_values)
-				{
-					if (REALLOCATE(temp_projection_matrix, projection_matrix, double,
-						number_of_projection_values))
+					/* ... only if the "field" token is next or no source_field */
+					if ((current_token = state->current_token) &&
+						fuzzy_string_compare(current_token, "field"))
 					{
-						projection_matrix = temp_projection_matrix;
-						/* clear any new projection_matrix to zero */
-						for (i = temp_number_of_projection_values;
-							i < number_of_projection_values; i++)
-						{
-							projection_matrix[i] = 0.0;
-						}
+						option_table = CREATE(Option_table)();
+						/* field */
+						Option_table_add_entry(option_table, "field", &source_field,
+							&set_source_field_data, set_Computed_field_conditional);
+						return_code = Option_table_parse(option_table, state);
+						DESTROY(Option_table)(&option_table);
 					}
-					else
+					if (return_code && (!source_field))
 					{
 						display_message(ERROR_MESSAGE,
-							"define_Computed_field_type_projection.  "
-							"Could not reallocate projection matrix");
+							"define_Computed_field_type_projection.  Must specify field first");
 						return_code = 0;
 					}
 				}
-			}
-
-			/* parse the projection_matrix */
-			if (return_code && state->current_token)
-			{
-				option_table = CREATE(Option_table)();					
-				Option_table_add_entry(option_table, "projection_matrix",
-					projection_matrix, &number_of_projection_values,
-					set_double_vector);
-				return_code = Option_table_multi_parse(option_table, state);
-				DESTROY(Option_table)(&option_table);
-			}
-			if (return_code)
-			{
-				if (Computed_field_set_type_projection(field, source_field,
-					number_of_components, projection_matrix))
+	
+				/* parse the number_of_components... */
+				if (return_code && (current_token = state->current_token))
 				{
-					return_code = 1;
+					/* ... only if the "number_of_components" token is next */
+					if (fuzzy_string_compare(current_token, "number_of_components"))
+					{
+						option_table = CREATE(Option_table)();					
+						Option_table_add_entry(option_table, "number_of_components",
+							&number_of_components, NULL, set_int_positive);
+						return_code = Option_table_parse(option_table, state);
+						DESTROY(Option_table)(&option_table);
+					}
 				}
-				else
+	
+				/* ensure projection matrix is correct size; set new values to zero */
+				if (return_code)
+				{
+					number_of_projection_values = (source_field->number_of_components + 1)
+						* (number_of_components + 1);
+					if (temp_number_of_projection_values != number_of_projection_values)
+					{
+						if (REALLOCATE(temp_projection_matrix, projection_matrix, double,
+							number_of_projection_values))
+						{
+							projection_matrix = temp_projection_matrix;
+							/* clear any new projection_matrix to zero */
+							for (i = temp_number_of_projection_values;
+								i < number_of_projection_values; i++)
+							{
+								projection_matrix[i] = 0.0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"define_Computed_field_type_projection.  "
+								"Could not reallocate projection matrix");
+							return_code = 0;
+						}
+					}
+				}
+	
+				/* parse the projection_matrix */
+				if (return_code && state->current_token)
+				{
+					option_table = CREATE(Option_table)();					
+					Option_table_add_entry(option_table, "projection_matrix",
+						projection_matrix, &number_of_projection_values,
+						set_double_vector);
+					return_code = Option_table_multi_parse(option_table, state);
+					DESTROY(Option_table)(&option_table);
+				}
+				if (return_code)
+				{
+					return_code = field_modify->update_field_and_deaccess(
+						Computed_field_create_projection(field_modify->get_field_factory(),
+							source_field, number_of_components, projection_matrix));
+				}
+				if (!return_code)
 				{
 					display_message(ERROR_MESSAGE,
 						"define_Computed_field_type_projection.  Failed");
-					return_code = 0;
 				}
 			}
+
 			/* clean up the projection_matrix array */
 			DEALLOCATE(projection_matrix);
 			if (source_field)
@@ -2609,15 +2453,15 @@ class Computed_field_transpose : public Computed_field_core
 public:
 	int source_number_of_rows;
 
-	Computed_field_transpose(Computed_field *field, int source_number_of_rows) : 
-		Computed_field_core(field), source_number_of_rows(source_number_of_rows)
+	Computed_field_transpose(int source_number_of_rows) : 
+		Computed_field_core(), source_number_of_rows(source_number_of_rows)
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_transpose(new_parent, source_number_of_rows);
+		return new Computed_field_transpose(source_number_of_rows);
 	}
 
 	char *get_type_string()
@@ -2802,70 +2646,29 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_transpose(struct Computed_field *field,
-	int source_number_of_rows,struct Computed_field *source_field)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_TRANSPOSE which computes the transpose
-of the <source_number_of_rows> by source_number_of_columns <source_field>. The
-source_number_of_columns is computed as source_field->number_of_components
-divided by <source_number_of_rows>, and this division must have no remainder.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
+Computed_field *Computed_field_create_transpose(
+	struct Cmiss_field_factory *field_factory,
+	int source_number_of_rows, struct Computed_field *source_field)
 {
-	int number_of_source_fields, return_code;
-	struct Computed_field **temp_source_fields;
-
-	ENTER(Computed_field_set_type_transpose);
-	if (field && (0 < source_number_of_rows) && source_field)
+	struct Computed_field *field = NULL;
+	if (field_factory && (0 < source_number_of_rows) && source_field &&
+		(0 == (source_field->number_of_components % source_number_of_rows)))
 	{
-		if (0 == (source_field->number_of_components % source_number_of_rows))
-		{
-			/* 1. make dynamic allocations for any new type-specific data */
-			number_of_source_fields=1;
-			if (ALLOCATE(temp_source_fields,struct Computed_field *,
-				number_of_source_fields))
-			{
-				/* 2. free current type-specific data */
-				Computed_field_clear_type(field);
-				/* 3. establish the new type */
-				field->number_of_components = source_field->number_of_components;
-				temp_source_fields[0] = ACCESS(Computed_field)(source_field);
-				field->source_fields = temp_source_fields;
-				field->number_of_source_fields = number_of_source_fields;
-				field->core = new Computed_field_transpose(field, source_number_of_rows);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_transpose.  Unable to allocate memory");
-				DEALLOCATE(temp_source_fields);
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Computed_field_set_type_transpose.  "
-				"Source field %s has %d components, hence cannot have %d rows",
-				source_field->name,source_field->number_of_components,
-				source_number_of_rows);
-			return_code=0;
-		}
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_transpose(source_number_of_rows));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_transpose.  Invalid argument(s)");
-		return_code=0;
+			"Computed_field_create_transpose.  Invalid argument(s)");
 	}
-	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_transpose */
+	return (field);
+}
 
 int Computed_field_get_type_transpose(struct Computed_field *field,
 	int *source_number_of_rows, struct Computed_field **source_field)
@@ -2911,24 +2714,24 @@ already) and allows its contents to be modified.
 {
 	const char *current_token;
 	int source_number_of_rows, return_code;
-	struct Computed_field *field,*source_field;
+	struct Computed_field *source_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_transpose);
 	USE_PARAMETER(computed_field_matrix_operations_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for transpose field */
 		source_number_of_rows = 1;
 		source_field = (struct Computed_field *)NULL;
-		if (computed_field_transpose_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_transpose_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code=Computed_field_get_type_transpose(field,
+			return_code=Computed_field_get_type_transpose(field_modify->get_field(),
 				&source_number_of_rows,&source_field);
 		}
 		if (return_code)
@@ -2945,7 +2748,7 @@ already) and allows its contents to be modified.
 					Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data = (void *)NULL;
 				set_source_field_data.computed_field_manager =
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
 				{
@@ -2976,9 +2779,13 @@ already) and allows its contents to be modified.
 						option_table = CREATE(Option_table)();
 						Option_table_add_entry(option_table,"field",&source_field,
 							&set_source_field_data,set_Computed_field_conditional);
-						return_code = Option_table_multi_parse(option_table,state) &&
-							Computed_field_set_type_transpose(field,
-								source_number_of_rows,source_field);
+						return_code = Option_table_multi_parse(option_table, state);
+						if (return_code)
+						{
+							return_code = field_modify->update_field_and_deaccess(
+								Computed_field_create_transpose(field_modify->get_field_factory(),
+									source_number_of_rows, source_field));
+						}
 						DESTROY(Option_table)(&option_table);
 					}
 					if (!return_code)
@@ -3020,8 +2827,8 @@ class Computed_field_quaternion_to_matrix : public Computed_field_core
 {
 public:
 
-	 Computed_field_quaternion_to_matrix(Computed_field *field) : 
-			Computed_field_core(field)
+	 Computed_field_quaternion_to_matrix() : 
+			Computed_field_core()
 	 {
 	 };
 	 
@@ -3030,9 +2837,9 @@ public:
 	 };
 	 
 private:
-	 Computed_field_core *copy(Computed_field* new_parent)
+	 Computed_field_core *copy()
 	 {
-			return new Computed_field_quaternion_to_matrix(new_parent);
+			return new Computed_field_quaternion_to_matrix();
 	 }
 
 	 char *get_type_string()
@@ -3170,68 +2977,36 @@ Returns allocated command string for reproducing field. Includes type.
 		 */
 } //namespace
 
-int Computed_field_set_type_quaternion_to_matrix(struct Computed_field *field,
-	 struct Computed_field *source_field) 
-/*******************************************************************************
-LAST MODIFIED : 18 Jun 2008
-
-DESCRIPTION :
-Converts a 'quaternion' to a transformation matrix, where
-<source_field> must have 4 components.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
+/***************************************************************************//**
+ * Creates a 4x4 (= 16 component) transformation matrix from a 4 component
+ * quaternion valued source field. 
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param source_field  4 component field giving source quaternion value.
+ * @return Newly created field.
+ */
+Computed_field *Computed_field_create_quaternion_to_matrix(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *source_field) 
 {
-	 int number_of_source_fields, return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_quaternion_to_matrix);
-	if (field && source_field)
+	struct Computed_field *field = NULL;
+	if (field_factory && source_field && (source_field->number_of_components == 4))
 	{
-		 return_code=1;
-		 /* 1. make dynamic allocations for any new type-specific data */
-		 if (source_field->number_of_components == 4)
-		 {
-				/* 1. make dynamic allocations for any new type-specific data */
-				number_of_source_fields = 1;
-				if (ALLOCATE(source_fields,struct Computed_field *,
-							number_of_source_fields))
-				{
-					 /* 2. free current type-specific data */
-					 Computed_field_clear_type(field);
-					 /* 3. establish the new type */
-					 field->number_of_components = 16;
-					 source_fields[0] = ACCESS(Computed_field)(source_field);
-					 field->source_fields = source_fields;
-					 field->number_of_source_fields = number_of_source_fields;
-					 field->core = new Computed_field_quaternion_to_matrix(field);
-					 return_code=1;
-				}
-				else
-				{
-					 display_message(ERROR_MESSAGE,
-							"Computed_field_set_type_quaternion_to_matrix.  Not enough memory");
-					 DEALLOCATE(source_fields);
-					 return_code=0;
-				}
-		 }
-		 else
-		 {
-				display_message(ERROR_MESSAGE,"Computed_field_set_type_quaternion_to_matrix.  "
-					 "Field %s does not have 4 components",source_field->name);
-				return_code = 0;
-		 }
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			/*number_of_components*/16,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_quaternion_to_matrix());
 	}
 	else
 	{
-		 display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_quaternion_to_matrix.  Invalid argument(s)");
-		 return_code = 0;
+		display_message(ERROR_MESSAGE,
+			"Computed_field_create_quaternion_to_matrix.  Invalid argument(s)");
 	}
-	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_quaternion_to_matrix */
+	return (field);
+}
 
 int Computed_field_get_type_quaternion_to_matrix(struct Computed_field *field,
 	struct Computed_field **quaternion_to_matrix_field)
@@ -3272,25 +3047,25 @@ Converts a "quaternion" to a transformation matrix.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field, **source_fields;
+	struct Computed_field **source_fields;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_quaternion_to_matrix);
 	USE_PARAMETER(computed_field_matrix_operations_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		source_fields = (struct Computed_field **)NULL;
 		if (ALLOCATE(source_fields, struct Computed_field *, 1))
 		{
 			 source_fields[0] = (struct Computed_field *)NULL;
-			 if (computed_field_quaternion_to_matrix_type_string ==
-					Computed_field_get_type_string(field))
+				if ((NULL != field_modify->get_field()) &&
+					(computed_field_quaternion_to_matrix_type_string ==
+						Computed_field_get_type_string(field_modify->get_field())))
 			 {
-					return_code = Computed_field_get_type_quaternion_to_matrix(field, 
+					return_code = Computed_field_get_type_quaternion_to_matrix(field_modify->get_field(), 
 						 source_fields);
 			 }
 			 if (return_code)
@@ -3303,19 +3078,18 @@ Converts a "quaternion" to a transformation matrix.
 					Option_table_add_help(option_table,
 						 "A computed field to convert a quaternion (w,x,y,z) to a 4x4 matrix,");
 					set_source_field_data.computed_field_manager =
-						Cmiss_region_get_Computed_field_manager(field_modify->region);
+						field_modify->get_field_manager();
 					set_source_field_data.conditional_function =
 						 Computed_field_has_4_components;
 					set_source_field_data.conditional_function_user_data = (void *)NULL;
 					Option_table_add_entry(option_table, "field", &source_fields[0],
 						 &set_source_field_data, set_Computed_field_conditional);
-					/* process the option table */
 					return_code = Option_table_multi_parse(option_table, state);
-					/* no errors, not asking for help */
 					if (return_code)
 					{
-					  return_code = Computed_field_set_type_quaternion_to_matrix(
-						  field, source_fields[0]);
+						return_code = field_modify->update_field_and_deaccess(
+							Computed_field_create_quaternion_to_matrix(
+								field_modify->get_field_factory(), source_fields[0]));
 					}
 					else
 					{
@@ -3363,8 +3137,8 @@ class Computed_field_matrix_to_quaternion : public Computed_field_core
 {
 public:
 
-	 Computed_field_matrix_to_quaternion(Computed_field *field) : 
-			Computed_field_core(field)
+	 Computed_field_matrix_to_quaternion() : 
+			Computed_field_core()
 	 {
 	 };
 	 
@@ -3373,9 +3147,9 @@ public:
 	 };
 	 
 private:
-	 Computed_field_core *copy(Computed_field* new_parent)
+	 Computed_field_core *copy()
 	 {
-			return new Computed_field_matrix_to_quaternion(new_parent);
+			return new Computed_field_matrix_to_quaternion();
 	 }
 
 	 char *get_type_string()
@@ -3511,68 +3285,36 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_matrix_to_quaternion(struct Computed_field *field,
-	 struct Computed_field *source_field) 
-/*******************************************************************************
-LAST MODIFIED : 18 Jun 2008
-
-DESCRIPTION :
-Converts a quaternion to a transformation matrix, where
-<source_field> must have 16 components.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
+/***************************************************************************//**
+ * Creates a 4 component field returning the nearest quaternion value equivalent
+ * to 4x4 matrix source field 
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param source_field  4x4 component source field.
+ * @return Newly created field.
+ */
+Computed_field *Computed_field_create_matrix_to_quaternion(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *source_field) 
 {
-	int number_of_source_fields, return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_matrix_to_quaternion);
-	if (field && source_field)
+	struct Computed_field *field = NULL;
+	if (field_factory && source_field && (source_field->number_of_components == 16))
 	{
-		 return_code=1;
-		 /* 1. make dynamic allocations for any new type-specific data */
-		 if (source_field->number_of_components == 16)
-		 {
-				/* 1. make dynamic allocations for any new type-specific data */
-				number_of_source_fields = 1;
-				if (ALLOCATE(source_fields,struct Computed_field *,
-							number_of_source_fields))
-				{
-					 /* 2. free current type-specific data */
-					 Computed_field_clear_type(field);
-					 /* 3. establish the new type */
-					 field->number_of_components = 4;
-					 source_fields[0] = ACCESS(Computed_field)(source_field);
-					 field->source_fields = source_fields;
-					 field->number_of_source_fields = number_of_source_fields;
-					 field->core = new Computed_field_matrix_to_quaternion(field);
-					 return_code=1;
-				}
-				else
-				{
-					 display_message(ERROR_MESSAGE,
-							"Computed_field_set_type_matrix_to_quaternion.  Not enough memory");
-					 DEALLOCATE(source_fields);
-					 return_code=0;
-				}
-		 }
-		 else
-		 {
-				display_message(ERROR_MESSAGE,"Computed_field_set_type_matrix_to_quaternion.  "
-					 "Field %s does not have 16 components",source_field->name);
-				return_code = 0;
-		 }
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			/*number_of_components*/4,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_matrix_to_quaternion());
 	}
 	else
 	{
-		 display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_matrix_to_quaternion.  Invalid argument(s)");
-		 return_code = 0;
+		display_message(ERROR_MESSAGE,
+			"Computed_field_create_matrix_to_quaternion.  Invalid argument(s)");
 	}
-	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_matrix_to_quaternion */
+	return (field);
+}
 
 int Computed_field_get_type_matrix_to_quaternion(struct Computed_field *field,
 	struct Computed_field **matrix_to_quaternion_field)
@@ -3613,25 +3355,25 @@ Converts a transformation matrix to  a "quaternion".
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field, **source_fields;
+	struct Computed_field **source_fields;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_matrix_to_quaternion);
 	USE_PARAMETER(computed_field_matrix_operations_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		source_fields = (struct Computed_field **)NULL;
 		if (ALLOCATE(source_fields, struct Computed_field *, 1))
 		{
 			 source_fields[0] = (struct Computed_field *)NULL;
-			 if (computed_field_matrix_to_quaternion_type_string ==
-					Computed_field_get_type_string(field))
+				if ((NULL != field_modify->get_field()) &&
+					(computed_field_matrix_to_quaternion_type_string ==
+						Computed_field_get_type_string(field_modify->get_field())))
 			 {
-					return_code = Computed_field_get_type_matrix_to_quaternion(field, 
+					return_code = Computed_field_get_type_matrix_to_quaternion(field_modify->get_field(), 
 						 source_fields);
 			 }
 			 if (return_code)
@@ -3649,7 +3391,7 @@ Converts a transformation matrix to  a "quaternion".
 						 "    8   9   10  11                                         "
 						 "    12  13  14  15                                         \n");
 					set_source_field_data.computed_field_manager =
-						Cmiss_region_get_Computed_field_manager(field_modify->region);
+						field_modify->get_field_manager();
 					set_source_field_data.conditional_function =
 						 Computed_field_has_16_components;
 					set_source_field_data.conditional_function_user_data = (void *)NULL;
@@ -3659,8 +3401,9 @@ Converts a transformation matrix to  a "quaternion".
 					return_code = Option_table_multi_parse(option_table, state);
 					if (return_code)
 					{
-					  return_code = Computed_field_set_type_matrix_to_quaternion(
-							field, source_fields[0]);
+						return_code = field_modify->update_field_and_deaccess(
+							Computed_field_create_matrix_to_quaternion(
+								field_modify->get_field_factory(), source_fields[0]));
 					}
 					else
 					{

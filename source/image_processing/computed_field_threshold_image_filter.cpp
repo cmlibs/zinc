@@ -123,7 +123,7 @@ namespace {
 		double below_value;   // needed for both below and outside mode
 		double above_value;   // neeeded for both above and outside mode
 		
-		Computed_field_threshold_image_filter(Computed_field *field,
+		Computed_field_threshold_image_filter(Computed_field *source_field,
 			enum General_threshold_filter_mode threshold_mode, 
 			double oustide_value, double below_value, double above_value);
 		
@@ -132,9 +132,11 @@ namespace {
 		}
 		
 	private:
-		Computed_field_core *copy(Computed_field* new_parent)
+		virtual void create_functor();
+
+		Computed_field_core *copy()
 		{
-			return new Computed_field_threshold_image_filter(new_parent,
+			return new Computed_field_threshold_image_filter(field->source_fields[0],
 				threshold_mode, outside_value, below_value, above_value);
 		}
 		
@@ -264,9 +266,10 @@ and generate the outputImage.
 	}; /* template < class ImageType > class Computed_field_threshold_image_filter_Functor */
 
 	Computed_field_threshold_image_filter::Computed_field_threshold_image_filter(
-		Computed_field *field, enum General_threshold_filter_mode threshold_mode,
+		Computed_field *source_field,
+		enum General_threshold_filter_mode threshold_mode,
 		double outside_value, double below_value, double above_value) :
-		Computed_field_ImageFilter(field),
+		Computed_field_ImageFilter(source_field),
 		threshold_mode(threshold_mode), outside_value(outside_value),  
 		below_value(below_value),above_value(above_value)
 /*******************************************************************************
@@ -275,6 +278,10 @@ LAST MODIFIED : 12 September 2006
 DESCRIPTION :
 Create the computed_field representation of the threshold_image_filter.
 ==============================================================================*/
+	{
+	}
+
+	void Computed_field_threshold_image_filter::create_functor()
 	{
 #if defined DONOTUSE_TEMPLATETEMPLATES
 		create_filters_singlecomponent_multidimensions(
@@ -411,62 +418,31 @@ Cmiss_field_threshold_image_filter_id Cmiss_field_threshold_image_filter_cast(Cm
 	}
 }
 
-
-Computed_field *Cmiss_field_create_threshold_image_filter(
+struct Computed_field *Cmiss_field_create_threshold_image_filter(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, 
 	enum General_threshold_filter_mode threshold_mode, double outside_value,
 	double below_value, double above_value)
 {
-	int number_of_source_fields;
-	Computed_field *field, **source_fields;
-
-	ENTER(Cmiss_field_create_threshold_image_filter);
-	if ( source_field &&
-		Computed_field_is_scalar(source_field, (void *)NULL))
+	Computed_field *field = NULL;
+	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
 	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields = 1;
-		if (ALLOCATE(source_fields, struct Computed_field *,
-				number_of_source_fields))
-		{
-			/* 2. create new field */
-			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-			/* 3. establish the new type */
-			field->number_of_components = source_field->number_of_components;
-			source_fields[0] = ACCESS(Computed_field)(source_field);
-			field->source_fields = source_fields;
-			field->number_of_source_fields = number_of_source_fields;			
-			Computed_field_ImageFilter* filter_core = new Computed_field_threshold_image_filter(field,
-				threshold_mode, outside_value,  
-				below_value, above_value);
-			if (filter_core->functor)
-			{
-				field->core = filter_core;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_create_threshold_image_filter.  "
-					"Unable to create image filter.");
-				field = (Computed_field *)NULL;
-			}
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			field = (Computed_field *)NULL;
-		}
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_threshold_image_filter(source_field,
+				threshold_mode, outside_value, below_value, above_value));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_create_threshold_image_filter.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
 	}
-	LEAVE;
 
 	return (field);
-} /* Cmiss_field_create_threshold_image_filter */
+}
 
 int Computed_field_get_type_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field,  
@@ -522,15 +498,14 @@ already) and allows its contents to be modified.
 	double outside_value, below_value, above_value;
 
 	int return_code;
-	struct Computed_field *field, *source_field;
+	struct Computed_field *source_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_threshold_image_filter);
 	USE_PARAMETER(computed_field_simple_package_void);
-	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void) &&
-			(field=field_modify->field))
+	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code = 1;
 		/* get valid parameters for projection field */
@@ -542,11 +517,12 @@ already) and allows its contents to be modified.
 		below_value = 0.5;
 		above_value = 0.5;
 
-		if (computed_field_threshold_image_filter_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_threshold_image_filter_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
 			return_code =
-				Computed_field_get_type_threshold_image_filter(field, &source_field,
+				Computed_field_get_type_threshold_image_filter(field_modify->get_field(), &source_field,
 					&threshold_mode, &outside_value,  
 					&below_value, &above_value);
 		}
@@ -564,7 +540,7 @@ already) and allows its contents to be modified.
 
 			/* field */
 			set_source_field_data.computed_field_manager =
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_source_field_data.conditional_function = Computed_field_is_scalar;
 			set_source_field_data.conditional_function_user_data = (void *)NULL;
 			Option_table_add_entry(option_table, "field", &source_field,
@@ -598,10 +574,11 @@ already) and allows its contents to be modified.
 			}
 			if (return_code)
 			{
-				return_code = Computed_field_copy_type_specific_and_deaccess(field, Cmiss_field_create_threshold_image_filter( 
-					source_field, threshold_mode, outside_value, below_value, 
-					above_value));
-				
+				return_code = field_modify->update_field_and_deaccess(
+					Cmiss_field_create_threshold_image_filter(
+						field_modify->get_field_factory(),
+						source_field, threshold_mode, outside_value, below_value, 
+						above_value));
 			}
 			
 			if (!return_code)

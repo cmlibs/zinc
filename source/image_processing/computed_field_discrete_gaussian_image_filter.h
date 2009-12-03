@@ -52,6 +52,7 @@ int Computed_field_register_types_discrete_gaussian_image_filter(
 	struct Computed_field_package *computed_field_package);
 
 struct Computed_field *Cmiss_field_create_discrete_gaussian_image_filter(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, double variance, int maxKernelWidth);
 
 Cmiss_field_discrete_gaussian_image_filter_id Cmiss_field_discrete_gaussian_image_filter_cast(Cmiss_field_id field);

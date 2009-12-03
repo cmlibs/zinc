@@ -455,6 +455,14 @@ indented from the left margin by <indent> spaces; this is incremented by
 ==============================================================================*/
 
 /***************************************************************************//**
+ * Returns the name of the region. 
+ * 
+ * @param region  The region whose name is requested.
+ * @return  On success: allocated string containing region name.
+ */
+char *Cmiss_region_get_name(struct Cmiss_region *region);
+
+/***************************************************************************//**
  * Returns the full path name from the root region to this region. Path name
  * always begins and ends with the CMISS_REGION_PATH_SEPARATOR_CHAR '/'.
  * 

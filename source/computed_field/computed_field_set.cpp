@@ -80,6 +80,7 @@ wrapper for field and add it to the manager.
 			(struct Set_Computed_field_conditional_data *)set_field_data_void) &&
 		set_field_data->computed_field_manager)
 	{
+		selected_field = (struct Computed_field *)NULL;
 		if (current_token = state->current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
@@ -106,7 +107,7 @@ wrapper for field and add it to the manager.
 						current_token += 1;
 
 						ALLOCATE(values, double, 1);
-						/* This is a constant array, make a new field not in the manager */
+						/* This is a constant array, make a new private constant field */
 						finished = 0;
 						while (!finished)
 						{
@@ -130,12 +131,15 @@ wrapper for field and add it to the manager.
 								append_string(&command_string, current_token, &error);
 							}
 						}
-						selected_field = CREATE(Computed_field)("constants");
-						Computed_field_set_command_string(selected_field, 
-							command_string);
-						Computed_field_copy_type_specific_and_deaccess(selected_field, 
-							Computed_field_create_constant(
-							number_of_values, values));
+
+						Cmiss_region *region =
+							Computed_field_manager_get_region(set_field_data->computed_field_manager);
+						Cmiss_field_factory *temp_field_factory = Cmiss_field_factory_create(region);
+						Cmiss_field_factory_set_field_name(temp_field_factory, "constants");
+						selected_field = Computed_field_create_constant(temp_field_factory,
+							number_of_values, values);
+						Cmiss_field_factory_destroy(&temp_field_factory);
+						
 						DEALLOCATE(values);
 						DEALLOCATE(command_string);
 					}
@@ -143,9 +147,13 @@ wrapper for field and add it to the manager.
 					{
 						/* component_no = -1 denotes the whole field may be used */
 						component_no = -1;
-						if (!(selected_field =
-								FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(current_token,
-									set_field_data->computed_field_manager)))
+						selected_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)(
+							current_token, set_field_data->computed_field_manager);
+						if (selected_field)
+						{
+							ACCESS(Computed_field)(selected_field);
+						}
+						else
 						{
 							if (strchr(current_token, '.'))
 							{
@@ -156,6 +164,7 @@ wrapper for field and add it to the manager.
 								if (selected_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
 										name)(current_token_copy, set_field_data->computed_field_manager))
 								{
+									ACCESS(Computed_field)(selected_field);
 									/* get the component number */
 									number_of_components =
 										Computed_field_get_number_of_components(selected_field);
@@ -176,7 +185,7 @@ wrapper for field and add it to the manager.
 											display_message(WARNING_MESSAGE,
 												"set_Computed_field_component.  "
 												"Could not get component name");
-											selected_field = (struct Computed_field *)NULL;
+											DEACCESS(Computed_field)(&selected_field);
 										}
 									}
 									if (0 <= component_no)
@@ -188,16 +197,18 @@ wrapper for field and add it to the manager.
 										}
 										else
 										{
-											/* get or make wrapper for field component */
-											if (!(selected_field =
-													Computed_field_manager_get_component_wrapper(
-														set_field_data->computed_field_manager,
-														selected_field, component_no)))
+											/* get or make wrapper for field component (clean up access later) */
+											struct Computed_field *component_wrapper =
+												Computed_field_manager_get_component_wrapper(
+													set_field_data->computed_field_manager,
+													selected_field, component_no);
+											if (NULL == component_wrapper)
 											{
 												display_message(WARNING_MESSAGE,
-													"set_Computed_field_component.  "
-													"Could not make component wrapper");
+													"set_Computed_field_component.  Could not make component wrapper");
 											}
+											REACCESS(Computed_field)(&selected_field, component_wrapper); 
+											DEACCESS(Computed_field)(&component_wrapper); 
 										}
 									}
 									else
@@ -205,7 +216,7 @@ wrapper for field and add it to the manager.
 										display_message(ERROR_MESSAGE,
 											"Unknown field component: %s.%s", current_token_copy,
 											field_component_name);
-										selected_field = (struct Computed_field *)NULL;
+										DEACCESS(Computed_field)(&selected_field);
 									}
 								}
 								else
@@ -252,6 +263,7 @@ wrapper for field and add it to the manager.
 				/* if possible, then write the name */
 				if (selected_field = *field_address)
 				{
+					ACCESS(Computed_field)(selected_field);
 					GET_NAME(Computed_field)(selected_field, &temp_name);
 					display_message(INFORMATION_MESSAGE, "[%s]", temp_name);
 					DEALLOCATE(temp_name);
@@ -269,6 +281,7 @@ wrapper for field and add it to the manager.
 			display_parse_state_location(state);
 			return_code = 0;
 		}
+		REACCESS(Computed_field)(&selected_field, NULL);
 	}
 	else
 	{

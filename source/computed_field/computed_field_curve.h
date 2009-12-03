@@ -54,19 +54,20 @@ LAST MODIFIED : 21 May 2001
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_curve_lookup(struct Computed_field *field,
-	struct Computed_field *source_field, struct Curve *curve,
-	struct MANAGER(Curve) *curve_manager);
-/*******************************************************************************
-LAST MODIFIED : 24 May 2001
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CURVE_LOOKUP, returning the value of
-<curve> at the time/parameter value given by scalar <source_field>.
-Sets number of components to same number as <curve>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
+/*****************************************************************************//**
+ * Creates a field which returns the value of curve at the time/parameter value
+ * given by scalar <source_field>.
+ * Field has number of components to same number as <curve>.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param source_field  Field providing time/parameter values for curve lookup.
+ * @param curve  Parametric curve object.
+ * @param curve_manager  Manager of curve objects.
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_curve_lookup(
+	Cmiss_field_factory *field_factory, struct Computed_field *source_field,
+	struct Curve *curve, struct MANAGER(Curve) *curve_manager);
 
 int Computed_field_get_type_curve_lookup(struct Computed_field *field,
 	struct Computed_field **source_field, struct Curve **curve);

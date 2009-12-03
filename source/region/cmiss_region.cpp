@@ -257,8 +257,8 @@ Created with access_count of 1 so call DEACCESS to clean up.
 		region_fields->access_count = 1;
 		if (!(region_fields->field_manager &&
 			region_fields->fe_region &&
-			Computed_field_manager_begin_autowrap_FE_fields(
-				region_fields->field_manager, region_fields->fe_region)))
+			FE_region_add_callback(region_fields->fe_region,
+				Cmiss_region_FE_region_change, (void *)owning_region)))
 		{
 			DEACCESS(Cmiss_region_fields)(&region_fields);
 		}
@@ -290,8 +290,11 @@ Frees the memory for the Cmiss_region_fields and sets
 	{
 		if (0 == region_fields->access_count)
 		{
-			Computed_field_manager_end_autowrap_FE_fields(
-				region_fields->field_manager, region_fields->fe_region);
+			if (region_fields->owning_region)
+			{
+				FE_region_remove_callback(region_fields->fe_region,
+					Cmiss_region_FE_region_change, (void *)region_fields->owning_region);
+			}
 			DEACCESS(FE_region)(&region_fields->fe_region);
 			DESTROY(MANAGER(Computed_field))(&(region_fields->field_manager));
 			DEALLOCATE(*region_fields_address);
@@ -607,7 +610,7 @@ Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
 	struct Cmiss_region *region;
 
 	ENTER(DESTROY(Cmiss_region));
-	if (region_address && (region = *region_address))
+	if (region_address && (NULL != (region = *region_address)))
 	{
 		if (0 == region->access_count)
 		{
@@ -631,9 +634,15 @@ Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
 			}
 			DESTROY(LIST(CMISS_CALLBACK_ITEM(Cmiss_region_change)))(
 				&(region->change_callback_list));
-			// remove link back from region_fields to this region
-			if (region->fields && (region->fields->owning_region == *region_address))
+			if (region->fields && (region->fields->owning_region == region) &&
+				(region->fields->access_count > 1))
 			{
+				// should be an assert
+				display_message(ERROR_MESSAGE,
+					"DESTROY(Cmiss_region).  Cmiss_region_fields owner destroyed early");
+				// remove link back from region_fields to this region
+				FE_region_remove_callback(region->fields->fe_region,
+					Cmiss_region_FE_region_change, (void *)region);
 				region->fields->owning_region = NULL;
 			}
 			DEACCESS(Cmiss_region_fields)(&region->fields);
@@ -2181,7 +2190,7 @@ Cmiss_field_id Cmiss_region_add_field(Cmiss_region_id region,
 	{
 		if (Computed_field_check_manager(field, &manager))
 		{
-			if (!Computed_field_manage(field, manager, Computed_field::MANAGED_PUBLIC))
+			if (!Computed_field_manage(field, manager, COMPUTED_FIELD_MANAGED_PUBLIC))
 			{
 				field = (struct Cmiss_field *)NULL;
 				display_message(ERROR_MESSAGE,
@@ -2205,6 +2214,32 @@ Cmiss_field_id Cmiss_region_add_field(Cmiss_region_id region,
 
 	return (field);
 } /* Cmiss_region_add_field */
+
+char *Cmiss_region_get_name(struct Cmiss_region *region)
+{
+	char *name = NULL;
+	if (region)
+	{
+		Cmiss_region* parent = region->parent;
+		if (parent)
+		{
+			for (int i = 0; i < parent->number_of_child_regions; i++)
+			{
+				if (region == parent->child[i]->region)
+				{
+					name = duplicate_string(parent->child[i]->name);
+					break;
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Cmiss_region_get_name.  Missing region");
+	}
+	
+	return (name);
+}
 
 char *Cmiss_region_get_path(struct Cmiss_region *region)
 {

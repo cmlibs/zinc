@@ -55,36 +55,32 @@ LAST MODIFIED : 01 May 2006
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_region_sum(struct Computed_field *field,
-	struct Computed_field *operate_field,
-	struct Cmiss_region *operate_region, char *region_path);
 /*******************************************************************************
-LAST MODIFIED : 01 May 2006
+ * Creates a field which returns the sum of a source field's value over all
+ * nodes in its region. Returned field has same number of components as source.
+ * GRC: rename this field before exposing in external API
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param source_field  Field to sum.
+ * @param group  Optional sub-group of region to limit sum over.  
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_region_sum(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *source_field, struct Cmiss_region *group);
 
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_REGION_SUM, this field allows you to
-evaluate one field to find "texture coordinates", use a find_element_xi field
-to then calculate a corresponding element/xi and finally calculate values using
-this element/xi and a third field.  You can then evaluate values on a "host"
-mesh for any points "contained" inside.  The <search_element_group> is the group
-from which any returned element_xi will belong.
-If <use_point_five_when_out_of_bounds> is true then if the texture_coordinate_field
-values cannot be found in the find_element_xi_field, then instead of returning
-failure, the values will be set to 0.5 and returned as success.
-Only elements that have dimension equals <element_dimension> will be searched.
-==============================================================================*/
-
-int Computed_field_get_type_region_sum(struct Computed_field *field,
-	struct Computed_field *operate_field,
-	struct Cmiss_region **operate_region, char **region_path);
 /*******************************************************************************
-LAST MODIFIED : 01 May 2006
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_REGION_SUM, the function returns the three
-fields which define the field.
-Note that the fields are not ACCESSed and the <region_path> points to the
-internally used path.
-==============================================================================*/
+ * Creates a field which returns the mean of a source field's values over all
+ * nodes in its region. Returned field has same number of components as source.
+ * GRC: rename this field before exposing in external API
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param source_field  Field to sum & average.
+ * @param group  Optional sub-group of region to limit sum over.  
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_region_mean(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *source_field, struct Cmiss_region *group);
 
 #endif /* !defined (COMPUTED_FIELD_REGION_OPERATIONS_H) */

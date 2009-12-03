@@ -57,22 +57,24 @@ enum Computed_field_window_projection_type
 
 struct MANAGER(Graphics_window);
 
-int Computed_field_set_type_window_projection(struct Computed_field *field,
+/*****************************************************************************//**
+ * Creates a field performing a window projection, returning the source field
+ * with each component multiplied by the perspective transformation of the
+ * supplied scene_viewer.
+ * The <graphics_window_name> and <pane_number> are stored so that the command to
+ * reproduce this field can be written out.
+ * The manager for <field> is notified if the <scene_viewer> closes.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param source_field  Field supplying values to transform.
+ * @param scene_viewer  Scene viewer to obtain projection transformation from.
+ * @return Newly created field with 3 components.
+ */
+struct Computed_field *Computed_field_create_window_projection(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, struct Scene_viewer *scene_viewer,
 	char *graphics_window_name, int pane_number,
 	enum Computed_field_window_projection_type projection_type);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_WINDOW_PROJECTION, returning the 
-<source_field> with each component multiplied by the perspective transformation
-of the <scene_viewer>.  The <graphics_window_name> and <pane_number> are stored
-so that the command to reproduce this field can be written out.
-The manager for <field> is notified if the <scene_viewer> closes.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 
 int Computed_field_register_type_window_projection(
 	struct Computed_field_package *computed_field_package, 

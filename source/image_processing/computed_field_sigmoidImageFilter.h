@@ -46,12 +46,6 @@ DESCRIPTION :
 
 #include "api/cmiss_field.h"
 
-/* API functions are prefixed with Cmiss */
-#define Computed_field_set_type_sigmoid_image_filter \
-	Cmiss_field_set_type_sigmoid_image_filter
-#define Computed_field_get_type_sigmoid_image_filter \
-	Cmiss_field_get_type_sigmoid_image_filter
-
 int Computed_field_register_types_sigmoid_image_filter(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
@@ -60,18 +54,16 @@ LAST MODIFIED : 18 October 2006
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_sigmoid_image_filter(struct Computed_field *field,
-	struct Computed_field *source_field, double min, double max, double alpha, double beta);
-/*******************************************************************************
-LAST MODIFIED : 18 October 2006
+/***************************************************************************//**
+ * Creates a field performing ITK sigmoid image filter on scalar source field
+ * image. Sets number of components to same number as <source_field>.
+ */
+struct Computed_field *Cmiss_field_create_sigmoid_image_filter(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *source_field, double min, double max,
+	double alpha, double beta);
 
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_SIGMOIDIMAGEFILTER, returning the value of
-<sigmoid_image_filter> at the time/parameter value given by scalar <source_field>.
-Sets number of components to same number as <source_field>.
-==============================================================================*/
-
-int Computed_field_get_type_sigmoid_image_filter(struct Computed_field *field,
+int Cmiss_field_get_type_sigmoid_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, double *min, double *max, double *alpha, double *beta);
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006

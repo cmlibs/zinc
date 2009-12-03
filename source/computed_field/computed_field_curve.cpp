@@ -83,21 +83,30 @@ public:
 	MANAGER(Curve) *curve_manager;
 	void *curve_manager_callback_id;
 
-	Computed_field_curve_lookup(Computed_field *field, Curve *curve,
-			MANAGER(Curve) *curve_manager) :
-		Computed_field_core(field),
+	Computed_field_curve_lookup(Curve *curve, MANAGER(Curve) *curve_manager) :
+		Computed_field_core(),
 		curve(ACCESS(Curve)(curve)),
-		curve_manager(curve_manager)
+		curve_manager(curve_manager),
+		curve_manager_callback_id(NULL)
 	{
-		curve_manager_callback_id = MANAGER_REGISTER(Curve)(
-			Computed_field_curve_lookup_Curve_change, (void *)field,
-			curve_manager);
 	};
 
+	virtual bool attach_to_field(Computed_field *parent)
+	{
+		if (Computed_field_core::attach_to_field(parent))
+		{
+			curve_manager_callback_id = MANAGER_REGISTER(Curve)(
+				Computed_field_curve_lookup_Curve_change, (void *)parent,
+				curve_manager);
+			return true;
+		}
+		return false;
+	}
+		
 	~Computed_field_curve_lookup();
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent);
+	Computed_field_core *copy();
 
 	char *get_type_string()
 	{
@@ -144,7 +153,7 @@ Clear the type specific data used by this type.
 	LEAVE;
 } /* Computed_field_curve_lookup::~Computed_field_curve_lookup */
 
-Computed_field_core* Computed_field_curve_lookup::copy(Computed_field* new_parent)
+Computed_field_core* Computed_field_curve_lookup::copy()
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -152,20 +161,8 @@ DESCRIPTION :
 Copy the type specific data used by this type.
 ==============================================================================*/
 {
-	Computed_field_curve_lookup* core;
-
-	ENTER(Computed_field_curve_lookup::copy);
-	if (new_parent)
-	{
-		core = new Computed_field_curve_lookup(new_parent, curve, curve_manager);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_curve_lookup::copy.  Invalid argument(s)");
-		core = (Computed_field_curve_lookup*)NULL;
-	}
-	LEAVE;
+	Computed_field_curve_lookup* core =
+		new Computed_field_curve_lookup(curve, curve_manager);
 
 	return (core);
 } /* Computed_field_curve_lookup::copy */
@@ -395,63 +392,18 @@ COMPUTED_FIELD_CURVE_LOOKUP.
 } /* Computed_field_curve_lookup_Curve_change */
 } //namespace
 
-int Computed_field_set_type_curve_lookup(struct Computed_field *field,
-	struct Computed_field *source_field, struct Curve *curve,
-	struct MANAGER(Curve) *curve_manager)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CURVE_LOOKUP, returning the value of
-<curve> at the time/parameter value given by scalar <source_field>.
-Sets number of components to same number as <curve>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-???RC In future may not need to pass computed_field_manager it all fields
-maintain pointer to it. Only have it to invoke computed field manager messages
-in response to changes in the curve from the control curve manager.
-==============================================================================*/
+struct Computed_field *Computed_field_create_curve_lookup(
+	Cmiss_field_factory *field_factory, struct Computed_field *source_field,
+	struct Curve *curve, struct MANAGER(Curve) *curve_manager)
 {
-	int number_of_source_fields, return_code;
-	struct Computed_field **source_fields;
+	struct Computed_field *field = Computed_field_create_generic(field_factory,
+		/*check_source_field_regions*/true,
+		/*number_of_components*/Curve_get_number_of_components(curve),
+		/*number_of_source_fields*/1, &source_field,
+		/*number_of_source_values*/0, NULL,
+		new Computed_field_curve_lookup(curve, curve_manager));
 
-	ENTER(Computed_field_set_type_curve_lookup);
-	if (field && source_field &&
-		Computed_field_is_scalar(source_field, (void *)NULL) &&
-		curve && curve_manager)
-	{
-		return_code = 1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields = 1;
-		if (ALLOCATE(source_fields, struct Computed_field *,
-			number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->number_of_components =
-				Curve_get_number_of_components(curve);
-			source_fields[0] = ACCESS(Computed_field)(source_field);
-			field->source_fields = source_fields;
-			field->number_of_source_fields = number_of_source_fields;			
-			field->core = new Computed_field_curve_lookup(field,
-				curve, curve_manager);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_curve_lookup.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
+	return (field);
 } /* Computed_field_set_type_curve_lookup */
 
 int Computed_field_get_type_curve_lookup(struct Computed_field *field,
@@ -497,7 +449,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field, *source_field;
+	struct Computed_field *source_field;
 	Computed_field_curve_package *computed_field_curve_package;
 	Computed_field_modify_data *field_modify;
 	struct Curve *curve;
@@ -505,8 +457,7 @@ already) and allows its contents to be modified.
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_curve_lookup);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void) &&
 		(computed_field_curve_package =
 			(Computed_field_curve_package *)
 			computed_field_curve_package_void))
@@ -515,11 +466,12 @@ already) and allows its contents to be modified.
 		/* get valid parameters for projection field */
 		source_field = (struct Computed_field *)NULL;
 		curve = (struct Curve *)NULL;
-		if (computed_field_curve_lookup_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_curve_lookup_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
 			return_code =
-				Computed_field_get_type_curve_lookup(field, &source_field, &curve);
+				Computed_field_get_type_curve_lookup(field_modify->get_field(), &source_field, &curve);
 		}
 		if (return_code)
 		{
@@ -540,7 +492,7 @@ already) and allows its contents to be modified.
 				set_Curve);
 			/* source */
 			set_source_field_data.computed_field_manager =
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_source_field_data.conditional_function = Computed_field_is_scalar;
 			set_source_field_data.conditional_function_user_data = (void *)NULL;
 			Option_table_add_entry(option_table, "source", &source_field,
@@ -549,8 +501,9 @@ already) and allows its contents to be modified.
 			/* no errors,not asking for help */
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_curve_lookup(field, source_field,
-					curve, computed_field_curve_package->curve_manager);
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_curve_lookup(field_modify->get_field_factory(),
+						source_field, curve, computed_field_curve_package->curve_manager));
 			}
 			if (!return_code)
 			{

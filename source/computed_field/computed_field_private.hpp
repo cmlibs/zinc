@@ -62,35 +62,56 @@ extern "C" {
 }
 
 /**
- * Argument to field modifier functions containing field to be modified,
- * and the region which source fields should be chosen from.
+ * Argument to field modifier functions supplying region, default name,
+ * coordinate system etc.
+ * Previously had other parameters, but now just wraps the field_factory.
  */
 class Computed_field_modify_data
 {
+private:
+	Cmiss_field_factory *field_factory;
+
 public:
-	struct Computed_field *field;
-	struct Cmiss_region *region;
-	bool no_change;
-	
-	Computed_field_modify_data(struct Computed_field *field,
-		struct Cmiss_region *region) :
-		field(field),
-		region(region),
-		no_change(false)
+	Computed_field_modify_data(
+		struct Cmiss_field_factory *field_factory) :
+		field_factory(field_factory)
 	{
-	}
+	};
+
+	~Computed_field_modify_data()
+	{
+	};
+
+	Cmiss_field_factory *get_field_factory()
+	{
+		return field_factory;
+	};
 
 	/**
-	 * Call if define field function has not modified field
-	 * Notably called by finite_element field type since that field modifies
-	 * FE_field and relies on callbacks to update computed field wrapper.
+	 * Take ownership of field reference so caller does not need
+	 * to deaccess the supplied field.
+	 * 
+	 * @param new_field  Field to take ownership of. 
+	 * @return  1 if field supplied, 0 if not.
 	 */
-	void set_no_change() { no_change = true; };
-	
+	int update_field_and_deaccess(Computed_field *new_field)
+	{
+		if (new_field)
+		{
+			DEACCESS(Computed_field)(&new_field);
+			return 1;
+		}
+		return 0;
+	};
+
 	/**
-	 * @return true if field has been modified, false if not
+	 * Get existing field to replace, if any.
 	 */
-	bool is_field_changed() const { return !no_change; };
+	Computed_field *get_field();
+
+	Cmiss_region *get_region();
+
+	MANAGER(Computed_field) *get_field_manager();
 };
 
 class Computed_field_type_package
@@ -161,8 +182,8 @@ protected:
 	struct Computed_field *field;
 
 public:
-	Computed_field_core(Computed_field *parent = (Computed_field*)NULL)
-		: field(parent)
+	Computed_field_core()
+		: field(NULL)
 	{
 	};
 
@@ -170,7 +191,34 @@ public:
 	{
 	};
 
-	virtual Computed_field_core *copy(Computed_field* parent) = 0;
+	/**
+	 * Last stage of construction - attach to parent field. Override to perform
+	 * additional tasks after calling base class attach_to_field.
+	 * NOTE: do not modify parent field in this function - use
+	 * inherit_source_field_attributes() to copy default coordinate system
+	 * from source fields, etc.
+	 *
+	 * @param parent  Field to attach core to
+	 * @return  true on success, false if construction of field failed.  
+	 */
+	virtual bool attach_to_field(Computed_field* parent)
+	{
+		if (parent)
+		{
+			field = parent;
+			return true;
+		}
+		return false;
+	};
+
+	/**
+	 * Override to inherit attributes such as coordinate system from source fields.
+	 */
+	virtual void inherit_source_field_attributes()
+	{
+	};
+	
+	virtual Computed_field_core *copy() = 0;
 
 	virtual char *get_type_string() = 0;
 
@@ -320,24 +368,7 @@ DESCRIPTION :
 	struct MANAGER(Computed_field) *manager;
 
 	/** Mode/flags controlling how this field is managed by a region. */
-	enum Managed_status
-	{
-		/** If bit set, remove from region when unused / access_count reduced to 1 */
-		REMOVE_IF_UNUSED_BIT = 4,
-
-		/** Field is not managed by a region */
-		UNMANAGED = 0,
-
-		/** Field is managed by region with public visibility */
-		MANAGED_PUBLIC = 1,
-
-		/** Field is managed by region with private visibility */
-		MANAGED_PRIVATE = 3,
-
-		/** Field is managed by region with private visibility, and is volatile */
-		MANAGED_PRIVATE_VOLATILE = MANAGED_PRIVATE + REMOVE_IF_UNUSED_BIT
-	};
-	Managed_status managed_status;
+	enum Computed_field_managed_status managed_status;
 
 }; /* struct Computed_field */
 
@@ -347,42 +378,28 @@ Computed field functions
 Functions used only internally to computed fields or the region that owns them.
 */
 
-struct Computed_field_constructor *CREATE(Computed_field_constructor)
-	(Computed_field_core *core, int number_of_components);
-/*******************************************************************************
-LAST MODIFIED : 9 May 2008
-
-DESCRIPTION :
-Creates a structure representing a type of computed field.
-==============================================================================*/
-
-int DESTROY(Computed_field_constructor)
-	(struct Computed_field_constructor **type_address);
-/*******************************************************************************
-LAST MODIFIED : 9 May 2008
-
-DESCRIPTION :
-Frees memory/deaccess data at <*type_address>.
-==============================================================================*/
-
-int Computed_field_constructor_add_source_field(
-	struct Computed_field_constructor *field_type,
-	struct Computed_field *source_field);
-/*******************************************************************************
-LAST MODIFIED : 9 May 2008
-
-DESCRIPTION :
-Add the <source_field> to the list of fields referenced by <field_type>.
-==============================================================================*/
-
-int Computed_field_constructor_add_source_value(
-	struct Computed_field_constructor *field_type, FE_value source_value);
-/*******************************************************************************
-LAST MODIFIED : 9 May 2008
-
-DESCRIPTION :
-Add the <value> to the list of values referenced by <field_type>.
-==============================================================================*/
+/***************************************************************************//**
+ * Creates a new computed field with the supplied content and for the region
+ * specified by the field_factory.
+ * 
+ * @param field_factory  Specifies region to add field to default parameters.
+ * @param check_source_field_regions  If set to true, require all source fields
+ * to be from the same region as the field_factory. If false skip this checks.
+ * @param number_of_components  Number of components the new field will have.
+ * @param number_of_source_fields  Size of source_fields array.
+ * @param source_fields  Array of source fields for the new field.
+ * @param number_of_source_values  Size of source_values array.
+ * @param source_values  Array of source values for the new field.
+ * @param field_core  Field type-specific data and implementation. On success,
+ * ownership of field_core object passes to the new field.
+ * @return  Newly created field, or NULL on failure.
+ */
+Computed_field *Computed_field_create_generic(
+	Cmiss_field_factory *field_factory, bool check_source_field_regions,
+	int number_of_components,
+	int number_of_source_fields, Computed_field **source_fields,
+	int number_of_source_values, double *source_values,
+	Computed_field_core *field_core);
 
 /***************************************************************************//**
  * Sets the Cmiss_region_fields object which will own this manager.
@@ -402,6 +419,15 @@ int Computed_field_manager_set_owner(struct MANAGER(Computed_field) *manager,
  * @return  A handle to the owning region fields object or NULL if none.
  */
 struct Cmiss_region_fields *Computed_field_get_owner(struct Computed_field *field);
+
+/***************************************************************************//**
+ * Gets the Cmiss_region owning this field manager.
+ * 
+ * @param manager  Computed field manager.
+ * @return  The owning Cmiss_region object.
+ */
+struct Cmiss_region *Computed_field_manager_get_region(
+	struct MANAGER(Computed_field) *manager);
 
 int Computed_field_changed(struct Computed_field *field,
 	struct MANAGER(Computed_field) *computed_field_manager);
@@ -447,19 +473,6 @@ This may be different from the name when it contains characters invalid for
 using as an identifier in the manager, such as spaces or punctuation.
 ==============================================================================*/
 
-int Computed_field_clear_type(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 18 June 1999
-
-DESCRIPTION :
-Used internally by DESTROY and Computed_field_set_type_*() functions to
-deallocate or deaccess data specific to any Computed_field_type. Functions
-changing the type of the Computed_field should allocate any dynamic data needed
-for the type, call this function to clear what is currently in the field and
-then set values - that way the field will never be left in an invalid state.
-Calls Computed_field_clear_cache before clearing the type.
-==============================================================================*/
-
 int Computed_field_contents_match(struct Computed_field *field,
 	void *other_computed_field_void);
 /*******************************************************************************
@@ -469,22 +482,6 @@ DESCRIPTION :
 Iterator/conditional function returning true if contents of <field> other than
 its name matches the contents of the <other_computed_field_void>.
 ==============================================================================*/
-
-/***************************************************************************//**
- * Copy the type specific parts of <source> field to <destination>, namely the
- * number_of_components, the source_fields, the soure_values and the core. 
- * The <source> field is then DEACCESSED.
- * Chiefly used in gfx define field commands to copy a new field's contents over
- * an existing field.
- * Note: destination may not be managed since this function could destroy
- * volatile source fields, sending change messages while destination is corrupt.
- * 
- * @destination  Field being modified to have a copy of type-specific data.
- * @source  Field providing the type-specific data. Deaccessed at end.
- * @return  1 on success, 0 on failure.
- */
-int Computed_field_copy_type_specific_and_deaccess(
-	struct Computed_field *destination, struct Computed_field *source);
 
 int Computed_field_default_clear_type_specific(struct Computed_field *field);
 /*******************************************************************************
@@ -534,6 +531,7 @@ Sets the coordinate system of the <field> to match that of it's sources.
 ==============================================================================*/
 
 int Computed_field_broadcast_field_components(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field **field_one, struct Computed_field **field_two);
 /*******************************************************************************
 LAST MODIFIED : 31 March 2008
@@ -734,6 +732,122 @@ int Computed_field_check_manager(struct Computed_field *field,
  */
 int Computed_field_manage(struct Computed_field *field, 
 	struct MANAGER(Computed_field) *manager,
-	Computed_field::Managed_status managed_status);
+	enum Computed_field_managed_status managed_status);
+
+/***************************************************************************//**
+ * Creates field factory object needed to create fields in supplied region.
+ * Also used to set new field default arguments prior to create.
+ *
+ * @param region  The region which the field factory can create fields in.
+ * @return  Field factory object.
+ */
+struct Cmiss_field_factory *Cmiss_field_factory_create(struct Cmiss_region *region);
+
+/***************************************************************************//**
+ * Gets the region this field factory can create fields for.
+ *
+ * @param field_factory  The field factory to create fields with.
+ * @return  Owning region for field_factory.
+ */
+struct Cmiss_region *Cmiss_field_factory_get_region(
+	struct Cmiss_field_factory *field_factory);
+
+/***************************************************************************//**
+ * Sets the name (or name stem if non-unique) of the next field to be created
+ * with this field_factory.
+ *
+ * @param field_factory  The field factory to create fields with.
+ * @param field_name  Field name or name stem.
+ * @return  Non-zero on success, 0 on failure.
+ */
+int Cmiss_field_factory_set_field_name(struct Cmiss_field_factory *field_factory,
+	const char *field_name);
+
+/***************************************************************************//**
+ * Gets a copy of the field name/stem set in this field_factory.
+ * Up to caller to DEALLOCATE.
+ *
+ * @param field_factory  The field factory to create fields with.
+ * @return  Allocated copy of the name, or NULL if none.
+ */
+char *Cmiss_field_factory_get_field_name(
+	struct Cmiss_field_factory *field_factory);
+
+/***************************************************************************//**
+ * Sets the coordinate system to be used for subsequent fields created with
+ * this field factory.
+ *
+ * @param field_factory  The field factory to create fields with.
+ * @param coordinate_system  The coordinate system to set.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_factory_set_coordinate_system(
+	struct Cmiss_field_factory *field_factory,
+	struct Coordinate_system coordinate_system);
+
+/***************************************************************************//**
+ * Returns the default coordinate system set in the field_factory.
+ *
+ * @param field_factory  The field factory to create fields with.
+ * @return  Copy of default coordinate system.
+ */
+struct Coordinate_system Cmiss_field_factory_get_coordinate_system(
+	struct Cmiss_field_factory *field_factory);
+
+/***************************************************************************//**
+ * Returns true if the default coordinate system has been explicitly set. 
+ *
+ * @param field_factory  The field factory to create fields with.
+ * @return  1 if coordinate system set, 0 if never set.
+ */
+int Cmiss_field_factory_coordinate_system_is_set(
+	struct Cmiss_field_factory *field_factory);
+
+/***************************************************************************//**
+ * Sets the public/private persistent/volatile default managed status flags for
+ * the next field to be created.
+ *
+ * @param field_factory  The field factory to create fields with.
+ * @param new_managed_status  Managed status flags to use for next field create.
+ * @return  Non-zero on success, 0 on failure.
+ */
+int Cmiss_field_factory_set_managed_status(
+	struct Cmiss_field_factory *field_factory,
+	enum Computed_field_managed_status new_managed_status);
+
+/***************************************************************************//**
+ * Gets the public/private persistent/volatile default managed status flags for
+ * the next field to be created.
+ *
+ * @param field_factory  The field factory to create fields with.
+ * @return  Field managed status flags.
+ */
+enum Computed_field_managed_status Cmiss_field_factory_get_managed_status(
+	struct Cmiss_field_factory *field_factory);
+
+/***************************************************************************//**
+ * Sets the replace_field that will be redefined by the next field
+ * created with the field factory. Cleared after next field create call.
+ * Field name and coordinate system defaults are taken from supplied field.
+ *
+ * @param field_factory  The field factory to create fields with.
+ * @param replace_field  Existing field to be overwritten on next create. Can
+ * be NULL to clear.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_factory_set_replace_field(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *replace_field);
+
+/***************************************************************************//**
+ * Gets the replace_field, if any, that will be redefined by the next field
+ * created with the field factory. Cleared after next field create call.
+ *
+ * @param field_factory  The field factory to create fields with.
+ * @return  Existing field to be replaced which caller must deaccess, or NULL
+ * if none.
+ */
+struct Computed_field *Cmiss_field_factory_get_replace_field(
+	struct Cmiss_field_factory *field_factory);
 
 #endif /* !defined (COMPUTED_FIELD_PRIVATE_H) */

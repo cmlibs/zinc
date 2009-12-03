@@ -50,19 +50,24 @@ and real values in any order into a single vector field.
 #if !defined (COMPUTED_FIELD_FUNCTION_H)
 #define COMPUTED_FIELD_FUNCTION_H
 
-int Computed_field_set_type_function(struct Computed_field *field,
+/***************************************************************************//**
+ * Converts a "function" type field which returns the values of <result_field>
+ * with respect to the <source_field> values being the inputs for
+ * <reference_field>.
+ * The sequence of operations <reference_field> to <result_field>
+ * becomes a function operating on the input <source_field> values.
+ * Either the number of components in the <source_field> and <reference_field>
+ * should be the same, and then the number of components of this <field>
+ * will be the same as the number of components in the <result_field>,
+ * or if the <reference_field> and <result_field> are scalar then the
+ * function operation will be applied as many times as required for each
+ * component in the <source_field> and then this <field> will have as many
+ * components as the <source_field>.
+ */
+struct Computed_field *Computed_field_create_function(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, struct Computed_field *result_field,
 	struct Computed_field *reference_field);
-/*******************************************************************************
-LAST MODIFIED : 31 March 2008
-
-DESCRIPTION :
-Converts <field> into a function field which returns the values of
-<result_field> with respect to the <source_field> values 
-being the inputs for <reference_field>.
-The sequence of operations <reference_field> to <result_field> 
-become a function operating on the input <source_field> values.
-==============================================================================*/
 
 int Computed_field_get_type_function(struct Computed_field *field,
 	struct Computed_field **source_field, struct Computed_field **result_field,

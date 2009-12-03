@@ -219,14 +219,14 @@ char computed_field_coordinate_transformation_type_string[] = "coordinate_transf
 class Computed_field_coordinate_transformation : public Computed_field_core
 {
 public:
-	Computed_field_coordinate_transformation(Computed_field *field) : Computed_field_core(field)
+	Computed_field_coordinate_transformation() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_coordinate_transformation(new_parent);
+		return new Computed_field_coordinate_transformation();
 	}
 
 	char *get_type_string()
@@ -531,54 +531,19 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_coordinate_transformation(
-	struct Computed_field *field, struct Computed_field *source_field)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_COORDINATE_TRANSFORMATION with the supplied
-<source_field>.  Sets the number of components equal to the <source_field>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
+struct Computed_field *Computed_field_create_coordinate_transformation(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *source_field)
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
+	Computed_field *field = Computed_field_create_generic(field_factory,
+		/*check_source_field_regions*/true,
+		/*number_of_components*/3,
+		/*number_of_source_fields*/1, &source_field,
+		/*number_of_source_values*/0, NULL,
+		new Computed_field_coordinate_transformation());
 
-	ENTER(Computed_field_set_type_coordinate_transformation);
-	if (field&&source_field)
-	{
-		return_code=1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->number_of_components = 3;
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_coordinate_transformation(field);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_coordinate_transformation.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_coordinate_transformation */
+	return (field);
+}
 
 int Computed_field_get_type_coordinate_transformation(struct Computed_field *field,
 	struct Computed_field **source_field)
@@ -620,24 +585,24 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field,*source_field;
+	struct Computed_field *source_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_coordinate_transformation);
 	USE_PARAMETER(computed_field_coordinate_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code = 1;
 		/* get valid parameters for projection field */
 		source_field = (struct Computed_field *)NULL;
-		if (computed_field_coordinate_transformation_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_coordinate_transformation_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
 			return_code =
-				Computed_field_get_type_coordinate_transformation(field, &source_field);
+				Computed_field_get_type_coordinate_transformation(field_modify->get_field(), &source_field);
 		}
 		if (return_code)
 		{
@@ -649,7 +614,7 @@ already) and allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* field */
 			set_source_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_source_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -659,7 +624,9 @@ already) and allows its contents to be modified.
 			/* no errors,not asking for help */
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_coordinate_transformation(field, source_field);
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_coordinate_transformation(
+						field_modify->get_field_factory(), source_field));
 			}
 			if (!return_code)
 			{
@@ -697,14 +664,14 @@ char computed_field_vector_coordinate_transformation_type_string[] = "vector_coo
 class Computed_field_vector_coordinate_transformation : public Computed_field_core
 {
 public:
-	Computed_field_vector_coordinate_transformation(Computed_field *field) : Computed_field_core(field)
+	Computed_field_vector_coordinate_transformation() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_vector_coordinate_transformation(new_parent);
+		return new Computed_field_vector_coordinate_transformation();
 	}
 
 	char *get_type_string()
@@ -1004,76 +971,48 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_vector_coordinate_transformation(
-	struct Computed_field *field,
-	struct Computed_field *vector_field,struct Computed_field *coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_RC_VECTOR, combining a vector field
-supplying a single vector (1,2 or 3 components), two vectors (4 or 6 components)
-or three vectors (9 components) with a coordinate field. This field type ensures
-that each source vector is converted to RC coordinates at the position given by
-the coordinate field - as opposed to RC_COORDINATE which assumes the
-transformation is always based at the origin.
-Sets the number of components to 3 times the number of vectors expected from
-the source vector_field.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
+struct Computed_field *Computed_field_create_vector_coordinate_transformation(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *vector_field, struct Computed_field *coordinate_field)
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_vector_coordinate_transformation);
-	if (field&&vector_field&&coordinate_field&&
-		Computed_field_is_orientation_scale_capable(vector_field,(void *)NULL)&&
+	Computed_field *field = NULL;
+	if (field_factory && vector_field && coordinate_field&&
+		Computed_field_is_orientation_scale_capable(vector_field, (void *)NULL) &&
 		Computed_field_has_up_to_3_numerical_components(coordinate_field,
 			(void *)NULL))
 	{
-		return_code=1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=2;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
+		int number_of_components = 0;
+		if (3 >= vector_field->number_of_components)
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			if (3 >= vector_field->number_of_components)
-			{
-				field->number_of_components=3;
-			}
-			else if (6 >= vector_field->number_of_components)
-			{
-				field->number_of_components=6;
-			}
-			else
-			{
-				field->number_of_components=9;
-			}
-			source_fields[0]=ACCESS(Computed_field)(vector_field);
-			source_fields[1]=ACCESS(Computed_field)(coordinate_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_vector_coordinate_transformation(field);
+			number_of_components = 3;
+		}
+		else if (6 >= vector_field->number_of_components)
+		{
+			number_of_components = 6;
 		}
 		else
 		{
-			DEALLOCATE(source_fields);
-			return_code=0;
+			number_of_components = 9;
 		}
+		Computed_field *source_fields[2];
+		source_fields[0] = vector_field;
+		source_fields[1] = coordinate_field;
+
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			number_of_components,
+			/*number_of_source_fields*/2, source_fields,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_vector_coordinate_transformation());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_vector_coordinate_transformation.  Invalid argument(s)");
-		return_code=0;
+			"Computed_field_create_vector_coordinate_transformation.  Invalid argument(s)");
 	}
-	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_vector_coordinate_transformation */
+	return (field);
+}
 
 int Computed_field_get_type_vector_coordinate_transformation(struct Computed_field *field,
 	struct Computed_field **vector_field,
@@ -1119,7 +1058,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *coordinate_field,*field,*vector_field;
+	struct Computed_field *coordinate_field,*vector_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
@@ -1127,17 +1066,17 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_vector_coordinate_transformation);
 	USE_PARAMETER(computed_field_coordinate_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
 		coordinate_field = (struct Computed_field *)NULL;
 		vector_field = (struct Computed_field *)NULL;
-		if (computed_field_vector_coordinate_transformation_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_vector_coordinate_transformation_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code=Computed_field_get_type_vector_coordinate_transformation(field, &vector_field, &coordinate_field);
+			return_code=Computed_field_get_type_vector_coordinate_transformation(field_modify->get_field(), &vector_field, &coordinate_field);
 		}
 		if (return_code)
 		{
@@ -1153,7 +1092,7 @@ already) and allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* coordinate */
 			set_coordinate_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
@@ -1161,7 +1100,7 @@ already) and allows its contents to be modified.
 				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* vector */
 			set_vector_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_vector_field_data.conditional_function=
 				Computed_field_is_orientation_scale_capable;
 			set_vector_field_data.conditional_function_user_data=(void *)NULL;
@@ -1171,8 +1110,9 @@ already) and allows its contents to be modified.
 			/* no errors,not asking for help */
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_vector_coordinate_transformation(
-					field, vector_field, coordinate_field);
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_vector_coordinate_transformation(
+						field_modify->get_field_factory(), vector_field, coordinate_field));
 			}
 			if (!return_code)
 			{

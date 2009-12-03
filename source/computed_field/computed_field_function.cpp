@@ -72,7 +72,7 @@ class Computed_field_function : public Computed_field_core
 {
 public:
 
-	Computed_field_function(Computed_field *field) : Computed_field_core(field)
+	Computed_field_function() : Computed_field_core()
 	{
 	}
 
@@ -81,7 +81,7 @@ public:
 	}
 
 private:
-	Computed_field_core* copy(Computed_field* new_parent);
+	Computed_field_core* copy();
 
 	char* get_type_string()
 	{
@@ -100,31 +100,12 @@ private:
 
 };
 
-Computed_field_core* Computed_field_function::copy(Computed_field *new_parent)
-/*******************************************************************************
-LAST MODIFIED : 31 March 2008
-
-DESCRIPTION :
-Copy the type specific data used by this type.
-==============================================================================*/
+Computed_field_core* Computed_field_function::copy()
 {
-	Computed_field_function* core;
-
-	ENTER(Computed_field_function::copy);
-	if (new_parent)
-	{
-		core = new Computed_field_function(new_parent);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_function::copy.  Invalid arguments.");
-		core = (Computed_field_function*)NULL;
-	}
-	LEAVE;
+	Computed_field_function* core = new Computed_field_function();
 
 	return (core);
-} /* Computed_field_function::copy */
+}
 
 int Computed_field_function::compare(Computed_field_core *other_core)
 /*******************************************************************************
@@ -416,91 +397,48 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_function(Computed_field *field,
-	Computed_field *source_field, Computed_field *result_field,
-	Computed_field *reference_field)
-/*******************************************************************************
-LAST MODIFIED : 31 March 2008
-
-DESCRIPTION :
-Converts <field> into a function field which returns the values of
-<result_field> with respect to the <source_field> values 
-being the inputs for <reference_field>.
-The sequence of operations <reference_field> to <result_field> 
-become a function operating on the input <source_field> values.
-Either the number of components in the <source_field> and <reference_field>
-should be the same, and then the number of components of this <field>
-will be the same as the number of components in the <result_field>,
-or if the <reference_field> and <result_field> are scalar then the
-function operation will be applied as many times as required for each 
-component in the <source_field> and then this <field> will have as many
-components as the <source_field>.
-==============================================================================*/
+struct Computed_field *Computed_field_create_function(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *source_field, struct Computed_field *result_field,
+	struct Computed_field *reference_field)
 {
-	int number_of_source_fields, return_code;
-	Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_function);
-	if (field&&source_field&&result_field&&reference_field)
-	{
-		return_code = 1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields = 3;
-		if ((source_field->number_of_components ==
+	Computed_field *field = NULL;
+	if (source_field && result_field && reference_field &&
+		((source_field->number_of_components ==
 			reference_field->number_of_components) ||
-			((1 == reference_field->number_of_components)
-				&& (1 == result_field->number_of_components)))
-
+			((1 == reference_field->number_of_components) &&
+			 (1 == result_field->number_of_components))))
+	{
+		int number_of_components = 0;
+		if ((source_field->number_of_components ==
+			reference_field->number_of_components))
 		{
-			if (ALLOCATE(source_fields, Computed_field *,
-					number_of_source_fields))
-			{
-				/* 2. free current type-specific data */
-				Computed_field_clear_type(field);
-				/* 3. establish the new type */
-				if ((source_field->number_of_components ==
-						reference_field->number_of_components))
-				{
-					field->number_of_components=
-						result_field->number_of_components;
-				}
-				else
-				{
-					field->number_of_components=
-						source_field->number_of_components;
-				}
-				source_fields[0]=ACCESS(Computed_field)(source_field);
-				source_fields[1]=ACCESS(Computed_field)(result_field);
-				source_fields[2]=ACCESS(Computed_field)(reference_field);
-				field->source_fields=source_fields;
-				field->number_of_source_fields=number_of_source_fields;
-
-				field->core = new Computed_field_function(field);
-			}
-			else
-			{
-				DEALLOCATE(source_fields);
-				return_code = 0;
-			}
+			number_of_components = result_field->number_of_components;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_function.  "
-				"Incompatible fields");
-			return_code=0;
+			number_of_components = source_field->number_of_components;
 		}
+		Computed_field *source_fields[3];
+		source_fields[0] = source_field;
+		source_fields[1] = result_field;
+		source_fields[2] = reference_field;
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			number_of_components,
+			/*number_of_source_fields*/3, source_fields,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_function());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_function.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_function.  Invalid argument(s)");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_function */
+	return (field);
+}
 
 int Computed_field_get_type_function(Computed_field *field,
 	Computed_field **source_field, Computed_field **result_field,
@@ -548,7 +486,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	Computed_field *field, *source_field, *result_field,
+	Computed_field *source_field, *result_field,
 		*reference_field;
 	Computed_field_function_package *computed_field_function_package;
 	Computed_field_modify_data *field_modify;
@@ -560,8 +498,7 @@ already) and allows its contents to be modified.
 	computed_field_function_package =
 	  (Computed_field_function_package *)
 	  computed_field_function_package_void;
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field) &&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void) &&
 	    (computed_field_function_package != NULL))
 	{
 		USE_PARAMETER(computed_field_function_package);
@@ -570,10 +507,11 @@ already) and allows its contents to be modified.
 		result_field = (Computed_field *)NULL;
 		reference_field = (Computed_field *)NULL;
 
-		if (computed_field_function_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_function_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code = Computed_field_get_type_function(field, 
+			return_code = Computed_field_get_type_function(field_modify->get_field(), 
 				&source_field, &result_field,
 				&reference_field);
 		}
@@ -598,7 +536,7 @@ already) and allows its contents to be modified.
 				"The value of a function field is found by evaluating the <source_field> values, and then evaluating the <result_field> with respect to the <reference_field> using the values from the source field.  The sequence of operations <reference_field> to <result_field> become a function operating on the input <source_field> values.  Either the number of components in the <source_field> and <reference_field> should be the same, and then the number of components of this <field> will be the same as the number of components in the <result_field>, or if the <reference_field> and <result_field> are scalar then the function operation will be applied as many times as required for each component in the <source_field> and then this <field> will have as many components as the <source_field>.");
 			/* reference_field */
 			set_reference_field_data.computed_field_manager =
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_reference_field_data.conditional_function = 
 				Computed_field_has_numerical_components;
 			set_reference_field_data.conditional_function_user_data = 
@@ -608,7 +546,7 @@ already) and allows its contents to be modified.
 				set_Computed_field_conditional);
 			/* result_field */
 			set_result_field_data.computed_field_manager =
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_result_field_data.conditional_function = 
 				Computed_field_has_numerical_components;
 			set_result_field_data.conditional_function_user_data = 
@@ -618,7 +556,7 @@ already) and allows its contents to be modified.
 				set_Computed_field_conditional);
 			/* source_field */
 			set_source_field_data.computed_field_manager =
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_source_field_data.conditional_function = 
 				Computed_field_has_numerical_components;
 			set_source_field_data.conditional_function_user_data = 
@@ -630,8 +568,9 @@ already) and allows its contents to be modified.
 			/* no errors,not asking for help */
 			if (return_code)
 			{
-				return_code=Computed_field_set_type_function(field,
-					source_field, result_field, reference_field);
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_function(field_modify->get_field_factory(),
+						source_field, result_field, reference_field));
 			}
 			if (!return_code)
 			{

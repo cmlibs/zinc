@@ -66,14 +66,14 @@ char computed_field_or_type_string[] = "or";
 class Computed_field_or : public Computed_field_core
 {
 public:
-	Computed_field_or(Computed_field *field) : Computed_field_core(field)
+	Computed_field_or() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_or(new_parent);
+		return new Computed_field_or();
 	}
 
 	char *get_type_string()
@@ -148,66 +148,42 @@ Evaluate the fields cache at the element.
 } //namespace
 
 Computed_field *Computed_field_create_or(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_XYZ with the supplied
-field, <source_field> .  Sets the number of 
-components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int number_of_source_fields;
-	Computed_field *field, **source_fields;
-
-	ENTER(Computed_field_create_or);
-	if (
-		/* Access and broadcast before checking components match,
-			the source_field_one and source_field_two will get replaced
-			if necessary. */
-		ACCESS(Computed_field)(source_field_one) &&
-		ACCESS(Computed_field)(source_field_two) &&
-		Computed_field_broadcast_field_components(
+	Computed_field *field = NULL;
+	/* Access and broadcast before checking components match,
+		the local source_field_one and source_field_two will 
+		get replaced if necessary. */
+	ACCESS(Computed_field)(source_field_one);
+	ACCESS(Computed_field)(source_field_two);
+	if (field_factory && source_field_one && source_field_two &&
+		Computed_field_broadcast_field_components(field_factory,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=2;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. create new field */
-			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-			/* 3. establish the new type */
-			field->number_of_components = source_field_one->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field_one);
-			source_fields[1]=ACCESS(Computed_field)(source_field_two);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_or(field);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			field = (Computed_field *)NULL;
-		}
-		DEACCESS(Computed_field)(&source_field_one);
-		DEACCESS(Computed_field)(&source_field_two);
+		Computed_field *source_fields[2];
+		source_fields[0] = source_field_one;
+		source_fields[1] = source_field_two;
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			source_field_one->number_of_components,
+			/*number_of_source_fields*/2, source_fields,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_or());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_create_or.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
 	}
-	LEAVE;
+	DEACCESS(Computed_field)(&source_field_one);
+	DEACCESS(Computed_field)(&source_field_two);
 
 	return (field);
-} /* Computed_field_create_or */
+}
 
 int Computed_field_get_type_or(struct Computed_field *field,
 	struct Computed_field **source_field_one,
@@ -251,7 +227,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field,**source_fields;
+	struct Computed_field **source_fields;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -259,8 +235,7 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_or);
 	USE_PARAMETER(computed_field_logical_operators_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -269,10 +244,11 @@ already) and allows its contents to be modified.
 		{
 			source_fields[0] = (struct Computed_field *)NULL;
 			source_fields[1] = (struct Computed_field *)NULL;
-			if (computed_field_or_type_string ==
-				Computed_field_get_type_string(field))
+			if ((NULL != field_modify->get_field()) &&
+				(computed_field_or_type_string ==
+					Computed_field_get_type_string(field_modify->get_field())))
 			{
-				return_code=Computed_field_get_type_or(field, 
+				return_code=Computed_field_get_type_or(field_modify->get_field(), 
 					source_fields, source_fields + 1);
 			}
 			if (return_code)
@@ -289,7 +265,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
 				set_source_field_array_data.number_of_fields=2;
@@ -300,8 +276,9 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_or(
-						source_fields[0], source_fields[1]));
+					return_code = field_modify->update_field_and_deaccess(
+						Computed_field_create_or(field_modify->get_field_factory(),
+							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
 				{
@@ -351,14 +328,14 @@ char computed_field_and_type_string[] = "and";
 class Computed_field_and : public Computed_field_core
 {
 public:
-	Computed_field_and(Computed_field *field) : Computed_field_core(field)
+	Computed_field_and() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_and(new_parent);
+		return new Computed_field_and();
 	}
 
 	char *get_type_string()
@@ -435,66 +412,42 @@ Evaluate the fields cache at the element.
 } //namespace
 
 Computed_field *Computed_field_create_and(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_AND with the supplied
-field, <source_field> .  Sets the number of 
-components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int number_of_source_fields;
-	Computed_field *field, **source_fields;
-
-	ENTER(Computed_field_create_and);
-	if (
-		/* Access and broadcast before checking components match,
-			the source_field_one and source_field_two will get replaced
-			if necessary. */
-		ACCESS(Computed_field)(source_field_one) &&
-		ACCESS(Computed_field)(source_field_two) &&
-		Computed_field_broadcast_field_components(
+	Computed_field *field = NULL;
+	/* Access and broadcast before checking components match,
+		the local source_field_one and source_field_two will 
+		get replaced if necessary. */
+	ACCESS(Computed_field)(source_field_one);
+	ACCESS(Computed_field)(source_field_two);
+	if (field_factory && source_field_one && source_field_two &&
+		Computed_field_broadcast_field_components(field_factory,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=2;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. create new field */
-			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-			/* 3. establish the new type */
-			field->number_of_components = source_field_one->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field_one);
-			source_fields[1]=ACCESS(Computed_field)(source_field_two);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_and(field);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			field = (Computed_field *)NULL;
-		}
-		DEACCESS(Computed_field)(&source_field_one);
-		DEACCESS(Computed_field)(&source_field_two);
+		Computed_field *source_fields[2];
+		source_fields[0] = source_field_one;
+		source_fields[1] = source_field_two;
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			source_field_one->number_of_components,
+			/*number_of_source_fields*/2, source_fields,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_and());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_and.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
+			"Computed_field_create_or.  Invalid argument(s)");
 	}
-	LEAVE;
+	DEACCESS(Computed_field)(&source_field_one);
+	DEACCESS(Computed_field)(&source_field_two);
 
 	return (field);
-} /* Computed_field_create_and */
+}
 
 int Computed_field_get_type_and(struct Computed_field *field,
 	struct Computed_field **source_field_one,
@@ -538,7 +491,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field,**source_fields;
+	struct Computed_field **source_fields;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -546,8 +499,7 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_and);
 	USE_PARAMETER(computed_field_logical_operators_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -556,10 +508,11 @@ already) and allows its contents to be modified.
 		{
 			source_fields[0] = (struct Computed_field *)NULL;
 			source_fields[1] = (struct Computed_field *)NULL;
-			if (computed_field_and_type_string ==
-				Computed_field_get_type_string(field))
+			if ((NULL != field_modify->get_field()) &&
+				(computed_field_and_type_string ==
+					Computed_field_get_type_string(field_modify->get_field())))
 			{
-				return_code=Computed_field_get_type_and(field, 
+				return_code=Computed_field_get_type_and(field_modify->get_field(), 
 					source_fields, source_fields + 1);
 			}
 			if (return_code)
@@ -576,7 +529,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
 				set_source_field_array_data.number_of_fields=2;
@@ -587,8 +540,9 @@ already) and allows its contents to be modified.
 				/* no errands,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_and(
-						source_fields[0], source_fields[1]));
+					return_code = field_modify->update_field_and_deaccess(
+						Computed_field_create_and(field_modify->get_field_factory(),
+							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
 				{
@@ -638,14 +592,14 @@ char computed_field_xor_type_string[] = "xor";
 class Computed_field_xor : public Computed_field_core
 {
 public:
-	Computed_field_xor(Computed_field *field) : Computed_field_core(field)
+	Computed_field_xor() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_xor(new_parent);
+		return new Computed_field_xor();
 	}
 
 	char *get_type_string()
@@ -727,66 +681,42 @@ Evaluate the fields cache at the element.
 } //namespace
 
 Computed_field *Computed_field_create_xor(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_XOR with the supplied
-field, <source_field> .  Sets the number of 
-components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int number_of_source_fields;
-	Computed_field *field, **source_fields;
-
-	ENTER(Computed_field_create_xor);
-	if (
-		/* Access and broadcast before checking components match,
-			the source_field_one and source_field_two will get replaced
-			if necessary. */
-		ACCESS(Computed_field)(source_field_one) &&
-		ACCESS(Computed_field)(source_field_two) &&
-		Computed_field_broadcast_field_components(
+	Computed_field *field = NULL;
+	/* Access and broadcast before checking components match,
+		the local source_field_one and source_field_two will 
+		get replaced if necessary. */
+	ACCESS(Computed_field)(source_field_one);
+	ACCESS(Computed_field)(source_field_two);
+	if (field_factory && source_field_one && source_field_two &&
+		Computed_field_broadcast_field_components(field_factory,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=2;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. create new field */
-			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-			/* 3. establish the new type */
-			field->number_of_components = source_field_one->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field_one);
-			source_fields[1]=ACCESS(Computed_field)(source_field_two);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_xor(field);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			field = (Computed_field *)NULL;
-		}
-		DEACCESS(Computed_field)(&source_field_one);
-		DEACCESS(Computed_field)(&source_field_two);
+		Computed_field *source_fields[2];
+		source_fields[0] = source_field_one;
+		source_fields[1] = source_field_two;
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			source_field_one->number_of_components,
+			/*number_of_source_fields*/2, source_fields,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_xor());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_xor.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
+			"Computed_field_create_or.  Invalid argument(s)");
 	}
-	LEAVE;
+	DEACCESS(Computed_field)(&source_field_one);
+	DEACCESS(Computed_field)(&source_field_two);
 
 	return (field);
-} /* Computed_field_create_xor */
+}
 
 int Computed_field_get_type_xor(struct Computed_field *field,
 	struct Computed_field **source_field_one,
@@ -830,7 +760,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field,**source_fields;
+	struct Computed_field **source_fields;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -838,8 +768,7 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_xor);
 	USE_PARAMETER(computed_field_logical_operators_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -848,10 +777,11 @@ already) and allows its contents to be modified.
 		{
 			source_fields[0] = (struct Computed_field *)NULL;
 			source_fields[1] = (struct Computed_field *)NULL;
-			if (computed_field_xor_type_string ==
-				Computed_field_get_type_string(field))
+			if ((NULL != field_modify->get_field()) &&
+				(computed_field_xor_type_string ==
+					Computed_field_get_type_string(field_modify->get_field())))
 			{
-				return_code=Computed_field_get_type_xor(field, 
+				return_code=Computed_field_get_type_xor(field_modify->get_field(), 
 					source_fields, source_fields + 1);
 			}
 			if (return_code)
@@ -868,7 +798,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
 				set_source_field_array_data.number_of_fields=2;
@@ -879,8 +809,9 @@ already) and allows its contents to be modified.
 				/* no errxors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_xor(
-						source_fields[0], source_fields[1]));
+					return_code = field_modify->update_field_and_deaccess(
+						Computed_field_create_xor(field_modify->get_field_factory(),
+							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
 				{
@@ -930,14 +861,14 @@ char computed_field_equal_to_type_string[] = "equal_to";
 class Computed_field_equal_to : public Computed_field_core
 {
 public:
-	Computed_field_equal_to(Computed_field *field) : Computed_field_core(field)
+	Computed_field_equal_to() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_equal_to(new_parent);
+		return new Computed_field_equal_to();
 	}
 
 	char *get_type_string()
@@ -1044,66 +975,42 @@ Evaluate the fields cache at the element.
 } //namespace
 
 Computed_field *Computed_field_create_equal_to(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_EQUAL_TO with the supplied
-field, <source_field> .  Sets the number of 
-components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int number_of_source_fields;
-	Computed_field *field, **source_fields;
-
-	ENTER(Computed_field_create_equal_to);
-	if (
-		/* Access and broadcast before checking components match,
-			the source_field_one and source_field_two will get replaced
-			if necessary. */
-		ACCESS(Computed_field)(source_field_one) &&
-		ACCESS(Computed_field)(source_field_two) &&
-		Computed_field_broadcast_field_components(
+	Computed_field *field = NULL;
+	/* Access and broadcast before checking components match,
+		the local source_field_one and source_field_two will 
+		get replaced if necessary. */
+	ACCESS(Computed_field)(source_field_one);
+	ACCESS(Computed_field)(source_field_two);
+	if (field_factory && source_field_one && source_field_two &&
+		Computed_field_broadcast_field_components(field_factory,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=2;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. create new field */
-			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-			/* 3. establish the new type */
-			field->number_of_components = source_field_one->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field_one);
-			source_fields[1]=ACCESS(Computed_field)(source_field_two);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_equal_to(field);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			field = (Computed_field *)NULL;
-		}
-		DEACCESS(Computed_field)(&source_field_one);
-		DEACCESS(Computed_field)(&source_field_two);
+		Computed_field *source_fields[2];
+		source_fields[0] = source_field_one;
+		source_fields[1] = source_field_two;
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			source_field_one->number_of_components,
+			/*number_of_source_fields*/2, source_fields,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_equal_to());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_equal_to.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
+			"Computed_field_create_or.  Invalid argument(s)");
 	}
-	LEAVE;
+	DEACCESS(Computed_field)(&source_field_one);
+	DEACCESS(Computed_field)(&source_field_two);
 
 	return (field);
-} /* Computed_field_create_equal_to */
+}
 
 int Computed_field_get_type_equal_to(struct Computed_field *field,
 	struct Computed_field **source_field_one,
@@ -1147,7 +1054,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field,**source_fields;
+	struct Computed_field **source_fields;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -1155,8 +1062,7 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_equal_to);
 	USE_PARAMETER(computed_field_logical_operators_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -1165,10 +1071,11 @@ already) and allows its contents to be modified.
 		{
 			source_fields[0] = (struct Computed_field *)NULL;
 			source_fields[1] = (struct Computed_field *)NULL;
-			if (computed_field_equal_to_type_string ==
-				Computed_field_get_type_string(field))
+			if ((NULL != field_modify->get_field()) &&
+				(computed_field_equal_to_type_string ==
+					Computed_field_get_type_string(field_modify->get_field())))
 			{
-				return_code=Computed_field_get_type_equal_to(field, 
+				return_code=Computed_field_get_type_equal_to(field_modify->get_field(), 
 					source_fields, source_fields + 1);
 			}
 			if (return_code)
@@ -1185,7 +1092,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_source_field_data.conditional_function=
 					(LIST_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -1197,8 +1104,9 @@ already) and allows its contents to be modified.
 				/* no errequal_tos,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_equal_to(
-						source_fields[0], source_fields[1]));
+					return_code = field_modify->update_field_and_deaccess(
+						Computed_field_create_equal_to(field_modify->get_field_factory(),
+							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
 				{
@@ -1248,14 +1156,14 @@ char computed_field_less_than_type_string[] = "less_than";
 class Computed_field_less_than : public Computed_field_core
 {
 public:
-	Computed_field_less_than(Computed_field *field) : Computed_field_core(field)
+	Computed_field_less_than() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_less_than(new_parent);
+		return new Computed_field_less_than();
 	}
 
 	char *get_type_string()
@@ -1332,66 +1240,42 @@ Evaluate the fields cache at the element.
 } //namespace
 
 Computed_field *Computed_field_create_less_than(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_LESS_THAN with the supplied
-field, <source_field> .  Sets the number of 
-components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int number_of_source_fields;
-	Computed_field *field, **source_fields;
-
-	ENTER(Computed_field_create_less_than);
-	if (
-		/* Access and broadcast before checking components match,
-			the source_field_one and source_field_two will get replaced
-			if necessary. */
-		ACCESS(Computed_field)(source_field_one) &&
-		ACCESS(Computed_field)(source_field_two) &&
-		Computed_field_broadcast_field_components(
+	Computed_field *field = NULL;
+	/* Access and broadcast before checking components match,
+		the local source_field_one and source_field_two will 
+		get replaced if necessary. */
+	ACCESS(Computed_field)(source_field_one);
+	ACCESS(Computed_field)(source_field_two);
+	if (field_factory && source_field_one && source_field_two &&
+		Computed_field_broadcast_field_components(field_factory,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=2;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. create new field */
-			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-			/* 3. establish the new type */
-			field->number_of_components = source_field_one->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field_one);
-			source_fields[1]=ACCESS(Computed_field)(source_field_two);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_less_than(field);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			field = (Computed_field *)NULL;
-		}
-		DEACCESS(Computed_field)(&source_field_one);
-		DEACCESS(Computed_field)(&source_field_two);
+		Computed_field *source_fields[2];
+		source_fields[0] = source_field_one;
+		source_fields[1] = source_field_two;
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			source_field_one->number_of_components,
+			/*number_of_source_fields*/2, source_fields,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_less_than());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_less_than.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
+			"Computed_field_create_or.  Invalid argument(s)");
 	}
-	LEAVE;
+	DEACCESS(Computed_field)(&source_field_one);
+	DEACCESS(Computed_field)(&source_field_two);
 
 	return (field);
-} /* Computed_field_create_less_than */
+}
 
 int Computed_field_get_type_less_than(struct Computed_field *field,
 	struct Computed_field **source_field_one,
@@ -1435,7 +1319,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field,**source_fields;
+	struct Computed_field **source_fields;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -1443,8 +1327,7 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_less_than);
 	USE_PARAMETER(computed_field_logical_operators_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -1453,10 +1336,11 @@ already) and allows its contents to be modified.
 		{
 			source_fields[0] = (struct Computed_field *)NULL;
 			source_fields[1] = (struct Computed_field *)NULL;
-			if (computed_field_less_than_type_string ==
-				Computed_field_get_type_string(field))
+			if ((NULL != field_modify->get_field()) &&
+				(computed_field_less_than_type_string ==
+					Computed_field_get_type_string(field_modify->get_field())))
 			{
-				return_code=Computed_field_get_type_less_than(field, 
+				return_code=Computed_field_get_type_less_than(field_modify->get_field(), 
 					source_fields, source_fields + 1);
 			}
 			if (return_code)
@@ -1473,7 +1357,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
 				set_source_field_array_data.number_of_fields=2;
@@ -1484,8 +1368,9 @@ already) and allows its contents to be modified.
 				/* no errless_thans,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_less_than(
-						source_fields[0], source_fields[1]));
+					return_code = field_modify->update_field_and_deaccess(
+						Computed_field_create_less_than(field_modify->get_field_factory(),
+							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
 				{
@@ -1535,14 +1420,14 @@ char computed_field_greater_than_type_string[] = "greater_than";
 class Computed_field_greater_than : public Computed_field_core
 {
 public:
-	Computed_field_greater_than(Computed_field *field) : Computed_field_core(field)
+	Computed_field_greater_than() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_greater_than(new_parent);
+		return new Computed_field_greater_than();
 	}
 
 	char *get_type_string()
@@ -1619,66 +1504,42 @@ Evaluate the fields cache at the element.
 } //namespace
 
 Computed_field *Computed_field_create_greater_than(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_GREATER_THAN with the supplied
-field, <source_field> .  Sets the number of 
-components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int number_of_source_fields;
-	Computed_field *field, **source_fields;
-
-	ENTER(Computed_field_create_greater_than);
-	if (
-		/* Access and broadcast before checking components match,
-			the source_field_one and source_field_two will get replaced
-			if necessary. */
-		ACCESS(Computed_field)(source_field_one) &&
-		ACCESS(Computed_field)(source_field_two) &&
-		Computed_field_broadcast_field_components(
+	Computed_field *field = NULL;
+	/* Access and broadcast before checking components match,
+		the local source_field_one and source_field_two will 
+		get replaced if necessary. */
+	ACCESS(Computed_field)(source_field_one);
+	ACCESS(Computed_field)(source_field_two);
+	if (field_factory && source_field_one && source_field_two &&
+		Computed_field_broadcast_field_components(field_factory,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=2;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. create new field */
-			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-			/* 3. establish the new type */
-			field->number_of_components = source_field_one->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field_one);
-			source_fields[1]=ACCESS(Computed_field)(source_field_two);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_greater_than(field);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			field = (Computed_field *)NULL;
-		}
-		DEACCESS(Computed_field)(&source_field_one);
-		DEACCESS(Computed_field)(&source_field_two);
+		Computed_field *source_fields[2];
+		source_fields[0] = source_field_one;
+		source_fields[1] = source_field_two;
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			source_field_one->number_of_components,
+			/*number_of_source_fields*/2, source_fields,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_greater_than());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_greater_than.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
+			"Computed_field_create_or.  Invalid argument(s)");
 	}
-	LEAVE;
+	DEACCESS(Computed_field)(&source_field_one);
+	DEACCESS(Computed_field)(&source_field_two);
 
 	return (field);
-} /* Computed_field_create_greater_than */
+}
 
 int Computed_field_get_type_greater_than(struct Computed_field *field,
 	struct Computed_field **source_field_one,
@@ -1722,7 +1583,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field,**source_fields;
+	struct Computed_field **source_fields;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -1730,8 +1591,7 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_greater_than);
 	USE_PARAMETER(computed_field_logical_operators_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -1740,10 +1600,11 @@ already) and allows its contents to be modified.
 		{
 			source_fields[0] = (struct Computed_field *)NULL;
 			source_fields[1] = (struct Computed_field *)NULL;
-			if (computed_field_greater_than_type_string ==
-				Computed_field_get_type_string(field))
+			if ((NULL != field_modify->get_field()) &&
+				(computed_field_greater_than_type_string ==
+					Computed_field_get_type_string(field_modify->get_field())))
 			{
-				return_code=Computed_field_get_type_greater_than(field, 
+				return_code=Computed_field_get_type_greater_than(field_modify->get_field(), 
 					source_fields, source_fields + 1);
 			}
 			if (return_code)
@@ -1760,7 +1621,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
 				set_source_field_array_data.number_of_fields=2;
@@ -1771,8 +1632,9 @@ already) and allows its contents to be modified.
 				/* no errgreater_thans,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_greater_than(
-						source_fields[0], source_fields[1]));
+					return_code = field_modify->update_field_and_deaccess(
+						Computed_field_create_greater_than(field_modify->get_field_factory(),
+							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
 				{
@@ -1822,14 +1684,14 @@ char computed_field_is_defined_type_string[] = "is_defined";
 class Computed_field_is_defined : public Computed_field_core
 {
 public:
-	Computed_field_is_defined(Computed_field *field) : Computed_field_core(field)
+	Computed_field_is_defined() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_is_defined(new_parent);
+		return new Computed_field_is_defined();
 	}
 
 	char *get_type_string()
@@ -1916,51 +1778,27 @@ Evaluate the fields cache at the element.
 
 } //namespace
 
+/*****************************************************************************//**
+ * Creates a scalar field whose value is 1 wherever the source field is defined,
+ * and 0 elsewhere (without error).
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param source_field  Source field to check whether defined.
+ * @return Newly created field
+ */
 Computed_field *Computed_field_create_is_defined(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_IS_DEFINED with the supplied
-field, <source_field> .  Number of components is one.
-==============================================================================*/
 {
-	int number_of_source_fields;
-	Computed_field *field, **source_fields;
-
-	ENTER(Computed_field_create_is_defined);
-	if (source_field)
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. create new field */
-			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-			/* 3. establish the new type */
-			field->number_of_components = 1;
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_is_defined(field);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			field = (Computed_field *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_create_is_defined.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
-	}
-	LEAVE;
+	Computed_field *field = Computed_field_create_generic(field_factory,
+		/*check_source_field_regions*/true,
+		/*number_of_components*/1,
+		/*number_of_source_fields*/1, &source_field,
+		/*number_of_source_values*/0, NULL,
+		new Computed_field_is_defined());
 
 	return (field);
-} /* Computed_field_create_is_defined */
+}
 
 int Computed_field_get_type_is_defined(struct Computed_field *field,
 	struct Computed_field **source_field)
@@ -2002,22 +1840,22 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field,*source_field;
+	struct Computed_field *source_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_is_defined);
 	USE_PARAMETER(computed_field_logical_operators_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		source_field = (struct Computed_field *)NULL;
-		if (computed_field_is_defined_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_is_defined_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code=Computed_field_get_type_is_defined(field, 
+			return_code=Computed_field_get_type_is_defined(field_modify->get_field(), 
 				&source_field);
 		}
 		if (return_code)
@@ -2030,7 +1868,7 @@ already) and allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* field */
 			set_source_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"field",&source_field,
@@ -2039,8 +1877,9 @@ already) and allows its contents to be modified.
 			/* no erris_defineds,not asking for help */
 			if (return_code)
 			{
-				return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_is_defined(
-					source_field));
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_is_defined(field_modify->get_field_factory(),
+						source_field));
 			}
 			if (!return_code)
 			{

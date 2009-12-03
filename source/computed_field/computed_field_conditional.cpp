@@ -65,14 +65,14 @@ char computed_field_if_type_string[] = "if";
 class Computed_field_if : public Computed_field_core
 {
 public:
-	Computed_field_if(Computed_field *field) : Computed_field_core(field)
+	Computed_field_if() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_if(new_parent);
+		return new Computed_field_if();
 	}
 
 	char *get_type_string()
@@ -271,6 +271,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_if(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two,
 	struct Computed_field *source_field_three)
@@ -285,8 +286,7 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int number_of_source_fields;
-	Computed_field *field, **source_fields;
+	Computed_field *field = NULL;
 
 	ENTER(Computed_field_create_if);
 	if (source_field_one&&source_field_two&&source_field_three&&
@@ -295,32 +295,21 @@ although its cache may be lost.
 		(source_field_one->number_of_components ==
 			source_field_three->number_of_components))
 	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=3;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. create new field */
-			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-			/* 3. establish the new type */
-			field->number_of_components = source_field_one->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field_one);
-			source_fields[1]=ACCESS(Computed_field)(source_field_two);
-			source_fields[2]=ACCESS(Computed_field)(source_field_three);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_if(field);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			field = (Computed_field *)NULL;
-		}
+		Computed_field *source_fields[3];
+		source_fields[0] = source_field_one;
+		source_fields[1] = source_field_two;
+		source_fields[2] = source_field_three;
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			source_field_one->number_of_components,
+			/*number_of_source_fields*/3, source_fields,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_if());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_create_if.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
 	}
 	LEAVE;
 
@@ -372,7 +361,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field,**source_fields;
+	struct Computed_field **source_fields;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -380,8 +369,7 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_if);
 	USE_PARAMETER(computed_field_conditional_package_void);
-	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void) &&
-			(field=field_modify->field))
+	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -391,10 +379,11 @@ already) and allows its contents to be modified.
 			source_fields[0] = (struct Computed_field *)NULL;
 			source_fields[1] = (struct Computed_field *)NULL;
 			source_fields[2] = (struct Computed_field *)NULL;
-			if (computed_field_if_type_string ==
-				Computed_field_get_type_string(field))
+			if ((NULL != field_modify->get_field()) &&
+				(computed_field_if_type_string ==
+					Computed_field_get_type_string(field_modify->get_field())))
 			{
-				return_code=Computed_field_get_type_if(field, 
+				return_code=Computed_field_get_type_if(field_modify->get_field(), 
 					source_fields, source_fields + 1, source_fields + 2);
 			}
 			if (return_code)
@@ -424,7 +413,7 @@ already) and allows its contents to be modified.
 
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_source_field_data.conditional_function=
           Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -436,8 +425,9 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_if(
-						source_fields[0], source_fields[1], source_fields[2]));
+					return_code = field_modify->update_field_and_deaccess(
+						Computed_field_create_if(field_modify->get_field_factory(),
+							source_fields[0], source_fields[1], source_fields[2]));
 				}
 				if (!return_code)
 				{

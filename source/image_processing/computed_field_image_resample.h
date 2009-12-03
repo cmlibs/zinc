@@ -45,6 +45,20 @@ Image processing fields use the native resolution to determine their image size.
 #if !defined (COMPUTED_FIELD_IMAGE_RESAMPLE_H)
 #define COMPUTED_FIELD_IMAGE_RESAMPLE_H
 
+/***************************************************************************//**
+ * Create a field which resamples the image in source field, and overrides the
+ * sizes that will be used for subsequent image processing operations.
+ * The texture_coordinate field could also be overridden.  The minimums and
+ * maximums are not implemented at all, which would allow a windowing, and could
+ * also be overridden here.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @return  Newly created field.
+ */
+Computed_field *Computed_field_create_image_resample(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *source_field, int dimension, int *sizes);
+
 int Computed_field_register_types_image_resample(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************

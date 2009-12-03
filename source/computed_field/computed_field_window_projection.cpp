@@ -93,28 +93,39 @@ public:
 
 	double *projection_matrix;
 
-	Computed_field_window_projection(Computed_field *field, 
+	Computed_field_window_projection(
 		char *graphics_window_name, int pane_number, 
 		Scene_viewer *scene_viewer, 
 		enum Computed_field_window_projection_type projection_type) : 
-		Computed_field_core(field), 
+		Computed_field_core(), 
 		graphics_window_name(duplicate_string(graphics_window_name)),
 		pane_number(pane_number), scene_viewer(scene_viewer),
 		projection_type(projection_type)
 	{
 		scene_viewer_callback_flag = 0;
 		projection_matrix = (double*)NULL;
-		Scene_viewer_add_destroy_callback(scene_viewer, 
-			Computed_field_window_projection_scene_viewer_destroy_callback,
-			(void *)field);
 	};
 
+	virtual bool attach_to_field(Computed_field *parent)
+	{
+		if (Computed_field_core::attach_to_field(parent))
+		{
+			if (Scene_viewer_add_destroy_callback(scene_viewer, 
+				Computed_field_window_projection_scene_viewer_destroy_callback,
+				(void *)parent))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+			
 	~Computed_field_window_projection();
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_window_projection(new_parent,
+		return new Computed_field_window_projection(
 			graphics_window_name, pane_number, scene_viewer, projection_type);
 	}
 
@@ -1112,62 +1123,32 @@ Clear the scene viewer reference when it is no longer valid.
 
 } //namespace
 
-int Computed_field_set_type_window_projection(struct Computed_field *field,
+struct Computed_field *Computed_field_create_window_projection(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, struct Scene_viewer *scene_viewer,
 	char *graphics_window_name, int pane_number,
 	enum Computed_field_window_projection_type projection_type)
-/*******************************************************************************
-LAST MODIFIED : 21 April 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_WINDOW_PROJECTION, returning the 
-<source_field> with each component multiplied by the perspective transformation
-of the <scene_viewer>.  The <graphics_window_name> and <pane_number> are stored
-so that the command to reproduce this field can be written out.
-The manager of <field> is notified if the <scene_viewer> closes.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int number_of_source_fields,return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_window_projection);
-	if (field && source_field && Computed_field_has_3_components(source_field, NULL)
-		&& scene_viewer)
+	Computed_field *field = NULL;
+	if (source_field && Computed_field_has_3_components(source_field, NULL) &&
+		scene_viewer)
 	{
-		return_code=1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->number_of_components = 3;
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_window_projection(field,
-				graphics_window_name, pane_number, scene_viewer,
-				projection_type);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			return_code=0;
-		}
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			/*number_of_components*/3,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_window_projection(graphics_window_name, pane_number,
+				scene_viewer, projection_type));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_window_projection.  Invalid argument(s)");
-		return_code=0;
+			"Computed_field_create_window_projection.  Invalid argument(s)");
 	}
-	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_window_projection */
+	return (field);
+}
 
 int Computed_field_get_type_window_projection(struct Computed_field *field,
 	struct Computed_field **source_field, struct Scene_viewer **scene_viewer,
@@ -1222,7 +1203,7 @@ already) and allows its contents to be modified.
 	const char *projection_type_string;
 	enum Computed_field_window_projection_type projection_type;
 	int pane_number, return_code;
-	struct Computed_field *field,*source_field;
+	struct Computed_field *source_field;
 	Computed_field_window_projection_package 
 		*computed_field_window_projection_package;
 	Computed_field_modify_data *field_modify;
@@ -1241,8 +1222,7 @@ already) and allows its contents to be modified.
 	};
 
 	ENTER(define_Computed_field_type_window_projection);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void) &&
 		(computed_field_window_projection_package=
 		(Computed_field_window_projection_package *)
 		computed_field_window_projection_package_void))
@@ -1253,9 +1233,10 @@ already) and allows its contents to be modified.
 		projection_type = TEXTURE_PROJECTION;
 		source_field = (struct Computed_field *)NULL;
 		graphics_window = (struct Graphics_window *)NULL;
-		if (dynamic_cast<Computed_field_window_projection*>(field->core))
+		if ((NULL != field_modify->get_field()) &&
+			(NULL != dynamic_cast<Computed_field_window_projection*>(field_modify->get_field()->core)))
 		{
-			return_code=Computed_field_get_type_window_projection(field,
+			return_code=Computed_field_get_type_window_projection(field_modify->get_field(),
 				&source_field, &scene_viewer, &graphics_window_name, &pane_number, &projection_type);
 			pane_number++;
 			if (graphics_window_name)
@@ -1281,7 +1262,7 @@ already) and allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* field */
 			set_source_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_source_field_data.conditional_function=Computed_field_has_3_components;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"field",&source_field,
@@ -1344,9 +1325,11 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				GET_NAME(Graphics_window)(graphics_window, &graphics_window_name);
-				return_code = Computed_field_set_type_window_projection(field,
-					source_field, scene_viewer, graphics_window_name, pane_number,
-					projection_type);
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_window_projection(
+						field_modify->get_field_factory(),
+						source_field, scene_viewer, graphics_window_name, pane_number,
+						projection_type));
 				DEALLOCATE(graphics_window_name);
 			}
 			if (!return_code)

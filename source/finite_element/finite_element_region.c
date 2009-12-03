@@ -2100,7 +2100,7 @@ A NULL value is returned on any error.
 				{
 					/* can only change fundamentals -- number of components, value type
 						 if merged_fe_field is not accessed by any other objects */
-					if ((1 == get_FE_field_access_count(merged_fe_field)) ||
+					if ((1 == FE_field_get_access_count(merged_fe_field)) ||
 						FE_fields_match_fundamental(merged_fe_field, fe_field))
 					{
 						if (FE_field_copy_without_identifier(merged_fe_field, fe_field))

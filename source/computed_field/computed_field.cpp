@@ -230,6 +230,20 @@ from the appropriate Cmiss_region.
 	Computed_field_simple_package *simple_package;
 }; /* struct Computed_field_package */
 
+/***************************************************************************//**
+ * Object to pass into field create functions, supplying region field is to
+ * go into and other default parameters.
+ */
+struct Cmiss_field_factory
+{
+	Cmiss_region *region;
+	char *field_name;
+	struct Coordinate_system coordinate_system;
+	int coordinate_system_override; // true if coordinate system has been set
+	Computed_field_managed_status managed_status;
+	Computed_field *replace_field;
+};
+
 /*
 Module functions
 ----------------
@@ -327,7 +341,7 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Computed_field_type_data,
   name, const char *, strcmp)
 DECLARE_INDEXED_LIST_FUNCTIONS(Computed_field_type_data)
 
-int Computed_field_clear_type(struct Computed_field *field)
+static int Computed_field_clear_type(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
 
@@ -504,7 +518,7 @@ COMPUTED_FIELD_INVALID with no components.
 			field->manager = (struct MANAGER(Computed_field) *)NULL;
 			/* fields default to publicly managed to support all the old code that
 			 * directly adds them to the manager without going through the region */ 
-			field->managed_status = Computed_field::MANAGED_PUBLIC;
+			field->managed_status = COMPUTED_FIELD_MANAGED_PUBLIC;
 		}
 		else
 		{
@@ -592,7 +606,7 @@ PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Computed_field)
 			return_code = DESTROY(Computed_field)(object_address);
 		}
 		else if ((1 == object->access_count) && object->manager &&
-			(object->managed_status & Computed_field::REMOVE_IF_UNUSED_BIT))
+			(object->managed_status & COMPUTED_FIELD_REMOVE_IF_UNUSED_BIT))
 		{
 			return_code = REMOVE_OBJECT_FROM_MANAGER(Computed_field)
 				(object, object->manager);
@@ -713,7 +727,6 @@ int Computed_field_copy_type_specific(
 		return_code = 1;
 		char **component_names = (char **)NULL;
 		Computed_field **source_fields = (struct Computed_field **)NULL;
-		Computed_field_core *core = (Computed_field_core *)NULL;
 		FE_value *source_values = (FE_value *)NULL;
 		if (source->component_names)
 		{
@@ -765,12 +778,17 @@ int Computed_field_copy_type_specific(
 			}
 			destination->source_values = source_values;
 
-			if ((!source->core) || (core = source->core->copy(destination)))
+			if (source->core)
 			{
-				destination->core = core;
-				return_code = 1;
+				destination->core = source->core->copy();
+				if ((NULL == destination->core) ||
+					(!destination->core->attach_to_field(destination)))
+				{
+					return_code = 0;
+				}
 			}
-			else
+
+			if (!return_code)
 			{
 				display_message(ERROR_MESSAGE,
 					"Computed_field_copy_type_specific.  Unable to copy Computed_field_core.");
@@ -984,6 +1002,7 @@ Computed_field requires a special version of this function mainly due to the
 finite_element type which automatically wraps FE_fields. If the computed field
 is not itself in use, it calls the field's optional computed_field_not_in_use
 function and bases its result on that.
+Note: assumes caller is accessing field once!
 ==============================================================================*/
 {
 	int return_code;
@@ -996,8 +1015,8 @@ function and bases its result on that.
 		{
 			if (IS_OBJECT_IN_LIST(Computed_field)(object, manager->object_list))
 			{
-				if ((1 == object->access_count) ||
-					((2 == object->access_count) &&
+				if ((2 >= object->access_count) ||
+					((3 == object->access_count) &&
 						IS_OBJECT_IN_LIST(Computed_field)(object,
 							manager->message->changed_object_list)))
 				{
@@ -1275,6 +1294,164 @@ DECLARE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(Computed_field, name, const char *)
 DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(Computed_field, name, const char *)
 
 DECLARE_MANAGER_OWNER_FUNCTIONS(Computed_field, struct Cmiss_region_fields)
+
+/* prototype */
+int Computed_field_add_to_manager_private(struct Computed_field *field,
+	struct MANAGER(Computed_field) *manager, Computed_field_managed_status managed_status);
+
+Computed_field *Computed_field_create_generic(
+	Cmiss_field_factory *field_factory, bool check_source_field_regions,
+	int number_of_components,
+	int number_of_source_fields, Computed_field **source_fields,
+	int number_of_source_values, double *source_values,
+	Computed_field_core *field_core)
+{
+	Computed_field *field = NULL;
+
+	ENTER(Computed_field_create_generic);
+	if ((NULL != field_factory) && (0 < number_of_components) &&
+		((0 == number_of_source_fields) ||
+			((0 < number_of_source_fields) && (NULL != source_fields))) &&
+		((0 == number_of_source_values) ||
+			((0 < number_of_source_values) && (NULL != source_values))) &&
+		(NULL != field_core))
+	{
+		int return_code = 1;
+		Cmiss_region *region = field_factory->region;
+		for (int i = 0; i < number_of_source_fields; i++)
+		{
+			if (NULL != source_fields[i])
+			{
+				if (check_source_field_regions &&
+					(Computed_field_get_region(source_fields[i]) != region))
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_create_generic.  Source field is from a different region");
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_create_generic.  Missing source field");
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
+			const char *field_name = (NULL != field_factory->field_name) ?
+				field_factory->field_name	: "";
+			field = CREATE(Computed_field)(field_name);
+			if (NULL != field)
+			{
+				ACCESS(Computed_field)(field);
+				field->number_of_components = number_of_components;
+				if (0 < number_of_source_fields)
+				{
+					ALLOCATE(field->source_fields, struct Computed_field *, number_of_source_fields);
+					if (NULL != field->source_fields)
+					{
+						field->number_of_source_fields = number_of_source_fields;
+						for (int i = 0; i < number_of_source_fields; i++)
+						{
+							field->source_fields[i] = ACCESS(Computed_field)(source_fields[i]);
+						}
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+				if (0 < number_of_source_values)
+				{
+					ALLOCATE(field->source_values, FE_value, number_of_source_values);
+					if (NULL != field->source_values)
+					{
+						field->number_of_source_values = number_of_source_values;
+						for (int i = 0; i < number_of_source_values; i++)
+						{
+							field->source_values[i] = static_cast<FE_value>(source_values[i]);
+						}
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+				Computed_field_set_managed_status(field,
+					Cmiss_field_factory_get_managed_status(field_factory));
+				if (return_code)
+				{
+					// 2nd stage of construction - can fail
+					if (!field_core->attach_to_field(field))
+					{
+						return_code = 0;
+					}
+				}
+				field->core = field_core;
+				if (return_code)
+				{
+					// only some field types implement the following, e.g. set default
+					// coordinate system of new field to that of a source field:
+					field_core->inherit_source_field_attributes();
+					// default coordinate system can also be overridden:
+					if (Cmiss_field_factory_coordinate_system_is_set(field_factory))
+					{
+						struct Coordinate_system coordinate_system =
+							Cmiss_field_factory_get_coordinate_system(field_factory);
+						Computed_field_set_coordinate_system(field, &coordinate_system);
+					}
+
+					Computed_field *replace_field =
+						Cmiss_field_factory_get_replace_field(field_factory);
+					if (replace_field)
+					{
+						if (Computed_field_is_read_only(replace_field))
+						{
+							display_message(ERROR_MESSAGE,
+								"Computed_field_create_generic.  Not allowed to modify read-only field");
+							return_code = 0;
+						}
+						else
+						{
+							/* copy modifications to existing field. Can fail if new definition is incompatible */
+							return_code = MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name)(
+								replace_field, field,
+								Cmiss_region_get_Computed_field_manager(region));
+							REACCESS(Computed_field)(&field, replace_field);
+						}
+					}
+					else
+					{
+						// GRC some consolidation needed here; no need to pass managed_status
+						if (!Computed_field_add_to_manager_private(field,
+							Cmiss_region_get_Computed_field_manager(region),
+							field->managed_status))
+						{
+							display_message(ERROR_MESSAGE,
+								"Computed_field_create_generic.  Unable to add field to region");
+							return_code = 0;
+						}
+					}
+				}
+				if (!return_code)
+				{
+					DEACCESS(Computed_field)(&field);
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_create_generic.  Invalid argument(s)");
+	}
+	// replace_field must not be used for further field creates, so clear
+	Cmiss_field_factory_set_replace_field(field_factory, NULL);
+	LEAVE;
+	
+	return (field);
+}
 
 int Computed_field_manager_set_owner(struct MANAGER(Computed_field) *manager,
 	struct Cmiss_region_fields *region_fields)
@@ -3850,8 +4027,8 @@ to modify it if it was.
 	{
 		if (NULL != (current_token=state->current_token))
 		{
-			COPY(Coordinate_system)(&coordinate_system,
-				Computed_field_get_coordinate_system(field_modify->field));
+			Cmiss_field_factory *field_factory = field_modify->get_field_factory();
+			coordinate_system = Cmiss_field_factory_get_coordinate_system(field_factory);
 			/* read the optional cooordinate_system NAME [focus #] parameter */
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
@@ -3863,15 +4040,11 @@ to modify it if it was.
 						&coordinate_system, NULL, set_Coordinate_system);
 					return_code=Option_table_parse(option_table,state);
 					DESTROY(Option_table)(&option_table);
-					if(return_code)
+					if (return_code)
 					{
-						if(0 != (return_code=define_Computed_field_type(state,field_modify_void,
-							computed_field_package_void)))
-						{
-							/* Override the type set by define_Computed_field_type */
-							return_code = Computed_field_set_coordinate_system(
-								field_modify->field,&coordinate_system);
-						}
+						Cmiss_field_factory_set_coordinate_system(field_factory, coordinate_system);
+						return_code = define_Computed_field_type(state, field_modify_void,
+							computed_field_package_void);
 					}
 				}
 				else
@@ -3942,14 +4115,10 @@ FE_values.
 2. The number_of_components and coordinate system are options for all types of
 computed field so it makes sense that they are set before splitting up into the
 options for the various types.
-The <field_copy_void> parameter, if set, points to the field we are to modify
-and should not itself be managed.
 ==============================================================================*/
 {
 	const char *current_token;
-	char *field_name, *region_path;
 	int return_code;
-	struct Computed_field *existing_field = NULL,*temp_field;
 	struct Option_table *help_option_table;
 	struct Cmiss_region *region, *root_region;
 
@@ -3964,37 +4133,31 @@ and should not itself be managed.
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
-					temp_field = (struct Computed_field *)NULL;
+					char *field_name = NULL;
+					char *region_path = NULL;
 					if (Cmiss_region_get_partial_region_path(root_region,
 						current_token, &region, &region_path, &field_name))
 					{
+						Cmiss_field_factory *field_factory =
+							Cmiss_field_factory_create(region);
+						Cmiss_field_factory_set_managed_status(field_factory,
+							COMPUTED_FIELD_MANAGED_PUBLIC);
 						if (field_name && (strlen(field_name) > 0) &&
 							(strchr(field_name, CMISS_REGION_PATH_SEPARATOR_CHAR)	== NULL))
 						{
-							existing_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-								field_name, Cmiss_region_get_Computed_field_manager(region));
-							/* create temp_field with the supplied name for working on */
-							if (NULL != (temp_field=CREATE(Computed_field)(field_name)))
-							{
-								ACCESS(Computed_field)(temp_field);
-								if (existing_field)
-								{
-									if (!MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name)(
-										temp_field,existing_field))
-									{
-										display_message(ERROR_MESSAGE,
-											"define_Computed_field.  Could not copy existing field");
-										return_code=0;
-									}
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"define_Computed_field.  Could not build temporary field");
-								return_code=0;
-							}
 							shift_Parse_state(state,1);
+							Cmiss_field_factory_set_field_name(field_factory, field_name);
+							Computed_field *existing_field =
+								FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+									field_name, Cmiss_region_get_Computed_field_manager(region));
+							if (existing_field)
+							{
+								Cmiss_field_factory_set_replace_field(field_factory, existing_field);
+							}
+							Computed_field_modify_data field_modify(field_factory);
+							return_code = define_Computed_field_coordinate_system(state,
+								(void *)&field_modify,computed_field_package_void);
+							Cmiss_field_factory_destroy(&field_factory);
 						}
 						else
 						{
@@ -4021,80 +4184,22 @@ and should not itself be managed.
 						display_parse_state_location(state);
 						return_code = 0;
 					}
-					if (return_code)
-					{
-						Computed_field_modify_data field_modify(temp_field,region);
-						if ((return_code = define_Computed_field_coordinate_system(state,
-								(void *)&field_modify,computed_field_package_void)) &&
-								field_modify.is_field_changed())
-						{
-							if (existing_field)
-							{
-								if (Computed_field_is_read_only(existing_field))
-								{
-									display_message(ERROR_MESSAGE,
-										"Not allowed to modify read-only field");
-									return_code=0;
-								}
-								else
-								{
-									/* copy modifications to existing_field */
-									return_code=
-										MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name)(
-											existing_field,temp_field,
-											Cmiss_region_get_Computed_field_manager(region));
-								}
-							}
-							else
-							{
-								if (temp_field->core && 
-									temp_field->core->get_type_string())
-								{
-									if (!Cmiss_region_add_field(region, temp_field))
-									{
-										display_message(ERROR_MESSAGE,
-											"define_Computed_field.  Unable to add field to region");
-										return_code = 0;
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"gfx define field:  No field type specified");
-									display_parse_state_location(state);
-									return_code = 0;
-								}
-							}
-						}
-					}
-					if (temp_field)
-					{
-						DEACCESS(Computed_field)(&temp_field);
-					}
 				}
 				else
 				{
 					/* Write out the help */
-					if (NULL != (temp_field=CREATE(Computed_field)("dummy")))
-					{
-						Computed_field_modify_data field_modify(temp_field,root_region);
-						help_option_table = CREATE(Option_table)();
-						/* FIELD_NAME */
-						Option_table_add_entry(help_option_table,
-							"[REGION_PATH" CMISS_REGION_PATH_SEPARATOR_STRING "]FIELD_NAME",
-							(void *)&field_modify, computed_field_package_void,
-							define_Computed_field_coordinate_system);
-						return_code=Option_table_parse(help_option_table,state);
-						DESTROY(Option_table)(&help_option_table);
-						DESTROY(Computed_field)(&temp_field);
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"define_Computed_field.  Could not create dummy field");
-						return_code=0;
-					}
+					Cmiss_field_factory *field_factory =
+						Cmiss_field_factory_create(root_region);
+					Computed_field_modify_data field_modify(field_factory);
+					help_option_table = CREATE(Option_table)();
+					Option_table_add_entry(help_option_table,
+						"[REGION_PATH" CMISS_REGION_PATH_SEPARATOR_STRING "]FIELD_NAME",
+						(void *)&field_modify, computed_field_package_void,
+						define_Computed_field_coordinate_system);
+					return_code=Option_table_parse(help_option_table,state);
+					DESTROY(Option_table)(&help_option_table);
+					Cmiss_field_factory_destroy(&field_factory);
+					return_code = 1;
 				}
 			}
 			else
@@ -4562,28 +4667,6 @@ its name matches the contents of the <other_computed_field_void>.
 	return (return_code);
 } /* Computed_field_contents_match */
 
-int Computed_field_copy_type_specific_and_deaccess(
-	struct Computed_field *destination, struct Computed_field *source)
-{
-	int return_code;
-
-	ENTER(Computed_field_copy_type_specific_and_deaccess);
-	if (destination && source && (!destination->manager))
-	{
-		return_code = Computed_field_copy_type_specific(destination, source);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_copy_type_specific_and_deaccess.  Invalid arguments");
-		return_code=0;
-	}
-	DEACCESS(Computed_field)(&source);
-	LEAVE;
-	
-	return (return_code);
-} /* Computed_field_copy_type_specific_and_deaccess */
-
 int Computed_field_core::list()
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
@@ -4896,6 +4979,7 @@ function to access the Computed_field_package.
 } /* Computed_field_package_get_simple_package */
 
 int Computed_field_broadcast_field_components(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field **field_one, struct Computed_field **field_two)
 /*******************************************************************************
 LAST MODIFIED : 31 March 2008
@@ -4956,15 +5040,17 @@ for matrix operations.
 					/* First (and only) component */
 					source_value_numbers[i] = 0;
 				}
-				broadcast_wrapper = Computed_field_create_composite(
+				// create new field factory for broadcast wrapper since needs different defaults
+				Cmiss_field_factory *temp_field_factory =
+					Cmiss_field_factory_create(field_factory->region);
+				// wrapper field has same name stem as wrapped field
+				Cmiss_field_factory_set_field_name(temp_field_factory, (**field_to_wrap)->name);
+				broadcast_wrapper = Computed_field_create_composite(temp_field_factory,
 					number_of_components,
 					/*number_of_source_fields*/1, *field_to_wrap,
-					0, (FE_value *)NULL,
+					0, (double *)NULL,
 					source_field_numbers, source_value_numbers);
-				/* The name of the wrapper should be the same as the wrapped
-					field so the list commands still reference the original field,
-					and as this field does not go into the MANAGER it can be the same. */
-				Computed_field_set_name(broadcast_wrapper, (**field_to_wrap)->name);
+				Cmiss_field_factory_destroy(&temp_field_factory);
 
 				DEALLOCATE(source_field_numbers);
 				DEALLOCATE(source_value_numbers);
@@ -4987,18 +5073,15 @@ for matrix operations.
 	return (return_code);
 } /* Computed_field_broadcast_field_components */
 
-/***************************************************************************//**
- * Set mode controlling visibility and lifetime of field in its region.
- */
 int Computed_field_set_managed_status(
-	struct Computed_field *field, Computed_field::Managed_status managed_status) 
+	struct Computed_field *field, enum Computed_field_managed_status managed_status) 
 {
 	int return_code;
 
 	ENTER(Computed_field_set_managed_status);
 	if (field &&
-		((managed_status == Computed_field::MANAGED_PUBLIC) ||
-		(managed_status == Computed_field::MANAGED_PRIVATE_VOLATILE)))
+		((managed_status == COMPUTED_FIELD_MANAGED_PUBLIC) ||
+		(managed_status == COMPUTED_FIELD_MANAGED_PRIVATE_VOLATILE)))
 	{
 		if (managed_status != field->managed_status)
 		{
@@ -5112,6 +5195,32 @@ Changes the name of a field.
 	return (return_code);
 } /* Computed_field_set_name */
 
+struct Cmiss_region *Computed_field_manager_get_region(
+	struct MANAGER(Computed_field) *manager)
+{
+	struct Cmiss_region *region;
+
+	ENTER(Computed_field_manager_get_region);
+	region = (struct Cmiss_region *)NULL;
+	if (manager)
+	{
+		struct Cmiss_region_fields *region_fields =
+			MANAGER_GET_OWNER(Computed_field)(manager);
+		if (region_fields)
+		{
+			region = Cmiss_region_fields_get_master_region(region_fields);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_region_add_field.  Missing field");
+	}
+	LEAVE;
+
+	return (region);
+}
+
 struct Cmiss_region *Computed_field_get_region(struct Computed_field *field)
 {
 	struct Cmiss_region *region;
@@ -5133,7 +5242,7 @@ struct Cmiss_region *Computed_field_get_region(struct Computed_field *field)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_region_add_field.  Missing field");
+			"Computed_field_get_region.  Missing field");
 	}
 	LEAVE;
 
@@ -5225,7 +5334,7 @@ int Computed_field_check_manager(struct Computed_field *field, struct MANAGER(Co
  * @return  1 if field successfully added to manager, 0 if not added.
  */
 int Computed_field_add_to_manager_private(struct Computed_field *field,
-	struct MANAGER(Computed_field) *manager, Computed_field::Managed_status managed_status)
+	struct MANAGER(Computed_field) *manager, Computed_field_managed_status managed_status)
 {
 	int return_code;
 
@@ -5247,7 +5356,7 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
 						number++;
 					}
 					while (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(field_name, manager));
-					if (managed_status == Computed_field::MANAGED_PUBLIC)
+					if (managed_status == COMPUTED_FIELD_MANAGED_PUBLIC)
 					{
 						display_message(WARNING_MESSAGE, "Computed_field_add_to_manager_private.  "
 							"Renaming field from %s to %s as name already in use.",
@@ -5291,7 +5400,7 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
 }
 
 int Computed_field_manage_recursive(struct Computed_field *field, 
-	struct MANAGER(Computed_field) *manager, Computed_field::Managed_status managed_status)	
+	struct MANAGER(Computed_field) *manager, enum Computed_field_managed_status managed_status)	
 {
 	int return_code;
 
@@ -5347,7 +5456,7 @@ int Computed_field_core::manage_source_fields(MANAGER(Computed_field) *manager)
 		for (int i = 0; (i < field->number_of_source_fields) && return_code; i++)
 		{
 			return_code = Computed_field_manage_recursive(field->source_fields[i],
-				manager, Computed_field::MANAGED_PRIVATE_VOLATILE); 
+				manager, COMPUTED_FIELD_MANAGED_PRIVATE_VOLATILE); 
 		}
 	}
 	else
@@ -5363,7 +5472,7 @@ int Computed_field_core::manage_source_fields(MANAGER(Computed_field) *manager)
 
 int Computed_field_manage(struct Computed_field *field, 
 	struct MANAGER(Computed_field) *manager,
-	Computed_field::Managed_status managed_status)	
+	enum Computed_field_managed_status managed_status)	
 {
 	int return_code;
 
@@ -5390,3 +5499,219 @@ int Computed_field_manage(struct Computed_field *field,
 
 	return return_code;
 }
+
+struct Cmiss_field_factory *Cmiss_field_factory_create(struct Cmiss_region *region)
+{
+	ENTER(Cmiss_field_factory_create);
+	Cmiss_field_factory *field_factory = NULL;
+	if (region)
+	{
+		ALLOCATE(field_factory, struct Cmiss_field_factory, sizeof(struct Cmiss_field_factory));
+		if (field_factory)
+		{
+			field_factory->region = ACCESS(Cmiss_region)(region);
+			field_factory->field_name = (char *)NULL;
+			field_factory->managed_status = COMPUTED_FIELD_MANAGED_PRIVATE_VOLATILE;
+			field_factory->replace_field = (Computed_field *)NULL;
+			field_factory->coordinate_system.type = RECTANGULAR_CARTESIAN;
+			field_factory->coordinate_system_override = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Cmiss_field_factory_create.  Missing region");		
+	}
+	LEAVE;
+
+	return (field_factory);
+};
+
+int Cmiss_field_factory_destroy(
+	struct Cmiss_field_factory **field_factory_address)
+{
+	int return_code;
+	struct Cmiss_field_factory *field_factory;
+
+	ENTER(Cmiss_field_factory_destroy);
+	if (field_factory_address && (NULL != (field_factory = *field_factory_address)))
+	{
+		DEACCESS(Cmiss_region)(&field_factory->region);
+		DEALLOCATE(field_factory->field_name)
+		REACCESS(Computed_field)(&field_factory->replace_field, NULL);
+		DEALLOCATE(*field_factory_address);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_factory_destroy.  Missing field factory");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_field_factory_destroy */
+
+struct Cmiss_region *Cmiss_field_factory_get_region(
+	struct Cmiss_field_factory *field_factory)
+{
+	if (field_factory)
+	{
+		return field_factory->region;
+	}
+	return NULL;
+}
+
+int Cmiss_field_factory_set_field_name(
+	struct Cmiss_field_factory *field_factory, const char *field_name)
+{
+	int return_code = 0;
+	if (field_factory && field_name)
+	{
+		char *temp = duplicate_string(field_name);
+		if (temp)
+		{
+			if (field_factory->field_name)
+			{
+				DEALLOCATE(field_factory->field_name);
+			}
+			field_factory->field_name = temp;
+			return_code = 1;
+		}
+	}
+	return (return_code);
+}
+
+char *Cmiss_field_factory_get_field_name(
+	struct Cmiss_field_factory *field_factory)
+{
+	if (field_factory && field_factory->field_name)
+	{
+		return duplicate_string(field_factory->field_name);
+	}
+	return NULL;
+}
+
+int Cmiss_field_factory_set_coordinate_system(
+	struct Cmiss_field_factory *field_factory,
+	struct Coordinate_system coordinate_system)
+{
+	if (field_factory)
+	{
+		field_factory->coordinate_system = coordinate_system;
+		field_factory->coordinate_system_override = 1;
+		return 1;
+	}
+	return 0;
+}
+
+struct Coordinate_system Cmiss_field_factory_get_coordinate_system(
+	struct Cmiss_field_factory *field_factory)
+{
+	if (field_factory)
+	{
+		return field_factory->coordinate_system;
+	}
+	// return dummy
+	struct Coordinate_system coordinate_system;
+	coordinate_system.type = RECTANGULAR_CARTESIAN;
+	return (coordinate_system);
+}
+
+int Cmiss_field_factory_coordinate_system_is_set(
+	struct Cmiss_field_factory *field_factory)
+{
+	if (field_factory)
+	{
+		return field_factory->coordinate_system_override;
+	}
+	return 0;
+}
+
+int Cmiss_field_factory_set_managed_status(
+	struct Cmiss_field_factory *field_factory,
+	enum Computed_field_managed_status new_managed_status)
+{
+	int return_code = 0;
+	if (field_factory)
+	{
+		field_factory->managed_status = new_managed_status;
+		return_code = 1;
+	}
+	return (return_code);
+}
+
+enum Computed_field_managed_status Cmiss_field_factory_get_managed_status(
+	struct Cmiss_field_factory *field_factory)
+{
+	if (field_factory)
+	{
+		return field_factory->managed_status;
+	}
+	return COMPUTED_FIELD_UNMANAGED;
+}
+
+int Cmiss_field_factory_set_replace_field(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *replace_field)
+{
+	int return_code;
+	
+	if (field_factory && ((NULL == replace_field) ||
+		(field_factory->region == Computed_field_get_region(replace_field))))
+	{
+		REACCESS(Computed_field)(&field_factory->replace_field, replace_field);
+		if (replace_field)
+		{
+			// copy settings from replace_field to be new defaults
+			char *field_name = NULL;
+			if (GET_NAME(Computed_field)(replace_field, &field_name))
+			{
+				if (field_factory->field_name)
+				{
+					DEALLOCATE(field_factory->field_name);
+				}
+				field_factory->field_name = field_name;
+			}
+			field_factory->coordinate_system = replace_field->coordinate_system;
+			field_factory->coordinate_system_override = 1;
+			field_factory->managed_status = replace_field->managed_status;
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_factory_set_replace_field.  Invalid arguments");		
+		return_code = 0;
+	}
+	
+	return (return_code);
+}
+
+struct Computed_field *Cmiss_field_factory_get_replace_field(
+	struct Cmiss_field_factory *field_factory)
+{
+	Computed_field *replace_field = NULL;
+	if (field_factory)
+	{
+		replace_field = field_factory->replace_field;
+	}
+	return (replace_field);
+}
+
+Computed_field *Computed_field_modify_data::get_field()
+{
+	return Cmiss_field_factory_get_replace_field(field_factory);
+};
+
+Cmiss_region *Computed_field_modify_data::get_region()
+{
+	return Cmiss_field_factory_get_region(field_factory);
+};
+
+MANAGER(Computed_field) *Computed_field_modify_data::get_field_manager()
+{
+	return Cmiss_region_get_Computed_field_manager(
+		Cmiss_field_factory_get_region(field_factory));
+};

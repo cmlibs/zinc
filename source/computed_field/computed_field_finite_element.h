@@ -137,19 +137,16 @@ NULL then the field will be defined as constant for all times.
 If it is NULL then a single nodal value for each component will be defined.
 ==============================================================================*/
 
-int Computed_field_set_type_finite_element(struct Computed_field *field,
-	struct FE_field *fe_field, struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 11 March 2003
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_FINITE_ELEMENT, wrapping the given
-<fe_field>. Makes the number of components the same as in the <fe_field>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-Need pointer to fe_field_manager so can call MANAGED_OBJECT_NOT_IN_USE in
-Computed_field_finite_element_not_in_use.
-==============================================================================*/
+/*****************************************************************************//**
+ * Creates a computed field wrapper for <fe_field>.
+ * Makes the number of components the same as in the <fe_field>.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param fe_field  FE_field to be wrapped
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_finite_element(
+	struct Cmiss_field_factory *field_factory, struct FE_field *fe_field);
 
 int Computed_field_get_type_finite_element(struct Computed_field *field,
 	struct FE_field **fe_field);
@@ -211,17 +208,15 @@ LAST MODIFIED : 18 July 2000
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_cmiss_number(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CMISS_NUMBER with the supplied
-fields, <source_field_one> and <source_field_two>.  Sets the number of 
-components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
+/*****************************************************************************//**
+ * Creates a cmiss_number type fields whose value is the number of the element
+ * or node location. 
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_cmiss_number(
+	struct Cmiss_field_factory *field_factory);
 
 int Computed_field_has_coordinate_fe_field(struct Computed_field *field,
 	void *dummy);
@@ -304,21 +299,22 @@ DESCRIPTION :
 Cleans up <fe_field> and its Computed_field wrapper if each are not in use.
 ==============================================================================*/
 
-int Computed_field_set_type_node_value(struct Computed_field *field,
+/*****************************************************************************//**
+ * Creates a field returning the values for the given <nodal_value_type> and
+ * <version_number> of <fe_field> at a node.
+ * Makes the number of components the same as in the <fe_field>.
+ * Field automatically takes the coordinate system of the source fe_field.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param fe_field  FE_field whose nodal parameters will be extracted
+ * @param nodal_value_type  Parameter value type to extract
+ * @param version_number  Version of parameter value to extract.
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_node_value(
+	struct Cmiss_field_factory *field_factory,
 	struct FE_field *fe_field,enum FE_nodal_value_type nodal_value_type,
 	int version_number);
-/*******************************************************************************
-LAST MODIFIED : 19 July 2000
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_NODE_VALUE, returning the values for the
-given <nodal_value_type> and <version_number> of <fe_field> at a node.
-Makes the number of components the same as in the <fe_field>.
-Field automatically takes the coordinate system of the source fe_field. See note
-at start of this file about changing use of coordinate systems.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 
 int Computed_field_is_type_xi_coordinates(struct Computed_field *field,
 	void *dummy_void);
@@ -328,17 +324,16 @@ LAST MODIFIED : 15 January 2002
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_xi_coordinates(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_XI_COORDINATES with the supplied
-fields, <source_field_one> and <source_field_two>.  Sets the number of 
-components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
+/*****************************************************************************//**
+ * Creates a field whose return values are the xi coordinate location.
+ * Currently fixed at 3 components, padding with zeros for lower dimension
+ * elements.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_xi_coordinates(
+	struct Cmiss_field_factory *field_factory);
 
 int Computed_field_is_type_node_value(struct Computed_field *field);
 /*******************************************************************************
@@ -346,7 +341,6 @@ LAST MODIFIED : 19 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
-
 
 int Computed_field_get_FE_field_time_array_index_at_FE_value_time(
 	 struct Computed_field *field,FE_value time, FE_value *the_time_high,
@@ -366,27 +360,17 @@ LAST MODIFIED : 9 Oct 2007
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_manager_begin_autowrap_FE_fields(
-	struct MANAGER(Computed_field) *computed_field_manager,
-	struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 22 May 2008
+struct FE_region_changes;
 
-DESCRIPTION :
-Establishes callbacks to automatically wrap FE_fields from <fe_region> in
-finite element computed fields in <computed_field_manager>.
-==============================================================================*/
-
-int Computed_field_manager_end_autowrap_FE_fields(
-	struct MANAGER(Computed_field) *computed_field_manager,
-	struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 22 May 2008
-
-DESCRIPTION :
-Ends automatically wrapping of FE_fields from <fe_region> in
-finite element computed fields in <computed_field_manager>.
-==============================================================================*/
+/***************************************************************************//**
+ * Callback for changes to FE_region attached to a cmiss_region.
+ * Updates definitions of Computed_field wrappers for changed FE_fields in the
+ * region.
+ * Also ensures region has cmiss_number and xi fields, at the appropriate time.
+ * @private  Should only be called from cmiss_region.cpp!
+ */
+void Cmiss_region_FE_region_change(struct FE_region *fe_region,
+	struct FE_region_changes *changes, void *cmiss_region_void);
 
 #ifdef __cplusplus
 }

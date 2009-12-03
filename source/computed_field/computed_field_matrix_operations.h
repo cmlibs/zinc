@@ -43,23 +43,93 @@ DESCRIPTION :
 #if !defined (COMPUTED_FIELD_MATRIX_OPERATIONS_H)
 #define COMPUTED_FIELD_MATRIX_OPERATIONS_H
 
-int Computed_field_set_type_projection(struct Computed_field *field,
+/***************************************************************************//**
+ * Creates a field returning the N eigenvalues of symmetric N*N component source
+ * field.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param source_field  N*N component square symmetric matrix field.
+ * @return Newly created field
+ */
+Computed_field *Computed_field_create_eigenvalues(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *source_field);
+
+/***************************************************************************//**
+ * Creates a field returning the N, N-dimensional eigenvectors computed with the
+ * source eigenvalues field. Sets the number of components equal to N*N, where
+ * N is the number of components in the <eigenvalues_field>.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param eigenvalues_field  Eigenvalues type field.
+ * @return Newly created field
+ */
+Computed_field *Computed_field_create_eigenvectors(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *eigenvalues_field);
+
+/***************************************************************************//**
+ * Creates a field returning the inverse of N*N symmetric matrix valued source
+ * field.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param source_field  N*N component square symmetric matrix field.
+ * @return Newly created field
+ */
+Computed_field *Computed_field_create_matrix_invert(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *source_field);
+
+/***************************************************************************//**
+ * Creates a field returning the values resulting from matrix multiplication
+ * <source_field1> x <source_field2>, with <number_of_rows> rows in both
+ * <source_field1> and the result. From the <number_of_rows> the columns in
+ * <source_field1>, rows in <source_field2> and then columns in <source_field2>
+ * are implied and checked.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param number_of_rows  Number of rows N in source_field1 and result.
+ * @param source_field1  N rows * M columns component matrix field 1.
+ * @param source_field2  M rows * P columns component matrix field 2.
+ * @return Newly created matrix with N*P components.
+ */
+Computed_field *Computed_field_create_matrix_multiply(
+	struct Cmiss_field_factory *field_factory,
+	int number_of_rows, struct Computed_field *source_field1,
+	struct Computed_field *source_field2);
+
+/***************************************************************************//**
+ * Creates a projection field returning the <source_field> with each component
+ * multiplied by the perspective <projection_matrix>.
+ * The <projection_matrix> array must be of size (number_of_components + 1)
+ * rows * (source_field->number_of_components + 1) columns.
+ * The source vector is appended with a 1 to make
+ * source_field->number_of_components + 1 components. The extra calculated
+ * value is a perspective value which divides through each of the other
+ * components.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_projection(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, int number_of_components, 
 	double *projection_matrix);
-/*******************************************************************************
-LAST MODIFIED : 27 September 2000
 
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_PROJECTION, returning the <source_field>
-with each component multiplied by the perspective <projection_matrix>.
-The <projection_matrix> array must be of size
-(source_field->number_of_components + 1) * (field->number_of_components + 1).
-The source vector is appended with a 1 to make
-source_field->number_of_components + 1 components. The extra calculated value
-is a perspective value which divides through each of the other components.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
+/***************************************************************************//**
+ * Creates a field returning the transpose of N*M matrix source_field.
+ * The source_number_of_rows is specified; source_number_of_columns is computed
+ * as source_field->number_of_components / <source_number_of_rows>;
+ * this division must have no remainder. 
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param source_number_of_rows  Number of rows N in source_field.
+ * @param source_field  N rows * M columns component matrix field.
+ * @return Newly created M*N component transposed matrix field.
+ */
+Computed_field *Computed_field_create_transpose(
+	struct Cmiss_field_factory *field_factory,
+	int source_number_of_rows, struct Computed_field *source_field);
 
 int Computed_field_register_types_matrix_operations(
 	struct Computed_field_package *computed_field_package);
@@ -68,4 +138,5 @@ LAST MODIFIED : 26 September 2000
 
 DESCRIPTION :
 ==============================================================================*/
+
 #endif /* !defined (COMPUTED_FIELD_MATRIX_OPERATIONS_H) */

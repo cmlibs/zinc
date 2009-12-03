@@ -68,8 +68,8 @@ namespace {
 		                // kept here just to help with iterating through array
 		int *sizes; // Resolution in each direction of <dimension>
 		
-		Computed_field_image_resample(Computed_field *field,
-			int dimension, int *sizes_in) : Computed_field_core(field), dimension(dimension) 
+		Computed_field_image_resample(int dimension, int *sizes_in) :
+			Computed_field_core(), dimension(dimension) 
 		{
 			int i;
 			sizes = new int[dimension];
@@ -88,10 +88,9 @@ namespace {
 		}
 		
 	private:
-		Computed_field_core *copy(Computed_field* new_parent)
+		Computed_field_core *copy()
 		{
-			return new Computed_field_image_resample(new_parent,
-				dimension, sizes);
+			return new Computed_field_image_resample(dimension, sizes);
 		}
 		
 		int evaluate_cache_at_location(Field_location* location);
@@ -326,68 +325,44 @@ Returns allocated command string for reproducing field.
 
 } //namespace
 
-int Computed_field_set_type_image_resample(struct Computed_field *field,
+Computed_field *Computed_field_create_image_resample(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, int dimension, int *sizes)
-/*******************************************************************************
-LAST MODIFIED : 7 March 2007
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_IMAGE_RESAMPLE with the supplied
-field, <source_field>, and overrides the sizes that will be used for subsequent
-image processing operations.  The texture_coordinate field could also be 
-overridden.  The minimums and maximums are not implemented at all, which
-would allow a windowing, and could also be overridden here.
-==============================================================================*/
 {
-	int number_of_source_fields, return_code, source_field_dimension, *source_sizes;
-	Computed_field **source_fields, *source_texture_coordinate_field;
-
-	ENTER(Computed_field_set_type_time_image_resample);
-	if (field && source_field && dimension && sizes)
+	Computed_field *field = NULL;
+	if (source_field && dimension && sizes)
 	{
-		if (Computed_field_get_native_resolution(
+		Computed_field *source_texture_coordinate_field = NULL;
+		int source_field_dimension = 0;
+		int *source_sizes = NULL;
+		int return_code = Computed_field_get_native_resolution(
 			source_field, &source_field_dimension, &source_sizes,
-			&source_texture_coordinate_field) && 
-			(dimension == source_field_dimension))
+			&source_texture_coordinate_field);
+		DEALLOCATE(source_sizes);
+		if (return_code && (dimension == source_field_dimension))
 		{
-			DEALLOCATE(source_sizes);
-			return_code=1;
-			/* 1. make dynamic allocations for any new type-specific data */
-			number_of_source_fields=1;
-			if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-			{
-				/* 2. free current type-specific data */
-				Computed_field_clear_type(field);
-				/* 3. establish the new type */
-				field->number_of_components = source_field->number_of_components;
-				source_fields[0]=ACCESS(Computed_field)(source_field);
-				field->source_fields=source_fields;
-				field->number_of_source_fields=number_of_source_fields;
-				field->core = new Computed_field_image_resample(field, dimension, sizes);
-			}
-			else
-			{
-				return_code = 0;
-			}
+			field = Computed_field_create_generic(field_factory,
+				/*check_source_field_regions*/true,
+				source_field->number_of_components,
+				/*number_of_source_fields*/1, &source_field,
+				/*number_of_source_values*/0, NULL,
+				new Computed_field_image_resample(dimension, sizes));
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_image_resample.  "
+				"Computed_field_create_image_resample.  "
 				"Specified dimension and source field dimension do not match.");
-			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_image_resample.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_image_resample.  Invalid argument(s)");
 	}
-	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_image_resample */
+	return (field);
+}
 
 int Computed_field_get_type_image_resample(struct Computed_field *field,
 	struct Computed_field **source_field, int *dimension, int **sizes)
@@ -444,25 +419,25 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int dimension, return_code, original_dimension, *sizes, *original_sizes;
-	Computed_field *field,*source_field, *texture_coordinate_field;
+	Computed_field *source_field, *texture_coordinate_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_image_resample);
 	USE_PARAMETER(computed_field_simple_package_void);
-	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void) &&
-			(field=field_modify->field))
+	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
 		source_field = (struct Computed_field *)NULL;
 		original_dimension = 0;
 		original_sizes = (int *)NULL;
-		if (computed_field_image_resample_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_image_resample_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code=Computed_field_get_type_image_resample(field, 
+			return_code=Computed_field_get_type_image_resample(field_modify->get_field(), 
 				&source_field, &original_dimension, &original_sizes);
 			ACCESS(Computed_field)(source_field);
 		}
@@ -479,7 +454,7 @@ already) and allows its contents to be modified.
 
 				/* source field */
 				set_source_field_data.computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_source_field_data.conditional_function=
 					Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -497,7 +472,7 @@ already) and allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* source field */
 			set_source_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_source_field_data.conditional_function=
 				Computed_field_has_numerical_components;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -541,8 +516,9 @@ already) and allows its contents to be modified.
 			}
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_image_resample(field,
-					source_field, dimension, sizes);
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_image_resample(field_modify->get_field_factory(),
+						source_field, dimension, sizes));
 			}
 			
 			if (!return_code)

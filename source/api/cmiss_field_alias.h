@@ -43,19 +43,19 @@
 #if !defined (CMISS_FIELD_ALIAS_H)
 #define CMISS_FIELD_ALIAS_H
 
-#include "api/cmiss_field.h"
-
 typedef struct Cmiss_field_alias *Cmiss_field_alias_id;
 
-/*****************************************************************************//**
+/***************************************************************************//**
  * Creates a cmiss field which is an alias for another field, possibly from
  * another region.
  * This is the main mechanism for reusing field definitions from other regions.
  *
- * @param original_field  The field which the new field will be an alias for.
- *   Must already be in a region.
- * @return  Newly created field
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param original_field  The field which the new field will be an alias for. Can
+ * be from a different region.
+ * @return  Newly created alias field
  */
-Cmiss_field_id Cmiss_field_create_alias(Cmiss_field_id original_field);
+Cmiss_field_id Cmiss_field_create_alias(Cmiss_field_factory_id field_factory,
+	Cmiss_field_id original_field);
 
 #endif /* !defined (CMISS_FIELD_ALIAS_H) */

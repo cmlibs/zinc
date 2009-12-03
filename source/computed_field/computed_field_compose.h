@@ -55,28 +55,28 @@ LAST MODIFIED : 7 January 2003
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_compose(struct Computed_field *field,
+/***************************************************************************//**
+ * Creates a field of type COMPUTED_FIELD_COMPOSE. This field allows you to
+ * evaluate one field to find "texture coordinates", use a find_element_xi field
+ * to then calculate a corresponding element/xi and finally calculate values
+ * using this element/xi and a third field.  You can then evaluate values on a
+ * "host" mesh for any points "contained" inside.  The <search_element_group> is
+ * the group from which any returned element_xi will belong.
+ * If <use_point_five_when_out_of_bounds> is true then if the
+ * texture_coordinate_field values cannot be found in the find_element_xi_field,
+ * then instead of returning failure, the values will be set to 0.5 and returned
+ * as success.
+ * Only elements that have dimension equals <element_dimension> will be searched.
+ * The <region_path> string is supplied so that the commands listed can correctly
+ * name the string used to select the <search_region>.
+ */
+Computed_field *Computed_field_create_compose(Cmiss_field_factory *field_factory,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *find_element_xi_field,
 	struct Computed_field *calculate_values_field,
 	struct Cmiss_region *search_region, char *region_path,
 	int find_nearest, int use_point_five_when_out_of_bounds,
 	int element_dimension);
-/*******************************************************************************
-LAST MODIFIED : 9 May 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_COMPOSE, this field allows you to
-evaluate one field to find "texture coordinates", use a find_element_xi field
-to then calculate a corresponding element/xi and finally calculate values using
-this element/xi and a third field.  You can then evaluate values on a "host"
-mesh for any points "contained" inside.  The <search_element_group> is the group
-from which any returned element_xi will belong.
-If <use_point_five_when_out_of_bounds> is true then if the texture_coordinate_field
-values cannot be found in the find_element_xi_field, then instead of returning
-failure, the values will be set to 0.5 and returned as success.
-Only elements that have dimension equals <element_dimension> will be searched.
-==============================================================================*/
 
 int Computed_field_get_type_compose(struct Computed_field *field,
 	struct Computed_field **texture_coordinate_field,

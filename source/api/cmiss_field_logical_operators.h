@@ -4,7 +4,7 @@ FILE : cmiss_field_logical_operators.h
 LAST MODIFIED : 16 May 2008
 
 DESCRIPTION :
-The public interface to the Cmiss_fields that perform arithmetic operations.
+The public interface to the Cmiss_fields that perform logical operations.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -45,30 +45,34 @@ The public interface to the Cmiss_fields that perform arithmetic operations.
 #ifndef __CMISS_FIELD_LOGICAL_OPERATORS_H__
 #define __CMISS_FIELD_LOGICAL_OPERATORS_H__
 
+/*****************************************************************************//**
+ * Creates a field whose component values are 1 if that component of
+ * source_field_one is less than the component value in source_field_two.
+ * Automatic scalar broadcast will apply, see cmiss_field.h.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param source_field_one First input field
+ * @param source_field_two Second input field
+ * @return Newly created field
+ */
 Cmiss_field_id Cmiss_field_create_less_than(
+	Cmiss_field_factory_id field_factory,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
-/*******************************************************************************
-LAST MODIFIED : 16 May 2008
 
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_LESS_THAN with the supplied
-field, <source_field> .  Sets the number of 
-components equal to the source_fields.
-Automatic scalar broadcast will apply, see cmiss_field.h.
-==============================================================================*/
-
+/*****************************************************************************//**
+ * Creates a field whose component values are 1 if that component of
+ * source_field_one is greater than the component value in source_field_two.
+ * Automatic scalar broadcast will apply, see cmiss_field.h.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param source_field_one First input field
+ * @param source_field_two Second input field
+ * @return Newly created field
+ */
 Cmiss_field_id Cmiss_field_create_greater_than(
+	Cmiss_field_factory_id field_factory,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
-/*******************************************************************************
-LAST MODIFIED : 16 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_GREATER_THAN with the supplied
-field, <source_field> .  Sets the number of 
-components equal to the source_fields.
-Automatic scalar broadcast will apply, see cmiss_field.h.
-==============================================================================*/
 
 #endif /* __CMISS_FIELD_LOGICAL_OPERATORS_H__ */

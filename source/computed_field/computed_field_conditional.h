@@ -50,21 +50,23 @@ Implements computed fields which conditionally calculate their inputs.
 
 #define Computed_field_create_if Cmiss_field_create_if
 
+/*****************************************************************************//**
+ * Creates a conditional field with the same number of components as each of the
+ * source_fields. For each component, if the value of source_field_one is TRUE
+ * (non-zero) then the result will be the value of source_field_two, otherwise the
+ * component result will be taken from source_field_three.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param source_field_one  Conditional field.
+ * @param source_field_two  TRUE = non-zero conditional component results.
+ * @param source_field_three  FALSE = zero conditional component results.
+ * @return Newly created field
+ */
 struct Computed_field *Computed_field_create_if(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two,
 	struct Computed_field *source_field_three);
-/*******************************************************************************
-LAST MODIFIED : 16 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_IF with the supplied
-fields, <source_field_one>, <source_field_two> and <source_field_three>.
-Sets the number of components equal to the source_fields.
-For each component, if the value of source_field_one is TRUE (non-zero) then
-the result will be the value of source_field_two, otherwise the result will
-be source_field_three.
-==============================================================================*/
 
 int Computed_field_register_types_conditional(
 	struct Computed_field_package *computed_field_package);

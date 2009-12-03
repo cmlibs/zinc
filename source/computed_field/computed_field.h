@@ -100,6 +100,26 @@ LAST MODIFIED : 24 December 1998
 DESCRIPTION :
 ==============================================================================*/
 
+/** Mode/flags controlling how a field is managed by a region. */
+enum Computed_field_managed_status
+{
+	/** If bit set, remove from region when unused / access_count reduced to 1 */
+	COMPUTED_FIELD_REMOVE_IF_UNUSED_BIT = 4,
+
+	/** Field is not managed by a region */
+	COMPUTED_FIELD_UNMANAGED = 0,
+
+	/** Field is managed by region with public visibility */
+	COMPUTED_FIELD_MANAGED_PUBLIC = 1,
+
+	/** Field is managed by region with private visibility */
+	COMPUTED_FIELD_MANAGED_PRIVATE = 3,
+
+	/** Field is managed by region with private visibility, and is volatile */
+	COMPUTED_FIELD_MANAGED_PRIVATE_VOLATILE =
+		COMPUTED_FIELD_MANAGED_PRIVATE + COMPUTED_FIELD_REMOVE_IF_UNUSED_BIT
+};
+
 DECLARE_LIST_TYPES(Computed_field);
 
 DECLARE_MANAGER_TYPES(Computed_field);
@@ -129,6 +149,12 @@ struct Computed_field_conditional_data
 	FE_value time;
 }; /* struct Computed_field_conditional_data */
 
+/***************************************************************************//**
+ * Stores data and settings needed to create field, including the region to add
+ * it to.
+ */
+struct Cmiss_field_factory;
+
 /*
 Global functions
 ----------------
@@ -136,23 +162,6 @@ Global functions
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
-
-struct Computed_field *CREATE(Computed_field)(const char *name);
-/*******************************************************************************
-LAST MODIFIED : 13 December 2001
-
-DESCRIPTION :
-Creates a basic Computed_field with the given <name>. Its type is initially
-COMPUTED_FIELD_INVALID with no components.
-==============================================================================*/
-
-int DESTROY(Computed_field)(struct Computed_field **field_address);
-/*******************************************************************************
-LAST MODIFIED : 24 December 1998
-
-DESCRIPTION :
-Frees memory/deaccess objects in computed_field at <*field_address>.
-==============================================================================*/
 
 PROTOTYPE_OBJECT_FUNCTIONS(Computed_field);
 /*PROTOTYPE_COPY_OBJECT_FUNCTION(Computed_field);*/
@@ -980,6 +989,12 @@ Returns true if the <field> is only accessed once - assumed by its manager. If
 it is of type COMPUTED_FIELD_FINITE_ELEMENT further tests that its fe_field can
 be destroyed, assuming it is only accessed by this field and its manager.
 ==============================================================================*/
+
+/***************************************************************************//**
+ * Set mode controlling visibility and lifetime of field in its region.
+ */
+int Computed_field_set_managed_status(struct Computed_field *field,
+	enum Computed_field_managed_status managed_status); 
 
 int Computed_field_set_name(struct Computed_field *field,
 	const char *name);

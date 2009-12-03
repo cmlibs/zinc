@@ -52,14 +52,17 @@ LAST MODIFIED : 7 July 2006
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_string_constant(struct Computed_field *field,
+/*****************************************************************************//**
+ * Creates a string constant field with the supplied <number_of_components> and
+ * the string values from <string_constant_array> 
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param number_of_components  Number of components == number of strings.
+ * @param string_constant_array  Array of strings
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_string_constant(
+	struct Cmiss_field_factory *field_factory,
 	int number_of_components, char **string_constant_array);
-/*******************************************************************************
-LAST MODIFIED : 7 July 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_STRING_CONSTANT with the supplied
-<number_of_components> and the string values from <string_constant_array>.
-==============================================================================*/
 
 #endif /* !defined (COMPUTED_FIELD_STRING_CONSTANT_H) */

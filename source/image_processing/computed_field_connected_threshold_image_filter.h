@@ -45,12 +45,6 @@ DESCRIPTION :
 
 #include "api/cmiss_field.h"
 
-/* API functions are prefixed with Cmiss */
-#define Computed_field_set_type_connected_threshold_image_filter \
-	Cmiss_field_set_type_connected_threshold_image_filter
-#define Computed_field_get_type_connected_threshold_image_filter \
-	Cmiss_field_get_type_connected_threshold_image_filter
-
 int Computed_field_register_types_connected_threshold_image_filter(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
@@ -59,25 +53,17 @@ LAST MODIFIED : 16 July 2007
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_connected_threshold_image_filter(struct Computed_field *field,
+/***************************************************************************//**
+ * Creates a field performing ITK connected threshold image filter on scalar
+ * source field image. Sets number of components to same number as source field.
+ */
+struct Computed_field *Cmiss_field_create_connected_threshold_image_filter(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field,
   double lower_threshold, double upper_threshold, double replace_value,
 	int num_seed_points, int dimension, double *seed_points);
-/*******************************************************************************
-LAST MODIFIED : 16 July 2007
 
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CONNECTED_THRESHOLD_IMAGE_FILTER, returning the value of
-<connected_threshold_image_filter> at the time/parameter value given by scalar <source_field>.
-Sets number of components to same number as <connected_threshold_image_filter>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-???RC In future may not need to pass computed_field_manager it all fields
-maintain pointer to it. Only have it to invoke computed field manager messages
-in response to changes in the connected_threshold_image_filter from the control connected_threshold_image_filter manager.
-==============================================================================*/
-
-int Computed_field_get_type_connected_threshold_image_filter(struct Computed_field *field,
+int Cmiss_field_get_type_connected_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field,
   double *lower_threshold, double *upper_threshold, double *replace_value,
 	int *num_seed_points, int *dimension, double **seed_points);

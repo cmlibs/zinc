@@ -68,14 +68,14 @@ char computed_field_time_lookup_type_string[] = "time_lookup";
 class Computed_field_time_lookup : public Computed_field_core
 {
 public:
-	Computed_field_time_lookup(Computed_field *field) : Computed_field_core(field)
+	Computed_field_time_lookup() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_time_lookup(new_parent);
+		return new Computed_field_time_lookup();
 	}
 
 	char *get_type_string()
@@ -370,58 +370,32 @@ int Computed_field_time_lookup::find_element_xi(
 
 } //namespace
 
-int Computed_field_set_type_time_lookup(struct Computed_field *field,
+struct Computed_field *Computed_field_create_time_lookup(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, struct Computed_field *time_field)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_TIME_LOOKUP with the supplied
-fields, <source_field> is the field the values are returned from but rather
-than using the current time, the scalar <time_field> is evaluated and its value
-is used for the time.
-==============================================================================*/
 {
-	int number_of_source_fields,number_of_source_values,return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_time_lookup);
-	if (field&&source_field&&time_field&&(1 == time_field->number_of_components))
+	struct Computed_field *field = NULL;
+	if (field_factory && source_field && time_field &&
+		(1 == time_field->number_of_components))
 	{
-		return_code=1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=2;
-		number_of_source_values=0;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->number_of_components = source_field->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			source_fields[1]=ACCESS(Computed_field)(time_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->source_values=(FE_value *)NULL;
-			field->number_of_source_values=number_of_source_values;
-			field->core = new Computed_field_time_lookup(field);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			return_code = 0;
-		}
+		Computed_field *source_fields[2];
+		source_fields[0] = source_field;
+		source_fields[1] = time_field;
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/2, source_fields,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_time_lookup());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_time_lookup.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_time_lookup.  Invalid argument(s)");
 	}
-	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_time_lookup */
+	return (field);
+}
 
 int Computed_field_get_type_time_lookup(struct Computed_field *field,
 	struct Computed_field **source_field, struct Computed_field **time_field)
@@ -464,7 +438,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field,**source_fields;
+	struct Computed_field **source_fields;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data,
@@ -472,8 +446,7 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_time_lookup);
 	USE_PARAMETER(computed_field_time_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -482,10 +455,11 @@ already) and allows its contents to be modified.
 		{
 			source_fields[0] = (struct Computed_field *)NULL;
 			source_fields[1] = (struct Computed_field *)NULL;
-			if (computed_field_time_lookup_type_string ==
-				Computed_field_get_type_string(field))
+			if ((NULL != field_modify->get_field()) &&
+				(computed_field_time_lookup_type_string ==
+					Computed_field_get_type_string(field_modify->get_field())))
 			{
-				return_code=Computed_field_get_type_time_lookup(field, 
+				return_code=Computed_field_get_type_time_lookup(field_modify->get_field(), 
 					source_fields, source_fields + 1);
 			}
 			if (return_code)
@@ -503,13 +477,13 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_source_field_data.conditional_function=Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
 				Option_table_add_entry(option_table,"field",&source_fields[0],
 					&set_source_field_data,set_Computed_field_conditional);
 				set_time_field_data.computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_time_field_data.conditional_function=Computed_field_is_scalar;
 				set_time_field_data.conditional_function_user_data=(void *)NULL;
 				Option_table_add_entry(option_table,"time_field",&source_fields[1],
@@ -518,8 +492,9 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_set_type_time_lookup(field,
-						source_fields[0], source_fields[1]);
+					return_code = field_modify->update_field_and_deaccess(
+						Computed_field_create_time_lookup(field_modify->get_field_factory(),
+							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
 				{
@@ -569,17 +544,32 @@ char computed_field_time_value_type_string[] = "time_value";
 class Computed_field_time_value : public Computed_field_core
 {
 public:
+	
 	Time_object *time_object;
 
-	Computed_field_time_value(Computed_field *field,
-		Time_keeper* time_keeper) : 
-		Computed_field_core(field)
+	Computed_field_time_value(Time_keeper* time_keeper) : 
+		Computed_field_core(),
+		time_object(NULL)
 	{
 		time_object = Time_object_create_regular(
 			/*update_frequency*/10.0, /*time_offset*/0.0); 
-		Time_object_set_name(time_object,field->name);
-		Time_keeper_add_time_object(time_keeper,time_object);
+		if (!Time_keeper_add_time_object(time_keeper, time_object))
+		{
+			DEACCESS(Time_object)(&time_object);
+		}
 	};
+
+	virtual bool attach_to_field(Computed_field *parent)
+	{
+		if (Computed_field_core::attach_to_field(parent))
+		{
+			if (time_object && Time_object_set_name(time_object, parent->name))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 
 	~Computed_field_time_value()
 	{
@@ -587,9 +577,9 @@ public:
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_time_value(new_parent, 
+		return new Computed_field_time_value( 
 			Time_object_get_time_keeper(time_object));
 	}
 
@@ -756,38 +746,27 @@ Always has multiple times.
 
 } //namespace
 
-int Computed_field_set_type_time_value(struct Computed_field *field,
-	struct Time_keeper *time_keeper)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_TIME_VALUE.  It always returns the time
-from the default time keeper.
-==============================================================================*/
+struct Computed_field *Computed_field_create_time_value(
+	struct Cmiss_field_factory *field_factory, struct Time_keeper *time_keeper)
 {
-	int return_code;
-
-	ENTER(Computed_field_set_type_time_value);
-	if (field)
+	struct Computed_field *field = NULL;
+	if (field_factory && time_keeper)
 	{
-		return_code=1;
-		/* 2. free current type-specific data */
-		Computed_field_clear_type(field);
-		/* 3. establish the new type */
-		field->number_of_components = 1;
-		field->core = new Computed_field_time_value(field, time_keeper);
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			/*number_of_components*/1,
+			/*number_of_source_fields*/0, NULL,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_time_value(time_keeper));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_time_value.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_create_time_value.  Invalid argument(s)");
 	}
-	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_time_value */
+	return (field);
+}
 
 /* Computed_field_get_type_time_value(struct Computed_field *field) */
 /*******************************************************************************
@@ -808,13 +787,11 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code = 0;
-	struct Computed_field *field;
 	Computed_field_time_package *computed_field_time_package;
 	Computed_field_modify_data *field_modify;
 
 	ENTER(define_Computed_field_type_time_value);
 	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
 		(computed_field_time_package=
 		(Computed_field_time_package *)
 		computed_field_time_package_void))
@@ -823,8 +800,9 @@ already) and allows its contents to be modified.
 		(strcmp(PARSER_HELP_STRING,state->current_token)&&
 		strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
 		{
-			return_code = Computed_field_set_type_time_value(field,
-				computed_field_time_package->time_keeper);
+			return_code = field_modify->update_field_and_deaccess(
+				Computed_field_create_time_value(field_modify->get_field_factory(),
+					computed_field_time_package->time_keeper));
 		}
 		else
 		{

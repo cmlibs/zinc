@@ -55,16 +55,27 @@ LAST MODIFIED : 19 September 2003
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_time_lookup(struct Computed_field *field,
+/***************************************************************************//**
+ * Creates a field whose value equals <source_field>, calculated at the time
+ * value given by <time_field> instead of the current time from the timekeeper.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param source_field  Field to evaluate.
+ * @param time_field  Field providing time value to evaluate at.
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_time_lookup(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, struct Computed_field *time_field);
-/*******************************************************************************
-LAST MODIFIED : 16 December 2002
 
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_TIME_LOOKUP with the supplied
-fields, <source_field> is the field the values are returned from but rather
-than using the current time, the scalar <time_field> is evaluated and its value
-is used for the time.
-==============================================================================*/
+/***************************************************************************//**
+ * Creates a field which returns the current time from the supplied time keeper. 
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param time_keeper  Time keeper object.
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_time_value(
+	struct Cmiss_field_factory *field_factory, struct Time_keeper *time_keeper);
 
 #endif /* !defined (COMPUTED_FIELD_TIME_H) */

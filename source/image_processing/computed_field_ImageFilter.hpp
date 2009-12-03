@@ -94,9 +94,9 @@ public:
 
 	Computed_field_ImageFilter_Functor* functor;
 
-	Computed_field_ImageFilter(Computed_field *field) : Computed_field_core(field)
+	Computed_field_ImageFilter(Computed_field *source_field) : Computed_field_core()
 	{
-		if (Computed_field_get_native_resolution(field->source_fields[0],
+		if (Computed_field_get_native_resolution(source_field,
 				&dimension, &sizes, &texture_coordinate_field))
 		{
 			ACCESS(Computed_field)(texture_coordinate_field);
@@ -112,6 +112,22 @@ public:
 		}
 		functor = NULL;
 	};
+
+	virtual void create_functor() = 0;
+	
+	virtual bool attach_to_field(Computed_field *parent)
+	{
+		if (Computed_field_core::attach_to_field(parent))
+		{
+			create_functor();
+			// construction failed if no functor
+			if ((dimension > 0) && sizes && (NULL != functor))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 
 	~Computed_field_ImageFilter()
 	{

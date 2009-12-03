@@ -52,10 +52,15 @@ DESCRIPTION :
  * actual image data, which should then be set using a Cmiss_field_image_set_*
  * function.
  * 
+ * @param field_factory  Specifies owning region and other generic arguments.
  * @param domain_field  The field in which the image data will be embedded.
+ * @param source_field  Optional source field to automatically provides pixel
+ * values to the image.
  * @return Newly created field
-*/
-struct Computed_field *Computed_field_create_image(struct Computed_field *domain_field,
+ */
+struct Computed_field *Computed_field_create_image(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *domain_field,
 	struct Computed_field *source_field);
 
 int Computed_field_register_type_image(

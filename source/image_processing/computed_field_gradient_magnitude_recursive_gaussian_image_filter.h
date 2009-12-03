@@ -46,12 +46,6 @@ DESCRIPTION :
 
 #include "api/cmiss_field.h"
 
-/* API functions are prefixed with Cmiss */
-#define Computed_field_set_type_gradient_magnitude_recursive_gaussian_image_filter \
-	Cmiss_field_set_type_gradient_magnitude_recursive_gaussian_image_filter
-#define Computed_field_get_type_gradient_magnitude_recursive_gaussian_image_filter \
-	Cmiss_field_get_type_gradient_magnitude_recursive_gaussian_image_filter
-
 int Computed_field_register_types_gradient_magnitude_recursive_gaussian_image_filter(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
@@ -60,18 +54,16 @@ LAST MODIFIED : 18 Nov 2006
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_gradient_magnitude_recursive_gaussian_image_filter(struct Computed_field *field,
+/***************************************************************************//**
+ * Creates a field performing ITK gradient magnitude recursive gaussian image
+ * filter on scalar source field image.
+ * Sets number of components to same number as <source_field>.
+ */
+struct Computed_field *Cmiss_field_create_gradient_magnitude_recursive_gaussian_image_filter(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, double sigma);
-/*******************************************************************************
-LAST MODIFIED : 18 Nov 2006
 
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_GRADIENT_MAGNITUDE_RECURSIVE_GAUSSIAN_IMAGE_FILTER, returning the value of
-<gradient_magnitude_recursive_gaussian_image_filter> at the time/parameter value given by scalar <source_field>.
-Sets number of components to same number as <source_field>.
-==============================================================================*/
-
-int Computed_field_get_type_gradient_magnitude_recursive_gaussian_image_filter(struct Computed_field *field,
+int Cmiss_field_get_type_gradient_magnitude_recursive_gaussian_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, double *sigma);
 /*******************************************************************************
 LAST MODIFIED : 18 Nov 2006

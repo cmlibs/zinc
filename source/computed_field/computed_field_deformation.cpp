@@ -66,16 +66,16 @@ char computed_field_2d_strain_type_string[] = "2d_strain";
 class Computed_field_2d_strain : public Computed_field_core
 {
 public:
-	Computed_field_2d_strain(Computed_field *field) : Computed_field_core(field)
+	Computed_field_2d_strain() : Computed_field_core()
 	{
 	};
 
 private:
 	int is_defined_at_location(Field_location* location);
 
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_2d_strain(new_parent);
+		return new Computed_field_2d_strain();
 	}
 
 	char *get_type_string()
@@ -417,68 +417,44 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_2d_strain(struct Computed_field *field,
+/***************************************************************************//**
+ * Creates a field which preforms a 2-D strain calculation, combining a
+ * deformed_coordinate_field, undeformed_coordinate_field and
+ * fibre_angle_field.  Sets the number of components to 4.
+ * The <coordinate_field>s must have no more than 3 components.
+ */
+struct Computed_field *Computed_field_create_2d_strain(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *deformed_coordinate_field,
 	struct Computed_field *undeformed_coordinate_field,
 	struct Computed_field *fibre_angle_field)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_2D_STRAIN, combining a 
-deformed_coordinate_field, undeformed_coordinate_field and
-fibre_angle_field.  Sets the number of components to 4.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-The <coordinate_field>s must have no more than 3 components.
-==============================================================================*/
 {
-	int number_of_source_fields, return_code;
-	struct Computed_field **temp_source_fields;
-
-	ENTER(Computed_field_set_type_2d_strain);
-	if (field&&deformed_coordinate_field&&
-		(3>=deformed_coordinate_field->number_of_components)&&
-		undeformed_coordinate_field&&
-		(3>=undeformed_coordinate_field->number_of_components)
-		&&fibre_angle_field)
+	Computed_field *field = NULL;
+	if (field_factory && deformed_coordinate_field &&
+		(3 >= deformed_coordinate_field->number_of_components) &&
+		undeformed_coordinate_field &&
+		(3 >= undeformed_coordinate_field->number_of_components) &&
+		fibre_angle_field)
 	{
-		return_code=1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=3;
-		if (ALLOCATE(temp_source_fields,struct Computed_field *,
-			number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->number_of_components=4;
-			/* source_fields:
-				 0=deformed_coordinate, 1=undeformed_coordinate, 2=fibre_angle */
-			temp_source_fields[0]=ACCESS(Computed_field)(deformed_coordinate_field);
-			temp_source_fields[1]=ACCESS(Computed_field)(undeformed_coordinate_field);
-			temp_source_fields[2]=ACCESS(Computed_field)(fibre_angle_field);
-			field->source_fields=temp_source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			field->core = new Computed_field_2d_strain(field);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_2d_strain.  Not enough memory");
-			return_code=0;
-		}
+		Computed_field *source_fields[3];
+		source_fields[0] = deformed_coordinate_field;
+		source_fields[1] = undeformed_coordinate_field;
+		source_fields[2] = fibre_angle_field;
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			/*number_of_components*/4,
+			/*number_of_source_fields*/3, source_fields,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_2d_strain());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_2d_strain.  Invalid argument(s)");
-		return_code=0;
+			"Computed_field_create_2d_strain.  Invalid argument(s)");
 	}
-	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_2d_strain */
+	return (field);
+}
 
 int Computed_field_get_type_2d_strain(struct Computed_field *field,
 	struct Computed_field **deformed_coordinate_field,
@@ -531,7 +507,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *deformed_coordinate_field, *fibre_angle_field, *field,
+	struct Computed_field *deformed_coordinate_field, *fibre_angle_field,
 		*undeformed_coordinate_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
@@ -540,17 +516,17 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_2d_strain);
 	USE_PARAMETER(computed_field_deformation_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		deformed_coordinate_field=(struct Computed_field *)NULL;
 		undeformed_coordinate_field=(struct Computed_field *)NULL;
 		fibre_angle_field=(struct Computed_field *)NULL;
-		if (computed_field_2d_strain_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_2d_strain_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code=Computed_field_get_type_2d_strain(field,
+			return_code=Computed_field_get_type_2d_strain(field_modify->get_field(),
 				&deformed_coordinate_field, &undeformed_coordinate_field,
 				&fibre_angle_field);
 		}
@@ -572,7 +548,7 @@ already) and allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* deformed coordinate */
 			set_deformed_coordinate_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_deformed_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_deformed_coordinate_field_data.conditional_function_user_data=
@@ -582,7 +558,7 @@ already) and allows its contents to be modified.
 				set_Computed_field_conditional);
 			/* undeformed coordinate */
 			set_undeformed_coordinate_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_undeformed_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_undeformed_coordinate_field_data.conditional_function_user_data=
@@ -592,7 +568,7 @@ already) and allows its contents to be modified.
 				set_Computed_field_conditional);
 			/* fibre_angle */
 			set_fibre_angle_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_fibre_angle_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_fibre_angle_field_data.conditional_function_user_data=(void *)NULL;
@@ -601,9 +577,11 @@ already) and allows its contents to be modified.
 				set_Computed_field_conditional);
 			if (return_code = Option_table_multi_parse(option_table,state))
 			{
-				return_code = Computed_field_set_type_2d_strain(field,
-					deformed_coordinate_field, undeformed_coordinate_field,
-					fibre_angle_field);
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_2d_strain(
+						field_modify->get_field_factory(),
+						deformed_coordinate_field, undeformed_coordinate_field,
+						fibre_angle_field));
 			}
 			DESTROY(Option_table)(&option_table);
 			if (deformed_coordinate_field)

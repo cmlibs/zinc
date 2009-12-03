@@ -68,35 +68,35 @@ Note the order of derivatives:
 3. All the <element_dimension> derivatives of component 3.
 ==============================================================================*/
 
-int Computed_field_set_type_coordinate_transformation(struct Computed_field *field,
+/*****************************************************************************//**
+ * Creates a field which performs a coordinate transformation from the source
+ * field values in their coordinate system into the coordinate system of this
+ * field. Returned field has 3 components.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param source_field  Source field with values in their own coordinate system.
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_coordinate_transformation(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field);
-/*******************************************************************************
-LAST MODIFIED : 8 November 2001
 
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_COORDINATE_TRANSFORMATION with the supplied
-<source_field>.  Sets the number of components equal to the <source_field>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
-int Computed_field_set_type_vector_coordinate_transformation(struct Computed_field *field,
-	struct Computed_field *vector_field,struct Computed_field *coordinate_field);
-/*******************************************************************************
-LAST MODIFIED : 8 November 2001
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_RC_VECTOR, combining a vector field
-supplying a single vector (1,2 or 3 components), two vectors (4 or 6 components)
-or three vectors (9 components) with a coordinate field. This field type ensures
-that each source vector is converted to RC coordinates at the position given by
-the coordinate field - as opposed to RC_COORDINATE which assumes the
-transformation is always based at the origin.
-Sets the number of components to 3 times the number of vectors expected from
-the source vector_field.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
+/*****************************************************************************//**
+ * Create a field which performs a coordinate transformation of vectors from their
+ * original coordinate system and coordinate positions, to the coordinate system
+ * of this field. Sets the number of components in returned field to 3 times the
+ * number of vectors expected from the source vector_field.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param vector_field  Vector field to be transformed. Can be a single vector
+ * (1,2 or 3 components), two vectors (4 or 6 components) or three vectors
+ * (9 components).
+ * @param coordinate_field  Field giving location where vector value is from.
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_vector_coordinate_transformation(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *vector_field, struct Computed_field *coordinate_field);
 
 int Computed_field_register_types_coordinate(
 	struct Computed_field_package *computed_field_package);

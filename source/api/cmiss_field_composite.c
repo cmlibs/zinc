@@ -34,13 +34,15 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include "api/cmiss_field.h"
+#include "api/cmiss_field_composite.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "general/debug.h"
 #include "user_interface/message.h"
 
-Cmiss_field_id Cmiss_field_create_concatenate(int number_of_source_fields,
-	Cmiss_field_id *source_fields)
+Cmiss_field_id Cmiss_field_create_concatenate(Cmiss_field_factory_id field_factory,
+	int number_of_source_fields, Cmiss_field_id *source_fields)
 {
 	int *temp_source_field_numbers, *temp_source_value_numbers,i,j,k,
 		number_of_components_per_field,number_of_components;
@@ -70,9 +72,9 @@ Cmiss_field_id Cmiss_field_create_concatenate(int number_of_source_fields,
 					temp_source_value_numbers[k+j] = j;
 				}
 				k += number_of_components_per_field;
-			}	
-			field = Computed_field_create_composite(number_of_components,
-				number_of_source_fields, source_fields,
+			}
+			field = Computed_field_create_composite(field_factory,
+				number_of_components, number_of_source_fields, source_fields,
 				0, NULL, temp_source_field_numbers,temp_source_value_numbers);
 			DEALLOCATE(temp_source_field_numbers);
 			DEALLOCATE(temp_source_value_numbers);	
@@ -80,13 +82,13 @@ Cmiss_field_id Cmiss_field_create_concatenate(int number_of_source_fields,
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_field_create_composite.  Out of memory");
+				"Cmiss_field_create_concatenate.  Out of memory");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_create_composite.  Invalid argument(s)");
+			"Cmiss_field_create_concatenate.  Invalid argument(s)");
 	}
 
 	LEAVE;

@@ -65,14 +65,14 @@ char computed_field_sin_type_string[] = "sin";
 class Computed_field_sin : public Computed_field_core
 {
 public:
-	Computed_field_sin(Computed_field *field) : Computed_field_core(field)
+	Computed_field_sin() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_sin(new_parent);
+		return new Computed_field_sin();
 	}
 
 	char *get_type_string()
@@ -228,49 +228,15 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_sin(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_SIN with the supplied
-field, <source_field_one>.  Sets the number of components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int number_of_source_fields;
-	Computed_field *field, **source_fields;
-
-	ENTER(Computed_field_create_sin);
-	if ( source_field)
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. create new field */
-			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-			/* 3. establish the new type */
-			field->number_of_components = source_field->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_sin(field);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			field = (Computed_field *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_create_sin.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
-	}
-	LEAVE;
+	Computed_field *field = Computed_field_create_generic(field_factory,
+		/*check_source_field_regions*/true,
+		source_field->number_of_components,
+		/*number_of_source_fields*/1, &source_field,
+		/*number_of_source_values*/0, NULL,
+		new Computed_field_sin());
 
 	return (field);
 } /* Computed_field_create_sin */
@@ -315,7 +281,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field,**source_fields;
+	struct Computed_field **source_fields;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -323,8 +289,7 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_sin);
 	USE_PARAMETER(computed_field_trigonometry_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -332,10 +297,11 @@ already) and allows its contents to be modified.
 		if (ALLOCATE(source_fields, struct Computed_field *, 1))
 		{
 			source_fields[0] = (struct Computed_field *)NULL;
-			if (computed_field_sin_type_string ==
-				Computed_field_get_type_string(field))
+			if ((NULL != field_modify->get_field()) &&
+				(computed_field_sin_type_string ==
+					Computed_field_get_type_string(field_modify->get_field())))
 			{
-				return_code=Computed_field_get_type_sin(field, 
+				return_code=Computed_field_get_type_sin(field_modify->get_field(), 
 					source_fields);
 			}
 			if (return_code)
@@ -349,7 +315,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_source_field_data.conditional_function=
 					Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -361,8 +327,9 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_sin(
-						source_fields[0]));
+					return_code = field_modify->update_field_and_deaccess(
+						Computed_field_create_sin(field_modify->get_field_factory(),
+							source_fields[0]));
 				}
 				if (!return_code)
 				{
@@ -408,14 +375,14 @@ char computed_field_cos_type_string[] = "cos";
 class Computed_field_cos : public Computed_field_core
 {
 public:
-	Computed_field_cos(Computed_field *field) : Computed_field_core(field)
+	Computed_field_cos() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_cos(new_parent);
+		return new Computed_field_cos();
 	}
 
 	char *get_type_string()
@@ -571,49 +538,15 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_cos(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_COS with the supplied
-field, <source_field_one>.  Sets the number of components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int number_of_source_fields;
-	Computed_field *field, **source_fields;
-
-	ENTER(Computed_field_create_cos);
-	if ( source_field)
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. create new field */
-			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-			/* 3. establish the new type */
-			field->number_of_components = source_field->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_cos(field);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			field = (Computed_field *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_create_cos.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
-	}
-	LEAVE;
+	Computed_field *field = Computed_field_create_generic(field_factory,
+		/*check_source_field_regions*/true,
+		source_field->number_of_components,
+		/*number_of_source_fields*/1, &source_field,
+		/*number_of_source_values*/0, NULL,
+		new Computed_field_cos());
 
 	return (field);
 } /* Computed_field_create_cos */
@@ -658,7 +591,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field,**source_fields;
+	struct Computed_field **source_fields;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -666,8 +599,7 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_cos);
 	USE_PARAMETER(computed_field_trigonometry_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -675,10 +607,11 @@ already) and allows its contents to be modified.
 		if (ALLOCATE(source_fields, struct Computed_field *, 1))
 		{
 			source_fields[0] = (struct Computed_field *)NULL;
-			if (computed_field_cos_type_string ==
-				Computed_field_get_type_string(field))
+			if ((NULL != field_modify->get_field()) &&
+				(computed_field_cos_type_string ==
+					Computed_field_get_type_string(field_modify->get_field())))
 			{
-				return_code=Computed_field_get_type_cos(field, 
+				return_code=Computed_field_get_type_cos(field_modify->get_field(), 
 					source_fields);
 			}
 			if (return_code)
@@ -692,7 +625,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_source_field_data.conditional_function=
 					Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -704,8 +637,9 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_cos(
-						source_fields[0]));
+					return_code = field_modify->update_field_and_deaccess(
+						Computed_field_create_cos(field_modify->get_field_factory(),
+							source_fields[0]));
 				}
 				if (!return_code)
 				{
@@ -751,14 +685,14 @@ char computed_field_tan_type_string[] = "tan";
 class Computed_field_tan : public Computed_field_core
 {
 public:
-	Computed_field_tan(Computed_field *field) : Computed_field_core(field)
+	Computed_field_tan() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_tan(new_parent);
+		return new Computed_field_tan();
 	}
 
 	char *get_type_string()
@@ -914,49 +848,15 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_tan(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_TAN with the supplied
-field, <source_field_one>.  Sets the number of components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int number_of_source_fields;
-	Computed_field *field, **source_fields;
-
-	ENTER(Computed_field_create_tan);
-	if ( source_field)
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. create new field */
-			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-			/* 3. establish the new type */
-			field->number_of_components = source_field->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_tan(field);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			field = (Computed_field *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_create_tan.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
-	}
-	LEAVE;
+	Computed_field *field = Computed_field_create_generic(field_factory,
+		/*check_source_field_regions*/true,
+		source_field->number_of_components,
+		/*number_of_source_fields*/1, &source_field,
+		/*number_of_source_values*/0, NULL,
+		new Computed_field_tan());
 
 	return (field);
 } /* Computed_field_create_tan */
@@ -1001,7 +901,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field,**source_fields;
+	struct Computed_field **source_fields;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -1009,8 +909,7 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_tan);
 	USE_PARAMETER(computed_field_trigonometry_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -1018,10 +917,11 @@ already) and allows its contents to be modified.
 		if (ALLOCATE(source_fields, struct Computed_field *, 1))
 		{
 			source_fields[0] = (struct Computed_field *)NULL;
-			if (computed_field_tan_type_string ==
-				Computed_field_get_type_string(field))
+			if ((NULL != field_modify->get_field()) &&
+				(computed_field_tan_type_string ==
+					Computed_field_get_type_string(field_modify->get_field())))
 			{
-				return_code=Computed_field_get_type_tan(field, 
+				return_code=Computed_field_get_type_tan(field_modify->get_field(), 
 					source_fields);
 			}
 			if (return_code)
@@ -1035,7 +935,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_source_field_data.conditional_function=
 					Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -1047,8 +947,9 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_tan(
-						source_fields[0]));
+					return_code = field_modify->update_field_and_deaccess(
+						Computed_field_create_tan(field_modify->get_field_factory(),
+							source_fields[0]));
 				}
 				if (!return_code)
 				{
@@ -1094,14 +995,14 @@ char computed_field_asin_type_string[] = "asin";
 class Computed_field_asin : public Computed_field_core
 {
 public:
-	Computed_field_asin(Computed_field *field) : Computed_field_core(field)
+	Computed_field_asin() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_asin(new_parent);
+		return new Computed_field_asin();
 	}
 
 	char *get_type_string()
@@ -1265,49 +1166,15 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_asin(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_ASIN with the supplied
-field, <source_field_one>.  Sets the number of components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int number_of_source_fields;
-	Computed_field *field, **source_fields;
-
-	ENTER(Computed_field_create_asin);
-	if ( source_field)
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. create new field */
-			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-			/* 3. establish the new type */
-			field->number_of_components = source_field->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_asin(field);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			field = (Computed_field *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_create_asin.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
-	}
-	LEAVE;
+	Computed_field *field = Computed_field_create_generic(field_factory,
+		/*check_source_field_regions*/true,
+		source_field->number_of_components,
+		/*number_of_source_fields*/1, &source_field,
+		/*number_of_source_values*/0, NULL,
+		new Computed_field_asin());
 
 	return (field);
 } /* Computed_field_create_asin */
@@ -1352,7 +1219,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field,**source_fields;
+	struct Computed_field **source_fields;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -1360,8 +1227,7 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_asin);
 	USE_PARAMETER(computed_field_trigonometry_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -1369,10 +1235,11 @@ already) and allows its contents to be modified.
 		if (ALLOCATE(source_fields, struct Computed_field *, 1))
 		{
 			source_fields[0] = (struct Computed_field *)NULL;
-			if (computed_field_asin_type_string ==
-				Computed_field_get_type_string(field))
+			if ((NULL != field_modify->get_field()) &&
+				(computed_field_asin_type_string ==
+					Computed_field_get_type_string(field_modify->get_field())))
 			{
-				return_code=Computed_field_get_type_asin(field, 
+				return_code=Computed_field_get_type_asin(field_modify->get_field(), 
 					source_fields);
 			}
 			if (return_code)
@@ -1386,7 +1253,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_source_field_data.conditional_function=
 					Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -1398,8 +1265,9 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_asin(
-						source_fields[0]));
+					return_code = field_modify->update_field_and_deaccess(
+						Computed_field_create_asin(field_modify->get_field_factory(),
+							source_fields[0]));
 				}
 				if (!return_code)
 				{
@@ -1445,14 +1313,14 @@ char computed_field_acos_type_string[] = "acos";
 class Computed_field_acos : public Computed_field_core
 {
 public:
-	Computed_field_acos(Computed_field *field) : Computed_field_core(field)
+	Computed_field_acos() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_acos(new_parent);
+		return new Computed_field_acos();
 	}
 
 	char *get_type_string()
@@ -1616,49 +1484,15 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_acos(
+		struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_ACOS with the supplied
-field, <source_field_one>.  Sets the number of components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int number_of_source_fields;
-	Computed_field *field, **source_fields;
-
-	ENTER(Computed_field_create_acos);
-	if ( source_field)
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. create new field */
-			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-			/* 3. establish the new type */
-			field->number_of_components = source_field->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_acos(field);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			field = (Computed_field *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_create_acos.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
-	}
-	LEAVE;
+	Computed_field *field = Computed_field_create_generic(field_factory,
+		/*check_source_field_regions*/true,
+		source_field->number_of_components,
+		/*number_of_source_fields*/1, &source_field,
+		/*number_of_source_values*/0, NULL,
+		new Computed_field_acos());
 
 	return (field);
 } /* Computed_field_create_acos */
@@ -1703,7 +1537,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field,**source_fields;
+	struct Computed_field **source_fields;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -1711,8 +1545,7 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_acos);
 	USE_PARAMETER(computed_field_trigonometry_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -1720,10 +1553,11 @@ already) and allows its contents to be modified.
 		if (ALLOCATE(source_fields, struct Computed_field *, 1))
 		{
 			source_fields[0] = (struct Computed_field *)NULL;
-			if (computed_field_acos_type_string ==
-				Computed_field_get_type_string(field))
+			if ((NULL != field_modify->get_field()) &&
+				(computed_field_acos_type_string ==
+					Computed_field_get_type_string(field_modify->get_field())))
 			{
-				return_code=Computed_field_get_type_acos(field, 
+				return_code=Computed_field_get_type_acos(field_modify->get_field(), 
 					source_fields);
 			}
 			if (return_code)
@@ -1737,7 +1571,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_source_field_data.conditional_function=
 					Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -1749,8 +1583,9 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_acos(
-						source_fields[0]));
+					return_code = field_modify->update_field_and_deaccess(
+						Computed_field_create_acos(field_modify->get_field_factory(),
+							source_fields[0]));
 				}
 				if (!return_code)
 				{
@@ -1796,14 +1631,14 @@ char computed_field_atan_type_string[] = "atan";
 class Computed_field_atan : public Computed_field_core
 {
 public:
-	Computed_field_atan(Computed_field *field) : Computed_field_core(field)
+	Computed_field_atan() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_atan(new_parent);
+		return new Computed_field_atan();
 	}
 
 	char *get_type_string()
@@ -1960,49 +1795,15 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_atan(
+		struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_ATAN with the supplied
-field, <source_field_one>.  Sets the number of components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int number_of_source_fields;
-	Computed_field *field, **source_fields;
-
-	ENTER(Computed_field_create_atan);
-	if ( source_field)
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. create new field */
-			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-			/* 3. establish the new type */
-			field->number_of_components = source_field->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_atan(field);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			field = (Computed_field *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_create_atan.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
-	}
-	LEAVE;
+	Computed_field *field = Computed_field_create_generic(field_factory,
+		/*check_source_field_regions*/true,
+		source_field->number_of_components,
+		/*number_of_source_fields*/1, &source_field,
+		/*number_of_source_values*/0, NULL,
+		new Computed_field_atan());
 
 	return (field);
 } /* Computed_field_create_atan */
@@ -2047,7 +1848,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field,**source_fields;
+	struct Computed_field **source_fields;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -2055,8 +1856,7 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_atan);
 	USE_PARAMETER(computed_field_trigonometry_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -2064,10 +1864,11 @@ already) and allows its contents to be modified.
 		if (ALLOCATE(source_fields, struct Computed_field *, 1))
 		{
 			source_fields[0] = (struct Computed_field *)NULL;
-			if (computed_field_atan_type_string ==
-				Computed_field_get_type_string(field))
+			if ((NULL != field_modify->get_field()) &&
+				(computed_field_atan_type_string ==
+					Computed_field_get_type_string(field_modify->get_field())))
 			{
-				return_code=Computed_field_get_type_atan(field, 
+				return_code=Computed_field_get_type_atan(field_modify->get_field(), 
 					source_fields);
 			}
 			if (return_code)
@@ -2081,7 +1882,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_source_field_data.conditional_function=
 					Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -2093,8 +1894,9 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_atan(
-						source_fields[0]));
+					return_code = field_modify->update_field_and_deaccess(
+						Computed_field_create_atan(field_modify->get_field_factory(),
+							source_fields[0]));
 				}
 				if (!return_code)
 				{
@@ -2140,14 +1942,14 @@ char computed_field_atan2_type_string[] = "atan2";
 class Computed_field_atan2 : public Computed_field_core
 {
 public:
-	Computed_field_atan2(Computed_field *field) : Computed_field_core(field)
+	Computed_field_atan2() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_atan2(new_parent);
+		return new Computed_field_atan2();
 	}
 
 	char *get_type_string()
@@ -2317,54 +2119,30 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_atan2(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
-/*******************************************************************************
-LAST MODIFIED : 16 May 2008
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_ATAN2 with the supplied
-fields, <source_field_one> and <source_field_two>.  Sets the number of 
-components equal to the source_fields.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
 {
-	int number_of_source_fields;
-	Computed_field *field, **source_fields;
-
-	ENTER(Computed_field_create_atan2);
-	if (source_field_one&&source_field_two&&
+	struct Computed_field *field = NULL;
+	if (source_field_one && source_field_two &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=2;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. create new field */
-			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-			/* 3. establish the new type */
-			field->number_of_components = source_field_one->number_of_components;
-			source_fields[0]=ACCESS(Computed_field)(source_field_one);
-			source_fields[1]=ACCESS(Computed_field)(source_field_two);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->core = new Computed_field_atan2(field);
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			field = (Computed_field *)NULL;
-		}
+		Computed_field *source_fields[2];
+		source_fields[0] = source_field_one;
+		source_fields[1] = source_field_two;
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			source_field_one->number_of_components,
+			/*number_of_source_fields*/2, source_fields,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_atan2());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_atan2.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
+			"Computed_field_create_time_lookup.  Invalid argument(s)");
 	}
-	LEAVE;
 
 	return (field);
 } /* Computed_field_create_atan2 */
@@ -2411,7 +2189,7 @@ already) and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *field,**source_fields;
+	struct Computed_field **source_fields;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_array_data set_source_field_array_data;
@@ -2419,8 +2197,7 @@ already) and allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_atan2);
 	USE_PARAMETER(computed_field_trigonometry_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
@@ -2429,10 +2206,11 @@ already) and allows its contents to be modified.
 		{
 			source_fields[0] = (struct Computed_field *)NULL;
 			source_fields[1] = (struct Computed_field *)NULL;
-			if (computed_field_atan2_type_string ==
-				Computed_field_get_type_string(field))
+			if ((NULL != field_modify->get_field()) &&
+				(computed_field_atan2_type_string ==
+					Computed_field_get_type_string(field_modify->get_field())))
 			{
-				return_code=Computed_field_get_type_atan2(field, 
+				return_code=Computed_field_get_type_atan2(field_modify->get_field(), 
 					source_fields, source_fields + 1);
 			}
 			if (return_code)
@@ -2450,7 +2228,7 @@ already) and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_source_field_data.conditional_function=
           Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
@@ -2462,8 +2240,9 @@ already) and allows its contents to be modified.
 				/* no errors,not asking for help */
 				if (return_code)
 				{
-					return_code = Computed_field_copy_type_specific_and_deaccess(field, Computed_field_create_atan2(
-						source_fields[0], source_fields[1]));
+					return_code = field_modify->update_field_and_deaccess(
+						Computed_field_create_atan2(field_modify->get_field_factory(),
+							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
 				{

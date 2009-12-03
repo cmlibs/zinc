@@ -47,60 +47,72 @@ The public interface to the Cmiss_fields that perform trigonometry.
  * Creates a field where the components are the sine value (using radians) of the
  * components of the source_field.
  * 
+ * @param field_factory  Specifies owning region and other generic arguments.
  * @param source_field Input field
  * @return Newly created field
  */
 Cmiss_field_id Cmiss_field_create_sin(
+	Cmiss_field_factory_id field_factory,
 	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
  * Creates a field where the components are the cosine value (using radians) of the
  * components of the source_field.
  * 
+ * @param field_factory  Specifies owning region and other generic arguments.
  * @param source_field Input field (components in radians)
  * @return Newly created field
  */
 Cmiss_field_id Cmiss_field_create_cos(
+	Cmiss_field_factory_id field_factory,
 	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
  * Creates a field where the components are the trigonometric tangent value 
  * (using radians) of the components of the source_field.
  * 
+ * @param field_factory  Specifies owning region and other generic arguments.
  * @param source_field Input field (components in radians)
  * @return Newly created field
  */
 Cmiss_field_id Cmiss_field_create_tan(
+	Cmiss_field_factory_id field_factory,
 	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
  * Creates a field where the components are the arcsine value (using radians) of the
  * components of the source_field.
  * 
+ * @param field_factory  Specifies owning region and other generic arguments.
  * @param source_field Input field (components in radians)
  * @return Newly created field
  */
 Cmiss_field_id Cmiss_field_create_asin(
+	Cmiss_field_factory_id field_factory,
 	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
  * Creates a field where the components are the arccosine value (using radians) of the
  * components of the source_field.
  * 
+ * @param field_factory  Specifies owning region and other generic arguments.
  * @param source_field Input field
  * @return Newly created field (components in radians)
  */
 Cmiss_field_id Cmiss_field_create_acos(
+	Cmiss_field_factory_id field_factory,
 	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
  * Creates a field where the components are the arctangent value (using radians) of the
  * components of the source_field.
  * 
+ * @param field_factory  Specifies owning region and other generic arguments.
  * @param source_field Input field
  * @return Newly created field (components in radians)
  */
 Cmiss_field_id Cmiss_field_create_atan(
+	Cmiss_field_factory_id field_factory,
 	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
@@ -109,11 +121,13 @@ Cmiss_field_id Cmiss_field_create_atan(
  * a plane and the vector (x,y) where x is the source_field_one component and y is
  * the source_field_two component.
  * 
+ * @param field_factory  Specifies owning region and other generic arguments.
  * @param source_field_one First input field
  * @param source_field_two Second input field
  * @return Newly created field (components in radians)
  */
 Cmiss_field_id Cmiss_field_create_atan2(
+	Cmiss_field_factory_id field_factory,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 

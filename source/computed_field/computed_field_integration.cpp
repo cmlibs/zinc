@@ -337,9 +337,9 @@ public:
 		that it can first try this element again */
 	Computed_field_element_integration_mapping *find_element_xi_mapping;
 
-	Computed_field_integration(Computed_field *field, 
+	Computed_field_integration(
 		FE_element *seed_element, FE_region *fe_region, int magnitude_coordinates) : 
-		Computed_field_core(field), seed_element(ACCESS(FE_element)(seed_element)),
+		Computed_field_core(), seed_element(ACCESS(FE_element)(seed_element)),
 		fe_region(ACCESS(FE_region)(fe_region)), magnitude_coordinates(magnitude_coordinates)
 	{
 		cached_time = 0;
@@ -354,7 +354,7 @@ public:
 	~Computed_field_integration();
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent);
+	Computed_field_core *copy();
 
 	char *get_type_string()
 	{
@@ -1150,7 +1150,7 @@ Clear the type specific data used by this type.
 
 } /* Computed_field_integration::~Computed_field_integration */
 
-Computed_field_core* Computed_field_integration::copy(Computed_field* new_parent)
+Computed_field_core* Computed_field_integration::copy()
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
 
@@ -1158,19 +1158,8 @@ DESCRIPTION :
 Copy the type specific data used by this type.
 ==============================================================================*/
 {
-	Computed_field_integration *core;
-
-	ENTER(Computed_field_integration::copy);
-	if (new_parent)
-	{
-		core = new Computed_field_integration(new_parent,
-			seed_element, fe_region, magnitude_coordinates);
-	}
-	else
-	{
-		core = (Computed_field_integration*)NULL;
-	}
-	LEAVE;
+	Computed_field_integration *core =
+		new Computed_field_integration(seed_element, fe_region, magnitude_coordinates);
 
 	return (core);
 } /* Computed_field_integration::copy */
@@ -2073,100 +2062,85 @@ Returns true if <field> has the appropriate static type string.
 	return (return_code);
 } /* Computed_field_is_type_integration */
 
-int Computed_field_set_type_integration(Computed_field *field,
+/*****************************************************************************//**
+ * Creates a field that computes an integration over a mesh.
+ * The seed element is set to the number given and the mapping calculated.
+ * Sets the number of components to be the same as the <integrand> field.
+ * The <integrand> is the value that is integrated over each element and the
+ * <coordinate_field> is used to define the arc length differential for each
+ * element. Currently only two gauss points are supported, a linear integration.
+ * If <magnitude_coordinates> is false then the resulting field has the same
+ * number of components as the <coordinate_field> and each component is the
+ * integration with respect to each of the components, if <magnitude_components>
+ * is true then the field will have a single component and the magnitude of the
+ * <coordinate_field> derivatives are used to calculate arc lengths at each
+ * gauss point.
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_integration(
+	struct Cmiss_field_factory *field_factory,
 	FE_element *seed_element,
 	FE_region *fe_region, Computed_field *integrand, 
 	int magnitude_coordinates, Computed_field *coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_INTEGRATION.
-The seed element is set to the number given and the mapping calculated.
-Sets the number of components to be the same as the <integrand> field.
-The <integrand> is the value that is integrated over each element and the
-<coordinate_field> is used to define the arc length differential for each element.
-Currently only two gauss points are supported, a linear integration.
-If <magnitude_coordinates> is false then the resulting field has the same number
-of components as the <coordinate_field> and each component is the integration
-with respect to each of the components, if <magnitude_components> is true then
-the field will have a single component and the magnitude of the <coordinate_field>
-derivatives are used to calculate arc lengths at each gauss pointa.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-=============================================================================*/
 {
-	int number_of_source_fields, return_code;
-	Computed_field **source_fields;
-	CM_element_information cm;
-	FE_element *element;
-
-	ENTER(Computed_field_set_type_integration);
-	if (field&&seed_element&&integrand&&coordinate_field&&
-		(1==Computed_field_get_number_of_components(integrand)))
+	Computed_field *field = NULL;
+	if (seed_element && integrand && coordinate_field &&
+		(1 == Computed_field_get_number_of_components(integrand)))
 	{
-		return_code=1;
-		number_of_source_fields=2;
-		/* 1. make dynamic allocations for any new type-specific data */
-		if ((ALLOCATE(source_fields,Computed_field *,
-			number_of_source_fields)))
-		{
-			/* Add seed element */
-			get_FE_element_identifier(seed_element, &cm);
-			if (!((element=FE_region_get_FE_element_from_identifier(
-						 fe_region, &cm)) && (element==seed_element)))
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_set_type_integration.  "
-					"Unable to find seed element");
-				return_code=0;
-			}
-		}
-		else
+		int return_code = 1;
+		/* check seed element is from region */
+		CM_element_information cm;
+		FE_element *element;
+		get_FE_element_identifier(seed_element, &cm);
+		if (!((element = FE_region_get_FE_element_from_identifier(
+			fe_region, &cm)) && (element==seed_element)))
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_integration.  Unable to create type specific data");
-			return_code=0;
+				"Computed_field_set_type_integration.  Unable to find seed element");
+			return_code = 0;
 		}
-		if(return_code)
+		if (return_code)
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
+			int number_of_components = 0;
 			if (magnitude_coordinates)
 			{
-				field->number_of_components = 1;
+				number_of_components = 1;
 			}
 			else
 			{
-				field->number_of_components = coordinate_field->number_of_components;
+				number_of_components = coordinate_field->number_of_components;
 				if (Computed_field_is_type_xi_coordinates(coordinate_field, NULL))
 				{
 					/* Unlike the xi field we only deal with top level elements of a 
 						single dimension so we can match that dimension for our number
 						of coordinates */
-					field->number_of_components = get_FE_element_dimension(seed_element);
+					number_of_components = get_FE_element_dimension(seed_element);
 				}
 			}
-			/* source_fields: 0=integrand, 1=coordinate_field */
-			source_fields[0]=ACCESS(Computed_field)(integrand);
-			source_fields[1]=ACCESS(Computed_field)(coordinate_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			field->core = new Computed_field_integration(field,
-				seed_element, fe_region, magnitude_coordinates);
+			Computed_field *source_fields[2];
+			source_fields[0] = integrand;
+			source_fields[1] = coordinate_field;
+			
+			field = Computed_field_create_generic(field_factory,
+				/*check_source_field_regions*/true,
+				number_of_components,
+				/*number_of_source_fields*/2, source_fields,
+				/*number_of_source_values*/0, NULL,
+				new Computed_field_integration(seed_element, fe_region,
+					magnitude_coordinates));
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_integration.  Invalid argument(s)");
-		return_code=0;
+			"Computed_field_create_integration.  Invalid argument(s)");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_integration */
+	return (field);
+}
 
 int Computed_field_get_type_integration(Computed_field *field,
 	FE_element **seed_element, Computed_field **integrand,
@@ -2215,7 +2189,7 @@ and allows its contents to be modified.
 	char magnitude_coordinates_flag;
 	char* region_path;
 	Cmiss_region *region;
-	Computed_field *coordinate_field, *field, *integrand;
+	Computed_field *coordinate_field, *integrand;
 	Computed_field_integration_package *computed_field_integration_package;
 	Computed_field_modify_data *field_modify;
 	double value;
@@ -2228,8 +2202,7 @@ and allows its contents to be modified.
 		set_integrand_field_data;
 
 	ENTER(define_Computed_field_type_integration);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void) &&
 		(computed_field_integration_package=
 			(Computed_field_integration_package *)computed_field_integration_package_void))
 	{
@@ -2241,9 +2214,11 @@ and allows its contents to be modified.
 		magnitude_coordinates = 0;
 		seed_element = (FE_element *)NULL;
 		time_update = 0;
-		if (Computed_field_is_type_integration(field))
+
+		if ((NULL != field_modify->get_field()) &&
+			Computed_field_is_type_integration(field_modify->get_field()))
 		{
-			return_code = Computed_field_get_type_integration(field,
+			return_code = Computed_field_get_type_integration(field_modify->get_field(),
 				&seed_element, &integrand, &magnitude_coordinates, &coordinate_field);
 		}
 		if (return_code)
@@ -2260,14 +2235,19 @@ and allows its contents to be modified.
 			{
 				/* Make a default integrand of one */
 				value = 1.0;
-				if (!((integrand = ACCESS(Computed_field)(CREATE(Computed_field)("constant_1.0"))) &&
-				   Computed_field_copy_type_specific_and_deaccess(integrand,
-					Computed_field_create_constant(1,&value))))
+				// use temporary field factory to supply different defaults
+				Cmiss_field_factory *temp_field_factory =
+					Cmiss_field_factory_create(field_modify->get_region());
+				Cmiss_field_factory_set_field_name(temp_field_factory, "constant_1.0");
+				integrand = Computed_field_create_constant(temp_field_factory,
+					/*number_of_components*/1, &value);
+				if (NULL == integrand)
 				{
 					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_xi_texture_coordinates.  Unable to create constant field");
-					return_code=0;
+						"define_Computed_field_type_integration.  Unable to create constant integrand");
+					return_code = 0;
 				}
+				Cmiss_field_factory_destroy(&temp_field_factory);
 			}
 			Cmiss_region_get_root_region_path(&region_path);
 			if (seed_element)
@@ -2307,7 +2287,7 @@ and allows its contents to be modified.
 					option_table = CREATE(Option_table)();
 					/* coordinate */
 					set_coordinate_field_data.computed_field_manager=
-						Cmiss_region_get_Computed_field_manager(field_modify->region);
+						field_modify->get_field_manager();
 					set_coordinate_field_data.conditional_function=
 						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=
@@ -2317,7 +2297,7 @@ and allows its contents to be modified.
 						set_Computed_field_conditional);
 					/* integrand */
 					set_integrand_field_data.computed_field_manager=
-						Cmiss_region_get_Computed_field_manager(field_modify->region);
+						field_modify->get_field_manager();
 					set_integrand_field_data.conditional_function=
 						Computed_field_is_scalar;
 					set_integrand_field_data.conditional_function_user_data=
@@ -2361,7 +2341,8 @@ and allows its contents to be modified.
 					}
 					if (return_code)
 					{
-						if (time_update && Computed_field_is_type_integration(field))
+						if (time_update && (NULL != field_modify->get_field()) &&
+							Computed_field_is_type_integration(field_modify->get_field()))
 						{
 							display_message(ERROR_MESSAGE,
 								"The update_time_integration code has not been updated"
@@ -2375,9 +2356,10 @@ and allows its contents to be modified.
 						}
 						else
 						{
-							return_code=Computed_field_set_type_integration(field,
-								seed_element, Cmiss_region_get_FE_region(region),
-								integrand, magnitude_coordinates, coordinate_field);
+							return_code = field_modify->update_field_and_deaccess(
+								Computed_field_create_integration(field_modify->get_field_factory(),
+									seed_element, Cmiss_region_get_FE_region(region),
+									integrand, magnitude_coordinates, coordinate_field));
 						}
 					}
 					DESTROY(Option_table)(&option_table);
@@ -2388,7 +2370,7 @@ and allows its contents to be modified.
 				option_table = CREATE(Option_table)();
 				/* coordinate */
 				set_coordinate_field_data.computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_coordinate_field_data.conditional_function=
 					Computed_field_has_up_to_3_numerical_components;
 				set_coordinate_field_data.conditional_function_user_data=
@@ -2398,7 +2380,7 @@ and allows its contents to be modified.
 					set_Computed_field_conditional);
 				/* integrand */
 				set_integrand_field_data.computed_field_manager=
-					Cmiss_region_get_Computed_field_manager(field_modify->region);
+					field_modify->get_field_manager();
 				set_integrand_field_data.conditional_function=
 					Computed_field_is_scalar;
 				set_integrand_field_data.conditional_function_user_data=
@@ -2470,15 +2452,13 @@ and allows its contents to be modified.
 	char* region_path;
 	Cmiss_region* region;
 	int expected_parameters, previous_state_index, return_code;
-	Computed_field *field;
 	Computed_field_integration_package *computed_field_integration_package;
 	Computed_field_modify_data *field_modify;
 	FE_element *seed_element;	
 	Option_table *option_table;
 
 	ENTER(define_Computed_field_type_xi_texture_coordinates);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field)&&
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void) &&
 		(computed_field_integration_package=
 			(Computed_field_integration_package *)computed_field_integration_package_void))
 	{
@@ -2529,7 +2509,7 @@ and allows its contents to be modified.
 				{
 					Computed_field *coordinate_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 						Computed_field_is_type_xi_coordinates, (void *)NULL,
-						Cmiss_region_get_Computed_field_manager(field_modify->region));
+						field_modify->get_field_manager());
 					if (coordinate_field)
 					{
 						ACCESS(Computed_field)(coordinate_field);
@@ -2541,20 +2521,26 @@ and allows its contents to be modified.
 						return_code=0;
 					}
 					double value = 1.0;
-					Computed_field *integrand = (Computed_field *)NULL;
-					if (!((integrand = ACCESS(Computed_field)(CREATE(Computed_field)("constant_1.0"))) &&
-						Computed_field_copy_type_specific_and_deaccess(integrand,
-						Computed_field_create_constant(1,&value))))
+					// use temporary field factory to supply different defaults
+					Cmiss_field_factory *temp_field_factory =
+						Cmiss_field_factory_create(field_modify->get_region());
+					Cmiss_field_factory_set_field_name(temp_field_factory, "constant_1.0");
+					Computed_field *integrand = Computed_field_create_constant(temp_field_factory,
+						/*number_of_components*/1, &value);
+					if (NULL == integrand)
 					{
 						display_message(ERROR_MESSAGE,
 							"define_Computed_field_type_xi_texture_coordinates.  Unable to create constant field");
-						return_code=0;
+						return_code = 0;
 					}
+					Cmiss_field_factory_destroy(&temp_field_factory);
+
 					if (return_code)
 					{
-						return_code=Computed_field_set_type_integration(field,
-							seed_element, Cmiss_region_get_FE_region(region),
-							integrand, /*magnitude_coordinates*/0, coordinate_field);
+						return_code = field_modify->update_field_and_deaccess(
+							Computed_field_create_integration(field_modify->get_field_factory(),
+								seed_element, Cmiss_region_get_FE_region(region),
+								integrand, /*magnitude_coordinates*/0, coordinate_field));
 					}
 					if (coordinate_field)
 					{

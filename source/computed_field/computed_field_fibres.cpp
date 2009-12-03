@@ -67,14 +67,14 @@ char computed_field_fibre_axes_type_string[] = "fibre_axes";
 class Computed_field_fibre_axes : public Computed_field_core
 {
 public:
-	Computed_field_fibre_axes(Computed_field *field) : Computed_field_core(field)
+	Computed_field_fibre_axes() : Computed_field_core()
 	{
 	};
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	Computed_field_core *copy()
 	{
-		return new Computed_field_fibre_axes(new_parent);
+		return new Computed_field_fibre_axes();
 	}
 
 	char *get_type_string()
@@ -436,70 +436,33 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-int Computed_field_set_type_fibre_axes(struct Computed_field *field,
-	struct Computed_field *fibre_field,struct Computed_field *coordinate_field)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_FIBRE_AXES, combining a fibre and
-coordinate field to return the 3, 3-component fibre axis vectors:
-fibre  = fibre direction,
-sheet  = fibre normal in the plane of the sheet,
-normal = normal to the fibre sheet.
-Sets the number of components to 9.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-
-Both the fibre and coordinate fields must have no more than 3 components. The
-fibre field is expected to have a FIBRE coordinate_system, although this is not
-enforced.
-???RC To enforce the fibre field to have a FIBRE coordinate_system, must make
-the MANAGER_COPY_NOT_IDENTIFIER fail if it would change the coordinate_system
-while the field is in use. Not sure if we want that restriction.
-==============================================================================*/
+struct Computed_field *Computed_field_create_fibre_axes(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *fibre_field, struct Computed_field *coordinate_field)
 {
-	int number_of_source_fields, return_code;
-	struct Computed_field **temp_source_fields;
-
-	ENTER(Computed_field_set_type_fibre_axes);
-	if (field&&fibre_field&&(3>=fibre_field->number_of_components)&&
-		coordinate_field&&(3>=coordinate_field->number_of_components))
+	Computed_field *field = NULL;
+	if (field_factory && fibre_field && (3>=fibre_field->number_of_components) &&
+		coordinate_field && (3 >= coordinate_field->number_of_components))
 	{
-		return_code = 1;
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=2;
-		if (ALLOCATE(temp_source_fields,struct Computed_field *,
-			number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->number_of_components=9;
-			/* source_fields: 0=fibre, 1=coordinate */
-			temp_source_fields[0]=ACCESS(Computed_field)(fibre_field);
-			temp_source_fields[1]=ACCESS(Computed_field)(coordinate_field);
-			field->source_fields=temp_source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			field->core = new Computed_field_fibre_axes(field);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_fibre_axes.  Not enough memory");
-			return_code=0;
-		}
+		Computed_field *source_fields[2];
+		source_fields[0] = fibre_field;
+		source_fields[1] = coordinate_field;
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			/*number_of_components*/9,
+			/*number_of_source_fields*/2, source_fields,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_fibre_axes());
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_fibre_axes.  Invalid argument(s)");
-		return_code=0;
+			"Computed_field_create_fibre_axes.  Invalid argument(s)");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Computed_field_set_type_fibre_axes */
+	return (field);
+}
 
 int Computed_field_get_type_fibre_axes(struct Computed_field *field,
 	struct Computed_field **fibre_field,struct Computed_field **coordinate_field)
@@ -544,7 +507,7 @@ allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *coordinate_field, *fibre_field, *field;
+	struct Computed_field *coordinate_field, *fibre_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
@@ -552,16 +515,16 @@ allows its contents to be modified.
 
 	ENTER(define_Computed_field_type_fibre_axes);
 	USE_PARAMETER(computed_field_fibres_package_void);
-	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void)&&
-			(field=field_modify->field))
+	if (state&&(field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code=1;
 		coordinate_field=(struct Computed_field *)NULL;
 		fibre_field=(struct Computed_field *)NULL;
-		if (computed_field_fibre_axes_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_fibre_axes_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code = Computed_field_get_type_fibre_axes(field,
+			return_code = Computed_field_get_type_fibre_axes(field_modify->get_field(),
 				&fibre_field, &coordinate_field);
 		}
 		if (return_code)
@@ -578,7 +541,7 @@ allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* coordinate */
 			set_coordinate_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=
@@ -588,7 +551,7 @@ allows its contents to be modified.
 				set_Computed_field_conditional);
 			/* fibre */
 			set_fibre_field_data.computed_field_manager=
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_fibre_field_data.conditional_function=
 				Computed_field_has_up_to_3_numerical_components;
 			set_fibre_field_data.conditional_function_user_data=(void *)NULL;
@@ -596,8 +559,9 @@ allows its contents to be modified.
 				&fibre_field,&set_fibre_field_data,set_Computed_field_conditional);
 			if (return_code = Option_table_multi_parse(option_table,state))
 			{
-				return_code = Computed_field_set_type_fibre_axes(field,
-					fibre_field, coordinate_field);
+				return_code = field_modify->update_field_and_deaccess(
+					Computed_field_create_fibre_axes(
+						field_modify->get_field_factory(), fibre_field, coordinate_field));
 			}
 			DESTROY(Option_table)(&option_table);
 			if (coordinate_field)

@@ -45,12 +45,6 @@ DESCRIPTION :
 
 #include "api/cmiss_field.h"
 
-/* API functions are prefixed with Cmiss */
-#define Computed_field_set_type_mean_image_filter \
-	Cmiss_field_set_type_mean_image_filter
-#define Computed_field_get_type_mean_image_filter \
-	Cmiss_field_get_type_mean_image_filter
-
 int Computed_field_register_types_mean_image_filter(
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
@@ -59,18 +53,17 @@ LAST MODIFIED : 30 August 2006
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_mean_image_filter(struct Computed_field *field,
+/***************************************************************************//**
+ * Create field performing ITK mean image filter on source_field image.
+ * The <radius_sizes> is a vector of integers of dimension specified by the
+ * <source_field> dimension.
+ * Sets number of components to same number as <source_field>.
+ */
+struct Computed_field *Cmiss_field_create_mean_image_filter(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, int *radius_sizes);
-/*******************************************************************************
-LAST MODIFIED : 30 August 2006
 
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_MEANIMAGEFILTER, returning the value of
-<mean_image_filter> at the time/parameter value given by scalar <source_field>.
-Sets number of components to same number as <source_field>.
-==============================================================================*/
-
-int Computed_field_get_type_mean_image_filter(struct Computed_field *field,
+int Cmiss_field_get_type_mean_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, int **radius_sizes);
 /*******************************************************************************
 LAST MODIFIED : 30 August 2006

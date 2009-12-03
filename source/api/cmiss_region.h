@@ -218,31 +218,6 @@ Ensures:
 - <child_region> is not the same as or contains <region>;
 ==============================================================================*/
 
-/***************************************************************************//**
- * Ensures the field and any fields it depends on are managed by the region.
- * 
- * The field passed to this function is managed with public status meaning it 
- * resides in the region until specifically removed.
- * Any automatically managed fields have private-volatile status meaning they
- * will be destroyed when no longer in use.
- * Fails with no fields added if there exists a dependency on a field from
- * another region.
- * Where field names are already in use in the region, names of fields being
- * added are made unique by the addition of a suffix. Unnamed fields are
- * automatically given unique names.
- * Note that in contrast to all other functions returning an object pointer,
- * the returned field does not gain an additional reference count, so the
- * following is allowable:
- * Cmiss_field_id field = Cmiss_region_add_field(region, Cmiss_field_create...);
- *
- * @param region  The region which will contain the field.
- * @param field  The field to be added.
- * @return  A valid field is returned if field has been successfully added,
- *   otherwise NULL is returned.
- */
-Cmiss_field_id Cmiss_region_add_field(Cmiss_region_id region, 
-	Cmiss_field_id field);
-
 Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region, 
 	const char *field_name);
 /*******************************************************************************
@@ -252,5 +227,13 @@ DESCRIPTION :
 Returns the field of <field_name> from the <region> if it is defined,
 NULL otherwise.
 ==============================================================================*/
+
+/***************************************************************************//**
+ * Returns field factory object needed to create fields in this region.
+ *
+ * @param region  The region which the field factory can create fields in.
+ * @return  Field factory object.
+ */
+Cmiss_field_factory_id Cmiss_region_get_field_factory(Cmiss_region_id region);
 
 #endif /* __CMISS_REGION_H__ */

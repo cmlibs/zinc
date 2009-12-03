@@ -46,8 +46,6 @@ Implements computed fields for lookups.
 
 #include "region/cmiss_region.h"
 
-struct Computed_field_lookup_package;
-
 int Computed_field_register_types_lookup(
 	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *root_region);
@@ -57,29 +55,25 @@ LAST MODIFIED : 01 October 2003
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_field_set_type_nodal_lookup(struct Computed_field *field,
-	struct Computed_field *source_field,struct Cmiss_region *region,
-  int lookup_node_identifier, 
-	struct Computed_field_lookup_package *lookup_package);
-/*******************************************************************************
-LAST MODIFIED : 27 January 2006
+/*****************************************************************************//**
+ * Creates a field whose value equals source field calculated at the lookup node
+ * instead of the domain location requested. 
+ * 
+ * @param field_factory  Specifies owning region and other generic arguments.
+ * @param source_field  Field to evaluate.
+ * @param lookup_node  Node from same region as source field to evaluate value at.  
+ * @return Newly created field
+ */
+struct Computed_field *Computed_field_create_nodal_lookup(
+	struct Cmiss_field_factory *field_factory,
+	struct Computed_field *source_field, struct FE_node *lookup_node); 
 
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_LOOKUP with the supplied
-fields, <source_field> is the field the values are returned from but rather
-than using the current node the <lookup_node_identifier> node is used.
-==============================================================================*/
-
+/***************************************************************************//**
+ * If the field is of type COMPUTED_FIELD_LOOKUP, the function returns the
+ * source field and the  lookup node where it is evaluated.
+ * Note that nothing returned has been ACCESSed.
+ */
 int Computed_field_get_type_nodal_lookup(struct Computed_field *field,
-  struct Computed_field **lookup_field,struct Cmiss_region **lookup_region,
-  int *lookup_node_identifier,
-	struct Computed_field_lookup_package **lookup_package);
-/*******************************************************************************
-LAST MODIFIED : 27 January 2006
+  struct Computed_field **source_field, struct FE_node **lookup_node);
 
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_LOOKUP, the function returns the source
-<lookup_field>, <lookup_region>, and the <lookup_node_identifier>.
-Note that nothing returned has been ACCESSed.
-==============================================================================*/
 #endif /* !defined (COMPUTED_FIELD_LOOKUP_H) */

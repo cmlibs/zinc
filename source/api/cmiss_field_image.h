@@ -132,12 +132,14 @@ typedef struct Cmiss_field_image_storage_information *Cmiss_field_image_storage_
  *		 "2 component field creates a LUMINANCE_ALPHA texture, "
  *		 "3 component field creates a RGB texture, "
  *		 "4 component field creates a RGBA texture. "
+ * @param field_factory  Specifies owning region and other generic arguments.
  * @param domain_field  The field in which the image data will be embedded.
- * @param source_field  The source field which provides pixel values to the image.
+ * @param source_field  Optional source field to automatically provides pixel
+ * values to the image.
  * @return Newly created field
 */
-Cmiss_field_id Cmiss_field_create_image(Cmiss_field_id domain_field, 
-	Cmiss_field_id source_field);
+Cmiss_field_id Cmiss_field_create_image(Cmiss_field_factory_id field_factory,
+	Cmiss_field_id domain_field, Cmiss_field_id source_field);
 
 /*****************************************************************************//**
  * If the image_field is of type image field then this function returns

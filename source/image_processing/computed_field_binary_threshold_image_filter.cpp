@@ -70,7 +70,7 @@ public:
 	double lower_threshold;
 	double upper_threshold;
 
-	Computed_field_binary_threshold_image_filter(Computed_field *field,
+	Computed_field_binary_threshold_image_filter(Computed_field *source_field,
 		double lower_threshold, double upper_threshold);
 
 	~Computed_field_binary_threshold_image_filter()
@@ -78,9 +78,11 @@ public:
 	}
 
 private:
-	Computed_field_core *copy(Computed_field* new_parent)
+	virtual void create_functor();
+
+	Computed_field_core *copy()
 	{
-		return new Computed_field_binary_threshold_image_filter(new_parent,
+		return new Computed_field_binary_threshold_image_filter(field->source_fields[0],
 			lower_threshold, upper_threshold);
 	}
 
@@ -190,10 +192,13 @@ public:
  * @return Return code indicating succes (1) or failure (0)
 */
 Computed_field_binary_threshold_image_filter::Computed_field_binary_threshold_image_filter(
-	Computed_field *field,
-	double lower_threshold, double upper_threshold) :
-	Computed_field_ImageFilter(field),
+	Computed_field *source_field, double lower_threshold, double upper_threshold) :
+	Computed_field_ImageFilter(source_field),
 	lower_threshold(lower_threshold), upper_threshold(upper_threshold)
+{
+}
+
+void Computed_field_binary_threshold_image_filter::create_functor()
 {
 #if defined DONOTUSE_TEMPLATETEMPLATES
 	create_filters_singlecomponent_multidimensions(
@@ -295,59 +300,30 @@ Cmiss_field_binary_threshold_image_filter_id Cmiss_field_binary_threshold_image_
 	}
 }
 
-Computed_field *Cmiss_field_create_binary_threshold_image_filter(
+struct Computed_field *Cmiss_field_create_binary_threshold_image_filter(
+	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, double lower_threshold,
 	double upper_threshold)
 {
-	int number_of_source_fields;
-	Computed_field *field, **source_fields;
-
-	ENTER(Cmiss_field_create_binary_threshold_image_filter);
-	if ( source_field &&
-		Computed_field_is_scalar(source_field, (void *)NULL))
+	Computed_field *field = NULL;
+	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
 	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields = 1;
-		if (ALLOCATE(source_fields, struct Computed_field *,
-			number_of_source_fields))
-		{
-			/* 2. create new field */
-			field = ACCESS(Computed_field)(CREATE(Computed_field)(""));
-			/* 3. establish the new type */
-			field->number_of_components = source_field->number_of_components;
-			source_fields[0] = ACCESS(Computed_field)(source_field);
-			field->source_fields = source_fields;
-			field->number_of_source_fields = number_of_source_fields;			
-			Computed_field_ImageFilter* filter_core = new Computed_field_binary_threshold_image_filter(field,
-				lower_threshold, upper_threshold);
-			if (filter_core->functor)
-			{
-				field->core = filter_core;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_create_binary_threshold_image_filter.  "
-					"Unable to create image filter.");
-				field = (Computed_field *)NULL;
-			}
-		}
-		else
-		{
-			DEALLOCATE(source_fields);
-			field = (Computed_field *)NULL;
-		}
+		field = Computed_field_create_generic(field_factory,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_binary_threshold_image_filter(source_field,
+				lower_threshold, upper_threshold));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_binary_threshold_image_filter.  Invalid argument(s)");
-		field = (Computed_field *)NULL;
+			"Cmiss_field_create_binary_threshold_image_filter.  Invalid argument(s)");
 	}
-	LEAVE;
 
 	return (field);
-} /* Cmiss_field_create_binary_threshold_image_filter */
+}
 
 /*****************************************************************************//**
  * If the field is of type COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER, 
@@ -397,26 +373,26 @@ int define_Computed_field_type_binary_threshold_image_filter(struct Parse_state 
 {
 	double lower_threshold, upper_threshold;
 	int return_code;
-	struct Computed_field *field, *source_field;
+	struct Computed_field *source_field;
 	Computed_field_modify_data *field_modify;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_binary_threshold_image_filter);
 	USE_PARAMETER(computed_field_simple_package_void);
-	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void) &&
-			(field=field_modify->field))
+	if (state && (field_modify=(Computed_field_modify_data *)field_modify_void))
 	{
 		return_code = 1;
 		/* get valid parameters for projection field */
 		source_field = (struct Computed_field *)NULL;
 		lower_threshold = 0.0;
 		upper_threshold = 1.0;
-		if (computed_field_binary_threshold_image_filter_type_string ==
-			Computed_field_get_type_string(field))
+		if ((NULL != field_modify->get_field()) &&
+			(computed_field_binary_threshold_image_filter_type_string ==
+				Computed_field_get_type_string(field_modify->get_field())))
 		{
 			return_code =
-				Computed_field_get_type_binary_threshold_image_filter(field, &source_field,
+				Computed_field_get_type_binary_threshold_image_filter(field_modify->get_field(), &source_field,
 					&lower_threshold, &upper_threshold);
 		}
 		if (return_code)
@@ -433,7 +409,7 @@ int define_Computed_field_type_binary_threshold_image_filter(struct Parse_state 
 
 			/* field */
 			set_source_field_data.computed_field_manager =
-				Cmiss_region_get_Computed_field_manager(field_modify->region);
+				field_modify->get_field_manager();
 			set_source_field_data.conditional_function = Computed_field_is_scalar;
 			set_source_field_data.conditional_function_user_data = (void *)NULL;
 			Option_table_add_entry(option_table, "field", &source_field,
@@ -461,9 +437,10 @@ int define_Computed_field_type_binary_threshold_image_filter(struct Parse_state 
 			}
 			if (return_code)
 			{
-				return_code = Computed_field_copy_type_specific_and_deaccess(field,
+				return_code = field_modify->update_field_and_deaccess(
 					Cmiss_field_create_binary_threshold_image_filter(
-						source_field, lower_threshold, upper_threshold));			
+						field_modify->get_field_factory(),
+						source_field, lower_threshold, upper_threshold));
 			}
 			
 			if (!return_code)

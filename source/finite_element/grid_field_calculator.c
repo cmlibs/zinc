@@ -427,6 +427,7 @@ Applies the computed field to the grid field.
 					{
 						return_code=0;
 					}
+					DEACCESS(Computed_field)(&(coordinate_component[i]));
 				}
 				if (return_code)
 				{
