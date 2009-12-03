@@ -9672,7 +9672,7 @@ Executes a GFX DESTROY FIELD command.
 	const char *current_token;
 	char *field_name, *region_path;
 	struct Computed_field *field;
-	int return_code;
+	int return_code = 0;
 	struct Cmiss_region *region, *root_region;
 	struct FE_field *fe_field;
 

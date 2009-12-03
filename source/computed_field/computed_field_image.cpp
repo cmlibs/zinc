@@ -143,7 +143,7 @@ public:
 	 */
 	int set_texture(Texture *texture_in)
 	{
-		int return_code;
+		int return_code = 0;
 		if (field)
 		{
 			int new_number_of_components;
@@ -179,6 +179,7 @@ public:
 		{
 			// just called from copy() - copy texture reference
 			REACCESS(Texture)(&texture, texture_in);
+			return_code = 1;
 		}
 		return (return_code);
 	}
