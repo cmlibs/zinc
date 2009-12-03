@@ -36,7 +36,7 @@ DESTROY(Cmiss::Region region)
 			struct Cmiss_region *temp_region;
 
 			temp_region=region;
-			RETVAL=DEACCESS(Cmiss_region)(&temp_region);
+			RETVAL=Cmiss_region_destroy(&temp_region);
 		}
 	OUTPUT:
 		RETVAL
@@ -78,7 +78,7 @@ region_read_file(Cmiss::Region region,char *file_name);
 			{
 				RETVAL=Cmiss_regions_merge_FE_regions(region,temp_region);
 			}
-			DEACCESS(Cmiss_region)(&temp_region);
+			Cmiss_region_destroy(&temp_region);
 		}
 	OUTPUT:
 		RETVAL
@@ -245,12 +245,5 @@ Cmiss_region_find_field_by_name(Cmiss::Region region, char *name)
 int
 Cmiss_region_is_field_defined(Cmiss::Region region, char *name)
 
-Cmiss::Field
-Cmiss_region_add_field(Cmiss::Region region, Cmiss::Field field)
-   POSTCALL:
-	if (RETVAL)
-		/* Add the reference as Cmiss_region_add_field does not */
-		Cmiss_field_access(RETVAL);
-   else
-		XSRETURN_UNDEF;
-
+Cmiss::Field_factory
+Cmiss_region_get_field_factory(Cmiss::Region region)

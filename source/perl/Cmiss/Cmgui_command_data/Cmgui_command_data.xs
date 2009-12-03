@@ -79,7 +79,7 @@ create(argv)
 				elem = av_fetch(argv, i, 0);
 				c_argv[i] = SvPV(*elem, PL_na);
 			}
-			RETVAL=CREATE(Cmiss_command_data)(argc, c_argv, "cmgui perl");
+			RETVAL=Cmiss_command_data_create(argc, c_argv, "cmgui perl");
 			Safefree(c_argv);
 	   }
 	OUTPUT:
@@ -92,7 +92,7 @@ destroy(Cmiss::Cmgui_command_data value)
 			struct Cmiss_command_data *temp_value;
 
 			temp_value=value;
-			RETVAL=DESTROY(Cmiss_command_data)(&temp_value);
+			RETVAL=Cmiss_command_data_destroy(&temp_value);
 		}
 	OUTPUT:
 		RETVAL

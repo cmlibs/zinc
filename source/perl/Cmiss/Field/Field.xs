@@ -35,10 +35,10 @@ Cmiss_field_evaluate_at_node(Cmiss::Field field, Cmiss::Node node, float time)
 	PPCODE:
 	{
 		int i, number_of_values;
-		float *values;
+		double *values;
 
 		number_of_values = Cmiss_field_get_number_of_components(field);
-		values = malloc(sizeof(float) * number_of_values);
+		values = malloc(sizeof(double) * number_of_values);
 		if (Cmiss_field_evaluate_at_node(field,
 			node, time, number_of_values, values))
 		{
@@ -63,45 +63,49 @@ Cmiss_field_set_name(IN Cmiss::Field field, \
 	char *name)
 
 Cmiss::Field
-Cmiss_field_create_multiply( \
+Cmiss_field_create_multiply(Cmiss::Field_factory field_factory, \
    Cmiss::Field source_field_one, Cmiss::Field source_field_two)
 
 Cmiss::Field
-Cmiss_field_create_add( \
+Cmiss_field_create_add(Cmiss::Field_factory field_factory, \
    Cmiss::Field source_field_one, Cmiss::Field source_field_two)
 
 Cmiss::Field
-Cmiss_field_create_subtract( \
+Cmiss_field_create_subtract(Cmiss::Field_factory field_factory, \
    Cmiss::Field source_field_one, Cmiss::Field source_field_two)
 
 Cmiss::Field
-Cmiss_field_create_divide( \
+Cmiss_field_create_divide(Cmiss::Field_factory field_factory, \
    Cmiss::Field source_field_one, Cmiss::Field source_field_two)
 
 Cmiss::Field
-Cmiss_field_create_sqrt(Cmiss::Field source_field)
+Cmiss_field_create_sqrt(Cmiss::Field_factory field_factory, \
+	Cmiss::Field source_field)
 
 Cmiss::Field
-Cmiss_field_create_log(Cmiss::Field source_field)
+Cmiss_field_create_log(Cmiss::Field_factory field_factory, \
+	Cmiss::Field source_field)
 
 Cmiss::Field
-Cmiss_field_create_exp(Cmiss::Field source_field)
+Cmiss_field_create_exp(Cmiss::Field_factory field_factory, \
+	Cmiss::Field source_field)
 
 Cmiss::Field
-Cmiss_field_create_less_than( \
+Cmiss_field_create_less_than(Cmiss::Field_factory field_factory, \
    Cmiss::Field source_field_one, Cmiss::Field source_field_two)
 
 Cmiss::Field
-Cmiss_field_create_greater_than( \
+Cmiss_field_create_greater_than(Cmiss::Field_factory field_factory, \
    Cmiss::Field source_field_one, Cmiss::Field source_field_two)
 
 Cmiss::Field
-Cmiss_field_create_if( \
+Cmiss_field_create_if(Cmiss::Field_factory field_factory, \
    Cmiss::Field source_field_one, Cmiss::Field source_field_two, \
 	Cmiss::Field source_field_three)
 
 Cmiss::Field
-Cmiss_field_create_constant(AV *values_array)
+Cmiss_field_create_constant(Cmiss::Field_factory field_factory, \
+	AV *values_array)
 	CODE:
 	{
 		double *value, *values;
@@ -117,7 +121,7 @@ Cmiss_field_create_constant(AV *values_array)
 				*value=(double)SvNV(AvARRAY(values_array)[j]);
 				value++;
 			}
-			RETVAL = Cmiss_field_create_constant(number_of_values,
+			RETVAL = Cmiss_field_create_constant(field_factory, number_of_values,
 				values);
 			free(values);
 		}
