@@ -325,7 +325,7 @@ Returns allocated command string for reproducing field.
 
 } //namespace
 
-Computed_field *Computed_field_create_image_resample(
+Computed_field *Cmiss_field_create_image_resample(
 	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, int dimension, int *sizes)
 {
@@ -351,20 +351,20 @@ Computed_field *Computed_field_create_image_resample(
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_create_image_resample.  "
+				"Cmiss_field_create_image_resample.  "
 				"Specified dimension and source field dimension do not match.");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_image_resample.  Invalid argument(s)");
+			"Cmiss_field_create_image_resample.  Invalid argument(s)");
 	}
 
 	return (field);
 }
 
-int Computed_field_get_type_image_resample(struct Computed_field *field,
+int Cmiss_field_get_type_image_resample(struct Computed_field *field,
 	struct Computed_field **source_field, int *dimension, int **sizes)
 /*******************************************************************************
 LAST MODIFIED : 7 March 2007
@@ -377,7 +377,7 @@ If the field is of type COMPUTED_FIELD_IMAGE_RESAMPLE, the function returns the 
 	Computed_field_image_resample* core;
 	int i, return_code = 0;
 
-	ENTER(Computed_field_get_type_image_resample);
+	ENTER(Cmiss_field_get_type_image_resample);
 	if (field && (core = dynamic_cast<Computed_field_image_resample*>(field->core)))
 	{
 		if (ALLOCATE(*sizes, int, core->dimension))
@@ -393,20 +393,20 @@ If the field is of type COMPUTED_FIELD_IMAGE_RESAMPLE, the function returns the 
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_get_type_image_resample.  Unable to allocate array.");
+				"Cmiss_field_get_type_image_resample.  Unable to allocate array.");
 			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_image_resample.  Invalid argument(s)");
+			"Cmiss_field_get_type_image_resample.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_get_type_image_resample */
+} /* Cmiss_field_get_type_image_resample */
 
 int define_Computed_field_type_image_resample(struct Parse_state *state,
 	void *field_modify_void,void *computed_field_simple_package_void)
@@ -437,7 +437,7 @@ already) and allows its contents to be modified.
 			(computed_field_image_resample_type_string ==
 				Computed_field_get_type_string(field_modify->get_field())))
 		{
-			return_code=Computed_field_get_type_image_resample(field_modify->get_field(), 
+			return_code=Cmiss_field_get_type_image_resample(field_modify->get_field(), 
 				&source_field, &original_dimension, &original_sizes);
 			ACCESS(Computed_field)(source_field);
 		}
@@ -517,7 +517,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_image_resample(field_modify->get_field_factory(),
+					Cmiss_field_create_image_resample(field_modify->get_field_factory(),
 						source_field, dimension, sizes));
 			}
 			

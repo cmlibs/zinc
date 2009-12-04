@@ -45,6 +45,9 @@ DESCRIPTION :
 
 #include "graphics/scene_viewer.h"
 
+/* API functions are prefixed with Cmiss */
+#define Computed_field_create_window_projection Cmiss_field_create_window_projection
+
 enum Computed_field_window_projection_type
 {
 	NDC_PROJECTION,

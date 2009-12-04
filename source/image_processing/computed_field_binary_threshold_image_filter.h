@@ -55,6 +55,17 @@ struct Computed_field *Cmiss_field_create_binary_threshold_image_filter(
 	struct Computed_field *source_field, double lower_threshold,
 	double upper_threshold);
 
+/*****************************************************************************//**
+ * If the field is of type COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER, 
+ * the source_field and thresholds used by it are returned - 
+ * otherwise an error is reported.
+ *
+ * @return Return code indicating success (1) or failure (0)
+*/
+int Cmiss_field_get_type_binary_threshold_image_filter(struct Computed_field *field,
+	struct Computed_field **source_field, double *lower_threshold,
+	double *upper_threshold);
+
 Cmiss_field_binary_threshold_image_filter_id Cmiss_field_binary_threshold_image_filter_cast(Cmiss_field_id field);
 
 #endif /* !defined (COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER_H) */

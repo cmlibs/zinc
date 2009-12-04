@@ -325,21 +325,14 @@ struct Computed_field *Cmiss_field_create_binary_threshold_image_filter(
 	return (field);
 }
 
-/*****************************************************************************//**
- * If the field is of type COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER, 
- * the source_field and thresholds used by it are returned - 
- * otherwise an error is reported.
- *
- * @return Return code indicating succes (1) or failure (0)
-*/
-int Computed_field_get_type_binary_threshold_image_filter(struct Computed_field *field,
+int Cmiss_field_get_type_binary_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, double *lower_threshold,
 	double *upper_threshold)
 {
 	Computed_field_binary_threshold_image_filter* core;
 	int return_code;
 
-	ENTER(Computed_field_get_type_binary_threshold_image_filter);
+	ENTER(Cmiss_field_get_type_binary_threshold_image_filter);
 	if (field && (core = dynamic_cast<Computed_field_binary_threshold_image_filter*>(field->core))
 		&& source_field)
 	{
@@ -351,13 +344,13 @@ int Computed_field_get_type_binary_threshold_image_filter(struct Computed_field 
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_binary_threshold_image_filter.  Invalid argument(s)");
+			"Cmiss_field_get_type_binary_threshold_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_get_type_binary_threshold_image_filter */
+} /* Cmiss_field_get_type_binary_threshold_image_filter */
 
 /*****************************************************************************//**
  * Converts <field> into type COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER 
@@ -392,7 +385,7 @@ int define_Computed_field_type_binary_threshold_image_filter(struct Parse_state 
 				Computed_field_get_type_string(field_modify->get_field())))
 		{
 			return_code =
-				Computed_field_get_type_binary_threshold_image_filter(field_modify->get_field(), &source_field,
+				Cmiss_field_get_type_binary_threshold_image_filter(field_modify->get_field(), &source_field,
 					&lower_threshold, &upper_threshold);
 		}
 		if (return_code)

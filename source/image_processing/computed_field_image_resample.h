@@ -55,7 +55,7 @@ Image processing fields use the native resolution to determine their image size.
  * @param field_factory  Specifies owning region and other generic arguments.
  * @return  Newly created field.
  */
-Computed_field *Computed_field_create_image_resample(
+Computed_field *Cmiss_field_create_image_resample(
 	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, int dimension, int *sizes);
 

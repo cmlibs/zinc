@@ -214,7 +214,7 @@ Cmiss_field_is_type_finite_element
 Cmiss_field_finite_element_define_at_node
 Cmiss_field_evaluate_in_element
 #if defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE)
-Computed_field_set_type_window_projection
+Cmiss_field_create_window_projection
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WX_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) */
 
 Cmiss_texture_manager_get_texture

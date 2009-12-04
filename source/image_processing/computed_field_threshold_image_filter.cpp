@@ -438,13 +438,13 @@ struct Computed_field *Cmiss_field_create_threshold_image_filter(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_threshold_image_filter.  Invalid argument(s)");
+			"Cmiss_field_create_threshold_image_filter.  Invalid argument(s)");
 	}
 
 	return (field);
 }
 
-int Computed_field_get_type_threshold_image_filter(struct Computed_field *field,
+int Cmiss_field_get_type_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field,  
 	enum General_threshold_filter_mode *threshold_mode, 
 	double *outside_value, double *below_value,	double *above_value)
@@ -460,7 +460,7 @@ otherwise an error is reported.
 	Computed_field_threshold_image_filter* core;
 	int return_code;
 
-	ENTER(Computed_field_get_type_threshold_image_filter);
+	ENTER(Cmiss_field_get_type_threshold_image_filter);
 	if (field && (core = dynamic_cast<Computed_field_threshold_image_filter*>(field->core))
 		&& source_field)
 	{
@@ -474,13 +474,13 @@ otherwise an error is reported.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_threshold_image_filter.  Invalid argument(s)");
+			"Cmiss_field_get_type_threshold_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_get_type_threshold_image_filter */
+} /* Cmiss_field_get_type_threshold_image_filter */
 
 int define_Computed_field_type_threshold_image_filter(struct Parse_state *state,
 	void *field_modify_void, void *computed_field_simple_package_void)
@@ -522,7 +522,7 @@ already) and allows its contents to be modified.
 				Computed_field_get_type_string(field_modify->get_field())))
 		{
 			return_code =
-				Computed_field_get_type_threshold_image_filter(field_modify->get_field(), &source_field,
+				Cmiss_field_get_type_threshold_image_filter(field_modify->get_field(), &source_field,
 					&threshold_mode, &outside_value,  
 					&below_value, &above_value);
 		}

@@ -62,4 +62,15 @@ struct Computed_field *Cmiss_field_create_derivative_image_filter(
 	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, int order, int direction);
 
+int Cmiss_field_get_type_derivative_image_filter(struct Computed_field *field,
+	struct Computed_field **source_field, int *order, int *direction);
+/*******************************************************************************
+LAST MODIFIED : 18 Nov 2006
+
+DESCRIPTION :
+If the field is of type FIELD_DERIVATIVEIMAGEFILTER, the source_field and derivative_image_filter
+used by it are returned - otherwise an error is reported.
+WARNING: To be deprecated.
+==============================================================================*/
+
 #endif /* !defined (COMPUTED_FIELD_DERIVATIVEIMAGEFILTER_H) */
