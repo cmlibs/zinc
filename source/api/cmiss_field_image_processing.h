@@ -211,27 +211,6 @@ WARNING: To be deprecated.
 
 
 
-/***************************************************************************//**
- * Creates a field performing ITK derivative image filter on scalar source field
- * image. Sets number of components to same number as <source_field>.
- */
-Cmiss_field_id Cmiss_field_create_derivative_image_filter(
-	Cmiss_field_factory_id field_factory, Cmiss_field_id source_field,
-	int order, int direction);
-
-int Cmiss_field_get_type_derivative_image_filter(Cmiss_field_id field,
-	Cmiss_field_id *source_field, int *order, int *direction);
-/*******************************************************************************
-LAST MODIFIED : 18 Nov 2006
-
-DESCRIPTION :
-If the field is of type FIELD_DERIVATIVEIMAGEFILTER, the source_field and derivative_image_filter
-used by it are returned - otherwise an error is reported.
-WARNING: To be deprecated.
-==============================================================================*/
-
-
-
 /*****************************************************************************//**
  * The image field specific handle to a Cmiss discrete gaussian field.
  */
