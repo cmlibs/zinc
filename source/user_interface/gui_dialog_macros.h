@@ -88,7 +88,8 @@ of the dialog_structure. \
 \
 	ENTER(DIALOG_IDENTIFY(dialog_name,this_widget)); \
 	USE_PARAMETER(call_data); \
-	if (dialog_structure=(struct Dialog_structure_type *)client_data) \
+	dialog_structure=(struct Dialog_structure_type *)client_data; \
+	if (NULL != dialog_structure) \
 	{ \
 		dialog_structure->this_widget= *widget_id; \
 	} \
@@ -119,7 +120,8 @@ Diagnostic version of macro writes out when widget is identified. \
 	struct Dialog_structure_type *dialog_structure; \
 \
 	ENTER(DIALOG_IDENTIFY(dialog_name,this_widget)); \
-	if (dialog_structure=(struct Dialog_structure_type *)client_data) \
+	dialog_structure=(struct Dialog_structure_type *)client_data; \
+	if (NULL != dialog_structure) \
 	{ \
 		display_message(INFORMATION_MESSAGE, \
 			"DIALOG_IDENTIFY(" #dialog_name "," #this_widget \

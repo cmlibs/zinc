@@ -42,6 +42,7 @@ control curve variation over coordinates - usually xi_texture_coordinates.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+extern "C" {
 #include <stdio.h>
 #include "choose/choose_computed_field.h"
 #include "choose/choose_curve.h"
@@ -54,6 +55,9 @@ control curve variation over coordinates - usually xi_texture_coordinates.
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_curve.h"
 #include "computed_field/computed_field_integration.h"
+}
+#include "computed_field/computed_field_private.hpp" // only for Cmiss_field_factory_set_replace_field()
+extern "C" {
 #include "computed_field/computed_field_update.h"
 #include "computed_field/computed_field_vector_operations.h"
 #include "finite_element/finite_element.h"
@@ -61,8 +65,10 @@ control curve variation over coordinates - usually xi_texture_coordinates.
 static char grid_field_calculator_uidh[] =
 #include "finite_element/grid_field_calculator.uidh"
 	;
+#include "region/cmiss_region.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
+}
 
 /*
 Module variables
@@ -137,7 +143,8 @@ details: dynamic allocations, etc.
 	ENTER(grid_field_calculator_destroy_CB);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(reason);
-	if (grid_calc=(struct Grid_field_calculator *)client_data)
+	grid_calc = (struct Grid_field_calculator *)client_data;
+	if (NULL != grid_calc)
 	{
 		/* clear the grid_field_calculator for the client */
 		*(grid_calc->dialog_address)=(Widget)NULL;
@@ -169,19 +176,21 @@ DESCRIPTION :
 	ENTER(grid_field_calculator_axis1_curve_edit_CB);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(reason);
-	if (grid_calc=(struct Grid_field_calculator *)client_data)
+	grid_calc=(struct Grid_field_calculator *)client_data;
+	if (NULL != grid_calc)
 	{
 		/* edit the curve in the chooser... */
-		if (curve=CHOOSE_OBJECT_GET_OBJECT(Curve)(
-			grid_calc->axis1_curve_widget))
+		curve=CHOOSE_OBJECT_GET_OBJECT(Curve)(grid_calc->axis1_curve_widget);
+		if (NULL != curve)
 		{
 			current_curve=curve;
 			/* ...but not if it is called "constant_1" */
 			if (curve==FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
 				"constant_1",grid_calc->curve_manager))
 			{
-				if (grid_field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
-					grid_calc->grid_field_widget))
+				grid_field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+					grid_calc->grid_field_widget);
+				if (NULL != grid_field)
 				{
 					error=0;
 					if (GET_NAME(Computed_field)(grid_field,&curve_name)&&
@@ -191,7 +200,8 @@ DESCRIPTION :
 						if (!(curve=FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
 							curve_name,grid_calc->curve_manager)))
 						{
-							if (curve=CREATE(Curve)(curve_name,LINEAR_LAGRANGE,1))
+							curve = CREATE(Curve)(curve_name,LINEAR_LAGRANGE,1);
+							if (NULL != curve)
 							{
 								if (!(MANAGER_COPY_WITHOUT_IDENTIFIER(Curve,name)(curve,
 									current_curve)&&
@@ -239,18 +249,21 @@ DESCRIPTION :
 	ENTER(grid_field_calculator_axis2_curve_edit_CB);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(reason);
-	if (grid_calc=(struct Grid_field_calculator *)client_data)
+	grid_calc = (struct Grid_field_calculator *)client_data;
+	if (NULL != grid_calc)
 	{
 		/* edit the curve in the chooser... */
-		if (curve=current_curve=CHOOSE_OBJECT_GET_OBJECT(Curve)(
-			grid_calc->axis2_curve_widget))
+		curve = current_curve =
+			CHOOSE_OBJECT_GET_OBJECT(Curve)(grid_calc->axis2_curve_widget);
+		if (NULL != curve)
 		{
 			/* ...but not if it is called "constant_1" */
 			if (curve==FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
 				"constant_1",grid_calc->curve_manager))
 			{
-				if (grid_field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
-					grid_calc->grid_field_widget))
+				grid_field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+					grid_calc->grid_field_widget);
+				if (NULL != grid_field)
 				{
 					error=0;
 					if (GET_NAME(Computed_field)(grid_field,&curve_name)&&
@@ -260,7 +273,8 @@ DESCRIPTION :
 						if (!(curve=FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
 							curve_name,grid_calc->curve_manager)))
 						{
-							if (curve=CREATE(Curve)(curve_name,LINEAR_LAGRANGE,1))
+							curve = CREATE(Curve)(curve_name,LINEAR_LAGRANGE,1);
+							if (NULL != curve)
 							{
 								if (!(MANAGER_COPY_WITHOUT_IDENTIFIER(Curve,name)(curve,
 									current_curve)&&
@@ -308,18 +322,21 @@ DESCRIPTION :
 	ENTER(grid_field_calculator_axis3_curve_edit_CB);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(reason);
-	if (grid_calc=(struct Grid_field_calculator *)client_data)
+	grid_calc = (struct Grid_field_calculator *)client_data;
+	if (NULL != grid_calc)
 	{
 		/* edit the curve in the chooser... */
-		if (curve=current_curve=CHOOSE_OBJECT_GET_OBJECT(Curve)(
-			grid_calc->axis3_curve_widget))
+		curve = current_curve =
+			CHOOSE_OBJECT_GET_OBJECT(Curve)(grid_calc->axis2_curve_widget);
+		if (NULL != curve)
 		{
 			/* ...but not if it is called "constant_1" */
 			if (curve==FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
 				"constant_1",grid_calc->curve_manager))
 			{
-				if (grid_field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
-					grid_calc->grid_field_widget))
+				grid_field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+					grid_calc->grid_field_widget);
+				if (NULL != grid_field)
 				{
 					error=0;
 					if (GET_NAME(Computed_field)(grid_field,&curve_name)&&
@@ -329,7 +346,8 @@ DESCRIPTION :
 						if (!(curve=FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
 							curve_name,grid_calc->curve_manager)))
 						{
-							if (curve=CREATE(Curve)(curve_name,LINEAR_LAGRANGE,1))
+							curve = CREATE(Curve)(curve_name,LINEAR_LAGRANGE,1);
+							if (NULL != curve)
 							{
 								if (!(MANAGER_COPY_WITHOUT_IDENTIFIER(Curve,name)(curve,
 									current_curve)&&
@@ -371,21 +389,20 @@ Applies the computed field to the grid field.
 	char tmp_string[20];
 	int axis,i,number_of_components,return_code;
 	struct Computed_field *coordinate_component[3],*coordinate_field,
-		*curve_lookup[3],*grid_field,*source_field,*temp_field;
-	struct MANAGER(Computed_field) *computed_field_manager;
+		*curve_lookup[3],*grid_field,*source_field;
 	Widget widget;
 
 	ENTER(grid_field_calculator_apply);
-	if (grid_calc&&(computed_field_manager=
-		Computed_field_package_get_computed_field_manager(
-			grid_calc->computed_field_package)))
+	if (grid_calc)
 	{
 		return_code=1;
-		if (grid_field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
-			grid_calc->grid_field_widget))
+		grid_field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+			grid_calc->grid_field_widget);
+		if (NULL != grid_field)
 		{
-			if (coordinate_field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
-				grid_calc->coord_field_widget))
+			coordinate_field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+				grid_calc->coord_field_widget);
+			if (NULL != coordinate_field)
 			{
 				number_of_components=
 					Computed_field_get_number_of_components(coordinate_field);
@@ -410,64 +427,49 @@ Applies the computed field to the grid field.
 					/* get or make wrapper for field component */
 					coordinate_component[i] =
 						Computed_field_manager_get_component_wrapper(
-							computed_field_manager, coordinate_field, i);
+							Cmiss_region_get_Computed_field_manager(grid_calc->region),
+								coordinate_field, i);
 					sprintf(tmp_string,"curve_lookup%d",axis);
-					if (curve_lookup[i]=CREATE(Computed_field)(tmp_string))
+					
+					Cmiss_field_factory *field_factory =
+						Cmiss_region_get_field_factory(grid_calc->region);
+					curve_lookup[i] = Computed_field_create_curve_lookup(field_factory,
+						coordinate_component[i],
+						CHOOSE_OBJECT_GET_OBJECT(Curve)(widget),
+						grid_calc->curve_manager);
+					Computed_field_set_name(curve_lookup[i], tmp_string);
+					if (!curve_lookup[i])
 					{
-						ACCESS(Computed_field)(curve_lookup[i]);
-						if (!Computed_field_set_type_curve_lookup(curve_lookup[i],
-							coordinate_component[i],
-							CHOOSE_OBJECT_GET_OBJECT(Curve)(widget),
-							grid_calc->curve_manager))
-						{
-							return_code = 0;
-						}
+						return_code = 0;
 					}
-					else
-					{
-						return_code=0;
-					}
+					Cmiss_field_factory_destroy(&field_factory);
+
 					DEACCESS(Computed_field)(&(coordinate_component[i]));
 				}
 				if (return_code)
 				{
 					if (1==number_of_components)
 					{
-						source_field=curve_lookup[0];
+						source_field=ACCESS(Computed_field)(curve_lookup[0]);
 					}
 					else
 					{
-						if (source_field=CREATE(Computed_field)("dot_product1"))
+						Cmiss_field_factory *field_factory =
+							Cmiss_region_get_field_factory(grid_calc->region);
+						source_field = Computed_field_create_dot_product(field_factory,
+							curve_lookup[0], curve_lookup[1]);
+						if (3 == number_of_components)
 						{
-							if (Computed_field_set_type_dot_product(source_field,
-								curve_lookup[0],curve_lookup[1]))
-							{
-								if (3==number_of_components)
-								{
-									temp_field=source_field;
-									if (source_field=CREATE(Computed_field)("dot_product2"))
-									{
-										if (!Computed_field_set_type_dot_product(source_field,
-											temp_field,curve_lookup[2]))
-										{
-											DESTROY(Computed_field)(&source_field);
-										}
-									}
-									else
-									{
-										DESTROY(Computed_field)(&temp_field);
-									}
-								}
-							}
-							else
-							{
-								DESTROY(Computed_field)(&source_field);
-							}
+							Computed_field *source_field2 =
+								Computed_field_create_dot_product(field_factory,
+									source_field, curve_lookup[2]);
+							REACCESS(Computed_field)(&source_field, source_field2);
+							DEACCESS(Computed_field)(&source_field2);
 						}
+						Cmiss_field_factory_destroy(&field_factory);
 					}
 					if (source_field)
 					{
-						ACCESS(Computed_field)(source_field);
 						return_code=Computed_field_update_element_values_from_source(
 							grid_field,source_field, grid_calc->region,
 							(struct Element_point_ranges_selection *)NULL,
@@ -524,7 +526,8 @@ DESCRIPTION :
 	ENTER(grid_field_calculator_ok_button_CB);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(reason);
-	if (grid_calc=(struct Grid_field_calculator *)client_data)
+	grid_calc = (struct Grid_field_calculator *)client_data;
+	if (NULL != grid_calc)
 	{
 		if (grid_field_calculator_apply(grid_calc))
 		{
@@ -553,7 +556,8 @@ DESCRIPTION :
 	ENTER(grid_field_calculator_apply_button_CB);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(reason);
-	if (grid_calc=(struct Grid_field_calculator *)client_data)
+	grid_calc = (struct Grid_field_calculator *)client_data;
+	if (NULL != grid_calc)
 	{
 		grid_field_calculator_apply(grid_calc);
 	}
@@ -578,7 +582,8 @@ DESCRIPTION :
 	ENTER(grid_field_calculator_cancel_button_CB);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(reason);
-	if (grid_calc=(struct Grid_field_calculator *)client_data)
+	grid_calc = (struct Grid_field_calculator *)client_data;
+	if (NULL != grid_calc)
 	{
 		/* close the dialog shell */
 		XtDestroyWidget(grid_calc->dialog);
@@ -602,7 +607,6 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 ==============================================================================*/
 {
 	char *curve_name,*field_name;
-	double double_value;
 	FE_value value;
 	int axis, integration_magnitude_coordinates, return_code;
 	struct Computed_field *coordinate_field, *grid_field, *integration_integrand,
@@ -620,53 +624,48 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 		return_code=1;
 		integration_coordinate_field = (struct Computed_field *)NULL;
 		integration_integrand = (struct Computed_field *)NULL;
-		if (coordinate_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-			"xi_texture_coordinates",computed_field_manager))
+		coordinate_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+			"xi_texture_coordinates",computed_field_manager);
+		if (NULL != coordinate_field)
 		{
-			if (Computed_field_is_type_integration(coordinate_field)&&
+			ACCESS(Computed_field)(coordinate_field);
+			if (Computed_field_is_type_integration(coordinate_field))
+			{
 				Computed_field_get_type_integration(coordinate_field,
 					&seed_element,&integration_integrand,
-					&integration_magnitude_coordinates, &integration_coordinate_field))
-			{
+					&integration_magnitude_coordinates, &integration_coordinate_field);
 				TEXT_CHOOSE_FROM_FE_REGION_SET_OBJECT(FE_element)(
 					grid_calc->seed_element_widget,seed_element);
+				ACCESS(Computed_field)(integration_coordinate_field);
+				ACCESS(Computed_field)(integration_integrand);
 			}
 		}
 		else
 		{
+			Cmiss_field_factory *field_factory =
+				Cmiss_region_get_field_factory(grid_calc->region);
 			if (!integration_coordinate_field)
 			{
-				integration_coordinate_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)
-					("xi", computed_field_manager);
+				REACCESS(Computed_field)(&integration_coordinate_field,
+					FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)
+						("xi", computed_field_manager));
 			}
-			double_value = 1.0;
 			if (!integration_integrand)
 			{
-				integration_integrand = Computed_field_create_constant(1,&double_value);
+				double double_value = 1.0;
+				integration_integrand = Computed_field_create_constant(field_factory,
+					/*number_of_components*/1, &double_value);
 				Computed_field_set_name(integration_integrand, "constant_1.0");
 			}
-			else
+			seed_element = TEXT_CHOOSE_FROM_FE_REGION_GET_OBJECT(FE_element)(
+				grid_calc->seed_element_widget);
+			if (seed_element)
 			{
-				ACCESS(Computed_field)(integration_integrand);
+				coordinate_field = Computed_field_create_integration(field_factory,
+					seed_element, grid_calc->fe_region, integration_integrand,
+					integration_magnitude_coordinates, integration_coordinate_field);
 			}
-			if (seed_element=TEXT_CHOOSE_FROM_FE_REGION_GET_OBJECT(FE_element)(
-				grid_calc->seed_element_widget))
-			{
-				if (coordinate_field=CREATE(Computed_field)("xi_texture_coordinates"))
-				{
-					integration_magnitude_coordinates = 0;
-					if (!(Computed_field_set_type_integration(
-						coordinate_field,seed_element,grid_calc->fe_region,
-						integration_integrand,
-						integration_magnitude_coordinates,integration_coordinate_field)&&
-						ADD_OBJECT_TO_MANAGER(Computed_field)(coordinate_field,
-							computed_field_manager)))
-					{
-						DESTROY(Computed_field)(&coordinate_field);
-					}
-				}
-			}
-			DEACCESS(Computed_field)(&integration_integrand);
+			Cmiss_field_factory_destroy(&field_factory);
 		}
 		if (coordinate_field)
 		{
@@ -675,11 +674,12 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 			XtSetSensitive(grid_calc->seed_element_entry,
 				Computed_field_is_type_integration(coordinate_field));
 		}
-		if (!(constant_1_curve=FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
-			"constant_1",grid_calc->curve_manager)))
+		constant_1_curve = FIND_BY_IDENTIFIER_IN_MANAGER(Curve,name)(
+			"constant_1",grid_calc->curve_manager);
+		if (NULL == constant_1_curve)
 		{
-			if (constant_1_curve=CREATE(Curve)("constant_1",
-				LINEAR_LAGRANGE,1))
+			constant_1_curve = CREATE(Curve)("constant_1", LINEAR_LAGRANGE,1);
+			if (constant_1_curve)
 			{
 				Curve_add_element(constant_1_curve,1);
 				Curve_set_parameter(constant_1_curve,1,0,0.0);
@@ -729,6 +729,9 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 			}
 			DEALLOCATE(field_name);
 		}
+		DEACCESS(Computed_field)(&integration_coordinate_field);
+		DEACCESS(Computed_field)(&integration_integrand);
+		DEACCESS(Computed_field)(&coordinate_field);
 	}
 	else
 	{
@@ -755,7 +758,8 @@ Callback for change of grid field.
 	ENTER(grid_field_calculator_update_grid_field);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(grid_field_void);
-	if (grid_calc=(struct Grid_field_calculator *)grid_calc_void)
+	grid_calc = (struct Grid_field_calculator *)grid_calc_void;
+	if (grid_calc)
 	{
 		grid_field_calculator_set_grid_field(grid_calc);
 	}
@@ -784,8 +788,9 @@ Callback for change of coordinate field.
 
 	ENTER(grid_field_calculator_update_coordinate_field);
 	USE_PARAMETER(widget);
-	if ((grid_calc=(struct Grid_field_calculator *)grid_calc_void)&&
-		(coordinate_field=(struct Computed_field *)coordinate_field_void))
+	grid_calc = (struct Grid_field_calculator *)grid_calc_void;
+	coordinate_field = (struct Computed_field *)coordinate_field_void;
+	if (grid_calc && coordinate_field)
 	{
 		if (Computed_field_is_type_integration(coordinate_field)&&
 			Computed_field_get_type_integration(coordinate_field,
@@ -818,59 +823,64 @@ Callback for change of seed_element.
 	int integration_magnitude_coordinates;
 	double value;
 	struct Computed_field *coordinate_field,*integration_integrand,
-		*integration_coordinate_field,*temp_field;
+		*integration_coordinate_field;
 	struct FE_element *seed_element;
 	struct Grid_field_calculator *grid_calc;
 
-	ENTER(grid_field_calculator_update_coordinate_field);
+	ENTER(grid_field_calculator_update_seed_element);
 	USE_PARAMETER(widget);
-	if ((grid_calc=(struct Grid_field_calculator *)grid_calc_void)&&
-		(seed_element=(struct FE_element *)seed_element_void))
+	grid_calc = (struct Grid_field_calculator *)grid_calc_void;
+	seed_element = (struct FE_element *)seed_element_void;
+	if (grid_calc && seed_element)
 	{
-		if (coordinate_field=
-			CHOOSE_OBJECT_GET_OBJECT(Computed_field)(grid_calc->coord_field_widget))
+		coordinate_field=
+			CHOOSE_OBJECT_GET_OBJECT(Computed_field)(grid_calc->coord_field_widget);
+		if (coordinate_field)
 		{
+			Cmiss_field_factory *field_factory =
+				Cmiss_region_get_field_factory(grid_calc->region);
+			integration_coordinate_field = NULL;
+			
 			if (Computed_field_is_type_integration(coordinate_field))
 			{
+				struct FE_element *temp_seed_element;
 				Computed_field_get_type_integration(coordinate_field,
-					&seed_element,&integration_integrand,
+					&temp_seed_element,&integration_integrand,
 					&integration_magnitude_coordinates,&integration_coordinate_field);
 				ACCESS(Computed_field)(integration_integrand);
+				ACCESS(Computed_field)(integration_coordinate_field);
 			}
 			else
 			{
-				integration_coordinate_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)
-					("xi", Computed_field_package_get_computed_field_manager(
-							grid_calc->computed_field_package));
+				REACCESS(Computed_field)(&integration_coordinate_field,
+					FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)
+						("xi", Cmiss_region_get_Computed_field_manager(grid_calc->region)));
 				value = 1.0;
-				integration_integrand = Computed_field_create_constant(1,&value);
-				Computed_field_set_name(integration_integrand,"constant_1.0");
+				integration_integrand = Computed_field_create_constant(field_factory,
+					/*number_of_components*/1, &value);
+				Computed_field_set_name(integration_integrand, "constant_1.0");
 				integration_magnitude_coordinates = 0;
 			}
-			/* this is very inefficient - creates xi mapping twice per element! */
-			if (temp_field=CREATE(Computed_field)("temp"))
-			{
-				if (Computed_field_set_type_integration(temp_field,
-					seed_element,grid_calc->fe_region,integration_integrand,
-					integration_magnitude_coordinates,integration_coordinate_field))
-				{
-					MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name)(
-						coordinate_field,temp_field,
-						Computed_field_package_get_computed_field_manager(
-							grid_calc->computed_field_package));
-				}
-				DESTROY(Computed_field)(&temp_field);
-			}
+			
+			Cmiss_field_factory_set_replace_field(field_factory, coordinate_field);
+			coordinate_field = Computed_field_create_integration(field_factory,
+				seed_element, grid_calc->fe_region, integration_integrand,
+				integration_magnitude_coordinates, integration_coordinate_field);
+			DEACCESS(Computed_field)(&coordinate_field);
+			DEACCESS(Computed_field)(&integration_coordinate_field);
 			DEACCESS(Computed_field)(&integration_integrand);
+			Cmiss_field_factory_destroy(&field_factory);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"grid_field_calculator_update_.  Invalid argument(s)");
+			"grid_field_calculator_update_seed_element.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* grid_field_calculator_update_ */
+} /* grid_field_calculator_update_seed_element */
+
+#define DODGY_MOTIF_CHAR_CAST char *
 
 static Widget create_grid_field_calculator(
 	Widget *grid_field_calculator_address,Widget parent,
@@ -891,55 +901,52 @@ control curve variation over coordinates - usually integration.
 	MrmType grid_field_calculator_dialog_class;
 	static MrmRegisterArg callback_list[]=
 	{
-		{"grid_calc_id_grid_field_form",(XtPointer)
+		{(DODGY_MOTIF_CHAR_CAST)"grid_calc_id_grid_field_form",(XtPointer)
 			DIALOG_IDENTIFY(grid_field_calculator,grid_field_form)},
-		{"grid_calc_id_coord_field_form",(XtPointer)
+		{(DODGY_MOTIF_CHAR_CAST)"grid_calc_id_coord_field_form",(XtPointer)
 			DIALOG_IDENTIFY(grid_field_calculator,coord_field_form)},
-		{"grid_calc_id_seed_element_entry",(XtPointer)
+		{(DODGY_MOTIF_CHAR_CAST)"grid_calc_id_seed_element_entry",(XtPointer)
 			DIALOG_IDENTIFY(grid_field_calculator,seed_element_entry)},
-		{"grid_calc_id_seed_element_form",(XtPointer)
+		{(DODGY_MOTIF_CHAR_CAST)"grid_calc_id_seed_element_form",(XtPointer)
 			DIALOG_IDENTIFY(grid_field_calculator,seed_element_form)},
-		{"grid_calc_id_axis1_curve_entry",(XtPointer)
+		{(DODGY_MOTIF_CHAR_CAST)"grid_calc_id_axis1_curve_entry",(XtPointer)
 			DIALOG_IDENTIFY(grid_field_calculator,axis1_curve_entry)},
-		{"grid_calc_id_axis1_curve_form",(XtPointer)
+		{(DODGY_MOTIF_CHAR_CAST)"grid_calc_id_axis1_curve_form",(XtPointer)
 			DIALOG_IDENTIFY(grid_field_calculator,axis1_curve_form)},
-		{"grid_calc_id_axis2_curve_entry",(XtPointer)
+		{(DODGY_MOTIF_CHAR_CAST)"grid_calc_id_axis2_curve_entry",(XtPointer)
 			DIALOG_IDENTIFY(grid_field_calculator,axis2_curve_entry)},
-		{"grid_calc_id_axis2_curve_form",(XtPointer)
+		{(DODGY_MOTIF_CHAR_CAST)"grid_calc_id_axis2_curve_form",(XtPointer)
 			DIALOG_IDENTIFY(grid_field_calculator,axis2_curve_form)},
-		{"grid_calc_id_axis3_curve_entry",(XtPointer)
+		{(DODGY_MOTIF_CHAR_CAST)"grid_calc_id_axis3_curve_entry",(XtPointer)
 			DIALOG_IDENTIFY(grid_field_calculator,axis3_curve_entry)},
-		{"grid_calc_id_axis3_curve_form",(XtPointer)
+		{(DODGY_MOTIF_CHAR_CAST)"grid_calc_id_axis3_curve_form",(XtPointer)
 			DIALOG_IDENTIFY(grid_field_calculator,axis3_curve_form)},
-		{"grid_calc_destroy_CB",(XtPointer)
+		{(DODGY_MOTIF_CHAR_CAST)"grid_calc_destroy_CB",(XtPointer)
 			grid_field_calculator_destroy_CB},
-		{"grid_calc_axis1_curve_edit_CB",(XtPointer)
+		{(DODGY_MOTIF_CHAR_CAST)"grid_calc_axis1_curve_edit_CB",(XtPointer)
 			grid_field_calculator_axis1_curve_edit_CB},
-		{"grid_calc_axis2_curve_edit_CB",(XtPointer)
+		{(DODGY_MOTIF_CHAR_CAST)"grid_calc_axis2_curve_edit_CB",(XtPointer)
 			grid_field_calculator_axis2_curve_edit_CB},
-		{"grid_calc_axis3_curve_edit_CB",(XtPointer)
+		{(DODGY_MOTIF_CHAR_CAST)"grid_calc_axis3_curve_edit_CB",(XtPointer)
 			grid_field_calculator_axis3_curve_edit_CB},
-		{"grid_calc_ok_btn_CB",(XtPointer)
+		{(DODGY_MOTIF_CHAR_CAST)"grid_calc_ok_btn_CB",(XtPointer)
 			grid_field_calculator_ok_button_CB},
-		{"grid_calc_apply_btn_CB",(XtPointer)
+		{(DODGY_MOTIF_CHAR_CAST)"grid_calc_apply_btn_CB",(XtPointer)
 			grid_field_calculator_apply_button_CB},
-		{"grid_calc_cancel_btn_CB",(XtPointer)
+		{(DODGY_MOTIF_CHAR_CAST)"grid_calc_cancel_btn_CB",(XtPointer)
 			grid_field_calculator_cancel_button_CB}
 	};
 	static MrmRegisterArg identifier_list[]=
 	{
-		{"grid_calc_structure",(XtPointer)NULL}
+		{(DODGY_MOTIF_CHAR_CAST)"grid_calc_structure",(XtPointer)NULL}
 	};
 	struct Callback_data callback;
 	struct Grid_field_calculator *grid_calc;
-	struct MANAGER(Computed_field) *computed_field_manager;
 	Widget return_widget;
 
 	ENTER(create_grid_field_calculator);
 	return_widget=(Widget)NULL;
 	if (grid_field_calculator_address&&parent&&computed_field_package&&
-		(computed_field_manager=Computed_field_package_get_computed_field_manager(
-			computed_field_package))&&
 		curve_manager&&region&&user_interface&&
 		curve_editor_dialog_address)
 	{
@@ -978,9 +985,9 @@ control curve variation over coordinates - usually integration.
 				grid_calc->widget = (Widget)NULL;
 				grid_calc->dialog = (Widget)NULL;
 				/* make the dialog shell */
-				if (grid_calc->dialog=XtVaCreatePopupShell(
+				if (NULL != (grid_calc->dialog=XtVaCreatePopupShell(
 					"Grid Field Calculator",topLevelShellWidgetClass,parent,
-					XmNallowShellResize,FALSE,NULL))
+					XmNallowShellResize,FALSE,NULL)))
 				{
 					/* register the callbacks */
 					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
@@ -995,7 +1002,7 @@ control curve variation over coordinates - usually integration.
 						{
 							/* fetch dialog widget */
 							if (MrmSUCCESS==MrmFetchWidget(grid_field_calculator_hierarchy,
-								"grid_calc_widget",grid_calc->dialog,&(grid_calc->widget),
+								(DODGY_MOTIF_CHAR_CAST)"grid_calc_widget",grid_calc->dialog,&(grid_calc->widget),
 								&grid_field_calculator_dialog_class))
 							{
 								XtManageChild(grid_calc->widget);
@@ -1004,7 +1011,7 @@ control curve variation over coordinates - usually integration.
 								if (!(grid_calc->grid_field_widget=
 									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 										grid_calc->grid_field_form,(struct Computed_field *)NULL,
-										computed_field_manager,Computed_field_is_scalar,
+										Cmiss_region_get_Computed_field_manager(region), Computed_field_is_scalar,
 										(void *)NULL, user_interface)))
 								{
 									init_widgets=0;
@@ -1012,7 +1019,7 @@ control curve variation over coordinates - usually integration.
 								if (!(grid_calc->coord_field_widget=
 									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 										grid_calc->coord_field_form,(struct Computed_field *)NULL,
-										computed_field_manager,
+										Cmiss_region_get_Computed_field_manager(region),
 										Computed_field_has_up_to_3_numerical_components,
 										(void *)NULL, user_interface)))
 								{
