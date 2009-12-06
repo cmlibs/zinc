@@ -614,7 +614,7 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 	struct Curve *constant_1_curve,*curve;
 	struct FE_element *seed_element;
 	struct MANAGER(Computed_field) *computed_field_manager;
-	Widget widget;
+	Widget widget = (Widget)NULL;
 
 	ENTER(grid_field_calculator_set_grid_field);
 	if (grid_calc&&(computed_field_manager=
