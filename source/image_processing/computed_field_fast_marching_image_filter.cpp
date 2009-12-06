@@ -618,7 +618,7 @@ already) and allows its contents to be modified.
 				Computed_field_get_type_string(field_modify->get_field())))
 		{
 			return_code =
-				gradient_magnitude_recursive_gaussian(field_modify->get_field(), &source_field,
+				Cmiss_field_get_type_fast_marching_image_filter(field_modify->get_field(), &source_field,
 				  &stopping_value, &num_seed_points, &dimension, &seed_points, &seed_values, &output_size);
 		}
 		if (return_code)
