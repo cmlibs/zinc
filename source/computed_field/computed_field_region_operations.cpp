@@ -415,7 +415,7 @@ struct Computed_field *Computed_field_create_region_sum(
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_region_sum(region));
+			new Computed_field_region_sum(group));
 	}
 	return (field);
 }
@@ -780,7 +780,7 @@ struct Computed_field *Computed_field_create_region_mean(
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_region_mean(region));
+			new Computed_field_region_mean(group));
 	}
 
 	return (field);
