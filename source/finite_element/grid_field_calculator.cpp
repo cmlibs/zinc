@@ -390,7 +390,7 @@ Applies the computed field to the grid field.
 	int axis,i,number_of_components,return_code;
 	struct Computed_field *coordinate_component[3],*coordinate_field,
 		*curve_lookup[3],*grid_field,*source_field;
-	Widget widget;
+	Widget widget = NULL;
 
 	ENTER(grid_field_calculator_apply);
 	if (grid_calc)
