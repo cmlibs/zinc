@@ -85,7 +85,7 @@ public:
 		a destroy callback and then must evaluate correctly with a NULL scene_viewer */
 	struct Scene_viewer *scene_viewer;
 
-	enum Computed_field_window_projection_type projection_type;
+	enum Cmiss_field_window_projection_type projection_type;
 
 	/* This flag indicates if the field has registered for callbacks with the
 		scene_viewer */
@@ -96,7 +96,7 @@ public:
 	Computed_field_window_projection(
 		char *graphics_window_name, int pane_number, 
 		Scene_viewer *scene_viewer, 
-		enum Computed_field_window_projection_type projection_type) : 
+		enum Cmiss_field_window_projection_type projection_type) : 
 		Computed_field_core(), 
 		graphics_window_name(duplicate_string(graphics_window_name)),
 		pane_number(pane_number), scene_viewer(scene_viewer),
@@ -143,7 +143,7 @@ private:
 	char* get_command_string();
 
 	const char *projection_type_string(
-		enum Computed_field_window_projection_type projection_type);
+		enum Cmiss_field_window_projection_type projection_type);
 
 	int calculate_matrix();
 
@@ -159,7 +159,7 @@ private:
 };
 
 const char *Computed_field_window_projection::projection_type_string(
-	enum Computed_field_window_projection_type projection_type)
+	enum Cmiss_field_window_projection_type projection_type)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -1127,7 +1127,7 @@ struct Computed_field *Computed_field_create_window_projection(
 	struct Cmiss_field_factory *field_factory,
 	struct Computed_field *source_field, struct Scene_viewer *scene_viewer,
 	char *graphics_window_name, int pane_number,
-	enum Computed_field_window_projection_type projection_type)
+	enum Cmiss_field_window_projection_type projection_type)
 {
 	Computed_field *field = NULL;
 	if (source_field && Computed_field_has_3_components(source_field, NULL) &&
@@ -1153,7 +1153,7 @@ struct Computed_field *Computed_field_create_window_projection(
 int Computed_field_get_type_window_projection(struct Computed_field *field,
 	struct Computed_field **source_field, struct Scene_viewer **scene_viewer,
 	char **graphics_window_name, int *pane_number, 
-	enum Computed_field_window_projection_type *projection_type)
+	enum Cmiss_field_window_projection_type *projection_type)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -1201,7 +1201,7 @@ already) and allows its contents to be modified.
 {
 	char *graphics_window_name;
 	const char *projection_type_string;
-	enum Computed_field_window_projection_type projection_type;
+	enum Cmiss_field_window_projection_type projection_type;
 	int pane_number, return_code;
 	struct Computed_field *source_field;
 	Computed_field_window_projection_package 

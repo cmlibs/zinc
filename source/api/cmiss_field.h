@@ -94,6 +94,10 @@ DESCRIPTION :
  */
 struct Cmiss_field_factory;
 typedef struct Cmiss_field_factory *Cmiss_field_factory_id;
+/* Until the Cmiss_field_factory names have the correct form it is convenient
+ * for generation from zinc to have this alias name.
+ */
+typedef struct Cmiss_field_factory *Cmiss_field_create_id;
 
 /* Forward declared types */
 /* SAB Temporary until we decide how to fix things up internally instead of externally.*/
@@ -129,7 +133,7 @@ DESCRIPTION :
 Returns the <values> of <field> at <node> and <time> if it is defined there.
 
 The <values> array must be large enough to store as many floats as there are
-number_of_components, the function checks that <number_of_values> is 
+number_of_components, the function checks that <number_of_values> is
 greater than or equal to the number of components.
 ==============================================================================*/
 
@@ -152,7 +156,7 @@ is reached for which its calculation is not reversible, or is not supported yet.
 ==============================================================================*/
 
 int Cmiss_field_evaluate_in_element(struct Cmiss_field *field,
-	struct Cmiss_element *element, double *xi, double time, 
+	struct Cmiss_element *element, double *xi, double time,
 	struct Cmiss_element *top_level_element, int number_of_values,
 	double *values, int number_of_derivatives, double *derivatives);
 /*******************************************************************************
@@ -246,7 +250,7 @@ Change the name of a field.
 ==============================================================================*/
 
 int Cmiss_field_finite_element_set_string_at_node(
-	Cmiss_field_id field, int component_number, Cmiss_node_id node, 
+	Cmiss_field_id field, int component_number, Cmiss_node_id node,
 	double time, const char *string);
 /*******************************************************************************
 LAST MODIFIED : 24 May 2006

@@ -1,10 +1,10 @@
-/*******************************************************************************
-FILE : computed_field_window_projection.h
-
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-==============================================================================*/
+/*****************************************************************************//**
+ * FILE : cmiss_field_window_projection.h
+ * 
+ * Implements a cmiss field which is connected to the viewing transformations of
+ * a scene viewer.
+ *
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -22,7 +22,7 @@ DESCRIPTION :
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2009
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -40,14 +40,20 @@ DESCRIPTION :
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (COMPUTED_FIELD_WINDOW_PROJECTION_H)
-#define COMPUTED_FIELD_WINDOW_PROJECTION_H
+#if !defined (CMISS_FIELD_WINDOW_PROJECTION_H)
+#define CMISS_FIELD_WINDOW_PROJECTION_H
 
-#include "api/cmiss_field_window_projection.h"
-#include "graphics/scene_viewer.h"
+typedef struct Cmiss_field_window_projection *Cmiss_field_window_projection_id;
 
-/* API functions are prefixed with Cmiss */
-#define Computed_field_create_window_projection Cmiss_field_create_window_projection
+enum Cmiss_field_window_projection_type
+{
+	NDC_PROJECTION,
+	TEXTURE_PROJECTION,
+	VIEWPORT_PROJECTION,
+	INVERSE_NDC_PROJECTION,
+	INVERSE_TEXTURE_PROJECTION,
+	INVERSE_VIEWPORT_PROJECTION
+};
 
 /*****************************************************************************//**
  * Creates a field performing a window projection, returning the source field
@@ -62,18 +68,10 @@ DESCRIPTION :
  * @param scene_viewer  Scene viewer to obtain projection transformation from.
  * @return Newly created field with 3 components.
  */
-struct Computed_field *Computed_field_create_window_projection(
+struct Cmiss_field *Cmiss_field_create_window_projection(
 	struct Cmiss_field_factory *field_factory,
-	struct Computed_field *source_field, struct Scene_viewer *scene_viewer,
+	struct Cmiss_field *source_field, struct Cmiss_scene_viewer *scene_viewer,
 	char *graphics_window_name, int pane_number,
 	enum Cmiss_field_window_projection_type projection_type);
 
-int Computed_field_register_type_window_projection(
-	struct Computed_field_package *computed_field_package, 
-	struct MANAGER(Graphics_window) *graphics_window_manager);
-/*******************************************************************************
-LAST MODIFIED : 5 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-#endif /* !defined (COMPUTED_FIELD_WINDOW_PROJECTION_H) */
+#endif /* !defined (CMISS_FIELD_WINDOW_PROJECTION_H) */
