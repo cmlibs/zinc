@@ -392,12 +392,11 @@ used by it are returned - otherwise an error is reported.
 WARNING: To be deprecated.
 ==============================================================================*/
 
-
 enum General_threshold_filter_mode
 {
-	BELOW,
-	ABOVE,
-	OUTSIDE
+	GENERAL_THRESHOLD_FILTER_MODE_BELOW,
+	GENERAL_THRESHOLD_FILTER_MODE_ABOVE,
+	GENERAL_THRESHOLD_FILTER_MODE_OUTSIDE
 }; /* enum General_threshold_filter_mode */
 
 /*****************************************************************************//**

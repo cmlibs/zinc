@@ -83,15 +83,15 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(General_threshold_filter_mode)
 	ENTER(ENUMERATOR_STRING(General_threshold_filter_mode));
 	switch (enumerator_value)
 	{
-		case BELOW:
+		case GENERAL_THRESHOLD_FILTER_MODE_BELOW:
 		{
 			enumerator_string = "below";
 		} break;
-		case ABOVE:
+		case GENERAL_THRESHOLD_FILTER_MODE_ABOVE:
 		{
 			enumerator_string = "above";
 		} break;
-		case OUTSIDE:
+		case GENERAL_THRESHOLD_FILTER_MODE_OUTSIDE:
 		{
 			enumerator_string = "outside";
 		} break;
@@ -236,15 +236,15 @@ and generate the outputImage.
 
 			switch (threshold_image_filter->threshold_mode)
 			{
-				case BELOW:
+				case GENERAL_THRESHOLD_FILTER_MODE_BELOW:
 				{
 					filter->ThresholdBelow( threshold_image_filter->below_value );
 				} break;
-				case ABOVE:
+				case GENERAL_THRESHOLD_FILTER_MODE_ABOVE:
 				{
 					filter->ThresholdAbove( threshold_image_filter->above_value );
 				} break;
-				case OUTSIDE:
+				case GENERAL_THRESHOLD_FILTER_MODE_OUTSIDE:
 				{
 					filter->ThresholdOutside( threshold_image_filter->below_value, threshold_image_filter->above_value );
 				} break; 
@@ -316,17 +316,17 @@ DESCRIPTION : list out the threshold filter options
 
 			switch (threshold_mode)
 			{
-				case BELOW:
+				case GENERAL_THRESHOLD_FILTER_MODE_BELOW:
 				{
 					display_message(INFORMATION_MESSAGE,
 						"    below_value : %g\n", below_value);
 				} break;
-				case ABOVE:
+				case GENERAL_THRESHOLD_FILTER_MODE_ABOVE:
 				{
 					display_message(INFORMATION_MESSAGE,
 						"    above_value : %g\n", above_value);
 				} break;
-				case OUTSIDE:
+				case GENERAL_THRESHOLD_FILTER_MODE_OUTSIDE:
 				{
 					display_message(INFORMATION_MESSAGE,
 						"    below_value : %g\n", below_value);
@@ -376,15 +376,15 @@ Returns allocated command string for reproducing field. Includes type.
 
 			switch (threshold_mode)
 			{
-				case BELOW:
+				case GENERAL_THRESHOLD_FILTER_MODE_BELOW:
 				{
 					sprintf(temp_string, " below_value %g", below_value);
 				} break;
-				case ABOVE:
+				case GENERAL_THRESHOLD_FILTER_MODE_ABOVE:
 				{
 					sprintf(temp_string, " above_value %g", above_value);
 				} break;
-				case OUTSIDE:
+				case GENERAL_THRESHOLD_FILTER_MODE_OUTSIDE:
 				{
 					sprintf(temp_string, " below_value %g above_value %g", 
 						below_value, above_value);
@@ -512,7 +512,7 @@ already) and allows its contents to be modified.
 		source_field = (struct Computed_field *)NULL;
 
 		/* default values */
-		threshold_mode = BELOW;
+		threshold_mode = GENERAL_THRESHOLD_FILTER_MODE_BELOW;
 		outside_value = 0.0;
 		below_value = 0.5;
 		above_value = 0.5;
