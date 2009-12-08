@@ -1,11 +1,3 @@
-/*******************************************************************************
-FILE : cmiss_graphics_package.c
-
-LAST MODIFIED : 05 Nov 2009
-
-DESCRIPTION :
-The public interface to the graphics packge.
-==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -44,6 +36,7 @@ The public interface to the graphics packge.
 
 #include "api/cmiss_material.h"
 #include "api/cmiss_graphics_package.h"
+#include "general/debug.h"
 #include "graphics/cmiss_rendition.h"
 #include "graphics/material.h"
 
@@ -52,6 +45,7 @@ Cmiss_graphics_material_id Cmiss_graphics_package_find_material_by_name(
 {
 	Cmiss_graphics_material_id material = NULL;
 
+	ENTER(Cmiss_graphics_package_find_material_by_name);
 	if (graphics_package && name)
 	{
 		struct MANAGER(Graphical_material) *material_manager =
@@ -65,7 +59,55 @@ Cmiss_graphics_material_id Cmiss_graphics_package_find_material_by_name(
 			}
 		}
 	}
-	
+	LEAVE;
+ 
+	return material;
+}
 
+Cmiss_graphics_material_id Cmiss_graphics_package_create_material(
+	Cmiss_graphics_package_id graphics_package)
+{
+	Cmiss_graphics_material_id material = NULL;
+	struct MANAGER(Graphical_material) *material_manager =
+		Cmiss_graphics_package_get_material_manager(graphics_package);
+	int i = 0;
+	char *temp_string = NULL;
+	char *num = NULL;
+
+	ENTER(Cmiss_graphics_package_create_material);
+	do 
+	{
+		if (temp_string)
+		{
+			DEALLOCATE(temp_string);
+		}
+		ALLOCATE(temp_string, char, 18);
+		strcpy(temp_string, "temp_material");
+		num = strrchr(temp_string, 'l') + 1;
+		sprintf(num, "%i", i);
+		strcat(temp_string, "\0");
+		i++;
+	}
+	while (FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material, name)(temp_string,
+			material_manager));
+			
+	if (temp_string)
+	{
+		if (NULL != (material = CREATE(Graphical_material)(temp_string)))
+		{
+			if (ADD_OBJECT_TO_MANAGER(Graphical_material)(
+						material, material_manager))
+			{
+				ACCESS(Graphical_material)(material);
+			}
+			else
+			{
+				DESTROY(Graphical_material)(&material);
+			}
+		}
+		DEALLOCATE(temp_string);
+	}
+	LEAVE;
+	
 	return material;
 }

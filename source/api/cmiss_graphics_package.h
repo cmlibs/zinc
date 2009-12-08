@@ -1,11 +1,3 @@
-/*******************************************************************************
-FILE : cmiss_graphics_package.h
-
-LAST MODIFIED : 05 Nov 2009
-
-DESCRIPTION :
-The public interface to the cmiss_graphics_package.
-==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -64,5 +56,18 @@ typedef struct Cmiss_graphics_package * Cmiss_graphics_package_id;
  */
 Cmiss_graphics_material_id Cmiss_graphics_package_find_material_by_name(
 	Cmiss_graphics_package_id graphics_package, const char *name);
+
+/***************************************************************************//**
+ * Create a new cmiss graphic material. This new material will be returned and 
+ * put in the Cmiss_graphic_package. User can also get the handle to the created
+ * material through Cmiss_graphics_material_get_with_name function.
+ *
+ * @param graphics_package  The handle to cmiss grpahics package, it contains
+ *   internal cmgui structure required by cmiss_graphical_material.
+ * @param name  The name for the newly created material
+ * @return  The newly created material if successfully created, otherwise NULL.
+ */
+Cmiss_graphics_material_id Cmiss_graphics_package_create_material(
+	Cmiss_graphics_package_id graphics_package);
 
 #endif /*__CMISS_GRAPHICS_PACKAGE_H__*/

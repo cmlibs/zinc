@@ -1,11 +1,3 @@
-/*******************************************************************************
-FILE : cmiss_material.h
-
-LAST MODIFIED : 05 Nov 2009
-
-DESCRIPTION :
-The public interface to the material.
-==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -47,12 +39,6 @@ The public interface to the material.
 
 #include "api/cmiss_texture.h"
 
-struct Cmiss_graphics_package;
-#ifndef CMISS_GRAPHICS_PACKAGE_ID_DEFINED
-typedef struct Cmiss_graphics_package * Cmiss_graphics_package_id;
-#define CMISS_GRAPHICS_PACKAGE_ID_DEFINED
-#endif /* CMISS_GRAPHICS_PACKAGE_ID_DEFINED */
-
 struct Graphical_material;
 #ifndef CMISS_GRAPHICS_MATERIAL_ID_DEFINED
 /***************************************************************************//**
@@ -60,7 +46,7 @@ struct Graphical_material;
  * colour, shading and other graphical properties of a material, it is highly 
  * similar to material described by OpenGL.
  * User can get a handle to material either through create new material using 
- * Cmiss_graphics_material_create or use existing materials in the 
+ * Cmiss_graphics_package_create_material or use existing materials in the 
  * graphics_package provided by the cmiss_command_data with 
  * Cmiss_graphics_package_find_material_by_name.
  * Cmgui also provide a number of preset materials in the default
@@ -75,19 +61,6 @@ struct Graphical_material;
 typedef struct Graphical_material * Cmiss_graphics_material_id;
 #define CMISS_GRAPHICS_MATERIAL_ID_DEFINED
 #endif /* CMISS_GRAPHICAL_MATERIAL_ID_DEFINED */
-
-/***************************************************************************//**
- * Create a new cmiss graphic material. This new material will be returned and 
- * put in the Cmiss_graphic_package. User can also get the handle to the created
- * material through Cmiss_graphics_material_get_with_name function.
- *
- * @param graphics_package  The handle to cmiss grpahics package, it contains
- *   internal cmgui structure required by cmiss_graphical_material.
- * @param name  The name for the newly created material
- * @return  The newly created material if successfully created, otherwise NULL.
- */
-Cmiss_graphics_material_id Cmiss_graphics_material_create(
-	Cmiss_graphics_package_id graphics_package);
 
 /***************************************************************************//**
  * Set/change name for <material>.

@@ -1,11 +1,3 @@
-/*******************************************************************************
-FILE : cmiss_material.c
-
-LAST MODIFIED : 05 Nov 2009
-
-DESCRIPTION :
-The public interface to the material.
-==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -47,117 +39,109 @@ The public interface to the material.
 #include "graphics/colour.h"
 #include "graphics/material.h"
 #include "graphics/cmiss_rendition.h"
-#include "graphics/texture.h"
-
-Cmiss_graphics_material_id Cmiss_graphics_material_create(
-	Cmiss_graphics_package_id graphics_package)
-{
-	Cmiss_graphics_material_id material = NULL;
-	struct MANAGER(Graphical_material) *material_manager =
-		Cmiss_graphics_package_get_material_manager(graphics_package);
-	int i = 0;
-	char *temp_string = NULL;
-	char *num = NULL;
-	do 
-	{
-		if (temp_string)
-		{
-			DEALLOCATE(temp_string);
-		}
-		ALLOCATE(temp_string, char, 18);
-		strcpy(temp_string, "temp_material");
-		num = strrchr(temp_string, 'l') + 1;
-		sprintf(num, "%i", i);
-		strcat(temp_string, "\0");
-		i++;
-	}
-	while (FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material, name)(temp_string,
-			material_manager));
-			
-	if (temp_string)
-	{
-		if (NULL != (material = CREATE(Graphical_material)(temp_string)))
-		{
-			if (ADD_OBJECT_TO_MANAGER(Graphical_material)(
-						material, material_manager))
-			{
-				return ACCESS(Graphical_material)(material);
-			}
-			else
-			{
-				DESTROY(Graphical_material)(&material);
-			}
-		}
-		DEALLOCATE(temp_string);
-	}
-	return material;
-}
 
 int Cmiss_graphics_material_set_alpha(
 	Cmiss_graphics_material_id material, float alpha)
 {
+	int return_code = 0;
+
+	ENTER(Cmiss_graphics_material_set_alpha);
 	if (material)
 	{
-		return Graphical_material_set_alpha(material, alpha);
+		return_code = Graphical_material_set_alpha(material, alpha);
 	}
-	return 0;
+	LEAVE;
+
+	return return_code;
 }
 
 int Cmiss_graphics_material_set_shininess(
 	Cmiss_graphics_material_id material, float shininess)
 {
+	int return_code = 0;
+
+	ENTER(Cmiss_graphics_material_set_shininess);
 	if (material)
 	{
-		return Graphical_material_set_shininess(material, shininess);
+		return_code = Graphical_material_set_shininess(material, shininess);
 	}
-	return 0;
+	LEAVE;
+
+	return return_code;
 }
 
 int Cmiss_graphics_material_set_ambient(
 	Cmiss_graphics_material_id material, float red, float green, float blue)
 {
 	struct Colour colour;
+	int return_code = 0;
+
+	ENTER(Cmiss_graphics_material_set_ambient);
+	if (material)
+	{
+		colour.red = red;
+		colour.green = green;
+		colour.blue = blue;
+		return_code = Graphical_material_set_ambient(material, &colour);
+	}
+	LEAVE;
 	
-	colour.red = red;
-	colour.green = green;
-	colour.blue = blue;
-	
-	return Graphical_material_set_ambient(material, &colour);
+	return return_code;
 }
 
 int Cmiss_graphics_material_set_diffuse(
 	Cmiss_graphics_material_id material, float red, float green, float blue)
 {
-
 	struct Colour colour;
+	int return_code = 0;
+
+	ENTER(Cmiss_graphics_material_set_diffuse);
+	if (material)
+	{
+		colour.red = red;
+		colour.green = green;
+		colour.blue = blue;
+		return_code = Graphical_material_set_diffuse(material, &colour);
+	}
+	LEAVE;
 	
-	colour.red = red;
-	colour.green = green;
-	colour.blue = blue;
-	
-	return Graphical_material_set_diffuse(material, &colour);
+	return return_code;
 }
 
 int Cmiss_graphics_material_set_emission(
 	Cmiss_graphics_material_id material, float red, float green, float blue)
 {
 	struct Colour colour;
+	int return_code = 0;
 
-	colour.red = red;
-	colour.green = green;
-	colour.blue = blue;
+	ENTER(Cmiss_graphics_material_set_emission);
+	if (material)
+	{
+		colour.red = red;
+		colour.green = green;
+		colour.blue = blue;
+		return_code = Graphical_material_set_emission(material, &colour);
+	}
+	LEAVE;
 
-	return Graphical_material_set_emission(material, &colour);
+	return return_code;
 }
 
 int Cmiss_graphics_material_set_specular(
 	Cmiss_graphics_material_id material, float red, float green, float blue)
 {
 	struct Colour colour;
+	int return_code = 0;
 
-	colour.red = red;
-	colour.green = green;
-	colour.blue = blue;
-
-	return Graphical_material_set_specular(material, &colour);
+	ENTER(Cmiss_graphics_material_set_specular);
+	if (material)
+	{
+		colour.red = red;
+		colour.green = green;
+		colour.blue = blue;
+		return_code = Graphical_material_set_specular(material, &colour);
+	}
+	LEAVE;
+	
+	return return_code;
 }

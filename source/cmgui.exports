@@ -375,7 +375,6 @@ access_Interactive_event
 deaccess_Interactive_event
 Scene_viewer_get_scene
 
-Cmiss_graphics_material_create
 Cmiss_graphics_material_set_name
 Cmiss_graphics_material_set_alpha
 Cmiss_graphics_material_set_shininess
@@ -388,3 +387,4 @@ Cmiss_graphics_material_set_volatile
 Cmiss_graphics_material_destroy
 
 Cmiss_graphics_package_find_material_by_name
+Cmiss_graphics_package_create_material
