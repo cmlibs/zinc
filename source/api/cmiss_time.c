@@ -42,7 +42,6 @@ to Cmgui.
 #include "time/time.h"
 #include "api/cmiss_time.h"
 #include "general/debug.h"
-#include "user_interface/message.h"
 
 int Cmiss_time_notifier_destroy(Cmiss_time_notifier_id *time_notifier_address)
 {

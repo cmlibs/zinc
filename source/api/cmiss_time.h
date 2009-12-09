@@ -64,21 +64,6 @@ typedef int (*Cmiss_time_notifier_callback)(Cmiss_time_notifier_id time_notifier
 	double current_time, void *user_data);
 
 /***************************************************************************//**
- * Create and returns a time notifier with regular update time.
- *
- * @param update_frequency  The number of times which time notifier will receive
- *    callback per unit of time in the time keeper.
- * @param time_offset  This value will set the exact time the notification
- *    happenes and allow setting the callback time other than t=0. 
- *    Time notifier will receive/send out notification when 
- *    time_offset + original callback time is reached.
- * @return  The time notifier if successfully create a time notifier otherwise 
- *    NULL.
- */
-Cmiss_time_notifier_id Cmiss_time_notifier_create_regular(
-	double update_frequency, double time_offset);
-
-/***************************************************************************//**
  * Destroys this reference to the time notifier (and sets it to NULL).
  * Internally this just decrements the reference count.
  *

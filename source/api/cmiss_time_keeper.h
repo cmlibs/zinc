@@ -93,6 +93,22 @@ enum Cmiss_time_keeper_frame_mode
 typedef struct Cmiss_time_keeper *Cmiss_time_keeper_id;
 
 /***************************************************************************//**
+ * Create and returns a time notifier with regular update time in time keeper.
+ * The returned time notifier will automatically be added to the time keeper. 
+ *
+ * @param update_frequency  The number of times which time notifier will receive
+ *    callback per unit of time in the time keeper.
+ * @param time_offset  This value will set the exact time the notification
+ *    happenes and allow setting the callback time other than t=0. 
+ *    Time notifier will receive/send out notification when 
+ *    time_offset + original callback time is reached.
+ * @return  The time notifier if successfully create a time notifier otherwise 
+ *    NULL.
+ */
+Cmiss_time_notifier_id Cmiss_time_keeper_create_notifier_regular(
+	Cmiss_time_keeper_id time_keeper, double update_frequency, double time_offset);
+
+/***************************************************************************//**
  * Get the minimum allowed time in time keeper.
  *
  * @param time_keeper  Handle to time keeper.

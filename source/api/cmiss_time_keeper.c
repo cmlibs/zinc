@@ -48,6 +48,24 @@ rewind and fast forward.
 #include "time/time.h"
 #include "user_interface/message.h"
 
+Cmiss_time_notifier_id Cmiss_time_keeper_create_notifier_regular(
+	Cmiss_time_keeper_id time_keeper, double update_frequency, double time_offset)
+{
+	Cmiss_time_notifier_id time_notifier = NULL;
+	if (time_keeper)
+	{
+		time_notifier = Time_object_create_regular(update_frequency, time_offset);
+		if (time_notifier)
+		{
+			if (!Cmiss_time_keeper_add_time_notifier(time_keeper, time_notifier))
+			{
+				Cmiss_time_notifier_destroy(&time_notifier);
+			}
+		}
+	}
+	return time_notifier;
+}
+
 enum Cmiss_time_keeper_play_direction Cmiss_time_keeper_get_play_direction(
 	Cmiss_time_keeper_id time_keeper)
 {

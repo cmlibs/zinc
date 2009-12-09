@@ -49,7 +49,6 @@ This provides an object which supplies a concept of time to Cmgui
 #include "time/time_keeper.h"
 
 #define Time_object Cmiss_time_notifier
-#define Time_object_create_regular Cmiss_time_notifier_create_regular
 #define Time_object_add_callback Cmiss_time_notifier_add_callback
 #define Time_object_remove_callback Cmiss_time_notifier_remove_callback
 #define Time_object_regular_set_frequency Cmiss_time_notifier_regular_set_frequency
