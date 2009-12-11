@@ -7200,6 +7200,115 @@ Gets the viewing volume of the Scene_viewer.
 	return (return_code);
 } /* Scene_viewer_get_viewing_volume */
 
+int Scene_viewer_get_viewing_volume_and_NDC_info_for_specified_size(Scene_viewer *scene_viewer,
+	int target_width, int target_height, int source_width, int source_height, double *left, 
+	double *right, double *bottom, double *top, double *scaled_NDC_width, double *scaled_NDC_height)
+{
+	int return_code = 0;
+
+	ENTER(Scene_viewer_get_viewing_volume_for_specified_size);
+	if (scene_viewer && left && right && bottom && top && scaled_NDC_width && scaled_NDC_height)
+	{
+		*left=scene_viewer->left;
+		*right=scene_viewer->right;
+		*bottom=scene_viewer->bottom;
+		*top=scene_viewer->top;
+		*scaled_NDC_width = scene_viewer->NDC_width;
+		*scaled_NDC_height = scene_viewer->NDC_height;
+		
+		double ratio = (double)1.0, centre_x, centre_y, x_size, y_size, source_ratio = (double)1.0,
+			rescaled_ratio = (double)1.0;
+		const double tolerance = 0.000001;
+
+		if (source_width  > 0 && source_height > 0 && source_width != source_height)
+		{
+			source_ratio = (double) source_width / source_height;
+		}
+		if (target_width > 0 && target_height > 0 && target_width != target_height)
+		{
+			ratio = (double) target_width / target_height;
+		}
+
+		/* rescaled ratio is an ratio used to determine how much
+			 the shorter side needs to be expanded by and ratio 
+			 is the ratio of how much the longer side need to be
+		   expanded by*/
+		if (source_ratio > 1.0 && ratio > 1.0)
+		{
+			if (source_ratio > ratio)
+			{
+				rescaled_ratio = ratio / source_ratio;
+				ratio = source_ratio;
+			}
+			source_ratio = (double)1.0;
+		}
+		else if (source_ratio < 1.0 && ratio < 1.0)
+		{
+			if (source_ratio < ratio)
+			{
+				rescaled_ratio = ratio / source_ratio;
+				ratio = source_ratio;
+			}
+			source_ratio = (double)1.0;
+		}
+		if (ratio > (double)1.0)
+		{
+			/* Case where the print out image's width is greater then height */
+			x_size = (fabs(((scene_viewer->right - scene_viewer->left) * ratio) / (double)2.0)) / source_ratio;
+			y_size = fabs(((scene_viewer->top - scene_viewer->bottom) / (source_ratio * rescaled_ratio)) / (double)2.0);
+			*scaled_NDC_width = scene_viewer->NDC_width * ratio / source_ratio;
+			*scaled_NDC_height = scene_viewer->NDC_height / (rescaled_ratio * source_ratio);
+			return_code = 1;
+		}
+		else if (ratio < (double)1.0)
+		{
+			/* Case where the print out image's height is greater then width */
+			x_size = fabs(((scene_viewer->right - scene_viewer->left) * source_ratio * rescaled_ratio) / (double)2.0);
+			y_size = fabs((scene_viewer->top - scene_viewer->bottom) / (ratio * (double)2.0)) * source_ratio;
+			*scaled_NDC_width = scene_viewer->NDC_width * rescaled_ratio *source_ratio;
+			*scaled_NDC_height = scene_viewer->NDC_height / ratio * source_ratio;
+			return_code = 1;
+		}
+		else if ((tolerance > fabs(ratio - (double)1.0))  && (tolerance < fabs(source_ratio - (double)1.0)))
+		{
+			/* Case where the print out image is a square but the actual viewing area is not */
+			if (source_ratio < (double)1.0)
+			{
+				source_ratio = (double)1.0 / source_ratio;
+			}
+			x_size = fabs(((scene_viewer->right - scene_viewer->left) * source_ratio) / (double)2.0);
+			y_size = fabs(((scene_viewer->top - scene_viewer->bottom) * source_ratio) / (double)2.0);
+			*scaled_NDC_width = scene_viewer->NDC_width * source_ratio;
+			*scaled_NDC_height = scene_viewer->NDC_height * source_ratio;
+			return_code = 1;
+		}
+
+		/* calcuate the required left, right bottom, top of the viewing volume for
+			 correct image output */
+		if (return_code)
+		{
+			centre_x = (scene_viewer->right + scene_viewer->left) / (double)2.0;
+			centre_y = (scene_viewer->top + scene_viewer->bottom) / (double)2.0;
+			*left = centre_x - x_size;
+			*right = centre_x + x_size;
+			*bottom = centre_y - y_size;
+			*top = centre_y + y_size;
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_viewing_volume_for_specified_size.  Invalid argument(s)");
+		return_code=0;
+	}
+
+	LEAVE;
+
+	return (return_code);
+}
+
+
 int Scene_viewer_set_viewing_volume(struct Scene_viewer *scene_viewer,
 	double left,double right,double bottom,double top,
 	double near_plane,double far_plane)

@@ -6605,11 +6605,13 @@ graphics window on screen.
 		original_near_plane, original_far_plane, right, top,
 		viewport_left, viewport_top, viewport_pixels_per_x, viewport_pixels_per_y,
 		original_viewport_left, original_viewport_top,
-		original_viewport_pixels_per_x, original_viewport_pixels_per_y;
+		original_viewport_pixels_per_x, original_viewport_pixels_per_y,
+		real_left, real_right, real_bottom, real_top,
+		scaled_NDC_width,scaled_NDC_height ;
 	int i, j, number_of_panes, pane,
 		pane_i, pane_j, pane_width, pane_height, panes_across, panes_down,
 		patch_width, patch_height,
-		tile_height, tile_width, tiles_across, tiles_down;
+		tile_height, tile_width, tiles_across, tiles_down, panel_width, panel_height;
 	struct Graphics_buffer *offscreen_buffer;
 	struct Scene_viewer *scene_viewer;
 #if defined (SGI)
@@ -6622,6 +6624,8 @@ graphics window on screen.
 	ENTER(Graphics_window_get_frame_pixels);
 	if (window && width && height)
 	{
+		Graphics_window_get_viewing_area_size(window, &panel_width, 
+			&panel_height);
 		if ((*width) && (*height))
 		{
 			frame_width = *width;
@@ -6630,8 +6634,8 @@ graphics window on screen.
 		else
 		{
 			/* Only use the window size if either dimension is zero */
-			Graphics_window_get_viewing_area_size(window, &frame_width, 
-				&frame_height);
+			frame_width = panel_width;
+			frame_height = panel_height;
 			*width = frame_width;
 			*height = frame_height;
 		}
@@ -6706,11 +6710,10 @@ graphics window on screen.
 				tiles_down = (int)ceil(fraction_down);
 			}
 #else
- 			wxPanel *GridPanel;
-			int panel_width, panel_height;
-			GridPanel = XRCCTRL(*window->wx_graphics_window,
-				 "GridPanel", wxPanel);
-			GridPanel->GetSize(&panel_width, &panel_height);
+//  			wxPanel *GridPanel;
+// 			GridPanel = XRCCTRL(*window->wx_graphics_window,
+// 				 "GridPanel", wxPanel);
+// 			GridPanel->GetSize(&panel_width, &panel_height);
 			if (pane_width <= panel_width)
 			{
 				tile_width = pane_width;
@@ -6800,18 +6803,23 @@ graphics window on screen.
 						Scene_viewer_get_viewport_info(scene_viewer,
 							&original_viewport_left, &original_viewport_top,
 							&original_viewport_pixels_per_x, &original_viewport_pixels_per_y);
-						NDC_width = original_NDC_width / fraction_across;
-						NDC_height = original_NDC_height / fraction_down;
+						Scene_viewer_get_viewing_volume_and_NDC_info_for_specified_size(scene_viewer,
+							frame_width, frame_height, panel_width, panel_height, &real_left, 
+							&real_right, &real_bottom, &real_top, &scaled_NDC_width, &scaled_NDC_height);
+
+						NDC_width = scaled_NDC_width / fraction_across;
+						NDC_height = scaled_NDC_height / fraction_down;
 						viewport_pixels_per_x = original_viewport_pixels_per_x;
 						viewport_pixels_per_y = original_viewport_pixels_per_y;
+						
 					}
 					for (j = 0 ; return_code && (j < tiles_down) ; j++)
 					{
 						if ((tiles_across > 1) || (tiles_down > 1))
 						{
-							bottom = original_bottom + (double)j * (original_top - original_bottom) / fraction_down;
-							top = original_bottom
-								+ (double)(j + 1) * (original_top - original_bottom) / fraction_down;
+							bottom = real_bottom + (double)j * (real_top - real_bottom) / fraction_down;
+							top = real_bottom
+								+ (double)(j + 1) * (real_top - real_bottom) / fraction_down;
 							NDC_top = original_NDC_top + (double)j * original_NDC_height / fraction_down;
 							viewport_top = ((j + 1) * tile_height - pane_height) / viewport_pixels_per_y;
 						}
@@ -6819,9 +6827,9 @@ graphics window on screen.
 						{
 							if ((tiles_across > 1) || (tiles_down > 1))
 							{
-								 left = original_left + (double)i * (original_right - original_left) / fraction_across;
-								 right = original_left + 
-								 	(double)(i + 1) * (original_right - original_left) / fraction_across;
+								left = real_left + (double)i * (real_right - real_left) / fraction_across;
+								right = real_left + 
+									(double)(i + 1) * (real_right - real_left) / fraction_across;
 								NDC_left = original_NDC_left + (double)i *
 									 original_NDC_width / fraction_across;
 								viewport_left = i * tile_width / viewport_pixels_per_x;
@@ -6830,7 +6838,7 @@ graphics window on screen.
 									left, right, bottom, top,
 									original_near_plane, original_far_plane);
 								Scene_viewer_set_NDC_info(scene_viewer,
-									NDC_left, NDC_top, NDC_width, NDC_height);
+										NDC_left, NDC_top, NDC_width, NDC_height);
 								Scene_viewer_set_viewport_info(scene_viewer,
 									viewport_left, viewport_top,
 									viewport_pixels_per_x, viewport_pixels_per_y);

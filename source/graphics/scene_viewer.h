@@ -1171,6 +1171,36 @@ DESCRIPTION :
 Gets the viewing volume of the Scene_viewer.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * This function handle cases when scene viewer or/and print out images is/are
+ * is non square. This calculation will help cmgui to determine
+ * the required view volume and NDC width and height for correct image
+ * output.
+ *
+ * @param scene_viewer  The target scene viewer where the values will be
+ *   calculated for.
+ * @param target_width  width of the print out images.
+ * @param target_height  height of the print out images.
+ * @param source_width  width of the scene viewer.
+ * @param source_height  height of the scene viewer.
+ * @param left  Pointer to a double, which value will be written with the
+ *   evaluated location of the left of the view volume.
+ * @param right  Pointer to a double, which value will be written with the
+ *   evaluated location of the right of the view volume.
+ * @param bottom  Pointer to a double, which value will be written with the
+ *   evaluated location of the bottom of the view volume.
+ * @param top  Pointer to a double, which value will be written with the
+ *   evaluated location of the top of the view volume.
+ * @param scaled_NDC_width  Pointer to a double, which value will be written with
+ *   the rescaled NDC width
+  * @param scaled_NDC_height Pointer to a double, which value will be written with
+ *   the rescaled NDC height
+ * @return  1 if successfully get the view volume and NDC info, otherwise 0.
+ */
+int Scene_viewer_get_viewing_volume_and_NDC_info_for_specified_size(struct Scene_viewer *scene_viewer,
+	int target_width, int target_height, int source_width, int source_height, double *left, 
+	double *right, double *bottom, double *top, double *scaled_NDC_width, double *scaled_NDC_height);
+
 int Scene_viewer_set_viewing_volume(struct Scene_viewer *scene_viewer,
 	double left,double right,double bottom,double top,double near,double far);
 /*******************************************************************************
