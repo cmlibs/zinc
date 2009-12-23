@@ -4688,8 +4688,10 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 	if (buffer)
 	{
 		return_code = 0;
+#if defined (DEBUG)
 		printf("Graphics_buffer_win32_reallocate_offscreen_size %p checking size %d %d current %d %d\n",
 				buffer, buffer->width, buffer->height, buffer->offscreen_width, buffer->offscreen_height);
+#endif // defined (DEBUG)
 
 		/* We never bother to reduce the size */
 		if (!buffer->offscreen_width || (buffer->offscreen_width < buffer->width)
@@ -4815,7 +4817,9 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 								buffer->type = GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE;
 								buffer->pixel_format = pixel_format;
 								return_code = 1;
+#if defined (DEBUG)
 								printf("Using pbuffer\n");
+#endif // defined (DEBUG)
 							}
 							else
 							{
@@ -4836,7 +4840,9 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 				{
 					/* Try non accelerated bitmap OpenGL instead */
 					return_code = 1;
+#if defined (DEBUG)
 					printf("Using non accelerated bitmap\n");
+#endif // defined (DEBUG)
 				}
 			}
 #endif /* defined (WGL_ARB_pixel_format) && (WGL_ARB_pbuffer) */
