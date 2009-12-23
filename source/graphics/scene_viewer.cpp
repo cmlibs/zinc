@@ -3008,13 +3008,7 @@ if there are no more expose events pending.
 		{
 			/* We are not currently using the fields of this data */
 			USE_PARAMETER(expose_data);
-			/*Redraw now if idle callback is pending
-			(otherwise assume we are up to date already) */
-			if (scene_viewer->idle_update_callback_id)
-			{
-				Scene_viewer_redraw_now(scene_viewer);
-				/* Redraw_now clears the idle_update_callback */
-			}
+			Scene_viewer_redraw_now(scene_viewer);
 		}
 	}
 	else
