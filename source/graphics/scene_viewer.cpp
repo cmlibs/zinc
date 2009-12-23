@@ -2288,12 +2288,16 @@ access this function.
 			if (Graphics_library_check_extension(GL_ARB_vertex_buffer_object))
 			{
 				if (Graphics_library_check_extension(GL_display_lists)
-					/* Prevent using display lists with vertex_buffers on ATI
-					 * as this generates a segfault in the driver on both linux
-					 * and windows.
+					/* Only allow vertex buffers and display lists to be used
+					 * together on Nvidia and Mesa as other drivers (at least some ATI and Intel)
+					 * generate a segfault in the driver on both linux and windows.
+					 * We can enable other drivers as they are proven reliable,
+					 * although if we adopt vertex buffers widely then display lists aren't
+					 * that useful any more.
 					 * See https://tracker.physiomeproject.org/show_bug.cgi?id=1533
 					 */
-					&& (Graphics_library_vendor_ati != Graphics_library_get_vendor_id())
+					&& ((Graphics_library_vendor_nvidia == Graphics_library_get_vendor_id())
+					|| (Graphics_library_vendor_mesa == Graphics_library_get_vendor_id()))
 				)
 				{
 					rendering_data.renderer =
