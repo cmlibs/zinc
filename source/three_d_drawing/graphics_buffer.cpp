@@ -113,9 +113,9 @@ extern "C" {
 #include "three_d_drawing/window_system_extensions.h"
 
 /* #define DEBUG */
-#if defined (DEBUG)
-#include <stdio.h>
-#endif /* defined (DEBUG) */
+#if defined DEBUG
+#  include <stdio.h>
+#endif
 }
 
 #if !defined (AIX)
@@ -167,6 +167,15 @@ DESCRIPTION :
 class wxGraphicsBuffer;
 #endif /* defined (WX_USER_INTERFACE) */
 
+#if defined (WIN32_USER_INTERFACE)
+enum Graphics_buffer_pbuffer_support
+{
+	GRAPHICS_BUFFER_PBUFFER_SUPPORT_UNKNOWN,
+	GRAPHICS_BUFFER_PBUFFER_SUPPORT_AVAILABLE,
+	GRAPHICS_BUFFER_PBUFFER_SUPPORT_UNAVAILABLE
+};
+#endif /* defined (WIN32_USER_INTERFACE) */
+
 struct Graphics_buffer_package
 /*******************************************************************************
 LAST MODIFIED : 5 May 2004
@@ -190,6 +199,12 @@ DESCRIPTION :
 #if defined (WIN32_USER_INTERFACE)
 	HGLRC wgl_shared_context;
 	User_interface *user_interface;
+
+	/* Hidden window used to get connection to independent driver OpenGL */
+	HWND hidden_accelerated_window;
+	Graphics_buffer *hidden_graphics_buffer;
+	enum Graphics_buffer_pbuffer_support pbuffer_support_available;
+	
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 	wxGLContext* wxSharedContext;
@@ -308,19 +323,18 @@ DESCRIPTION :
 	HPBUFFERARB pbuffer;
 #endif /* defined (WGL_ARB_pbuffer) */
 	/* We need the creation parameters to support delayed creation and recreation
-		as the pbuffer changes size.  Double buffering is irrelevant as we are drawing
-		offscreen and copying so we get it anyway and stereo is not possible. */
+		as the pbuffer changes size. */
 	int minimum_colour_buffer_depth;
 	int minimum_depth_buffer_depth;
 	int minimum_accumulation_buffer_depth;
+	int minimum_alpha_buffer_depth;
+    enum Graphics_buffer_stereo_mode stereo_mode;
+	
 	/* Windows bitmap, either used with non accelerated windows OpenGL or
 		for copying from pbuffer for rendering to screen */
 	HBITMAP device_independent_bitmap;
 	HDC device_independent_bitmap_hdc;
 	void *device_independent_bitmap_pixels;
-	/* Hidden window used to get connection to independent driver OpenGL */
-	HWND hidden_accelerated_window;
-	Graphics_buffer *hidden_graphics_buffer;
 	/* So we know how to composite we need to keep the buffering mode */
 	enum Graphics_buffer_buffering_mode buffering_mode;
         /* Some calls to the scene viewer mean that we will need to rerender
@@ -474,11 +488,11 @@ contained in the this module only.
 		 buffer->minimum_colour_buffer_depth = 0;
 		 buffer->minimum_depth_buffer_depth = 0;
 		 buffer->minimum_accumulation_buffer_depth = 0;
+		 buffer->minimum_alpha_buffer_depth = 0;
+		 buffer->stereo_mode = GRAPHICS_BUFFER_ANY_STEREO_MODE;
 		 buffer->device_independent_bitmap = (HBITMAP)NULL;
 		 buffer->device_independent_bitmap_hdc = (HDC)NULL;
 		 buffer->device_independent_bitmap_pixels = NULL;
-		 buffer->hidden_accelerated_window = (HWND)NULL;
-		 buffer->hidden_graphics_buffer = (Graphics_buffer *)NULL;
 		 buffer->offscreen_render_required = 0;
 #endif // defined (WIN32_USER_INTERFACE)
 
@@ -3242,6 +3256,9 @@ it to share graphics contexts.
 #if defined (WIN32_USER_INTERFACE)
 		package->user_interface = user_interface;
 		package->wgl_shared_context = (HGLRC)NULL;
+		package->hidden_accelerated_window = (HWND)NULL;
+		package->hidden_graphics_buffer = (Graphics_buffer *)NULL;
+		package->pbuffer_support_available = GRAPHICS_BUFFER_PBUFFER_SUPPORT_UNKNOWN;
 #endif /* defined (WIN32_USER_INTERFACE) */
 	}
 	else
@@ -3287,6 +3304,14 @@ Closes the Graphics buffer package
 #  endif /* ! defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
+		if (package->hidden_graphics_buffer)
+		{
+			DESTROY(Graphics_buffer)(&package->hidden_graphics_buffer);
+		}
+		if (package->hidden_accelerated_window)
+		{
+			DestroyWindow(package->hidden_accelerated_window);
+		}
 		/* Destroy the shared_glx_context as we did not destroy it when closing
 			it's buffer */
 		if (package->wgl_shared_context)
@@ -3710,14 +3735,14 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 #endif /* defined (DEBUG) */
 
 					/* Only get the first valid format */
-					if(wglChoosePixelFormatARB(buffer->hidden_graphics_buffer->hDC,
+					if(wglChoosePixelFormatARB(buffer->package->hidden_graphics_buffer->hDC,
 							pbuffer_attributes, float_pbuffer_attributes, 1,
 							&pixel_format, &number_of_formats))
 					{
 						const int pbuffer_attrib[] = {0};
 
 						if (buffer->pbuffer=wglCreatePbufferARB(
-								 buffer->hidden_graphics_buffer->hDC, pixel_format,
+								 buffer->package->hidden_graphics_buffer->hDC, pixel_format,
 								 required_width, required_height, pbuffer_attrib))
 						{
 							if (buffer->hDC = wglGetPbufferDCARB(buffer->pbuffer))
@@ -3836,7 +3861,7 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 			{
 				buffer->offscreen_width = required_width;
 				buffer->offscreen_height = required_height;
-                                buffer->offscreen_render_required = 1;
+                buffer->offscreen_render_required = 1;
 			}
 		}
 		else
@@ -4316,6 +4341,338 @@ DESCRIPTION :
 #endif /* defined (GTK_USER_INTERFACE) */
 
 #if defined (WIN32_USER_INTERFACE)
+static int Graphics_buffer_win32_create_context(struct Graphics_buffer *buffer)
+/*******************************************************************************
+Actually make the OpenGL context.
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(Graphics_buffer_win32_create_context);
+	if (buffer)
+	{
+		return_code = 1;
+		/* Find a valid OpenGL context for the hdc */
+		if ((GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE != buffer->type) && buffer->hDC)
+		{
+			int number_of_formats = DescribePixelFormat(buffer->hDC, 1, 0, NULL);
+			int best_selection_level = 0;
+			int format = 0;
+			int selection_level;
+			PIXELFORMATDESCRIPTOR pfd;
+
+			for (i = 0 ; i < number_of_formats ; i++)
+			{
+				/* set the pixel format for the DC */
+				ZeroMemory( &pfd, sizeof( PIXELFORMATDESCRIPTOR ) );
+				pfd.nSize = sizeof( pfd );
+				pfd.nVersion = 1;
+
+				DescribePixelFormat(buffer->hDC, i, pfd.nSize, &pfd);
+
+				if ((pfd.dwFlags & PFD_SUPPORT_OPENGL)
+					&& (pfd.iPixelType == PFD_TYPE_RGBA))
+				{
+					selection_level = 10;
+				}
+				else
+				{
+					/* No good */
+					selection_level = 0;
+				}
+
+				if (pfd.dwFlags & PFD_GENERIC_ACCELERATED)
+				{
+					/* Windows driver accelerated OpenGL */
+					selection_level -= 2;
+				}
+				else
+				{
+					if (pfd.dwFlags & PFD_GENERIC_FORMAT)
+					{
+						/* Software OpenGL */
+						selection_level -= 4;
+					}
+					else
+					{
+						/* Independent driver accelerated OpenGL */
+						/* Best */
+					}
+				}
+
+				if (!buffer->hWnd)
+				{
+					if (!(pfd.dwFlags & PFD_DRAW_TO_BITMAP))
+					{
+						selection_level = 0;
+					}
+				}
+				else
+				{
+					if (!(pfd.dwFlags & PFD_DRAW_TO_WINDOW))
+					{
+						selection_level = 0;
+					}
+				}
+
+				if (pfd.cColorBits >= 24)
+				{
+					/* Best */
+				}
+				else if (pfd.cColorBits >= buffer->minimum_colour_buffer_depth)
+				{
+					/* Satisfactory */
+					selection_level--;
+				}
+				else
+				{
+					/* Poor */
+					selection_level-=2;
+				}
+
+				if (pfd.cDepthBits >= 24)
+				{
+					/* Best */
+				}
+				else if (pfd.cDepthBits >= buffer->minimum_depth_buffer_depth)
+				{
+					/* Satisfactory */
+					selection_level--;
+				}
+				else
+				{
+					/* Poor */
+					selection_level-=2;
+				}
+
+				if (pfd.cAlphaBits >= buffer->minimum_alpha_buffer_depth)
+				{
+					/* Best */
+				}
+				else if (pfd.cAlphaBits > 0)
+				{
+					/* Satisfactory */
+					selection_level--;
+				}
+				else
+				{
+					/* Poor */
+					selection_level-=2;
+				}
+
+				if (pfd.cAccumBits >= buffer->minimum_accumulation_buffer_depth)
+				{
+					/* Best */
+				}
+				else if (pfd.cAccumBits > 0)
+				{
+					/* Satisfactory */
+					selection_level--;
+				}
+				else
+				{
+					/* Poor */
+					selection_level-=2;
+				}
+
+				switch (buffer->buffering_mode)
+				{
+					case GRAPHICS_BUFFER_SINGLE_BUFFERING:
+					{
+						if (pfd.dwFlags & PFD_DOUBLEBUFFER)
+						{
+							selection_level = 0;
+						}
+					} break;
+					case GRAPHICS_BUFFER_DOUBLE_BUFFERING:
+					{
+						if (!(pfd.dwFlags & PFD_DOUBLEBUFFER))
+						{
+							selection_level = 0;
+						}
+					} break;
+					default: /* GRAPHICS_BUFFER_ANY_BUFFERING_MODE: */
+					{
+					} break;
+				}
+				switch (buffer->stereo_mode)
+				{
+					case GRAPHICS_BUFFER_MONO:
+					{
+						if (pfd.dwFlags & PFD_STEREO)
+						{
+							selection_level = 0;
+						}
+					} break;
+					case GRAPHICS_BUFFER_STEREO:
+					{
+						if (!(pfd.dwFlags & PFD_STEREO))
+						{
+							selection_level = 0;
+						}
+					} break;
+					default: /* GRAPHICS_BUFFER_ANY_STEREO_MODE: */
+					{
+					} break;
+				}
+
+				if (selection_level > best_selection_level)
+				{
+					format = i;
+					best_selection_level = selection_level;
+				}
+			}
+			if (!format)
+			{
+			  /* Try the automatic chooser */
+			  memset(&pfd,0, sizeof(PIXELFORMATDESCRIPTOR)) ;
+			  pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR); 
+			  pfd.nVersion = 1 ;
+			  pfd.dwFlags =  PFD_SUPPORT_OPENGL ;
+			  pfd.iPixelType = PFD_TYPE_RGBA ;
+			  pfd.cColorBits = 24 ;
+			  pfd.cDepthBits = 32 ;
+			  pfd.iLayerType = PFD_MAIN_PLANE ;				  
+			  // Choose the pixel format.
+			  format = ChoosePixelFormat(buffer->hDC, &pfd);
+			  best_selection_level = -1;  /* Set a value to show that it was selected by ChoosePixelFormat */
+			}
+
+			if (format)
+			{
+#if defined (DEBUG)
+				printf ("Trying format %d, selection level %d\n",
+					format, best_selection_level);
+#endif /* defined (DEBUG) */
+				if(SetPixelFormat( buffer->hDC, format, &pfd ))
+				{
+#if defined (DEBUG)
+					printf ("SetPixelFormat %d success\n", format);
+#endif /* defined (DEBUG) */
+					buffer->pixel_format = format;
+				}
+				else
+				{
+					DWORD error = GetLastError();
+					display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
+						"Unable to set pixel format. Microsoft error code: %d", error);
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
+					"No valid pixel formats found.");
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
+			/* A work around for Intel GMA 900 cards on windows where compilation
+				of textures only seems to work on the first context of a
+				share group.  On these cards only use a single
+				graphics context for all graphics buffers.
+				The vendor string will not be defined the first time around,
+				although when using multiple instances in the same memory
+				space (such as with zinc) it could be set for the first
+				in a share group. */
+			const char *vendor_string = (const char *)glGetString(GL_VENDOR);
+			if (!buffer->package->wgl_shared_context ||
+				!vendor_string || strcmp("Intel", vendor_string))
+			{
+				/* Default normal implementation,
+					different context for each buffer with shared lists */
+				/* create and enable the render context (RC) */
+				if(buffer->hRC = wglCreateContext( buffer->hDC ))
+				{
+					if (buffer->package->wgl_shared_context)
+					{
+						wglShareLists(buffer->package->wgl_shared_context,
+							buffer->hRC);
+					}
+					else
+					{
+						buffer->package->wgl_shared_context = buffer->hRC;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
+						"Unable to create the render context.");
+					return_code = 0;
+				}
+			}
+			else
+			{
+				/* Use a single context for all graphics buffers */
+				buffer->hRC = buffer->package->wgl_shared_context;
+			}
+			if (return_code)
+			{
+				if(wglMakeCurrent(buffer->hDC,buffer->hRC))
+				{
+#if defined (DEBUG)
+					printf("Made new context %p %p\n", buffer->hDC, buffer->hRC);
+
+					PIXELFORMATDESCRIPTOR pfd;
+					ZeroMemory( &pfd, sizeof( PIXELFORMATDESCRIPTOR ) );
+					pfd.nSize = sizeof( pfd );
+					pfd.nVersion = 1;
+	
+					DescribePixelFormat(buffer->hDC, buffer->pixel_format, pfd.nSize, &pfd);
+	
+					printf("Pixel format %d\n", buffer->pixel_format);
+					const char *vendor_string = (const char *)glGetString(GL_VENDOR);
+					printf("OpenGL vendor string %s\n", vendor_string);
+					if (pfd.dwFlags & PFD_GENERIC_ACCELERATED)
+					{
+						/* Windows driver accelerated OpenGL */
+						printf("Windows driver accelerated OpenGL\n");
+					}
+					else
+					{
+						if (pfd.dwFlags & PFD_GENERIC_FORMAT)
+						{
+							/* Windows software OpenGL */
+							printf("Software OpenGL\n");
+						}
+						else
+						{
+							/* Independent driver accelerated OpenGL */
+							printf("Independent driver accelerated OpenGL\n");
+						}
+					}
+					printf("Colour depth %d\n",  pfd.cColorBits);
+					printf("Z depth %d\n",  pfd.cDepthBits);
+					printf("Alpha depth %d\n",  pfd.cAlphaBits);
+					printf("Accumulation depth %d\n",  pfd.cAccumBits);
+#endif /* defined (DEBUG) */
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"Graphics_buffer_win32_create_context.  "
+						"Unable enable the render context.");
+					return_code = 0;
+				}
+			}
+		}
+#if defined (DEBUG)
+		fflush(stdout);
+#endif /* defined (DEBUG) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Graphics_buffer_win32_create_context.  "
+			"Missing graphics_buffer parameter.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphics_buffer_win32_create_context */
+#endif /* defined (WIN32_USER_INTERFACE) */
+
+#if defined (WIN32_USER_INTERFACE)
 static int Graphics_buffer_win32_reallocate_offscreen_size(
 	struct Graphics_buffer *buffer, HDC onscreen_hdc)
 /*******************************************************************************
@@ -4331,14 +4688,17 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 	if (buffer)
 	{
 		return_code = 0;
+		printf("Graphics_buffer_win32_reallocate_offscreen_size %p checking size %d %d current %d %d\n",
+				buffer, buffer->width, buffer->height, buffer->offscreen_width, buffer->offscreen_height);
+
 		/* We never bother to reduce the size */
 		if (!buffer->offscreen_width || (buffer->offscreen_width < buffer->width)
 			|| !buffer->offscreen_height || (buffer->offscreen_height < buffer->height))
 		{
-			/* 256x256 is the current minimum, also allocate powers of two just to be
+			/* 64x64 is the current minimum, also allocate powers of two just to be
 				conservative with graphics card drivers */
-			int required_width = 256;
-			int required_height = 256;
+			int required_width = 64;
+			int required_height = 64;
 			while (required_width < buffer->width)
 			{
 				required_width *= 2;
@@ -4352,7 +4712,7 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 			{
 				/* Must create and select the offscreen buffer before testing extensions
 				 otherwise default windows implementation will just respond unavailable. */
-				if (!buffer->hidden_graphics_buffer)
+				if (!buffer->package->hidden_graphics_buffer)
 				{
 					BOOL win32_return_code;
 					static char *class_name="Hidden window";
@@ -4360,7 +4720,7 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 
 					/* check if the class is registered */
 					win32_return_code=GetClassInfo(User_interface_get_instance(
-																 buffer->package->user_interface),
+						buffer->package->user_interface),
 						class_name,&class_information);
 
 					if (win32_return_code==FALSE)
@@ -4387,20 +4747,20 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 
 					/* Need to get an accelerated rendering context before
 						we can try these functions!!! */
-					buffer->hidden_accelerated_window =CreateWindow(class_name, "Hidden",
+					buffer->package->hidden_accelerated_window =CreateWindow(class_name, "Hidden",
 						WS_CAPTION | WS_POPUPWINDOW | WS_SIZEBOX,
 						0, 0, 100, 100,
 						NULL, NULL, User_interface_get_instance(buffer->package->user_interface), NULL);
 
-					buffer->hidden_graphics_buffer = create_Graphics_buffer_win32(
+					buffer->package->hidden_graphics_buffer = create_Graphics_buffer_win32(
 						buffer->package,
-						buffer->hidden_accelerated_window, (HDC)NULL,
+						buffer->package->hidden_accelerated_window, (HDC)NULL,
 						GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
 						buffer->minimum_colour_buffer_depth, buffer->minimum_depth_buffer_depth,
 						buffer->minimum_accumulation_buffer_depth);
 				}
 
-				Graphics_buffer_make_current(buffer->hidden_graphics_buffer);
+				Graphics_buffer_make_current(buffer->package->hidden_graphics_buffer);
 
 #if defined (DEBUG)
 				printf("Made hidden window current\n");
@@ -4440,14 +4800,14 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 #endif /* defined (DEBUG) */
 
 					/* Only get the first valid format */
-					if(wglChoosePixelFormatARB(buffer->hidden_graphics_buffer->hDC,
+					if(wglChoosePixelFormatARB(buffer->package->hidden_graphics_buffer->hDC,
 							pbuffer_attributes, float_pbuffer_attributes, 1,
 							&pixel_format, &number_of_formats))
 					{
 						const int pbuffer_attrib[] = {0};
 
 						if (buffer->pbuffer=wglCreatePbufferARB(
-								 buffer->hidden_graphics_buffer->hDC, pixel_format,
+								 buffer->package->hidden_graphics_buffer->hDC, pixel_format,
 								 required_width, required_height, pbuffer_attrib))
 						{
 							if (buffer->hDC = wglGetPbufferDCARB(buffer->pbuffer))
@@ -4455,6 +4815,7 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 								buffer->type = GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE;
 								buffer->pixel_format = pixel_format;
 								return_code = 1;
+								printf("Using pbuffer\n");
 							}
 							else
 							{
@@ -4475,6 +4836,7 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 				{
 					/* Try non accelerated bitmap OpenGL instead */
 					return_code = 1;
+					printf("Using non accelerated bitmap\n");
 				}
 			}
 #endif /* defined (WGL_ARB_pixel_format) && (WGL_ARB_pbuffer) */
@@ -4558,16 +4920,6 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 #if defined (DEBUG)
 					printf("buffer->hDC %p\n", buffer->hDC);
 #endif /* defined (DEBUG) */
-
-					PIXELFORMATDESCRIPTOR pfd;
-					SetPixelFormat( buffer->hDC, buffer->pixel_format, &pfd );
-					buffer->hRC = wglCreateContext( buffer->hDC );
-					if(!wglMakeCurrent(buffer->hDC,buffer->hRC))
-					{
-						display_message(ERROR_MESSAGE,"Graphics_buffer_win32_reallocate_pbuffer_size.  "
-							"Bitmap make current failed");
-						return_code = 0;
-					}
 				}
 
 			}
@@ -4575,7 +4927,24 @@ Resizes the offscreen pbuffer used for rendering with windowless mode.
 			{
 				buffer->offscreen_width = required_width;
 				buffer->offscreen_height = required_height;
-                                buffer->offscreen_render_required = 1;
+				buffer->offscreen_render_required = 1;
+
+				if (buffer->hRC)
+				{
+					wglMakeCurrent(NULL, NULL);
+					/* Only delete it here if it isn't the share context, otherwise we
+						will destroy it when the graphics buffer package is destroyed.
+						In the intel workaround case we only want to destroy it at the end. */
+					if (buffer->hRC && (buffer->hRC != buffer->package->wgl_shared_context))
+					{
+#if defined (DEBUG)
+						printf("Graphics_buffer_win32_reallocate_offscreen_size %p wglDeleteContext %p\n", buffer, buffer->hRC);	
+#endif //defined (DEBUG)
+						wglDeleteContext(buffer->hRC);
+					}
+				}
+
+				return_code = Graphics_buffer_win32_create_context(buffer);
 			}
 		}
 		else
@@ -4614,8 +4983,7 @@ Alternatively if <hWnd> is NULL and <hDC> is specified then no window functions
 are performed but the graphics window will render into the supplied device context.
 ==============================================================================*/
 {
-	PIXELFORMATDESCRIPTOR pfd;
-	int i, selection_level, use_pbuffer;
+	int i, render_offscreen;
 	struct Graphics_buffer *buffer;
 
 	ENTER(create_Graphics_buffer_win32);
@@ -4624,9 +4992,15 @@ are performed but the graphics window will render into the supplied device conte
 		/* Hardcode this for the meantime so as not to change function interface */
 		int minimum_alpha_buffer_depth = 8;
 
-		use_pbuffer = 0;
+		render_offscreen = 0;
 
 		buffer->type = GRAPHICS_BUFFER_WIN32_TYPE;
+		buffer->buffering_mode = buffering_mode;
+		buffer->stereo_mode = stereo_mode;
+		buffer->minimum_colour_buffer_depth = minimum_colour_buffer_depth;
+		buffer->minimum_depth_buffer_depth = minimum_depth_buffer_depth;
+		buffer->minimum_accumulation_buffer_depth = minimum_accumulation_buffer_depth;
+		buffer->minimum_alpha_buffer_depth = minimum_alpha_buffer_depth;
 
 		if (hWnd)
 		{
@@ -4648,358 +5022,27 @@ are performed but the graphics window will render into the supplied device conte
 		else if ((GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_COPY == buffering_mode) ||
 			(GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND == buffering_mode))
 		{
-			buffer->minimum_colour_buffer_depth = minimum_colour_buffer_depth;
-			buffer->minimum_depth_buffer_depth = minimum_depth_buffer_depth;
-			buffer->minimum_accumulation_buffer_depth = minimum_accumulation_buffer_depth;
-
-			buffer->buffering_mode = buffering_mode;
-
-			/* If we don't use the pbuffer below we need a SINGLE BUFFERING OpenGL
-				when we search pixel formats */
+			/* We should always use single buffering with an offscreen render */
 			buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
-			if (Graphics_buffer_win32_reallocate_offscreen_size(buffer, hDC))
-			{
-				if (GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE == buffer->type)
-				{
-#if defined (DEBUG)
-					printf("Using pbuffer\n");
-#endif /* defined (DEBUG) */
-					use_pbuffer = 1;
-				}
-				else
-				{
-					/* Try to get some alpha planes although I think they don't work anyway */
-					minimum_alpha_buffer_depth = 1;
-				}
-			}
-			else
-			{
-				DESTROY(Graphics_buffer)(&buffer);
-				buffer = (struct Graphics_buffer *)NULL;
-			}
+
+			render_offscreen = 1;
 		}
 #if defined (DEBUG)
 		printf ("create_Graphics_buffer_win32 %p %p %p\n",
 			hWnd, hDC, buffer->hDC);
 #endif /* defined (DEBUG) */
 
-		if (buffer && !use_pbuffer)
+		/* Defer creating the graphics context for offscreen rendering until we actually need it
+		 * and will have the correct initial sizes.
+		 */
+		if (buffer && !render_offscreen)
 		{
-			/* Find a valid OpenGL context for the hdc */
-			if (buffer->hDC)
+			if (!Graphics_buffer_win32_create_context(buffer))
 			{
-				int number_of_formats = DescribePixelFormat(buffer->hDC, 1, 0, NULL);
-				int best_selection_level = 0;
-				int format = 0;
-
-				for (i = 0 ; i < number_of_formats ; i++)
-				{
-					/* set the pixel format for the DC */
-					ZeroMemory( &pfd, sizeof( PIXELFORMATDESCRIPTOR ) );
-					pfd.nSize = sizeof( pfd );
-					pfd.nVersion = 1;
-
-					DescribePixelFormat(buffer->hDC, i, pfd.nSize, &pfd);
-
-					if ((pfd.dwFlags & PFD_SUPPORT_OPENGL)
-						&& (pfd.iPixelType == PFD_TYPE_RGBA))
-					{
-						selection_level = 10;
-					}
-					else
-					{
-						/* No good */
-						selection_level = 0;
-					}
-
-					if (pfd.dwFlags & PFD_GENERIC_ACCELERATED)
-					{
-						/* Windows driver accelerated OpenGL */
-						selection_level -= 2;
-					}
-					else
-					{
-						if (pfd.dwFlags & PFD_GENERIC_FORMAT)
-						{
-							/* Software OpenGL */
-							selection_level -= 4;
-						}
-						else
-						{
-							/* Independent driver accelerated OpenGL */
-							/* Best */
-						}
-					}
-
-					if (!hWnd)
-					{
-						if (!(pfd.dwFlags & PFD_DRAW_TO_BITMAP))
-						{
-							selection_level = 0;
-						}
-					}
-					else
-					{
-						if (!(pfd.dwFlags & PFD_DRAW_TO_WINDOW))
-						{
-							selection_level = 0;
-						}
-					}
-
-					if (pfd.cColorBits >= 24)
-					{
-						/* Best */
-					}
-					else if (pfd.cColorBits >= minimum_colour_buffer_depth)
-					{
-						/* Satisfactory */
-						selection_level--;
-					}
-					else
-					{
-						/* Poor */
-						selection_level-=2;
-					}
-
-					if (pfd.cDepthBits >= 24)
-					{
-						/* Best */
-					}
-					else if (pfd.cDepthBits >= minimum_depth_buffer_depth)
-					{
-						/* Satisfactory */
-						selection_level--;
-					}
-					else
-					{
-						/* Poor */
-						selection_level-=2;
-					}
-
-					if (pfd.cAlphaBits >= minimum_alpha_buffer_depth)
-					{
-						/* Best */
-					}
-					else if (pfd.cAlphaBits > 0)
-					{
-						/* Satisfactory */
-						selection_level--;
-					}
-					else
-					{
-						/* Poor */
-						selection_level-=2;
-					}
-
-					if (pfd.cAccumBits >= minimum_accumulation_buffer_depth)
-					{
-						/* Best */
-					}
-					else if (pfd.cAccumBits > 0)
-					{
-						/* Satisfactory */
-						selection_level--;
-					}
-					else
-					{
-						/* Poor */
-						selection_level-=2;
-					}
-
-					switch (buffering_mode)
-					{
-						case GRAPHICS_BUFFER_SINGLE_BUFFERING:
-						{
-							if (pfd.dwFlags & PFD_DOUBLEBUFFER)
-							{
-								selection_level = 0;
-							}
-						} break;
-						case GRAPHICS_BUFFER_DOUBLE_BUFFERING:
-						{
-							if (!(pfd.dwFlags & PFD_DOUBLEBUFFER))
-							{
-								selection_level = 0;
-							}
-						} break;
-						default: /* GRAPHICS_BUFFER_ANY_BUFFERING_MODE: */
-						{
-						} break;
-					}
-					switch (stereo_mode)
-					{
-						case GRAPHICS_BUFFER_MONO:
-						{
-							if (pfd.dwFlags & PFD_STEREO)
-							{
-								selection_level = 0;
-							}
-						} break;
-						case GRAPHICS_BUFFER_STEREO:
-						{
-							if (!(pfd.dwFlags & PFD_STEREO))
-							{
-								selection_level = 0;
-							}
-						} break;
-						default: /* GRAPHICS_BUFFER_ANY_STEREO_MODE: */
-						{
-						} break;
-					}
-
-					if (selection_level > best_selection_level)
-					{
-						format = i;
-						best_selection_level = selection_level;
-					}
-				}
-				if (!format)
-				{
-				  /* Try the automatic chooser */
-				  memset(&pfd,0, sizeof(PIXELFORMATDESCRIPTOR)) ;
-				  pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR); 
-				  pfd.nVersion = 1 ;
-				  pfd.dwFlags =  PFD_SUPPORT_OPENGL ;
-				  pfd.iPixelType = PFD_TYPE_RGBA ;
-				  pfd.cColorBits = 24 ;
-				  pfd.cDepthBits = 32 ;
-				  pfd.iLayerType = PFD_MAIN_PLANE ;				  
-				  // Choose the pixel format.
-				  format = ChoosePixelFormat(buffer->hDC, &pfd);
-				  best_selection_level = -1;  /* Set a value to show that it was selected by ChoosePixelFormat */
-				}
-
-				if (format)
-				{
-#if defined (DEBUG)
-					printf ("Trying format %d, selection level %d\n",
-						format, best_selection_level);
-#endif /* defined (DEBUG) */
-					if(SetPixelFormat( buffer->hDC, format, &pfd ))
-					{
-#if defined (DEBUG)
-						printf ("SetPixelFormat %d success\n", format);
-#endif /* defined (DEBUG) */
-						buffer->pixel_format = format;
-					}
-					else
-					{
-						DWORD error = GetLastError();
-						display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
-							"Unable to set pixel format. Microsoft error code: %d", error);
-						DESTROY(Graphics_buffer)(&buffer);
-						buffer = (struct Graphics_buffer *)NULL;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
-						"No valid pixel formats found.");
-					DESTROY(Graphics_buffer)(&buffer);
-					buffer = (struct Graphics_buffer *)NULL;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
-					"Unable to get drawing context.");
 				DESTROY(Graphics_buffer)(&buffer);
-				buffer = (struct Graphics_buffer *)NULL;
+				buffer = (struct Graphics_buffer *)NULL;				
 			}
 		}
-
-		if (buffer)
-		{
-			/* A work around for Intel GMA 900 cards on windows where compilation
-				of textures only seems to work on the first context of a
-				share group.  On these cards only use a single
-				graphics context for all graphics buffers.
-				The vendor string will not be defined the first time around,
-				although when using multiple instances in the same memory
-				space (such as with zinc) it could be set for the first
-				in a share group. */
-			const char *vendor_string = (const char *)glGetString(GL_VENDOR);
-			if (!graphics_buffer_package->wgl_shared_context ||
-				!vendor_string || strcmp("Intel", vendor_string))
-			{
-				/* Default normal implementation,
-					different context for each buffer with shared lists */
-				/* create and enable the render context (RC) */
-				if(buffer->hRC = wglCreateContext( buffer->hDC ))
-				{
-					if (graphics_buffer_package->wgl_shared_context)
-					{
-						wglShareLists(graphics_buffer_package->wgl_shared_context,
-							buffer->hRC);
-					}
-					else
-					{
-						graphics_buffer_package->wgl_shared_context = buffer->hRC;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
-						"Unable to create the render context.");
-					DESTROY(Graphics_buffer)(&buffer);
-					buffer = (struct Graphics_buffer *)NULL;
-				}
-			}
-			else
-			{
-				/* Use a single context for all graphics buffers */
-				buffer->hRC = graphics_buffer_package->wgl_shared_context;
-			}
-			if (buffer)
-			{
-				if(wglMakeCurrent(buffer->hDC,buffer->hRC))
-				{
-#if defined (DEBUG)
-					ZeroMemory( &pfd, sizeof( PIXELFORMATDESCRIPTOR ) );
-					pfd.nSize = sizeof( pfd );
-					pfd.nVersion = 1;
-
-					DescribePixelFormat(buffer->hDC, buffer->pixel_format, pfd.nSize, &pfd);
-
-					printf("Pixel format %d\n", buffer->pixel_format);
-					const char *vendor_string = (const char *)glGetString(GL_VENDOR);
-					printf("OpenGL vendor string %s\n", vendor_string);
-					if (pfd.dwFlags & PFD_GENERIC_ACCELERATED)
-					{
-						/* Windows driver accelerated OpenGL */
-						printf("Windows driver accelerated OpenGL\n");
-					}
-					else
-					{
-						if (pfd.dwFlags & PFD_GENERIC_FORMAT)
-						{
-							/* Windows software OpenGL */
-							printf("Software OpenGL\n");
-						}
-						else
-						{
-							/* Independent driver accelerated OpenGL */
-							printf("Independent driver accelerated OpenGL\n");
-						}
-					}
-					printf("Colour depth %d\n",  pfd.cColorBits);
-					printf("Z depth %d\n",  pfd.cDepthBits);
-					printf("Alpha depth %d\n",  pfd.cAlphaBits);
-					printf("Accumulation depth %d\n",  pfd.cAccumBits);
-#endif /* defined (DEBUG) */
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"create_Graphics_buffer_win32.  "
-						"Unable enable the render context.");
-					DESTROY(Graphics_buffer)(&buffer);
-					buffer = (struct Graphics_buffer *)NULL;
-				}
-			}
-		}
-#if defined (DEBUG)
-		fflush(stdout);
-#endif /* defined (DEBUG) */
 	}
 	else
 	{
@@ -5052,22 +5095,64 @@ mode with zinc.
 		  RECT * drc = (RECT *)second_message;
 
 #if defined (DEBUG)
+		  printf("Graphics_buffer_handle_windows_event paint %p\n",
+					buffer);
 		  printf ("Graphics_buffer_handle_windows_event WMPAINT\nhdc %p left %ld right %ld top %ld bottom %ld\n",
-			  hdc, drc->left, drc->right, drc->top, drc->bottom);
-#endif /* defined (DEBUG) */
+				  hdc, drc->left, drc->right, drc->top, drc->bottom);
+		  fflush(stdout);
+#endif // defined (DEBUG)
 
 		  Graphics_buffer_win32_reallocate_offscreen_size(buffer, hdc);
 
-                  if (buffer->offscreen_render_required)
+		  if (buffer->offscreen_render_required)
 		  {
-		    //Graphics_buffer_expose_data expose_data;
-		          CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
-		  	          buffer->expose_callback_list, buffer, NULL);
+#if defined (DEBUG)
+			printf("Graphics_buffer_handle_windows_event render required %p\n",
+					buffer);
+#endif // defined (DEBUG)
+			  wglMakeCurrent( buffer->hDC, buffer->hRC );
+
+			  if (buffer->offscreen_render_required == 1)
+			  {
+				  glScissor(0, 0, buffer->width, buffer->height);
+				  glEnable(GL_SCISSOR_TEST);
+
+				  Graphics_buffer_expose_data expose_data;
+				  CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+					  buffer->expose_callback_list, buffer, &expose_data);
+			  }
+			  if (buffer->type == GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE)
+			  {
+#if defined (DEBUG)
+				  printf("Graphics_buffer_handle_windows_event opengl update %p\n",
+				     buffer);
+#endif // defined (DEBUG)
+
+				  glPixelStorei(GL_PACK_ROW_LENGTH, buffer->offscreen_width);
+				  if (GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND == buffer->buffering_mode)
+				  {
+					  glReadPixels(0, 0,
+						  buffer->width, buffer->height, GL_BGRA,
+						  GL_UNSIGNED_BYTE,
+						  (unsigned char *)buffer->device_independent_bitmap_pixels +
+						  4 * buffer->offscreen_width * (buffer->offscreen_height - buffer->height));
+
+				  }
+				  else
+				  {
+					  glReadPixels(0, 0,
+						  buffer->width, buffer->height, GL_BGR,
+						  GL_UNSIGNED_BYTE,
+						  (unsigned char *)buffer->device_independent_bitmap_pixels +
+						  3 * buffer->offscreen_width * (buffer->offscreen_height - buffer->height));
+				  }
+				  glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+			  }
 			  buffer->offscreen_render_required = 0;
 		  }
 
- 	          /* Work around bug in firefox.  See definition of mouse_x.
-   	           */
+		  /* Work around bug in firefox.  See definition of mouse_x.
+		   */
           if (((drc->left == buffer->x) || (drc->left == buffer->x - 1))
         	&& ((drc->top == buffer->y) || (drc->top == buffer->y - 1)) &&
         	((drc->right - drc->left) >= buffer->width) && ((drc->bottom - drc->top) >= buffer->height))
@@ -5075,8 +5160,6 @@ mode with zinc.
         	  buffer->mouse_x = buffer->x;
         	  buffer->mouse_y = buffer->y;
           }
-
-		  wglMakeCurrent( buffer->hDC, buffer->hRC );
 
 		  {
  			  int x = drc->left;
@@ -5230,15 +5313,8 @@ mode with zinc.
 					  } break;
 					  case GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE:
 					  {
-						  glPixelStorei(GL_PACK_ROW_LENGTH, buffer->offscreen_width);
 						  if (GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND == buffer->buffering_mode)
 						  {
-							  glReadPixels(x - buffer->x, buffer->height - height - y + buffer->y,
-								  width, height, GL_BGRA,
-								  GL_UNSIGNED_BYTE,
-								  (unsigned char *)buffer->device_independent_bitmap_pixels +
-								  4 * buffer->offscreen_width * (buffer->offscreen_height - height));
-
 							  BLENDFUNCTION blendfunction =
 								  {
 									  AC_SRC_OVER,
@@ -5270,12 +5346,6 @@ mode with zinc.
 						  }
 						  else
 						  {
-							  glReadPixels(x - buffer->x, buffer->height - height - y + buffer->y,
-								  width, height, GL_BGR,
-								  GL_UNSIGNED_BYTE,
-								  (unsigned char *)buffer->device_independent_bitmap_pixels +
-								  3 * buffer->offscreen_width * (buffer->offscreen_height - height));
-
 #if defined (DEBUG)
 							  //memset(buffer->device_independent_bitmap_pixels, 128,
 							  //	 3 * buffer->offscreen_width * buffer->offscreen_height);
@@ -5298,7 +5368,6 @@ mode with zinc.
 								  buffer->device_independent_bitmap_hdc, 0, 0,
 								  SRCCOPY);
 						  }
-						  glPixelStorei(GL_PACK_ROW_LENGTH, 0);
 					  } break;
 					  default:
 					  {
@@ -6073,8 +6142,14 @@ DESCRIPTION :
 #endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 #if defined (WIN32_USER_INTERFACE)
-			case GRAPHICS_BUFFER_WIN32_TYPE:
 			case GRAPHICS_BUFFER_WIN32_COPY_PBUFFER_TYPE:
+			{
+				/* If this context has been made current then we need to copy the pixels
+				 * before the next paint.
+				 */
+				buffer->offscreen_render_required = 2;
+			} /* no break */
+			case GRAPHICS_BUFFER_WIN32_TYPE:
 			case GRAPHICS_BUFFER_WIN32_COPY_BITMAP_TYPE:
 			{
 				wglMakeCurrent( buffer->hDC, buffer->hRC );
@@ -7944,14 +8019,6 @@ x==============================================================================*
 					DeleteDC(buffer->device_independent_bitmap_hdc);
 				}
 			} break;
-		}
-		if (buffer->hidden_graphics_buffer)
-		{
-			DESTROY(Graphics_buffer)(&buffer->hidden_graphics_buffer);
-		}
-		if (buffer->hidden_accelerated_window)
-		{
-			DestroyWindow(buffer->hidden_accelerated_window);
 		}
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (CARBON_USER_INTERFACE)
