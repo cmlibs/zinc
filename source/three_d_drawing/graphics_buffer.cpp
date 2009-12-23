@@ -4989,7 +4989,7 @@ Alternatively if <hWnd> is NULL and <hDC> is specified then no window functions
 are performed but the graphics window will render into the supplied device context.
 ==============================================================================*/
 {
-	int i, render_offscreen;
+	int render_offscreen;
 	struct Graphics_buffer *buffer;
 
 	ENTER(create_Graphics_buffer_win32);
