@@ -361,7 +361,7 @@ DESCRIPTION :
 	{
 		texture_tiling->total_tiles = 0;
 		texture_tiling->dimension = dimension;
-		texture_tiling->texture_ids = (int *)NULL;
+		texture_tiling->texture_ids = (unsigned int *)NULL;
 		texture_tiling->overlap = 0;
 		texture_tiling->texture_target = 0;
 		texture_tiling->access_count = 0;
@@ -385,9 +385,6 @@ LAST MODIFIED : 22 November 2007
 DESCRIPTION :
 ==============================================================================*/
 {
-#if defined (OPENGL_API)
-	int i;
-#endif /* defined (OPENGL_API) */
 	int return_code;
 	struct Texture_tiling *texture_tiling;
 
@@ -397,12 +394,7 @@ DESCRIPTION :
 		if (texture_tiling->texture_ids)
 		{
 #if defined (OPENGL_API)
-			for (i = 0 ; i < texture_tiling->total_tiles ; i++)
-			{
-				GLuint gl_texture_id;
-				gl_texture_id = texture_tiling->texture_ids[i];
-				glDeleteTextures(1,&(gl_texture_id));
-			}
+			glDeleteTextures(texture_tiling->total_tiles, texture_tiling->texture_ids);
 #endif /* defined (OPENGL_API) */
 			DEALLOCATE(texture_tiling->texture_ids);
 		}
@@ -1477,13 +1469,8 @@ tiles (and <texture_tiling> wasn't NULL.
 					number_of_tiles *= (*texture_tiling)->texture_tiles[i];
 				}
 				(*texture_tiling)->total_tiles = number_of_tiles;
-				ALLOCATE((*texture_tiling)->texture_ids, int, number_of_tiles);
-				for (i = 0 ; i < number_of_tiles ; i++)
-				{
-					GLuint gl_texture_id;
-					glGenTextures(1,&(gl_texture_id));
-					(*texture_tiling)->texture_ids[i] = gl_texture_id;
-				}
+				ALLOCATE((*texture_tiling)->texture_ids, unsigned int, number_of_tiles);
+				glGenTextures(number_of_tiles, (*texture_tiling)->texture_ids);
 				texture->texture_tiling = ACCESS(Texture_tiling)(*texture_tiling);
 			}
 		}
@@ -2371,6 +2358,9 @@ Directly outputs the commands setting up the <texture>.
 	{
 		rendered_image = (unsigned char *)NULL;
 		texture_target = Texture_get_target_enum(texture);
+		glEnable(texture_target);
+		Texture_activate_texture_target_environment(texture,
+			texture_target);
 		switch(texture->storage)
 		{
 			case TEXTURE_DMBUFFER:
@@ -2672,8 +2662,6 @@ Directly outputs the commands setting up the <texture>.
 				}
 			} break;
 		}
-		Texture_activate_texture_target_environment(texture,
-			texture_target);
 	}
 	else
 	{
@@ -6838,11 +6826,17 @@ int Texture_compile_opengl_texture_object(struct Texture *texture,
 			}
 			else
 			{
+				if (texture->texture_id)
+				{
+					glDeleteTextures(1, &(texture->texture_id));
+					texture->texture_id = 0;
+				}
 				if (!texture->texture_id)
 				{
 					glGenTextures(1, &(texture->texture_id));
 				}
 				glBindTexture(texture_target, texture->texture_id);
+				direct_render_Texture_environment(texture);
 				if(texture->storage==TEXTURE_DMBUFFER || 
 					texture->storage==TEXTURE_PBUFFER)
 				{
@@ -6893,6 +6887,10 @@ int Texture_execute_opengl_texture_object(struct Texture *texture,
 			/* We only activate the environment here, the individual
 			 * textures will be bound as we activate each driver */
 			direct_render_Texture_environment(texture);
+			if (renderer->allow_texture_tiling)
+			{
+				renderer->texture_tiling = texture->texture_tiling;
+			}
 		}
 		else
 		{

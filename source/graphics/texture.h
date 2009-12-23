@@ -219,7 +219,7 @@ If defined it should be used to compile any graphics objects.
 	/* Array of size dimension recording the scaling to be applied to each texture coordinate */
 	float *coordinate_scaling;
 	/* Recording the bound texture id for each tile */
-	int *texture_ids;
+	unsigned int *texture_ids;
 	/* Overlap of duplicated pixels on boundaries of tiles to allow filtering */
 	int overlap;
 	/* The OpenGL enumerated bound texture target */
