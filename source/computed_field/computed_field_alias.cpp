@@ -54,8 +54,6 @@ extern "C" {
 #include "user_interface/message.h"
 }
 
-#include "api_cpp/CmissField.hpp"
-
 /*
 Module types
 ------------
