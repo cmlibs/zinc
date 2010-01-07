@@ -475,8 +475,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *Cmiss_field_create_fast_marching_image_filter(
-	struct Cmiss_field_factory *field_factory,
+struct Computed_field *Cmiss_field_module_create_fast_marching_image_filter(
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, double stopping_value,
   int num_seed_points, int dimension, double *seed_points, double *seed_values, 
   int *output_size)
@@ -485,7 +485,7 @@ struct Computed_field *Cmiss_field_create_fast_marching_image_filter(
 	USE_PARAMETER(dimension);
 	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
 	{
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -496,7 +496,7 @@ struct Computed_field *Cmiss_field_create_fast_marching_image_filter(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_create_fast_marching_image_filter.  Invalid argument(s)");
+			"Cmiss_field_module_create_fast_marching_image_filter.  Invalid argument(s)");
 	}
 
 	return (field);
@@ -759,8 +759,8 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Cmiss_field_create_fast_marching_image_filter(
-						field_modify->get_field_factory(),
+					Cmiss_field_module_create_fast_marching_image_filter(
+						field_modify->get_field_module(),
 						source_field, stopping_value, num_seed_points, dimension, 
 						seed_points, seed_values, output_size));				
 			}

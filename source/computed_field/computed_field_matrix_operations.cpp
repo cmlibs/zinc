@@ -482,14 +482,14 @@ List conditional function version of Computed_field_is_type_eigenvalues.
 } //namespace
 
 Computed_field *Computed_field_create_eigenvalues(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
 	struct Computed_field *field = NULL;
-	if (field_factory && source_field &&
+	if (field_module && source_field &&
 		Computed_field_is_square_matrix(source_field, (void *)NULL))
 	{
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/Computed_field_get_square_matrix_size(source_field),
 			/*number_of_source_fields*/1, &source_field,
@@ -584,7 +584,7 @@ contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_eigenvalues(field_modify->get_field_factory(),
+					Computed_field_create_eigenvalues(field_modify->get_field_module(),
 						source_field));
 			}
 			DESTROY(Option_table)(&option_table);
@@ -815,16 +815,16 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_eigenvectors(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *eigenvalues_field)
 {
 	struct Computed_field *field = NULL;
-	if (field_factory && eigenvalues_field &&
+	if (field_module && eigenvalues_field &&
 		Computed_field_is_type_eigenvalues(eigenvalues_field))
 	{
 		int n = eigenvalues_field->number_of_components;
 		int number_of_components = n * n;
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			number_of_components,
 			/*number_of_source_fields*/1, &eigenvalues_field,
@@ -922,7 +922,7 @@ its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_eigenvectors(field_modify->get_field_factory(),
+					Computed_field_create_eigenvectors(field_modify->get_field_module(),
 						source_field));
 			}
 			if (source_field)
@@ -1260,14 +1260,14 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_matrix_invert(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
 	struct Computed_field *field = NULL;
-	if (field_factory && source_field &&
+	if (field_module && source_field &&
 		Computed_field_is_square_matrix(source_field, (void *)NULL))
 	{
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			Computed_field_get_number_of_components(source_field),
 			/*number_of_source_fields*/1, &source_field,
@@ -1362,7 +1362,7 @@ contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_matrix_invert(field_modify->get_field_factory(),
+					Computed_field_create_matrix_invert(field_modify->get_field_module(),
 						source_field));
 			}
 			DESTROY(Option_table)(&option_table);
@@ -1607,12 +1607,12 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_matrix_multiply(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	int number_of_rows, struct Computed_field *source_field1,
 	struct Computed_field *source_field2)
 {
 	Computed_field *field = NULL;
-	if (field_factory && (0 < number_of_rows) && source_field1 && source_field2)
+	if (field_module && (0 < number_of_rows) && source_field1 && source_field2)
 	{
 		int nc1 = source_field1->number_of_components;
 		int nc2 = source_field2->number_of_components;
@@ -1626,7 +1626,7 @@ Computed_field *Computed_field_create_matrix_multiply(
 			Computed_field *source_fields[2];
 			source_fields[0] = source_field1;
 			source_fields[1] = source_field2;
-			field = Computed_field_create_generic(field_factory,
+			field = Computed_field_create_generic(field_module,
 				/*check_source_field_regions*/true,
 				/*number_of_components*/number_of_rows * result_number_of_columns,
 				/*number_of_source_fields*/2, source_fields,
@@ -1780,7 +1780,7 @@ already) and allows its contents to be modified.
 							if (return_code)
 							{
 								return_code = field_modify->update_field_and_deaccess(
-									Computed_field_create_matrix_multiply(field_modify->get_field_factory(),
+									Computed_field_create_matrix_multiply(field_modify->get_field_module(),
 										number_of_rows, source_fields[0], source_fields[1]));
 							}
 							DESTROY(Option_table)(&option_table);
@@ -2175,15 +2175,15 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_projection(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, int number_of_components, 
 	double *projection_matrix)
 {
 	Computed_field *field = NULL;
-	if (field_factory && source_field && projection_matrix &&
+	if (field_module && source_field && projection_matrix &&
 		(0 < number_of_components))
 	{
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -2415,7 +2415,7 @@ and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_projection(field_modify->get_field_factory(),
+						Computed_field_create_projection(field_modify->get_field_module(),
 							source_field, number_of_components, projection_matrix));
 				}
 				if (!return_code)
@@ -2647,14 +2647,14 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_transpose(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	int source_number_of_rows, struct Computed_field *source_field)
 {
 	struct Computed_field *field = NULL;
-	if (field_factory && (0 < source_number_of_rows) && source_field &&
+	if (field_module && (0 < source_number_of_rows) && source_field &&
 		(0 == (source_field->number_of_components % source_number_of_rows)))
 	{
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -2783,7 +2783,7 @@ already) and allows its contents to be modified.
 						if (return_code)
 						{
 							return_code = field_modify->update_field_and_deaccess(
-								Computed_field_create_transpose(field_modify->get_field_factory(),
+								Computed_field_create_transpose(field_modify->get_field_module(),
 									source_number_of_rows, source_field));
 						}
 						DESTROY(Option_table)(&option_table);
@@ -2981,18 +2981,18 @@ Returns allocated command string for reproducing field. Includes type.
  * Creates a 4x4 (= 16 component) transformation matrix from a 4 component
  * quaternion valued source field. 
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field  4 component field giving source quaternion value.
  * @return Newly created field.
  */
 Computed_field *Computed_field_create_quaternion_to_matrix(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field) 
 {
 	struct Computed_field *field = NULL;
-	if (field_factory && source_field && (source_field->number_of_components == 4))
+	if (field_module && source_field && (source_field->number_of_components == 4))
 	{
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/16,
 			/*number_of_source_fields*/1, &source_field,
@@ -3089,7 +3089,7 @@ Converts a "quaternion" to a transformation matrix.
 					{
 						return_code = field_modify->update_field_and_deaccess(
 							Computed_field_create_quaternion_to_matrix(
-								field_modify->get_field_factory(), source_fields[0]));
+								field_modify->get_field_module(), source_fields[0]));
 					}
 					else
 					{
@@ -3289,18 +3289,18 @@ Returns allocated command string for reproducing field. Includes type.
  * Creates a 4 component field returning the nearest quaternion value equivalent
  * to 4x4 matrix source field 
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field  4x4 component source field.
  * @return Newly created field.
  */
 Computed_field *Computed_field_create_matrix_to_quaternion(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field) 
 {
 	struct Computed_field *field = NULL;
-	if (field_factory && source_field && (source_field->number_of_components == 16))
+	if (field_module && source_field && (source_field->number_of_components == 16))
 	{
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/4,
 			/*number_of_source_fields*/1, &source_field,
@@ -3403,7 +3403,7 @@ Converts a transformation matrix to  a "quaternion".
 					{
 						return_code = field_modify->update_field_and_deaccess(
 							Computed_field_create_matrix_to_quaternion(
-								field_modify->get_field_factory(), source_fields[0]));
+								field_modify->get_field_module(), source_fields[0]));
 					}
 					else
 					{

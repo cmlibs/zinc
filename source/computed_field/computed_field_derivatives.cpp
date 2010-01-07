@@ -607,10 +607,10 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_derivative(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, int xi_index)
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		source_field->number_of_components,
 		/*number_of_source_fields*/1, &source_field,
@@ -725,7 +725,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_derivative(field_modify->get_field_factory(),
+					Computed_field_create_derivative(field_modify->get_field_module(),
 						source_field, xi_index - 1));
 			}
 			if (!return_code)
@@ -1035,7 +1035,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_curl(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *vector_field, struct Computed_field *coordinate_field)
 {
 	struct Computed_field *field = NULL;
@@ -1046,7 +1046,7 @@ struct Computed_field *Computed_field_create_curl(
 		Computed_field *source_fields[2];
 		source_fields[0] = vector_field;
 		source_fields[1] = coordinate_field;
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			vector_field->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -1161,7 +1161,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_curl(field_modify->get_field_factory(),
+					Computed_field_create_curl(field_modify->get_field_module(),
 						vector_field, coordinate_field));
 			}
 			if (!return_code)
@@ -1476,7 +1476,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_divergence(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *vector_field, struct Computed_field *coordinate_field)
 {
 	struct Computed_field *field = NULL;
@@ -1489,7 +1489,7 @@ struct Computed_field *Computed_field_create_divergence(
 		Computed_field *source_fields[2];
 		source_fields[0] = vector_field;
 		source_fields[1] = coordinate_field;
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/1,
 			/*number_of_source_fields*/2, source_fields,
@@ -1604,7 +1604,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_divergence(field_modify->get_field_factory(),
+					Computed_field_create_divergence(field_modify->get_field_module(),
 						vector_field, coordinate_field));
 			}
 			if (!return_code)
@@ -1890,7 +1890,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_gradient(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, struct Computed_field *coordinate_field)
 {
 	struct Computed_field *field = NULL;
@@ -1902,7 +1902,7 @@ struct Computed_field *Computed_field_create_gradient(
 		Computed_field *source_fields[2];
 		source_fields[0] = source_field;
 		source_fields[1] = coordinate_field;
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -2017,7 +2017,7 @@ to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_gradient(field_modify->get_field_factory(),
+					Computed_field_create_gradient(field_modify->get_field_module(),
 						source_field, coordinate_field));
 			}
 			if (!return_code)

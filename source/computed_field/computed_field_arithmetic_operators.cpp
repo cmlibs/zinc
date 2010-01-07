@@ -247,7 +247,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_power(Cmiss_field_factory *field_factory,
+Computed_field *Computed_field_create_power(Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -259,15 +259,15 @@ Computed_field *Computed_field_create_power(Cmiss_field_factory *field_factory,
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
-	if (field_factory && source_field_one && source_field_two &&
-		Computed_field_broadcast_field_components(field_factory,
+	if (field_module && source_field_one && source_field_two &&
+		Computed_field_broadcast_field_components(field_module,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -381,7 +381,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_power(field_modify->get_field_factory(),
+						Computed_field_create_power(field_modify->get_field_module(),
 							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
@@ -609,7 +609,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_multiply(
-	Cmiss_field_factory *field_factory,
+	Cmiss_field_module *field_module,
 	Computed_field *source_field_one, Computed_field *source_field_two)
 {
 	Computed_field *field, *source_fields[2];
@@ -620,15 +620,15 @@ Computed_field *Computed_field_create_multiply(
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
-	if (field_factory && source_field_one && source_field_two &&
-		Computed_field_broadcast_field_components(field_factory,
+	if (field_module && source_field_one && source_field_two &&
+		Computed_field_broadcast_field_components(field_module,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -741,7 +741,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_multiply(field_modify->get_field_factory(),
+						Computed_field_create_multiply(field_modify->get_field_module(),
 							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
@@ -966,7 +966,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_divide(Cmiss_field_factory *field_factory,
+Computed_field *Computed_field_create_divide(Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -978,15 +978,15 @@ Computed_field *Computed_field_create_divide(Cmiss_field_factory *field_factory,
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
-	if (field_factory && source_field_one && source_field_two &&
-		Computed_field_broadcast_field_components(field_factory,
+	if (field_module && source_field_one && source_field_two &&
+		Computed_field_broadcast_field_components(field_module,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -1099,7 +1099,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_divide(field_modify->get_field_factory(),
+						Computed_field_create_divide(field_modify->get_field_module(),
 							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
@@ -1332,7 +1332,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_weighted_add(Cmiss_field_factory *field_factory,
+Computed_field *Computed_field_create_weighted_add(Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one, double scale_factor1,
 	struct Computed_field *source_field_two, double scale_factor2)
 {
@@ -1345,8 +1345,8 @@ Computed_field *Computed_field_create_weighted_add(Cmiss_field_factory *field_fa
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
-	if (field_factory && source_field_one && source_field_two &&
-		Computed_field_broadcast_field_components(field_factory,
+	if (field_module && source_field_one && source_field_two &&
+		Computed_field_broadcast_field_components(field_module,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
@@ -1355,7 +1355,7 @@ Computed_field *Computed_field_create_weighted_add(Cmiss_field_factory *field_fa
 		source_fields[1] = source_field_two;
 		source_values[0] = scale_factor1;
 		source_values[1] = scale_factor2;
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -1375,19 +1375,19 @@ Computed_field *Computed_field_create_weighted_add(Cmiss_field_factory *field_fa
 	return (field);
 } /* Computed_field_create_weighted_add */
  
-Computed_field *Computed_field_create_add(Cmiss_field_factory *field_factory,
+Computed_field *Computed_field_create_add(Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
-	return(Computed_field_create_weighted_add(field_factory,
+	return(Computed_field_create_weighted_add(field_module,
 		source_field_one, 1.0, source_field_two, 1.0));
 } /* Computed_field_create_add */
 
-Computed_field *Computed_field_create_subtract(Cmiss_field_factory *field_factory,
+Computed_field *Computed_field_create_subtract(Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
-	return(Computed_field_create_weighted_add(field_factory,
+	return(Computed_field_create_weighted_add(field_module,
 		source_field_one, 1.0, source_field_two, -1.0));
 } /* Computed_field_create_subtract */
 
@@ -1495,7 +1495,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_weighted_add(field_modify->get_field_factory(),
+						Computed_field_create_weighted_add(field_modify->get_field_module(),
 							source_fields[0], scale_factors[0],
 							source_fields[1], scale_factors[1]));
 				}
@@ -1852,7 +1852,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_scale(Cmiss_field_factory *field_factory,
+Computed_field *Computed_field_create_scale(Cmiss_field_module *field_module,
 	struct Computed_field *source_field, double *scale_factors)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -1864,7 +1864,7 @@ Sets the number of components equal to that of <source_field>.
 Not exposed in the API as this is really just a multiply with constant
 ==============================================================================*/
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		source_field->number_of_components,
 		/*number_of_source_fields*/1, &source_field,
@@ -2043,7 +2043,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_scale(field_modify->get_field_factory(),
+					Computed_field_create_scale(field_modify->get_field_module(),
 						source_field, scale_factors));
 			}
 			if (!return_code)
@@ -2317,7 +2317,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_clamp_maximum(Cmiss_field_factory *field_factory,
+Computed_field *Computed_field_create_clamp_maximum(Cmiss_field_module *field_module,
 	struct Computed_field *source_field, double *maximums)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -2332,7 +2332,7 @@ SAB.  I think this should be changed so that the maximums come from a source
 field rather than constant maximums before it is exposed in the API.
 ==============================================================================*/
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		source_field->number_of_components,
 		/*number_of_source_fields*/1, &source_field,
@@ -2505,7 +2505,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_clamp_maximum(field_modify->get_field_factory(),
+					Computed_field_create_clamp_maximum(field_modify->get_field_module(),
 						source_field, maximums));
 			}
 			if (!return_code)
@@ -2779,7 +2779,7 @@ DESCRIPTION :
 
 } //namespace
 
-Computed_field *Computed_field_create_clamp_minimum(Cmiss_field_factory *field_factory,
+Computed_field *Computed_field_create_clamp_minimum(Cmiss_field_module *field_module,
 	struct Computed_field *source_field, double *minimums)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -2794,7 +2794,7 @@ SAB.  I think this should be changed so that the minimums come from a source
 field rather than constant minimums before it is exposed in the API.
 ==============================================================================*/
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		source_field->number_of_components,
 		/*number_of_source_fields*/1, &source_field,
@@ -2967,7 +2967,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_clamp_minimum(field_modify->get_field_factory(),
+					Computed_field_create_clamp_minimum(field_modify->get_field_module(),
 						source_field, minimums));
 			}
 			if (!return_code)
@@ -3283,7 +3283,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_offset(Cmiss_field_factory *field_factory,
+Computed_field *Computed_field_create_offset(Cmiss_field_module *field_module,
 	struct Computed_field *source_field, double *offsets)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -3296,7 +3296,7 @@ components in <source_field>; this is the number of components in the field.
 Not exposed in the API is this is just an add with constant field.
 ==============================================================================*/
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		source_field->number_of_components,
 		/*number_of_source_fields*/1, &source_field,
@@ -3475,7 +3475,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_offset(field_modify->get_field_factory(),
+					Computed_field_create_offset(field_modify->get_field_module(),
 						source_field, offsets));
 			}
 			if (!return_code)
@@ -3694,10 +3694,10 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_sum_components(Cmiss_field_factory *field_factory,
+Computed_field *Computed_field_create_sum_components(Cmiss_field_module *field_module,
 	struct Computed_field *source_field, double *weights)
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		/*number_of_components*/1,
 		/*number_of_source_fields*/1, &source_field,
@@ -3869,7 +3869,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_sum_components(field_modify->get_field_factory(),
+					Computed_field_create_sum_components(field_modify->get_field_module(),
 						source_field, weights));
 			}
 			if (!return_code)
@@ -4145,7 +4145,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_edit_mask(Cmiss_field_factory *field_factory,
+Computed_field *Computed_field_create_edit_mask(Cmiss_field_module *field_module,
 	struct Computed_field *source_field, double *edit_mask)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -4161,7 +4161,7 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		source_field->number_of_components,
 		/*number_of_source_fields*/1, &source_field,
@@ -4337,7 +4337,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_edit_mask(field_modify->get_field_factory(),
+					Computed_field_create_edit_mask(field_modify->get_field_module(),
 						source_field, edit_mask));
 			}
 			if (!return_code)
@@ -4538,7 +4538,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_log(Cmiss_field_factory *field_factory,
+Computed_field *Computed_field_create_log(Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -4548,7 +4548,7 @@ Converts <field> to type COMPUTED_FIELD_LOG with the supplied
 field, <source_field_one>.  Sets the number of components equal to the source_fields.
 ==============================================================================*/
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		source_field->number_of_components,
 		/*number_of_source_fields*/1, &source_field,
@@ -4645,7 +4645,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_log(field_modify->get_field_factory(),
+						Computed_field_create_log(field_modify->get_field_module(),
 							source_fields[0]));
 				}
 				if (!return_code)
@@ -4854,7 +4854,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_sqrt(Cmiss_field_factory *field_factory,
+Computed_field *Computed_field_create_sqrt(Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -4864,7 +4864,7 @@ Converts <field> to type COMPUTED_FIELD_SQRT with the supplied
 field, <source_field_one>.  Sets the number of components equal to the source_fields.
 ==============================================================================*/
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		source_field->number_of_components,
 		/*number_of_source_fields*/1, &source_field,
@@ -4961,7 +4961,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_sqrt(field_modify->get_field_factory(),
+						Computed_field_create_sqrt(field_modify->get_field_module(),
 							source_fields[0]));
 				}
 				if (!return_code)
@@ -5170,7 +5170,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_exp(Cmiss_field_factory *field_factory,
+Computed_field *Computed_field_create_exp(Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -5180,7 +5180,7 @@ Converts <field> to type COMPUTED_FIELD_EXP with the supplied
 field, <source_field_one>.  Sets the number of components equal to the source_fields.
 ==============================================================================*/
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		source_field->number_of_components,
 		/*number_of_source_fields*/1, &source_field,
@@ -5277,7 +5277,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_exp(field_modify->get_field_factory(),
+						Computed_field_create_exp(field_modify->get_field_module(),
 							source_fields[0]));
 				}
 				if (!return_code)
@@ -5505,7 +5505,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_abs(Cmiss_field_factory *field_factory,
+Computed_field *Computed_field_create_abs(Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 /*******************************************************************************
 DESCRIPTION :
@@ -5513,7 +5513,7 @@ Converts <field> to type COMPUTED_FIELD_EXP with the supplied
 field, <source_field_one>.  Sets the number of components equal to the source_fields.
 ==============================================================================*/
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		source_field->number_of_components,
 		/*number_of_source_fields*/1, &source_field,
@@ -5606,7 +5606,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_abs(field_modify->get_field_factory(),
+						Computed_field_create_abs(field_modify->get_field_module(),
 							source_fields[0]));
 				}
 				if (!return_code)

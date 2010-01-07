@@ -831,7 +831,6 @@ ALL_LIB = $(LINKOPTIONFLAG) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 API_SRCS = \
 	api/cmiss_command_data.c \
 	api/cmiss_field.c \
-	api/cmiss_field_composite.c \
 	api/cmiss_core.c \
 	api/cmiss_element.c \
 	api/cmiss_graphics_package.c \

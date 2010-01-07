@@ -45,16 +45,19 @@ The public interface to the Cmiss_fields that perform arithmetic operations.
 #ifndef __CMISS_FIELD_COMPOSITE_H__
 #define __CMISS_FIELD_COMPOSITE_H__
 
+#include "api/cmiss_field.h"
+#include "api/cmiss_field_module.h"
+
 /*****************************************************************************//**
  * Creates a field with the components specified in the array values.
  * Internally this a composite field.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param number_of_values  The number of values in the array.
  * @param values The array of constant values
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_create_constant(Cmiss_field_factory_id field_factory,
+Cmiss_field_id Cmiss_field_module_create_constant(Cmiss_field_module_id field_module,
 	int number_of_values, double *values);
 
 /*****************************************************************************//**
@@ -63,11 +66,11 @@ Cmiss_field_id Cmiss_field_create_constant(Cmiss_field_factory_id field_factory,
  * later on.
  * Internally this a composite field.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field The field the values are copied from.
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_create_identity(Cmiss_field_factory_id field_factory,
+Cmiss_field_id Cmiss_field_module_create_identity(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
@@ -75,25 +78,25 @@ Cmiss_field_id Cmiss_field_create_identity(Cmiss_field_factory_id field_factory,
  * specified by the component_number.
  * Internally this a composite field.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field The field the component value is copied from.
  * @param component_index  The index for the component.  The first values index
  * is 0 and the last is (number_of_field_components - 1).
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_create_component(Cmiss_field_factory_id field_factory,
+Cmiss_field_id Cmiss_field_module_create_component(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field, int component_index);
 
 /*****************************************************************************//**
  * Creates a field which concatenates the components of all source fields, in
  * order, into a single vector.
  *
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param number_of_source_fields  The number of source fields in the array.
- * @param source_fields  The array of fields, this field is copying from.
+ * @param source_fields  The array of fields to be concatenating together.
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_create_concatenate(Cmiss_field_factory_id field_factory,
+Cmiss_field_id Cmiss_field_module_create_concatenate(Cmiss_field_module_id field_module,
 	int number_of_source_fields, Cmiss_field_id *source_fields);
 
 #endif /* __CMISS_FIELD_COMPOSITE_H__ */

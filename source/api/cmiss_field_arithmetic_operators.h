@@ -45,17 +45,19 @@ The public interface to the Cmiss_fields that perform arithmetic operators.
 #ifndef __CMISS_FIELD_ARITHMETIC_OPERATORS_H__
 #define __CMISS_FIELD_ARITHMETIC_OPERATORS_H__
 
+#include "api/cmiss_field.h"
+
 /*****************************************************************************//**
  * Creates a field where the which calculates the components of source_field_one
  * raised to the power of the components in source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_create_power(Cmiss_field_factory_id field_factory,
+Cmiss_field_id Cmiss_field_module_create_power(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
@@ -64,12 +66,12 @@ Cmiss_field_id Cmiss_field_create_power(Cmiss_field_factory_id field_factory,
  * source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_create_multiply(Cmiss_field_factory_id field_factory,
+Cmiss_field_id Cmiss_field_module_create_multiply(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
@@ -78,12 +80,12 @@ Cmiss_field_id Cmiss_field_create_multiply(Cmiss_field_factory_id field_factory,
  * by source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_create_divide(Cmiss_field_factory_id field_factory,
+Cmiss_field_id Cmiss_field_module_create_divide(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
@@ -92,12 +94,12 @@ Cmiss_field_id Cmiss_field_create_divide(Cmiss_field_factory_id field_factory,
  * source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_create_add(Cmiss_field_factory_id field_factory,
+Cmiss_field_id Cmiss_field_module_create_add(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
@@ -106,12 +108,12 @@ Cmiss_field_id Cmiss_field_create_add(Cmiss_field_factory_id field_factory,
  * from source_field_one.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_create_subtract(Cmiss_field_factory_id field_factory,
+Cmiss_field_id Cmiss_field_module_create_subtract(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
@@ -123,13 +125,13 @@ Cmiss_field_id Cmiss_field_create_subtract(Cmiss_field_factory_id field_factory,
  * I think this should be deprecated and either only the dot product kept
  * or the dot product and a field with sums the components without weights.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field The input field
  * @param weights A vector of values equal in length to the number of components
  * in the source field which is dot producted with the source field components.
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_create_sum_components(Cmiss_field_factory_id field_factory,
+Cmiss_field_id Cmiss_field_module_create_sum_components(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field, double *weights);
 
 int Cmiss_field_get_type_sum_components(Cmiss_field_id field,
@@ -147,44 +149,44 @@ WARNING: to be deprecated.
  * Creates a field where the field components are the natural logarithm 
  * of each component in the source field.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field The input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_create_log(Cmiss_field_factory_id field_factory,
+Cmiss_field_id Cmiss_field_module_create_log(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
  * Creates a field where the field components are the square root 
  * of each component in the source field.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field The input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_create_sqrt(Cmiss_field_factory_id field_factory,
+Cmiss_field_id Cmiss_field_module_create_sqrt(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
  * Creates a field where the field components are the natural exponent 
  * of each component in the source field.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field The input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_create_exp(Cmiss_field_factory_id field_factory,
+Cmiss_field_id Cmiss_field_module_create_exp(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
 /*****************************************************************************//**
  * Creates a field where the field components are the absolute value of each 
  * component in the source field.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field The input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_create_abs(Cmiss_field_factory_id field_factory,
+Cmiss_field_id Cmiss_field_module_create_abs(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field);
 
 #endif /* __CMISS_FIELD_ARITHMETIC_OPERATORS_H__ */

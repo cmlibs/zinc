@@ -359,10 +359,10 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_string_constant(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	int number_of_components, char **string_constant_array)
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true, number_of_components,
 		/*number_of_source_fields*/0, NULL,
 		/*number_of_source_values*/0, NULL,
@@ -453,7 +453,7 @@ already) and allows its contents to be modified.
 			else
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_string_constant(field_modify->get_field_factory(),
+					Computed_field_create_string_constant(field_modify->get_field_module(),
 						/*number_of_components*/state->number_of_tokens - state->current_index,
 						/*string_constant_array*/state->tokens + state->current_index));	
 			}

@@ -47,12 +47,12 @@ DESCRIPTION :
  * Creates a field returning the N eigenvalues of symmetric N*N component source
  * field.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field  N*N component square symmetric matrix field.
  * @return Newly created field
  */
 Computed_field *Computed_field_create_eigenvalues(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field);
 
 /***************************************************************************//**
@@ -60,24 +60,24 @@ Computed_field *Computed_field_create_eigenvalues(
  * source eigenvalues field. Sets the number of components equal to N*N, where
  * N is the number of components in the <eigenvalues_field>.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param eigenvalues_field  Eigenvalues type field.
  * @return Newly created field
  */
 Computed_field *Computed_field_create_eigenvectors(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *eigenvalues_field);
 
 /***************************************************************************//**
  * Creates a field returning the inverse of N*N symmetric matrix valued source
  * field.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field  N*N component square symmetric matrix field.
  * @return Newly created field
  */
 Computed_field *Computed_field_create_matrix_invert(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field);
 
 /***************************************************************************//**
@@ -87,14 +87,14 @@ Computed_field *Computed_field_create_matrix_invert(
  * <source_field1>, rows in <source_field2> and then columns in <source_field2>
  * are implied and checked.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param number_of_rows  Number of rows N in source_field1 and result.
  * @param source_field1  N rows * M columns component matrix field 1.
  * @param source_field2  M rows * P columns component matrix field 2.
  * @return Newly created matrix with N*P components.
  */
 Computed_field *Computed_field_create_matrix_multiply(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	int number_of_rows, struct Computed_field *source_field1,
 	struct Computed_field *source_field2);
 
@@ -108,11 +108,11 @@ Computed_field *Computed_field_create_matrix_multiply(
  * value is a perspective value which divides through each of the other
  * components.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_projection(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, int number_of_components, 
 	double *projection_matrix);
 
@@ -122,13 +122,13 @@ struct Computed_field *Computed_field_create_projection(
  * as source_field->number_of_components / <source_number_of_rows>;
  * this division must have no remainder. 
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_number_of_rows  Number of rows N in source_field.
  * @param source_field  N rows * M columns component matrix field.
  * @return Newly created M*N component transposed matrix field.
  */
 Computed_field *Computed_field_create_transpose(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	int source_number_of_rows, struct Computed_field *source_field);
 
 int Computed_field_register_types_matrix_operations(

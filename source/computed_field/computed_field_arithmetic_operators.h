@@ -49,16 +49,16 @@ Implements a number of basic component wise operators on computed fields.
 #include "api/cmiss_field_arithmetic_operators.h"
 
 /* API functions are prefixed with Cmiss */
-#define Computed_field_create_sum_components Cmiss_field_create_sum_components
-#define Computed_field_create_add Cmiss_field_create_add
-#define Computed_field_create_subtract Cmiss_field_create_subtract
-#define Computed_field_create_multiply Cmiss_field_create_multiply
-#define Computed_field_create_divide Cmiss_field_create_divide
-#define Computed_field_create_exp Cmiss_field_create_exp
-#define Computed_field_create_log Cmiss_field_create_log
-#define Computed_field_create_power Cmiss_field_create_power
-#define Computed_field_create_sqrt Cmiss_field_create_sqrt
-#define Computed_field_create_abs Cmiss_field_create_abs
+#define Computed_field_create_sum_components Cmiss_field_module_create_sum_components
+#define Computed_field_create_add Cmiss_field_module_create_add
+#define Computed_field_create_subtract Cmiss_field_module_create_subtract
+#define Computed_field_create_multiply Cmiss_field_module_create_multiply
+#define Computed_field_create_divide Cmiss_field_module_create_divide
+#define Computed_field_create_exp Cmiss_field_module_create_exp
+#define Computed_field_create_log Cmiss_field_module_create_log
+#define Computed_field_create_power Cmiss_field_module_create_power
+#define Computed_field_create_sqrt Cmiss_field_module_create_sqrt
+#define Computed_field_create_abs Cmiss_field_module_create_abs
 
 int Computed_field_register_types_arithmetic_operators(
 	struct Computed_field_package *computed_field_package);
@@ -69,7 +69,7 @@ DESCRIPTION :
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_power(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 /*******************************************************************************
@@ -83,7 +83,7 @@ Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_multiply(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 /*******************************************************************************
@@ -97,7 +97,7 @@ Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_divide(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 /*******************************************************************************
@@ -111,7 +111,7 @@ Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_weighted_add(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one, double scale_factor1,
 	struct Computed_field *source_field_two, double scale_factor2);
 /*******************************************************************************
@@ -125,7 +125,7 @@ Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_add(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 /*******************************************************************************
@@ -139,7 +139,7 @@ Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_subtract(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 /*******************************************************************************
@@ -153,7 +153,7 @@ Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_sum_components(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, double *weights);
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -166,7 +166,7 @@ components in <source_field>.
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_log(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field);
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -178,7 +178,7 @@ Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_sqrt(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field);
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -189,7 +189,7 @@ field, <source_field_one>.  Sets the number of components equal to the source_fi
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_exp(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field);
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -200,7 +200,7 @@ field, <source_field_one>.  Sets the number of components equal to the source_fi
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_abs(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field);
 /*******************************************************************************
 LAST MODIFIED : 1 December 2008

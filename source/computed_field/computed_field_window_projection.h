@@ -47,7 +47,7 @@ DESCRIPTION :
 #include "graphics/scene_viewer.h"
 
 /* API functions are prefixed with Cmiss */
-#define Computed_field_create_window_projection Cmiss_field_create_window_projection
+#define Computed_field_create_window_projection Cmiss_field_module_create_window_projection
 
 /*****************************************************************************//**
  * Creates a field performing a window projection, returning the source field
@@ -57,13 +57,13 @@ DESCRIPTION :
  * reproduce this field can be written out.
  * The manager for <field> is notified if the <scene_viewer> closes.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field  Field supplying values to transform.
  * @param scene_viewer  Scene viewer to obtain projection transformation from.
  * @return Newly created field with 3 components.
  */
 struct Computed_field *Computed_field_create_window_projection(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, struct Scene_viewer *scene_viewer,
 	char *graphics_window_name, int pane_number,
 	enum Cmiss_field_window_projection_type projection_type);

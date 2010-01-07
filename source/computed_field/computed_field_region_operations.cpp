@@ -392,7 +392,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_region_sum(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, struct Cmiss_region *group)
 {
 	Computed_field *field = NULL;
@@ -410,7 +410,7 @@ struct Computed_field *Computed_field_create_region_sum(
 	}
 	if (region)
 	{
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -546,7 +546,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_region_sum(field_modify->get_field_factory(),
+					Computed_field_create_region_sum(field_modify->get_field_module(),
 						source_field, group));
 			}
 			if (!return_code)
@@ -757,7 +757,7 @@ Returns allocated command string for reproducing field.
 } //namespace
 
 struct Computed_field *Computed_field_create_region_mean(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, struct Cmiss_region *group)
 {
 	Computed_field *field = NULL;
@@ -775,7 +775,7 @@ struct Computed_field *Computed_field_create_region_mean(
 	}
 	if (region)
 	{
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -912,7 +912,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_region_mean(field_modify->get_field_factory(),
+					Computed_field_create_region_mean(field_modify->get_field_module(),
 						source_field, group));
 			}
 			if (!return_code)

@@ -45,8 +45,7 @@ Implements cmiss fields which deal with image processing
 #define CMISS_FIELD_IMAGE_PROCESSING_H
 
 #include "api/cmiss_field.h"
-
-
+#include "api/cmiss_field_module.h"
 
 /***************************************************************************//**
  * Creates a field performing ITK binary dilate image filter on scalar source
@@ -54,8 +53,8 @@ Implements cmiss fields which deal with image processing
  * The <radius> and <dilate_value> specify the radius of pixels to use
  * for dilation and what pixel value to use for dilation
  */
-Cmiss_field_id Cmiss_field_create_binary_dilate_image_filter(
-	Cmiss_field_factory_id field_factory, Cmiss_field_id source_field,
+Cmiss_field_id Cmiss_field_module_create_binary_dilate_image_filter(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	int radius, double dilate_value);
 
 int Cmiss_field_get_type_binary_dilate_image_filter(Cmiss_field_id field,
@@ -78,8 +77,8 @@ WARNING: To be deprecated.
  * The <radius> and <erode_value> specify the radius of pixels to use
  * for dilation and what pixel value to use for dilation
  */
-Cmiss_field_id Cmiss_field_create_binary_erode_image_filter(
-		Cmiss_field_factory_id field_factory, Cmiss_field_id source_field,
+Cmiss_field_id Cmiss_field_module_create_binary_erode_image_filter(
+		Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 		int radius, double erode_value);
 
 int Cmiss_field_get_type_binary_erode_image_filter(Cmiss_field_id field,
@@ -109,14 +108,14 @@ typedef struct Cmiss_field_binary_threshold_image_filter * Cmiss_field_binary_th
  * Input values with an intensity range between lower_threshold and the 
  * upper_threshold are set to 1, the rest are set to 0.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field  The field to be filtered
  * @param lower_threshold  Threshold value below which all pixels are set to 0 
  * @param upper_threshold  Theshold value above which all values are set to 0
  * @return  Newly created field
 */
-Cmiss_field_id Cmiss_field_create_binary_threshold_image_filter(
-	Cmiss_field_factory_id field_factory, Cmiss_field_id source_field,
+Cmiss_field_id Cmiss_field_module_create_binary_threshold_image_filter(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	double lower_threshold, double upper_threshold);
 
 /*****************************************************************************//**
@@ -146,8 +145,8 @@ WARNING: To be deprecated.
  * Creates a field returning result of ITK canny edge detection filter on the
  * source field image. Sets number of components to same number as source field.
  */
-Cmiss_field_id Cmiss_field_create_canny_edge_detection_image_filter(
-	Cmiss_field_factory_id field_factory, Cmiss_field_id source_field,
+Cmiss_field_id Cmiss_field_module_create_canny_edge_detection_image_filter(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	double variance, double maximumError, 
   double upperThreshold, double lowerThreshold);
 
@@ -169,8 +168,8 @@ WARNING: To be deprecated.
  * Creates a field performing ITK connected threshold image filter on scalar
  * source field image. Sets number of components to same number as source field.
  */
-Cmiss_field_id Cmiss_field_create_connected_threshold_image_filter(
-	Cmiss_field_factory_id field_factory, Cmiss_field_id source_field,
+Cmiss_field_id Cmiss_field_module_create_connected_threshold_image_filter(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
   double lower_threshold, double upper_threshold, double replace_value,
 	int num_seed_points, int dimension, double *seed_points);
 
@@ -194,8 +193,8 @@ WARNING: To be deprecated.
  * on scalar source field image.
  * Sets number of components to same number as <source_field>.
  */
-Cmiss_field_id Cmiss_field_create_curvature_anisotropic_diffusion_image_filter(
-	Cmiss_field_factory_id field_factory, Cmiss_field_id source_field,
+Cmiss_field_id Cmiss_field_module_create_curvature_anisotropic_diffusion_image_filter(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	double timeStep, double conductance, int numIterations);
 
 int Cmiss_field_get_type_curvature_anisotropic_diffusion_image_filter(Cmiss_field_id field,
@@ -228,14 +227,14 @@ typedef struct Cmiss_field_discrete_gaussian_image_filter * Cmiss_field_discrete
  * This smooths the image more.  A limit is set on the max_kernel_width used 
  * to approximate the guassian to ensure the calculation completes.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field  The field to be filtered
  * @param variance  The variance of the gaussian distribution used in the filter
  * @param max_kernel_width  The limit on the maximum kernel width that may be used
  * @return  Newly created field
 */
-Cmiss_field_id Cmiss_field_create_discrete_gaussian_image_filter(
-	Cmiss_field_factory_id field_factory, Cmiss_field_id source_field,
+Cmiss_field_id Cmiss_field_module_create_discrete_gaussian_image_filter(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	double variance, int maxKernelWidth);
 
 /*****************************************************************************//**
@@ -264,8 +263,8 @@ WARNING: To be deprecated.
  * Creates a field performing ITK fast marching image filter on scalar source field
  * image. Sets number of components to same number as <source_field>.
  */
-Cmiss_field_id Cmiss_field_create_fast_marching_image_filter(
-	Cmiss_field_factory_id field_factory, Cmiss_field_id source_field,
+Cmiss_field_id Cmiss_field_module_create_fast_marching_image_filter(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	double stopping_value, int num_seed_points, int dimension,
 	double *seed_points, double *seed_values, int *output_size);
 
@@ -289,8 +288,8 @@ WARNING: To be deprecated.
  * filter on scalar source field image.
  * Sets number of components to same number as <source_field>.
  */
-Cmiss_field_id Cmiss_field_create_gradient_magnitude_recursive_gaussian_image_filter(
-	Cmiss_field_factory_id field_factory, Cmiss_field_id source_field,
+Cmiss_field_id Cmiss_field_module_create_gradient_magnitude_recursive_gaussian_image_filter(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	double sigma);
 
 int Cmiss_field_get_type_gradient_magnitude_recursive_gaussian_image_filter(
@@ -312,8 +311,8 @@ WARNING: To be deprecated.
  * image. Sets number of components to 1.
  * @param numberOfBins  Number of bins per source field component.
  */
-Cmiss_field_id Cmiss_field_create_histogram_image_filter(
-	Cmiss_field_factory_id field_factory, Cmiss_field_id source_field,
+Cmiss_field_id Cmiss_field_module_create_histogram_image_filter(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	int *numberOfBins, double marginalScale);
 
 int Cmiss_field_get_type_histogram_image_filter(Cmiss_field_id field,
@@ -335,8 +334,8 @@ WARNING: To be deprecated.
  * <source_field> dimension.
  * Sets number of components to same number as <source_field>.
  */
-Cmiss_field_id Cmiss_field_create_mean_image_filter(
-	Cmiss_field_factory_id field_factory, Cmiss_field_id source_field,
+Cmiss_field_id Cmiss_field_module_create_mean_image_filter(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	int *radius_sizes);
 
 int Cmiss_field_get_type_mean_image_filter(Cmiss_field_id field,
@@ -356,8 +355,8 @@ WARNING: To be deprecated.
  * Creates a field performing ITK rescale intensity image filter on scalar
  * source field image. Sets number of components to same number as source field.
  */
-Cmiss_field_id Cmiss_field_create_rescale_intensity_image_filter(
-	Cmiss_field_factory_id field_factory, Cmiss_field_id source_field,
+Cmiss_field_id Cmiss_field_module_create_rescale_intensity_image_filter(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	double outputMin, double outputMax);
 
 int Cmiss_field_get_type_rescale_intensity_image_filter(Cmiss_field_id field,
@@ -377,8 +376,8 @@ WARNING: To be deprecated.
  * Creates a field performing ITK sigmoid image filter on scalar source field
  * image. Sets number of components to same number as <source_field>.
  */
-Cmiss_field_id Cmiss_field_create_sigmoid_image_filter(
-	Cmiss_field_factory_id field_factory, Cmiss_field_id source_field,
+Cmiss_field_id Cmiss_field_module_create_sigmoid_image_filter(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
 	double min, double max,	double alpha, double beta);
 
 int Cmiss_field_get_type_sigmoid_image_filter(Cmiss_field_id field,
@@ -417,7 +416,7 @@ typedef struct Cmiss_field_threshold_image_filter * Cmiss_field_threshold_image_
  * For the oustide mode, all pixels OUTSIDE the range defined by the 
  * below and above values are set to the outside value
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field The field to be filtered
  * @param threshold_mode The threshold mode to apply, either BELOW, ABOVE or OUTSIDE
  * @param outside_value The value to replace all thresholded values with
@@ -425,8 +424,8 @@ typedef struct Cmiss_field_threshold_image_filter * Cmiss_field_threshold_image_
  * @param above_value Above value used by ABOVE and OUTSIDE modes
  * @return Newly created field
 */
-Cmiss_field_id Cmiss_field_create_threshold_image_filter(
-	Cmiss_field_factory_id field_factory, Cmiss_field_id source_field, 
+Cmiss_field_id Cmiss_field_module_create_threshold_image_filter(
+	Cmiss_field_module_id field_module, Cmiss_field_id source_field, 
 	enum General_threshold_filter_mode threshold_mode, 
 	double outside_value, double below_value, double above_value);
 

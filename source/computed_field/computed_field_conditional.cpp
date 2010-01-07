@@ -271,7 +271,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_if(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two,
 	struct Computed_field *source_field_three)
@@ -299,7 +299,7 @@ although its cache may be lost.
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
 		source_fields[2] = source_field_three;
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/3, source_fields,
@@ -426,7 +426,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_if(field_modify->get_field_factory(),
+						Computed_field_create_if(field_modify->get_field_module(),
 							source_fields[0], source_fields[1], source_fields[2]));
 				}
 				if (!return_code)

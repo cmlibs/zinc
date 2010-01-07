@@ -532,10 +532,10 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_coordinate_transformation(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		/*number_of_components*/3,
 		/*number_of_source_fields*/1, &source_field,
@@ -626,7 +626,7 @@ already) and allows its contents to be modified.
 			{
 				return_code = field_modify->update_field_and_deaccess(
 					Computed_field_create_coordinate_transformation(
-						field_modify->get_field_factory(), source_field));
+						field_modify->get_field_module(), source_field));
 			}
 			if (!return_code)
 			{
@@ -972,11 +972,11 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_vector_coordinate_transformation(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *vector_field, struct Computed_field *coordinate_field)
 {
 	Computed_field *field = NULL;
-	if (field_factory && vector_field && coordinate_field&&
+	if (field_module && vector_field && coordinate_field&&
 		Computed_field_is_orientation_scale_capable(vector_field, (void *)NULL) &&
 		Computed_field_has_up_to_3_numerical_components(coordinate_field,
 			(void *)NULL))
@@ -998,7 +998,7 @@ struct Computed_field *Computed_field_create_vector_coordinate_transformation(
 		source_fields[0] = vector_field;
 		source_fields[1] = coordinate_field;
 
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -1112,7 +1112,7 @@ already) and allows its contents to be modified.
 			{
 				return_code = field_modify->update_field_and_deaccess(
 					Computed_field_create_vector_coordinate_transformation(
-						field_modify->get_field_factory(), vector_field, coordinate_field));
+						field_modify->get_field_module(), vector_field, coordinate_field));
 			}
 			if (!return_code)
 			{

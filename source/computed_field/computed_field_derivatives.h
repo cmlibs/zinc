@@ -50,28 +50,28 @@ as derivatives w.r.t. Xi, gradient, curl, divergence etc.
  * xi_index as its primary value. Returned field has same number of components
  * as source field.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field  Source field to get derivative number.
  * @param xi_index  Element coordinate system index for derivative, from 0 to
  * dimension - 1.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_derivative(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, int xi_index);
 
 /***************************************************************************//**
  * Creates a field returning the curl of vector_field at location given by
  * coordinate_field. All fields including return field have 3 components.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param vector_field  Vector field from which curl is evaluated. Must have
  * rectangular cartesian coordinate system.
  * @param coordinate_field  Field supplying location.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_curl(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *vector_field, struct Computed_field *coordinate_field);
 
 /***************************************************************************//**
@@ -80,14 +80,14 @@ struct Computed_field *Computed_field_create_curl(
  * The number of components of <vector_field> and <coordinate_field> must be the
  * same and less than or equal to 3.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param vector_field  Vector field from which divergence is evaluated. Must
  * have rectangular cartesian coordinate system.
  * @param coordinate_field  Field supplying location.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_divergence(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *vector_field, struct Computed_field *coordinate_field);
 
 /***************************************************************************//**
@@ -105,13 +105,13 @@ struct Computed_field *Computed_field_create_divergence(
  * scalar source_field, and the deformation gradient if a deformed coordinate
  * field is passed as the source_field.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field  Field to calculate gradients for.  
  * @param coordinate_field  Field supplying location.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_gradient(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, struct Computed_field *coordinate_field);
 
 int Computed_field_register_types_derivatives(

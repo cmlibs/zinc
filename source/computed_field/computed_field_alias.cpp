@@ -54,6 +54,8 @@ extern "C" {
 #include "user_interface/message.h"
 }
 
+#include "api_cpp/CmissField.hpp"
+
 /*
 Module types
 ------------
@@ -392,7 +394,7 @@ char *Computed_field_alias::get_command_string()
 
 } //namespace
 
-Computed_field *Cmiss_field_create_alias(Cmiss_field_factory_id field_factory,
+Computed_field *Cmiss_field_module_create_alias(Cmiss_field_module_id field_module,
 	Computed_field *original_field)
 {
 	Computed_field *field;
@@ -400,9 +402,9 @@ Computed_field *Cmiss_field_create_alias(Cmiss_field_factory_id field_factory,
 	ENTER(Computed_field_create_alias);
 	field = (Computed_field *)NULL;
 	// GRC original_field->manager check will soon be unnecessary
-	if (field_factory && original_field && (NULL != original_field->manager))
+	if (field_module && original_field && (NULL != original_field->manager))
 	{
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, original_field->number_of_components,
 			/*number_of_source_fields*/1, &original_field,
 			/*number_of_source_values*/0, NULL,
@@ -411,12 +413,12 @@ Computed_field *Cmiss_field_create_alias(Cmiss_field_factory_id field_factory,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_create_alias.  Invalid argument(s)");
+			"Cmiss_field_module_create_alias.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (field);
-} /* Cmiss_field_create_alias */
+} /* Cmiss_field_module_create_alias */
 
 /*****************************************************************************//**
  * Command modifier function for defining a field as type computed_field_alias
@@ -501,7 +503,7 @@ int define_Computed_field_type_alias(Parse_state *state,
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Cmiss_field_create_alias(field_modify->get_field_factory(),
+					Cmiss_field_module_create_alias(field_modify->get_field_module(),
 						original_field));
 			}
 			if (original_field)

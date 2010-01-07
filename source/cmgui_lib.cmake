@@ -24,7 +24,6 @@ SET( CMGUI_LIB_SRCS
 SET( CMGUI_LIB_HDRS
 	${wxWidgets_GENERATED_HDRS} )
 #	source/api/cmiss_command_data.c
-#	source/api/cmiss_field_composite.c
 #	source/api/cmiss_field.c
 #	source/api/cmiss_region.c )
 

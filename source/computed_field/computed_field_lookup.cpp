@@ -440,13 +440,13 @@ If the node we are looking at changes generate a computed field change message.
 } //namespace
 
 struct Computed_field *Computed_field_create_nodal_lookup(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, struct FE_node *lookup_node) 
 {
 	Computed_field *field = NULL;
 	if (source_field && lookup_node)
 	{
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -576,7 +576,7 @@ already) and allows its contents to be modified.
 					if (node)
 					{
 						return_code = field_modify->update_field_and_deaccess(
-							Computed_field_create_nodal_lookup(field_modify->get_field_factory(),
+							Computed_field_create_nodal_lookup(field_modify->get_field_module(),
 								source_field, node));
 					}
 					else
@@ -1070,7 +1070,7 @@ If the node we are looking at changes generate a computed field change message.
  * <source_field> must have 4 components.
  */
 struct Computed_field *Computed_field_create_quaternion_SLERP(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	 struct Computed_field *source_field, struct Cmiss_region *region,
 	 int quaternion_SLERP_node_identifier) 
 {
@@ -1080,7 +1080,7 @@ struct Computed_field *Computed_field_create_quaternion_SLERP(
 	if (source_field && (4 == source_field->number_of_components) &&
 		region && quaternion_SLERP_node)
 	{
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -1216,7 +1216,7 @@ contents to be modified.
 					computed_field_lookup_package->root_region, region_path, &region))
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_quaternion_SLERP(field_modify->get_field_factory(),
+						Computed_field_create_quaternion_SLERP(field_modify->get_field_module(),
 							 source_field, region, node_identifier));
 				}
 				else

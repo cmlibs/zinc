@@ -2376,12 +2376,13 @@ struct Cmiss_region *Cmiss_region_get_parent(struct Cmiss_region *region)
 }
 
 /***************************************************************************//**
- * Returns field factory object needed to create fields in this region.
+ * Returns field module container for this region's fields, which must be passed
+ * to field factory create methods.
  *
- * @param region  The region which the field factory can create fields in.
- * @return  Field factory object.
+ * @param region  The region from which to obtain the field module.
+ * @return  Field module object.
  */
-struct Cmiss_field_factory *Cmiss_region_get_field_factory(struct Cmiss_region *region)
+struct Cmiss_field_module *Cmiss_region_get_field_module(struct Cmiss_region *region)
 {
-	return Cmiss_field_factory_create(region);
+	return Cmiss_field_module_create(region);
 }

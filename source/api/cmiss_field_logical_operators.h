@@ -45,18 +45,21 @@ The public interface to the Cmiss_fields that perform logical operations.
 #ifndef __CMISS_FIELD_LOGICAL_OPERATORS_H__
 #define __CMISS_FIELD_LOGICAL_OPERATORS_H__
 
+#include "api/cmiss_field.h"
+#include "api/cmiss_field_module.h"
+
 /*****************************************************************************//**
  * Creates a field whose component values are 1 if that component of
  * source_field_one is less than the component value in source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_create_less_than(
-	Cmiss_field_factory_id field_factory,
+Cmiss_field_id Cmiss_field_module_create_less_than(
+	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 
@@ -65,13 +68,13 @@ Cmiss_field_id Cmiss_field_create_less_than(
  * source_field_one is greater than the component value in source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_create_greater_than(
-	Cmiss_field_factory_id field_factory,
+Cmiss_field_id Cmiss_field_module_create_greater_than(
+	Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two);
 

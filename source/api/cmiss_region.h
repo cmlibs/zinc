@@ -47,6 +47,7 @@ The public interface to the Cmiss_regions.
 #include "api/cmiss_node.h"
 #include "api/cmiss_element.h"
 #include "api/cmiss_field.h"
+#include "api/cmiss_field_module.h"
 
 /*
 Global types
@@ -229,11 +230,12 @@ NULL otherwise.
 ==============================================================================*/
 
 /***************************************************************************//**
- * Returns field factory object needed to create fields in this region.
+ * Returns field module container for this region's fields, which must be passed
+ * to field factory create methods.
  *
- * @param region  The region which the field factory can create fields in.
- * @return  Field factory object.
+ * @param region  The region from which to obtain the field module.
+ * @return  Field module object.
  */
-Cmiss_field_factory_id Cmiss_region_get_field_factory(Cmiss_region_id region);
+Cmiss_field_module_id Cmiss_region_get_field_module(Cmiss_region_id region);
 
 #endif /* __CMISS_REGION_H__ */

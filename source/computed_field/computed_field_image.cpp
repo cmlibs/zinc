@@ -1051,7 +1051,7 @@ Cmiss_field_image_id Cmiss_field_image_cast(Cmiss_field_id field)
 }
 
 Computed_field *Computed_field_create_image(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	Computed_field *domain_field, Computed_field *source_field)
 {
 	Computed_field *field = NULL;
@@ -1118,12 +1118,12 @@ Computed_field *Computed_field_create_image(
 	}
 	if (texture_coordinate_field == (struct Computed_field *)NULL)
 	{
-		Cmiss_field_factory *temp_field_factory =
-			Cmiss_field_factory_create(Cmiss_field_factory_get_region(field_factory));
-		Cmiss_field_factory_set_field_name(temp_field_factory, "temp_image_domain");
-		texture_coordinate_field = Computed_field_create_xi_coordinates(temp_field_factory);
+		Cmiss_field_module *temp_field_module =
+			Cmiss_field_module_create(Cmiss_field_module_get_region(field_module));
+		Cmiss_field_module_set_field_name(temp_field_module, "temp_image_domain");
+		texture_coordinate_field = Computed_field_create_xi_coordinates(temp_field_module);
 		Computed_field_set_read_only(texture_coordinate_field);
-		Cmiss_field_factory_destroy(&temp_field_factory);
+		Cmiss_field_module_destroy(&temp_field_module);
 	}
 	if (return_code && texture_coordinate_field && 
 		(3 >= texture_coordinate_field->number_of_components))
@@ -1139,7 +1139,7 @@ Computed_field *Computed_field_create_image(
 			number_of_source_fields = 2;
 			source_fields[1] = source_field;
 		}
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			number_of_components,
 			number_of_source_fields, source_fields,
@@ -1163,7 +1163,7 @@ Computed_field *Computed_field_create_image(
  * Needed to get number of components from input texture. 
  */
 static Computed_field *Computed_field_create_sample_texture_internal(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	Computed_field *domain_field, struct Texture *texture_in)
 {
 	Computed_field *field = NULL;
@@ -1174,18 +1174,18 @@ static Computed_field *Computed_field_create_sample_texture_internal(
 	}
 	if (texture_coordinate_field == (struct Computed_field *)NULL)
 	{
-		Cmiss_field_factory *temp_field_factory =
-			Cmiss_field_factory_create(Cmiss_field_factory_get_region(field_factory));
-		Cmiss_field_factory_set_field_name(temp_field_factory, "temp_image_domain");
-		texture_coordinate_field = Computed_field_create_xi_coordinates(temp_field_factory);
+		Cmiss_field_module *temp_field_module =
+			Cmiss_field_module_create(Cmiss_field_module_get_region(field_module));
+		Cmiss_field_module_set_field_name(temp_field_module, "temp_image_domain");
+		texture_coordinate_field = Computed_field_create_xi_coordinates(temp_field_module);
 		Computed_field_set_read_only(texture_coordinate_field);
-		Cmiss_field_factory_destroy(&temp_field_factory);
+		Cmiss_field_module_destroy(&temp_field_module);
 	}
 	if (texture_in && texture_coordinate_field && 
 		(3 >= texture_coordinate_field->number_of_components))
 	{
 		int number_of_components = Texture_get_number_of_components(texture_in);
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			number_of_components,
 			/*number_of_source_fields*/1, &texture_coordinate_field,
@@ -1442,13 +1442,13 @@ Maintains legacy version that is set with a texture.
 				if (texture)
 				{
 					field = Computed_field_create_sample_texture_internal(
-						field_modify->get_field_factory(),
+						field_modify->get_field_module(),
 						texture_coordinate_field, texture);
 				}
 				else
 				{
 					field = Computed_field_create_image(
-						field_modify->get_field_factory(),
+						field_modify->get_field_module(),
 						texture_coordinate_field, source_field);
 				}
 				if (field)

@@ -1256,17 +1256,17 @@ Returns true if <field> has the appropriate static type string.
 } /* Computed_field_is_type_finite_element */
 
 struct Computed_field *Computed_field_create_finite_element(
-	struct Cmiss_field_factory *field_factory, struct FE_field *fe_field)
+	struct Cmiss_field_module *field_module, struct FE_field *fe_field)
 {
 	char **component_names;
 	int i, number_of_components, return_code;
 	struct Computed_field *field = NULL;
 
 	ENTER(Computed_field_create_finite_element);
-	if (field_factory && fe_field)
+	if (field_module && fe_field)
 	{
 		return_code = 1;
-		Cmiss_region *region = Cmiss_field_factory_get_region(field_factory);
+		Cmiss_region *region = Cmiss_field_module_get_region(field_module);
 		FE_region *fe_region = Cmiss_region_get_FE_region(region);
 		if (FE_field_get_FE_region(fe_field) != fe_region)
 		{
@@ -1292,7 +1292,7 @@ struct Computed_field *Computed_field_create_finite_element(
 		}
 		if (return_code)
 		{
-			field = Computed_field_create_generic(field_factory,
+			field = Computed_field_create_generic(field_module,
 				/*check_source_field_regions*/true, number_of_components,
 				/*number_of_source_fields*/0, NULL,
 				/*number_of_source_values*/0, NULL,
@@ -1543,10 +1543,10 @@ FE_field being made and/or modified.
 
 				/* create FE_field */
 				struct Coordinate_system coordinate_system =
-					Cmiss_field_factory_get_coordinate_system(
-						field_modify->get_field_factory());
-				char *field_name = Cmiss_field_factory_get_field_name(
-					field_modify->get_field_factory());
+					Cmiss_field_module_get_coordinate_system(
+						field_modify->get_field_module());
+				char *field_name = Cmiss_field_module_get_field_name(
+					field_modify->get_field_module());
 				/* Fetching the field finds the correct field in the manager,
 					creating it if it doesn't exist and merging it into the region
 					automatically */
@@ -1788,9 +1788,9 @@ Returns true if <field> has the appropriate static type string.
 } /* Computed_field_is_type_cmiss_number */
 
 struct Computed_field *Computed_field_create_cmiss_number(
-	struct Cmiss_field_factory *field_factory)
+	struct Cmiss_field_module *field_module)
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		/*number_of_components*/1,
 		/*number_of_source_fields*/0, NULL,
@@ -1819,7 +1819,7 @@ Converts <field> into type COMPUTED_FIELD_CMISS_NUMBER.
 		if (!state->current_token)
 		{
 			return_code = field_modify->update_field_and_deaccess(
-				Computed_field_create_cmiss_number(field_modify->get_field_factory()));
+				Computed_field_create_cmiss_number(field_modify->get_field_module()));
 		}
 		else
 		{
@@ -1994,13 +1994,13 @@ Returns allocated command string for reproducing field. Includes type.
  * Creates a field which returns the element or node access count as its value.
  * 
  * @experimental
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_access_count(
-	struct Cmiss_field_factory *field_factory)
+	struct Cmiss_field_module *field_module)
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		/*number_of_components*/1,
 		/*number_of_source_fields*/0, NULL,
@@ -2029,7 +2029,7 @@ Converts <field> into type COMPUTED_FIELD_ACCESS_COUNT.
 		if (!state->current_token)
 		{
 			return_code = field_modify->update_field_and_deaccess(
-				Computed_field_create_access_count(field_modify->get_field_factory()));
+				Computed_field_create_access_count(field_modify->get_field_module()));
 		}
 		else
 		{
@@ -2568,7 +2568,7 @@ Check the fe_field
 } //namespace
 
 struct Computed_field *Computed_field_create_node_value(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct FE_field *fe_field,enum FE_nodal_value_type nodal_value_type,
 	int version_number)
 {
@@ -2598,7 +2598,7 @@ struct Computed_field *Computed_field_create_node_value(
 		}
 		if (return_code)
 		{
-			field = Computed_field_create_generic(field_factory,
+			field = Computed_field_create_generic(field_module,
 				/*check_source_field_regions*/true, number_of_components,
 				/*number_of_source_fields*/0, NULL,
 				/*number_of_source_values*/0, NULL,
@@ -2833,7 +2833,7 @@ and allows its contents to be modified.
 			{
 				/* user enters version number starting at 1; field stores it as 0 */
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_node_value(field_modify->get_field_factory(),
+					Computed_field_create_node_value(field_modify->get_field_module(),
 						fe_field, nodal_value_type, version_number-1));
 			}
 			if (!return_code)
@@ -3331,23 +3331,23 @@ Returns true if <field> has the appropriate static type string.
 /*****************************************************************************//**
  * Creates a field returning a value of another field at an embedded location.  
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param element_xi_fe_field  FE_field giving embedded location in an element.
  * @param source_field  Field to evaluate at the embedded location.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_embedded(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct FE_field *element_xi_fe_field, struct Computed_field *source_field)
 {
 	struct Computed_field *field = NULL;
 
 	ENTER(Computed_field_create_embedded);
-	if (field_factory && element_xi_fe_field && 
+	if (field_module && element_xi_fe_field && 
 		(ELEMENT_XI_VALUE == get_FE_field_value_type(element_xi_fe_field)) &&
 		source_field)
 	{
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -3461,7 +3461,7 @@ and allows its contents to be modified.
 				if (element_xi_fe_field && source_field)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_embedded(field_modify->get_field_factory(),
+						Computed_field_create_embedded(field_modify->get_field_module(),
 							element_xi_fe_field, source_field));
 				}
 				else
@@ -3722,7 +3722,7 @@ Converts <field> into type COMPUTED_FIELD_XI_COORDINATES.
 		if (!state->current_token)
 		{
 			return_code = field_modify->update_field_and_deaccess(
-				Computed_field_create_xi_coordinates(field_modify->get_field_factory()));
+				Computed_field_create_xi_coordinates(field_modify->get_field_module()));
 		}
 		else
 		{
@@ -3783,9 +3783,9 @@ Returns true if <field> has the appropriate static type string.
 } /* Computed_field_is_type_xi_coordinates */
 
 struct Computed_field *Computed_field_create_xi_coordinates(
-	struct Cmiss_field_factory *field_factory)
+	struct Cmiss_field_module *field_module)
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		/*number_of_components*/3,
 		/*number_of_source_fields*/0, NULL,
@@ -4515,7 +4515,7 @@ Returns true if <field> has the appropriate static type string.
  * to the xi directions in accordance with the vector of <xi_indices> which is
  * length <order>.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param fe_field  FE_field to return derivatives w.r.t. xi for.
  * @param order  The order of the derivatives.
  * @param xi_indices  Array of length order giving the xi indices the derivative
@@ -4523,7 +4523,7 @@ Returns true if <field> has the appropriate static type string.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_basis_derivative(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct FE_field *fe_field, int order, int *xi_indices)
 {
 	char **component_names;
@@ -4552,7 +4552,7 @@ struct Computed_field *Computed_field_create_basis_derivative(
 		}
 		if (return_code)
 		{
-			field = Computed_field_create_generic(field_factory,
+			field = Computed_field_create_generic(field_module,
 				/*check_source_field_regions*/true, number_of_components,
 				/*number_of_source_fields*/0, NULL,
 				/*number_of_source_values*/0, NULL,
@@ -4739,7 +4739,7 @@ FE_field being made and/or modified.
 					xi_indices[i]--;
 				}
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_basis_derivative(field_modify->get_field_factory(),
+					Computed_field_create_basis_derivative(field_modify->get_field_module(),
 						fe_field, order, xi_indices));
 			}
 			if (!return_code)
@@ -4806,39 +4806,39 @@ int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 				 CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field) |
 				 CHANGE_LOG_OBJECT_ADDED(FE_field)))
 			{
-				Cmiss_field_factory *field_factory =
-					Cmiss_field_factory_create(field_change_data->cmiss_region);
+				Cmiss_field_module *field_module =
+					Cmiss_field_module_create(field_change_data->cmiss_region);
 				struct Computed_field *existing_wrapper =
 					FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 						Computed_field_is_read_only_with_fe_field, (void *)fe_field,
 						field_change_data->computed_field_manager);
 				if (existing_wrapper)
 				{
-					Cmiss_field_factory_set_replace_field(field_factory, existing_wrapper);
+					Cmiss_field_module_set_replace_field(field_module, existing_wrapper);
 				}
 				else
 				{
 					char *field_name = NULL;
 					if (GET_NAME(FE_field)(fe_field, &field_name))
 					{
-						Cmiss_field_factory_set_field_name(field_factory, field_name);
+						Cmiss_field_module_set_field_name(field_module, field_name);
 						DEALLOCATE(field_name);
 					}
 					struct Coordinate_system *coordinate_system =
 						get_FE_field_coordinate_system(fe_field);
 					if (coordinate_system)
 					{
-						Cmiss_field_factory_set_coordinate_system(field_factory, *coordinate_system);
+						Cmiss_field_module_set_coordinate_system(field_module, *coordinate_system);
 					}
 				}
-				Cmiss_field_factory_set_managed_status(field_factory, COMPUTED_FIELD_MANAGED_PUBLIC);
+				Cmiss_field_module_set_managed_status(field_module, COMPUTED_FIELD_MANAGED_PUBLIC);
 				// this is the only function allowed to modify read-only fields: clear flag to permit & restory later
 				if (existing_wrapper)
 				{
 					existing_wrapper->read_only = 0;
 				}
 				Computed_field *field =
-					Computed_field_create_finite_element(field_factory, fe_field);
+					Computed_field_create_finite_element(field_module, fe_field);
 				if (field)
 				{
 					Computed_field_set_read_only(field);
@@ -4852,7 +4852,7 @@ int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 					return_code = 0;
 				}
 				DEACCESS(Computed_field)(&field);
-				Cmiss_field_factory_destroy(&field_factory);
+				Cmiss_field_module_destroy(&field_module);
 			}
 		}
 		else
@@ -4915,14 +4915,14 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 					"cmiss_number", computed_field_manager);
 				if (!field)
 				{
-					Cmiss_field_factory *field_factory =
-						Cmiss_field_factory_create(cmiss_region);
-					Cmiss_field_factory_set_field_name(field_factory, "cmiss_number");
-					Cmiss_field_factory_set_managed_status(field_factory, COMPUTED_FIELD_MANAGED_PUBLIC);
-					field = Computed_field_create_cmiss_number(field_factory);
+					Cmiss_field_module *field_module =
+						Cmiss_field_module_create(cmiss_region);
+					Cmiss_field_module_set_field_name(field_module, "cmiss_number");
+					Cmiss_field_module_set_managed_status(field_module, COMPUTED_FIELD_MANAGED_PUBLIC);
+					field = Computed_field_create_cmiss_number(field_module);
 					Computed_field_set_read_only(field);
 					DEACCESS(Computed_field)(&field);
-					Cmiss_field_factory_destroy(&field_factory);
+					Cmiss_field_module_destroy(&field_module);
 				}
 			}
 			if (add_xi_field)
@@ -4931,14 +4931,14 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 					"xi", computed_field_manager);
 				if (!field)
 				{
-					Cmiss_field_factory *field_factory =
-						Cmiss_field_factory_create(cmiss_region);
-					Cmiss_field_factory_set_field_name(field_factory, "xi");
-					Cmiss_field_factory_set_managed_status(field_factory, COMPUTED_FIELD_MANAGED_PUBLIC);
-					field = Computed_field_create_xi_coordinates(field_factory);
+					Cmiss_field_module *field_module =
+						Cmiss_field_module_create(cmiss_region);
+					Cmiss_field_module_set_field_name(field_module, "xi");
+					Cmiss_field_module_set_managed_status(field_module, COMPUTED_FIELD_MANAGED_PUBLIC);
+					field = Computed_field_create_xi_coordinates(field_module);
 					Computed_field_set_read_only(field);
 					DEACCESS(Computed_field)(&field);
-					Cmiss_field_factory_destroy(&field_factory);
+					Cmiss_field_module_destroy(&field_module);
 				}
 			}
 			Cmiss_region_end_change(cmiss_region);

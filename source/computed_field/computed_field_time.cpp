@@ -371,17 +371,17 @@ int Computed_field_time_lookup::find_element_xi(
 } //namespace
 
 struct Computed_field *Computed_field_create_time_lookup(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, struct Computed_field *time_field)
 {
 	struct Computed_field *field = NULL;
-	if (field_factory && source_field && time_field &&
+	if (field_module && source_field && time_field &&
 		(1 == time_field->number_of_components))
 	{
 		Computed_field *source_fields[2];
 		source_fields[0] = source_field;
 		source_fields[1] = time_field;
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -493,7 +493,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_time_lookup(field_modify->get_field_factory(),
+						Computed_field_create_time_lookup(field_modify->get_field_module(),
 							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
@@ -747,12 +747,12 @@ Always has multiple times.
 } //namespace
 
 struct Computed_field *Computed_field_create_time_value(
-	struct Cmiss_field_factory *field_factory, struct Time_keeper *time_keeper)
+	struct Cmiss_field_module *field_module, struct Time_keeper *time_keeper)
 {
 	struct Computed_field *field = NULL;
-	if (field_factory && time_keeper)
+	if (field_module && time_keeper)
 	{
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/1,
 			/*number_of_source_fields*/0, NULL,
@@ -801,7 +801,7 @@ already) and allows its contents to be modified.
 		strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
 		{
 			return_code = field_modify->update_field_and_deaccess(
-				Computed_field_create_time_value(field_modify->get_field_factory(),
+				Computed_field_create_time_value(field_modify->get_field_module(),
 					computed_field_time_package->time_keeper));
 		}
 		else

@@ -153,7 +153,7 @@ struct Computed_field_conditional_data
  * Stores data and settings needed to create field, including the region to add
  * it to.
  */
-struct Cmiss_field_factory;
+struct Cmiss_field_module;
 
 /*
 Global functions

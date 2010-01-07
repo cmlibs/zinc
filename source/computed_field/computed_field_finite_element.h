@@ -141,12 +141,12 @@ If it is NULL then a single nodal value for each component will be defined.
  * Creates a computed field wrapper for <fe_field>.
  * Makes the number of components the same as in the <fe_field>.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param fe_field  FE_field to be wrapped
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_finite_element(
-	struct Cmiss_field_factory *field_factory, struct FE_field *fe_field);
+	struct Cmiss_field_module *field_module, struct FE_field *fe_field);
 
 int Computed_field_get_type_finite_element(struct Computed_field *field,
 	struct FE_field **fe_field);
@@ -212,11 +212,11 @@ DESCRIPTION :
  * Creates a cmiss_number type fields whose value is the number of the element
  * or node location. 
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_cmiss_number(
-	struct Cmiss_field_factory *field_factory);
+	struct Cmiss_field_module *field_module);
 
 int Computed_field_has_coordinate_fe_field(struct Computed_field *field,
 	void *dummy);
@@ -305,14 +305,14 @@ Cleans up <fe_field> and its Computed_field wrapper if each are not in use.
  * Makes the number of components the same as in the <fe_field>.
  * Field automatically takes the coordinate system of the source fe_field.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param fe_field  FE_field whose nodal parameters will be extracted
  * @param nodal_value_type  Parameter value type to extract
  * @param version_number  Version of parameter value to extract.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_node_value(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct FE_field *fe_field,enum FE_nodal_value_type nodal_value_type,
 	int version_number);
 
@@ -329,11 +329,11 @@ DESCRIPTION :
  * Currently fixed at 3 components, padding with zeros for lower dimension
  * elements.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_xi_coordinates(
-	struct Cmiss_field_factory *field_factory);
+	struct Cmiss_field_module *field_module);
 
 int Computed_field_is_type_node_value(struct Computed_field *field);
 /*******************************************************************************

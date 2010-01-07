@@ -393,10 +393,10 @@ COMPUTED_FIELD_CURVE_LOOKUP.
 } //namespace
 
 struct Computed_field *Computed_field_create_curve_lookup(
-	Cmiss_field_factory *field_factory, struct Computed_field *source_field,
+	Cmiss_field_module *field_module, struct Computed_field *source_field,
 	struct Curve *curve, struct MANAGER(Curve) *curve_manager)
 {
-	struct Computed_field *field = Computed_field_create_generic(field_factory,
+	struct Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		/*number_of_components*/Curve_get_number_of_components(curve),
 		/*number_of_source_fields*/1, &source_field,
@@ -502,7 +502,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_curve_lookup(field_modify->get_field_factory(),
+					Computed_field_create_curve_lookup(field_modify->get_field_module(),
 						source_field, curve, computed_field_curve_package->curve_manager));
 			}
 			if (!return_code)

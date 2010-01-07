@@ -52,11 +52,11 @@ Image processing fields use the native resolution to determine their image size.
  * maximums are not implemented at all, which would allow a windowing, and could
  * also be overridden here.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @return  Newly created field.
  */
-Computed_field *Cmiss_field_create_image_resample(
-	struct Cmiss_field_factory *field_factory,
+Computed_field *Cmiss_field_module_create_image_resample(
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, int dimension, int *sizes);
 
 int Computed_field_register_types_image_resample(

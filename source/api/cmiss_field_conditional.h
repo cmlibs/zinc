@@ -45,6 +45,7 @@ Implements cmiss fields which conditionally calculate their inputs.
 #define CMISS_FIELD_CONDITIONAL_H
 
 #include "api/cmiss_field.h"
+#include "api/cmiss_field_module.h"
 
 /*****************************************************************************//**
  * Creates a conditional field with the same number of components as each of the
@@ -52,13 +53,13 @@ Implements cmiss fields which conditionally calculate their inputs.
  * (non-zero) then the result will be the value of source_field_two, otherwise the
  * component result will be taken from source_field_three.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field_one  Conditional field.
  * @param source_field_two  TRUE = non-zero conditional component results.
  * @param source_field_three  FALSE = zero conditional component results.
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_create_if(Cmiss_field_factory_id field_factory,
+Cmiss_field_id Cmiss_field_module_create_if(Cmiss_field_module_id field_module,
 	Cmiss_field_id source_field_one,
 	Cmiss_field_id source_field_two,
 	Cmiss_field_id source_field_three);

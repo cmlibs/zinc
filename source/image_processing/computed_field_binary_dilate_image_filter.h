@@ -60,8 +60,8 @@ DESCRIPTION :
  * for dilation and what pixel value to use for dilation
  * 
  */
-struct Computed_field *Cmiss_field_create_binary_dilate_image_filter(
-	struct Cmiss_field_factory *field_factory,
+struct Computed_field *Cmiss_field_module_create_binary_dilate_image_filter(
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, int radius, double dilate_value);
 
 int Cmiss_field_get_type_binary_dilate_image_filter(struct Computed_field *field,

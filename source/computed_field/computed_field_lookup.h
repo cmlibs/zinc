@@ -59,13 +59,13 @@ DESCRIPTION :
  * Creates a field whose value equals source field calculated at the lookup node
  * instead of the domain location requested. 
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field  Field to evaluate.
  * @param lookup_node  Node from same region as source field to evaluate value at.  
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_nodal_lookup(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, struct FE_node *lookup_node); 
 
 /***************************************************************************//**

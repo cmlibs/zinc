@@ -56,13 +56,13 @@ DESCRIPTION :
  * Creates a string constant field with the supplied <number_of_components> and
  * the string values from <string_constant_array> 
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param number_of_components  Number of components == number of strings.
  * @param string_constant_array  Array of strings
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_string_constant(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	int number_of_components, char **string_constant_array);
 
 #endif /* !defined (COMPUTED_FIELD_STRING_CONSTANT_H) */

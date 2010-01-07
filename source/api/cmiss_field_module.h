@@ -1,9 +1,7 @@
 /*****************************************************************************//**
- * FILE : cmiss_field_window_projection.h
+ * FILE : cmiss_field_module.h
  * 
- * Implements a cmiss field which is connected to the viewing transformations of
- * a scene viewer.
- *
+ * Public interface to the field module including its generic functions.
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -22,7 +20,7 @@
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2009
+ * Portions created by the Initial Developer are Copyright (C) 2010
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -40,41 +38,28 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (CMISS_FIELD_WINDOW_PROJECTION_H)
-#define CMISS_FIELD_WINDOW_PROJECTION_H
+#ifndef __CMISS_FIELD_MODULE_H__
+#define __CMISS_FIELD_MODULE_H__
 
-#include "api/cmiss_field.h"
-#include "api/cmiss_field_module.h"
-
-typedef struct Cmiss_field_window_projection *Cmiss_field_window_projection_id;
-
-enum Cmiss_field_window_projection_type
-{
-	NDC_PROJECTION,
-	TEXTURE_PROJECTION,
-	VIEWPORT_PROJECTION,
-	INVERSE_NDC_PROJECTION,
-	INVERSE_TEXTURE_PROJECTION,
-	INVERSE_VIEWPORT_PROJECTION
-};
-
-/*****************************************************************************//**
- * Creates a field performing a window projection, returning the source field
- * with each component multiplied by the perspective transformation of the
- * supplied scene_viewer.
- * The <graphics_window_name> and <pane_number> are stored so that the command to
- * reproduce this field can be written out.
- * The manager for <field> is notified if the <scene_viewer> closes.
- * 
- * @param field_module  Region field module which will own new field.
- * @param source_field  Field supplying values to transform.
- * @param scene_viewer  Scene viewer to obtain projection transformation from.
- * @return Newly created field with 3 components.
+/***************************************************************************//**
+ * Field module, obtained from region, which owns fields and must be passed to
+ * field factory create methods.
  */
-struct Cmiss_field *Cmiss_field_module_create_window_projection(
-	struct Cmiss_field_module *field_module,
-	struct Cmiss_field *source_field, struct Cmiss_scene_viewer *scene_viewer,
-	char *graphics_window_name, int pane_number,
-	enum Cmiss_field_window_projection_type projection_type);
+struct Cmiss_field_module;
 
-#endif /* !defined (CMISS_FIELD_WINDOW_PROJECTION_H) */
+typedef struct Cmiss_field_module *Cmiss_field_module_id;
+
+/* Until the Cmiss_field_module names have the correct form it is convenient
+ * for generation from zinc to have this alias name.
+ */
+typedef struct Cmiss_field_module *Cmiss_field_create_id;
+
+/***************************************************************************//**
+ * Destroys reference to the field module and sets pointer/handle to NULL.
+ *
+ * @param field_module_address  Address of field module reference.
+ * @return  1 on success, 0 if invalid arguments.
+ */
+int Cmiss_field_module_destroy(Cmiss_field_module_id *field_module_address);
+
+#endif /* __CMISS_FIELD_MODULE_H__ */

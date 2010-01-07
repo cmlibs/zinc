@@ -148,7 +148,7 @@ Evaluate the fields cache at the element.
 } //namespace
 
 Computed_field *Computed_field_create_or(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -158,8 +158,8 @@ Computed_field *Computed_field_create_or(
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
-	if (field_factory && source_field_one && source_field_two &&
-		Computed_field_broadcast_field_components(field_factory,
+	if (field_module && source_field_one && source_field_two &&
+		Computed_field_broadcast_field_components(field_module,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
@@ -167,7 +167,7 @@ Computed_field *Computed_field_create_or(
 		Computed_field *source_fields[2];
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -277,7 +277,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_or(field_modify->get_field_factory(),
+						Computed_field_create_or(field_modify->get_field_module(),
 							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
@@ -412,7 +412,7 @@ Evaluate the fields cache at the element.
 } //namespace
 
 Computed_field *Computed_field_create_and(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -422,8 +422,8 @@ Computed_field *Computed_field_create_and(
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
-	if (field_factory && source_field_one && source_field_two &&
-		Computed_field_broadcast_field_components(field_factory,
+	if (field_module && source_field_one && source_field_two &&
+		Computed_field_broadcast_field_components(field_module,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
@@ -431,7 +431,7 @@ Computed_field *Computed_field_create_and(
 		Computed_field *source_fields[2];
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -541,7 +541,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_and(field_modify->get_field_factory(),
+						Computed_field_create_and(field_modify->get_field_module(),
 							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
@@ -681,7 +681,7 @@ Evaluate the fields cache at the element.
 } //namespace
 
 Computed_field *Computed_field_create_xor(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -691,8 +691,8 @@ Computed_field *Computed_field_create_xor(
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
-	if (field_factory && source_field_one && source_field_two &&
-		Computed_field_broadcast_field_components(field_factory,
+	if (field_module && source_field_one && source_field_two &&
+		Computed_field_broadcast_field_components(field_module,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
@@ -700,7 +700,7 @@ Computed_field *Computed_field_create_xor(
 		Computed_field *source_fields[2];
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -810,7 +810,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_xor(field_modify->get_field_factory(),
+						Computed_field_create_xor(field_modify->get_field_module(),
 							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
@@ -975,7 +975,7 @@ Evaluate the fields cache at the element.
 } //namespace
 
 Computed_field *Computed_field_create_equal_to(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -985,8 +985,8 @@ Computed_field *Computed_field_create_equal_to(
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
-	if (field_factory && source_field_one && source_field_two &&
-		Computed_field_broadcast_field_components(field_factory,
+	if (field_module && source_field_one && source_field_two &&
+		Computed_field_broadcast_field_components(field_module,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
@@ -994,7 +994,7 @@ Computed_field *Computed_field_create_equal_to(
 		Computed_field *source_fields[2];
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -1105,7 +1105,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_equal_to(field_modify->get_field_factory(),
+						Computed_field_create_equal_to(field_modify->get_field_module(),
 							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
@@ -1240,7 +1240,7 @@ Evaluate the fields cache at the element.
 } //namespace
 
 Computed_field *Computed_field_create_less_than(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -1250,8 +1250,8 @@ Computed_field *Computed_field_create_less_than(
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
-	if (field_factory && source_field_one && source_field_two &&
-		Computed_field_broadcast_field_components(field_factory,
+	if (field_module && source_field_one && source_field_two &&
+		Computed_field_broadcast_field_components(field_module,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
@@ -1259,7 +1259,7 @@ Computed_field *Computed_field_create_less_than(
 		Computed_field *source_fields[2];
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -1369,7 +1369,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_less_than(field_modify->get_field_factory(),
+						Computed_field_create_less_than(field_modify->get_field_module(),
 							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
@@ -1504,7 +1504,7 @@ Evaluate the fields cache at the element.
 } //namespace
 
 Computed_field *Computed_field_create_greater_than(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -1514,8 +1514,8 @@ Computed_field *Computed_field_create_greater_than(
 		get replaced if necessary. */
 	ACCESS(Computed_field)(source_field_one);
 	ACCESS(Computed_field)(source_field_two);
-	if (field_factory && source_field_one && source_field_two &&
-		Computed_field_broadcast_field_components(field_factory,
+	if (field_module && source_field_one && source_field_two &&
+		Computed_field_broadcast_field_components(field_module,
 			&source_field_one, &source_field_two) &&
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
@@ -1523,7 +1523,7 @@ Computed_field *Computed_field_create_greater_than(
 		Computed_field *source_fields[2];
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field_one->number_of_components,
 			/*number_of_source_fields*/2, source_fields,
@@ -1633,7 +1633,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_greater_than(field_modify->get_field_factory(),
+						Computed_field_create_greater_than(field_modify->get_field_module(),
 							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
@@ -1782,15 +1782,15 @@ Evaluate the fields cache at the element.
  * Creates a scalar field whose value is 1 wherever the source field is defined,
  * and 0 elsewhere (without error).
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field  Source field to check whether defined.
  * @return Newly created field
  */
 Computed_field *Computed_field_create_is_defined(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		/*number_of_components*/1,
 		/*number_of_source_fields*/1, &source_field,
@@ -1878,7 +1878,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_is_defined(field_modify->get_field_factory(),
+					Computed_field_create_is_defined(field_modify->get_field_module(),
 						source_field));
 			}
 			if (!return_code)

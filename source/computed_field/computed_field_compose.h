@@ -70,7 +70,7 @@ DESCRIPTION :
  * The <region_path> string is supplied so that the commands listed can correctly
  * name the string used to select the <search_region>.
  */
-Computed_field *Computed_field_create_compose(Cmiss_field_factory *field_factory,
+Computed_field *Computed_field_create_compose(Cmiss_field_module *field_module,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *find_element_xi_field,
 	struct Computed_field *calculate_values_field,

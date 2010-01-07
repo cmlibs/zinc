@@ -88,17 +88,6 @@ LAST MODIFIED : 31 March 2004
 DESCRIPTION :
 ==============================================================================*/
 
-/***************************************************************************//**
- * Field factory object obtained from Cmiss_region and required to construct
- * fields in that region.
- */
-struct Cmiss_field_factory;
-typedef struct Cmiss_field_factory *Cmiss_field_factory_id;
-/* Until the Cmiss_field_factory names have the correct form it is convenient
- * for generation from zinc to have this alias name.
- */
-typedef struct Cmiss_field_factory *Cmiss_field_create_id;
-
 /* Forward declared types */
 /* SAB Temporary until we decide how to fix things up internally instead of externally.*/
 #define Cmiss_time_sequence FE_time_sequence
@@ -275,13 +264,5 @@ NULL then the field will be defined as constant for all times.
 <node_field_creator> optionally defines different versions and/or derivative types.
 If it is NULL then a single nodal value for each component will be defined.
 ==============================================================================*/
-
-/***************************************************************************//**
- * Destroys reference to the field factory and sets pointer/handle to NULL.
- *
- * @param field_factory_address  Address of field factory reference.
- * @return  1 on success, 0 if invalid arguments.
- */
-int Cmiss_field_factory_destroy(Cmiss_field_factory_id *field_factory_address);
 
 #endif /* __CMISS_FIELD_H__ */

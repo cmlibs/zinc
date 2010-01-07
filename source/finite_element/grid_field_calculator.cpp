@@ -56,7 +56,7 @@ extern "C" {
 #include "computed_field/computed_field_curve.h"
 #include "computed_field/computed_field_integration.h"
 }
-#include "computed_field/computed_field_private.hpp" // only for Cmiss_field_factory_set_replace_field()
+#include "computed_field/computed_field_private.hpp" // only for Cmiss_field_module_set_replace_field()
 extern "C" {
 #include "computed_field/computed_field_update.h"
 #include "computed_field/computed_field_vector_operations.h"
@@ -431,9 +431,9 @@ Applies the computed field to the grid field.
 								coordinate_field, i);
 					sprintf(tmp_string,"curve_lookup%d",axis);
 					
-					Cmiss_field_factory *field_factory =
-						Cmiss_region_get_field_factory(grid_calc->region);
-					curve_lookup[i] = Computed_field_create_curve_lookup(field_factory,
+					Cmiss_field_module *field_module =
+						Cmiss_region_get_field_module(grid_calc->region);
+					curve_lookup[i] = Computed_field_create_curve_lookup(field_module,
 						coordinate_component[i],
 						CHOOSE_OBJECT_GET_OBJECT(Curve)(widget),
 						grid_calc->curve_manager);
@@ -442,7 +442,7 @@ Applies the computed field to the grid field.
 					{
 						return_code = 0;
 					}
-					Cmiss_field_factory_destroy(&field_factory);
+					Cmiss_field_module_destroy(&field_module);
 
 					DEACCESS(Computed_field)(&(coordinate_component[i]));
 				}
@@ -454,19 +454,19 @@ Applies the computed field to the grid field.
 					}
 					else
 					{
-						Cmiss_field_factory *field_factory =
-							Cmiss_region_get_field_factory(grid_calc->region);
-						source_field = Computed_field_create_dot_product(field_factory,
+						Cmiss_field_module *field_module =
+							Cmiss_region_get_field_module(grid_calc->region);
+						source_field = Computed_field_create_dot_product(field_module,
 							curve_lookup[0], curve_lookup[1]);
 						if (3 == number_of_components)
 						{
 							Computed_field *source_field2 =
-								Computed_field_create_dot_product(field_factory,
+								Computed_field_create_dot_product(field_module,
 									source_field, curve_lookup[2]);
 							REACCESS(Computed_field)(&source_field, source_field2);
 							DEACCESS(Computed_field)(&source_field2);
 						}
-						Cmiss_field_factory_destroy(&field_factory);
+						Cmiss_field_module_destroy(&field_module);
 					}
 					if (source_field)
 					{
@@ -642,8 +642,8 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 		}
 		else
 		{
-			Cmiss_field_factory *field_factory =
-				Cmiss_region_get_field_factory(grid_calc->region);
+			Cmiss_field_module *field_module =
+				Cmiss_region_get_field_module(grid_calc->region);
 			if (!integration_coordinate_field)
 			{
 				REACCESS(Computed_field)(&integration_coordinate_field,
@@ -653,7 +653,7 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 			if (!integration_integrand)
 			{
 				double double_value = 1.0;
-				integration_integrand = Computed_field_create_constant(field_factory,
+				integration_integrand = Computed_field_create_constant(field_module,
 					/*number_of_components*/1, &double_value);
 				Computed_field_set_name(integration_integrand, "constant_1.0");
 			}
@@ -661,11 +661,11 @@ Sets the dialog to look at <grid_field>. Establishes coordinate_field
 				grid_calc->seed_element_widget);
 			if (seed_element)
 			{
-				coordinate_field = Computed_field_create_integration(field_factory,
+				coordinate_field = Computed_field_create_integration(field_module,
 					seed_element, grid_calc->fe_region, integration_integrand,
 					integration_magnitude_coordinates, integration_coordinate_field);
 			}
-			Cmiss_field_factory_destroy(&field_factory);
+			Cmiss_field_module_destroy(&field_module);
 		}
 		if (coordinate_field)
 		{
@@ -837,8 +837,8 @@ Callback for change of seed_element.
 			CHOOSE_OBJECT_GET_OBJECT(Computed_field)(grid_calc->coord_field_widget);
 		if (coordinate_field)
 		{
-			Cmiss_field_factory *field_factory =
-				Cmiss_region_get_field_factory(grid_calc->region);
+			Cmiss_field_module *field_module =
+				Cmiss_region_get_field_module(grid_calc->region);
 			integration_coordinate_field = NULL;
 			
 			if (Computed_field_is_type_integration(coordinate_field))
@@ -856,20 +856,20 @@ Callback for change of seed_element.
 					FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field, name)
 						("xi", Cmiss_region_get_Computed_field_manager(grid_calc->region)));
 				value = 1.0;
-				integration_integrand = Computed_field_create_constant(field_factory,
+				integration_integrand = Computed_field_create_constant(field_module,
 					/*number_of_components*/1, &value);
 				Computed_field_set_name(integration_integrand, "constant_1.0");
 				integration_magnitude_coordinates = 0;
 			}
 			
-			Cmiss_field_factory_set_replace_field(field_factory, coordinate_field);
-			coordinate_field = Computed_field_create_integration(field_factory,
+			Cmiss_field_module_set_replace_field(field_module, coordinate_field);
+			coordinate_field = Computed_field_create_integration(field_module,
 				seed_element, grid_calc->fe_region, integration_integrand,
 				integration_magnitude_coordinates, integration_coordinate_field);
 			DEACCESS(Computed_field)(&coordinate_field);
 			DEACCESS(Computed_field)(&integration_coordinate_field);
 			DEACCESS(Computed_field)(&integration_integrand);
-			Cmiss_field_factory_destroy(&field_factory);
+			Cmiss_field_module_destroy(&field_module);
 		}
 	}
 	else

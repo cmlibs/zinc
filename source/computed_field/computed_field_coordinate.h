@@ -73,12 +73,12 @@ Note the order of derivatives:
  * field values in their coordinate system into the coordinate system of this
  * field. Returned field has 3 components.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field  Source field with values in their own coordinate system.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_coordinate_transformation(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field);
 
 /*****************************************************************************//**
@@ -87,7 +87,7 @@ struct Computed_field *Computed_field_create_coordinate_transformation(
  * of this field. Sets the number of components in returned field to 3 times the
  * number of vectors expected from the source vector_field.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param vector_field  Vector field to be transformed. Can be a single vector
  * (1,2 or 3 components), two vectors (4 or 6 components) or three vectors
  * (9 components).
@@ -95,7 +95,7 @@ struct Computed_field *Computed_field_create_coordinate_transformation(
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_vector_coordinate_transformation(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *vector_field, struct Computed_field *coordinate_field);
 
 int Computed_field_register_types_coordinate(

@@ -48,7 +48,7 @@ Implements computed fields which conditionally calculate their inputs.
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_conditional.h"
 
-#define Computed_field_create_if Cmiss_field_create_if
+#define Computed_field_create_if Cmiss_field_module_create_if
 
 /*****************************************************************************//**
  * Creates a conditional field with the same number of components as each of the
@@ -56,14 +56,14 @@ Implements computed fields which conditionally calculate their inputs.
  * (non-zero) then the result will be the value of source_field_two, otherwise the
  * component result will be taken from source_field_three.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field_one  Conditional field.
  * @param source_field_two  TRUE = non-zero conditional component results.
  * @param source_field_three  FALSE = zero conditional component results.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_if(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two,
 	struct Computed_field *source_field_three);

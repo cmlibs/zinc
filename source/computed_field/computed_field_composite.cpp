@@ -644,7 +644,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_composite(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	int number_of_components,
 	int number_of_source_fields,struct Computed_field **source_fields,
 	int number_of_source_values, double *source_values,
@@ -759,7 +759,7 @@ struct Computed_field *Computed_field_create_composite(
 		}
 		if (return_code)
 		{
-			field = Computed_field_create_generic(field_factory,
+			field = Computed_field_create_generic(field_module,
 				/*check_source_field_regions*/true,
 				number_of_components,
 				number_of_source_fields, source_fields,
@@ -1201,7 +1201,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_composite(field_modify->get_field_factory(),
+					Computed_field_create_composite(field_modify->get_field_module(),
 						source_data.number_of_components,
 						source_data.number_of_source_fields, source_data.source_fields,
 						source_data.number_of_source_values, source_data.source_values,
@@ -1240,7 +1240,7 @@ already) and allows its contents to be modified.
 } /* define_Computed_field_type_composite */
 
 struct Computed_field *Computed_field_create_constant(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	int number_of_values, double *values)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -1269,7 +1269,7 @@ convenience function for building a composite field which has <number_of_values>
 				source_field_numbers[i] = -1;
 				source_value_numbers[i] = i;
 			}
-			field = Computed_field_create_composite(field_factory,
+			field = Computed_field_create_composite(field_module,
 				/*number_of_components*/number_of_values,
 				/*number_of_source_fields*/0,
 				/*source_fields*/(struct Computed_field **)NULL,
@@ -1460,7 +1460,7 @@ and allows its contents to be modified.
 				if (return_code = Option_table_multi_parse(option_table, state))
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_constant(field_modify->get_field_factory(),
+						Computed_field_create_constant(field_modify->get_field_module(),
 							number_of_values, values));
 				}
 				DESTROY(Option_table)(&option_table);
@@ -1570,10 +1570,10 @@ Returned field is ACCESSed once.
 				{
 					sprintf(component_field_name, "%s.%s", field->name, component_name);
 					Cmiss_region* region = Computed_field_get_region(field);
-					Cmiss_field_factory *field_factory = Cmiss_field_factory_create(region);
-					Cmiss_field_factory_set_field_name(field_factory, component_field_name);
-					component_field = Computed_field_create_component(field_factory, field, component_number);
-					Cmiss_field_factory_destroy(&field_factory);
+					Cmiss_field_module *field_module = Cmiss_field_module_create(region);
+					Cmiss_field_module_set_field_name(field_module, component_field_name);
+					component_field = Computed_field_create_component(field_module, field, component_number);
+					Cmiss_field_module_destroy(&field_module);
 					DEALLOCATE(component_field_name);
 				}
 				DEALLOCATE(component_name);
@@ -1595,8 +1595,8 @@ Returned field is ACCESSed once.
 	return (component_field);
 } /* Computed_field_manager_get_component_wrapper */
 
-Computed_field *Cmiss_field_create_identity(
-	struct Cmiss_field_factory *field_factory,
+Computed_field *Cmiss_field_module_create_identity(
+	struct Cmiss_field_module *field_module,
 	Computed_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 21 April 2008
@@ -1623,7 +1623,7 @@ Changes <field> into type composite with one input field, the <source_field>.
 				source_value_numbers[i] = i;
 			}
 			field =
-				Computed_field_create_composite(field_factory,
+				Computed_field_create_composite(field_module,
 				/*number_of_components*/number_of_values,
 				/*number_of_source_fields*/1, /*source_fields*/&source_field,
 				/*number_of_source_values*/0, /*source_values*/(double *)NULL,
@@ -1647,8 +1647,8 @@ Changes <field> into type composite with one input field, the <source_field>.
 	return (field);
 } /* Computed_field_create_identity */
 
-Computed_field *Cmiss_field_create_component(
-	struct Cmiss_field_factory *field_factory,
+Computed_field *Cmiss_field_module_create_component(
+	struct Cmiss_field_module *field_module,
 	Computed_field *source_field, int component_number)
 /*******************************************************************************
 
@@ -1672,7 +1672,7 @@ and the component index <component_number>.
 			source_field_numbers[0] = 0;
 			source_value_numbers[0] = component_number;
 			field =
-				Computed_field_create_composite(field_factory,
+				Computed_field_create_composite(field_module,
 				number_of_components,
 				/*number_of_source_fields*/1, /*source_fields*/&source_field,
 				/*number_of_source_values*/0, /*source_values*/(double *)NULL,
@@ -1695,6 +1695,56 @@ and the component index <component_number>.
 
 	return (field);
 } /* Computed_field_create_component */
+
+struct Computed_field *Computed_field_create_concatenate(
+	struct Cmiss_field_module *field_module,
+	int number_of_source_fields, struct Computed_field **source_fields)
+{
+	Computed_field *field = NULL;
+	
+	if (source_fields && number_of_source_fields > 0)
+	{
+		int *source_field_numbers, *source_value_numbers, i, j, k,
+			number_of_components_per_field, number_of_components;
+		number_of_components = 0;
+		for (i = 0; i < number_of_source_fields; i++)
+		{
+			number_of_components += 
+				Computed_field_get_number_of_components(source_fields[i]);
+		}
+		ALLOCATE(source_field_numbers, int, number_of_components);
+		ALLOCATE(source_value_numbers, int, number_of_components);
+		if (source_field_numbers && source_value_numbers)
+		{
+			k = 0;
+			for (i = 0; i < number_of_source_fields; i++)
+			{
+				number_of_components_per_field = 
+					Computed_field_get_number_of_components(source_fields[i]);
+				for (j = 0; j < number_of_components_per_field; j++)
+				{
+					source_field_numbers[k + j] = i;
+					source_value_numbers[k + j] = j;
+				}
+				k += number_of_components_per_field;
+			}
+			field = Computed_field_create_composite(field_module,
+				number_of_components,
+				number_of_source_fields, source_fields,
+				/*number_of_source_values*/0, /*source_values*/(double *)NULL,
+				source_field_numbers, source_value_numbers);
+		}
+		DEALLOCATE(source_field_numbers);
+		DEALLOCATE(source_value_numbers);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_create_concatenate.  Invalid argument(s)");
+	}
+
+	return(field);
+}
 
 int Computed_field_register_types_composite(
 	struct Computed_field_package *computed_field_package)

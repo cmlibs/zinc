@@ -60,13 +60,13 @@ DESCRIPTION :
  * nodes in its region. Returned field has same number of components as source.
  * GRC: rename this field before exposing in external API
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field  Field to sum.
  * @param group  Optional sub-group of region to limit sum over.  
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_region_sum(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, struct Cmiss_region *group);
 
 /*******************************************************************************
@@ -74,13 +74,13 @@ struct Computed_field *Computed_field_create_region_sum(
  * nodes in its region. Returned field has same number of components as source.
  * GRC: rename this field before exposing in external API
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field  Field to sum & average.
  * @param group  Optional sub-group of region to limit sum over.  
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_region_mean(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, struct Cmiss_region *group);
 
 #endif /* !defined (COMPUTED_FIELD_REGION_OPERATIONS_H) */

@@ -448,7 +448,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_compose(Cmiss_field_factory *field_factory,
+Computed_field *Computed_field_create_compose(Cmiss_field_module *field_module,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *find_element_xi_field,
 	struct Computed_field *calculate_values_field,
@@ -472,7 +472,7 @@ Computed_field *Computed_field_create_compose(Cmiss_field_factory *field_factory
 				source_fields[0] = texture_coordinate_field;
 				source_fields[1] = find_element_xi_field;
 				source_fields[2] = calculate_values_field;
-				field = Computed_field_create_generic(field_factory,
+				field = Computed_field_create_generic(field_module,
 					/*check_source_field_regions*/true,
 					calculate_values_field->number_of_components,
 					/*number_of_source_fields*/3, source_fields,
@@ -742,7 +742,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_compose(field_modify->get_field_factory(),
+					Computed_field_create_compose(field_modify->get_field_module(),
 						texture_coordinates_field, find_element_xi_field,
 						calculate_values_field, search_region, search_region_path,
 						find_nearest, use_point_five_when_out_of_bounds,

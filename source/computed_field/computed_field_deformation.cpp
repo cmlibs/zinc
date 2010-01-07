@@ -424,13 +424,13 @@ Returns allocated command string for reproducing field. Includes type.
  * The <coordinate_field>s must have no more than 3 components.
  */
 struct Computed_field *Computed_field_create_2d_strain(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *deformed_coordinate_field,
 	struct Computed_field *undeformed_coordinate_field,
 	struct Computed_field *fibre_angle_field)
 {
 	Computed_field *field = NULL;
-	if (field_factory && deformed_coordinate_field &&
+	if (field_module && deformed_coordinate_field &&
 		(3 >= deformed_coordinate_field->number_of_components) &&
 		undeformed_coordinate_field &&
 		(3 >= undeformed_coordinate_field->number_of_components) &&
@@ -440,7 +440,7 @@ struct Computed_field *Computed_field_create_2d_strain(
 		source_fields[0] = deformed_coordinate_field;
 		source_fields[1] = undeformed_coordinate_field;
 		source_fields[2] = fibre_angle_field;
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/4,
 			/*number_of_source_fields*/3, source_fields,
@@ -579,7 +579,7 @@ already) and allows its contents to be modified.
 			{
 				return_code = field_modify->update_field_and_deaccess(
 					Computed_field_create_2d_strain(
-						field_modify->get_field_factory(),
+						field_modify->get_field_module(),
 						deformed_coordinate_field, undeformed_coordinate_field,
 						fibre_angle_field));
 			}

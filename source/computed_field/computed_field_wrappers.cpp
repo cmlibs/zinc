@@ -86,15 +86,15 @@ wrapped.
 		}
 		else
 		{
-			Cmiss_field_factory *field_factory =
-				Cmiss_field_factory_create(Computed_field_get_region(coordinate_field));
+			Cmiss_field_module *field_module =
+				Cmiss_field_module_create(Computed_field_get_region(coordinate_field));
 			struct Coordinate_system rc_coordinate_system;
 			rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-			Cmiss_field_factory_set_coordinate_system(field_factory,
+			Cmiss_field_module_set_coordinate_system(field_module,
 				rc_coordinate_system);
-			wrapper_field = Computed_field_create_coordinate_transformation(field_factory,
+			wrapper_field = Computed_field_create_coordinate_transformation(field_module,
 				coordinate_field);
-			Cmiss_field_factory_destroy(&field_factory);
+			Cmiss_field_module_destroy(&field_module);
 		}
 	}
 	else
@@ -148,24 +148,24 @@ Must call Computed_field_end_wrap to clean up the returned field after use.
 			(3>=Computed_field_get_number_of_components(orientation_scale_field)))
 		{
 			/* make fibre_axes wrapper from fibre field */
-			Cmiss_field_factory *field_factory =
-				Cmiss_field_factory_create(Computed_field_get_region(coordinate_field));
-			wrapper_field = Computed_field_create_fibre_axes(field_factory,
+			Cmiss_field_module *field_module =
+				Cmiss_field_module_create(Computed_field_get_region(coordinate_field));
+			wrapper_field = Computed_field_create_fibre_axes(field_module,
 					orientation_scale_field, coordinate_field);
-			Cmiss_field_factory_destroy(&field_factory);
+			Cmiss_field_module_destroy(&field_module);
 		}
 		else
 		{
 			/* make vector_coordinate_transformation wrapper of non-RC vector field */
-			Cmiss_field_factory *field_factory =
-				Cmiss_field_factory_create(Computed_field_get_region(coordinate_field));
+			Cmiss_field_module *field_module =
+				Cmiss_field_module_create(Computed_field_get_region(coordinate_field));
 			struct Coordinate_system rc_coordinate_system;
 			rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-			Cmiss_field_factory_set_coordinate_system(field_factory,
+			Cmiss_field_module_set_coordinate_system(field_module,
 				rc_coordinate_system);
 			wrapper_field = Computed_field_create_vector_coordinate_transformation(
-				field_factory, orientation_scale_field, coordinate_field);
-			Cmiss_field_factory_destroy(&field_factory);
+				field_module, orientation_scale_field, coordinate_field);
+			Cmiss_field_module_destroy(&field_module);
 		}
 	}
 	else

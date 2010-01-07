@@ -62,7 +62,7 @@ Computed fields for extracting fibre axes from fibre angles in elements.
  * normal axis = cross product fibre (x) sheet
  */
 struct Computed_field *Computed_field_create_fibre_axes(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *fibre_field, struct Computed_field *coordinate_field);
 
 int Computed_field_register_types_fibres(

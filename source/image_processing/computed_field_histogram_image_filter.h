@@ -59,8 +59,8 @@ DESCRIPTION :
  * image. Sets number of components to 1.
  * @param numberOfBins  Number of bins per source field component.
  */
-struct Computed_field *Cmiss_field_create_histogram_image_filter(
-	struct Cmiss_field_factory *field_factory,
+struct Computed_field *Cmiss_field_module_create_histogram_image_filter(
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, int *numberOfBins, double marginalScale);
 
 int Cmiss_field_get_type_histogram_image_filter(struct Computed_field *field,

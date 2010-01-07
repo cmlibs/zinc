@@ -47,21 +47,21 @@ Implements logical operations on computed fields.
 #include "api/cmiss_field.h"
 #include "api/cmiss_field_logical_operators.h"
 
-#define Computed_field_create_greater_than Cmiss_field_create_greater_than
-#define Computed_field_create_less_than Cmiss_field_create_less_than
+#define Computed_field_create_greater_than Cmiss_field_module_create_greater_than
+#define Computed_field_create_less_than Cmiss_field_module_create_less_than
 
 /***************************************************************************//**
  * Creates a field whose component values are 1 if that component of
  * source_field_one OR source_field_two is non-zero, 0 otherwise.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field_one  First input field
  * @param source_field_two  Second input field
  * @return Newly created field
  */
 Computed_field *Computed_field_create_or(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 
@@ -70,13 +70,13 @@ Computed_field *Computed_field_create_or(
  * source_field_one AND source_field_two is non-zero, 0 otherwise.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field_one  First input field
  * @param source_field_two  Second input field
  * @return Newly created field
  */
 Computed_field *Computed_field_create_and(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 
@@ -85,13 +85,13 @@ Computed_field *Computed_field_create_and(
  * source_field_one OR source_field_two is non-zero (but not both), 0 otherwise.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field_one  First input field
  * @param source_field_two  Second input field
  * @return Newly created field
  */
 Computed_field *Computed_field_create_xor(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 
@@ -100,13 +100,13 @@ Computed_field *Computed_field_create_xor(
  * source_field_one EQUALS that component of source_field_two, 0 otherwise.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field_one  First input field
  * @param source_field_two  Second input field
  * @return Newly created field
  */
 Computed_field *Computed_field_create_equal_to(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 
@@ -115,13 +115,13 @@ Computed_field *Computed_field_create_equal_to(
  * source_field_one is less than the component value in source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_less_than(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 
@@ -130,13 +130,13 @@ struct Computed_field *Computed_field_create_less_than(
  * source_field_one is greater than the component value in source_field_two.
  * Automatic scalar broadcast will apply, see cmiss_field.h.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_greater_than(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 
@@ -144,12 +144,12 @@ struct Computed_field *Computed_field_create_greater_than(
  * Creates a scalar field whose value is 1 wherever the source field is defined,
  * and 0 elsewhere (without error).
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field  Source field to check whether defined.
  * @return Newly created field
  */
 Computed_field *Computed_field_create_is_defined(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field);
 
 int Computed_field_register_types_logical_operators(

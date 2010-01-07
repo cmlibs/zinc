@@ -57,8 +57,8 @@ DESCRIPTION :
  * Creates a field performing ITK connected threshold image filter on scalar
  * source field image. Sets number of components to same number as source field.
  */
-struct Computed_field *Cmiss_field_create_connected_threshold_image_filter(
-	struct Cmiss_field_factory *field_factory,
+struct Computed_field *Cmiss_field_module_create_connected_threshold_image_filter(
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field,
   double lower_threshold, double upper_threshold, double replace_value,
 	int num_seed_points, int dimension, double *seed_points);

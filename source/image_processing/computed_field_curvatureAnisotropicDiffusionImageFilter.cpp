@@ -287,14 +287,14 @@ void Computed_field_curvature_anisotropic_diffusion_image_filter::create_functor
 
 } //namespace
 
-struct Computed_field *Cmiss_field_create_curvature_anisotropic_diffusion_image_filter(
-	struct Cmiss_field_factory *field_factory,
+struct Computed_field *Cmiss_field_module_create_curvature_anisotropic_diffusion_image_filter(
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, double timeStep, double conductance, int numIterations)
 {
 	Computed_field *field = NULL;
 	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
 	{
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
@@ -305,7 +305,7 @@ struct Computed_field *Cmiss_field_create_curvature_anisotropic_diffusion_image_
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_create_curvature_anisotropic_diffusion_image_filter.  Invalid argument(s)");
+			"Cmiss_field_module_create_curvature_anisotropic_diffusion_image_filter.  Invalid argument(s)");
 	}
 
 	return (field);
@@ -428,8 +428,8 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Cmiss_field_create_curvature_anisotropic_diffusion_image_filter(
-						field_modify->get_field_factory(),
+					Cmiss_field_module_create_curvature_anisotropic_diffusion_image_filter(
+						field_modify->get_field_module(),
 						source_field, timeStep, conductance, numIterations));
 			}
 			

@@ -2076,11 +2076,11 @@ Returns true if <field> has the appropriate static type string.
  * <coordinate_field> derivatives are used to calculate arc lengths at each
  * gauss point.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_integration(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	FE_element *seed_element,
 	FE_region *fe_region, Computed_field *integrand, 
 	int magnitude_coordinates, Computed_field *coordinate_field)
@@ -2123,7 +2123,7 @@ struct Computed_field *Computed_field_create_integration(
 			source_fields[0] = integrand;
 			source_fields[1] = coordinate_field;
 			
-			field = Computed_field_create_generic(field_factory,
+			field = Computed_field_create_generic(field_module,
 				/*check_source_field_regions*/true,
 				number_of_components,
 				/*number_of_source_fields*/2, source_fields,
@@ -2235,11 +2235,11 @@ and allows its contents to be modified.
 			{
 				/* Make a default integrand of one */
 				value = 1.0;
-				// use temporary field factory to supply different defaults
-				Cmiss_field_factory *temp_field_factory =
-					Cmiss_field_factory_create(field_modify->get_region());
-				Cmiss_field_factory_set_field_name(temp_field_factory, "constant_1.0");
-				integrand = Computed_field_create_constant(temp_field_factory,
+				// use temporary field module to supply different defaults
+				Cmiss_field_module *temp_field_module =
+					Cmiss_field_module_create(field_modify->get_region());
+				Cmiss_field_module_set_field_name(temp_field_module, "constant_1.0");
+				integrand = Computed_field_create_constant(temp_field_module,
 					/*number_of_components*/1, &value);
 				if (NULL == integrand)
 				{
@@ -2247,7 +2247,7 @@ and allows its contents to be modified.
 						"define_Computed_field_type_integration.  Unable to create constant integrand");
 					return_code = 0;
 				}
-				Cmiss_field_factory_destroy(&temp_field_factory);
+				Cmiss_field_module_destroy(&temp_field_module);
 			}
 			Cmiss_region_get_root_region_path(&region_path);
 			if (seed_element)
@@ -2357,7 +2357,7 @@ and allows its contents to be modified.
 						else
 						{
 							return_code = field_modify->update_field_and_deaccess(
-								Computed_field_create_integration(field_modify->get_field_factory(),
+								Computed_field_create_integration(field_modify->get_field_module(),
 									seed_element, Cmiss_region_get_FE_region(region),
 									integrand, magnitude_coordinates, coordinate_field));
 						}
@@ -2521,11 +2521,11 @@ and allows its contents to be modified.
 						return_code=0;
 					}
 					double value = 1.0;
-					// use temporary field factory to supply different defaults
-					Cmiss_field_factory *temp_field_factory =
-						Cmiss_field_factory_create(field_modify->get_region());
-					Cmiss_field_factory_set_field_name(temp_field_factory, "constant_1.0");
-					Computed_field *integrand = Computed_field_create_constant(temp_field_factory,
+					// use temporary field module to supply different defaults
+					Cmiss_field_module *temp_field_module =
+						Cmiss_field_module_create(field_modify->get_region());
+					Cmiss_field_module_set_field_name(temp_field_module, "constant_1.0");
+					Computed_field *integrand = Computed_field_create_constant(temp_field_module,
 						/*number_of_components*/1, &value);
 					if (NULL == integrand)
 					{
@@ -2533,12 +2533,12 @@ and allows its contents to be modified.
 							"define_Computed_field_type_xi_texture_coordinates.  Unable to create constant field");
 						return_code = 0;
 					}
-					Cmiss_field_factory_destroy(&temp_field_factory);
+					Cmiss_field_module_destroy(&temp_field_module);
 
 					if (return_code)
 					{
 						return_code = field_modify->update_field_and_deaccess(
-							Computed_field_create_integration(field_modify->get_field_factory(),
+							Computed_field_create_integration(field_modify->get_field_module(),
 								seed_element, Cmiss_region_get_FE_region(region),
 								integrand, /*magnitude_coordinates*/0, coordinate_field));
 					}

@@ -59,23 +59,23 @@ DESCRIPTION :
  * Creates a field whose value equals <source_field>, calculated at the time
  * value given by <time_field> instead of the current time from the timekeeper.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field  Field to evaluate.
  * @param time_field  Field providing time value to evaluate at.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_time_lookup(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, struct Computed_field *time_field);
 
 /***************************************************************************//**
  * Creates a field which returns the current time from the supplied time keeper. 
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param time_keeper  Time keeper object.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_time_value(
-	struct Cmiss_field_factory *field_factory, struct Time_keeper *time_keeper);
+	struct Cmiss_field_module *field_module, struct Time_keeper *time_keeper);
 
 #endif /* !defined (COMPUTED_FIELD_TIME_H) */

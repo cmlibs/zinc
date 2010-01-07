@@ -59,14 +59,14 @@ DESCRIPTION :
  * given by scalar <source_field>.
  * Field has number of components to same number as <curve>.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param source_field  Field providing time/parameter values for curve lookup.
  * @param curve  Parametric curve object.
  * @param curve_manager  Manager of curve objects.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_curve_lookup(
-	Cmiss_field_factory *field_factory, struct Computed_field *source_field,
+	Cmiss_field_module *field_module, struct Computed_field *source_field,
 	struct Curve *curve, struct MANAGER(Curve) *curve_manager);
 
 int Computed_field_get_type_curve_lookup(struct Computed_field *field,

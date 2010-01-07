@@ -292,7 +292,7 @@ ifeq ($(SYSNAME),Linux)
 			NON_STRICT_FILENAMES = wx_non_strict_c.filenames
 			CPP_NON_STRICT_FILENAMES = wx_non_strict_cpp.filenames
 			ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
-				NON_STRICT_FILENAMES = motif_non_strict_c.filenames
+				NON_STRICT_FILENAMES = motif_non_strict_c.filenames unemap_non_strict_c.filenames
 				CPP_NON_STRICT_FILENAMES = motif_non_strict_cpp.filenames
 			endif
 			empty :=

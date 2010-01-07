@@ -325,8 +325,8 @@ Returns allocated command string for reproducing field.
 
 } //namespace
 
-Computed_field *Cmiss_field_create_image_resample(
-	struct Cmiss_field_factory *field_factory,
+Computed_field *Cmiss_field_module_create_image_resample(
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, int dimension, int *sizes)
 {
 	Computed_field *field = NULL;
@@ -341,7 +341,7 @@ Computed_field *Cmiss_field_create_image_resample(
 		DEALLOCATE(source_sizes);
 		if (return_code && (dimension == source_field_dimension))
 		{
-			field = Computed_field_create_generic(field_factory,
+			field = Computed_field_create_generic(field_module,
 				/*check_source_field_regions*/true,
 				source_field->number_of_components,
 				/*number_of_source_fields*/1, &source_field,
@@ -351,14 +351,14 @@ Computed_field *Cmiss_field_create_image_resample(
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_field_create_image_resample.  "
+				"Cmiss_field_module_create_image_resample.  "
 				"Specified dimension and source field dimension do not match.");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_create_image_resample.  Invalid argument(s)");
+			"Cmiss_field_module_create_image_resample.  Invalid argument(s)");
 	}
 
 	return (field);
@@ -517,7 +517,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Cmiss_field_create_image_resample(field_modify->get_field_factory(),
+					Cmiss_field_module_create_image_resample(field_modify->get_field_module(),
 						source_field, dimension, sizes));
 			}
 			

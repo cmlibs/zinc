@@ -234,10 +234,10 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_normalise(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		source_field->number_of_components,
 		/*number_of_source_fields*/1, &source_field,
@@ -326,7 +326,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_normalise(field_modify->get_field_factory(),
+					Computed_field_create_normalise(field_modify->get_field_module(),
 						source_field));
 			}
 			if (!return_code)
@@ -672,7 +672,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_cross_product(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	int dimension, struct Computed_field **source_fields)
 {
 	Computed_field *field = NULL;
@@ -693,7 +693,7 @@ struct Computed_field *Computed_field_create_cross_product(
 		}
 		if (return_code)
 		{
-			field = Computed_field_create_generic(field_factory,
+			field = Computed_field_create_generic(field_module,
 				/*check_source_field_regions*/true,
 				/*number_of_components*/dimension,
 				/*number_of_source_fields*/(dimension - 1), source_fields,
@@ -895,7 +895,7 @@ already) and allows its contents to be modified.
 						if (return_code = Option_table_multi_parse(option_table, state))
 						{
 							return_code = field_modify->update_field_and_deaccess(
-								Computed_field_create_cross_product(field_modify->get_field_factory(),
+								Computed_field_create_cross_product(field_modify->get_field_module(),
 									dimension, source_fields));
 						}
 						for (i = 0; i < number_of_source_fields; i++)
@@ -1136,7 +1136,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_dot_product(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -1148,7 +1148,7 @@ struct Computed_field *Computed_field_create_dot_product(
 		Computed_field *source_fields[2];
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/1,
 			/*number_of_source_fields*/2, source_fields,
@@ -1257,7 +1257,7 @@ already) and allows its contents to be modified.
 				if (return_code)
 				{
 					return_code = field_modify->update_field_and_deaccess(
-						Computed_field_create_dot_product(field_modify->get_field_factory(),
+						Computed_field_create_dot_product(field_modify->get_field_module(),
 							source_fields[0], source_fields[1]));
 				}
 				if (!return_code)
@@ -1547,10 +1547,10 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_magnitude(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		/*number_of_components*/1,
 		/*number_of_source_fields*/1, &source_field,
@@ -1640,7 +1640,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = field_modify->update_field_and_deaccess(
-					Computed_field_create_magnitude(field_modify->get_field_factory(),
+					Computed_field_create_magnitude(field_modify->get_field_module(),
 						source_field));
 			}
 			if (!return_code)
@@ -1847,10 +1847,10 @@ Returns allocated command string for reproducing field. Includes type.
  * ???GRC Someone needs to explain what this field does.
  */
 struct Computed_field *Computed_field_create_cubic_texture_coordinates(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field)
 {
-	Computed_field *field = Computed_field_create_generic(field_factory,
+	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		source_field->number_of_components,
 		/*number_of_source_fields*/1, &source_field,
@@ -1942,7 +1942,7 @@ already) and allows its contents to be modified.
 			{
 				return_code = field_modify->update_field_and_deaccess(
 					Computed_field_create_cubic_texture_coordinates(
-						field_modify->get_field_factory(), source_field));
+						field_modify->get_field_module(), source_field));
 			}
 			if (!return_code)
 			{

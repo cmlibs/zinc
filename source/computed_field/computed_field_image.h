@@ -45,21 +45,21 @@ DESCRIPTION :
 
 #include "api/cmiss_field_image.h"
 
-#define Computed_field_create_image Cmiss_field_create_image
+#define Computed_field_create_image Cmiss_field_module_create_image
 
 /*****************************************************************************//**
  * Creates a new image based field.  This constructor does not define the
  * actual image data, which should then be set using a Cmiss_field_image_set_*
  * function.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @param domain_field  The field in which the image data will be embedded.
  * @param source_field  Optional source field to automatically provides pixel
  * values to the image.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_image(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *domain_field,
 	struct Computed_field *source_field);
 

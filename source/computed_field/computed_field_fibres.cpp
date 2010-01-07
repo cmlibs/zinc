@@ -437,17 +437,17 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_fibre_axes(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *fibre_field, struct Computed_field *coordinate_field)
 {
 	Computed_field *field = NULL;
-	if (field_factory && fibre_field && (3>=fibre_field->number_of_components) &&
+	if (field_module && fibre_field && (3>=fibre_field->number_of_components) &&
 		coordinate_field && (3 >= coordinate_field->number_of_components))
 	{
 		Computed_field *source_fields[2];
 		source_fields[0] = fibre_field;
 		source_fields[1] = coordinate_field;
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/9,
 			/*number_of_source_fields*/2, source_fields,
@@ -561,7 +561,7 @@ allows its contents to be modified.
 			{
 				return_code = field_modify->update_field_and_deaccess(
 					Computed_field_create_fibre_axes(
-						field_modify->get_field_factory(), fibre_field, coordinate_field));
+						field_modify->get_field_module(), fibre_field, coordinate_field));
 			}
 			DESTROY(Option_table)(&option_table);
 			if (coordinate_field)

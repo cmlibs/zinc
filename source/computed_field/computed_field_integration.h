@@ -64,11 +64,11 @@ DESCRIPTION :
  * <coordinate_field> derivatives are used to calculate arc lengths at each
  * gauss point.
  * 
- * @param field_factory  Specifies owning region and other generic arguments.
+ * @param field_module  Region field module which will own new field.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_integration(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	FE_element *seed_element,
 	FE_region *fe_region, Computed_field *integrand, 
 	int magnitude_coordinates, Computed_field *coordinate_field);

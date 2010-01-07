@@ -1124,7 +1124,7 @@ Clear the scene viewer reference when it is no longer valid.
 } //namespace
 
 struct Computed_field *Computed_field_create_window_projection(
-	struct Cmiss_field_factory *field_factory,
+	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, struct Scene_viewer *scene_viewer,
 	char *graphics_window_name, int pane_number,
 	enum Cmiss_field_window_projection_type projection_type)
@@ -1133,7 +1133,7 @@ struct Computed_field *Computed_field_create_window_projection(
 	if (source_field && Computed_field_has_3_components(source_field, NULL) &&
 		scene_viewer)
 	{
-		field = Computed_field_create_generic(field_factory,
+		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/3,
 			/*number_of_source_fields*/1, &source_field,
@@ -1327,7 +1327,7 @@ already) and allows its contents to be modified.
 				GET_NAME(Graphics_window)(graphics_window, &graphics_window_name);
 				return_code = field_modify->update_field_and_deaccess(
 					Computed_field_create_window_projection(
-						field_modify->get_field_factory(),
+						field_modify->get_field_module(),
 						source_field, scene_viewer, graphics_window_name, pane_number,
 						projection_type));
 				DEALLOCATE(graphics_window_name);
