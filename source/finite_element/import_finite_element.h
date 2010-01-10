@@ -106,7 +106,7 @@ int read_exdata_file(struct Cmiss_region *region,
 /*****************************************************************************//**
  * Version of read_exregion_file that opens and closes file <file_name>.
  */
-int read_exregion_file_of_name(struct Cmiss_region *region, char *file_name,
+int read_exregion_file_of_name(struct Cmiss_region *region, const char *file_name,
 	struct IO_stream_package *io_stream_package,
 	struct FE_import_time_index *time_index);
 
