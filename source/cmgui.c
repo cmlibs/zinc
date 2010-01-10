@@ -140,7 +140,7 @@ Main program for the CMISS Graphical User Interface
 #endif /* !defined (WIN32_USER_INTERFACE) */
 	{
 		Cmiss_command_data_main_loop(command_data);
-		DESTROY(Cmiss_command_data)(&command_data);
+		Cmiss_command_data_destroy(&command_data);
 		return_code = 0;
 	}
 	else

@@ -96,7 +96,7 @@ public:
 	FE_value** source_pointers;
 
 	Computed_field_composite(int number_of_components,
-		int *source_field_numbers_in, int *source_value_numbers_in) : Computed_field_core()
+		const int *source_field_numbers_in, const int *source_value_numbers_in) : Computed_field_core()
 	{
 		int i;
 		source_field_numbers = new int[number_of_components];
@@ -647,8 +647,8 @@ struct Computed_field *Computed_field_create_composite(
 	struct Cmiss_field_module *field_module,
 	int number_of_components,
 	int number_of_source_fields,struct Computed_field **source_fields,
-	int number_of_source_values, double *source_values,
-	int *source_field_numbers,int *source_value_numbers)
+	int number_of_source_values, const double *source_values,
+	const int *source_field_numbers, const int *source_value_numbers)
 {
 	int i, j, return_code, source_field_number, source_value_number;
 	Computed_field *field, *source_field;
@@ -1241,7 +1241,7 @@ already) and allows its contents to be modified.
 
 struct Computed_field *Computed_field_create_constant(
 	struct Cmiss_field_module *field_module,
-	int number_of_values, double *values)
+	int number_of_values, const double *values)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 

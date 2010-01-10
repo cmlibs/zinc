@@ -58,7 +58,7 @@ The public interface to the Cmiss_fields that perform arithmetic operations.
  * @return Newly created field
  */
 Cmiss_field_id Cmiss_field_module_create_constant(Cmiss_field_module_id field_module,
-	int number_of_values, double *values);
+	int number_of_values, const double *values);
 
 /*****************************************************************************//**
  * Creates a field with the single source field.  This field is useful

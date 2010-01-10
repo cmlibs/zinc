@@ -398,7 +398,7 @@ Computed_field *Computed_field_create_generic(
 	Cmiss_field_module *field_module, bool check_source_field_regions,
 	int number_of_components,
 	int number_of_source_fields, Computed_field **source_fields,
-	int number_of_source_values, double *source_values,
+	int number_of_source_values, const double *source_values,
 	Computed_field_core *field_core);
 
 /***************************************************************************//**

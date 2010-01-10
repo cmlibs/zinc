@@ -121,11 +121,12 @@ Cmiss_field_id Cmiss_field_module_create_binary_threshold_image_filter(
 /*****************************************************************************//**
  * If field can be cast to a Cmiss_field_binary_threshold_image_filter_id do so
  * and return the field.  Otherwise return NULL.
+ * Caller is responsible for destroying the new image filter reference.
  * 
  * @param field  Id of the field to cast
  * @return  Id of the cast field, or NULL
 */
-Cmiss_field_binary_threshold_image_filter_id Cmiss_field_binary_threshold_image_filter_cast(Cmiss_field_id field);
+Cmiss_field_binary_threshold_image_filter_id Cmiss_field_cast_binary_threshold_image_filter(Cmiss_field_id field);
 
 int Cmiss_field_get_type_binary_threshold_image_filter(Cmiss_field_id field,
 	Cmiss_field_id *source_field,
@@ -240,11 +241,12 @@ Cmiss_field_id Cmiss_field_module_create_discrete_gaussian_image_filter(
 /*****************************************************************************//**
  * If field can be cast to a Cmiss_field_discrete_gaussian_image_filter_id do so
  * and return the field.  Otherwise return NULL.
+ * Caller is responsible for destroying the new image filter reference.
  * 
  * @param field Id of the field to cast
  * @return Id of the cast field, or NULL
 */
-Cmiss_field_discrete_gaussian_image_filter_id Cmiss_field_discrete_gaussian_image_filter_cast(Cmiss_field_id field);
+Cmiss_field_discrete_gaussian_image_filter_id Cmiss_field_cast_discrete_gaussian_image_filter(Cmiss_field_id field);
 
 int Cmiss_field_get_type_discrete_gaussian_image_filter(Cmiss_field_id field,
 	Cmiss_field_id *source_field, double *variance, int *maxKernelWidth);
@@ -432,10 +434,11 @@ Cmiss_field_id Cmiss_field_module_create_threshold_image_filter(
 /*****************************************************************************//**
  * If field can be cast to a Cmiss_field_threshold_image_filter_id do so
  * and return the field.  Otherwise return NULL.
+ * Caller is responsible for destroying the new image filter reference.
  * 
  * @param field Id of the field to cast
  * @return Id of the cast field, or NULL
 */
-Cmiss_field_threshold_image_filter_id Cmiss_field_threshold_image_filter_cast(Cmiss_field_id field);
+Cmiss_field_threshold_image_filter_id Cmiss_field_cast_threshold_image_filter(Cmiss_field_id field);
 
 #endif /* !defined (CMISS_FIELD_IMAGE_PROCESSING_H) */

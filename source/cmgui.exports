@@ -87,6 +87,7 @@ Cmiss_scene_viewer_win32_set_window_size
 #endif /* defined (WIN32_USER_INTERFACE) */
 
 Cmiss_command_data_create
+Cmiss_command_data_access
 Cmiss_command_data_destroy
 Cmiss_command_data_get_root_region
 Cmiss_command_data_get_node_selection
@@ -108,6 +109,7 @@ FE_node_selection_get_node_list
 FE_node_selection_add_callback
 FE_node_selection_remove_callback
 
+Cmiss_field_access
 Cmiss_field_destroy
 Cmiss_field_get_number_of_components
 Cmiss_field_evaluate_at_node
@@ -116,6 +118,9 @@ Cmiss_field_is_defined_at_node
 Cmiss_field_evaluate_at_field_coordinates
 Cmiss_field_set_name
 Cmiss_field_get_name
+
+Cmiss_field_module_access
+Cmiss_field_module_destroy
 
 /* api/cmiss_field_arithmetic_operators.h */
 Cmiss_field_module_create_power
@@ -140,7 +145,7 @@ Cmiss_field_module_create_if
 
 /* api/cmiss_field_image.h */
 Cmiss_field_module_create_image
-Cmiss_field_image_cast
+Cmiss_field_cast_image
 Cmiss_field_image_read
 Cmiss_field_image_write
 Cmiss_field_image_read_file
@@ -167,7 +172,7 @@ Cmiss_field_get_type_binary_dilate_image_filter
 Cmiss_field_module_create_binary_erode_image_filter
 Cmiss_field_get_type_binary_erode_image_filter
 Cmiss_field_module_create_binary_threshold_image_filter
-Cmiss_field_binary_threshold_image_filter_cast
+Cmiss_field_cast_binary_threshold_image_filter
 Cmiss_field_get_type_binary_threshold_image_filter
 Cmiss_field_module_create_canny_edge_detection_image_filter
 Cmiss_field_get_type_canny_edge_detection_image_filter
@@ -176,7 +181,7 @@ Cmiss_field_get_type_connected_threshold_image_filter
 Cmiss_field_module_create_curvature_anisotropic_diffusion_image_filter
 Cmiss_field_get_type_curvature_anisotropic_diffusion_image_filter
 Cmiss_field_module_create_discrete_gaussian_image_filter
-Cmiss_field_discrete_gaussian_image_filter_cast
+Cmiss_field_cast_discrete_gaussian_image_filter
 Cmiss_field_get_type_discrete_gaussian_image_filter
 Cmiss_field_module_create_fast_marching_image_filter
 Cmiss_field_get_type_fast_marching_image_filter
@@ -191,7 +196,7 @@ Cmiss_field_get_type_rescale_intensity_image_filter
 Cmiss_field_module_create_sigmoid_image_filter
 Cmiss_field_get_type_sigmoid_image_filter
 Cmiss_field_module_create_threshold_image_filter
-Cmiss_field_threshold_image_filter_cast
+Cmiss_field_cast_threshold_image_filter
 
 /* api/cmiss_field_logical_operators.h */
 Cmiss_field_module_create_less_than
@@ -251,7 +256,7 @@ get_FE_field_number_of_components
 get_FE_field_component_name
 
 Cmiss_region_create
-access_Cmiss_region
+Cmiss_region_access
 Cmiss_region_destroy
 Cmiss_region_get_region_from_path
 Cmiss_region_get_FE_region
@@ -260,7 +265,6 @@ Cmiss_region_begin_change
 Cmiss_region_merge_Cmiss_element
 Cmiss_region_merge_Cmiss_node
 Cmiss_region_end_change
-deaccess_Cmiss_region
 
 create_list_FE_element_shape
 create_manager_FE_basis

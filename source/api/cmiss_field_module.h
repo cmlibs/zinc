@@ -54,8 +54,18 @@ typedef struct Cmiss_field_module *Cmiss_field_module_id;
  */
 typedef struct Cmiss_field_module *Cmiss_field_create_id;
 
+/*******************************************************************************
+ * Returns a new reference to the field module with reference count incremented.
+ * Caller is responsible for destroying the new reference.
+ * 
+ * @param field_module  The field module to obtain a new reference to.
+ * @return  New field module reference with incremented reference count.
+ */
+Cmiss_field_module_id Cmiss_field_module_access(Cmiss_field_module_id field_module);
+
 /***************************************************************************//**
  * Destroys reference to the field module and sets pointer/handle to NULL.
+ * Internally this just decrements the reference count.
  *
  * @param field_module_address  Address of field module reference.
  * @return  1 on success, 0 if invalid arguments.

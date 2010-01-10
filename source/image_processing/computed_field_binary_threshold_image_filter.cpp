@@ -288,10 +288,11 @@ char *Computed_field_binary_threshold_image_filter::get_command_string()
  * @param field Id of the field to cast
  * @return Id of the cast field, or NULL
 */
-Cmiss_field_binary_threshold_image_filter_id Cmiss_field_binary_threshold_image_filter_cast(Cmiss_field_id field)
+Cmiss_field_binary_threshold_image_filter_id Cmiss_field_cast_binary_threshold_image_filter(Cmiss_field_id field)
 {
 	if (dynamic_cast<Computed_field_binary_threshold_image_filter*>(field->core))
 	{
+		Cmiss_field_access(field);
 		return (reinterpret_cast<Cmiss_field_binary_threshold_image_filter_id>(field));
 	}
 	else

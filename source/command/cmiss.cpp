@@ -293,6 +293,9 @@ LAST MODIFIED : 12 August 2002
 DESCRIPTION :
 ==============================================================================*/
 {
+	int access_count;
+	int argc;
+	char **argv;
 	char *cm_examples_directory,*cm_parameters_file_name,*example_directory,
 		*examples_directory,*example_comfile,
 		*example_requirements,*help_directory,*help_url;
@@ -24918,11 +24921,11 @@ Parses command line options from <state>.
 } /* read_cmgui_command_line_options */
 
 #if !defined (WIN32_USER_INTERFACE)
-struct Cmiss_command_data *CREATE(Cmiss_command_data)(int argc,char *argv[], 
+struct Cmiss_command_data *CREATE(Cmiss_command_data)(int in_argc, const char *in_argv[], 
 	const char *name_string, const char *version_string,const char *date_string,
 	const char *copyright_string, const char *build_string, const char *revision_string)
 #else /* !defined (WIN32_USER_INTERFACE) */
-struct Cmiss_command_data *CREATE(Cmiss_command_data)(int argc,char *argv[], 
+struct Cmiss_command_data *CREATE(Cmiss_command_data)(int in_argc, const char *in_argv[], 
 	const char *name_string, const char *version_string,const char *date_string,
 	const char *copyright_string, const char *build_string, const char *revision_string,
 	HINSTANCE current_instance, HINSTANCE previous_instance, LPSTR command_line,
@@ -25054,6 +25057,20 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 
 	if (ALLOCATE(command_data, struct Cmiss_command_data, 1))
 	{
+		command_data->access_count = 1;
+		// duplicate argument list so it can be modified by User Interface
+		int argc = in_argc;
+		char **argv = NULL;
+		if (0 < argc)
+		{
+			ALLOCATE(argv, char *, argc);
+			for (int ai = 0; ai < argc; ai++)
+			{
+				argv[ai] = duplicate_string(in_argv[ai]);
+			}
+		}
+		command_data->argc = argc;
+		command_data->argv = argv;
 		/* initialize application specific global variables */
 		command_data->execute_command = CREATE(Execute_command)();;
 		command_data->set_command = CREATE(Execute_command)();
@@ -26125,8 +26142,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 
 		if (command_list || write_help || batch_mode || !return_code)
 		{
-			DESTROY(Cmiss_command_data)(&command_data);
-			command_data = (struct Cmiss_command_data *)NULL;
+			Cmiss_command_data_destroy(&command_data);
 		}
 	}
 	else
@@ -26138,34 +26154,13 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 	return (command_data);
 } /* CREATE(Cmiss_command_data) */
 
-int Cmiss_command_data_main_loop(struct Cmiss_command_data *command_data)
-/*******************************************************************************
-LAST MODIFIED : 19 December 2002
-
-DESCRIPTION :
-Process events until some events request the program to finish.
-==============================================================================*/
-{
-	int return_code = 0;
-
-	ENTER(Cmiss_command_data_main_loop);
-	/* main processing / loop */
-	if (command_data && command_data->event_dispatcher)
-	{
-		/* user interface loop */						
-		return_code=Event_dispatcher_main_loop(command_data->event_dispatcher);
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_command_data_main_loop */
-
 int DESTROY(Cmiss_command_data)(struct Cmiss_command_data **command_data_address)
 /*******************************************************************************
 LAST MODIFIED : 19 December 2002
 
 DESCRIPTION :
 Clean up the command_data, deallocating all the associated memory and resources.
+NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 ==============================================================================*/
 {
 	int return_code = 0;
@@ -26180,8 +26175,14 @@ Clean up the command_data, deallocating all the associated memory and resources.
 
 	if (command_data_address && (command_data = *command_data_address))
 	{
+		if (command_data->access_count != 0)
+		{
+			display_message(ERROR_MESSAGE,
+				"Call to DESTROY(Cmiss_command_data) while still in use");
+			return 0;
+		}
 		/* clean-up memory */
-#if defined (USE_CMGUI_GRAPHICS_WINDOW)
+		#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		if (command_data->scene_viewer_package)
 		{
 			DESTROY(Cmiss_scene_viewer_package)(&command_data->scene_viewer_package);		
@@ -26340,7 +26341,7 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		DESTROY(LIST(GT_object))(&command_data->graphics_object_list);
 		DESTROY(LIST(GT_object))(&command_data->glyph_list);
 
-		/* need the following due to cirular reference where field owned by region references region itself;
+		/* need the following due to circular references where field owned by region references region itself;
 		 * when following removed also remove #include "region/cmiss_region_private.h" */
 		Cmiss_region_detach_fields_hierarchical(command_data->root_region);
 		
@@ -26438,6 +26439,15 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		{
 			DEALLOCATE(command_data->cm_parameters_file_name);
 		}
+		if (command_data->argv != NULL)
+		{
+			for (int ai = 0; ai < command_data->argc; ai++)
+			{
+				DEALLOCATE(command_data->argv[ai]);
+			}
+			DEALLOCATE(command_data->argv);
+			command_data->argv = NULL;
+		}
 
 		DEALLOCATE(*command_data_address);
 		return_code = 1;
@@ -26457,6 +26467,65 @@ Clean up the command_data, deallocating all the associated memory and resources.
 	
 	return (return_code);
 } /* DESTROY(Cmiss_command_data) */
+
+struct Cmiss_command_data *Cmiss_command_data_access(struct Cmiss_command_data *command_data)
+{
+	if (command_data)
+	{
+		command_data->access_count++;
+	}
+	return command_data;
+}
+
+int Cmiss_command_data_destroy(
+	struct Cmiss_command_data **command_data_address)
+{
+	int return_code;
+	struct Cmiss_command_data *command_data;
+
+	ENTER(Cmiss_command_data_destroy);
+	if (command_data_address && (NULL != (command_data = *command_data_address)))
+	{
+		command_data->access_count--;
+		if (0 == command_data->access_count)
+		{
+			DESTROY(Cmiss_command_data)(command_data_address);
+		}
+		*command_data_address = NULL;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_command_data_destroy.  Missing command data");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+int Cmiss_command_data_main_loop(struct Cmiss_command_data *command_data)
+/*******************************************************************************
+LAST MODIFIED : 19 December 2002
+
+DESCRIPTION :
+Process events until some events request the program to finish.
+==============================================================================*/
+{
+	int return_code = 0;
+
+	ENTER(Cmiss_command_data_main_loop);
+	/* main processing / loop */
+	if (command_data && command_data->event_dispatcher)
+	{
+		/* user interface loop */						
+		return_code=Event_dispatcher_main_loop(command_data->event_dispatcher);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_command_data_main_loop */
 
 struct Cmiss_region *Cmiss_command_data_get_root_region(
 	struct Cmiss_command_data *command_data)

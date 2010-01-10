@@ -79,6 +79,15 @@ DESCRIPTION :
 Creates a blank Cmiss_region.
 ==============================================================================*/
 
+/*******************************************************************************
+ * Returns a new reference to the region with reference count incremented.
+ * Caller is responsible for destroying the new reference.
+ * 
+ * @param region  The region to obtain a new reference to.
+ * @return  New region reference with incremented reference count.
+ */
+Cmiss_region_id Cmiss_region_access(Cmiss_region_id region);
+
 int Cmiss_region_destroy(Cmiss_region_id *region);
 /*******************************************************************************
 LAST MODIFIED : 3 January 2008
@@ -109,7 +118,7 @@ the change count returns to zero.  This allows many changes to be made
 efficiently, resulting in only one update of the dependent objects.
 ==============================================================================*/
 
-int Cmiss_region_read_file(struct Cmiss_region *region, char *file_name);
+int Cmiss_region_read_file(struct Cmiss_region *region, const char *file_name);
 /*******************************************************************************
 LAST MODIFIED : 19 August 2002
 

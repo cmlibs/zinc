@@ -280,10 +280,11 @@ void Computed_field_discrete_gaussian_image_filter::create_functor()
 } //namespace
 
 
-Cmiss_field_discrete_gaussian_image_filter_id Cmiss_field_discrete_gaussian_image_filter_cast(Cmiss_field_id field)
+Cmiss_field_discrete_gaussian_image_filter_id Cmiss_field_cast_discrete_gaussian_image_filter(Cmiss_field_id field)
 {
 	if (dynamic_cast<Computed_field_discrete_gaussian_image_filter*>(field->core))
 	{
+		Cmiss_field_access(field);
 		return (reinterpret_cast<Cmiss_field_discrete_gaussian_image_filter_id>(field));
 	}
 	else

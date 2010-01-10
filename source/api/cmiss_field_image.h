@@ -145,12 +145,13 @@ Cmiss_field_id Cmiss_field_module_create_image(Cmiss_field_module_id field_modul
 /*****************************************************************************//**
  * If the image_field is of type image field then this function returns
  * the image_field specific representation, otherwise returns NULL.
+ * Caller is responsible for destroying the new image filter reference.
  *
  * @param image_field  The image field to be cast.
  * @return  Image field specific representation if the input is the correct
  * field type, otherwise returns NULL.
  */
-Cmiss_field_image_id Cmiss_field_image_cast(Cmiss_field_id image_field);
+Cmiss_field_image_id Cmiss_field_cast_image(Cmiss_field_id image_field);
 
 /*****************************************************************************//**
  * Reads image data into the field.

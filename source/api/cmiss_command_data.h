@@ -82,11 +82,11 @@ Global functions
 */
 
 #if !defined (WIN32_USER_INTERFACE)
-struct Cmiss_command_data *Cmiss_command_data_create(int argc,char *argv[],
-	char *version_string);
+Cmiss_command_data_id Cmiss_command_data_create(int argc, const char *argv[],
+	const char *version_string);
 #else /* !defined (WIN32_USER_INTERFACE) */
-struct Cmiss_command_data *Cmiss_command_data_create(int argc,char *argv[],
-	char *version_string, HINSTANCE current_instance, 
+struct Cmiss_command_data *Cmiss_command_data_create(int argc, const char *argv[],
+	const char *version_string, HINSTANCE current_instance, 
         HINSTANCE previous_instance, LPSTR command_line,int initial_main_window_state);
 #endif /* !defined (WIN32_USER_INTERFACE) */
 /*******************************************************************************
@@ -96,15 +96,25 @@ DESCRIPTION :
 Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 ==============================================================================*/
 
-int Cmiss_command_data_destroy(struct Cmiss_command_data **command_data_address);
 /*******************************************************************************
-LAST MODIFIED : 13 August 2002
+ * Returns a new reference to the command data with reference count incremented.
+ * Caller is responsible for destroying the new reference.
+ * 
+ * @param command_data  The command data to obtain a new reference to.
+ * @return  New command data reference with incremented reference count.
+ */
+Cmiss_command_data_id Cmiss_command_data_access(Cmiss_command_data_id command_data);
 
-DESCRIPTION :
-Clean up the command_data, deallocating all the associated memory and resources.
-==============================================================================*/
+/***************************************************************************//**
+ * Destroys reference to the command data and sets pointer/handle to NULL.
+ * Internally this just decrements the reference count.
+ *
+ * @param command_data_address  Address of command data reference.
+ * @return  1 on success, 0 if invalid arguments.
+ */
+int Cmiss_command_data_destroy(Cmiss_command_data_id *command_data_address);
 
-int Cmiss_command_data_execute_command(struct Cmiss_command_data *command_data,
+int Cmiss_command_data_execute_command(Cmiss_command_data_id command_data,
 	const char *command);
 /*******************************************************************************
 LAST MODIFIED : 9 July 2007
@@ -114,7 +124,7 @@ Parses the supplied <command> using the command parser interpreter.
 ==============================================================================*/
 
 struct Cmiss_region *Cmiss_command_data_get_root_region(
-	struct Cmiss_command_data *command_data);
+	Cmiss_command_data_id command_data);
 /*******************************************************************************
 LAST MODIFIED : 18 April 2003
 
@@ -122,7 +132,7 @@ DESCRIPTION :
 Returns the root region from the <command_data>.
 ==============================================================================*/
 
-int Cmiss_command_data_main_loop(struct Cmiss_command_data *command_data);
+int Cmiss_command_data_main_loop(Cmiss_command_data_id command_data);
 /*******************************************************************************
 LAST MODIFIED : 19 December 2002
 
@@ -131,7 +141,7 @@ Process events until some events request the program to finish.
 ==============================================================================*/
 
 struct Cmiss_scene_viewer *Cmiss_command_data_get_graphics_window_pane_by_name(
-	struct Cmiss_command_data *command_data, const char *name, int pane_number);
+	Cmiss_command_data_id command_data, const char *name, int pane_number);
 /*******************************************************************************
 LAST MODIFIED : 26 January 2007
 

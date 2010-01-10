@@ -242,6 +242,7 @@ struct Cmiss_field_module
 	int coordinate_system_override; // true if coordinate system has been set
 	Computed_field_managed_status managed_status;
 	Computed_field *replace_field;
+	int access_count;
 };
 
 /*
@@ -1303,7 +1304,7 @@ Computed_field *Computed_field_create_generic(
 	Cmiss_field_module *field_module, bool check_source_field_regions,
 	int number_of_components,
 	int number_of_source_fields, Computed_field **source_fields,
-	int number_of_source_values, double *source_values,
+	int number_of_source_values, const double *source_values,
 	Computed_field_core *field_core)
 {
 	Computed_field *field = NULL;
@@ -5515,6 +5516,7 @@ struct Cmiss_field_module *Cmiss_field_module_create(struct Cmiss_region *region
 			field_module->replace_field = (Computed_field *)NULL;
 			field_module->coordinate_system.type = RECTANGULAR_CARTESIAN;
 			field_module->coordinate_system_override = 0;
+			field_module->access_count = 1;
 		}
 	}
 	else
@@ -5526,6 +5528,15 @@ struct Cmiss_field_module *Cmiss_field_module_create(struct Cmiss_region *region
 	return (field_module);
 };
 
+struct Cmiss_field_module *Cmiss_field_module_access(struct Cmiss_field_module *field_module)
+{
+	if (field_module)
+	{
+		field_module->access_count++;
+	}
+	return field_module;
+}
+
 int Cmiss_field_module_destroy(
 	struct Cmiss_field_module **field_module_address)
 {
@@ -5535,10 +5546,15 @@ int Cmiss_field_module_destroy(
 	ENTER(Cmiss_field_module_destroy);
 	if (field_module_address && (NULL != (field_module = *field_module_address)))
 	{
-		DEACCESS(Cmiss_region)(&field_module->region);
-		DEALLOCATE(field_module->field_name)
-		REACCESS(Computed_field)(&field_module->replace_field, NULL);
-		DEALLOCATE(*field_module_address);
+		field_module->access_count--;
+		if (0 == field_module->access_count)
+		{
+			DEACCESS(Cmiss_region)(&field_module->region);
+			DEALLOCATE(field_module->field_name)
+			REACCESS(Computed_field)(&field_module->replace_field, NULL);
+			DEALLOCATE(*field_module_address);
+		}
+		*field_module_address = NULL;
 		return_code = 1;
 	}
 	else

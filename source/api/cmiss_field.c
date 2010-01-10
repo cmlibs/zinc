@@ -54,17 +54,15 @@ Global functions
 ----------------
 */
 
-int Cmiss_field_destroy(Cmiss_field_id *field)
-/*******************************************************************************
-LAST MODIFIED : 22 April 2008
-
-DESCRIPTION :
-Destroys this reference to the field (and sets it to NULL).
-Internally this just decrements the reference count.
-==============================================================================*/
+Cmiss_field_id Cmiss_field_access(Cmiss_field_id field)
 {
-	return (DEACCESS(Computed_field)(field));
-} /* Cmiss_field_destroy */
+	return (ACCESS(Computed_field)(field));
+}
+
+int Cmiss_field_destroy(Cmiss_field_id *field_address)
+{
+	return (DEACCESS(Computed_field)(field_address));
+}
 
 int Cmiss_field_evaluate_at_node(struct Cmiss_field *field,
 	struct Cmiss_node *node, double time, int number_of_values, double *values)

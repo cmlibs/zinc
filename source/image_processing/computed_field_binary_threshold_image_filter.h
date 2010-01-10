@@ -66,6 +66,6 @@ int Cmiss_field_get_type_binary_threshold_image_filter(struct Computed_field *fi
 	struct Computed_field **source_field, double *lower_threshold,
 	double *upper_threshold);
 
-Cmiss_field_binary_threshold_image_filter_id Cmiss_field_binary_threshold_image_filter_cast(Cmiss_field_id field);
+Cmiss_field_binary_threshold_image_filter_id Cmiss_field_cast_binary_threshold_image_filter(Cmiss_field_id field);
 
 #endif /* !defined (COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER_H) */

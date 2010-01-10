@@ -56,6 +56,11 @@ Global functions
 ----------------
 */
 
+Cmiss_region_id Cmiss_region_access(Cmiss_region_id region)
+{
+	return (ACCESS(Cmiss_region)(region));
+}
+
 int Cmiss_region_destroy(Cmiss_region_id *region)
 /*******************************************************************************
 LAST MODIFIED : 3 January 2008
@@ -77,7 +82,7 @@ Destroys the <region> and sets the pointer to NULL.
 	return (return_code);
 } /* Cmiss_region_destroy */
 
-int Cmiss_region_read_file(struct Cmiss_region *region, char *file_name)
+int Cmiss_region_read_file(struct Cmiss_region *region, const char *file_name)
 /*******************************************************************************
 LAST MODIFIED : 23 May 2008
 

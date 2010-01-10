@@ -57,15 +57,15 @@ Global functions
 */
 
 #if !defined (WIN32_USER_INTERFACE)
-struct Cmiss_command_data *Cmiss_command_data_create(int argc,char *argv[],
-	char *version_string)
+struct Cmiss_command_data *Cmiss_command_data_create(int argc, const char *argv[],
+	const char *version_string)
 {
 	return CREATE(Cmiss_command_data)(argc, argv, version_string, NULL
 		, NULL, NULL, NULL, NULL);
 }
 #else /* !defined (WIN32_USER_INTERFACE) */
-struct Cmiss_command_data *Cmiss_command_data_create(int argc,char *argv[],
-	char *version_string, HINSTANCE current_instance, 
+struct Cmiss_command_data *Cmiss_command_data_create(int argc, const char *argv[],
+	const char *version_string, HINSTANCE current_instance, 
 	HINSTANCE previous_instance, LPSTR command_line,int initial_main_window_state)
 {
 	return CREATE(Cmiss_command_data)(argc, argv, version_string, NULL, NULL,
@@ -73,11 +73,6 @@ struct Cmiss_command_data *Cmiss_command_data_create(int argc,char *argv[],
 		previous_instance, command_line, initial_main_window_state);
 }
 #endif /* !defined (WIN32_USER_INTERFACE) */
-
-int Cmiss_command_data_destroy(struct Cmiss_command_data **command_data_address)
-{
-	return DESTROY(Cmiss_command_data)(command_data_address);
-}
 
 int Cmiss_command_data_execute_command(struct Cmiss_command_data *command_data,
 	const char *command)

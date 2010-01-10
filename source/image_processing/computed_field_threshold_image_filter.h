@@ -57,6 +57,6 @@ struct Computed_field *Cmiss_field_module_create_threshold_image_filter(
 	enum General_threshold_filter_mode threshold_mode, 
 	double outside_value, double below_value, double above_value);
 
-Cmiss_field_threshold_image_filter_id Cmiss_field_threshold_image_filter_cast(Cmiss_field_id field);
+Cmiss_field_threshold_image_filter_id Cmiss_field_cast_threshold_image_filter(Cmiss_field_id field);
 
 #endif /* !defined (COMPUTED_FIELD_THRESHOLD_IMAGE_FILTER_H) */

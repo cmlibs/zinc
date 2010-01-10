@@ -88,7 +88,7 @@ Returned field is ACCESSed once.
 
 struct Computed_field *Computed_field_create_constant(
 	struct Cmiss_field_module *field_module,
-	int number_of_values, double *values);
+	int number_of_values, const double *values);
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
 
@@ -140,8 +140,8 @@ struct Computed_field *Computed_field_create_composite(
 	struct Cmiss_field_module *field_module,
 	int number_of_components,
 	int number_of_source_fields, struct Computed_field **source_fields,
-	int number_of_source_values, double *source_values,
-	int *source_field_numbers, int *source_value_numbers);
+	int number_of_source_values, const double *source_values,
+	const int *source_field_numbers, const int *source_value_numbers);
 
 /*****************************************************************************//**
  * Creates a field which concatenates the components of all source fields, in

@@ -104,14 +104,20 @@ LAST MODIFIED : 23 December 1998
 DESCRIPTION :
 ==============================================================================*/
 
-int Cmiss_field_destroy(Cmiss_field_id *field);
 /*******************************************************************************
-LAST MODIFIED : 22 April 2008
+ * Returns a new reference to the field with reference count incremented.
+ * Caller is responsible for destroying the new reference.
+ * 
+ * @param field  The field to obtain a new reference to.
+ * @return  New field reference with incremented reference count.
+ */
+Cmiss_field_id Cmiss_field_access(Cmiss_field_id field);
 
-DESCRIPTION :
-Destroys this reference to the field (and sets it to NULL).
-Internally this just decrements the reference count.
-==============================================================================*/
+/*******************************************************************************
+ * Destroys this reference to the field (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ */
+int Cmiss_field_destroy(Cmiss_field_id *field_address);
 
 int Cmiss_field_evaluate_at_node(struct Cmiss_field *field,
 	struct Cmiss_node *node, double time, int number_of_values, double *values);

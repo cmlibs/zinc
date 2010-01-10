@@ -46,6 +46,7 @@ This should only be included in cmgui.c and command/cmiss.c
 #if !defined (COMMAND_CMISS_H)
 #define COMMAND_CMISS_H
 
+#include "api/cmiss_command_data.h"
 #include "command/command.h"
 #if defined (BUILD_WITH_CMAKE)
 #include "configure/cmgui_configure.h"
@@ -102,11 +103,11 @@ for editing or entering. If there is no command_window, does nothing.
 ==============================================================================*/
 
 #if !defined (WIN32_USER_INTERFACE)
-struct Cmiss_command_data *CREATE(Cmiss_command_data)(int argc,char *argv[],
+struct Cmiss_command_data *CREATE(Cmiss_command_data)(int in_argc, const char *in_argv[],
 	const char *name_string, const char *version_string,const char *date_string,
 	const char *copyright_string, const char *build_string, const char *revision_string);
 #else /* !defined (WIN32_USER_INTERFACE) */
-struct Cmiss_command_data *CREATE(Cmiss_command_data)(int argc,char *argv[],
+struct Cmiss_command_data *CREATE(Cmiss_command_data)(int in_argc, const char *in_argv[],
 	const char *name_string, const char *version_string, const char *date_string,
 	const char *copyright_string, const char *build_string, const char *revision_string, 
 	HINSTANCE current_instance, HINSTANCE previous_instance, 
@@ -119,20 +120,32 @@ DESCRIPTION :
 Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 ==============================================================================*/
 
+/*******************************************************************************
+ * Returns a new reference to the command data with reference count incremented.
+ * Caller is responsible for destroying the new reference.
+ * 
+ * @param command_data  The command data to obtain a new reference to.
+ * @return  New command data reference with incremented reference count.
+ */
+struct Cmiss_command_data * Cmiss_command_data_access(
+	struct Cmiss_command_data * command_data);
+
+/***************************************************************************//**
+ * Destroys reference to the command data and sets pointer/handle to NULL.
+ * Internally this just decrements the reference count.
+ *
+ * @param command_data_address  Address of command data reference.
+ * @return  1 on success, 0 if invalid arguments.
+ */
+int Cmiss_command_data_destroy(
+	struct Cmiss_command_data **command_data_address);
+
 int Cmiss_command_data_main_loop(struct Cmiss_command_data *command_data);
 /*******************************************************************************
 LAST MODIFIED : 19 December 2002
 
 DESCRIPTION :
 Process events until some events request the program to finish.
-==============================================================================*/
-
-int DESTROY(Cmiss_command_data)(struct Cmiss_command_data **command_data_address);
-/*******************************************************************************
-LAST MODIFIED : 19 December 2002
-
-DESCRIPTION :
-Clean up the command_data, deallocating all the associated memory and resources.
 ==============================================================================*/
 
 struct Cmiss_region *Cmiss_command_data_get_root_region(
