@@ -49,11 +49,6 @@ struct Cmiss_field_module;
 
 typedef struct Cmiss_field_module *Cmiss_field_module_id;
 
-/* Until the Cmiss_field_module names have the correct form it is convenient
- * for generation from zinc to have this alias name.
- */
-typedef struct Cmiss_field_module *Cmiss_field_create_id;
-
 /*******************************************************************************
  * Returns a new reference to the field module with reference count incremented.
  * Caller is responsible for destroying the new reference.

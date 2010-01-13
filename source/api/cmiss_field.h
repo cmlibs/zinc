@@ -47,6 +47,7 @@ The public interface to the Cmiss fields.
 
 #include "api/cmiss_node.h"
 #include "api/cmiss_element.h"
+#include "api/cmiss_field_module.h"
 
 /*******************************************************************************
  Automatic scalar broadcast
