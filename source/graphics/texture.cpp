@@ -49,7 +49,7 @@ The functions for manipulating graphical textures.
 // Visual Studio/cl doesn't implement this yet.
 double log2(double value)
 {  
-    return log(value) / log( 2.0 );  
+    return log(value) / M_LN2;  
 }
 #endif // defined (WIN32_SYSTEM)
 #if defined (BUILD_WITH_CMAKE)
