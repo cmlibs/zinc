@@ -25059,18 +25059,16 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 	{
 		command_data->access_count = 1;
 		// duplicate argument list so it can be modified by User Interface
-		int argc = in_argc;
-		char **argv = NULL;
-		if (0 < argc)
+		command_data->argc = in_argc;
+		command_data->argv = NULL;
+		if (0 < in_argc)
 		{
-			ALLOCATE(argv, char *, argc);
-			for (int ai = 0; ai < argc; ai++)
+			ALLOCATE(command_data->argv, char *, in_argc);
+			for (int ai = 0; ai < in_argc; ai++)
 			{
-				argv[ai] = duplicate_string(in_argv[ai]);
+				command_data->argv[ai] = duplicate_string(in_argv[ai]);
 			}
 		}
-		command_data->argc = argc;
-		command_data->argv = argv;
 		/* initialize application specific global variables */
 		command_data->execute_command = CREATE(Execute_command)();;
 		command_data->set_command = CREATE(Execute_command)();
@@ -25238,10 +25236,10 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_line_options.visual_id_number = visual_id;
 		command_line_options.command_file_name = comfile_name;
 	
-		if (state = create_Parse_state_from_tokens(argc,(const char **) argv))
+		if (state = create_Parse_state_from_tokens(command_data->argc,(const char **)(command_data->argv)))
 		{
 			option_table = CREATE(Option_table)();
-			Option_table_add_entry(option_table, argv[0], NULL,
+			Option_table_add_entry(option_table, command_data->argv[0], NULL,
 				(void *)&command_line_options, read_cmgui_command_line_options);
 			if (!Option_table_parse(option_table, state))
 			{
@@ -25280,7 +25278,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			/* write question mark help for command line options */
 			state = create_Parse_state_from_tokens(1, &double_question_mark);
 			option_table = CREATE(Option_table)();
-			Option_table_add_entry(option_table, argv[0], NULL,
+			Option_table_add_entry(option_table, command_data->argv[0], NULL,
 				(void *)&command_line_options, read_cmgui_command_line_options);
 			Option_table_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
@@ -25294,7 +25292,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			as X modifies the argc, argv removing the options it understands
 			however I want a full copy for the interpreter so that we can use
 			-display for example for both */
-		create_interpreter(argc, argv, comfile_name, &command_data->interpreter, &status);
+		create_interpreter(command_data->argc, command_data->argv, comfile_name, &command_data->interpreter, &status);
 
 		if (!status)
 		{
@@ -25325,7 +25323,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				{
 #if !defined (WIN32_USER_INTERFACE)
 					if (!(command_data->user_interface = CREATE(User_interface)
-							 (&argc, argv, command_data->event_dispatcher, "Cmgui",
+							 (&(command_data->argc), command_data->argv, command_data->event_dispatcher, "Cmgui",
 								 "cmgui")))
 					{
 						display_message(ERROR_MESSAGE,"Could not create User interface");
@@ -25808,7 +25806,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		{
 			/* set up image library */
 #if defined (UNIX) /* switch (Operating_System) */
-			Open_image_environment(*argv);
+			Open_image_environment(*(command_data->argv));
 #elif defined (WIN32_USER_INTERFACE) /* switch (Operating_System) */
 			/* SAB Passing a string to this function so that it
 				starts up, should get the correct thing from
