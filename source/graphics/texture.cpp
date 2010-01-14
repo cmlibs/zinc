@@ -45,6 +45,13 @@ The functions for manipulating graphical textures.
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#if defined (WIN32_SYSTEM)
+// Visual Studio/cl doesn't implement this yet.
+double log2(double value)
+{  
+    return log(value) / log( 2.0 );  
+}
+#endif // defined (WIN32_SYSTEM)
 #if defined (BUILD_WITH_CMAKE)
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
@@ -2353,7 +2360,7 @@ static int Texture_generate_software_mipmaps(struct Texture *texture,
 			max_size = render_depth;
 		}
 		
-		number_of_levels = floor(log2(max_size)) + 1;
+		number_of_levels = (unsigned int)floor(log2(max_size)) + 1;
 		
 #if defined (DEBUG)
 		printf("Max size %d levels %u\n", max_size, number_of_levels);
@@ -2370,15 +2377,15 @@ static int Texture_generate_software_mipmaps(struct Texture *texture,
 		for (level = 1 ; (NULL != previous_mipmap_image) && (level < number_of_levels) ; level++)
 		{
 			scaling *= 2.0;
-			int level_width = floor((double)render_width / scaling);
+			int level_width = (int)floor((double)render_width / scaling);
 			if (level_width < 1)
 				level_width = 1;
 
-			int level_height = floor((double)render_height / scaling);
+			int level_height = (int)floor((double)render_height / scaling);
 			if (level_height < 1)
 				level_height = 1;
 
-			int level_depth = floor((double)render_depth / scaling);
+			int level_depth = (int)floor((double)render_depth / scaling);
 			if (level_depth < 1)
 				level_depth = 1;
 			
