@@ -44,6 +44,9 @@ The functions for manipulating graphical textures.
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined (WIN32_SYSTEM)
+#define _USE_MATH_DEFINES
+#endif // defined (WIN32_SYSTEM)
 #include <math.h>
 #if defined (WIN32_SYSTEM)
 // Visual Studio/cl doesn't implement this yet.
