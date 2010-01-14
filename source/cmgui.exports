@@ -121,6 +121,7 @@ Cmiss_field_get_name
 
 Cmiss_field_module_access
 Cmiss_field_module_destroy
+Cmiss_field_module_find_field_by_name
 
 /* api/cmiss_field_arithmetic_operators.h */
 Cmiss_field_module_create_power

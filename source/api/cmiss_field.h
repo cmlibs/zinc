@@ -66,29 +66,14 @@ Global types
 ------------
 */
 
-struct Cmiss_region;
-/*******************************************************************************
-LAST MODIFIED : 13 August 2002
-
-DESCRIPTION :
-==============================================================================*/
-
-#ifndef CMISS_REGION_ID_DEFINED
-   typedef struct Cmiss_region * Cmiss_region_id;
-   #define CMISS_REGION_ID_DEFINED
-#endif /* CMISS_REGION_ID_DEFINED */
-
-/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
-#define Cmiss_field Computed_field
-
-struct Cmiss_field;
-typedef struct Cmiss_field *Cmiss_field_id;
-/*******************************************************************************
-LAST MODIFIED : 31 March 2004
-
-DESCRIPTION :
-==============================================================================*/
-
+#ifndef CMISS_FIELD_ID_DEFINED
+	/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
+	#define Cmiss_field Computed_field
+	struct Cmiss_field;
+	typedef struct Cmiss_field *Cmiss_field_id;
+	#define CMISS_FIELD_ID_DEFINED
+#endif /* CMISS_FIELD_ID_DEFINED */
+   
 /* Forward declared types */
 /* SAB Temporary until we decide how to fix things up internally instead of externally.*/
 #define Cmiss_time_sequence FE_time_sequence

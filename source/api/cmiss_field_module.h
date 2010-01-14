@@ -41,6 +41,15 @@
 #ifndef __CMISS_FIELD_MODULE_H__
 #define __CMISS_FIELD_MODULE_H__
 
+/* Workaround to revision C6810. It would be cleaner to just #include "api/cmiss_field.h" */
+#ifndef CMISS_FIELD_ID_DEFINED
+	/* SAB Temporary until we decide how to fix things up internally instead of externally.*/
+	#define Cmiss_field Computed_field
+	struct Cmiss_field;
+	typedef struct Cmiss_field *Cmiss_field_id;
+	#define CMISS_FIELD_ID_DEFINED
+#endif /* CMISS_FIELD_ID_DEFINED */
+
 /***************************************************************************//**
  * Field module, obtained from region, which owns fields and must be passed to
  * field factory create methods.
@@ -66,5 +75,15 @@ Cmiss_field_module_id Cmiss_field_module_access(Cmiss_field_module_id field_modu
  * @return  1 on success, 0 if invalid arguments.
  */
 int Cmiss_field_module_destroy(Cmiss_field_module_id *field_module_address);
+
+/***************************************************************************//**
+ * Returns the field of the specified name from the field module.
+ *
+ * @param field_module  Region field module in which to find the field.
+ * @param field_name  The name of the field to find.
+ * @return  New reference to field of specified name, or NULL if not found.
+ */
+Cmiss_field_id Cmiss_field_module_find_field_by_name(
+	Cmiss_field_module_id field_module, const char *field_name);
 
 #endif /* __CMISS_FIELD_MODULE_H__ */

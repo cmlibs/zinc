@@ -5568,6 +5568,35 @@ int Cmiss_field_module_destroy(
 	return (return_code);
 } /* Cmiss_field_module_destroy */
 
+
+struct Computed_field *Cmiss_field_module_find_field_by_name(
+	struct Cmiss_field_module *field_module, const char *field_name)
+{
+	struct Computed_field *field;
+	struct MANAGER(Computed_field) *manager;
+
+	ENTER(Cmiss_field_module_find_field_by_name);
+	if (field_module && field_name && 
+		(manager = Cmiss_region_get_Computed_field_manager(field_module->region)))
+	{
+		field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+			(char *)field_name, manager);
+		if (field)
+		{
+			ACCESS(Computed_field)(field);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_field_module_find_field_by_name.  Invalid argument(s)");
+		field = (struct Computed_field *)NULL;
+	}
+	LEAVE;
+
+	return (field);
+}
+
 struct Cmiss_region *Cmiss_field_module_get_region(
 	struct Cmiss_field_module *field_module)
 {
