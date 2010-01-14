@@ -1501,23 +1501,26 @@ tiles (and <texture_tiling> wasn't NULL.
 #endif /* defined (OPENGL_API)*/
 
 #if defined (OPENGL_API)
+/***************************************************************************//**
+ * Returns an resized image representing a scaling of the <source_image>
+ *  
+ * @param texture The source_image and returned image are assumed to
+ * be stored consistently with the format described by this texture
+ * @param source_image The incoming image data downsampled to calculate the resized image
+ * @param source_width_texels source_image sizes
+ * @param source_height_texels source_image sizes
+ * @param source_depth_texels source_image sizes
+ * @param width_texels Desired returned image sizes
+ * @param height_texels Desired returned image sizes
+ * @param depth_texels Desired returned image sizes
+ * @param resize_filter Filtering mode
+ * @return Returns allocated new memory containing image if successful, otherwise NULL.
+ */
 static unsigned char *Texture_get_resized_image(struct Texture *texture,
+	unsigned char *source_image, int source_width_texels,
+	int source_height_texels, int source_depth_texels,
 	int width_texels, int height_texels, int depth_texels,
 	enum Texture_resize_filter_mode resize_filter)
-/*******************************************************************************
-LAST MODIFIED : 7 March 2002
-
-DESCRIPTION :
-Returns an allocated image space suitable for passing to texture commands and
-containing the image in <texture> resized to:
-<width_texels>*<height_texels>*<depth_texels>.
-The <filter> mode controls how the texture image is resampled and varyies from
-fast nearest pixel filtering to linear interpolation.
-???RC Since this function is currently only called with a power of 2 reduction
-factor obtained from Texture_get_hardware_reduction, only the case where the
-original width, height and depth are integer multiples of the new values is
-currently implemented for the expensive linear filter.
-==============================================================================*/
 {
 	unsigned char *destination, *i_base, *image, *j_base, *source, *source2;
 	float i_factor, j_factor, k_factor;
@@ -1537,7 +1540,7 @@ currently implemented for the expensive linear filter.
 			Texture_storage_type_get_number_of_components(texture->storage);
 		number_of_bytes_per_component = texture->number_of_bytes_per_component;
 		bytes_per_pixel = number_of_bytes_per_component * number_of_components;
-		source_row_width_bytes = 4*((texture->width_texels*bytes_per_pixel + 3)/4);
+		source_row_width_bytes = 4*((source_width_texels*bytes_per_pixel + 3)/4);
 		destination_row_width_bytes = 4*((width_texels*bytes_per_pixel + 3)/4);
 		if (ALLOCATE(image, unsigned char,
 			depth_texels*height_texels*destination_row_width_bytes))
@@ -1546,24 +1549,24 @@ currently implemented for the expensive linear filter.
 			{
 				case TEXTURE_RESIZE_LINEAR_FILTER:
 				{
-					width_reduction = texture->width_texels / width_texels;
-					height_reduction = texture->height_texels / height_texels;
-					depth_reduction = texture->depth_texels / depth_texels;
-					if ((width_texels*width_reduction == texture->width_texels) &&
-						(height_texels*height_reduction == texture->height_texels) &&
-						(depth_texels*depth_reduction == texture->depth_texels))
+					width_reduction = source_width_texels / width_texels;
+					height_reduction = source_height_texels / height_texels;
+					depth_reduction = source_depth_texels / depth_texels;
+					if ((width_texels*width_reduction == source_width_texels) &&
+						(height_texels*height_reduction == source_height_texels) &&
+						(depth_texels*depth_reduction == source_depth_texels))
 					{
 						number_of_accumulated_pixels =
 							width_reduction*height_reduction*depth_reduction;
-						i_offset = (depth_reduction - 1)*texture->height_texels*
+						i_offset = (depth_reduction - 1)*source_height_texels*
 							source_row_width_bytes;
 						j_offset = (height_reduction - 1)*source_row_width_bytes;
 						k_offset = width_reduction*bytes_per_pixel;
-						a_offset = (texture->height_texels - height_reduction)*
+						a_offset = (source_height_texels - height_reduction)*
 							source_row_width_bytes;
 						b_offset = source_row_width_bytes - width_reduction*bytes_per_pixel;
 						c_offset = bytes_per_pixel;
-						source = texture->image;
+						source = source_image;
 						destination = image;
 						switch (number_of_bytes_per_component)
 						{
@@ -1596,7 +1599,7 @@ currently implemented for the expensive linear filter.
 												accumulator =
 													(accumulator + number_of_accumulated_pixels/2) /
 													number_of_accumulated_pixels;
-												*destination = (unsigned char)accumulator;
+												*destination = accumulator;
 												destination++;
 											}
 											source += k_offset;
@@ -1639,8 +1642,8 @@ currently implemented for the expensive linear filter.
 												accumulator =
 													(accumulator + number_of_accumulated_pixels/2) /
 													number_of_accumulated_pixels;
-												*destination = (unsigned char)accumulator;
-												destination++;
+												*((unsigned short *)destination) = accumulator;
+												destination+=2;
 											}
 											source += k_offset;
 										}
@@ -1666,16 +1669,16 @@ currently implemented for the expensive linear filter.
 				} break;
 				case TEXTURE_RESIZE_NEAREST_FILTER:
 				{
-					i_factor = texture->depth_texels / depth_texels;
-					j_factor = texture->height_texels / height_texels;
-					k_factor = texture->width_texels / width_texels;
+					i_factor = source_depth_texels / depth_texels;
+					j_factor = source_height_texels / height_texels;
+					k_factor = source_width_texels / width_texels;
 					padding_bytes = (destination_row_width_bytes -
 						width_texels*bytes_per_pixel);
 					destination = image;
 					for (i = 0; i < depth_texels; i++)
 					{
-						i_base = texture->image + (long int)((0.5 + (double)i)*(double)i_factor) *
-							texture->height_texels * source_row_width_bytes;
+						i_base = source_image + (long int)((0.5 + (double)i)*(double)i_factor) *
+							source_height_texels * source_row_width_bytes;
 						for (j = 0; j < height_texels; j++)
 						{
 							j_base = i_base + (long int)((0.5 + (double)j)*(double)j_factor) *
@@ -2248,19 +2251,18 @@ Separating this out so we can set it for each activated tile.
 			case TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER:
 			{
 #if defined (GL_VERSION_1_4)
-				if (Graphics_library_check_extension(GL_VERSION_1_4))
+				/* The GL_GENERATE_MIPMAP extension was promoted to core in OpenGL 1.4.
+				 * (but has been deprecated for manual calculation with glGenerateMipmap
+				 * but I haven't changed right now as that seems less supported)
+				 * We check for the previous extension name at runtime and if not available
+				 * then fallback to software mipmap generation.
+				 */
+				glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+				glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,
+					GL_LINEAR_MIPMAP_LINEAR);
+				if (Graphics_library_check_extension(GL_SGIS_generate_mipmap))
 				{
-					glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-					glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,
-						GL_LINEAR_MIPMAP_LINEAR);
 					glTexParameteri(texture_target,GL_GENERATE_MIPMAP,GL_TRUE);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
-						"Texture filter mode %s not supported on this hardware.", 
-						ENUMERATOR_STRING(Texture_filter_mode)(texture->filter_mode));
-					return_code = 0;
 				}
 #else /* defined (GL_VERSION_1_4) */
 				display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
@@ -2272,19 +2274,12 @@ Separating this out so we can set it for each activated tile.
 			case TEXTURE_LINEAR_MIPMAP_NEAREST_FILTER:
 			{
 #if defined (GL_VERSION_1_4)
-				if (Graphics_library_check_extension(GL_VERSION_1_4))
+				glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+				glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,
+					GL_LINEAR_MIPMAP_NEAREST);
+				if (Graphics_library_check_extension(GL_SGIS_generate_mipmap))
 				{
-					glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-					glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,
-						GL_LINEAR_MIPMAP_NEAREST);
 					glTexParameteri(texture_target,GL_GENERATE_MIPMAP,GL_TRUE);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
-						"Texture filter mode %s not supported on this hardware.", 
-						ENUMERATOR_STRING(Texture_filter_mode)(texture->filter_mode));
-					return_code = 0;
 				}
 #else /* defined (GL_VERSION_1_4) */
 				display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
@@ -2296,19 +2291,12 @@ Separating this out so we can set it for each activated tile.
 			case TEXTURE_NEAREST_MIPMAP_NEAREST_FILTER:
 			{
 #if defined (GL_VERSION_1_4)
-				if (Graphics_library_check_extension(GL_VERSION_1_4))
+				glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+				glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,
+					GL_NEAREST_MIPMAP_NEAREST);
+				if (Graphics_library_check_extension(GL_SGIS_generate_mipmap))
 				{
-					glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-					glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,
-						GL_NEAREST_MIPMAP_NEAREST);
 					glTexParameteri(texture_target,GL_GENERATE_MIPMAP,GL_TRUE);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
-						"Texture filter mode %s not supported on this hardware.", 
-						ENUMERATOR_STRING(Texture_filter_mode)(texture->filter_mode));
-					return_code = 0;
 				}
 #else /* defined (GL_VERSION_1_4) */
 				display_message(ERROR_MESSAGE, "Texture_activate_texture_target_environment.  "
@@ -2333,6 +2321,158 @@ Separating this out so we can set it for each activated tile.
 
 	return (return_code);
 } /* Texture_activate_texture_target_environment */
+#endif /* defined (OPENGL_API) */
+
+#if defined (OPENGL_API)
+/***************************************************************************//**
+ * Calculates and loads software mipmap levels for the texture.
+ * 
+ * @param texture The currently active texture for which mipmaps should be loaded.
+ * @param renderer  The currently operating renderer.
+ * @return Returns 1 if successful.
+ */
+static int Texture_generate_software_mipmaps(struct Texture *texture,
+	Render_graphics_opengl *renderer, unsigned char *source_image,
+	int render_width, int render_height, int render_depth,
+	int hardware_storage_format, GLenum format, GLenum type)
+{
+	int return_code;
+	
+	if (texture && renderer)
+	{
+		int max_size;
+		unsigned int number_of_levels;
+		
+		max_size = render_width;
+		if ((texture->dimension > 1) && render_height > max_size)
+		{
+			max_size = render_height;
+		}
+		if ((texture->dimension > 2) && render_depth > max_size)
+		{
+			max_size = render_depth;
+		}
+		
+		number_of_levels = floor(log2(max_size)) + 1;
+		
+#if defined (DEBUG)
+		printf("Max size %d levels %u\n", max_size, number_of_levels);
+#endif // defined (DEBUG)
+		
+		unsigned char *previous_mipmap_image = source_image;
+		int previous_mipmap_width = render_width;
+		int previous_mipmap_height = render_height;
+		int previous_mipmap_depth = render_depth;
+		
+		
+		double scaling = 1.0;
+		unsigned int level;
+		for (level = 1 ; (NULL != previous_mipmap_image) && (level < number_of_levels) ; level++)
+		{
+			scaling *= 2.0;
+			int level_width = floor((double)render_width / scaling);
+			if (level_width < 1)
+				level_width = 1;
+
+			int level_height = floor((double)render_height / scaling);
+			if (level_height < 1)
+				level_height = 1;
+
+			int level_depth = floor((double)render_depth / scaling);
+			if (level_depth < 1)
+				level_depth = 1;
+			
+#if defined (DEBUG)
+			printf(" Level %u (%d,%d,%d)\n", level, level_width, level_height, level_depth);
+#endif // defined (DEBUG)
+
+			unsigned char *mipmap_image = Texture_get_resized_image(texture,
+				previous_mipmap_image, previous_mipmap_width, previous_mipmap_height, previous_mipmap_depth,
+				level_width, level_height, level_depth, TEXTURE_RESIZE_LINEAR_FILTER);
+			
+			if (mipmap_image)
+			{
+				switch (texture->dimension)
+				{
+					case 1:
+					{
+						glTexImage1D(GL_TEXTURE_1D, level,
+							(GLint)hardware_storage_format,
+							(GLint)level_width, (GLint)0,
+							format, type, (GLvoid *)mipmap_image);
+					} break;
+					case 2:
+					{
+						glTexImage2D(GL_TEXTURE_2D, level,
+							(GLint)hardware_storage_format,
+							(GLint)level_width,
+							(GLint)level_height, (GLint)0,
+							format, type, (GLvoid *)mipmap_image);
+					} break;
+					case 3:
+					{
+	#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+						if (
+	#  if defined (GL_VERSION_1_2)
+							Graphics_library_check_extension(GL_VERSION_1_2)
+	#    if defined (GL_EXT_texture3D)
+							||
+	#    endif /* defined (GL_EXT_texture3D) */
+	#  endif /* defined (GL_VERSION_1_2) */
+	#  if defined (GL_EXT_texture3D)
+							Graphics_library_check_extension(GL_EXT_texture3D)
+	#  endif /* defined (GL_EXT_texture3D) */
+							)
+						{
+							glTexImage3D(GL_TEXTURE_3D, level,
+								(GLint)hardware_storage_format,
+								(GLint)level_width,
+								(GLint)level_height,
+								(GLint)level_depth, (GLint)0,
+								format, type, (GLvoid *)mipmap_image);
+						}
+						else
+						{
+	#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+							display_message(ERROR_MESSAGE,"direct_render_Texture.  "
+								"3D textures not supported on this display.");
+							return_code=0;
+	#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+						}
+	#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+					} break;	
+				}
+			}
+
+			if (previous_mipmap_image != source_image)
+			{
+				DEALLOCATE(previous_mipmap_image);
+			}
+			previous_mipmap_image = mipmap_image;
+			previous_mipmap_width = level_width;
+			previous_mipmap_height = level_height;
+			previous_mipmap_depth = level_depth;
+		}
+		if (previous_mipmap_image)
+		{
+			return_code = 1;
+			if (previous_mipmap_image != source_image)
+			{
+				DEALLOCATE(previous_mipmap_image);
+			}
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		return_code = 0;		
+	}
+	
+	return (return_code);
+} /* Texture_generate_software_mipmaps */
 #endif /* defined (OPENGL_API) */
 
 #if defined (OPENGL_API)
@@ -2536,6 +2676,7 @@ Directly outputs the commands setting up the <texture>.
 							if (return_code)
 							{
 								reduced_image = Texture_get_resized_image(texture,
+									texture->image, texture->width_texels, texture->height_texels, texture->depth_texels,
 									texture->rendered_width_texels, texture->rendered_height_texels,
 									texture->rendered_depth_texels, texture->resize_filter_mode);
 								if (reduced_image)
@@ -2646,6 +2787,25 @@ Directly outputs the commands setting up the <texture>.
 #endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
 								} break;
 							}
+#if defined (GL_VERSION_1_4)
+							switch (texture->filter_mode)
+							{
+								case TEXTURE_LINEAR_MIPMAP_NEAREST_FILTER:
+								case TEXTURE_LINEAR_MIPMAP_LINEAR_FILTER:
+								{
+									if (!Graphics_library_check_extension(GL_SGIS_generate_mipmap))
+									{	
+										Texture_generate_software_mipmaps(texture, renderer, rendered_image,
+											render_tile_width, render_tile_height, render_tile_depth,
+											hardware_storage_format, format, type);
+									}
+								} break;
+								default:
+								{
+									/* Do nothing */
+								}
+							}
+#endif /* defined (GL_VERSION_1_4) */
 						}
 					}
 					if (reduced_image)

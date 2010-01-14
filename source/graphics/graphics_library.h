@@ -415,6 +415,9 @@ yet we just don't know.
 #if defined (GL_VERSION_2_0)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_shading_language);
 #endif 
+#if defined (GL_VERSION_1_4)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_SGIS_generate_mipmap);
+#endif 
 /* Fake extension to control whether display lists are used or not.
  * This is only determined by the corresponding CMISS_GL_display_list environment
  * variable. */

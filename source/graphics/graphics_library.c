@@ -1428,6 +1428,41 @@ appropriately.
 			}
 		}
 #endif /* GL_NV_float_buffer */
+#if defined GL_VERSION_1_4
+		/* This was promoted to core in OpenGL 1.4 but we use the previous extension
+		 * name to give us control over just this feature (and to embargo it for Intel)
+		 */
+		else if (!strcmp(extension_name, "GL_SGIS_generate_mipmap"))
+		{
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_SGIS_generate_mipmap))
+			{
+				return_code = GLEXTENSIONFLAG(GL_SGIS_generate_mipmap);
+			}
+			else
+			{
+				return_code = Graphics_library_query_environment_extension(extension_name);
+				if (GLEXTENSION_UNSURE == return_code)
+				{
+					/* Embargo on Intel as it reports available but doesn't seem to work
+					 * on the chipsets I have tried.
+					 * See https://tracker.physiomeproject.org/show_bug.cgi?id=2386
+					 */
+					if (Graphics_library_vendor_intel == Graphics_library_get_vendor_id())
+					{
+						return_code = GLEXTENSION_UNAVAILABLE;
+					}
+					else
+					{
+						return_code = query_gl_version(1, 4);
+						if (return_code != GLEXTENSION_AVAILABLE)
+							return_code = query_gl_extension(extension_name);
+					}
+					/* Only symbols, no functions. */
+				}
+				GLEXTENSIONFLAG(GL_SGIS_generate_mipmap) = return_code;
+			}
+		}
+#endif /* GL_VERSION_1_4 */
 		/* A fake extension for controlling whether display lists are used at run time. */
 		else if (!strcmp(extension_name, "GL_display_lists"))
 		{
