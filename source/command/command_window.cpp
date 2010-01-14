@@ -2014,14 +2014,20 @@ private:
 		 USE_PARAMETER(event);
 		 wxAboutDialogInfo info;
 		 info.SetName(_T("cmgui"));
-		 if (ALLOCATE(temp_string, char, strlen(copyright_string) + strlen(license_string) + 1))
+
+		 if (copyright_string && ALLOCATE(temp_string, char, strlen(copyright_string) + strlen(license_string) + 1))
 		 {
 			 strcpy(temp_string, copyright_string);
 			 strcat(temp_string, license_string);
 			 info.SetDescription(_T(temp_string));
 			 DEALLOCATE(temp_string);
 		 }
-		 if (ALLOCATE(temp_string, char, strlen(build_string) + strlen(revision_string) + strlen(date_string) + 23))
+		 else
+		 {
+			 info.SetDescription(_T(license_string));
+		 }
+		 if (build_string && revision_string && date_string &&
+			 ALLOCATE(temp_string, char, strlen(build_string) + strlen(revision_string) + strlen(date_string) + 23))
 		 {
 			 strcpy(temp_string, "Build_information: ");
 			 strcat(temp_string, build_string);
@@ -2032,7 +2038,10 @@ private:
 			 info.SetCopyright(_T(temp_string));
 			 DEALLOCATE(temp_string);
 		 }
-		 info.SetVersion(_T(version_string));
+		 if (version_string)
+		 {
+			 info.SetVersion(_T(version_string));
+		 }
 		 info.SetWebSite(_T("http://www.cmiss.org/cmgui"));
 		 info.SetLicense(CMISS_LICENSE_STRING);
 		 wxAboutBox(info);
