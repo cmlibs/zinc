@@ -54,6 +54,10 @@ double log2(double value)
 {  
     return log(value) / M_LN2;  
 }
+long lround(double d)
+{
+	return (long)(d>0 ? d+0.5 : ceil(d-0.5));
+}
 #endif // defined (WIN32_SYSTEM)
 #if defined (BUILD_WITH_CMAKE)
 #include "configure/cmgui_configure.h"
