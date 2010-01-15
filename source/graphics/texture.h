@@ -355,6 +355,26 @@ DESCRIPTION :
 Sets how the texture is combined with the material: blend, decal or modulate.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * The mipmap_level_of_detail_bias adjusts the automatic OpenGL calculation for
+ * selecting an appropriate mipmap when displaying a texture.
+ * 
+ * @param texture The texture object.
+ * @param bias  Returns current bias value.
+ * @return Returns 1 if successful.
+ */
+int Texture_get_mipmap_level_of_detail_bias(struct Texture *texture,float *bias);
+
+/***************************************************************************//**
+ * The mipmap_level_of_detail_bias adjusts the automatic OpenGL calculation for
+ * selecting an appropriate mipmap when displaying a texture.
+ * 
+ * @param texture The texture object.
+ * @param bias  New bias value.
+ * @return Returns 1 if successful.
+ */
+int Texture_set_mipmap_level_of_detail_bias(struct Texture *texture,float bias);
+
 enum Texture_compression_mode Texture_get_compression_mode(struct Texture *texture);
 /*******************************************************************************
 LAST MODIFIED : 8 August 2002

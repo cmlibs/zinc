@@ -7051,7 +7051,7 @@ Modifies the properties of a texture.
 	enum Texture_storage_type specify_format;
 	enum Texture_wrap_mode wrap_mode;
 	float alpha, depth, distortion_centre_x, distortion_centre_y,
-		distortion_factor_k1, height, width;
+		distortion_factor_k1, height, mipmap_level_of_detail_bias, width;
 	int file_number, i, number_of_file_names, number_of_valid_strings, process,
 		return_code, specify_depth, specify_height,
 		specify_number_of_bytes_per_component, specify_width, texture_is_managed;
@@ -7157,6 +7157,7 @@ Modifies the properties of a texture.
 						&width, &height, &depth);
 					Texture_get_distortion_info(texture,
 						&distortion_centre_x,&distortion_centre_y,&distortion_factor_k1);
+					Texture_get_mipmap_level_of_detail_bias(texture, &mipmap_level_of_detail_bias);
 					texture_tiling_enabled = Texture_get_texture_tiling_enabled(texture);
 					texture_distortion[0]=(double)distortion_centre_x;
 					texture_distortion[1]=(double)distortion_centre_y;
@@ -7264,6 +7265,9 @@ Modifies the properties of a texture.
 					Option_table_add_entry(option_table, "movie", &movie,
 					  command_data->movie_graphics_manager, set_Movie_graphics);
 #endif /* defined (SGI_MOVIE_FILE) */
+					/* mipmap_level_of_detail_bias */
+					Option_table_add_float_entry(option_table, "mipmap_level_of_detail_bias",
+						&mipmap_level_of_detail_bias);
 					/* number_pattern */
 					Option_table_add_entry(option_table, "number_pattern",
 						&file_number_pattern, (void *)1, set_name);
@@ -7355,6 +7359,7 @@ Modifies the properties of a texture.
 						Texture_set_physical_size(texture, width,
 							height, depth);
 						Texture_set_texture_tiling_enabled(texture, texture_tiling_enabled);
+						Texture_set_mipmap_level_of_detail_bias(texture, mipmap_level_of_detail_bias);
 
 						STRING_TO_ENUMERATOR(Texture_combine_mode)(
 							combine_mode_string, &combine_mode);

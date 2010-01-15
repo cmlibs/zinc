@@ -181,6 +181,7 @@ The properties of a graphical texture.
 	enum Texture_wrap_mode wrap_mode;
 	struct Colour combine_colour;
 	float combine_alpha;
+	float mipmap_level_of_detail_bias;
 	/* following controls how a texture is downsampled to fit texture hardware */
 	enum Texture_resize_filter_mode resize_filter_mode;
 
@@ -1532,13 +1533,12 @@ static unsigned char *Texture_get_resized_image(struct Texture *texture,
 	int width_texels, int height_texels, int depth_texels,
 	enum Texture_resize_filter_mode resize_filter)
 {
+	double accumulator, width_reduction, height_reduction, depth_reduction, number_of_accumulated_pixels;
 	unsigned char *destination, *i_base, *image, *j_base, *source, *source2;
 	float i_factor, j_factor, k_factor;
-	int a, a_offset, b, b_offset, bytes_per_pixel, c, c_offset, depth_reduction,
-		destination_row_width_bytes, height_reduction, i, i_offset, j, j_offset,
-		k, k_offset, n, number_of_bytes_per_component, number_of_components,
-		padding_bytes, return_code, source_row_width_bytes, width_reduction;
-	unsigned long accumulator, number_of_accumulated_pixels;
+	int a, b, bytes_per_pixel, c,
+		destination_row_width_bytes, i, j, k, n, number_of_bytes_per_component, number_of_components,
+		padding_bytes, return_code, source_row_width_bytes;
 
 	ENTER(Texture_get_resized_image);
 	image = (unsigned char *)NULL;
@@ -1559,122 +1559,192 @@ static unsigned char *Texture_get_resized_image(struct Texture *texture,
 			{
 				case TEXTURE_RESIZE_LINEAR_FILTER:
 				{
-					width_reduction = source_width_texels / width_texels;
-					height_reduction = source_height_texels / height_texels;
-					depth_reduction = source_depth_texels / depth_texels;
-					if ((width_texels*width_reduction == source_width_texels) &&
-						(height_texels*height_reduction == source_height_texels) &&
-						(depth_texels*depth_reduction == source_depth_texels))
+					width_reduction = (double)source_width_texels / (double)width_texels;
+					height_reduction = (double)source_height_texels / (double)height_texels;
+					depth_reduction = (double)source_depth_texels / (double)depth_texels;
+					number_of_accumulated_pixels =
+						width_reduction*height_reduction*depth_reduction;
+					source = source_image;
+					destination = image;
+					padding_bytes = (destination_row_width_bytes -
+						width_texels*bytes_per_pixel);
+					switch (number_of_bytes_per_component)
 					{
-						number_of_accumulated_pixels =
-							width_reduction*height_reduction*depth_reduction;
-						i_offset = (depth_reduction - 1)*source_height_texels*
-							source_row_width_bytes;
-						j_offset = (height_reduction - 1)*source_row_width_bytes;
-						k_offset = width_reduction*bytes_per_pixel;
-						a_offset = (source_height_texels - height_reduction)*
-							source_row_width_bytes;
-						b_offset = source_row_width_bytes - width_reduction*bytes_per_pixel;
-						c_offset = bytes_per_pixel;
-						source = source_image;
-						destination = image;
-						switch (number_of_bytes_per_component)
+						case 1:
 						{
-							case 1:
+							for (i = 0; i < depth_texels; i++)
 							{
-								for (i = 0; i < depth_texels; i++)
+								double source_depth_start = (double)i * depth_reduction;
+								double source_depth_end = (double)(i + 1) * depth_reduction;
+								int a_start = (int)floor(source_depth_start);
+								int a_end = (int)ceil(source_depth_end);
+								double xi_a_start = 1.0 - (source_depth_start - (double)a_start);
+								double xi_a_end =  1.0 - ((double)a_end - source_depth_end);
+								for (j = 0; j < height_texels; j++)
 								{
-									for (j = 0; j < height_texels; j++)
+									double source_height_start = (double)j * height_reduction;
+									double source_height_end = (double)(j + 1) * height_reduction;
+									int b_start = (int)floor(source_height_start);
+									int b_end = (int)ceil(source_height_end);
+									double xi_b_start = 1.0 - (source_height_start - (double)b_start);
+									double xi_b_end =  1.0 - ((double)b_end - source_height_end);
+									for (k = 0; k < width_texels; k++)
 									{
-										for (k = 0; k < width_texels; k++)
+										double source_width_start = (double)k * width_reduction;
+										double source_width_end = (double)(k + 1) * width_reduction;
+										int c_start = (int)floor(source_width_start);
+										int c_end = (int)ceil(source_width_end);
+										double xi_c_start = 1.0 - (source_width_start - (double)c_start);
+										double xi_c_end =  1.0 - ((double)c_end - source_width_end);
+										source = source_image + bytes_per_pixel * c_start + 
+											source_row_width_bytes * (b_start + source_height_texels * a_start);
+										for (n = 0; n < number_of_components; n++)
 										{
-											for (n = 0; n < number_of_components; n++)
+											source2 = source + n;
+											accumulator = 0.0;
+											for (a = a_start; a < a_end; a++)
 											{
-												source2 = source + n;
-												accumulator = 0;
-												for (a = 0; a < depth_reduction; a++)
+												double xi_a;
+												if (a == a_start)
+													xi_a = xi_a_start;
+												else if (a == a_end - 1)
+													xi_a = xi_a_end;
+												else
+													xi_a = 1.0;
+												for (b = b_start; b < b_end; b++)
 												{
-													for (b = 0; b < height_reduction; b++)
+													double xi_b;
+													if (b == b_start)
+														xi_b = xi_a * xi_b_start;
+													else if (b == b_end - 1)
+														xi_b = xi_a * xi_b_end;
+													else
+														xi_b = xi_a;
+													for (c = c_start; c < c_end; c++)
 													{
-														for (c = 0; c < width_reduction; c++)
-														{
-															accumulator += *source2;
-															source2 += c_offset;
-														}
-														source2 += b_offset;
+														double xi_c;
+														if (c == c_start)
+															xi_c = xi_b * xi_c_start;
+														else if (c == c_end - 1)
+															xi_c = xi_b * xi_c_end;
+														else
+															xi_c = xi_b;
+														accumulator += *source2 * xi_c;
+														source2 += bytes_per_pixel;
 													}
-													source2 += a_offset;
+													source2 += source_row_width_bytes - (c_end - c_start)*bytes_per_pixel;
 												}
-												/* following performs integer rounding */
-												accumulator =
-													(accumulator + number_of_accumulated_pixels/2) /
-													number_of_accumulated_pixels;
-												*destination = accumulator;
-												destination++;
+												source2 += (source_height_texels - (b_end - b_start)) *
+													source_row_width_bytes;
 											}
-											source += k_offset;
+											*destination = lround(accumulator / number_of_accumulated_pixels);
+											destination++;
+#if defined (DEBUG)
+//											printf(" %lf-%lf(%d-%d) %lf-%lf(%d-%d) %lf-%lf(%d-%d)  axi %lf %lf bxi %lf %lf cxi %lf %lf\n       number %lf %lf accumulation %lf\n",
+//													source_depth_start, source_depth_end, a_start, a_end, 
+//													source_height_start, source_height_end, b_start, b_end,
+//													source_width_start, source_width_end, c_start, c_end,
+//													xi_a_start, xi_a_end, xi_b_start, xi_b_end, xi_c_start, xi_c_end, 
+//													number_of_accumulated_pixels, xi_accumulator, accumulator);
+#endif // defined (DEBUG)
 										}
-										source += j_offset;
 									}
-									source += i_offset;
+									if (0 < padding_bytes)
+									{
+										memset((void *)destination, 0, padding_bytes);
+										destination += padding_bytes;
+									}
 								}
-							} break;
-							case 2:
+							}
+						} break;
+						case 2:
+						{
+							for (i = 0; i < depth_texels; i++)
 							{
-								for (i = 0; i < depth_texels; i++)
+								double source_depth_start = (double)i * depth_reduction;
+								double source_depth_end = (double)(i + 1) * depth_reduction;
+								int a_start = (int)floor(source_depth_start);
+								int a_end = (int)ceil(source_depth_end);
+								double xi_a_start = 1.0 - (source_depth_start - (double)a_start);
+								double xi_a_end =  1.0 - ((double)a_end - source_depth_end);
+								for (j = 0; j < height_texels; j++)
 								{
-									for (j = 0; j < height_texels; j++)
+									double source_height_start = (double)j * height_reduction;
+									double source_height_end = (double)(j + 1) * height_reduction;
+									int b_start = (int)floor(source_height_start);
+									int b_end = (int)ceil(source_height_end);
+									double xi_b_start = 1.0 - (source_height_start - (double)b_start);
+									double xi_b_end =  1.0 - ((double)b_end - source_height_end);
+									for (k = 0; k < width_texels; k++)
 									{
-										for (k = 0; k < width_texels; k++)
+										double source_width_start = (double)k * width_reduction;
+										double source_width_end = (double)(k + 1) * width_reduction;
+										int c_start = (int)floor(source_width_start);
+										int c_end = (int)ceil(source_width_end);
+										if (c_start == c_end)
+											printf("  ERROR cstart %d cend %d", c_start, c_end);
+										double xi_c_start = 1.0 - (source_width_start - (double)c_start);
+										double xi_c_end =  1.0 - ((double)c_end - source_width_end);
+										source = source_image + bytes_per_pixel * c_start + 
+											source_row_width_bytes * (b_start + source_height_texels * a_start);
+										for (n = 0; n < number_of_components; n++)
 										{
-											for (n = 0; n < number_of_components; n++)
+											source2 = source + n;
+											accumulator = 0.0;
+											for (a = a_start; a < a_end; a++)
 											{
-												source2 = source + 2*n;
-												accumulator = 0;
-												for (a = 0; a < depth_reduction; a++)
+												double xi_a;
+												if (a == a_start)
+													xi_a = xi_a_start;
+												else if (a == a_end - 1)
+													xi_a = xi_a_end;
+												else
+													xi_a = 1.0;
+												for (b = b_start; b < b_end; b++)
 												{
-													for (b = 0; b < height_reduction; b++)
+													double xi_b;
+													if (b == b_start)
+														xi_b = xi_a * xi_b_start;
+													else if (b == b_end - 1)
+														xi_b = xi_a * xi_b_end;
+													else
+														xi_b = xi_a;
+													for (c = c_start; c < c_end; c++)
 													{
-														for (c = 0; c < width_reduction; c++)
-														{
-#if (1234==BYTE_ORDER)
-															accumulator += *source2 + ((*(source2 + 1)) << 8);
-#else /* (1234==BYTE_ORDER) */
-															accumulator += (*source2 << 8) + (*(source2 + 1));
-#endif /* (1234==BYTE_ORDER) */
-															source2 += c_offset;
-														}
-														source2 += b_offset;
+														double xi_c;
+														if (c == c_start)
+															xi_c = xi_b * xi_c_start;
+														else if (c == c_end - 1)
+															xi_c = xi_b * xi_c_end;
+														else
+															xi_c = xi_b;
+														accumulator += (double)*((unsigned short *)source2) * xi_c;
+														source2 += bytes_per_pixel;
 													}
-													source2 += a_offset;
+													source2 += source_row_width_bytes - (c_end - c_start)*bytes_per_pixel;
 												}
-												/* following performs integer rounding */
-												accumulator =
-													(accumulator + number_of_accumulated_pixels/2) /
-													number_of_accumulated_pixels;
-												*((unsigned short *)destination) = accumulator;
-												destination+=2;
+												source2 += (source_height_texels - (b_end - b_start)) *
+													source_row_width_bytes;
 											}
-											source += k_offset;
+											*((unsigned short *)destination) =
+												lround(accumulator / number_of_accumulated_pixels);
+											destination+=2;
 										}
-										source += j_offset;
 									}
-									source += i_offset;
+									if (0 < padding_bytes)
+									{
+										memset((void *)destination, 0, padding_bytes);
+										destination += padding_bytes;
+									}
 								}
-							} break;
-							default:
-							{
-								display_message(ERROR_MESSAGE, "Texture_get_resized_image.  "
-									"Only 1 or 2 bytes per component supported");
-								return_code = 0;
-							} break;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE, "Texture_get_resized_image.  "
-							"Only integer downsampling supported for linear filter");
-						return_code = 0;
+							}
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE, "Texture_get_resized_image.  "
+								"Only 1 or 2 bytes per component supported");
+							return_code = 0;
+						} break;
 					}
 				} break;
 				case TEXTURE_RESIZE_NEAREST_FILTER:
@@ -2270,6 +2340,7 @@ Separating this out so we can set it for each activated tile.
 				glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 				glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,
 					GL_LINEAR_MIPMAP_LINEAR);
+				glTexParameterf(texture_target,GL_TEXTURE_LOD_BIAS, texture->mipmap_level_of_detail_bias);
 				if (Graphics_library_check_extension(GL_SGIS_generate_mipmap))
 				{
 					glTexParameteri(texture_target,GL_GENERATE_MIPMAP,GL_TRUE);
@@ -2287,6 +2358,7 @@ Separating this out so we can set it for each activated tile.
 				glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 				glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,
 					GL_LINEAR_MIPMAP_NEAREST);
+				glTexParameterf(texture_target,GL_TEXTURE_LOD_BIAS, texture->mipmap_level_of_detail_bias);
 				if (Graphics_library_check_extension(GL_SGIS_generate_mipmap))
 				{
 					glTexParameteri(texture_target,GL_GENERATE_MIPMAP,GL_TRUE);
@@ -2304,6 +2376,7 @@ Separating this out so we can set it for each activated tile.
 				glTexParameteri(texture_target,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 				glTexParameteri(texture_target,GL_TEXTURE_MIN_FILTER,
 					GL_NEAREST_MIPMAP_NEAREST);
+				glTexParameterf(texture_target,GL_TEXTURE_LOD_BIAS, texture->mipmap_level_of_detail_bias);
 				if (Graphics_library_check_extension(GL_SGIS_generate_mipmap))
 				{
 					glTexParameteri(texture_target,GL_GENERATE_MIPMAP,GL_TRUE);
@@ -3473,6 +3546,7 @@ of all textures.
 			(texture->combine_colour).green=0.;
 			(texture->combine_colour).blue=0.;
 			texture->combine_alpha=0.;
+			texture->mipmap_level_of_detail_bias=0.;
 			texture->texture_manager = (struct MANAGER(Texture) *)NULL;
 			texture->movie = (struct X3d_movie *)NULL;
 			texture->graphics_buffer = (struct Graphics_buffer *)NULL;
@@ -4139,6 +4213,52 @@ Sets how the texture is combined with the material: blend, decal or modulate.
 
 	return (return_code);
 } /* Texture_set_combine_mode */
+
+int Texture_get_mipmap_level_of_detail_bias(struct Texture *texture,float *bias)
+{
+	int return_code;
+
+	ENTER(Texture_get_mipmap_level_of_detail_bias);
+	if (texture&&bias)
+	{
+		*bias=texture->mipmap_level_of_detail_bias;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_get_mipmap_level_of_detail_bias.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_get_mipmap_level_of_detail_bias */
+
+int Texture_set_mipmap_level_of_detail_bias(struct Texture *texture,float bias)
+{
+	int return_code;
+
+	ENTER(Texture_set_mipmap_level_of_detail_bias);
+	if (texture)
+	{
+		if (bias != texture->mipmap_level_of_detail_bias)
+		{
+			texture->mipmap_level_of_detail_bias=bias;
+			Texture_notify_change(texture);
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_set_mipmap_level_of_detail_bias.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_set_mipmap_level_of_detail_bias */
 
 enum Texture_compression_mode Texture_get_compression_mode(struct Texture *texture)
 /*******************************************************************************
