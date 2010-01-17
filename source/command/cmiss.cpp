@@ -294,8 +294,10 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int access_count;
-	int argc;
-	char **argv;
+	// argc, argv are filtered by User_interface without deallocating strings,
+	// hence also making cleanup copies
+	int argc, cleanup_argc;
+	char **argv, **cleanup_argv;
 	char *cm_examples_directory,*cm_parameters_file_name,*example_directory,
 		*examples_directory,*example_comfile,
 		*example_requirements,*help_directory,*help_url;
@@ -25066,12 +25068,16 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		// duplicate argument list so it can be modified by User Interface
 		command_data->argc = in_argc;
 		command_data->argv = NULL;
+		command_data->cleanup_argc = in_argc;
+		command_data->cleanup_argv = NULL;
 		if (0 < in_argc)
 		{
 			ALLOCATE(command_data->argv, char *, in_argc);
+			ALLOCATE(command_data->cleanup_argv, char *, in_argc);
 			for (int ai = 0; ai < in_argc; ai++)
 			{
-				command_data->argv[ai] = duplicate_string(in_argv[ai]);
+				command_data->cleanup_argv[ai] = command_data->argv[ai] =
+					duplicate_string(in_argv[ai]);
 			}
 		}
 		/* initialize application specific global variables */
@@ -26442,14 +26448,14 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 		{
 			DEALLOCATE(command_data->cm_parameters_file_name);
 		}
-		if (command_data->argv != NULL)
+		if (command_data->cleanup_argv != NULL)
 		{
-			for (int ai = 0; ai < command_data->argc; ai++)
+			for (int ai = 0; ai < command_data->cleanup_argc; ai++)
 			{
-				DEALLOCATE(command_data->argv[ai]);
+				DEALLOCATE(command_data->cleanup_argv[ai]);
 			}
+			DEALLOCATE(command_data->cleanup_argv);
 			DEALLOCATE(command_data->argv);
-			command_data->argv = NULL;
 		}
 
 		DEALLOCATE(*command_data_address);
