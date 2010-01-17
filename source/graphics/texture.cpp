@@ -1685,15 +1685,13 @@ static unsigned char *Texture_get_resized_image(struct Texture *texture,
 										double source_width_end = (double)(k + 1) * width_reduction;
 										int c_start = (int)floor(source_width_start);
 										int c_end = (int)ceil(source_width_end);
-										if (c_start == c_end)
-											printf("  ERROR cstart %d cend %d", c_start, c_end);
 										double xi_c_start = 1.0 - (source_width_start - (double)c_start);
 										double xi_c_end =  1.0 - ((double)c_end - source_width_end);
 										source = source_image + bytes_per_pixel * c_start + 
 											source_row_width_bytes * (b_start + source_height_texels * a_start);
 										for (n = 0; n < number_of_components; n++)
 										{
-											source2 = source + n;
+											source2 = source + 2*n;
 											accumulator = 0.0;
 											for (a = a_start; a < a_end; a++)
 											{
