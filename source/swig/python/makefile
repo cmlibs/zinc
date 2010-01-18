@@ -6,6 +6,12 @@
 #DESCRIPTION :
 
 #makefile for cmgui API wrappers in Python using swig
+#
+# IMPORTANT NOTE!
+# This makefile builds swig python wrappers in swig/python/Cmiss based on
+# the new cmgui C++ api and interface files in swig/interface.
+# At this time, the examples under the swig/python/test_examples work with
+# the wrappers generated from sources in swig/cmiss
 #==========================================================================
 
 # Compilers
@@ -24,9 +30,10 @@ CMISS_LIBS = -L$(CMISS_ROOT)/cmgui/lib/i686-linux/cmgui-wx-debug/ -lcmgui
 
 PYTHON_INCLUDES = -I/usr/include/python2.5 -I$(CMISS_ROOT)/cmgui/source
 
+INTERFACE_PATH=$(CMISS_ROOT)/cmgui/source/swig/interface
 OBJECT_PATH=$(CMISS_ROOT)/cmgui/source/swig/python/object
 BIN_PATH=$(CMISS_ROOT)/cmgui/source/swig/python/Cmiss
-VPATH=$(OBJECT_PATH):$(BIN_PATH)
+VPATH=$(INTERFACE_PATH):$(OBJECT_PATH):$(BIN_PATH)
 
 # Dependencies
 INTERFACES = CmissCommandData.i CmissRegion.i CmissFieldModule.i
@@ -62,7 +69,7 @@ $(PYTHON_WRAPS): $(INTERFACES)
 	@if [ ! -d $(BIN_PATH) ]; then \
 		mkdir -p $(BIN_PATH); \
 	fi
-	swig -c++ -python $(SWIG_INCLUDES) -o $(OBJECT_PATH)/$@ -outdir $(BIN_PATH) $(@:_wrap.cxx=.i)
+	swig -c++ -python $(SWIG_INCLUDES) -o $(OBJECT_PATH)/$@ -outdir $(BIN_PATH) $(INTERFACE_PATH)/$(@:_wrap.cxx=.i)
 
 clean:
 	rm -r $(OBJECT_PATH)
