@@ -2172,11 +2172,12 @@ DESCRIPTION :
 Returns true if <FE_field> is defined on any nodes and element in <fe_region>.
 ==============================================================================*/
 {
+	char *field_name;
 	int return_code;
-	struct FE_region *master_fe_region;
+	struct FE_region *master_fe_region, *referenced_fe_region;
 
 	ENTER(FE_region_is_FE_field_in_use);
-	return_code = 0;
+	return_code = 1;
 	if (fe_region && fe_field)
 	{
 		/* get the ultimate master FE_region; only it has fe_field_list */
@@ -2187,6 +2188,7 @@ Returns true if <FE_field> is defined on any nodes and element in <fe_region>.
 		}
 		if (IS_OBJECT_IN_LIST(FE_field)(fe_field, master_fe_region->fe_field_list))
 		{
+			return_code = 0;
 			if (FIRST_OBJECT_IN_LIST_THAT(FE_node_field_info)(
 				FE_node_field_info_has_FE_field, (void *)fe_field,
 				master_fe_region->fe_node_field_info_list))
@@ -2215,9 +2217,20 @@ Returns true if <FE_field> is defined on any nodes and element in <fe_region>.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"FE_region_is_FE_field_in_use.  Field %p is not in region %p (master %p)",
-				fe_field, fe_region, master_fe_region);
+			referenced_fe_region = FE_field_get_FE_region(fe_field);
+			if ((referenced_fe_region != NULL) && (referenced_fe_region != master_fe_region))
+			{
+				GET_NAME(FE_field)(fe_field, &field_name);
+				display_message(ERROR_MESSAGE,
+					"FE_region_is_FE_field_in_use.  Field %s is from another region",
+					field_name);
+				DEALLOCATE(field_name);
+				return_code = 1;
+			}
+			else
+			{
+				return_code = 0;
+			}
 		}
 	}
 	else

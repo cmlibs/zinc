@@ -5452,7 +5452,10 @@ int Computed_field_manager_destroy_FE_field(
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-Cleans up <fe_field> and its Computed_field wrapper if each are not in use.
+Cleans up <fe_field> if not defined on nodes or elements, and makes its
+Computed_field wrapper volatile/private so it is clean up when no longer
+externally accessed.
+Currently only used by unemap_3d; be careful about ever using again. 
 ==============================================================================*/
 {
 	int return_code;
@@ -5474,31 +5477,18 @@ Cleans up <fe_field> and its Computed_field wrapper if each are not in use.
 		}
 		else
 		{
-			/* Computed_field wrapper does not need to exist to remove FE_field */
-			if (computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+			computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 				Computed_field_is_read_only_with_fe_field, (void *)(fe_field),
-				computed_field_manager))
+				computed_field_manager);
+			if (computed_field)
 			{
 				ACCESS(Computed_field)(computed_field);
-				if (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(computed_field,
-					computed_field_manager))
-				{
-					Computed_field_set_managed_status(computed_field, COMPUTED_FIELD_MANAGED_PRIVATE_VOLATILE);
-					return_code = 0;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_manager_destroy_FE_field.  "
-						"Computed_field %s is in use (accessed %d times)",
-						computed_field->name, computed_field->access_count);
-					return_code = 0;
-				}
-				DEACCESS(Computed_field)(&computed_field);
+				Computed_field_set_managed_status(computed_field, COMPUTED_FIELD_MANAGED_PRIVATE_VOLATILE);
 			}
-			if (return_code)
+			return_code = FE_region_remove_FE_field(fe_region, fe_field);
+			if (computed_field)
 			{
-				return_code = FE_region_remove_FE_field(fe_region, fe_field);
+				DEACCESS(Computed_field)(&computed_field);
 			}
 		}
 	}
