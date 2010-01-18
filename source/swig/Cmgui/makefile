@@ -27,7 +27,7 @@ PYTHON_INCLUDES = -I/usr/include/python2.5 -I$(CMISS_ROOT)/cmgui/source
 OCTAVE_INCLUDES = -I$(CMISS_ROOT)/cmgui/source
 
 # Dependencies
-INTERFACES = CmguiCommandData.i CmguiRegion.i CmguiFieldModule.i
+INTERFACES = CmissCommandData.i CmissRegion.i CmissFieldModule.i
 PYTHON_WRAPS = $(INTERFACES:.i=_wrap.cxx)
 PYTHON_OBJECTS = $(PYTHON_WRAPS:.cxx=.o)
 PYTHON_MODULES = $(subst Cmgui,_,$(INTERFACES:.i=.so))
@@ -35,7 +35,7 @@ PYTHON_MODULES = $(subst Cmgui,_,$(INTERFACES:.i=.so))
 CmguiPython: $(PYTHON_MODULES)
 
 $(PYTHON_MODULES): $(PYTHON_OBJECTS)
-	$(CXX) $(CXXFLAGS) $(CMISS_LIBS) $(subst .so,_wrap.o, $(subst _,Cmgui,$@)) -o $@
+	$(CXX) $(CXXFLAGS) $(CMISS_LIBS) $(subst .so,_wrap.o, $(subst _,Cmiss,$@)) -o $@
 
 $(PYTHON_OBJECTS): $(PYTHON_WRAPS)
 	$(CC) $(CFLAGS) $(PYTHON_INCLUDES) $(@:.o=.cxx)	
@@ -44,5 +44,5 @@ $(PYTHON_WRAPS): $(INTERFACES)
 	swig -c++ -python $(SWIG_INCLUDES) $(@:_wrap.cxx=.i)
 
 clean:
-	rm -f $(PYTHON_WRAPS) $(PYTHON_OBJECTS) $(PYTHON_MODULES) $(subst Cmgui,,$(INTERFACES:.i=.py)) $(subst Cmgui,,$(INTERFACES:.i=.pyc))
+	rm -f $(PYTHON_WRAPS) $(PYTHON_OBJECTS) $(PYTHON_MODULES) $(subst Cmiss,,$(INTERFACES:.i=.py)) $(subst Cmiss,,$(INTERFACES:.i=.pyc))
 
