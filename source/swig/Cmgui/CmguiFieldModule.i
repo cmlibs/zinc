@@ -1,7 +1,7 @@
 /*******************************************************************************
- * CmguiFieldModule.i
+ * CmissFieldModule.i
  * 
- * Swig interface file for wrapping api functions in api/CmguiFieldModule.hpp
+ * Swig interface file for wrapping api functions in api/CmissFieldModule.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -42,16 +42,16 @@
 %module FieldModule
 
 %{
-#include "api++/CmguiFieldModule.hpp"
+#include "api++/CmissFieldModule.hpp"
 %}
 
-%include "api++/CmguiField.hpp"
-%include "api++/CmguiFieldTypesArithmeticOperators.hpp"
-%include "api++/CmguiFieldTypesComposite.hpp"
-%include "api++/CmguiFieldTypesImage.hpp"
-%include "api++/CmguiFieldTypesTrigonometry.hpp"
-%include "api++/CmguiFieldModule.hpp"
+%include "api++/CmissField.hpp"
+%include "api++/CmissFieldTypesArithmeticOperators.hpp"
+%include "api++/CmissFieldTypesComposite.hpp"
+%include "api++/CmissFieldTypesImage.hpp"
+%include "api++/CmissFieldTypesTrigonometry.hpp"
+%include "api++/CmissFieldModule.hpp"
 
-%extend Cmgui::Field {
-	%template(castImage) cast<Cmgui::FieldImage>;
+%extend Cmiss::Field {
+	%template(castImage) cast<Cmiss::FieldImage>;
 };

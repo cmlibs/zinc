@@ -1,5 +1,5 @@
 /*******************************************************************************
- * CmguiCommandData.i
+ * CmissCommandData.i
  * 
  * Swig interface file for cmgui core command data.
  */
@@ -42,12 +42,12 @@
 %module CommandData
 
 %{
-#include "api++/CmguiCommandData.hpp"
-#include "api++/CmguiRegion.hpp"
+#include "api++/CmissCommandData.hpp"
+#include "api++/CmissRegion.hpp"
 %}
 
-%include "api++/CmguiCommandData.hpp"
+%include "api++/CmissCommandData.hpp"
 
-%extend Cmgui::CommandData {
-	%template(getRootRegion) getRootRegion<Cmgui::Region>;
+%extend Cmiss::CommandData {
+	%template(getRootRegion) getRootRegion<Cmiss::Region>;
 };

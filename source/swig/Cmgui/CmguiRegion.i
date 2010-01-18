@@ -1,5 +1,5 @@
 /*******************************************************************************
- * CmguiRegion.i
+ * CmissRegion.i
  * 
  * Swig interface file for cmgui region API.
  */
@@ -42,12 +42,12 @@
 %module Region
 
 %{
-#include "api++/CmguiRegion.hpp"
-#include "api++/CmguiFieldModule.hpp"
+#include "api++/CmissRegion.hpp"
+#include "api++/CmissFieldModule.hpp"
 %}
 
-%include "api++/CmguiRegion.hpp"
+%include "api++/CmissRegion.hpp"
 
-%extend Cmgui::Region {
-	%template(getFieldModule) getFieldModule<Cmgui::FieldModule>;
+%extend Cmiss::Region {
+	%template(getFieldModule) getFieldModule<Cmiss::FieldModule>;
 };
