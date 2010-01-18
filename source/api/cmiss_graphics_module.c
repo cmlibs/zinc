@@ -35,21 +35,21 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include "api/cmiss_material.h"
-#include "api/cmiss_graphics_package.h"
+#include "api/cmiss_graphics_module.h"
 #include "general/debug.h"
 #include "graphics/cmiss_rendition.h"
 #include "graphics/material.h"
 
-Cmiss_graphics_material_id Cmiss_graphics_package_find_material_by_name(
-	Cmiss_graphics_package_id graphics_package, const char *name)
+Cmiss_material_id Cmiss_graphics_module_find_material_by_name(
+	Cmiss_graphics_module_id graphics_module, const char *name)
 {
-	Cmiss_graphics_material_id material = NULL;
+	Cmiss_material_id material = NULL;
 
-	ENTER(Cmiss_graphics_package_find_material_by_name);
-	if (graphics_package && name)
+	ENTER(Cmiss_graphics_module_find_material_by_name);
+	if (graphics_module && name)
 	{
 		struct MANAGER(Graphical_material) *material_manager =
-			Cmiss_graphics_package_get_material_manager(graphics_package);
+			Cmiss_graphics_module_get_material_manager(graphics_module);
 		if (material_manager)
 		{
 			if (NULL != (material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material, name)(
@@ -64,17 +64,17 @@ Cmiss_graphics_material_id Cmiss_graphics_package_find_material_by_name(
 	return material;
 }
 
-Cmiss_graphics_material_id Cmiss_graphics_package_create_material(
-	Cmiss_graphics_package_id graphics_package)
+Cmiss_material_id Cmiss_graphics_module_create_material(
+	Cmiss_graphics_module_id graphics_module)
 {
-	Cmiss_graphics_material_id material = NULL;
+	Cmiss_material_id material = NULL;
 	struct MANAGER(Graphical_material) *material_manager =
-		Cmiss_graphics_package_get_material_manager(graphics_package);
+		Cmiss_graphics_module_get_material_manager(graphics_module);
 	int i = 0;
 	char *temp_string = NULL;
 	char *num = NULL;
 
-	ENTER(Cmiss_graphics_package_create_material);
+	ENTER(Cmiss_graphics_module_create_material);
 	do 
 	{
 		if (temp_string)

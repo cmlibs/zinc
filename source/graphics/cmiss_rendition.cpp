@@ -52,7 +52,7 @@ extern "C" {
 #include "user_interface/message.h"
 }
 
-struct Cmiss_graphics_package
+struct Cmiss_graphics_module
 {
 	/* attribute managers and defaults: */
 	struct LIST(GT_object) *glyph_list;
@@ -72,7 +72,7 @@ struct Cmiss_graphics_package
 	struct Time_keeper *default_time_keeper;
 };
 
-struct Cmiss_graphics_package *Cmiss_graphics_package_create(
+struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
@@ -87,15 +87,15 @@ struct Cmiss_graphics_package *Cmiss_graphics_package_create(
 	struct FE_node_selection *node_selection,
 	struct Time_keeper *default_time_keeper)
 {
-	struct Cmiss_graphics_package *package;
+	struct Cmiss_graphics_module *package;
 
-	ENTER(Cmiss_graphics_package_create);
+	ENTER(Cmiss_graphics_module_create);
 	if (glyph_list && graphical_material_manager && default_material &&
 		default_font && light_manager && spectrum_manager &&
 		default_spectrum && texture_manager && element_point_ranges_selection &&
 		element_selection && data_selection && node_selection)
 	{
-		if (ALLOCATE(package, struct Cmiss_graphics_package, 1))
+		if (ALLOCATE(package, struct Cmiss_graphics_module, 1))
 		{
 			package->glyph_list = glyph_list;
 			package->graphical_material_manager = graphical_material_manager;
@@ -113,35 +113,35 @@ struct Cmiss_graphics_package *Cmiss_graphics_package_create(
 		}
 		else
 		{
-			package = (Cmiss_graphics_package *)NULL;
+			package = (Cmiss_graphics_module *)NULL;
 			display_message(ERROR_MESSAGE,
-			"Cmiss_rendtion_graphics_package_create. Not enough memory for Cmiss rendition graphics package");
+			"Cmiss_rendtion_graphics_module_create. Not enough memory for Cmiss rendition graphics package");
 		}
 	}
 	else
 	{
-		package = (Cmiss_graphics_package *)NULL;
-		display_message(ERROR_MESSAGE,"Cmiss_rendtion_graphics_package_create.  Invalid argument(s)");
+		package = (Cmiss_graphics_module *)NULL;
+		display_message(ERROR_MESSAGE,"Cmiss_rendtion_graphics_module_create.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (package);
 }
 
-struct MANAGER(Graphical_material) *Cmiss_graphics_package_get_material_manager(
-	struct Cmiss_graphics_package *graphics_package)
+struct MANAGER(Graphical_material) *Cmiss_graphics_module_get_material_manager(
+	struct Cmiss_graphics_module *graphics_module)
 {
 	struct MANAGER(Graphical_material) *material_manager;
 
-	ENTER(Cmiss_graphics_package_get_material_manager);
-	if (graphics_package)
+	ENTER(Cmiss_graphics_module_get_material_manager);
+	if (graphics_module)
 	{
-		material_manager = graphics_package->graphical_material_manager;
+		material_manager = graphics_module->graphical_material_manager;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_graphics_package_get_material_manager.  Invalid argument(s)");
+			"Cmiss_graphics_module_get_material_manager.  Invalid argument(s)");
 		material_manager = (struct MANAGER(Graphical_material) *)NULL;
 	}
 	LEAVE;
@@ -149,25 +149,25 @@ struct MANAGER(Graphical_material) *Cmiss_graphics_package_get_material_manager(
 	return (material_manager);
 }
 
-int DESTROY(Cmiss_graphics_package)(
-	struct Cmiss_graphics_package **cmiss_graphics_package_address)
+int DESTROY(Cmiss_graphics_module)(
+	struct Cmiss_graphics_module **cmiss_graphics_module_address)
 {
 	int return_code;
-	struct Cmiss_graphics_package *cmiss_graphics_package;
+	struct Cmiss_graphics_module *cmiss_graphics_module;
 
-	ENTER(DESTROY(Cmiss_graphics_package));
-	if (NULL != (cmiss_graphics_package =* cmiss_graphics_package_address))
+	ENTER(DESTROY(Cmiss_graphics_module));
+	if (NULL != (cmiss_graphics_module =* cmiss_graphics_module_address))
 	{
-		DEACCESS(Graphical_material)(&cmiss_graphics_package->default_material);
-		DEACCESS(Graphics_font)(&cmiss_graphics_package->default_font);
-		DEACCESS(Spectrum)(&cmiss_graphics_package->default_spectrum);
-		DEACCESS(Time_keeper)(&cmiss_graphics_package->default_time_keeper);
-		DEALLOCATE(*cmiss_graphics_package_address);
+		DEACCESS(Graphical_material)(&cmiss_graphics_module->default_material);
+		DEACCESS(Graphics_font)(&cmiss_graphics_module->default_font);
+		DEACCESS(Spectrum)(&cmiss_graphics_module->default_spectrum);
+		DEACCESS(Time_keeper)(&cmiss_graphics_module->default_time_keeper);
+		DEALLOCATE(*cmiss_graphics_module_address);
 		return_code = 1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"DESTROY(Cmiss_graphics_package).  "
+		display_message(ERROR_MESSAGE,"DESTROY(Cmiss_graphics_module).  "
 			"Invalid argument(s)");
 		return_code=0;
 	}

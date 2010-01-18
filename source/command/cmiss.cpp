@@ -403,7 +403,7 @@ DESCRIPTION :
 #if defined (UNEMAP)
 	struct Unemap_command_data *unemap_command_data;
 #endif /* defined (UNEMAP) */
-	struct Cmiss_graphics_package *graphics_package;
+	struct Cmiss_graphics_module *graphics_module;
 }; /* struct Cmiss_command_data */
 
 typedef struct
@@ -25134,7 +25134,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 		command_data->graphics_buffer_package=(struct Graphics_buffer_package *)NULL;
 		command_data->scene_viewer_package=(struct Cmiss_scene_viewer_package *)NULL;
-		command_data->graphics_package = (struct Cmiss_graphics_package *)NULL;
+		command_data->graphics_module = (struct Cmiss_graphics_module *)NULL;
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		command_data->graphics_window_manager=(struct MANAGER(Graphics_window) *)NULL;
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
@@ -25754,12 +25754,12 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #if defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE)
 		command_data->movie_graphics_manager = CREATE(MANAGER(Movie_graphics))();
 #endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE) */
-		/* graphics_package */
+		/* graphics_module */
 		command_data->default_time_keeper=ACCESS(Time_keeper)(
 			CREATE(Time_keeper)("default", command_data->event_dispatcher,
 				command_data->user_interface));
-		command_data->graphics_package = 
-			Cmiss_graphics_package_create(
+		command_data->graphics_module = 
+			Cmiss_graphics_module_create(
 				command_data->glyph_list,
 				Material_package_get_material_manager(command_data->material_package),
 				Material_package_get_default_material(command_data->material_package),
@@ -26325,9 +26325,9 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 
 		DEACCESS(Scene)(&(command_data->default_scene));
 		DESTROY(MANAGER(Scene))(&command_data->scene_manager);
-		if (command_data->graphics_package)
+		if (command_data->graphics_module)
 		{
-			DESTROY(Cmiss_graphics_package)(&command_data->graphics_package);
+			DESTROY(Cmiss_graphics_module)(&command_data->graphics_module);
 		}
 		DESTROY(Time_keeper)(&command_data->default_time_keeper);
 		if (command_data->computed_field_package)
@@ -26821,20 +26821,20 @@ Returns the scene viewer data from the <command_data>.
 	return (cmiss_scene_viewer_package);
 }
 
-struct Cmiss_graphics_package *Cmiss_command_data_get_graphics_package(
+struct Cmiss_graphics_module *Cmiss_command_data_get_graphics_module(
 	struct Cmiss_command_data *command_data)
 {
-	struct Cmiss_graphics_package *graphics_package;
+	struct Cmiss_graphics_module *graphics_module;
 
-	ENTER(Cmiss_command_package_get_graphics_package);
-	graphics_package=(struct Cmiss_graphics_package *)NULL;
+	ENTER(Cmiss_command_package_get_graphics_module);
+	graphics_module=(struct Cmiss_graphics_module *)NULL;
 	if (command_data)
 	{
-		graphics_package = command_data->graphics_package;
+		graphics_module = command_data->graphics_module;
 	}
 	LEAVE;
 
-	return (graphics_package);
+	return (graphics_module);
 }
 
 struct MANAGER(Graphics_window) *Cmiss_command_data_get_graphics_window_manager(

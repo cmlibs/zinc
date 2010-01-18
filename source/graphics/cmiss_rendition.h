@@ -51,10 +51,10 @@ FILE : cmiss_rendition.h
 
 #define CMISS_RENDITION_H
 
-struct Cmiss_graphics_package;
+struct Cmiss_graphics_module;
 
 /***************************************************************************//** 
- * Create Cmiss_rendition_graphics_package
+ * Create Cmiss_rendition_graphics_module
  *
  * @param glyph_list  List of glyphs
  * @param graphical_material_manager  Material manager
@@ -69,7 +69,7 @@ struct Cmiss_graphics_package;
  * @param node_selection Node  selection
  * @return  If successfully constructed, return the Cmiss_rendition
  */
-struct Cmiss_graphics_package *Cmiss_graphics_package_create(
+struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_material,
@@ -85,24 +85,24 @@ struct Cmiss_graphics_package *Cmiss_graphics_package_create(
 	struct Time_keeper *default_time_keeper);
 
 /***************************************************************************//** 
- * Return Graphical_material manager in the Cmiss_graphics_package.
+ * Return Graphical_material manager in the Cmiss_graphics_module.
  *
- * @param cmiss_graphics_package  the pointer to the cmiss_graphics_package
+ * @param cmiss_graphics_module  the pointer to the cmiss_graphics_module
  * @return  the material manager in the graphics package if exists,
  *   otherwise NULL
  */
-struct MANAGER(Graphical_material) *Cmiss_graphics_package_get_material_manager(
-	struct Cmiss_graphics_package *graphics_package);
+struct MANAGER(Graphical_material) *Cmiss_graphics_module_get_material_manager(
+	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//** 
- * Destroy Cmiss_graphics_package and clean up the memory it uses.
+ * Destroy Cmiss_graphics_module and clean up the memory it uses.
  *
- * @param cmiss_graphics_package_address  the address to the pointer of 
+ * @param cmiss_graphics_module_address  the address to the pointer of 
  *   the cmiss_graphics_packge to be deleted
- * @return  1 if successfully destroy cmiss_graphics_package, otherwise 0
+ * @return  1 if successfully destroy cmiss_graphics_module, otherwise 0
  */
-int DESTROY(Cmiss_graphics_package)(
-	struct Cmiss_graphics_package **cmiss_graphics_package_address);
+int DESTROY(Cmiss_graphics_module)(
+	struct Cmiss_graphics_module **cmiss_graphics_module_address);
 
 #endif /* !defined (CMISS_RENDITION_H) */
 

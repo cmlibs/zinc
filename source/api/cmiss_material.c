@@ -40,12 +40,12 @@
 #include "graphics/material.h"
 #include "graphics/cmiss_rendition.h"
 
-int Cmiss_graphics_material_set_alpha(
-	Cmiss_graphics_material_id material, float alpha)
+int Cmiss_material_set_alpha(
+	Cmiss_material_id material, float alpha)
 {
 	int return_code = 0;
 
-	ENTER(Cmiss_graphics_material_set_alpha);
+	ENTER(Cmiss_material_set_alpha);
 	if (material)
 	{
 		return_code = Graphical_material_set_alpha(material, alpha);
@@ -55,12 +55,12 @@ int Cmiss_graphics_material_set_alpha(
 	return return_code;
 }
 
-int Cmiss_graphics_material_set_shininess(
-	Cmiss_graphics_material_id material, float shininess)
+int Cmiss_material_set_shininess(
+	Cmiss_material_id material, float shininess)
 {
 	int return_code = 0;
 
-	ENTER(Cmiss_graphics_material_set_shininess);
+	ENTER(Cmiss_material_set_shininess);
 	if (material)
 	{
 		return_code = Graphical_material_set_shininess(material, shininess);
@@ -70,13 +70,13 @@ int Cmiss_graphics_material_set_shininess(
 	return return_code;
 }
 
-int Cmiss_graphics_material_set_ambient(
-	Cmiss_graphics_material_id material, float red, float green, float blue)
+int Cmiss_material_set_ambient(
+	Cmiss_material_id material, float red, float green, float blue)
 {
 	struct Colour colour;
 	int return_code = 0;
 
-	ENTER(Cmiss_graphics_material_set_ambient);
+	ENTER(Cmiss_material_set_ambient);
 	if (material)
 	{
 		colour.red = red;
@@ -89,13 +89,13 @@ int Cmiss_graphics_material_set_ambient(
 	return return_code;
 }
 
-int Cmiss_graphics_material_set_diffuse(
-	Cmiss_graphics_material_id material, float red, float green, float blue)
+int Cmiss_material_set_diffuse(
+	Cmiss_material_id material, float red, float green, float blue)
 {
 	struct Colour colour;
 	int return_code = 0;
 
-	ENTER(Cmiss_graphics_material_set_diffuse);
+	ENTER(Cmiss_material_set_diffuse);
 	if (material)
 	{
 		colour.red = red;
@@ -108,13 +108,13 @@ int Cmiss_graphics_material_set_diffuse(
 	return return_code;
 }
 
-int Cmiss_graphics_material_set_emission(
-	Cmiss_graphics_material_id material, float red, float green, float blue)
+int Cmiss_material_set_emission(
+	Cmiss_material_id material, float red, float green, float blue)
 {
 	struct Colour colour;
 	int return_code = 0;
 
-	ENTER(Cmiss_graphics_material_set_emission);
+	ENTER(Cmiss_material_set_emission);
 	if (material)
 	{
 		colour.red = red;
@@ -127,13 +127,13 @@ int Cmiss_graphics_material_set_emission(
 	return return_code;
 }
 
-int Cmiss_graphics_material_set_specular(
-	Cmiss_graphics_material_id material, float red, float green, float blue)
+int Cmiss_material_set_specular(
+	Cmiss_material_id material, float red, float green, float blue)
 {
 	struct Colour colour;
 	int return_code = 0;
 
-	ENTER(Cmiss_graphics_material_set_specular);
+	ENTER(Cmiss_material_set_specular);
 	if (material)
 	{
 		colour.red = red;

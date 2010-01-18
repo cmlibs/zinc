@@ -34,40 +34,40 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __CMISS_GRAPHICS_PACKAGE_H__
-#define __CMISS_GRAPHICS_PACKAGE_H__
+#ifndef __CMISS_GRAPHICS_MODULE_H__
+#define __CMISS_GRAPHICS_MODULE_H__
 
 #include "api/cmiss_material.h"
 
-struct Cmiss_graphics_package;
-#ifndef CMISS_GRAPHICS_PACKAGE_ID_DEFINED
-typedef struct Cmiss_graphics_package * Cmiss_graphics_package_id;
-#define CMISS_GRAPHICS_PACKAGE_ID_DEFINED
-#endif /* CMISS_GRAPHICS_PACKAGE_ID_DEFINED */
+struct Cmiss_graphics_module;
+#ifndef CMISS_GRAPHICS_MODULE_ID_DEFINED
+typedef struct Cmiss_graphics_module * Cmiss_graphics_module_id;
+#define CMISS_GRAPHICS_MODULE_ID_DEFINED
+#endif /* CMISS_GRAPHICS_MODULE_ID_DEFINED */
 
 /***************************************************************************//**
- * Get the material with <name> from graphics_package if graphics_package has
+ * Get the material with <name> from graphics_module if graphics_module has
  * an existing material with the name provided.
  *
- * @param graphics_package  The handle to cmiss grpahics package, it contains
+ * @param graphics_module  The handle to cmiss grpahics package, it contains
  *   internal cmgui structure required by cmiss_graphical_material.
  * @param name  The name of the material.
  * @return  1 if successfully get material, otherwise 0.
  */
-Cmiss_graphics_material_id Cmiss_graphics_package_find_material_by_name(
-	Cmiss_graphics_package_id graphics_package, const char *name);
+Cmiss_material_id Cmiss_graphics_module_find_material_by_name(
+	Cmiss_graphics_module_id graphics_module, const char *name);
 
 /***************************************************************************//**
  * Create a new cmiss graphic material. This new material will be returned and 
  * put in the Cmiss_graphic_package. User can also get the handle to the created
- * material through Cmiss_graphics_material_get_with_name function.
+ * material through Cmiss_material_get_with_name function.
  *
- * @param graphics_package  The handle to cmiss grpahics package, it contains
+ * @param graphics_module  The handle to cmiss grpahics package, it contains
  *   internal cmgui structure required by cmiss_graphical_material.
  * @param name  The name for the newly created material
  * @return  The newly created material if successfully created, otherwise NULL.
  */
-Cmiss_graphics_material_id Cmiss_graphics_package_create_material(
-	Cmiss_graphics_package_id graphics_package);
+Cmiss_material_id Cmiss_graphics_module_create_material(
+	Cmiss_graphics_module_id graphics_module);
 
-#endif /*__CMISS_GRAPHICS_PACKAGE_H__*/
+#endif /*__CMISS_GRAPHICS_MODULE_H__*/

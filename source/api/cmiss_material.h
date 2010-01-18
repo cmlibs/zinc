@@ -34,21 +34,21 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __CMISS_GRAPHICS_MATERIAL_H__
-#define __CMISS_GRAPHICS_MATERIAL_H__
+#ifndef __CMISS_MATERIAL_H__
+#define __CMISS_MATERIAL_H__
 
 #include "api/cmiss_texture.h"
 
 struct Graphical_material;
-#ifndef CMISS_GRAPHICS_MATERIAL_ID_DEFINED
+#ifndef CMISS_MATERIAL_ID_DEFINED
 /***************************************************************************//**
  * A handle to cmiss graphics material. Cmiss graphics material describes the
  * colour, shading and other graphical properties of a material, it is highly 
  * similar to material described by OpenGL.
  * User can get a handle to material either through create new material using 
- * Cmiss_graphics_package_create_material or use existing materials in the 
- * graphics_package provided by the cmiss_command_data with 
- * Cmiss_graphics_package_find_material_by_name.
+ * Cmiss_graphics_module_create_material or use existing materials in the 
+ * graphics_module provided by the ciss_command_data with 
+ * Cmiss_graphics_module_find_material_by_name.
  * Cmgui also provide a number of preset materials in the default
  * graphics_packge.
  * Preset graphical materials are:
@@ -58,9 +58,9 @@ struct Graphical_material;
  * Please see available Cmiss_graphic_material API functions belong for 
  * configuarble properties.
  */
-typedef struct Graphical_material * Cmiss_graphics_material_id;
-#define CMISS_GRAPHICS_MATERIAL_ID_DEFINED
-#endif /* CMISS_GRAPHICAL_MATERIAL_ID_DEFINED */
+typedef struct Graphical_material * Cmiss_material_id;
+#define CMISS_MATERIAL_ID_DEFINED
+#endif /* CMISS_MATERIAL_ID_DEFINED */
 
 /***************************************************************************//**
  * Set/change name for <material>.
@@ -69,8 +69,8 @@ typedef struct Graphical_material * Cmiss_graphics_material_id;
  * @param name  name to be set to the material
  * @return  1 if successfully set/change name for material, otherwise 0.
  */
-int Cmiss_graphics_material_set_name(
-	Cmiss_graphics_material_id material, const char *name);
+int Cmiss_material_set_name(
+	Cmiss_material_id material, const char *name);
 
 /***************************************************************************//**
  * Set the alpha value (opacity) of the material.
@@ -81,8 +81,8 @@ int Cmiss_graphics_material_set_name(
  *   and maximum acceptable value is 1.
  * @return  1 if successfully modify material, otherwise 0.
  */
-int Cmiss_graphics_material_set_alpha(
-	Cmiss_graphics_material_id material, float alpha);
+int Cmiss_material_set_alpha(
+	Cmiss_material_id material, float alpha);
 
 /***************************************************************************//**
  * Set the size and brigtness of the highlight.
@@ -93,8 +93,8 @@ int Cmiss_graphics_material_set_alpha(
  *   and maximum acceptable value is 1.
  * @return  1 if successfully modify material, otherwise 0.
  */
-int Cmiss_graphics_material_set_shininess(
-	Cmiss_graphics_material_id material, float shininess);
+int Cmiss_material_set_shininess(
+	Cmiss_material_id material, float shininess);
 
 /***************************************************************************//**
  * Set the ambient colour of the material. Ambient colour simulates the colour 
@@ -109,8 +109,8 @@ int Cmiss_graphics_material_set_shininess(
  *   Minimum acceptable value is 0 and maximum acceptable value is 1.
  * @return  1 if successfully modify material, otherwise 0.
  */
-int Cmiss_graphics_material_set_ambient(
-	Cmiss_graphics_material_id material, float red, float green, float blue);
+int Cmiss_material_set_ambient(
+	Cmiss_material_id material, float red, float green, float blue);
 
 /***************************************************************************//**
  * Set the diffuse color of the material. Diffuse colour response to light that 
@@ -126,8 +126,8 @@ int Cmiss_graphics_material_set_ambient(
  *   Minimum acceptable value is 0 and maximum acceptable value is 1.
  * @return  1 if successfully modify material, otherwise 0.
  */
-int Cmiss_graphics_material_set_diffuse(
-	Cmiss_graphics_material_id material, float red, float green, float blue);
+int Cmiss_material_set_diffuse(
+	Cmiss_material_id material, float red, float green, float blue);
 
 /***************************************************************************//**
  * Set the emissive colour of the material. Emissive colour simulates colours
@@ -143,8 +143,8 @@ int Cmiss_graphics_material_set_diffuse(
  *   Minimum acceptable value is 0 and maximum acceptable value is 1.
  * @return  1 if successfully modify material, otherwise 0.
  */
-int Cmiss_graphics_material_set_emission(
-	Cmiss_graphics_material_id material, float red, float green, float blue);
+int Cmiss_material_set_emission(
+	Cmiss_material_id material, float red, float green, float blue);
 
 /***************************************************************************//**
  * Set the specular colour of the material. Specular colour produces highlights.
@@ -160,8 +160,8 @@ int Cmiss_graphics_material_set_emission(
  *   Minimum acceptable value is 0 and maximum acceptable value is 1.
  * @return  1 if successfully modify material, otherwise 0.
  */
-int Cmiss_graphics_material_set_specular(
-	Cmiss_graphics_material_id material, float red, float green, float blue);
+int Cmiss_material_set_specular(
+	Cmiss_material_id material, float red, float green, float blue);
 
 /***************************************************************************//**
  * Set the texture of the material.
@@ -170,20 +170,20 @@ int Cmiss_graphics_material_set_specular(
  * @param texture  Handle to cmiss texture to be used for this material.
  * @return  1 if successfully modify material, otherwise 0.
  */
-int Cmiss_graphics_material_set_texture(
-	Cmiss_graphics_material_id material, Cmiss_texture_id texture);
+int Cmiss_material_set_texture(
+	Cmiss_material_id material, Cmiss_texture_id texture);
 
 /***************************************************************************//**
  * The volatile flag determine how the material is destroyed. If a material 
- * is volatile upon destroyed, it will also be removed from the graphics_package 
- * but if volatile flag is 0 then material will remain in the graphics_package.
+ * is volatile upon destroyed, it will also be removed from the graphics_module 
+ * but if volatile flag is 0 then material will remain in the graphics_module.
  *
  * @warning  This function is under development and may subject to change.
  * @param material  handle to the" cmiss graphics material.
  * @return  1 if successfully set the volatile flag, otherwise 0.
  */
-int Cmiss_graphics_material_set_volatile(
-	Cmiss_graphics_material_id material, int volatile_flag);
+int Cmiss_material_set_volatile(
+	Cmiss_material_id material, int volatile_flag);
 
 /***************************************************************************//**
  * Destroy the material.
@@ -191,6 +191,6 @@ int Cmiss_graphics_material_set_volatile(
  * @param material  handle to the "to be destroyed" cmiss graphics material.
  * @return  1 if successfully destroy material, otherwise 0.
  */
-int Cmiss_graphics_material_destroy(
-	Cmiss_graphics_material_id *material);
+int Cmiss_material_destroy(
+	Cmiss_material_id *material);
 #endif
