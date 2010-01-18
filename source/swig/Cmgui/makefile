@@ -24,25 +24,46 @@ CMISS_LIBS = -L$(CMISS_ROOT)/cmgui/lib/i686-linux/cmgui-wx-debug/ -lcmgui
 
 PYTHON_INCLUDES = -I/usr/include/python2.5 -I$(CMISS_ROOT)/cmgui/source
 
-OCTAVE_INCLUDES = -I$(CMISS_ROOT)/cmgui/source
+OBJECT_PATH=$(CMISS_ROOT)/cmgui/source/swig/python/object
+BIN_PATH=$(CMISS_ROOT)/cmgui/source/swig/python/Cmiss
+VPATH=$(OBJECT_PATH):$(BIN_PATH)
 
 # Dependencies
 INTERFACES = CmissCommandData.i CmissRegion.i CmissFieldModule.i
+PYTHON_PACKAGE_INIT = __init__.py
 PYTHON_WRAPS = $(INTERFACES:.i=_wrap.cxx)
 PYTHON_OBJECTS = $(PYTHON_WRAPS:.cxx=.o)
-PYTHON_MODULES = $(subst Cmgui,_,$(INTERFACES:.i=.so))
+PYTHON_MODULES = $(subst Cmiss,_,$(INTERFACES:.i=.so))
 
-CmguiPython: $(PYTHON_MODULES)
+CmguiPython: $(PYTHON_MODULES) $(PYTHON_PACKAGE_INIT)
+
+$(PYTHON_PACKAGE_INIT) : $(PYTHON_MODULES) makefile
+	@if [ ! -d $(BIN_PATH) ]; then \
+		mkdir -p $(BIN_PATH); \
+	fi
+	echo '# Cmiss Python package initialisation file' > $(BIN_PATH)/$(PYTHON_PACKAGE_INIT);
 
 $(PYTHON_MODULES): $(PYTHON_OBJECTS)
-	$(CXX) $(CXXFLAGS) $(CMISS_LIBS) $(subst .so,_wrap.o, $(subst _,Cmiss,$@)) -o $@
+	@if [ ! -d $(BIN_PATH) ]; then \
+		mkdir -p $(BIN_PATH); \
+	fi
+	$(CXX) $(CXXFLAGS) $(CMISS_LIBS) $(OBJECT_PATH)/$(subst .so,_wrap.o,$(subst _,Cmiss,$@)) -o $(BIN_PATH)/$@
 
 $(PYTHON_OBJECTS): $(PYTHON_WRAPS)
-	$(CC) $(CFLAGS) $(PYTHON_INCLUDES) $(@:.o=.cxx)	
+	@if [ ! -d $(OBJECT_PATH) ]; then \
+		mkdir -p $(OBJECT_PATH); \
+	fi
+	$(CC) $(CFLAGS) $(PYTHON_INCLUDES) $(OBJECT_PATH)/$(@:.o=.cxx) -o $(OBJECT_PATH)/$@
 	
 $(PYTHON_WRAPS): $(INTERFACES)
-	swig -c++ -python $(SWIG_INCLUDES) $(@:_wrap.cxx=.i)
+	@if [ ! -d $(OBJECT_PATH) ]; then \
+		mkdir -p $(OBJECT_PATH); \
+	fi
+	@if [ ! -d $(BIN_PATH) ]; then \
+		mkdir -p $(BIN_PATH); \
+	fi
+	swig -c++ -python $(SWIG_INCLUDES) -o $(OBJECT_PATH)/$@ -outdir $(BIN_PATH) $(@:_wrap.cxx=.i)
 
 clean:
-	rm -f $(PYTHON_WRAPS) $(PYTHON_OBJECTS) $(PYTHON_MODULES) $(subst Cmiss,,$(INTERFACES:.i=.py)) $(subst Cmiss,,$(INTERFACES:.i=.pyc))
-
+	rm -r $(OBJECT_PATH)
+	rm -r $(BIN_PATH)
