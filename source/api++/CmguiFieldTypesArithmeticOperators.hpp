@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : CmguiField.hpp
+ * FILE : CmissField.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -36,19 +36,19 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMGUI_FIELD_TYPES_ARITHMETIC_OPERATORS_HPP__
-#define __CMGUI_FIELD_TYPES_ARITHMETIC_OPERATORS_HPP__
+#ifndef __CMISS_FIELD_TYPES_ARITHMETIC_OPERATORS_HPP__
+#define __CMISS_FIELD_TYPES_ARITHMETIC_OPERATORS_HPP__
 
 extern "C" {
 #include "api/cmiss_field_arithmetic_operators.h"
 }
-#include "api++/CmguiField.hpp"
+#include "api++/CmissField.hpp"
 
 // following should be defined in api/cmiss_field_arithmetic_operators.h:
 struct Cmiss_field_add;
 typedef struct Cmiss_field_add *Cmiss_field_add_id;
 
-namespace Cmgui
+namespace Cmiss
 {
 
 class FieldAdd : public Field
@@ -60,6 +60,6 @@ public:
 	{ }
 };
 
-}  // namespace Cmgui
+}  // namespace Cmiss
 
-#endif /* __CMGUI_FIELD_TYPES_ARITHMETIC_OPERATORS_HPP__ */
+#endif /* __CMISS_FIELD_TYPES_ARITHMETIC_OPERATORS_HPP__ */

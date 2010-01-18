@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : CmguiFieldModule.hpp
+ * FILE : CmissFieldModule.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -36,19 +36,19 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMGUI_FIELD_MODULE_HPP__
-#define __CMGUI_FIELD_MODULE_HPP__
+#ifndef __CMISS_FIELD_MODULE_HPP__
+#define __CMISS_FIELD_MODULE_HPP__
 
 extern "C" {
 #include "api/cmiss_field_module.h"
 }
-#include "api++/CmguiField.hpp"
-#include "api++/CmguiFieldTypesArithmeticOperators.hpp"
-#include "api++/CmguiFieldTypesComposite.hpp"
-#include "api++/CmguiFieldTypesImage.hpp"
-#include "api++/CmguiFieldTypesTrigonometry.hpp"
+#include "api++/CmissField.hpp"
+#include "api++/CmissFieldTypesArithmeticOperators.hpp"
+#include "api++/CmissFieldTypesComposite.hpp"
+#include "api++/CmissFieldTypesImage.hpp"
+#include "api++/CmissFieldTypesTrigonometry.hpp"
 
-namespace Cmgui
+namespace Cmiss
 {
 
 class FieldAdd;
@@ -131,6 +131,6 @@ public:
 
 };
 
-} // namespace Cmgui
+} // namespace Cmiss
 
-#endif /* __CMGUI_FIELD_MODULE_HPP__ */
+#endif /* __CMISS_FIELD_MODULE_HPP__ */

@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : CmguiFieldTypesImage.hpp
+ * FILE : CmissFieldTypesImage.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -36,15 +36,15 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMGUI_FIELD_TYPES_IMAGE_HPP__
-#define __CMGUI_FIELD_TYPES_IMAGE_HPP__
+#ifndef __CMISS_FIELD_TYPES_IMAGE_HPP__
+#define __CMISS_FIELD_TYPES_IMAGE_HPP__
 
 extern "C" {
 #include "api/cmiss_field_image.h"
 }
-#include "api++/CmguiField.hpp"
+#include "api++/CmissField.hpp"
 
-namespace Cmgui
+namespace Cmiss
 {
 
 class FieldImage : public Field
@@ -74,6 +74,6 @@ public:
 
 };
 
-} // namespace Cmgui
+} // namespace Cmiss
 
-#endif /* __CMGUI_FIELD_TYPES_IMAGE_HPP__ */
+#endif /* __CMISS_FIELD_TYPES_IMAGE_HPP__ */

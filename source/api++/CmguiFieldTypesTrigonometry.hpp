@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : CmguiFieldTypesTrigonometry.hpp
+ * FILE : CmissFieldTypesTrigonometry.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -36,19 +36,19 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMGUI_FIELD_TYPES_TRIGONOMETRY_HPP__
-#define __CMGUI_FIELD_TYPES_TRIGONOMETRY_HPP__
+#ifndef __CMISS_FIELD_TYPES_TRIGONOMETRY_HPP__
+#define __CMISS_FIELD_TYPES_TRIGONOMETRY_HPP__
 
 extern "C" {
 #include "api/cmiss_field_trigonometry.h"
 }
-#include "api++/CmguiField.hpp"
+#include "api++/CmissField.hpp"
 
 // following should be defined in api/cmiss_field_trigonometry.h:
 struct Cmiss_field_sin;
 typedef struct Cmiss_field_sin *Cmiss_field_sin_id;
 
-namespace Cmgui
+namespace Cmiss
 {
 
 class FieldSin : public Field
@@ -60,6 +60,6 @@ public:
 	{ }
 };
 
-} // namespace Cmgui
+} // namespace Cmiss
 
-#endif /* __CMGUI_FIELD_TYPES_TRIGONOMETRY_HPP__ */
+#endif /* __CMISS_FIELD_TYPES_TRIGONOMETRY_HPP__ */

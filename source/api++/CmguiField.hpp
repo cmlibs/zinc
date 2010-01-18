@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : CmguiField.hpp
+ * FILE : CmissField.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -36,14 +36,14 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMGUI_FIELD_HPP__
-#define __CMGUI_FIELD_HPP__
+#ifndef __CMISS_FIELD_HPP__
+#define __CMISS_FIELD_HPP__
 
 extern "C" {
 #include "api/cmiss_field.h"
 }
 
-namespace Cmgui
+namespace Cmiss
 {
 
 class FieldModule;
@@ -109,6 +109,6 @@ public:
 	}
 };
 
-} // namespace Cmgui
+} // namespace Cmiss
 
-#endif /* __CMGUI_FIELD_HPP__ */
+#endif /* __CMISS_FIELD_HPP__ */

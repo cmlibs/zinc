@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : CmguiCommandData.hpp
+ * FILE : CmissCommandData.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -36,14 +36,14 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMGUI_COMMAND_DATA_HPP__
-#define __CMGUI_COMMAND_DATA_HPP__
+#ifndef __CMISS_COMMAND_DATA_HPP__
+#define __CMISS_COMMAND_DATA_HPP__
 
 extern "C" {
 #include "api/cmiss_command_data.h"
 }
 
-namespace Cmgui
+namespace Cmiss
 {
 
 class Region;
@@ -55,7 +55,7 @@ private:
 	Cmiss_command_data_id id;
 
 public:
-	// Creates a new Cmgui CommandData instance
+	// Creates a new Cmiss CommandData instance
 	CommandData(int argc, const char *argv[], const char *version_string) :
 		id(Cmiss_command_data_create(argc, argv, version_string))
 	{ }
@@ -92,7 +92,6 @@ public:
 	{
 		if (NULL != id)
 		{
-			//display_message(INFORMATION_MESSAGE, "Destroy Cmgui::CommandData\n"); // GRC_TEMP
 			Cmiss_command_data_destroy(&id);
 		}
 	}
@@ -120,6 +119,6 @@ public:
 	}
 };
 
-} // namespace Cmgui
+} // namespace Cmiss
 
-#endif /* __CMGUI_COMMAND_DATA_HPP__ */
+#endif /* __CMISS_COMMAND_DATA_HPP__ */
