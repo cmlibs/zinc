@@ -12378,8 +12378,8 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 				&fineness,(void *)NULL,set_double);
 			Option_table_add_entry(option_table,"secondorder",
 				&secondorder,(void *)NULL,set_int);
-			Option_table_add_entry(option_table,"meshsize_file",
-				&meshsize_file,(void *)" FILENAME",set_string);
+			Option_table_add_string_entry(option_table,"meshsize_file",
+				&meshsize_file, " FILENAME");
 
 			if ((return_code = Option_table_multi_parse(option_table,state)))
 			{
