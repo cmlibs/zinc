@@ -10,6 +10,37 @@ It is released under the Mozilla Public License v1.1
 Further information, help pages, a tracker and a wiki is available at 
 http://www.cmiss.org/cmgui/
 
+v2.6.2
+20 Jan 2009
+
+This is an intermediate release of cmgui, parts of the software may or may 
+not work.
+
+Added Functions (selected list):
+1626 Field dependent visibility
+1837 Added glyphs that have texture coordinates
+1917 Width option for isolines
+1989 Triangular meshing
+2050 Tetrahedral meshing
+
+Bugs fixed:
+949  Cmgui now prints out extra large images correctly
+1789 Timekeeper's time has been tweak to work correctly
+1791 Fixed cmgui does not evaluate field value at the right time in rare occasion
+1833 Fixed antialiasing not applied to other scene viewer panels except the first one
+     in rare occasion
+1854 Allow user to output ex format file at a specified time
+
+Improvement:
+1738 Better CMake support.
+1788 Added more information to the about box.
+1990 New isosurface algorithem which should improve performance and it now handles tetrahedron
+2012 Use 16bit storage for 16bit grey scale image when rendering using OpenGL
+
+Others:
+More api functions have been exposed for api user and have started work on the c++ api but note that the api functions are not yet finalised.
+
+
 v2.6
 5 May 2009
 
