@@ -6319,7 +6319,7 @@ Executes a GFX MODIFY EMOTER command.
 		*input_sequence, keyframe, maximum_time_flag, minimum_time_flag, 
 		*movie_filename, new_flag, no_rigid_body_motion, play, rigid_body_motion,
 		*save_filename, *slidername, stop, *temp_filename, time_flag, value_flag;
-	FE_value maximum_time, minimum_time, time, value;
+	double maximum_time, minimum_time, time, value;
 	int face_changed, i, integer_time, modes, return_code;
 	static struct Modifier_entry option_table[]=
 	{
