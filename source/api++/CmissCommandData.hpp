@@ -110,9 +110,12 @@ public:
 	{
 		return Region(Cmiss_command_data_get_root_region(id));
 	}
-	
-	//GraphicsModule getDefaultGraphicsModule() const;
-	
+
+	template<class GraphicsModuleType> GraphicsModuleType getDefaultGraphicsModule() const
+	{
+		return GraphicsModule(Cmiss_command_data_get_graphics_module(id));
+	}
+
 	int runMainLoop() const
 	{
 		return Cmiss_command_data_main_loop(id);

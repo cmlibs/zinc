@@ -7043,3 +7043,14 @@ int Cmiss_material_set_volatile(
 
 	return return_code;
 }
+
+struct Graphical_material *Cmiss_material_access(struct Graphical_material *material)
+{
+	ENTER(Cmiss_material_access);
+	if (material)
+	{
+		material->access_count++;
+	}
+	
+	return material;
+}

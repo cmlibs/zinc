@@ -1,7 +1,5 @@
-/*******************************************************************************
- * CmissCommandData.i
- * 
- * Swig interface file for cmgui core command data.
+/***************************************************************************//**
+ * FILE : CmissMaterial.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -38,21 +36,88 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#ifndef __CMISS_MATERIAL_HPP__
+#define __CMISS_MATERIAL_HPP__
 
-%module CommandData
+extern "C" {
+#include "api/cmiss_material.h"
+}
 
-%{
-#include "api++/CmissCommandData.hpp"
-#include "api++/CmissRegion.hpp"
-#include "api++/CmissGraphicsModule.hpp"
-%}
+namespace Cmiss
+{
 
-%include "api++/CmissCommandData.hpp"
+class Material
+{
+protected:
+	Cmiss_material_id id;
 
-%extend Cmiss::CommandData {
-	%template(getRootRegion) getRootRegion<Cmiss::Region>;
+public:
+	Material() : id(NULL)
+	{	}
+
+	// takes ownership of C-style field reference
+	Material(Cmiss_material_id in_material_id): id(in_material_id)
+	{ }
+
+	Material(const Material& material) : id(Cmiss_material_access(material.id))
+	{ }
+
+	Material& operator=(const Material& material)
+	{
+		Cmiss_material_id temp_id = Cmiss_material_access(material.id);
+		if (NULL != id)
+		{
+			Cmiss_material_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+	
+	~Material()
+	{
+		if (NULL != id)
+		{
+			Cmiss_material_destroy(&id);
+		}
+	}
+
+	int setName(const char *name)
+	{
+		return Cmiss_material_set_name(id, name);
+	}
+
+	int setAlpha(float alpha)
+	{
+		return Cmiss_material_set_alpha(id, alpha);
+	}
+
+	int setShininess(float shininess)
+	{
+		return Cmiss_material_set_shininess(id, shininess);
+	}
+
+	int setAmbient(float red, float green, float blue)
+	{
+		return Cmiss_material_set_ambient(id, red, green, blue);
+	}
+
+	int setDiffuse(float red, float green, float blue)
+	{
+		return Cmiss_material_set_diffuse(id, red, green, blue);
+	}
+
+	int setEmission(float red, float green, float blue)
+	{
+		return Cmiss_material_set_emission(id, red, green, blue);
+	}
+
+	int setSpecular(float red, float green, float blue)
+	{
+		return Cmiss_material_set_specular(id, red, green, blue);
+	}
+
 };
 
-%extend Cmiss::CommandData {
-	%template(getDefaultGraphicsModule) getDefaultGraphicsModule<Cmiss::GraphicsModule>;
-};
+} // namespace Cmiss
+
+#endif /* __CMISS_MATERIAL_HPP__ */

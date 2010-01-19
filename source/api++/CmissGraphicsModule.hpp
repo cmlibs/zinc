@@ -1,7 +1,5 @@
-/*******************************************************************************
- * CmissCommandData.i
- * 
- * Swig interface file for cmgui core command data.
+/***************************************************************************//**
+ * FILE : CmissGraphicsModule.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -38,21 +36,68 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#ifndef __CMISS_GRAPHICS_MODULE_HPP__
+#define __CMISS_GRAPHICS_MODULE_HPP__
 
-%module CommandData
+extern "C" {
+#include "api/cmiss_graphics_module.h"
+}
+#include "api++/CmissMaterial.hpp"
 
-%{
-#include "api++/CmissCommandData.hpp"
-#include "api++/CmissRegion.hpp"
-#include "api++/CmissGraphicsModule.hpp"
-%}
+namespace Cmiss
+{
 
-%include "api++/CmissCommandData.hpp"
+class Material;
 
-%extend Cmiss::CommandData {
-	%template(getRootRegion) getRootRegion<Cmiss::Region>;
+class GraphicsModule
+{
+protected:
+	Cmiss_graphics_module_id id;
+
+public:
+	GraphicsModule() : id(NULL)
+	{ }
+
+	// takes ownership of C-style graphics_module reference
+	GraphicsModule(Cmiss_graphics_module_id graphics_module_id) : 
+		id(graphics_module_id)
+	{ }
+
+	GraphicsModule(const GraphicsModule& graphicsModule) :
+		id(Cmiss_graphics_module_access(graphicsModule.id))
+	{ }
+
+	GraphicsModule& operator=(const GraphicsModule& graphicsModule)
+	{
+		Cmiss_graphics_module_id temp_id = graphicsModule.id;
+		if (NULL != id)
+		{
+			Cmiss_graphics_module_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+	
+	~GraphicsModule()
+	{
+		if (NULL != id)
+		{
+			Cmiss_graphics_module_destroy(&id);
+		}
+	}
+
+	Material createMaterial() const
+	{
+		return Material(Cmiss_graphics_module_create_material(id));
+	}
+
+	Material findMaterialByName(const char *material_name) const
+	{
+		return Material(Cmiss_graphics_module_find_material_by_name(id, material_name));
+	}
+	
 };
 
-%extend Cmiss::CommandData {
-	%template(getDefaultGraphicsModule) getDefaultGraphicsModule<Cmiss::GraphicsModule>;
-};
+} // namespace Cmiss
+
+#endif /* __CMISS_GRAPHICS_MODULE_HPP__ */

@@ -42,7 +42,7 @@
 struct Graphical_material;
 #ifndef CMISS_MATERIAL_ID_DEFINED
 /***************************************************************************//**
- * A handle to cmiss graphics material. Cmiss graphics material describes the
+ * A handle to cmiss material. cmiss material describes the
  * colour, shading and other graphical properties of a material, it is highly 
  * similar to material described by OpenGL.
  * User can get a handle to material either through create new material using 
@@ -87,7 +87,7 @@ int Cmiss_material_set_alpha(
 /***************************************************************************//**
  * Set the size and brigtness of the highlight.
  *
- * @param material  The handle to the to be modified cmiss graphics material.
+ * @param material  The handle to the to be modified cmiss material.
  * @param shininess  Size and brightness of the hightlight, the higher the 
  *   value, the smaller and brighter the highlight. Minimum acceptable value is 0
  *   and maximum acceptable value is 1.
@@ -100,7 +100,7 @@ int Cmiss_material_set_shininess(
  * Set the ambient colour of the material. Ambient colour simulates the colour 
  * of the material when it does not receive direct illumination.
  *
- * @param material  The handle to the to be modified cmiss graphics material.
+ * @param material  The handle to the to be modified cmiss material.
  * @param red  Value of the red component to be set.
  *   Minimum acceptable value is 0 and maximum acceptable value is 1.
  * @param green  Value of the green component to be set.
@@ -117,7 +117,7 @@ int Cmiss_material_set_ambient(
  * comes from one direction and this colour scattered equally in all directions 
  * once the light hits it.
  *
- * @param material  The handle to the to be modified cmiss graphics material.
+ * @param material  The handle to the to be modified cmiss material.
  * @param red  Value of the red component to be set.
  *   Minimum acceptable value is 0 and maximum acceptable value is 1.
  * @param green  Value of the green component to be set.
@@ -134,7 +134,7 @@ int Cmiss_material_set_diffuse(
  * that is originating from the material itself. It is not affected by any
  * lighting.
  *
- * @param material  The handle to the to be modified cmiss graphics material.
+ * @param material  The handle to the to be modified cmiss material.
  * @param red  Value of the red component to be set.
  *   Minimum acceptable value is 0 and maximum acceptable value is 1.
  * @param green  Value of the green component to be set.
@@ -151,7 +151,7 @@ int Cmiss_material_set_emission(
  * Unlike ambient and diffuse reflect, specular colour depends on location of
  * the viewpoint, it is brightest along the direct angle of reflection.
  *
- * @param material  The handle to the to be modified cmiss graphics material.
+ * @param material  The handle to the to be modified cmiss material.
  * @param red  Value of the red component to be set.
  *   Minimum acceptable value is 0 and maximum acceptable value is 1.
  * @param green  Value of the green component to be set.
@@ -166,7 +166,7 @@ int Cmiss_material_set_specular(
 /***************************************************************************//**
  * Set the texture of the material.
  *
- * @param material  The handle to the to be modified cmiss graphics material.
+ * @param material  The handle to the to be modified cmiss material.
  * @param texture  Handle to cmiss texture to be used for this material.
  * @return  1 if successfully modify material, otherwise 0.
  */
@@ -179,18 +179,26 @@ int Cmiss_material_set_texture(
  * but if volatile flag is 0 then material will remain in the graphics_module.
  *
  * @warning  This function is under development and may subject to change.
- * @param material  handle to the" cmiss graphics material.
+ * @param material  handle to the" cmiss material.
  * @return  1 if successfully set the volatile flag, otherwise 0.
  */
 int Cmiss_material_set_volatile(
 	Cmiss_material_id material, int volatile_flag);
 
 /***************************************************************************//**
+ * Access the material, increase the access count of the material by one.
+ *
+ * @param material  handle to the "to be access" cmiss material.
+ * @return  handle to material if successfully access material.
+ */
+Cmiss_material_id Cmiss_material_access(Cmiss_material_id material);
+
+/***************************************************************************//**
  * Destroy the material.
  *
- * @param material  handle to the "to be destroyed" cmiss graphics material.
+ * @param material  address to the handle to the "to be destroyed" 
+ *   cmiss material.
  * @return  1 if successfully destroy material, otherwise 0.
  */
-int Cmiss_material_destroy(
-	Cmiss_material_id *material);
+int Cmiss_material_destroy(Cmiss_material_id *material);
 #endif

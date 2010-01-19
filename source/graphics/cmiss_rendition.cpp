@@ -39,6 +39,7 @@ FILE : cmiss_rendition.cpp
  * ***** END LICENSE BLOCK ***** */
 
 extern "C" {
+#include "api/cmiss_graphics_module.h"
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
 #include "general/object.h"
@@ -70,6 +71,7 @@ struct Cmiss_graphics_module
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *data_selection,*node_selection;
 	struct Time_keeper *default_time_keeper;
+	int access_count;
 };
 
 struct Cmiss_graphics_module *Cmiss_graphics_module_create(
@@ -87,7 +89,7 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 	struct FE_node_selection *node_selection,
 	struct Time_keeper *default_time_keeper)
 {
-	struct Cmiss_graphics_module *package;
+	struct Cmiss_graphics_module *module;
 
 	ENTER(Cmiss_graphics_module_create);
 	if (glyph_list && graphical_material_manager && default_material &&
@@ -95,37 +97,38 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 		default_spectrum && texture_manager && element_point_ranges_selection &&
 		element_selection && data_selection && node_selection)
 	{
-		if (ALLOCATE(package, struct Cmiss_graphics_module, 1))
+		if (ALLOCATE(module, struct Cmiss_graphics_module, 1))
 		{
-			package->glyph_list = glyph_list;
-			package->graphical_material_manager = graphical_material_manager;
-			package->default_material = ACCESS(Graphical_material)(default_material);
-			package->default_font = ACCESS(Graphics_font)(default_font);
-			package->light_manager = light_manager;
-			package->spectrum_manager = spectrum_manager;
-			package->default_spectrum = ACCESS(Spectrum)(default_spectrum);
-			package->texture_manager = texture_manager;
-			package->element_point_ranges_selection = element_point_ranges_selection;
-			package->element_selection = element_selection;
-			package->data_selection = data_selection;
-			package->node_selection = node_selection;
-			package->default_time_keeper = ACCESS(Time_keeper)(default_time_keeper);
+			module->glyph_list = glyph_list;
+			module->graphical_material_manager = graphical_material_manager;
+			module->default_material = ACCESS(Graphical_material)(default_material);
+			module->default_font = ACCESS(Graphics_font)(default_font);
+			module->light_manager = light_manager;
+			module->spectrum_manager = spectrum_manager;
+			module->default_spectrum = ACCESS(Spectrum)(default_spectrum);
+			module->texture_manager = texture_manager;
+			module->element_point_ranges_selection = element_point_ranges_selection;
+			module->element_selection = element_selection;
+			module->data_selection = data_selection;
+			module->node_selection = node_selection;
+			module->default_time_keeper = ACCESS(Time_keeper)(default_time_keeper);
+			module->access_count = 1;
 		}
 		else
 		{
-			package = (Cmiss_graphics_module *)NULL;
+			module = (Cmiss_graphics_module *)NULL;
 			display_message(ERROR_MESSAGE,
-			"Cmiss_rendtion_graphics_module_create. Not enough memory for Cmiss rendition graphics package");
+			"Cmiss_rendtion_graphics_module_create. Not enough memory for Cmiss rendition graphics module");
 		}
 	}
 	else
 	{
-		package = (Cmiss_graphics_module *)NULL;
+		module = (Cmiss_graphics_module *)NULL;
 		display_message(ERROR_MESSAGE,"Cmiss_rendtion_graphics_module_create.  Invalid argument(s)");
 	}
 	LEAVE;
 
-	return (package);
+	return (module);
 }
 
 struct MANAGER(Graphical_material) *Cmiss_graphics_module_get_material_manager(
@@ -149,29 +152,42 @@ struct MANAGER(Graphical_material) *Cmiss_graphics_module_get_material_manager(
 	return (material_manager);
 }
 
-int DESTROY(Cmiss_graphics_module)(
-	struct Cmiss_graphics_module **cmiss_graphics_module_address)
+struct Cmiss_graphics_module *Cmiss_graphics_module_access(
+	struct Cmiss_graphics_module *graphics_module)
 {
-	int return_code;
-	struct Cmiss_graphics_module *cmiss_graphics_module;
-
-	ENTER(DESTROY(Cmiss_graphics_module));
-	if (NULL != (cmiss_graphics_module =* cmiss_graphics_module_address))
+	if (graphics_module)
 	{
-		DEACCESS(Graphical_material)(&cmiss_graphics_module->default_material);
-		DEACCESS(Graphics_font)(&cmiss_graphics_module->default_font);
-		DEACCESS(Spectrum)(&cmiss_graphics_module->default_spectrum);
-		DEACCESS(Time_keeper)(&cmiss_graphics_module->default_time_keeper);
-		DEALLOCATE(*cmiss_graphics_module_address);
+		graphics_module->access_count++;
+	}
+	return graphics_module;
+}
+
+int Cmiss_graphics_module_destroy(
+	struct Cmiss_graphics_module **graphics_module_address)
+{
+	int return_code = 0;
+	struct Cmiss_graphics_module *graphics_module = NULL;
+
+	if (NULL != (graphics_module = *graphics_module_address))
+	{
+		graphics_module->access_count--;
+		if (0 == graphics_module->access_count)
+		{
+			DEACCESS(Graphical_material)(&graphics_module->default_material);
+			DEACCESS(Graphics_font)(&graphics_module->default_font);
+			DEACCESS(Spectrum)(&graphics_module->default_spectrum);
+			DEACCESS(Time_keeper)(&graphics_module->default_time_keeper);
+			DEALLOCATE(*graphics_module_address);
+		}
+		*graphics_module_address = NULL;
 		return_code = 1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"DESTROY(Cmiss_graphics_module).  "
-			"Invalid argument(s)");
-		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"Cmiss_graphics_module_destroy.  Missing graphics module");
+		return_code = 0;
 	}
-	LEAVE;
 
-	return (return_code);
+	return return_code;
 }

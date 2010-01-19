@@ -1,7 +1,7 @@
 /*******************************************************************************
- * CmissCommandData.i
+ * CmissGraphicsModule.i
  * 
- * Swig interface file for cmgui core command data.
+ * Swig interface file for cmiss graphics module.
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -39,20 +39,11 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module CommandData
+%module GraphicsModule
 
 %{
-#include "api++/CmissCommandData.hpp"
-#include "api++/CmissRegion.hpp"
 #include "api++/CmissGraphicsModule.hpp"
+#include "api++/CmissMaterial.hpp"
 %}
 
-%include "api++/CmissCommandData.hpp"
-
-%extend Cmiss::CommandData {
-	%template(getRootRegion) getRootRegion<Cmiss::Region>;
-};
-
-%extend Cmiss::CommandData {
-	%template(getDefaultGraphicsModule) getDefaultGraphicsModule<Cmiss::GraphicsModule>;
-};
+%include "api++/CmissGraphicsModule.hpp"

@@ -36,7 +36,7 @@ BIN_PATH=$(CMISS_ROOT)/cmgui/source/swig/python/Cmiss
 VPATH=$(INTERFACE_PATH):$(OBJECT_PATH):$(BIN_PATH)
 
 # Dependencies
-INTERFACES = CmissCommandData.i CmissRegion.i CmissFieldModule.i
+INTERFACES = CmissCommandData.i CmissRegion.i CmissFieldModule.i CmissGraphicsModule.i CmissMaterial.i
 PYTHON_PACKAGE_INIT = __init__.py
 PYTHON_WRAPS = $(INTERFACES:.i=_wrap.cxx)
 PYTHON_OBJECTS = $(PYTHON_WRAPS:.cxx=.o)

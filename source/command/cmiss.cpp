@@ -59,6 +59,7 @@
 #endif /* defined (MOTIF_USER_INTERFACE) */
 extern "C" {
 #include "api/cmiss_command_data.h"
+#include "api/cmiss_graphics_module.h"
 #include "api/cmiss_region.h"
 #include "api/cmiss_scene_viewer.h"
 #include "api/cmiss_scene_viewer_private.h"
@@ -26331,7 +26332,7 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 		DESTROY(MANAGER(Scene))(&command_data->scene_manager);
 		if (command_data->graphics_module)
 		{
-			DESTROY(Cmiss_graphics_module)(&command_data->graphics_module);
+			Cmiss_graphics_module_destroy(&command_data->graphics_module);
 		}
 		DESTROY(Time_keeper)(&command_data->default_time_keeper);
 		if (command_data->computed_field_package)
@@ -26834,7 +26835,7 @@ struct Cmiss_graphics_module *Cmiss_command_data_get_graphics_module(
 	graphics_module=(struct Cmiss_graphics_module *)NULL;
 	if (command_data)
 	{
-		graphics_module = command_data->graphics_module;
+		graphics_module = Cmiss_graphics_module_access(command_data->graphics_module);
 	}
 	LEAVE;
 

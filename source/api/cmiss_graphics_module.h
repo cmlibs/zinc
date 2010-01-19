@@ -70,4 +70,23 @@ Cmiss_material_id Cmiss_graphics_module_find_material_by_name(
 Cmiss_material_id Cmiss_graphics_module_create_material(
 	Cmiss_graphics_module_id graphics_module);
 
+/***************************************************************************//**
+ * Access the graphics module , increase the access count of the module by one.
+ *
+ * @param graphics_module  handle to the "to be accessed" graphics module.
+ * @return  handle to graphics module.
+ */
+Cmiss_graphics_module_id Cmiss_graphics_module_access(
+	Cmiss_graphics_module_id graphics_module);
+
+/***************************************************************************//**
+ * Destroy the graphics module.
+ *
+ * @param graphics_module_address  address to the handle to the "to be destroyed" 
+ *   graphics module.
+ * @return  1 if successfully destroy graphics module, otherwise 0.
+ */
+int Cmiss_graphics_module_destroy(
+	Cmiss_graphics_module_id *graphics_module_address);
+
 #endif /*__CMISS_GRAPHICS_MODULE_H__*/
