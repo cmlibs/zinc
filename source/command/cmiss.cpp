@@ -12361,7 +12361,7 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 			double fineness=0.5;
 			int secondorder=0;    
 			struct Scene *scene;
-			char meshsize_file[200];
+			char *meshsize_file = NULL;
 			struct Option_table *option_table;
 			scene = ACCESS(Scene)(command_data->default_scene);
 			option_table = CREATE(Option_table)();
@@ -12379,7 +12379,7 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 			Option_table_add_entry(option_table,"secondorder",
 				&secondorder,(void *)NULL,set_int);
 			Option_table_add_entry(option_table,"meshsize_file",
-				meshsize_file,(void *)NULL,set_string);
+				&meshsize_file,(void *)" FILENAME",set_string);
 
 			if ((return_code = Option_table_multi_parse(option_table,state)))
 			{
@@ -12470,6 +12470,10 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 			DEALLOCATE(region_path);
 			DESTROY(Option_table)(&option_table);
 			DEACCESS(Scene)(&scene);
+			if (meshsize_file)
+			{
+				DEALLOCATE(meshsize_file);
+			}
 		}
 		else
 		{

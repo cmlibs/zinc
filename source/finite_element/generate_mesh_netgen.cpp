@@ -134,7 +134,8 @@ int set_netgen_parameters_secondorder(struct Generate_netgen_parameters *para, i
     return return_code;
 }
 
-int set_netgen_parameters_meshsize_filename(struct Generate_netgen_parameters *para, char* meshsize_filename)
+int set_netgen_parameters_meshsize_filename(struct Generate_netgen_parameters *para,
+	const char* meshsize_filename)
 {
     int return_code=0;
 
