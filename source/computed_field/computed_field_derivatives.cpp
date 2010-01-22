@@ -610,12 +610,21 @@ struct Computed_field *Computed_field_create_derivative(
 	struct Cmiss_field_module *field_module,
 	struct Computed_field *source_field, int xi_index)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
-		/*check_source_field_regions*/true,
-		source_field->number_of_components,
-		/*number_of_source_fields*/1, &source_field,
-		/*number_of_source_values*/0, NULL,
-		new Computed_field_derivative(xi_index));
+	Computed_field *field = NULL;
+	if (source_field)
+	{
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/1, &source_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_derivative(xi_index));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_create_derivative.  Missing source field");
+	}
 
 	return (field);
 }
