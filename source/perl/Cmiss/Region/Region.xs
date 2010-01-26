@@ -245,5 +245,5 @@ Cmiss_region_find_field_by_name(Cmiss::Region region, char *name)
 int
 Cmiss_region_is_field_defined(Cmiss::Region region, char *name)
 
-Cmiss::Field_factory
-Cmiss_region_get_field_factory(Cmiss::Region region)
+Cmiss::Field_module
+Cmiss_region_get_field_module(Cmiss::Region region)

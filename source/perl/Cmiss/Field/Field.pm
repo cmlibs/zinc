@@ -35,186 +35,165 @@ Cmiss::require_library('cmgui_finite_element');
 
 package Cmiss::Field;
 
+sub get_field_module_for_wrap
+{
+  for my $field ( @_)
+  {
+  	if ("Cmiss::Field" eq ref $field)
+  	{
+  		return $field->get_field_module();
+  	}
+  }
+	croak "Can't get field Cmiss::Field_module from any object in @_";
+}
+
 sub wrap_numbers_in_field
 {
-  my ($field) = @_;
+  my ($field_module, $field) = @_;
 
   if ($field =~ m/^([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?$/)
   {
-	 my $region =   $Cmiss::Cmgui_command_data->get_root_region();
-	 $field = $region->add_field(
-			Cmiss::Field::create_constant([$field]));
+    $field = $field_module->create_constant([$field]);
   }
   elsif ("ARRAY" eq ref $field)
   {
-	 my $region =   $Cmiss::Cmgui_command_data->get_root_region();
-	 $field = $region->add_field(
-			Cmiss::Field::create_constant($field));
+    $field = $field_module->create_constant($field);
   }
 
   if ("Cmiss::Field" ne ref $field)
   {
-	 croak "Can't create Cmiss::Field from $field";
+	  croak "Can't create Cmiss::Field from $field";
   }
 
   return $field;
 }
 
-sub constant
-{
-  my ($values) = @_;
-
-  my $field = wrap_numbers_in_field($values);
-
-  return($field);
-}
-
 sub add
 {
   my ($source_one, $source_two) = @_;
+	my $field_module = get_field_module_for_wrap(@_);
 
-  $source_one = wrap_numbers_in_field($source_one);
-  $source_two = wrap_numbers_in_field($source_two);
+  $source_one = wrap_numbers_in_field($field_module, $source_one);
+  $source_two = wrap_numbers_in_field($field_module, $source_two);
 
-  #Should get the region from the $source_one field instead I think.
-  my $region = $Cmiss::Cmgui_command_data->get_root_region();
-  return ($region->add_field(
-	  Cmiss::Field::create_add($source_one, $source_two)));
+	return $field_module->create_add($source_one, $source_two);
 }
 
 sub subtract
 {
   my ($source_one, $source_two, $swap) = @_;
+	my $field_module = get_field_module_for_wrap(@_);
 
   #If $swap is undef then this will be false so works for two parameters.
   if ($swap)
   {
 	 ($source_one, $source_two) = ($source_two, $source_one);
   }
-  $source_one = wrap_numbers_in_field($source_one);
-  $source_two = wrap_numbers_in_field($source_two);
+  $source_one = wrap_numbers_in_field($field_module, $source_one);
+  $source_two = wrap_numbers_in_field($field_module, $source_two);
 
-  #Should get the region from the $source_one field instead I think.
-  my $region = $Cmiss::Cmgui_command_data->get_root_region();
-  return ($region->add_field(
-	  Cmiss::Field::create_subtract($source_one, $source_two)));
+	return $field_module->create_subtract($source_one, $source_two);
 }
 
 sub multiply
 {
   my ($source_one, $source_two) = @_;
+	my $field_module = get_field_module_for_wrap(@_);
 
-  $source_one = wrap_numbers_in_field($source_one);
-  $source_two = wrap_numbers_in_field($source_two);
+  $source_one = wrap_numbers_in_field($field_module, $source_one);
+  $source_two = wrap_numbers_in_field($field_module, $source_two);
 
-  #Should get the region from the $source_one field instead I think.
-  my $region =   $Cmiss::Cmgui_command_data->get_root_region();
-  return ($region->add_field(
-	  Cmiss::Field::create_multiply($source_one, $source_two)));
+ 	return $field_module->create_multiply($source_one, $source_two);
 }
 
 sub divide
 {
   my ($source_one, $source_two, $swap) = @_;
+	my $field_module = get_field_module_for_wrap(@_);
 
   #If $swap is undef then this will be false so works for two parameters.
   if ($swap)
   {
 	 ($source_one, $source_two) = ($source_two, $source_one);
   }
-  $source_one = wrap_numbers_in_field($source_one);
-  $source_two = wrap_numbers_in_field($source_two);
+  $source_one = wrap_numbers_in_field($field_module, $source_one);
+  $source_two = wrap_numbers_in_field($field_module, $source_two);
 
-  #Should get the region from the $source_one field instead I think.
-  my $region = $Cmiss::Cmgui_command_data->get_root_region();
-  return ($region->add_field(
-	 Cmiss::Field::create_divide($source_one, $source_two)));
+	return $field_module->create_divide($source_one, $source_two);
 }
 
 sub less_than
 {
   my ($source_one, $source_two, $swap) = @_;
+	my $field_module = get_field_module_for_wrap(@_);
 
   #If $swap is undef then this will be false so works for two parameters.
   if ($swap)
   {
 	 ($source_one, $source_two) = ($source_two, $source_one);
   }
-  $source_one = wrap_numbers_in_field($source_one);
-  $source_two = wrap_numbers_in_field($source_two);
+  $source_one = wrap_numbers_in_field($field_module, $source_one);
+  $source_two = wrap_numbers_in_field($field_module, $source_two);
 
-  #Should get the region from the $source_one field instead I think.
-  my $region = $Cmiss::Cmgui_command_data->get_root_region();
-  return ($region->add_field(
-	 Cmiss::Field::create_less_than($source_one, $source_two)));
+	return $field_module->create_less_than($source_one, $source_two);
 }
 
 sub greater_than
 {
   my ($source_one, $source_two, $swap) = @_;
+	my $field_module = get_field_module_for_wrap(@_);
 
   #If $swap is undef then this will be false so works for two parameters.
   if ($swap)
   {
 	 ($source_one, $source_two) = ($source_two, $source_one);
   }
-  $source_one = wrap_numbers_in_field($source_one);
-  $source_two = wrap_numbers_in_field($source_two);
+  $source_one = wrap_numbers_in_field($field_module, $source_one);
+  $source_two = wrap_numbers_in_field($field_module, $source_two);
 
-  #Should get the region from the $source_one field instead I think.
-  my $region = $Cmiss::Cmgui_command_data->get_root_region();
-  return ($region->add_field(
-	 Cmiss::Field::create_greater_than($source_one, $source_two)));
+	return $field_module->create_greater_than($source_one, $source_two);
 }
 
 sub sqrt
 {
   my ($source) = @_;
+	my $field_module = get_field_module_for_wrap(@_);
 
-  $source = wrap_numbers_in_field($source);
+  $source = wrap_numbers_in_field($field_module, $source);
 
-  #Should get the region from the $source_one field instead I think.
-  my $region = $Cmiss::Cmgui_command_data->get_root_region();
-  return ($region->add_field(
-	  Cmiss::Field::create_sqrt($source)));
+	return $field_module->create_sqrt($source);
 }
 
 sub log
 {
   my ($source) = @_;
+	my $field_module = get_field_module_for_wrap(@_);
 
-  $source = wrap_numbers_in_field($source);
+  $source = wrap_numbers_in_field($field_module, $source);
 
-  #Should get the region from the $source_one field instead I think.
-  my $region = $Cmiss::Cmgui_command_data->get_root_region();
-  return ($region->add_field(
-	  Cmiss::Field::create_log($source)));
+	return $field_module->create_log($source);
 }
 
 sub exp
 {
   my ($source) = @_;
+	my $field_module = get_field_module_for_wrap(@_);
 
-  $source = wrap_numbers_in_field($source);
+  $source = wrap_numbers_in_field($field_module, $source);
 
-  #Should get the region from the $source_one field instead I think.
-  my $region = $Cmiss::Cmgui_command_data->get_root_region();
-  return ($region->add_field(
-	  Cmiss::Field::create_exp($source)));
+	return $field_module->create_exp($source);
 }
 
 sub if
 {
   my ($source_one, $source_two, $source_three) = @_;
+	my $field_module = get_field_module_for_wrap(@_);
 
-  $source_one = wrap_numbers_in_field($source_one);
-  $source_two = wrap_numbers_in_field($source_two);
-  $source_three = wrap_numbers_in_field($source_three);
+  $source_one = wrap_numbers_in_field($field_module, $source_one);
+  $source_two = wrap_numbers_in_field($field_module, $source_two);
+  $source_three = wrap_numbers_in_field($field_module, $source_three);
 
-  #Should get the region from the $source_one field instead I think.
-  my $region = $Cmiss::Cmgui_command_data->get_root_region();
-  return ($region->add_field(
-	 Cmiss::Field::create_if($source_one, $source_two, $source_three)));
+	return $field_module->create_if($source_one, $source_two, $source_three);
 }
 
 use overload
