@@ -6970,12 +6970,9 @@ int Cmiss_material_set_texture(
 	if (material)
 	{
 		Graphical_material_set_texture(material, texture);
-		if (material->material_manager&&IS_MANAGED(Graphical_material)(material,
-			material->material_manager))
+		if (material->material_manager)
 		{
-			MANAGER_BEGIN_CHANGE(Graphical_material)(material->material_manager,
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Graphical_material), material);
-			MANAGER_END_CHANGE(Graphical_material)(material->material_manager);
+			Graphical_material_changed(material);
 			return_code = 1;
 		}
 	}
@@ -7054,3 +7051,29 @@ struct Graphical_material *Cmiss_material_access(struct Graphical_material *mate
 	
 	return material;
 }
+
+int Graphical_material_changed(struct Graphical_material *material)
+{
+	int return_code;
+
+	ENTER(Computed_field_changed);
+	if (material)
+	{
+		if (material->material_manager)
+		{
+			MANAGER_BEGIN_CHANGE(Graphical_material)(material->material_manager,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Graphical_material), material);
+			MANAGER_END_CHANGE(Graphical_material)(material->material_manager);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_material *material.  Invalid argument");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_changed */

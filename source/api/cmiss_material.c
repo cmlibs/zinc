@@ -48,7 +48,8 @@ int Cmiss_material_set_alpha(
 	ENTER(Cmiss_material_set_alpha);
 	if (material)
 	{
-		return_code = Graphical_material_set_alpha(material, alpha);
+		return_code = Graphical_material_set_alpha(material, alpha) &&
+			Graphical_material_changed(material);
 	}
 	LEAVE;
 
@@ -63,7 +64,8 @@ int Cmiss_material_set_shininess(
 	ENTER(Cmiss_material_set_shininess);
 	if (material)
 	{
-		return_code = Graphical_material_set_shininess(material, shininess);
+		return_code = Graphical_material_set_shininess(material, shininess) &&
+			Graphical_material_changed(material);
 	}
 	LEAVE;
 
@@ -82,7 +84,8 @@ int Cmiss_material_set_ambient(
 		colour.red = red;
 		colour.green = green;
 		colour.blue = blue;
-		return_code = Graphical_material_set_ambient(material, &colour);
+		return_code = Graphical_material_set_ambient(material, &colour) &&
+			Graphical_material_changed(material);
 	}
 	LEAVE;
 	
@@ -101,7 +104,8 @@ int Cmiss_material_set_diffuse(
 		colour.red = red;
 		colour.green = green;
 		colour.blue = blue;
-		return_code = Graphical_material_set_diffuse(material, &colour);
+		return_code = Graphical_material_set_diffuse(material, &colour) &&
+			Graphical_material_changed(material);
 	}
 	LEAVE;
 	
@@ -120,7 +124,8 @@ int Cmiss_material_set_emission(
 		colour.red = red;
 		colour.green = green;
 		colour.blue = blue;
-		return_code = Graphical_material_set_emission(material, &colour);
+		return_code = Graphical_material_set_emission(material, &colour) &&
+			Graphical_material_changed(material);
 	}
 	LEAVE;
 
@@ -139,7 +144,8 @@ int Cmiss_material_set_specular(
 		colour.red = red;
 		colour.green = green;
 		colour.blue = blue;
-		return_code = Graphical_material_set_specular(material, &colour);
+		return_code = Graphical_material_set_specular(material, &colour) &&
+			Graphical_material_changed(material);
 	}
 	LEAVE;
 	
