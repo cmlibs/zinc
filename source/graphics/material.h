@@ -579,13 +579,4 @@ the <material_package> by name.
 int Material_set_program_uniform_qualifier_variable_value(
 	struct Graphical_material* material, const char *uniform_name, float value);
 
-/***************************************************************************//**
- * Broadcast changes in the graphical material to be propagated to objects that
- * uses it through manager that owns it.
- *
- * @param material  Modified Graphical_material to be broadcast.
- * @return 1 on success, 0 on failure
- */
-int Graphical_material_changed(struct Graphical_material *material);
-
 #endif

@@ -3916,6 +3916,40 @@ Be careful with the returned value: esp. do not modify or DEALLOCATE it!
 	return (return_name);
 } /* Graphical_material_name */
 
+/***************************************************************************//**
+ * Broadcast changes in the graphical material to be propagated to objects that
+ * uses it through manager that owns it.
+ *
+ * @param material  Modified Graphical_material to be broadcast.
+ * @return 1 on success, 0 on failure
+ */
+int Graphical_material_changed(struct Graphical_material *material)
+{
+	int return_code;
+
+	ENTER(Computed_field_changed);
+	if (material)
+	{
+		if (material->material_manager)
+		{
+			MANAGER_BEGIN_CHANGE(Graphical_material)(material->material_manager,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Graphical_material), material);
+			MANAGER_END_CHANGE(Graphical_material)(material->material_manager);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_material *material.  Invalid argument");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_changed */
+
+
 int Graphical_material_get_ambient(struct Graphical_material *material,
 	struct Colour *ambient)
 /*******************************************************************************
@@ -3965,6 +3999,7 @@ Sets the ambient colour of the material.
 		material->ambient.blue=ambient->blue;
 		/* display list needs to be compiled again */
 		material->compile_status = GRAPHICS_NOT_COMPILED;
+		Graphical_material_changed(material);
 		return_code=1;
 	}
 	else
@@ -4027,6 +4062,7 @@ Sets the diffuse colour of the material.
 		material->diffuse.blue=diffuse->blue;
 		/* display list needs to be compiled again */
 		material->compile_status = GRAPHICS_NOT_COMPILED;
+		Graphical_material_changed(material);
 		return_code=1;
 	}
 	else
@@ -4089,6 +4125,7 @@ Sets the emission colour of the material.
 		material->emission.blue=emission->blue;
 		/* display list needs to be compiled again */
 		material->compile_status = GRAPHICS_NOT_COMPILED;
+		Graphical_material_changed(material);
 		return_code=1;
 	}
 	else
@@ -4151,6 +4188,7 @@ Sets the specular colour of the material.
 		material->specular.blue=specular->blue;
 		/* display list needs to be compiled again */
 		material->compile_status = GRAPHICS_NOT_COMPILED;
+		Graphical_material_changed(material);
 		return_code=1;
 	}
 	else
@@ -4209,6 +4247,7 @@ Sets the alpha value of the material.
 		material->alpha=alpha;
 		/* display list needs to be compiled again */
 		material->compile_status = GRAPHICS_NOT_COMPILED;
+		Graphical_material_changed(material);
 		return_code=1;
 	}
 	else
@@ -4267,6 +4306,7 @@ Sets the shininess value of the material.
 		material->shininess=shininess;
 		/* display list needs to be compiled again */
 		material->compile_status = GRAPHICS_NOT_COMPILED;
+		Graphical_material_changed(material);
 		return_code=1;
 	}
 	else
@@ -4459,6 +4499,7 @@ Sets the spectrum member of the material.
 		{
 			REACCESS(Spectrum)(&material->spectrum, spectrum);
 			material->compile_status = GRAPHICS_NOT_COMPILED;
+			Graphical_material_changed(material);
 			return_code=1;
 		}
 		else
@@ -4538,6 +4579,7 @@ Sets the texture member of the material.
 
 	 /* display list needs to be compiled again */
 	 material->compile_status = GRAPHICS_NOT_COMPILED;
+	 Graphical_material_changed(material);
 	 return_code=1;
 	 LEAVE;
 
@@ -7051,29 +7093,3 @@ struct Graphical_material *Cmiss_material_access(struct Graphical_material *mate
 	
 	return material;
 }
-
-int Graphical_material_changed(struct Graphical_material *material)
-{
-	int return_code;
-
-	ENTER(Computed_field_changed);
-	if (material)
-	{
-		if (material->material_manager)
-		{
-			MANAGER_BEGIN_CHANGE(Graphical_material)(material->material_manager,
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Graphical_material), material);
-			MANAGER_END_CHANGE(Graphical_material)(material->material_manager);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphical_material *material.  Invalid argument");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_changed */
