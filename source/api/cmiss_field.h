@@ -105,6 +105,14 @@ Cmiss_field_id Cmiss_field_access(Cmiss_field_id field);
  */
 int Cmiss_field_destroy(Cmiss_field_id *field_address);
 
+/*******************************************************************************
+ * Returns a reference to the field module which owns this field.
+ * 
+ * @param field  The field to obtain field module for.
+ * @return  Field module which this field belongs to.
+ */
+Cmiss_field_module_id Cmiss_field_get_field_module(Cmiss_field_id field);
+
 int Cmiss_field_evaluate_at_node(struct Cmiss_field *field,
 	struct Cmiss_node *node, double time, int number_of_values, double *values);
 /*******************************************************************************

@@ -111,6 +111,7 @@ FE_node_selection_remove_callback
 
 Cmiss_field_access
 Cmiss_field_destroy
+Cmiss_field_get_field_module
 Cmiss_field_get_number_of_components
 Cmiss_field_evaluate_at_node
 Cmiss_field_evaluate_as_string_at_node

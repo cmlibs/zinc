@@ -44,6 +44,7 @@ The public interface to the Cmiss fields.
 #include <stdlib.h>
 #include <stdio.h>
 #include "api/cmiss_field.h"
+#include "api/cmiss_region.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
@@ -62,6 +63,12 @@ Cmiss_field_id Cmiss_field_access(Cmiss_field_id field)
 int Cmiss_field_destroy(Cmiss_field_id *field_address)
 {
 	return (DEACCESS(Computed_field)(field_address));
+}
+
+Cmiss_field_module_id Cmiss_field_get_field_module(Cmiss_field_id field)
+{
+	struct Cmiss_region *region = Computed_field_get_region(field);
+	return Cmiss_region_get_field_module(region);
 }
 
 int Cmiss_field_evaluate_at_node(struct Cmiss_field *field,
