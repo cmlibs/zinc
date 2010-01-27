@@ -12447,7 +12447,8 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 							set_netgen_parameters_fineness(generate_netgen_para,fineness);
 							set_netgen_parameters_secondorder(generate_netgen_para,secondorder);   
 							set_netgen_parameters_trimesh(generate_netgen_para, trimesh);
-							set_netgen_parameters_meshsize_filename(generate_netgen_para, meshsize_file);
+							if (meshsize_file)
+								set_netgen_parameters_meshsize_filename(generate_netgen_para, meshsize_file);
 							generate_mesh_netgen(Cmiss_region_get_FE_region(region), generate_netgen_para);
 							release_netgen_parameters(generate_netgen_para);        
 							

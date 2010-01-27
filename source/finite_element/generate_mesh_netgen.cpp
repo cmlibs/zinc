@@ -140,7 +140,7 @@ int set_netgen_parameters_meshsize_filename(struct Generate_netgen_parameters *p
     int return_code=0;
 
     ENTER(set_netgen_parameters_meshsize_filename);
-    if(para)
+    if(para && meshsize_filename)
 		{
 			para->meshsize_filename=duplicate_string(meshsize_filename);
 			return_code=1;
