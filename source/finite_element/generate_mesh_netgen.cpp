@@ -335,8 +335,6 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)
 
    /* create a 3-D coordinate field*/
    FE_field *coordinate_field = FE_field_create_coordinate_3d(fe_region,(char*)"coordinate");
-    
-   ACCESS(FE_field)(coordinate_field);
 	
    /* create and fill nodes*/
    struct FE_node *template_node = CREATE(FE_node)(
