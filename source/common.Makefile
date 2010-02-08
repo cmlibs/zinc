@@ -255,8 +255,9 @@ ifeq ($(SYSNAME),Linux)
 			UNINITIALISED_FLAG = -Wno-uninitialized
       NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
       CPP_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
-      #NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-      #CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+			UNINITIALISED_FLAG_PATTERN = NONE			
 			UNINITIALISED_FLAG_FILENAMES = wx_not_initialised.filenames
 			NON_STRICT_FILENAMES = wx_non_strict_c.filenames
 			CPP_NON_STRICT_FILENAMES = wx_non_strict_cpp.filenames
@@ -267,9 +268,16 @@ ifeq ($(SYSNAME),Linux)
 			endif
 			empty :=
 			space := $(empty) $(empty)
-			NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(NON_STRICT_FILENAMES))))
-			CPP_NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(CPP_NON_STRICT_FILENAMES))))
-			UNINITIALISED_FLAG_PATTERN := $(subst $(space),|,$(strip $(shell cat $(UNINITIALISED_FLAG_FILENAMES))))
+			ifneq ($(wildcard $(NON_STRICT_FILENAMES)),)
+				NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(NON_STRICT_FILENAMES))))
+			endif
+			ifneq ($(wildcard $(CPP_NON_STRICT_FILENAMES)),)
+				CPP_NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(CPP_NON_STRICT_FILENAMES))))
+			endif
+			ifneq ($(wildcard $(UNINITIALISED_FLAG_FILENAMES)),)
+				UNINITIALISED_FLAG_PATTERN := $(subst $(space),|,$(strip $(shell cat $(UNINITIALISED_FLAG_FILENAMES))))
+			endif
+		
       ifeq ($(PROFILE),true)
         #Don't strip if profiling
         STRIP =
@@ -287,8 +295,8 @@ ifeq ($(SYSNAME),Linux)
 			UNINITILISED_FLAG = 
       NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
       CPP_NON_STRICT_FLAGS = -Wno-parentheses -Wno-switch
-      #NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-      #CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
 			NON_STRICT_FILENAMES = wx_non_strict_c.filenames
 			CPP_NON_STRICT_FILENAMES = wx_non_strict_cpp.filenames
 			ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
@@ -297,8 +305,12 @@ ifeq ($(SYSNAME),Linux)
 			endif
 			empty :=
 			space := $(empty) $(empty)
-			NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(NON_STRICT_FILENAMES))))
-			CPP_NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(CPP_NON_STRICT_FILENAMES))))
+			ifneq ($(wildcard $(NON_STRICT_FILENAMES)),)
+				NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(NON_STRICT_FILENAMES))))
+			endif
+			ifneq ($(wildcard $(CPP_NON_STRICT_FILENAMES)),)
+				CPP_NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(CPP_NON_STRICT_FILENAMES))))
+			endif
 			UNINITIALISED_FLAG_PATTERN = NONE
       STRIP =
       STRIP_SHARED =
@@ -425,6 +437,9 @@ ifeq ($(SYSNAME),win32)
       else # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE || $(USER_INTERFACE) == GTK_USER_INTERFACE
          LINK += -mwindows
       endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE || $(USER_INTERFACE) == GTK_USER_INTERFACE
+      NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+      CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      UNINITIALISED_FLAG_PATTERN = NONE # Must specify a pattern that doesn't match */
       ifneq ($(DEBUG),true)
          OPTIMISATION_FLAGS = -O2
          COMPILE_DEFINES = -DOPTIMISED
@@ -433,9 +448,6 @@ ifeq ($(SYSNAME),win32)
          CPP_STRICT_FLAGS = -Werror
          NON_STRICT_FLAGS = 
       	 CPP_NON_STRICT_FLAGS = 
-         NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
-         CPP_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
-         UNINITIALISED_FLAG_PATTERN = NONE # Must specify a pattern that doesn't match */
          STRIP = strip --strip-unneeded
          STRIP_SHARED = strip --strip-unneeded
       else # DEBUG != true
@@ -454,8 +466,12 @@ ifeq ($(SYSNAME),win32)
          endif
          empty :=
          space := $(empty) $(empty)
-         NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(NON_STRICT_FILENAMES))))
-         CPP_NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(CPP_NON_STRICT_FILENAMES))))
+				 ifneq ($(wildcard $(NON_STRICT_FILENAMES)),)
+					  NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(NON_STRICT_FILENAMES))))
+				 endif
+				 ifneq ($(wildcard $(CPP_NON_STRICT_FILENAMES)),)
+						CPP_NON_STRICT_FLAGS_PATTERN := $(subst $(space),|,$(strip $(shell cat $(CPP_NON_STRICT_FILENAMES))))
+				 endif
          UNINITIALISED_FLAG_PATTERN = NONE # Must specify a pattern that doesn't match */
          STRIP =
          STRIP_SHARED =
