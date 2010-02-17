@@ -1013,6 +1013,15 @@ Change the name of a field.
  */
 struct Cmiss_region *Computed_field_get_region(struct Computed_field *field);
 
+
+/***************************************************************************//**
+ * Returns true if field is not a source field of other.
+ * 
+ * @param field  The field.
+ * @return  1 if field is not a source field of others otherwise 0.
+ */
+int Computed_field_is_not_source_field_of_others(struct Computed_field *field);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

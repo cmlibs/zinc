@@ -1507,6 +1507,11 @@ are possibly not going to be called again for some time.
 	ENTER(Computed_field_clear_cache);
 	if (field)
 	{
+		if (field->values)
+		{
+			DEALLOCATE(field->values);
+			DEALLOCATE(field->derivatives);
+		}
 		if (field->element)
 		{
 			DEACCESS(FE_element)(&field->element);
@@ -5760,3 +5765,34 @@ MANAGER(Computed_field) *Computed_field_modify_data::get_field_manager()
 	return Cmiss_region_get_Computed_field_manager(
 		Cmiss_field_module_get_region(field_module));
 };
+
+int Computed_field_does_not_depend_on_field(Computed_field *field, void *source_field_void)
+{
+	struct Computed_field *source_field = (struct Computed_field *)source_field_void;
+	int return_code = 0;
+
+	if (field && source_field && field != source_field)
+	{
+		return_code = Computed_field_depends_on_Computed_field(field,source_field);
+	}
+	
+	return !return_code;
+}
+
+int Computed_field_is_not_source_field_of_others(struct Computed_field *field)
+{
+	int return_code = 0;
+
+	if (field->manager)
+	{
+		return_code = FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
+			Computed_field_does_not_depend_on_field,(void *)field,
+			field->manager);
+	}
+	else
+	{
+		return_code = 1;
+	}
+
+	return return_code;
+}

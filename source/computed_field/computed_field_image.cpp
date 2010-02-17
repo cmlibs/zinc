@@ -161,10 +161,12 @@ public:
 				new_number_of_components = field->number_of_components;
 			}
 			if ((field->number_of_components == new_number_of_components)
-				|| MANAGED_OBJECT_NOT_IN_USE(Computed_field)(field, field->manager))
+				|| (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(field, field->manager) ||
+					Computed_field_is_not_source_field_of_others(field)))
 			{
 				REACCESS(Texture)(&texture, texture_in);
 				field->number_of_components = new_number_of_components;
+				Computed_field_clear_cache(field);
 				return_code = 1;
 			}
 			else
