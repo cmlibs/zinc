@@ -916,6 +916,10 @@ but extra characters may follow. This is especially true for .tif/.tiff and
 		{
 			file_format_extension = "bmp";
 		} break;
+		case DICOM_FILE_FORMAT:
+		{
+			file_format_extension = "dcm";
+		} break;
 		case JPG_FILE_FORMAT:
 		{
 			file_format_extension = "jpg";
@@ -927,6 +931,10 @@ but extra characters may follow. This is especially true for .tif/.tiff and
 		case POSTSCRIPT_FILE_FORMAT:
 		{
 			file_format_extension = "ps";
+		} break;
+		case PNG_FILE_FORMAT:
+		{
+			file_format_extension = "png";
 		} break;
 		case RAW_FILE_FORMAT:
 		{
