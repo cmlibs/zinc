@@ -2041,6 +2041,10 @@ DESCRIPTION :
 	ENTER(DESTROY(User_interface));
 	if (user_interface_address && (user_interface = *user_interface_address))
 	{
+		if (user_interface->local_machine_info)
+		{
+			DESTROY(Machine_information)(&(user_interface->local_machine_info));
+		}
 #if defined (LINK_CMISS)
 		if (CMISS)
 		{
@@ -2053,10 +2057,6 @@ DESCRIPTION :
 		{
 			set_property_notify_callback(user_interface,
 				(Property_notify_callback)NULL,NULL,(Widget)NULL);
-		}
-		if (user_interface->local_machine_info)
-		{
-			DESTROY(Machine_information)(&(user_interface->local_machine_info));
 		}
 		if (user_interface->normal_fontlist)
 		{
@@ -2090,10 +2090,6 @@ DESCRIPTION :
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
 #endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
-		if (user_interface->local_machine_info)
-		{
-			DESTROY(Machine_information)(&(user_interface->local_machine_info));
-		}
 		wxEntryCleanup();
 #endif /* defined (WX_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)

@@ -26293,24 +26293,7 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 			DESTROY(Select_tool)(&command_data->select_tool);
 		}
 #endif /* defined (MOTIF_USER_INTERFACE) */
-#if !defined (WX_USER_INTERFACE)
-		if (command_data->data_tool)
-		{
-			 DESTROY(Node_tool)(&command_data->data_tool);
-		}
-		if (command_data->node_tool)
-		{
-			 DESTROY(Node_tool)(&command_data->node_tool);
-		}
-		if (command_data->element_tool)
-		{
-			 DESTROY(Element_tool)(&command_data->element_tool);
-		}
-		if (command_data->element_point_tool)
-		{
-			 DESTROY(Element_point_tool)(&command_data->element_point_tool);
-		}
-#else
+#if defined (WX_USER_INTERFACE)
 		 /* deallocate the current region path when cmiss command_data is
 			 being destroyed to prevent multiple deallocations of the same
 			 address under DESTROY(Node_tool) which cause segfault in

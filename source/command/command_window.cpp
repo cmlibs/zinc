@@ -2784,6 +2784,8 @@ DESCRIPTION:
 		destroy_Shell_list_item_from_shell(&(command_window->shell),
 			command_window->user_interface);
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
+		if (command_window->command_prompt)
+			 DEALLOCATE(command_window->command_prompt);
 		/* Set the window proc back to the default so that we don't 
 			get any more messages, particularly the close message, we
 			do not necessarily want to quit the whole program */

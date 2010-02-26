@@ -4723,6 +4723,10 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 			order_independent_finalise(
 				&scene_viewer->order_independent_transparency_data);
 		}
+		if (scene_viewer->interactive_tool_manager)
+		{
+			DESTROY(MANAGER(Interactive_tool))(&scene_viewer->interactive_tool_manager);
+		}
 
 		/* must destroy the widget */
 		DEACCESS(Graphics_buffer)(&scene_viewer->graphics_buffer);				
@@ -7305,7 +7309,6 @@ int Scene_viewer_get_viewing_volume_and_NDC_info_for_specified_size(Scene_viewer
 
 	return (return_code);
 }
-
 
 int Scene_viewer_set_viewing_volume(struct Scene_viewer *scene_viewer,
 	double left,double right,double bottom,double top,
