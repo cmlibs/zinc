@@ -44,6 +44,7 @@ Functions for discretizing finite elements into points and simple sub-domains.
 
 #include <math.h>
 #include <stdlib.h>
+extern "C" {
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
@@ -51,7 +52,7 @@ Functions for discretizing finite elements into points and simple sub-domains.
 #include "general/statistics.h"
 #include "graphics/graphics_object.h"
 #include "user_interface/message.h"
-
+}
 /*
 Module types
 ------------
@@ -262,8 +263,8 @@ comments for simplex and polygons shapes for more details.
 	enum FE_element_shape_category element_shape_category;
 	float xi_j, xi_k;
 	int element_dimension, i, j, k, line_direction, linked_xi_directions[2],
-		number_in_xi0, number_in_xi1, number_in_xi_around_polygon,
-		number_in_xi_simplex, number_of_polygon_sides,
+		number_in_xi0, number_in_xi1, number_in_xi_around_polygon = 0,
+		number_in_xi_simplex = 0, number_of_polygon_sides,
 		number_of_xi_points, points_per_row, return_code;
 	FE_value_triple *xi, *xi_points;
 
@@ -705,8 +706,8 @@ comments for simplex and polygons shapes for more details.
 	enum FE_element_shape_category element_shape_category;
 	float xi_j, xi_k;
 	int element_dimension, i, j, k, line_direction, linked_xi_directions[2],
-		number_in_xi0, number_in_xi1, number_in_xi_around_polygon,
-		number_in_xi_simplex, number_of_polygon_sides, number_of_xi_points,
+		number_in_xi0, number_in_xi1, number_in_xi_around_polygon = 0,
+		number_in_xi_simplex = 0, number_of_polygon_sides, number_of_xi_points,
 		points_per_row, return_code;
 	FE_value_triple *xi, *xi_points;
 
@@ -2258,6 +2259,13 @@ calculation is trivial.
 								return_code = 0;
 							}
 						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_element_get_numbered_xi_point.  "
+								"Element shape not supported");
+							return_code = 0;
+						} break;
 					}
 				} break;
 				case XI_DISCRETIZATION_CELL_CORNERS:
@@ -2332,6 +2340,13 @@ calculation is trivial.
 								return_code = 0;
 							}
 						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_element_get_numbered_xi_point.  "
+								"Element shape not supported");
+							return_code = 0;
+						} break;
 					}
 				} break;
 				case XI_DISCRETIZATION_EXACT_XI:
@@ -2359,6 +2374,13 @@ calculation is trivial.
 							"FE_element_get_numbered_xi_point.  Missing exact Xi");
 						return_code = 0;
 					}
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"FE_element_get_numbered_xi_point.  "
+						"Discretization mode not supported");
+					return_code = 0;
 				} break;
 			}
 			if (return_code && default_behaviour)
