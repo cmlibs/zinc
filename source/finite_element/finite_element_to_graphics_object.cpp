@@ -250,7 +250,7 @@ computed_fields_of_node->number_of_nodes++.
 	int return_code;
 	struct Computed_field **current_field_address;
 	struct Computed_fields_of_node *computed_fields_of_node;
-	FE_value *values;
+	FE_value visibility;
 
 	ENTER(FE_node_count_if_computed_fields_defined);
 	/* check arguments */
@@ -271,15 +271,14 @@ computed_fields_of_node->number_of_nodes++.
 			if (computed_fields_of_node->visibility_field && 
 				(Computed_field_is_defined_at_node(
 					 computed_fields_of_node->visibility_field,node)) && 
-				(ALLOCATE(values, FE_value, 1)))
+				(1 == Computed_field_get_number_of_components(computed_fields_of_node->visibility_field)))
 			{
 				Computed_field_evaluate_at_node(computed_fields_of_node->visibility_field,
-					node, computed_fields_of_node->time, values);
-				if (values[0] >= 1)
+					node, computed_fields_of_node->time, &visibility);
+				if (visibility >= 1)
 				{
 					computed_fields_of_node->number_of_nodes++;
 				}
-				DEALLOCATE(values);
 			}
 			else
 			{
@@ -308,7 +307,7 @@ fields used here.
 ==============================================================================*/
 {
 	FE_value a[3], b[3], c[3], coordinates[3], orientation_scale[9], size[3],
-		time, variable_scale[3], *vector, *visibility_value;
+		time, variable_scale[3], *vector, visibility_value;
 	struct Computed_field **current_field_address, *coordinate_field, *data_field,
 		*label_field, *orientation_scale_field, *required_fields[5],
 		*variable_scale_field;
@@ -325,17 +324,17 @@ fields used here.
 	number_of_variable_scale_components = 0;
 	node_to_glyph_set_data =
 		(struct Node_to_glyph_set_data *)node_to_glyph_set_data_void;
-	visibility_value = (FE_value *)NULL;
+	visibility_value = 1;
 	if (node_to_glyph_set_data &&
 		node_to_glyph_set_data->visibility_field &&
 		Computed_field_is_defined_at_node(
-			node_to_glyph_set_data->visibility_field,node) && 
-		(ALLOCATE(visibility_value, FE_value, 1)))
+			node_to_glyph_set_data->visibility_field,node) &&
+		(1 == Computed_field_get_number_of_components(node_to_glyph_set_data->visibility_field)))
 	{
 		Computed_field_evaluate_at_node(node_to_glyph_set_data->visibility_field,
-			node, node_to_glyph_set_data->time, visibility_value);
+			node, node_to_glyph_set_data->time, &visibility_value);
 	}
-	if (!visibility_value || (visibility_value[0] >= 1))
+	if (visibility_value >= 1)
 	{
 		if (node && node_to_glyph_set_data && 
 			(coordinate_field=node_to_glyph_set_data->coordinate_field) &&
@@ -570,10 +569,6 @@ fields used here.
 	else
 	{
 		return_code=1;
-	}
-	if (visibility_value)
-	{
-		DEALLOCATE(visibility_value);
 	}
 	LEAVE;
 
