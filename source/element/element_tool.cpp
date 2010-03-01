@@ -1335,10 +1335,6 @@ structure itself.
 	{
 		REACCESS(FE_element)(&(element_tool->last_picked_element),
 			(struct FE_element *)NULL);
-#if defined (MOTIF_USER_INTERFACE)
-		REMOVE_OBJECT_FROM_MANAGER(Interactive_tool)(element_tool->interactive_tool,
-			element_tool->interactive_tool_manager);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		REACCESS(Interaction_volume)(&(element_tool->last_interaction_volume),
 			(struct Interaction_volume *)NULL);
 		REACCESS(GT_object)(&(element_tool->rubber_band),(struct GT_object *)NULL);

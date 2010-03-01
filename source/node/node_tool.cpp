@@ -3638,11 +3638,6 @@ structure itself.
 	if (node_tool_address&&
 		(node_tool= *node_tool_address))
 	{
-#if defined (MOTIF_USER_INTERFACE)
-		REMOVE_OBJECT_FROM_MANAGER(Interactive_tool)(
-			node_tool->interactive_tool,
-			node_tool->interactive_tool_manager);
-#endif /* defined (MOTIF_USER_INTERFACE) */
 		Node_tool_reset((void *)node_tool);
 		REACCESS(GT_object)(&(node_tool->rubber_band),(struct GT_object *)NULL);
 		DEACCESS(Graphical_material)(&(node_tool->rubber_band_material));
