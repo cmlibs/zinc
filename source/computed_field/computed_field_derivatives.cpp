@@ -1657,9 +1657,33 @@ class Computed_field_gradient : public Computed_field_core
 public:
 	Computed_field_gradient() : Computed_field_core()
 	{
+		down_values = NULL;
+		coordinate_values = NULL;
 	};
 
 private:
+	~Computed_field_gradient()
+	{
+		if (down_values)
+			delete[] down_values;
+		if (coordinate_values)
+			delete[] coordinate_values;
+	}
+
+	virtual bool attach_to_field(Computed_field *parent)
+	{
+		if (Computed_field_core::attach_to_field(parent))
+		{
+			down_values = new FE_value[field->source_fields[0]->number_of_components];
+			coordinate_values = new FE_value[field->source_fields[1]->number_of_components];
+			return true;
+		}
+		return false;
+	}
+
+	FE_value *down_values;
+	FE_value *coordinate_values;
+	
 	Computed_field_core *copy()
 	{
 		return new Computed_field_gradient();
@@ -1682,6 +1706,8 @@ private:
 		}
 	}
 
+	int is_defined_at_location(Field_location* location);
+
 	int evaluate_cache_at_location(Field_location* location);
 
 	int list();
@@ -1689,14 +1715,43 @@ private:
 	char* get_command_string();
 };
 
+int Computed_field_gradient::is_defined_at_location(Field_location* location)
+/*******************************************************************************
+Implemented for element_xi and node locations
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_gradient::is_defined_at_location);
+	if (field && location)
+	{
+		if (dynamic_cast<Field_element_xi_location*>(location))
+		{
+			return_code = Computed_field_core::is_defined_at_location(location);
+		}
+		else if (dynamic_cast<Field_node_location*>(location))
+		{
+			return_code = Computed_field_core::is_defined_at_location(location);
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_gradient::is_defined_at_location.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_gradient::is_defined_at_location */
+
 int Computed_field_gradient::evaluate_cache_at_location(
     Field_location* location)
-/*******************************************************************************
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Evaluate the fields cache in the element.
-==============================================================================*/
 {
 	double a[9], b[3], d;
 	FE_element *top_level_element;
@@ -1708,108 +1763,201 @@ Evaluate the fields cache in the element.
 	ENTER(Computed_field_gradient::evaluate_cache_at_location);
 	return_code = 0;
 
-	Field_element_xi_location* element_xi_location;
-	/* Only works for element_xi locations */
-	if (field && location && (element_xi_location  = 
-			dynamic_cast<Field_element_xi_location*>(location)))
+	if (field && location)
 	{
-		/* cannot calculate derivatives for gradient yet */
-		field->derivatives_valid = 0;
-		if (!location->get_number_of_derivatives())
+		Field_element_xi_location* element_xi_location;
+		Field_node_location* node_location;
+		if (element_xi_location = dynamic_cast<Field_element_xi_location*>(location))
 		{
-			FE_element* element = element_xi_location->get_element();
-			int element_dimension=get_FE_element_dimension(element);
-
-			FE_element_get_top_level_element_and_xi(element_xi_location->get_element(),
-				element_xi_location->get_xi(), element_dimension,
-				&top_level_element, top_level_xi, &top_level_element_dimension);
-
-			Field_element_xi_location top_level_location(top_level_element,
-				top_level_xi, element_xi_location->get_time(), top_level_element,
-				get_FE_element_dimension(top_level_element));
-
-			/* 1. Precalculate any source fields that this field depends on,
-				we always want the derivatives and want to use the top_level element */
-			if (Computed_field_evaluate_source_fields_cache_at_location(
-					 field, &top_level_location))
+			/* cannot calculate derivatives for gradient yet */
+			field->derivatives_valid = 0;
+			if (!location->get_number_of_derivatives())
 			{
-				/* 2. Calculate the field. First verify we can invert the derivatives of
-					the coordinate field, which we can if dx_dxi is square */
-				source_field = field->source_fields[0];
-				source_components = source_field->number_of_components;
-				coordinate_field = field->source_fields[1];
-				coordinate_components = coordinate_field->number_of_components;
-				if (top_level_element_dimension == coordinate_components)
+				FE_element* element = element_xi_location->get_element();
+				int element_dimension=get_FE_element_dimension(element);
+	
+				FE_element_get_top_level_element_and_xi(element_xi_location->get_element(),
+					element_xi_location->get_xi(), element_dimension,
+					&top_level_element, top_level_xi, &top_level_element_dimension);
+	
+				Field_element_xi_location top_level_location(top_level_element,
+					top_level_xi, element_xi_location->get_time(), top_level_element,
+					get_FE_element_dimension(top_level_element));
+	
+				/* 1. Precalculate any source fields that this field depends on,
+					we always want the derivatives and want to use the top_level element */
+				if (Computed_field_evaluate_source_fields_cache_at_location(
+						 field, &top_level_location))
 				{
-					/* fill square matrix a with coordinate field derivatives w.r.t. xi */
-					for (i = 0; i < coordinate_components; i++)
+					/* 2. Calculate the field. First verify we can invert the derivatives of
+						the coordinate field, which we can if dx_dxi is square */
+					source_field = field->source_fields[0];
+					source_components = source_field->number_of_components;
+					coordinate_field = field->source_fields[1];
+					coordinate_components = coordinate_field->number_of_components;
+					if (top_level_element_dimension == coordinate_components)
 					{
-						for (j = 0; j < coordinate_components; j++)
-						{
-							a[i*coordinate_components + j] =
-								coordinate_field->derivatives[j*coordinate_components+i];
-						}
-					}
-					/* invert to get derivatives of xi w.r.t. coordinates */
-					if (LU_decompose(coordinate_components,a,indx,&d,/*singular_tolerance*/1.0e-12))
-					{
-						return_code = 1;
-						destination = field->values;
-						source = source_field->derivatives;
-						for (i = 0; (i < source_components) && return_code; i++)
+						/* fill square matrix a with coordinate field derivatives w.r.t. xi */
+						for (i = 0; i < coordinate_components; i++)
 						{
 							for (j = 0; j < coordinate_components; j++)
 							{
-								b[j] = (double)(*source);
-								source++;
+								a[i*coordinate_components + j] =
+									coordinate_field->derivatives[j*coordinate_components+i];
 							}
-							if (LU_backsubstitute(coordinate_components,a,indx,b))
+						}
+						/* invert to get derivatives of xi w.r.t. coordinates */
+						if (LU_decompose(coordinate_components,a,indx,&d,/*singular_tolerance*/1.0e-12))
+						{
+							return_code = 1;
+							destination = field->values;
+							source = source_field->derivatives;
+							for (i = 0; (i < source_components) && return_code; i++)
 							{
 								for (j = 0; j < coordinate_components; j++)
 								{
-									*destination = (FE_value)b[j];
-									destination++;
+									b[j] = (double)(*source);
+									source++;
+								}
+								if (LU_backsubstitute(coordinate_components,a,indx,b))
+								{
+									for (j = 0; j < coordinate_components; j++)
+									{
+										*destination = (FE_value)b[j];
+										destination++;
+									}
+								}
+								else
+								{
+									return_code = 0;
 								}
 							}
-							else
+						}
+						if (!return_code)
+						{
+							/* cannot invert at apex of heart, so set to zero to allow values
+								to be viewed elsewhere in mesh */
+							display_message(WARNING_MESSAGE,
+								"Computed_field_gradient::evaluate_cache_at_location.  "
+								"Could not invert coordinate derivatives; setting gradient to 0");
+							for (i = 0; i < field->number_of_components; i++)
 							{
-								return_code = 0;
+								field->values[i] = 0.0;
 							}
+							return_code = 1;
 						}
 					}
-					if (!return_code)
+					else
 					{
-						/* cannot invert at apex of heart, so set to zero to allow values
-							to be viewed elsewhere in mesh */
-						display_message(WARNING_MESSAGE,
+						display_message(ERROR_MESSAGE,
 							"Computed_field_gradient::evaluate_cache_at_location.  "
-							"Could not invert coordinate derivatives; setting gradient to 0");
-						for (i = 0; i < field->number_of_components; i++)
-						{
-							field->values[i] = 0.0;
-						}
-						return_code = 1;
+							"Cannot invert coordinate derivatives");
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
 						"Computed_field_gradient::evaluate_cache_at_location.  "
-						"Cannot invert coordinate derivatives");
+						"Cannot evaluate source fields");
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"Computed_field_gradient::evaluate_cache_at_location.  "
-					"Cannot evaluate source fields");
+					"Derivatives not available for gradient field");
 			}
+		}
+		else if (node_location = dynamic_cast<Field_node_location*>(location))
+		{
+			/* Do a finite difference calculation varying the coordinate field*/
+			int k;
+			FE_node *node = node_location->get_node();
+			FE_node *temporary_node = ACCESS(FE_node)(CREATE(FE_node)(get_FE_node_identifier(node),
+				(struct FE_region *)NULL, node));
+			
+			const FE_value perturb_scale = 1e-5;
+			int source_number_of_components = field->source_fields[0]->number_of_components;
+			int coordinate_number_of_components = field->source_fields[1]->number_of_components;
+			source_field = field->source_fields[0];
+			coordinate_field = field->source_fields[1];
+			
+			if (Computed_field_evaluate_cache_at_location(coordinate_field, location))
+			{
+				return_code = 1;
+				for (j = 0 ; j < coordinate_number_of_components ; j++)
+				{
+					coordinate_values[j] = field->source_fields[1]->values[j];
+				}
+				for (i = 0 ; i < coordinate_number_of_components ; i++)
+				{
+					for (k = 0 ; k < 2 ; k++)
+					{
+						double sign;
+						FE_value *field_values;
+						if (k == 0)
+						{
+							sign = -1;
+							field_values = down_values;
+						}
+						else
+						{
+							sign = 1;
+							field_values = field->values + i * source_number_of_components;
+						}
+						for (j = 0 ; j < coordinate_number_of_components ; j++)
+						{
+							if (i == j + 1)
+							{
+								// Set back the perturbed value from last time
+								coordinate_values[j] = coordinate_field->values[j];
+							}
+							if (i == j)
+							{
+								coordinate_values[j] += sign * perturb_scale * coordinate_values[j];
+							}
+						}
+						
+						/* Set the coordinate field and evaluate the source field */
+						if (Computed_field_set_values_at_node(coordinate_field,
+								temporary_node, node_location->get_time(), coordinate_values))
+						{
+							/* We need to explicitly clear the label_field cache as if
+								 we are caching computed_field manager messages then the 
+								 changes to the coordinate field will not be notified to
+								 the source field yet. */
+							Computed_field_clear_cache(source_field);
+							if (!(Computed_field_evaluate_at_node(source_field,
+								temporary_node, node_location->get_time(), field_values)))
+							{
+								display_message(WARNING_MESSAGE,
+									"Computed_field_gradient::evaluate_cache_at_location.  "
+									"Unable to evaluate source field when evaluating nodal finite difference.");
+								return_code = 0;
+							}
+						}
+						else
+						{
+							display_message(WARNING_MESSAGE,
+								"Computed_field_gradient::evaluate_cache_at_location.  "
+								"Unable to set coordinate field when evaluating nodal finite difference.");
+							return_code = 0;
+						}
+					}
+					for (j = 0 ; j < source_number_of_components ; j++)
+					{
+						field->values[i * source_number_of_components + j] = 
+								(field->values[i * source_number_of_components + j] - down_values[j]) / (2.0 * perturb_scale);
+					}					
+				}
+			}
+			DEACCESS(FE_node)(&temporary_node);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_gradient::evaluate_cache_at_location.  "
-				"Derivatives not available for gradient field");
+				"Not defined at specified location");			
 		}
 	}
 	else
@@ -2004,6 +2152,19 @@ to be modified.
 			}
 
 			option_table = CREATE(Option_table)();
+			Option_table_add_help(option_table,
+				"The gradient field calculates the partial derivatives of each of the "
+				"source field components with respect to each of the coordinate field components.  "
+				"The first values are each of the source field components with respect to the first "
+				"coordinate component and then each of the source field components wrt to the second "
+				"coordinate component and so on.  "
+				"This field can now be used at both element_xi and nodal locations.  At element_xi "
+				"locations the basis function supplied xi derivative is multiplied by the basis function "
+				"coordinate field jacobian.  For nodal locations a finite difference approximation is "
+				"calculated by perturbing each of the coordinate field values and reevaluating the source field.  "
+				"See a/graph_axes for an example of using the gradient field to calculate the number of pixels "
+				"per ndc coordinate.");
+
 			/* coordinate */
 			set_coordinate_field_data.computed_field_manager=
 				field_modify->get_field_manager();
