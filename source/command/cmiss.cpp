@@ -1153,6 +1153,7 @@ a single point in 3-D space with an axes glyph.
 					point_list, axis1_list, axis2_list, axis3_list, scale_list, glyph, command_data->default_font,
 					/*labels*/(char **)NULL, /*n_data_components*/0, /*data*/(GTDATA *)NULL,
 					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
+					/*label_density_list*/(Triple *)NULL,
 					/*object_name*/0, /*names*/(int *)NULL)))
 				{
 					(*point_list)[0] = axis_origin[0];
@@ -4662,7 +4663,8 @@ If <use_data> is set, creating data points, otherwise creating node points.
 				if (glyph_set = create_GT_glyph_set_from_FE_region_nodes(fe_region,
 					rc_coordinate_field, glyph, base_size, centre, scale_factors, time,
 					wrapper_orientation_scale_field, variable_scale_field,
-						data_field, command_data->default_font, label_field, 
+						data_field, command_data->default_font, label_field,
+						/* label_density_field */ NULL,
 						/* visibility_field */ NULL, GRAPHICS_NO_SELECT,
 						(struct LIST(FE_node) *)NULL))
 				{

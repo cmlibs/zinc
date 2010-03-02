@@ -229,8 +229,9 @@ Copied from the control curve editor.
 	return (return_code);
 } /* tick_mark_get_grid_spacing */
 
-static int draw_glyph_axes_general(Triple coordinate_scaling, 
+static int draw_glyph_axes_general(Triple *coordinate_scaling, 
 	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
+	Triple *label_density,
 	int primary_axis_number, int label_bounds_component,
 	float major_cross_min, float major_cross_max,
 	float minor_cross_min, float minor_cross_max, FE_value minor_grid_size,
@@ -287,8 +288,15 @@ Renders the label_bounds as lines and labels.
 			minor_grid_size *= fabs_length;
 			log_scale = ceil(-0.5 + log10(minor_grid_size * 2.0));
 			minor_grid_size = pow(10, log_scale) / 2.0;
-			grid_scale = coordinate_scaling[0] / fabs_length;
-
+			if (label_density)
+			{
+				grid_scale = 0.01 * (*label_density)[0] / fabs_length;				
+			}
+			else
+			{
+				grid_scale = (*coordinate_scaling)[0] / fabs_length;
+			}
+			
 			tick_mark_get_grid_spacing(&minor_grid_size,
 				&minor_grids_per_major, grid_scale, min_minor_grid, min_major_grid);
 			
@@ -299,7 +307,14 @@ Renders the label_bounds as lines and labels.
 		else
 		{
 			length = 1e-12;
-			grid_scale = 0.01 * coordinate_scaling[0];
+			if (label_density)
+			{
+				grid_scale = 0.01 * (*label_density)[0];				
+			}
+			else
+			{
+				grid_scale = 0.01 * (*coordinate_scaling)[0];
+			}
 
 			minor_grids_per_major = 5;
   			tick_mark_get_grid_spacing(&minor_grid_size,
@@ -526,8 +541,9 @@ Renders the label_bounds as lines and labels.
 	return (return_code);
 } /* draw_glyph_axes_general */
 
-static int draw_glyph_axes_ticks(Triple coordinate_scaling, 
+static int draw_glyph_axes_ticks(Triple *coordinate_scaling, 
 	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
+	Triple *label_density,
 	struct Graphical_material *material, struct Graphical_material *secondary_material,
 	struct Graphics_font *font, Render_graphics *renderer)
 /*******************************************************************************
@@ -547,6 +563,7 @@ so only the first component of the label_bounds is drawn.
 	{
 		return_code = draw_glyph_axes_general(coordinate_scaling, 
 			label_bounds_dimension, label_bounds_components, label_bounds,
+			label_density,
 			/*primary_axis_number*/0, /*label_bounds_component*/0,
 			/*major_cross_min*/-0.05, /*major_cross_max*/0.05,
 			/*minor_cross_min*/-0.01, /*minor_cross_max*/0.01,
@@ -564,8 +581,9 @@ so only the first component of the label_bounds is drawn.
 	return (return_code);
 } /* draw_glyph_axes_ticks */
 
-static int draw_glyph_grid_lines(Triple coordinate_scaling, 
+static int draw_glyph_grid_lines(Triple *coordinate_scaling, 
 	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
+	Triple *label_density,
 	struct Graphical_material *material, struct Graphical_material *secondary_material,
 	struct Graphics_font *font, Render_graphics *renderer)
 /*******************************************************************************
@@ -586,6 +604,7 @@ second component on the second axis.
 	{
 		return_code = draw_glyph_axes_general(coordinate_scaling, 
 			label_bounds_dimension, label_bounds_components, label_bounds,
+			label_density,
 			/*primary_axis_number*/0, /*label_bounds_component*/0,
 			/*major_cross_min*/-0.01, /*major_cross_max*/1.01,
 			/*minor_cross_min*/-0.01, /*minor_cross_max*/1.01,
@@ -594,6 +613,7 @@ second component on the second axis.
 			material, secondary_material, font, renderer);
 		return_code = draw_glyph_axes_general(coordinate_scaling, 
 			label_bounds_dimension, label_bounds_components, label_bounds,
+			label_density,
 			/*primary_axis_number*/1, /*label_bounds_component*/1,
 			/*major_cross_min*/-0.01, /*major_cross_max*/1.01,
 			/*minor_cross_min*/-0.01, /*minor_cross_max*/1.01,

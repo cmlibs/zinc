@@ -118,7 +118,7 @@ the glyph_set to be identified in picking for node position/vector editing.
 ==============================================================================*/
 {
 	int number_of_points;
-	Triple *axis1_list, *axis2_list, *axis3_list, *point_list, *scale_list;
+	Triple *axis1_list, *axis2_list, *axis3_list, *label_density_list, *point_list, *scale_list;
 	char **labels;
 	struct GT_object *glyph;
 	int n_data_components;

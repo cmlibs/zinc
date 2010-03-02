@@ -628,6 +628,7 @@ static int draw_glyphsetGL(int number_of_points,Triple *point_list, Triple *axis
 	struct GT_object *glyph, char **labels,
 	int number_of_data_components, GTDATA *data, int *names,
 	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
+	Triple *label_density_list,
 	struct Graphical_material *material, struct Graphical_material *secondary_material, 
 	struct Spectrum *spectrum, struct Graphics_font *font, int draw_selected, int some_selected,
 	struct Multi_range *selected_name_ranges,	Render_graphics_opengl *renderer)
@@ -657,7 +658,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 		number_of_glyphs, return_code;
 	struct GT_object *temp_glyph;
 	struct Spectrum_render_data *render_data;
-	Triple *axis1, *axis2, *axis3, *point, *scale, temp_axis1, temp_axis2,
+	Triple *axis1, *axis2, *axis3, *label_density, *point, *scale, temp_axis1, temp_axis2,
 		temp_axis3, temp_point;
 
 	ENTER(draw_glyphsetGL);
@@ -698,6 +699,14 @@ are selected, or all points if <selected_name_ranges> is NULL.
 				if (data)
 				{
 					datum=data;
+				}
+				if (label_density_list)
+				{
+					label_density = label_density_list;
+				}
+				else
+				{
+					label_density = (Triple *)NULL;
 				}
 				name = names;
 				if (name)
@@ -1084,9 +1093,9 @@ are selected, or all points if <selected_name_ranges> is NULL.
 								glyph_labels_function = Graphics_object_get_glyph_labels_function(glyph);
 								if (glyph_labels_function)
 								{
-									return_code = (*glyph_labels_function)(*scale,
+									return_code = (*glyph_labels_function)(scale,
 										label_bounds_dimension, label_bounds_components, label_bound,
-										material, secondary_material, font, renderer);
+										label_density, material, secondary_material, font, renderer);
 								}
 								/* restore the original modelview matrix */
 								glPopMatrix();
@@ -1101,6 +1110,10 @@ are selected, or all points if <selected_name_ranges> is NULL.
 						if (data)
 						{
 							datum += number_of_data_components;
+						}
+						if (label_density_list)
+						{
+							label_density++;
 						}
 						if (names)
 						{
@@ -3220,6 +3233,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 										interpolate_glyph_set->data,
 										interpolate_glyph_set->names,
 										/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
+										/*label_density*/NULL,
 										material, secondary_material, spectrum, 
 										interpolate_glyph_set->font,
 										draw_selected,name_selected,selected_name_ranges,
@@ -3250,7 +3264,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 									glyph_set->labels, glyph_set->n_data_components,
 									glyph_set->data, glyph_set->names,
 									glyph_set->label_bounds_dimension, glyph_set->label_bounds_components,
-									glyph_set->label_bounds, material, secondary_material, 
+									glyph_set->label_bounds, glyph_set->label_density_list,
+									material, secondary_material, 
 									spectrum, glyph_set->font, 
 									draw_selected, name_selected, selected_name_ranges,
 									renderer);

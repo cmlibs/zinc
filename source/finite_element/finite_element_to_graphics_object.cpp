@@ -110,10 +110,10 @@ Used with iterators for building glyph sets from nodes.
 	int *label_bounds_bit_pattern, label_bounds_components, label_bounds_dimension,
 		label_bounds_values, n_data_components, *name;
 	struct Computed_field *coordinate_field, *data_field, *label_field, 
-		*label_bounds_field, *orientation_scale_field, *variable_scale_field,
+		*label_bounds_field, *label_density_field, *orientation_scale_field, *variable_scale_field,
 		*visibility_field;
 	struct FE_node *label_bounds_node;
-	Triple *point, *axis1, *axis2, *axis3, *scale;
+	Triple *label_density, *point, *axis1, *axis2, *axis3, *scale;
 }; /* struct Node_to_glyph_set_data */
 
 /*
@@ -309,7 +309,7 @@ fields used here.
 	FE_value a[3], b[3], c[3], coordinates[3], orientation_scale[9], size[3],
 		time, variable_scale[3], *vector, visibility_value;
 	struct Computed_field **current_field_address, *coordinate_field, *data_field,
-		*label_field, *orientation_scale_field, *required_fields[5],
+		*label_field, *label_density_field, *orientation_scale_field, *required_fields[5],
 		*variable_scale_field;
 	int dimension, i, j, k, label_defined, number_of_fields,
 		number_of_orientation_scale_components, number_of_variable_scale_components,
@@ -347,6 +347,8 @@ fields used here.
 				node_to_glyph_set_data->data) &&
 			((!(label_field = node_to_glyph_set_data->label_field)) ||
 				node_to_glyph_set_data->label) &&
+			((!(label_density_field = node_to_glyph_set_data->label_density_field)) ||
+				node_to_glyph_set_data->label_density) &&
 			((!(variable_scale_field = node_to_glyph_set_data->variable_scale_field)) ||
 				(3 >= (number_of_variable_scale_components =
 					Computed_field_get_number_of_components(variable_scale_field)))) &&
@@ -385,6 +387,11 @@ fields used here.
 				required_fields[number_of_fields]=node_to_glyph_set_data->label_bounds_field;
 				number_of_fields++;
 			}
+			if (label_density_field && (label_density_field != coordinate_field))
+			{ 
+				required_fields[number_of_fields]=node_to_glyph_set_data->label_density_field;
+				number_of_fields++;
+			}
 			time = node_to_glyph_set_data->time;
 			current_field_address = required_fields;		
 			/* if there's no node coordinate field, do nothing, but no error */
@@ -415,9 +422,13 @@ fields used here.
 						 variable_scale_field, node, time, variable_scale)) &&
 					((!data_field)||Computed_field_evaluate_at_node(data_field,node,
 						time, data_values))&&
-					((!label_defined) || (*(node_to_glyph_set_data->label) =
-						Computed_field_evaluate_as_string_at_node(label_field,
-							/*component_number*/-1, node, time)))&&
+					((!label_defined) ||
+						((*(node_to_glyph_set_data->label) =
+							Computed_field_evaluate_as_string_at_node(label_field,
+							/*component_number*/-1, node, time)) &&
+						((!label_density_field) ||
+						Computed_field_evaluate_at_node(label_density_field,
+							node, time, *(node_to_glyph_set_data->label_density)))))&&
 					make_glyph_orientation_scale_axes(
 						number_of_orientation_scale_components, orientation_scale,
 						a, b, c, size))
@@ -462,6 +473,10 @@ fields used here.
 					if (node_to_glyph_set_data->label_field)
 					{
 						(node_to_glyph_set_data->label)++;
+						if (label_density_field)
+						{
+							(node_to_glyph_set_data->label_density)++;
+						}
 					}
 					/* Record the value of the label field at the bounds of the glyph size
 						 into a tensor so that they can be used for adding grids and axes to the glyph */
@@ -1226,30 +1241,9 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field,
 	struct Graphics_font *font, struct Computed_field *label_field,
+	struct Computed_field *label_density_field,
 	struct Computed_field *visibility_field, enum Graphics_select_mode select_mode,
 	struct LIST(FE_node) *selected_node_list)
-/*******************************************************************************
-LAST MODIFIED : 18 November 2005
-
-DESCRIPTION :
-Creates a GT_glyph_set displaying a <glyph> of at least <base_size>, with the
-given glyph <centre> at each node in <fe_region>.
-The optional <orientation_scale_field> can be used to orient and scale the
-glyph in a manner depending on the number of components in the field. The
-optional <variable_scale_field> can provide signed scaling independently of the
-glyph axis directions. See function make_glyph_orientation_scale_axes for
-details. The combined scale from the above 2 fields is multiplied in each axis
-by the <scale_factors> then added to the base_size.
-The optional <data_field> is calculated as data over the glyph_set, for later
-colouration by a spectrum.
-The optional <label_field> is written beside each glyph in string form.
-The <select_mode> controls whether node cmiss numbers are output as integer
-names with the glyph_set. If <select_mode> is DRAW_SELECTED or DRAW_UNSELECTED,
-only nodes in (or not in) the <selected_node_list> are rendered.
-Notes:
-- the coordinate and orientation fields are assumed to be rectangular cartesian.
-- the coordinate system of the variable_scale_field is ignored/not used.
-==============================================================================*/
 {
 	char *glyph_name, **labels;
 	float *label_bounds;
@@ -1260,8 +1254,8 @@ Notes:
 		number_of_fields, number_of_points, return_code;
 	struct GT_glyph_set *glyph_set;
 	struct Node_to_glyph_set_data node_to_glyph_set_data;
-	Triple *axis1_list, *axis2_list, *axis3_list, *point_list, *scale_list;
-	struct Computed_field *label_bounds_field, *required_fields[5];
+	Triple *axis1_list, *axis2_list, *axis3_list, *label_density_list, *point_list, *scale_list;
+	struct Computed_field *label_bounds_field, *required_fields[6];
 	struct Computed_fields_of_node *computed_fields_of_node;
 	struct FE_node *label_bounds_node;
 
@@ -1274,6 +1268,8 @@ Notes:
 		glyph && centre && base_size && scale_factors &&
 		((!variable_scale_field) ||
 			(3 >=	Computed_field_get_number_of_components(variable_scale_field))) &&
+		((!label_density_field) ||
+			(3 >=	Computed_field_get_number_of_components(label_density_field))) &&
 		(((GRAPHICS_DRAW_SELECTED!=select_mode)&&
 			(GRAPHICS_DRAW_UNSELECTED!=select_mode))||selected_node_list))
 	{
@@ -1339,6 +1335,11 @@ Notes:
 				{
 					label_bounds_field = coordinate_field;
 				}
+				if (label_density_field)
+				{
+					required_fields[number_of_fields]=label_density_field;
+					number_of_fields++;								
+				}
 			}
 			if (return_code)
 			{
@@ -1385,6 +1386,7 @@ Notes:
 					axis2_list = (Triple *)NULL;
 					axis3_list = (Triple *)NULL;
 					scale_list = (Triple *)NULL;
+					label_density_list = (Triple *)NULL;
 					labels = (char **)NULL;
 					n_data_components = 0;
 					data = (GTDATA *)NULL;
@@ -1426,6 +1428,10 @@ Notes:
 					{
 						ALLOCATE(names,int,number_of_points);
 					}
+					if (label_density_field)
+					{
+						ALLOCATE(label_density_list, Triple, number_of_points);
+					}
 					if (((!n_data_components)||data)&&((!label_field)||labels)&&
 						((GRAPHICS_NO_SELECT==select_mode)||names) &&
 						ALLOCATE(point_list, Triple, number_of_points) &&
@@ -1437,6 +1443,7 @@ Notes:
 							axis1_list,axis2_list,axis3_list,scale_list,glyph,font,labels,
 							n_data_components,data,
 							label_bounds_dimension,label_bounds_components,label_bounds,
+							label_density_list,
 							/*object_name*/0,names)))
 					{
 						/* set up information for the iterator */
@@ -1453,6 +1460,7 @@ Notes:
 						node_to_glyph_set_data.scale = scale_list;
 						node_to_glyph_set_data.data = data;
 						node_to_glyph_set_data.label = labels;
+						node_to_glyph_set_data.label_density = label_density_list;
 						node_to_glyph_set_data.coordinate_field = coordinate_field;
 						node_to_glyph_set_data.orientation_scale_field =
 							orientation_scale_field;
@@ -1460,6 +1468,7 @@ Notes:
 						node_to_glyph_set_data.data_field = data_field;
 						node_to_glyph_set_data.n_data_components = n_data_components;
 						node_to_glyph_set_data.label_field = label_field;
+						node_to_glyph_set_data.label_density_field = label_density_field;
 						node_to_glyph_set_data.visibility_field = visibility_field;
 						node_to_glyph_set_data.name = names;
 						node_to_glyph_set_data.time = time;
@@ -1509,6 +1518,10 @@ Notes:
 						{
 							Computed_field_clear_cache(label_field);
 						}
+						if (label_density_field)
+						{
+							Computed_field_clear_cache(label_density_field);
+						}
 						if (label_bounds)
 						{
 							DEALLOCATE(label_bounds_vector);
@@ -1538,6 +1551,7 @@ Notes:
 						DEALLOCATE(axis2_list);
 						DEALLOCATE(axis3_list);
 						DEALLOCATE(scale_list);
+						DEALLOCATE(label_density_list);
 						DEALLOCATE(data);
 						DEALLOCATE(labels);
 						DEALLOCATE(names);
@@ -4287,6 +4301,7 @@ Note:
 					axis1_list, axis2_list, axis3_list, scale_list, glyph, font,
 					labels, n_data_components, data,
 					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
+					/*label_density_list*/(Triple *)NULL,
 					CM_element_information_to_graphics_name(&cm), names)))
 			{
 				point = point_list;

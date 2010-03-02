@@ -404,12 +404,10 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field,
 	struct Graphics_font *font, struct Computed_field *label_field,
+	struct Computed_field *label_density_field,
 	struct Computed_field *visibility_field, enum Graphics_select_mode select_mode,
 	struct LIST(FE_node) *selected_node_list);
 /*******************************************************************************
-LAST MODIFIED : 18 November 2005
-
-DESCRIPTION :
 Creates a GT_glyph_set displaying a <glyph> of at least <base_size>, with the
 given glyph <centre> at each node in <fe_region>.
 The optional <orientation_scale_field> can be used to orient and scale the
@@ -421,6 +419,9 @@ by the <scale_factors> then added to the base_size.
 The optional <data_field> is calculated as data over the glyph_set, for later
 colouration by a spectrum.
 The optional <label_field> is written beside each glyph in string form.
+The optional <label_density_field> controls the number of times the label
+field is rendered for glyphs that can render the label many times, such as axes
+and graph grids.
 The <select_mode> controls whether node cmiss numbers are output as integer
 names with the glyph_set. If <select_mode> is DRAW_SELECTED or DRAW_UNSELECTED,
 only nodes in (or not in) the <selected_node_list> are rendered.

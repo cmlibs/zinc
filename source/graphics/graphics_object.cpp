@@ -1231,6 +1231,7 @@ this gets tricky when done on all axes consistently.
 					axis1_list, axis2_list, axis3_list, scale_list, initial->glyph,
 					initial->font, labels, initial->n_data_components, data,
 					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
+					/*label_density_list*/(Triple *)NULL,
 					nearest_glyph_set->object_name, names))
 				{
 #if defined (OLD_CODE)
@@ -2364,26 +2365,7 @@ struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph,
 	struct Graphics_font *font, char **labels, int n_data_components, GTDATA *data,
 	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
-	int object_name, int *names)
-/*******************************************************************************
-LAST MODIFIED : 18 November 2005
-
-DESCRIPTION :
-Allocates memory and assigns fields for a GT_glyph_set. The glyph set shows
-the object <glyph> at the specified <number_of_points> with positions given in
-<point_list>, and principal axes in <axis1_list>, <axis2_list> and <axis3_list>.
-The magnitude of these axes control scaling of the glyph at each point, while
-their orientations - which need not be orthogonal - effect rotations and skew.
-There magnitudes also multiplied by the <scale_list> values, 1 value per axis,
-which permit certain glyphs to reverse direction with negative values.
-The optional <labels> parameter is an array of strings to be written beside each
-glyph, while the optional <data> of number <n_data_components> per glyph allows
-colouring of the glyphs by a spectrum.
-The glyph_set will be marked as coming from the <object_name>, and integer
-identifier, while the optional <names> contains an integer identifier per point.
-Note: All arrays passed to this routine are owned by the new GT_glyph_set
-and are deallocated by its DESTROY function.
-==============================================================================*/
+	Triple *label_density_list,	int object_name, int *names)
 {
 	struct GT_glyph_set *glyph_set;
 
@@ -2414,6 +2396,7 @@ and are deallocated by its DESTROY function.
 			glyph_set->label_bounds_dimension = label_bounds_dimension;
 			glyph_set->label_bounds_components = label_bounds_components;
 			glyph_set->label_bounds = label_bounds;
+			glyph_set->label_density_list = label_density_list;
 
 			glyph_set->object_name = object_name;
 			glyph_set->auxiliary_object_name = 0;
@@ -2474,6 +2457,10 @@ Frees the frees the memory for <**glyph_set_address> and sets
 		if (glyph_set->label_bounds)
 		{
 			DEALLOCATE(glyph_set->label_bounds);
+		}
+		if (glyph_set->label_density_list)
+		{
+			DEALLOCATE(glyph_set->label_density_list);
 		}
 		if (glyph_set->data)
 		{

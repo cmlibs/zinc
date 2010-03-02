@@ -133,6 +133,7 @@ finite element group rendition.
 	struct Computed_field *orientation_scale_field;
 	struct Computed_field *variable_scale_field;
 	struct Computed_field *label_field;
+	struct Computed_field *label_density_field;
 	struct Computed_field *visibility_field;
 	/* for element_points and iso_surfaces */
 	enum Use_element_type use_element_type;
@@ -721,6 +722,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->orientation_scale_field=(struct Computed_field *)NULL;
 			settings->variable_scale_field=(struct Computed_field *)NULL;
 			settings->label_field=(struct Computed_field *)NULL;
+			settings->label_density_field=(struct Computed_field *)NULL;
 			settings->visibility_field=(struct Computed_field *)NULL;
 			settings->select_mode=GRAPHICS_SELECT_ON;
 			/* for element_points and iso_surfaces */
@@ -860,6 +862,10 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 			if (settings->label_field)
 			{
 				DEACCESS(Computed_field)(&(settings->label_field));
+			}
+			if (settings->label_density_field)
+			{
+				DEACCESS(Computed_field)(&(settings->label_density_field));
 			}
 			if (settings->visibility_field)
 			{
@@ -1049,6 +1055,7 @@ graphics_object is NOT copied; destination->graphics_object is cleared.
 			}
 		}
 		REACCESS(Computed_field)(&(destination->label_field),source->label_field);
+		REACCESS(Computed_field)(&(destination->label_density_field),source->label_density_field);
 		REACCESS(Computed_field)(&(destination->visibility_field),source->visibility_field);
 		/* for element_points and iso_surfaces */
 		destination->use_element_type=source->use_element_type;
@@ -3275,6 +3282,8 @@ Returns 1 if the <settings> use any embedded_fields.
 					Computed_field_depends_on_embedded_field(settings->data_field)) ||
 				(settings->label_field &&
 					Computed_field_depends_on_embedded_field(settings->label_field)) ||
+				(settings->label_density_field &&
+					Computed_field_depends_on_embedded_field(settings->label_density_field)) ||
 				(settings->visibility_field &&
 					Computed_field_depends_on_embedded_field(settings->visibility_field))))
 		{
@@ -3361,6 +3370,11 @@ group are time dependent.
 		}
 		if (settings->label_field && 
 			Computed_field_has_multiple_times(settings->label_field))
+		{
+			time_dependent = 1;
+		}
+		if (settings->label_density_field && 
+			Computed_field_has_multiple_times(settings->label_density_field))
 		{
 			time_dependent = 1;
 		}
@@ -3627,6 +3641,9 @@ used if the settings has no coodinate field of its own.
 			(settings->label_field &&
 				Computed_field_or_ancestor_satisfies_condition(
 					settings->label_field, conditional_function, user_data)) ||
+			(settings->label_density_field &&
+				Computed_field_or_ancestor_satisfies_condition(
+					settings->label_density_field, conditional_function, user_data)) ||
 			(settings->visibility_field &&
 				Computed_field_or_ancestor_satisfies_condition(
 					settings->visibility_field, conditional_function, user_data)))
@@ -4456,6 +4473,7 @@ settings describe EXACTLY the same geometry.
 				(settings->variable_scale_field==
 					second_settings->variable_scale_field)&&
 				(settings->label_field==second_settings->label_field)&&
+				(settings->label_density_field==second_settings->label_density_field)&&
 				 (settings->font==second_settings->font) &&
 				(settings->visibility_field==second_settings->visibility_field);
 		}
@@ -5005,6 +5023,17 @@ if no coordinate field. Currently only write if we have a field.
 						/* put quotes around name if it contains special characters */
 						make_valid_token(&name);
 						append_string(&settings_string," label ",&error);
+						append_string(&settings_string,name,&error);
+						DEALLOCATE(name);
+					}
+				}
+				if (settings->label_density_field)
+				{
+					if (GET_NAME(Computed_field)(settings->label_density_field,&name))
+					{
+						/* put quotes around name if it contains special characters */
+						make_valid_token(&name);
+						append_string(&settings_string," ldensity ",&error);
 						append_string(&settings_string,name,&error);
 						DEALLOCATE(name);
 					}
@@ -6488,7 +6517,8 @@ The graphics object is stored with with the settings it was created from.
 										settings_to_object_data->time,
 										settings_to_object_data->wrapper_orientation_scale_field,
 										settings->variable_scale_field, settings->data_field,
-										settings->font, settings->label_field, settings->visibility_field,
+										settings->font, settings->label_field, 
+										settings->label_density_field, settings->visibility_field,
 										settings->select_mode,selected_node_list);
 									/* NOT an error if no glyph_set produced == empty group */
 									if (glyph_set)
@@ -7345,7 +7375,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	struct Modify_g_element_data *modify_g_element_data;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data, set_label_field_data, set_visibility_field_data, set_orientation_scale_field_data,
+		set_data_field_data, set_label_field_data, set_label_density_field_data,
+		set_visibility_field_data, set_orientation_scale_field_data,
 		set_variable_scale_field_data;
 	Triple glyph_centre, glyph_scale_factors, glyph_size;
 
@@ -7458,6 +7489,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_label_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"label",&(settings->label_field),
 						&set_label_field_data,set_Computed_field_conditional);
+					/* ldensity */
+					set_label_density_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
+					set_label_density_field_data.conditional_function=
+						Computed_field_has_up_to_3_numerical_components;
+					set_label_density_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"ldensity",&(settings->label_density_field),
+						&set_label_density_field_data,set_Computed_field_conditional);
 					/* visibility_field */
 					set_visibility_field_data.computed_field_manager=
 						g_element_command_data->computed_field_manager;
@@ -7648,7 +7687,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	struct Modify_g_element_data *modify_g_element_data;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data, set_label_field_data, set_visibility_field_data, set_orientation_scale_field_data,
+		set_data_field_data, set_label_field_data, set_label_density_field_data,
+		set_visibility_field_data, set_orientation_scale_field_data,
 		set_variable_scale_field_data;
 	Triple glyph_centre, glyph_scale_factors, glyph_size;
 
@@ -7761,6 +7801,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_label_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"label",&(settings->label_field),
 						&set_label_field_data,set_Computed_field_conditional);
+					/* ldensity */
+					set_label_density_field_data.computed_field_manager=
+						g_element_command_data->computed_field_manager;
+					set_label_density_field_data.conditional_function=
+						Computed_field_has_up_to_3_numerical_components;
+					set_label_density_field_data.conditional_function_user_data=(void *)NULL;
+					Option_table_add_entry(option_table,"ldensity",&(settings->label_density_field),
+						&set_label_density_field_data,set_Computed_field_conditional);
 					/* visibility */
 					set_visibility_field_data.computed_field_manager=
 						g_element_command_data->computed_field_manager;
@@ -8856,7 +8904,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	struct Modify_g_element_data *modify_g_element_data;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data, set_label_field_data, set_orientation_scale_field_data,
+		set_data_field_data, set_label_field_data, set_label_density_field_data,
+		set_orientation_scale_field_data,
 		set_variable_scale_field_data, set_xi_point_density_field_data;
 	Triple glyph_centre, glyph_scale_factors, glyph_size;
 
@@ -9005,6 +9054,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 			set_label_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"label",&(settings->label_field),
 				&set_label_field_data,set_Computed_field_conditional);
+			/* ldensity */
+			set_label_density_field_data.computed_field_manager=
+				g_element_command_data->computed_field_manager;
+			set_label_density_field_data.conditional_function=
+				Computed_field_has_up_to_3_numerical_components;
+			set_label_density_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"ldensity",&(settings->label_density_field),
+				&set_label_density_field_data,set_Computed_field_conditional);
 			/* material */
 			Option_table_add_entry(option_table,"material",&(settings->material),
 				g_element_command_data->graphical_material_manager,

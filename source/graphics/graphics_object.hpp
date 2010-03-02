@@ -205,8 +205,9 @@ public:
 
 };
 
-typedef int (*Graphics_object_glyph_labels_function)(Triple coordinate_scaling,
+typedef int (*Graphics_object_glyph_labels_function)(Triple *coordinate_scaling,
 	int label_bounds_dimension, int label_bounds_components, float *label_bounds,
+	Triple *label_density,
 	struct Graphical_material *material, struct Graphical_material *secondary_material,
 	struct Graphics_font *font, Render_graphics *renderer);
 /*******************************************************************************
