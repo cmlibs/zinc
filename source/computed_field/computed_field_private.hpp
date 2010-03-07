@@ -568,31 +568,31 @@ Upon successful return the node values of the <field> are stored in its cache.
 #endif /* ! defined (OPTIMISED) */
 		return_code=1;
 
-		/* make sure we have allocated values AND derivatives, or nothing */
-		if (!field->values)
-		{
-			/* get enough space for derivatives in highest dimension element */
-			if (!(ALLOCATE(field->values,FE_value,field->number_of_components)&&
-					ALLOCATE(field->derivatives,FE_value,
-						MAXIMUM_ELEMENT_XI_DIMENSIONS*field->number_of_components)))
-			{
-				if (field->values)
-				{
-					DEALLOCATE(field->values);
-				}
-				return_code=0;
-			}
-			if (field->values && return_code)
-			{
-				 for (i=0;i<(field->number_of_components);i++)
-				 {
-						field->values[i]=0;
-				 }
-			}
-		}
-		
 		if (!location->check_cache_for_location(field))
 		{
+			/* make sure we have allocated values AND derivatives, or nothing */
+			if (!field->values)
+			{
+				/* get enough space for derivatives in highest dimension element */
+				if (!(ALLOCATE(field->values,FE_value,field->number_of_components)&&
+						ALLOCATE(field->derivatives,FE_value,
+							MAXIMUM_ELEMENT_XI_DIMENSIONS*field->number_of_components)))
+				{
+					if (field->values)
+					{
+						DEALLOCATE(field->values);
+					}
+					return_code=0;
+				}
+				if (field->values && return_code)
+				{
+					for (i=0;i<(field->number_of_components);i++)
+					{
+						field->values[i]=0;
+					}
+				}
+			}
+		
 			field->derivatives_valid=0;
 			if (field->string_cache)
 			{

@@ -362,14 +362,6 @@ Calls Computed_field_clear_cache before clearing the type.
 	{
 		/* must clear the cache first */
 		Computed_field_clear_cache(field);
-
-		/* clear values and derivatives cache as size may be changing */
-		if (field->values)
-		{
-			DEALLOCATE(field->values);
-			DEALLOCATE(field->derivatives);
-		}
-
 		if (field->component_names)
 		{
 			for (i = 0 ; i < field->number_of_components ; i++)
