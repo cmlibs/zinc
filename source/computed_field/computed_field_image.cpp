@@ -167,6 +167,7 @@ public:
 				REACCESS(Texture)(&texture, texture_in);
 				field->number_of_components = new_number_of_components;
 				Computed_field_clear_cache(field);
+				Computed_field_rebuild_cache_values(field);
 				return_code = 1;
 			}
 			else

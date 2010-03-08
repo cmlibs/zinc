@@ -567,32 +567,30 @@ Upon successful return the node values of the <field> are stored in its cache.
 	{
 #endif /* ! defined (OPTIMISED) */
 		return_code=1;
-
-		if (!location->check_cache_for_location(field))
+		/* make sure we have allocated values AND derivatives, or nothing */
+		if (!field->values)
 		{
-			/* make sure we have allocated values AND derivatives, or nothing */
-			if (!field->values)
+			/* get enough space for derivatives in highest dimension element */
+			if (!(ALLOCATE(field->values,FE_value,field->number_of_components)&&
+					ALLOCATE(field->derivatives,FE_value,
+						MAXIMUM_ELEMENT_XI_DIMENSIONS*field->number_of_components)))
 			{
-				/* get enough space for derivatives in highest dimension element */
-				if (!(ALLOCATE(field->values,FE_value,field->number_of_components)&&
-						ALLOCATE(field->derivatives,FE_value,
-							MAXIMUM_ELEMENT_XI_DIMENSIONS*field->number_of_components)))
+				if (field->values)
 				{
-					if (field->values)
-					{
-						DEALLOCATE(field->values);
-					}
-					return_code=0;
+					DEALLOCATE(field->values);
 				}
-				if (field->values && return_code)
-				{
-					for (i=0;i<(field->number_of_components);i++)
+				return_code=0;
+			}
+			if (field->values && return_code)
+			{
+				for (i=0;i<(field->number_of_components);i++)
 					{
 						field->values[i]=0;
 					}
-				}
 			}
-		
+		}
+		if (!location->check_cache_for_location(field))
+		{
 			field->derivatives_valid=0;
 			if (field->string_cache)
 			{
@@ -849,5 +847,31 @@ int Cmiss_field_module_set_replace_field(
  */
 struct Computed_field *Cmiss_field_module_get_replace_field(
 	struct Cmiss_field_module *field_module);
+
+/***************************************************************************//**
+ * Rebuild the cache values of the field. This is only used by 
+ * computed_field_image to wipe out the cache when number of components changes.
+ *
+ * @param field  Field to be updated.
+ * @return  1 if successfully rebuild cache_values, or 0
+ * if none.
+ */
+inline int Computed_field_rebuild_cache_values(
+	Computed_field *field)
+{
+	int return_code = 1;
+
+	if (field)
+	{
+		if (field->values)
+		{
+			DEALLOCATE(field->values);
+			DEALLOCATE(field->derivatives);
+		}
+	}
+
+	return (return_code);
+}
+
 
 #endif /* !defined (COMPUTED_FIELD_PRIVATE_H) */
