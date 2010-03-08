@@ -220,6 +220,7 @@ int Field_coordinate_location::check_cache_for_location(Computed_field *field)
 			}
 			field->derivatives_valid = 1;
 		}
+		cache_is_valid = 1;
 	}
 	else
 	{
