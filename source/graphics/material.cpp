@@ -199,9 +199,6 @@ struct Material_program
 	enum Material_program_shader_type shader_type;
 	/*! Display list which enables the correct state for this program */
 	GLuint display_list;
-	int number_of_program_values;
-	float *uniform_value;
-	char **uniform_name;
 #endif /* defined (OPENGL_API) */
 
 	/*! Flag indicating whether the program is compiled or not */
@@ -213,6 +210,32 @@ struct Material_program
 DECLARE_LIST_TYPES(Material_program);
 PROTOTYPE_LIST_FUNCTIONS(Material_program);
 FULL_DECLARE_INDEXED_LIST_TYPE(Material_program);
+
+enum Material_program_uniform_type
+{
+	MATERIAL_PROGRAM_UNIFORM_TYPE_UNDEFINED,
+	MATERIAL_PROGRAM_UNIFORM_TYPE_FLOAT
+};
+
+/*****************************************************************************//**
+Store a uniform parameter value used by a Material_program.
+These values are not stored in the program as a particular material may
+use the same program with different values for these parameters.
+Currently only the FLOAT type is implemented.
+The object currently always stores the values in a double 4 array for simplicity.
+==============================================================================*/
+struct Material_program_uniform
+{
+	char *name;
+	unsigned int number_of_defined_values;
+	enum Material_program_uniform_type type;
+	double values[4];
+	int access_count;
+}; /* struct Material_program_uniform */
+
+DECLARE_LIST_TYPES(Material_program_uniform);
+PROTOTYPE_LIST_FUNCTIONS(Material_program_uniform);
+FULL_DECLARE_INDEXED_LIST_TYPE(Material_program_uniform);
 
 struct Graphical_material
 /*******************************************************************************
@@ -267,6 +290,8 @@ The properties of a material.
 	float lit_volume_normal_scaling[4];
 	/* the graphics state program that represents this material */
 	struct Material_program *program;
+	/* user defined uniforms used by the program */
+	LIST(Material_program_uniform) *program_uniforms;
 	 int access_count, per_pixel_lighting_flag, bump_mapping_flag;
 	/* this flag is for external API uses. If a material is set to be volatile
 		 then this material will be removed from the manager after destroy.
@@ -325,9 +350,6 @@ DESCRIPTION :
 		material_program->vertex_program_string = (char *)NULL;
 		material_program->fragment_program_string = (char *)NULL;
 		material_program->display_list = 0;
-		material_program->number_of_program_values = 0;
-		material_program->uniform_value = NULL;
-		material_program->uniform_name = NULL;
 #endif /* defined (OPENGL_API) */
 		material_program->compiled = 0;
 		material_program->access_count = 0;
@@ -434,19 +456,6 @@ Frees the memory for the material_program.
 				DEALLOCATE(material_program->fragment_program_string);
 				material_program->fragment_program_string = NULL;
 			}
-			if (material_program->number_of_program_values > 0 && 
-				material_program->uniform_value &&
-				material_program->uniform_name)
-			{
-				int i;
-				DEALLOCATE(material_program->uniform_value);
-				for (i=0; i <material_program->number_of_program_values; i++)
-				{
-
-					DEALLOCATE(material_program->uniform_name[i]);
-				}
-				DEALLOCATE(material_program->uniform_name);
-			}
 #endif /* defined (OPENGL_API) */
 			DEALLOCATE(*material_program_address);
 			return_code=1;
@@ -475,6 +484,160 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Material_program, type, \
 DECLARE_INDEXED_LIST_FUNCTIONS(Material_program)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Material_program, type,
 	enum Material_program_type, compare_int)
+
+static struct Material_program_uniform *CREATE(Material_program_uniform)(char *name)
+/*******************************************************************************
+==============================================================================*/
+{
+	struct Material_program_uniform *uniform;
+
+	ENTER(CREATE(Material_program_uniform));
+
+	if (ALLOCATE(uniform, Material_program_uniform, 1))
+	{
+		uniform->name = duplicate_string(name);
+		uniform->type = MATERIAL_PROGRAM_UNIFORM_TYPE_UNDEFINED;
+		uniform->number_of_defined_values = 0;
+		uniform->access_count = 0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CREATE(Material_program).  Not enough memory");
+	}
+	LEAVE;
+
+	return (uniform);
+} /* CREATE(Material_program_uniform) */
+
+static int DESTROY(Material_program_uniform)(struct Material_program_uniform **material_program_uniform_address)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+Frees the memory for the material_program.
+==============================================================================*/
+{
+	int return_code;
+	Material_program_uniform *uniform;
+
+	ENTER(DESTROY(Material_program_uniform));
+	if (material_program_uniform_address &&
+			(uniform = *material_program_uniform_address))
+	{
+		if (0==uniform->access_count)
+		{
+			if (uniform->name)
+				DEALLOCATE(uniform->name)
+
+			DEALLOCATE(*material_program_uniform_address);
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"DESTROY(Material_program_uniform).  Material program uniform has non-zero access count");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Material_program_uniform).  Missing address");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Material_program_uniform) */
+
+DECLARE_OBJECT_FUNCTIONS(Material_program_uniform)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Material_program_uniform, name, \
+	char *, strcmp)
+DECLARE_INDEXED_LIST_FUNCTIONS(Material_program_uniform)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Material_program_uniform, name,
+	char *, strcmp)
+
+/* Misusing the double array here as the vector parser function gives us an 
+ * array of doubles and I don't see the need to copy and pass floats.
+ * It isn't called double_vector then because we are going to use it with Uniform?f
+ */
+static int Material_program_uniform_set_float_vector(Material_program_uniform *uniform,
+	unsigned int number_of_values, double *values)
+{
+	int return_code;
+	unsigned int i;
+	if (uniform && (number_of_values <= 4))
+	{
+		uniform->type = MATERIAL_PROGRAM_UNIFORM_TYPE_FLOAT;
+		uniform->number_of_defined_values = number_of_values;
+		for (i = 0 ; i < number_of_values; i++)
+		{
+			uniform->values[i] = values[i];
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Material_program_uniform_set_float_vector.  Invalid arguments");
+		return_code = 0;
+	}
+	return (return_code);
+}
+
+#if defined (OPENGL_API)
+#  if defined (GL_VERSION_2_0)
+static int Material_program_uniform_write_glsl_values(Material_program_uniform *uniform,
+	void *material_void)
+{
+	int return_code;
+	Graphical_material *material;
+	if (uniform && (material = static_cast<Graphical_material*>(material_void)))
+	{
+		GLint location = glGetUniformLocation(material->program->glsl_current_program,
+			uniform->name);
+		if (location != (GLint)-1)
+		{
+			switch(uniform->type)
+			{
+				case MATERIAL_PROGRAM_UNIFORM_TYPE_FLOAT:
+				{
+					switch(uniform->number_of_defined_values)
+					{
+						case 1:
+						{
+							glUniform1f(location, uniform->values[0]);
+						} break;
+						case 2:
+						{
+							glUniform2f(location, uniform->values[0], uniform->values[1]);
+						} break;
+						case 3:
+						{
+							glUniform3f(location, uniform->values[0], uniform->values[1], uniform->values[2]);
+						} break;
+						case 4:
+						{
+							glUniform4f(location, uniform->values[0], uniform->values[1], uniform->values[2], uniform->values[3]);
+						} break;
+					}
+				} break;
+			}
+		}
+
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Material_program_uniform_set_float_vector.  Invalid arguments");
+		return_code = 0;
+	}
+	return (return_code);
+}
+#  endif // defined (GL_VERSION_2_0)
+#endif // defined (OPENGL_API)
 
 #if defined (OPENGL_API)
 static int Material_program_compile(struct Material_program *material_program)
@@ -2744,44 +2907,53 @@ be shared by multiple materials using the same program.
 #endif /* ! defined (TESTING_PROGRAM_STRINGS) */			
 					if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
 					{
+						GLint vertexShaderCompiled, fragmentShaderCompiled;
+						
 						material_program->glsl_current_program = glCreateProgram();
 						
 						vv = vertex_program_string;
 						glShaderSource(material_program->vertex_program,1, &vv, NULL);
 						glCompileShader(material_program->vertex_program);
+						glGetShaderiv(material_program->vertex_program, GL_COMPILE_STATUS, &vertexShaderCompiled);
 						glAttachShader(material_program->glsl_current_program,material_program->vertex_program);
 						DEALLOCATE(vertex_program_string);
 						
 						ff = fragment_program_string;
 						glShaderSource(material_program->fragment_program,1, &ff, NULL);
 						glCompileShader(material_program->fragment_program);
+						glGetShaderiv(material_program->fragment_program, GL_COMPILE_STATUS, &fragmentShaderCompiled);
 						glAttachShader(material_program->glsl_current_program,material_program->fragment_program);
 						DEALLOCATE(fragment_program_string);
+
+#if !defined (DEBUG)
+						// If DEBUG is defined always write the program info, otherwise
+						// write the program info only when one of the shaders fails to compile.
+						if (!vertexShaderCompiled || !fragmentShaderCompiled)
+#endif // !defined (DEBUG)
+						{
+							int infologLength = 0;
+							int charsWritten  = 0;
+							char *infoLog;
+							glGetShaderiv(material_program->vertex_program, GL_INFO_LOG_LENGTH,&infologLength);
+							if (infologLength > 0)
+							{
+								infoLog = (char *)malloc(infologLength);
+								glGetShaderInfoLog(material_program->vertex_program,
+									infologLength, &charsWritten, infoLog);
+								display_message(INFORMATION_MESSAGE,"Vertex program info:\n%s\n",infoLog);
+								free(infoLog);
+							}
+							glGetShaderiv(material_program->fragment_program, GL_INFO_LOG_LENGTH,&infologLength);
+							if (infologLength > 0)
+							{
+								infoLog = (char *)malloc(infologLength);
+								glGetShaderInfoLog(material_program->fragment_program, 
+									infologLength, &charsWritten, infoLog);
+								display_message(INFORMATION_MESSAGE,"Fragment program info:\n%s\n",infoLog);
+								free(infoLog);
+							}
+						}
 						
-#if defined (DEBUG)
-						int infologLength = 0;
-						int charsWritten  = 0;
-						char *infoLog;
-						glGetShaderiv(material_program->vertex_program, GL_INFO_LOG_LENGTH,&infologLength);
-						if (infologLength > 0)
-						{
-							infoLog = (char *)malloc(infologLength);
-							glGetShaderInfoLog(material_program->vertex_program,
-								infologLength, &charsWritten, infoLog);
-							display_message(INFORMATION_MESSAGE,"Vertex program info:\n%s\n",infoLog);
-							free(infoLog);
-						}
-						glGetShaderiv(material_program->fragment_program, GL_INFO_LOG_LENGTH,&infologLength);
-						if (infologLength > 0)
-						{
-							infoLog = (char *)malloc(infologLength);
-							glGetShaderInfoLog(material_program->fragment_program, 
-								infologLength, &charsWritten, infoLog);
-							display_message(INFORMATION_MESSAGE,"Fragment program info:\n%s\n",infoLog);
-							free(infoLog);
-						}
-#endif /* defined (DEBUG) */	 
-					 
 						if (!material_program->display_list)
 						{
 							material_program->display_list = glGenLists(1);
@@ -2916,7 +3088,7 @@ material results.
 #if defined (GL_VERSION_2_0)
 	GLint loc1 = -1;
 #endif /* defined (GL_VERSION_2_0) */
-	int i, return_code;
+	int return_code;
 
 	ENTER(direct_render_Graphical_material);
 	if (material)
@@ -3043,15 +3215,10 @@ material results.
 								loc1 = glGetUniformLocation(material->program->glsl_current_program,"texture0");
 								if (loc1 != (GLint)-1)
 									 glUniform1i(loc1, 0);
-								for (i=0; i < material->program->number_of_program_values; i++)
-								{
-									loc1 = glGetUniformLocation(material->program->glsl_current_program,
-										material->program->uniform_name[i]);
-									if (loc1 != (GLint)-1)
-									{
-										glUniform1f(loc1, material->program->uniform_value[i]);
-									}
-								}
+								if (material->program_uniforms)
+									FOR_EACH_OBJECT_IN_LIST(Material_program_uniform)(
+											Material_program_uniform_write_glsl_values, material,
+											material->program_uniforms);
 						 }
 					}
 			 }
@@ -3572,6 +3739,7 @@ Allocates memory and assigns fields for a material.
 			material->lit_volume_normal_scaling[2] = 1.0;
 			material->lit_volume_normal_scaling[3] = 1.0;
 			material->program = (struct Material_program *)NULL;
+			material->program_uniforms = (LIST(Material_program_uniform) *)NULL;
 			material->volatile_flag=0;
 			material->material_manager = (struct MANAGER(Graphical_material) *)NULL;
 #if defined (OPENGL_API)
@@ -3654,6 +3822,10 @@ Frees the memory for the material and sets <*material_address> to NULL.
 			if (material->program)
 			{
 				DEACCESS(Material_program)(&(material->program));
+			}
+			if (material->program_uniforms)
+			{
+				DESTROY(LIST(Material_program_uniform))(&material->program_uniforms);
 			}
 			DEALLOCATE(*material_address);
 			return_code=1;
@@ -3806,6 +3978,26 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
 		REACCESS(Texture)(&(destination->second_texture), source->second_texture);
 		REACCESS(Texture)(&(destination->third_texture), source->third_texture);
 		REACCESS(Texture)(&(destination->fourth_texture), source->fourth_texture);
+		if (source->program_uniforms)
+		{
+			if (destination->program_uniforms)
+			{
+				REMOVE_ALL_OBJECTS_FROM_LIST(Material_program_uniform)(destination->program_uniforms);
+			}
+			else
+			{
+				destination->program_uniforms = CREATE(LIST(Material_program_uniform))();
+			}
+			COPY_LIST(Material_program_uniform)(destination->program_uniforms,
+				source->program_uniforms);
+		}
+		else
+		{
+			if (destination->program_uniforms)
+			{
+				DESTROY(LIST(Material_program_uniform))(&destination->program_uniforms);
+			}
+		}
 		/* flag destination display list as no longer current */
 		destination->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code=1;
@@ -5238,69 +5430,6 @@ the one in material, it is used for setting up the GUI.
 	 return return_code;
 }
 
-/***************************************************************************//**
- * Set a value to the uniform qualified variable used in an arbitrary shader.
- *
- * @param material  Graphical_material with the arbitrary shaders program.
- * @param uniform_name  Name of the uniform_qualifier variable.
- * @param value  Value to be set to the uniform varaible.
- * @return 1 on success, 0 on failure
- */
-int Material_set_program_uniform_qualifier_variable_value(
-	Graphical_material* material, const char *uniform_name, float value)
-{
-	int return_code;
-
-	ENTER(Material_set_program_uniform_value);
-	return_code = 0;
-#if defined (OPENGL_API)
-	int i;
-	if (material && material->program)
-	{
-		i = 0;
-		while (material->program->number_of_program_values > 0 &&
-			!return_code && i < material->program->number_of_program_values)
-		{
-			if (!strcmp(uniform_name, material->program->uniform_name[i]))
-			{
-				material->program->uniform_value[i] = value;
-				return_code = 1;
-			}
-			i++;
-		}
-		if (!return_code)
-		{
-			if (REALLOCATE(material->program->uniform_value, 
-					material->program->uniform_value,
-					float,material->program->number_of_program_values+1) && 
-				REALLOCATE(material->program->uniform_name,
-					material->program->uniform_name,
-					char *,material->program->number_of_program_values+1))
-			{
-				material->program->uniform_value[material->program->number_of_program_values] 
-					= value;
-				material->program->uniform_name[material->program->number_of_program_values] 
-					= duplicate_string(uniform_name);
-				material->program->number_of_program_values++;
-				return_code = 1;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Material_set_program_uniform_value.  Missing material_program");
-	}
-#else /* defined (OPENGL_API) */
-	USE_PARAMETER(material);
-	USE_PARAMETER(uniform_name);
-	USE_PARAMETER(value);
-#endif 
-	LEAVE;
-
-	return return_code;
-}
-
 /**************************************************************************//**
  * Sets the material to use a #Material_program with user specified strings
  * for the vertex_program and fragment_program.
@@ -5330,30 +5459,6 @@ int Material_set_material_program_strings(struct Graphical_material *material_to
 		Material_program_create_from_program_strings(
 		vertex_program_string, fragment_program_string)))
 	{
-#if defined (OPENGL_API)
-		if (old_program)
-		{
-			int i;
-			material_to_be_modified->program->number_of_program_values = 
-				old_program->number_of_program_values;
-			if (old_program->number_of_program_values > 0 && 
-				old_program->uniform_value &&
-				old_program->uniform_name &&
-				(ALLOCATE(material_to_be_modified->program->uniform_value, float,
-					old_program->number_of_program_values)) &&
-				(ALLOCATE(material_to_be_modified->program->uniform_name, char *,
-					old_program->number_of_program_values)))
-			{
-				for (i=0; i <old_program->number_of_program_values; i++)
-				{
-					material_to_be_modified->program->uniform_value[i] =
-						old_program->uniform_value[i];
-					material_to_be_modified->program->uniform_name[i]=
-						duplicate_string(old_program->uniform_name[i]);	
-				}
-			}
-		}
-#endif /* defined (OPENGL_API) */
 		return_code = 1;
 	}
 	else
@@ -5418,12 +5523,13 @@ DESCRIPTION :
 		*fragment_program_string, *vertex_program_string, *uniform_name;
 	/*	enum Spectrum_colour_components spectrum_colour_components; */
 	int /*dimension,*/ lit_volume_normal_scaling_number,
-		number_of_spectrum_components, process, return_code;
+		number_of_spectrum_components, number_of_uniform_values,
+		process, return_code;
 	struct Graphical_material *material_to_be_modified,
 		*material_to_be_modified_copy;
 	struct Material_package *material_package;
 	struct Option_table *help_option_table, *option_table, *mode_option_table;
-	float uniform_value;
+	double *uniform_values;
 
 	ENTER(modify_Graphical_material);
 	if (state)
@@ -5532,7 +5638,8 @@ DESCRIPTION :
 					vertex_program_string = (char *)NULL;
 					fragment_program_string = (char *)NULL;
 					uniform_name = (char *)NULL;
-					uniform_value = 0.0;
+					number_of_uniform_values = 0;
+					uniform_values = (double *)NULL;
 					option_table = CREATE(Option_table)();
 					Option_table_add_help(option_table,
 						"The material controls how pixels will be rendered on the "
@@ -5682,8 +5789,8 @@ DESCRIPTION :
 						&vertex_program_string);
 					Option_table_add_name_entry(option_table, "uniform_name",
 						&uniform_name);
-					Option_table_add_entry(option_table, "uniform_value",
-						&uniform_value, NULL, set_float);
+					Option_table_add_variable_length_double_vector_entry(option_table,
+						"uniform_values", &number_of_uniform_values, &uniform_values);
 					if (return_code=Option_table_multi_parse(option_table, state))
 					{
 						if (normal_mode_flag + per_pixel_mode_flag > 1)
@@ -5812,13 +5919,16 @@ DESCRIPTION :
 						}
 						else if (per_pixel_mode_flag || material_to_be_modified_copy->program)
 						{
-							if ((vertex_program_string && fragment_program_string) ||
-								(material_to_be_modified_copy->program &&
-								(0 == material_to_be_modified_copy->program->type)))
+							if (vertex_program_string && fragment_program_string)
 							{
 								return_code = Material_set_material_program_strings(
 									material_to_be_modified_copy, vertex_program_string,
 									fragment_program_string);
+							}
+							else if (material_to_be_modified_copy->program &&
+								(0 == material_to_be_modified_copy->program->type))
+							{
+								/* Do nothing as we just keep the existing program */
 							}
 							else
 							{
@@ -5829,10 +5939,29 @@ DESCRIPTION :
 									lit_volume_scale_alpha_flag, return_code);
 							}
 						}
-						if (uniform_name)
+						if (uniform_name && number_of_uniform_values && uniform_values)
 						{
-							Material_set_program_uniform_qualifier_variable_value(
-								material_to_be_modified_copy,uniform_name, uniform_value);
+							Material_program_uniform *uniform;
+							if (!material_to_be_modified_copy->program_uniforms)
+							{
+								material_to_be_modified_copy->program_uniforms = CREATE(LIST(Material_program_uniform))();
+							}
+							if (!(uniform = FIND_BY_IDENTIFIER_IN_LIST(Material_program_uniform,name)
+								(uniform_name, material_to_be_modified_copy->program_uniforms)))
+							{
+								uniform = CREATE(Material_program_uniform)(uniform_name);
+								ADD_OBJECT_TO_LIST(Material_program_uniform)(uniform,
+									material_to_be_modified_copy->program_uniforms);
+							}
+							if (uniform)
+							{
+								Material_program_uniform_set_float_vector(uniform,
+									number_of_uniform_values, uniform_values);
+							}
+						}
+						if (uniform_values)
+						{
+							DEALLOCATE(uniform_values);
 						}
 						if (return_code)
 						{

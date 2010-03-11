@@ -449,6 +449,8 @@ GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_display_lists);
 #    if defined (GL_VERSION_1_4)
        GRAPHICS_LIBRARY_EXTERN PFNGLBLENDFUNCSEPARATEPROC GLHANDLE(glBlendFuncSeparate);
 #      define glBlendFuncSeparate (GLHANDLE(glBlendFuncSeparate))
+       GRAPHICS_LIBRARY_EXTERN PFNGLGENERATEMIPMAPPROC GLHANDLE(glGenerateMipmap);
+#      define glGenerateMipmap (GLHANDLE(glGenerateMipmap))
 #    endif /* defined (GL_VERSION_1_4) */
 
 #    if defined (GL_VERSION_1_5)
@@ -497,12 +499,16 @@ GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_display_lists);
 #      define glShaderSource  (GLHANDLE(glShaderSource))
        GRAPHICS_LIBRARY_EXTERN PFNGLUSEPROGRAMPROC GLHANDLE(glUseProgram);
 #      define glUseProgram (GLHANDLE(glUseProgram))   
-       GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM4FPROC GLHANDLE(glUniform4f);
-#      define glUniform4f  (GLHANDLE(glUniform4f))
        GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM1IPROC GLHANDLE(glUniform1i);
 #      define glUniform1i  (GLHANDLE(glUniform1i))
        GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM1FPROC GLHANDLE(glUniform1f);
 #      define glUniform1f  (GLHANDLE(glUniform1f))
+       GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM2FPROC GLHANDLE(glUniform2f);
+#      define glUniform2f  (GLHANDLE(glUniform2f))
+       GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM3FPROC GLHANDLE(glUniform3f);
+#      define glUniform3f  (GLHANDLE(glUniform3f))
+       GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM4FPROC GLHANDLE(glUniform4f);
+#      define glUniform4f  (GLHANDLE(glUniform4f))
 #    endif /* defined (GL_VERSION_2_0) */
 
 #    if defined (GL_ARB_vertex_program) || defined (GL_ARB_fragment_program)

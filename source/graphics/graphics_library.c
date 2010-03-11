@@ -949,6 +949,11 @@ appropriately.
  					{
 						return_code = GLEXTENSION_UNAVAILABLE;
 					}
+					if (!(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenerateMipmap, PFNGLGENERATEMIPMAPPROC)
+							Graphics_library_get_function_ptr("glGenerateMipmap")))
+ 					{
+						return_code = GLEXTENSION_UNAVAILABLE;
+					}
 				}
 				GLEXTENSIONFLAG(GL_VERSION_1_4) = return_code;
 			}
@@ -999,12 +1004,17 @@ appropriately.
 									Graphics_library_get_function_ptr("glShaderSource")) &&
 								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glUseProgram, PFNGLUSEPROGRAMPROC)
 									Graphics_library_get_function_ptr("glUseProgram")) &&
-								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glUniform4f, PFNGLUNIFORM4FPROC)
-									Graphics_library_get_function_ptr("glUniform4f")) &&
 								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glUniform1i, PFNGLUNIFORM1IPROC)
 									Graphics_library_get_function_ptr("glUniform1i")) &&
 								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glUniform1f, PFNGLUNIFORM1FPROC)
-									Graphics_library_get_function_ptr("glUniform1f"))))
+									Graphics_library_get_function_ptr("glUniform1f")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glUniform2f, PFNGLUNIFORM2FPROC)
+									Graphics_library_get_function_ptr("glUniform2f")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glUniform3f, PFNGLUNIFORM3FPROC)
+									Graphics_library_get_function_ptr("glUniform3f")) &&
+								(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glUniform4f, PFNGLUNIFORM4FPROC)
+									Graphics_library_get_function_ptr("glUniform4f"))
+								))
 						{
 							return_code = GLEXTENSION_UNAVAILABLE;
 						}
