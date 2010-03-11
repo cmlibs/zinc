@@ -949,7 +949,7 @@ appropriately.
  					{
 						return_code = GLEXTENSION_UNAVAILABLE;
 					}
-					if (!(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenerateMipmap, PFNGLGENERATEMIPMAPPROC)
+					if (!(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenerateMipmap, PFNGLGENERATEMIPMAPEXTPROC)
 							Graphics_library_get_function_ptr("glGenerateMipmap")))
  					{
 						return_code = GLEXTENSION_UNAVAILABLE;
