@@ -949,11 +949,6 @@ appropriately.
  					{
 						return_code = GLEXTENSION_UNAVAILABLE;
 					}
-					if (!(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenerateMipmap, PFNGLGENERATEMIPMAPEXTPROC)
-							Graphics_library_get_function_ptr("glGenerateMipmap")))
- 					{
-						return_code = GLEXTENSION_UNAVAILABLE;
-					}
 				}
 				GLEXTENSIONFLAG(GL_VERSION_1_4) = return_code;
 			}
@@ -1054,6 +1049,28 @@ appropriately.
 			}
 		}
 #endif /* defined GL_VERSION_2_0 */
+#if defined GL_VERSION_3_0
+		else if (!strcmp(extension_name, "GL_VERSION_3_0"))
+		{
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_VERSION_3_0))
+			{
+				return_code = GLEXTENSIONFLAG(GL_VERSION_3_0);
+			}
+			else
+			{
+				return_code = query_gl_version(3, 0);
+				if (GLEXTENSION_AVAILABLE == return_code)
+				{
+					if (!(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenerateMipmap, PFNGLGENERATEMIPMAPPROC)
+						Graphics_library_get_function_ptr("glGenerateMipmap")))
+ 					{
+						return_code = GLEXTENSION_UNAVAILABLE;
+					}
+				}
+				GLEXTENSIONFLAG(GL_VERSION_3_0) = return_code;
+			}
+		}
+#endif /* GL_VERSION_3_0 */
 #if defined GL_ARB_depth_texture
 		else if (!strcmp(extension_name, "GL_ARB_depth_texture"))
 		{

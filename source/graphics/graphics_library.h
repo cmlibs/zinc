@@ -357,10 +357,13 @@ yet we just don't know.
 #endif /* defined (GL_VERSION_1_4) */
 #if defined (GL_VERSION_1_5)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_VERSION_1_5);
-#endif /* defined (GL_VERSION_1_4) */
+#endif /* defined (GL_VERSION_1_5) */
 #if defined (GL_VERSION_2_0)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_VERSION_2_0);
-#endif /* defined (GL_VERSION_1_4) */
+#endif /* defined (GL_VERSION_2_0) */
+#if defined (GL_VERSION_3_0)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_VERSION_3_0);
+#endif /* defined (GL_VERSION_3_0) */
 #if defined (GL_ARB_depth_texture)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_depth_texture);
 #endif /* defined (GL_ARB_depth_texture) */
@@ -449,8 +452,6 @@ GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_display_lists);
 #    if defined (GL_VERSION_1_4)
        GRAPHICS_LIBRARY_EXTERN PFNGLBLENDFUNCSEPARATEPROC GLHANDLE(glBlendFuncSeparate);
 #      define glBlendFuncSeparate (GLHANDLE(glBlendFuncSeparate))
-       GRAPHICS_LIBRARY_EXTERN PFNGLGENERATEMIPMAPEXTPROC GLHANDLE(glGenerateMipmap);
-#      define glGenerateMipmap (GLHANDLE(glGenerateMipmap))
 #    endif /* defined (GL_VERSION_1_4) */
 
 #    if defined (GL_VERSION_1_5)
@@ -510,6 +511,11 @@ GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_display_lists);
        GRAPHICS_LIBRARY_EXTERN PFNGLUNIFORM4FPROC GLHANDLE(glUniform4f);
 #      define glUniform4f  (GLHANDLE(glUniform4f))
 #    endif /* defined (GL_VERSION_2_0) */
+
+#    if defined (GL_VERSION_3_0)
+       GRAPHICS_LIBRARY_EXTERN PFNGLGENERATEMIPMAPEXTPROC GLHANDLE(glGenerateMipmap);
+#      define glGenerateMipmap (GLHANDLE(glGenerateMipmap))
+#    endif /* defined (GL_VERSION_3_0) */
 
 #    if defined (GL_ARB_vertex_program) || defined (GL_ARB_fragment_program)
        GRAPHICS_LIBRARY_EXTERN PFNGLGENPROGRAMSARBPROC GLHANDLE(glGenProgramsARB);
