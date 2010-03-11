@@ -449,7 +449,7 @@ GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_display_lists);
 #    if defined (GL_VERSION_1_4)
        GRAPHICS_LIBRARY_EXTERN PFNGLBLENDFUNCSEPARATEPROC GLHANDLE(glBlendFuncSeparate);
 #      define glBlendFuncSeparate (GLHANDLE(glBlendFuncSeparate))
-       GRAPHICS_LIBRARY_EXTERN PFNGLGENERATEMIPMAPPROC GLHANDLE(glGenerateMipmap);
+       GRAPHICS_LIBRARY_EXTERN PFNGLGENERATEMIPMAPEXTPROC GLHANDLE(glGenerateMipmap);
 #      define glGenerateMipmap (GLHANDLE(glGenerateMipmap))
 #    endif /* defined (GL_VERSION_1_4) */
 
