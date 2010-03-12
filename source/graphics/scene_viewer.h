@@ -258,7 +258,6 @@ struct Cmiss_scene_viewer_package *CREATE(Cmiss_scene_viewer_package)(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	struct Colour *background_colour,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	struct Interactive_tool *default_interactive_tool, 
 	struct MANAGER(Light) *light_manager,struct Light *default_light,
 	struct MANAGER(Light_model) *light_model_manager,
 	struct Light_model *default_light_model,

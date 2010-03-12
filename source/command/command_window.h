@@ -77,9 +77,7 @@ Global functions
 ----------------
 */
 struct Command_window *CREATE(Command_window)(
-	struct Execute_command *execute_command,struct User_interface *user_interface,
-	const char *name_string, const char *version_string,const char *date_string,
-	const char *copyright_string, const char *build_string, const char *revision_string);
+	struct Execute_command *execute_command,struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 24 July 1998
 
@@ -156,4 +154,8 @@ LAST MODIFIED : 9 November 1998
 DESCRIPTION :
 Modifys the <command_window_void> according to the command in the <parse_state>.
 ==============================================================================*/
+
+int Command_window_set_cmgui_string(struct Command_window *command_window,
+	const char *name_string, const char *version_string,const char *date_string,
+	const char *copyright_string, const char *build_string, const char *revision_string);
 #endif /* !defined (COMMAND_WINDOW_H) */

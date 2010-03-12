@@ -762,6 +762,7 @@ and as a child of <parent>.
 	return (image);
 } /* Element_tool_get_icon */
 
+#if defined (OPENGL_API)
 static int Element_tool_destroy_element_tool(void **element_tool_void)
 /*******************************************************************************
 LAST MODIFIED : 6 July 2007
@@ -782,6 +783,7 @@ Function to call DESTROY
 	LEAVE;
 	return (return_code);
 }
+#endif
 
 #if defined (WX_USER_INTERFACE)
 class wxElementTool : public wxPanel

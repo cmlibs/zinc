@@ -738,11 +738,11 @@ are both closed.  Primary axis is either 1,2 or 3 and indicates the direction
 the arrow points in.
 ==============================================================================*/
 {
-	float r1,r2,x1,x2;
+	float r1 = 0.0, r2 = 0.0, x1 = 0.0, x2 = 0.0;
 	int i;
 	struct GT_object *glyph;
 	struct GT_surface *surface;
-	Triple *points, *normalpoints;
+	Triple *points = NULL, *normalpoints = NULL;
 
 	ENTER(make_glyph_arrow_solid);
 	if (name&&(2<number_of_segments_around)&&(0<shaft_radius)&&(1>shaft_radius)&&
@@ -855,7 +855,7 @@ The length and width of the arrow heads are specified by the final parameters.
 	int j;
 	struct Colour colour;
 	struct Graphical_material *material;
-	struct GT_object *glyph,*arrow2,*arrow3,*labels_object,*last_object;
+	struct GT_object *glyph = NULL,*arrow2,*arrow3,*labels_object,*last_object;
 	struct GT_pointset *pointset;
 	struct GT_polyline *polyline;
 	Triple *points,*vertex;

@@ -58,7 +58,7 @@
 #include <Xm/List.h>
 #endif /* defined (MOTIF_USER_INTERFACE) */
 extern "C" {
-#include "api/cmiss_command_data.h"
+#include "api/cmiss_context.h"
 #include "api/cmiss_graphics_module.h"
 #include "api/cmiss_region.h"
 #include "api/cmiss_scene_viewer.h"
@@ -107,6 +107,7 @@ extern "C" {
 #include "computed_field/computed_field_vector_operations.h"
 #include "computed_field/computed_field_window_projection.h"
 #include "computed_field/computed_field_wrappers.h"
+#include "context/context.h"
 #if defined (MOTIF_USER_INTERFACE)
 #include "element/element_creator.h"
 #endif /* defined (MOTIF_USER_INTERFACE) */
@@ -277,8 +278,6 @@ extern "C" {
 #include "user_interface/idle.h"
 #include "user_interface/timer.h"
 #include "command/cmiss.h"
-/* following is temporary until circular references are removed for Cmiss_region - see DESTROY(Cmiss_command_data) */
-#include "region/cmiss_region_private.h"
 }
 
 /*
@@ -295,10 +294,6 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int access_count;
-	// argc, argv are filtered by User_interface without deallocating strings,
-	// hence also making cleanup copies
-	int argc, cleanup_argc;
-	char **argv, **cleanup_argv;
 	char *cm_examples_directory,*cm_parameters_file_name,*example_directory,
 		*examples_directory,*example_comfile,
 		*example_requirements,*help_directory,*help_url;
@@ -371,10 +366,6 @@ DESCRIPTION :
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *data_selection,*node_selection;
-#if defined (MOTIF_USER_INTERFACE)
-	struct Socket *command_socket;
-	XtInputId command_socket_input_id;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Spectrum *default_spectrum;
 	struct Streampoint *streampoint_list;
 	struct Time_keeper *default_time_keeper;
@@ -398,9 +389,6 @@ DESCRIPTION :
 	struct Scene_editor *scene_editor;
 	struct Spectrum_editor_dialog *spectrum_editor_dialog;
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
-#if defined (WIN32_USER_INTERFACE)
-	HINSTANCE hInstance;
-#endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (UNEMAP)
 	struct Unemap_command_data *unemap_command_data;
 #endif /* defined (UNEMAP) */
@@ -420,17 +408,6 @@ DESCRIPTION :
 	char *examples_directory,*help_directory,*help_url,*startup_comfile;
 } User_settings;
 
-struct Startup_material_definition
-{
-	const char *name;
-	MATERIAL_PRECISION ambient[3];
-	MATERIAL_PRECISION diffuse[3];
-	MATERIAL_PRECISION emission[3];
-	MATERIAL_PRECISION specular[3];
-	MATERIAL_PRECISION alpha;
-	MATERIAL_PRECISION shininess;
-};
-
 /*
 Module variables
 ----------------
@@ -440,98 +417,6 @@ Module variables
 	user_interface.c) */
 struct CMISS_connection *CMISS = (struct CMISS_connection *)NULL;
 #endif /* LINK_CMISS */
-
-/* only the default material is not in this list because its colour changes
-	 to contrast with the background; colours are R G B */
-struct Startup_material_definition
-	startup_materials[] =
-{
-	{"black",
-	 /*ambient*/ { 0.00, 0.00, 0.00},
-	 /*diffuse*/ { 0.00, 0.00, 0.00},
-	 /*emission*/{ 0.00, 0.00, 0.00},
-	 /*specular*/{ 0.30, 0.30, 0.30},
-	 /*alpha*/1.0,
-	 /*shininess*/0.2},
-	{"blue",
-	 /*ambient*/ { 0.00, 0.00, 0.50},
-	 /*diffuse*/ { 0.00, 0.00, 1.00},
-	 /*emission*/{ 0.00, 0.00, 0.00},
-	 /*specular*/{ 0.20, 0.20, 0.20},
-	 /*alpha*/1.0,
-	 /*shininess*/0.2},
-	{"bone",
-	 /*ambient*/ { 0.70, 0.70, 0.60},
-	 /*diffuse*/ { 0.90, 0.90, 0.70},
-	 /*emission*/{ 0.00, 0.00, 0.00},
-	 /*specular*/{ 0.10, 0.10, 0.10},
-	 /*alpha*/1.0,
-	 /*shininess*/0.2},
-	{"gray50",
-	 /*ambient*/ { 0.50, 0.50, 0.50},
-	 /*diffuse*/ { 0.50, 0.50, 0.50},
-	 /*emission*/{ 0.50, 0.50, 0.50},
-	 /*specular*/{ 0.50, 0.50, 0.50},
-	 /*alpha*/1.0,
-	 /*shininess*/0.2},
-	{"gold",
-	 /*ambient*/ { 1.00, 0.40, 0.00},
-	 /*diffuse*/ { 1.00, 0.70, 0.00},
-	 /*emission*/{ 0.00, 0.00, 0.00},
-	 /*specular*/{ 0.50, 0.50, 0.50},
-	 /*alpha*/1.0,
-	 /*shininess*/0.3},
-	{"green",
-	 /*ambient*/ { 0.00, 0.50, 0.00},
-	 /*diffuse*/ { 0.00, 1.00, 0.00},
-	 /*emission*/{ 0.00, 0.00, 0.00},
-	 /*specular*/{ 0.20, 0.20, 0.20},
-	 /*alpha*/1.0,
-	 /*shininess*/0.1},
-	{"muscle",
-	 /*ambient*/ { 0.40, 0.14, 0.11},
-	 /*diffuse*/ { 0.50, 0.12, 0.10},
-	 /*emission*/{ 0.00, 0.00, 0.00},
-	 /*specular*/{ 0.30, 0.50, 0.50},
-	 /*alpha*/1.0,
-	 /*shininess*/0.2},
-	{"red",
-	 /*ambient*/ { 0.50, 0.00, 0.00},
-	 /*diffuse*/ { 1.00, 0.00, 0.00},
-	 /*emission*/{ 0.00, 0.00, 0.00},
-	 /*specular*/{ 0.20, 0.20, 0.20},
-	 /*alpha*/1.0,
-	 /*shininess*/0.2},
-	{"silver",
-	 /*ambient*/ { 0.40, 0.40, 0.40},
-	 /*diffuse*/ { 0.70, 0.70, 0.70},
-	 /*emission*/{ 0.00, 0.00, 0.00},
-	 /*specular*/{ 0.50, 0.50, 0.50},
-	 /*alpha*/1.0,
-	 /*shininess*/0.3},
-	{"tissue",
-	 /*ambient*/ { 0.90, 0.70, 0.50},
-	 /*diffuse*/ { 0.90, 0.70, 0.50},
-	 /*emission*/{ 0.00, 0.00, 0.00},
-	 /*specular*/{ 0.20, 0.20, 0.30},
-	 /*alpha*/1.0,
-	 /*shininess*/0.2},
-	/* Used as the default fail_material for texture evaluation. */
-	{"transparent_gray50",
-	 /*ambient*/ { 0.50, 0.50, 0.50},
-	 /*diffuse*/ { 0.50, 0.50, 0.50},
-	 /*emission*/{ 0.50, 0.50, 0.50},
-	 /*specular*/{ 0.50, 0.50, 0.50},
-	 /*alpha*/0.0,
-	 /*shininess*/0.2},
-	{"white",
-	 /*ambient*/ { 1.00, 1.00, 1.00},
-	 /*diffuse*/ { 1.00, 1.00, 1.00},
-	 /*emission*/{ 0.00, 0.00, 0.00},
-	 /*specular*/{ 0.00, 0.00, 0.00},
-	 /*alpha*/1.0,
-	 /*shininess*/0.0}
-};
 
 /*
 Module functions
@@ -24697,34 +24582,6 @@ Executes the comfile specified on the command line.
 	return (return_code);
 } /* cmgui_execute_comfile */
 
-struct Cmgui_command_line_options
-/*******************************************************************************
-LAST MODIFIED : 19 May 2006
-
-DESCRIPTION :
-Command line options to be parsed by read_cmgui_command_line_options.
-==============================================================================*/
-{
-	char batch_mode_flag;
-	char cm_start_flag;
-	char *cm_epath_directory_name;
-	char *cm_parameters_file_name;
-	char command_list_flag;
-	char console_mode_flag;
-	char *epath_directory_name;
-	char *example_file_name;
-	char *execute_string;
-	char write_help_flag;
-	char *id_name;
-	char mycm_start_flag;
-	char no_display_flag;
-	char server_mode_flag;
-	int random_number_seed;
-	int visual_id_number;
-	/* default option; no token */
-	char *command_file_name;
-};
-
 int set_string_no_command_line_option(struct Parse_state *state,
 	void *string_address_void, void *string_description_void)
 /*******************************************************************************
@@ -24822,6 +24679,34 @@ of this parse state routine.
 
 	return (return_code);
 } /* ignore_entry_and_next_token */
+
+struct Cmgui_command_line_options
+/*******************************************************************************
+LAST MODIFIED : 19 May 2006
+
+DESCRIPTION :
+Command line options to be parsed by read_cmgui_command_line_options.
+==============================================================================*/
+{
+	char batch_mode_flag;
+	char cm_start_flag;
+	char *cm_epath_directory_name;
+	char *cm_parameters_file_name;
+	char command_list_flag;
+	char console_mode_flag;
+	char *epath_directory_name;
+	char *example_file_name;
+	char *execute_string;
+	char write_help_flag;
+	char *id_name;
+	char mycm_start_flag;
+	char no_display_flag;
+	char server_mode_flag;
+	int random_number_seed;
+	int visual_id_number;
+	/* default option; no token */
+	char *command_file_name;
+};
 
 static int read_cmgui_command_line_options(struct Parse_state *state,
 	void *dummy_to_be_modified, void *cmgui_command_line_options_void)
@@ -24935,17 +24820,8 @@ Parses command line options from <state>.
 	return (return_code);
 } /* read_cmgui_command_line_options */
 
-#if !defined (WIN32_USER_INTERFACE)
-struct Cmiss_command_data *CREATE(Cmiss_command_data)(int in_argc, const char *in_argv[], 
-	const char *name_string, const char *version_string,const char *date_string,
-	const char *copyright_string, const char *build_string, const char *revision_string)
-#else /* !defined (WIN32_USER_INTERFACE) */
-struct Cmiss_command_data *CREATE(Cmiss_command_data)(int in_argc, const char *in_argv[], 
-	const char *name_string, const char *version_string,const char *date_string,
-	const char *copyright_string, const char *build_string, const char *revision_string,
-	HINSTANCE current_instance, HINSTANCE previous_instance, LPSTR command_line,
-	int initial_main_window_state)
-#endif /* !defined (WIN32_USER_INTERFACE) */
+struct Cmiss_command_data *CREATE(Cmiss_command_data)(struct Context *context, 
+	struct User_interface_module *UI_module)
 /*******************************************************************************
 LAST MODIFIED : 3 April 2003
 
@@ -24958,15 +24834,13 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		*version_command_id;
 	const char *version_string_to_pass;
 	char global_temp_string[1000];
-	float default_light_direction[3]={0.0,-0.5,-1.0};
-	int i, number_of_startup_materials, return_code;
+	int return_code;
 	int batch_mode, console_mode, command_list, no_display, non_random,
 		server_mode, start_cm, start_mycm, visual_id, write_help;
 #if defined (F90_INTERPRETER) || defined (USE_PERL_INTERPRETER)
 	int status;
 #endif /* defined (F90_INTERPRETER) || defined (USE_PERL_INTERPRETER) */
 #if defined (MOTIF_USER_INTERFACE)
-	Display *display;
 #define XmNbackgroundColour "backgroundColour"
 #define XmCBackgroundColour "BackgroundColour"
 #define XmNforegroundColour "foregroundColour"
@@ -24979,63 +24853,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #define XmCHelpDirectory "HelpDirectory"
 #define XmNhelpUrl "helpUrl"
 #define XmCHelpUrl "HelpUrl"
-	static XtResource resources[]=
-	{
-		{
-			const_cast<char *>(XmNbackgroundColour),
-			const_cast<char *>(XmCBackgroundColour),
-			XmRPixel,
-			sizeof(Pixel),
-			XtOffsetOf(User_settings,background_colour),
-			XmRString,
-			const_cast<char *>("black")
-		},
-		{
-			const_cast<char *>(XmNforegroundColour),
-			const_cast<char *>(XmCForegroundColour),
-			XmRPixel,
-			sizeof(Pixel),
-			XtOffsetOf(User_settings,foreground_colour),
-			XmRString,
-			const_cast<char *>("white")
-		},
-		{
-			const_cast<char *>(XmNexamplesDirectory),
-			const_cast<char *>(XmCExamplesDirectory),
-			XmRString,
-			sizeof(char *),
-			XtOffsetOf(User_settings,examples_directory),
-			XmRString,
-			const_cast<char *>("")
-		},
-		{
-			const_cast<char *>(XmNstartupComfile),
-			const_cast<char *>(XmCStartupComfile),
-			XmRString,
-			sizeof(char *),
-			XtOffsetOf(User_settings,startup_comfile),
-			XmRImmediate,
-			(XtPointer)0
-		},
-		{
-			const_cast<char *>(XmNhelpDirectory),
-			const_cast<char *>(XmCHelpDirectory),
-			XmRString,
-			sizeof(char *),
-			XtOffsetOf(User_settings,help_directory),
-			XmRString,
-			const_cast<char *>("")
-		},
-		{
-			const_cast<char *>(XmNhelpUrl),
-			const_cast<char *>(XmCHelpUrl),
-			XmRString,
-			sizeof(char *),
-			XtOffsetOf(User_settings,help_url),
-			XmRString,
-			const_cast<char *>("http://www.bioeng.auckland.ac.nz/cmiss/help/user_help.php")
-		},
-	};
 #endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (MOTIF_USER_INTERFACE)
 /*???DB.  Need a setup routine for file I/O ? */
@@ -25048,19 +24865,13 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #endif /* defined (MOTIF_USER_INTERFACE) */
 	struct Cmgui_command_line_options command_line_options;
 	struct Cmiss_command_data *command_data;
-	struct Colour ambient_colour, colour, default_colour;
 #if defined(USE_CMGUI_COMMAND_WINDOW)
 	struct Command_window *command_window;
 #endif /* defined(USE_CMGUI_COMMAND_WINDOW) */
 	struct Graphical_material *material;
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Option_table *option_table;
 	struct Parse_state *state;
 	User_settings user_settings;
-
-#if defined (MOTIF_USER_INTERFACE)
-	XColor rgb;
-#endif /* defined (MOTIF_USER_INTERFACE) */
 
 #if defined (MOTIF_USER_INTERFACE)
 	ENTER(main);
@@ -25074,20 +24885,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 	{
 		command_data->access_count = 1;
 		// duplicate argument list so it can be modified by User Interface
-		command_data->argc = in_argc;
-		command_data->argv = NULL;
-		command_data->cleanup_argc = in_argc;
-		command_data->cleanup_argv = NULL;
-		if (0 < in_argc)
-		{
-			ALLOCATE(command_data->argv, char *, in_argc);
-			ALLOCATE(command_data->cleanup_argv, char *, in_argc);
-			for (int ai = 0; ai < in_argc; ai++)
-			{
-				command_data->cleanup_argv[ai] = command_data->argv[ai] =
-					duplicate_string(in_argv[ai]);
-			}
-		}
 		/* initialize application specific global variables */
 		command_data->execute_command = CREATE(Execute_command)();;
 		command_data->set_command = CREATE(Execute_command)();
@@ -25255,10 +25052,10 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_line_options.visual_id_number = visual_id;
 		command_line_options.command_file_name = comfile_name;
 	
-		if (state = create_Parse_state_from_tokens(command_data->argc,(const char **)(command_data->argv)))
+		if (state = create_Parse_state_from_tokens(UI_module->argc,(const char **)(UI_module->argv)))
 		{
 			option_table = CREATE(Option_table)();
-			Option_table_add_entry(option_table, command_data->argv[0], NULL,
+			Option_table_add_entry(option_table, UI_module->argv[0], NULL,
 				(void *)&command_line_options, read_cmgui_command_line_options);
 			if (!Option_table_parse(option_table, state))
 			{
@@ -25297,21 +25094,21 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			/* write question mark help for command line options */
 			state = create_Parse_state_from_tokens(1, &double_question_mark);
 			option_table = CREATE(Option_table)();
-			Option_table_add_entry(option_table, command_data->argv[0], NULL,
+			Option_table_add_entry(option_table,UI_module->argv[0], NULL,
 				(void *)&command_line_options, read_cmgui_command_line_options);
 			Option_table_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
 			destroy_Parse_state(&state);
 		}
 
-		command_data->io_stream_package = CREATE(IO_stream_package)();
+		command_data->io_stream_package = Cmiss_context_get_default_IO_stream_package(context);
 
 #if defined (F90_INTERPRETER) || defined (USE_PERL_INTERPRETER)
 		/* SAB I want to do this before CREATEing the User_interface
 			as X modifies the argc, argv removing the options it understands
 			however I want a full copy for the interpreter so that we can use
 			-display for example for both */
-		create_interpreter(command_data->argc, command_data->argv, comfile_name, &command_data->interpreter, &status);
+		create_interpreter(UI_module->argc, UI_module->argv, comfile_name, &command_data->interpreter, &status);
 
 		if (!status)
 		{
@@ -25336,27 +25133,16 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 
 		if ((!command_list) && (!write_help))
 		{
-			if (command_data->event_dispatcher = CREATE(Event_dispatcher)())
+			if (NULL != (command_data->event_dispatcher = 
+					Cmiss_context_get_default_event_dispatcher(context)))
 			{
 				if (!no_display)
 				{
-#if !defined (WIN32_USER_INTERFACE)
-					if (!(command_data->user_interface = CREATE(User_interface)
-							 (&(command_data->argc), command_data->argv, command_data->event_dispatcher, "Cmgui",
-								 "cmgui")))
+					if (NULL == (command_data->user_interface = UI_module->user_interface))
 					{
 						display_message(ERROR_MESSAGE,"Could not create User interface");
 						return_code=0;
 					}
-#else /* !defined (WIN32_USER_INTERFACE) */
-					if (!(command_data->user_interface = CREATE(User_interface)
-							 (current_instance, previous_instance, command_line,
-								 initial_main_window_state, command_data->event_dispatcher)))
-					{
-						display_message(ERROR_MESSAGE,"Could not create User interface");
-						return_code=0;
-					}
-#endif /* !defined (WIN32_USER_INTERFACE) */
 				}
 			}
 			else
@@ -25369,40 +25155,12 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #if defined (MOTIF_USER_INTERFACE)
 		if (command_data->user_interface)
 		{
-			/* retrieve application specific constants */
-			display = User_interface_get_display(command_data->user_interface);
-			XtVaGetApplicationResources(User_interface_get_application_shell(
-			   command_data->user_interface),&user_settings,resources,
-			   XtNumber(resources),NULL);
-			/*???DB.  User settings should be divided among tools */
-			/* retrieve the background rgb settings */
-			rgb.pixel=user_settings.background_colour;
-			XQueryColor(display,DefaultColormap(display,DefaultScreen(display)),&rgb);
-			/*???DB.  Get rid of 65535 ? */
-			command_data->background_colour.red=(float)(rgb.red)/(float)65535;
-			command_data->background_colour.green=(float)(rgb.green)/(float)65535;
-			command_data->background_colour.blue=(float)(rgb.blue)/(float)65535;
-			/* retrieve the foreground rgb settings */
-			rgb.pixel=user_settings.foreground_colour;
-			XQueryColor(display,DefaultColormap(display,DefaultScreen(display)),&rgb);
-			/*???DB.  Get rid of 65535 ? */
-			command_data->foreground_colour.red=(float)(rgb.red)/(float)65535;
-			command_data->foreground_colour.green=(float)(rgb.green)/(float)65535;
-			command_data->foreground_colour.blue=(float)(rgb.blue)/(float)65535;
-			if ((command_data->foreground_colour.red ==
-					 command_data->background_colour.red) &&
-				(command_data->foreground_colour.green ==
-					command_data->background_colour.green) &&
-				(command_data->foreground_colour.blue ==
-					command_data->background_colour.blue))
-			{
-				command_data->foreground_colour.red =
-					1 - command_data->background_colour.red;
-				command_data->foreground_colour.green =
-					1 - command_data->background_colour.green;
-				command_data->foreground_colour.blue =
-					1 - command_data->background_colour.blue;
-			}
+			command_data->background_colour.red=UI_module->background_colour.red;
+			command_data->background_colour.green=UI_module->background_colour.green;
+			command_data->background_colour.blue=UI_module->background_colour.blue;
+			command_data->foreground_colour.red=UI_module->foreground_colour.red;
+			command_data->foreground_colour.green=UI_module->foreground_colour.green;
+			command_data->foreground_colour.blue=UI_module->foreground_colour.blue;
 		}
 #endif /* defined (MOTIF_USER_INTERFACE) */
 
@@ -25459,75 +25217,41 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 
 #if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
 		/* comfile window manager */
-		command_data->comfile_window_manager = CREATE(MANAGER(Comfile_window))();
+		command_data->comfile_window_manager = UI_module->comfile_window_manager;
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
-
+		command_data->graphics_module = 
+			Cmiss_context_get_default_graphics_module(context);
 		/* light manager */
-		if (command_data->light_manager=CREATE(MANAGER(Light))())
+		if (NULL != (command_data->light_manager=Cmiss_graphics_module_get_light_manager(
+				        command_data->graphics_module)))
 		{
-			if (command_data->default_light=CREATE(Light)("default"))
-			{
-				set_Light_type(command_data->default_light,INFINITE_LIGHT);
-				default_colour.red=1.0;
-				default_colour.green=1.0;
-				default_colour.blue=1.0;		
-				set_Light_colour(command_data->default_light,&default_colour); 
-				
-				set_Light_direction(command_data->default_light,default_light_direction);
-				/*???DB.  Include default as part of manager ? */
-				ACCESS(Light)(command_data->default_light);
-				if (!ADD_OBJECT_TO_MANAGER(Light)(command_data->default_light,
-						 command_data->light_manager))
-				{
-					DEACCESS(Light)(&(command_data->default_light));
-				}
-			}
+			command_data->default_light=Cmiss_graphics_module_get_default_light(
+				command_data->graphics_module);
 		}
-		if (command_data->light_model_manager=CREATE(MANAGER(Light_model))())
-		{
-			if (command_data->default_light_model=CREATE(Light_model)("default"))
-			{
-				ambient_colour.red=0.2;
-				ambient_colour.green=0.2;
-				ambient_colour.blue=0.2;
-				Light_model_set_ambient(command_data->default_light_model,&ambient_colour);
-				Light_model_set_side_mode(command_data->default_light_model,
-					LIGHT_MODEL_TWO_SIDED);
-				/*???DB.  Include default as part of manager ? */			
-				ACCESS(Light_model)(command_data->default_light_model);
-				if (!ADD_OBJECT_TO_MANAGER(Light_model)(
-						 command_data->default_light_model,command_data->light_model_manager))
-				{
-					DEACCESS(Light_model)(&(command_data->default_light_model));
-				}			
-			}
-		}
+		command_data->light_model_manager=
+			Cmiss_graphics_module_get_light_model_manager(command_data->graphics_module);
+		
+		command_data->default_light_model=
+			Cmiss_graphics_module_get_default_light_model(command_data->graphics_module);
+
 		/* environment map manager */
 		command_data->environment_map_manager=CREATE(MANAGER(Environment_map))();
 		/* texture manager */
-		command_data->texture_manager=CREATE(MANAGER(Texture))();
+		command_data->texture_manager=Cmiss_graphics_module_get_texture_manager(
+				        command_data->graphics_module);
 		/* volume texture manager */
 		command_data->volume_texture_manager=CREATE(MANAGER(VT_volume_texture))();
 		/* spectrum manager */
-		if (command_data->spectrum_manager=CREATE(MANAGER(Spectrum))())
+		if (NULL != (command_data->spectrum_manager=
+				Cmiss_graphics_module_get_spectrum_manager(
+					command_data->graphics_module)))
 		{
-			if (command_data->default_spectrum=CREATE(Spectrum)("default"))
-			{
-				Spectrum_set_simple_type(command_data->default_spectrum,
-					BLUE_TO_RED_SPECTRUM);
-				Spectrum_set_minimum_and_maximum(command_data->default_spectrum,0,1);
-				/* ACCESS so can never be destroyed */
-				ACCESS(Spectrum)(command_data->default_spectrum);
-				if (!ADD_OBJECT_TO_MANAGER(Spectrum)(command_data->default_spectrum,
-						 command_data->spectrum_manager))
-				{
-					DEACCESS(Spectrum)(&(command_data->default_spectrum));
-				}
-			}
+			command_data->default_spectrum=
+				Cmiss_graphics_module_get_default_spectrum(command_data->graphics_module);
 		}
 		/* create Material package and CMGUI default materials */
-		if (command_data->material_package = ACCESS(Material_package)(CREATE(Material_package)
-				(command_data->texture_manager, command_data->spectrum_manager)))
+		if (NULL != (command_data->material_package = 
+				Cmiss_graphics_module_get_material_package(command_data->graphics_module)))
 		{
 			if (material = Material_package_get_default_material(command_data->material_package))
 			{
@@ -25537,52 +25261,17 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #endif /* defined (MOTIF_USER_INTERFACE) */
 				Graphical_material_set_alpha(material, 1.0);
 			}
+			Cmiss_graphics_module_create_standard_materials(command_data->graphics_module);
 		}
-		command_data->graphics_font_package = CREATE(Graphics_font_package)();
-		command_data->default_font = ACCESS(Graphics_font)(
-			Graphics_font_package_get_font(command_data->graphics_font_package, "default"));
-		number_of_startup_materials = sizeof(startup_materials) /
-			sizeof(struct Startup_material_definition);
-		for (i = 0; i < number_of_startup_materials; i++)
-		{
-			if (material = CREATE(Graphical_material)(startup_materials[i].name))
-			{
-				colour.red   = startup_materials[i].ambient[0];
-				colour.green = startup_materials[i].ambient[1];
-				colour.blue  = startup_materials[i].ambient[2];
-				Graphical_material_set_ambient(material, &colour);
-				colour.red   = startup_materials[i].diffuse[0];
-				colour.green = startup_materials[i].diffuse[1];
-				colour.blue  = startup_materials[i].diffuse[2];
-				Graphical_material_set_diffuse(material, &colour);
-				colour.red   = startup_materials[i].emission[0];
-				colour.green = startup_materials[i].emission[1];
-				colour.blue  = startup_materials[i].emission[2];
-				Graphical_material_set_emission(material, &colour);
-				colour.red   = startup_materials[i].specular[0];
-				colour.green = startup_materials[i].specular[1];
-				colour.blue  = startup_materials[i].specular[2];
-				Graphical_material_set_specular(material, &colour);
-				Graphical_material_set_alpha(material, startup_materials[i].alpha);
-				Graphical_material_set_shininess(material,
-					startup_materials[i].shininess);
-				if (!Material_package_manage_material(command_data->material_package,
-					material))
-				{
-					DESTROY(Graphical_material)(&material);
-				}
-			}
-		}
+		command_data->graphics_font_package = Cmiss_graphics_module_get_font_package(
+			command_data->graphics_module);
+		command_data->default_font = Cmiss_graphics_module_get_default_font(
+			command_data->graphics_module);
+
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
-		if (command_data->user_interface)
-		{
-			command_data->graphics_buffer_package = CREATE(Graphics_buffer_package)(
-				command_data->user_interface);
-			Graphics_buffer_package_set_override_visual_id(
-					command_data->graphics_buffer_package, visual_id);
-		}
+		command_data->graphics_buffer_package = UI_module->graphics_buffer_package;
 		/* graphics window manager.  Note there is no default window. */
-		command_data->graphics_window_manager=CREATE(MANAGER(Graphics_window))();
+		command_data->graphics_window_manager = UI_module->graphics_window_manager;
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 		/* FE_element_shape manager */
 		/*???DB.  To be done */
@@ -25592,11 +25281,12 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 
 		command_data->basis_manager=CREATE(MANAGER(FE_basis))();
 
-		command_data->root_region = Cmiss_region_create();
+		command_data->root_region = Cmiss_context_get_default_region(context);
 
 		/* create graphics object list */
 		/*???RC.  Eventually want graphics object manager */
-		command_data->graphics_object_list=CREATE(LIST(GT_object))();
+		command_data->graphics_object_list=Cmiss_graphics_module_get_default_GT_object_list(
+			command_data->graphics_module);
 
 #if defined (SELECT_DESCRIPTORS)
 		/* create device list */
@@ -25604,33 +25294,31 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->device_list=CREATE(LIST(Io_device))();
 #endif /* defined (SELECT_DESCRIPTORS) */
 
-		command_data->glyph_list = make_standard_glyphs(command_data->default_font);
+		command_data->glyph_list = Cmiss_graphics_module_get_default_glyph_list(
+			command_data->graphics_module);
 
 		/* global list of selected objects */
-		command_data->any_object_selection=CREATE(Any_object_selection)();
-		command_data->element_point_ranges_selection=
-			CREATE(Element_point_ranges_selection)(/*root_fe_region*/);
-		command_data->element_selection = CREATE(FE_element_selection)(
-			Cmiss_region_get_FE_region(command_data->root_region));
-		command_data->node_selection = CREATE(FE_node_selection)(
-			Cmiss_region_get_FE_region(command_data->root_region));
-		command_data->data_selection = CREATE(FE_node_selection)(
-			FE_region_get_data_FE_region(Cmiss_region_get_FE_region(command_data->root_region)));	
+		command_data->any_object_selection = Cmiss_context_get_any_object_selection(context);
+		command_data->element_point_ranges_selection = 
+			Cmiss_context_get_element_point_ranges_selection(context);
+		command_data->element_selection = Cmiss_context_get_element_selection(context);
+		command_data->node_selection = Cmiss_context_get_node_selection(context);
+		command_data->data_selection = Cmiss_context_get_data_selection(context);
 
 		/* interactive_tool manager */
-		command_data->interactive_tool_manager=CREATE(MANAGER(Interactive_tool))();
+		command_data->interactive_tool_manager=UI_module->interactive_tool_manager;
 		/* computed field manager and default computed fields zero, xi,
 			default_coordinate, etc. */
 		/*???RC should the default computed fields be established in
 		  CREATE(Computed_field_package)? */
-		computed_field_manager=
-			Cmiss_region_get_Computed_field_manager(command_data->root_region);
+
 		/*???GRC will eventually remove manager from field package so it is
 		  purely type-specific data. Field manager is now owned by region.
 		  Temporarily passing it to package to keep existing code running */
-		command_data->computed_field_package=
+		struct MANAGER(Computed_field) *computed_field_manager=
+			Cmiss_region_get_Computed_field_manager(command_data->root_region);
+		command_data->computed_field_package = 
 			CREATE(Computed_field_package)(computed_field_manager);
-
 		/* Add Computed_fields to the Computed_field_package */
 		if (command_data->computed_field_package)
 		{
@@ -25750,39 +25438,20 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->computed_field_package);
 #endif /* defined (USE_ITK) */
 		}
-
-#if defined (MOTIF_USER_INTERFACE)
-		/* now set up the conversion routines */
-		/*???DB.  Can this be put elsewhere ? */
-		conversion_init();
-		/* initialize the coordinate widget manager */
-		/*???DB.  Still needs to be turned into a manager */
-		coord_widget_init();
-#endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE)
-		command_data->movie_graphics_manager = CREATE(MANAGER(Movie_graphics))();
+		command_data->movie_graphics_manager = UI_module->movie_graphics_manager;
 #endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE) */
 		/* graphics_module */
-		command_data->default_time_keeper=ACCESS(Time_keeper)(
-			CREATE(Time_keeper)("default", command_data->event_dispatcher,
-				command_data->user_interface));
-		command_data->graphics_module = 
-			Cmiss_graphics_module_create(
-				command_data->glyph_list,
-				Material_package_get_material_manager(command_data->material_package),
-				Material_package_get_default_material(command_data->material_package),
-				command_data->default_font, command_data->light_manager,
-				command_data->spectrum_manager,command_data->default_spectrum,
-				command_data->texture_manager, command_data->element_point_ranges_selection,
-				command_data->element_selection, command_data->node_selection,
-				command_data->data_selection,
-				command_data->default_time_keeper);
+		command_data->default_time_keeper=ACCESS(Time_keeper)(UI_module->default_time_keeper);
 		/* scene manager */
 		/*???RC & SAB.   LOTS of managers need to be created before this 
 		  and the User_interface too */
-		if (command_data->scene_manager=CREATE(MANAGER(Scene))())
+		if (NULL != (command_data->scene_manager=Cmiss_graphics_module_get_scene_manager(
+									 command_data->graphics_module)))
 		{
-			if (command_data->default_scene=CREATE(Scene)("default"))
+			command_data->default_scene = Cmiss_graphics_module_get_default_scene(
+				command_data->graphics_module);
+			if (command_data->default_scene)
 			{
 				Scene_enable_graphics(command_data->default_scene,command_data->glyph_list,
 					Material_package_get_material_manager(command_data->material_package),
@@ -25801,12 +25470,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				/* ACCESS default so can never be destroyed */
 				/*???RC.  Should be able to change: eg. gfx set default scene NAME */
 				/*???DB.  Include default as part of manager ? */
-				ACCESS(Scene)(command_data->default_scene);
-				if (!ADD_OBJECT_TO_MANAGER(Scene)(command_data->default_scene,
-						 command_data->scene_manager))
-				{
-					DEACCESS(Scene)(&(command_data->default_scene));
-				}
 			}
 		}
 
@@ -25825,7 +25488,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		{
 			/* set up image library */
 #if defined (UNIX) /* switch (Operating_System) */
-			Open_image_environment(*(command_data->argv));
+			Open_image_environment(*(UI_module->argv));
 #elif defined (WIN32_USER_INTERFACE) /* switch (Operating_System) */
 			/* SAB Passing a string to this function so that it
 				starts up, should get the correct thing from
@@ -25833,13 +25496,13 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			Open_image_environment("cmgui");
 #endif /* switch (Operating_System) */
 			command_data->transform_tool=create_Interactive_tool_transform(
-				command_data->user_interface);
+				UI_module->user_interface);
 			ADD_OBJECT_TO_MANAGER(Interactive_tool)(command_data->transform_tool,
 				command_data->interactive_tool_manager);
 			command_data->node_tool=CREATE(Node_tool)(
 				command_data->interactive_tool_manager,
 				command_data->root_region, /*use_data*/0,
-				command_data->node_selection,
+				Cmiss_context_get_node_selection(context),
 				command_data->computed_field_package,
 				Material_package_get_default_material(command_data->material_package),
 				command_data->user_interface,
@@ -25848,7 +25511,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			command_data->data_tool=CREATE(Node_tool)(
 				command_data->interactive_tool_manager,
 				command_data->root_region, /*use_data*/1,
-				command_data->data_selection,
+				Cmiss_context_get_data_selection(context),
 				command_data->computed_field_package,
 				Material_package_get_default_material(command_data->material_package),
 				command_data->user_interface,
@@ -25857,8 +25520,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			command_data->element_tool=CREATE(Element_tool)(
 				command_data->interactive_tool_manager,
 				command_data->root_region,
-				command_data->element_selection,
-				command_data->element_point_ranges_selection,
+				Cmiss_context_get_element_selection(context),
+				Cmiss_context_get_element_point_ranges_selection(context),
 				command_data->computed_field_package,
 				Material_package_get_default_material(command_data->material_package),
 				command_data->user_interface,
@@ -25866,7 +25529,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->execute_command);
 			command_data->element_point_tool=CREATE(Element_point_tool)(
 				command_data->interactive_tool_manager,
-				command_data->element_point_ranges_selection,
+				Cmiss_context_get_element_point_ranges_selection(context),
 				command_data->computed_field_package,
 				Material_package_get_default_material(command_data->material_package),
 				command_data->user_interface,
@@ -25880,22 +25543,10 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->user_interface);
 #endif /* defined (MOTIF_USER_INTERFACE) */
 		}
-
-#if defined (WIN32_USER_INTERFACE)
-		command_data->hInstance=current_instance;
-#endif /* defined (WIN32_USER_INTERFACE) */
-
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		if (command_data->user_interface)
 		{
-			command_data->scene_viewer_package = CREATE(Cmiss_scene_viewer_package)
-				(command_data->graphics_buffer_package,
-				&command_data->background_colour,
-				command_data->interactive_tool_manager, command_data->transform_tool,
-				command_data->light_manager, command_data->default_light,
-				command_data->light_model_manager, command_data->default_light_model,
-				command_data->scene_manager, command_data->default_scene,
-				command_data->texture_manager, command_data->user_interface);
+			command_data->scene_viewer_package = UI_module->scene_viewer_package;
 		}
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 
@@ -25904,7 +25555,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			cmiss_execute_command, (void *)command_data);
 		Execute_command_set_command_function(command_data->set_command,
 			cmiss_set_command, (void *)command_data);
-
 #if defined (UNEMAP)
 		command_data->unemap_command_data = CREATE(Unemap_command_data)(
 			command_data->event_dispatcher,
@@ -25963,7 +25613,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				{
 #endif /* defined (MOTIF_USER_INTERFACE) */
 					/* create the main window */
-#if defined (MOTIF_USER_INTERFACE)
+#if defined (MOTIF_USER_INTERFACE) &&(TEST)
 					/* MOTIF uses the version string for a specific purpose
 						 therefore we will setup the version string differently */
 					char version_temp[50], version_id_string[100];
@@ -26000,7 +25650,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					}
 					version_string_to_pass = version_id_string;
 #else /* defined (MOTIF_USER_INTERFACE) */
-					version_string_to_pass = version_string;
+					//version_string_to_pass = version_string;
+					version_string_to_pass =  NULL;
 #endif
 					if (!server_mode)
 					{
@@ -26019,9 +25670,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 						}
 						else
 						{
-							if (command_window=CREATE(Command_window)(command_data->execute_command,
-									command_data->user_interface,name_string, version_string_to_pass,
-									date_string, copyright_string, build_string, revision_string))
+							if (NULL != (command_window = CREATE(Command_window)(command_data->execute_command,
+										command_data->user_interface)))
 							{
 								command_data->command_window=command_window;
 								if (!batch_mode)
@@ -26058,7 +25708,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				}
 #endif /* defined (MOTIF_USER_INTERFACE) */
 			}
-		}	
+		}
 
 		if (return_code && (!command_list) && (!write_help))
 		{
@@ -26199,16 +25849,6 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 			return 0;
 		}
 		/* clean-up memory */
-		#if defined (USE_CMGUI_GRAPHICS_WINDOW)
-		if (command_data->scene_viewer_package)
-		{
-			DESTROY(Cmiss_scene_viewer_package)(&command_data->scene_viewer_package);		
-		}
-#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
-
-#if defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE)
-		DESTROY(MANAGER(Movie_graphics))(&command_data->movie_graphics_manager);
-#endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE) */
 
 #if defined (CELL)
 		/*created in execute_command_cell_open in command/cmiss.c */
@@ -26274,16 +25914,6 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 		}
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 
-#if defined (USE_CMGUI_GRAPHICS_WINDOW)
-		DESTROY(MANAGER(Graphics_window))(
-			&command_data->graphics_window_manager);
-		/* Must destroy the graphics_buffer_package after the windows which use it */
-		if (command_data->graphics_buffer_package)
-		{
-			DESTROY(Graphics_buffer_package)(&command_data->graphics_buffer_package);
-		}
-#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
-
 #if defined (MOTIF_USER_INTERFACE)
 		if (command_data->element_creator)
 		{
@@ -26311,39 +25941,22 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 			 DEALLOCATE(path);
 		}
 #endif /* !defined(WX_USER_INTERFACE)*/
-		DESTROY(MANAGER(Interactive_tool))(
-			 &(command_data->interactive_tool_manager));
-
-		DEACCESS(Scene)(&(command_data->default_scene));
-		DESTROY(MANAGER(Scene))(&command_data->scene_manager);
+		DEACCESS(Scene)(&command_data->default_scene);
 		if (command_data->graphics_module)
 		{
 			Cmiss_graphics_module_destroy(&command_data->graphics_module);
 		}
-		DESTROY(Time_keeper)(&command_data->default_time_keeper);
+		DEACCESS(Time_keeper)(&command_data->default_time_keeper);
 		if (command_data->computed_field_package)
 		{
 			Computed_field_package_remove_types(command_data->computed_field_package);
 			DESTROY(Computed_field_package)(&command_data->computed_field_package);
 		}
 
-		DESTROY(Any_object_selection)(&(command_data->any_object_selection));
-		DESTROY(FE_node_selection)(&(command_data->data_selection));
-		DESTROY(FE_node_selection)(&(command_data->node_selection));
-		DESTROY(FE_element_selection)(&(command_data->element_selection));
-		DESTROY(Element_point_ranges_selection)(
-			&(command_data->element_point_ranges_selection));
-
 #if defined (SELECT_DESCRIPTORS)
 		DESTROY(LIST(Io_device))(&command_data->device_list);
 #endif /* defined (SELECT_DESCRIPTORS) */
 
-		DESTROY(LIST(GT_object))(&command_data->graphics_object_list);
-		DESTROY(LIST(GT_object))(&command_data->glyph_list);
-
-		/* need the following due to circular references where field owned by region references region itself;
-		 * when following removed also remove #include "region/cmiss_region_private.h" */
-		Cmiss_region_detach_fields_hierarchical(command_data->root_region);
 		
 		DEACCESS(Cmiss_region)(&(command_data->root_region));
 		DESTROY(MANAGER(FE_basis))(&command_data->basis_manager);
@@ -26353,20 +25966,15 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 			 hence must destroy after regions and their fields */
 		DESTROY(MANAGER(Curve))(&command_data->curve_manager);
 		DEACCESS(Spectrum)(&(command_data->default_spectrum));
-		DESTROY(MANAGER(Spectrum))(&command_data->spectrum_manager);
+		command_data->spectrum_manager=NULL;
 		DEACCESS(Material_package)(&command_data->material_package);
 		DEACCESS(Graphics_font)(&command_data->default_font);
-		DESTROY(Graphics_font_package)(&command_data->graphics_font_package);
 		DESTROY(MANAGER(VT_volume_texture))(&command_data->volume_texture_manager);
-		DESTROY(MANAGER(Texture))(&command_data->texture_manager);
+		command_data->texture_manager = NULL;
 		DESTROY(MANAGER(Environment_map))(&command_data->environment_map_manager);				
 		DEACCESS(Light_model)(&(command_data->default_light_model));
-		DESTROY(MANAGER(Light_model))(&command_data->light_model_manager);
 		DEACCESS(Light)(&(command_data->default_light));
-		DESTROY(MANAGER(Light))(&command_data->light_manager);
-#if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)
-		DESTROY(MANAGER(Comfile_window))(&command_data->comfile_window_manager);
-#endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
+		command_data->light_manager = NULL;
 
 		if (command_data->example_directory)
 		{
@@ -26406,24 +26014,9 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 
 		if (command_data->user_interface)
-		{
-			/* reset up messages */
-			set_display_message_function(ERROR_MESSAGE,
-				(Display_message_function *)NULL, NULL);
-			set_display_message_function(INFORMATION_MESSAGE,
-				(Display_message_function *)NULL, NULL);
-			set_display_message_function(WARNING_MESSAGE,
-				(Display_message_function *)NULL, NULL);
-			/* close the user interface */
-			DESTROY(User_interface)(&(command_data->user_interface));
-		}
-
+			command_data->user_interface = NULL;
 		if (command_data->event_dispatcher)
-		{
-			DESTROY(Event_dispatcher)(&command_data->event_dispatcher);
-		}		
-
-		DESTROY(IO_stream_package)(&command_data->io_stream_package);
+			command_data->event_dispatcher = NULL;
 
 		/* clean up command-line options */
 
@@ -26439,15 +26032,6 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 		{
 			DEALLOCATE(command_data->cm_parameters_file_name);
 		}
-		if (command_data->cleanup_argv != NULL)
-		{
-			for (int ai = 0; ai < command_data->cleanup_argc; ai++)
-			{
-				DEALLOCATE(command_data->cleanup_argv[ai]);
-			}
-			DEALLOCATE(command_data->cleanup_argv);
-			DEALLOCATE(command_data->argv);
-		}
 
 		DEALLOCATE(*command_data_address);
 		return_code = 1;
@@ -26458,10 +26042,6 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 			"Invalid arguments");
 	}
 	
-	/* Write out any memory blocks still ALLOCATED when MEMORY_CHECKING is
-		on.  When MEMORY_CHECKING is off this function does nothing */
-	list_memory(/*count_number*/0, /*show_pointers*/0, /*increment_counter*/0,
-		/*show_structures*/1);
 	
 	LEAVE;
 	
@@ -26853,3 +26433,26 @@ Returns the graphics_window manager from the <command_data>.
 
 	return (graphics_window_manager);
 } /* Cmiss_command_data_get_graphics_window_manager */
+
+int Cmiss_command_data_set_cmgui_string(Cmiss_command_data *command_data, const char *name_string, 
+	const char *version_string,const char *date_string, const char *copyright_string, 
+	const char *build_string, const char *revision_string)
+{
+	int return_code = 1;
+	if (command_data)
+	{
+#if defined(USE_CMGUI_COMMAND_WINDOW)
+		if (command_data->command_window)
+		{
+			return_code =Command_window_set_cmgui_string(command_data->command_window,
+				name_string, version_string, date_string, copyright_string, build_string, revision_string);
+		}
+		else
+		{
+			return_code = 0;
+		}
+#endif
+	}
+
+	return return_code;
+}

@@ -66,6 +66,11 @@ Global types
 */
 struct Cmiss_scene_viewer_package;
 
+#ifndef CMISS_SCENE_VIEWER_PACKAGE_DEFINED
+   typedef struct Cmiss_scene_viewer_package * Cmiss_scene_viewer_package_id;
+   #define CMISS_SCENE_VIEWER_PACKAGE_DEFINED
+#endif /* CMISS_SCENE_VIEWER_PACKAGE_DEFINED */
+
 enum Cmiss_scene_viewer_buffering_mode
 /*******************************************************************************
 LAST MODIFIED : 13 March 2008

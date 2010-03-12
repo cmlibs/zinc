@@ -2202,9 +2202,7 @@ Global functions
 
 
 struct Command_window *CREATE(Command_window)(
-	struct Execute_command *execute_command,struct User_interface *user_interface,
-	const char *name_string, const char *version_string,const char *date_string,
-	const char *copyright_string, const char *build_string, const char *revision_string)
+	struct Execute_command *execute_command,struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 9 May 2000
 
@@ -2261,30 +2259,16 @@ Create the structures and retrieve the command window from the uil file.
 		{const_cast<char *>("command_window_close"),(XtPointer)command_window_close}
 	};
 	static MrmRegisterArg identifier_list[2];
-#elif defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */
-	USE_PARAMETER(version_string);
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
 	BOOL win32_return_code;
 	static char *class_name="Command_window";
 	WNDCLASSEX class_information;
-	USE_PARAMETER(version_string);
 #elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #if GTK_MAJOR_VERSION >= 2
 	GtkTextIter end_iterator;
 #endif /* GTK_MAJOR_VERSION >= 2 */
 	GtkWidget *history_scroll, *output_scroll, *vbox, *vpaned;
 #endif /* switch (USER_INTERFACE) */
-
-#if defined (GTK_USER_INTERFACE)
-	USE_PARAMETER(version_string);
-#endif /* switch (GTK_USER_INTERFACE) */
-#if !defined(WX_USER_INTERFACE)
-	USE_PARAMETER(name_string);
-	USE_PARAMETER(date_string);
-	USE_PARAMETER(copyright_string);
-	USE_PARAMETER(build_string);
-	USE_PARAMETER(revision_string);
-#endif /* switch (WX_USER_INTERFACE) */
 
 	ENTER(CREATE(Command_window));
 	/* check arguments */
@@ -2408,10 +2392,6 @@ Create the structures and retrieve the command window from the uil file.
 									CMGUI_COMMAND_PROPERTY,False);
 								XA_CMGUI_RESPONSE=XInternAtom(User_interface_get_display(user_interface),
 									CMGUI_RESPONSE_PROPERTY,False);
-								XChangeProperty(User_interface_get_display(user_interface),
-									XtWindow(command_window->shell),XA_CMGUI_VERSION,XA_STRING,8,
-									PropModeReplace,(unsigned char *)version_string,
-									strlen(version_string));
 #if defined (OLD_CODE)								
 								XGetWindowAttributes(User_interface_get_display(user_interface),
 									XtWindow(command_window->shell),&window_attributes);
@@ -2729,8 +2709,6 @@ Create the structures and retrieve the command window from the uil file.
 			  XRCCTRL(*command_window->wx_command_window, "CmguiCommandWindow", wxFrame);
 			command_window->frame->SetSize(wxSize(400,600)); 
 			command_window->frame->SetMinSize(wxSize(1,1));
-			command_window->wx_command_window->SetCmguiStrings(name_string, version_string, date_string,
-				copyright_string, build_string, revision_string);
 			wxSplitterWindow *splitter_window =
 				 XRCCTRL(*command_window->wx_command_window, "CommandSplitterWindow", 
 						wxSplitterWindow);
@@ -3252,3 +3230,30 @@ Modifys the <command_window_void> according to the command in the <state>.
 
 	return (return_code);
 } /* modify_Command_window_out_file */
+
+int Command_window_set_cmgui_string(struct Command_window *command_window,
+	const char *name_string, const char *version_string,const char *date_string,
+	const char *copyright_string, const char *build_string, const char *revision_string)
+{
+	int return_code = 0;
+	if (command_window)
+	{
+#if defined (WX_USER_INTERFACE)
+		if (command_window->wx_command_window)
+		{
+			command_window->wx_command_window->SetCmguiStrings(name_string, version_string, date_string,
+				copyright_string, build_string, revision_string);
+		}
+#else
+		USE_PARAMETER(name_string);
+		USE_PARAMETER(date_string);
+		USE_PARAMETER(copyright_string);
+		USE_PARAMETER(build_string);
+		USE_PARAMETER(revision_string);
+		USE_PARAMETER(version_string);
+#endif /* switch (WX_USER_INTERFACE) */
+		return_code = 1;
+	}
+
+	return return_code;
+}

@@ -80,6 +80,7 @@ Creates a machine information structure.
 	if (ALLOCATE(return_struct,struct Machine_information,1))
 	{
 		/* determine what machine we are */
+		return_struct->name = NULL;
 		name_length=0;
 #if defined (UNIX)
 		if (-1==uname(&local_information))

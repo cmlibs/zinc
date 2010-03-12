@@ -829,7 +829,7 @@ ALL_LIB = $(LINKOPTIONFLAG) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(SYSTEM_LIB) $(NETGEN_LIB)
 
 API_SRCS = \
-	api/cmiss_command_data.c \
+	api/cmiss_context.c \
 	api/cmiss_field.c \
 	api/cmiss_core.c \
 	api/cmiss_element.c \
@@ -885,6 +885,9 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 COMFILE_INTERFACE_SRCS = \
 	comfile/comfile_window.c 
 endif #$(USER_INTERFACE) == MOTIF_USER_INTERFACE
+CONTEXT_SRCS = \
+	context/context.cpp \
+	context/user_interface_module.cpp
 COMMAND_SRCS = \
 	command/command.c \
 	command/console.c \
@@ -1227,6 +1230,7 @@ SRCS_1 = \
 	$(COMFILE_SRCS) \
 	$(COMMAND_SRCS) \
 	$(COMPUTED_FIELD_SRCS) \
+	$(CONTEXT_SRCS) \
 	$(CURVE_SRCS) \
 	$(ELEMENT_SRCS) \
 	$(EMOTER_SRCS) \

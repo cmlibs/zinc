@@ -47,6 +47,8 @@ DESCRIPTION :
 #endif /* defined (BUILD_WITH_CMAKE) */
 
 #include "command/cmiss.h"
+#include "context/context.h"
+#include "context/user_interface_module.h"
 #include "general/debug.h"
 #include "user_interface/message.h"
 #if defined (UNEMAP)
@@ -87,6 +89,8 @@ Main program for the CMISS Graphical User Interface
 	int argc = 1, i;
 	char **argv, *p, *q;
 #endif /* defined (WIN32_USER_INTERFACE) */
+	struct Context *context = NULL;
+	struct User_interface_module *UI_module = NULL;
 	struct Cmiss_command_data *command_data;
 
 #if !defined (WIN32_USER_INTERFACE)
@@ -128,26 +132,43 @@ Main program for the CMISS Graphical User Interface
 	GetCurrentProcess(&PSN);
 	TransformProcessType(&PSN,kProcessTransformToForegroundApplication);
 #endif
-#if !defined (WIN32_USER_INTERFACE)
-	if ((command_data = CREATE(Cmiss_command_data)(argc, argv, CMISS_NAME_STRING, CMISS_VERSION_STRING, 
-				CMISS_DATE_STRING, CMISS_COPYRIGHT_STRING, CMISS_BUILD_STRING,
-				CMISS_SVN_REVISION_STRING)))
-#else /* !defined (WIN32_USER_INTERFACE) */
-	if ((command_data = CREATE(Cmiss_command_data)(argc, argv, CMISS_NAME_STRING, CMISS_VERSION_STRING, 
-				CMISS_DATE_STRING, CMISS_COPYRIGHT_STRING, CMISS_BUILD_STRING,
-				CMISS_SVN_REVISION_STRING, 
-				current_instance, previous_instance, command_line, initial_main_window_state)))
-#endif /* !defined (WIN32_USER_INTERFACE) */
+	context = Cmiss_context_create("default");
+	if (context)
 	{
-		Cmiss_command_data_main_loop(command_data);
-		Cmiss_command_data_destroy(&command_data);
-		return_code = 0;
+#if !defined (WIN32_USER_INTERFACE)
+		UI_module = Cmiss_context_create_user_interface(context, argc, argv);
+#else /* !defined (WIN32_USER_INTERFACE) */
+		UI_module = Cmiss_context_create_user_interface(context, argc,argv, current_instance,
+			previous_instance, command_line, initial_main_window_state);
+#endif
+		if (UI_module)
+		{
+			if (NULL != (command_data = Cmiss_context_get_default_command_interpreter(context)))
+			{
+				Cmiss_command_data_set_cmgui_string(command_data, CMISS_NAME_STRING, 
+					CMISS_VERSION_STRING, CMISS_DATE_STRING, CMISS_COPYRIGHT_STRING, CMISS_BUILD_STRING,
+					CMISS_SVN_REVISION_STRING);
+				Cmiss_command_data_main_loop(command_data);
+				Cmiss_command_data_destroy(&command_data);
+				return_code = 0;
+			}
+			else
+			{
+				return_code = 1;
+			}
+			User_interface_module_destroy(&UI_module);
+		}
+		else
+		{
+			return_code = 1;
+		}
+		Cmiss_context_destroy(&context);
 	}
 	else
 	{
 		return_code = 1;
 	}
 	LEAVE;
-
+	
 	return (return_code);
 } /* main */

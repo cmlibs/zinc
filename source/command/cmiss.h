@@ -46,8 +46,9 @@ This should only be included in cmgui.c and command/cmiss.c
 #if !defined (COMMAND_CMISS_H)
 #define COMMAND_CMISS_H
 
-#include "api/cmiss_command_data.h"
 #include "command/command.h"
+#include "context/context.h"
+#include "context/user_interface_module.h"
 #if defined (BUILD_WITH_CMAKE)
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
@@ -62,6 +63,7 @@ This should only be included in cmgui.c and command/cmiss.c
 Global types
 ------------
 */
+
 struct Cmiss_command_data;
 /*******************************************************************************
 LAST MODIFIED : 12 August 2002
@@ -102,17 +104,9 @@ Sets the <command_string> in the command box of the CMISS command_window, ready
 for editing or entering. If there is no command_window, does nothing.
 ==============================================================================*/
 
-#if !defined (WIN32_USER_INTERFACE)
-struct Cmiss_command_data *CREATE(Cmiss_command_data)(int in_argc, const char *in_argv[],
-	const char *name_string, const char *version_string,const char *date_string,
-	const char *copyright_string, const char *build_string, const char *revision_string);
-#else /* !defined (WIN32_USER_INTERFACE) */
-struct Cmiss_command_data *CREATE(Cmiss_command_data)(int in_argc, const char *in_argv[],
-	const char *name_string, const char *version_string, const char *date_string,
-	const char *copyright_string, const char *build_string, const char *revision_string, 
-	HINSTANCE current_instance, HINSTANCE previous_instance, 
-	LPSTR command_line,int initial_main_window_state);
-#endif /* !defined (WIN32_USER_INTERFACE) */
+struct Cmiss_command_data *CREATE(Cmiss_command_data)(struct Context *context, 
+	struct User_interface_module *UI_module);
+
 /*******************************************************************************
 LAST MODIFIED : 19 December 2002
 
@@ -249,16 +243,6 @@ DESCRIPTION :
 Returns the texture manager from the <command_data>.
 ==============================================================================*/
 
-// Moving to api/cmiss_command_data.h
-//struct Cmiss_scene_viewer_package *Cmiss_command_data_get_scene_viewer_package(
-//	struct Cmiss_command_data *command_data);
-/*******************************************************************************
-LAST MODIFIED : 7 November 2006
-
-DESCRIPTION :
-Returns the texture manager from the <command_data>.
-==============================================================================*/
-
 struct MANAGER(Graphics_window) *Cmiss_command_data_get_graphics_window_manager(
 	struct Cmiss_command_data *command_data);
 /*******************************************************************************
@@ -269,4 +253,23 @@ Returns the graphics_window manager from the <command_data>.
 If this version of cmgui does not have graphics windows the returned pointer
 will be NULL.
 ==============================================================================*/
+
+/***************************************************************************//**
+ * Set various strings which are important to the wxwidgets about box.
+ * It will not do anything if wxwidget is not in use.
+ *
+ * @param command_data  Pointer to a Cmiss_command_data object.
+ * @param name_string  Given name of the current build.
+ * @param version_string  Version of the current build.
+ * @param date_string  Date of build of the current build.
+ * @param copyright_string  Copyright statement of the current build.
+ * @param build_string  Machine information of the current build.
+ * @param revision_string  Subversion revision number of the current build.
+ * @return  user_interface_module if successfully create the user interface, 
+ *    otherwise NULL.
+ */
+int Cmiss_command_data_set_cmgui_string(struct Cmiss_command_data *command_data, 
+	const char *name_string, const char *version_string,const char *date_string, 
+	const char *copyright_string, const char *build_string, const char *revision_string);
+
 #endif /* !defined (COMMAND_CMISS_H) */

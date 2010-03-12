@@ -1704,7 +1704,7 @@ Open the <user_interface>.
 		user_interface->max_priority = 0;
 #endif /* ! defined (USE_GTK_MAIN_STEP) */
 #endif /* defined (GTK_USER_INTERFACE) */
-
+		user_interface->local_machine_info = NULL;
 		user_interface->event_dispatcher = event_dispatcher;
 		user_interface->shell_list = (struct Shell_list_item *)NULL;
 		user_interface->active_shell_stack = (struct Shell_stack_item *)NULL;

@@ -135,7 +135,6 @@ The default data used to create Cmiss_scene_viewers.
 	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Colour *background_colour;
  	struct MANAGER(Interactive_tool) *interactive_tool_manager;
-	struct Interactive_tool *default_interactive_tool;
 	struct MANAGER(Light) *light_manager;
 	struct Light *default_light;
 	struct MANAGER(Light_model) *light_model_manager;
@@ -4060,7 +4059,6 @@ struct Cmiss_scene_viewer_package *CREATE(Cmiss_scene_viewer_package)(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	struct Colour *background_colour,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	struct Interactive_tool *default_interactive_tool, 
 	struct MANAGER(Light) *light_manager,struct Light *default_light,
 	struct MANAGER(Light_model) *light_model_manager,
 	struct Light_model *default_light_model,
@@ -4086,8 +4084,6 @@ Creates a Cmiss_scene_viewer_package.
 			scene_viewer_package->graphics_buffer_package = graphics_buffer_package;
 			scene_viewer_package->background_colour = background_colour;
 			scene_viewer_package->interactive_tool_manager = interactive_tool_manager;
-			scene_viewer_package->default_interactive_tool = ACCESS(Interactive_tool)
-				(default_interactive_tool);
 			scene_viewer_package->light_manager = light_manager;
 			scene_viewer_package->default_light = ACCESS(Light)(default_light);
 			scene_viewer_package->light_model_manager = light_model_manager;
@@ -4189,8 +4185,6 @@ Destroys the scene_viewer_package.
 		FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(Scene_viewer_destroy_from_package,
 			scene_viewer_package, scene_viewer_package->scene_viewer_list);
 		DESTROY(LIST(Scene_viewer))(&scene_viewer_package->scene_viewer_list);
-
-		DEACCESS(Interactive_tool)(&scene_viewer_package->default_interactive_tool);
 		DEACCESS(Light)(&scene_viewer_package->default_light);
 		DEACCESS(Light_model)(&scene_viewer_package->default_light_model);
 		DEACCESS(Scene)(&scene_viewer_package->scene);

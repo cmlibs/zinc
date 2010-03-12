@@ -39,6 +39,9 @@ FILE : cmiss_rendition.h
  * ***** END LICENSE BLOCK ***** */
 
 #if !defined (CMISS_RENDITION_H)
+#define CMISS_RENDITION_H
+
+#include "context/context.h"
 #include "graphics/font.h"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
@@ -49,7 +52,6 @@ FILE : cmiss_rendition.h
 #include "selection/node_selection.h"
 #include "time/time_keeper.h"
 
-#define CMISS_RENDITION_H
 
 struct Cmiss_graphics_module;
 
@@ -63,26 +65,9 @@ struct Cmiss_graphics_module;
  * @param spectrum_manager  Spectrum manager
  * @param default_spectrum  Default spectrum
  * @param texture_manager  Texture manager
- * @param element_point_ranges_selection  Element point ranges selection
- * @param element_selection  Element selection
- * @param data_selection Data  selection
- * @param node_selection Node  selection
  * @return  If successfully constructed, return the Cmiss_rendition
  */
-struct Cmiss_graphics_module *Cmiss_graphics_module_create(
-	struct LIST(GT_object) *glyph_list,
-	struct MANAGER(Graphical_material) *graphical_material_manager,
-	struct Graphical_material *default_material,
-	struct Graphics_font *default_font,
-	struct MANAGER(Light) *light_manager,
-	struct MANAGER(Spectrum) *spectrum_manager,
-	struct Spectrum *default_spectrum,
-	struct MANAGER(Texture) *texture_manager,
-	struct Element_point_ranges_selection *element_point_ranges_selection,
-	struct FE_element_selection *element_selection,
-  struct FE_node_selection *data_selection,
-	struct FE_node_selection *node_selection,
-	struct Time_keeper *default_time_keeper);
+struct Cmiss_graphics_module *Cmiss_graphics_module_create(struct Context *context);
 
 /***************************************************************************//** 
  * Return Graphical_material manager in the Cmiss_graphics_module.
@@ -92,6 +77,66 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
  *   otherwise NULL
  */
 struct MANAGER(Graphical_material) *Cmiss_graphics_module_get_material_manager(
+	struct Cmiss_graphics_module *graphics_module);
+
+/***************************************************************************//**
+ * Return the material package in graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  the material pacakage in graphics module if successfully called, 
+ *    otherwise NULL.
+ */
+struct Material_package *Cmiss_graphics_module_get_material_package(
+	struct Cmiss_graphics_module *graphics_module);
+
+/***************************************************************************//**
+ * Return the texture manager in graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  the texture manager in graphics module if successfully called, 
+ *    otherwise NULL.
+ */
+struct MANAGER(Texture) *Cmiss_graphics_module_get_texture_manager(
+	struct Cmiss_graphics_module *graphics_module);
+
+/***************************************************************************//**
+ * Return the manager of light in graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  the manager of light in graphics module if successfully called, 
+ *    otherwise NULL.
+ */
+struct MANAGER(Light) *Cmiss_graphics_module_get_light_manager(
+	struct Cmiss_graphics_module *graphics_module);
+
+/***************************************************************************//**
+ * Return the default light in graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  the default light in graphics module if successfully called, 
+ *    otherwise NULL.
+ */
+struct Light *Cmiss_graphics_module_get_default_light(
+	struct Cmiss_graphics_module *graphics_module);
+
+/***************************************************************************//**
+ * Return the specrtrum manager in graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  the spectrum manager in graphics module if successfully called, 
+ *    otherwise NULL.
+ */
+struct MANAGER(Spectrum) *Cmiss_graphics_module_get_spectrum_manager(
+	struct Cmiss_graphics_module *graphics_module);
+
+/***************************************************************************//**
+ * Return the default spectrum in graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  the default spectrum in graphics module if successfully called, 
+ *    otherwise NULL.
+ */
+struct Spectrum *Cmiss_graphics_module_get_default_spectrum(
 	struct Cmiss_graphics_module *graphics_module);
 
 /***************************************************************************//** 
@@ -104,5 +149,92 @@ struct MANAGER(Graphical_material) *Cmiss_graphics_module_get_material_manager(
 int DESTROY(Cmiss_graphics_module)(
 	struct Cmiss_graphics_module **cmiss_graphics_module_address);
 
+/***************************************************************************//**
+ * Create a list of standard cmgui materials and store them as they are managed
+ * by graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  1 if successfully create a list of standard materials into graphics
+ *    module, otherwise 0.
+ */
+int Cmiss_graphics_module_create_standard_materials(
+	struct Cmiss_graphics_module *graphics_module);
+
+/***************************************************************************//**
+ * Return the default list of GT _objects in graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  list of the GT_objects if successfully called, otherwise NULL.
+ */
+struct LIST(GT_object) * Cmiss_graphics_module_get_default_GT_object_list(
+	struct Cmiss_graphics_module *graphics_module);
+
+/***************************************************************************//**
+ * Return the default font package in graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  the default font package if successfully called, otherwise NULL.
+ */
+struct Graphics_font_package *Cmiss_graphics_module_get_font_package(
+	struct Cmiss_graphics_module *graphics_module);
+
+/***************************************************************************//**
+ * Return the default font in graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  the default font if successfully called, otherwise NULL.
+ */
+struct Graphics_font *Cmiss_graphics_module_get_default_font(
+	struct Cmiss_graphics_module *graphics_module);
+
+/***************************************************************************//**
+ * Return the default list of the glyphs stored in graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  the default list of glyphs in graphics module if successfully called, 
+ *    otherwise NULL.
+ */
+struct LIST(GT_object) *Cmiss_graphics_module_get_default_glyph_list(
+		struct Cmiss_graphics_module *graphics_module);
+
+/***************************************************************************//**
+ * Return the scene manager of graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  the manager of scenes in graphics module if successfully called, 
+ *    otherwise NULL.
+ */
+struct MANAGER(Scene) *Cmiss_graphics_module_get_scene_manager(
+	struct Cmiss_graphics_module *graphics_module);
+
+/***************************************************************************//**
+ * Return the default scene in graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  default scene in graphics module if successfully called, 
+ *    otherwise NULL.
+ */
+struct Scene *Cmiss_graphics_module_get_default_scene(
+	struct Cmiss_graphics_module *graphics_module);
+
+/***************************************************************************//**
+ * Return the light model manager of graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  the manager of light_models in graphics module if successfully called, 
+ *    otherwise NULL.
+ */
+struct MANAGER(Light_model) *Cmiss_graphics_module_get_light_model_manager(
+	struct Cmiss_graphics_module *graphics_module);
+
+/***************************************************************************//**
+ * Return the default light model in graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  the default light_models in graphics module if successfully called, 
+ *    otherwise NULL.
+ */
+struct Light_model *Cmiss_graphics_module_get_default_light_model(
+	struct Cmiss_graphics_module *graphics_module);
 #endif /* !defined (CMISS_RENDITION_H) */
 
