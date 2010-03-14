@@ -554,7 +554,7 @@ Cmiss_time_keeper_id Cmiss_context_get_default_time_keeper(
 	Cmiss_context_id context)
 {
 	Cmiss_time_keeper *time_keeper = NULL;
-	if (context && context->UI_module)
+	if (context && context->UI_module && context->UI_module->default_time_keeper)
 	{
 		time_keeper = ACCESS(Time_keeper)(context->UI_module->default_time_keeper);
 	}
@@ -570,11 +570,9 @@ Cmiss_scene_viewer_package_id Cmiss_context_get_default_scene_viewer_package(
 	Cmiss_context_id context)
 {
 	Cmiss_scene_viewer_package *scene_viewer_package = NULL;
-	if (context && context->UI_module)
+	if (context && context->UI_module && context->UI_module->scene_viewer_package)
 	{
-#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		scene_viewer_package = context->UI_module->scene_viewer_package;
-#endif
 	}
 	else
 	{

@@ -24680,34 +24680,6 @@ of this parse state routine.
 	return (return_code);
 } /* ignore_entry_and_next_token */
 
-struct Cmgui_command_line_options
-/*******************************************************************************
-LAST MODIFIED : 19 May 2006
-
-DESCRIPTION :
-Command line options to be parsed by read_cmgui_command_line_options.
-==============================================================================*/
-{
-	char batch_mode_flag;
-	char cm_start_flag;
-	char *cm_epath_directory_name;
-	char *cm_parameters_file_name;
-	char command_list_flag;
-	char console_mode_flag;
-	char *epath_directory_name;
-	char *example_file_name;
-	char *execute_string;
-	char write_help_flag;
-	char *id_name;
-	char mycm_start_flag;
-	char no_display_flag;
-	char server_mode_flag;
-	int random_number_seed;
-	int visual_id_number;
-	/* default option; no token */
-	char *command_file_name;
-};
-
 static int read_cmgui_command_line_options(struct Parse_state *state,
 	void *dummy_to_be_modified, void *cmgui_command_line_options_void)
 /*******************************************************************************
@@ -24819,6 +24791,53 @@ Parses command line options from <state>.
 
 	return (return_code);
 } /* read_cmgui_command_line_options */
+
+int Cmiss_command_data_process_command_line(int argc, const char *argv[], 
+	struct Cmgui_command_line_options *command_line_options)
+{
+	int return_code = 1;
+	struct Option_table *option_table = NULL;
+	struct Parse_state *state = NULL;
+
+	/* put command line options into structure for parsing & extract below */
+	command_line_options->batch_mode_flag = (char)0;
+	command_line_options->cm_start_flag = (char)0;
+	command_line_options->cm_epath_directory_name = NULL;
+	command_line_options->cm_parameters_file_name = NULL;
+	command_line_options->command_list_flag = (char)0;
+	command_line_options->console_mode_flag = (char)0;
+	command_line_options->epath_directory_name = NULL;
+	command_line_options->example_file_name = NULL;
+	command_line_options->execute_string = NULL;
+	command_line_options->write_help_flag = (char)0;
+	command_line_options->id_name = NULL;
+	command_line_options->mycm_start_flag = (char)0;
+	command_line_options->no_display_flag = (char)0;
+	command_line_options->random_number_seed = -1;
+	command_line_options->server_mode_flag = (char)0;
+	command_line_options->visual_id_number = 0;
+	command_line_options->command_file_name = NULL;
+	
+	if (state = create_Parse_state_from_tokens(argc,argv))
+	{
+		option_table = CREATE(Option_table)();
+		Option_table_add_entry(option_table, argv[0], NULL,
+			(void *)command_line_options, read_cmgui_command_line_options);
+		if (!Option_table_parse(option_table, state))
+		{
+			command_line_options->write_help_flag = (char)1;
+			return_code = 0;
+		}
+			DESTROY(Option_table)(&option_table);
+			destroy_Parse_state(&state);
+	}
+	else
+	{
+		return_code = 0;
+	}
+
+	return return_code;
+}
 
 struct Cmiss_command_data *CREATE(Cmiss_command_data)(struct Context *context, 
 	struct User_interface_module *UI_module)

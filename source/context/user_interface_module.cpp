@@ -198,10 +198,7 @@ struct User_interface_module *User_interface_module_create(
 		UI_module->scene_editor = NULL;
 		UI_module->spectrum_editor_dialog = NULL;
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
-#if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		UI_module->scene_viewer_package = NULL;
-		/* graphics window manager.  Note there is no default window. */
-#endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 		UI_module->graphics_buffer_package = NULL;
 		UI_module->interactive_tool_manager = NULL;
 		UI_module->background_colour.red=(float)0;
@@ -216,6 +213,10 @@ struct User_interface_module *User_interface_module_create(
 		UI_module->argv = NULL;
 		UI_module->cleanup_argc = in_argc;
 		UI_module->cleanup_argv = NULL;
+		struct Cmgui_command_line_options command_line_options;
+		Cmiss_command_data_process_command_line(in_argc, in_argv, 
+			&command_line_options);
+
 		if (0 < in_argc)
 		{
 			ALLOCATE(UI_module->argv, char *, in_argc);
@@ -227,26 +228,32 @@ struct User_interface_module *User_interface_module_create(
 			}
 		}
 
-		if (NULL != (UI_module->event_dispatcher = Cmiss_context_get_default_event_dispatcher(
-									 context)))
+		if ((!command_line_options.command_list_flag) && (!command_line_options.write_help_flag))
 		{
+			if (NULL != (UI_module->event_dispatcher = Cmiss_context_get_default_event_dispatcher(
+										 context)))
+			{
+				if (!command_line_options.no_display_flag)
+				{
 #if !defined (WIN32_USER_INTERFACE)
-			if (NULL == (UI_module->user_interface = CREATE(User_interface)
-					(&(UI_module->argc), UI_module->argv, UI_module->event_dispatcher, "Cmgui",
-						"cmgui")))
-			{
-				display_message(ERROR_MESSAGE,"Could not create User interface");
-				return_code=0;
-			}
+					if (NULL == (UI_module->user_interface = CREATE(User_interface)
+							(&(UI_module->argc), UI_module->argv, UI_module->event_dispatcher, "Cmgui",
+								"cmgui")))
+					{
+						display_message(ERROR_MESSAGE,"Could not create User interface");
+						return_code=0;
+					}
 #else /* !defined (WIN32_USER_INTERFACE) */
-			if (NULL == (UI_module->user_interface = CREATE(User_interface)
-					(current_instance, previous_instance, command_line,
-						initial_main_window_state, UI_module->event_dispatcher)))
-			{
-				display_message(ERROR_MESSAGE,"Could not create User interface");
-				return_code=0;
-			}
+					if (NULL == (UI_module->user_interface = CREATE(User_interface)
+							(current_instance, previous_instance, command_line,
+								initial_main_window_state, UI_module->event_dispatcher)))
+					{
+						display_message(ERROR_MESSAGE,"Could not create User interface");
+						return_code=0;
+					}
 #endif /* !defined (WIN32_USER_INTERFACE) */
+				}
+			}
 		}
 		else
 		{
@@ -318,12 +325,10 @@ struct User_interface_module *User_interface_module_create(
 #if defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE)
 		UI_module->movie_graphics_manager = CREATE(MANAGER(Movie_graphics))();
 #endif /* defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE) */
-		if (UI_module->user_interface)
-		{
-			UI_module->default_time_keeper=ACCESS(Time_keeper)(
-				CREATE(Time_keeper)("default", UI_module->event_dispatcher,
+		UI_module->default_time_keeper=ACCESS(Time_keeper)(
+			CREATE(Time_keeper)("default", UI_module->event_dispatcher,
 				UI_module->user_interface));
-		}
+		
 		if (UI_module->user_interface)
 		{
 			/* set up image library */

@@ -72,6 +72,34 @@ DESCRIPTION :
 Shifted the Cmiss_command_data to be internal to cmiss.c
 ==============================================================================*/
 
+struct Cmgui_command_line_options
+/*******************************************************************************
+LAST MODIFIED : 19 May 2006
+
+DESCRIPTION :
+Command line options to be parsed by read_cmgui_command_line_options.
+==============================================================================*/
+{
+	char batch_mode_flag;
+	char cm_start_flag;
+	char *cm_epath_directory_name;
+	char *cm_parameters_file_name;
+	char command_list_flag;
+	char console_mode_flag;
+	char *epath_directory_name;
+	char *example_file_name;
+	char *execute_string;
+	char write_help_flag;
+	char *id_name;
+	char mycm_start_flag;
+	char no_display_flag;
+	char server_mode_flag;
+	int random_number_seed;
+	int visual_id_number;
+	/* default option; no token */
+	char *command_file_name;
+};
+
 /*
 Global functions
 ----------------
@@ -272,4 +300,14 @@ int Cmiss_command_data_set_cmgui_string(struct Cmiss_command_data *command_data,
 	const char *name_string, const char *version_string,const char *date_string, 
 	const char *copyright_string, const char *build_string, const char *revision_string);
 
+/***************************************************************************//**
+ * Process command line options.
+ *
+ * @param argc  number of arguments.
+ * @param argv  array of the value of arguments.
+ * @param command_line_options  pointer to command line options object.
+ * @return  1 if successfully called otherwise 0.
+ */
+int Cmiss_command_data_process_command_line(int argc, const char *argv[], 
+	struct Cmgui_command_line_options *command_line_options);
 #endif /* !defined (COMMAND_CMISS_H) */
