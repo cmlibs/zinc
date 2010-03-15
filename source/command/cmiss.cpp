@@ -24828,8 +24828,8 @@ int Cmiss_command_data_process_command_line(int argc, const char *argv[],
 			command_line_options->write_help_flag = (char)1;
 			return_code = 0;
 		}
-			DESTROY(Option_table)(&option_table);
-			destroy_Parse_state(&state);
+		DESTROY(Option_table)(&option_table);
+		destroy_Parse_state(&state);
 	}
 	else
 	{
@@ -25159,14 +25159,12 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				{
 					if (NULL == (command_data->user_interface = UI_module->user_interface))
 					{
-						display_message(ERROR_MESSAGE,"Could not create User interface");
 						return_code=0;
 					}
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"Could not create Event dispatcher.");
 				return_code = 0;
 			}
 		}
@@ -25296,7 +25294,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		/*???DB.  To be done */
 		command_data->element_shape_list=CREATE(LIST(FE_element_shape))();
 
-		command_data->curve_manager=CREATE(MANAGER(Curve))();
+		command_data->curve_manager=Cmiss_context_get_default_curve_manager(context);
 
 		command_data->basis_manager=CREATE(MANAGER(FE_basis))();
 
@@ -25983,7 +25981,7 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 
 		/* some fields register for changes with the following managers,
 			 hence must destroy after regions and their fields */
-		DESTROY(MANAGER(Curve))(&command_data->curve_manager);
+		command_data->curve_manager = NULL;
 		DEACCESS(Spectrum)(&(command_data->default_spectrum));
 		command_data->spectrum_manager=NULL;
 		DEACCESS(Material_package)(&command_data->material_package);

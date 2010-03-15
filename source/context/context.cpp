@@ -44,6 +44,7 @@ extern "C" {
 #include "api/cmiss_graphics_module.h"
 #include "command/cmiss.h"
 #include "context/context.h"
+#include "curve/curve.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/object.h"
@@ -70,6 +71,7 @@ struct Context
 	struct FE_node_selection *node_selection, *data_selection;
 	struct Event_dispatcher *event_dispatcher;
 	struct IO_stream_package *io_stream_package;
+	struct MANAGER(Curve) *curve_manager;
 };
 
 struct Context *Cmiss_context_create(const char *id)
@@ -89,6 +91,7 @@ struct Context *Cmiss_context_create(const char *id)
 		context->data_selection = NULL;
 		context->event_dispatcher = NULL;
 		context->io_stream_package = NULL;
+		context->curve_manager = NULL;
 		context->access_count = 1;
 	}
 
@@ -139,6 +142,10 @@ int Cmiss_context_destroy(struct Context **context_address)
 				 * when following removed also remove #include "region/cmiss_region_private.h" */
 				Cmiss_region_detach_fields_hierarchical(context->root_region);
 				DEACCESS(Cmiss_region)(&context->root_region);
+			}
+			if (context->curve_manager)
+			{
+				DESTROY(MANAGER(Curve))(&context->curve_manager);
 			}
 			if (context->io_stream_package)
 			{
@@ -581,4 +588,25 @@ Cmiss_scene_viewer_package_id Cmiss_context_get_default_scene_viewer_package(
 			"Missing context or user interface");
 	}
 	return scene_viewer_package;
+}
+
+struct MANAGER(Curve) *Cmiss_context_get_default_curve_manager(
+	Cmiss_context_id context)
+{
+	MANAGER(Curve) *curve_manager = NULL;
+	if (context)
+	{
+		if (!context->curve_manager)
+		{
+			context->curve_manager = CREATE(MANAGER(Curve))();
+		}
+		curve_manager = context->curve_manager;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_context_get_default_curve_manager.  "
+			"Missing context");
+	}
+	return curve_manager;
 }

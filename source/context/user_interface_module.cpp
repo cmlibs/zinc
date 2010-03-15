@@ -260,6 +260,12 @@ struct User_interface_module *User_interface_module_create(
 			display_message(ERROR_MESSAGE,"Could not create Event dispatcher.");
 			return_code = 0;
 		}
+		if (command_line_options.example_file_name)
+		{
+			DEALLOCATE(command_line_options.example_file_name);
+		}
+
+
 #if defined (MOTIF_USER_INTERFACE)
 		if (UI_module->user_interface)
 		{

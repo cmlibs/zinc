@@ -121,6 +121,15 @@ struct IO_stream_package *Cmiss_context_get_default_IO_stream_package(
 	struct Context *context);
 
 /***************************************************************************//**
+ * Return the default curve manager in context.
+ *
+ * @param context  Pointer to a cmiss_context object.
+ * @return  the default curve_manager if successfully, otherwise NULL.
+ */
+struct MANAGER(Curve) *Cmiss_context_get_default_curve_manager(
+	Cmiss_context_id context);
+
+/***************************************************************************//**
  * Create and returns the internal user interface module in cmgui.
  *
  * @param context  Pointer to a cmiss_context object.
