@@ -276,7 +276,10 @@ struct User_interface_module *User_interface_module_create(
 		{
 			DEALLOCATE(command_line_options.command_file_name);
 		}
-
+		if (command_line_options.epath_directory_name)
+		{
+			DEALLOCATE(command_line_options.epath_directory_name);
+		}
 #if defined (MOTIF_USER_INTERFACE)
 		if (UI_module->user_interface)
 		{
