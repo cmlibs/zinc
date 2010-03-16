@@ -516,7 +516,7 @@ int Cmiss_context_run_main_loop(Cmiss_context_id context)
 	return return_code;
 }
 
-Cmiss_scene_viewer_id Cmiss_command_data_get_graphics_window_pane_by_name(
+Cmiss_scene_viewer_id Cmiss_context_get_graphics_window_pane_by_name(
 	Cmiss_context_id context, const char *name, int pane_number)
 {
 	Cmiss_scene_viewer_id scene_viewer = NULL;
