@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : CmissCommandData.hpp
+ * FILE : CmissContext.hpp
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -36,11 +36,12 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#ifndef __CMISS_COMMAND_DATA_HPP__
-#define __CMISS_COMMAND_DATA_HPP__
+
+#ifndef __CMISS_CONTEXT_HPP__
+#define __CMISS_CONTEXT_HPP__
 
 extern "C" {
-#include "api/cmiss_command_data.h"
+#include "api/cmiss_context.h"
 }
 
 namespace Cmiss
@@ -49,50 +50,45 @@ namespace Cmiss
 class Region;
 class GraphicsModule;
 
-class CommandData
+class Context
 {
 private:
-	Cmiss_command_data_id id;
+	Cmiss_context_id id;
 
 public:
-	// Creates a new Cmiss CommandData instance
-	CommandData(int argc, const char *argv[], const char *version_string) :
-		id(Cmiss_command_data_create(argc, argv, version_string))
+	// Creates a new Cmiss Context instance
+	Context(const char *contextName) :
+		id(Cmiss_context_create(contextName))
 	{ }
 
-	// temporary constructor to use from SWIG
-	CommandData(const char *appName) :
-		id(Cmiss_command_data_create(1, &appName, "0.0"))
+	Context() : id(NULL)
 	{ }
 
-	CommandData() : id(NULL)
+	// takes ownership of C-style context reference
+	Context(Cmiss_context_id context_id) :
+		id(context_id)
 	{ }
 
-	// takes ownership of C-style command data reference
-	CommandData(Cmiss_command_data_id command_data_id) :
-		id(command_data_id)
+	Context(const Context& context) :
+		id(Cmiss_context_access(context.id))
 	{ }
 
-	CommandData(const CommandData& commandData) :
-		id(Cmiss_command_data_access(commandData.id))
-	{ }
-
-	CommandData& operator=(const CommandData& commandData)
+	Context& operator=(const Context& context)
 	{
-		Cmiss_command_data_id temp_id = Cmiss_command_data_access(commandData.id);
+		Cmiss_context_id temp_id = Cmiss_context_access(context.id);
 		if (NULL != id)
 		{
-			Cmiss_command_data_destroy(&id);
+			Cmiss_context_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
 	}
 	
-	~CommandData()
+	~Context()
 	{
 		if (NULL != id)
 		{
-			Cmiss_command_data_destroy(&id);
+			Cmiss_context_destroy(&id);
 		}
 	}
 
@@ -101,27 +97,33 @@ public:
 		return (NULL != id);
 	}
 
-	int executeCommand(const char *command) const
+	int enableUserInterface() const
 	{
-		return Cmiss_command_data_execute_command(id, command);
+		const char *name = "cmgui";
+		return Cmiss_context_enable_user_interface(id, 1, &name);
 	}
 
-	template<class RegionType> RegionType getRootRegion() const
+	int executeCommand(const char *command) const
 	{
-		return Region(Cmiss_command_data_get_root_region(id));
+		return Cmiss_context_execute_command(id, command);
+	}
+
+	template<class RegionType> RegionType getDefaultRegion() const
+	{
+		return Region(Cmiss_context_get_default_region(id));
 	}
 
 	template<class GraphicsModuleType> GraphicsModuleType getDefaultGraphicsModule() const
 	{
-		return GraphicsModule(Cmiss_command_data_get_graphics_module(id));
+		return GraphicsModule(Cmiss_context_get_default_graphics_module(id));
 	}
 
 	int runMainLoop() const
 	{
-		return Cmiss_command_data_main_loop(id);
+		return Cmiss_context_run_main_loop(id);
 	}
 };
 
 } // namespace Cmiss
 
-#endif /* __CMISS_COMMAND_DATA_HPP__ */
+#endif /* __CMISS_CONTEXT_HPP__ */
