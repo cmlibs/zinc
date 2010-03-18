@@ -1408,7 +1408,7 @@ Returns the set of bit flags showing the whether the modifier inputs
 were active when the event was generated.
 ==============================================================================*/
 {
-	int return_code = 0;
+	int return_code = 1;
 
 	ENTER(Cmiss_scene_viewer_input_get_event_type);
 	if (input_data)
@@ -1458,7 +1458,7 @@ Sets the set of bit flags showing the whether the modifier inputs
 were active when the event was generated.
 ==============================================================================*/
 {
-	int return_code = 0;
+	int return_code = 1;
 
 	ENTER(Cmiss_scene_viewer_input_get_event_type);
 	if (input_data)
