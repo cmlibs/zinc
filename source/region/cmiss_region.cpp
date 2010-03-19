@@ -1,15 +1,9 @@
-/*******************************************************************************
-FILE : cmiss_region.cpp
-
-LAST MODIFIED : 4 December 2003
-
-DESCRIPTION :
-Definition of Cmiss_region, used to create hierarchical data structures.
-Object can be structured into directed-acyclic-graphs or DAGs, which contain a
-list of child regions, each with their own name as seen by that parent.
-Advanced hierarchical functionality is built up by attaching context objects
-to regions, but hiding their details from the core Cmiss_region object.
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : cmiss_region.cpp
+ * 
+ * Definition of Cmiss_region, container of fields for representing model data,
+ * and child regions for building hierarchical models.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -65,21 +59,14 @@ Module types
 ------------
 */
 
-struct Cmiss_region_child
-/*******************************************************************************
-LAST MODIFIED : 11 September 2002
-
-DESCRIPTION :
-Object in which a Cmiss_region keeps a reference to a child region.
-Stores the name that this child is known by to this parent.
-==============================================================================*/
-{
-  const char *name;
-  struct Cmiss_region *region;
-};
-
 FULL_DECLARE_CMISS_CALLBACK_TYPES(Cmiss_region_change, \
 	struct Cmiss_region *, struct Cmiss_region_changes *);
+
+enum Cmiss_region_attach_fields_variant
+{
+	CMISS_REGION_SHARE_BASES_SHAPES,
+	CMISS_REGION_SHARE_FIELDS_GROUP
+};
 
 struct Cmiss_region_fields
 /*******************************************************************************
@@ -99,42 +86,32 @@ FE_region whose FE_fields are automatically wrapped.
 	int access_count;
 };
 
+/***************************************************************************//**
+ * A region object which contains fields and child regions.
+ * Other data can be attached using the any_object_list.
+ */
 struct Cmiss_region
-/*******************************************************************************
-LAST MODIFIED : 19 May 2008
-
-DESCRIPTION :
-Object responsible for building directed acyclic graph hierarchies in Cmiss.
-Implements hierarchies by contains a list of Cmiss_region_child objects, each
-with their own name as seen by this parent.
-Implements advanced hierarchical functionality through context objects stored
-within it. Type and role of context objects are not known to the Cmiss_region.
-==============================================================================*/
 {
+	char *name;
 	/* non-accessed pointer to parent region, or NULL if root */
-	struct Cmiss_region *parent;
+	Cmiss_region *parent;
+	/* accessed first child and next sibling for building region tree */
+	Cmiss_region *first_child, *next_sibling;
+	/* non-access pointer to previous sibling, if any */
+	Cmiss_region *previous_sibling;
+	
 	/* fields owned by this region (or master) */
-	struct Cmiss_region_fields *fields;
+	Cmiss_region_fields *fields;
+
 	/* list of objects attached to region */
 	struct LIST(Any_object) *any_object_list;
-	/* ordered list of child regions 0..number_of_child_regions-1 */
-	int number_of_child_regions;
-	struct Cmiss_region_child **child;
-	/* true if children added, removed or reordered in Cmiss_region */
-	int children_changed;
-	/* If a single child has been added then identify it here for efficiency */
-	struct Cmiss_region *child_added;
-	/* If a single child has been removed then identify it here for efficiency */
-	struct Cmiss_region *child_removed;
-	/* The name by which the parent used to name the child */
-	char *child_removed_name;
-	/* true if objects added to or removed from Cmiss_region */
-	int objects_changed;
-	/* change counter; if zero, change messages are sent with every change,
-		 otherwise incremented/decremented for nested changes */
-	int change;
+
+	/* increment/decrement change_level to nest changes. Message sent when zero */
+	int change_level;
+	Cmiss_region_changes changes;
 	/* list of change callbacks */
 	struct LIST(CMISS_CALLBACK_ITEM(Cmiss_region_change)) *change_callback_list;
+
 	/* number of objects using this region */
 	int access_count;
 };
@@ -143,79 +120,6 @@ within it. Type and role of context objects are not known to the Cmiss_region.
 Module functions
 ----------------
 */
-
-static struct Cmiss_region_child *CREATE(Cmiss_region_child)(const char *name,
-	struct Cmiss_region *region)
-/*******************************************************************************
-LAST MODIFIED : 11 September 2002
-
-DESCRIPTION :
-Creates a Cmiss_region_child for <region> with <name>.
-==============================================================================*/
-{
-	struct Cmiss_region_child *cmiss_region_child;
-
-	ENTER(CREATE(Cmiss_region_child));
-	cmiss_region_child = (struct Cmiss_region_child *)NULL;
-	if (name && region)
-	{
-		if (ALLOCATE(cmiss_region_child, struct Cmiss_region_child, 1) &&
-			(cmiss_region_child->name = duplicate_string(name)))
-		{ 
-			cmiss_region_child->region = ACCESS(Cmiss_region)(region);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(Cmiss_region_child).  Could not allocate memory");
-			if (cmiss_region_child)
-			{
-				DEALLOCATE(cmiss_region_child);
-				cmiss_region_child = (struct Cmiss_region_child *)NULL;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(Cmiss_region_child).  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (cmiss_region_child);
-} /* CREATE(Cmiss_region_child) */
-
-static int DESTROY(Cmiss_region_child)(
-	struct Cmiss_region_child **cmiss_region_child_address)
-/*******************************************************************************
-LAST MODIFIED : 10 September 2002
-
-DESCRIPTION :
-Frees the memory for the Cmiss_region_child_child and sets <*cmiss_region_child_address> to NULL.
-==============================================================================*/
-{
-	int return_code;
-	struct Cmiss_region_child *cmiss_region_child;
-
-	ENTER(DESTROY(Cmiss_region_child));
-	if (cmiss_region_child_address &&
-		(cmiss_region_child = *cmiss_region_child_address))
-	{
-		DEALLOCATE(cmiss_region_child->name);
-		DEACCESS(Cmiss_region)(&(cmiss_region_child->region));
-		DEALLOCATE(*cmiss_region_child_address);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(Cmiss_region_child).  Missing Cmiss_region_child");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(Cmiss_region_child) */
 
 DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Cmiss_region_change, void)
 
@@ -399,7 +303,9 @@ struct Cmiss_region *Cmiss_region_fields_get_master_region(
 }
 
 DECLARE_OBJECT_FUNCTIONS(Cmiss_region_fields)
-	
+
+namespace {
+
 static int Cmiss_region_update(struct Cmiss_region *region)
 /*******************************************************************************
 LAST MODIFIED : 4 December 2003
@@ -415,30 +321,21 @@ region. No messages sent if change count positive or no changes have occurred.
 	ENTER(Cmiss_region_update);
 	if (region)
 	{
-		if ((!region->change) &&
-			(region->children_changed || region->objects_changed))
+		if ((0 == region->change_level) && ((region->changes.children_changed) ||
+			(region->changes.name_changed)))
 		{
-			/* construct the changes object */
-			changes.children_changed = region->children_changed;
-			changes.child_added = region->child_added;
-			changes.child_removed = region->child_removed;
-			/* This is an allocated string but we are transferring it and then
-				DEALLOCATING at the end of this routine */
-			changes.child_removed_name = region->child_removed_name;
-			changes.objects_changed = region->objects_changed;
+			changes = region->changes;
 			/* must clear flags in the region before changes go out */
-			region->children_changed = 0;
-			region->child_added = (struct Cmiss_region *)NULL;
-			region->child_removed = (struct Cmiss_region *)NULL;
-			region->child_removed_name = (char *)NULL;
-			region->objects_changed = 0;
+			region->changes.name_changed = 0;
+			region->changes.children_changed = 0;
+			region->changes.child_added = (struct Cmiss_region *)NULL;
+			region->changes.child_removed = (struct Cmiss_region *)NULL;
 			/* send the callbacks */
 			CMISS_CALLBACK_LIST_CALL(Cmiss_region_change)(
 				region->change_callback_list, region, &changes);
-			if (changes.child_removed_name)
-			{
-				DEALLOCATE(changes.child_removed_name);
-			}
+			// deaccess child pointers from message
+			REACCESS(Cmiss_region)(&changes.child_added, NULL);
+			REACCESS(Cmiss_region)(&changes.child_removed, NULL);
 		}
 		return_code = 1;
 	}
@@ -451,6 +348,70 @@ region. No messages sent if change count positive or no changes have occurred.
 
 	return (return_code);
 } /* Cmiss_region_update */
+
+/***************************************************************************//**
+ * Internal-only implementation of Cmiss_region_find_child_by_name which does
+ * not ACCESS the returned reference.
+ * @see Cmiss_region_find_child_by_name
+ */
+struct Cmiss_region *Cmiss_region_find_child_by_name_internal(
+	struct Cmiss_region *region, const char *name)
+{
+	struct Cmiss_region *child = NULL;
+	if (region && name)
+	{
+		child = region->first_child;
+		while (child)
+		{
+			if (0 == strcmp(child->name, name))
+			{
+				break;
+			}
+			child = child->next_sibling;
+		}
+	}
+	return (child);
+}
+
+/***************************************************************************//**
+ * Internal-only implementation of Cmiss_region_find_subregion_at_path which
+ * does not ACCESS the returned reference.
+ * @see Cmiss_region_find_subregion_at_path
+ */
+struct Cmiss_region *Cmiss_region_find_subregion_at_path_internal(
+	struct Cmiss_region *region, const char *path)
+{
+	struct Cmiss_region *subregion = NULL;
+	if (region && path)
+	{
+		subregion = region;
+		char *path_copy = duplicate_string(path);
+		char *child_name = path_copy;
+		/* skip leading separator */
+		if (child_name[0] == CMISS_REGION_PATH_SEPARATOR_CHAR)
+		{
+			child_name++;
+		}
+		char *child_name_end;
+		while (subregion && (child_name_end =
+			strchr(child_name, CMISS_REGION_PATH_SEPARATOR_CHAR)))
+		{
+			*child_name_end = '\0';
+			subregion = Cmiss_region_find_child_by_name_internal(subregion, child_name);
+			child_name = child_name_end + 1;
+		}
+		/* already found the subregion if there was a single trailing separator */
+		if (subregion && (child_name[0] != '\0'))
+		{
+			subregion = Cmiss_region_find_child_by_name_internal(subregion, child_name);
+		}
+		DEALLOCATE(path_copy);
+	}
+
+	return (subregion);
+}
+
+} // anonymous namespace
 
 /*
 Global functions
@@ -472,20 +433,22 @@ Region is created with an access_count of 1; DEACCESS to destroy.
 	ENTER(CREATE(Cmiss_region));
 	if (ALLOCATE(region, struct Cmiss_region, 1))
 	{
+		region->name = NULL;
 		region->parent = NULL;
+		region->first_child = NULL;
+		region->next_sibling = NULL;
+		region->previous_sibling = NULL;
 		region->fields = NULL;
 		region->any_object_list = CREATE(LIST(Any_object))();
-		region->number_of_child_regions = 0;
-		region->child = (struct Cmiss_region_child **)NULL;
-		region->children_changed = 0;
-		region->child_added = (struct Cmiss_region *)NULL;
-		region->child_removed = (struct Cmiss_region *)NULL;
-		region->child_removed_name = (char *)NULL;
-		region->objects_changed = 0;
-		region->change = 0;
+		region->change_level = 0;
+		region->changes.name_changed = 0;
+		region->changes.children_changed = 0;
+		region->changes.child_added = NULL;
+		region->changes.child_removed = NULL;
 		region->change_callback_list =
 			CREATE(LIST(CMISS_CALLBACK_ITEM(Cmiss_region_change)))();
 		region->access_count = 1;
+
 		if (!(region->any_object_list && region->change_callback_list))
 		{
 			display_message(ERROR_MESSAGE,
@@ -575,7 +538,7 @@ cases in code.
 			if (region->fields && Cmiss_region_attach_FE_region(region, fe_region))
 			{
 				/* must catch up to region change counter */
-				for (i = 0; i < region->change; i++)
+				for (i = 0; i < region->change_level; i++)
 				{
 					Cmiss_region_fields_begin_change(region);
 				}
@@ -606,7 +569,7 @@ DESCRIPTION :
 Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
 ==============================================================================*/
 {
-	int i, return_code;
+	int return_code;
 	struct Cmiss_region *region;
 
 	ENTER(DESTROY(Cmiss_region));
@@ -615,25 +578,25 @@ Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
 		if (0 == region->access_count)
 		{
 			DESTROY(LIST(Any_object))(&(region->any_object_list));
-			/* clean up child array. Note array may still be allocated even if
-				 number_of_child_regions has returned to zero */
-			if (0 < region->number_of_child_regions)
+			
+			// destroy child list
+			Cmiss_region *next_child = region->first_child;
+			region->first_child = NULL;
+			Cmiss_region *child;
+			while ((child = next_child))
 			{
-				for (i = 0; i < region->number_of_child_regions; i++)
-				{
-					DESTROY(Cmiss_region_child)(&(region->child[i]));
-				}
+				next_child = child->next_sibling;
+				child->next_sibling = NULL;
+				child->previous_sibling = NULL;
+				DEACCESS(Cmiss_region)(&child);
 			}
-			if (region->child)
-			{
-				DEALLOCATE(region->child);
-			}
-			if (region->child_removed_name)
-			{
-				DEALLOCATE(region->child_removed_name);
-			}
+
+			REACCESS(Cmiss_region)(&region->changes.child_added, NULL);
+			REACCESS(Cmiss_region)(&region->changes.child_removed, NULL);
+			
 			DESTROY(LIST(CMISS_CALLBACK_ITEM(Cmiss_region_change)))(
 				&(region->change_callback_list));
+
 			if (region->fields && (region->fields->owning_region == region) &&
 				(region->fields->access_count > 1))
 			{
@@ -646,6 +609,10 @@ Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
 				region->fields->owning_region = NULL;
 			}
 			DEACCESS(Cmiss_region_fields)(&region->fields);
+			if (region->name)
+			{
+				DEALLOCATE(region->name);
+			}
 			DEALLOCATE(*region_address);
 			return_code = 1;
 		}
@@ -680,14 +647,14 @@ Temporary until circular references sorted out - certain fields access regions.
 Call ONLY before deaccessing root_region in command_data.
 ==============================================================================*/
 {
-	int i;
-
 	ENTER(Cmiss_region_detach_fields_hierarchical);
 	if (region) 
 	{
-		for (i = 0; i < region->number_of_child_regions; i++)
+		Cmiss_region *child = region->first_child;
+		while (child)
 		{
-			Cmiss_region_detach_fields_hierarchical(region->child[i]->region);
+			Cmiss_region_detach_fields_hierarchical(child);
+			child = child->next_sibling;
 		}
 		// remove link back from region_fields to this region
 		if (region->fields && (region->fields->owning_region == region))
@@ -792,6 +759,12 @@ Consider as private: NOT approved for exposing in API.
 	return (region);
 } /* Cmiss_region_create_share_globals */
 
+int Cmiss_region_clear_finite_elements(struct Cmiss_region *region)
+{
+	return FE_region_clear(Cmiss_region_get_FE_region(region),
+		/*destroy_in_master*/0);
+}
+
 struct MANAGER(Computed_field) *Cmiss_region_get_Computed_field_manager(
 	struct Cmiss_region *cmiss_region)
 /*******************************************************************************
@@ -842,8 +815,9 @@ Modifier function for entering a path to a Cmiss_region, starting at
 			if (strcmp(PARSER_HELP_STRING, current_token) &&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (Cmiss_region_get_region_from_path(root_region, current_token,
-					&region) && region)
+				region = Cmiss_region_find_subregion_at_path_internal(
+					root_region, current_token);
+				if (region)
 				{
 					if (path_address = (char **)path_address_void)
 					{
@@ -951,7 +925,7 @@ Note this is NOT Hierarchical: child region change caching is not affected.
 	ENTER(Cmiss_region_begin_change);
 	if (region)
 	{
-		region->change++;
+		region->change_level++;
 		if (region->fields)
 		{
 			Cmiss_region_fields_begin_change(region);
@@ -986,14 +960,14 @@ Note this is NOT Hierarchical: child region change caching is not affected.
 	ENTER(Cmiss_region_end_change);
 	if (region)
 	{
-		if (0 < region->change)
+		if (0 < region->change_level)
 		{
 			if (region->fields)
 			{
 				Cmiss_region_fields_end_change(region);
 			}
-			region->change--;
-			if (0 == region->change)
+			region->change_level--;
+			if (0 == region->change_level)
 			{
 				Cmiss_region_update(region);
 			}
@@ -1093,461 +1067,315 @@ Removes the callback calling <function> with <user_data> from <region>.
 	return (return_code);
 } /* Cmiss_region_remove_callback */
 
-int Cmiss_region_add_child_region(struct Cmiss_region *region,
-	struct Cmiss_region *child_region, const char *child_name, int child_position)
-/*******************************************************************************
-LAST MODIFIED : 29 April 2003
-
-DESCRIPTION :
-Adds <child_region> to <region> at <child_position> under the <child_name>.
-<child_position> must be from -1 to the regions number_of_child_regions; if it
-is -1 it is added at the end of the list.
-Ensures:
-- <child_name> passes is_standard_object_name;
-- <child_name> is not already used in <region>;
-- <child_region> is not already in <region>;
-- <child_region> is not the same as or contains <region>;
-==============================================================================*/
+char *Cmiss_region_get_name(struct Cmiss_region *region)
 {
-	int child_in_region, i, name_in_use, return_code;
-	struct Cmiss_region_child *region_child, **temp_child;
+	char *name = NULL;
+	if (region && region->name)
+	{
+		name = duplicate_string(region->name); 
+	}
+	return (name);
+}
 
-	ENTER(Cmiss_region_add_child_region);
-	if (region && child_name &&
-		child_region && (-1 <= child_position) &&
-		(child_position <= region->number_of_child_regions))
+int Cmiss_region_set_name(struct Cmiss_region *region, const char *name)
+{
+	int return_code = 0;
+	if (region && name && is_standard_object_name(name))
 	{
 		return_code = 1;
-		/* check child name is valid */
-		if (!is_standard_object_name(child_name))
+		if ((NULL == region->name) || strcmp(region->name, name))
 		{
-			display_message(ERROR_MESSAGE, "Cmiss_region_add_child_region.  "
-				"'%s' is not a valid name for a child region", child_name);
-			return_code = 0;
-		}
-		/* check not putting region in itself either directly or indirectly */ 
-		if (Cmiss_region_contains_Cmiss_region(child_region, region))
-		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_region_add_child_region.  Cannot add region to itself");
-			return_code = 0;
-		}
-		/* check child_name and child_region not already in child list */
-		name_in_use = 0;
-		child_in_region = 0;
-		for (i = 0; i < region->number_of_child_regions; i++)
-		{
-			if (0 == strcmp(child_name, region->child[i]->name))
+			if ((NULL == region->parent) ||
+				(NULL == Cmiss_region_find_child_by_name_internal(region->parent, name)))
 			{
-				name_in_use = 1;
-			}
-			if (child_region == region->child[i]->region)
-			{
-				child_in_region = 1;
-			}
-		}
-		if (name_in_use)
-		{
-			display_message(ERROR_MESSAGE, "Cmiss_region_add_child_region.  "
-				"Region already contains child named '%s'", child_name);
-			return_code = 0;
-		}
-		if (child_in_region)
-		{
-			display_message(ERROR_MESSAGE, "Cmiss_region_add_child_region.  "
-				"Region already contains this child region");
-			return_code = 0;
-		}
-		if (child_region->parent)
-		{
-			display_message(ERROR_MESSAGE, "Cmiss_region_add_child_region.  "
-				"Child region already has a parent");
-			return_code = 0;
-		}
-		if (return_code)
-		{
-			if (region_child = CREATE(Cmiss_region_child)(child_name, child_region))
-			{
-				if (REALLOCATE(temp_child, region->child, struct Cmiss_region_child *,
-					region->number_of_child_regions + 1))
+				char *temp_name = duplicate_string(name);
+				if (region->name)
 				{
-					if (-1 == child_position)
-					{
-						temp_child[region->number_of_child_regions] = region_child;
-					}
-					else
-					{
-						for (i = region->number_of_child_regions; i > child_position; i--)
-						{
-							temp_child[i] = temp_child[i - 1];
-						}
-						temp_child[child_position] = region_child;
-					}
-					child_region->parent = region;
-					region->child = temp_child;
-					region->number_of_child_regions++;
-					/* note changes and inform clients */
-					if (! region->children_changed)
-					{
-						region->children_changed = 1;
-						region->child_added = child_region;
-					}
-					else
-					{
-						/* More than a simple change */
-						region->child_added = (struct Cmiss_region *)NULL;
-						region->child_removed = (struct Cmiss_region *)NULL;
-						if (region->child_removed_name)
-						{
-							DEALLOCATE(region->child_removed_name);
-						}
-					}
-					Cmiss_region_update(region);
+					DEALLOCATE(region->name);
+				}
+				region->name = temp_name;
+				region->changes.name_changed = 1;
+				Cmiss_region_update(region);
+			}
+			else
+			{
+				return_code = 0; // name is in use by sibling
+			}
+		}
+	}
+	return (return_code);
+}
+
+char *Cmiss_region_get_root_region_path(void)
+{
+	return duplicate_string(CMISS_REGION_PATH_SEPARATOR_STRING);
+}
+
+char *Cmiss_region_get_path(struct Cmiss_region *region)
+{
+	char *path = NULL;
+
+	ENTER(Cmiss_region_get_path);
+	if (region)
+	{
+		int error = 0;
+		Cmiss_region* parent = region->parent;
+		if (parent)
+		{
+			if (path = Cmiss_region_get_path(parent))
+			{
+				append_string(&path, region->name, &error);
+			}
+			else
+			{
+				DEALLOCATE(path);
+				error = 1;
+			}
+		}
+		append_string(&path, CMISS_REGION_PATH_SEPARATOR_STRING, &error);
+	}
+	LEAVE;
+	
+	return (path);
+}
+
+char *Cmiss_region_get_relative_path(struct Cmiss_region *region,
+	struct Cmiss_region *other_region)
+{
+	char *path = NULL;
+
+	ENTER(Cmiss_region_get_relative_path);
+	if (region && other_region)
+	{
+		int error = 0;
+		if (region != other_region) 
+		{
+			Cmiss_region* parent = region->parent;
+			if (parent)
+			{
+				if (path = Cmiss_region_get_relative_path(parent, other_region))
+				{
+					append_string(&path, region->name, &error);
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE, "Cmiss_region_add_child_region.  "
-						"Could not add region child to list");
-					return_code = 0;
-					DESTROY(Cmiss_region_child)(&region_child);
+					error = 1;
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Cmiss_region_add_child_region.  Could not make region child");
-				return_code = 0;
+				error = 1;
 			}
 		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_region_add_child_region.  Invalid argument(s)");
-		return_code = 0;
+		append_string(&path, CMISS_REGION_PATH_SEPARATOR_STRING, &error);
 	}
 	LEAVE;
+	
+	return (path);
+}
 
-	return (return_code);
-} /* Cmiss_region_add_child_region */
-
-int Cmiss_region_remove_child_region(struct Cmiss_region *region,
-	struct Cmiss_region *child_region)
-/*******************************************************************************
-LAST MODIFIED : 27 March 2003
-
-DESCRIPTION :
-Removes <child_region> from <region>.
-==============================================================================*/
+struct Cmiss_region *Cmiss_region_get_parent(struct Cmiss_region *region)
 {
-	char *child_region_name;
-	int child_in_region, i, return_code;
+	return (region && region->parent) ?
+		ACCESS(Cmiss_region)(region->parent) : NULL;
+}
 
-	ENTER(Cmiss_region_remove_child_region);
-	if (region && child_region)
+struct Cmiss_region *Cmiss_region_get_first_child(struct Cmiss_region *region)
+{
+	return (region && region->first_child) ?
+		ACCESS(Cmiss_region)(region->first_child) : NULL;
+}
+
+struct Cmiss_region *Cmiss_region_get_next_sibling(struct Cmiss_region *region)
+{
+	return (region && region->next_sibling) ?
+		ACCESS(Cmiss_region)(region->next_sibling) : NULL;
+}
+
+struct Cmiss_region *Cmiss_region_get_previous_sibling(struct Cmiss_region *region)
+{
+	return (region && region->previous_sibling) ?
+		ACCESS(Cmiss_region)(region->previous_sibling) : NULL;
+}
+
+void Cmiss_region_reaccess_next_sibling(struct Cmiss_region **region_address)
+{
+	if (region_address && (*region_address))
 	{
-		child_in_region = 0;
-		for (i = 0; i < region->number_of_child_regions; i++)
+		REACCESS(Cmiss_region)(region_address, (*region_address)->next_sibling);
+	}
+}
+
+int Cmiss_region_append_child(struct Cmiss_region *region,
+	struct Cmiss_region *new_child)
+{
+	return Cmiss_region_insert_child_before(region, new_child, NULL);
+}
+
+int Cmiss_region_insert_child_before(struct Cmiss_region *region,
+	struct Cmiss_region *new_child, struct Cmiss_region *ref_child)
+{
+	int return_code = 0;
+	if (region && new_child &&
+		((NULL == ref_child) || (ref_child->parent == region)) &&
+		(!Cmiss_region_contains_subregion(new_child, region)) &&
+		((NULL != new_child->name) && ((new_child->parent == region) ||
+		(NULL == Cmiss_region_find_child_by_name_internal(region,
+			new_child->name)))))
+	{
+		Cmiss_region_begin_change(region);
+		if (new_child->parent)
 		{
-			if (child_in_region)
-			{
-				region->child[i - 1] = region->child[i];
-			}
-			else if (child_region == region->child[i]->region)
-			{
-				if (! region->children_changed)
-				{
-					/* Copy out the name before we remove it */
-					child_region_name = duplicate_string((region->child[i])->name);
-				}
-				region->child[i]->region->parent = NULL;
-				DESTROY(Cmiss_region_child)(&(region->child[i]));
-				child_in_region = 1;
-			}
+			Cmiss_region_remove_child(new_child->parent, new_child);
 		}
-		if (child_in_region)
+		new_child->parent = region;
+		if (ref_child)
 		{
-			(region->number_of_child_regions)--;
-			/* note changes and inform clients */
-			if (! region->children_changed)
+			new_child->next_sibling = ref_child;
+			new_child->previous_sibling = ref_child->previous_sibling;
+			ref_child->previous_sibling = new_child;
+			if (new_child->previous_sibling)
 			{
-				region->children_changed = 1;
-				region->child_removed = child_region;
-				region->child_removed_name = child_region_name;
+				new_child->previous_sibling->next_sibling = ACCESS(Cmiss_region)(new_child);
 			}
 			else
 			{
-				/* More than a simple change */
-				region->child_added = (struct Cmiss_region *)NULL;
-				region->child_removed = (struct Cmiss_region *)NULL;
-				if (region->child_removed_name)
+				region->first_child = ACCESS(Cmiss_region)(new_child);
+			}
+		}
+		else
+		{
+			if (region->first_child)
+			{
+				Cmiss_region *last_child = region->first_child;
+				while (last_child->next_sibling)
 				{
-					DEALLOCATE(region->child_removed_name);
+					last_child = last_child->next_sibling;
 				}
+				last_child->next_sibling = ACCESS(Cmiss_region)(new_child);
+				new_child->previous_sibling = last_child;
+			}
+			else
+			{
+				region->first_child = ACCESS(Cmiss_region)(new_child);
+			}
+		}
+		if (!region->changes.children_changed)
+		{
+			region->changes.children_changed = 1;
+			region->changes.child_added = ACCESS(Cmiss_region)(new_child);
+		}
+		else
+		{
+			/* multiple changes */
+			REACCESS(Cmiss_region)(&region->changes.child_added, NULL);
+			REACCESS(Cmiss_region)(&region->changes.child_removed, NULL);
+		}
+		Cmiss_region_end_change(region);
+		return_code = 1;
+	}
+	return (return_code);
+}
+
+int Cmiss_region_remove_child(struct Cmiss_region *region,
+	struct Cmiss_region *old_child)
+{
+	int return_code = 0;
+	if (region && old_child)
+	{
+		if (old_child->parent == region)
+		{
+			if (old_child == region->first_child)
+			{
+				DEACCESS(Cmiss_region)(&region->first_child);
+				region->first_child = old_child->next_sibling;
+			}
+			else
+			{
+				DEACCESS(Cmiss_region)(&old_child->previous_sibling->next_sibling);
+				old_child->previous_sibling->next_sibling = old_child->next_sibling;
+				old_child->previous_sibling = NULL;
+			}
+			if (old_child->next_sibling)
+			{
+				old_child->next_sibling->previous_sibling = old_child->previous_sibling;
+				old_child->next_sibling = NULL;
+			}
+			old_child->parent = NULL;
+			if (!region->changes.children_changed)
+			{
+				region->changes.children_changed = 1;
+				region->changes.child_removed = ACCESS(Cmiss_region)(old_child);
+			}
+			else
+			{
+				/* multiple changes */
+				REACCESS(Cmiss_region)(&region->changes.child_added, NULL);
+				REACCESS(Cmiss_region)(&region->changes.child_removed, NULL);
 			}
 			Cmiss_region_update(region);
 			return_code = 1;
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "Cmiss_region_remove_child_region.  "
-				"Region does not contain this child region");
-			return_code = 0;
-		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_region_remove_child_region.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
 	return (return_code);
-} /* Cmiss_region_remove_child_region */
+}
 
-int Cmiss_region_contains_Cmiss_region(struct Cmiss_region *region,
-	struct Cmiss_region *other_region)
-/*******************************************************************************
-LAST MODIFIED : 12 November 2002
-
-DESCRIPTION :
-Returns true if <region> contains <other_region>, this is the case if
-<region> equals <other_region> or any of child regions satisfy this function.
-==============================================================================*/
+int Cmiss_region_contains_subregion(struct Cmiss_region *region,
+	struct Cmiss_region *subregion)
 {
-	int i, return_code;
-
-	ENTER(Cmiss_region_contains_Cmiss_region);
-	return_code = 0;
-	if (region && other_region)
+	int return_code = 0;
+	if (region && subregion)
 	{
-		if (region == other_region)
+		do
 		{
-			return_code = 1;
-		}
-		else
-		{
-			for (i = 0; (i < region->number_of_child_regions) && (!return_code); i++)
+			if (subregion == region)
 			{
-				return_code = Cmiss_region_contains_Cmiss_region(
-					region->child[i]->region, other_region);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_region_contains_Cmiss_region.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_region_contains_Cmiss_region */
-
-struct Cmiss_region *Cmiss_region_get_child_region_from_name(
-	struct Cmiss_region *region, const char *child_name)
-/*******************************************************************************
-LAST MODIFIED : 29 October 2002
-
-DESCRIPTION :
-Returns a pointer to the child of <region> known by <child_name>.
-Returns NULL without error messages if no child of that name exists in <region>.
-==============================================================================*/
-{
-	int i;
-	struct Cmiss_region *child_region;
-
-	ENTER(Cmiss_region_get_child_region_from_name);
-	child_region = (struct Cmiss_region *)NULL;
-	if (region && child_name)
-	{
-		for (i = 0; (i < region->number_of_child_regions) && (!child_region); i++)
-		{
-			if (0 == strcmp(child_name, region->child[i]->name))
-			{
-				child_region = (region->child[i])->region;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_region_get_child_region_from_name.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (child_region);
-} /* Cmiss_region_get_child_region_from_name */
-
-int Cmiss_region_get_child_region_number(struct Cmiss_region *region,
-	struct Cmiss_region *child_region, int *child_number_address)
-/*******************************************************************************
-LAST MODIFIED : 25 March 2003
-
-DESCRIPTION :
-Returns in <child_number_address> the position of <child_region> in <region>,
-with numbering starting at 0.
-Returns 0 without error messages if <child_region> is not in <region>.
-==============================================================================*/
-{
-	int i, return_code;
-
-	ENTER(Cmiss_region_get_child_region_number);
-	if (region && child_region && child_number_address)
-	{
-		return_code = 0;
-		for (i = 0; (i < region->number_of_child_regions) && (0 == return_code);
-			i++)
-		{
-			if (child_region == region->child[i]->region)
-			{
-				*child_number_address = i;
 				return_code = 1;
+				break;
 			}
-		}
+		} while (NULL != (subregion = subregion->parent));
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_region_get_child_region_number.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
 	return (return_code);
-} /* Cmiss_region_get_child_region_number */
+}
 
-int Cmiss_region_set_child_region_number(struct Cmiss_region *region,
-	struct Cmiss_region *child_region, int child_number)
-/*******************************************************************************
-LAST MODIFIED : 24 March 2003
-
-DESCRIPTION :
-Changes the position of <child_region> in the list of children of <region> to
-<child_number>, with the first child being 0. A <child_number> of -1 puts the
-child at the bottom of the list.
-==============================================================================*/
+struct Cmiss_region *Cmiss_region_find_child_by_name(
+	struct Cmiss_region *region, const char *name)
 {
-	int current_child_number, i, return_code;
-	struct Cmiss_region_child *temp_child;
-
-	ENTER(Cmiss_region_set_child_region_number);
-	if (region && child_region && (-1 <= child_number) &&
-		(child_number < region->number_of_child_regions))
+	Cmiss_region *child = Cmiss_region_find_child_by_name_internal(region, name);
+	if (child)
 	{
-		if (Cmiss_region_get_child_region_number(region, child_region,
-			&current_child_number))
+		ACCESS(Cmiss_region)(child);
+	}
+	return (child);
+}
+
+struct Cmiss_region *Cmiss_region_find_subregion_at_path(
+	struct Cmiss_region *region, const char *path)
+{
+	Cmiss_region *subregion =
+		Cmiss_region_find_subregion_at_path_internal(region, path);
+	if (subregion)
+	{
+		ACCESS(Cmiss_region)(subregion);
+	}
+	return (subregion);
+}
+
+int Cmiss_region_get_region_from_path_deprecated(struct Cmiss_region *region,
+	const char *path, struct Cmiss_region **subregion_address)
+{
+	int return_code = 0;
+	if (subregion_address)
+	{
+		*subregion_address =
+			Cmiss_region_find_subregion_at_path_internal(region, path);
+		if (NULL != *subregion_address)
 		{
 			return_code = 1;
-			if (-1 == child_number)
-			{
-				child_number = region->number_of_child_regions - 1;
-			}
-			if (child_number != current_child_number)
-			{
-				temp_child = region->child[current_child_number];
-				if (current_child_number < child_number)
-				{
-					for (i = current_child_number; i < child_number; i++)
-					{
-						region->child[i] = region->child[i + 1];
-					}
-				}
-				else
-				{
-					for (i = current_child_number; i > child_number; i--)
-					{
-						region->child[i] = region->child[i - 1];
-					}
-				}
-				region->child[child_number] = temp_child;
-				/* note changes and inform clients */
-				region->children_changed = 1;
-				Cmiss_region_update(region);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_region_set_child_region_number.  Region is not a child");
-			return_code = 0;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_region_set_child_region_number.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
 	return (return_code);
-} /* Cmiss_region_set_child_region_number */
-
-int Cmiss_region_get_region_from_path(struct Cmiss_region *root_region,
-	const char *path, struct Cmiss_region **region_address)
-/*******************************************************************************
-LAST MODIFIED : 11 November 2002
-
-DESCRIPTION :
-Returns the region described relative to the <root_region> in <path>.
-<path> is of the format CHILD_NAME/CHILD_NAME/...
-where '/' is actually the CMISS_REGION_PATH_SEPARATOR_CHAR.
-Single leading and trailing separator characters are ignored, hence:
-- "/heart/coronaries/" = "heart/coronaries" -- the latter is preferred.
-- both "/" and "" refer to the root_region itself.
-If no region can be identified from path, returns successfully but with NULL
-in <region_address> 
-For safety, returns NULL in <region_address> on any error.
-==============================================================================*/
-{
-	char *child_name, *child_name_allocate, *child_name_end;
-	int return_code;
-	struct Cmiss_region *region;
-
-	ENTER(Cmiss_region_get_region_from_path);
-	if (root_region && path && region_address)
-	{
-		region = root_region;
-		child_name_allocate = duplicate_string(path);
-		child_name = child_name_allocate;
-		/* skip leading separator */
-		if (child_name[0] == CMISS_REGION_PATH_SEPARATOR_CHAR)
-		{
-			child_name++;
-		}
-		while (region && (child_name_end =
-			strchr(child_name, CMISS_REGION_PATH_SEPARATOR_CHAR)))
-		{
-			*child_name_end = '\0';
-			region = Cmiss_region_get_child_region_from_name(region, child_name);
-			*child_name_end = CMISS_REGION_PATH_SEPARATOR_CHAR;
-			child_name = child_name_end + 1;
-		}
-		/* already found the region if there was a single trailing separator */
-		if (region && (child_name[0] != '\0'))
-		{
-			region = Cmiss_region_get_child_region_from_name(region, child_name);
-		}
-		*region_address = region;
-		DEALLOCATE(child_name_allocate);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_region_get_region_from_path.  Invalid argument(s)");
-		if (region_address)
-		{
-			*region_address = (struct Cmiss_region *)NULL;
-		}
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_region_get_region_from_path */
+}
 
 struct Cmiss_region *Cmiss_region_get_or_create_region_at_path(
 	struct Cmiss_region *root_region, const char *path)
@@ -1572,15 +1400,12 @@ struct Cmiss_region *Cmiss_region_get_or_create_region_at_path(
 			{
 				*child_name_end = '\0';
 			}
-			child_region = Cmiss_region_get_child_region_from_name(region, child_name);
-			if (child_region)
-			{
-				ACCESS(Cmiss_region)(child_region);
-			}
-			else
+			child_region = Cmiss_region_find_child_by_name(region, child_name);
+			if (NULL == child_region)
 			{
 				child_region = Cmiss_region_create_share_globals(region);
-				if (!Cmiss_region_add_child_region(region, child_region, child_name, /*child_position*/-1))
+				Cmiss_region_set_name(child_region, child_name);
+				if (!Cmiss_region_append_child(region, child_region))
 				{
 					display_message(ERROR_MESSAGE,
 						"Cmiss_region_get_or_create_region_at_path.  Failed");
@@ -1615,7 +1440,7 @@ int Cmiss_region_get_partial_region_path(struct Cmiss_region *root_region,
 	const char *path, struct Cmiss_region **region_address,
 	char **region_path_address,	char **remainder_address)
 {
-	char *child_name, *child_name_allocate, *child_name_end, *child_name_start;
+	char *child_name, *path_copy, *child_name_end, *child_name_start;
 	int length, return_code;
 	struct Cmiss_region *next_region, *region;
 
@@ -1625,8 +1450,8 @@ int Cmiss_region_get_partial_region_path(struct Cmiss_region *root_region,
 	{
 		return_code = 1;
 		region = root_region;
-		child_name_allocate = duplicate_string(path);
-		child_name = child_name_allocate;
+		path_copy = duplicate_string(path);
+		child_name = path_copy;
 		/* skip leading separator */
 		if (child_name[0] == CMISS_REGION_PATH_SEPARATOR_CHAR)
 		{
@@ -1643,7 +1468,7 @@ int Cmiss_region_get_partial_region_path(struct Cmiss_region *root_region,
 				*child_name_end = '\0';
 			}
 			if (next_region =
-				Cmiss_region_get_child_region_from_name(region, child_name))
+					Cmiss_region_find_child_by_name_internal(region, child_name))
 			{
 				region = next_region;
 				if (child_name_end)
@@ -1701,7 +1526,7 @@ int Cmiss_region_get_partial_region_path(struct Cmiss_region *root_region,
 		}
 
 		*region_address = region;
-		DEALLOCATE(child_name_allocate);
+		DEALLOCATE(path_copy);
 	}
 	else
 	{
@@ -1815,212 +1640,6 @@ int Option_table_add_region_path_and_or_field_name_entry(
 	return (return_code);
 } /* Option_table_add_region_path_and_or_field_name_entry */
 
-int Cmiss_region_get_child_region_from_path(struct Cmiss_region *root_region,
-	const char *path, struct Cmiss_region **child_region_address,
-	const char **remaining_path_address)
-/*******************************************************************************
-LAST MODIFIED : 28 March 2003
-
-DESCRIPTION :
-Returns in <child_region> the child region of <root_region> named by the first
-part of <path> up to the CMISS_REGION_PATH_SEPARATOR_CHAR.
-<path> is allowed to have zero or one leading or trailing separators, except
-that "//" is illegal.
-<remaining_path> is advanced to the next child region name in <path> or NULL
-if none.
-Special case: "/" and "" both return <root_region>.
-Returns 0 with no error message if no child region found.
-For safety, returns NULL in <child_region_address> and either NULL or a valid
-pointer within path in <remaining_path_address> on any error.
-==============================================================================*/
-{
-	char *child_name_copy, *remaining_copy;
-	const char *child_name;
-	int return_code;
-
-	ENTER(Cmiss_region_get_child_region_from_path);
-	if (root_region && path && child_region_address && remaining_path_address)
-	{
-		return_code = 1;
-		child_name = path;
-		child_name_copy = (char *)NULL;
-		/* skip leading separator */
-		if (child_name[0] == CMISS_REGION_PATH_SEPARATOR_CHAR)
-		{
-			child_name++;
-		}
-		child_name_copy = duplicate_string(child_name);
-		if (*remaining_path_address =
-			strchr(child_name, CMISS_REGION_PATH_SEPARATOR_CHAR))
-		{
-			remaining_copy = strchr(child_name_copy, CMISS_REGION_PATH_SEPARATOR_CHAR);
-			*remaining_copy = '\0';
-		}
-		if (('\0' == child_name[0]) && ((char *)NULL == (*remaining_path_address)))
-		{
-			*child_region_address = root_region;
-		}
-		else
-		{
-			if (!(*child_region_address =
-				Cmiss_region_get_child_region_from_name(root_region, child_name_copy)))
-			{
-				return_code = 0;
-			}
-		}
-		DEALLOCATE(child_name_copy);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_region_get_child_region_from_path.  Invalid argument(s)");
-		if (child_region_address)
-		{
-			*child_region_address = (struct Cmiss_region *)NULL;
-		}
-		if (*remaining_path_address)
-		{
-			*remaining_path_address = (char *)NULL;
-		}
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_region_get_child_region_from_path */
-
-int Cmiss_region_get_number_of_child_regions(struct Cmiss_region *region,
-	int *number_of_child_regions_address)
-/*******************************************************************************
-LAST MODIFIED : 7 November 2002
-
-DESCRIPTION :
-Gets the number of child regions in <region>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Cmiss_region_get_number_of_child_regions);
-	if (region && number_of_child_regions_address)
-	{
-		*number_of_child_regions_address = region->number_of_child_regions;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_region_get_number_of_child_regions.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_region_get_number_of_child_regions */
-
-struct Cmiss_region *Cmiss_region_get_child_region(struct Cmiss_region *region,
-	int child_number)
-/*******************************************************************************
-LAST MODIFIED : 26 May 2008
-
-DESCRIPTION :
-Returns the child <child_number> of <region> if within the range from 0 to
-one less than number_of_child_regions, otherwise NULL.
-==============================================================================*/
-{
-	struct Cmiss_region *child_region;
-
-	ENTER(Cmiss_region_get_child_region);
-	child_region = (struct Cmiss_region *)NULL;
-	if (region)
-	{
-		if ((0 <= child_number) && (child_number < region->number_of_child_regions))
-		{
-			child_region = (region->child[child_number])->region;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_region_get_child_region.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (child_region);
-} /* Cmiss_region_get_child_region */
-
-int Cmiss_region_get_child_region_name(struct Cmiss_region *region,
-	int child_number, char **child_region_name_address)
-/*******************************************************************************
-LAST MODIFIED : 11 November 2002
-
-DESCRIPTION :
-Returns at <child_region_name_address> the name of child region <child_number>
-as known by <region>.
-<child_number> ranges from 0 to one less than number_of_child_regions.
-For safety, returns NULL in <child_region_name_address> on any error.
-Up to the calling function to deallocate the returned name.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Cmiss_region_get_child_region_name);
-	if (region && (0 <= child_number) &&
-		(child_number < region->number_of_child_regions) &&
-		child_region_name_address)
-	{
-		if (*child_region_name_address =
-			duplicate_string((region->child[child_number])->name))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_region_get_child_region_name.  Could not duplicate name");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_region_get_child_region_name.  Invalid argument(s)");
-		return_code = 0;
-		if (child_region_name_address)
-		{
-			*child_region_name_address = (char *)NULL;
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_region_get_child_region_name */
-
-int Cmiss_region_get_root_region_path(char **path_address)
-/*******************************************************************************
-LAST MODIFIED : 17 January 2003
-
-DESCRIPTION :
-Allocates and returns the path to the root_region.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Cmiss_region_get_root_region_path);
-	if (path_address)
-	{
-		*path_address = duplicate_string(CMISS_REGION_PATH_SEPARATOR_STRING);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_region_get_root_region_path.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-	return (return_code);
-} /* Cmiss_region_get_root_region_path */
-
 int Cmiss_region_list(struct Cmiss_region *region,
 	int indent, int indent_increment)
 /*******************************************************************************
@@ -2032,17 +1651,17 @@ indented from the left margin by <indent> spaces; this is incremented by
 <indent_increment> for each child level.
 ==============================================================================*/
 {
-	int i, return_code;
+	int return_code;
 
 	ENTER(Cmiss_region_list);
 	if (region && (0 <= indent) && (0 < indent_increment))
 	{
-		for (i = 0; i < region->number_of_child_regions; i++)
+		Cmiss_region *child = region->first_child;
+		while (child)
 		{
-			display_message(INFORMATION_MESSAGE, "%*s%s\n", indent, " ",
-				(region->child[i])->name);
-			Cmiss_region_list((region->child[i])->region,
-				indent + indent_increment, indent_increment);
+			display_message(INFORMATION_MESSAGE, "%*s%s\n", indent, " ", child->name);
+			Cmiss_region_list(child, indent + indent_increment, indent_increment);
+			child = child->next_sibling;
 		}
 		return_code = 1;
 	}
@@ -2071,19 +1690,8 @@ This function is only externally visible to context objects.
 	ENTER(Cmiss_region_private_attach_any_object);
 	if (region && any_object)
 	{
-		if (ADD_OBJECT_TO_LIST(Any_object)(any_object, region->any_object_list))
-		{
-			/* note changes and inform clients */
-			region->objects_changed = 1;
-			Cmiss_region_update(region);
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_region_private_attach_any_object.  Could not attach object");
-			return_code = 0;
-		}
+		return_code =
+			ADD_OBJECT_TO_LIST(Any_object)(any_object, region->any_object_list);
 	}
 	else
 	{
@@ -2116,20 +1724,8 @@ This function is only externally visible to context objects.
 	{
 		if (IS_OBJECT_IN_LIST(Any_object)(any_object, region->any_object_list))
 		{
-			if (REMOVE_OBJECT_FROM_LIST(Any_object)(any_object,
-				region->any_object_list))
-			{
-				/* note changes and inform clients */
-				region->objects_changed = 1;
-				Cmiss_region_update(region);
-				return_code = 1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"Cmiss_region_private_detach_any_object.  "
-					"Could not remove object from list");
-				return_code = 0;
-			}
+			return_code = REMOVE_OBJECT_FROM_LIST(Any_object)(any_object,
+				region->any_object_list);
 		}
 		else
 		{
@@ -2215,120 +1811,6 @@ Cmiss_field_id Cmiss_region_add_field(Cmiss_region_id region,
 	return (field);
 } /* Cmiss_region_add_field */
 
-char *Cmiss_region_get_name(struct Cmiss_region *region)
-{
-	char *name = NULL;
-	if (region)
-	{
-		Cmiss_region* parent = region->parent;
-		if (parent)
-		{
-			for (int i = 0; i < parent->number_of_child_regions; i++)
-			{
-				if (region == parent->child[i]->region)
-				{
-					name = duplicate_string(parent->child[i]->name);
-					break;
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Cmiss_region_get_name.  Missing region");
-	}
-	
-	return (name);
-}
-
-char *Cmiss_region_get_path(struct Cmiss_region *region)
-{
-	char *path = NULL;
-
-	ENTER(Cmiss_region_get_path);
-	if (region)
-	{
-		int error = 0;
-		Cmiss_region* parent = region->parent;
-		if (parent)
-		{
-			if (path = Cmiss_region_get_path(parent))
-			{
-				const char *child_name = NULL;
-				for (int i = 0; i < parent->number_of_child_regions; i++)
-				{
-					if (region == parent->child[i]->region)
-					{
-						child_name = parent->child[i]->name;
-						break;
-					}
-				}
-				append_string(&path, child_name, &error);
-			}
-			else
-			{
-				error = 1;
-			}
-		}
-		append_string(&path, CMISS_REGION_PATH_SEPARATOR_STRING, &error);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Cmiss_region_get_path.  Missing region");
-	}
-	LEAVE;
-	
-	return (path);
-}
-
-char *Cmiss_region_get_relative_path(struct Cmiss_region *region,
-	struct Cmiss_region *other_region)
-{
-	char *path = NULL;
-
-	ENTER(Cmiss_region_get_relative_path);
-	if (region && other_region)
-	{
-		int error = 0;
-		if (region != other_region) 
-		{
-			Cmiss_region* parent = region->parent;
-			if (parent)
-			{
-				if (path = Cmiss_region_get_relative_path(parent, other_region))
-				{
-					const char *child_name = NULL;
-					for (int i = 0; i < parent->number_of_child_regions; i++)
-					{
-						if (region == parent->child[i]->region)
-						{
-							child_name = parent->child[i]->name;
-							break;
-						}
-					}
-					append_string(&path, child_name, &error);
-				}
-				else
-				{
-					error = 1;
-				}
-			}
-			else
-			{
-				error = 1;
-			}
-		}
-		append_string(&path, CMISS_REGION_PATH_SEPARATOR_STRING, &error);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Cmiss_region_get_relative_path.  Invalid arguments");
-	}
-	LEAVE;
-	
-	return (path);
-}
-
 int Cmiss_region_is_group(struct Cmiss_region *region)
 {
 	int return_code = 0;
@@ -2352,27 +1834,6 @@ int Cmiss_region_is_group(struct Cmiss_region *region)
 	LEAVE;
 	
 	return (return_code);
-}
-
-struct Cmiss_region *Cmiss_region_get_parent(struct Cmiss_region *region)
-{
-	struct Cmiss_region *parent = NULL;
-
-	ENTER(Cmiss_region_get_parent);
-	if (region)
-	{
-		if (region->parent)
-		{
-			parent = ACCESS(Cmiss_region)(region->parent);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Cmiss_region_get_parent.  Missing region");
-	}
-	LEAVE;
-	
-	return (parent);
 }
 
 /***************************************************************************//**

@@ -596,7 +596,7 @@ over a <region>
 			{
 				if (region_path)
 				{
-					if (Cmiss_region_get_region_from_path(package->root_region, region_path, &region))
+					if (Cmiss_region_get_region_from_path_deprecated(package->root_region, region_path, &region))
 					{
 						FE_region *fe_region = Cmiss_region_get_FE_region(region);
 						

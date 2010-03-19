@@ -545,7 +545,7 @@ already) and allows its contents to be modified.
 			}
 			else
 			{
-				Cmiss_region_get_root_region_path(&region_path);
+				region_path = Cmiss_region_get_root_region_path();
 			}
 			option_table = CREATE(Option_table)();
 			/* source field */
@@ -567,7 +567,7 @@ already) and allows its contents to be modified.
 			/* no errors,not asking for help */
 			if (return_code && node_flag)
 			{
-				if (Cmiss_region_get_region_from_path(
+				if (Cmiss_region_get_region_from_path_deprecated(
 							computed_field_lookup_package->root_region,region_path,
 							&region))
 				{
@@ -1181,7 +1181,7 @@ contents to be modified.
 			}
 			else
 			{
-				Cmiss_region_get_root_region_path(&region_path);
+				region_path = Cmiss_region_get_root_region_path();
 			}
 			option_table = CREATE(Option_table)();
 			Option_table_add_help(option_table,
@@ -1212,7 +1212,7 @@ contents to be modified.
 			/* no errors, not asking for help */
 			if (return_code && node_flag)
 			{
-				if (Cmiss_region_get_region_from_path(
+				if (Cmiss_region_get_region_from_path_deprecated(
 					computed_field_lookup_package->root_region, region_path, &region))
 				{
 					return_code = field_modify->update_field_and_deaccess(

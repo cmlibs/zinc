@@ -3367,6 +3367,7 @@ Notes:
 
 	ENTER(write_Cmiss_region);
 	USE_PARAMETER(force_no_master_region);
+	write_path_region = NULL;
 	if (output_file && region && root_region &&
 		(!(write_path && write_region)) &&
 		(0 <= indent) && write_info_list && path)
@@ -3378,15 +3379,8 @@ Notes:
 				 sets write_region to region */
 			write_path_copy = duplicate_string(write_path);
 			write_path_const = write_path;
-			if (Cmiss_region_get_child_region_from_path(region, write_path_const,
-				&write_path_region, &write_path_const))
-			{
-				if ((char *)NULL == write_path)
-				{
-					write_region = write_path_region;
-				}
-			}
-			else
+			write_path_region = Cmiss_region_find_child_by_name(region, write_path);
+			if (NULL == write_path_region)
 			{
 				display_message(ERROR_MESSAGE,
 					"write_Cmiss_region.  Invalid write path");
@@ -3396,6 +3390,10 @@ Notes:
 			{
 				fprintf(output_file, "<group name=\"%s\">\n", write_path_copy);
 			}
+		}
+		else
+		{
+			REACCESS(Cmiss_region)(&write_path_region, write_region); 
 		}
 		if (return_code)
 		{
@@ -3562,6 +3560,7 @@ Notes:
 		display_message(ERROR_MESSAGE, "write_Cmiss_region.  Invalid argument(s)");
 		return_code = 0;
 	}
+	REACCESS(Cmiss_region)(&write_path_region, NULL); 
 	LEAVE;
 
 	return (return_code);

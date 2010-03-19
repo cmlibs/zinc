@@ -9455,7 +9455,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				}
 				if (settings->seed_node_region_path)
 				{
-					if (!(Cmiss_region_get_region_from_path(
+					if (!(Cmiss_region_get_region_from_path_deprecated(
 						g_element_command_data->root_region,
 						settings->seed_node_region_path, &seed_node_region) &&
 						REACCESS(FE_region)(&settings->seed_node_region,

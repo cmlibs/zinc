@@ -54,6 +54,7 @@ finite element fields defined on or interpolated over them.
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/object.h"
+#include "region/cmiss_region.h"
 #include "region/cmiss_region_private.h"
 #include "user_interface/message.h"
 
@@ -7536,186 +7537,60 @@ transferred.
 	return (return_code);
 } /* FE_regions_merge */
 
-static int Cmiss_regions_FE_regions_can_be_merged_private(
-	struct Cmiss_region *global_region, struct Cmiss_region *region, 
-	struct Cmiss_region ***matching_regions_address,
-	int *number_of_matching_regions_address)
-/*******************************************************************************
-LAST MODIFIED : 4 March 2003
-
-DESCRIPTION :
-Returns true if the FE_region in <region> can be merged into the FE_region for
-<global_region>, and, recursively, if the same function returns true for all
-child regions with the same name.
-Uses <matching_regions_address> and <number_of_matching_regions_address> to
-store regions that have already been checked; every second member of the
-matching region array is the global_region that the prior region was matched to.
-The array at <matching_regions_address> should be deallocated after all calls to
-this function are completed.
-Assumes all master_fe_regions are in parents of the owning cmiss_region.
-==============================================================================*/
+/***************************************************************************//**
+ * Returns true if the FE_regions within the region tree can be merged into
+ * the global_region tree.
+ * 
+ * @param global_region  Region to check merge into.
+ * @param region  Source region tree to check merge.
+ * @return  1 if merge is possible, 0 if not i.e. some objects are incompatible.
+ */
+int Cmiss_regions_FE_regions_can_be_merged(
+	struct Cmiss_region *global_region, struct Cmiss_region *region)
 {
-	char *child_region_name;
-	int i, j, number_of_children, return_code;
-	struct Cmiss_region *child_region, *global_child_region,
-		*matching_global_region, **matching_regions;
+	char *child_region_name, *global_path, *path;
+	int return_code;
+	struct Cmiss_region *child_region, *global_child_region;
 	struct FE_region *fe_region, *global_fe_region;
 
-	ENTER(Cmiss_regions_FE_regions_can_be_merged_private);
-	if (region && global_region && matching_regions_address &&
-		number_of_matching_regions_address)
+	ENTER(Cmiss_regions_FE_regions_can_be_merged);
+	if (global_region && region)
 	{
 		return_code = 1;
-		/* check to see if this region has already been checked */
-		matching_regions = *matching_regions_address;
-		matching_global_region = (struct Cmiss_region *)NULL;
-		j = *number_of_matching_regions_address;
-		while ((0 < j) && (*matching_regions != region))
+		/* check FE_regions */
+		fe_region = Cmiss_region_get_FE_region(region);
+		global_fe_region = Cmiss_region_get_FE_region(global_region);
+		if (!FE_regions_can_be_merged(global_fe_region, fe_region))
 		{
-			matching_regions += 2;
-			j--;
-		}
-		if (j)
-		{
-			matching_global_region = *(matching_regions + 1);
-		}
-		if (matching_global_region && (matching_global_region != global_region))
-		{
+			global_path = Cmiss_region_get_path(global_region);
+			path = Cmiss_region_get_path(region);
 			display_message(ERROR_MESSAGE,
-				"Cmiss_regions_FE_regions_can_be_merged_private.  "
-				"Region graph mismatch");
+				"Cannot merge incompatible fields from temporary region %s into %s", path, global_path);
+			DEALLOCATE(path);
+			DEALLOCATE(global_path);
 			return_code = 0;
 		}
-		if (return_code)
+		/* check child regions can be merged */
+		child_region = Cmiss_region_get_first_child(region);
+		while ((NULL != child_region) && return_code)
 		{
-			/* check FE_regions */
-			fe_region = Cmiss_region_get_FE_region(region);
-			global_fe_region = Cmiss_region_get_FE_region(global_region);
-			if (fe_region && global_fe_region)
+			child_region_name = Cmiss_region_get_name(child_region);
+			global_child_region =
+				Cmiss_region_find_child_by_name(global_region, child_region_name);
+			if (global_child_region)
 			{
-				if (!FE_regions_can_be_merged(global_fe_region, fe_region))
-				{
-					display_message(ERROR_MESSAGE,
-						"Cmiss_regions_FE_regions_can_be_merged_private.  "
-						"FE_regions can not be merged");
-					return_code = 0;
-				}
+				return_code = 
+					FE_regions_check_master_FE_regions_against_parents(
+						fe_region, Cmiss_region_get_FE_region(child_region),
+						global_fe_region, Cmiss_region_get_FE_region(global_child_region)) &&
+					Cmiss_regions_FE_regions_can_be_merged(
+						global_child_region, child_region);
 			}
+			Cmiss_region_destroy(&global_child_region);
+			DEALLOCATE(child_region_name);
+			Cmiss_region_reaccess_next_sibling(&child_region);
 		}
-		if (return_code)
-		{
-			/* check child regions can be merged */
-			if (Cmiss_region_get_number_of_child_regions(region, &number_of_children))
-			{
-				for (i = 0; (i < number_of_children) && return_code; i++)
-				{
-					child_region = Cmiss_region_get_child_region(region, i);
-					if ((child_region != NULL) &&
-						Cmiss_region_get_child_region_name(region, i, &child_region_name))
-					{
-						if (global_child_region = Cmiss_region_get_child_region_from_name(
-							global_region, child_region_name))
-						{
-							/* check that fe_region/master_fe_region relationship is either
-								 nonexistant, through wholly different parents or exactly
-								 through these parents; also illegal for child_region to have a
-								 master when global_child_region does not */
-							if (FE_regions_check_master_FE_regions_against_parents(
-								fe_region, Cmiss_region_get_FE_region(child_region),
-								global_fe_region,
-								Cmiss_region_get_FE_region(global_child_region)))
-							{
-								if (!Cmiss_regions_FE_regions_can_be_merged_private(
-									global_child_region, child_region, matching_regions_address,
-									number_of_matching_regions_address))
-								{
-									display_message(ERROR_MESSAGE,
-										"Cmiss_regions_FE_regions_can_be_merged_private.  "
-										"Child region \"%s\" can not be merged", child_region_name);
-									return_code = 0;
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"Cmiss_regions_FE_regions_can_be_merged_private.  "
-									"Child region \"%s\" has invalid master region",
-									child_region_name);
-								return_code = 0;
-							}
-						}
-						DEALLOCATE(child_region_name);
-					}
-					else
-					{
-						return_code = 0;
-					}
-				}
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-		if (return_code && (!matching_global_region))
-		{
-			/* remember that this region has been matched */
-			if (REALLOCATE(matching_regions, *matching_regions_address,
-				struct Cmiss_region *, 2*(*number_of_matching_regions_address + 1)))
-			{
-				matching_regions[2*(*number_of_matching_regions_address)] = region;
-				matching_regions[2*(*number_of_matching_regions_address) + 1] =
-					global_region;
-				*matching_regions_address = matching_regions;
-				(*number_of_matching_regions_address)++;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Cmiss_regions_FE_regions_can_be_merged_private.  "
-					"Could not add region to matching region list");
-				return_code = 0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Cmiss_regions_FE_regions_can_be_merged_private.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Cmiss_regions_FE_regions_can_be_merged_private */
-
-int Cmiss_regions_FE_regions_can_be_merged(struct Cmiss_region *global_region,
-	struct Cmiss_region *region)
-/*******************************************************************************
-LAST MODIFIED : 4 March 2003
-
-DESCRIPTION :
-Returns true if the FE_region in <region> can be merged into the FE_region for
-<global_region>, and, recursively, if the same function returns true for all
-child regions with the same name.
-==============================================================================*/
-{
-	int number_of_matching_regions, return_code;
-	struct Cmiss_region **matching_regions;
-
-	ENTER(Cmiss_regions_FE_regions_can_be_merged);
-	if (region && global_region)
-	{
-		/* need to build up a list of matching regions from region and global_region
-			 so that consistency of region graph can be checked */
-		matching_regions = (struct Cmiss_region **)NULL;
-		number_of_matching_regions = 0;
-		return_code = Cmiss_regions_FE_regions_can_be_merged_private(global_region, 
-			region, &matching_regions, &number_of_matching_regions);
-		if (matching_regions)
-		{
-			DEALLOCATE(matching_regions);
-		}
+		REACCESS(Cmiss_region)(&child_region, NULL);
 	}
 	else
 	{
@@ -7728,245 +7603,95 @@ child regions with the same name.
 	return (return_code);
 } /* Cmiss_regions_FE_regions_can_be_merged */
 
+/****************************************************************************//**
+ * Merges the fields, nodes and elements of region into global_region.
+ * 
+ * @param global_region  Region to merge into.
+ * @param region  Source region to merge.
+ * @param merge_only_existing_regions  If set, only regions with existing
+ * global_region counterparts are merged in this sweep; should call this function
+ * a second time without this flag set in order to merge all regions.
+ * @param new_global_region  Set to 1 if global_region was created immediately
+ * before this call (by this function, nested) and therefore must be merged.
+ * @param embedding_data  Contains root region for embedded element:xi locations.
+ * @return  1 if merge was successful, 0 if not.
+ */
 static int Cmiss_regions_merge_FE_regions_private(
 	struct Cmiss_region *global_region, struct Cmiss_region *region,
-	int match_only_existing_regions,
-	struct Cmiss_region ***matching_regions_address,
-	int *number_of_matching_regions_address,
+	int merge_only_existing_regions, int new_global_region,
 	struct FE_regions_merge_embedding_data *embedding_data)
-/*******************************************************************************
-LAST MODIFIED : 29 November 2002
-
-DESCRIPTION :
-Merges the fields, nodes and elements of <region> into <global_region>.
-Uses <matching_regions_address> and <number_of_matching_regions_address> to
-store regions that have already been merged; every second member of the merged
-region array is the global_region that the prior region was merged with.
-The array at <matching_regions_address> should be deallocated after all calls to
-this function are completed.
-If <match_only_existing_regions> is true, only regions with existing
-global_region counterparts are merged in this sweep; should call this function a
-second time without this flag set in order to merge all regions.
-Assumes all master_fe_regions are in parents of the owning cmiss_region.
-==============================================================================*/
 {
-	char *child_region_name;
-	int i, j, merge_now, number_of_children, return_code;
-	struct Cmiss_region *child_region, *global_child_region,
-		*global_master_region, *master_region, *merged_global_region,
-		**matching_regions;
-	struct FE_region *fe_region, *global_fe_region, *master_fe_region;
+	char *child_region_name, *global_path, *path;
+	int new_global_child, return_code;
+	struct Cmiss_region *child_region, *global_child_region;
+	struct FE_region *fe_region, *global_fe_region;
 
 	ENTER(Cmiss_regions_merge_FE_regions_private);
-	if (global_region && region && matching_regions_address &&
-		number_of_matching_regions_address && embedding_data)
+	if (global_region && region && embedding_data)
 	{
 		return_code = 1;
 		Cmiss_region_begin_change(global_region);
-		/* check to see if this region is already merged */
-		matching_regions = *matching_regions_address;
-		merged_global_region = (struct Cmiss_region *)NULL;
-		j = *number_of_matching_regions_address;
-		while ((0 < j) && (*matching_regions != region))
+
+		if (merge_only_existing_regions || new_global_region)
 		{
-			matching_regions += 2;
-			j--;
-		}
-		if (j)
-		{
-			merged_global_region = *(matching_regions + 1);
-		}
-		merge_now = 1;
-		if (merged_global_region)
-		{
-			if (merged_global_region != global_region)
-			{
-				display_message(ERROR_MESSAGE,
-					"Cmiss_regions_merge_FE_regions_private.  Region graph mismatch");
-				return_code = 0;
-			}
-		}
-		else
-		{
-			/* merge FE_regions */
 			fe_region = Cmiss_region_get_FE_region(region);
 			global_fe_region = Cmiss_region_get_FE_region(global_region);
-			if (fe_region)
+			if (Cmiss_region_is_group(region))
 			{
-				if (FE_region_get_immediate_master_FE_region(fe_region,
-					&master_fe_region))
+				return_code = FE_regions_merge_with_master(global_fe_region, fe_region);
+			}
+			else
+			{
+				return_code = FE_regions_merge(global_fe_region, fe_region, embedding_data);
+			}
+			if (!return_code)
+			{
+				global_path = Cmiss_region_get_path(global_region);
+				path = Cmiss_region_get_path(region);
+				display_message(ERROR_MESSAGE,
+					"Could not merge temporary region %s into %s", path, global_path);
+				DEALLOCATE(path);
+				DEALLOCATE(global_path);
+			}
+		}
+
+		/* merge child regions */
+		child_region = Cmiss_region_get_first_child(region);
+		while ((NULL != child_region) && return_code)
+		{
+			child_region_name = Cmiss_region_get_name(child_region);
+			global_child_region =
+				Cmiss_region_find_child_by_name(global_region, child_region_name);
+			new_global_child = 0;
+			if ((NULL == global_child_region) && (!merge_only_existing_regions))
+			{
+				if (Cmiss_region_is_group(child_region))
 				{
-					if (master_fe_region)
-					{
-						/* determine whether master_region has been merged already */
-						if (FE_region_get_Cmiss_region(master_fe_region, &master_region))
-						{
-							matching_regions = *matching_regions_address;
-							j = *number_of_matching_regions_address;
-							while ((0 < j) && (*matching_regions != master_region))
-							{
-								matching_regions += 2;
-								j--;
-							}
-							if (j)
-							{
-								/* master region merged: merge now */
-								/* get global_master */
-								global_master_region = *(matching_regions + 1);
-								if (!global_fe_region)
-								{
-									Cmiss_region_attach_fields(global_region,
-										global_master_region, CMISS_REGION_SHARE_FIELDS_GROUP);
-									global_fe_region = Cmiss_region_get_FE_region(global_region); 
-									if (!global_fe_region)
-									{
-										display_message(ERROR_MESSAGE,
-											"Cmiss_regions_merge_FE_regions_private.  "
-											"Could not create fields for group");
-										return_code = 0;
-									}
-								}
-								if (global_fe_region)
-								{
-									if (!FE_regions_merge_with_master(global_fe_region,
-										fe_region))
-									{
-										display_message(ERROR_MESSAGE,
-											"Cmiss_regions_merge_FE_regions_private.  "
-											"Could not merge FE_region with master");
-										return_code = 0;
-									}
-								}
-							}
-							else
-							{
-								/* master region not merged: merge later */
-								merge_now = 0;
-							}
-						}
-						else
-						{
-							return_code = 0;
-						}
-					}
-					else
-					{
-						if (!global_fe_region)
-						{
-							/* ???GRC Future optimisation is to just ACCESS the incoming region,
-							 * but may need to handle others regions' groups being children */
-							Cmiss_region_attach_fields(global_region, region, CMISS_REGION_SHARE_BASES_SHAPES);
-							global_fe_region = Cmiss_region_get_FE_region(global_region);
-						}
-						if (!FE_regions_merge(global_fe_region, fe_region, embedding_data))
-						{
-							display_message(ERROR_MESSAGE,
-								"Cmiss_regions_merge_FE_regions_private.  "
-								"Could not merge FE_regions");
-							return_code = 0;
-						}
-					}
+					global_child_region = Cmiss_region_create_group(global_region);
 				}
 				else
+				{
+					global_child_region =
+						Cmiss_region_create_share_globals(global_region);
+				}
+				new_global_child = 1;
+				Cmiss_region_set_name(global_child_region, child_region_name);
+				if (!Cmiss_region_append_child(global_region, global_child_region))
 				{
 					return_code = 0;
 				}
 			}
+			if (global_child_region && return_code)
+			{
+				return_code = Cmiss_regions_merge_FE_regions_private(
+					global_child_region, child_region, merge_only_existing_regions,
+					new_global_child, embedding_data);
+			}
+			Cmiss_region_destroy(&global_child_region);
+			DEALLOCATE(child_region_name);
+			Cmiss_region_reaccess_next_sibling(&child_region);
 		}
-
-		if (return_code && (!merged_global_region) && merge_now)
-		{
-			/* remember that this region has been merged */
-			if (REALLOCATE(matching_regions, *matching_regions_address,
-				struct Cmiss_region *, 2*(*number_of_matching_regions_address + 1)))
-			{
-				matching_regions[2*(*number_of_matching_regions_address)] = region;
-				matching_regions[2*(*number_of_matching_regions_address) + 1] =
-					global_region;
-				*matching_regions_address = matching_regions;
-				(*number_of_matching_regions_address)++;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Cmiss_regions_merge_FE_regions_private.  "
-					"Could not add region to merged region list");
-				return_code = 0;
-			}
-		}
-		
-		if (return_code && merge_now)
-		{
-			/* merge child regions */
-			if (Cmiss_region_get_number_of_child_regions(region, &number_of_children))
-			{
-				for (i = 0; (i < number_of_children) && return_code; i++)
-				{
-					child_region = Cmiss_region_get_child_region(region, i);
-					if ((child_region != NULL) &&
-						Cmiss_region_get_child_region_name(region, i, &child_region_name))
-					{
-						/* get global child of same name */
-						global_child_region = Cmiss_region_get_child_region_from_name(global_region, child_region_name);
-						if (global_child_region)
-						{
-							ACCESS(Cmiss_region)(global_child_region);
-						}
-						else if (!match_only_existing_regions)
-						{
-							/* see if there is a merged equivalent for this child */
-							matching_regions = *matching_regions_address;
-							j = *number_of_matching_regions_address;
-							while ((0 < j) && (*matching_regions != child_region))
-							{
-								matching_regions += 2;
-								j--;
-							}
-							if (j)
-							{
-								global_child_region = ACCESS(Cmiss_region)(*(matching_regions + 1));
-							}
-							else
-							{
-								/* create region without fields; these are added later */
-								global_child_region = CREATE(Cmiss_region)();
-							}
-							if (!Cmiss_region_add_child_region(global_region,
-								global_child_region, child_region_name, /*child_position*/-1))
-							{
-								display_message(ERROR_MESSAGE,
-									"Cmiss_regions_merge_FE_regions_private.  "
-									"Could not add child region \"%s\"", child_region_name);
-								return_code = 0;
-							}
-						}
-						if (global_child_region && return_code)
-						{
-							if (!Cmiss_regions_merge_FE_regions_private(
-								global_child_region, child_region, match_only_existing_regions,
-								matching_regions_address, number_of_matching_regions_address,
-								embedding_data))
-							{
-								display_message(ERROR_MESSAGE,
-									"Cmiss_regions_merge_FE_regions_private.  "
-									"Could not merge child region \"%s\"", child_region_name);
-								return_code = 0;
-							}
-						}
-						REACCESS(Cmiss_region)(&global_child_region,NULL);
-						DEALLOCATE(child_region_name);
-					}
-					else
-					{
-						return_code = 0;
-					}
-				}
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
+		REACCESS(Cmiss_region)(&child_region, NULL);
 
 		Cmiss_region_end_change(global_region);
 	}
@@ -8002,21 +7727,14 @@ required at this time for import functions. If this is required in future,
 FE_regions_merge would have to be changed.
 ==============================================================================*/
 {
-	int number_of_matching_regions, return_code;
-	struct Cmiss_region **matching_regions;
+	int return_code;
 	struct FE_regions_merge_embedding_data embedding_data;
 
 	ENTER(Cmiss_regions_merge_FE_regions);
 	if (global_region && region)
 	{
 		Cmiss_region_begin_change(global_region);
-		/* must merge child regions that have existing regions in global_region
-			 before new regions so that they merge in correctly. Build up a table
-			 correlating regions in region with counterparts in global_region so
-			 that region graph can be constructed correctly */
-		matching_regions = (struct Cmiss_region **)NULL;
-		number_of_matching_regions = 0;
-		/*???RC embedding data currenty only allows embedding elements to be in
+		/*???RC embedding data currently only allows embedding elements to be in
 			the root region */
 		embedding_data.root_fe_region = Cmiss_region_get_FE_region(global_region);
 		if (embedding_data.root_fe_region&&
@@ -8025,16 +7743,14 @@ FE_regions_merge would have to be changed.
 			embedding_data.root_fe_region =
 				embedding_data.root_fe_region->master_fe_region;
 		}
+		/* merge existing regions before new regions to handle embedding cleanly */
+		/* ???GRC not a complete solution */
 		return_code = Cmiss_regions_merge_FE_regions_private(
-			global_region, region, /*match_only_existing_regions*/1,
-			&matching_regions, &number_of_matching_regions, &embedding_data) &&
+			global_region, region, /*merge_only_existing_regions*/1,
+			/*new_global_region*/0, &embedding_data) &&
 			Cmiss_regions_merge_FE_regions_private(
-				global_region, region, /*match_only_existing_regions*/0,
-				&matching_regions, &number_of_matching_regions, &embedding_data);
-		if (matching_regions)
-		{
-			DEALLOCATE(matching_regions);
-		}
+				global_region, region, /*merge_only_existing_regions*/0,
+				/*new_global_region*/0, &embedding_data);
 		Cmiss_region_end_change(global_region);
 	}
 	else

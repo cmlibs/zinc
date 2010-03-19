@@ -239,7 +239,7 @@ is in the root_region itself. The REGION_PATH must end in
 			}
 			else if (1 == IO_stream_scan(input_file, " %d", &(cm.number)))
 			{
-				if (Cmiss_region_get_region_from_path(root_region, first_string,
+				if (Cmiss_region_get_region_from_path_deprecated(root_region, first_string,
 					&region) && region)
 				{
 					element_type_string = second_string;
@@ -3561,16 +3561,12 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 							}
 							else
 							{
-								if (read_region = Cmiss_region_get_child_region_from_name(
-									region, region_path))
-								{
-									ACCESS(Cmiss_region)(read_region);
-								}
-								else
+								read_region = Cmiss_region_find_child_by_name(region, region_path);
+								if (NULL == read_region)
 								{
 									read_region = Cmiss_region_create_group(region);
-									if (!Cmiss_region_add_child_region(region,
-										read_region, region_path, /*child_position*/-1))
+									Cmiss_region_set_name(read_region, region_path);
+									if (!Cmiss_region_append_child(region, read_region))
 									{
 										location = IO_stream_get_location_string(input_file);
 										display_message(ERROR_MESSAGE,

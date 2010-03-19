@@ -2249,7 +2249,7 @@ and allows its contents to be modified.
 				}
 				Cmiss_field_module_destroy(&temp_field_module);
 			}
-			Cmiss_region_get_root_region_path(&region_path);
+			region_path = Cmiss_region_get_root_region_path();
 			if (seed_element)
 			{
 				ACCESS(FE_element)(seed_element);
@@ -2277,7 +2277,7 @@ and allows its contents to be modified.
 				}
 				if (return_code)
 				{
-					return_code = Cmiss_region_get_region_from_path(
+					return_code = Cmiss_region_get_region_from_path_deprecated(
 						computed_field_integration_package->root_region, 
 						region_path, &region);
 					ACCESS(Cmiss_region)(region);
@@ -2465,7 +2465,7 @@ and allows its contents to be modified.
 		region = (struct Cmiss_region *)NULL;
 		region_path = (char *)NULL;
 		return_code=1;
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 		seed_element = (FE_element *)NULL;
 		if ((!state->current_token) ||
 			(strcmp(PARSER_HELP_STRING, state->current_token)&&
@@ -2489,7 +2489,7 @@ and allows its contents to be modified.
 			}
 			if (return_code)
 			{
-				return_code = Cmiss_region_get_region_from_path(
+				return_code = Cmiss_region_get_region_from_path_deprecated(
 					computed_field_integration_package->root_region, 
 					region_path, &region);
 				ACCESS(Cmiss_region)(region);

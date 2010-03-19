@@ -2888,11 +2888,9 @@ static int write_Cmiss_region(FILE *output_file,
 		}
 
 		/* recursively output child regions */
-		int number_of_children;
-		Cmiss_region_get_number_of_child_regions(region, &number_of_children);
-		for (int i = 0; (i < number_of_children) && return_code; i++)
+		Cmiss_region *child_region = Cmiss_region_get_first_child(region);
+		while (child_region)
 		{
-			Cmiss_region *child_region = Cmiss_region_get_child_region(region, i);
 			if ((write_recursion == FE_WRITE_RECURSIVE) ||
 				((write_recursion == FE_WRITE_RECURSE_SUBGROUPS) &&
 					Cmiss_region_is_group(child_region)))
@@ -2903,6 +2901,7 @@ static int write_Cmiss_region(FILE *output_file,
 					write_fields_mode, number_of_field_names, field_names,
 					field_names_counter, time, write_criterion, write_recursion);
 			}
+			Cmiss_region_reaccess_next_sibling(&child_region);
 		}
 	}
 	else
@@ -2998,11 +2997,8 @@ int write_exregion_file(FILE *output_file,
 		((write_fields_mode != FE_WRITE_LISTED_FIELDS) ||
 			((0 < number_of_field_names) && field_names)))
 	{
-		/* check root_region contains region */
-		char *relative_path = Cmiss_region_get_relative_path(region, root_region);
-		if (relative_path)
+		if (Cmiss_region_contains_subregion(root_region, region))
 		{
-			DEALLOCATE(relative_path);
 			int *field_names_counter = NULL;
 			if (0 < number_of_field_names)
 			{

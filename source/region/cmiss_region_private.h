@@ -52,42 +52,6 @@ Global functions
 ----------------
 */
 
-/***************************************************************************//**
- * Private structure containing fields owned by a region and shared by any
- * groups using it as a master region.
- */
-struct Cmiss_region_fields;
-
-struct Cmiss_region *CREATE(Cmiss_region)(void);
-/*******************************************************************************
-LAST MODIFIED : 22 May 2008
-
-DESCRIPTION :
-Partial constructor. Creates an empty Cmiss_region WITHOUT fields.
-The region is not fully constructed until Cmiss_region_attach_fields is called.
-Region is created with an access_count of 1; DEACCESS to destroy.
-==============================================================================*/
-
-enum Cmiss_region_attach_fields_variant
-{
-	CMISS_REGION_SHARE_BASES_SHAPES,
-	CMISS_REGION_SHARE_FIELDS_GROUP
-};
-
-int Cmiss_region_attach_fields(struct Cmiss_region *region,
-	struct Cmiss_region *master_region,
-	enum Cmiss_region_attach_fields_variant variant);
-/*******************************************************************************
-LAST MODIFIED : 23 May 2008
-
-DESCRIPTION :
-Adds field-capability to <region> created with private constructor.
-If <master_region> is not supplied, region is created with its own fields, nodes
-and elements. 
-If <master_region> is supplied; then behaviour depends on the <variant>; see
-cases in code.
-==============================================================================*/
-
 void Cmiss_region_detach_fields_hierarchical(struct Cmiss_region *region);
 /*******************************************************************************
 LAST MODIFIED : 29 May 2008
@@ -131,6 +95,8 @@ Returns the list of objects, abstractly stored as struct Any_object from
 <region>. It is important that this list not be modified directly.
 This function is only externally visible to context objects.
 ==============================================================================*/
+
+struct Cmiss_region_fields;
 
 /***************************************************************************//**
  * Returns the master region from the private Cmiss_region_fields object.

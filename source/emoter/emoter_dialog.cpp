@@ -4426,8 +4426,9 @@ DESCRIPTION :
 						Cmiss_region_create_group(emoter_dialog->shared->region)) &&
 					(minimum_fe_region =
 						Cmiss_region_get_FE_region(emoter_dialog->minimum_region)) &&
-					Cmiss_region_add_child_region(emoter_dialog->shared->region,
-						emoter_dialog->minimum_region, "minimum_set", /*position*/-1))
+					Cmiss_region_set_name(emoter_dialog->minimum_region, "minimum_set") &&
+					Cmiss_region_append_child(emoter_dialog->shared->region,
+						emoter_dialog->minimum_region))
 				{
 					FE_region_begin_change(minimum_fe_region);
 				}
@@ -6072,7 +6073,7 @@ in existence, then bring it to the front, otherwise create new one.
 		create_emoter_slider_data_void)&&
 		(create_emoter_slider_data->emoter_dialog_address))
 	{
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 		index_nodes = (int *)NULL;
 		number_of_index_nodes = 0;
 		minimum_nodeset_flag = 0;
@@ -6136,7 +6137,7 @@ in existence, then bring it to the front, otherwise create new one.
 					}
 				}
 				em_object=(struct EM_Object *)NULL;
-				if (Cmiss_region_get_region_from_path(
+				if (Cmiss_region_get_region_from_path_deprecated(
 					create_emoter_slider_data->root_region, region_path, &region)&&
 					(fe_region = Cmiss_region_get_FE_region(region)))
 				{

@@ -615,7 +615,7 @@ already) and allows its contents to be modified.
 		}
 		else
 		{
-			Cmiss_region_get_root_region_path(&search_region_path);
+			search_region_path = Cmiss_region_get_root_region_path();
 		}
 		if (return_code)
 		{
@@ -692,7 +692,7 @@ already) and allows its contents to be modified.
 			{
 				if (search_region_path)
 				{
-					if (!(Cmiss_region_get_region_from_path(
+					if (!(Cmiss_region_get_region_from_path_deprecated(
 						computed_field_compose_package->root_region, 
 						search_region_path, &search_region)))
 					{

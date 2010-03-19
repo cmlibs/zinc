@@ -1204,16 +1204,14 @@ that defines elements of <field> in <write_path>.  The <ipmap_file> is
 optional, all the others are required.
 ==============================================================================*/
 {
-	int number_of_children, return_code;
+	int return_code;
 	struct Cmiss_region *write_region;
 	struct FE_region *fe_region;
 
 	ENTER(write_exregion_file);
 	write_region = (struct Cmiss_region *)NULL;
 	if (ipcoor_file && ipbase_file && ipnode_file && ipelem_file && root_region && 
-		Cmiss_region_get_number_of_child_regions(root_region, &number_of_children)
-		&& write_path && Cmiss_region_get_region_from_path(root_region,
-			write_path, &write_region) && write_region)
+		(NULL != (write_region = Cmiss_region_find_subregion_at_path(root_region, write_path))))
 	{
 		return_code = 1;
 		if (fe_region = Cmiss_region_get_FE_region(write_region))
@@ -1238,6 +1236,7 @@ optional, all the others are required.
 			"write_cm_files.  Invalid argument(s)");
 		return_code = 0;
 	}
+	Cmiss_region_destroy(&write_region);
 	LEAVE;
 
 	return (return_code);

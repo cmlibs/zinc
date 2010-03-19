@@ -1842,7 +1842,7 @@ root region.
 	if (scene_object && (scene = (struct Scene *)scene_void))
 	{
 		if ((SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP == scene_object->type) &&
-			(!Cmiss_region_contains_Cmiss_region(scene->root_region,
+			(!Cmiss_region_contains_subregion(scene->root_region,
 				GT_element_group_get_Cmiss_region(scene_object->gt_element_group))))
 		{
 			return_code = 1;
@@ -1871,31 +1871,24 @@ DESCRIPTION :
 Ensures there is a GT_element_group in <scene> for every Cmiss_region.
 ==============================================================================*/
 {
-	char *child_region_name;
-	int i, number_of_child_regions, return_code;
-	struct Cmiss_region *child_region;
+	int return_code;
 
 	ENTER(Scene_update_graphical_element_groups);
 	if (scene)
 	{
 		Scene_begin_cache(scene);
-		/* ensure we have a graphical element for each child region */
-		Cmiss_region_get_number_of_child_regions(scene->root_region,
-			&number_of_child_regions);
-		for (i = 0; i < number_of_child_regions; i++)
+		struct Cmiss_region *child_region =
+			Cmiss_region_get_first_child(scene->root_region);
+		while (NULL != child_region)
 		{
-			child_region = Cmiss_region_get_child_region(
-				scene->root_region, /*child_number*/i);
 			if (!Scene_has_Cmiss_region(scene, child_region))
 			{
-				if (Cmiss_region_get_child_region_name(scene->root_region,
-					/*child_number*/i, &child_region_name))
-				{
-					Scene_add_graphical_element_group(scene, child_region,
-						/*position*/0, child_region_name);
-					DEALLOCATE(child_region_name);
-				}
+				char *child_region_name = Cmiss_region_get_name(child_region);
+				Scene_add_graphical_element_group(scene, child_region,
+					/*position*/0, child_region_name);
+				DEALLOCATE(child_region_name);
 			}
+			Cmiss_region_reaccess_next_sibling(&child_region);
 		}
 		Scene_end_cache(scene);
 		return_code = 1;
@@ -1921,9 +1914,7 @@ Callback from <root_region> informing of <changes>.
 <scene> adds or removes graphical element groups to match.
 ==============================================================================*/
 {
-	char *child_region_name;
-	int child_number, return_code;
-	struct Cmiss_region *child_region;
+	int return_code;
 	struct Scene *scene;
 	struct Scene_object *scene_object;
 
@@ -1954,15 +1945,12 @@ Callback from <root_region> informing of <changes>.
 					 we now have a node and data pair */
 					if (root_region == scene->root_region)
 					{
-						child_region = region_changes->child_added;
-						if ((!Scene_has_Cmiss_region(scene, child_region)) &&
-							Cmiss_region_get_child_region_number(root_region,
-							child_region, &child_number) &&
-							Cmiss_region_get_child_region_name(root_region,
-							child_number, &child_region_name))
+						if (!Scene_has_Cmiss_region(scene, region_changes->child_added))
 						{
-							return_code = Scene_add_graphical_element_group(scene, child_region,
-								/*position*/0, child_region_name);
+							char *child_region_name =
+								Cmiss_region_get_name(region_changes->child_added);
+							return_code = Scene_add_graphical_element_group(scene,
+								region_changes->child_added, /*position*/0, child_region_name);
 							DEALLOCATE(child_region_name);
 						}
 					}

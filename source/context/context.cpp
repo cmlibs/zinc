@@ -248,7 +248,13 @@ struct Cmiss_region *Cmiss_context_create_region(struct Context *context)
 
 	if (context)
 	{
-		region = Cmiss_region_create();
+		// all regions share the element shapes and bases from the default_region
+		if (!context->root_region)
+		{
+			Cmiss_region *default_region = Cmiss_context_get_default_region(context);
+			Cmiss_region_destroy(&default_region);
+		}
+		region = Cmiss_region_create_share_globals(context->root_region);
 	}
 	else
 	{

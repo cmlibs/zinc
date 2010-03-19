@@ -5265,11 +5265,10 @@ appropriateness to curve usage.
 				if (return_code)
 				{
 					/* remove child groups */
-					while ((NULL != (child_region =
-							Cmiss_region_get_child_region(curve->region,/*child_number*/0))) &&
-						Cmiss_region_remove_child_region(curve->region,child_region))
+					while (child_region = Cmiss_region_get_first_child(curve->region))
 					{
-						/* do nothing more */
+						Cmiss_region_remove_child(curve->region, child_region);
+						Cmiss_region_destroy(&child_region);
 					}
 					/* now check mesh is appropriate for a Curve */
 					if (curve->template_element=FE_region_get_first_FE_element_that(curve->fe_region,

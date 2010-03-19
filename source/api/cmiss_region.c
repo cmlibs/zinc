@@ -114,34 +114,6 @@ DESCRIPTION :
 	return(return_code);
 }
 
-struct Cmiss_region *Cmiss_region_get_sub_region(struct Cmiss_region *region,
-	const char *path)
-/*******************************************************************************
-LAST MODIFIED : 13 August 2002
-
-DESCRIPTION :
-Returns the sub_region specified by the string <path> in <region>.
-==============================================================================*/
-{
-	struct Cmiss_region *return_region;
-
-	ENTER(Cmiss_region_get_sub_region);
-	if (region && path)
-	{
-		if (Cmiss_region_get_region_from_path(region, (char *)path, &return_region))
-		{
-			/* ACCESS(Cmiss_region)(RETVAL); */
-		}
-	}
-	else
-	{
-		return_region = (struct Cmiss_region *)NULL;
-	}
-	LEAVE;
-
-	return (return_region);
-} /* Cmiss_region_get_sub_region */
-
 struct Cmiss_element *Cmiss_region_get_element(struct Cmiss_region *region,
 	const char *name)
 /*******************************************************************************

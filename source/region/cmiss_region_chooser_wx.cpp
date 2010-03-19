@@ -112,7 +112,7 @@ Returns to <region_address> the region chosen in the <chooser>.
 ==============================================================================*/
 {
 	Cmiss_region *child_region = NULL;
-	Cmiss_region_get_region_from_path(root_region,
+	Cmiss_region_get_region_from_path_deprecated(root_region,
 		GetString(GetSelection()), &child_region);
 	return (child_region);
 }
@@ -153,14 +153,11 @@ Sets <path> of chosen region in the <chooser>.
 ==============================================================================*/
 {
 	char *child_name, *child_path;
-	Cmiss_region *child_region;
-	int i, number_of_children;
 
-	Cmiss_region_get_number_of_child_regions(current_region,
-		&number_of_children);
-	for (i = 0 ; i < number_of_children ; i++)
+	Cmiss_region *child_region = Cmiss_region_get_first_child(current_region);
+	while (NULL != child_region)
 	{
-		Cmiss_region_get_child_region_name(current_region, i, &child_name);
+		child_name = Cmiss_region_get_name(child_region);
 		
 		ALLOCATE(child_path, char, strlen(current_path) + strlen(child_name) + 2);
 		sprintf(child_path, "%s%c%s", current_path, CMISS_REGION_PATH_SEPARATOR_CHAR,
@@ -172,11 +169,11 @@ Sets <path> of chosen region in the <chooser>.
 		}
 
 		//Recurse
-		child_region = Cmiss_region_get_child_region(current_region, i);
 		append_children(child_region, child_path, initial_path);
 
 		DEALLOCATE(child_name);
 		DEALLOCATE(child_path);
+		Cmiss_region_reaccess_next_sibling(&child_region);
 	}
 	return 1;
 }
@@ -195,7 +192,7 @@ is selected.
 	char *root_path;
 	Clear();
 
-	Cmiss_region_get_root_region_path(&root_path);
+	root_path = Cmiss_region_get_root_region_path();
 	Append(root_path);
 	if (!strcmp(root_path, initial_path))
 	{

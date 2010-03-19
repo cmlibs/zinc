@@ -586,7 +586,7 @@ DESCRIPTION :
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 		data_flag = 0;
 		data_offset = 0;
 		element_flag = 0;
@@ -640,7 +640,7 @@ DESCRIPTION :
 
 		if (return_code = Option_table_multi_parse(option_table,state))
 		{
-			if (Cmiss_region_get_region_from_path(command_data->root_region,
+			if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 				region_path, &region) &&
 				(fe_region = Cmiss_region_get_FE_region(region)))
 			{
@@ -1301,7 +1301,7 @@ Executes a GFX CREATE CYLINDERS command.
 	{
 		/* initialise defaults */
 		graphics_object_name = duplicate_string("cylinders");
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 		constant_radius=0.0;
 		scale_factor=1.0;
 		coordinate_field=(struct Computed_field *)NULL;
@@ -1399,7 +1399,7 @@ Executes a GFX CREATE CYLINDERS command.
 		/* no errors, not asking for help */
 		if (return_code)
 		{
-			if (!(Cmiss_region_get_region_from_path(command_data->root_region,
+			if (!(Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 				region_path, &region) &&
 				(fe_region = Cmiss_region_get_FE_region(region))))
 			{
@@ -1582,7 +1582,7 @@ Executes a GFX CREATE ELEMENT_CREATOR command.
 				}
 				else
 				{
-					Cmiss_region_get_root_region_path(&initial_region_path);
+					initial_region_path = Cmiss_region_get_root_region_path();
 					if (CREATE(Element_creator)(&(command_data->element_creator),
 						command_data->root_region, initial_region_path,
 						command_data->element_selection, command_data->node_selection,
@@ -1664,7 +1664,7 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 	{
 		/* initialise defaults */
 		graphics_object_name = duplicate_string("element_points");
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 		number_of_components=3;
 		exact_xi[0]=0.5;
 		exact_xi[1]=0.5;
@@ -1831,7 +1831,7 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 			exact_xi,&number_of_components,set_float_vector);
 		if (return_code = Option_table_multi_parse(option_table, state))
 		{
-			if (!(Cmiss_region_get_region_from_path(command_data->root_region,
+			if (!(Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 				region_path, &region) &&
 				(fe_region = Cmiss_region_get_FE_region(region))))
 			{
@@ -2187,7 +2187,7 @@ Executes a GFX CREATE GROUP command.
 		if (set_name(state, (void *)&name, (void *)1))
 		{
 			return_code = 1;
-			if (name && Cmiss_region_get_region_from_path(root_region, name, &region) &&
+			if (name && Cmiss_region_get_region_from_path_deprecated(root_region, name, &region) &&
 				region)
 			{
 				display_message(ERROR_MESSAGE,
@@ -2197,8 +2197,8 @@ Executes a GFX CREATE GROUP command.
 			if (return_code)
 			{
 				/* initialise defaults */
-				Cmiss_region_get_root_region_path(&from_region_path);
-				Cmiss_region_get_root_region_path(&region_path);
+				from_region_path = Cmiss_region_get_root_region_path();
+				region_path = Cmiss_region_get_root_region_path();
 				add_ranges = CREATE(Multi_range)();
 				option_table = CREATE(Option_table)();
 				/* add_ranges */
@@ -2212,7 +2212,7 @@ Executes a GFX CREATE GROUP command.
 					root_region, set_Cmiss_region_path);
 				if (return_code = Option_table_multi_parse(option_table, state))
 				{
-					Cmiss_region_get_region_from_path(root_region, region_path,
+					Cmiss_region_get_region_from_path_deprecated(root_region, region_path,
 						&base_region);
 					region = Cmiss_region_create_group(base_region);
 					fe_region = Cmiss_region_get_FE_region(region);
@@ -2223,7 +2223,7 @@ Executes a GFX CREATE GROUP command.
 					FE_region_begin_change(fe_region);
 					if (0 < Multi_range_get_number_of_ranges(add_ranges))
 					{
-						if (Cmiss_region_get_region_from_path(root_region, from_region_path,
+						if (Cmiss_region_get_region_from_path_deprecated(root_region, from_region_path,
 							&from_region) &&
 							(from_fe_region = Cmiss_region_get_FE_region(from_region)))
 						{
@@ -2258,9 +2258,9 @@ Executes a GFX CREATE GROUP command.
 						}
 					}
 					FE_region_end_change(fe_region);
+					Cmiss_region_set_name(region, name);
 					return_code = return_code &&
-						Cmiss_region_add_child_region(base_region, region, name,
-							/*child_position*/-1);
+						Cmiss_region_append_child(base_region, region);
 					DEACCESS(Cmiss_region)(&region);
 				}
 				DESTROY(Option_table)(&option_table);
@@ -2418,7 +2418,7 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 	{
 		/* initialise defaults */
 		graphics_object_name = duplicate_string("particles");
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 		element_number=0;  /* Zero gives all elements in group */
 		coordinate_field=(struct Computed_field *)NULL;
 		stream_vector_field=(struct Computed_field *)NULL;
@@ -2481,7 +2481,7 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 				display_message(WARNING_MESSAGE, "Must specify a coordinate field");
 				return_code = 0;
 			}
-			if (!(Cmiss_region_get_region_from_path(command_data->root_region,
+			if (!(Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 				region_path, &region) &&
 				(fe_region = Cmiss_region_get_FE_region(region))))
 			{
@@ -3014,7 +3014,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 	{
 		/* initialise defaults */
 		graphics_object_name = duplicate_string("iso_surfaces");
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 		coordinate_field=(struct Computed_field *)NULL;
 		data_field=(struct Computed_field *)NULL;
 		surface_data_region_path = (char *)NULL;
@@ -3154,7 +3154,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 		/* no errors, not asking for help */
 		if (return_code)
 		{
-			if (!(Cmiss_region_get_region_from_path(command_data->root_region,
+			if (!(Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 				region_path, &region) &&
 				(fe_region = Cmiss_region_get_FE_region(region))))
 			{
@@ -3165,7 +3165,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 			surface_data_fe_region = (struct FE_region *)NULL;
 			if (surface_data_region_path)
 			{
-				if (!(Cmiss_region_get_region_from_path(command_data->root_region,
+				if (!(Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 					surface_data_region_path, &surface_data_region) &&
 					(surface_data_fe_region = FE_region_get_data_FE_region(
 						Cmiss_region_get_FE_region(surface_data_region)))))
@@ -3619,7 +3619,7 @@ Executes a GFX CREATE LINES command.
 	{
 		/* initialise defaults */
 		graphics_object_name = duplicate_string("lines");
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 		coordinate_field=(struct Computed_field *)NULL;
 		data_field=(struct Computed_field *)NULL;
 		time=0;
@@ -3679,7 +3679,7 @@ Executes a GFX CREATE LINES command.
 		/* no errors, not asking for help */
 		if (return_code)
 		{
-			if (!(Cmiss_region_get_region_from_path(command_data->root_region,
+			if (!(Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 				region_path, &region) &&
 				(fe_region = Cmiss_region_get_FE_region(region))))
 			{
@@ -4358,7 +4358,7 @@ If <use_data> is set, creating data points, otherwise creating node points.
 		{
 			ACCESS(GT_object)(glyph);
 		}
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 		coordinate_field = (struct Computed_field *)NULL;
 		data_field = (struct Computed_field *)NULL;
 		/* must access it now, because we deaccess it later */
@@ -4465,7 +4465,7 @@ If <use_data> is set, creating data points, otherwise creating node points.
 		return_code = Option_table_multi_parse(option_table,state);
 		if (return_code)
 		{
-			if (!(Cmiss_region_get_region_from_path(command_data->root_region, region_path, &region)
+			if (!(Cmiss_region_get_region_from_path_deprecated(command_data->root_region, region_path, &region)
 				&& (fe_region = Cmiss_region_get_FE_region(region)) &&
 				((!use_data) || (fe_region=FE_region_get_data_FE_region(fe_region)))))
 			{
@@ -4657,7 +4657,7 @@ Executes a GFX CREATE REGION command.
 				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
 			{
 				return_code = 1;
-				if (name && Cmiss_region_get_region_from_path(root_region, name, &region) &&
+				if (name && Cmiss_region_get_region_from_path_deprecated(root_region, name, &region) &&
 					region)
 				{
 					display_message(ERROR_MESSAGE,
@@ -4667,9 +4667,8 @@ Executes a GFX CREATE REGION command.
 				if (return_code)
 				{
 					region = Cmiss_region_create_share_globals(root_region);
-					return_code = (NULL != region) &&
-						Cmiss_region_add_child_region(root_region, region, name,
-							/*child_position*/-1);
+					Cmiss_region_set_name(region, name);
+					return_code = Cmiss_region_append_child(root_region, region);
 					DEACCESS(Cmiss_region)(&region);
 				}
 			}
@@ -4926,7 +4925,7 @@ Executes a GFX CREATE SNAKE command.
 				return_code = 0;
 			}
 			if (!(region_path &&
-				Cmiss_region_get_region_from_path(command_data->root_region,
+				Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 					region_path, &region) &&
 				(fe_region = Cmiss_region_get_FE_region(region))))
 			{
@@ -5423,7 +5422,7 @@ Executes a GFX CREATE STREAMLINES command.
 	{
 		/* initialise defaults */
 		graphics_object_name = duplicate_string("streamlines");
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 		coordinate_field=(struct Computed_field *)NULL;
 		stream_vector_field=(struct Computed_field *)NULL;
 		data_field=(struct Computed_field *)NULL;
@@ -5537,7 +5536,7 @@ Executes a GFX CREATE STREAMLINES command.
 		if (return_code=Option_table_multi_parse(option_table,state))
 		{
 			fe_region = (struct FE_region *)NULL;
-			if (!(Cmiss_region_get_region_from_path(command_data->root_region,
+			if (!(Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 				region_path, &region) &&
 				(fe_region = Cmiss_region_get_FE_region(region))))
 			{
@@ -5589,7 +5588,7 @@ Executes a GFX CREATE STREAMLINES command.
 			seed_data_fe_region = (struct FE_region *)NULL;
 			if (seed_data_region_path)
 			{
-				if (!(Cmiss_region_get_region_from_path(
+				if (!(Cmiss_region_get_region_from_path_deprecated(
 					command_data->root_region,
 					seed_data_region_path, &seed_data_region) &&
 					(seed_data_fe_region = FE_region_get_data_FE_region(
@@ -5836,7 +5835,7 @@ Executes a GFX CREATE SURFACES command.
 	{
 		/* initialise defaults */
 		graphics_object_name = duplicate_string("surfaces");
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 		coordinate_field=(struct Computed_field *)NULL;
 		data_field=(struct Computed_field *)NULL;
 		texture_coordinate_field=(struct Computed_field *)NULL;
@@ -5924,7 +5923,7 @@ Executes a GFX CREATE SURFACES command.
 		/* no errors, not asking for help */
 		if (return_code)
 		{
-			if (!(Cmiss_region_get_region_from_path(command_data->root_region,
+			if (!(Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 				region_path, &region) &&
 				(fe_region = Cmiss_region_get_FE_region(region))))
 			{
@@ -7223,7 +7222,7 @@ Modifies the properties of a texture.
 							evaluate_data.spectrum || evaluate_data.texture_coordinates_field)
 						{
 							if (!(evaluate_data.field &&
-								Cmiss_region_get_region_from_path(command_data->root_region,
+								Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 									evaluate_data.region_path, &evaluate_data_region) &&
 								evaluate_data.spectrum &&
 								evaluate_data.texture_coordinates_field))
@@ -8575,8 +8574,8 @@ Executes a GFX CONVERT ELEMENETS command.
 	{
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
-			Cmiss_region_get_root_region_path(&source_region_path);
-			Cmiss_region_get_root_region_path(&destination_region_path);
+			source_region_path = Cmiss_region_get_root_region_path();
+			destination_region_path = Cmiss_region_get_root_region_path();
 			fields = (struct Computed_field **)NULL;
 			number_of_fields = 1;
 			conversion_mode = CONVERT_TO_FINITE_ELEMENTS_HERMITE_2D_PRODUCT;
@@ -8644,7 +8643,7 @@ Executes a GFX CONVERT ELEMENETS command.
 			if (return_code)
 			{
 				destination_fe_region = (struct FE_region *)NULL;
-				if (!(Cmiss_region_get_region_from_path(command_data->root_region,
+				if (!(Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 					destination_region_path, &region) &&
 					(destination_fe_region = Cmiss_region_get_FE_region(region))))
 				{
@@ -8653,7 +8652,7 @@ Executes a GFX CONVERT ELEMENETS command.
 					return_code = 0;
 				}
 				source_fe_region = (struct FE_region *)NULL;
-				if (!(Cmiss_region_get_region_from_path(command_data->root_region,
+				if (!(Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 					source_region_path, &region) &&
 					(source_fe_region = Cmiss_region_get_FE_region(region))))
 				{
@@ -8732,7 +8731,7 @@ Executes a GFX CREATE command.
 	{
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
-			Cmiss_region_get_root_region_path(&region_path);
+			region_path = Cmiss_region_get_root_region_path();
 			coordinate_field=(struct Computed_field *)NULL;
 			scene = (struct Scene *)NULL;
 			render_mode = RENDER_TO_FINITE_ELEMENTS_LINEAR_PRODUCT;
@@ -8776,7 +8775,7 @@ Executes a GFX CREATE command.
 					return_code = 0;
 				}
 				fe_region = (struct FE_region *)NULL;
-				if (!(Cmiss_region_get_region_from_path(command_data->root_region,
+				if (!(Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 					region_path, &region) &&
 					(fe_region = Cmiss_region_get_FE_region(region))))
 				{
@@ -9073,7 +9072,7 @@ Executes a GFX DEFINE FACES command.
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		/* initialise defaults */
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 
 		option_table = CREATE(Option_table)();
 		/* egroup */
@@ -9081,7 +9080,7 @@ Executes a GFX DEFINE FACES command.
 			command_data->root_region, set_Cmiss_region_path);
 		if (return_code = Option_table_multi_parse(option_table, state))
 		{
-			if (Cmiss_region_get_region_from_path(command_data->root_region,
+			if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 				region_path, &region) && region &&
 				(fe_region = Cmiss_region_get_FE_region(region)))
 			{
@@ -9334,45 +9333,37 @@ DESCRIPTION :
 Executes a GFX REMOVE REGION command.
 ==============================================================================*/
 {
-	const char *current_token, *region_path;
+	const char *current_token;
 	int return_code = 1;
-	struct Cmiss_region *last_region, *parent_region, *region;
+	struct Cmiss_region *root_region;
 
 	ENTER(gfx_remove_region);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state && (parent_region = (struct Cmiss_region *)root_region_void))
+	if (state && (root_region = (struct Cmiss_region *)root_region_void))
 	{
 		if (current_token = state->current_token)
 		{
 			if (strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				/* get region to be removed and the parent_region to remove it from */
-				last_region = parent_region;
-				region_path = current_token;
-				while (region_path &&
-					(return_code = Cmiss_region_get_child_region_from_path(
-						last_region, region_path, &region, &region_path)) &&
-					(region != last_region))
+				struct Cmiss_region *region =
+					Cmiss_region_find_subregion_at_path(root_region, current_token);
+				if (region)
 				{
-					parent_region = last_region;
-					last_region = region;
-				}
-
-				if (return_code)
-				{
-					if (region == parent_region)
+					struct Cmiss_region *parent_region = Cmiss_region_get_parent(region);
+					if (parent_region)
+					{
+						Cmiss_region_remove_child(parent_region, region);
+						Cmiss_region_destroy(&parent_region);
+					}
+					else
 					{
 						display_message(ERROR_MESSAGE,
 							"gfx remove region:  The root region may not be removed");
 						display_parse_state_location(state);
 						return_code = 0;
 					}
-					else
-					{
-						return_code =
-							Cmiss_region_remove_child_region(parent_region, region);
-					}
+					Cmiss_region_destroy(&region);
 				}
 				else
 				{
@@ -9472,7 +9463,7 @@ Executes a GFX DESTROY ELEMENTS command.
 		if (return_code = Option_table_multi_parse(option_table,state))
 		{
 			if (((region_path &&
-				Cmiss_region_get_region_from_path(command_data->root_region,
+				Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 					region_path, &region)) ||
 				((all_flag || selected_flag ||
 					(0 < Multi_range_get_number_of_ranges(element_ranges))) &&
@@ -9911,7 +9902,7 @@ use node_manager and node_selection.
 		if (return_code = Option_table_multi_parse(option_table, state))
 		{
 			if (((region_path &&
-				Cmiss_region_get_region_from_path(command_data->root_region, region_path, &region)) ||
+				Cmiss_region_get_region_from_path_deprecated(command_data->root_region, region_path, &region)) ||
 				((all_flag || selected_flag ||
 					(0 < Multi_range_get_number_of_ranges(node_ranges))) &&
 					(region = command_data->root_region))) &&
@@ -10534,7 +10525,7 @@ Executes a GFX DRAW command.
 			}
 			else if (region_path)
 			{
-				if (Cmiss_region_get_region_from_path(command_data->root_region,
+				if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 					region_path, &region))
 				{
 					if (!scene_object_name)
@@ -11065,7 +11056,7 @@ Executes a GFX ELEMENT_CREATOR command.
 		else
 		{
 			create_enabled = 0;
-			Cmiss_region_get_root_region_path(&region_path);
+			region_path = Cmiss_region_get_root_region_path();
 			element_dimension = 2;
 			coordinate_field = (struct FE_field *)NULL;
 		}
@@ -11759,7 +11750,7 @@ Executes a GFX EXPORT IGES command.
 	{
 		return_code=1;
 		/* initialize defaults */
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 		coordinate_field = (struct Computed_field *)NULL;
 		file_name = (char *)NULL;
 
@@ -11782,7 +11773,7 @@ Executes a GFX EXPORT IGES command.
 		/* no errors, not asking for help */
 		if (return_code = Option_table_multi_parse(option_table,state))
 		{
-			if (Cmiss_region_get_region_from_path(command_data->root_region,
+			if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 				region_path, &region) &&
 				(fe_region = Cmiss_region_get_FE_region(region)))
 			{
@@ -12241,7 +12232,7 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 		if (NULL != (command_data=(struct Cmiss_command_data *)command_data_void))
 		{
 						
@@ -12291,42 +12282,13 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 						return_code =
 							renderer.Scene_execute(scene);
 						trimesh = renderer.get_triangle_mesh();
-						struct Cmiss_region *region = NULL;
+						struct Cmiss_region *region = Cmiss_region_find_subregion_at_path(
+							command_data->root_region, region_path);
 						if (clear)
 						{
-							Cmiss_region *last_region = command_data->root_region;
-							const char *temp_region_path = region_path;
-							Cmiss_region *parent_region = NULL;
-							while (temp_region_path &&
-								(return_code = Cmiss_region_get_child_region_from_path(
-									 last_region, region_path, &region, &temp_region_path)) &&
-								(region != last_region))
-							{
-								parent_region = last_region;
-								last_region = region;
-							}
-							
-							if (return_code)
-							{
-								if (region != parent_region)
-								{
-									int pos;
-									Cmiss_region_get_child_region_number(parent_region, region, &pos);
-									return_code =
-										Cmiss_region_remove_child_region(parent_region, region);
-									if (return_code)
-									{
-										struct Cmiss_region *temp_region = Cmiss_region_create_share_globals(
-											command_data->root_region);
-										Cmiss_region_add_child_region(
-											command_data->root_region, temp_region, region_path, pos);
-										DEACCESS(Cmiss_region)(&temp_region);
-									}
-								}
-							}
+							Cmiss_region_clear_finite_elements(region);
 						}
-						if (trimesh && Cmiss_region_get_region_from_path(command_data->root_region,
-								region_path, &region))
+						if (trimesh && region)
 						{
 							struct Generate_netgen_parameters *generate_netgen_para=NULL;
 							generate_netgen_para=create_netgen_parameters();
@@ -12345,6 +12307,7 @@ static int gfx_mesh_graphics_tetrahedral(struct Parse_state *state,
 							display_message(ERROR_MESSAGE, "gfx_mesh_graphics_tetrahedral."
 								"Unknown region: %s", region_path);
 						}
+						Cmiss_region_destroy(&region);
 					}
 				}
 #else
@@ -12387,14 +12350,13 @@ static int gfx_mesh_graphics_triangle(struct Parse_state *state,
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct Option_table *option_table;
-	struct Cmiss_region *region;
 	char *region_path;
 
 	ENTER(gfx_mesh_graphics_triangle);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 		if (NULL != (command_data=(struct Cmiss_command_data *)command_data_void))
 		{
 			struct Scene *scene;
@@ -12428,41 +12390,13 @@ static int gfx_mesh_graphics_triangle(struct Parse_state *state,
 						return_code =
 							renderer.Scene_execute(scene);
 						trimesh = renderer.get_triangle_mesh();
-				 
+						struct Cmiss_region *region = Cmiss_region_find_subregion_at_path(
+							command_data->root_region, region_path);
 						if (clear)
 						{
-							Cmiss_region *last_region = command_data->root_region;
-							const char *temp_region_path = region_path;
-							Cmiss_region *parent_region = NULL;
-							while (temp_region_path &&
-								(return_code = Cmiss_region_get_child_region_from_path(
-									 last_region, region_path, &region, &temp_region_path)) &&
-								(region != last_region))
-							{
-								parent_region = last_region;
-								last_region = region;
-							}
-							if (return_code)
-							{
-								if (region != parent_region)
-								{
-									int pos;
-									Cmiss_region_get_child_region_number(parent_region, region, &pos);
-									return_code =
-										Cmiss_region_remove_child_region(parent_region, region);
-									if (return_code)
-									{
-										struct Cmiss_region *temp_region = Cmiss_region_create_share_globals(
-											command_data->root_region);
-										Cmiss_region_add_child_region(
-											command_data->root_region, temp_region, region_path, pos);
-										DEACCESS(Cmiss_region)(&temp_region);
-									}
-								}
-							}
+							Cmiss_region_clear_finite_elements(region);
 						}
-						if (trimesh && Cmiss_region_get_region_from_path(command_data->root_region,
-								region_path, &region))
+						if (trimesh && region)
 						{
 							create_triangle_mesh(region, trimesh);
 						}
@@ -12470,6 +12404,7 @@ static int gfx_mesh_graphics_triangle(struct Parse_state *state,
 						{
 							display_message(ERROR_MESSAGE, "gfx_mesh_graphics_triangle. Unknown region: %s", region_path);
 						}
+						Cmiss_region_destroy(&region);
 					}
 				}
 			}
@@ -12657,7 +12592,7 @@ DESCRIPTION :
 
 				if (data_region_path && (!element_region_path) && (!node_region_path))
 				{
-					if (Cmiss_region_get_region_from_path(command_data->root_region,
+					if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 						data_region_path, &region))
 					{
 						Computed_field_update_nodal_values_from_source(
@@ -12667,7 +12602,7 @@ DESCRIPTION :
 				else if (element_region_path && (!data_region_path) &&
 					(!node_region_path))
 				{
-					if (Cmiss_region_get_region_from_path(command_data->root_region,
+					if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 						element_region_path, &region))
 					{
 						Computed_field_update_element_values_from_source(
@@ -12678,7 +12613,7 @@ DESCRIPTION :
 				else if (node_region_path && (!data_region_path) &&
 					(!element_region_path))
 				{
-					if (Cmiss_region_get_region_from_path(command_data->root_region,
+					if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 						node_region_path, &region))
 					{
 						Computed_field_update_nodal_values_from_source(
@@ -13100,7 +13035,7 @@ Executes a GFX LIST ELEMENT.
 		/* region_path defaults to NULL so that we have to either specify "all"
 			 or group "/" to destroy all elements */
 		all_flag = 0;
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 		selected_flag = 0;
 		verbose_flag = 0;
 		element_ranges = CREATE(Multi_range)();
@@ -13122,7 +13057,7 @@ Executes a GFX LIST ELEMENT.
 			NULL, set_Multi_range);
 		if (return_code = Option_table_multi_parse(option_table,state))
 		{
-			if (Cmiss_region_get_region_from_path(command_data->root_region,
+			if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 				region_path, &region) &&
 				(fe_region = Cmiss_region_get_FE_region(region)))
 			{
@@ -13265,7 +13200,7 @@ use node_manager and node_selection.
 		}
 		/* initialise defaults */
 		all_flag = 0;
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 		selected_flag = 0;
 		verbose_flag = 0;
 		node_ranges = CREATE(Multi_range)();
@@ -13287,7 +13222,7 @@ use node_manager and node_selection.
 			NULL, set_Multi_range);
 		if (return_code = Option_table_multi_parse(option_table, state))
 		{
-			if (Cmiss_region_get_region_from_path(command_data->root_region, region_path, &region)
+			if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region, region_path, &region)
 				&& (fe_region = Cmiss_region_get_FE_region(region)) &&
 				((!use_data) || (fe_region=FE_region_get_data_FE_region(fe_region))))
 			{
@@ -13500,7 +13435,7 @@ Executes a GFX LIST REGION command.
 			if (current_token)
 			{
 				/* get region to be listed */
-				if (Cmiss_region_get_region_from_path(root_region, current_token,
+				if (Cmiss_region_get_region_from_path_deprecated(root_region, current_token,
 					&region))
 				{
 					display_message(INFORMATION_MESSAGE, "Region %s:\n", current_token);
@@ -13576,7 +13511,7 @@ Executes a GFX LIST G_ELEMENT.
 		{
 			if (GET_NAME(Scene)(scene,&scene_name))
 			{
-				if (region_path && Cmiss_region_get_region_from_path(
+				if (region_path && Cmiss_region_get_region_from_path_deprecated(
 					command_data->root_region, region_path, &region) &&
 					(gt_element_group = Scene_get_graphical_element_group(scene, region)))
 				{
@@ -14736,12 +14671,12 @@ be specified at once.
 			/* no errors, not asking for help */
 			if (return_code)
 			{
-				if (Cmiss_region_get_region_from_path(command_data->root_region,
+				if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 					modify_region_path, &region) &&
 					(modify_fe_region = Cmiss_region_get_FE_region(region)))
 				{
 					if ((from_region_path &&
-						Cmiss_region_get_region_from_path(command_data->root_region,
+						Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 							from_region_path, &region) &&
 						(fe_region = Cmiss_region_get_FE_region(region))) ||
 						((!from_region_path) && FE_region_get_ultimate_master_FE_region(
@@ -14943,7 +14878,7 @@ Parameter <help_mode> should be NULL when calling this function.
 	{
 		return_code = 1;
 		/* initialize defaults */
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 		if (!help_mode)
 		{
 			option_table = CREATE(Option_table)();
@@ -14966,7 +14901,7 @@ Parameter <help_mode> should be NULL when calling this function.
 		}
 		if (return_code)
 		{
-			if (region_path && Cmiss_region_get_region_from_path(
+			if (region_path && Cmiss_region_get_region_from_path_deprecated(
 				command_data->root_region, region_path, &region))
 			{
 				/* set defaults */
@@ -15353,13 +15288,13 @@ use node_manager and node_selection.
 			/* no errors, not asking for help */
 			if (return_code)
 			{
-				if (Cmiss_region_get_region_from_path(command_data->root_region,
+				if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 					modify_region_path, &region) &&
 					(modify_fe_region = Cmiss_region_get_FE_region(region)) &&
 					((!use_data) || (modify_fe_region=FE_region_get_data_FE_region(modify_fe_region))))
 				{
 					if ((from_region_path &&
-						Cmiss_region_get_region_from_path(command_data->root_region,
+						Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 							from_region_path, &region) &&
 						(fe_region = Cmiss_region_get_FE_region(region)) &&
 						((!use_data) || (fe_region=FE_region_get_data_FE_region(fe_region)))) ||
@@ -15918,7 +15853,7 @@ use node_manager and node_selection.
 		if (return_code)
 		{
 			if (((region_path &&
-				Cmiss_region_get_region_from_path(command_data->root_region, region_path, &region)) ||
+				Cmiss_region_get_region_from_path_deprecated(command_data->root_region, region_path, &region)) ||
 				((all_flag || selected_flag ||
 					(0 < Multi_range_get_number_of_ranges(node_ranges))) &&
 					(region = command_data->root_region))) &&
@@ -17224,7 +17159,7 @@ user, otherwise the elements file is read.
 			top_region = (struct Cmiss_region *)NULL;
 			if (region_path)
 			{
-				if (Cmiss_region_get_region_from_path(command_data->root_region,
+				if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 					region_path, &top_region) && top_region)
 				{
 					ACCESS(Cmiss_region)(top_region);
@@ -17232,9 +17167,8 @@ user, otherwise the elements file is read.
 				else
 				{
 					top_region = Cmiss_region_create_share_globals(command_data->root_region);
-					if (!top_region || !Cmiss_region_add_child_region(
-						command_data->root_region,top_region, region_path,
-						/*child_position*/-1))
+					Cmiss_region_set_name(top_region, region_path);
+					if (!Cmiss_region_append_child(command_data->root_region, top_region))
 					{
 						display_message(ERROR_MESSAGE, "gfx_read_elements.  "
 							"Unable to create child region.");
@@ -17501,7 +17435,7 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 					top_region = (struct Cmiss_region *)NULL;
 					if (region_path)
 					{
-						if (Cmiss_region_get_region_from_path(command_data->root_region,
+						if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 							region_path, &top_region) && top_region)
 						{
 							ACCESS(Cmiss_region)(top_region);
@@ -17509,9 +17443,8 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 						else
 						{
 							top_region = Cmiss_region_create_share_globals(command_data->root_region);
-							if (!top_region || !Cmiss_region_add_child_region(
-								command_data->root_region,top_region, region_path,
-								/*child_position*/-1))
+							Cmiss_region_set_name(top_region, region_path);
+							if (!Cmiss_region_append_child(command_data->root_region, top_region))
 							{
 								display_message(ERROR_MESSAGE, "gfx_read_nodes.  "
 									"Unable to create child region.");
@@ -18070,7 +18003,7 @@ Executes a GFX SELECT command.
 	{
 		if (state->current_token)
 		{
-			Cmiss_region_get_root_region_path(&region_path);
+			region_path = Cmiss_region_get_root_region_path();
 			fe_region = Cmiss_region_get_FE_region(command_data->root_region);
 			all_flag = 0;
 			conditional_field=(struct Computed_field *)NULL;
@@ -18168,7 +18101,7 @@ Executes a GFX SELECT command.
 					return_code = 0;
 				}
 				if (!(region_path &&
-					Cmiss_region_get_region_from_path(command_data->root_region,
+					Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 						region_path, &region) &&
 					(fe_region = Cmiss_region_get_FE_region(region))))
 				{
@@ -18441,7 +18374,7 @@ Executes a GFX UNSELECT command.
 	{
 		if (state->current_token)
 		{
-			Cmiss_region_get_root_region_path(&region_path);
+			region_path = Cmiss_region_get_root_region_path();
 			fe_region = Cmiss_region_get_FE_region(command_data->root_region);
 			all_flag = 0;
 			conditional_field=(struct Computed_field *)NULL;
@@ -18538,7 +18471,7 @@ Executes a GFX UNSELECT command.
 					return_code = 0;
 				}
 				if (!(region_path &&
-					Cmiss_region_get_region_from_path(command_data->root_region,
+					Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 						region_path, &region) &&
 					(fe_region = Cmiss_region_get_FE_region(region))))
 				{
@@ -19498,7 +19431,7 @@ Executes a GFX SMOOTH command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 		fe_field = (struct FE_field *)NULL;
 		if (command_data->default_time_keeper)
 		{
@@ -19522,7 +19455,7 @@ Executes a GFX SMOOTH command.
 		return_code = Option_table_multi_parse(option_table, state);
 		if (return_code)
 		{
-			if (Cmiss_region_get_region_from_path(command_data->root_region,
+			if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 				region_path, &region) &&
 				(fe_region = Cmiss_region_get_FE_region(region)))
 			{
@@ -20045,7 +19978,7 @@ Can also write individual groups with the <group> option.
 				Cmiss_region *root_region = command_data->root_region;
 				if (root_region_path)
 				{
-					if (!Cmiss_region_get_region_from_path(command_data->root_region,
+					if (!Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 						root_region_path, &root_region) || (!root_region))
 					{
 						display_message(WARNING_MESSAGE,
@@ -20056,7 +19989,7 @@ Can also write individual groups with the <group> option.
 				Cmiss_region *region = root_region;
 				if (root_region && region_path)
 				{
-					if (!Cmiss_region_get_region_from_path(root_region,
+					if (!Cmiss_region_get_region_from_path_deprecated(root_region,
 						region_path, &region) || (!region))
 					{
 						display_message(WARNING_MESSAGE,
@@ -20650,7 +20583,7 @@ Can also write individual element groups with the <group> option.
 			Cmiss_region *root_region = command_data->root_region;
 			if (root_region_path)
 			{
-				if (!Cmiss_region_get_region_from_path(command_data->root_region,
+				if (!Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 					root_region_path, &root_region) || (!root_region))
 				{
 					display_message(WARNING_MESSAGE,
@@ -20661,7 +20594,7 @@ Can also write individual element groups with the <group> option.
 			Cmiss_region *region = root_region;
 			if (root_region && region_path)
 			{
-				if (!Cmiss_region_get_region_from_path(root_region,
+				if (!Cmiss_region_get_region_from_path_deprecated(root_region,
 					region_path, &region) || (!region))
 				{
 					display_message(WARNING_MESSAGE,
@@ -20851,7 +20784,7 @@ If <use_data> is set, writing data, otherwise writing nodes.
 			Cmiss_region *root_region = command_data->root_region;
 			if (root_region_path)
 			{
-				if (!Cmiss_region_get_region_from_path(command_data->root_region,
+				if (!Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
 					root_region_path, &root_region) || (!root_region))
 				{
 					display_message(WARNING_MESSAGE,
@@ -20862,7 +20795,7 @@ If <use_data> is set, writing data, otherwise writing nodes.
 			Cmiss_region *region = root_region;
 			if (root_region && region_path)
 			{
-				if (!Cmiss_region_get_region_from_path(root_region,
+				if (!Cmiss_region_get_region_from_path_deprecated(root_region,
 					region_path, &region) || (!region))
 				{
 					display_message(WARNING_MESSAGE,
@@ -20957,7 +20890,7 @@ If <use_data> is set, writing data, otherwise writing nodes.
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		return_code = 1;
-		Cmiss_region_get_root_region_path(&region_path);
+		region_path = Cmiss_region_get_root_region_path();
 		field_order_info = (struct FE_field_order_info *)NULL;
 		file_name = (char *)NULL;
 

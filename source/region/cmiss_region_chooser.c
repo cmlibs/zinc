@@ -211,48 +211,43 @@ Callback for the text field - region path entered.
 	LEAVE;
 } /* Cmiss_region_chooser_callback */
 
+/***************************************************************************//**
+ * Callback from current or ancestor children indicating children or name
+ * changed.
+ */
 static void Cmiss_region_chooser_Cmiss_region_change(
 	struct Cmiss_region *region, struct Cmiss_region_changes *changes,
 	void *chooser_void)
-/*******************************************************************************
-LAST MODIFIED : 9 January 2003
-
-DESCRIPTION :
-==============================================================================*/
 {
-	int child_number, i, region_number;
+	char *new_path;
+	int i, region_number;
 	struct Cmiss_region_chooser *chooser;
 
 	ENTER(Cmiss_region_chooser_Cmiss_region_change);
 	if (region && changes &&
 		(chooser = (struct Cmiss_region_chooser *)chooser_void))
 	{
-		/* only care if the child in this path changes */
-		if (changes->children_changed)
+		region_number = -1;
+		for (i = 0; (i < chooser->number_of_regions) && (region_number < 0); i++)
 		{
-			region_number = -1;
-			for (i = 0; (i < chooser->number_of_regions) && (region_number < 0); i++)
+			if (region == chooser->regions[i])
 			{
-				if (region == chooser->regions[i])
-				{
-					region_number = i;
-				}
+				region_number = i;
 			}
-			if (0 <= region_number)
+		}
+		if (0 <= region_number)
+		{
+			if (changes->children_changed &&
+				(!Cmiss_region_contains_subregion(region,
+					chooser->regions[chooser->number_of_regions - 1])))
 			{
-				if (Cmiss_region_get_child_region_number(
-					chooser->regions[region_number],
-					chooser->regions[region_number + 1], &child_number))
-				{
-					/*???RC Later handle child name changes here */
-				}
-				else
-				{
-					/* truncate path to this parent */
-					chooser->number_of_regions = region_number + 1;
-					Cmiss_region_chooser_update_path(chooser);
-					Cmiss_region_chooser_update(chooser);
-				}
+				new_path = Cmiss_region_get_path(region);
+				Cmiss_region_chooser_set_path(chooser, new_path);
+				DEALLOCATE(new_path);
+			}
+			else if (changes->name_changed)
+			{
+				Cmiss_region_chooser_update_path(chooser);
 			}
 		}
 	}
@@ -292,7 +287,7 @@ Creates a dialog from which a region may be chosen.
 			/* initialise the structure */
 			chooser->number_of_regions = 1;
 			chooser->max_number_of_regions = 1;
-			chooser->regions[0] = root_region;
+			chooser->regions[0] = ACCESS(Cmiss_region)(root_region);
 			chooser->last_updated_region = (struct Cmiss_region *)NULL;
 			chooser->parent = parent;
 			chooser->widget = (Widget)NULL;
@@ -314,6 +309,8 @@ Creates a dialog from which a region may be chosen.
 					Cmiss_region_chooser_callback, (XtPointer)chooser);
 				XtAddCallback(chooser->widget, XmNactivateCallback,
 					Cmiss_region_chooser_callback, (XtPointer)chooser);
+				Cmiss_region_add_callback(chooser->regions[0],
+					Cmiss_region_chooser_Cmiss_region_change, (void *)chooser);
 				Cmiss_region_chooser_set_path(chooser, initial_path);
 				XtManageChild(chooser->widget);
 			}
@@ -356,11 +353,11 @@ DESCRIPTION :
 	ENTER(DESTROY(Cmiss_region_chooser));
 	if (chooser_address && (chooser = *chooser_address))
 	{
-		/* clear callbacks from parent regions */
-		for (i = 0; i < (chooser->number_of_regions - 1); i++)
+		for (i = 0; i < chooser->number_of_regions; i++)
 		{
 			Cmiss_region_remove_callback(chooser->regions[i],
 				Cmiss_region_chooser_Cmiss_region_change, (void *)chooser);
+			DEACCESS(Cmiss_region)(&(chooser->regions[i]));
 		}
 		DEALLOCATE(chooser->regions);
 		DEALLOCATE(*chooser_address);
@@ -416,45 +413,14 @@ Gets <path> of chosen region in the <chooser>.
 Up to the calling function to DEALLOCATE the returned path.
 ==============================================================================*/
 {
-	char *child_region_name;
-	int child_number, error, i, return_code;
+	int return_code;
 
 	ENTER(Cmiss_region_chooser_get_path);
 	if (chooser && path_address)
 	{
-		return_code = 1;
-		*path_address = (char *)NULL;
-		error = 0;
-		append_string(path_address, CMISS_REGION_PATH_SEPARATOR_STRING, &error);
-		for (i = 1; (i < chooser->number_of_regions) && return_code; i++)
-		{
-			if (Cmiss_region_get_child_region_number(chooser->regions[i - 1],
-				chooser->regions[i], &child_number) && 
-				Cmiss_region_get_child_region_name(chooser->regions[i - 1],
-					child_number, &child_region_name))
-			{
-				append_string(path_address, child_region_name, &error);
-				if (i < chooser->number_of_regions - 1)
-				{
-					append_string(path_address, CMISS_REGION_PATH_SEPARATOR_STRING,
-						&error);
-				}
-				DEALLOCATE(child_region_name);
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-		if (error)
-		{
-			return_code = 0;
-		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_region_chooser_get_path.  Failed");
-		}
+		*path_address =
+			Cmiss_region_get_path(chooser->regions[chooser->number_of_regions - 1]);
+		return_code = (*path_address != NULL);
 	}
 	else
 	{
@@ -504,61 +470,53 @@ DESCRIPTION :
 Sets <path> of chosen region in the <chooser>.
 ==============================================================================*/
 {
-	const char *remaining_path;
+	char *temp1, *temp2;
 	int i, return_code;
-	struct Cmiss_region *last_region, *region, **regions;
+	struct Cmiss_region *parent, *region, **regions;
 
 	ENTER(Cmiss_region_chooser_set_path);
 	if (chooser && path)
 	{
 		return_code = 1;
-		/* clear callbacks from parent regions */
-		for (i = 0; i < (chooser->number_of_regions - 1); i++)
+		/* remove callbacks from and deaccess non-root regions in path */
+		for (i = 1; i < chooser->number_of_regions; i++)
 		{
 			Cmiss_region_remove_callback(chooser->regions[i],
 				Cmiss_region_chooser_Cmiss_region_change, (void *)chooser);
+			DEACCESS(Cmiss_region)(&(chooser->regions[i]));
 		}
 		chooser->number_of_regions = 1;
 		region = chooser->regions[0];
-		remaining_path = path;
-		while (return_code && remaining_path)
+		Cmiss_region_get_partial_region_path(chooser->regions[0], path,
+			&region, &temp1, &temp2);
+		DEALLOCATE(temp1);
+		DEALLOCATE(temp2);
+		while (parent = Cmiss_region_get_parent(region))
 		{
-			last_region = region;
-			if (return_code = Cmiss_region_get_child_region_from_path(last_region,
-				remaining_path, &region, &remaining_path))
+			if (chooser->number_of_regions == chooser->max_number_of_regions)
 			{
-				if (region != last_region)
+				if (REALLOCATE(regions, chooser->regions, struct Cmiss_region *,
+					chooser->max_number_of_regions + 1))
 				{
-					if (chooser->number_of_regions == chooser->max_number_of_regions)
-					{
-						if (REALLOCATE(regions, chooser->regions, struct Cmiss_region *,
-							chooser->max_number_of_regions + 1))
-						{
-							chooser->regions = regions;
-							chooser->max_number_of_regions++;
-						}
-						else
-						{
-							return_code = 0;
-						}
-					}
-					if (return_code)
-					{
-						chooser->regions[chooser->number_of_regions] = region;
-						chooser->number_of_regions++;
-					}
+					chooser->regions = regions;
+					chooser->max_number_of_regions++;
+				}
+				else
+				{
+					return_code = 0;
+					break;
 				}
 			}
-		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE, "Cmiss_region_chooser_set_path.  Failed");
-		}
-		/* request callbacks from parent regions */
-		for (i = 0; i < (chooser->number_of_regions - 1); i++)
-		{
-			Cmiss_region_add_callback(chooser->regions[i],
+			for (i = chooser->number_of_regions; i > 1; i--)
+			{
+				chooser->regions[i] = chooser->regions[i - 1];
+			}
+			chooser->regions[1] = ACCESS(Cmiss_region)(region);
+			Cmiss_region_add_callback(region,
 				Cmiss_region_chooser_Cmiss_region_change, (void *)chooser);
+			chooser->number_of_regions++;
+			region = parent;
+			Cmiss_region_destroy(&parent);
 		}
 		Cmiss_region_chooser_update_path(chooser);
 		Cmiss_region_chooser_update(chooser);

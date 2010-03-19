@@ -4928,16 +4928,12 @@ DESCRIPTION :
 	}
 	if (name)
 	{
-		if (region = Cmiss_region_get_child_region_from_name(
-			fieldml_data->root_region, name))
-		{
-			ACCESS(Cmiss_region)(region);
-		}
-		else
+		region = Cmiss_region_find_child_by_name(fieldml_data->root_region, name);
+		if (NULL == region)
 		{
 			region = Cmiss_region_create_group(fieldml_data->root_region);
-			if (!Cmiss_region_add_child_region(fieldml_data->root_region,
-					 region, name, /*child_position*/-1))
+			Cmiss_region_set_name(region, name);
+			if (!Cmiss_region_append_child(fieldml_data->root_region, region))
 			{
 				display_message(ERROR_MESSAGE,
 					"fieldml_start_group.  Could not add child region");

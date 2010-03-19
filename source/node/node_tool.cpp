@@ -2581,7 +2581,7 @@ public:
 	  wxPanel *region_chooser_panel = 
 		 XRCCTRL(*this, "RegionChooserPanel", wxPanel);
 	  char *initial_path;
-	  Cmiss_region_get_root_region_path(&initial_path);
+	  initial_path = Cmiss_region_get_root_region_path();
 	  region_chooser = new wxRegionChooser(region_chooser_panel,
 		  node_tool->root_region, initial_path); 
 	  DEALLOCATE(initial_path);
@@ -2985,7 +2985,7 @@ int wx_Node_tool_get_region_path(char **path_address)
 	 }
 	 else
 	 {
-			Cmiss_region_get_root_region_path(path_address);
+			*path_address = Cmiss_region_get_root_region_path();
 	 }
 	 return 1;
 }
@@ -3345,7 +3345,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			Computed_field_package_get_computed_field_manager(computed_field_package))
 		&&rubber_band_material&&user_interface&&execute_command)
 	{
-		Cmiss_region_get_root_region_path(&initial_path);
+		initial_path = Cmiss_region_get_root_region_path();
 		if (ALLOCATE(node_tool,struct Node_tool,1))
 		{
 			node_tool->execute_command=execute_command;
@@ -4273,7 +4273,7 @@ Up to the calling function to DEALLOCATE the returned path.
 		}
 		else
 		{
-			 Cmiss_region_get_root_region_path(path_address);
+			*path_address = Cmiss_region_get_root_region_path();
 			 return_code = 0;
 		}
 #else /* switch USER_INTERFACE*/
@@ -4361,12 +4361,12 @@ Sets the <path> to the region/FE_region where nodes created by
 		else
 		{
 			region=node_tool->root_region;
-			Cmiss_region_get_region_from_path(node_tool->root_region,
+			Cmiss_region_get_region_from_path_deprecated(node_tool->root_region,
 				path, &region);
 		}
 		return_code = Node_tool_set_Cmiss_region(node_tool, region);
 #else /* defined (MOTIF_USER_INTERFACE) */
-		if (return_code = Cmiss_region_get_region_from_path(node_tool->root_region,
+		if (return_code = Cmiss_region_get_region_from_path_deprecated(node_tool->root_region,
 					path, &region))
 		{
 			 if (node_tool->current_region_path)

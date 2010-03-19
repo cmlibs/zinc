@@ -529,7 +529,7 @@ already) and allows its contents to be modified.
 			{
 				if (group_name)
 				{
-					if (!(Cmiss_region_get_region_from_path(
+					if (!(Cmiss_region_get_region_from_path_deprecated(
 						/*root_region*/field_modify->get_region(), group_name, &group)))
 					{
 						display_message(ERROR_MESSAGE,
@@ -895,7 +895,7 @@ already) and allows its contents to be modified.
 			{
 				if (group_name)
 				{
-					if (!(Cmiss_region_get_region_from_path(
+					if (!(Cmiss_region_get_region_from_path_deprecated(
 						/*root_region*/field_modify->get_region(), group_name, &group)))
 					{
 						display_message(ERROR_MESSAGE,
