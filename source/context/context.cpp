@@ -103,7 +103,7 @@ int Cmiss_context_destroy(struct Context **context_address)
 	int return_code = 0;
 	struct Context *context = NULL;
 
-	if (NULL != (context = *context_address))
+	if (context_address && NULL != (context = *context_address))
 	{
 		context->access_count--;
 		if (0 == context->access_count)
@@ -163,7 +163,7 @@ int Cmiss_context_destroy(struct Context **context_address)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_context_destroy.  Missing graphics module");
+			"Cmiss_context_destroy.  Missing context address");
 		return_code = 0;
 	}
 

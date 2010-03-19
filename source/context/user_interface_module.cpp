@@ -423,7 +423,7 @@ int User_interface_module_destroy(
 	int return_code = 0;
 	struct User_interface_module *UI_module  = NULL;
 
-	if (NULL != (UI_module = *UI_module_address))
+	if (UI_module_address && NULL != (UI_module = *UI_module_address))
 	{
 		UI_module->access_count--;
 		if (0 == UI_module->access_count)
@@ -482,7 +482,7 @@ int User_interface_module_destroy(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-				"User_interface_module_destroy.  Missing address of user interface module");
+				"User_interface_module_destroy.  Missing user interface module address");
 		return_code = 0;
 	}
 		
