@@ -2,7 +2,7 @@
 #include "perl.h"
 #include "XSUB.h"
 
-#include "api/cmiss_command_data.h"
+#include "api/cmiss_context.h"
 #include "api/cmiss_scene_viewer.h"
 #include "perl/Cmiss/typemap.h"
 #include "perl/Cmiss/Scene_viewer/typemap.h"
@@ -32,13 +32,13 @@ constant(sv,arg)
 	RETVAL
 
 Cmiss::Scene_viewer
-get_scene_viewer_by_name_xs(Cmiss::Cmgui_command_data command_data,char *name,int pane_number)
+get_scene_viewer_by_name_xs(Cmiss::Cmiss_context context,char *name,int pane_number)
 	CODE:
 		RETVAL=0;
-		if (command_data&&name)
+		if (context&&name)
 		{
-			RETVAL = Cmiss_command_data_get_graphics_window_pane_by_name(
-				command_data, name, pane_number);
+			RETVAL = Cmiss_context_get_graphics_window_pane_by_name(
+				context, name, pane_number);
 		}
 		if (!RETVAL)
 		{

@@ -28,12 +28,12 @@ our @EXPORT = qw(
 
 our $VERSION = '0.01';
 
-#Currently implemented by loading cmgui command data and then copying the
+#Currently implemented by loading cmiss context and then copying the
 #variable from the default execution package (cmiss).
 #I have put it into this separate module so that in the future we may
-#find the $example directory without the full command_data.
+#find the $example directory without the full context.
 
-use Cmiss::Cmgui_command_data;
+use Cmiss::Cmiss_context;
 our $example = $cmiss::example;
 our $TESTING = $cmiss::TESTING;
 

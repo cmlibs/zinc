@@ -1,7 +1,7 @@
 #if ! defined (PERL_CMISS_TYPEMAP_H)
 #define PERL_CMISS_TYPEMAP_H
 
-typedef struct Cmiss_command_data * Cmiss__Cmgui_command_data;
+typedef struct Cmiss_context * Cmiss__Cmiss_context;
 typedef struct Cmiss_field * Cmiss__Field;
 typedef struct Cmiss_field_module * Cmiss__Field_module;
 typedef struct Cmiss_element * Cmiss__Element;

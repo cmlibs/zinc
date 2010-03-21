@@ -91,7 +91,7 @@ sub AUTOLOAD {
 }
 
 #Scene viewers currently require the command data to be initialised.
-use Cmiss::Cmgui_command_data;
+use Cmiss::Cmiss_context;
 
 require XSLoader;
 XSLoader::load('Cmiss::Scene_viewer', $VERSION);

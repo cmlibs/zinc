@@ -30,7 +30,7 @@ our $VERSION = '0.01';
 
 
 use Cmiss;
-use Cmiss::Cmgui_command_data;
+use Cmiss::Cmiss_context;
 Cmiss::require_library('cmgui_finite_element');
 
 package Cmiss::Field;

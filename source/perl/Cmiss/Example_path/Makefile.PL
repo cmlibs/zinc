@@ -1,7 +1,7 @@
 use ExtUtils::MakeMaker;
 
 #
-# Problems with "Manifying" in a FAT32 filesystem because Cmiss::Cmgui_command_data.3 is not
+# Problems with "Manifying" in a FAT32 filesystem because Cmiss::Cmiss_context.3 is not
 #   a valid file name
 WriteMakefile(
     'NAME'    => 'Cmiss::Example_path',

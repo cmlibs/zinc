@@ -61,8 +61,8 @@ sub AUTOLOAD {
     goto &$AUTOLOAD;
 }
 
-#Graphics windows currently require the command data to be initialised.
-use Cmiss::Cmgui_command_data;
+#Graphics windows currently require the context to be initialised.
+use Cmiss::Cmiss_context;
 
 require XSLoader;
 XSLoader::load('Cmiss::Graphics_window', $VERSION);
@@ -73,13 +73,13 @@ sub get_scene_viewer_by_name
   {
 	 my $name = shift;
 	 my $pane_number = shift;
-	 my $cmgui_command_data = new Cmiss::Cmgui_command_data();
+	 my $cmiss_context = new Cmiss::Cmiss_context();
 
-	 if (!defined $cmgui_command_data)
+	 if (!defined $cmiss_context)
 		{
 		  die "Cmgui must be initialised correctly";
 		}
-	 get_scene_viewer_by_name_xs($cmgui_command_data, $name, $pane_number);
+	 get_scene_viewer_by_name_xs($cmiss_context, $name, $pane_number);
   }
 
 
