@@ -412,6 +412,12 @@ yet we just don't know.
 #if defined (GL_EXT_framebuffer_object)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_EXT_framebuffer_object);
 #endif /* (GL_EXT_framebuffer_object) */
+#if defined (GL_EXT_framebuffer_blit)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_EXT_framebuffer_blit);
+#endif /* (GL_EXT_framebuffer_blit) */
+#if defined (GL_EXT_framebuffer_multisample)
+  GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_EXT_framebuffer_multisample);
+#endif /* (GL_EXT_framebuffer_multisample) */
 #if defined (GL_NV_float_buffer)
   GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_NV_float_buffer);
 #endif /* defined (GL_NV_float_buffer) */
@@ -554,6 +560,14 @@ GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_display_lists);
        GRAPHICS_LIBRARY_EXTERN PFNGLDELETERENDERBUFFERSEXTPROC GLHANDLE(glDeleteRenderbuffersEXT);
 #      define glDeleteRenderbuffersEXT (GLHANDLE(glDeleteRenderbuffersEXT))
 #    endif /* GL_EXT_framebuffer_object */
+#    if defined (GL_EXT_framebuffer_blit)
+       GRAPHICS_LIBRARY_EXTERN PFNGLBLITFRAMEBUFFEREXTPROC GLHANDLE(glBlitFramebufferEXT);
+#      define glBlitFramebufferEXT (GLHANDLE(glBlitFramebufferEXT))
+#    endif /* (GL_EXT_framebuffer_blit) */
+#    if defined (GL_EXT_framebuffer_multisample)
+       GRAPHICS_LIBRARY_EXTERN PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC GLHANDLE(glRenderbufferStorageMultisampleEXT);
+#      define glRenderbufferStorageMultisampleEXT (GLHANDLE(glRenderbufferStorageMultisampleEXT))
+#    endif /* GL_EXT_framebuffer_multisample */
 
 #  else  /* defined (APIENTRY) */
      /* We don't have types for the functions so we will not use any extensions */
@@ -565,6 +579,7 @@ GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_display_lists);
 #    undef GL_EXT_texture3D
 #    undef GL_ARB_vertex_program
 #    undef GL_ARB_fragment_program
+#    undef GL_EXT_framebuffer_blit
 #  endif  /* defined (APIENTRY) */
 #endif /* defined GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES */
 

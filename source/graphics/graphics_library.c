@@ -1436,6 +1436,50 @@ appropriately.
 			}
 		}
 #endif /* GL_EXT_FRAMEBUFFER_OBJECT */
+#if defined GL_EXT_framebuffer_blit
+		else if (!strcmp(extension_name, "GL_EXT_framebuffer_blit"))
+		{
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_EXT_framebuffer_blit))
+			{
+				return_code = GLEXTENSIONFLAG(GL_EXT_framebuffer_blit);
+			}
+			else
+			{
+				return_code = query_gl_extension(extension_name);
+				if (GLEXTENSION_AVAILABLE == return_code)
+				{
+					 if (!(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glBlitFramebufferEXT, PFNGLBLITFRAMEBUFFEREXTPROC)
+						Graphics_library_get_function_ptr("glBlitFramebufferEXT")))
+					{
+						return_code = GLEXTENSION_UNAVAILABLE;
+					}
+				}
+				GLEXTENSIONFLAG(GL_EXT_framebuffer_blit) = return_code;
+			}
+		}
+#endif /* GL_EXT_FRAMEBUFFER_BLIT */
+#if defined GL_EXT_framebuffer_multisample
+		else if (!strcmp(extension_name, "GL_EXT_framebuffer_multisample"))
+		{
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_EXT_framebuffer_multisample))
+			{
+				return_code = GLEXTENSIONFLAG(GL_EXT_framebuffer_multisample);
+			}
+			else
+			{
+				return_code = query_gl_extension(extension_name);
+				if (GLEXTENSION_AVAILABLE == return_code)
+				{
+					 if (!(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glRenderbufferStorageMultisampleEXT, PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC)
+						Graphics_library_get_function_ptr("glRenderbufferStorageMultisampleEXT")))
+					{
+						return_code = GLEXTENSION_UNAVAILABLE;
+					}
+				}
+				GLEXTENSIONFLAG(GL_EXT_framebuffer_multisample) = return_code;
+			}
+		}
+#endif /* GL_EXT_FRAMEBUFFER_MULTISAMPLE */
 #if defined GL_NV_float_buffer
 		else if (!strcmp(extension_name, "GL_NV_float_buffer"))
 		{

@@ -592,7 +592,6 @@ Private routine to facilitate the compilation of Graphics fonts with only
 a Graphics_buffer.
 ==============================================================================*/
 #endif /* defined (MOTIF_USER_INTERFACE) */
-#endif /* !defined (GRAPHICS_BUFFER_H) */
 
 #if defined (CARBON_USER_INTERFACE)
 int Graphics_buffer_carbon_set_window_size(struct Graphics_buffer *graphics_buffer,
@@ -605,3 +604,14 @@ Sets the coordinates within the graphics port which the graphics_buffer should
 respect.
 ==============================================================================*/
 #endif /* defined (CARBON_USER_INTERFACE) */
+
+
+#if defined (OPENGL_API) && defined (USE_MSAA)
+void Graphics_buffer_reset_multisample_framebuffer(struct Graphics_buffer *buffer);
+
+void Graphics_buffer_blit_framebuffer(struct Graphics_buffer *buffer);
+
+int Graphics_buffer_set_multisample_framebuffer(struct Graphics_buffer *buffer, int preferred_antialias);
+#endif /* defined (USE_MSAA) */
+
+#endif /* !defined (GRAPHICS_BUFFER_H) */

@@ -92,6 +92,9 @@ extern "C" {
 }
 #if defined (WX_USER_INTERFACE)
 extern "C" {
+#define GL_GLEXT_PROTOTYPES
+#include <GL/gl.h>
+#include <GL/glext.h>
 #include "graphics/graphics_library.h"
 }
 #include <wx/wx.h>
@@ -363,6 +366,9 @@ DESCRIPTION :
 	int *attrib_list, framebuffer_width, framebuffer_height;
 #if defined (OPENGL_API)
 	GLuint fbo, depthbuffer, img;
+#if defined (USE_MSAA)
+	GLuint msbuffer, multi_depthbuffer, multi_fbo;
+#endif
 #endif
 #endif /* defined (WX_USER_INTERFACE) */
 };
@@ -518,6 +524,11 @@ contained in the this module only.
 		 buffer->fbo = 0;
 		 buffer->depthbuffer = 0;
 		 buffer->img = 0;
+#if defined (USE_MSAA)
+		 buffer->msbuffer = 0;
+		 buffer->multi_fbo = 0;
+		 buffer->multi_depthbuffer = 0;
+#endif
 #endif
 		 buffer->framebuffer_height = 0;
 		 buffer->framebuffer_width = 0;
@@ -1507,6 +1518,108 @@ public:
 		}
 	}
 };
+
+#if defined (OPENGL_API) && defined (USE_MSAA)
+void Graphics_buffer_reset_multisample_framebuffer(struct Graphics_buffer *buffer)
+{
+	 if (buffer->multi_fbo)
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, buffer->multi_fbo);
+}
+
+void Graphics_buffer_blit_framebuffer(struct Graphics_buffer *buffer)
+{
+#ifdef GL_EXT_framebuffer_blit
+	 int renderbuffer_width, renderbuffer_height;
+	 int max_renderbuffer_size = 2048;
+
+	 if (buffer->framebuffer_width > max_renderbuffer_size)
+	 {
+			renderbuffer_width = max_renderbuffer_size;
+	 }
+	 else
+	 {
+			renderbuffer_width = buffer->framebuffer_width;
+	 }
+	 
+	 if (buffer->framebuffer_height > max_renderbuffer_size)
+	 {
+			renderbuffer_height = max_renderbuffer_size;
+	 }
+	 else
+	 {
+			renderbuffer_height = buffer->framebuffer_height;
+	 }
+	 if (Graphics_library_load_extension("GL_EXT_framebuffer_blit") && 
+			Graphics_library_check_extension(GL_EXT_framebuffer_blit))
+	 {
+			glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, buffer->multi_fbo);
+			glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, buffer->fbo);
+			glBlitFramebufferEXT(0, 0, renderbuffer_width, renderbuffer_height, 
+				0, 0, renderbuffer_width, renderbuffer_height, 
+				GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, buffer->fbo);
+	 }
+	 else
+	 {
+		 display_message(INFORMATION_MESSAGE,
+			 "Graphics_buffer_blit_framebuffer. glBlitFramebufferEXT not supported\n");
+	 }
+#endif /* defined (GL_EXT_framebuffer_blit) */
+}
+
+int Graphics_buffer_set_multisample_framebuffer(struct Graphics_buffer *buffer, int preferred_antialias)
+{
+#ifdef GL_EXT_framebuffer_multisample
+	 int antialias;
+	 if (Graphics_library_load_extension("GL_EXT_framebuffer_multisample") && 
+			Graphics_library_check_extension(GL_EXT_framebuffer_multisample) &&
+			preferred_antialias > 0)
+	 {
+			int max_samples;
+			glGetIntegerv(GL_MAX_SAMPLES_EXT, &max_samples);
+			glGenFramebuffersEXT(1, &buffer->multi_fbo);
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, buffer->multi_fbo);
+			if (buffer->img > 0) {
+				 glBindTexture(GL_TEXTURE_2D, buffer->img);
+			}
+			if (preferred_antialias > max_samples)
+			{
+				 antialias = max_samples;
+				 display_message(INFORMATION_MESSAGE,
+						"Preferred antialias exceed the hardware capability.\n"
+						"Max number of multisample framebuffer is: %d\n"
+						"cmgui will set the antialiasing to max.\n",
+						antialias);
+			}
+			else
+			{
+				 antialias = preferred_antialias;
+			}
+			glGenRenderbuffersEXT(1, &buffer->msbuffer);
+			glBindRenderbufferEXT(GL_RENDERBUFFER_EXT,buffer->msbuffer);
+			glRenderbufferStorageMultisampleEXT(
+				 GL_RENDERBUFFER_EXT, antialias, GL_RGBA,
+				 buffer->framebuffer_width, buffer->framebuffer_height);
+			glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, 
+				 GL_RENDERBUFFER_EXT, buffer->msbuffer);
+			glGenRenderbuffersEXT(1, &buffer->multi_depthbuffer);
+			glBindRenderbufferEXT(GL_RENDERBUFFER_EXT,buffer->multi_depthbuffer);
+			glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, antialias, GL_DEPTH_COMPONENT, 
+				  buffer->framebuffer_width,  buffer->framebuffer_height);
+			glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, 
+				 GL_RENDERBUFFER_EXT, buffer->multi_depthbuffer);
+			return 1;
+	 }
+	 else
+	 {
+			display_message(INFORMATION_MESSAGE,
+				 "multisample_framebuffer EXT not available\n");
+			return 0;
+	 }
+#endif /* defined (GL_EXT_framebuffer_multisample) */
+	 return 0;
+}
+#endif /* defined (OPENGL_API) */
 
 static void Graphics_buffer_create_buffer_wx(
 	struct Graphics_buffer *buffer,
@@ -8074,10 +8187,25 @@ x==============================================================================*
 					 {
 						 glDeleteRenderbuffersEXT(1, &buffer->depthbuffer);
 					 }
+#if defined (USE_MSAA)
+					 if (buffer->multi_fbo != 0)
+					 {
+						 glDeleteFramebuffersEXT(1, &buffer->multi_fbo);
+					 }
+					 if (buffer->multi_depthbuffer != 0)
+					 {
+						 glDeleteFramebuffersEXT(1, &buffer->multi_depthbuffer);
+					 }
+					 if (buffer->msbuffer != 0)
+					 {
+						 glDeleteRenderbuffersEXT(1, &buffer->msbuffer);
+					 }
+#endif
 					 if (buffer->img != 0)
 					 {
 						 glDeleteTextures(1, &buffer->img);
 					 }
+
 				 }
 			 }
 		 }

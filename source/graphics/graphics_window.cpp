@@ -6612,6 +6612,9 @@ graphics window on screen.
 		pane_i, pane_j, pane_width, pane_height, panes_across, panes_down,
 		patch_width, patch_height,
 		tile_height, tile_width, tiles_across, tiles_down, panel_width, panel_height;
+#if defined (USE_MSAA)
+	int multisample_framebuffer_flag = 0;
+#endif
 	struct Graphics_buffer *offscreen_buffer;
 	struct Scene_viewer *scene_viewer;
 #if defined (SGI)
@@ -6710,10 +6713,6 @@ graphics window on screen.
 				tiles_down = (int)ceil(fraction_down);
 			}
 #else
-//  			wxPanel *GridPanel;
-// 			GridPanel = XRCCTRL(*window->wx_graphics_window,
-// 				 "GridPanel", wxPanel);
-// 			GridPanel->GetSize(&panel_width, &panel_height);
 			if (pane_width <= panel_width)
 			{
 				tile_width = pane_width;
@@ -6765,6 +6764,24 @@ graphics window on screen.
 			{
 				return_code = 1;
 				Graphics_buffer_make_current(offscreen_buffer);
+				if (Graphics_buffer_get_type(offscreen_buffer) ==	
+					GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE)
+				{
+					if (preferred_antialias != 0)
+					{
+#if !defined (USE_MSAA)
+						display_message(WARNING_MESSAGE,
+							"Graphics_window_get_frame_pixels. Cmgui-wx does not write"
+							"image with anti-aliasing under offscreen mode at the moment.");
+#else
+#if defined (OPENGL_API)
+						multisample_framebuffer_flag = 
+							Graphics_buffer_set_multisample_framebuffer(offscreen_buffer, preferred_antialias);
+#endif
+#endif
+					}
+				}
+
 #if defined (OPENGL_API)
 				if (number_of_panes > 1)
 				{
@@ -6773,17 +6790,6 @@ graphics window on screen.
 					glClear(GL_COLOR_BUFFER_BIT); 
 				}
 #endif /* defined (OPENGL_API) */
-
-				if (Graphics_buffer_get_type(offscreen_buffer) ==	
-					GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE)
-				{
-					if (preferred_antialias != 0)
-					{
-						display_message(WARNING_MESSAGE,
-							"Graphics_window_get_frame_pixels. Cmgui-wx does not write"
-							"image with anti-aliasing under offscreen mode at the moment.");
-					}
-				}
 				if ((tiles_across > 1) || (panes_across > 1))
 				{
 					glPixelStorei(GL_PACK_ROW_LENGTH, frame_width);
@@ -6876,11 +6882,32 @@ graphics window on screen.
 								{
 									patch_height = pane_height - tile_height * (tiles_down - 1);
 								}
+
+								if (Graphics_buffer_get_type(offscreen_buffer) ==	
+									GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE)
+								{
+#if defined (OPENGL_API) && defined (USE_MSAA)
+									if (multisample_framebuffer_flag)
+									{
+										Graphics_buffer_blit_framebuffer(offscreen_buffer);
+									}
+#endif
+								}
 								return_code=Graphics_library_read_pixels(*frame_data +
 									(i * tile_width + pane_i * (pane_width + PANE_BORDER) + 
-									(j * tile_height + (panes_down - 1 - pane_j) * (pane_height + PANE_BORDER))
-									* frame_width) * number_of_components,
+										(j * tile_height + (panes_down - 1 - pane_j) * (pane_height + PANE_BORDER))
+										* frame_width) * number_of_components,
 									patch_width, patch_height, storage, /*front_buffer*/0);
+								if (Graphics_buffer_get_type(offscreen_buffer) ==	
+									GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE)
+								{
+#if defined (OPENGL_API) && defined (USE_MSAA)
+									if (multisample_framebuffer_flag)
+									{
+										Graphics_buffer_reset_multisample_framebuffer(offscreen_buffer);
+									}
+#endif
+								}
 							}
 						}
 					}
