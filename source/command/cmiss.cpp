@@ -25833,11 +25833,6 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 		{
 			DESTROY(Element_creator)(&command_data->element_creator);
 		}
-		/* destroy Interactive_tools and manager */
-		if (command_data->select_tool)
-		{
-			DESTROY(Select_tool)(&command_data->select_tool);
-		}
 #endif /* defined (MOTIF_USER_INTERFACE) */
 #if defined (WX_USER_INTERFACE)
 		 /* deallocate the current region path when cmiss command_data is
