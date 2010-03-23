@@ -6612,7 +6612,7 @@ graphics window on screen.
 		pane_i, pane_j, pane_width, pane_height, panes_across, panes_down,
 		patch_width, patch_height,
 		tile_height, tile_width, tiles_across, tiles_down, panel_width, panel_height;
-#if defined (USE_MSAA)
+#if defined (OPENGL_API) &&defined (USE_MSAA) && defined (WX_USER_INTERFACE)
 	int multisample_framebuffer_flag = 0;
 #endif
 	struct Graphics_buffer *offscreen_buffer;
@@ -6774,7 +6774,7 @@ graphics window on screen.
 							"Graphics_window_get_frame_pixels. Cmgui-wx does not write"
 							"image with anti-aliasing under offscreen mode at the moment.");
 #else
-#if defined (OPENGL_API)
+#if defined (OPENGL_API)  && defined (WX_USER_INTERFACE)
 						multisample_framebuffer_flag = 
 							Graphics_buffer_set_multisample_framebuffer(offscreen_buffer, preferred_antialias);
 #endif
@@ -6886,7 +6886,7 @@ graphics window on screen.
 								if (Graphics_buffer_get_type(offscreen_buffer) ==	
 									GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE)
 								{
-#if defined (OPENGL_API) && defined (USE_MSAA)
+#if defined (OPENGL_API) && defined (USE_MSAA) && defined (WX_USER_INTERFACE)
 									if (multisample_framebuffer_flag)
 									{
 										Graphics_buffer_blit_framebuffer(offscreen_buffer);
@@ -6901,7 +6901,7 @@ graphics window on screen.
 								if (Graphics_buffer_get_type(offscreen_buffer) ==	
 									GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE)
 								{
-#if defined (OPENGL_API) && defined (USE_MSAA)
+#if defined (OPENGL_API) && defined (USE_MSAA) && defined (WX_USER_INTERFACE)
 									if (multisample_framebuffer_flag)
 									{
 										Graphics_buffer_reset_multisample_framebuffer(offscreen_buffer);
