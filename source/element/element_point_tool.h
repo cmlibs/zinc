@@ -68,12 +68,11 @@ Global functions
 
 struct Element_point_tool *CREATE(Element_point_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
+	struct Cmiss_region *region,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
-	struct Computed_field_package *computed_field_package,
 	struct Graphical_material *rubber_band_material,
 	struct User_interface *user_interface,
-	struct Time_keeper *time_keeper,
-	struct Execute_command *execute_command);
+	struct Time_keeper *time_keeper);
 /*******************************************************************************
 LAST MODIFIED : 5 July 2002
 
@@ -141,4 +140,6 @@ DESCRIPTION :
 Returns the generic interactive_tool the represents the <element_point_tool>.
 ==============================================================================*/
 
+int Element_point_tool_set_execute_command(struct Element_point_tool *element_point_tool, 
+	struct Execute_command *execute_command);
 #endif /* !defined (ELEMENT_POINT_TOOL_H) */

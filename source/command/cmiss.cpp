@@ -7941,41 +7941,38 @@ Executes a GFX CREATE WINDOW command.
 				             command_data->user_interface);
 						ADD_OBJECT_TO_MANAGER(Interactive_tool)(transform_tool,
 							 interactive_tool_manager);
-						CREATE(Node_tool)(
+						Node_tool_set_execute_command(CREATE(Node_tool)(
 								interactive_tool_manager,
 								command_data->root_region, /*use_data*/0,
 								command_data->node_selection,
-								command_data->computed_field_package,
 								Material_package_get_default_material(command_data->material_package),
 								command_data->user_interface,
-								command_data->default_time_keeper,
+								command_data->default_time_keeper),
 								command_data->execute_command);
-						CREATE(Node_tool)(
+						Node_tool_set_execute_command(CREATE(Node_tool)(
 								interactive_tool_manager,
 								command_data->root_region, /*use_data*/1,
 								command_data->data_selection,
-								command_data->computed_field_package,
 								Material_package_get_default_material(command_data->material_package),
 								command_data->user_interface,
-								command_data->default_time_keeper,
+								command_data->default_time_keeper),
 								command_data->execute_command);
-						CREATE(Element_tool)(
+						Element_tool_set_execute_command(CREATE(Element_tool)(
 								interactive_tool_manager,
 								command_data->root_region,
 								command_data->element_selection,
 								command_data->element_point_ranges_selection,
-								command_data->computed_field_package,
 								Material_package_get_default_material(command_data->material_package),
 								command_data->user_interface,
-								command_data->default_time_keeper,
+								command_data->default_time_keeper),
 								command_data->execute_command);
-						CREATE(Element_point_tool)(
+						Element_point_tool_set_execute_command(CREATE(Element_point_tool)(
 								interactive_tool_manager,
+								command_data->root_region,
 								command_data->element_point_ranges_selection,
-								command_data->computed_field_package,
 								Material_package_get_default_material(command_data->material_package),
 								command_data->user_interface,
-								command_data->default_time_keeper,
+								command_data->default_time_keeper),
 								command_data->execute_command);
 						if (window=CREATE(Graphics_window)(name,buffer_mode,stereo_mode,
 							minimum_colour_buffer_depth, minimum_depth_buffer_depth,
@@ -25445,52 +25442,19 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				the windows system */
 			Open_image_environment("cmgui");
 #endif /* switch (Operating_System) */
-			command_data->transform_tool=create_Interactive_tool_transform(
-				UI_module->user_interface);
-			ADD_OBJECT_TO_MANAGER(Interactive_tool)(command_data->transform_tool,
-				command_data->interactive_tool_manager);
-			command_data->node_tool=CREATE(Node_tool)(
-				command_data->interactive_tool_manager,
-				command_data->root_region, /*use_data*/0,
-				Cmiss_context_get_node_selection(context),
-				command_data->computed_field_package,
-				Material_package_get_default_material(command_data->material_package),
-				command_data->user_interface,
-				command_data->default_time_keeper,
+			command_data->transform_tool=UI_module->transform_tool;
+			command_data->node_tool=UI_module->node_tool;
+			Node_tool_set_execute_command(command_data->node_tool, command_data->execute_command);
+			command_data->data_tool=UI_module->data_tool;
+			Node_tool_set_execute_command(command_data->data_tool, command_data->execute_command);
+			command_data->element_tool=UI_module->element_tool;
+			Element_tool_set_execute_command(command_data->element_tool, 
 				command_data->execute_command);
-			command_data->data_tool=CREATE(Node_tool)(
-				command_data->interactive_tool_manager,
-				command_data->root_region, /*use_data*/1,
-				Cmiss_context_get_data_selection(context),
-				command_data->computed_field_package,
-				Material_package_get_default_material(command_data->material_package),
-				command_data->user_interface,
-				command_data->default_time_keeper,
-				command_data->execute_command);
-			command_data->element_tool=CREATE(Element_tool)(
-				command_data->interactive_tool_manager,
-				command_data->root_region,
-				Cmiss_context_get_element_selection(context),
-				Cmiss_context_get_element_point_ranges_selection(context),
-				command_data->computed_field_package,
-				Material_package_get_default_material(command_data->material_package),
-				command_data->user_interface,
-				command_data->default_time_keeper,
-				command_data->execute_command);
-			command_data->element_point_tool=CREATE(Element_point_tool)(
-				command_data->interactive_tool_manager,
-				Cmiss_context_get_element_point_ranges_selection(context),
-				command_data->computed_field_package,
-				Material_package_get_default_material(command_data->material_package),
-				command_data->user_interface,
-				command_data->default_time_keeper,
+			command_data->element_point_tool=UI_module->element_point_tool;
+			Element_point_tool_set_execute_command(command_data->element_point_tool, 
 				command_data->execute_command);
 #if defined (MOTIF_USER_INTERFACE)
-			command_data->select_tool=CREATE(Select_tool)(
-				command_data->interactive_tool_manager,
-				command_data->any_object_selection,
-				Material_package_get_default_material(command_data->material_package),
-				command_data->user_interface);
+			command_data->select_tool=UI_module->select_tool;
 #endif /* defined (MOTIF_USER_INTERFACE) */
 		}
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)

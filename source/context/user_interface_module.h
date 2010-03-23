@@ -58,6 +58,10 @@ struct User_interface_module
 	int argc, cleanup_argc;
 	char **argv, **cleanup_argv;
 	struct Colour background_colour,foreground_colour;
+	struct Element_point_tool *element_point_tool;
+	struct Element_tool *element_tool;
+	struct Interactive_tool *transform_tool;
+	struct Node_tool *data_tool,*node_tool;
 #if defined (CELL)
 	struct Cell_interface *cell_interface;
 #endif /* defined (CELL) */

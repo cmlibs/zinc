@@ -82,11 +82,9 @@ struct Node_tool *CREATE(Node_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct Cmiss_region *root_region, int use_data,
 	struct FE_node_selection *node_selection,
-	struct Computed_field_package *computed_field_package,
 	struct Graphical_material *rubber_band_material,
 	struct User_interface *user_interface,
-	struct Time_keeper *time_keeper,
-	struct Execute_command *execute_command);
+	struct Time_keeper *time_keeper);
 /*******************************************************************************
 LAST MODIFIED : 15 January 2003
 
@@ -413,4 +411,7 @@ LAST MODIFIED : 13 April 2007
 DESCRIPTION :
 Set the wx_interface for new settings.
 ==============================================================================*/	 
+
+int Node_tool_set_execute_command(struct Node_tool *node_tool, 
+	struct Execute_command *execute_command);
 #endif /* !defined (NODE_TOOL_H) */

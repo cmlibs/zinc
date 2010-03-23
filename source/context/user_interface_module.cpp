@@ -43,6 +43,7 @@ DESCRIPTION :
 
 extern "C" {
 #if defined (MOTIF_USER_INTERFACE)
+#include "interaction/select_tool.h"
 #include "io_devices/conversion.h"
 #include "view/coord.h"
 #endif
@@ -50,12 +51,16 @@ extern "C" {
 #include "comfile/comfile.h"
 #include "command/command_window.h"
 #include "command/cmiss.h"
+#include "element/element_point_tool.h"
+#include "element/element_tool.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "graphics/colour.h"
 #include "graphics/cmiss_rendition.h"
+#include "graphics/transform_tool.h"
 #include "graphics/scene.h"
 #include "interaction/interactive_tool.h"
+#include "node/node_tool.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/event_dispatcher.h"
 #include "user_interface/message.h"
@@ -85,7 +90,8 @@ struct User_interface_module *User_interface_module_create(
 {
 	struct User_interface_module  *UI_module = NULL;
 	int return_code = 1;
-	Cmiss_region *root_region;
+	Cmiss_region *root_region = NULL;;
+	struct Cmiss_graphics_module *graphics_module = NULL;
 
 #if defined (MOTIF_USER_INTERFACE)
 	Display *display;
@@ -165,6 +171,7 @@ struct User_interface_module *User_interface_module_create(
 	if (context && ALLOCATE(UI_module, struct User_interface_module, 1))
 	{
 		root_region = Cmiss_context_get_default_region(context);
+		graphics_module = Cmiss_context_get_default_graphics_module(context);
 #if defined (CELL)
 		UI_module->cell_interface = NULL;
 #endif /* defined (CELL) */
@@ -334,6 +341,52 @@ struct User_interface_module *User_interface_module_create(
 		UI_module->graphics_window_manager=CREATE(MANAGER(Graphics_window))();
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 		UI_module->interactive_tool_manager=CREATE(MANAGER(Interactive_tool))();
+		if (UI_module->user_interface)
+		{
+			struct Material_package *material_package = 
+				Cmiss_graphics_module_get_material_package(graphics_module);
+			UI_module->transform_tool=create_Interactive_tool_transform(
+				UI_module->user_interface);
+			ADD_OBJECT_TO_MANAGER(Interactive_tool)(UI_module->transform_tool,
+				UI_module->interactive_tool_manager);
+			UI_module->node_tool=CREATE(Node_tool)(
+				UI_module->interactive_tool_manager,
+				root_region, /*use_data*/0,
+				Cmiss_context_get_node_selection(context),
+				Material_package_get_default_material(material_package),
+				UI_module->user_interface,
+				UI_module->default_time_keeper);
+			UI_module->data_tool=CREATE(Node_tool)(
+				UI_module->interactive_tool_manager,
+				root_region, /*use_data*/1,
+				Cmiss_context_get_data_selection(context),
+				Material_package_get_default_material(material_package),
+				UI_module->user_interface,
+				UI_module->default_time_keeper);
+			UI_module->element_tool=CREATE(Element_tool)(
+				UI_module->interactive_tool_manager,
+				root_region,
+				Cmiss_context_get_element_selection(context),
+				Cmiss_context_get_element_point_ranges_selection(context),
+				Material_package_get_default_material(material_package),
+				UI_module->user_interface,
+				UI_module->default_time_keeper);
+			UI_module->element_point_tool=CREATE(Element_point_tool)(
+				UI_module->interactive_tool_manager,
+				root_region,
+				Cmiss_context_get_element_point_ranges_selection(context),
+				Material_package_get_default_material(material_package),
+				UI_module->user_interface,
+				UI_module->default_time_keeper);
+#if defined (MOTIF_USER_INTERFACE)
+			UI_module->select_tool=CREATE(Select_tool)(
+				UI_module->interactive_tool_manager,
+				Cmiss_context_get_any_object_selection(context),
+				Material_package_get_default_material(material_package),
+				UI_module->user_interface);
+#endif /* defined (MOTIF_USER_INTERFACE) */
+			DEACCESS(Material_package)(&material_package);
+		}
 #if defined (MOTIF_USER_INTERFACE)
 		/* now set up the conversion routines */
 		/*???DB.  Can this be put elsewhere ? */
@@ -364,8 +417,6 @@ struct User_interface_module *User_interface_module_create(
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		if (UI_module->user_interface)
 		{
-			struct Cmiss_graphics_module *graphics_module = 
-				Cmiss_context_get_default_graphics_module(context);
 			if (graphics_module)
 			{
 				struct Light *default_light = 
@@ -387,10 +438,10 @@ struct User_interface_module *User_interface_module_create(
 				DEACCESS(Light)(&default_light);
 				DEACCESS(Scene)(&default_scene);
 			}
-			Cmiss_graphics_module_destroy(&graphics_module);
 		}
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 		Cmiss_region_destroy(&root_region);
+		Cmiss_graphics_module_destroy(&graphics_module);
 	}
 	else
 	{
@@ -442,6 +493,12 @@ int User_interface_module_destroy(
 				DESTROY(Graphics_buffer_package)(&UI_module->graphics_buffer_package);
 			}
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
+#if defined (MOTIF_USER_INTERFACE)
+			if (UI_module->select_tool)
+			{
+				DESTROY(Select_tool)(&UI_module->select_tool);
+			}
+#endif
 			DESTROY(MANAGER(Interactive_tool))(&(UI_module->interactive_tool_manager));
 
 #if defined (MOTIF_USER_INTERFACE) || defined (WX_USER_INTERFACE)

@@ -143,7 +143,6 @@ changes in node position and derivatives etc.
 	/* needed for destroy button */
 	struct MANAGER(FE_element) *element_manager;
 	struct FE_node_selection *node_selection;
-	struct Computed_field_package *computed_field_package;
 	struct Graphical_material *rubber_band_material;
 	struct Time_keeper *time_keeper;
 	struct User_interface *user_interface;
@@ -2308,9 +2307,10 @@ release.
 								{
 									time = 0;
 								}
-								if (command_string = Computed_field_evaluate_as_string_at_node(
+								if (node_tool->execute_command &&
+									(NULL != (command_string = Computed_field_evaluate_as_string_at_node(
 									node_tool->command_field, /*component_number*/-1,
-									node_tool->last_picked_node, time))
+									node_tool->last_picked_node, time))))
 								{
 									Execute_command_execute_string(node_tool->execute_command,
 										command_string);
@@ -3132,10 +3132,10 @@ Copies the state of one node tool to another.
 				source_node_tool->root_region, 
 				source_node_tool->use_data,
 				source_node_tool->node_selection,
-				source_node_tool->computed_field_package,
 				source_node_tool->rubber_band_material,
 				source_node_tool->user_interface,
-				source_node_tool->time_keeper,
+				source_node_tool->time_keeper);
+			Node_tool_set_execute_command(destination_node_tool,
 				source_node_tool->execute_command);
 		}
 		if (destination_node_tool)
@@ -3261,11 +3261,9 @@ struct Node_tool *CREATE(Node_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct Cmiss_region *root_region, int use_data,
 	struct FE_node_selection *node_selection,
-	struct Computed_field_package *computed_field_package,
 	struct Graphical_material *rubber_band_material,
 	struct User_interface *user_interface,
-	struct Time_keeper *time_keeper,
-	struct Execute_command *execute_command)
+	struct Time_keeper *time_keeper)
 /*******************************************************************************
 LAST MODIFIED : 17 May 2003
 
@@ -3341,21 +3339,20 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 	ENTER(CREATE(Node_tool));
 	node_tool=(struct Node_tool *)NULL;
 	if (interactive_tool_manager&&root_region&&node_selection&&
-		computed_field_package&&(computed_field_manager=
-			Computed_field_package_get_computed_field_manager(computed_field_package))
-		&&rubber_band_material&&user_interface&&execute_command)
+		(NULL != (computed_field_manager=
+			Cmiss_region_get_Computed_field_manager(root_region)))
+		&&rubber_band_material&&user_interface)
 	{
 		initial_path = Cmiss_region_get_root_region_path();
 		if (ALLOCATE(node_tool,struct Node_tool,1))
 		{
-			node_tool->execute_command=execute_command;
+			node_tool->execute_command=NULL;
 			node_tool->interactive_tool_manager=interactive_tool_manager;
 			node_tool->root_region=root_region;
 			node_tool->region=(struct Cmiss_region *)NULL;
 			node_tool->fe_region=(struct FE_region *)NULL;
 			node_tool->use_data = use_data;
 			node_tool->node_selection=node_selection;
-			node_tool->computed_field_package=computed_field_package;
 			node_tool->rubber_band_material=
 				ACCESS(Graphical_material)(rubber_band_material);
 			node_tool->user_interface=user_interface;
@@ -3400,7 +3397,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				tool_display_name="Node tool";
 			}
 #if defined (WX_USER_INTERFACE) /* switch (USER_INTERFACE) */ 
-			node_tool->computed_field_manager=Computed_field_package_get_computed_field_manager(computed_field_package);
+			node_tool->computed_field_manager=Cmiss_region_get_Computed_field_manager(root_region);
 			node_tool->wx_node_tool = (wxNodeTool *)NULL;
 			/* Set defaults until we have some sort of region chooser */
 			Node_tool_set_Cmiss_region(node_tool, node_tool->root_region);
@@ -5216,3 +5213,21 @@ Returns the dimension of elements to be created by the <node_tool>.
 	return (element_dimension);
 } /* node_tool_get_element_dimension */
 #endif /* defined (WX_USER_INTERFACE)*/
+
+int Node_tool_set_execute_command(struct Node_tool *node_tool, 
+	struct Execute_command *execute_command)
+{
+	int return_code = 0;
+	if (node_tool)
+	{
+		node_tool->execute_command = execute_command;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_set_execute_command.  Invalid argument(s)");
+	}
+	
+	return return_code;
+}

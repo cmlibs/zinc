@@ -71,11 +71,9 @@ struct Element_tool *CREATE(Element_tool)(
 	struct Cmiss_region *region,
 	struct FE_element_selection *element_selection,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
-	struct Computed_field_package *computed_field_package,
 	struct Graphical_material *rubber_band_material,
 	struct User_interface *user_interface,
-	struct Time_keeper *time_keeper,
-	struct Execute_command *execute_command);
+	struct Time_keeper *time_keeper);
 /*******************************************************************************
 LAST MODIFIED : 20 March 2003
 
@@ -189,4 +187,6 @@ DESCRIPTION :
 Returns the generic interactive_tool the represents the <element_tool>.
 ==============================================================================*/
 
+int Element_tool_set_execute_command(struct Element_tool *element_tool, 
+	struct Execute_command *execute_command);
 #endif /* !defined (ELEMENT_TOOL_H) */

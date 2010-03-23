@@ -116,7 +116,6 @@ DESCRIPTION :
 Object storing all the parameters for interactively selecting element points.
 ==============================================================================*/
 {
-	struct Computed_field_package *computed_field_package;
 	struct Execute_command *execute_command;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct Interactive_tool *interactive_tool;
@@ -132,6 +131,7 @@ Object storing all the parameters for interactively selecting element points.
 	struct Element_point_ranges *last_picked_element_point;
 	struct Interaction_volume *last_interaction_volume;
 	struct GT_object *rubber_band;
+	struct Cmiss_region *region;
 	//struct Graphics_window *graphics_window;
 #if defined (MOTIF_USER_INTERFACE)
 	Display *display;
@@ -378,12 +378,12 @@ release.
 													/*density_field*/(struct Computed_field *)NULL,
 													start, xi, time))
 											{
-												if (command_string =
+												if (element_point_tool && (NULL != (command_string =
 													Computed_field_evaluate_as_string_in_element(
 														element_point_tool->command_field,
 														/*component_number*/-1,
 														element_point_ranges_identifier.element, xi, time,
-														element_point_ranges_identifier.top_level_element))
+														element_point_ranges_identifier.top_level_element))))
 												{
 													Execute_command_execute_string(element_point_tool->execute_command,
 														command_string);
@@ -643,8 +643,11 @@ public:
 			wxXmlResource::Get()->LoadPanel(this,parent,_T("CmguiElementPointTool"));
 			elementpointcommandfieldcheckbox = XRCCTRL(*this, "ElementPointCommandFieldCheckBox",wxCheckBox);
 			element_point_command_field_chooser_panel = XRCCTRL(*this, "ElementPointCommandFieldChooserPanel", wxPanel);
-			computed_field_manager=
-				 Computed_field_package_get_computed_field_manager(element_point_tool->computed_field_package);
+			if (element_point_tool->region)
+			{
+				computed_field_manager=
+					Cmiss_region_get_Computed_field_manager(element_point_tool->region);
+			}
 			element_point_command_field_chooser =
 				 new Managed_object_chooser<Computed_field,MANAGER_CLASS(Computed_field)>
 				 (element_point_command_field_chooser_panel, element_point_tool->command_field, computed_field_manager,
@@ -791,11 +794,12 @@ Copies the state of one element_point tool to another.
 		{
 			destination_element_point_tool = CREATE(Element_point_tool)
 				(destination_tool_manager,
+				source_element_point_tool->region,
 				source_element_point_tool->element_point_ranges_selection,
-				source_element_point_tool->computed_field_package,
 				source_element_point_tool->rubber_band_material,
 				source_element_point_tool->user_interface,
-				source_element_point_tool->time_keeper,
+				source_element_point_tool->time_keeper);
+			Element_point_tool_set_execute_command(destination_element_point_tool,
 				source_element_point_tool->execute_command);
 		}
 		if (destination_element_point_tool)
@@ -821,12 +825,11 @@ Copies the state of one element_point tool to another.
 
 struct Element_point_tool *CREATE(Element_point_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
+	struct Cmiss_region *region,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
-	struct Computed_field_package *computed_field_package,
 	struct Graphical_material *rubber_band_material,
 	struct User_interface *user_interface,
-	struct Time_keeper *time_keeper,
-	struct Execute_command *execute_command)
+	struct Time_keeper *time_keeper)
 /*******************************************************************************
 LAST MODIFIED : 5 July 2002
 
@@ -859,15 +862,15 @@ Creates an Element_point_tool with Interactive_tool in
 	struct MANAGER(Computed_field) *computed_field_manager;
 
 	ENTER(CREATE(Element_point_tool));
-	if (interactive_tool_manager&&element_point_ranges_selection&&
-		computed_field_package&&(computed_field_manager=
-			Computed_field_package_get_computed_field_manager(computed_field_package))
-		&&rubber_band_material&&user_interface&&execute_command)
+	if (interactive_tool_manager&&element_point_ranges_selection&&region&&
+		(NULL != (computed_field_manager=
+			Cmiss_region_get_Computed_field_manager(region)))
+		&&rubber_band_material&&user_interface)
 	{
 		if (ALLOCATE(element_point_tool,struct Element_point_tool,1))
 		{
-			element_point_tool->computed_field_package=computed_field_package;
-			element_point_tool->execute_command=execute_command;
+			element_point_tool->region = region;
+			element_point_tool->execute_command=NULL;
 			element_point_tool->interactive_tool_manager=interactive_tool_manager;
 			element_point_tool->element_point_ranges_selection=
 				element_point_ranges_selection;
@@ -1275,3 +1278,21 @@ Returns the generic interactive_tool the represents the <element_point_tool>.
 
 	return (interactive_tool);
 } /* Element_tool_get_interactive_tool */
+
+int Element_point_tool_set_execute_command(struct Element_point_tool *element_point_tool, 
+	struct Execute_command *execute_command)
+{
+	int return_code = 0;
+	if (element_point_tool)
+	{
+		element_point_tool->execute_command = execute_command;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_tool_set_execute_command.  Invalid argument(s)");
+	}
+	
+	return return_code;
+}
