@@ -25,7 +25,7 @@ create()
 			ACCESSing for Perl assignment/copy, $cmiss_region_2=$cmiss_region_1,
 			because this increments the reference count for the stash (DESTROY is
 			called when the stash reference count gets to zero) */
-		RETVAL=Cmiss_region_create();
+		RETVAL=Cmiss_region_create_internal();
 	OUTPUT:
 		RETVAL
 
@@ -50,7 +50,7 @@ region_read_file(Cmiss::Region region,char *file_name);
 			char *fieldml;
 			struct Cmiss_region *temp_region;
 
-			temp_region = Cmiss_region_create_share_globals(region);
+			temp_region = Cmiss_region_create(region);
 			if (fieldml=strrchr(file_name,'.'))
 			{
 				fieldml++;
