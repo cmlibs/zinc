@@ -586,6 +586,7 @@ Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
 			while ((child = next_child))
 			{
 				next_child = child->next_sibling;
+				child->parent = NULL;
 				child->next_sibling = NULL;
 				child->previous_sibling = NULL;
 				DEACCESS(Cmiss_region)(&child);
@@ -1277,20 +1278,18 @@ int Cmiss_region_remove_child(struct Cmiss_region *region,
 		{
 			if (old_child == region->first_child)
 			{
-				DEACCESS(Cmiss_region)(&region->first_child);
 				region->first_child = old_child->next_sibling;
 			}
 			else
 			{
-				DEACCESS(Cmiss_region)(&old_child->previous_sibling->next_sibling);
 				old_child->previous_sibling->next_sibling = old_child->next_sibling;
-				old_child->previous_sibling = NULL;
 			}
 			if (old_child->next_sibling)
 			{
 				old_child->next_sibling->previous_sibling = old_child->previous_sibling;
 				old_child->next_sibling = NULL;
 			}
+			old_child->previous_sibling = NULL;
 			old_child->parent = NULL;
 			if (!region->changes.children_changed)
 			{
@@ -1304,6 +1303,7 @@ int Cmiss_region_remove_child(struct Cmiss_region *region,
 				REACCESS(Cmiss_region)(&region->changes.child_removed, NULL);
 			}
 			Cmiss_region_update(region);
+			DEACCESS(Cmiss_region)(&old_child);
 			return_code = 1;
 		}
 	}
