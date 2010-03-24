@@ -354,4 +354,45 @@ Returns the field of <field_name> from the <region> if it is defined,
 NULL otherwise.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Creates and returns the reference to a region that uses basis_manager 
+ * and shape_list from base_region.
+ *
+ * @param base_region  The region from which the basis_manager and shape_list
+ *    are used.
+ * @return  Accessed reference to the newly created region, or NULL if none.
+ */
+Cmiss_region_id Cmiss_region_create(Cmiss_region_id base_region);
+
+/***************************************************************************//**
+ * Creates and returns the reference to a child region with provided name 
+ * in parent region.
+ * A valid region name must start with an alphanumeric character, contain only
+ * alphanumeric characters, spaces ' ', dots '.', colons ':' or underscores '_',
+ * and may not finish with a space.
+ * Fails if the new name is already in use by another region in  parent region. 
+ * 
+ * @param parent_region  The region from which the basis_manager and shape_list
+ *    are used.
+ * @param name  The name for the newly created region
+ * @return  Accessed reference to the newly created child region, or NULL if fails.
+ */
+Cmiss_region_id Cmiss_region_create_child(Cmiss_region_id parent_region, 
+	const char *name);
+
+/***************************************************************************//**
+ * Create and Returns the reference to the region at the specified path, 
+ * creating any intermediary regions if required.
+ * Only creates true regions sharing basis_manager and shape_list with 
+ * top_region.
+ * 
+ * @param top_region  The region the path is relative to.
+ * @param path  Region path, a series of valid region names separated by the
+ *   CMISS_REGION_PATH_SEPARATOR_CHAR. Leading and trailing separator characters
+ *   are optional/ignored.
+ * @return  Accessed reference to the created region, or NULL if fails.
+ */
+Cmiss_region_id Cmiss_region_create_subregion(Cmiss_region_id top_region, 
+	const char *path);
+
 #endif /* __CMISS_REGION_H__ */

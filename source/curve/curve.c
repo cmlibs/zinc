@@ -450,7 +450,7 @@ but it is at least destroyable when returned from this function.
 			curve->value_nodes_per_element=0;
 			curve->value_derivatives_per_node=0;
 
-			curve->region=Cmiss_region_create();
+			curve->region=Cmiss_region_create_internal();
 			curve->fe_region=ACCESS(FE_region)(Cmiss_region_get_FE_region(curve->region));
 			curve->parameter_field=(struct FE_field *)NULL;
 			curve->value_field=(struct FE_field *)NULL;

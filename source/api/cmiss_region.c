@@ -97,7 +97,7 @@ DESCRIPTION :
 	return_code = 0;
 	if (region && file_name && (io_stream_package=CREATE(IO_stream_package)()))
 	{
-		temp_region = Cmiss_region_create_share_globals(region);
+		temp_region = Cmiss_region_create(region);
 		if (read_exregion_file_of_name(temp_region,file_name,io_stream_package,
 			(struct FE_import_time_index *)NULL))
 		{
@@ -396,3 +396,55 @@ Returns the field of <field_name> from <region> if it is defined.
 	return (field);
 } /* Cmiss_region_find_field_by_name */
 
+Cmiss_region_id Cmiss_region_create_child(Cmiss_region_id parent_region, 
+	const char *name)
+{
+	Cmiss_region_id region = NULL;
+
+	if (parent_region)
+	{
+		region = Cmiss_region_find_child_by_name(parent_region, name);
+		if (!region)
+		{
+			region = Cmiss_region_create(parent_region);
+			if (region)
+			{
+				if (Cmiss_region_append_child(parent_region, region))
+				{
+					if (!(Cmiss_region_set_name(region, name)))
+					{
+						Cmiss_region_remove_child(parent_region, region);
+						Cmiss_region_destroy(&region);
+					}
+				}
+				else
+				{
+					Cmiss_region_destroy(&region);
+				}
+			}
+		}
+		else
+		{
+			Cmiss_region_destroy(&region);
+		}
+	}
+
+	return region;
+}
+
+Cmiss_region_id Cmiss_region_create_subregion(Cmiss_region_id top_region, const char *path)
+{
+	Cmiss_region_id region = NULL;
+
+	region = Cmiss_region_find_subregion_at_path(top_region, path);
+	if (region)
+	{
+		Cmiss_region_destroy(&region);
+	}
+	else
+	{
+		region = Cmiss_region_get_or_create_region_at_path(top_region, path);
+	}
+
+	return region;
+}

@@ -230,7 +230,7 @@ struct Cmiss_region *Cmiss_context_get_default_region(struct Context *context)
 	{
 		if (!context->root_region)
 		{
-			context->root_region = Cmiss_region_create();
+			context->root_region = Cmiss_region_create_internal();
 		}
 	}
 	else
@@ -254,7 +254,7 @@ struct Cmiss_region *Cmiss_context_create_region(struct Context *context)
 			Cmiss_region *default_region = Cmiss_context_get_default_region(context);
 			Cmiss_region_destroy(&default_region);
 		}
-		region = Cmiss_region_create_share_globals(context->root_region);
+		region = Cmiss_region_create(context->root_region);
 	}
 	else
 	{

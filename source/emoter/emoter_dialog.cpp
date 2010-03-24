@@ -337,7 +337,7 @@ Updates the node locations for the <emoter_slider>
 					if ((input_file = CREATE(IO_stream)(shared_data->io_stream_package))
 						&& (IO_stream_open_for_read(input_file, input_filename)))
 					{
-						input_sequence = Cmiss_region_create_share_globals(shared_data->region);
+						input_sequence = Cmiss_region_create(shared_data->region);
 						if (read_exregion_file(input_sequence, input_file,
 							(struct FE_import_time_index *)NULL))
 						{

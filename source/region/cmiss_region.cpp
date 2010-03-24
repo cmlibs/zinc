@@ -666,7 +666,7 @@ Call ONLY before deaccessing root_region in command_data.
 	LEAVE;
 } /* Cmiss_region_detach_fields */
 
-struct Cmiss_region *Cmiss_region_create(void)
+struct Cmiss_region *Cmiss_region_create_internal(void)
 /*******************************************************************************
 LAST MODIFIED : 23 May 2008
 
@@ -724,26 +724,16 @@ Consider as private: NOT approved for exposing in API.
 	return (region);
 } /* Cmiss_region_create_group */
 
-struct Cmiss_region *Cmiss_region_create_share_globals(
-		struct Cmiss_region *source_region)
-/*******************************************************************************
-LAST MODIFIED : 23 May 2008
-
-DESCRIPTION :
-Equivalent to Cmiss_region_create(), except the new region uses
-global basis_manager and shape_list from <source_region>.
-Region is created with an access_count of 1; DEACCESS to destroy.
-Consider as private: NOT approved for exposing in API.
-==============================================================================*/
+struct Cmiss_region *Cmiss_region_create(struct Cmiss_region *base_region)
 {
 	struct Cmiss_region *region;
 
-	ENTER(Cmiss_region_create_share_globals);
+	ENTER(Cmiss_region_create);
 	region = (struct Cmiss_region *)NULL;
-	if (source_region)
+	if (base_region)
 	{
 		region = CREATE(Cmiss_region)();
-		if (!region || !Cmiss_region_attach_fields(region, source_region,
+		if (!region || !Cmiss_region_attach_fields(region, base_region,
 			CMISS_REGION_SHARE_BASES_SHAPES))
 		{
 			DEACCESS(Cmiss_region)(&region);
@@ -1403,7 +1393,7 @@ struct Cmiss_region *Cmiss_region_get_or_create_region_at_path(
 			child_region = Cmiss_region_find_child_by_name(region, child_name);
 			if (NULL == child_region)
 			{
-				child_region = Cmiss_region_create_share_globals(region);
+				child_region = Cmiss_region_create(region);
 				Cmiss_region_set_name(child_region, child_name);
 				if (!Cmiss_region_append_child(region, child_region))
 				{

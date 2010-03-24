@@ -103,14 +103,13 @@ Global functions
 
 PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_region);
 
-struct Cmiss_region *Cmiss_region_create(void);
-/*******************************************************************************
-LAST MODIFIED : 23 May 2008
-
-DESCRIPTION :
-Creates a full Cmiss_region, able to have its own fields.
-Region is created with an access_count of 1; DEACCESS to destroy.
-==============================================================================*/
+/***************************************************************************//**
+ * Creates a Cmiss_region, able to have its own fields. This is an internal
+ * function and should not be exposed to the API.
+ *
+ * @return  Accessed reference to the newly created region, or NULL if none.
+ */
+struct Cmiss_region *Cmiss_region_create_internal(void);
 
 struct Cmiss_region *Cmiss_region_create_group(
 		struct Cmiss_region *master_region);
@@ -120,18 +119,6 @@ LAST MODIFIED : 23 May 2008
 DESCRIPTION :
 Creates a Cmiss_region that shares the fields with master_region but
 uses a subset of its nodes and element (i.e. a group).
-Region is created with an access_count of 1; DEACCESS to destroy.
-Consider as private: NOT approved for exposing in API.
-==============================================================================*/
-
-struct Cmiss_region *Cmiss_region_create_share_globals(
-		struct Cmiss_region *source_region);
-/*******************************************************************************
-LAST MODIFIED : 23 May 2008
-
-DESCRIPTION :
-Equivalent to Cmiss_region_create(), except the new region uses
-global basis_manager and shape_list from <source_region>.
 Region is created with an access_count of 1; DEACCESS to destroy.
 Consider as private: NOT approved for exposing in API.
 ==============================================================================*/
