@@ -362,7 +362,7 @@ NULL otherwise.
  *    are used.
  * @return  Accessed reference to the newly created region, or NULL if none.
  */
-Cmiss_region_id Cmiss_region_create(Cmiss_region_id base_region);
+Cmiss_region_id Cmiss_region_create_region(Cmiss_region_id base_region);
 
 /***************************************************************************//**
  * Creates and returns the reference to a child region with provided name 

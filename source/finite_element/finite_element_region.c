@@ -7672,7 +7672,7 @@ static int Cmiss_regions_merge_FE_regions_private(
 				else
 				{
 					global_child_region =
-						Cmiss_region_create(global_region);
+						Cmiss_region_create_region(global_region);
 				}
 				new_global_child = 1;
 				Cmiss_region_set_name(global_child_region, child_region_name);

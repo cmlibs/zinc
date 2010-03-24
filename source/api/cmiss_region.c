@@ -97,7 +97,7 @@ DESCRIPTION :
 	return_code = 0;
 	if (region && file_name && (io_stream_package=CREATE(IO_stream_package)()))
 	{
-		temp_region = Cmiss_region_create(region);
+		temp_region = Cmiss_region_create_region(region);
 		if (read_exregion_file_of_name(temp_region,file_name,io_stream_package,
 			(struct FE_import_time_index *)NULL))
 		{
@@ -406,7 +406,7 @@ Cmiss_region_id Cmiss_region_create_child(Cmiss_region_id parent_region,
 		region = Cmiss_region_find_child_by_name(parent_region, name);
 		if (!region)
 		{
-			region = Cmiss_region_create(parent_region);
+			region = Cmiss_region_create_region(parent_region);
 			if (region)
 			{
 				if (Cmiss_region_append_child(parent_region, region))

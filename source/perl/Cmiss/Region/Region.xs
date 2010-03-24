@@ -50,7 +50,7 @@ region_read_file(Cmiss::Region region,char *file_name);
 			char *fieldml;
 			struct Cmiss_region *temp_region;
 
-			temp_region = Cmiss_region_create(region);
+			temp_region = Cmiss_region_create_region(region);
 			if (fieldml=strrchr(file_name,'.'))
 			{
 				fieldml++;

@@ -725,11 +725,11 @@ Consider as private: NOT approved for exposing in API.
 	return (region);
 } /* Cmiss_region_create_group */
 
-struct Cmiss_region *Cmiss_region_create(struct Cmiss_region *base_region)
+struct Cmiss_region *Cmiss_region_create_region(struct Cmiss_region *base_region)
 {
 	struct Cmiss_region *region;
 
-	ENTER(Cmiss_region_create);
+	ENTER(Cmiss_region_create_region);
 	region = (struct Cmiss_region *)NULL;
 	if (base_region)
 	{
@@ -743,12 +743,12 @@ struct Cmiss_region *Cmiss_region_create(struct Cmiss_region *base_region)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_region_create_share_globals.  Invalid argument(s)");
+			"Cmiss_region_create_region.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (region);
-} /* Cmiss_region_create_share_globals */
+} /* Cmiss_region_create_region */
 
 int Cmiss_region_clear_finite_elements(struct Cmiss_region *region)
 {
@@ -1393,7 +1393,7 @@ struct Cmiss_region *Cmiss_region_get_or_create_region_at_path(
 			child_region = Cmiss_region_find_child_by_name(region, child_name);
 			if (NULL == child_region)
 			{
-				child_region = Cmiss_region_create(region);
+				child_region = Cmiss_region_create_region(region);
 				Cmiss_region_set_name(child_region, child_name);
 				if (!Cmiss_region_append_child(region, child_region))
 				{
