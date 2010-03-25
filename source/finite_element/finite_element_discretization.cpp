@@ -1286,9 +1286,11 @@ array is enlarged if necessary and the new points added at random locations.
 static int FE_element_add_xi_points_2d_square_cell_random(
 	struct FE_element	*element,
 	enum Xi_discretization_mode xi_discretization_mode,
+	enum FE_element_shape_category element_shape_category,
 	FE_value *centre_xi, FE_value *dxi, struct Computed_field *coordinate_field,
 	struct Computed_field *density_field, int *number_of_xi_points,
-	FE_value_triple **xi_points, int *number_of_xi_points_allocated, FE_value time)
+	FE_value_triple **xi_points, int *number_of_xi_points_allocated, FE_value time,
+	FE_value *xi_offset)
 /*******************************************************************************
 LAST MODIFIED : 21 March 2003
 
@@ -1418,20 +1420,57 @@ array is enlarged if necessary and the new points added at random locations.
 				}
 				if (return_code)
 				{
-					xi = *xi_points + (*number_of_xi_points);
-					for (j = 0; j < number_of_points_in_square; j++)
+					switch (element_shape_category)
 					{
-						(*xi)[0] = centre_xi1 + dxi1*(CMGUI_RANDOM(float) - 0.5);
-						(*xi)[1] = centre_xi2 + dxi2*(CMGUI_RANDOM(float) - 0.5);
-						(*xi)[2] = 0.0;
+						case ELEMENT_CATEGORY_2D_SQUARE:
+						{
+							xi = *xi_points + (*number_of_xi_points);
+							for (j = 0; j < number_of_points_in_square; j++)
+							{
+								(*xi)[0] = centre_xi1 + dxi1*(CMGUI_RANDOM(float) - (float)xi_offset[0]);
+								(*xi)[1] = centre_xi2 + dxi2*(CMGUI_RANDOM(float) - (float)xi_offset[1]);
+								(*xi)[2] = 0.0;
 #if defined (DEBUG)
-						/*???debug*/
-						printf("FE_element_add_xi_points_2d_square_cell_random.  "
-							"xi(%d) = %6.3f %6.3f %6.3f\n", *number_of_xi_points,
-							(*xi)[0], (*xi)[1], (*xi)[2]);
+								/*???debug*/
+								printf("FE_element_add_xi_points_2d_square_cell_random.  "
+									"xi(%d) = %6.3f %6.3f %6.3f\n", *number_of_xi_points,
+									(*xi)[0], (*xi)[1], (*xi)[2]);
 #endif /* defined (DEBUG) */
-						xi++;
-						(*number_of_xi_points)++;
+								xi++;
+								(*number_of_xi_points)++;
+							}
+						} break;
+						case ELEMENT_CATEGORY_2D_TRIANGLE:
+						{							
+							xi = *xi_points + (*number_of_xi_points);
+							FE_value xi0, xi1;
+							for (j = 0; j < number_of_points_in_square; j++)
+							{
+								xi0 = centre_xi1 + dxi1*(CMGUI_RANDOM(float) - (float)xi_offset[0]);
+								xi1 = centre_xi2 + dxi2*(CMGUI_RANDOM(float) - (float)xi_offset[1]);
+								if ((xi0 + xi1) < 1 )
+								{
+									(*xi)[0] = xi0;
+									(*xi)[1] = xi1;
+									(*xi)[2] = 0.0;
+									xi++;
+									(*number_of_xi_points)++;
+								}
+#if defined (DEBUG)
+								/*???debug*/
+								printf("FE_element_add_xi_points_2d_cube_cell_random.  "
+								"xi(%d) = %6.3f %6.3f %6.3f\n", *number_of_xi_points,
+									xi0, xi1, xi2);
+#endif /* defined (DEBUG) */
+							}			
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_element_add_xi_points_2d_square_cell_random.  "
+								"Element shape not supported");
+							return_code = 0;
+						} break;
 					}
 				}
 			}
@@ -1465,7 +1504,8 @@ static int FE_element_add_xi_points_3d_cube_cell_random(
 	enum FE_element_shape_category element_shape_category,
 	FE_value *centre_xi, FE_value *dxi, struct Computed_field *coordinate_field,
 	struct Computed_field *density_field, int *number_of_xi_points,
-	FE_value_triple **xi_points, int *number_of_xi_points_allocated, FE_value time)
+	FE_value_triple **xi_points, int *number_of_xi_points_allocated, FE_value time,
+	FE_value *xi_offset)
 /*******************************************************************************
 LAST MODIFIED : 21 March 2003
 
@@ -1590,9 +1630,9 @@ array is enlarged if necessary and the new points added at random locations.
 							xi = *xi_points + (*number_of_xi_points);
 							for (j = 0; j < number_of_points_in_cube; j++)
 							{
-								(*xi)[0] = centre_xi1 + dxi1*(CMGUI_RANDOM(float) - 0.5);
-								(*xi)[1] = centre_xi2 + dxi2*(CMGUI_RANDOM(float) - 0.5);
-								(*xi)[2] = centre_xi3 + dxi3*(CMGUI_RANDOM(float) - 0.5);
+								(*xi)[0] = centre_xi1 + dxi1*(CMGUI_RANDOM(float) - (float)xi_offset[0]);
+								(*xi)[1] = centre_xi2 + dxi2*(CMGUI_RANDOM(float) - (float)xi_offset[1]);
+								(*xi)[2] = centre_xi3 + dxi3*(CMGUI_RANDOM(float) - (float)xi_offset[2]);
 #if defined (DEBUG)
  								/*???debug*/
 								printf("FE_element_add_xi_points_3d_cube_cell_random.  "
@@ -1610,9 +1650,9 @@ array is enlarged if necessary and the new points added at random locations.
 							FE_value xi0, xi1, xi2;
 							for (j = 0; j < number_of_points_in_cube; j++)
 							{
-								xi0 = centre_xi1 + dxi1*(CMGUI_RANDOM(float) - 0.25);
-								xi1 = centre_xi2 + dxi2*(CMGUI_RANDOM(float) - 0.25);
-								xi2 = centre_xi3 + dxi2*(CMGUI_RANDOM(float) - 0.25);
+								xi0 = centre_xi1 + dxi1*(CMGUI_RANDOM(float) - (float)xi_offset[0]);
+								xi1 = centre_xi2 + dxi2*(CMGUI_RANDOM(float) - (float)xi_offset[1]);
+								xi2 = centre_xi3 + dxi2*(CMGUI_RANDOM(float) - (float)xi_offset[2]);
 								if ((xi0 + xi1 + xi2) < 1 )
 								{
 									(*xi)[0] = xi0;
@@ -1622,7 +1662,7 @@ array is enlarged if necessary and the new points added at random locations.
 									(*number_of_xi_points)++;
 								}
 #if defined (DEBUG)
-								/*???debug*/
+.								/*???debug*/
 								printf("FE_element_add_xi_points_3d_cube_cell_random.  "
 									"xi(%d) = %6.3f %6.3f %6.3f\n", *number_of_xi_points,
 									xi0, xi1, xi2);
@@ -1692,7 +1732,7 @@ comments for simplex and polygons shapes for more details.
 ==============================================================================*/
 {
 	enum FE_element_shape_category element_shape_category;
-	FE_value centre_xi[3], delta_xi, dxi[3], xi_centre;
+	FE_value centre_xi[3], delta_xi, dxi[3], xi_centre, xi_offset[3];
 	int element_dimension, i, j, k, line_direction, linked_xi_directions[2],
 		number_of_polygon_sides, number_of_xi_points, number_of_xi_points_allocated,
 		return_code;
@@ -1764,6 +1804,9 @@ comments for simplex and polygons shapes for more details.
 				{
 					dxi[0] = 1.0 / (FE_value)number_in_xi[0];
 					dxi[1] = 1.0 / (FE_value)number_in_xi[1];
+					xi_offset[0] = (FE_value)0.5;
+					xi_offset[1] = (FE_value)0.5;
+					xi_offset[2] = (FE_value)0;
 					for (j = 0; j < number_in_xi[1]; j++)
 					{
 						centre_xi[1] = ((float)j + 0.5)/(float)number_in_xi[1];
@@ -1771,19 +1814,41 @@ comments for simplex and polygons shapes for more details.
 						{
 							centre_xi[0] = ((float)i + 0.5)/(float)number_in_xi[0];
 							return_code = FE_element_add_xi_points_2d_square_cell_random(
-								element, xi_discretization_mode, centre_xi, dxi,
-								coordinate_field, density_field,
+								element, xi_discretization_mode, element_shape_category, 
+								centre_xi, dxi, coordinate_field, density_field,
 								&number_of_xi_points, xi_points_address,
-								&number_of_xi_points_allocated, time);
+								&number_of_xi_points_allocated, time, xi_offset);
 						}
 					}
 				} break;
 				case ELEMENT_CATEGORY_2D_TRIANGLE:
 				{
-					display_message(ERROR_MESSAGE,
-						"FE_element_get_xi_points_cell_random.  "
-						"Not implemented for ELEMENT_CATEGORY_2D_TRIANGLE");
-					return_code = 0;
+					int number_in_xi_simplex = number_in_xi[0];
+					if (number_in_xi[1] > number_in_xi_simplex)
+					{
+						number_in_xi_simplex = number_in_xi[1];
+					}
+					dxi[0] = 1.0 / (FE_value)number_in_xi_simplex;
+					dxi[1] = 1.0 / (FE_value)number_in_xi_simplex;
+					int number_in_xi0 = 0;
+					xi_offset[0] = (FE_value)(1.0/3.0);
+					xi_offset[1] = (FE_value)(1.0/3.0);
+					xi_offset[2] = (FE_value)0;
+					for (j = 0; j < number_in_xi_simplex; j++)
+					{
+						centre_xi[1] = ((float)j + (1.0/3.0))/(float)number_in_xi_simplex;
+						number_in_xi0 = number_in_xi_simplex - j;
+						for (i = 0; i < number_in_xi0; i++)
+						{
+							centre_xi[0] = ((float)i + (1.0/3.0))/(float)number_in_xi_simplex;
+							centre_xi[2] = 0.0;
+							return_code = FE_element_add_xi_points_2d_square_cell_random(
+								element, xi_discretization_mode, element_shape_category, 
+								centre_xi, dxi, coordinate_field, density_field,
+								&number_of_xi_points, xi_points_address,
+								&number_of_xi_points_allocated, time, xi_offset);
+						}
+					}
 				} break;
 				case ELEMENT_CATEGORY_2D_POLYGON:
 				{
@@ -1794,6 +1859,9 @@ comments for simplex and polygons shapes for more details.
 				} break;
 				case ELEMENT_CATEGORY_3D_CUBE:
 				{
+					xi_offset[0] = (FE_value)0.5;
+					xi_offset[1] = (FE_value)0.5;
+					xi_offset[2] = (FE_value)0.5;
 					dxi[0] = 1.0 / (FE_value)number_in_xi[0];
 					dxi[1] = 1.0 / (FE_value)number_in_xi[1];
 					dxi[2] = 1.0 / (FE_value)number_in_xi[2];
@@ -1810,17 +1878,13 @@ comments for simplex and polygons shapes for more details.
 									element, xi_discretization_mode, element_shape_category, 
 									centre_xi, dxi, coordinate_field, density_field,
 									&number_of_xi_points, xi_points_address,
-									&number_of_xi_points_allocated, time);
+									&number_of_xi_points_allocated, time, xi_offset);
 							}
 						}
 					}
 				} break;
 				case ELEMENT_CATEGORY_3D_TETRAHEDRON:
 				{
-					dxi[0] = 1.0 / (FE_value)number_in_xi[0];
-					dxi[1] = 1.0 / (FE_value)number_in_xi[1];
-					dxi[2] = 1.0 / (FE_value)number_in_xi[2];
-
 					int number_in_xi_simplex = number_in_xi[0];
 					if (number_in_xi[1] > number_in_xi_simplex)
 					{
@@ -1830,7 +1894,13 @@ comments for simplex and polygons shapes for more details.
 					{
 						number_in_xi_simplex = number_in_xi[2];
 					}
+					dxi[0] = 1.0 / (FE_value)number_in_xi_simplex;
+					dxi[1] = 1.0 / (FE_value)number_in_xi_simplex;
+					dxi[2] = 1.0 / (FE_value)number_in_xi_simplex;
 					int	number_in_xi1 = 0, number_in_xi0 = 0;
+					xi_offset[0] = (FE_value)0.25;
+					xi_offset[1] = (FE_value)0.25;
+					xi_offset[2] = (FE_value)0.25;
 					for (k = 0; k < number_in_xi_simplex; k++)
 					{
 						centre_xi[2] = ((float)k + 0.25)/(float)number_in_xi_simplex;
@@ -1846,11 +1916,10 @@ comments for simplex and polygons shapes for more details.
 									element, xi_discretization_mode, element_shape_category, 
 									centre_xi, dxi, coordinate_field, density_field,
 									&number_of_xi_points, xi_points_address,
-									&number_of_xi_points_allocated, time);
+									&number_of_xi_points_allocated, time, xi_offset);
 							}
 						}
 					}
-
 				} break;
 				case ELEMENT_CATEGORY_3D_TRIANGLE_LINE:
 				{
