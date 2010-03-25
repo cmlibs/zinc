@@ -681,57 +681,26 @@ private:
 	}
 	
 	/***************************************************************************//**
-	 * Get the mean scalar value of four points, used to get the interpolated scalar
-	 * value at the centre of a quadrilateral. Adds scalars from maximum to minimum
-	 * so result is identical for different ordering of the same points, needed to
-	 * ensure same ambiguity resolution case used for neighbouring faces, where even
-	 * small numerical rounding differences can leave holes in surface.
-	 * @return  true if the mean scalar is greater than the iso_value; 
+	 * Evaluate the scalar field at the centre of the quad and return true if it
+	 * exceeds current iso-value.
+	 * @param p1, p2, p3, p4  Point indexes of ambiguous quad corners.
+	 * @return  true if scalar at quad centre is greater than current iso-value. 
 	 */
 	bool ambiguous_quad_resolves_over(const Point_index& p1, const Point_index& p2,
 		const Point_index& p3, const Point_index& p4)
 	{
-		double s1 = get_scalar(p1);
-		double s2 = get_scalar(p2);
-		double s3 = get_scalar(p3);
-		double s4 = get_scalar(p4);
-		if (s4 > s3)
-		{
-			double temp = s3;
-			s3 = s4;
-			s4 = temp;
-		}
-		if (s3 > s2)
-		{
-			double temp = s2;
-			s2 = s3;
-			s3 = temp;
-		}
-		if (s2 > s1)
-		{
-			double temp = s1;
-			s1 = s2;
-			s2 = temp;
-		}
-		if (s4 > s3)
-		{
-			double temp = s3;
-			s3 = s4;
-			s4 = temp;
-		}
-		if (s3 > s2)
-		{
-			double temp = s2;
-			s2 = s3;
-			s3 = temp;
-		}
-		if (s4 > s3)
-		{
-			double temp = s3;
-			s3 = s4;
-			s4 = temp;
-		}
-		return ((s1 + s2 + s3 + s4)*0.25 > current_iso_value);
+		FE_value scalar_FE_value, xi[3], xi1[3], xi2[3], xi3[3], xi4[3];
+		get_xi(p1, xi1);
+		get_xi(p2, xi2);
+		get_xi(p3, xi3);
+		get_xi(p4, xi4);
+		xi[0] = 0.25*(xi1[0] + xi2[0] + xi3[0] + xi4[0]);
+		xi[1] = 0.25*(xi1[1] + xi2[1] + xi3[1] + xi4[1]);
+		xi[2] = 0.25*(xi1[2] + xi2[2] + xi3[2] + xi4[2]);
+		Computed_field_evaluate_in_element(scalar_field, element, xi, time,
+			/*top_level_element*/(struct FE_element *)NULL, &scalar_FE_value,
+			/*derivatives*/(FE_value *)NULL);
+		return ((double)scalar_FE_value > current_iso_value);
 	}
 
 	void get_xi(const Point_index& p, FE_value *xi) const
@@ -1460,7 +1429,7 @@ int Isosurface_builder::cross_pyramid(
 			v4 = get_line_crossing(Point_index_pair(mp3, mp2));
 			v5 = get_line_crossing(Point_index_pair(mp3, mp4));
 			v6 = get_line_crossing(Point_index_pair(mp3, mp1));
-			if (ambiguous_quad_resolves_over(p0, p1, p2, p3) != inverse)
+			if (ambiguous_quad_resolves_over(mp0, mp1, mp2, mp3) != inverse)
 			{
 				mesh.add_quadrilateral(v1, v2, v5, v6, inverse);
 				mesh.add_quadrilateral(v2, v3, v4, v5, inverse);
@@ -1640,7 +1609,7 @@ int Isosurface_builder::cross_triangle_wedge(
 			v4 = get_line_crossing(Point_index_pair(mp4, mp1));
 			v5 = get_line_crossing(Point_index_pair(mp4, mp5));
 			v6 = get_line_crossing(Point_index_pair(mp4, mp3));
-			if (ambiguous_quad_resolves_over(p0, p1, p3, p4) != inverse)
+			if (ambiguous_quad_resolves_over(mp0, mp1, mp3, mp4) != inverse)
 			{
 				mesh.add_quadrilateral(v1, v2, v5, v6, inverse);
 				mesh.add_quadrilateral(v2, v3, v4, v5, inverse);
@@ -1666,7 +1635,7 @@ int Isosurface_builder::cross_triangle_wedge(
 			v4 = get_line_crossing(Point_index_pair(mp5, mp3));
 			v5 = get_line_crossing(Point_index_pair(mp5, mp4));
 			v6 = get_line_crossing(Point_index_pair(mp5, mp2));
-			if (ambiguous_quad_resolves_over(p0, p2, p3, p5) != inverse)
+			if (ambiguous_quad_resolves_over(mp0, mp2, mp3, mp5) != inverse)
 			{
 				mesh.add_quadrilateral(v1, v2, v5, v6, inverse);
 				mesh.add_quadrilateral(v2, v3, v4, v5, inverse);
@@ -1988,7 +1957,7 @@ int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
 					struct CM_element_information cm;
 					get_FE_element_identifier(element, &cm);
 					GT_surface_set_integer_identifier(surface, CM_element_information_to_graphics_name(&cm));
-					if (!GT_OBJECT_ADD(GT_surface)(graphics_object, time, surface))
+					if (!GT_OBJECT_ADD(GT_surface)(graphics_object, /*time*/0.0, surface))
 					{
 						DESTROY(GT_surface)(&surface);
 						return_code = 0;
