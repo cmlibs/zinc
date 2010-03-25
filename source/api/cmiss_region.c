@@ -409,11 +409,10 @@ Cmiss_region_id Cmiss_region_create_child(Cmiss_region_id parent_region,
 			region = Cmiss_region_create_region(parent_region);
 			if (region)
 			{
-				if (Cmiss_region_append_child(parent_region, region))
+				if (Cmiss_region_set_name(region, name))
 				{
-					if (!(Cmiss_region_set_name(region, name)))
+					if (!Cmiss_region_append_child(parent_region, region))
 					{
-						Cmiss_region_remove_child(parent_region, region);
 						Cmiss_region_destroy(&region);
 					}
 				}

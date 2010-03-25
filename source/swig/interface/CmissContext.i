@@ -54,5 +54,9 @@
 };
 
 %extend Cmiss::Context {
+	%template(createRegion) createRegion<Cmiss::Region>;
+};
+
+%extend Cmiss::Context {
 	%template(getDefaultGraphicsModule) getDefaultGraphicsModule<Cmiss::GraphicsModule>;
 };

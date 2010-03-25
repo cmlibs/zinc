@@ -113,6 +113,11 @@ public:
 		return Region(Cmiss_context_get_default_region(id));
 	}
 
+	template<class RegionType> RegionType createRegion() const
+	{
+		return Region(Cmiss_context_create_region(id));
+	}
+
 	template<class GraphicsModuleType> GraphicsModuleType getDefaultGraphicsModule() const
 	{
 		return GraphicsModule(Cmiss_context_get_default_graphics_module(id));

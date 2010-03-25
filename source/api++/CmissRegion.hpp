@@ -98,6 +98,81 @@ public:
 		return Cmiss_region_read_file(id, fileName);
 	}
 
+	Region createChild(const char *name) const
+	{
+		return Region(Cmiss_region_create_child(id, name));
+	}
+
+	Region createSubregion(const char *path) const
+	{
+		return Region(Cmiss_region_create_subregion(id, path));
+	}
+
+	Region createRegion() const
+	{
+		return Region(Cmiss_region_create_region(id));
+	}
+
+	char *getName() const
+	{
+		return Cmiss_region_get_name(id);
+	}
+
+	int setName(const char *name) const
+	{
+		return Cmiss_region_set_name(id, name);
+ 	}
+
+	Region getParent() const
+	{
+		return Region(Cmiss_region_get_parent(id));
+	}
+
+	Region getFirstChild() const
+	{
+		return Region(Cmiss_region_get_first_child(id));
+	}
+
+	Region getNextSibling() const
+	{
+		return Region(Cmiss_region_get_next_sibling(id));
+	}
+
+	Region getPreviousSibling() const
+	{
+		return Region(Cmiss_region_get_previous_sibling(id));
+	}
+
+	int appendChild(const Region& new_child) const
+	{
+		return Cmiss_region_append_child(id, new_child.id);
+	}
+
+	int insertChildBefore(const Region& new_child, const Region& ref_child) const
+	{
+		return Cmiss_region_insert_child_before(id, new_child.id, ref_child.id);
+	}
+
+	int removeChild(const Region& old_child) const
+	{
+		return Cmiss_region_remove_child(id, old_child.id);
+	}
+
+	Region findChildByName(const char *name) const
+	{
+		return Region(Cmiss_region_find_child_by_name(id, name));
+	}
+	
+	Region findSubregionAtPath(const char *path) const
+	{
+		return Region(Cmiss_region_find_subregion_at_path(id, path));
+	}
+
+	int containsSubregion(const Region& subregion)
+	{
+		return Cmiss_region_contains_subregion(id, subregion.id);
+	}
+
 };
 
 } // namespace Cmiss
