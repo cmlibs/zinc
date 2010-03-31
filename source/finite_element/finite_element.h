@@ -1986,7 +1986,7 @@ Returns the type of mapping used by <element_field_component>.
 ==============================================================================*/
 
 int calculate_grid_field_offsets(int element_dimension,
-	int top_level_element_dimension,int *top_level_number_in_xi,
+	int top_level_element_dimension, const int *top_level_number_in_xi,
 	FE_value *element_to_top_level,int *number_in_xi,int *base_grid_offset,
 	int *grid_offset_in_xi);
 /*******************************************************************************
@@ -4304,31 +4304,26 @@ Returns 0 with no error if <field> is not defined over element or not element-
 based in it.
 ==============================================================================*/
 
-int get_FE_element_field_grid_map_number_in_xi(struct FE_element *element,
-	struct FE_field *field,int *number_in_xi);
-/*******************************************************************************
-LAST MODIFIED : 5 October 1999 
+/***************************************************************************//**
+ * If <field> <component_number> is grid-based in <element>, returns in
+ * <number_in_xi> the numbers of finite difference cells in each xi-direction
+ * of element (equals one less than number of grid points in each direction).
+ * <number_in_xi> should be allocated with at least as much space as the number
+ * of dimensions in <element>, but is assumed to have no more than
+ * MAXIMUM_ELEMENT_XI_DIMENSIONS so that int
+ * number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS] can be passed to this function.
+ */
+int get_FE_element_field_component_grid_map_number_in_xi(struct FE_element *element,
+	struct FE_field *field, int component_number, int *number_in_xi);
 
-DESCRIPTION :
-If <field> is grid-based in <element>, returns in <number_in_xi> the numbers of
-finite difference cells in each xi-direction of <element>. Note that this number
-is one less than the number of grid points in each direction. <number_in_xi>
-should be allocated with at least as much space as the number of dimensions in
-<element>, but is assumed to have no more than MAXIMUM_ELEMENT_XI_DIMENSIONS so
-that int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS] can be passed to this
-function.
-==============================================================================*/
-
-int get_FE_element_field_number_of_grid_values(struct FE_element *element,
-	struct FE_field *field);
-/*******************************************************************************
-LAST MODIFIED : 12 October 1999 
-
-DESCRIPTION :
-If <field> is grid-based in <element>, returns the total number of grid points
-at which data is stored for <field>, equal to product of <number_in_xi>+1 in
-all directions. Returns 0 without error for non grid-based fields.
-==============================================================================*/
+/***************************************************************************//**
+ * Returns the number of element values used by a component of field in element.
+ * If a component is grid based the number of element values is equal
+ * to the product of (1+number_in_xi) for each direction. Per-element constant
+ * components require 1 value. Nodally interpolated components require 0 values.
+ */
+int get_FE_element_field_component_number_of_grid_values(struct FE_element *element,
+	struct FE_field *field, int component_number);
 
 int get_FE_element_field_component(struct FE_element *element,
 	struct FE_field *field, int component_number,
@@ -4353,7 +4348,7 @@ LAST MODIFIED : 22 April 2005 \
 DESCRIPTION : \
 If <field> is grid-based in <element>, returns an allocated array of the grid \
 values stored for <component_number>. To get number of values returned, call \
-get_FE_element_field_number_of_grid_values; Grids change in xi0 fastest. \
+get_FE_element_field_component_number_of_grid_values; Grids change in xi0 fastest. \
 It is up to the calling function to DEALLOCATE the returned values. \
 ==============================================================================*/
 
@@ -4367,7 +4362,7 @@ LAST MODIFIED : 21 April 2005 \
 DESCRIPTION : \
 If <field> is grid-based in <element>, copies <values> into the values storage \
 for <component_number>. To get number of values to pass, call \
-get_FE_element_field_number_of_grid_values; Grids change in xi0 fastest. \
+get_FE_element_field_component_number_of_grid_values; Grids change in xi0 fastest. \
 ==============================================================================*/
 
 #define PROTOTYPE_FE_ELEMENT_FIELD_COMPONENT_FUNCTIONS( macro_value_type , value_enum ) \

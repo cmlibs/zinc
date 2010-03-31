@@ -909,7 +909,9 @@ leaves the current discretization/mode intact.
 			Computed_field_get_type_finite_element(grid_field,&grid_fe_field)&&
 			FE_element_field_is_grid_based(element,grid_fe_field))
 		{
-			get_FE_element_field_grid_map_number_in_xi(element,grid_fe_field,
+			/* only checks first component */
+			get_FE_element_field_component_grid_map_number_in_xi(element,grid_fe_field,
+				/*component_number*/0,
 				element_point_viewer->element_point_identifier.number_in_xi);
 			element_point_viewer->element_point_identifier.xi_discretization_mode=
 				XI_DISCRETIZATION_CELL_CORNERS;

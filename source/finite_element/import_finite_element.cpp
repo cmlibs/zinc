@@ -3114,127 +3114,123 @@ in a grid field.
 						get_FE_field_order_info_number_of_fields(field_order_info);
 					for (i = 0; (i < number_of_fields) && return_code; i++)
 					{
-						if (field = get_FE_field_order_info_field(field_order_info, i))
+						if ((field = get_FE_field_order_info_field(field_order_info, i)))
 						{
-							if (0 < (number_of_values =
-								get_FE_element_field_number_of_grid_values(element, field)))
+							number_of_components = get_FE_field_number_of_components(field);
+							int allocated_number_of_values = 0;
+							value_type = get_FE_field_value_type(field);
+							switch (value_type)
 							{
-								value_type = get_FE_field_value_type(field);
-								number_of_components =
-									get_FE_field_number_of_components(field);
-								switch (value_type)
+								case FE_VALUE_VALUE:
 								{
-									case FE_VALUE_VALUE:
+									FE_value *values = NULL;
+									for (j = 0; (j < number_of_components) && return_code; j++)
 									{
-										FE_value *values;
-
-										if (ALLOCATE(values, FE_value, number_of_values))
+										number_of_values = get_FE_element_field_component_number_of_grid_values(element, field, j);
+										if (0 < number_of_values)
 										{
-											for (j = 0;(j < number_of_components) && return_code;
-													 j++)
+											if (number_of_values > allocated_number_of_values)
 											{
-												for (k = 0; (k < number_of_values) && return_code;
-														 k++)
+												FE_value *temp_values;
+												if (REALLOCATE(temp_values, values, FE_value, number_of_values))
 												{
-													if (1 != IO_stream_scan(input_file, FE_VALUE_INPUT_STRING,
-														&(values[k])))
-													{
-														location = IO_stream_get_location_string(input_file);
-														display_message(ERROR_MESSAGE,
-															"Error reading grid FE_value value from file.  %s",
-															location);
-														DEALLOCATE(location);
-														return_code = 0;
-													}
-													if (!finite(values[k]))
-													{
-														location = IO_stream_get_location_string(input_file);
-														display_message(ERROR_MESSAGE,
-															"Infinity or NAN element value read from element file.  %s",
-															location);
-														DEALLOCATE(location);
-														return_code = 0;
-													}
+													values = temp_values;
+													allocated_number_of_values = number_of_values;
 												}
-												if (return_code)
+												else
 												{
-													if (!set_FE_element_field_component_grid_FE_value_values(
-														element, field, /*component_number*/j, values))
-													{
-														location = IO_stream_get_location_string(input_file);
-														display_message(ERROR_MESSAGE,
-															"read_FE_element.  Could not set grid FE_value values");
-														DEALLOCATE(location);
-													}
+													return_code = 0;
 												}
 											}
-											DEALLOCATE(values);
-										}
-										else
-										{
-											location = IO_stream_get_location_string(input_file);
-											display_message(ERROR_MESSAGE,"read_FE_element.  "
-												"Insufficient memory for FE_value values");
-											DEALLOCATE(location);
-											return_code = 0;
-										}
-									} break;
-									case INT_VALUE:
-									{
-										int *values;
-
-										if (ALLOCATE(values, int, number_of_values))
-										{
-											for (j = 0;(j < number_of_components) && return_code;
-													 j++)
+											for (k = 0; (k < number_of_values) && return_code; k++)
 											{
-												for (k = 0; (k < number_of_values) && return_code;
-														 k++)
+												if (1 != IO_stream_scan(input_file, FE_VALUE_INPUT_STRING,
+													&(values[k])))
 												{
-													if (1 != IO_stream_scan(input_file, "%d", &(values[k])))
-													{
-														location = IO_stream_get_location_string(input_file);
-														display_message(ERROR_MESSAGE,
-															"Error reading grid int value from file.  %s",
-															location);
-														DEALLOCATE(location);
-														return_code = 0;
-													}
+													location = IO_stream_get_location_string(input_file);
+													display_message(ERROR_MESSAGE,
+														"Error reading grid FE_value value from file.  %s",
+														location);
+													DEALLOCATE(location);
+													return_code = 0;
 												}
-												if (return_code)
+												if (!finite(values[k]))
 												{
-													if (!set_FE_element_field_component_grid_int_values(
-														element, field, /*component_number*/j, values))
-													{
-														location = IO_stream_get_location_string(input_file);
-														display_message(ERROR_MESSAGE,
-															"read_FE_element.  Could not set grid int values");
-														DEALLOCATE(location);
-													}
+													location = IO_stream_get_location_string(input_file);
+													display_message(ERROR_MESSAGE,
+														"Infinity or NAN element value read from element file.  %s",
+														location);
+													DEALLOCATE(location);
+													return_code = 0;
 												}
 											}
-											DEALLOCATE(values);
+											if (return_code)
+											{
+												if (!set_FE_element_field_component_grid_FE_value_values(
+													element, field, /*component_number*/j, values))
+												{
+													location = IO_stream_get_location_string(input_file);
+													display_message(ERROR_MESSAGE,
+														"read_FE_element.  Could not set grid FE_value values");
+													DEALLOCATE(location);
+												}
+											}
 										}
-										else
-										{
-											location = IO_stream_get_location_string(input_file);
-											display_message(ERROR_MESSAGE, "read_FE_element.  "
-												"Insufficient memory for int values");
-											DEALLOCATE(location);
-											return_code = 0;
-										}
-									} break;
-									default:
+									}
+									DEALLOCATE(values);
+								} break;
+								case INT_VALUE:
+								{
+									int *values = NULL;
+									for (j = 0; (j < number_of_components) && return_code; j++)
 									{
-										location = IO_stream_get_location_string(input_file);
-										display_message(ERROR_MESSAGE,
-											"Unsupported grid field value_type %s.  %s",
-											Value_type_string(value_type),
-											location);
-										DEALLOCATE(location);
-										return_code = 0;
-									} break;
-								}
+										number_of_values = get_FE_element_field_component_number_of_grid_values(element, field, j);
+										if (0 < number_of_values)
+										{
+											if (number_of_values > allocated_number_of_values)
+											{
+												int *temp_values;
+												if (REALLOCATE(temp_values, values, int, number_of_values))
+												{
+													values = temp_values;
+													allocated_number_of_values = number_of_values;
+												}
+												else
+												{
+													return_code = 0;
+												}
+											}
+											for (k = 0; (k < number_of_values) && return_code; k++)
+											{
+												if (1 != IO_stream_scan(input_file, "%d", &(values[k])))
+												{
+													location = IO_stream_get_location_string(input_file);
+													display_message(ERROR_MESSAGE,
+														"Error reading grid int value from file.  %s",
+														location);
+													DEALLOCATE(location);
+													return_code = 0;
+												}
+											}
+											if (return_code)
+											{
+												if (!set_FE_element_field_component_grid_int_values(
+													element, field, /*component_number*/j, values))
+												{
+													location = IO_stream_get_location_string(input_file);
+													display_message(ERROR_MESSAGE,
+														"read_FE_element.  Could not set grid int values");
+													DEALLOCATE(location);
+												}
+											}
+										}
+									}
+									DEALLOCATE(values);
+								} break;
+								default:
+								{
+									/* no element values for other types */
+								} break;
 							}
 						}
 						else

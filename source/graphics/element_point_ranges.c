@@ -1417,8 +1417,8 @@ No Element_point_ranges object is returned without error if:
 			if (get_FE_element_field_component_grid_int_values(element,
 				grid_field,/*component_number*/0,&values))
 			{
-				number_of_grid_values=
-					get_FE_element_field_number_of_grid_values(element,grid_field);
+				number_of_grid_values = get_FE_element_field_component_number_of_grid_values(
+					element, grid_field, /*component_number*/0);
 				/* work out if any values are in the given ranges */
 				grid_value_in_range=0;
 				for (i=0;(i<number_of_grid_values)&&(!grid_value_in_range);i++)
@@ -1430,8 +1430,8 @@ No Element_point_ranges object is returned without error if:
 					identifier.element=element;
 					identifier.top_level_element=element;
 					identifier.xi_discretization_mode=XI_DISCRETIZATION_CELL_CORNERS;
-					get_FE_element_field_grid_map_number_in_xi(element,grid_field,
-						identifier.number_in_xi);
+					get_FE_element_field_component_grid_map_number_in_xi(element,grid_field,
+						/*component_number*/0, identifier.number_in_xi);
 					/* set exact_xi to something reasonable, just in case it is used */
 					for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
 					{
@@ -1567,8 +1567,8 @@ If field and element_point_ranges not identically grid-based, clear
 				element_point_ranges->id.xi_discretization_mode)&&
 			FE_element_field_is_grid_based(element,grid_fe_field))
 		{
-			if (return_code=get_FE_element_field_grid_map_number_in_xi(element,
-				grid_fe_field,number_in_xi))
+			if (return_code=get_FE_element_field_component_grid_map_number_in_xi(element,
+				grid_fe_field,/*component_number*/0,number_in_xi))
 			{
 				native=1;
 				for (i=0;(i<dimension)&&native;i++)
@@ -1585,8 +1585,8 @@ If field and element_point_ranges not identically grid-based, clear
 			if (return_code=get_FE_element_field_component_grid_int_values(element,
 				grid_fe_field,/*component_number*/0,&values))
 			{
-				number_of_grid_values=
-					get_FE_element_field_number_of_grid_values(element,grid_fe_field);
+				number_of_grid_values = get_FE_element_field_component_number_of_grid_values(
+					element, grid_fe_field, /*component_number*/0);
 				for (i=0;(i<number_of_grid_values)&&return_code;i++)
 				{
 					if (Multi_range_is_value_in_range(element_point_ranges->ranges,i))
@@ -1655,8 +1655,8 @@ in <element> to the <multi_range>.
 			if (get_FE_element_field_component_grid_int_values(element,
 				grid_fe_field,/*component_number*/0,&values))
 			{
-				number_of_grid_values=
-					get_FE_element_field_number_of_grid_values(element,grid_fe_field);
+				number_of_grid_values = get_FE_element_field_component_number_of_grid_values(
+					element, grid_fe_field, /*component_number*/0);
 				for (i=0;(i<number_of_grid_values)&&return_code;i++)
 				{
 					return_code=Multi_range_add_range(multi_range,values[i],values[i]);

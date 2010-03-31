@@ -1523,9 +1523,10 @@ Writes grid-based values stored with the element.
 					if (ELEMENT_GRID_MAP == component_type)
 					{
 						if ((0<(number_of_values=
-							get_FE_element_field_number_of_grid_values(element,field)))&&
-							get_FE_element_field_grid_map_number_in_xi(element,
-								field,number_in_xi)&&(0<(number_of_columns=number_in_xi[0]+1)))
+							get_FE_element_field_component_number_of_grid_values(element,field,i)))&&
+							get_FE_element_field_component_grid_map_number_in_xi(element,
+								field,/*component_number*/i,number_in_xi) &&
+								(0 < (number_of_columns=number_in_xi[0]+1)))
 						{
 							switch (value_type)
 							{

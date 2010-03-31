@@ -771,90 +771,89 @@ Sets the <values> of the computed <field> over the <element>.
 			if (FE_element_field_is_grid_based(element,fe_field))
 			{
 				return_code=1;
-				if (get_FE_element_field_grid_map_number_in_xi(element,
-						fe_field, grid_map_number_in_xi) &&
-					get_FE_element_shape(element, &element_shape) &&
-					FE_element_shape_get_indices_for_xi_location_in_cell_corners(
-						element_shape, grid_map_number_in_xi, xi, indices))
+				for (k = 0 ; (k < field->number_of_components) && return_code ; k++)
 				{
-					offset = indices[element_dimension - 1];
-					for (i = element_dimension - 2 ; i >= 0 ; i--)
+					/* ignore non-grid-based components */
+					if (get_FE_element_field_component_grid_map_number_in_xi(element,
+							fe_field, /*component_number*/k, grid_map_number_in_xi))
 					{
-						offset = offset * (grid_map_number_in_xi[i] + 1) + indices[i];
-					}
-					value_type=get_FE_field_value_type(fe_field);
-					switch (value_type)
-					{
-						case FE_VALUE_VALUE:
+						if (get_FE_element_shape(element, &element_shape) &&
+							FE_element_shape_get_indices_for_xi_location_in_cell_corners(
+								element_shape, grid_map_number_in_xi, xi, indices))
 						{
-							for (k = 0 ; (k < field->number_of_components) && return_code ; k++)
+							offset = indices[element_dimension - 1];
+							for (i = element_dimension - 2 ; i >= 0 ; i--)
 							{
-								if (get_FE_element_field_component_grid_FE_value_values(element,
-										fe_field, k, &grid_values))
+								offset = offset * (grid_map_number_in_xi[i] + 1) + indices[i];
+							}
+							value_type=get_FE_field_value_type(fe_field);
+							switch (value_type)
+							{
+								case FE_VALUE_VALUE:
 								{
-									grid_values[offset] = values[k];
-									if (!set_FE_element_field_component_grid_FE_value_values(
-											 element, fe_field, k, grid_values))
+									if (get_FE_element_field_component_grid_FE_value_values(element,
+											fe_field, k, &grid_values))
+									{
+										grid_values[offset] = values[k];
+										if (!set_FE_element_field_component_grid_FE_value_values(
+												 element, fe_field, k, grid_values))
+										{
+											display_message(ERROR_MESSAGE,
+												"Computed_field_finite_element::set_values_at_location.  "
+												"Unable to set finite element grid FE_value values");
+											return_code=0;
+										}
+										DEALLOCATE(grid_values);
+									}
+									else
 									{
 										display_message(ERROR_MESSAGE,
 											"Computed_field_finite_element::set_values_at_location.  "
-											"Unable to set finite element grid FE_value values");
+											"Unable to get old grid FE_value values");
 										return_code=0;
 									}
-									DEALLOCATE(grid_values);
-								}
-								else
+								} break;
+								case INT_VALUE:
 								{
-									display_message(ERROR_MESSAGE,
-										"Computed_field_finite_element::set_values_at_location.  "
-										"Unable to get old grid FE_value values");
-									return_code=0;
-								}
-							}
-						} break;
-						case INT_VALUE:
-						{
-							for (k = 0 ; (k < field->number_of_components) && return_code ; k++)
-							{
-								if (get_FE_element_field_component_grid_int_values(element,
-										fe_field, k, &grid_int_values))
-								{
-									grid_int_values[offset] = (int)values[k];
-									if (!set_FE_element_field_component_grid_int_values(
-											 element, fe_field, k, grid_int_values))
+									if (get_FE_element_field_component_grid_int_values(element,
+											fe_field, k, &grid_int_values))
+									{
+										grid_int_values[offset] = (int)values[k];
+										if (!set_FE_element_field_component_grid_int_values(
+												 element, fe_field, k, grid_int_values))
+										{
+											display_message(ERROR_MESSAGE,
+												"Computed_field_finite_element::set_values_at_location.  "
+												"Unable to set finite element grid FE_value values");
+											return_code=0;
+										}
+										DEALLOCATE(grid_int_values);
+									}
+									else
 									{
 										display_message(ERROR_MESSAGE,
 											"Computed_field_finite_element::set_values_at_location.  "
-											"Unable to set finite element grid FE_value values");
+											"Unable to get old grid FE_value values");
 										return_code=0;
 									}
-									DEALLOCATE(grid_int_values);
-								}
-								else
+								} break;
+								default:
 								{
 									display_message(ERROR_MESSAGE,
 										"Computed_field_finite_element::set_values_at_location.  "
-										"Unable to get old grid FE_value values");
+										"Unsupported value_type for finite_element field");
 									return_code=0;
-								}
+								} break;
 							}
-						} break;
-						default:
+						}
+						else
 						{
 							display_message(ERROR_MESSAGE,
 								"Computed_field_finite_element::set_values_at_location.  "
-								"Unsupported value_type for finite_element field");
-							return_code=0;
-						} break;
+								"Element locations do not coincide with grid");
+							return_code = 0;
+						}
 					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_finite_element::set_values_at_location.  "
-						"Finite element field %s is not grid based in element",
-						field->name);
-					return_code=0;
 				}
 			}
 			else if (FE_element_field_is_standard_node_based(element, fe_field))
@@ -965,7 +964,7 @@ int Computed_field_finite_element::get_native_discretization_in_element(
 LAST MODIFIED : 24 August 2006
 
 DESCRIPTION :
-If the <field> ois grid-based in <element>, returns in
+If the <field> is grid-based in <element>, returns in
 <number_in_xi> the numbers of finite difference cells in each xi-direction of
 <element>. Note that this number is one less than the number of grid points in
 each direction. <number_in_xi> should be allocated with at least as much space
@@ -983,8 +982,9 @@ Returns 0 with no errors if the field is not grid-based.
 	{
 		if (FE_element_field_is_grid_based(element,fe_field))
 		{
-			return_code=get_FE_element_field_grid_map_number_in_xi(element,
-				fe_field,number_in_xi);
+			/* use only first component */
+			return_code=get_FE_element_field_component_grid_map_number_in_xi(element,
+				fe_field, /*component_number*/0, number_in_xi);
 		}
 		else
 		{
