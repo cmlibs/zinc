@@ -225,6 +225,7 @@ FE_basis_type_string
 	BSPLINE,
 	CUBIC_HERMITE,
 	CUBIC_LAGRANGE,
+	FE_BASIS_CONSTANT,
 	FOURIER,
 	HERMITE_LAGRANGE,
 	LAGRANGE_HERMITE,
@@ -1642,6 +1643,16 @@ Returns a pointer to a static string token for the given <basis_type>.
 The calling function must not deallocate the returned string.
 #### Must ensure implemented correctly for new FE_basis_type. ####
 ==============================================================================*/
+
+/*******************************************************************************
+ * Returns the string description of the basis type used in serialisation.
+ * ???RC Currently limited to handling one polygon or one simplex. Will have to
+ * be rewritten for 4-D and above elements.
+ * 
+ * @param basis  FE_basis type array - see struct FE_basis
+ * @return  allocated basis description string
+ */
+char *FE_basis_get_description_string(struct FE_basis *basis);
 
 int FE_basis_get_dimension(struct FE_basis *basis, int *dimension_address);
 /*******************************************************************************

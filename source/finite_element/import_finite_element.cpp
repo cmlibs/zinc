@@ -2198,7 +2198,7 @@ Some examples of basis descriptions in an input file are:
 			{
 				location=IO_stream_get_location_string(input_file);
 				display_message(ERROR_MESSAGE,
-					"Error convering basis description to type array.  %s",location);
+					"Error converting basis description to type array.  %s",location);
 				DEALLOCATE(location);
 			}
 			DEALLOCATE(basis_description_string);

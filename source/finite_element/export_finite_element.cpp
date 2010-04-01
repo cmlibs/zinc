@@ -677,165 +677,31 @@ LAST MODIFIED : 12 November 2002
 
 DESCRIPTION :
 Writes out the <basis> to <output_file>.
-???RC Currently limited to handling one polygon or one simplex. Will have to
-be rewritten for 4-D and above elements.
 ==============================================================================*/
 {
-	const char *basis_type_string;
-	enum FE_basis_type basis_type;
-	int dimension, linked_dimensions, next_xi_number, number_of_polygon_vertices,
-		return_code, xi_number;
+	char *basis_string;
+	int return_code;
 
 	ENTER(write_FE_basis);
-	if (output_file && basis && FE_basis_get_dimension(basis, &dimension))
+	if (output_file && basis)
 	{
 		return_code = 1;
-		linked_dimensions = 0;
-		for (xi_number = 0; (xi_number < dimension) && return_code; xi_number++)
+		basis_string = FE_basis_get_description_string(basis);
+		if (basis_string)
 		{
-			if (FE_basis_get_xi_basis_type(basis, xi_number, &basis_type))
-			{
-				if (basis_type_string = FE_basis_type_string(basis_type))
-				{
-					fprintf(output_file, "%s", basis_type_string);
-					switch (basis_type)
-					{
-						case CUBIC_HERMITE:
-						case CUBIC_LAGRANGE:
-						case HERMITE_LAGRANGE:
-						case LAGRANGE_HERMITE:
-						case LINEAR_LAGRANGE:
-						case QUADRATIC_LAGRANGE:
-						{
-							/* no linking between dimensions */
-						} break;
-						case POLYGON:
-						{
-							/* write (number_of_polygon_vertices;linked_xi) */
-							/* logic currently limited to one polygon in basis - ok to 3D */
-							if (0 == linked_dimensions)
-							{
-								if (FE_basis_get_next_linked_xi_number(basis,
-									xi_number, &next_xi_number, &number_of_polygon_vertices) &&
-									(0 < next_xi_number))
-								{
-									if (number_of_polygon_vertices >= 3)
-									{
-										fprintf(output_file, "(%d;%d)", number_of_polygon_vertices,
-											next_xi_number + 1);
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE, "write_FE_basis.  "
-											"Invalid number of vertices in polygon: %d",
-											number_of_polygon_vertices);
-										return_code = 0;
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE, "write_FE_basis.  "
-										"No second linked dimensions in polygon");
-									return_code = 0;
-								}
-							}
-							linked_dimensions++;
-							if (2 < linked_dimensions)
-							{
-								display_message(ERROR_MESSAGE, "write_FE_basis.  "
-									"Too many linked dimensions in polygon");
-								return_code = 0;
-							}
-						} break;
-						case LINEAR_SIMPLEX:
-						case QUADRATIC_SIMPLEX:
-						case SERENDIPITY:
-						{
-							/* write (linked_xi[;linked_xi]) */
-							/* logic currently limited to one simplex in shape - ok to 3D */
-							if (0 == linked_dimensions)
-							{
-								linked_dimensions++;
-								/* for first linked simplex dimension write (N1[;N2]) where N1
-									 is first linked dimension, N2 is second - for tetrahedra */
-								fprintf(output_file,"(");
-								next_xi_number = xi_number;
-								while (return_code && (next_xi_number < dimension))
-								{
-									if (FE_basis_get_next_linked_xi_number(basis,
-										next_xi_number, &next_xi_number,
-										&number_of_polygon_vertices))
-									{
-										if (0 < next_xi_number)
-										{
-											linked_dimensions++;
-											if (2 < linked_dimensions)
-											{
-												fprintf(output_file, ";");
-											}
-											fprintf(output_file, "%d", next_xi_number + 1);
-										}
-										else
-										{
-											next_xi_number = dimension;
-										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE, "write_FE_basis.  "
-											"Could not get next linked xi number for simplex");
-										return_code = 0;
-									}
-								}
-								fprintf(output_file,")");
-								if (1 == linked_dimensions)
-								{
-									display_message(ERROR_MESSAGE,"write_FE_basis.  "
-										"Too few linked dimensions in simplex");
-									return_code = 0;
-								}
-							}
-						} break;
-						case BSPLINE:
-						case FOURIER:
-						case SINGULAR:
-						case TRANSITION:
-						{
-							printf("don't know how to link dimensions for %s\n",
-								basis_type_string);
-							/* don't know what to do! */
-						} break;
-						default:
-						{
-							display_message(ERROR_MESSAGE,
-								"write_FE_basis.  Unknown basis type: %s", basis_type_string);
-							return_code = 0;
-						}
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"write_FE_basis.  Could not get basis type string");
-					return_code = 0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"write_FE_basis.  Could not get basis type");
-				return_code = 0;
-			}
-			if (xi_number < (dimension - 1))
-			{
-				fprintf(output_file,"*");
-			}
+			fprintf(output_file, "%s", basis_string);
+			DEALLOCATE(basis_string);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"write_FE_basis.  Invalid basis");
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"write_FE_basis.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 

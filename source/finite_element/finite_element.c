@@ -6598,6 +6598,7 @@ general node to element maps. Absolute offset for start of field component is
 obtained from the node_field_component for the field at the node.
 ==============================================================================*/
 {
+	char *basis_string;
 	FE_value *array,*blended_element_value,*blended_element_values,
 		*blending_matrix,*element_value,*element_values,
 		*scale_factors,temp_value,xi;
@@ -7385,8 +7386,11 @@ printf("\n");*/
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"global_to_element_map_values.  Invalid basis");
+					basis_string = FE_basis_get_description_string(basis);
+					display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
+						"Incorrect number of element values (%d) for basis (%s)",
+						number_of_element_values, basis_string);
+					DEALLOCATE(basis_string);
 					DEALLOCATE(element_values);
 					return_code=0;
 				}
@@ -19194,6 +19198,14 @@ returned.
 				xi_coordinate++;
 				switch (*type_entry)
 				{
+					case FE_BASIS_CONSTANT:
+					{
+						*reorder_xi_entry=xi_coordinate;
+						reorder_xi_entry++;
+						*argument=0;
+						argument++;
+						valid_type = 1;
+					} break;
 					case LINEAR_LAGRANGE:
 					{
 						if (temp_matrix=tensor_product(2,2,
@@ -20928,51 +20940,40 @@ Some examples of basis descriptions are:
 							*xi_basis_type=LINEAR_LAGRANGE;
 							start_basis_name += 10;
 						}
+						else if (0==strncmp(start_basis_name,"q.Lagrange",10))
+						{
+							*xi_basis_type=QUADRATIC_LAGRANGE;
+							start_basis_name += 10;
+						}
+						else if (0==strncmp(start_basis_name,"c.Lagrange",10))
+						{
+							*xi_basis_type=CUBIC_LAGRANGE;
+							start_basis_name += 10;
+						}
+						else if (0==strncmp(start_basis_name,"c.Hermite",9))
+						{
+							*xi_basis_type=CUBIC_HERMITE;
+							start_basis_name += 9;
+						}
+						else if (0==strncmp(start_basis_name,"constant",8))
+						{
+							*xi_basis_type=FE_BASIS_CONSTANT;
+							start_basis_name += 8;
+						}
+						else if (0==strncmp(start_basis_name,"LagrangeHermite",15))
+						{
+							*xi_basis_type=LAGRANGE_HERMITE;
+							start_basis_name += 15;
+						}
+						else if (0==strncmp(start_basis_name,"HermiteLagrange",15))
+						{
+							*xi_basis_type=HERMITE_LAGRANGE;
+							start_basis_name += 15;
+						}
 						else
 						{
-							if (0==strncmp(start_basis_name,"q.Lagrange",10))
-							{
-								*xi_basis_type=QUADRATIC_LAGRANGE;
-								start_basis_name += 10;
-							}
-							else
-							{
-								if (0==strncmp(start_basis_name,"c.Lagrange",10))
-								{
-									*xi_basis_type=CUBIC_LAGRANGE;
-									start_basis_name += 10;
-								}
-								else
-								{
-									if (0==strncmp(start_basis_name,"c.Hermite",9))
-									{
-										*xi_basis_type=CUBIC_HERMITE;
-										start_basis_name += 9;
-									}
-									else
-									{
-										if (0==strncmp(start_basis_name,"LagrangeHermite",15))
-										{
-											*xi_basis_type=LAGRANGE_HERMITE;
-											start_basis_name += 15;
-										}
-										else
-										{
-											if (0==strncmp(start_basis_name,"HermiteLagrange",15))
-											{
-												*xi_basis_type=HERMITE_LAGRANGE;
-												start_basis_name += 15;
-											}
-											else
-											{
-												display_message(ERROR_MESSAGE,
-													"Invalid basis type");
-												no_error=0;
-											}
-										}
-									}
-								}
-							}
+							display_message(ERROR_MESSAGE, "Invalid basis type");
+							no_error=0;
 						}
 						if (no_error)
 						{
@@ -21000,56 +21001,43 @@ Some examples of basis descriptions are:
 									{
 										if (0==strncmp(start_basis_name,"l.Lagrange",10))
 										{
-											*temp_basis_type=LINEAR_LAGRANGE;
+											*xi_basis_type=LINEAR_LAGRANGE;
 											start_basis_name += 10;
+										}
+										else if (0==strncmp(start_basis_name,"q.Lagrange",10))
+										{
+											*xi_basis_type=QUADRATIC_LAGRANGE;
+											start_basis_name += 10;
+										}
+										else if (0==strncmp(start_basis_name,"c.Lagrange",10))
+										{
+											*xi_basis_type=CUBIC_LAGRANGE;
+											start_basis_name += 10;
+										}
+										else if (0==strncmp(start_basis_name,"c.Hermite",9))
+										{
+											*xi_basis_type=CUBIC_HERMITE;
+											start_basis_name += 9;
+										}
+										else if (0==strncmp(start_basis_name,"constant",8))
+										{
+											*xi_basis_type=FE_BASIS_CONSTANT;
+											start_basis_name += 8;
+										}
+										else if (0==strncmp(start_basis_name,"LagrangeHermite",15))
+										{
+											*xi_basis_type=LAGRANGE_HERMITE;
+											start_basis_name += 15;
+										}
+										else if (0==strncmp(start_basis_name,"HermiteLagrange",15))
+										{
+											*xi_basis_type=HERMITE_LAGRANGE;
+											start_basis_name += 15;
 										}
 										else
 										{
-											if (0==strncmp(start_basis_name,"q.Lagrange",10))
-											{
-												*temp_basis_type=QUADRATIC_LAGRANGE;
-												start_basis_name += 10;
-											}
-											else
-											{
-												if (0==strncmp(start_basis_name,"c.Lagrange",10))
-												{
-													*temp_basis_type=CUBIC_LAGRANGE;
-													start_basis_name += 10;
-												}
-												else
-												{
-													if (0==strncmp(start_basis_name,"c.Hermite",9))
-													{
-														*temp_basis_type=CUBIC_HERMITE;
-														start_basis_name += 9;
-													}
-													else
-													{
-														if (0==strncmp(start_basis_name,
-																 "LagrangeHermite",15))
-														{
-															*temp_basis_type=LAGRANGE_HERMITE;
-															start_basis_name += 15;
-														}
-														else
-														{
-															if (0==strncmp(start_basis_name,
-																	 "HermiteLagrange",15))
-															{
-																*temp_basis_type=HERMITE_LAGRANGE;
-																start_basis_name += 15;
-															}
-															else
-															{
-																display_message(ERROR_MESSAGE,
-																	"Invalid basis type");
-																no_error=0;
-															}
-														}
-													}
-												}
-											}
+											display_message(ERROR_MESSAGE, "Invalid basis type");
+											no_error=0;
 										}
 										if (';'== *start_basis_name)
 										{
@@ -21119,6 +21107,180 @@ Some examples of basis descriptions are:
 	return (basis_type);
 } /* FE_basis_string_to_type_array */
 
+/*******************************************************************************
+ * Returns the string description of the basis type used in serialisation.
+ * Currently limited to handling one polygon or one simplex. Will have to
+ * be rewritten for 4-D and above elements.
+ * 
+ * @param type_array  FE_basis type array - see struct FE_basis
+ * @return  allocated basis description string
+ */
+static char *FE_basis_type_array_to_string(const int *type_array)
+{
+	char *basis_string, temp[20];
+	const char *basis_type_string;
+	const int *type, *relation_type;
+	enum FE_basis_type basis_type;
+	int dimension, error, i, linked_dimensions, number_of_polygon_vertices,
+		xi_number;
+
+	ENTER(FE_basis_type_array_to_string);
+	basis_string = (char *)NULL;
+	if (type_array && (0 < (dimension = *type_array)) &&
+		(dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	{
+		type = type_array + 1;
+		linked_dimensions = 0;
+		error = 0;
+		for (xi_number = 0; (xi_number < dimension) && !error; xi_number++)
+		{
+			basis_type = (enum FE_basis_type)(*type);
+			if (basis_type_string = FE_basis_type_string(basis_type))
+			{
+				append_string(&basis_string, basis_type_string, &error);
+				switch (basis_type)
+				{
+					case CUBIC_HERMITE:
+					case CUBIC_LAGRANGE:
+					case FE_BASIS_CONSTANT:
+					case HERMITE_LAGRANGE:
+					case LAGRANGE_HERMITE:
+					case LINEAR_LAGRANGE:
+					case QUADRATIC_LAGRANGE:
+					case BSPLINE:
+					case FOURIER:
+						/* not sure about the following two: */
+					case SINGULAR:
+					case TRANSITION:
+					{
+						/* no linking between dimensions */
+					} break;
+					case LINEAR_SIMPLEX:
+					case QUADRATIC_SIMPLEX:
+					case SERENDIPITY:
+					{
+						/* write (linked_xi[;linked_xi]) */
+						/* logic currently limited to one simplex in shape - ok to 3D */
+						if (0 == linked_dimensions)
+						{
+							linked_dimensions++;
+							/* for first linked simplex dimension write (N1[;N2]) where N1
+								 is first linked dimension, N2 is second - for tetrahedra */
+							append_string(&basis_string, "(", &error);
+							relation_type = type + 1;
+							for (i = xi_number + 2; i <= dimension; i++)
+							{
+								if (*relation_type)
+								{
+									linked_dimensions++;
+									if (linked_dimensions > 2)
+									{
+										append_string(&basis_string, ";", &error);
+									}
+									sprintf(temp, "%d", i);
+									append_string(&basis_string, temp, &error);
+								}
+								relation_type++;
+							}
+							append_string(&basis_string, ")", &error);
+							if (1 == linked_dimensions)
+							{
+								display_message(ERROR_MESSAGE,
+									"FE_basis_type_array_to_string.  Too few linked dimensions in simplex");
+								DEALLOCATE(basis_string);
+								error = 1;
+							}
+						}
+					} break;
+					case POLYGON:
+					{
+						/* write (number_of_polygon_vertices;linked_xi) */
+						/* logic currently limited to one polygon in basis - ok to 3D */
+						if (0 == linked_dimensions)
+						{
+							linked_dimensions++;
+							number_of_polygon_vertices = 0;
+							relation_type = type + 1;
+							for (i = xi_number + 2; i <= dimension; i++)
+							{
+								if (*relation_type)
+								{
+									linked_dimensions++;
+									if (0 == number_of_polygon_vertices)
+									{
+										number_of_polygon_vertices = *relation_type;
+										if (number_of_polygon_vertices >= 3)
+										{
+											sprintf(temp, "(%d;%d)", number_of_polygon_vertices, i);
+											append_string(&basis_string, temp, &error);
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE, "write_FE_basis.  "
+												"Invalid number of vertices in polygon: %d",
+												number_of_polygon_vertices);
+											DEALLOCATE(basis_string);
+											error = 1;
+										}
+									}
+								}
+								relation_type++;
+							}
+							if (2 != linked_dimensions)
+							{
+								display_message(ERROR_MESSAGE, "FE_basis_type_array_to_string.  "
+									"Invalid number of linked dimensions in polygon: %d", linked_dimensions);
+								DEALLOCATE(basis_string);
+								error = 1;
+							}
+						}
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"write_FE_basis.  Unknown basis type: %s", basis_type_string);
+						error = 1;
+					}
+				}
+				type += (dimension - xi_number);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_basis_type_array_to_string.  Invalid basis type");
+				error = 1;
+			}
+			if (xi_number < (dimension - 1))
+			{
+				append_string(&basis_string, "*", &error);
+			}
+		}
+	}
+	LEAVE;
+
+	return (basis_string);
+}
+
+char *FE_basis_get_description_string(struct FE_basis *basis)
+{
+	char *basis_string;
+
+	ENTER(FE_basis_get_description_string);
+	basis_string = (char *)NULL;
+	if (basis && (basis->type))
+	{
+		basis_string = FE_basis_type_array_to_string(basis->type);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_basis_get_description_string.  Invalid basis");
+	}
+	LEAVE;
+	
+	return (basis_string);
+}
+
 const char *FE_basis_type_string(enum FE_basis_type basis_type)
 /*******************************************************************************
 LAST MODIFIED : 1 April 1999
@@ -21150,6 +21312,10 @@ The calling function must not deallocate the returned string.
 		case CUBIC_LAGRANGE:
 		{
 			basis_type_string="c.Lagrange";
+		} break;
+		case FE_BASIS_CONSTANT:
+		{
+			basis_type_string="constant";
 		} break;
 		case FOURIER:
 		{
