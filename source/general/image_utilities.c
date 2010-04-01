@@ -154,8 +154,11 @@ parameters are used to set the image dimensions and colour depth.
 	unsigned char *background_fill_bytes;
 	struct IO_stream_package *io_stream_package;
 	double quality;
-	/** A flag to indicate that a Cmgui_image_write will write to the memory_block. */
+	/* A flag to indicate that a Cmgui_image_write will write to the memory_block. */
 	int write_to_memory_block;
+	/* Flag to indicate that the memory_block memory is from an Imagemagick Blob
+	 * to deallocate with structure */
+	int memory_block_is_imagemagick_blob;
 	void *memory_block;
 	unsigned int memory_block_length;
 	enum Image_storage_compression compression;
@@ -5248,6 +5251,8 @@ To create an image need to specify most dimension arguments.
 		cmgui_image_information->memory_block = NULL;
 		cmgui_image_information->memory_block_length = 0;
 		cmgui_image_information->write_to_memory_block = 0;
+		cmgui_image_information->memory_block_is_imagemagick_blob = 0;
+
 	}
 	else
 	{
@@ -5287,6 +5292,11 @@ Frees the memory use by the Cmgui_image_information and sets
 		if (cmgui_image_information->background_fill_bytes)
 		{
 			DEALLOCATE(cmgui_image_information->background_fill_bytes);
+		}
+		if (cmgui_image_information->memory_block &&
+			cmgui_image_information->memory_block_is_imagemagick_blob)
+		{
+			RelinquishMagickMemory(cmgui_image_information->memory_block);
 		}
 		DEALLOCATE(*cmgui_image_information_address);
 		*cmgui_image_information_address = (struct Cmgui_image_information *)NULL;
@@ -7493,6 +7503,13 @@ that the images be adjoined in the single file.
 				}
 				if (cmgui_image_information->write_to_memory_block)
 				{
+					/* If we have one already free it */
+					if (cmgui_image_information->memory_block &&
+						cmgui_image_information->memory_block_is_imagemagick_blob)
+					{
+						RelinquishMagickMemory(cmgui_image_information->memory_block);
+					}
+
 					/* Need to use the correct pointer type for the API */
 					size_t magick_memory_block_length = 0;
 
@@ -7505,6 +7522,7 @@ that the images be adjoined in the single file.
 					{
 						cmgui_image_information->memory_block_length
 							= magick_memory_block_length;
+						cmgui_image_information->memory_block_is_imagemagick_blob = 1;
 					}
 					else
 					{
