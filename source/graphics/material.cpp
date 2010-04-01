@@ -5876,14 +5876,14 @@ DESCRIPTION :
 							if (!Graphics_library_tentative_check_extension(GL_VERSION_1_3))
 							{
 								display_message(ERROR_MESSAGE,
-									"Bump mapping requires OpenGL version 1.3 or better which is "
+									"Multitexture requires OpenGL version 1.3 or better which is "
 									"not available on this display.");
 								DEACCESS(Texture)(&material_to_be_modified_copy->second_texture);
 								return_code = 0;
 							}
 #else /* defined (GL_VERSION_1_3) */
 							display_message(ERROR_MESSAGE,
-								"Bump mapping requires OpenGL version 1.3 or better which was "
+								"Multitexture requires OpenGL version 1.3 or better which was "
 								"not compiled into this executable.");
 							DEACCESS(Texture)(&material_to_be_modified_copy->second_texture);
 							return_code = 0;
@@ -5897,7 +5897,7 @@ DESCRIPTION :
 								display_message(ERROR_MESSAGE,
 									"A colour lookup spectrum requires OpenGL version 1.3 or better which is "
 									"not available on this display.");
-								DEACCESS(Texture)(&material_to_be_modified_copy->second_texture);
+								DEACCESS(Spectrum)(&material_to_be_modified_copy->spectrum);
 								return_code = 0;
 							}
 #else /* defined (GL_VERSION_1_3) */
@@ -5919,25 +5919,57 @@ DESCRIPTION :
 						}
 						else if (per_pixel_mode_flag || material_to_be_modified_copy->program)
 						{
-							if (vertex_program_string && fragment_program_string)
+#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program || defined GL_VERSION_2_0
+							return_code = 0;
+#if defined GL_ARB_fragment_program && defined GL_ARB_vertex_program
+							if (Graphics_library_tentative_check_extension(GL_ARB_fragment_program) &&
+									Graphics_library_tentative_check_extension(GL_ARB_vertex_program))
 							{
-								return_code = Material_set_material_program_strings(
-									material_to_be_modified_copy, vertex_program_string,
-									fragment_program_string);
+								return_code = 1;
 							}
-							else if (material_to_be_modified_copy->program &&
-								(0 == material_to_be_modified_copy->program->type))
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+#if defined (GL_VERSION_2_0)
+							if (Graphics_library_tentative_check_extension(GL_shading_language))
 							{
-								/* Do nothing as we just keep the existing program */
+								return_code = 1;
+							}
+#endif // defined (GL_VERSION_2_0)
+							if (return_code)
+							{
+								if (vertex_program_string && fragment_program_string)
+								{
+									return_code = Material_set_material_program_strings(
+										material_to_be_modified_copy, vertex_program_string,
+										fragment_program_string);
+								}
+								else if (material_to_be_modified_copy->program &&
+										(0 == material_to_be_modified_copy->program->type))
+								{
+									/* Do nothing as we just keep the existing program */
+								}
+								else
+								{
+									return_code = set_material_program_type(material_to_be_modified_copy,
+										bump_mapping_flag, colour_lookup_red_flag,colour_lookup_green_flag,
+										colour_lookup_blue_flag, colour_lookup_alpha_flag,
+										lit_volume_intensity_normal_texture_flag, lit_volume_finite_difference_normal_flag,
+										lit_volume_scale_alpha_flag, return_code);
+								}
 							}
 							else
 							{
-								return_code = set_material_program_type(material_to_be_modified_copy,
-									bump_mapping_flag, colour_lookup_red_flag,colour_lookup_green_flag,
-									colour_lookup_blue_flag, colour_lookup_alpha_flag,
-									lit_volume_intensity_normal_texture_flag, lit_volume_finite_difference_normal_flag,
-									lit_volume_scale_alpha_flag, return_code);
+								display_message(ERROR_MESSAGE,
+									"Program or shader based materials require GL_ARB_vertex_program"
+									" and GL_ARB_fragment_program extensions or OpenGL 2.0 shading language support"
+									" which is not available on this display.");
 							}
+#else // defined GL_ARB_vertex_program && defined GL_ARB_fragment_program || defined GL_VERSION_2_0
+							display_message(ERROR_MESSAGE,
+								"Program or shader based materials require GL_ARB_vertex_program"
+								" and GL_ARB_fragment_program extensions or OpenGL 2.0 shading language support"
+								" which was not compiled into this program.");
+							return_code = 0;
+#endif // defined GL_ARB_vertex_program && defined GL_ARB_fragment_program || defined GL_VERSION_2_0
 						}
 						if (uniform_name && number_of_uniform_values && uniform_values)
 						{
