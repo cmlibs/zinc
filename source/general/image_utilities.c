@@ -7503,15 +7503,15 @@ that the images be adjoined in the single file.
 				}
 				if (cmgui_image_information->write_to_memory_block)
 				{
+					/* Need to use the correct pointer type for the API */
+					size_t magick_memory_block_length = 0;
+
 					/* If we have one already free it */
 					if (cmgui_image_information->memory_block &&
 						cmgui_image_information->memory_block_is_imagemagick_blob)
 					{
 						RelinquishMagickMemory(cmgui_image_information->memory_block);
 					}
-
-					/* Need to use the correct pointer type for the API */
-					size_t magick_memory_block_length = 0;
 
 					SetImageInfo(magick_image_info, MagickFalse, &magick_exception);
 
