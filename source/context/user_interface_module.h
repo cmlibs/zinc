@@ -56,7 +56,7 @@ struct User_interface_module
 {
 	int access_count;
 	int argc, cleanup_argc;
-	char **argv, **cleanup_argv;
+	char **argv, **cleanup_argv, **unmodified_argv;
 	struct Colour background_colour,foreground_colour;
 	struct Element_point_tool *element_point_tool;
 	struct Element_tool *element_tool;

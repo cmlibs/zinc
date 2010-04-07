@@ -25057,7 +25057,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			as X modifies the argc, argv removing the options it understands
 			however I want a full copy for the interpreter so that we can use
 			-display for example for both */
-		create_interpreter(UI_module->argc, UI_module->argv, comfile_name, &command_data->interpreter, &status);
+		create_interpreter(UI_module->argc, UI_module->unmodified_argv, comfile_name, &command_data->interpreter, &status);
 
 		if (!status)
 		{
@@ -25218,6 +25218,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		command_data->graphics_buffer_package = UI_module->graphics_buffer_package;
 		/* graphics window manager.  Note there is no default window. */
+		Graphics_buffer_package_set_override_visual_id(command_data->graphics_buffer_package,
+			visual_id);
 		command_data->graphics_window_manager = UI_module->graphics_window_manager;
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 		/* FE_element_shape manager */
@@ -25433,15 +25435,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 
 		if (command_data->user_interface)
 		{
-			/* set up image library */
-#if defined (UNIX) /* switch (Operating_System) */
-			Open_image_environment(*(UI_module->argv));
-#elif defined (WIN32_USER_INTERFACE) /* switch (Operating_System) */
-			/* SAB Passing a string to this function so that it
-				starts up, should get the correct thing from
-				the windows system */
-			Open_image_environment("cmgui");
-#endif /* switch (Operating_System) */
 			command_data->transform_tool=UI_module->transform_tool;
 			command_data->node_tool=UI_module->node_tool;
 			Node_tool_set_execute_command(command_data->node_tool, command_data->execute_command);

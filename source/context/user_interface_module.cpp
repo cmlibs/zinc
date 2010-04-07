@@ -92,7 +92,6 @@ struct User_interface_module *User_interface_module_create(
 	int return_code = 1;
 	Cmiss_region *root_region = NULL;;
 	struct Cmiss_graphics_module *graphics_module = NULL;
-
 #if defined (MOTIF_USER_INTERFACE)
 	Display *display;
 #define XmNbackgroundColour "backgroundColour"
@@ -215,9 +214,9 @@ struct User_interface_module *User_interface_module_create(
 		UI_module->foreground_colour.green=(float)1;
 		UI_module->foreground_colour.blue=(float)1;
 		UI_module->access_count = 1;
-
 		UI_module->argc = in_argc;
 		UI_module->argv = NULL;
+		UI_module->unmodified_argv = NULL;
 		UI_module->cleanup_argc = in_argc;
 		UI_module->cleanup_argv = NULL;
 		struct Cmgui_command_line_options command_line_options;
@@ -227,10 +226,11 @@ struct User_interface_module *User_interface_module_create(
 		if (0 < in_argc)
 		{
 			ALLOCATE(UI_module->argv, char *, in_argc);
+			ALLOCATE(UI_module->unmodified_argv, char *, in_argc);
 			ALLOCATE(UI_module->cleanup_argv, char *, in_argc);
 			for (int ai = 0; ai < in_argc; ai++)
 			{
-				UI_module->cleanup_argv[ai] = UI_module->argv[ai] =
+				UI_module->cleanup_argv[ai] = UI_module->argv[ai] = UI_module->unmodified_argv[ai] =
 					duplicate_string(in_argv[ai]);
 			}
 		}
@@ -529,6 +529,7 @@ int User_interface_module_destroy(
 					DEALLOCATE(UI_module->cleanup_argv[ai]);
 				}
 				DEALLOCATE(UI_module->cleanup_argv);
+				DEALLOCATE(UI_module->unmodified_argv);
 				DEALLOCATE(UI_module->argv);
 			}
 			DEALLOCATE(*UI_module_address);
