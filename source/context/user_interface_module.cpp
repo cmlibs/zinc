@@ -92,6 +92,7 @@ struct User_interface_module *User_interface_module_create(
 	int return_code = 1;
 	Cmiss_region *root_region = NULL;;
 	struct Cmiss_graphics_module *graphics_module = NULL;
+	int visual_id = 0;
 #if defined (MOTIF_USER_INTERFACE)
 	Display *display;
 #define XmNbackgroundColour "backgroundColour"
@@ -222,7 +223,7 @@ struct User_interface_module *User_interface_module_create(
 		struct Cmgui_command_line_options command_line_options;
 		Cmiss_command_data_process_command_line(in_argc, in_argv, 
 			&command_line_options);
-
+		visual_id = command_line_options.visual_id_number;
 		if (0 < in_argc)
 		{
 			ALLOCATE(UI_module->argv, char *, in_argc);
@@ -336,6 +337,8 @@ struct User_interface_module *User_interface_module_create(
 		{
 			UI_module->graphics_buffer_package = CREATE(Graphics_buffer_package)(
 				UI_module->user_interface);
+			Graphics_buffer_package_set_override_visual_id(UI_module->graphics_buffer_package,
+				visual_id);
 		}
 		/* graphics window manager.  Note there is no default window. */
 		UI_module->graphics_window_manager=CREATE(MANAGER(Graphics_window))();

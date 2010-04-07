@@ -25218,8 +25218,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #if defined (USE_CMGUI_GRAPHICS_WINDOW)
 		command_data->graphics_buffer_package = UI_module->graphics_buffer_package;
 		/* graphics window manager.  Note there is no default window. */
-		Graphics_buffer_package_set_override_visual_id(command_data->graphics_buffer_package,
-			visual_id);
 		command_data->graphics_window_manager = UI_module->graphics_window_manager;
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
 		/* FE_element_shape manager */
