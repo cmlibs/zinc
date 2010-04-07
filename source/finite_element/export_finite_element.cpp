@@ -1768,6 +1768,38 @@ Returns true if the <write_criterion> -- some options of which require the
 	return (return_code);
 } /* FE_element_passes_write_criterion */
 
+
+/***************************************************************************//**
+ * Return true if any fields are to be written for the element.
+ */
+static int FE_element_has_fields_to_write(
+	struct FE_element *element, struct FE_field_order_info *field_order_info)
+{
+	int i, number_of_fields, return_code;
+	struct FE_field *field;
+
+	if (field_order_info)
+	{
+		return_code = 0;
+		number_of_fields = get_FE_field_order_info_number_of_fields(field_order_info);
+		for (i = 0; i < number_of_fields; i++)
+		{
+			field = get_FE_field_order_info_field(field_order_info, i);
+			if (FE_field_is_defined_in_element_not_inherited(field, element))
+			{
+				return_code = 1;
+				break;
+			}
+		}
+	}
+	else
+	{
+		return_code = 0 < get_FE_element_number_of_fields(element);
+	}
+
+	return (return_code);
+}
+
 static int FE_elements_have_same_header(
 	struct FE_element *element_1, struct FE_element *element_2,
 	struct FE_field_order_info *field_order_info)
@@ -1857,8 +1889,16 @@ in the header.
 					{
 						new_shape = (element_shape != last_element_shape);
 					}
-					new_field_header = !FE_elements_have_same_header(element,
-						write_elements_data->last_element, write_elements_data->field_order_info);
+					if (new_shape)
+					{
+						new_field_header = FE_element_has_fields_to_write(element,
+							write_elements_data->field_order_info);
+					}
+					else
+					{
+						new_field_header = !FE_elements_have_same_header(element,
+								write_elements_data->last_element, write_elements_data->field_order_info);
+					}
 				}
 				if (new_shape)
 				{

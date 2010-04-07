@@ -39684,6 +39684,24 @@ Returns true if the <field> is defined for the <element>.
 	return (return_code);
 } /* FE_field_is_defined_in_element */
 
+int FE_field_is_defined_in_element_not_inherited(struct FE_field *field,
+	struct FE_element *element)
+{
+	int return_code;
+
+	return_code = 0;
+	if (element && element->fields)
+	{
+		if (FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(field,
+			element->fields->element_field_list))
+		{
+			return_code = 1;
+		}
+	}
+
+	return (return_code);
+}
+
 int FE_element_field_is_grid_based(struct FE_element *element,
 	struct FE_field *field)
 /*******************************************************************************

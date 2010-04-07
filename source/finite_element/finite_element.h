@@ -4302,6 +4302,13 @@ DESCRIPTION :
 Returns true if the <field> is defined for the <element>.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Returns true if <field> is defined in <element> directly, not inherited from
+ * a parent element it is a face of.
+ */
+int FE_field_is_defined_in_element_not_inherited(struct FE_field *field,
+	struct FE_element *element);
+
 int FE_element_field_is_grid_based(struct FE_element *element,
 	struct FE_field *field);
 /*******************************************************************************

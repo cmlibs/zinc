@@ -19961,7 +19961,7 @@ Can also write individual groups with the <group> option.
 				{
 					write_fields_mode = FE_WRITE_LISTED_FIELDS;
 				}
-				if ((FE_WRITE_LISTED_FIELDS == write_fields_mode) &&
+				if ((FE_WRITE_LISTED_FIELDS != write_fields_mode) &&
 					(FE_WRITE_COMPLETE_GROUP != write_criterion))
 				{
 					display_message(WARNING_MESSAGE,
@@ -20568,7 +20568,7 @@ Can also write individual element groups with the <group> option.
 			{
 				write_fields_mode = FE_WRITE_LISTED_FIELDS;
 			}
-			if ((FE_WRITE_LISTED_FIELDS == write_fields_mode) &&
+			if ((FE_WRITE_LISTED_FIELDS != write_fields_mode) &&
 				(FE_WRITE_COMPLETE_GROUP != write_criterion))
 			{
 				display_message(WARNING_MESSAGE,
@@ -20770,7 +20770,7 @@ If <use_data> is set, writing data, otherwise writing nodes.
 			{
 				write_fields_mode = FE_WRITE_LISTED_FIELDS;
 			}
-			if ((FE_WRITE_LISTED_FIELDS == write_fields_mode) &&
+			if ((FE_WRITE_LISTED_FIELDS != write_fields_mode) &&
 				(FE_WRITE_COMPLETE_GROUP != write_criterion))
 			{
 				display_message(WARNING_MESSAGE,
