@@ -2492,12 +2492,23 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 													while (return_code && (i < dimension))
 													{
 														if ((2 == IO_stream_scan(input_file, "#xi%d = %d", &j,
-															&number_in_xi)) && (j == i + 1) &&
-													FE_element_field_component_set_grid_map_number_in_xi(
-																components[component_number], i, number_in_xi))
+															&number_in_xi)) && (j == i + 1))
 														{
-															IO_stream_scan(input_file, " , ");
-															i++;
+															if (FE_element_field_component_set_grid_map_number_in_xi(
+																components[component_number], i, number_in_xi))
+															{
+																IO_stream_scan(input_file, " , ");
+																i++;
+															}
+															else
+															{
+																location = IO_stream_get_location_string(input_file);
+																display_message(ERROR_MESSAGE,
+																	"Grid basis must be constant for #xi=0, or linear for #xi>0.  %s",
+																	location);
+																DEALLOCATE(location);
+																return_code = 0;
+															}
 														}
 														else
 														{
@@ -2511,40 +2522,8 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 													}
 													if (return_code)
 													{
-														enum FE_basis_type basis_type;
-														int next_xi_number,xi_link_number,xi_number;
-
-														/* only allow linear bases */
-														xi_number=0;
-														while (return_code&&(xi_number<dimension))
-														{
-															if (FE_basis_get_xi_basis_type(basis,xi_number,
-																&basis_type)&&(LINEAR_LAGRANGE==basis_type)&&
-																FE_basis_get_next_linked_xi_number(basis,
-																xi_number,&next_xi_number,&xi_link_number)&&
-																(0==next_xi_number)&&(0==xi_link_number))
-															{
-																xi_number++;
-															}
-															else
-															{
-																return_code=0;
-															}
-														}
-														if (return_code)
-														{
-															FE_element_field_component_set_grid_map_value_index(
-																components[component_number], 0);
-														}
-														else
-														{
-															location = IO_stream_get_location_string(input_file);
-															display_message(ERROR_MESSAGE,
-																"Grid based must be linear.  %s",
-																location);
-															DEALLOCATE(location);
-															return_code = 0;
-														}
+														FE_element_field_component_set_grid_map_value_index(
+															components[component_number], 0);
 													}
 												}
 												else

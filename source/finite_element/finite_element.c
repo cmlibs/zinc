@@ -22653,6 +22653,7 @@ of the basis in <element_field_component>. <number_in_xi> must be positive.
 The number_in_xi must currently be unset for this <xi_number>.
 ==============================================================================*/
 {
+	enum FE_basis_type basis_type;
 	int dimension, return_code;
 
 	ENTER(FE_element_field_component_set_grid_map_number_in_xi);
@@ -22662,7 +22663,11 @@ The number_in_xi must currently be unset for this <xi_number>.
 		(0 <= xi_number) &&
 		FE_basis_get_dimension(element_field_component->basis, &dimension) &&
 		(xi_number < dimension) && (0 <= number_in_xi) && (0 ==
-			element_field_component->map.element_grid_based.number_in_xi[xi_number]))
+			element_field_component->map.element_grid_based.number_in_xi[xi_number]) &&
+		FE_basis_get_xi_basis_type(element_field_component->basis, xi_number,
+			&basis_type) &&
+		(((0 == number_in_xi) && (FE_BASIS_CONSTANT == basis_type)) ||
+		 ((0 < number_in_xi) && (LINEAR_LAGRANGE == basis_type))))
 	{
 		element_field_component->map.element_grid_based.number_in_xi[xi_number] =
 			number_in_xi;
@@ -25127,8 +25132,8 @@ Sets values appropriately if element_dimension = top_level_element_dimension.
 ==============================================================================*/
 {
 	FE_value *temp_element_to_top_level;
-	int i,return_code,top_level_grid_offset_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
-		xi_number;
+	int i, next_offset, return_code,
+		top_level_grid_offset_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], xi_number;
 
 	ENTER(calculate_grid_field_offsets);
 	if ((0<element_dimension)&&(element_dimension<=top_level_element_dimension)&&
@@ -25145,25 +25150,18 @@ Sets values appropriately if element_dimension = top_level_element_dimension.
 		}
 		/* calculate offset in grid_point_number for adjacent points in each xi
 			 direction on the top_level_element */
-		if (top_level_number_in_xi[0] > 0)
-		{
-			top_level_grid_offset_in_xi[0]=1;
-		}
-		else
-		{
-			top_level_grid_offset_in_xi[0]=0;
-		}
-		for (i=1;i<top_level_element_dimension;i++)
+		next_offset = 1;
+		for (i = 0; i < top_level_element_dimension; i++)
 		{
 			if (top_level_number_in_xi[i] > 0)
 			{
-				top_level_grid_offset_in_xi[i]=
-					top_level_grid_offset_in_xi[i-1]*(top_level_number_in_xi[i-1]+1);
+				top_level_grid_offset_in_xi[i] = next_offset;
+				next_offset *= top_level_number_in_xi[i] + 1;
 			}
 			else
 			{
-				top_level_grid_offset_in_xi[i]=
-					top_level_grid_offset_in_xi[i-1]*(top_level_number_in_xi[i-1]);
+				/* zero offset means linear interpolation gives same result as constant */
+				top_level_grid_offset_in_xi[i] = 0;
 			}
 		}
 		if (element_dimension == top_level_element_dimension)
@@ -34529,8 +34527,6 @@ already have a shape and node_scale_field_information.
 Checks the range of nodes, scale factors etc. referred to by the components are
 within the range of the node_scale_field_information, and that the basis
 functions are compatible with the element shape.
-If the components indicate the field is grid-based, checks that all the
-components are grid-based with same number_in_xi and value_index=0.
 Value types other than FE_VALUE_VALUE are only supported for grid-based element
 fields and constant and indexed FE_fields.
 The <components> are duplicated by this functions, so the calling function must
@@ -34539,6 +34535,7 @@ Should only be called for unmanaged elements.
 ???RC Should have more checks for STANDARD_NODE_TO_ELEMENT_MAP etc.
 ==============================================================================*/
 {
+	enum FE_basis_type grid_basis_type;
 	int component_number_of_values, dimension, i, j, number_of_components,
 		number_of_grid_based_components, number_of_values, old_values_storage_size,
 		return_code, *this_number_in_xi;
@@ -34618,6 +34615,21 @@ Should only be called for unmanaged elements.
 								if (0 <= this_number_in_xi[j])
 								{
 									component_number_of_values *= (this_number_in_xi[j] + 1);
+									grid_basis_type = FE_BASIS_TYPE_INVALID;
+									FE_basis_get_xi_basis_type((*component)->basis,
+										/*xi_number*/j, &grid_basis_type);
+									if ((0 == this_number_in_xi[j]) && (grid_basis_type != FE_BASIS_CONSTANT))
+									{
+										display_message(ERROR_MESSAGE, "define_FE_field_at_element.  "
+											"Grid-map component must have constant basis for 0 cells in xi %d", j+1);
+										return_code = 0;
+									}
+									else if ((0 < this_number_in_xi[j]) && (grid_basis_type != LINEAR_LAGRANGE))
+									{
+										display_message(ERROR_MESSAGE, "define_FE_field_at_element.  "
+											"Grid-map component must have linear basis for > 0 cells in xi %d", j+1);
+										return_code = 0;
+									}
 								}
 								else
 								{
