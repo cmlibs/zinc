@@ -31569,9 +31569,9 @@ function must be called before calling calculate_FE_element_field_values again.
 					component_standard_basis_function_arguments);
 				for (i=element_field_values->number_of_components;i>0;i--)
 				{
-					if (*component_standard_basis_function_arguments&&(1==i)||
+					if (*component_standard_basis_function_arguments&&((1==i)||
 						(*component_standard_basis_function_arguments!=
-							component_standard_basis_function_arguments[1]))
+							component_standard_basis_function_arguments[1])))
 					{
 						DEALLOCATE(*component_standard_basis_function_arguments);
 					}
