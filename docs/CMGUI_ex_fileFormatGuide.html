@@ -26,7 +26,7 @@
 <li><a class="reference" href="#example-collapsed-square-element" id="id19" name="id19">Example: collapsed square element</a></li>
 <li><a class="reference" href="#simplex-elements-triangles-and-tetrahedra" id="id20" name="id20">Simplex elements: triangles and tetrahedra</a></li>
 <li><a class="reference" href="#example-multiple-fields-bases-and-scale-factor-sets-in-the-prolate-heart" id="id21" name="id21">Example: multiple fields, bases and scale factor sets in the prolate heart</a></li>
-<li><a class="reference" href="#example-grid-based-element-fields" id="id22" name="id22">Example: grid-based element fields</a></li>
+<li><a class="reference" href="#example-per-element-constant-and-grid-based-element-fields" id="id22" name="id22">Example: per-element constant and grid-based element fields</a></li>
 </ul>
 </li>
 <li><a class="reference" href="#further-information" id="id23" name="id23">Further information</a></li>
@@ -93,7 +93,7 @@ Group name: GROUP_NAME
 1) coordinates, coordinate, rectangular cartesian, real, #Components=3
 ... field data specific to nodes or elements ...
 </pre>
-<p>The above header declares a field with the name &quot;coordinates&quot;. The field is tagged as usage type &quot;coordinate&quot; - this is a hint which tells cmgui that this field is appropriate for use as a coordinate field. Other values for this hint are &quot;anatomical&quot; for special fibre fields, and &quot;field&quot; for all other fields. By default, cmgui will use the first coordinate field in alphabetical name order for the coordinates of graphics. The coordinates declared in this header are embedded in a rectangular Cartesian coordinate system with 3 real-valued components. The rectangular Cartesian coordinate system is assumed if none is specified. The value type real is frequently omitted as it is the default; other types such as integer, string and element_xi are only usable in node fields and integer for grid-based element fields. More complex declarations are given throughout this document. Note that if there is no header or the header has "#Fields=0", then nodes and elements can be defined or listed for adding to a group without defining fields.</p>
+<p>The above header declares a field with the name &quot;coordinates&quot;. The field is tagged as usage type &quot;coordinate&quot; - this is a hint which tells cmgui that this field is appropriate for use as a coordinate field. Other values for this hint are &quot;anatomical&quot; for special fibre fields, and &quot;field&quot; for all other fields. By default, cmgui will use the first coordinate field in alphabetical name order for the coordinates of graphics. The coordinates declared in this header are embedded in a rectangular Cartesian coordinate system with 3 real-valued components. The rectangular Cartesian coordinate system is assumed if none is specified. The value type real is frequently omitted as it is the default; other types such as integer, string and element_xi are only usable in node fields and integer for grid-based element fields. More complex declarations are given throughout this document. Note that if there is no header or the header has &quot;#Fields=0&quot;, then nodes and elements can be defined or listed for adding to a group without defining fields.</p>
 <p>Following each line declaring the main details of a field are the details on each field component including the name and the parameter values to be supplied with each node, or the basis functions and parameter mappings to be supplied with each element. These are described later.</p>
 <p>There can be only one field of a given name in a region, but it can be defined on nodes, elements and data in that region provided the field is consistently declared in the header, including same value type, numbers of components and component names.</p>
 <p>Note that the #Fields keyword in element field headers are additionally preceded by the following keywords and sub-blocks which are described in later examples:</p>
@@ -305,6 +305,7 @@ Shape. Dimension=4 simplex(2)*simplex*simplex(4)*simplex
 <h2><a class="toc-backref" href="#id16" id="cmgui-element-basis-functions" name="cmgui-element-basis-functions">Cmgui element basis functions</a></h2>
 <p>Basis functions are defined in cmgui ex format in a very similar manner to element shapes, by outer (tensor) product of the following functions along each xi axis:</p>
 <pre class="literal-block">
+constant                      constant
 l.Lagrange                    linear Lagrange
 q.Lagrange                    quadratic Lagrange
 c.Lagrange                    cubic Lagrange
@@ -324,6 +325,7 @@ c.Hermite*c.Hermite                           bicubic Hermite (4 nodes x 4 param
 l.simplex(2)*l.simplex                        linear triangle (3 nodes)
 q.simplex(2;3)*q.simplex*q.simplex    quadratic tetrahedron (10 nodes)
 c.Hermite*l.simplex(3)*l.simplex              cubic Hermite * linear triangle (6 nodes, 2 parameters per node)
+constant*constant*l.Lagrange          constant in xi1 and xi2, linearly varying in xi3
 </pre>
 <p>Most element bases have one basis functions per node which multiplies a single parameter obtained from that node. For instance, a linear Lagrange basis expects 2 nodes each with 1 parameter per field component. A bilinear Lagrange basis interpolates a single parameter from 4 nodes at the corners of a unit square. A 3-D linear-quadratic-cubic Lagrange element basis expects 2*3*4 nodes along the respective xi directions, with 1 basis function and one parameter for each node. A linear triangle has 3 nodes with 1 parameter each; a quadratic triangle has 6 nodes with 1 parameter.</p>
 <p>1-D Hermite bases provide 2 basis functions per node, expected to multiple two parameters: (1) the value of the field at the node, and (2) the derivative of that field value with respect to the xi coordinate. If this derivative is common across an element boundary then the field is C¬1 continuous there. Outer products of 1-D Hermite basis functions double the number of parameters per node for each Hermite term. A bicubic Hermite basis expect 4 nodes with 4 basis functions per node, multiplying 4 nodal parameters: (1) value of the field, (2) the derivative of the field with respect to the first xi direction, (3) the derivative with respect to the second xi direction and (4) the double derivative of the field with respect to both directions referred to as the cross derivative. Tri-cubic Hermite bases have 8 basis functions per node, one multiplying the value, 3 for first derivatives, 3 for second (cross) derivatives and a final function multiplying a triple cross derivative parameter.</p>
@@ -799,8 +801,18 @@ Shape.  Dimension=3
 </ul>
 </div>
 <div class="section">
-<h2><a class="toc-backref" href="#id22" id="example-grid-based-element-fields" name="example-grid-based-element-fields">Example: grid-based element fields</a></h2>
-<p>Cmgui and its EX files also support storage of regular grids of real or integer values across elements. Only line based shapes are properly supported, i.e. lines, squares and cubes. Following is an excerpt from cmgui example a/aq &quot;element formats&quot;:</p>
+<h2><a class="toc-backref" href="#id22" id="example-per-element-constant-and-grid-based-element-fields" name="example-per-element-constant-and-grid-based-element-fields">Example: per-element constant and grid-based element fields</a></h2>
+<p>Cmgui and its EX files also support storage of regular grids of real or integer values across elements. The grid is assumed regular across N divisions on lines, N*M divisions on squares and N*M*P divisions on cubes.</p>
+<p>Per-element constants are a special case using constant bases together with 0 grid divisions. These have only been supported since Cmgui 2.7 (April 2010). See this extract from cmgui example a/element_constants:</p>
+<pre class="literal-block">
+1) temperature, field, rectangular cartesian, #Components=1
+ value. constant*constant*constant, no modify, grid based.
+ #xi1=0, #xi2=0, #xi3=0
+Element: 1 0 0
+  Values :
+  48.0
+</pre>
+<p>Linear Lagrange interpolation is used when there are 1 or more element divisions. Following is an excerpt from cmgui example a/aq &quot;element formats&quot;:</p>
 <pre class="literal-block">
 Group name: block
 Shape.  Dimension=3
@@ -843,7 +855,7 @@ Element: 1 0 0
 <p>Notes:</p>
 <ul class="simple">
 <li>&quot;#xi1=2, #xi2=3, #xi3=2&quot; actually refers to the number of divisions between grid points, so 3*4*3=36 values are read in, and represent values at the corners of the grid &quot;cells&quot;. If there are 2 divisions along an xi direction, values are held for xi=0.0, xi=0.5 and xi=1.0. Under each element, values are listed in order of location changing fastest along xi1, then along xi2, then along xi3.</li>
-<li>Only linear Lagrange bases are supported. The basis is irrelevant for integer-valued grids which choose the &quot;nearest value&quot;, so halfway between integer value 1 and 3 the field value jumps directly from 1 to 3.</li>
+<li>Only constant (for number-in-xi = 0) or linear Lagrange bases are supported. The basis is irrelevant for integer-valued grids which choose the &quot;nearest value&quot;, so halfway between integer value 1 and 3 the field value jumps directly from 1 to 3.</li>
 <li>Grid point values along boundaries of adjacent elements must be repeated in each element.</li>
 </ul>
 </div>

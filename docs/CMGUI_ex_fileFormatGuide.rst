@@ -325,6 +325,7 @@ Cmgui element basis functions
 
 Basis functions are defined in cmgui ex format in a very similar manner to element shapes, by outer (tensor) product of the following functions along each xi axis::
 
+  constant			constant
   l.Lagrange			linear Lagrange
   q.Lagrange			quadratic Lagrange
   c.Lagrange			cubic Lagrange
@@ -346,6 +347,7 @@ Some example element bases::
   l.simplex(2)*l.simplex			linear triangle (3 nodes)
   q.simplex(2;3)*q.simplex*q.simplex	quadratic tetrahedron (10 nodes)
   c.Hermite*l.simplex(3)*l.simplex		cubic Hermite * linear triangle (6 nodes, 2 parameters per node)
+  constant*constant*l.Lagrange		constant in xi1 and xi2, linearly varying in xi3
 
 Most element bases have one basis functions per node which multiplies a single parameter obtained from that node. For instance, a linear Lagrange basis expects 2 nodes each with 1 parameter per field component. A bilinear Lagrange basis interpolates a single parameter from 4 nodes at the corners of a unit square. A 3-D linear-quadratic-cubic Lagrange element basis expects 2*3*4 nodes along the respective xi directions, with 1 basis function and one parameter for each node. A linear triangle has 3 nodes with 1 parameter each; a quadratic triangle has 6 nodes with 1 parameter.
 
@@ -841,10 +843,21 @@ Notes:
 
 *	Note how all the scale factors for the tri-linear Lagrange basis are equal to 1.0.
 
-Example: grid-based element fields
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Example: per-element constant and grid-based element fields
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Cmgui and its EX files also support storage of regular grids of real or integer values across elements. Only line based shapes are properly supported, i.e. lines, squares and cubes. Following is an excerpt from cmgui example a/aq "element formats"::
+Cmgui and its EX files also support storage of regular grids of real or integer values across elements. The grid is assumed regular across N divisions on lines, N*M divisions on squares and N*M*P divisions on cubes.
+
+Per-element constants are a special case using constant bases together with 0 grid divisions. These have only been supported since Cmgui 2.7 (April 2010). See this extract from cmgui example a/element_constants::
+
+  1) temperature, field, rectangular cartesian, #Components=1
+   value. constant*constant*constant, no modify, grid based.
+   #xi1=0, #xi2=0, #xi3=0
+  Element: 1 0 0
+    Values :
+    48.0
+
+Linear Lagrange interpolation is used when there are 1 or more element divisions. Following is an excerpt from cmgui example a/aq "element formats"::
 
   Group name: block
   Shape.  Dimension=3
@@ -888,7 +901,7 @@ Notes:
 
 *	"#xi1=2, #xi2=3, #xi3=2" actually refers to the number of divisions between grid points, so 3*4*3=36 values are read in, and represent values at the corners of the grid "cells". If there are 2 divisions along an xi direction, values are held for xi=0.0, xi=0.5 and xi=1.0. Under each element, values are listed in order of location changing fastest along xi1, then along xi2, then along xi3.
 
-*	Only linear Lagrange bases are supported. The basis is irrelevant for integer-valued grids which choose the "nearest value", so halfway between integer value 1 and 3 the field value jumps directly from 1 to 3.
+*	Only constant (for number-in-xi = 0) or linear Lagrange bases are supported. The basis is irrelevant for integer-valued grids which choose the "nearest value", so halfway between integer value 1 and 3 the field value jumps directly from 1 to 3.
 
 *	Grid point values along boundaries of adjacent elements must be repeated in each element.
 
