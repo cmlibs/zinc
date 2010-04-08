@@ -1675,8 +1675,6 @@ array is enlarged if necessary and the new points added at random locations.
 							FE_value xi0, xi1, xi2;
 							for (j = 0; j < number_of_points_in_cube; j++)
 							{
-								float temp = CMGUI_RANDOM(float);
-								USE_PARAMETER(temp);
 								xi0 = centre_xi1 + dxi1*(CMGUI_RANDOM(float) - (float)xi_offset[0]);
 								xi1 = centre_xi2 + dxi2*(CMGUI_RANDOM(float) - (float)xi_offset[1]);
 								xi2 = centre_xi3 + dxi2*(CMGUI_RANDOM(float) - (float)xi_offset[2]);
