@@ -32662,12 +32662,10 @@ component will be calculated if 0<=component_number<number of components. For a
 single component, the value will be put in the first position of <values>.
 ==============================================================================*/
 {
-	int cn,comp_no,components_to_calculate,i,*number_in_xi,number_of_xi_coordinates,
-		offset,return_code,size,this_comp_no,xi_offset;
-	int *calculated_value;
+	int cn,comp_no,components_to_calculate,*element_int_values,i,*number_in_xi,
+		number_of_xi_coordinates,offset,return_code,this_comp_no,xi_offset;
 	FE_value xi_coordinate;
 	struct FE_field *field;
-	Value_storage **component_grid_values_storage,*element_values_storage;
 
 	ENTER(calculate_FE_element_field_int_values);
 	return_code=0;
@@ -32755,44 +32753,26 @@ single component, the value will be put in the first position of <values>.
 					number_in_xi = element_field_values->component_number_in_xi[this_comp_no];
 					if (number_in_xi)
 					{
-						/* grid based - get nearest value for INT_VALUE */
+						/* for integer, get value at nearest grid point */
 						return_code=1;
 						offset=element_field_values->component_base_grid_offset[this_comp_no];
 						for (i=0;(i<number_of_xi_coordinates)&&return_code;i++)
 						{
 							xi_coordinate=xi_coordinates[i];
-							if ((0<=xi_coordinate)&&(xi_coordinate<=1))
+							if (xi_coordinate < 0.0)
 							{
-								/* get nearest xi_offset */
-								xi_offset=(int)floor(
-									(double)number_in_xi[i]*(double)xi_coordinate+0.5);
-								offset += xi_offset*element_field_values->component_grid_offset_in_xi[this_comp_no][i];
+								xi_coordinate = 0.0;
 							}
-							else
+							else if (xi_coordinate > 1.0)
 							{
-								display_message(ERROR_MESSAGE,
-									"calculate_FE_element_field_int_values.  "
-									"Xi must be from 0 to 1");
-								return_code=0;
+								xi_coordinate = 1.0;
 							}
+							/* get nearest xi_offset */
+							xi_offset=(int)floor((double)number_in_xi[i]*(double)xi_coordinate+0.5);
+							offset += xi_offset*element_field_values->component_grid_offset_in_xi[this_comp_no][i];
 						}
-						if (return_code)
-						{
-							size=get_Value_storage_size(field->value_type,
-								(struct FE_time_sequence *)NULL);
-							component_grid_values_storage=
-								element_field_values->component_grid_values_storage;
-							calculated_value=values;
-							component_grid_values_storage += comp_no;
-							for (i=0;i<components_to_calculate;i++)
-							{
-								element_values_storage=
-									(*component_grid_values_storage)+size*offset;
-								*calculated_value = *((int *)element_values_storage);
-								calculated_value++;
-								component_grid_values_storage++;
-							}
-						}
+						element_int_values = (int *)element_field_values->component_grid_values_storage[this_comp_no];
+						values[cn] = element_int_values[offset];
 					}
 					else
 					{
