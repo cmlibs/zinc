@@ -1669,6 +1669,35 @@ array is enlarged if necessary and the new points added at random locations.
 #endif /* defined (DEBUG) */
 							}
 						} break;
+						case ELEMENT_CATEGORY_3D_TRIANGLE_LINE:
+						{
+							xi = *xi_points + (*number_of_xi_points);
+							FE_value xi0, xi1, xi2;
+							for (j = 0; j < number_of_points_in_cube; j++)
+							{
+								float temp = CMGUI_RANDOM(float);
+								USE_PARAMETER(temp);
+								xi0 = centre_xi1 + dxi1*(CMGUI_RANDOM(float) - (float)xi_offset[0]);
+								xi1 = centre_xi2 + dxi2*(CMGUI_RANDOM(float) - (float)xi_offset[1]);
+								xi2 = centre_xi3 + dxi2*(CMGUI_RANDOM(float) - (float)xi_offset[2]);
+								if (((float)xi_offset[0] == (float)0.5 && xi1 + xi2 < 1.0) ||
+									((float)xi_offset[1] == (float)0.5 && xi0 + xi2 < 1.0) ||
+									((float)xi_offset[2] == (float)0.5 && xi0 + xi1 < 1.0))
+								{
+									(*xi)[0] = xi0;
+									(*xi)[1] = xi1;
+									(*xi)[2] = xi2;
+									xi++;
+									(*number_of_xi_points)++;
+								}
+#if defined (DEBUG)
+.								/*???debug*/
+								printf("FE_element_add_xi_points_3d_cube_cell_random.  "
+									"xi(%d) = %6.3f %6.3f %6.3f\n", *number_of_xi_points,
+									xi0, xi1, xi2);
+#endif /* defined (DEBUG) */
+							}
+						} break;
 						default:
 						{
 							display_message(ERROR_MESSAGE,
@@ -1830,6 +1859,7 @@ comments for simplex and polygons shapes for more details.
 					}
 					dxi[0] = 1.0 / (FE_value)number_in_xi_simplex;
 					dxi[1] = 1.0 / (FE_value)number_in_xi_simplex;
+					dxi[2] = 1.0 / (FE_value)number_in_xi_simplex;
 					int number_in_xi0 = 0;
 					xi_offset[0] = (FE_value)(1.0/3.0);
 					xi_offset[1] = (FE_value)(1.0/3.0);
@@ -1923,10 +1953,60 @@ comments for simplex and polygons shapes for more details.
 				} break;
 				case ELEMENT_CATEGORY_3D_TRIANGLE_LINE:
 				{
-					display_message(ERROR_MESSAGE,
-						"FE_element_get_xi_points_cell_random.  "
-						"Not implemented for ELEMENT_CATEGORY_3D_TRIANGLE_LINE");
-					return_code = 0;
+					int number_in_xi_simplex = number_in_xi[linked_xi_directions[0]];
+					if (number_in_xi[linked_xi_directions[1]] > number_in_xi_simplex)
+					{
+						number_in_xi_simplex = number_in_xi[linked_xi_directions[1]];
+					}
+
+					float xi_j, xi_k;
+					int	number_in_xi0 = 0;
+					dxi[0] = 1.0 / (FE_value)number_in_xi_simplex;
+					dxi[1] = 1.0 / (FE_value)number_in_xi_simplex;
+					dxi[2] = 1.0 / (FE_value)number_in_xi_simplex;
+					xi_offset[line_direction] = (FE_value)0.5;
+					for (k = 0; k < number_in_xi[line_direction]; k++)
+					{
+						xi_offset[linked_xi_directions[0]] = (FE_value)(1.0/3.0);
+						xi_offset[linked_xi_directions[1]] = (FE_value)(1.0/3.0);
+						xi_k = ((float)k + 0.5)/(float)number_in_xi[line_direction];
+						for (j = 0; j < number_in_xi_simplex; j++)
+						{
+							xi_j = ((float)j + (1.0/3.0))/(float)number_in_xi_simplex;
+							number_in_xi0 = number_in_xi_simplex - j;
+							for (i = 0; i < number_in_xi0; i++)
+							{
+								centre_xi[linked_xi_directions[0]] =
+									((float)i + (1.0/3.0))/(float)number_in_xi_simplex;
+								centre_xi[linked_xi_directions[1]] = xi_j;
+								centre_xi[line_direction] = xi_k;
+								return_code = FE_element_add_xi_points_3d_cube_cell_random(
+									element, xi_discretization_mode, element_shape_category, 
+									centre_xi, dxi, coordinate_field, density_field,
+									&number_of_xi_points, xi_points_address,
+									&number_of_xi_points_allocated, time, xi_offset);			
+							}
+						}
+						xi_offset[linked_xi_directions[0]] = (FE_value)(-1.0/3.0);
+						xi_offset[linked_xi_directions[1]] = (FE_value)(-1.0/3.0);
+						for (j = 1; j < number_in_xi_simplex; j++)
+						{
+							xi_j = ((float)j - (1.0/3.0))/(float)number_in_xi_simplex;
+							number_in_xi0 = number_in_xi_simplex - j + 1;
+							for (i = 1; i < number_in_xi0; i++)
+							{
+								centre_xi[linked_xi_directions[0]] =
+									((float)i - (1.0/3.0))/(float)number_in_xi_simplex;
+								centre_xi[linked_xi_directions[1]] = xi_j;
+								centre_xi[line_direction] = xi_k;
+								return_code = FE_element_add_xi_points_3d_cube_cell_random(
+									element, xi_discretization_mode, element_shape_category, 
+									centre_xi, dxi, coordinate_field, density_field,
+									&number_of_xi_points, xi_points_address,
+									&number_of_xi_points_allocated, time, xi_offset);	
+							}
+						}
+					}
 				} break;
 				case ELEMENT_CATEGORY_3D_POLYGON_LINE:
 				{
