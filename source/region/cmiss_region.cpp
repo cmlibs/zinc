@@ -1764,6 +1764,7 @@ This function is only externally visible to context objects.
 	return (any_object_list);
 } /* Cmiss_region_private_get_any_object_list */
 
+#if defined (OLD_CODE)
 Cmiss_field_id Cmiss_region_add_field(Cmiss_region_id region,
 	Cmiss_field_id field)
 {
@@ -1776,7 +1777,7 @@ Cmiss_field_id Cmiss_region_add_field(Cmiss_region_id region,
 	{
 		if (Computed_field_check_manager(field, &manager))
 		{
-			if (!Computed_field_manage(field, manager, COMPUTED_FIELD_MANAGED_PUBLIC))
+			if (!Computed_field_manage(field, manager, COMPUTED_FIELD_MANAGED_PERSISTENT_BIT))
 			{
 				field = (struct Cmiss_field *)NULL;
 				display_message(ERROR_MESSAGE,
@@ -1800,6 +1801,7 @@ Cmiss_field_id Cmiss_region_add_field(Cmiss_region_id region,
 
 	return (field);
 } /* Cmiss_region_add_field */
+#endif /* defined (OLD_CODE) */
 
 int Cmiss_region_is_group(struct Cmiss_region *region)
 {

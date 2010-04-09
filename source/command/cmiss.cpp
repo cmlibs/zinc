@@ -9582,7 +9582,7 @@ Executes a GFX DESTROY FIELD command.
 						if (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(field,
 							Cmiss_region_get_Computed_field_manager(region)))
 						{
-							Computed_field_set_managed_status(field, COMPUTED_FIELD_MANAGED_PRIVATE_VOLATILE);
+							Cmiss_field_set_persistent(field, 0);
 							if (Computed_field_is_type_finite_element(field))
 							{
 								// also clean up FE_field

@@ -220,23 +220,47 @@ LAST MODIFIED : 18 July 2000
 DESCRIPTION :
 ==============================================================================*/
 
-int Cmiss_field_get_name(Cmiss_field_id field,
-	char **name);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2008
+/***************************************************************************//**
+ * Return the name of the field. 
+ * 
+ * @param field  The field whose name is requested.
+ * @return  On success: allocated string containing field name.
+ */
+char *Cmiss_field_get_name(Cmiss_field_id field);
 
-DESCRIPTION :
-Get the name of a field.
-==============================================================================*/
+/***************************************************************************//**
+ * Set the name of the field.
+ * Fails if the new name is in use by any other field in the same field module.
+ * 
+ * @param field  The field to be named.
+ * @param name  The new name for the field.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_set_name(Cmiss_field_id field, const char *name);
 
-int Cmiss_field_set_name(Cmiss_field_id field,
-	const char *name);
-/*******************************************************************************
-LAST MODIFIED : 17 April 2008
+/***************************************************************************//**
+ * Returns the persistent property flag of the field.
+ *
+ * @see Cmiss_field_set_persistent
+ * @param field  The field to query.
+ * @return  1 if field is persistent, 0 if non-persistent.
+ */
+int Cmiss_field_get_persistent(Cmiss_field_id field);
 
-DESCRIPTION :
-Change the name of a field.
-==============================================================================*/
+/***************************************************************************//**
+ * Sets the persistent property flag of the field.
+ * Default setting persistent=0 means the field is destroyed when the number of
+ * external references to it, including use as a source for other fields, drops
+ * to zero.
+ * Setting persistent=1 means the field exists in field module even if no
+ * external references to it are held, whence it can be found by name or other
+ * search criteria.
+ * 
+ * @param field  The field to set the persistent flag for.
+ * @param persistent  Non-zero for persistent, 0 for non-persistent.
+ * @return  1 on success, 0 on failure.
+ */
+int Cmiss_field_set_persistent(Cmiss_field_id field, int persistent);
 
 int Cmiss_field_finite_element_set_string_at_node(
 	Cmiss_field_id field, int component_number, Cmiss_node_id node,

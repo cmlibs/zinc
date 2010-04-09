@@ -4831,7 +4831,7 @@ int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 						Cmiss_field_module_set_coordinate_system(field_module, *coordinate_system);
 					}
 				}
-				Cmiss_field_module_set_managed_status(field_module, COMPUTED_FIELD_MANAGED_PUBLIC);
+				Cmiss_field_module_set_managed_status(field_module, COMPUTED_FIELD_MANAGED_PERSISTENT_BIT);
 				// this is the only function allowed to modify read-only fields: clear flag to permit & restory later
 				if (existing_wrapper)
 				{
@@ -4918,7 +4918,7 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 					Cmiss_field_module *field_module =
 						Cmiss_field_module_create(cmiss_region);
 					Cmiss_field_module_set_field_name(field_module, "cmiss_number");
-					Cmiss_field_module_set_managed_status(field_module, COMPUTED_FIELD_MANAGED_PUBLIC);
+					Cmiss_field_module_set_managed_status(field_module, COMPUTED_FIELD_MANAGED_PERSISTENT_BIT);
 					field = Computed_field_create_cmiss_number(field_module);
 					Computed_field_set_read_only(field);
 					DEACCESS(Computed_field)(&field);
@@ -4934,7 +4934,7 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 					Cmiss_field_module *field_module =
 						Cmiss_field_module_create(cmiss_region);
 					Cmiss_field_module_set_field_name(field_module, "xi");
-					Cmiss_field_module_set_managed_status(field_module, COMPUTED_FIELD_MANAGED_PUBLIC);
+					Cmiss_field_module_set_managed_status(field_module, COMPUTED_FIELD_MANAGED_PERSISTENT_BIT);
 					field = Computed_field_create_xi_coordinates(field_module);
 					Computed_field_set_read_only(field);
 					DEACCESS(Computed_field)(&field);
@@ -5483,7 +5483,7 @@ Currently only used by unemap_3d; be careful about ever using again.
 			if (computed_field)
 			{
 				ACCESS(Computed_field)(computed_field);
-				Computed_field_set_managed_status(computed_field, COMPUTED_FIELD_MANAGED_PRIVATE_VOLATILE);
+				Cmiss_field_set_persistent(computed_field, 0);
 			}
 			return_code = FE_region_remove_FE_field(fe_region, fe_field);
 			if (computed_field)

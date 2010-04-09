@@ -513,9 +513,7 @@ COMPUTED_FIELD_INVALID with no components.
 			field->access_count = 0;
 
 			field->manager = (struct MANAGER(Computed_field) *)NULL;
-			/* fields default to publicly managed to support all the old code that
-			 * directly adds them to the manager without going through the region */ 
-			field->managed_status = COMPUTED_FIELD_MANAGED_PUBLIC;
+			field->managed_status = COMPUTED_FIELD_MANAGED_STATUS_DEFAULT;
 		}
 		else
 		{
@@ -603,7 +601,7 @@ PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Computed_field)
 			return_code = DESTROY(Computed_field)(object_address);
 		}
 		else if ((1 == object->access_count) && object->manager &&
-			(object->managed_status & COMPUTED_FIELD_REMOVE_IF_UNUSED_BIT))
+			!(object->managed_status & COMPUTED_FIELD_MANAGED_PERSISTENT_BIT))
 		{
 			return_code = REMOVE_OBJECT_FROM_MANAGER(Computed_field)
 				(object, object->manager);
@@ -3907,7 +3905,7 @@ options for the various types.
 						Cmiss_field_module *field_module =
 							Cmiss_field_module_create(region);
 						Cmiss_field_module_set_managed_status(field_module,
-							COMPUTED_FIELD_MANAGED_PUBLIC);
+							COMPUTED_FIELD_MANAGED_PERSISTENT_BIT);
 						if (field_name && (strlen(field_name) > 0) &&
 							(strchr(field_name, CMISS_REGION_PATH_SEPARATOR_CHAR)	== NULL))
 						{
@@ -4839,6 +4837,40 @@ for matrix operations.
 	return (return_code);
 } /* Computed_field_broadcast_field_components */
 
+int Cmiss_field_get_persistent(Cmiss_field_id field)
+{
+	int persistent = 0;
+	if (field && (field->managed_status | COMPUTED_FIELD_MANAGED_PERSISTENT_BIT))
+	{
+		persistent = 1;
+	}
+	return (persistent);
+}
+
+int Cmiss_field_set_persistent(Cmiss_field_id field, int persistent)
+{
+	int return_code;
+	if (field)
+	{
+		int new_status = field->managed_status;
+		if (persistent)
+		{
+			new_status |= COMPUTED_FIELD_MANAGED_PERSISTENT_BIT;
+		}
+		else
+		{
+			new_status &= ~COMPUTED_FIELD_MANAGED_PERSISTENT_BIT;
+		}
+		return_code = Computed_field_set_managed_status(field,
+			static_cast<Computed_field_managed_status>(new_status));
+	}
+	else
+	{
+		return_code = 0;
+	}
+	return (return_code);
+}
+
 int Computed_field_set_managed_status(
 	struct Computed_field *field, enum Computed_field_managed_status managed_status) 
 {
@@ -4846,8 +4878,8 @@ int Computed_field_set_managed_status(
 
 	ENTER(Computed_field_set_managed_status);
 	if (field &&
-		((managed_status == COMPUTED_FIELD_MANAGED_PUBLIC) ||
-		(managed_status == COMPUTED_FIELD_MANAGED_PRIVATE_VOLATILE)))
+		((managed_status == COMPUTED_FIELD_MANAGED_STATUS_DEFAULT) ||
+		(managed_status == COMPUTED_FIELD_MANAGED_PERSISTENT_BIT)))
 	{
 		if (managed_status != field->managed_status)
 		{
@@ -4980,7 +5012,7 @@ struct Cmiss_region *Computed_field_manager_get_region(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_region_add_field.  Missing field");
+			"Computed_field_manager_get_region.  Missing field");
 	}
 	LEAVE;
 
@@ -5122,12 +5154,11 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
 						number++;
 					}
 					while (FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(field_name, manager));
-					if (managed_status == COMPUTED_FIELD_MANAGED_PUBLIC)
-					{
-						display_message(WARNING_MESSAGE, "Computed_field_add_to_manager_private.  "
-							"Renaming field from %s to %s as name already in use.",
-							field->name, field_name);
-					}
+#if defined (OLD_CODE)
+					display_message(WARNING_MESSAGE, "Computed_field_add_to_manager_private.  "
+						"Renaming field from %s to %s as name already in use.",
+						field->name, field_name);
+#endif /* defined (OLD_CODE) */
 					Computed_field_set_name(field, field_name);
 					DEALLOCATE(field_name);
 				}
@@ -5222,7 +5253,7 @@ int Computed_field_core::manage_source_fields(MANAGER(Computed_field) *manager)
 		for (int i = 0; (i < field->number_of_source_fields) && return_code; i++)
 		{
 			return_code = Computed_field_manage_recursive(field->source_fields[i],
-				manager, COMPUTED_FIELD_MANAGED_PRIVATE_VOLATILE); 
+				manager, COMPUTED_FIELD_MANAGED_STATUS_DEFAULT); 
 		}
 	}
 	else
@@ -5277,7 +5308,7 @@ struct Cmiss_field_module *Cmiss_field_module_create(struct Cmiss_region *region
 		{
 			field_module->region = ACCESS(Cmiss_region)(region);
 			field_module->field_name = (char *)NULL;
-			field_module->managed_status = COMPUTED_FIELD_MANAGED_PRIVATE_VOLATILE;
+			field_module->managed_status = COMPUTED_FIELD_MANAGED_STATUS_DEFAULT;
 			field_module->replace_field = (Computed_field *)NULL;
 			field_module->coordinate_system.type = RECTANGULAR_CARTESIAN;
 			field_module->coordinate_system_override = 0;
@@ -5458,7 +5489,7 @@ enum Computed_field_managed_status Cmiss_field_module_get_managed_status(
 	{
 		return field_module->managed_status;
 	}
-	return COMPUTED_FIELD_UNMANAGED;
+	return COMPUTED_FIELD_MANAGED_STATUS_DEFAULT;
 }
 
 int Cmiss_field_module_set_replace_field(

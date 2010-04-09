@@ -103,21 +103,10 @@ DESCRIPTION :
 /** Mode/flags controlling how a field is managed by a region. */
 enum Computed_field_managed_status
 {
-	/** If bit set, remove from region when unused / access_count reduced to 1 */
-	COMPUTED_FIELD_REMOVE_IF_UNUSED_BIT = 4,
+	COMPUTED_FIELD_MANAGED_STATUS_DEFAULT = 0,
 
-	/** Field is not managed by a region */
-	COMPUTED_FIELD_UNMANAGED = 0,
-
-	/** Field is managed by region with public visibility */
-	COMPUTED_FIELD_MANAGED_PUBLIC = 1,
-
-	/** Field is managed by region with private visibility */
-	COMPUTED_FIELD_MANAGED_PRIVATE = 3,
-
-	/** Field is managed by region with private visibility, and is volatile */
-	COMPUTED_FIELD_MANAGED_PRIVATE_VOLATILE =
-		COMPUTED_FIELD_MANAGED_PRIVATE + COMPUTED_FIELD_REMOVE_IF_UNUSED_BIT
+	/** If NOT set, remove from region when unused / access_count reduced to 1 */
+	COMPUTED_FIELD_MANAGED_PERSISTENT_BIT = 1
 };
 
 DECLARE_LIST_TYPES(Computed_field);
@@ -992,6 +981,8 @@ be destroyed, assuming it is only accessed by this field and its manager.
 
 /***************************************************************************//**
  * Set mode controlling visibility and lifetime of field in its region.
+ * Deprecated: use Cmiss_field_set_persistent.
+ * @see Cmiss_field_set_persistent
  */
 int Computed_field_set_managed_status(struct Computed_field *field,
 	enum Computed_field_managed_status managed_status); 

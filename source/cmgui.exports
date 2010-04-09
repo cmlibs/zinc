@@ -102,8 +102,10 @@ Cmiss_field_evaluate_at_node
 Cmiss_field_evaluate_as_string_at_node
 Cmiss_field_is_defined_at_node
 Cmiss_field_evaluate_at_field_coordinates
-Cmiss_field_set_name
 Cmiss_field_get_name
+Cmiss_field_set_name
+Cmiss_field_get_persistent
+Cmiss_field_set_persistent
 
 Cmiss_field_module_access
 Cmiss_field_module_destroy

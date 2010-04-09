@@ -326,25 +326,14 @@ number_of_components.
 	return (return_code);
 } /* Cmiss_field_evaluate_at_field_coordinates */
 
-int Cmiss_field_get_name(Cmiss_field_id field,
-	char **name)
-/*******************************************************************************
-LAST MODIFIED : 21 April 2008
-
-DESCRIPTION :
-Get the name of a field.
-==============================================================================*/
+char *Cmiss_field_get_name(Cmiss_field_id field)
 {
-	return GET_NAME(Computed_field)(field, name);
+	char *name = NULL;
+	GET_NAME(Computed_field)(field, &name);
+	return (name);
 }
 
 int Cmiss_field_set_name(Cmiss_field_id field, const char *name)
-/*******************************************************************************
-LAST MODIFIED : 18 January 2007
-
-DESCRIPTION :
-Change the name of a field.
-==============================================================================*/
 {
 	int return_code;
 
