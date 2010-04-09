@@ -379,6 +379,7 @@ access_Interactive_event
 deaccess_Interactive_event
 Scene_viewer_get_scene
 
+Cmiss_material_get_name
 Cmiss_material_set_name
 Cmiss_material_set_alpha
 Cmiss_material_set_shininess
@@ -387,7 +388,8 @@ Cmiss_material_set_diffuse
 Cmiss_material_set_emission
 Cmiss_material_set_specular
 Cmiss_material_set_texture
-Cmiss_material_set_volatile
+Cmiss_material_set_persistent
+Cmiss_material_get_persistent
 Cmiss_material_access
 Cmiss_material_destroy
 

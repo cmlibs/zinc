@@ -86,6 +86,11 @@ public:
 		return Cmiss_material_set_name(id, name);
 	}
 
+	const char *getName()
+	{
+		return Cmiss_material_get_name(id);
+	}
+
 	int setAlpha(float alpha)
 	{
 		return Cmiss_material_set_alpha(id, alpha);
@@ -115,6 +120,17 @@ public:
 	{
 		return Cmiss_material_set_specular(id, red, green, blue);
 	}
+
+	int setPersistent(int persistent_flag)
+	{
+		return Cmiss_material_set_persistent(id,persistent_flag);
+	}
+
+	int getPersistent()
+	{
+		return Cmiss_material_get_persistent(id);
+	}
+
 
 };
 

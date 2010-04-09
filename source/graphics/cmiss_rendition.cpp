@@ -69,7 +69,6 @@ struct Cmiss_graphics_module
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct Spectrum *default_spectrum;
 	struct MANAGER(Texture) *texture_manager; 
-	struct Time_keeper *default_time_keeper;
 	struct MANAGER(Scene) *scene_manager;
 	struct Scene *default_scene;
 	struct Light_model *default_light_model;
@@ -96,7 +95,6 @@ struct Cmiss_graphics_module *Cmiss_graphics_module_create(
 			module->default_font = NULL;
 			module->default_light = NULL;
 			module->default_spectrum = NULL;
-			module->default_time_keeper = NULL;
 			module->graphics_object_list=NULL;
 			module->graphics_font_package = NULL;
 			module->default_scene = NULL;
@@ -220,8 +218,6 @@ int Cmiss_graphics_module_destroy(
 				DESTROY(MANAGER(Texture))(&graphics_module->texture_manager);
 			if (graphics_module->graphics_font_package)
 				DESTROY(Graphics_font_package)(&graphics_module->graphics_font_package);
-			if (graphics_module->default_time_keeper)
-				DEACCESS(Time_keeper)(&graphics_module->default_time_keeper);
 			DEALLOCATE(*graphics_module_address);
 		}
 		*graphics_module_address = NULL;

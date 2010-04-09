@@ -174,16 +174,28 @@ int Cmiss_material_set_texture(
 	Cmiss_material_id material, Cmiss_texture_id texture);
 
 /***************************************************************************//**
- * The volatile flag determine how the material is destroyed. If a material 
- * is volatile upon destroyed, it will also be removed from the graphics_module 
- * but if volatile flag is 0 then material will remain in the graphics_module.
- *
- * @warning  This function is under development and may subject to change.
- * @param material  handle to the" cmiss material.
- * @return  1 if successfully set the volatile flag, otherwise 0.
- */
-int Cmiss_material_set_volatile(
-	Cmiss_material_id material, int volatile_flag);
+* Sets the persistent property flag of the material;.
+* Default setting persistent=0 means the material is destroyed when the number of
+* external references to it, including use as a source for other objects, drops
+* to zero.
+* Setting persistent=1 means the material exists in graphics module even if no
+* external references to it are held, whence it can be found by name or other
+* search criteria.
+*
+* @param material  The material to set the persistent flag for.
+* @param persistent  Non-zero for persistent, 0 for non-persistent.
+* @return  1 on success, 0 on failure.
+*/ 
+int Cmiss_material_set_persistent(Cmiss_material_id material, int persistent_flag);
+
+/***************************************************************************//**
+* Returns the persistent property flag of the material.
+*
+* @see Cmiss_material_set_persistent
+* @param material  The material to query.
+* @return  1 if material is persistent, 0 if non-persistent.
+*/ 
+int Cmiss_material_get_persistent(Cmiss_material_id material);
 
 /***************************************************************************//**
  * Access the material, increase the access count of the material by one.
@@ -201,4 +213,12 @@ Cmiss_material_id Cmiss_material_access(Cmiss_material_id material);
  * @return  1 if successfully destroy material, otherwise 0.
  */
 int Cmiss_material_destroy(Cmiss_material_id *material);
+
+/***************************************************************************//**
+ * Return an allocated string with the material name.
+ *
+ * @param material  handle to the cmiss material.
+ * @return  allocated string with the material name, otherwise NULL.
+ */
+const char *Cmiss_material_get_name(Cmiss_material_id material);
 #endif
