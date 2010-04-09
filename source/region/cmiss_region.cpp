@@ -678,7 +678,7 @@ Region is created with an access_count of 1; DEACCESS to destroy.
 {
 	struct Cmiss_region *region;
 
-	ENTER(Cmiss_region_create);
+	ENTER(Cmiss_region_create_internal);
 	region = CREATE(Cmiss_region)();
 	if (!region || !Cmiss_region_attach_fields(region,/*master_region*/NULL,
 		CMISS_REGION_SHARE_BASES_SHAPES))
@@ -688,7 +688,7 @@ Region is created with an access_count of 1; DEACCESS to destroy.
 	LEAVE;
 
 	return (region);
-} /* Cmiss_region_create */
+} /* Cmiss_region_create_internal */
 
 struct Cmiss_region *Cmiss_region_create_group(
 	struct Cmiss_region *master_region)

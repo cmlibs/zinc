@@ -46,45 +46,43 @@ typedef struct Cmiss_graphics_module * Cmiss_graphics_module_id;
 #endif /* CMISS_GRAPHICS_MODULE_ID_DEFINED */
 
 /***************************************************************************//**
- * Get the material with <name> from graphics_module if graphics_module has
- * an existing material with the name provided.
+ * Find the material with the supplied name in graphics module, if any.
  *
- * @param graphics_module  The handle to cmiss grpahics package, it contains
- *   internal cmgui structure required by cmiss_graphical_material.
+ * @param graphics_module  The handle to the graphics module to find the
+ * material in.
  * @param name  The name of the material.
- * @return  1 if successfully get material, otherwise 0.
+ * @return  Handle to the material with that name, or NULL if not found.
  */
 Cmiss_material_id Cmiss_graphics_module_find_material_by_name(
 	Cmiss_graphics_module_id graphics_module, const char *name);
 
 /***************************************************************************//**
- * Create a new cmiss graphic material. This new material will be returned and 
- * put in the Cmiss_graphic_package. User can also get the handle to the created
- * material through Cmiss_material_get_with_name function.
+ * Create and return a handle to a new graphics material.
  *
- * @param graphics_module  The handle to cmiss grpahics package, it contains
- *   internal cmgui structure required by cmiss_graphical_material.
- * @param name  The name for the newly created material
- * @return  The newly created material if successfully created, otherwise NULL.
+ * @param graphics_module  The handle to the graphics module the material will
+ * belong to.
+ * @return  Handle to the newly created material if successful, otherwise NULL.
  */
 Cmiss_material_id Cmiss_graphics_module_create_material(
 	Cmiss_graphics_module_id graphics_module);
 
 /***************************************************************************//**
- * Access the graphics module , increase the access count of the module by one.
+ * Return an additional handle to the graphics module. Increments the
+ * internal 'access count' of the module.
  *
- * @param graphics_module  handle to the "to be accessed" graphics module.
- * @return  handle to graphics module.
+ * @param graphics_module  Existing handle to the graphics module.
+ * @return  Additional handle to graphics module.
  */
 Cmiss_graphics_module_id Cmiss_graphics_module_access(
 	Cmiss_graphics_module_id graphics_module);
 
 /***************************************************************************//**
- * Destroy the graphics module.
+ * Destroy this handle to the graphics module. The graphics module itself will
+ * only be destroyed when all handles to it are destroyed.
  *
- * @param graphics_module_address  address to the handle to the "to be destroyed" 
- *   graphics module.
- * @return  1 if successfully destroy graphics module, otherwise 0.
+ * @param graphics_module_address  Address of the graphics module handle to be
+ * destroyed. 
+ * @return  1 if handle is destroyed, otherwise 0.
  */
 int Cmiss_graphics_module_destroy(
 	Cmiss_graphics_module_id *graphics_module_address);

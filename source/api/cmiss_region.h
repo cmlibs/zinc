@@ -355,11 +355,11 @@ NULL otherwise.
 ==============================================================================*/
 
 /***************************************************************************//**
- * Creates and returns the reference to a region that uses basis_manager 
- * and shape_list from base_region.
+ * Creates and returns a reference to a region compatible with base_region,
+ * i.e. able to exist in the same region tree.
  *
- * @param base_region  The region from which the basis_manager and shape_list
- *    are used.
+ * @see Cmiss_context_create_region
+ * @param base_region  An existing region.
  * @return  Accessed reference to the newly created region, or NULL if none.
  */
 Cmiss_region_id Cmiss_region_create_region(Cmiss_region_id base_region);
@@ -370,10 +370,9 @@ Cmiss_region_id Cmiss_region_create_region(Cmiss_region_id base_region);
  * A valid region name must start with an alphanumeric character, contain only
  * alphanumeric characters, spaces ' ', dots '.', colons ':' or underscores '_',
  * and may not finish with a space.
- * Fails if the new name is already in use by another region in  parent region. 
+ * Fails if the new name is already in use by another region in parent region. 
  * 
- * @param parent_region  The region from which the basis_manager and shape_list
- *    are used.
+ * @param parent_region  The parent region for the new region.
  * @param name  The name for the newly created region
  * @return  Accessed reference to the newly created child region, or NULL if fails.
  */
@@ -381,10 +380,9 @@ Cmiss_region_id Cmiss_region_create_child(Cmiss_region_id parent_region,
 	const char *name);
 
 /***************************************************************************//**
- * Create and Returns the reference to the region at the specified path, 
+ * Create and return a reference to a region at the specified relative path, 
  * creating any intermediary regions if required.
- * Only creates true regions sharing basis_manager and shape_list with 
- * top_region.
+ * Fails if there is already a region at that relative path. 
  * 
  * @param top_region  The region the path is relative to.
  * @param path  Region path, a series of valid region names separated by the

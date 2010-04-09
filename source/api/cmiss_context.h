@@ -83,8 +83,8 @@ Cmiss_context_id Cmiss_context_access(Cmiss_context_id context);
 /***************************************************************************//**
  * Destroy a context.
  *
- * @param context_address  The address to the handle of the 
- *    to be destroyed Cmiss_ccontext.
+ * @param context_address  The address to the handle of the context
+ *    to be destroyed Cmiss_context.
  * @return  1 if successfully destroy Cmiss_context otherwise 0.
  */
 int Cmiss_context_destroy(Cmiss_context_id *context_address);
@@ -100,10 +100,10 @@ Cmiss_graphics_module_id Cmiss_context_get_default_graphics_module(
 	Cmiss_context_id context);
 
 /***************************************************************************//**
- * Create a new graphics module and returns the handle of it.
+ * Create a new graphics module and return the handle of it.
  *
  * @param context  Handle to a cmiss_context object.
- * @return  a newly created graphics_module if successfully called, otherwise 0.
+ * @return  A newly created graphics_module if successfully called, otherwise 0.
  */
 Cmiss_graphics_module_id Cmiss_context_create_graphics_module(Cmiss_context_id context);
 
@@ -117,10 +117,13 @@ Cmiss_graphics_module_id Cmiss_context_create_graphics_module(Cmiss_context_id c
 Cmiss_region_id Cmiss_context_get_default_region(Cmiss_context_id context);
 
 /***************************************************************************//**
- * Create a new region and returns the handle of it.
- *
+ * Create a new region and return a reference to it. Use this function to create
+ * a region forming the root of an independent region tree. To create regions
+ * for addition to an existing region tree, use Cmiss_region_create_region.
+ * 
+ * @see Cmiss_region_create_region
  * @param context  Handle to a cmiss_context object.
- * @return  a newly created region if successfully called, otherwise 0.
+ * @return  Reference to newly created region if successful, otherwise 0.
  */
 Cmiss_region_id Cmiss_context_create_region(Cmiss_context_id context);
 
@@ -128,7 +131,7 @@ Cmiss_region_id Cmiss_context_create_region(Cmiss_context_id context);
  * Enable the internal user interface in cmgui.
  *
  * @param context  Handle to a cmiss_context object.
- * @return  1 if successfully initialize user interface, otherwise 0.
+ * @return  1 if successfully initialized user interface, otherwise 0.
  */
 #if !defined (WIN32_USER_INTERFACE)
 int Cmiss_context_enable_user_interface(Cmiss_context_id context, 
@@ -141,11 +144,11 @@ int Cmiss_context_enable_user_interface(
 #endif
 
 /***************************************************************************//**
- * Execute cmgui command as in standalone cmgui.
+ * Execute cmgui command as in standalone cmgui application.
  *
  * @param context  Handle to a cmiss_context object.
- & @param command  Command to be executed.
- * @return  1 if successfully initialize user interface, otherwise 0.
+ * @param command  Command to be executed.
+ * @return  1 if command completed successfully, otherwise 0.
  */
 int Cmiss_context_execute_command(Cmiss_context_id context, 
 	const char *command);
