@@ -146,9 +146,9 @@ int Cmiss_material_set_specular(
 	return return_code;
 }
 
-const char *Cmiss_material_get_name(Cmiss_material_id material)
+char *Cmiss_material_get_name(Cmiss_material_id material)
 {
-	const char *name = NULL;
+	char *name = NULL;
 	if (material)
 	{
 		name = duplicate_string(Graphical_material_name(material));

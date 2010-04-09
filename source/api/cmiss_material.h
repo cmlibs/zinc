@@ -215,10 +215,10 @@ Cmiss_material_id Cmiss_material_access(Cmiss_material_id material);
 int Cmiss_material_destroy(Cmiss_material_id *material);
 
 /***************************************************************************//**
- * Return an allocated string with the material name.
+ * Return an allocated string containing material name.
  *
  * @param material  handle to the cmiss material.
- * @return  allocated string with the material name, otherwise NULL.
+ * @return  allocated string containing material name, otherwise NULL.
  */
-const char *Cmiss_material_get_name(Cmiss_material_id material);
+char *Cmiss_material_get_name(Cmiss_material_id material);
 #endif
