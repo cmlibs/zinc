@@ -86,7 +86,7 @@ public:
 		return Cmiss_material_set_name(id, name);
 	}
 
-	const char *getName()
+	char *getName()
 	{
 		return Cmiss_material_get_name(id);
 	}
