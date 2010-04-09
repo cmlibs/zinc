@@ -1446,8 +1446,8 @@ array is enlarged if necessary and the new points added at random locations.
 							FE_value xi0, xi1;
 							for (j = 0; j < number_of_points_in_square; j++)
 							{
-								xi0 = centre_xi1 + dxi1*(CMGUI_RANDOM(float) - (float)xi_offset[0]);
-								xi1 = centre_xi2 + dxi2*(CMGUI_RANDOM(float) - (float)xi_offset[1]);
+								xi0 = centre_xi1 + dxi1*(CMGUI_RANDOM(FE_value) - (FE_value)xi_offset[0]);
+								xi1 = centre_xi2 + dxi2*(CMGUI_RANDOM(FE_value) - (FE_value)xi_offset[1]);
 								if ((xi0 + xi1) < 1 )
 								{
 									(*xi)[0] = xi0;
@@ -1650,9 +1650,9 @@ array is enlarged if necessary and the new points added at random locations.
 							FE_value xi0, xi1, xi2;
 							for (j = 0; j < number_of_points_in_cube; j++)
 							{
-								xi0 = centre_xi1 + dxi1*(CMGUI_RANDOM(float) - (float)xi_offset[0]);
-								xi1 = centre_xi2 + dxi2*(CMGUI_RANDOM(float) - (float)xi_offset[1]);
-								xi2 = centre_xi3 + dxi2*(CMGUI_RANDOM(float) - (float)xi_offset[2]);
+								xi0 = centre_xi1 + dxi1*(CMGUI_RANDOM(FE_value) - xi_offset[0]);
+								xi1 = centre_xi2 + dxi2*(CMGUI_RANDOM(FE_value) - xi_offset[1]);
+								xi2 = centre_xi3 + dxi2*(CMGUI_RANDOM(FE_value) - xi_offset[2]);
 								if ((xi0 + xi1 + xi2) < 1 )
 								{
 									(*xi)[0] = xi0;
@@ -1672,24 +1672,43 @@ array is enlarged if necessary and the new points added at random locations.
 						case ELEMENT_CATEGORY_3D_TRIANGLE_LINE:
 						{
 							xi = *xi_points + (*number_of_xi_points);
-							FE_value xi0, xi1, xi2;
+							FE_value r1, r2, r3;
+							FE_value sign = ((xi_offset[0] < 0.0) || (xi_offset[1] < 0.0)) ? -1 : 1;
+							FE_value base_xi1 = centre_xi1 - dxi1*xi_offset[0];
+							FE_value base_xi2 = centre_xi2 - dxi2*xi_offset[1];
+							FE_value base_xi3 = centre_xi3 - dxi3*xi_offset[2];
+							FE_value signed_dxi1 = sign*dxi1;
+							FE_value signed_dxi2 = sign*dxi2;
+							FE_value signed_dxi3 = sign*dxi3;
+							if (xi_offset[0] == (FE_value)0.5)
+							{
+								signed_dxi1 = dxi1;
+							}
+							else if (xi_offset[1] == (FE_value)0.5)
+							{
+								signed_dxi2 = dxi2;
+							}
+							else // if (xi_offset[2] == (FE_value)0.5)
+							{
+								signed_dxi3 = dxi3;
+							}
 							for (j = 0; j < number_of_points_in_cube; j++)
 							{
-								xi0 = centre_xi1 + dxi1*(CMGUI_RANDOM(float) - (float)xi_offset[0]);
-								xi1 = centre_xi2 + dxi2*(CMGUI_RANDOM(float) - (float)xi_offset[1]);
-								xi2 = centre_xi3 + dxi2*(CMGUI_RANDOM(float) - (float)xi_offset[2]);
-								if (((float)xi_offset[0] == (float)0.5 && xi1 + xi2 < 1.0) ||
-									((float)xi_offset[1] == (float)0.5 && xi0 + xi2 < 1.0) ||
-									((float)xi_offset[2] == (float)0.5 && xi0 + xi1 < 1.0))
+								r1 = CMGUI_RANDOM(FE_value);
+								r2 = CMGUI_RANDOM(FE_value);
+								r3 = CMGUI_RANDOM(FE_value);
+								if (((xi_offset[0] == (FE_value)0.5) && (r2 + r3 < 1.0)) ||
+									((xi_offset[1] == (FE_value)0.5) && (r3 + r1 < 1.0)) ||
+									((xi_offset[2] == (FE_value)0.5) && (r1 + r2 < 1.0)))
 								{
-									(*xi)[0] = xi0;
-									(*xi)[1] = xi1;
-									(*xi)[2] = xi2;
+									(*xi)[0] = base_xi1 + signed_dxi1*r1;
+									(*xi)[1] = base_xi2 + signed_dxi2*r2;
+									(*xi)[2] = base_xi3 + signed_dxi3*r3;
 									xi++;
 									(*number_of_xi_points)++;
 								}
 #if defined (DEBUG)
-.								/*???debug*/
+								/*???debug*/
 								printf("FE_element_add_xi_points_3d_cube_cell_random.  "
 									"xi(%d) = %6.3f %6.3f %6.3f\n", *number_of_xi_points,
 									xi0, xi1, xi2);
@@ -1962,6 +1981,7 @@ comments for simplex and polygons shapes for more details.
 					dxi[0] = 1.0 / (FE_value)number_in_xi_simplex;
 					dxi[1] = 1.0 / (FE_value)number_in_xi_simplex;
 					dxi[2] = 1.0 / (FE_value)number_in_xi_simplex;
+					dxi[line_direction] = 1.0 / (FE_value)number_in_xi[line_direction];
 					xi_offset[line_direction] = (FE_value)0.5;
 					for (k = 0; k < number_in_xi[line_direction]; k++)
 					{
