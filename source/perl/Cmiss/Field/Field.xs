@@ -55,12 +55,13 @@ Cmiss_field_evaluate_at_node(Cmiss::Field field, Cmiss::Node node, float time)
 		}
 	}
 
-NO_OUTPUT int
-Cmiss_field_get_name(IN Cmiss::Field field, \
-	OUTLIST char *name)
+char *
+Cmiss_field_get_name(IN Cmiss::Field field)
    POSTCALL:
 	if (RETVAL == 0)
 			XSRETURN_UNDEF;
+	OUTPUT:
+		RETVAL
 
 int
 Cmiss_field_set_name(IN Cmiss::Field field, \
