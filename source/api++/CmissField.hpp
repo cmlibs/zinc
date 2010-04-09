@@ -92,9 +92,24 @@ public:
 		return (NULL != id);
 	}
 
+	char *getName()
+	{
+		return Cmiss_field_get_name(id);
+	}
+
 	int setName(const char *name)
 	{
 		return Cmiss_field_set_name(id, name);
+	}
+
+	int getPersistent()
+	{
+		return Cmiss_field_get_persistent(id);
+	}
+
+	int setPersistent(int persistent_flag)
+	{
+		return Cmiss_field_set_persistent(id,persistent_flag);
 	}
 
 	template<class FieldType> FieldType cast()
