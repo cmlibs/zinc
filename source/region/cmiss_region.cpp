@@ -750,6 +750,59 @@ struct Cmiss_region *Cmiss_region_create_region(struct Cmiss_region *base_region
 	return (region);
 } /* Cmiss_region_create_region */
 
+struct Cmiss_region *Cmiss_region_create_child(struct Cmiss_region *parent_region, 
+	const char *name)
+{
+	struct Cmiss_region *region = NULL;
+
+	if (parent_region)
+	{
+		region = Cmiss_region_find_child_by_name(parent_region, name);
+		if (!region)
+		{
+			region = Cmiss_region_create_region(parent_region);
+			if (region)
+			{
+				if (Cmiss_region_set_name(region, name))
+				{
+					if (!Cmiss_region_append_child(parent_region, region))
+					{
+						Cmiss_region_destroy(&region);
+					}
+				}
+				else
+				{
+					Cmiss_region_destroy(&region);
+				}
+			}
+		}
+		else
+		{
+			Cmiss_region_destroy(&region);
+		}
+	}
+
+	return region;
+}
+
+struct Cmiss_region *Cmiss_region_create_subregion(
+	struct Cmiss_region *top_region, const char *path)
+{
+	struct Cmiss_region *region = NULL;
+
+	region = Cmiss_region_find_subregion_at_path(top_region, path);
+	if (region)
+	{
+		Cmiss_region_destroy(&region);
+	}
+	else
+	{
+		region = Cmiss_region_get_or_create_region_at_path(top_region, path);
+	}
+
+	return region;
+}
+
 int Cmiss_region_clear_finite_elements(struct Cmiss_region *region)
 {
 	return FE_region_clear(Cmiss_region_get_FE_region(region),

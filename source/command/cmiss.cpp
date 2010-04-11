@@ -4666,9 +4666,7 @@ Executes a GFX CREATE REGION command.
 				}
 				if (return_code)
 				{
-					region = Cmiss_region_create_region(root_region);
-					Cmiss_region_set_name(region, name);
-					return_code = Cmiss_region_append_child(root_region, region);
+					region = Cmiss_region_create_child(root_region, name);
 					DEACCESS(Cmiss_region)(&region);
 				}
 			}
@@ -17156,16 +17154,13 @@ user, otherwise the elements file is read.
 			top_region = (struct Cmiss_region *)NULL;
 			if (region_path)
 			{
-				if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
-					region_path, &top_region) && top_region)
+				top_region = Cmiss_region_find_subregion_at_path(
+					command_data->root_region, region_path);
+				if (NULL == top_region)
 				{
-					ACCESS(Cmiss_region)(top_region);
-				}
-				else
-				{
-					top_region = Cmiss_region_create_region(command_data->root_region);
-					Cmiss_region_set_name(top_region, region_path);
-					if (!Cmiss_region_append_child(command_data->root_region, top_region))
+					top_region = Cmiss_region_create_subregion(
+						command_data->root_region, region_path);
+					if (NULL == top_region)
 					{
 						display_message(ERROR_MESSAGE, "gfx_read_elements.  "
 							"Unable to create child region.");
@@ -17183,7 +17178,7 @@ user, otherwise the elements file is read.
 				if ((input_file = CREATE(IO_stream)(command_data->io_stream_package))
 					&& (IO_stream_open_for_read(input_file, file_name)))
 				{
-					region = Cmiss_region_create_region(command_data->root_region);
+					region = Cmiss_region_create_region(top_region);
 					if (read_exregion_file(region, input_file,
 						(struct FE_import_time_index *)NULL))
 					{
@@ -17432,16 +17427,13 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 					top_region = (struct Cmiss_region *)NULL;
 					if (region_path)
 					{
-						if (Cmiss_region_get_region_from_path_deprecated(command_data->root_region,
-							region_path, &top_region) && top_region)
+						top_region = Cmiss_region_find_subregion_at_path(
+							command_data->root_region, region_path);
+						if (NULL == top_region)
 						{
-							ACCESS(Cmiss_region)(top_region);
-						}
-						else
-						{
-							top_region = Cmiss_region_create_region(command_data->root_region);
-							Cmiss_region_set_name(top_region, region_path);
-							if (!Cmiss_region_append_child(command_data->root_region, top_region))
+							top_region = Cmiss_region_create_subregion(
+								command_data->root_region, region_path);
+							if (NULL == top_region)
 							{
 								display_message(ERROR_MESSAGE, "gfx_read_nodes.  "
 									"Unable to create child region.");
@@ -17451,15 +17443,14 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 					}
 					else
 					{
-						top_region = command_data->root_region;
-						ACCESS(Cmiss_region)(top_region);
+						top_region = ACCESS(Cmiss_region)(command_data->root_region);
 					}
 					if (return_code)
 					{
 						if ((input_file = CREATE(IO_stream)(command_data->io_stream_package))
 							&& (IO_stream_open_for_read(input_file, file_name)))
 						{
-							region = Cmiss_region_create_region(command_data->root_region);
+							region = Cmiss_region_create_region(top_region);
 							if (use_data)
 							{
 								return_code = read_exdata_file(region, input_file, node_time_index);
