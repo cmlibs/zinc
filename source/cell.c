@@ -203,6 +203,7 @@ Main program for cell
       {
         /* ACCESS so can never be destroyed */
         ACCESS(Graphical_material)(default_graphical_material);
+				Cmiss_material_set_persistent(default_graphical_material, 1);
         if (!ADD_OBJECT_TO_MANAGER(Graphical_material)(
           default_graphical_material,
           graphical_material_manager))

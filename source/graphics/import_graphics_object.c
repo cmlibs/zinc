@@ -54,6 +54,7 @@ Functions for reading graphics object data from a file.
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_object.h"
 #include "graphics/import_graphics_object.h"
+#include "api/cmiss_material.h"
 #include "graphics/userdef_objects.h"
 #include "graphics/volume_texture.h"
 #include "user_interface/message.h"
@@ -991,7 +992,7 @@ DESCRIPTION :
 										(ADD_OBJECT_TO_MANAGER(Graphical_material)
 											(scanned_material, graphical_material_manager)))
 									{
-										/* OK */
+										Cmiss_material_set_persistent(scanned_material , 1);
 									}
 									else
 									{

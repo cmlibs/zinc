@@ -49,7 +49,7 @@ extern "C" {
 #if defined (BUILD_WITH_CMAKE)
 #include "configure/cmgui_configure.h"
 #endif /* defined (BUILD_WITH_CMAKE) */
-
+#include "api/cmiss_material.h"
 #include "three_d_drawing/graphics_buffer.h"
 #include "command/parser.h"
 #include "general/debug.h"
@@ -1046,6 +1046,7 @@ void OnMaterialEditorCreateNewMaterial(wxCommandEvent& event)
 				 {
 						material_copy_bump_mapping_and_per_pixel_lighting_flag(material_editor->edit_material,
 							 material);
+						Cmiss_material_set_persistent(material, 1);
 						ADD_OBJECT_TO_MANAGER(Graphical_material)(
 							 material, material_editor->graphical_material_manager);
 						make_current_material(material_editor, material);

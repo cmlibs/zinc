@@ -307,6 +307,7 @@ graphic's graphical object.
         cell_graphic->graphical_material,
         Cell_cmgui_interface_get_graphical_material_manager(cmgui_interface))))
     {
+			Cmiss_material_set_persistent(cell_graphic->graphical_material , 1);
       /* Diffuse component */
       sscanf(diffuse_red,"%f",&red);
       sscanf(diffuse_green,"%f",&green);

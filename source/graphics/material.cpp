@@ -3595,6 +3595,7 @@ DESCRIPTION :
 		if (return_code = ADD_OBJECT_TO_MANAGER(Graphical_material)(
 			material, material_package->material_manager))
 		{
+			Cmiss_material_set_persistent(material, 1);
 			/* Cannot ACCESS the package as the package is
 				accessing each material through the MANAGER */
 			material->package = material_package;
@@ -5018,6 +5019,7 @@ If the material already exists, then behaves like gfx modify material.
 						}
 						if (material_is_new)
 						{
+							Cmiss_material_set_persistent(material, 1);
 							ADD_OBJECT_TO_MANAGER(Graphical_material)(material,
 								material_package->material_manager);
 						}
@@ -6479,6 +6481,7 @@ specified name and the default properties.
 			{
 				if (material=CREATE(Graphical_material)(material_name))
 				{
+						Cmiss_material_set_persistent(material, 1);
 					if (ADD_OBJECT_TO_MANAGER(Graphical_material)(material,
 						graphical_material_manager))
 					{

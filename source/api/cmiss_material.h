@@ -176,8 +176,7 @@ int Cmiss_material_set_texture(
 /***************************************************************************//**
 * Sets the persistent property flag of the material;.
 * Default setting persistent=0 means the material is destroyed when the number of
-* external references to it, including use as a source for other objects, drops
-* to zero.
+* external references to it drops to zero.
 * Setting persistent=1 means the material exists in graphics module even if no
 * external references to it are held, whence it can be found by name or other
 * search criteria.
