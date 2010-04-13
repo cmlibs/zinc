@@ -2749,6 +2749,8 @@ Create the structures and retrieve the command window from the uil file.
 			command_window->output_window = 
 			  XRCCTRL(*command_window->wx_command_window, "OutputWindow", wxTextCtrl);
 			command_window->output_window->SetSize(wxSize(400,-1));
+			command_window->output_window->SetDefaultStyle(wxTextAttr(wxNullColour, wxNullColour,
+					wxFont(10, wxDEFAULT, wxNORMAL, wxNORMAL, false)));
 			command_window->history_window = 
 				 XRCCTRL(*command_window->wx_command_window, "CommandHistory", wxListBox);
 			command_window->output_window->SetSize(wxSize(400,-1)); 
