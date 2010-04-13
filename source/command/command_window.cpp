@@ -983,7 +983,7 @@ DESCRIPTION :
 			{
 				case VK_RETURN:
 				{
-					char command[1000];
+					char command[2048];
 					int length;
 					struct Command_window *command_window;
 					
@@ -993,7 +993,7 @@ DESCRIPTION :
                         EM_LINELENGTH, 
                         (WPARAM) 0, 
                         (LPARAM) 0); 
-					*((LPWORD)command) = 999;
+					*((LPWORD)command) = 2047;
 					length = SendMessage(window, 
 						EM_GETLINE, 
 						(WPARAM) 0,
@@ -1054,6 +1054,57 @@ DESCRIPTION:
 					(DWORD)Command_window_command_edit_pick_up_enter);
 				SetWindowLong(command_edit,GWL_USERDATA,
 					(LONG)command_window);
+
+				SetWindowLong(window,GWL_USERDATA,
+					(LONG)command_window);
+			}
+		} break;
+		case WM_SIZE:
+		{
+			if (command_window = (struct Command_window *)GetWindowLong(window,GWL_USERDATA))
+			{				
+				RECT rcClient; 
+				GetClientRect(command_window->dialog, &rcClient);
+				MoveWindow(command_window->command_history, 0, 0, rcClient.right, (rcClient.bottom - 35) / 2, true); 
+				MoveWindow(command_window->command_entry, 0, (rcClient.bottom - 35) / 2, rcClient.right, 35, true); 
+				MoveWindow(command_window->command_output_pane, 0, (rcClient.bottom - 35) / 2 + 35, rcClient.right, (rcClient.bottom - 35) / 2, true);
+			}
+		} break;
+		case WM_COMMAND:
+		{
+			if (command_window = (struct Command_window *)GetWindowLong(window,GWL_USERDATA))
+			{				
+				switch (HIWORD(first_message))
+				{
+				case LBN_SELCHANGE:
+				{
+					char command[2048];
+					WORD selectionIndex = (WORD) SendMessage(command_window->command_history, 
+                        LB_GETCURSEL, 
+                        (WPARAM) 0, 
+                        (LPARAM) 0); 
+					WORD length = (WORD) SendMessage(command_window->command_history, 
+                        LB_GETTEXTLEN, 
+                        (WPARAM) selectionIndex, 
+                        (LPARAM) 0);
+					if (length < 2048 - 1)
+					{
+						length = SendMessage(command_window->command_history, 
+								LB_GETTEXT, 
+								(WPARAM) selectionIndex,
+								(LPARAM) command);
+						command[length] = 0;	
+						SendMessage(command_window->command_entry, 
+							WM_SETTEXT, 
+							(WPARAM) 0,
+							(LPARAM) command); 
+						SendMessage(command_window->command_entry, 
+						   EM_SETSEL, 
+							(WPARAM) length,
+							(LPARAM) length);
+					}
+				} break;
+				}
 			}
 		} break;
 		default:
