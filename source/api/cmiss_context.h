@@ -144,7 +144,8 @@ int Cmiss_context_enable_user_interface(
 #endif
 
 /***************************************************************************//**
- * Execute cmgui command as in standalone cmgui application.
+ * Execute cmgui command as in standalone cmgui application. 
+ * User interface must be enabled before this function can be called successfully.
  *
  * @param context  Handle to a cmiss_context object.
  * @param command  Command to be executed.

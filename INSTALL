@@ -10,7 +10,7 @@ It is released under the Mozilla Public License v1.1
 Further information, help pages, a tracker and a wiki is available at 
 http://www.cmiss.org/cmgui/
 
-Dependencies:
+Few other software packages are required when building your own cmgui:
 Cmgui-Motif Required:
 Motif:  Except for the gtk and win32 versions which have no interactive
 user interface, motif is required (and therefore X).  The lesstif implementation
@@ -24,6 +24,9 @@ and can be compiled under different platform such as X, windows and Mac.
 OpenGL: The 3D graphics is built on OpenGL.
 Other libraries are also required please visit http://www.cmiss.org/cmgui/ for
 more information.
+
+Note: All third party libraries except motif can now be checked out from
+https://svn.physiomeproject.org/svn/cmiss/third_party/trunk/
 
 Optional but recommended:
 Perl Interpreter: By embedding a perl interpreter, perl commands and control

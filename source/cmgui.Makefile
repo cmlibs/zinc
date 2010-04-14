@@ -9,7 +9,7 @@
 # Makefile for cmgui (the front end to CMISS)
 # ==========================================================================
 
-CMISS_VERSION_STRING=2.6.3
+CMISS_VERSION_STRING=2.7.0
 
 ifneq ($(WIN32_NATIVE_COMPILE),true)
    SHELL=/bin/sh

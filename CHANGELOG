@@ -10,8 +10,48 @@ It is released under the Mozilla Public License v1.1
 Further information, help pages, a tracker and a wiki is available at 
 http://www.cmiss.org/cmgui/
 
+v2.7.0
+12 Apr 2010
+
+This is an official release of cmgui.
+
+API Changes:
+(Break) Context API replaces command data. User interface must be enabled explicitly before using graphics, time and execute_command.
+(Break) Region API. New methods for creating regions and finding subregions. New method to get field module. Removed obsolete Cmiss_region_add_field.
+(Break) Field API. New Field_module API has factory methods for creating fields owned by a region; no need to call Cmiss_region_add_field. New get_name function.
+(Break) Object persistence API. New ~set_persistent methods for field, material must be called for objects to persist in owning module when no external references held.
+(New) Graphical material API.
+(New) Time API. 
+
+Added Features:
+1037 Field API
+1630 Time object and time keeper API
+1788 Added information in about dialog
+1854 Support write exnode function at specific time
+1990 New isosurface code including tetrahedra support
+1992 Surfaces made from exterior faces should now have outward normals 
+2091 Support texture tiling on special case for orthogonal aligned texture coordinates
+2096 Graphical material API
+2105 Support per-element constant fields
+2387 Region API
+2417 Replaced command data with context as main object in API
+2458 Added more discretization modes to simplex
+2491 Object persistent API
+
+Bugs fixed:
+995 Remove CREATE and DESTROY macros from API
+1023 Fixed missing geometry in tiled element
+2037 Fixed crash when when closing the scene editor while the focus is on the isovalue text box
+2092 Texture properties are no longer merged when a texture is modified by reading in a new image file 
+2377 FixedIntel drivers incorrectly clip new graphics buffers
+2427 Fixed image field API not working properly due to restriction on modifying number of components
+2451 Fixed strange name when saving png file
+
+Improvement:
+2064 Rendering optimisation for picking, spectrum, glBegin/glEnd
+
 v2.6.2
-20 Jan 2009
+20 Jan 2010
 
 This is an intermediate release of cmgui, parts of the software may or may 
 not work.
