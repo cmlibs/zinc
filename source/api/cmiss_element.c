@@ -108,6 +108,8 @@ Returns the region the <element> to.
 	if (fe_region = FE_element_get_FE_region(element))
 	{
 		 FE_region_get_Cmiss_region(fe_region, &cmiss_region);
+		 if (cmiss_region)
+			 cmiss_region = Cmiss_region_access(cmiss_region);
 	}
 	LEAVE;
 
