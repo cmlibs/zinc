@@ -1061,7 +1061,7 @@ appropriately.
 				return_code = query_gl_version(3, 0);
 				if (GLEXTENSION_AVAILABLE == return_code)
 				{
-					if (!(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenerateMipmap, PFNGLGENERATEMIPMAPPROC)
+					if (!(GRAPHICS_LIBRARY_ASSIGN_HANDLE(glGenerateMipmap, PFNGLGENERATEMIPMAPEXTPROC)
 						Graphics_library_get_function_ptr("glGenerateMipmap")))
  					{
 						return_code = GLEXTENSION_UNAVAILABLE;
