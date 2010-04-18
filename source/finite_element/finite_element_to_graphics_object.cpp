@@ -316,7 +316,7 @@ fields used here.
 		return_code, values;
 	struct Node_to_glyph_set_data *node_to_glyph_set_data;
 	Triple *axis1, *axis2, *axis3, *point, *scale;
-	FE_value *data_values;
+	FE_value *data_values = NULL;
 
 	ENTER(node_to_glyph_set);
 	/* must set following to 0 = valid if no orientation_scale_field */
@@ -414,6 +414,7 @@ fields used here.
 						node_to_glyph_set_data->n_data_components);
 				}
 				/* evaluate the fields at the node */
+				FE_value_triple fe_value_label_density;
 				if (Computed_field_evaluate_at_node(coordinate_field,node,time,
 						coordinates)&&
 					((!orientation_scale_field) || Computed_field_evaluate_at_node(
@@ -426,9 +427,9 @@ fields used here.
 						((*(node_to_glyph_set_data->label) =
 							Computed_field_evaluate_as_string_at_node(label_field,
 							/*component_number*/-1, node, time)) &&
-						((!label_density_field) ||
-						Computed_field_evaluate_at_node(label_density_field,
-							node, time, *(node_to_glyph_set_data->label_density)))))&&
+							((!label_density_field) ||
+								Computed_field_evaluate_at_node(label_density_field,
+									node, time, fe_value_label_density))))&&
 					make_glyph_orientation_scale_axes(
 						number_of_orientation_scale_components, orientation_scale,
 						a, b, c, size))
@@ -475,6 +476,12 @@ fields used here.
 						(node_to_glyph_set_data->label)++;
 						if (label_density_field)
 						{
+							(*(node_to_glyph_set_data->label_density))[0] = 
+								(float)fe_value_label_density[0];
+							(*(node_to_glyph_set_data->label_density))[1] = 
+								(float)fe_value_label_density[1];
+							(*(node_to_glyph_set_data->label_density))[2] = 
+								(float)fe_value_label_density[2];
 							(node_to_glyph_set_data->label_density)++;
 						}
 					}
@@ -1247,10 +1254,10 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 {
 	char *glyph_name, **labels;
 	float *label_bounds;
-	FE_value *label_bounds_vector;
+	FE_value *label_bounds_vector = NULL;
 	GTDATA *data;
-	int coordinate_dimension, i, *label_bounds_bit_pattern, label_bounds_components,
-		label_bounds_dimension, label_bounds_values, n_data_components, *names,
+	int coordinate_dimension, i, *label_bounds_bit_pattern = NULL, label_bounds_components = 0,
+		label_bounds_dimension, label_bounds_values = 0, n_data_components, *names,
 		number_of_fields, number_of_points, return_code;
 	struct GT_glyph_set *glyph_set;
 	struct Node_to_glyph_set_data node_to_glyph_set_data;
@@ -1842,7 +1849,7 @@ Notes:
 	int facet_offset,i,j,k,n_data_components,number_of_points;
 	struct CM_element_information cm;
 	struct GT_surface *surface;
-	Triple *derivative, *normal, *normalpoints, *point, *points, *previous_point,
+	Triple *derivative, *normal = NULL, *normalpoints, *point, *points, *previous_point,
 		*previous_normal, *texturepoints, *texture_coordinate;
 
 	ENTER(create_cylinder_from_FE_element);
@@ -2335,14 +2342,14 @@ The optional <top_level_element> may be provided as a clue to Computed_fields
 to say which parent element they should be evaluated on as necessary.
 ==============================================================================*/
 {
-	double sign1, sign2, *sknots, *tknots, *control_points,
-		*texture_control_points;
+	double sign1 = 0.0, sign2 = 0.0, *sknots, *tknots = NULL, *control_points = NULL,
+		*texture_control_points = NULL;
 	FE_value derivative_xi[6],coordinates[3], xi[3];
 	struct CM_element_information cm;
 	struct GT_nurbs *nurbs;
-	int i, j, offset0, offset1, offset2, number_of_points, sorder, torder,
+	int i, j, offset0 = 0, offset1 = 0, offset2 = 0, number_of_points, sorder, torder,
 		sknotcount, tknotcount, scontrolcount, tcontrolcount,
-		texture_coordinate_components;
+		texture_coordinate_components = 0;
 
 	ENTER(create_GT_nurb_from_FE_element);
 	/* check the arguments */
@@ -2772,8 +2779,8 @@ normals are used.
 		number_of_points_in_xi1,number_of_points_in_xi2,number_of_polygon_vertices,
 		return_code;
 	struct CM_element_information cm;
-	Triple *normal, *normalpoints, *point, *points, *tangent, *tangentpoints,
-		*texturepoints, *texture_coordinate;
+	Triple *normal, *normalpoints, *point, *points, *tangent = NULL, *tangentpoints,
+		*texturepoints, *texture_coordinate = NULL;
 
 	ENTER(create_GT_surface_from_FE_element);
 	if (element && (2 == get_FE_element_dimension(element)) &&
@@ -3446,7 +3453,7 @@ faces.
 	FE_value_triple *xi_points;
 
 	int tex_number_of_components;
-	double intensity1;
+	double intensity1 = 0.0;
 	int outside_block;
 
 	ENTER(create_GT_voltex_from_FE_element);

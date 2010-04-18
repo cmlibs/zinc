@@ -198,12 +198,12 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 			xi[1] = 0.0;
 			Computed_field_evaluate_in_element(data->field, element, xi,
 				/*time*/0,(struct FE_element *)NULL, data->values, (FE_value *)NULL);
-			glVertex2fv(data->values);
+			glVertex2dv(data->values);
 			xi[0] = 1.0;
 			xi[1] = 0.0;
 			Computed_field_evaluate_in_element(data->field, element, xi,
 				/*time*/0,(struct FE_element *)NULL, data->values, (FE_value *)NULL);
-			glVertex2fv(data->values);
+			glVertex2dv(data->values);
 
 			/* Only need to check the first dimension as this is only working for 2D */
 			if (get_FE_element_shape(element, &shape) &&
@@ -215,8 +215,8 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 				xi[1] = 1.0;
 				Computed_field_evaluate_in_element(data->field, element, xi,
 					/*time*/0,(struct FE_element *)NULL, data->values, (FE_value *)NULL);
-				glVertex2fv(data->values);
-				glVertex2fv(data->values);
+				glVertex2dv(data->values);
+				glVertex2dv(data->values);
 			}
 			else
 			{
@@ -224,13 +224,13 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 				xi[1] = 1.0;
 				Computed_field_evaluate_in_element(data->field, element, xi,
 					/*time*/0,(struct FE_element *)NULL, data->values, (FE_value *)NULL);
-				glVertex2fv(data->values);
+				glVertex2dv(data->values);
 				
 				xi[0] = 0.0;
 				xi[1] = 1.0;
 				Computed_field_evaluate_in_element(data->field, element, xi,
 					/*time*/0,(struct FE_element *)NULL, data->values, (FE_value *)NULL);
-				glVertex2fv(data->values);
+				glVertex2dv(data->values);
 			}
 		}
 		return_code = 1;

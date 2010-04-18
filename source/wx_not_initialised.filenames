@@ -6,7 +6,6 @@ finite_element/finite_element.c
 finite_element/finite_element_discretization.c
 finite_element/finite_element_region.c
 finite_element/finite_element_time.c
-finite_element/finite_element_to_graphics_object.cpp
 finite_element/finite_element_to_streamlines.cpp
 finite_element/import_finite_element.cpp
 finite_element/snake.c

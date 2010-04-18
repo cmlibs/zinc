@@ -42,7 +42,7 @@ ifndef STATIC_LINK
 endif
 
 ifndef FE_VALUE_IS_DOUBLE
-   FE_VALUE_IS_DOUBLE=false
+   FE_VALUE_IS_DOUBLE=true
 endif
 
 COMMONMAKEFILE := common.Makefile

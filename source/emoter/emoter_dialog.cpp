@@ -5510,7 +5510,7 @@ Handles input from the text widget which displays the current frame timecode
 	{
 		if ( text_string = XmTextGetString(widget))
 		{
-			sscanf(text_string, "%f", &value );
+			sscanf(text_string, "%lf", &value );
 			emoter_set_play_slider_value( emoter_dialog, value );
 			emoter_update_face( emoter_dialog->shared );
 			XtFree ( text_string );
@@ -5554,10 +5554,10 @@ Handles input from the text widget which displays the current frame timecode
 		{
 			if ( text_string_max = XmTextGetString(emoter_dialog->play_max_text))
 			{
-				sscanf(text_string_max, "%f", &max );
+				sscanf(text_string_max, "%lf", &max );
 				if ( text_string_min = XmTextGetString(emoter_dialog->play_min_text))
 				{
-					sscanf(text_string_min, "%f", &min );
+					sscanf(text_string_min, "%lf", &min );
 					emoter_set_play_slider_range( emoter_dialog, min, max );
 					emoter_update_face( emoter_dialog->shared );
 					XtFree ( text_string_min );

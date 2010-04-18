@@ -106,7 +106,7 @@ Returns the Curve currently being edited.
 ==============================================================================*/
 
 int curve_editor_set_cursor_parameter(
-	Widget curve_editor_widget, float parameter);
+	Widget curve_editor_widget, FE_value parameter);
 /*******************************************************************************
 LAST MODIFIED : 8 November 1999
 
@@ -115,7 +115,7 @@ Sets the current position of the parameter cursor and displays it if it isn't
 already shown.
 ==============================================================================*/
 
-float curve_editor_get_cursor_parameter(
+FE_value curve_editor_get_cursor_parameter(
 	Widget curve_editor_widget);
 /*******************************************************************************
 LAST MODIFIED : 8 November 1999
