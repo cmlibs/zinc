@@ -28483,7 +28483,7 @@ SAB Doesn't work for polygons at the moment.
 ==============================================================================*/
 {
 	int bit, i, j, return_code;
-	float sum;
+	FE_value sum;
 
 	ENTER(FE_element_shape_find_face_number_for_xi);
 
@@ -37009,79 +37009,48 @@ storage for the <value> should have been allocated outside the function.
 ???DB.  Picks up the first version for the node.
 ==============================================================================*/
 {
-	Value_storage *component_nodal_value,*nodal_values;
-	int i,return_code;
-	struct FE_element_field_values *element_field_values;
-	struct FE_node_field *node_field;
-	struct FE_node_field_component *node_field_component;
-	struct FE_node_field_info *node_field_info;
+	int return_code;
 
 	ENTER(calculate_FE_field);
-	/* check the arguments */
 	if (field&&((node&&!element&&!xi_coordinates)||
 		(!node&&element&&xi_coordinates))&&value)
 	{
 		if (node)
 		{
 			/* calculate field for node */
-			if ((nodal_values=node->values_storage)&&(node_field_info=node->fields))
+			if (field->value_type == FE_VALUE_VALUE)
 			{
-				if (node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-					field,node_field_info->node_field_list))
+				int components_to_calculate, first_comp, i; 
+				
+				first_comp = 0;
+				components_to_calculate = field->number_of_components;
+				if ((0 <= component_number) && (component_number < components_to_calculate))
 				{
-					if (field->value_type == FE_VALUE_VALUE)
-					{
-						if (((i=field->number_of_components)>0)&&
-							(node_field_component=node_field->components))
-						{
-							if ((0<=component_number)&&(component_number<i))
-							{
-								nodal_values += (node_field_component[component_number]).value;
-								*value = *((FE_value *)nodal_values);
-							}
-							else
-							{
-								while (i>0)
-								{	
-									component_nodal_value=nodal_values+node_field_component->value;								
-									*value = *((FE_value *)component_nodal_value);				
-									node_field_component++;
-									value++;
-									i--;
-								}					
-								return_code=1;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"calculate_FE_field.  Missing node field components");
-							return_code=0;
-						}
-					}/* if (field->value_type == FE_VALUE_VALUE) */
-					else
+					first_comp = component_number;
+					components_to_calculate = 1;
+				}
+				for (i = 0; i < components_to_calculate; i++)
+				{
+					if (!get_FE_nodal_FE_value_value(node, field, first_comp + i,
+						/*version*/0, FE_NODAL_VALUE, time, value + i))
 					{
 						display_message(ERROR_MESSAGE,
-								"calculate_FE_field. field->value_type must be FE_VALUE_VALUE ");
-							return_code=0;
+							"calculate_FE_field.  Field or component not defined for node");
+						break;
 					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"calculate_FE_field.  Field not defined for node");
-					return_code=0;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"calculate_FE_field.  Missing node values or fields");
-				return_code=0;
+						"calculate_FE_field. field->value_type must be FE_VALUE_VALUE ");
+					return_code=0;
 			}
 		}
 		else	
 		{
+			struct FE_element_field_values *element_field_values;
+
 			/* calculate field for element */
 			/* determine if the field is defined over the element */
 			element_field_values=CREATE(FE_element_field_values)();
@@ -39342,24 +39311,24 @@ for the coordinate_field used.
 					{
 
 						/*???DB.  Haven't written geometry function yet */
-						node_1=(float)node_x;
-						node_2=(float)node_y;
-						node_3=(float)node_z;
+						node_1=node_x;
+						node_2=node_y;
+						node_3=node_z;
 					} break;
 					case SPHERICAL_POLAR:
 					{
 
 						/*???DB.  Haven't written geometry function yet */
-						node_1=(float)node_x;
-						node_2=(float)node_y;
-						node_3=(float)node_z;
+						node_1=node_x;
+						node_2=node_y;
+						node_3=node_z;
 					} break;
 					default:
 					{
 
-						node_1=(float)node_x;
-						node_2=(float)node_y;
-						node_3=(float)node_z;
+						node_1=node_x;
+						node_2=node_y;
+						node_3=node_z;
 					} break;
 				}
 				coordinate_node_field_component=coordinate_node_field->components;
