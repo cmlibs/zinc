@@ -561,7 +561,7 @@ for node and element fields.
 	enum CM_field_type cm_field_type;
 	enum FE_field_type fe_field_type;
 	enum Value_type value_type;
-	float focus;
+	FE_value focus;
 	int i, number_of_components, number_of_indexed_values, return_code;
 	struct Coordinate_system coordinate_system;
 	struct FE_field *field, *indexer_field, *temp_indexer_field;
