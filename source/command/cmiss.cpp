@@ -2395,7 +2395,8 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 ==============================================================================*/
 {
 	char *graphics_object_name, *region_path;
-	float time, xi[3];
+	float time;
+	FE_value xi[3];
 	gtObject *graphics_object;
 	struct GT_pointset *pointset;
 	int current_number_of_particles, element_number, number_of_particles,
@@ -5530,7 +5531,7 @@ Executes a GFX CREATE STREAMLINES command.
 		Option_table_add_entry(option_table,"width",&width,NULL,set_float);
 		/* xi */
 		Option_table_add_entry(option_table,"xi",
-			seed_xi,&number_of_components,set_float_vector);
+			seed_xi,&number_of_components,set_FE_value_array);
 		if (return_code=Option_table_multi_parse(option_table,state))
 		{
 			fe_region = (struct FE_region *)NULL;

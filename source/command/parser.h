@@ -833,6 +833,13 @@ Adds the given <token> to the <option_table>.  If the <token> is specified then
 the token following is assigned to <value>.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Adds the given <token> to the <option_table>.  If the <token> is specified
+ * then the token following is assigned to <value>. Value must be non negative.
+ */
+int Option_table_add_non_negative_double_entry(struct Option_table *option_table,
+	const char *token, double *value);
+
 int Option_table_add_double_vector_entry(struct Option_table *option_table,
 	const char *token, double *vector, int *number_of_components);
 /*******************************************************************************

@@ -4347,6 +4347,89 @@ indicate that the double has been set.
 	return (return_code);
 } /* set_double_and_char_flag */
 
+int set_double_non_negative(struct Parse_state *state,void *value_address_void,
+	void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+A modifier function for setting a double to a non_negative value.
+==============================================================================*/
+{
+	const char *current_token;
+	double value,*value_address;
+	int return_code;
+
+	ENTER(set_double_non_negative);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (value_address=(double *)value_address_void)
+				{
+					if (1==sscanf(current_token," %lf ",&value))
+					{
+						/* make sure that the value value is non-negative */
+						if (value>=0)
+						{
+							*value_address=value;
+							return_code=shift_Parse_state(state,1);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Value must be a non_negative double: %s\n",current_token);
+							display_parse_state_location(state);
+							return_code=0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Invalid non-negative double: %s",
+							current_token);
+						display_parse_state_location(state);
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_double_non_negative.  Missing value_address");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," #");
+				if (value_address=(double *)value_address_void)
+				{
+					display_message(INFORMATION_MESSAGE,"[%lg]",*value_address);
+				}
+				display_message(INFORMATION_MESSAGE,"{>=0}");
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing non-negative double");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_double_non_negative.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
 int set_special_float3(struct Parse_state *state,void *values_address_void,
 	void *separation_char_address_void)
 /*******************************************************************************
@@ -5717,6 +5800,28 @@ the token following is assigned to <value>.
 
 	return (return_code);
 } /* Option_table_add_double_entry */
+
+int Option_table_add_non_negative_double_entry(struct Option_table *option_table,
+	const char *token, double *value)
+{
+	int return_code;
+
+	ENTER(Option_table_add_non_negative_double_entry);
+	if (option_table && token && value)
+	{
+		return_code = Option_table_add_entry(option_table, token, value,
+			NULL, set_double_non_negative);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_non_negative_double_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
 
 int Option_table_add_double_vector_entry(struct Option_table *option_table,
 	const char *token, double *vector, int *number_of_components)

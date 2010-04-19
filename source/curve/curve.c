@@ -4447,17 +4447,17 @@ DESCRIPTION :
 				Option_table_add_entry(option_table,"file",&file_name,
 					(void *)1,set_name);
 				/* max_value */
-				Option_table_add_entry(option_table,"max_value",max_value,
-					&number_of_components,set_float_vector);
+				Option_table_add_FE_value_vector_entry(option_table, "max_value",
+					max_value, &number_of_components);
 				/* min_value */
-				Option_table_add_entry(option_table,"min_value",min_value,
-					&number_of_components,set_float_vector);
+				Option_table_add_FE_value_vector_entry(option_table, "min_value",
+					min_value, &number_of_components);
 				/* parameter_grid */
-				Option_table_add_entry(option_table,"parameter_grid",&parameter_grid,
-					NULL,set_float_non_negative);
+				Option_table_add_non_negative_double_entry(option_table,
+					"parameter_grid", &parameter_grid);
 				/* value_grid */
-				Option_table_add_entry(option_table,"value_grid",&value_grid,
-					NULL,set_float_non_negative);
+				Option_table_add_non_negative_double_entry(option_table,
+					"value_grid", &value_grid);
 				if (return_code=Option_table_multi_parse(option_table,state))
 				{
 					if (file_name)
