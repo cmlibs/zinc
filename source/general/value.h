@@ -67,16 +67,19 @@ checking.
 Global types
 ------------
 */
-/*???DB.  Can only use float because of conflict with Triple in
-	standard_basis_functions */
+
 #if defined (FE_VALUE_IS_DOUBLE)
 typedef double FE_value;
 /* used when reading FE_values */
-#define FE_VALUE_INPUT_STRING "%lf"
+#  define FE_VALUE_INPUT_STRING "%lf"
+/* used when writing FE_values */
+#  define FE_VALUE_STRING "22.15le"
 #else
 typedef float FE_value;
 /* used when reading FE_values */
-#define FE_VALUE_INPUT_STRING "%f"
+#  define FE_VALUE_INPUT_STRING "%f"
+/* used when writing FE_values */
+#  define FE_VALUE_STRING "13.6e"
 #endif
 
 #define CAST_TO_FE_VALUE(FE, OTHER, LENGTH)														\
@@ -103,8 +106,6 @@ typedef float FE_value;
 /* the value that FE_value's are initialized to.  Some machines will have
 	"not a number" which should be used as the initializer */
 #define FE_VALUE_INITIALIZER 0
-/* necessary if we want to specify %10.2f etc */
-#define FE_VALUE_STRING "13.6e"
 /* Used with FE_VALUE_STRING in export_finite_element to keep numerical output
 	 of arrays to a reasonable page width. A value <= 0 means no columns. */
 #define FE_VALUE_MAX_OUTPUT_COLUMNS 5
