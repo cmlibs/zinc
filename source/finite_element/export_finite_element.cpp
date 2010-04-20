@@ -963,7 +963,7 @@ are passed to this function.
 		number_of_scale_factor_sets, number_of_scale_factors,
 		numbers_in_scale_factor_set,
 		output_number_of_scale_factor_sets, output_scale_factor_index, return_code,
-		scale_factor_index, *scale_factor_set_in_use, *temp_indices,
+		scale_factor_index, *scale_factor_set_in_use,
 		write_field_values;
 	struct FE_basis *basis;
 	struct FE_element_field_component *component;
@@ -985,6 +985,7 @@ are passed to this function.
 			if (get_FE_element_number_of_nodes(element, &number_of_nodes) &&
 				(0 < number_of_nodes))
 			{
+				int *temp_indices;
 				if (REALLOCATE(temp_indices, *output_node_indices, int,
 					number_of_nodes))
 				{
@@ -1007,6 +1008,7 @@ are passed to this function.
 			if (get_FE_element_number_of_scale_factors(element,
 				&number_of_scale_factors) && (0 < number_of_scale_factors))
 			{
+				int *temp_indices;
 				if (REALLOCATE(temp_indices, *output_scale_factor_indices, int,
 					number_of_scale_factors))
 				{
@@ -1020,10 +1022,6 @@ are passed to this function.
 				{
 					return_code = 0;
 				}
-			}
-			else
-			{
-				*output_scale_factor_indices = (int *)NULL;
 			}
 			number_of_fields_in_header = 0;
 			write_field_values = 0;
