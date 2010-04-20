@@ -385,10 +385,12 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)
 		 element = CREATE(FE_element)(&element_identifier, (struct FE_element_shape *)NULL,
 			 (struct FE_region *)NULL, template_element);
 		 ACCESS(FE_element)(element);
+		 /* netgen tet node order gives a left handed element coordinate system,
+				hence swap node indices 2 and 3 */
 		 return_code=set_FE_element_node(element, 0, FE_region_get_FE_node_from_identifier(fe_region,nodal_idx[0]));
 		 return_code=set_FE_element_node(element, 1, FE_region_get_FE_node_from_identifier(fe_region,nodal_idx[1]));
-		 return_code=set_FE_element_node(element, 2, FE_region_get_FE_node_from_identifier(fe_region,nodal_idx[2]));
-		 return_code=set_FE_element_node(element, 3, FE_region_get_FE_node_from_identifier(fe_region,nodal_idx[3]));
+		 return_code=set_FE_element_node(element, 2, FE_region_get_FE_node_from_identifier(fe_region,nodal_idx[3]));
+		 return_code=set_FE_element_node(element, 3, FE_region_get_FE_node_from_identifier(fe_region,nodal_idx[2]));
 		 FE_region_merge_FE_element_and_faces_and_nodes(fe_region, element);
 		 DEACCESS(FE_element)(&element);
    }
