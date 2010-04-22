@@ -199,7 +199,7 @@ Convert the matrix to a quaternion, the argument values must be allocated before
 ==============================================================================*/
  {
 		int return_code;
-		double trace, s;
+		double trace, s, w, x, y, z;
 
 		ENTER(Quaternion::matrix_to_quaternion);
 		return_code = 0;

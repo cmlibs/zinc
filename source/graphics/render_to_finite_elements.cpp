@@ -81,7 +81,7 @@ Module types
 struct Render_node
 {
 	struct FE_node *fe_node;
-	float *coordinates;
+	FE_value_triple coordinates;
 	float *data;
 };
 
@@ -102,7 +102,7 @@ Module functions
 */
 
 static struct FE_node *FE_region_add_node(struct Render_to_finite_elements_data *data, 
-	FE_value time, float *coordinates)
+	FE_value time, FE_value *coordinates)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2005
 
@@ -125,10 +125,8 @@ Generates a finite_element node at the specified location
 				(struct FE_region *)NULL, data->template_node))
 		{	
 			ACCESS(FE_node)(node);
-			FE_value_triple feCoords;
-			CAST_TO_FE_VALUE(feCoords,coordinates,3);
 			if (Computed_field_set_values_at_node(data->coordinate_field,
-					node, time, feCoords))
+					node, time, coordinates))
 			{
 				if (FE_region_merge_FE_node(data->fe_region, node))
 				{
@@ -163,7 +161,7 @@ Generates a finite_element node at the specified location
 
 static int Render_node_create(struct Render_node *render_node,
 	struct Render_to_finite_elements_data *data, FE_value time,
-	float *coordinates, int number_of_data_components, float *data_values)
+	FE_value *coordinates, int number_of_data_components, float *data_values)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2005
 
@@ -176,7 +174,6 @@ Generates a finite_element node at the specified location
 	ENTER(create_Render_node);
 
 	render_node->fe_node = (struct FE_node *)NULL;
-	render_node->coordinates = (float *)NULL;
 	render_node->data = (float *)NULL;
 	return_code = 1;
 	if (data->fe_region)
@@ -185,8 +182,10 @@ Generates a finite_element node at the specified location
 		{	
 			case RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD:
 			{
-				/* Keep the coordinate pointer for later */
-				render_node->coordinates = coordinates;
+				/* Keep the coordinates for later */
+				render_node->coordinates[0] = coordinates[0];
+				render_node->coordinates[1] = coordinates[1];
+				render_node->coordinates[2] = coordinates[2];
 				if (number_of_data_components)
 				{
 					render_node->data = data_values;
@@ -216,7 +215,6 @@ to the <render_mode>
 {
 	double area, coordinate_1, coordinate_2, coordinate_3, density, expected_number;
 	FE_value side1[3], side2[3], side3[3], position[3], xi1, xi2;
-	Triple positionT;
 	int element_number, i, j, number_of_points, return_code;
 	struct FE_element *element;
 
@@ -279,8 +277,7 @@ to the <render_mode>
 						position[i] = node1->coordinates[i]
 							+ xi1 * side1[i] + xi2 * side2[i];
 					}
-					CAST_TO_OTHER(positionT,position,float,3);
-					if (!FE_region_add_node(data, time, positionT))
+					if (!FE_region_add_node(data, time, position))
 					{
 						return_code = 0;
 					}
@@ -379,7 +376,6 @@ to the <render_mode>
 {
 	double length, density, expected_number;
 	FE_value position[3], side[3], xi1;
-	Triple positionT;
 	int element_number, i, j, number_of_points, return_code;
 	struct FE_element *element;
 
@@ -425,8 +421,7 @@ to the <render_mode>
 						position[i] = node1->coordinates[i]
 							+ xi1 * side[i];
 					}
-					CAST_TO_OTHER(positionT,position,float,3);
-					if (!FE_region_add_node(data, time, positionT))
+					if (!FE_region_add_node(data, time, position))
 					{
 						return_code = 0;
 					}
@@ -491,7 +486,7 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 	GTDATA *data_ptr;
 	int i,number_of_points,return_code;
 	struct Render_node *nodes;
-	Triple *triple;
+	FE_value_triple position;
 
 	ENTER(render_polyline_to_finite_elements);
 	if (point_list&&(1<n_pts)&&
@@ -519,13 +514,13 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 		}
 		if (return_code)
 		{
-			triple = point_list;
 			data_ptr = data_values;
 			if (ALLOCATE(nodes, struct Render_node, number_of_points))
 			{
 				for (i = 0 ; return_code && (i < number_of_points) ; i++)
 				{
-					if (!(Render_node_create(&nodes[i], data, time, *triple, 
+					CAST_TO_FE_VALUE(position, point_list[i], 3);
+					if (!(Render_node_create(&nodes[i], data, time, position, 
 						 number_of_data_components, data_ptr)))
 					{
 						display_message(ERROR_MESSAGE,
@@ -533,7 +528,6 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 								"Could not set fields at node");
 						return_code = 0;
 					}
-					triple++;
 					if (number_of_data_components)
 					{
 						data_ptr += number_of_data_components;
@@ -608,7 +602,7 @@ DESCRIPTION :
 	int i,j,return_code;
 	int index,index_1,index_2,number_of_points;
 	struct Render_node *nodes;
-	Triple *triple;
+	FE_value_triple position;
 
 	ENTER(render_surface_to_finite_elements);
 	return_code=0;
@@ -645,13 +639,13 @@ DESCRIPTION :
 		if (return_code)
 		{
 			nodes = (struct Render_node *)NULL;
-			triple = surfpts;
 			data_ptr = data_values;
 			if (ALLOCATE(nodes, struct Render_node, number_of_points))
 			{
 				for (i = 0 ; return_code && (i < number_of_points) ; i++)
 				{
-					if (!(Render_node_create(&nodes[i], data, time, *triple, 
+					CAST_TO_FE_VALUE(position, surfpts[i], 3);
+					if (!(Render_node_create(&nodes[i], data, time, position, 
 						 number_of_data_components, data_ptr)))
 					{
 						display_message(ERROR_MESSAGE,
@@ -659,7 +653,6 @@ DESCRIPTION :
 								"Could not set fields at node");
 						return_code = 0;
 					}
-					triple++;
 					if (number_of_data_components)
 					{
 						data_ptr += number_of_data_components;
@@ -798,6 +791,7 @@ DESCRIPTION :
 {
 	int i, return_code;
 	struct Render_node *nodes;
+	FE_value_triple position;
 
 	ENTER(render_voltex_to_finite_elements);
 
@@ -808,8 +802,8 @@ DESCRIPTION :
 		{
 			for (i = 0 ; return_code && (i < number_of_vertices) ; i++)
 			{
-				if (!(Render_node_create(&nodes[i], data, time, 
-					vertex_list[i]->coordinates,
+				CAST_TO_FE_VALUE(position, vertex_list[i]->coordinates, 3);
+				if (!(Render_node_create(&nodes[i], data, time, position,
 					number_of_data_components, vertex_list[i]->data)))
 				{
 					display_message(ERROR_MESSAGE,

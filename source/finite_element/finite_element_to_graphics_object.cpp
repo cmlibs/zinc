@@ -462,7 +462,7 @@ fields used here.
 					if (node_to_glyph_set_data->data_field)
 					{
 						CAST_TO_OTHER(node_to_glyph_set_data->data,data_values,
-							float,node_to_glyph_set_data->n_data_components);
+							GTDATA,node_to_glyph_set_data->n_data_components);
 						node_to_glyph_set_data->data +=
 							node_to_glyph_set_data->n_data_components;
 					}
@@ -4143,7 +4143,7 @@ faces.
 struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct FE_element *element, struct FE_element *top_level_element,
 	struct Computed_field *coordinate_field,
-	int number_of_xi_points, Triple *xi_points, struct GT_object *glyph,
+	int number_of_xi_points, FE_value_triple *xi_points, struct GT_object *glyph,
 	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
 	struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
@@ -4332,9 +4332,9 @@ Note:
 						((GRAPHICS_DRAW_SELECTED == select_mode) && point_selected) ||
 						((GRAPHICS_DRAW_UNSELECTED == select_mode) && (!point_selected)))
 					{
-						xi[0] = (FE_value)xi_points[i][0];
-						xi[1] = (FE_value)xi_points[i][1];
-						xi[2] = (FE_value)xi_points[i][2];
+						xi[0] = xi_points[i][0];
+						xi[1] = xi_points[i][1];
+						xi[2] = xi_points[i][2];
 						/* evaluate all the fields in order orientation_scale, coordinate
 							 then data (if each specified). Reason for this order is that the
 							 orientation_scale field very often requires the evaluation of the
@@ -5214,7 +5214,7 @@ fields defined over it.
 		return_code, top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct Element_to_glyph_set_data *element_to_glyph_set_data;
 	struct FE_element *top_level_element;
-	FE_value_triple *fe_xi_points;
+	FE_value_triple *xi_points;
 
 	ENTER(element_to_glyph_set);
 	if (element && (element_to_glyph_set_data=
@@ -5247,14 +5247,8 @@ fields defined over it.
 					element_to_glyph_set_data->exact_xi,
 					element_to_glyph_set_data->coordinate_field,
 					element_to_glyph_set_data->xi_point_density_field,
-					&number_of_xi_points, &fe_xi_points, element_to_glyph_set_data->time))
+					&number_of_xi_points, &xi_points, element_to_glyph_set_data->time))
 				{
-					Triple *xi_points = new Triple[number_of_xi_points];
-					int xii;
-					for (xii=0;xii<number_of_xi_points;xii++)
-					{
-						CAST_TO_OTHER(xi_points[xii],fe_xi_points[xii],float,3);
-					}
 					if (glyph_set = create_GT_glyph_set_from_FE_element(
 						element, top_level_element,
 						element_to_glyph_set_data->coordinate_field,
@@ -5286,8 +5280,7 @@ fields defined over it.
 					{
 						return_code=0;
 					}
-					delete[] xi_points;
-					DEALLOCATE(fe_xi_points);
+					DEALLOCATE(xi_points);
 				}
 				else
 				{

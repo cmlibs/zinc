@@ -2876,7 +2876,6 @@ Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	 int return_code;
-	 double w, x, y, z;
 
 	 ENTER(Computed_field_quaternion_to_matrix::evaluate_cache_at_location);
 	 return_code = 0;
@@ -2885,14 +2884,12 @@ Evaluate the fields cache at the location
 	 {
 			if (Computed_field_evaluate_source_fields_cache_at_location(field, location))
 			{
-				 w = (double)(field->source_fields[0]->values[0]);
-				 x = (double)(field->source_fields[0]->values[1]);
-				 y = (double)(field->source_fields[0]->values[2]);
-				 z = (double)(field->source_fields[0]->values[3]);
-				 Quaternion *quad = new Quaternion(w, x, y, z);
-				 double matrix[16];
-				 return_code = quad->quaternion_to_matrix(matrix);
-				 CAST_TO_FE_VALUE(field->values,matrix,16);
+				Quaternion quat(
+					/*w*/field->source_fields[0]->values[0],
+					/*x*/field->source_fields[0]->values[1],
+					/*y*/field->source_fields[0]->values[2],
+					/*z*/field->source_fields[0]->values[3]);
+				return_code = quat.quaternion_to_matrix(field->values);
 			}
 			else
 			{
@@ -3186,7 +3183,6 @@ Evaluate the fields cache at the location
 ==============================================================================*/
 {
 	 int return_code;
-	 double source[16],destination[4];
 
 	 ENTER(Computed_field_matrix_to_quaternion::evaluate_cache_at_location);
 	 return_code = 0;
@@ -3195,10 +3191,8 @@ Evaluate the fields cache at the location
 	 {
 			if (Computed_field_evaluate_source_fields_cache_at_location(field, location))
 			{
-				CAST_TO_OTHER(source,field->source_fields[0]->values,double,16);
-				Quaternion *quad = new Quaternion();
-				return_code = quad->matrix_to_quaternion(source,destination);
-				CAST_TO_FE_VALUE(field->values,destination,4);
+				return_code = Quaternion::matrix_to_quaternion(
+					/*source*/field->source_fields[0]->values, /*destination*/field->values);
 			}
 			else
 			{

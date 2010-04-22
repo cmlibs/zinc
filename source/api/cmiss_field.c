@@ -90,14 +90,8 @@ greater than or equal to the number of components.
 	if (field && node && values &&
 		(number_of_values >= Computed_field_get_number_of_components(field)))
 	{
-		FE_value *feValues;
-		ALLOCATE(feValues, FE_value, number_of_values);
-		return_code = Computed_field_evaluate_at_node(field, node,
-			(FE_value)time, feValues);
+		return_code = Computed_field_evaluate_at_node(field, node, time, values);
 		Computed_field_clear_cache(field);
-		CAST_TO_OTHER_C(values,feValues,double,
-			Computed_field_get_number_of_components(field));
-		DEALLOCATE(feValues);
 	}
 	else
 	{
@@ -134,12 +128,7 @@ is reached for which its calculation is not reversible, or is not supported yet.
 	if (field && node && values &&
 		(number_of_values >= Computed_field_get_number_of_components(field)))
 	{
-		FE_value *feValues;
-		ALLOCATE(feValues, FE_value, number_of_values);
-		CAST_TO_FE_VALUE_C(feValues,values,number_of_values);
-		return_code = Computed_field_set_values_at_node(field, node,
-			(FE_value)time, feValues);
-		DEALLOCATE(feValues);
+		return_code = Computed_field_set_values_at_node(field, node, time, values);
 	}
 	else
 	{
@@ -187,23 +176,9 @@ number_of_components
 		&& (!derivatives || (number_of_derivatives >= 
 		Computed_field_get_number_of_components(field) * get_FE_element_dimension(element))))
 	{
-		FE_value *xiFE, *feValues, *feDerivatives;
-		int nComp = Computed_field_get_number_of_components(field);
-		int nDeriv = Computed_field_get_number_of_components(field) *
-			get_FE_element_dimension(element);
-		int nDimen = get_FE_element_dimension(element);
-		ALLOCATE(xiFE, FE_value, nDimen);
-		CAST_TO_FE_VALUE_C(xiFE,xi,nDimen);
-		ALLOCATE(feValues, FE_value, nComp);
-		ALLOCATE(feDerivatives, FE_value, nDeriv);
-		return_code = Computed_field_evaluate_in_element(field, element, xiFE,
-			(FE_value)time, top_level_element, feValues, feDerivatives);
+		return_code = Computed_field_evaluate_in_element(field, element, xi,
+			time, top_level_element, values, derivatives);
 		Computed_field_clear_cache(field);
-		CAST_TO_OTHER_C(derivatives,feDerivatives,double,nDeriv);
-		CAST_TO_OTHER_C(values,feValues,double,nComp);
-		DEALLOCATE(xiFE);
-		DEALLOCATE(feValues);
-		DEALLOCATE(feDerivatives);
 	}
 	else
 	{
@@ -301,18 +276,8 @@ number_of_components.
 	ENTER(Cmiss_field_evaluate_at_field_coordinates);
 	if (field&&reference_field&&number_of_input_values&&input_values&&values)
 	{
-		FE_value *in, *out;
-		int nComp;
-		ALLOCATE(in, FE_value, number_of_input_values);
-		CAST_TO_FE_VALUE_C(in,input_values,number_of_input_values);
-		nComp = Computed_field_get_number_of_components(field);
-		ALLOCATE(out, FE_value, nComp);
 		return_code = Computed_field_evaluate_at_field_coordinates(field,
-			reference_field, number_of_input_values, in,
-			(FE_value)time, out);
-		CAST_TO_OTHER_C(values,out,double,nComp);
-		DEALLOCATE(in);
-		DEALLOCATE(out);
+			reference_field, number_of_input_values, input_values, time, values);
 	}
 	else
 	{

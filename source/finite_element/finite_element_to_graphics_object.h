@@ -356,7 +356,7 @@ Used for selection and highlighting of elements.
 struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct FE_element *element, struct FE_element *top_level_element,
 	struct Computed_field *coordinate_field,
-	int number_of_xi_points, Triple *xi_points, struct GT_object *glyph,
+	int number_of_xi_points, FE_value_triple *xi_points, struct GT_object *glyph,
 	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
 	struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,

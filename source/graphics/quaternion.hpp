@@ -80,7 +80,7 @@ public:
 
 	 int quaternion_to_matrix(double *values);
 
-	 int matrix_to_quaternion(double *source, double *destination);
+	 static int matrix_to_quaternion(double *source, double *destination);
 
 private:
 	 
