@@ -498,11 +498,12 @@ For reading a field in an image file directory.
 	int i,number_of_bytes,number_of_value_components,return_code,
 		value_component_size;
 	long int current_file_position;
-	unsigned char byte_array[4],*value;
+	unsigned char byte_array[4],*value, *pbyte_array;
 	unsigned long int file_offset;
 
 	ENTER(read_tiff_field);
 	/* read field information */
+	pbyte_array = byte_array;
 	return_code=1;
 #if defined (DEBUG)
 	/*???debug */
@@ -511,7 +512,7 @@ For reading a field in an image file directory.
 	/* read tag */
 	if (1==read_and_byte_swap(byte_array,2,1,least_to_most,tiff_file))
 	{
-		*tag = UNSIGNED_SHORT_INT_FROM_2_BYTES(byte_array);
+		*tag = UNSIGNED_SHORT_INT_FROM_2_BYTES(pbyte_array);
 #if defined (DEBUG)
 		/*???debug */
 		printf(".  tag=%d",*tag);
@@ -520,7 +521,7 @@ For reading a field in an image file directory.
 		if (1==read_and_byte_swap(byte_array,2,1,least_to_most,
 			tiff_file))
 		{
-			*type = UNSIGNED_SHORT_INT_FROM_2_BYTES(byte_array);
+			*type = UNSIGNED_SHORT_INT_FROM_2_BYTES(pbyte_array);
 #if defined (DEBUG)
 			/*???debug */
 			printf(", type=");
@@ -649,7 +650,7 @@ For reading a field in an image file directory.
 			if (1==read_and_byte_swap(byte_array,4,1,least_to_most,
 				tiff_file))
 			{
-				*count = UNSIGNED_LONG_INT_FROM_4_BYTES(byte_array);
+				*count = UNSIGNED_LONG_INT_FROM_4_BYTES(pbyte_array);
 #if defined (DEBUG)
 				/*???debug */
 				printf(", count=%ld",*count);
@@ -659,7 +660,7 @@ For reading a field in an image file directory.
 				{
 #if defined (DEBUG)
 				/*???debug */
-					printf(", byte_array=%ld",UNSIGNED_LONG_INT_FROM_4_BYTES(byte_array));
+					printf(", byte_array=%ld",UNSIGNED_LONG_INT_FROM_4_BYTES(pbyte_array));
 #endif /* defined (DEBUG) */
 					number_of_bytes=(int)
 						((*count)*number_of_value_components*value_component_size);
@@ -671,7 +672,7 @@ For reading a field in an image file directory.
 							{
 								byte_swap(byte_array,4,1,least_to_most);
 								current_file_position=ftell(tiff_file);
-								file_offset = UNSIGNED_LONG_INT_FROM_4_BYTES(byte_array);
+								file_offset = UNSIGNED_LONG_INT_FROM_4_BYTES(pbyte_array);
 								if (0 == fseek(tiff_file, (signed long int)file_offset, SEEK_SET))
 								{
 									if (number_of_bytes==(int)fread(value,1,number_of_bytes,tiff_file))
@@ -1133,7 +1134,7 @@ Writes an image in SGI rgb file format.
 {
 	char bytes_per_component,dummy[404],image_name[80],storage;
 	FILE *output_file;
-	int bytes_per_pixel,i,k,l,least_to_most,return_code;
+	int bytes_per_pixel,i,k,l,least_to_most,written,return_code;
 	long colour_map,maximum_pixel_value,minimum_pixel_value,
 	   row_size,row_sizes,row_start,row_starts;
 	short magic_number;
@@ -1229,7 +1230,7 @@ Writes an image in SGI rgb file format.
 							row_start_char[1] = (unsigned char)(((0x00ff0000 & row_start)) >> 16);
 							row_start_char[2] = (unsigned char)(((0x0000ff00 & row_start)) >> 8);
 							row_start_char[3] = (unsigned char)(((0x000000ff & row_start)));
-							fwrite(row_start_char,4,1,output_file);
+							written=fwrite(row_start_char,4,1,output_file);
 							fseek(output_file,row_start,SEEK_SET);
 							row_size=0;
 							pixel=((unsigned char *)image)+number_of_components*
@@ -1298,7 +1299,7 @@ Writes an image in SGI rgb file format.
 							row_size_char[1] = (unsigned char)(((0x00ff0000 & row_size)) >> 16);
 							row_size_char[2] = (unsigned char)(((0x0000ff00 & row_size)) >> 8);
 							row_size_char[3] = (unsigned char)(((0x000000ff & row_size)));
-							fwrite(row_size_char,4,1,output_file);
+							written=fwrite(row_size_char,4,1,output_file);
 							row_start += row_size;
 						}
 					}
@@ -1588,7 +1589,7 @@ if (bit_count<out_bit_count) \
 else \
 { \
 	out_byte |= (high_byte>>(bit_count-out_bit_count)); \
-	fwrite(&out_byte,1,1,output_file); \
+	written=fwrite(&out_byte,1,1,output_file); \
 	/*???debug */ \
 	/*printf("out_byte %02x\n",out_byte);*/ \
 	number_of_compressed_bytes++; \
@@ -1596,7 +1597,7 @@ else \
 	out_byte=high_byte<<out_bit_count; \
 } \
 out_byte |= (low_byte>>(8-out_bit_count)); \
-fwrite(&out_byte,1,1,output_file); \
+written=fwrite(&out_byte,1,1,output_file); \
 /*???debug */ \
 /*printf("out_byte %02x\n",out_byte);*/ \
 number_of_compressed_bytes++; \
@@ -1615,6 +1616,7 @@ Uses LZW compression to compress a stream of bytes to a file.
 	int bit_count,found,i,j,matched_string_length,out_bit_count,return_code,
 		search_length;
 	/* limited to 12-bit codes */
+	size_t written=0;
 	unsigned char high_byte,low_byte,*matched_string,*next_byte,
 		**next_string_table_entry,out_byte,*search_string,*string_table[4096];
 	unsigned short clear_code,end_of_information_code,matched_code,
@@ -1798,7 +1800,7 @@ Uses LZW compression to compress a stream of bytes to a file.
 			/* finish off last byte */
 			if (out_bit_count<8)
 			{
-				fwrite(&out_byte,1,1,output_file);
+				written=fwrite(&out_byte,1,1,output_file);
 #if defined (DEBUG)
 				/*???debug */
 				/*printf("out_byte %02x\n",out_byte);*/
@@ -1857,12 +1859,13 @@ For writing a field in an image file directory.
 {
 	int return_code;
 	unsigned long value_offset_temp;
+	size_t written;
 
 	ENTER(write_tiff_field);
 	return_code=1;
-	fwrite(&tag,sizeof(unsigned short),1,tiff_file);
-	fwrite(&type,sizeof(unsigned short),1,tiff_file);
-	fwrite(&count,sizeof(unsigned long),1,tiff_file);
+	written=fwrite(&tag,sizeof(unsigned short),1,tiff_file);
+	written=fwrite(&type,sizeof(unsigned short),1,tiff_file);
+	written=fwrite(&count,sizeof(unsigned long),1,tiff_file);
 #if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
 	value_offset_temp=value_offset;
 #else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
@@ -1892,7 +1895,7 @@ For writing a field in an image file directory.
 		value_offset_temp=value_offset;
 	}
 #endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
-	fwrite(&value_offset_temp,sizeof(unsigned long),1,tiff_file);
+	written=fwrite(&value_offset_temp,sizeof(unsigned long),1,tiff_file);
 	LEAVE;
 
 	return (return_code);
@@ -1912,6 +1915,7 @@ Uses pack bits compression to compress a stream of bytes to a file.
 	int i,j,return_code;
 	unsigned char last_pixel,*pixel,run[128],run_length;
 	unsigned short number_of_compressed_bytes;
+	size_t written;
 
 	ENTER(pack_bits_compress_to_file);
 	return_code=1;
@@ -1938,8 +1942,8 @@ Uses pack bits compression to compress a stream of bytes to a file.
 						pixel++;
 					} while ((j>0)&&(run_length<128)&&(*pixel==last_pixel));
 					out_run_length=1-run_length;
-					fwrite(&out_run_length,sizeof(char),1,output_file);
-					fwrite(&last_pixel,sizeof(unsigned char),1,output_file);
+					written=fwrite(&out_run_length,sizeof(char),1,output_file);
+					written=fwrite(&last_pixel,sizeof(unsigned char),1,output_file);
 					number_of_compressed_bytes += 2;
 				}
 				else
@@ -1955,15 +1959,15 @@ Uses pack bits compression to compress a stream of bytes to a file.
 					} while ((j>0)&&(run_length<128)&&(*pixel!=last_pixel));
 					number_of_compressed_bytes += run_length+1;
 					out_run_length=run_length-1;
-					fwrite(&out_run_length,sizeof(char),1,output_file);
-					fwrite(run,sizeof(unsigned char),(size_t)run_length,output_file);
+					written=fwrite(&out_run_length,sizeof(char),1,output_file);
+					written=fwrite(run,sizeof(unsigned char),(size_t)run_length,output_file);
 				}
 			}
 			else
 			{
 				out_run_length=run_length-1;
-				fwrite(&out_run_length,sizeof(char),1,output_file);
-				fwrite(&last_pixel,sizeof(unsigned char),1,output_file);
+				written=fwrite(&out_run_length,sizeof(char),1,output_file);
+				written=fwrite(&last_pixel,sizeof(unsigned char),1,output_file);
 				number_of_compressed_bytes += 2;
 			}
 		}
@@ -1991,6 +1995,7 @@ Not working for 64 bit as assumes a long is 4 bytes!
 {
 	FILE *output_file;
 	int i,j,k,number_in_colour_map,return_code,row_number,samples_per_pixel;
+	size_t strips_written, written;
 	struct Colour_map_entry *colour_map_entry,*colour_map_index;
 	struct LIST(Colour_map_entry) *colour_map_list;
 	unsigned char byte,*palette_image,*palette_image_pixel,*pixel,
@@ -2213,12 +2218,12 @@ Not working for 64 bit as assumes a long is 4 bytes!
 					byte_order=TIFF_HI_LO;
 #endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 					image_file_directory_offset=sizeof(unsigned short);
-					fwrite(&byte_order,sizeof(unsigned short),1,output_file);
+					written=fwrite(&byte_order,sizeof(unsigned short),1,output_file);
 					version=42;
 					image_file_directory_offset += sizeof(unsigned short);
-					fwrite(&version,sizeof(unsigned short),1,output_file);
+					written=fwrite(&version,sizeof(unsigned short),1,output_file);
 					image_file_directory_offset += sizeof(unsigned long);
-					fwrite(&image_file_directory_offset,sizeof(unsigned long),1,
+					written=fwrite(&image_file_directory_offset,sizeof(unsigned long),1,
 						output_file);
 #if defined (DEBUG)
 					/*???debug */
@@ -2237,7 +2242,7 @@ Not working for 64 bit as assumes a long is 4 bytes!
 					/* value offsets should be word aligned (4 ?) */
 					value_offset=image_file_directory_offset+sizeof(unsigned short)+
 					image_file_directory_entry_count*12+sizeof(unsigned long);
-					fwrite(&image_file_directory_entry_count,sizeof(unsigned short),1,
+					written=fwrite(&image_file_directory_entry_count,sizeof(unsigned short),1,
 						output_file);
 					/* write the fields in ascending tag order */
 					/* image width */
@@ -2337,7 +2342,7 @@ Not working for 64 bit as assumes a long is 4 bytes!
 						value_offset += 3*256*sizeof(unsigned short);
 					}
 					next_image_file_directory_offset=0;
-					fwrite(&next_image_file_directory_offset,sizeof(unsigned long),1,
+					written=fwrite(&next_image_file_directory_offset,sizeof(unsigned long),1,
 						output_file);
 #if defined (DEBUG)
 					/*???debug */
@@ -2350,7 +2355,7 @@ Not working for 64 bit as assumes a long is 4 bytes!
 					if (!palette_image)
 					{
 						/* write bits_per_sample */
-						fwrite(bits_per_sample,sizeof(unsigned short),3,output_file);
+						written=fwrite(bits_per_sample,sizeof(unsigned short),3,output_file);
 					}
 #if defined (DEBUG)
 					/*???debug */
@@ -2364,20 +2369,20 @@ Not working for 64 bit as assumes a long is 4 bytes!
 					{
 						/* write the strip offsets (currently 0 will need to be overwritten
 							later) */
-						fwrite(strip_offsets,sizeof(unsigned long),number_of_strips,
+						written=fwrite(strip_offsets,sizeof(unsigned long),number_of_strips,
 							output_file);
 					}
 					if (2<number_of_strips)
 					{
 						/* write the strip byte counts (currently 0 will need to be
 							overwritten later) */
-						fwrite(strip_byte_counts,sizeof(unsigned short),number_of_strips,
+						written=fwrite(strip_byte_counts,sizeof(unsigned short),number_of_strips,
 							output_file);
 					}
 					if (palette_image)
 					{
 						/* write the colour map */
-						fwrite(colour_map,sizeof(unsigned short),3*256,output_file);
+						written=fwrite(colour_map,sizeof(unsigned short),3*256,output_file);
 					}
 #if defined (DEBUG)
 					/*???debug */
@@ -2521,7 +2526,7 @@ Not working for 64 bit as assumes a long is 4 bytes!
 						{
 							case TIFF_NO_COMPRESSION:
 							{
-								fwrite(uncompressed_bytes,sizeof(unsigned char),
+								written=fwrite(uncompressed_bytes,sizeof(unsigned char),
 									number_of_uncompressed_bytes,output_file);
 								*strip_byte_count=number_of_uncompressed_bytes;
 							} break;
@@ -2550,7 +2555,7 @@ Not working for 64 bit as assumes a long is 4 bytes!
 							{
 								strip_offset[1]++;
 								byte=(unsigned char)1;
-								fwrite(&byte,sizeof(unsigned char),1,output_file);
+								written=fwrite(&byte,sizeof(unsigned char),1,output_file);
 							}
 						}
 						strip_offset++;
@@ -2584,22 +2589,33 @@ Not working for 64 bit as assumes a long is 4 bytes!
 					printf("strip offsets start %d %d\n",ftell(output_file),
 						strip_offsets_start);
 #endif /* defined (DEBUG) */
-					fwrite(strip_offsets,sizeof(unsigned long),number_of_strips,
-						output_file);
+					strips_written=fwrite(strip_offsets,sizeof(unsigned long),
+						number_of_strips, output_file);
+					if (strips_written != number_of_strips)
+					{
+						display_message(ERROR_MESSAGE,
+							"write_tiff_image_file.  Could not write %d strips to %s",
+							number_of_strips, output_file);
+						(void)fclose(output_file);
+						return_code=0;
+					}
+					else
+					{
 #if defined (DEBUG)
-					printf("strip byte counts start %d %d\n",ftell(output_file),
-						strip_byte_counts_start);
+						printf("strip byte counts start %d %d\n",ftell(output_file),
+							strip_byte_counts_start);
 #endif /* defined (DEBUG) */
-					/* write the strip byte counts */
-					fseek(output_file,(long int)strip_byte_counts_start,SEEK_SET);
+						/* write the strip byte counts */
+						fseek(output_file,(long int)strip_byte_counts_start,SEEK_SET);
 #if defined (DEBUG)
-					printf("strip byte counts start %d %d\n",ftell(output_file),
-						strip_byte_counts_start);
+						printf("strip byte counts start %d %d\n",ftell(output_file),
+							strip_byte_counts_start);
 #endif /* defined (DEBUG) */
-					fwrite(strip_byte_counts,sizeof(unsigned short),number_of_strips,
-						output_file);
-					(void)fclose(output_file);
-					return_code=1;
+						strips_written=fwrite(strip_byte_counts,sizeof(unsigned short),number_of_strips,
+							output_file);
+						(void)fclose(output_file);
+						return_code=1;
+					}
 				}
 				else
 				{
@@ -3272,11 +3288,11 @@ the second the denominator.
 	FILE *tiff_file;
 	float x_resolution, y_resolution;
 	int i,least_to_most,return_code;
-  long image_length,image_width,*strip_offset,*strip_offsets;
-	unsigned char bit,byte,byte_array[4],colour_0,colour_1,*image,*image_ptr,
+	long image_length,image_width,*strip_offset,*strip_offsets;
+	unsigned char bit,byte,byte_array[4],*pbyte_array,colour_0,colour_1,*image,*image_ptr,
 		*new_strip,*strip,*temp_unsigned_char_ptr, *field_values;
 	unsigned long byte_count,column_number,field_count,ifd_offset,
-      number_of_fields,number_of_strips,rows_per_strip,
+		number_of_fields,number_of_strips,rows_per_strip,
 		*strip_byte_count,*strip_byte_counts;
 	unsigned short bits_per_sample,compression,field_tag,field_type,file_type,
 		photometric_interpretation,planar_configuration,resolution_unit,
@@ -3288,6 +3304,7 @@ the second the denominator.
 	printf("enter read_tiff_image_file\n");
 #endif /* defined (DEBUG) */
 	return_code=0;
+	pbyte_array=byte_array;
 	if (file_name && width_address && height_address &&
 		number_of_components_address && number_of_bytes_per_component_address &&
 		image_address)
@@ -3341,7 +3358,7 @@ the second the denominator.
 				if (1==read_and_byte_swap(byte_array,2,1,least_to_most,
 					tiff_file))
 				{
-					file_type = UNSIGNED_SHORT_INT_FROM_2_BYTES(byte_array);
+					file_type = UNSIGNED_SHORT_INT_FROM_2_BYTES(pbyte_array);
 #if defined (DEBUG)
 					/*???debug */
 					printf("B) TIFF Version number = %d\n",file_type);
@@ -3367,7 +3384,7 @@ the second the denominator.
 					if (1==read_and_byte_swap(byte_array,4,1,least_to_most,
 						tiff_file))
 					{
-						ifd_offset = UNSIGNED_LONG_INT_FROM_4_BYTES(byte_array);
+						ifd_offset = UNSIGNED_LONG_INT_FROM_4_BYTES(pbyte_array);
 #if defined (DEBUG)
 						/*???debug */
 						printf("C) Address of Image File Directory = %ld\n\n",ifd_offset);
@@ -3393,7 +3410,7 @@ the second the denominator.
 							if (1==read_and_byte_swap(byte_array,2,1,
 								least_to_most,tiff_file))
 							{
-								number_of_fields = UNSIGNED_SHORT_INT_FROM_2_BYTES(byte_array);
+								number_of_fields = UNSIGNED_SHORT_INT_FROM_2_BYTES(pbyte_array);
 #if defined (DEBUG)
 								/*???debug */
 								printf("D) Image file directory\n");
@@ -5296,7 +5313,7 @@ Frees the memory use by the Cmgui_image_information and sets
 		if (cmgui_image_information->memory_block &&
 			cmgui_image_information->memory_block_is_imagemagick_blob)
 		{
-			RelinquishMagickMemory(cmgui_image_information->memory_block);
+			//RelinquishMagickMemory(cmgui_image_information->memory_block);
 		}
 		DEALLOCATE(*cmgui_image_information_address);
 		*cmgui_image_information_address = (struct Cmgui_image_information *)NULL;

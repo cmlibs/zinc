@@ -204,7 +204,7 @@ value. \
 { \
 	const char *current_token; \
 	char *enumerator_string_value; \
-	enum enumerator_type *enumerator_address, other_enumerator; \
+	enum enumerator_type *enumerator_address, other_enumerator = (enumerator_type)0; \
 	int return_code; \
 \
 	ENTER(set_enumerator(enumerator_type)); \
