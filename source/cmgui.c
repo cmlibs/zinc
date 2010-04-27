@@ -66,7 +66,7 @@ Global functions
 */
 
 #if !defined (WIN32_USER_INTERFACE)
-int main(int argc,char *argv[])
+int main(int argc,const char *argv[])
 #else /* !defined (WIN32_USER_INTERFACE) */
 int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	LPSTR command_line,int initial_main_window_state)

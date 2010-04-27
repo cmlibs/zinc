@@ -12,6 +12,14 @@ SET( COMMAND_SRCS source/command/command.c
 	source/command/example_path.h
 	source/command/parser.h	)
 
+SET( CONTEXT_SRCS 
+	source/context/context.cpp
+	source/context/user_interface_module.cpp )
+
+SET( CONTEXT_HDRS 
+	source/context/context.h
+	source/context/user_interface_module.h )
+
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	SET( COMMAND_SRCS ${COMMAND_SRCS} source/command/cmiss.cpp )
 	SET( COMMAND_HDRS ${COMMAND_HDRS}

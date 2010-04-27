@@ -2,12 +2,14 @@
 # Defines API_SRCS
 
 SET( API_SRCS 
-	source/api/cmiss_command_data.c
-	source/api/cmiss_field.c
-	source/api/cmiss_field_composite.c
+	source/api/cmiss_context.c
 	source/api/cmiss_core.c
 	source/api/cmiss_element.c
+	source/api/cmiss_field.c
+	source/api/cmiss_graphics_module.c
+	source/api/cmiss_graphics_window.c
 	source/api/cmiss_idle.c
+	source/api/cmiss_material.c
 	source/api/cmiss_node.c
 	source/api/cmiss_region.c
 	source/api/cmiss_time.c
@@ -15,7 +17,7 @@ SET( API_SRCS
 	source/api/cmiss_time_sequence.c
 	source/api/cmiss_timer.c )
 SET( API_HDRS
-	source/api/cmiss_command_data.h
+	source/api/cmiss_context.h
 	source/api/cmiss_core.h
 	source/api/cmiss_element.h
 	source/api/cmiss_fdio.h
@@ -30,12 +32,13 @@ SET( API_HDRS
 	source/api/cmiss_field_trigonometry.h
 	source/api/cmiss_graphics_window.h
 	source/api/cmiss_idle.h
+	source/api/cmiss_material.h
 	source/api/cmiss_node.h
 	source/api/cmiss_region.h
 	source/api/cmiss_time.h
-	source/api/cmiss_timer.h
 	source/api/cmiss_time_keeper.h
-	source/api/cmiss_time_sequence.h )
+	source/api/cmiss_time_sequence.h
+	source/api/cmiss_timer.h )
 	
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	SET( API_SRCS ${API_SRCS}

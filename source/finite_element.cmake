@@ -6,7 +6,7 @@
 SET( FINITE_ELEMENT_CORE_SRCS
 	source/finite_element/export_finite_element.cpp
 	source/finite_element/finite_element.c
-	source/finite_element/finite_element_discretization.c
+	source/finite_element/finite_element_discretization.cpp
 	source/finite_element/finite_element_helper.cpp
 	source/finite_element/finite_element_region.c
 	source/finite_element/finite_element_time.c

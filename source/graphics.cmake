@@ -3,6 +3,7 @@
 
 SET( GRAPHICS_SRCS
 	source/graphics/auxiliary_graphics_types.c
+	source/graphics/cmiss_rendition.cpp
 	source/graphics/colour.c
 	source/graphics/complex.c
 	source/graphics/decimate_voltex.cpp
@@ -34,6 +35,7 @@ SET( GRAPHICS_SRCS
 	source/graphics/volume_texture.c )
 SET( GRAPHICS_HDRS
 	source/graphics/auxiliary_graphics_types.h
+	source/graphics/cmiss_rendition.h
 	source/graphics/colour.h
 	source/graphics/complex.h
 	source/graphics/decimate_voltex.h
