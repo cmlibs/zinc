@@ -275,6 +275,8 @@ public:
 	virtual void field_is_managed(void)
 	{
 	}
+
+	virtual int get_domain( struct LIST(Computed_field) *domain_field_list ) const;
 }; /* class Computed_field_core */
 
 struct Computed_field

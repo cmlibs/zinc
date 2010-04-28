@@ -29,7 +29,8 @@
 #cmakedefine REPORT_GL_ERRORS
 #cmakedefine USE_PARAMETER_ON
 
-
+// Extension specific defines
+#cmakedefine USE_OPENCASCADE
 #cmakedefine USE_IMAGEMAGICK
 #cmakedefine USE_ITK
 #cmakedefine USE_PERL_INTERPRETER
@@ -40,5 +41,9 @@
 #cmakedefine NETSCAPE_HELP
 #cmakedefine FE_VALUE_IS_DOUBLE
 #cmakedefine HAVE_VFSCANF
+#cmakedefine OPTIMISED
+#cmakedefine DEBUG
+#cmakedefine MEMORY_CHECKING
 
 #endif
+

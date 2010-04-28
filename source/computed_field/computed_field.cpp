@@ -199,7 +199,7 @@ struct Computed_field_type_data
 LAST MODIFIED : 14 August 2006
 
 DESCRIPTION :
-Stores information defining a type of computed field so that it can be 
+Stores information defining a type of computed field so that it can be
 accessed by the rest of the program.
 ==============================================================================*/
 {
@@ -254,8 +254,8 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Computed_field,name,const char *,strcmp)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Computed_field)
 struct Computed_field_type_data *CREATE(Computed_field_type_data)
-   (const char *name, Define_Computed_field_type_function 
-	define_Computed_field_type_function, 
+   (const char *name, Define_Computed_field_type_function
+	define_Computed_field_type_function,
 	Computed_field_type_package *define_type_user_data)
 /*******************************************************************************
 LAST MODIFIED : 24 January 2007
@@ -270,13 +270,13 @@ the define_computed_field option table when needed.
 	struct Computed_field_type_data *type_data;
 
 	ENTER(CREATE(Computed_field_type_data));
-	
+
 	if (name && define_Computed_field_type_function)
 	{
 		if (ALLOCATE(type_data,struct Computed_field_type_data,1))
 		{
 			type_data->name = name;
-			type_data->define_Computed_field_type_function = 
+			type_data->define_Computed_field_type_function =
 				define_Computed_field_type_function;
 			type_data->define_type_user_data = define_type_user_data;
 			type_data->access_count = 0;
@@ -374,7 +374,7 @@ Calls Computed_field_clear_cache before clearing the type.
 			}
 			DEALLOCATE(field->component_names);
 		}
-		
+
 		delete field->core;
 
 		if (field->source_fields)
@@ -422,11 +422,11 @@ Sets the coordinate system of the <field> to match that of it's sources.
 		return_code = 1;
 		if (field->number_of_source_fields > 0)
 		{
-			coordinate_system_ptr = 
+			coordinate_system_ptr =
 				Computed_field_get_coordinate_system(field->source_fields[0]);
 			Computed_field_set_coordinate_system(field, coordinate_system_ptr);
 			i = 1;
-			while (i < field->number_of_source_fields && 
+			while (i < field->number_of_source_fields &&
 				Coordinate_systems_match(coordinate_system_ptr,
 					Computed_field_get_coordinate_system(field->source_fields[1])))
 			{
@@ -478,7 +478,7 @@ COMPUTED_FIELD_INVALID with no components.
 		{
 			/* By default the name and the command_string are the same */
 			field->command_string = (char *)field->name;
-			/* initialise all members of computed_field */	
+			/* initialise all members of computed_field */
 			field->number_of_components = 0;
 			/* allowed to modify/remove from manager until disabled with
 				 Computed_field_set_read_only */
@@ -705,10 +705,10 @@ DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Computed_field,name)
  * For safety, <destination> must be unmanaged or its contents must have been
  * copied to a temporary field while copying, otherwise clearing the type of
  * <destination> can cause objects to be cleaned up such as volatile source
- * fields. 
- * 
+ * fields.
+ *
  * @destination  Field being modified to have a copy of type-specific data.
- * @source  Field providing the type-specific data. 
+ * @source  Field providing the type-specific data.
  * @return  1 on success, 0 on failure.
  */
 int Computed_field_copy_type_specific(
@@ -820,7 +820,7 @@ int Computed_field_copy_type_specific(
 		return_code=0;
 	}
 
-	return (return_code);	
+	return (return_code);
 } /* Computed_field_copy_type_specific */
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Computed_field,name)
@@ -905,7 +905,7 @@ Do not allow copy if:
 			display_message(ERROR_MESSAGE,
 				"MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name).  "
 				"Cannot make field depend on itself");
-			return_code=0;		
+			return_code=0;
 		}
 		struct MANAGER(Computed_field) *manager_in_use = destination->manager;
 		/* check source fields are in the same manager */
@@ -1103,7 +1103,7 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 							MANAGER_BEGIN_CACHE(Computed_field)(manager);
 							/* copy type specific data from destination field to clean up at the end otherwise
 							 * automatic destruction of volatile source fields may notify the rest of the program
-							 * with destination in a half constructed state. See tracker item 1323 */  
+							 * with destination in a half constructed state. See tracker item 1323 */
 							struct Computed_field *old_object_copy = ACCESS(Computed_field)(CREATE(Computed_field)(""));
 							if (!Computed_field_copy_type_specific(old_object_copy, object))
 							{
@@ -1223,7 +1223,7 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 						MANAGER_BEGIN_CACHE(Computed_field)(manager);
 						/* copy type specific data from destination field to clean up at the end otherwise
 						 * automatic destruction of volatile source fields may notify the rest of the program
-						 * with destination in a half constructed state. See tracker item 1323 */  
+						 * with destination in a half constructed state. See tracker item 1323 */
 						struct Computed_field *old_object_copy = ACCESS(Computed_field)(CREATE(Computed_field)(""));
 						if (!Computed_field_copy_type_specific(old_object_copy, object))
 						{
@@ -1615,7 +1615,7 @@ This is currently that the field is defined and any of the components are non ze
 	ENTER(Computed_field_is_true_in_element);
 	return_code=0;
 	if (field&&element)
-	{	
+	{
 		Field_element_xi_location location(element);
 		if (field->core->is_defined_at_location(&location))
 		{
@@ -1629,7 +1629,7 @@ This is currently that the field is defined and any of the components are non ze
 				if (Computed_field_evaluate_cache_at_location(field, &centre_location))
 				{
 					return_code = 0;
-					for (i = 0 ; (return_code == 0) && 
+					for (i = 0 ; (return_code == 0) &&
 							  (i < field->number_of_components) ; i++)
 					{
 						if ((field->values[i] < -zero_tolerance) ||
@@ -1681,7 +1681,7 @@ Iterator version of NOT Computed_field_is_true_in_element.
 	ENTER(FE_element_Computed_field_is_not_true_iterator);
 	if (element && (data = (struct Computed_field_conditional_data *)
 		computed_field_conditional_data_void) && data->conditional_field)
-	{	
+	{
 		return_code = !Computed_field_is_true_in_element(data->conditional_field,
 			element, data->time);
 	}
@@ -1711,7 +1711,7 @@ any other fields, this function is recursively called for them.
 	ENTER(Computed_field_is_defined_at_node);
 	return_code=0;
 	if (field&&node)
-	{	
+	{
 		Field_node_location location(node);
 		return_code = field->core->is_defined_at_location(&location);
 	}
@@ -1842,14 +1842,14 @@ that the field is defined and any of the components are non zero.
 	ENTER(Computed_field_is_true_at_node);
 	return_code=0;
 	if (field&&node)
-	{	
+	{
 		Field_node_location location(node, time);
 		if (field->core->is_defined_at_location(&location))
 		{
 			if (Computed_field_evaluate_cache_at_location(field, &location))
 			{
 				return_code = 0;
-				for (i = 0 ; (return_code == 0) && 
+				for (i = 0 ; (return_code == 0) &&
 						  (i < field->number_of_components) ; i++)
 				{
 					if ((field->values[i] < -zero_tolerance) ||
@@ -1895,7 +1895,7 @@ Iterator version of NOT Computed_field_is_true_at_location.
 	ENTER(FE_node_Computed_field_is_not_true_iterator);
 	if (node && (data = (struct Computed_field_conditional_data *)
 		computed_field_conditional_data_void) && data->conditional_field)
-	{	
+	{
 		return_code = !Computed_field_is_true_at_node(data->conditional_field,
 			node, data->time);
 	}
@@ -2167,6 +2167,156 @@ Checks to see if it is already in the list.
 	return (return_code);
 } /* Computed_field_add_to_list_if_depends_on_list */
 
+int Computed_field_evaluate_cache_in_element(
+	struct Computed_field *field,struct FE_element *element,FE_value *xi,
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 14 August 2006
+
+DESCRIPTION :
+Calculates the values and derivatives (if <calculate_derivatives> set) of
+<field> at <element>:<xi>, if it is defined over the element. Upon successful
+return values and derivatives of the field are stored in the internal cache for
+the <field>. <xi> is assumed to contain the same number of values as the
+dimension of the element.
+
+The optional <top_level_element> may be supplied for the benefit of this or
+any source fields that may require calculation on it instead of a face or line.
+FIBRE_AXES and GRADIENT are examples of such fields, since they require
+top-level coordinate derivatives. The term "top_level" refers to an ultimate
+parent element for the face or line, eg. the 3-D element parent to 2-D faces.
+If no such top level element is supplied and one is required, then the first
+available parent element will be chosen - if the user requires a top-level
+element in the same group as the face or with the face on the correct side,
+then they should supply the top_level_element here. Once a field has switched
+to being calculated on the top_level_element, all its source fields will be
+too - this should be understood when supplying source fields to such functions.
+
+???RC  May want to make this function non-static since there will be occasions
+when the coordinate field is calculated without derivatives, then straight away
+with derivatives for computing fibre axes/gradient etc. By first calling this
+function with <calculate_derivatives> set, a recalculation of the field values
+is avoided.
+==============================================================================*/
+{
+	int cache_is_valid,element_dimension,i,number_of_derivatives,
+		return_code;
+
+	ENTER(Computed_field_evaluate_cache_in_element);
+	if (field && element)
+	{
+		element_dimension=get_FE_element_dimension(element);
+		return_code=1;
+		/* clear the cache if values already cached for a node */
+		if (field->node)
+		{
+			Computed_field_clear_cache(field);
+		}
+		/* Are the values and derivatives in the cache not already calculated? */
+		if ((element != field->element) || (time != field->time) ||
+			(calculate_derivatives && (!field->derivatives_valid)))
+		{
+			cache_is_valid = 0;
+		}
+		else
+		{
+			cache_is_valid = 1;
+			for (i = 0; cache_is_valid && (i < element_dimension); i++)
+			{
+				if (field->xi[i] != xi[i])
+				{
+					cache_is_valid = 0;
+				}
+			}
+		}
+		if (!cache_is_valid)
+		{
+			/* 3. Allocate values and derivative cache */
+			if (return_code)
+			{
+				/* make sure we have allocated values AND derivatives, or nothing */
+				if (!field->values)
+				{
+					/* get enough space for derivatives in highest dimension element */
+					if (!(ALLOCATE(field->values,FE_value,field->number_of_components)&&
+						ALLOCATE(field->derivatives,FE_value,
+							MAXIMUM_ELEMENT_XI_DIMENSIONS*field->number_of_components)))
+					{
+						if (field->values)
+						{
+							DEALLOCATE(field->values);
+						}
+						return_code=0;
+					}
+				}
+			}
+			field->derivatives_valid=0;
+			if (field->string_cache)
+			{
+				DEALLOCATE(field->string_cache);
+			}
+			if (return_code)
+			{
+				/* Before we set up a better typed cache storage we are assuming
+					the evaluate will generate valid values, for those which don't
+					this will be set to zero in the evaluate.  This allows the valid
+					evaluation to a string, which potentially will expand to more types. */
+				field->values_valid = 1;
+				if (calculate_derivatives)
+				{
+					number_of_derivatives = element_dimension;
+				}
+				else
+				{
+					number_of_derivatives = 0;
+				}
+				Field_element_xi_location location(element, xi, time,
+					 top_level_element, number_of_derivatives);
+				return_code = field->core->evaluate_cache_at_location(&location);
+					/* How to specify derivatives or not */
+				if (return_code&&calculate_derivatives&&!(field->derivatives_valid))
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_evaluate_cache_in_element.  "
+						"Derivatives unavailable for field %s of type %s",field->name,
+						Computed_field_get_type_string(field));
+					return_code=0;
+				}
+				if (return_code)
+				{
+					REACCESS(FE_element)(&field->element, element);
+					field->time = time;
+					for (i = 0; i < element_dimension; i++)
+					{
+						field->xi[i] = xi[i];
+					}
+					for (; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
+					{
+						field->xi[i] = 0.0;
+					}
+				}
+				else
+				{
+					/* make sure value cache is marked as invalid */
+					if (field->element)
+					{
+						DEACCESS(FE_element)(&field->element);
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_evaluate_cache_in_element.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_evaluate_cache_in_element */
+
 char *Computed_field_evaluate_as_string_at_location(
 	struct Computed_field *field,int component_number,
 	Field_location *location)
@@ -2176,7 +2326,7 @@ LAST MODIFIED : 14 August 2006
 DESCRIPTION :
 Returns a string representing the value of <field>.<component_number> at
 <element>:<xi>. Calls Computed_field_evaluate_cache_in_element and
-converts the value for <component_number> to a string (since result 
+converts the value for <component_number> to a string (since result
 may already be in cache).
 
 Use -1 as the <component_number> if you want all the components.
@@ -2266,7 +2416,7 @@ LAST MODIFIED : 14 August 2006
 DESCRIPTION :
 Returns a string representing the value of <field>.<component_number> at
 <element>:<xi>. Calls Computed_field_evaluate_cache_in_element and
-converts the value for <component_number> to a string (since result 
+converts the value for <component_number> to a string (since result
 may already be in cache).
 
 Use -1 as the <component_number> if you want all the components.
@@ -2301,7 +2451,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 } /* Computed_field_evaluate_as_string_in_element */
 
 int Computed_field_evaluate_in_element(struct Computed_field *field,
-	struct FE_element *element,FE_value *xi,FE_value time, 
+	struct FE_element *element,FE_value *xi,FE_value time,
 	struct FE_element *top_level_element,FE_value *values,FE_value *derivatives)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -2394,7 +2544,7 @@ the string. Otherwise, a string built up of comma separated values evaluated
 for the field in Computed_field_evaluate_cache_at_location. The FE_value exception
 is used since it is likely the values are already in the cache in most cases,
 or can be used by other fields again if calculated now.
-The <component_number> indicates which component to calculate.  Use -1 to 
+The <component_number> indicates which component to calculate.  Use -1 to
 create a string which represents all the components.
 Some basic field types such as CMISS_NUMBER have special uses in this function.
 It is up to the calling function to DEALLOCATE the returned string.
@@ -2486,7 +2636,7 @@ Returns the <values> of <field> for nodal_lookup field if it is defined there. C
 this in advance by calling function Computed_field_defined_at_location. Each <field>
 has a cache for storing its values and derivatives, which is allocated and the
 field->values array filled by a call to Computed_field_evaluate_cache_at_location,
-which is then copied to <values> by this function. 
+which is then copied to <values> by this function.
 
 The <values> array must be large enough to store as many FE_values as there are
 number_of_components.
@@ -2517,6 +2667,58 @@ number_of_components.
 
 	return (return_code);
 } /* Computed_field_evaluate_without_node */
+
+
+
+int Computed_field_evaluate_at_location(struct Computed_field *field,
+	Field_location& loc, FE_value *values, FE_value *derivatives)
+{
+	int i,return_code;
+
+	ENTER(Computed_field_evaluate_at_location);
+	if (field && values)
+	{
+		return_code = Computed_field_evaluate_cache_at_location(field, &loc);
+		if (return_code)
+		{
+			if (field->values_valid)
+			{
+				/* copy values from cache to <values> */
+				for (i=0;i<field->number_of_components;i++)
+				{
+					values[i] = field->values[i];
+					// \todo sort this dodgy number of derivatives out
+					if (derivatives)
+					{
+						derivatives[i] = field->derivatives[i];
+						derivatives[i + field->number_of_components] = field->derivatives[i + field->number_of_components];
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_evaluate_at_location.  Field '%s' has no numerical values",
+					field->name);
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_evaluate_at_location.  Failed to evaluate location" );
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_evaluate_at_location.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
 
 int Computed_field_set_values_at_location(struct Computed_field *field,
 	Field_location* location, FE_value *values)
@@ -2593,7 +2795,7 @@ is reached for which its calculation is not reversible, or is not supported yet.
 	if (field && node && values)
 	{
 		Field_node_location location(node, time);
-		if (!(return_code = 
+		if (!(return_code =
 				field->core->set_values_at_location(&location, values)))
 		{
 			display_message(ERROR_MESSAGE, "Computed_field_set_values_at_node.  "
@@ -2811,7 +3013,7 @@ Computed_field_set_values_in_[managed_]element.
 	if (field && element && number_in_xi &&
 		(MAXIMUM_ELEMENT_XI_DIMENSIONS >= get_FE_element_dimension(element)))
 	{
-		return_code = 
+		return_code =
 			field->core->get_native_discretization_in_element(element, number_in_xi);
 	}
 	else
@@ -2862,6 +3064,51 @@ Inherits its result from the first source field -- if any.
 
 	return (return_code);
 } /* Computed_field_default_get_native_discretization_in_element */
+
+int recursively_add_source_fields_to_list( struct Computed_field *field, struct LIST(Computed_field) *field_list )
+{
+	int return_code = 1;
+	if ( field )
+	{
+		ADD_OBJECT_TO_LIST(Computed_field)(field,field_list);
+		for (int i=0;(i<field->number_of_source_fields)&&(!return_code);i++)
+		{
+			recursively_add_source_fields_to_list(field->source_fields[i],field_list);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"recursively_add_sourcefields_to_list.  Invalid argument(s)");
+		return_code=0;
+	}
+
+	return return_code;
+}
+
+/**
+ * Returns the domain of the given field by recursively searching through the fields source fields
+ *
+ * @param field The field to find the  domain of
+ * @param domain_field_list A handle to the list of domains for the field
+ * @return 1 on success, 0 otherwise
+ */
+int Computed_field_get_domain( struct Computed_field *field, struct LIST(Computed_field) *domain_field_list )
+{
+	int return_code = 0;
+	if (field && domain_field_list)
+	{
+		//field_list = CREATE_LIST(Computed_field)();
+		return_code = field->core->get_domain( domain_field_list );
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_domain.  Invalid argument(s)");
+	}
+
+	return return_code;
+}
 
 int Computed_field_get_number_of_components(struct Computed_field *field)
 /*******************************************************************************
@@ -2915,7 +3162,7 @@ It is up to the calling function to deallocate the returned string.
 			{
 				display_message(ERROR_MESSAGE,
 					"Computed_field_get_component_name.  Not enough memory");
-			}					
+			}
 		}
 		else
 		{
@@ -3066,7 +3313,7 @@ using as an identifier in the manager, such as spaces or punctuation.
 } /* Computed_field_set_command_string */
 
 int Computed_field_get_native_resolution(struct Computed_field *field,
-	int *dimension, int **sizes, 
+	int *dimension, int **sizes,
 	struct Computed_field **texture_coordinate_field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -3076,13 +3323,13 @@ Gets the <dimension>, <sizes>, <minimums>, <maximums> and <texture_coordinate_fi
 the <field>. These parameters will be used in image processing.
 
 ==============================================================================*/
-{       
+{
 	int return_code;
-	
+
 	ENTER(Computed_field_get_native_resolution);
 	if (field)
 	{
-		return_code = field->core->get_native_resolution(dimension, sizes, 
+		return_code = field->core->get_native_resolution(dimension, sizes,
 			texture_coordinate_field);
 	}
 	else
@@ -3096,7 +3343,7 @@ the <field>. These parameters will be used in image processing.
 } /* Computed_field_get_native_resolution */
 
 int Computed_field_core::get_native_resolution(
-	int *dimension, int **sizes, 
+	int *dimension, int **sizes,
 	struct Computed_field **texture_coordinate_field)
 /*******************************************************************************
 LAST MODIFIED : 14 August 2006
@@ -3404,7 +3651,7 @@ Conditional function returning true if <field> depends on time.
 	ENTER(Computed_field_has_multiple_times);
 	return_code=0;
 	if (field)
-	{	
+	{
 		return_code = field->core->has_multiple_times();
 	}
 	else
@@ -3582,7 +3829,7 @@ to modify and destroy it.
 } /* Computed_field_set_read_write */
 
 int Computed_field_find_element_xi(struct Computed_field *field,
-	FE_value *values, int number_of_values, double time, struct FE_element **element, 
+	FE_value *values, int number_of_values, double time, struct FE_element **element,
 	FE_value *xi, int element_dimension, struct Cmiss_region *search_region,
 	int propagate_field, int find_nearest_location)
 /*******************************************************************************
@@ -3596,7 +3843,7 @@ This has been implemented so that the texture_coordinates can be used to extract
 information from textures (sample_texture computed_field) and then modified and
 then put back into another texture.
 The <search_element_group> is the set of elements from which the chosen element
-will belong or alternatively this can be NULL and the <*element> set to 
+will belong or alternatively this can be NULL and the <*element> set to
 a single element to search in.
 If <propagate_field> is set and the field has a find_element_xi_function, it
 is called to undo its field calculation and resume the search on its source
@@ -3606,8 +3853,8 @@ since valid values may be a multiple of  2*PI out.
 If <propagate_field> is not set or there is no <find_element_xi_function> this
 function searches all elements in <search_element_group> trying to find a point
 at which the field evaluates to the <values>.
-If <propagate_field> is not set then <find_nearest_location> can be set and 
-then rather than requiring an exact match the closest location in the 
+If <propagate_field> is not set then <find_nearest_location> can be set and
+then rather than requiring an exact match the closest location in the
 <search_region> or the <*element> will be found.  If <propagate_field> is set
 then the <find_nearest_location> flag is ignored.
 Note a copy of the <values> array is immediately made so it will be possible to
@@ -3620,7 +3867,7 @@ pass in pointers to field cache values.
 	if (field && values && (number_of_values == field->number_of_components) &&
 		element && xi && (search_region || *element))
 	{
-		if ((!propagate_field) || 
+		if ((!propagate_field) ||
 			(!(return_code = field->core->find_element_xi(values, number_of_values,
 					element, xi, element_dimension, time, search_region))))
 		{
@@ -3823,7 +4070,7 @@ to modify it if it was.
 				/* Write out the help */
 				option_table = CREATE(Option_table)();
 				Option_table_add_entry(option_table,"[coordinate_system NAME]",
-					field_modify_void, computed_field_package_void, 
+					field_modify_void, computed_field_package_void,
 					define_Computed_field_type);
 				return_code=Option_table_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
@@ -4154,7 +4401,7 @@ Writes the commands needed to reproduce <field> to the command window.
 		return_code = 0;
 	}
 	LEAVE;
-	
+
 	return (return_code);
 } /* list_Computed_field_commands */
 
@@ -4408,7 +4655,7 @@ its name matches the contents of the <other_computed_field_void>.
 				for(i = 0 ; return_code && (i < field->number_of_source_values) ; i++)
 				{
 					return_code = (field->source_values[i]==
-						other_computed_field->source_values[i]);				
+						other_computed_field->source_values[i]);
 				}
 			}
 			if (return_code)
@@ -4447,24 +4694,24 @@ Default listing of source fields and source values.
 		if (0 < field->number_of_source_fields)
 		{
 			display_message(INFORMATION_MESSAGE,
-				"    source fields :");									
-			for (i = 0 ; i < field->number_of_source_fields ; i++)	
-			{																			
-				display_message(INFORMATION_MESSAGE,						
-					" %s", field->source_fields[i]->name);					
-			}																			
-			display_message(INFORMATION_MESSAGE, "\n");					
+				"    source fields :");
+			for (i = 0 ; i < field->number_of_source_fields ; i++)
+			{
+				display_message(INFORMATION_MESSAGE,
+					" %s", field->source_fields[i]->name);
+			}
+			display_message(INFORMATION_MESSAGE, "\n");
 		}
 		if (0 < field->number_of_source_values)
 		{
 			display_message(INFORMATION_MESSAGE,
-				"    values :");									
-			for (i = 0 ; i < field->number_of_source_values ; i++)	
-			{																			
-				display_message(INFORMATION_MESSAGE,						
-					" %g", field->source_values[i]);							
-			}																			
-			display_message(INFORMATION_MESSAGE, "\n");					
+				"    values :");
+			for (i = 0 ; i < field->number_of_source_values ; i++)
+			{
+				display_message(INFORMATION_MESSAGE,
+					" %g", field->source_values[i]);
+			}
+			display_message(INFORMATION_MESSAGE, "\n");
 		}
 		return_code = 1;
 	}
@@ -4525,6 +4772,27 @@ Default listing of source fields and source values.
 	}
 
 	return (command_string);
+} /* Computed_field_core::get_command_string */
+
+int Computed_field_core::get_domain( struct LIST(Computed_field) *domain_field_list ) const
+{
+	int return_code = 0;
+
+	if (field && domain_field_list)
+	{
+		return_code = 1;
+		for (int i = 0; (i < field->number_of_source_fields) && return_code; i++)
+		{
+			return_code = field->source_fields[i]->core->get_domain( domain_field_list );
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_core::get_domain.  Invalid argument(s)");
+	}
+
+	return return_code;
 } /* Computed_field_core::get_command_string */
 
 struct Computed_field_package *CREATE(Computed_field_package)(
@@ -4642,9 +4910,9 @@ int Computed_field_package_add_type(
 LAST MODIFIED : 24 January 2007
 
 DESCRIPTION :
-Adds the type of Computed_field described by <name> and 
-<define_Computed_field_type_function> to those in the LIST held by the 
-<computed_field_package>.  This type is then added to the 
+Adds the type of Computed_field described by <name> and
+<define_Computed_field_type_function> to those in the LIST held by the
+<computed_field_package>.  This type is then added to the
 define_Computed_field_type option table when parsing commands.
 ==============================================================================*/
 {
@@ -4948,7 +5216,7 @@ Changes the name of a field.
 					"Could not safely change identifier in indexed lists");
 				return_code = 0;
 			}
-				
+
 			/* Actually do the change */
 			if (return_code)
 			{
@@ -4963,7 +5231,7 @@ Changes the name of a field.
 				/* Now make them point to the same memory */
 				field->command_string = (char *)field->name;
 			}
-			
+
 			if (!LIST_END_IDENTIFIER_CHANGE(Computed_field,
 					name)(&identifier_change_data))
 			{
@@ -5050,7 +5318,7 @@ struct Cmiss_region *Computed_field_get_region(struct Computed_field *field)
 /***************************************************************************//**
  * Calls Computed_field_check_manager for all source fields.
  * Override if not all source fields in array need belong in the same manager.
- * 
+ *
  * @param manager_address  Address of manager which must be initialised to the
  *   required manager if known, or NULL if unknown. On return points at the
  *   first manager used by field or any of its source fields, or NULL if none.
@@ -5237,10 +5505,10 @@ int Computed_field_manage_recursive(struct Computed_field *field,
  * Assumes check_manager has been used to ensure fields are not already in
  * another manager.
  * Override if not all source fields in array need belong in the same manager.
- * 
+ *
  * @param manager  Computed field manager.
  * @return  1 if successfully added field and its source fields to manager.
- *   0 if field or any of the source fields not added. 
+ *   0 if field or any of the source fields not added.
  */
 int Computed_field_core::manage_source_fields(MANAGER(Computed_field) *manager)
 {
@@ -5267,7 +5535,7 @@ int Computed_field_core::manage_source_fields(MANAGER(Computed_field) *manager)
 	return (return_code);
 }
 
-int Computed_field_manage(struct Computed_field *field, 
+int Computed_field_manage(struct Computed_field *field,
 	struct MANAGER(Computed_field) *manager,
 	enum Computed_field_managed_status managed_status)	
 {

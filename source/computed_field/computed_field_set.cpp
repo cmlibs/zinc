@@ -155,14 +155,14 @@ wrapper for field and add it to the manager.
 						}
 						else
 						{
-							if (strchr(current_token, '.'))
+							char tmp_token[strlen(current_token)+1];
+							strncpy(tmp_token,current_token,strlen(current_token));
+							if (field_component_name=strchr(tmp_token, '.'))
 							{
-								char *current_token_copy = duplicate_string(current_token);
-								field_component_name = strchr(current_token_copy, '.');
 								*field_component_name = '\0';
 								field_component_name++;
 								if (selected_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
-										name)(current_token_copy, set_field_data->computed_field_manager))
+										name)(current_token, set_field_data->computed_field_manager))
 								{
 									ACCESS(Computed_field)(selected_field);
 									/* get the component number */
@@ -214,7 +214,7 @@ wrapper for field and add it to the manager.
 									else
 									{
 										display_message(ERROR_MESSAGE,
-											"Unknown field component: %s.%s", current_token_copy,
+											"Unknown field component: %s.%s", current_token,
 											field_component_name);
 										DEACCESS(Computed_field)(&selected_field);
 									}
@@ -222,9 +222,8 @@ wrapper for field and add it to the manager.
 								else
 								{
 									display_message(ERROR_MESSAGE, "Unknown field : %s",
-										current_token_copy);
+										current_token);
 								}
-								DEALLOCATE(current_token_copy);
 							}
 							else
 							{

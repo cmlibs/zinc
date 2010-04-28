@@ -370,7 +370,7 @@ already) and allows its contents to be modified.
 				set_source_field_data.computed_field_manager=
 					field_modify->get_field_manager();
 				set_source_field_data.conditional_function=
-          Computed_field_has_numerical_components;
+					Computed_field_has_numerical_components;
 				set_source_field_data.conditional_function_user_data=(void *)NULL;
 				set_source_field_array_data.number_of_fields=2;
 				set_source_field_array_data.conditional_data= &set_source_field_data;
