@@ -76,7 +76,7 @@ INCLUDE( FunctionDefinitions )
 PROJECT( cmgui_project )
 
 SET( CMGUI_MAJOR_VERSION "2" )
-SET( CMGUI_MINOR_VERSION "7" )
+SET( CMGUI_MINOR_VERSION "6" )
 SET( CMGUI_PATCH_VERSION "1" )
 
 # TODO Check me with CMake DOCS, I think this should be

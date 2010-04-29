@@ -74,14 +74,10 @@ if a value is already known.
 #include "general/manager.h"
 #include "general/object.h"
 #include "user_interface/message.h"
-#ifdef __cplusplus
-#include "computed_field/field_location.hpp"
-#endif /* __cplusplus */
 
-struct Field_location;
-/*
-The Cmiss_computed_field which is Public is currently the same object as the
-cmgui internal Computed_field.  The Public interface is contained in
+/* 
+The Cmiss_computed_field which is Public is currently the same object as the 
+cmgui internal Computed_field.  The Public interface is contained in 
 api/cmiss_computed_field.h however most of the functions come directly from
 this module.  So that these functions match the public declarations the
 functions are given their public names.
@@ -398,7 +394,7 @@ the string. Otherwise, a string built up of comma separated values evaluated
 for the field in Computed_field_evaluate_cache_at_node. The FE_value exception
 is used since it is likely the values are already in the cache in most cases,
 or can be used by other fields again if calculated now.
-The <component_number> indicates which component to calculate.  Use -1 to
+The <component_number> indicates which component to calculate.  Use -1 to 
 create a string which represents all the components.
 Some basic field types such as CMISS_NUMBER have special uses in this function.
 It is up to the calling function to DEALLOCATE the returned string.
@@ -433,7 +429,7 @@ Returns the <values> of <field> for nodal_lookup field if it is defined there. C
 this in advance by calling function Computed_field_defined_at_location. Each <field>
 has a cache for storing its values and derivatives, which is allocated and the
 field->values array filled by a call to Computed_field_evaluate_cache_at_location,
-which is then copied to <values> by this function.
+which is then copied to <values> by this function. 
 
 The <values> array must be large enough to store as many FE_values as there are
 number_of_components.
@@ -457,11 +453,6 @@ continues until the actual FE_field values at the node are changed or a field
 is reached for which its calculation is not reversible, or is not supported yet.
 ???RC Note that some functions are not reversible in this way.
 ==============================================================================*/
-
-#ifdef __cplusplus
-int Computed_field_evaluate_at_location(struct Computed_field *field,
-	Field_location& loc, FE_value *values, FE_value *derivatives = 0);
-#endif /* __cplusplus */
 
 int Computed_field_evaluate_at_field_coordinates(struct Computed_field *field,
 	struct Computed_field *reference_field, int number_of_input_values,
@@ -516,7 +507,7 @@ supported yet.
 int Computed_field_get_native_discretization_in_element(
 	struct Computed_field *field,struct FE_element *element,int *number_in_xi);
 /*******************************************************************************
-LAST MODIFIED : 28 October 1999
+LAST MODIFIED : 28 October 1999 
 
 DESCRIPTION :
 If the <field> or its source field is grid-based in <element>, returns in
@@ -530,7 +521,7 @@ Returns 0 with no errors if the field is not grid-based.
 ==============================================================================*/
 
 int Computed_field_get_native_resolution(struct Computed_field *field,
-        int *dimension, int **sizes,
+        int *dimension, int **sizes, 
 	struct Computed_field **texture_coordinate_field);
 /*******************************************************************************
 LAST MODIFIED : 03 February 2005
@@ -763,7 +754,7 @@ to modify and destroy it.
 ==============================================================================*/
 
 int Computed_field_find_element_xi(struct Computed_field *field,
-	FE_value *values, int number_of_values, double time, struct FE_element **element,
+	FE_value *values, int number_of_values, double time, struct FE_element **element, 
 	FE_value *xi, int element_dimension, struct Cmiss_region *search_region,
 	int propagate_field, int find_nearest_location);
 /*******************************************************************************
@@ -777,7 +768,7 @@ This has been implemented so that the texture_coordinates can be used to extract
 information from textures (sample_texture computed_field) and then modified and
 then put back into another texture.
 The <search_element_group> is the set of elements from which the chosen element
-will belong or alternatively this can be NULL and the <*element> set to
+will belong or alternatively this can be NULL and the <*element> set to 
 a single element to search in.
 If <propagate_field> is set and the field has a find_element_xi_function, it
 is called to undo its field calculation and resume the search on its source
@@ -787,8 +778,8 @@ since valid values may be a multiple of  2*PI out.
 If <propagate_field> is not set or there is no <find_element_xi_function> this
 function searches all elements in <search_element_group> trying to find a point
 at which the field evaluates to the <values>.
-If <propagate_field> is not set then <find_nearest_location> can be set and
-then rather than requiring an exact match the closest location in the
+If <propagate_field> is not set then <find_nearest_location> can be set and 
+then rather than requiring an exact match the closest location in the 
 <search_region> or the <*element> will be found.  If <propagate_field> is set
 then the <find_nearest_location> flag is ignored.
 Note a copy of the <values> array is immediately made so it will be possible to
@@ -1007,13 +998,12 @@ Change the name of a field.
 
 /***************************************************************************//**
  * Returns the region which this field belongs to, if any.
- *
+ * 
  * @param field  The field.
  * @return  A handle to the owning region if in one, or NULL if none.
  */
 struct Cmiss_region *Computed_field_get_region(struct Computed_field *field);
 
-int Computed_field_get_domain( struct Computed_field *field, struct LIST(Computed_field) *domain_field_list );
 
 /***************************************************************************//**
  * Returns true if field is not a source field of other.

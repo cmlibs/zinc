@@ -47,8 +47,6 @@ extern "C" {
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_location.hpp"
 
-Field_location::~Field_location() {} /* Declaration of pure virtual destructor */
-
 int Field_element_xi_location::check_cache_for_location(Computed_field *field)
 {
  	int cache_is_valid, element_dimension, i;

@@ -2108,12 +2108,12 @@ private:
 void Terminate(wxCloseEvent& event)
 {
 	USE_PARAMETER(event);
-	 /*wxMessageDialog *dlg = new wxMessageDialog(NULL,"Are you sure you want to quit cmgui?", 
+	 wxMessageDialog *dlg = new wxMessageDialog(NULL,"Are you sure you want to quit cmgui?", 
 			"Exit Confirmation", wxYES_NO|wxICON_QUESTION|wxSTAY_ON_TOP);
-	 if ( dlg->ShowModal() == wxID_YES)*/
+	 if ( dlg->ShowModal() == wxID_YES)
 			Execute_command_execute_string(command_window->execute_command, "QUIT"); 
 	 //else: dialog was cancelled or some another button pressed
-	 /*dlg->Destroy();*/
+	 dlg->Destroy();
 } 
 
 void Exit(wxCommandEvent& event)

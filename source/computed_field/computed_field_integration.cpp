@@ -1022,9 +1022,9 @@ Calculates the mapping for the specified time.
 					printf("Texture mapping list\n");
 					FOR_EACH_OBJECT_IN_LIST(Computed_field_element_integration_mapping)(
 						write_Computed_field_element_integration_mapping, NULL, texture_mapping);
-					//printf("To be checked list\n");
-					//FOR_EACH_OBJECT_IN_LIST(Computed_field_element_integration_mapping)(
-					//	write_Computed_field_element_integration_mapping, NULL, to_be_checked);
+					printf("To be checked list\n");
+					FOR_EACH_OBJECT_IN_LIST(Computed_field_element_integration_mapping)(
+						write_Computed_field_element_integration_mapping, NULL, to_be_checked);
 #endif /* defined (DEBUG) */
 				}
 				cached_time = time;

@@ -3192,7 +3192,7 @@ If <field_order_info> contains fields, they are written in that order.
 
 static int write_Cmiss_region(FILE *output_file, struct Cmiss_region *region,
 	struct Cmiss_region *root_region, int force_no_master_region,
-	const char *write_path, struct Cmiss_region *write_region, int indent,
+	char *write_path, struct Cmiss_region *write_region, int indent,
 	int write_elements, int write_nodes, struct FE_field_order_info *field_order_info,
 	struct LIST(Cmiss_region_write_info) *write_info_list, char *path)
 /*******************************************************************************

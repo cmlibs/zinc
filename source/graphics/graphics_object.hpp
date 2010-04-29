@@ -74,7 +74,7 @@ public:
 	/*****************************************************************************//**
 	 * Construct a new vertex array of the specified type.
 	*/
-	Graphics_vertex_array(Graphics_vertex_array_type type);
+	Graphics_vertex_array(enum Graphics_vertex_array_type type);
 	
 	/*****************************************************************************//**
 	 * Destroys a vertex array.
@@ -85,18 +85,14 @@ public:
 	 * Add values to set.
 	 * 
 	 * @param vertex_type  Specifies the format of the supplied vertices.
-	 * @param values_per_vertex  The number of values for each vertex.
 	 * @param number_of_values  The size of the values array.
 	 * @param values  Array of values, length is required to match that expected by
 	 * the specified vertex_type.
 	 * @return return_code. 1 for Success, 0 for failure.
 	*/
-/*	int add_float_attribute(
-			Graphics_vertex_array_attribute_type vertex_type,
-			unsigned int values_per_vertex, unsigned int number_of_values, float *values);
-*/
-	int add_float_attribute( Graphics_vertex_array_attribute_type vertex_type,
-		const unsigned int values_per_vertex, const unsigned int number_of_values, const float *values);
+	int add_float_attribute(
+			enum Graphics_vertex_array_attribute_type vertex_type,
+			unsigned int number_of_values, float *values);
 
 	/*****************************************************************************//**
 	 * Retrieve pointer to value buffer from set.
@@ -114,7 +110,7 @@ public:
 	 * @return return_code. 1 for Success, 0 for failure.
 	*/
 	int get_float_vertex_buffer(
-			Graphics_vertex_array_attribute_type vertex_buffer_type,
+			enum Graphics_vertex_array_attribute_type vertex_buffer_type,
 			float **vertex_buffer, unsigned int *values_per_vertex,
 			unsigned int *vertex_count);
 
@@ -128,8 +124,8 @@ public:
 	 * @return return_code. 1 for Success, 0 for failure.
 	*/
 	int add_unsigned_integer_attribute(
-			Graphics_vertex_array_attribute_type vertex_type,
-			unsigned int values_per_vertex, unsigned int number_of_values, unsigned int *values);
+			enum Graphics_vertex_array_attribute_type vertex_type,
+			unsigned int number_of_values, unsigned int *values);
 
 	/*****************************************************************************//**
 	 * Get values from set.
@@ -141,7 +137,7 @@ public:
 	 * @return return_code. 1 for Success, 0 for failure.
 	*/
 	int get_unsigned_integer_attribute(
-		Graphics_vertex_array_attribute_type vertex_type,
+		enum Graphics_vertex_array_attribute_type vertex_type,
 		unsigned int vertex_index,	unsigned int number_of_values, unsigned int *values);
 
 	/*****************************************************************************//**
@@ -159,7 +155,7 @@ public:
 	 * @return return_code. 1 for Success, 0 for failure.
 	*/
 	int get_unsigned_integer_vertex_buffer(
-		Graphics_vertex_array_attribute_type vertex_buffer_type,
+		enum Graphics_vertex_array_attribute_type vertex_buffer_type,
 		unsigned int **vertex_buffer, unsigned int *values_per_vertex,
 		unsigned int *vertex_count);
 
@@ -172,8 +168,8 @@ public:
 	 * @return return_code. 1 for Success, 0 for failure.
 	*/
 	int add_integer_attribute(
-		Graphics_vertex_array_attribute_type vertex_type,
-		unsigned int values_per_vertex, unsigned int number_of_values, int *values);
+		enum Graphics_vertex_array_attribute_type vertex_type,
+		unsigned int number_of_values, int *values);
 
 	/*****************************************************************************//**
 	 * Get values from set.
@@ -185,7 +181,7 @@ public:
 	 * @return return_code. 1 for Success, 0 for failure.
 	*/
 	int get_integer_attribute(
-		Graphics_vertex_array_attribute_type vertex_type,
+		enum Graphics_vertex_array_attribute_type vertex_type,
 		unsigned int vertex_index,	unsigned int number_of_values, int *values);
 
 	/*****************************************************************************//**
@@ -196,12 +192,8 @@ public:
 	 * @return buffer size.
 	*/
 	unsigned int get_number_of_vertices(
-		Graphics_vertex_array_attribute_type vertex_type);
+		enum Graphics_vertex_array_attribute_type vertex_type);
 
-	/**
-	 * Free any unused memory at the end of a buffer
-	 */
-	int free_unused_buffer_memory( Graphics_vertex_array_attribute_type vertex_type );
 	/*****************************************************************************//**
 	 * Resets the sizes of all the buffers in the set.  Does not actually
 	 * release memory in the buffers as it is assumed likely that the same buffers

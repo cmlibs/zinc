@@ -109,7 +109,7 @@ Used with iterators for building glyph sets from nodes.
 	GTDATA *data;
 	int *label_bounds_bit_pattern, label_bounds_components, label_bounds_dimension,
 		label_bounds_values, n_data_components, *name;
-	struct Computed_field *coordinate_field, *data_field, *label_field,
+	struct Computed_field *coordinate_field, *data_field, *label_field, 
 		*label_bounds_field, *label_density_field, *orientation_scale_field, *variable_scale_field,
 		*visibility_field;
 	struct FE_node *label_bounds_node;
@@ -136,7 +136,7 @@ structure - assumes they will be statically allocated by the calling procedure.
 	if (ALLOCATE(computed_fields_of_node,struct Computed_fields_of_node,1))
 	{
 		computed_fields_of_node->num_required_fields=0;
-		computed_fields_of_node->number_of_nodes=0;
+		computed_fields_of_node->number_of_nodes=0;	
 		computed_fields_of_node->num_field=0;
 		computed_fields_of_node->num_coordinate=0;
 		computed_fields_of_node->time = 0;
@@ -193,7 +193,7 @@ static int FE_node_computed_fields_defined(struct FE_node *node,int num_of_field
 LAST MODIFIED : 17 May 1999
 
 DESCRIPTION :
-function for checking that a node has the computed fields in current_field_address
+function for checking that a node has the computed fields in current_field_address 
 defined.
 ==============================================================================*/
 {
@@ -201,7 +201,7 @@ defined.
 	struct Computed_field *current_field;
 
 	ENTER(FE_node_computed_fields_defined);
-	/* check arguments */
+	/* check arguments */	
 	if(node&&current_field_address)
 	{
 		fields_all_defined=1;
@@ -212,7 +212,7 @@ defined.
 			if (current_field= *current_field_address)
 			{
 				if(!Computed_field_is_defined_at_node(current_field,node))
-				{
+				{	
 					fields_all_defined=0;
 				}
 			}
@@ -221,13 +221,13 @@ defined.
 				display_message(ERROR_MESSAGE,"FE_node_computed_fields_defined"
 					" Current_field is NULL  ");
 				fields_all_defined=0;
-			}
+			}		
 			i--;
 			current_field_address++;
 		}
 	}
 	else
-	{
+	{		
 		display_message(ERROR_MESSAGE,"FE_node_computed_fields_defined."
 			" Invalid arguments");
 		fields_all_defined=0;
@@ -242,8 +242,8 @@ static int FE_node_count_if_computed_fields_defined(struct FE_node *node,
 LAST MODIFIED : 17 May 1999
 
 DESCRIPTION :
-Iterator function for counting how many of the supplied computed fields are defined
-and can be evaluated at a node. Count returned in
+Iterator function for counting how many of the supplied computed fields are defined 
+and can be evaluated at a node. Count returned in 
 computed_fields_of_node->number_of_nodes++.
 ==============================================================================*/
 {
@@ -257,20 +257,20 @@ computed_fields_of_node->number_of_nodes++.
 	if (node&&(computed_fields_of_node=(struct Computed_fields_of_node *)user_data))
 	{
 		return_code=1;
-		/* check for specific fields.  The old efficiency assumption that
+		/* check for specific fields.  The old efficiency assumption that 
 			the only thing that can affect this condition is the defined list
-			of FE_fields is a bad one. An alternative way to do this would be to
+			of FE_fields is a bad one. An alternative way to do this would be to 
 			allocate for all the nodes in the region and then reallocate to the
-			actual size after adding each node, thereby only visiting and
+			actual size after adding each node, thereby only visiting and 
 			checking each node once. */
 		current_field_address=computed_fields_of_node->required_fields;
-
+		
 		if (FE_node_computed_fields_defined(node,
 				computed_fields_of_node->num_required_fields,current_field_address))
 		{
-			if (computed_fields_of_node->visibility_field &&
+			if (computed_fields_of_node->visibility_field && 
 				(Computed_field_is_defined_at_node(
-					 computed_fields_of_node->visibility_field,node)) &&
+					 computed_fields_of_node->visibility_field,node)) && 
 				(1 == Computed_field_get_number_of_components(computed_fields_of_node->visibility_field)))
 			{
 				Computed_field_evaluate_at_node(computed_fields_of_node->visibility_field,
@@ -336,9 +336,9 @@ fields used here.
 	}
 	if (visibility_value >= 1)
 	{
-		if (node && node_to_glyph_set_data &&
+		if (node && node_to_glyph_set_data && 
 			(coordinate_field=node_to_glyph_set_data->coordinate_field) &&
-			(3 >= Computed_field_get_number_of_components(coordinate_field)) &&
+			(3 >= Computed_field_get_number_of_components(coordinate_field)) && 
 			((!(orientation_scale_field =
 					node_to_glyph_set_data->orientation_scale_field)) ||
 				(9 >= (number_of_orientation_scale_components =
@@ -360,30 +360,30 @@ fields used here.
 		{
 			return_code=1;
 			/* prepare fields for check with FE_node_computed_fields_defined */
-			number_of_fields = 0;
+			number_of_fields = 0;	
 			if (coordinate_field)
-			{
+			{ 
 				required_fields[number_of_fields]=coordinate_field;
-				number_of_fields++;
-			}
+				number_of_fields++;			
+			}	
 			if (data_field)
-			{
+			{ 
 				required_fields[number_of_fields]=data_field;
 				number_of_fields++;
 			}
 			if (orientation_scale_field)
-			{
+			{ 
 				required_fields[number_of_fields]=orientation_scale_field;
-				number_of_fields++;
-			}
+				number_of_fields++;			
+			}	
 			if (variable_scale_field)
-			{
+			{ 
 				required_fields[number_of_fields]=variable_scale_field;
-				number_of_fields++;
+				number_of_fields++;			
 			}
 			if (node_to_glyph_set_data->label_bounds_field &&
 				(node_to_glyph_set_data->label_bounds_field != coordinate_field))
-			{
+			{ 
 				required_fields[number_of_fields]=node_to_glyph_set_data->label_bounds_field;
 				number_of_fields++;
 			}
@@ -393,10 +393,10 @@ fields used here.
 				number_of_fields++;
 			}
 			time = node_to_glyph_set_data->time;
-			current_field_address = required_fields;
+			current_field_address = required_fields;		
 			/* if there's no node coordinate field, do nothing, but no error */
 			if (FE_node_computed_fields_defined(node,number_of_fields,
-					current_field_address))
+					current_field_address)) 
 			{
 				/* clear coordinates in case coordinate field is not 3 component */
 				coordinates[0] = 0.0;
@@ -458,7 +458,7 @@ fields used here.
 					(node_to_glyph_set_data->axis2)++;
 					(node_to_glyph_set_data->axis3)++;
 					(node_to_glyph_set_data->scale)++;
-
+					
 					if (node_to_glyph_set_data->data_field)
 					{
 						CAST_TO_OTHER(node_to_glyph_set_data->data,data_values,
@@ -541,7 +541,7 @@ fields used here.
 									vector))
 							{
 								/* We need to explicitly clear the label_field cache as if
-									 we are caching computed_field manager messages then the
+									 we are caching computed_field manager messages then the 
 									 changes to the coordinate field will not be notified to
 									 the label field yet. */
 								Computed_field_clear_cache(node_to_glyph_set_data->label_bounds_field);
@@ -617,7 +617,7 @@ but are indirectly connected (e.g. mesh with slit)
 	{
 		return_code=1;
 		/* if already visited, skip */
-		if ((i<n_xi[0]) && (j<n_xi[1]) && (k<n_xi[2])
+		if ((i<n_xi[0]) && (j<n_xi[1]) && (k<n_xi[2]) 
 				&& !element_block[k*n_xi[0]*n_xi[1]+j*n_xi[0]+i])
 		{
 			/* add element to block */
@@ -1283,13 +1283,13 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 		if (computed_fields_of_node=CREATE(Computed_fields_of_node)())
 		{
 			return_code = 1;
-			number_of_fields = 0;
+			number_of_fields = 0;	
 			computed_fields_of_node->num_coordinate=1;
 			computed_fields_of_node->required_fields=required_fields;
 			computed_fields_of_node->time = time;
 			if (visibility_field)
 			{
-				computed_fields_of_node->visibility_field =
+				computed_fields_of_node->visibility_field = 
 					ACCESS(Computed_field)(visibility_field);
 			}
 			if (coordinate_field)
@@ -1305,12 +1305,12 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 			if (orientation_scale_field)
 			{
 				required_fields[number_of_fields]=orientation_scale_field;
-				number_of_fields++;
+				number_of_fields++;			
 			}
 			if (variable_scale_field)
 			{
 				required_fields[number_of_fields]=variable_scale_field;
-				number_of_fields++;
+				number_of_fields++;			
 			}
 			/* label_field is not a required field (if undefined, label is empty) EXCEPT
 			 * where glyph bases its glyph_labels_function bounds on it */
@@ -1383,7 +1383,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_region_nodes(
 						"Error counting nodes with all fields defined");
 				}
 			}
-			if (return_code)
+			if (return_code) 
 			{
 				number_of_points = computed_fields_of_node->number_of_nodes;
 				if (0<number_of_points)
@@ -1726,7 +1726,7 @@ int FE_element_add_line_to_vertex_array(
 	   (3 >= Computed_field_get_number_of_components(texture_coordinate_field))))
 	{
 		return_code = 1;
-
+		
 		/* clear coordinates in case coordinate field is not 3 component */
 		coordinates[0]=0.0;
 		coordinates[1]=0.0;
@@ -1738,16 +1738,16 @@ int FE_element_add_line_to_vertex_array(
 			texture_coordinates[1] = 0.0;
 			texture_coordinates[2] = 0.0;
 		}
-
+		
 		/* for selective editing of GT_object primitives, record element ID */
 		get_FE_element_identifier(element, &cm);
 		graphics_name = CM_element_information_to_graphics_name(&cm);
 		array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ID,
-			1, 1, &graphics_name);
-
+			1, &graphics_name);
+		
 		vertex_start = array->get_number_of_vertices(
 			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
-
+		
 		distance=(FE_value)number_of_segments;
 		i=0;
 		for (i=0;(i<=number_of_segments)&&return_code;i++)
@@ -1767,13 +1767,13 @@ int FE_element_add_line_to_vertex_array(
 				float floatField[3];
 				CAST_TO_OTHER(floatField,coordinates,float,3);
 				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
-					3, 1, floatField);
+					3, floatField);
 				if (data_field)
 				{
 					float *floatData = new float[number_of_data_values];
 					CAST_TO_OTHER(floatData,data_buffer,float,number_of_data_values);
 					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-						number_of_data_values, 1, floatData);
+						number_of_data_values, floatData);
 					delete[] floatData;
 				}
 				if (texture_coordinate_field)
@@ -1781,7 +1781,7 @@ int FE_element_add_line_to_vertex_array(
 					CAST_TO_OTHER(floatField,texture_coordinates,float,3);
 					array->add_float_attribute(
 						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
-						3, 1, floatField);
+						3, floatField);
 				}
 			}
 		}
@@ -1790,13 +1790,13 @@ int FE_element_add_line_to_vertex_array(
 			number_of_vertices = number_of_segments+1;
 			array->add_unsigned_integer_attribute(
 				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
-				1, 1, &number_of_vertices);
+				1, &number_of_vertices);
 			array->add_unsigned_integer_attribute(
 				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
-				1, 1, &vertex_start);
+				1, &vertex_start);
 		}
 		/* else could try and remove vertices that failed */
-
+		
 		/* I don't think I need to clear the field cache's here, instead I have
 		 * done it in GT_element_settings_to_graphics_object.
 		 */
@@ -2098,7 +2098,7 @@ Notes:
 					jacobian[0] = (*point)[0] - (*previous_point)[0];
 					jacobian[1] = (*point)[1] - (*previous_point)[1];
 					jacobian[2] = (*point)[2] - (*previous_point)[2];
-
+				
 					/* Get the normal to plane which contains change_in_position
 						vector and previous_normal_vector */
 					jacobian[3] = jacobian[1] * (*previous_normal)[2] -
@@ -2130,7 +2130,7 @@ Notes:
 					}
 				}
 
-				/* Find the closest correlation between the end_aligned_normal and the
+				/* Find the closest correlation between the end_aligned_normal and the 
 					propogated normal */
 				derivative = normalpoints + number_of_segments_along * (number_of_segments_around+1);
 				normal = normalpoints + number_of_segments_along * (number_of_segments_around+1) + 1;
@@ -2208,7 +2208,7 @@ Notes:
 					dS_dxi = radius_array[3*i+2];
 
 					/* Write the true normals and positions */
-					normal = normalpoints + i * (number_of_segments_around+1);
+					normal = normalpoints + i * (number_of_segments_around+1);				
 					for (j=number_of_segments_around;0<=j;j--)
 					{
 						if (i < number_of_segments_along)
@@ -2364,7 +2364,7 @@ to say which parent element they should be evaluated on as necessary.
 		scontrolcount = 4;
 		tcontrolcount = 4;
 		number_of_points = scontrolcount * tcontrolcount;
-		if (ALLOCATE(sknots, double, sknotcount) &&
+		if (ALLOCATE(sknots, double, sknotcount) && 
 			ALLOCATE(tknots, double, tknotcount)&&
 			ALLOCATE(control_points, double, 4 * number_of_points))
 		{
@@ -2374,7 +2374,7 @@ to say which parent element they should be evaluated on as necessary.
 				get_FE_element_identifier(element, &cm);
 				GT_nurbs_set_integer_identifier(nurbs, CM_element_information_to_graphics_name(&cm));
 				if (GT_nurbs_set_surface(nurbs, sorder, torder,
-					sknotcount, tknotcount, sknots, tknots,
+					sknotcount, tknotcount, sknots, tknots, 
 					scontrolcount, tcontrolcount, control_points))
 				{
 					if (texture_coordinate_field)
@@ -2383,7 +2383,7 @@ to say which parent element they should be evaluated on as necessary.
 						{
 							GT_nurbs_set_texture_control_points(nurbs,
 								texture_control_points);
-							texture_coordinate_components =
+							texture_coordinate_components = 
 								Computed_field_get_number_of_components(texture_coordinate_field);
 						}
 						else
@@ -2447,7 +2447,7 @@ to say which parent element they should be evaluated on as necessary.
 				}
 			}
 		}
-
+			
 		if (nurbs)
 		{
 			/* Assuming a HERMITE nurb definition at the moment */
@@ -2500,12 +2500,12 @@ to say which parent element they should be evaluated on as necessary.
 						} break;
 					}
 					xi[2] = 0.0;
-
+					
 					if (Computed_field_evaluate_in_element(coordinate_field,element,xi,
 						time,top_level_element,coordinates,derivative_xi))
 					{
 						for (j = 0 ; j < 3 ; j++)
-						{
+						{							
 							control_points[4 * offset0 + j] = coordinates[j];
 							control_points[4 * (offset0 + offset1) + j] = coordinates[j]
 								+ sign1 * derivative_xi[2 * j] / 3.0;
@@ -3012,7 +3012,7 @@ normals are used.
 							/* tangent is dX/d_xi * inv(dT/dxi) */
 							texture_determinant = texture_derivative[0] * texture_derivative[3]
 								- texture_derivative[1] * texture_derivative[2];
-							if ((texture_determinant < FE_VALUE_ZERO_TOLERANCE) &&
+							if ((texture_determinant < FE_VALUE_ZERO_TOLERANCE) && 
 								(texture_determinant > -FE_VALUE_ZERO_TOLERANCE))
 							{
 								/* Cannot invert the texture derivative so just use the first xi derivative */
@@ -3382,7 +3382,7 @@ The <xi> are set to their local values within the returned <element>.
 		xi[0] -= ((FE_value)a);
 		xi[1] -= ((FE_value)b);
 		xi[2] -= ((FE_value)c);
-
+	
 		*element = element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a];
 		return_code = 1;
 	}
@@ -3462,7 +3462,7 @@ faces.
 		number_in_xi[0] = 1;
 		number_in_xi[1] = 1;
 		number_in_xi[2] = 1;
-		if (FE_element_shape_get_xi_points_cell_centres(shape,
+		if (FE_element_shape_get_xi_points_cell_centres(shape, 
 				number_in_xi, number_of_xi_points_created, &xi_points))
 		{
 			if (Computed_field_evaluate_in_element(
@@ -3472,8 +3472,8 @@ faces.
 			{
 				cross_product_FE_value_vector3(winding_coordinate_derivatives + 0,
 					winding_coordinate_derivatives + 3,result);
-				if ((result[0] * winding_coordinate_derivatives[6] +
-						result[1] * winding_coordinate_derivatives[7] +
+				if ((result[0] * winding_coordinate_derivatives[6] + 
+						result[1] * winding_coordinate_derivatives[7] + 
 						result[2] * winding_coordinate_derivatives[8]) < 0)
 				{
 					reverse_winding = 1;
@@ -3481,7 +3481,7 @@ faces.
 			}
 			DEALLOCATE(xi_points);
 		}
-
+			
 
 		if (texture_coordinate_field)
 		{
@@ -3635,8 +3635,8 @@ faces.
 							}
 							if (return_code)
 							{
-								if (!(voltex = CREATE(GT_voltex)(n_vertices, vertex_list,
-											n_iso_polys, triangle_list, n_data_components,
+								if (!(voltex = CREATE(GT_voltex)(n_vertices, vertex_list, 
+											n_iso_polys, triangle_list, n_data_components, 
 											tex_number_of_components, voltex_type)))
 								{
 									display_message(ERROR_MESSAGE,
@@ -3674,7 +3674,7 @@ faces.
 										triangle_list[i]->index = i;
 										for (j=0;j<3;j++)
 										{
-											triangle_list[i]->vertices[j] =
+											triangle_list[i]->vertices[j] = 
 												vertex_list[vtexture->mc_iso_surface->
 													compiled_triangle_list[i]->vertex_index[2-j]];
 										}
@@ -3688,7 +3688,7 @@ faces.
 										triangle_list[i]->index = i;
 										for (j=0;j<3;j++)
 										{
-											triangle_list[i]->vertices[j] =
+											triangle_list[i]->vertices[j] = 
 												vertex_list[vtexture->mc_iso_surface->
 													compiled_triangle_list[i]->vertex_index[j]];
 										}
@@ -3700,7 +3700,7 @@ faces.
 								{
 									vertex_list[i]->number_of_triangles = (vtexture->mc_iso_surface->
 										compiled_vertex_list)[i]->n_triangle_ptrs;
-									ALLOCATE(vertex_list[i]->triangles, struct VT_iso_triangle *,
+									ALLOCATE(vertex_list[i]->triangles, struct VT_iso_triangle *, 
 										vertex_list[i]->number_of_triangles);
 									for (j=0;j<vertex_list[i]->number_of_triangles;j++)
 									{
@@ -3935,7 +3935,7 @@ faces.
 														{
 															if (coordinate_field_derivatives)
 															{
-																/* For the other displacements we displace the
+																/* For the other displacements we displace the 
 																	xi coordinates (coordinate_field_derivatives IS NULL) */
 																switch (displacement_map_xi_direction)
 																{
@@ -4039,9 +4039,9 @@ faces.
 								} /* ii */
 								if (voltex)
 								{
-									/* Put normalised triangle contributions into each vertex
-										but do not normalise the sums as we will accumlate adjacent
-										iso_surfaces into the voltex and then normalise once all
+									/* Put normalised triangle contributions into each vertex 
+										but do not normalise the sums as we will accumlate adjacent 
+										iso_surfaces into the voltex and then normalise once all 
 										elements have been considered */
 									for (i = 0 ; i < n_iso_polys ; i++) /* triangles (ignoring repetitions) */
 									{
@@ -4073,7 +4073,7 @@ faces.
 										}
 									}
 								}
-
+							
 								Computed_field_clear_cache(coordinate_field);
 								if(data_field)
 								{
@@ -4147,7 +4147,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	FE_value *base_size, FE_value *centre, FE_value *scale_factors,
 	struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
-	struct Computed_field *data_field,
+	struct Computed_field *data_field, 
 	struct Graphics_font *font, struct Computed_field *label_field,
 	enum Graphics_select_mode select_mode, int element_selected,
 	struct Multi_range *selected_ranges, int *point_numbers, FE_value time)
@@ -4629,7 +4629,7 @@ Interpolates xi points (triples in vector field) over the finite <element>
 								if (Computed_field_evaluate_in_element(
 									coordinate_field,
 									element_block[c*n_xi[0]*n_xi[1]+b*n_xi[0]+a],
-									xi,time,(struct FE_element *)NULL, coordinate,
+									xi,time,(struct FE_element *)NULL, coordinate, 
 									(FE_value *)NULL))
 								{
 									/* assign the coordinates to the point */
@@ -5500,7 +5500,7 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 	struct GT_voltex *iso_surface_voltex;
 	int cell_limit, *detail_map, i, linked_xi1, linked_xi2, number_of_passes,
 		number_of_polygon_vertices, number_in_xi1, number_in_xi2, number_in_xi3,
-		number_of_volume_texture_cells, number_of_volume_texture_nodes,
+		number_of_volume_texture_cells, number_of_volume_texture_nodes, 
 		pass, return_code, tetrahedra, xi3_step;
 	struct MC_cell **mc_cell;
 	struct MC_iso_surface *mc_iso_surface;
@@ -5587,7 +5587,7 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 		if (number_in_xi1 * number_in_xi2 * number_in_xi3 > cell_limit)
 		{
 			xi3_step = number_in_xi3;
-			while ((xi3_step > 1) &&
+			while ((xi3_step > 1) && 
 				(number_in_xi1 * number_in_xi2 * xi3_step > cell_limit))
 			{
 				xi3_step /= 2;
@@ -5691,8 +5691,8 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 						return_code=1;
 						while (return_code&&(i<number_of_volume_texture_nodes))
 						{
-							xi[0] = (float)(i % (number_in_xi1+1)) / (float)number_in_xi1;
-							xi[1] = (float)((i / (number_in_xi1+1)) % (number_in_xi2+1)) / (float)number_in_xi2;
+							xi[0] = (float)(i % (number_in_xi1+1)) / (float)number_in_xi1; 
+							xi[1] = (float)((i / (number_in_xi1+1)) % (number_in_xi2+1)) / (float)number_in_xi2; 
 							/* We may start part way through, use number_in_xi2 as this is the total dimension */
 							xi[2] = (float)(((i / ((number_in_xi1+1) * (number_in_xi2+1))))
 								+ pass * xi3_step) / (float)number_in_xi[2];
@@ -5705,7 +5705,7 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 								node->scalar_value=(double)scalar_value;
 								if (tetrahedra)
 								{
-									/* Use the clipping function to define the
+									/* Use the clipping function to define the 
 										xi1+xi2+xi3=1 plane */
 									node->clipping_fn_value=(double)-(xi[0]+xi[1]+xi[2]);
 								}
@@ -5737,7 +5737,7 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 								the scalar field */
 							if (tetrahedra)
 							{
-								/* Use the clipping function to define the
+								/* Use the clipping function to define the 
 										xi1+xi2+xi3=1 plane, add a little so that
 										the valid portions of surfaces aligned with
 										the clipping plane are not cut out. */

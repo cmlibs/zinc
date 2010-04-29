@@ -56,9 +56,10 @@ protected:
 		time(time), number_of_derivatives(number_of_derivatives)
 	{};
 
-	/* Abstract virtual destructor declaration as we will not make objects of this
+	/* Abstract virtual destructor as we will not make objects of this
 		parent class */
-	virtual ~Field_location() = 0;
+	virtual ~Field_location()
+	{};
 
 public:
 	FE_value get_time()

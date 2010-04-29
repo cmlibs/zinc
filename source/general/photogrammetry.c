@@ -185,7 +185,7 @@ vector <b>.
 		printf("b:\n");
 		print_matrix(3,1,b," %12.7f");
 		/* solve a.x = b */
-		LU_decompose(3,a,indx,&d,1.0e-12);
+		LU_decompose(3,a,indx,&d);
 		LU_backsubstitute(3,a,indx,b);
 		printf("Solution:\n");
 		print_matrix(3,1,b," %12.7f");
@@ -341,7 +341,7 @@ Requires for now that NDC_bottom and NDC_left are zero.
 			print_matrix(3,3,tmp3," %8.5f");
 			printf("RHS:\n");
 			print_matrix(3,1,tmpb," %12.7f");
-			LU_decompose(3,tmp3,tmpindx,&tmpd,1.0e-12);
+			LU_decompose(3,tmp3,tmpindx,&tmpd);
 			LU_backsubstitute(3,tmp3,tmpindx,tmpb);
 			printf("Solution:\n");
 			print_matrix(3,1,tmpb," %12.7f");

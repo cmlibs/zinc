@@ -47,7 +47,6 @@ gtObject/gtWindow management routines.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -102,7 +101,7 @@ struct Graphics_vertex_buffer
 	/** Number of vertices stored. */
 	unsigned int vertex_count;
 	/** Type of vertex. */
-	Graphics_vertex_array_attribute_type type;
+	enum Graphics_vertex_array_attribute_type type;
 	/** Number of values per vertex */
 	unsigned int values_per_vertex;
 	/** Maximum number of vertices currently memory is allocated for. */
@@ -140,10 +139,10 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Graphics_vertex_buffer,
 class Graphics_vertex_array_internal
 {
 public:
-   Graphics_vertex_array_type type;
+   enum Graphics_vertex_array_type type;
    LIST(Graphics_vertex_buffer) *buffer_list;
 
-   Graphics_vertex_array_internal(Graphics_vertex_array_type type)
+   Graphics_vertex_array_internal(enum Graphics_vertex_array_type type)
 		: type(type)
    {
    	buffer_list = CREATE(LIST(Graphics_vertex_buffer))();
@@ -175,19 +174,17 @@ public:
    Graphics_vertex_buffer *get_vertex_buffer(
    	Graphics_vertex_array_attribute_type vertex_buffer_type);
 
-	template <class value_type> int free_unused_buffer_memory( Graphics_vertex_array_attribute_type vertex_type, const value_type* dummy );
-
    template <class value_type> int add_attribute(
    	Graphics_vertex_array_attribute_type vertex_type,
-   	const unsigned int values_per_vertex, const unsigned int number_of_values, const value_type *values);
+   	unsigned int values_per_vertex, value_type *values);
 
    template <class value_type> int get_attribute(
-   	Graphics_vertex_array_attribute_type vertex_type,
+   	enum Graphics_vertex_array_attribute_type vertex_type,
    	unsigned int vertex_index,
    	unsigned int number_of_values, value_type *values);
 
    template <class value_type> int get_vertex_buffer(
-   		Graphics_vertex_array_attribute_type vertex_buffer_type,
+   		enum Graphics_vertex_array_attribute_type vertex_buffer_type,
    		value_type **vertex_buffer, unsigned int *values_per_vertex, 
    		unsigned int *vertex_count);
 };
@@ -7690,7 +7687,7 @@ Frees the memory for <**context> and sets <*context> to NULL.
 */
 struct Graphics_vertex_buffer *
   CREATE(Graphics_vertex_buffer)
-  (Graphics_vertex_array_attribute_type type,
+  (enum Graphics_vertex_array_attribute_type type,
   unsigned int values_per_vertex)
 {
 	struct Graphics_vertex_buffer *buffer;
@@ -7741,7 +7738,7 @@ int DESTROY(Graphics_vertex_buffer)(
 	return (return_code);
 }
 
-Graphics_vertex_array::Graphics_vertex_array(Graphics_vertex_array_type type)
+Graphics_vertex_array::Graphics_vertex_array(enum Graphics_vertex_array_type type)
 {
 	internal = new Graphics_vertex_array_internal(type);
 }
@@ -7750,7 +7747,7 @@ Graphics_vertex_buffer *Graphics_vertex_array_internal::get_or_create_vertex_buf
 	Graphics_vertex_array_attribute_type vertex_type,
 	unsigned int values_per_vertex)
 {
-	Graphics_vertex_array_attribute_type vertex_buffer_type;
+	enum Graphics_vertex_array_attribute_type vertex_buffer_type;
 	Graphics_vertex_buffer *buffer;
 
    switch (type)
@@ -7786,7 +7783,7 @@ Graphics_vertex_buffer *Graphics_vertex_array_internal::get_or_create_vertex_buf
 Graphics_vertex_buffer *Graphics_vertex_array_internal::get_vertex_buffer_for_attribute(
 	Graphics_vertex_array_attribute_type vertex_type)
 {
-	Graphics_vertex_array_attribute_type vertex_buffer_type;
+	enum Graphics_vertex_array_attribute_type vertex_buffer_type;
 	Graphics_vertex_buffer *buffer;
 
    switch (type)
@@ -7812,22 +7809,22 @@ Graphics_vertex_buffer *Graphics_vertex_array_internal::get_vertex_buffer(
 
 	return (buffer);
 }
-
+	
 template <class value_type> int Graphics_vertex_array_internal::add_attribute(
 	Graphics_vertex_array_attribute_type vertex_type,
-	const unsigned int values_per_vertex, const unsigned int number_of_values, const value_type *values)
+	unsigned int values_per_vertex, value_type *values)
 {
-	int return_code = 1;
+	int return_code;
 	Graphics_vertex_buffer *buffer;
 	
+   return_code = 1;
 	if (buffer = get_or_create_vertex_buffer(vertex_type, values_per_vertex))
 	{
-		Graphics_vertex_array_attribute_type vertex_buffer_type = buffer->type;
+		enum Graphics_vertex_array_attribute_type vertex_buffer_type = buffer->type;
 		if (!buffer->memory)
 		{
-		// Allocate enough memory for what I am about to add plus some headroom
 			if (ALLOCATE(buffer->memory, value_type,
-				( GRAPHICS_VERTEX_BUFFER_INITIAL_SIZE + number_of_values ) * values_per_vertex))
+				GRAPHICS_VERTEX_BUFFER_INITIAL_SIZE * values_per_vertex))
 			{
 				buffer->max_vertex_count = GRAPHICS_VERTEX_BUFFER_INITIAL_SIZE;
 			}
@@ -7838,13 +7835,12 @@ template <class value_type> int Graphics_vertex_array_internal::add_attribute(
 		}
 		if (return_code)
 		{
-			if (buffer->max_vertex_count <= ( buffer->vertex_count + number_of_values ) )
+			if (buffer->max_vertex_count == buffer->vertex_count)
 			{
-				// Reallocate enough memory for what I am about to add plus some headroom
 				if (REALLOCATE(buffer->memory, buffer->memory, value_type,
-					( 2 * buffer->max_vertex_count + number_of_values ) * values_per_vertex))
+					2 * buffer->max_vertex_count * values_per_vertex))
 				{
-					buffer->max_vertex_count = 2 * buffer->max_vertex_count + number_of_values;
+					buffer->max_vertex_count = 2 * buffer->max_vertex_count;
 				}
 				else
 				{
@@ -7857,8 +7853,8 @@ template <class value_type> int Graphics_vertex_array_internal::add_attribute(
 			if (vertex_buffer_type == vertex_type)
 			{
 				memcpy((value_type*)buffer->memory + buffer->vertex_count * values_per_vertex,
-					values, values_per_vertex * number_of_values * sizeof(value_type));
-				buffer->vertex_count += number_of_values;
+					values, values_per_vertex * sizeof(value_type));
+				buffer->vertex_count++;
 			}
 			else
 			{
@@ -7879,7 +7875,7 @@ template <class value_type> int Graphics_vertex_array_internal::add_attribute(
 }
 
 template <class value_type> int Graphics_vertex_array_internal::get_attribute(
-	Graphics_vertex_array_attribute_type vertex_type,
+	enum Graphics_vertex_array_attribute_type vertex_type,
 	unsigned int vertex_index,
 	unsigned int number_of_values, value_type *values)
 {
@@ -7888,7 +7884,7 @@ template <class value_type> int Graphics_vertex_array_internal::get_attribute(
 
 	if (buffer = get_vertex_buffer_for_attribute(vertex_type))
 	{
-		Graphics_vertex_array_attribute_type vertex_buffer_type = buffer->type;
+		enum Graphics_vertex_array_attribute_type vertex_buffer_type = buffer->type;
 		if (buffer->values_per_vertex == number_of_values)
 		{
 			if (vertex_buffer_type == vertex_type)
@@ -7912,7 +7908,7 @@ template <class value_type> int Graphics_vertex_array_internal::get_attribute(
 }
 
 template <class value_type> int Graphics_vertex_array_internal::get_vertex_buffer(
-		Graphics_vertex_array_attribute_type vertex_buffer_type,
+		enum Graphics_vertex_array_attribute_type vertex_buffer_type,
 		value_type **vertex_buffer, unsigned int *values_per_vertex, 
 		unsigned int *vertex_count)
 {
@@ -7934,48 +7930,15 @@ template <class value_type> int Graphics_vertex_array_internal::get_vertex_buffe
 	return return_code;
 }
 
-template <class value_type> int Graphics_vertex_array_internal::free_unused_buffer_memory(
-	Graphics_vertex_array_attribute_type vertex_type, const value_type *dummy )
-{
-	int return_code = 0;
-	Graphics_vertex_buffer *buffer = 0;
-	if (buffer = get_vertex_buffer(vertex_type))
-	{
-		if (REALLOCATE(buffer->memory, buffer->memory, value_type,
-				(buffer->vertex_count  * buffer->values_per_vertex)))
-		{
-			return_code = 1;
-			buffer->max_vertex_count = buffer->vertex_count;
-		}
-	}
-
-	return return_code;
-}
-
-int Graphics_vertex_array::free_unused_buffer_memory(
-	Graphics_vertex_array_attribute_type vertex_type )
-{
-	USE_PARAMETER(vertex_type);
-	return 0;//internal->free_unused_buffer_memory( vertex_type );
-}
-/*
 int Graphics_vertex_array::add_float_attribute(
-	Graphics_vertex_array_attribute_type vertex_type,
-	unsigned int values_per_vertex, unsigned int number_of_values, float *values)
+	enum Graphics_vertex_array_attribute_type vertex_type,
+	unsigned int number_of_values, float *values)
 {
-	return internal->add_attribute(vertex_type, values_per_vertex, number_of_values, values);
+	return internal->add_attribute(vertex_type, number_of_values, values);
 }
-*/
-int Graphics_vertex_array::add_float_attribute(
-	Graphics_vertex_array_attribute_type vertex_type,
-	const unsigned int values_per_vertex, const unsigned int number_of_values, const float *values)
-{
-	return internal->add_attribute(vertex_type, values_per_vertex, number_of_values, values);
-}
-
 
 int Graphics_vertex_array::get_float_vertex_buffer(
-		Graphics_vertex_array_attribute_type vertex_buffer_type,
+		enum Graphics_vertex_array_attribute_type vertex_buffer_type,
 		float **vertex_buffer, unsigned int *values_per_vertex, 
 		unsigned int *vertex_count)
 {
@@ -7984,14 +7947,14 @@ int Graphics_vertex_array::get_float_vertex_buffer(
 }
 
 int Graphics_vertex_array::add_unsigned_integer_attribute(
-		Graphics_vertex_array_attribute_type vertex_type,
-		unsigned int values_per_vertex, unsigned int number_of_values, unsigned int *values)
+		enum Graphics_vertex_array_attribute_type vertex_type,
+		unsigned int number_of_values, unsigned int *values)
 {
-	return internal->add_attribute(vertex_type, values_per_vertex, number_of_values, values);
+	return internal->add_attribute(vertex_type, number_of_values, values);
 }
 
 int Graphics_vertex_array::get_unsigned_integer_attribute(
-		Graphics_vertex_array_attribute_type vertex_type,
+		enum Graphics_vertex_array_attribute_type vertex_type,
 		unsigned int vertex_index,
 		unsigned int number_of_values, unsigned int *values)
 {
@@ -8000,7 +7963,7 @@ int Graphics_vertex_array::get_unsigned_integer_attribute(
 }
 
 int Graphics_vertex_array::get_unsigned_integer_vertex_buffer(
-		Graphics_vertex_array_attribute_type vertex_buffer_type,
+		enum Graphics_vertex_array_attribute_type vertex_buffer_type,
 		unsigned int **vertex_buffer, unsigned int *values_per_vertex,
 		unsigned int *vertex_count)
 {
@@ -8009,14 +7972,14 @@ int Graphics_vertex_array::get_unsigned_integer_vertex_buffer(
 }
 
 int Graphics_vertex_array::add_integer_attribute(
-		Graphics_vertex_array_attribute_type vertex_type,
-		unsigned int values_per_vertex, unsigned int number_of_values, int *values)
+		enum Graphics_vertex_array_attribute_type vertex_type,
+		unsigned int number_of_values, int *values)
 {
-	return internal->add_attribute(vertex_type, values_per_vertex, number_of_values, values);
+	return internal->add_attribute(vertex_type, number_of_values, values);
 }
 
 int Graphics_vertex_array::get_integer_attribute(
-		Graphics_vertex_array_attribute_type vertex_type,
+		enum Graphics_vertex_array_attribute_type vertex_type,
 		unsigned int vertex_index,
 		unsigned int number_of_values, int *values)
 {
@@ -8025,7 +7988,7 @@ int Graphics_vertex_array::get_integer_attribute(
 }
 
 unsigned int Graphics_vertex_array::get_number_of_vertices(
-	Graphics_vertex_array_attribute_type vertex_buffer_type)
+	enum Graphics_vertex_array_attribute_type vertex_buffer_type)
 {
 	Graphics_vertex_buffer *buffer;
 	unsigned int vertex_count;

@@ -7204,7 +7204,7 @@ Returns the width of buffer represented by <buffer>.
 				if (buffer->hWnd)
 				{
 					RECT rect;
-					if(GetWindowRect(buffer->hWnd, &rect))
+					if(GetClientRect(buffer->hWnd, &rect))
 					{
 						width = rect.right - rect.left;
 					}
@@ -7359,7 +7359,7 @@ Returns the height of buffer represented by <buffer>.
 				if (buffer->hWnd)
 				{
 					RECT rect;
-					if(GetWindowRect(buffer->hWnd, &rect))
+					if(GetClientRect(buffer->hWnd, &rect))
 					{
 						height = rect.bottom - rect.top;
 					}

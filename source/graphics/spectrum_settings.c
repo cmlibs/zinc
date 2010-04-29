@@ -2212,9 +2212,6 @@ DESCRIPTION :
 	unsigned char pixels[3*1024];
 	int high_flag,low_flag,texel,texels_in_band,texels_per_band,i;
 #endif /* defined (OPENGL_API) */
-#if defined (DEBUG)
-	int error = 0;
-#endif /* defined (DEBUG) */
 	int return_code;
 
 	ENTER(Spectrum_settings_enable);
