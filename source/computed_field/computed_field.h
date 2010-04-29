@@ -74,10 +74,14 @@ if a value is already known.
 #include "general/manager.h"
 #include "general/object.h"
 #include "user_interface/message.h"
+#ifdef __cplusplus
+#include "computed_field/field_location.hpp"
+#endif /* __cplusplus */
 
-/* 
-The Cmiss_computed_field which is Public is currently the same object as the 
-cmgui internal Computed_field.  The Public interface is contained in 
+struct Field_location;
+/*
+The Cmiss_computed_field which is Public is currently the same object as the
+cmgui internal Computed_field.  The Public interface is contained in
 api/cmiss_computed_field.h however most of the functions come directly from
 this module.  So that these functions match the public declarations the
 functions are given their public names.
@@ -453,6 +457,11 @@ continues until the actual FE_field values at the node are changed or a field
 is reached for which its calculation is not reversible, or is not supported yet.
 ???RC Note that some functions are not reversible in this way.
 ==============================================================================*/
+
+#ifdef __cplusplus
+int Computed_field_evaluate_at_location(struct Computed_field *field,
+	Field_location& loc, FE_value *values, FE_value *derivatives = 0);
+#endif /* __cplusplus */
 
 int Computed_field_evaluate_at_field_coordinates(struct Computed_field *field,
 	struct Computed_field *reference_field, int number_of_input_values,
@@ -998,12 +1007,13 @@ Change the name of a field.
 
 /***************************************************************************//**
  * Returns the region which this field belongs to, if any.
- * 
+ *
  * @param field  The field.
  * @return  A handle to the owning region if in one, or NULL if none.
  */
 struct Cmiss_region *Computed_field_get_region(struct Computed_field *field);
 
+int Computed_field_get_domain( struct Computed_field *field, struct LIST(Computed_field) *domain_field_list );
 
 /***************************************************************************//**
  * Returns true if field is not a source field of other.

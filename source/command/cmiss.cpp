@@ -1,6 +1,6 @@
 /***************************************************************************//**
  * cmiss.cpp
- * 
+ *
  * Functions for executing cmiss commands.
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -177,7 +177,7 @@ extern "C" {
 #include "graphics/render_triangularisation.hpp"
 #include "graphics/scene.hpp"
 extern "C" {
-#if defined (MOTIF_USER_INTERFACE) 
+#if defined (MOTIF_USER_INTERFACE)
 #include "graphics/scene_editor.h"
 #elif defined (WX_USER_INTERFACE)
 #include "graphics/scene_editor_wx.h"
@@ -279,6 +279,15 @@ extern "C" {
 #include "user_interface/timer.h"
 #include "command/cmiss.h"
 }
+#if defined (USE_OPENCASCADE)
+#include "cad/graphicimporter.h"
+#include "cad/point.h"
+#include "cad/curve.h"
+#include "cad/surface.h"
+#include "cad/geometricshape.h"
+#include "graphics/graphics_object.hpp"
+#include "cad/opencascadeimporter.h"
+#endif /* defined (USE_OPENCASCADE) */
 
 /*
 Module types
@@ -306,10 +315,10 @@ DESCRIPTION :
 #endif /* USE_CMGUI_COMMAND_WINDOW */
 	struct Colour background_colour,foreground_colour;
 	struct Execute_command *execute_command,*set_command;
-	 struct Element_point_tool *element_point_tool;
-	 struct Element_tool *element_tool;
+	struct Element_point_tool *element_point_tool;
+	struct Element_tool *element_tool;
 	struct Event_dispatcher *event_dispatcher;
-	 struct Node_tool *data_tool,*node_tool;
+	struct Node_tool *data_tool,*node_tool;
 #if defined (MOTIF_USER_INTERFACE)
 	struct Select_tool *select_tool;
 #endif /* defined (MOTIF_USER_INTERFACE) */
@@ -346,7 +355,7 @@ DESCRIPTION :
 	struct Light *default_light;
 	struct MANAGER(Light_model) *light_model_manager;
 	struct Light_model *default_light_model;
-	 struct Material_package *material_package;
+	struct Material_package *material_package;
 	struct Graphics_font *default_font;
 #if defined (SGI_MOVIE_FILE) && defined (MOTIF_USER_INTERFACE)
 	struct MANAGER(Movie_graphics) *movie_graphics_manager;
@@ -465,8 +474,8 @@ to change the interactive tool settings.
 ==============================================================================*/
 {
 	 char *drive_name = NULL;
-	 char *first = NULL;	
-	 char *last = NULL;	
+	 char *first = NULL;
+	 char *last = NULL;
 	 char *temp_directory_name,*directory_name, *temp_name, *temp_string;
 	 int lastlength, length;
 	 first = strchr(file_name, '\\');
@@ -1020,6 +1029,12 @@ a single point in 3-D space with an axes glyph.
 				{
 					ACCESS(GT_object)(glyph);
 				}
+				else
+				{
+	  display_message(ERROR_MESSAGE,
+	    "Glyph name '%s' not found",
+	    glyph_name);
+	    }
 			}
 
 			if (return_code)
@@ -12089,6 +12104,581 @@ Executes a GFX EXPORT WAVEFRONT command.
 	return (return_code);
 } /* gfx_export_wavefront */
 
+#if defined (USE_OPENCASCADE)
+static struct Spectrum_settings *create_spectrum_component( Spectrum_settings_colour_mapping colour )
+{
+	int component = 1;
+	struct Spectrum_settings *settings = CREATE(Spectrum_settings)();
+	Spectrum_settings_set_type(settings, SPECTRUM_LINEAR);
+	Spectrum_settings_set_colour_mapping(settings, colour);
+	Spectrum_settings_set_extend_above_flag(settings, 1);
+	Spectrum_settings_set_extend_below_flag(settings, 1);
+	Spectrum_settings_set_reverse_flag(settings, 0);
+
+	if ( colour == SPECTRUM_RED )
+		component = 1;
+	else if ( colour == SPECTRUM_GREEN )
+		component = 2;
+	else
+		component = 3;
+
+	Spectrum_settings_set_component_number( settings, component );
+
+	return settings;
+}
+
+static int create_RGB_spectrum( struct Spectrum **spectrum, void *command_data_void )
+{
+  int return_code = 0, number_in_list = 0;
+	struct LIST(Spectrum_settings) *spectrum_settings_list;
+	struct Spectrum_settings *red_settings;
+	struct Spectrum_settings *green_settings;
+	struct Spectrum_settings *blue_settings;
+	struct Cmiss_command_data *command_data = (struct Cmiss_command_data *)command_data_void;
+
+	if ( command_data && ( (*spectrum) = CREATE(Spectrum)("RGB") ) )
+	{
+		spectrum_settings_list = get_Spectrum_settings_list( (*spectrum) );
+		number_in_list = NUMBER_IN_LIST(Spectrum_settings)(spectrum_settings_list);
+		if ( number_in_list > 0 )
+		{
+			REMOVE_ALL_OBJECTS_FROM_LIST(Spectrum_settings)(spectrum_settings_list);
+		}
+		red_settings = create_spectrum_component( SPECTRUM_RED );
+		Spectrum_settings_add( red_settings, /* end of list = 0 */0,
+		          spectrum_settings_list );
+
+		green_settings = create_spectrum_component( SPECTRUM_GREEN );
+		Spectrum_settings_add( green_settings, /* end of list = 0 */0,
+		          spectrum_settings_list );
+
+		blue_settings = create_spectrum_component( SPECTRUM_BLUE );
+		Spectrum_settings_add( blue_settings, /* end of list = 0 */0,
+		          spectrum_settings_list );
+
+		Spectrum_calculate_range( (*spectrum) );
+		Spectrum_calculate_range( (*spectrum) );
+		Spectrum_set_minimum_and_maximum( (*spectrum), 0, 1);
+		Spectrum_set_opaque_colour_flag( (*spectrum), 0 );
+		if (!ADD_OBJECT_TO_MANAGER(Spectrum)( (*spectrum),
+				 command_data->spectrum_manager))
+		{
+			DESTROY(Spectrum)(spectrum);
+			//DEACCESS(Spectrum)(&(command_data->default_spectrum));
+		}
+		else
+		{
+			return_code = 1;
+		}
+	}
+	return return_code;
+}
+
+static int execute_command_gfx_import(struct Parse_state *state,
+  void *dummy_to_be_modified, void *command_data_void )
+{
+	int return_code;
+	struct Cmiss_command_data *command_data;
+
+	ENTER(execute_command_gfx_import);
+
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
+	{
+		struct Spectrum *rgb_spectrum = (struct Spectrum *)NULL;
+		struct Graphical_material *material =
+			ACCESS(Graphical_material)(Material_package_get_default_material(command_data->material_package));
+
+		char *graphics_object_name = NULL;
+		char *file_name;
+		file_name = duplicate_string( "" );
+		float deflection = 0.1;
+		int predefined_file = -1;
+		struct Option_table *option_table = CREATE(Option_table)();
+#ifndef USE_CAD_FIELDS
+		graphics_object_name = duplicate_string( "cube" );
+		struct GT_object *glyph = (struct GT_object *)0;
+		char *glyph_name = duplicate_string( "sphere" );
+		char *shape_name = duplicate_string( "cube" );
+		Triple axis_lengths;
+		axis_lengths[0] = 1.0;
+		axis_lengths[1] = 1.0;
+		axis_lengths[2] = 1.0;
+#endif
+
+		rgb_spectrum = FIND_BY_IDENTIFIER_IN_MANAGER(Spectrum,name)( "RGB", command_data->spectrum_manager );
+		if ( !rgb_spectrum )
+		{
+			if ( !create_RGB_spectrum( &rgb_spectrum, command_data_void ) )
+			{
+				printf( "Failed to create RGB spectrum\n" );
+			}
+		}
+		// predefined
+		Option_table_add_int_non_negative_entry(option_table, "predefined", &predefined_file );
+		// as
+		Option_table_add_entry(option_table, "as", &graphics_object_name,
+			(void *)1, set_name );
+		// file
+		Option_table_add_entry(option_table, "file", &file_name,
+			(void *)1, set_name);
+#ifndef USE_CAD_FIELDS
+		// shape
+		Option_table_add_entry(option_table, "shape", &shape_name,
+			(void *)1, set_name);
+#endif
+		// spectrum
+		Option_table_add_entry(option_table, "spectrum", &rgb_spectrum,
+			command_data->spectrum_manager,set_Spectrum);
+		// material
+		Option_table_add_set_Material_entry(option_table, "material", &material,
+			command_data->material_package);
+#ifndef USE_CAD_FIELDS
+		// lengths
+		Option_table_add_special_float3_entry(option_table, "lengths", axis_lengths,
+			"*");
+#endif
+		// deflection
+		Option_table_add_entry(option_table, "deflection", &deflection, NULL, set_float );
+#ifndef USE_CAD_FIELDS
+
+		// glyph
+		Option_table_add_entry(option_table, "glyph", &glyph_name,
+			(void *)1, set_name);
+#endif
+		return_code = Option_table_multi_parse(option_table, state);
+		if (return_code)
+		{
+			switch( predefined_file )
+			{
+				case 0:
+					graphics_object_name = duplicate_string( "bike" );
+					file_name = duplicate_string( "/home/hsorby/data/brep/33_moto.brep" );
+				break;
+				case 1:
+					graphics_object_name = duplicate_string( "car" );
+					file_name = duplicate_string( "/home/hsorby/data/brep/18_f1.brep" );
+				break;
+				case 2:
+					graphics_object_name = duplicate_string( "bolt_step" );
+					file_name = duplicate_string( "/home/hsorby/data/step/m16_bolt.step" );
+				break;
+				case 3:
+					graphics_object_name = duplicate_string( "bolt_iges" );
+					file_name = duplicate_string( "/home/hsorby/data/iges/m16_bolt.iges" );
+				break;
+				case 4:
+					graphics_object_name = duplicate_string( "scooby" );
+					file_name = duplicate_string( "/home/hsorby/data/iges/scooby.iges" );
+				break;
+				case 5:
+					graphics_object_name = duplicate_string( "kneebrace_iges" );
+					file_name = duplicate_string( "/home/hsorby/data/iges/kneebrace.igs" );
+				break;
+				case 6:
+					graphics_object_name = duplicate_string( "kneebrace_step" );
+					file_name = duplicate_string( "/home/hsorby/data/step/kneebrace_step214.step" );
+				break;
+				case 7:
+					graphics_object_name = duplicate_string( "basic_step" );
+					file_name = duplicate_string( "/home/hsorby/data/step/rect_cyl.step" );
+				break;
+				case 8:
+					graphics_object_name = duplicate_string( "basic_step" );
+					file_name = duplicate_string( "/home/hsorby/data/step/rect_cyl_cyl.step" );
+				break;
+				case 9:
+					graphics_object_name = duplicate_string( "basic_step" );
+					file_name = duplicate_string( "/home/hsorby/data/step/sph_rect_cyl.step" );
+				break;
+				case 10:
+					graphics_object_name = duplicate_string( "basic_step" );
+					file_name = duplicate_string( "/home/hsorby/data/step/sph_tor_rect_cyl.step" );
+				break;
+				case 11:
+					graphics_object_name = duplicate_string( "basic_iges" );
+					file_name = duplicate_string( "/home/hsorby/data/iges/rect_cyl.igs" );
+				break;
+				case 12:
+					graphics_object_name = duplicate_string( "basic_iges" );
+					file_name = duplicate_string( "/home/hsorby/data/iges/rect_cyl_cyl.igs" );
+				break;
+				case 13:
+					graphics_object_name = duplicate_string( "basic_iges" );
+					file_name = duplicate_string( "/home/hsorby/data/iges/sph_rect_cyl.igs" );
+				break;
+				case 14:
+					graphics_object_name = duplicate_string( "basic_iges" );
+					file_name = duplicate_string( "/home/hsorby/data/iges/sph_tor_rect_cyl.igs" );
+				break;
+				case 15:
+					graphics_object_name = duplicate_string( "basic_iges" );
+					file_name = duplicate_string( "/home/hsorby/data/iges/rect_cyl_flat.igs" );
+				break;
+				case 16:
+					graphics_object_name = duplicate_string( "plates_step" );
+					file_name = duplicate_string( "/home/hsorby/data/step/plates.step" );
+				break;
+				case 17:
+					graphics_object_name = duplicate_string( "plates_iges" );
+					file_name = duplicate_string( "/home/hsorby/data/iges/plates.igs" );
+				break;
+				default:
+					graphics_object_name = duplicate_string("default");
+			}
+			if (return_code)
+			{
+				clock_t occStart, occEnd;
+				occStart = clock();
+#ifdef USE_CAD_FIELDS
+				OpenCascadeImporter occImporter( file_name );
+				if ( occImporter.import( command_data->root_region ) )
+				{
+					occEnd = clock();
+#if !defined (OPTIMISED)
+					printf( "OCC load took %.2lf seconds\n", ( occEnd - occStart ) / double( CLOCKS_PER_SEC ) );
+#endif
+				}
+				else
+				{
+					display_message( ERROR_MESSAGE, "Failed to load %s into region ??", file_name );
+				}
+			}
+#else
+				if (glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(glyph_name,
+					command_data->glyph_list))
+				{
+					ACCESS(GT_object)(glyph);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_import.  Could not find '%s' in glyph list, try 'gfx list glyph' for possible names", glyph_name);
+					return_code = 0;
+				}
+				char *points_name = duplicate_string( graphics_object_name );
+				char *curves_name = duplicate_string( graphics_object_name );
+				char *surface_name = duplicate_string( graphics_object_name );
+				check_suffix( &points_name, "_points" );
+				check_suffix( &curves_name, "_curves" );
+				check_suffix( &surface_name, "_surfaces" );
+
+				float time_param = 0.0;
+				struct GT_object *graphics_object_points = 0;
+				struct GT_object *graphics_object_lines = 0;
+				struct GT_object *graphics_object_surfaces = 0;
+
+				if (return_code)
+				{
+					return_code = create_graphics_object( &graphics_object_points, points_name, g_GLYPH_SET, material, command_data_void, time_param );
+					return_code = set_GT_object_Spectrum( graphics_object_points, rgb_spectrum );
+				}
+				if (return_code)
+				{
+					return_code = create_graphics_object( &graphics_object_lines, curves_name, g_POLYLINE_VERTEX_BUFFERS, material, command_data_void, time_param );
+					if (!return_code)
+					{
+						DESTROY(GT_object)(&graphics_object_points);
+					}
+					return_code = set_GT_object_Spectrum( graphics_object_lines, rgb_spectrum );
+				}
+				if (return_code)
+				{
+					return_code = create_graphics_object( &graphics_object_surfaces, surface_name, g_SURFACE, material, command_data_void, time_param );
+					if (!return_code)
+					{
+						DESTROY(GT_object)(&graphics_object_points);
+						DESTROY(GT_object)(&graphics_object_lines);
+					}
+					return_code = set_GT_object_Spectrum( graphics_object_surfaces, rgb_spectrum );
+				}
+				clock_t cmStart, cmEnd;
+				OpenCascadeImporter gi( file_name );
+				if ( gi.import() )
+				{
+					occEnd = clock();
+#if !defined (OPTIMISED)
+					printf( "OCC load took %.2lf seconds\n", ( occEnd - occStart ) / double( CLOCKS_PER_SEC ) );
+#endif
+					cmStart = clock();
+					std::cout << "Deflection set to: " << deflection << std::endl;
+					//gi.deflection( deflection );
+					std::vector<GeometricShape*> geometricShapes = gi.geometricShapes();
+					/* create the pointset for the model */
+					Triple *axis1_list, *axis2_list, *axis3_list,
+						*point_list, *scale_list;
+					struct GT_glyph_set *glyph_set = 0;
+
+					int point_count = 0;//gi.pointCount();
+					int curve_count = 0;//gi.curveCount();
+					int surface_count = 0;//gi.surfaceCount();
+					for ( size_t i = 0; i < geometricShapes.size(); i++ )
+					{
+						point_count += geometricShapes.at(i)->pointCount();
+						curve_count += geometricShapes.at(i)->curveCount();
+						surface_count += geometricShapes.at(i)->surfaceCount();
+					}
+					std::cout << "Point count: " << point_count << ", Curve count: " << curve_count << ", Surface count: " << surface_count << std::endl;
+
+					if ( point_count )
+					{
+						ALLOCATE(point_list, Triple, point_count);
+						ALLOCATE(axis1_list, Triple, point_count);
+						ALLOCATE(axis2_list, Triple, point_count);
+						ALLOCATE(axis3_list, Triple, point_count);
+						ALLOCATE(scale_list, Triple, point_count);
+
+						if (point_list && axis1_list && axis2_list && axis3_list &&
+							scale_list && (glyph_set = CREATE(GT_glyph_set)(/*number_of_points*/point_count,
+							point_list, axis1_list, axis2_list, axis3_list, scale_list, glyph, command_data->default_font,
+							/*labels*/(char **)NULL, /*n_data_components*/0, /*data*/(GTDATA *)NULL,
+							/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(float *)NULL,
+							/*object_name*/0, /*names*/(int *)NULL)))
+						{
+							int point_index = 0;
+							for ( size_t i = 0; i < geometricShapes.size(); i++ )
+							{
+								GeometricShape* gs = geometricShapes.at( i );
+								for ( int j = 0; j < gs->pointCount(); j++ )
+								{
+									(*point_list)[ 3 * point_index + 0 ] = gs->point( j )->x();
+									(*point_list)[ 3 * point_index + 1 ] = gs->point( j )->y();
+									(*point_list)[ 3 * point_index + 2 ] = gs->point( j )->z();
+									(*axis1_list)[ 3 * point_index + 0 ] = axis_lengths[0];
+									(*axis1_list)[ 3 * point_index + 1 ] = 0.0;
+									(*axis1_list)[ 3 * point_index + 2 ] = 0.0;
+									(*axis2_list)[ 3 * point_index + 0 ] = 0.0;
+									(*axis2_list)[ 3 * point_index + 1 ] = axis_lengths[1];
+									(*axis2_list)[ 3 * point_index + 2 ] = 0.0;
+									(*axis3_list)[ 3 * point_index + 0 ] = 0.0;
+									(*axis3_list)[ 3 * point_index + 1 ] = 0.0;
+									(*axis3_list)[ 3 * point_index + 2 ] = axis_lengths[2];
+									(*scale_list)[ 3 * point_index + 0 ] = 1.0;
+									(*scale_list)[ 3 * point_index + 1 ] = 1.0;
+									(*scale_list)[ 3 * point_index + 2 ] = 1.0;
+									point_index++;
+								}
+							}
+							if (!GT_OBJECT_ADD(GT_glyph_set)(graphics_object_points, time_param, glyph_set))
+							{
+								display_message(ERROR_MESSAGE,
+									"gfx_import.  Could not add points graphics object");
+									return_code = 0;
+							}
+						}
+						else
+						{
+							DEALLOCATE(point_list);
+							DEALLOCATE(axis1_list);
+							DEALLOCATE(axis2_list);
+							DEALLOCATE(axis3_list);
+							DEALLOCATE(scale_list);
+						}
+					}
+					else
+					{
+#if !defined (OPTIMISED)
+						printf( "no vertices\n" );
+#endif
+						DESTROY(GT_object)(&graphics_object_points);
+					}
+
+					/* create the lines for the model */
+					if ( curve_count )
+					{
+						Graphics_vertex_array* array = GT_object_get_vertex_set( graphics_object_lines );
+						int graphics_name = 0;
+						array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ID,
+							1, 1, &graphics_name);
+
+						unsigned int number_of_points = 0;
+						unsigned int vertex_start = 0;
+						for ( size_t i = 0; i < geometricShapes.size(); i++ )
+						{
+							GeometricShape* gs = geometricShapes.at( i );
+							for ( int j = 0; j < gs->curveCount(); j++ )
+							{
+								vertex_start = array->get_number_of_vertices(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
+								number_of_points = gs->curve( j )->count();
+								array->add_float_attribute( GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+									3, number_of_points, gs->curve( j )->points() );
+								array->add_float_attribute( GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+									4, number_of_points, gs->curve( j )->colours() );
+								array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+									1, 1, &number_of_points);
+								array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+									1, 1, &vertex_start);
+							}
+						}
+						GT_polyline_vertex_buffers *curves = CREATE(GT_polyline_vertex_buffers)(
+							g_NORMAL, 1);
+						if (!GT_OBJECT_ADD(GT_polyline_vertex_buffers)(graphics_object_lines, curves))
+						{
+								display_message(ERROR_MESSAGE,
+									"gfx_import.  Could not add curves graphics object");
+									return_code = 0;
+						}
+					}
+					else
+					{
+#if !defined (OPTIMISED)
+						printf( "no lines\n" );
+#endif
+						display_message( INFORMATION_MESSAGE, "don't delete this today\n" );
+						DESTROY(GT_object)(&graphics_object_lines);
+					}
+
+					/* Create the surfaces for the model */
+					if ( surface_count )
+					{
+						// Allocate points and normals?
+						clock_t start_surf, end_surf;
+						start_surf = clock();
+						Triple *points, *normals;
+						GTDATA *colours;
+						int surface_point_count = 0;
+						for ( size_t i = 0; i < geometricShapes.size(); i++ )
+						{
+							GeometricShape* geoShape = geometricShapes.at(i);
+							for ( int j = 0; j < geoShape->surfaceCount(); j++ )
+							{
+								surface_point_count += geoShape->surface(j)->pointCount();
+							}
+						}
+						//for ( int i = 0; i < surface_count; i++ )
+						//{
+						//	surface_point_count += gi.surface( i )->vertex_count();
+						//}
+#if !defined (OPTIMISED)
+						printf( "surface count %d, vertex count %d\n", surface_count, surface_point_count );
+#endif
+						ALLOCATE( points, Triple, surface_point_count );
+						ALLOCATE( normals, Triple, surface_point_count );
+						ALLOCATE( colours, GTDATA, 3 * surface_point_count );
+						struct GT_surface *surface = 0;
+						// create GT_surface
+						if ( points && normals && colours && ( surface = CREATE(GT_surface)(
+							g_SH_DISCONTINUOUS, g_TRIANGLE,	surface_point_count / 3, /*npp*/3,
+							points,	normals, /*tangent*/(Triple *)NULL,
+							/*texture*/(Triple *)NULL, /*data components*/3, /*data*/colours ) ) )
+						{
+							// put vertices into points
+							int point_index = 0;
+							for ( size_t h = 0; h < geometricShapes.size(); h++ )
+							{
+								GeometricShape* geoShape = geometricShapes.at(h);
+								for ( int i = 0; i < geoShape->surfaceCount(); i++ )
+								{
+									const float *surface_points = geoShape->surface( i )->points();
+									const float *surface_normals = geoShape->surface( i )->normals();
+									const float *surface_colours = geoShape->surface( i )->colours();
+									for ( int j = 0; j < geoShape->surface( i )->pointCount(); j++ )
+									{
+										/*	if ( j == 0 )
+											{
+											printf( "colour (" );
+										}*/
+										for ( int k = 0; k < 3; k++ )
+										{
+											points[ point_index ][ k ] = surface_points[ 3 * j + k ];
+											/*	printf( "%.2f", vertices[ 3 * j + k ] );
+												if ( k < 2 )
+													printf( ", " );
+											}
+											printf( ")\n" );
+											printf( "normal (" );
+											for ( int k = 0; k < 3; k++ )
+											{*/
+											normals[ point_index ][ k ] = surface_normals[ 3 * j + k ];
+											colours[ 3 * point_index + k ] = surface_colours[ 3 * j + k ];
+											/*if ( j == 0 )
+											{
+											printf( " %.2f,", vertex_colours[ 3 * j + k ] );
+											}
+
+											if ( k < 2 )
+												printf( ", " ); */
+										}
+										/*
+										if ( j == 0 )
+										{
+										printf( "\b)\n" );
+										}*/
+										point_index++;
+									}
+								}
+							}
+							end_surf = clock();
+#if !defined (OPTIMISED)
+							printf( "Surfacing work took %.2lf seconds\n", ( end_surf - start_surf ) / double( CLOCKS_PER_SEC ) );
+#endif
+							// add GT_object
+							if (!GT_OBJECT_ADD(GT_surface)(graphics_object_surfaces, time_param, surface))
+							{
+								display_message(ERROR_MESSAGE,
+									"gfx_import.  Could not add surface graphics object");
+									return_code = 0;
+							}
+						}
+						else
+						{
+							DEALLOCATE( points );
+							DEALLOCATE( normals );
+						}
+					}
+					else
+					{
+#if !defined (OPTIMISED)
+						printf( "no surfaces\n" );
+#endif
+						display_message( INFORMATION_MESSAGE, "shouldn't be doing this here?\n" );
+						DESTROY(GT_object)(&graphics_object_surfaces);
+					}
+					cmEnd =clock();
+#if !defined (OPTIMISED)
+					printf( "CMGUI took %.2lf seconds\n", ( cmEnd - cmStart ) / double( CLOCKS_PER_SEC ) );
+#endif
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_import.  Could not import file");
+					DESTROY(GT_object)(&graphics_object_points);
+					DESTROY(GT_object)(&graphics_object_lines);
+					DESTROY(GT_object)(&graphics_object_surfaces);
+					return_code = 0;
+				}
+			}
+			DEALLOCATE(points_name);
+			DEALLOCATE(curves_name);
+			DEALLOCATE(surface_name);
+#endif
+		}
+		DESTROY(Option_table)(&option_table);
+		DEALLOCATE(graphics_object_name);
+		DEACCESS(Graphical_material)(&material);
+#ifndef USE_CAD_FIELDS
+		if (glyph)
+		{
+			DEACCESS(GT_object)(&glyph);
+		}
+		DEALLOCATE(glyph_name);
+		DEALLOCATE(shape_name);
+#endif
+		DEALLOCATE(file_name);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"execute_command_gfx_import.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+	return (return_code);
+}
+
+#endif /* USE_OPENCASCADE */
+
 static int execute_command_gfx_export(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -21276,8 +21866,13 @@ Executes a GFX command.
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 			Option_table_add_entry(option_table, "erase", NULL,
 				command_data_void, execute_command_gfx_erase);
+#if defined (USE_OPENCASCADE)
+                       Option_table_add_entry(option_table, "import", NULL,
+                               command_data_void, execute_command_gfx_import);
+#endif /* defined (USE_OPENCASCADE) */
 			Option_table_add_entry(option_table, "evaluate", NULL,
 				command_data_void, gfx_evaluate);
+
 			Option_table_add_entry(option_table, "export", NULL,
 				command_data_void, execute_command_gfx_export);
 #if defined (OLD_CODE)

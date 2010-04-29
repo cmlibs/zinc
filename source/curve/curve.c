@@ -818,7 +818,7 @@ Ensures slope continuity in destination curve when cubic hermite basis.
 	return (return_code);
 } /* cc_add_duplicate_element */
 
-#if defined (DEBUG)
+#if defined (OLDCODE)
 static int cc_list(struct Curve *curve)
 /*******************************************************************************
 LAST MODIFIED : 22 November 1999

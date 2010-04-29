@@ -120,9 +120,6 @@ Called when this device has file descriptors that are waiting.
 	USE_PARAMETER(fdio);
 	if ((device = (struct Io_device *)device_void))
 	{
-#if defined (DEBUG)
-	  printf("Callback from %d\n", *filehandle);
-#endif /* defined (DEBUG) */
 
 #if defined (USE_PERL_INTERPRETER)
 

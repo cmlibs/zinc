@@ -1460,7 +1460,7 @@ array is enlarged if necessary and the new points added at random locations.
 								/*???debug*/
 								printf("FE_element_add_xi_points_2d_cube_cell_random.  "
 								"xi(%d) = %6.3f %6.3f %6.3f\n", *number_of_xi_points,
-									xi0, xi1, xi2);
+									(*xi)[0], (*xi)[1], (*xi)[2]);
 #endif /* defined (DEBUG) */
 							}			
 						} break;
@@ -1662,7 +1662,7 @@ array is enlarged if necessary and the new points added at random locations.
 									(*number_of_xi_points)++;
 								}
 #if defined (DEBUG)
-.								/*???debug*/
+								/*???debug*/
 								printf("FE_element_add_xi_points_3d_cube_cell_random.  "
 									"xi(%d) = %6.3f %6.3f %6.3f\n", *number_of_xi_points,
 									xi0, xi1, xi2);
@@ -1711,7 +1711,7 @@ array is enlarged if necessary and the new points added at random locations.
 								/*???debug*/
 								printf("FE_element_add_xi_points_3d_cube_cell_random.  "
 									"xi(%d) = %6.3f %6.3f %6.3f\n", *number_of_xi_points,
-									xi0, xi1, xi2);
+									(*xi)[0], (*xi)[1], (*xi)[2]);
 #endif /* defined (DEBUG) */
 							}
 						} break;

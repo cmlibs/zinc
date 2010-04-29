@@ -1738,16 +1738,16 @@ int FE_element_add_line_to_vertex_array(
 			texture_coordinates[1] = 0.0;
 			texture_coordinates[2] = 0.0;
 		}
-		
+
 		/* for selective editing of GT_object primitives, record element ID */
 		get_FE_element_identifier(element, &cm);
 		graphics_name = CM_element_information_to_graphics_name(&cm);
 		array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ID,
-			1, &graphics_name);
-		
+			1, 1, &graphics_name);
+
 		vertex_start = array->get_number_of_vertices(
 			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
-		
+
 		distance=(FE_value)number_of_segments;
 		i=0;
 		for (i=0;(i<=number_of_segments)&&return_code;i++)
@@ -1767,13 +1767,13 @@ int FE_element_add_line_to_vertex_array(
 				float floatField[3];
 				CAST_TO_OTHER(floatField,coordinates,float,3);
 				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
-					3, floatField);
+					3, 1, floatField);
 				if (data_field)
 				{
 					float *floatData = new float[number_of_data_values];
 					CAST_TO_OTHER(floatData,data_buffer,float,number_of_data_values);
 					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-						number_of_data_values, floatData);
+						number_of_data_values, 1, floatData);
 					delete[] floatData;
 				}
 				if (texture_coordinate_field)
@@ -1781,7 +1781,7 @@ int FE_element_add_line_to_vertex_array(
 					CAST_TO_OTHER(floatField,texture_coordinates,float,3);
 					array->add_float_attribute(
 						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
-						3, floatField);
+						3, 1, floatField);
 				}
 			}
 		}
@@ -1790,13 +1790,13 @@ int FE_element_add_line_to_vertex_array(
 			number_of_vertices = number_of_segments+1;
 			array->add_unsigned_integer_attribute(
 				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
-				1, &number_of_vertices);
+				1, 1, &number_of_vertices);
 			array->add_unsigned_integer_attribute(
 				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
-				1, &vertex_start);
+				1, 1, &vertex_start);
 		}
 		/* else could try and remove vertices that failed */
-		
+
 		/* I don't think I need to clear the field cache's here, instead I have
 		 * done it in GT_element_settings_to_graphics_object.
 		 */

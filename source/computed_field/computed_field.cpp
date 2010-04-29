@@ -2167,6 +2167,156 @@ Checks to see if it is already in the list.
 	return (return_code);
 } /* Computed_field_add_to_list_if_depends_on_list */
 
+int Computed_field_evaluate_cache_in_element(
+	struct Computed_field *field,struct FE_element *element,FE_value *xi,
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 14 August 2006
+
+DESCRIPTION :
+Calculates the values and derivatives (if <calculate_derivatives> set) of
+<field> at <element>:<xi>, if it is defined over the element. Upon successful
+return values and derivatives of the field are stored in the internal cache for
+the <field>. <xi> is assumed to contain the same number of values as the
+dimension of the element.
+
+The optional <top_level_element> may be supplied for the benefit of this or
+any source fields that may require calculation on it instead of a face or line.
+FIBRE_AXES and GRADIENT are examples of such fields, since they require
+top-level coordinate derivatives. The term "top_level" refers to an ultimate
+parent element for the face or line, eg. the 3-D element parent to 2-D faces.
+If no such top level element is supplied and one is required, then the first
+available parent element will be chosen - if the user requires a top-level
+element in the same group as the face or with the face on the correct side,
+then they should supply the top_level_element here. Once a field has switched
+to being calculated on the top_level_element, all its source fields will be
+too - this should be understood when supplying source fields to such functions.
+
+???RC  May want to make this function non-static since there will be occasions
+when the coordinate field is calculated without derivatives, then straight away
+with derivatives for computing fibre axes/gradient etc. By first calling this
+function with <calculate_derivatives> set, a recalculation of the field values
+is avoided.
+==============================================================================*/
+{
+	int cache_is_valid,element_dimension,i,number_of_derivatives,
+		return_code;
+
+	ENTER(Computed_field_evaluate_cache_in_element);
+	if (field && element)
+	{
+		element_dimension=get_FE_element_dimension(element);
+		return_code=1;
+		/* clear the cache if values already cached for a node */
+		if (field->node)
+		{
+			Computed_field_clear_cache(field);
+		}
+		/* Are the values and derivatives in the cache not already calculated? */
+		if ((element != field->element) || (time != field->time) ||
+			(calculate_derivatives && (!field->derivatives_valid)))
+		{
+			cache_is_valid = 0;
+		}
+		else
+		{
+			cache_is_valid = 1;
+			for (i = 0; cache_is_valid && (i < element_dimension); i++)
+			{
+				if (field->xi[i] != xi[i])
+				{
+					cache_is_valid = 0;
+				}
+			}
+		}
+		if (!cache_is_valid)
+		{
+			/* 3. Allocate values and derivative cache */
+			if (return_code)
+			{
+				/* make sure we have allocated values AND derivatives, or nothing */
+				if (!field->values)
+				{
+					/* get enough space for derivatives in highest dimension element */
+					if (!(ALLOCATE(field->values,FE_value,field->number_of_components)&&
+						ALLOCATE(field->derivatives,FE_value,
+							MAXIMUM_ELEMENT_XI_DIMENSIONS*field->number_of_components)))
+					{
+						if (field->values)
+						{
+							DEALLOCATE(field->values);
+						}
+						return_code=0;
+					}
+				}
+			}
+			field->derivatives_valid=0;
+			if (field->string_cache)
+			{
+				DEALLOCATE(field->string_cache);
+			}
+			if (return_code)
+			{
+				/* Before we set up a better typed cache storage we are assuming
+					the evaluate will generate valid values, for those which don't
+					this will be set to zero in the evaluate.  This allows the valid
+					evaluation to a string, which potentially will expand to more types. */
+				field->values_valid = 1;
+				if (calculate_derivatives)
+				{
+					number_of_derivatives = element_dimension;
+				}
+				else
+				{
+					number_of_derivatives = 0;
+				}
+				Field_element_xi_location location(element, xi, time,
+					 top_level_element, number_of_derivatives);
+				return_code = field->core->evaluate_cache_at_location(&location);
+					/* How to specify derivatives or not */
+				if (return_code&&calculate_derivatives&&!(field->derivatives_valid))
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_evaluate_cache_in_element.  "
+						"Derivatives unavailable for field %s of type %s",field->name,
+						Computed_field_get_type_string(field));
+					return_code=0;
+				}
+				if (return_code)
+				{
+					REACCESS(FE_element)(&field->element, element);
+					field->time = time;
+					for (i = 0; i < element_dimension; i++)
+					{
+						field->xi[i] = xi[i];
+					}
+					for (; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
+					{
+						field->xi[i] = 0.0;
+					}
+				}
+				else
+				{
+					/* make sure value cache is marked as invalid */
+					if (field->element)
+					{
+						DEACCESS(FE_element)(&field->element);
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_evaluate_cache_in_element.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_evaluate_cache_in_element */
+
 char *Computed_field_evaluate_as_string_at_location(
 	struct Computed_field *field,int component_number,
 	Field_location *location)
@@ -2518,6 +2668,58 @@ number_of_components.
 	return (return_code);
 } /* Computed_field_evaluate_without_node */
 
+
+
+int Computed_field_evaluate_at_location(struct Computed_field *field,
+	Field_location& loc, FE_value *values, FE_value *derivatives)
+{
+	int i,return_code;
+
+	ENTER(Computed_field_evaluate_at_location);
+	if (field && values)
+	{
+		return_code = Computed_field_evaluate_cache_at_location(field, &loc);
+		if (return_code)
+		{
+			if (field->values_valid)
+			{
+				/* copy values from cache to <values> */
+				for (i=0;i<field->number_of_components;i++)
+				{
+					values[i] = field->values[i];
+					// \todo sort this dodgy number of derivatives out
+					if (derivatives)
+					{
+						derivatives[i] = field->derivatives[i];
+						derivatives[i + field->number_of_components] = field->derivatives[i + field->number_of_components];
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_evaluate_at_location.  Field '%s' has no numerical values",
+					field->name);
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_evaluate_at_location.  Failed to evaluate location" );
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_evaluate_at_location.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
 int Computed_field_set_values_at_location(struct Computed_field *field,
 	Field_location* location, FE_value *values)
 /*******************************************************************************
@@ -2862,6 +3064,51 @@ Inherits its result from the first source field -- if any.
 
 	return (return_code);
 } /* Computed_field_default_get_native_discretization_in_element */
+
+int recursively_add_source_fields_to_list( struct Computed_field *field, struct LIST(Computed_field) *field_list )
+{
+	int return_code = 1;
+	if ( field )
+	{
+		ADD_OBJECT_TO_LIST(Computed_field)(field,field_list);
+		for (int i=0;(i<field->number_of_source_fields)&&(!return_code);i++)
+		{
+			recursively_add_source_fields_to_list(field->source_fields[i],field_list);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"recursively_add_sourcefields_to_list.  Invalid argument(s)");
+		return_code=0;
+	}
+
+	return return_code;
+}
+
+/**
+ * Returns the domain of the given field by recursively searching through the fields source fields
+ *
+ * @param field The field to find the  domain of
+ * @param domain_field_list A handle to the list of domains for the field
+ * @return 1 on success, 0 otherwise
+ */
+int Computed_field_get_domain( struct Computed_field *field, struct LIST(Computed_field) *domain_field_list )
+{
+	int return_code = 0;
+	if (field && domain_field_list)
+	{
+		//field_list = CREATE_LIST(Computed_field)();
+		return_code = field->core->get_domain( domain_field_list );
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_domain.  Invalid argument(s)");
+	}
+
+	return return_code;
+}
 
 int Computed_field_get_number_of_components(struct Computed_field *field)
 /*******************************************************************************
@@ -4447,24 +4694,24 @@ Default listing of source fields and source values.
 		if (0 < field->number_of_source_fields)
 		{
 			display_message(INFORMATION_MESSAGE,
-				"    source fields :");									
-			for (i = 0 ; i < field->number_of_source_fields ; i++)	
-			{																			
-				display_message(INFORMATION_MESSAGE,						
-					" %s", field->source_fields[i]->name);					
-			}																			
-			display_message(INFORMATION_MESSAGE, "\n");					
+				"    source fields :");
+			for (i = 0 ; i < field->number_of_source_fields ; i++)
+			{
+				display_message(INFORMATION_MESSAGE,
+					" %s", field->source_fields[i]->name);
+			}
+			display_message(INFORMATION_MESSAGE, "\n");
 		}
 		if (0 < field->number_of_source_values)
 		{
 			display_message(INFORMATION_MESSAGE,
-				"    values :");									
-			for (i = 0 ; i < field->number_of_source_values ; i++)	
-			{																			
-				display_message(INFORMATION_MESSAGE,						
-					" %g", field->source_values[i]);							
-			}																			
-			display_message(INFORMATION_MESSAGE, "\n");					
+				"    values :");
+			for (i = 0 ; i < field->number_of_source_values ; i++)
+			{
+				display_message(INFORMATION_MESSAGE,
+					" %g", field->source_values[i]);
+			}
+			display_message(INFORMATION_MESSAGE, "\n");
 		}
 		return_code = 1;
 	}
@@ -4525,6 +4772,27 @@ Default listing of source fields and source values.
 	}
 
 	return (command_string);
+} /* Computed_field_core::get_command_string */
+
+int Computed_field_core::get_domain( struct LIST(Computed_field) *domain_field_list ) const
+{
+	int return_code = 0;
+
+	if (field && domain_field_list)
+	{
+		return_code = 1;
+		for (int i = 0; (i < field->number_of_source_fields) && return_code; i++)
+		{
+			return_code = field->source_fields[i]->core->get_domain( domain_field_list );
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_core::get_domain.  Invalid argument(s)");
+	}
+
+	return return_code;
 } /* Computed_field_core::get_command_string */
 
 struct Computed_field_package *CREATE(Computed_field_package)(

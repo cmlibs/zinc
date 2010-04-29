@@ -2205,8 +2205,8 @@ Converts a 3-D element into an array of streamlines.
 		{
 #if defined (DEBUG)
 			/*???debug*/
-			printf("node_to_streamline: element %d, xi %f %f %f\n",
-				element->cm.number, initial_xi[0], initial_xi[1], initial_xi[2]);
+			//printf("node_to_streamline: element %d, xi %f %f %f\n",
+			//	element->cm.number, initial_xi[0], initial_xi[1], initial_xi[2]);
 #endif /* defined (DEBUG) */
 			if (STREAM_LINE==node_to_streamline_data->type)
 			{
