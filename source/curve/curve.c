@@ -105,6 +105,8 @@ It is designed to be flexible rather than fast.
 	FE_value *parameter_table;
 	int parameter_table_size;
 
+	struct MANAGER(Curve) *manager;
+
 	int access_count;
 }; /* struct Curve */
 
@@ -464,6 +466,8 @@ but it is at least destroyable when returned from this function.
 
 			curve->parameter_table=(FE_value *)NULL;
 			curve->parameter_table_size=0;
+			
+			curve->manager = (struct MANAGER(Curve) *)NULL;
 
 			curve->access_count=0;
 
@@ -1775,11 +1779,11 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Curve,name,const char *)
 	return (return_code);
 } /* MANAGER_COPY_IDENTIFIER(Curve,name) */
 
-DECLARE_MANAGER_FUNCTIONS(Curve)
+DECLARE_MANAGER_FUNCTIONS(Curve,manager)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Curve)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Curve,name,const char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Curve,name,const char *,manager)
 
 int Curve_unitize_vector(FE_value *vector,int number_of_components,
 	FE_value *norm)

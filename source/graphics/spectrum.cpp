@@ -83,6 +83,8 @@ Spectrum type is private.
 	
 	struct Texture *colour_lookup_texture;
 
+	struct MANAGER(Spectrum) *manager;
+	
 	/* the number of structures that point to this spectrum.  The spectrum
 		cannot be destroyed while this is greater than 0 */
 	int access_count;
@@ -252,11 +254,11 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Spectrum,name,const char *)
 	return (return_code);
 } /* MANAGER_COPY_IDENTIFIER(Spectrum,name) */
 
-DECLARE_MANAGER_FUNCTIONS(Spectrum)
+DECLARE_MANAGER_FUNCTIONS(Spectrum,manager)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Spectrum)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Spectrum,name,const char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Spectrum,name,const char *,manager)
 
 /*
 Global functions
@@ -2330,6 +2332,7 @@ Allocates memory and assigns fields for a Spectrum object.
 			spectrum->maximum=0;
 			spectrum->minimum=0;
 			spectrum->clear_colour_before_settings = 1;
+			spectrum->manager = (struct MANAGER(Spectrum) *)NULL;
 			spectrum->access_count=0;
 			spectrum->colour_lookup_texture = (struct Texture *)NULL;
 			if (spectrum->list_of_settings=CREATE(LIST(Spectrum_settings))())

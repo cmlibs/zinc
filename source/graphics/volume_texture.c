@@ -166,6 +166,7 @@ the list of all volume textures.
 		if (texture->name)
 		{
 			texture->access_count=0;
+			texture->manager = (struct MANAGER(VT_volume_texture) *)NULL;
 			(texture->dimension)[0]= -1;
 			(texture->dimension)[1]= -1;
 			(texture->dimension)[2]= -1;
@@ -1853,11 +1854,11 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(VT_volume_texture,name,const char *)
 	return (return_code);
 } /* MANAGER_COPY_IDENTIFIER(VT_volume_texture,name) */
 
-DECLARE_MANAGER_FUNCTIONS(VT_volume_texture)
+DECLARE_MANAGER_FUNCTIONS(VT_volume_texture,manager)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(VT_volume_texture)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(VT_volume_texture,name,const char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(VT_volume_texture,name,const char *,manager)
 
 int list_VT_volume_texture(struct VT_volume_texture *texture)
 /*******************************************************************************

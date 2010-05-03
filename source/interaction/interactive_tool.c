@@ -81,6 +81,7 @@ ACCESS this object for as long as you need to keep it; it is not modifiable.
 	Interactive_tool_copy_function *copy_function;
 	/* data for the actual tool receiving the events */
 	void *tool_data;
+	struct MANAGER(Interactive_tool) *manager;
 	int access_count;
 }; /* struct Interactive_tool */
 
@@ -139,6 +140,7 @@ type.
 			interactive_tool->destroy_tool_data_function=destroy_tool_data_function;
 			interactive_tool->tool_data=tool_data;
 			interactive_tool->copy_function=copy_function;
+			interactive_tool->manager = (struct MANAGER(Interactive_tool) *)NULL;
 			interactive_tool->access_count=0;
 		}
 		else
@@ -347,11 +349,11 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Interactive_tool,name,const char *)
 	return (return_code);
 } /* MANAGER_COPY_IDENTIFIER(Interactive_tool,name) */
 
-DECLARE_MANAGER_FUNCTIONS(Interactive_tool)
+DECLARE_MANAGER_FUNCTIONS(Interactive_tool,manager)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Interactive_tool)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Interactive_tool,name,const char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Interactive_tool,name,const char *,manager)
 
 const char *Interactive_tool_get_display_name(
 	struct Interactive_tool *interactive_tool)

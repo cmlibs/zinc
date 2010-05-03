@@ -125,7 +125,9 @@ DESCRIPTION :
 
 	int offset_x, offset_y;
 
-	 int access_count;
+	struct MANAGER(Graphics_font) *manager;
+
+	int access_count;
 
 #if defined (WX_USER_INTERFACE)
 	 wxFont *font_settings;
@@ -273,11 +275,11 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Graphics_font,name,const char *)
 	return (return_code);
 } /* MANAGER_COPY_IDENTIFIER(Graphics_font,name) */
 
-DECLARE_MANAGER_FUNCTIONS(Graphics_font)
+DECLARE_MANAGER_FUNCTIONS(Graphics_font,manager)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphics_font)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_font,name,const char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_font,name,const char *,manager)
 
 struct Graphics_font *CREATE(Graphics_font)(const char *name, const char *font_string);
 /*******************************************************************************
@@ -498,6 +500,8 @@ DESCRIPTION :
 
 		font->offset_x = 0;
 		font->offset_y = 0;
+
+		font->manager = (struct MANAGER(Graphics_font) *)NULL;
 
 		font->access_count = 0;
 

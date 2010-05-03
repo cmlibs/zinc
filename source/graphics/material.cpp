@@ -297,7 +297,7 @@ The properties of a material.
 		 then this material will not be removed from the manager after destroy.
 	 */
 	int persistent_flag;
-	struct MANAGER(Graphical_material) *material_manager;
+	struct MANAGER(Graphical_material) *manager;
 }; /* struct Graphical_material */
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Graphical_material);
@@ -3742,7 +3742,7 @@ Allocates memory and assigns fields for a material.
 			material->program = (struct Material_program *)NULL;
 			material->program_uniforms = (LIST(Material_program_uniform) *)NULL;
 			material->persistent_flag = 0;
-			material->material_manager = (struct MANAGER(Graphical_material) *)NULL;
+			material->manager = (struct MANAGER(Graphical_material) *)NULL;
 #if defined (OPENGL_API)
 			material->display_list=0;
 			material->brightness_texture_id=0;
@@ -4060,16 +4060,12 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Graphical_material,name,const char *)
 	return (return_code);
 } /* MANAGER_COPY_IDENTIFIER(Graphical_material,name) */
 
-DECLARE_MANAGER_FUNCTIONS(Graphical_material)
+DECLARE_MANAGER_FUNCTIONS(Graphical_material, manager)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphical_material)
 
-DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS( \
-	Graphical_material, name, const char *, material_manager)
-
-#if defined (OLD_CODE)
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Graphical_material,name,const char *)
-#endif /* defined (OLD_CODE) */
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS( \
+	Graphical_material, name, const char *, manager)
 
 const char *Graphical_material_name(struct Graphical_material *material)
 /*******************************************************************************
@@ -4123,11 +4119,11 @@ int Graphical_material_changed(struct Graphical_material *material)
 	ENTER(Computed_field_changed);
 	if (material)
 	{
-		if (material->material_manager)
+		if (material->manager)
 		{
-			MANAGER_BEGIN_CHANGE(Graphical_material)(material->material_manager,
+			MANAGER_BEGIN_CHANGE(Graphical_material)(material->manager,
 				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Graphical_material), material);
-			MANAGER_END_CHANGE(Graphical_material)(material->material_manager);
+			MANAGER_END_CHANGE(Graphical_material)(material->manager);
 		}
 		return_code = 1;
 	}
@@ -7176,7 +7172,7 @@ int Cmiss_material_set_texture(
 	if (material)
 	{
 		Graphical_material_set_texture(material, texture);
-		if (material->material_manager)
+		if (material->manager)
 		{
 			Graphical_material_changed(material);
 			return_code = 1;
@@ -7197,12 +7193,12 @@ int Cmiss_material_destroy(Graphical_material **material_address)
 	{
 		(material->access_count)--;
 		if (!material->persistent_flag && (material->access_count == 1)
-			&& material->material_manager)
+			&& material->manager)
 		{
 			return_code = REMOVE_OBJECT_FROM_MANAGER(Graphical_material)(
-				material, material->material_manager);
+				material, material->manager);
 		}
-		else if (!material->material_manager && (0 >= material->access_count))
+		else if (!material->manager && (0 >= material->access_count))
 		{
 			return_code = DESTROY(Graphical_material)(material_address);
 		}
@@ -7218,10 +7214,10 @@ int Cmiss_material_set_name(
 	int return_code = 0;
 
 	ENTER(Cmiss_material_set_name);
-	if (material && material->material_manager && name)
+	if (material && material->manager && name)
 	{
 		return_code = MANAGER_MODIFY_IDENTIFIER(Graphical_material, name)
-			(material, name, material->material_manager);
+			(material, name, material->manager);
 	}
 	LEAVE;
 

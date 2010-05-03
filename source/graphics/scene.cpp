@@ -5359,14 +5359,11 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Scene,name,const char *)
 	return (return_code);
 } /* MANAGER_COPY_IDENTIFIER(Scene,name) */
 
-/* NOTE: Using special ADD_OBJECT_TO_MANAGER function so that object keeps */
-/*       pointer to its manager while it is managed. */
-
-DECLARE_OBJECT_WITH_MANAGER_MANAGER_FUNCTIONS(Scene,scene_manager)
+DECLARE_MANAGER_FUNCTIONS(Scene,scene_manager)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Scene)
 
-DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS( \
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS( \
 	Scene,name,const char *,scene_manager)
 
 int Scene_get_number_of_scene_objects(struct Scene *scene)

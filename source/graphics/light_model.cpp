@@ -103,6 +103,7 @@ The properties of a light model.
 	enum Light_model_side_mode side_mode;
 	GLuint display_list;
 	int display_list_current;
+	struct MANAGER(Light_model) *manager;
 	/* the number of structures that point to this light model. The light model
 		cannot be destroyed while this is greater than 0 */
 	int access_count;
@@ -358,6 +359,7 @@ the list of all light models.
 		{
 			strcpy(light_model->name,name);
 			light_model->access_count=0;
+			light_model->manager = (struct MANAGER(Light_model) *)NULL;
 			light_model->enabled=1;
 			(light_model->ambient).red=0.;
 			(light_model->ambient).green=0.;
@@ -567,11 +569,11 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Light_model,name,const char *)
 	return (return_code);
 } /* MANAGER_COPY_IDENTIFIER(Light_model,name) */
 
-DECLARE_MANAGER_FUNCTIONS(Light_model)
+DECLARE_MANAGER_FUNCTIONS(Light_model,manager)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Light_model)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Light_model,name,const char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Light_model,name,const char *,manager)
 
 int Light_model_get_ambient(struct Light_model *light_model,
 	struct Colour *ambient)

@@ -150,17 +150,17 @@ the changed_object_list contains the objects affected by the change. \
 ============================================================================*/ \
 { \
 	/* indicates that no changes have been made; no message sent */ \
-	MANAGER_CHANGE_NONE(object_type), \
+	MANAGER_CHANGE_NONE(object_type) = 0, \
 	/* objects have been added to the manager */ \
-	MANAGER_CHANGE_ADD(object_type), \
+	MANAGER_CHANGE_ADD(object_type) = 1, \
 	/* objects have been removed from the manager */ \
-	MANAGER_CHANGE_REMOVE(object_type), \
+	MANAGER_CHANGE_REMOVE(object_type) = 2, \
 	/* identifiers of objects have changed in the manager */ \
-	MANAGER_CHANGE_IDENTIFIER(object_type), \
-	/* identifiers and contents of objects have changed in the manager */ \
-	MANAGER_CHANGE_OBJECT(object_type), \
+	MANAGER_CHANGE_IDENTIFIER(object_type) = 4, \
 	/* contents but not identifiers of objects have changed in the manager */ \
-	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type) \
+	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type) = 8, \
+	/* identifiers and contents of objects have changed in the manager */ \
+	MANAGER_CHANGE_OBJECT(object_type) = 12 \
 } /* enum MANAGER_CHANGE(object_type) */
 
 #if ! defined (SHORT_NAMES)

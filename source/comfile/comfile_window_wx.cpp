@@ -596,13 +596,11 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Comfile_window,name,char *)
 	return (return_code);
 } /* MANAGER_COPY_IDENTIFIER(Comfile_window,name) */
 
-/* NOTE: Using special ADD_OBJECT_TO_MANAGER function so that object keeps
-	pointer to its manager while it is managed. */
-DECLARE_MANAGER_FUNCTIONS(Comfile_window)
+DECLARE_MANAGER_FUNCTIONS(Comfile_window,comfile_window_manager)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Comfile_window)
 
-DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS(Comfile_window,name, \
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Comfile_window,name, \
 	char *,comfile_window_manager)
 
 char *Comfile_window_manager_make_unique_name(

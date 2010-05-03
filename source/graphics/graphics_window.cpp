@@ -5135,13 +5135,11 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Graphics_window,name,const char *)
 	return (return_code);
 } /* MANAGER_COPY_IDENTIFIER(Graphics_window,name) */
 
-/* NOTE: Using special ADD_OBJECT_TO_MANAGER function so that object keeps
-	pointer to its manager while it is managed. */
-DECLARE_MANAGER_FUNCTIONS(Graphics_window)
+DECLARE_MANAGER_FUNCTIONS(Graphics_window,graphics_window_manager)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphics_window)
 
-DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_window,name, \
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_window,name, \
 	const char *,graphics_window_manager)
 
 char *Graphics_window_manager_get_new_name(

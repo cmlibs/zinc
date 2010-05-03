@@ -986,7 +986,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Computed_field,name,const char *)
 	return (return_code);
 } /* MANAGER_COPY_IDENTIFIER(Computed_field,name) */
 
-DECLARE_OBJECT_WITH_MANAGER_MANAGER_FUNCTIONS(Computed_field, manager)
+DECLARE_MANAGER_FUNCTIONS(Computed_field, manager)
 
 PROTOTYPE_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Computed_field)
 /*******************************************************************************
@@ -1040,7 +1040,7 @@ Note: assumes caller is accessing field once!
 	return (return_code);
 } /* MANAGED_OBJECT_NOT_IN_USE(Computed_field) */
 
-DECLARE_ADD_OBJECT_WITH_MANAGER_TO_MANAGER_FUNCTION(Computed_field,name,manager)
+DECLARE_ADD_OBJECT_TO_MANAGER_FUNCTION(Computed_field,name,manager)
 
 PROTOTYPE_MANAGER_MODIFY_FUNCTION(Computed_field, name)
 /*******************************************************************************

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : manager_private.h
 
-LAST MODIFIED : 5 March 2002
+LAST MODIFIED : 4 May 2010
 
 DESCRIPTION :
 Managers oversee the creation, deletion and modification of global objects -
@@ -12,16 +12,6 @@ This file contains the details of the internal workings of the manager and
 should be included in the module that declares the manager for a particular
 object type.  This allows changes to the internal structure to be made without
 affecting other parts of the program.
-???DB.  Remove Manager_type and have a separate Manager_message and
-	Manager_callback_procedure for each object ?
-???DB.  Name not general enough ?
-???DB.  Use B-trees instead of lists ?
-???DB.  Include manager in message ?
-???DB.  Should there be another field, like access_count, that makes it so that
-	only the manager can delete/modify ?  (locked ?)
-???GH.  The MANAGER_COPY_NOT_IDENTIFIER functions should be put in object.h,
-	and the 'MANAGER' bit removed from the name.
-???GH.  The specialised group functions in this file should be in group.h
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -274,14 +264,14 @@ List conditional version of MANAGED_OBJECT_NOT_IN_USE function. \
 } /* MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL(object_type) */
 
 #if ! defined (SHORT_NAMES)
-#define OBJECT_WITH_MANAGER_REMOVE_MANAGER( object_type ) \
-	object_with_manager_remove_manager ## object_type
+#define OBJECT_CLEAR_MANAGER( object_type ) \
+	object_clear_manager ## object_type
 #else
-#define OBJECT_WITH_MANAGER_REMOVE_MANAGER( object_type )  owmrm ## object_type
+#define OBJECT_CLEAR_MANAGER( object_type )  ocm ## object_type
 #endif
 
-#define DECLARE_OBJECT_WITH_MANAGER_REMOVE_MANAGER_FUNCTION( object_type , object_manager ) \
-static int OBJECT_WITH_MANAGER_REMOVE_MANAGER(object_type)(struct object_type *object, \
+#define DECLARE_OBJECT_CLEAR_MANAGER_FUNCTION( object_type , object_manager ) \
+static int OBJECT_CLEAR_MANAGER(object_type)(struct object_type *object, \
 	void *dummy_user_data) \
 /***************************************************************************** \
 LAST MODIFIED : 10 August 2000 \
@@ -292,7 +282,7 @@ Remove the reference to the manager from the object \
 { \
 	int return_code; \
 \
-	ENTER(OBJECT_WITH_MANAGER_REMOVE_MANAGER(object_type)); \
+	ENTER(OBJECT_CLEAR_MANAGER(object_type)); \
    USE_PARAMETER(dummy_user_data); \
 	if (object) \
 	{ \
@@ -302,13 +292,13 @@ Remove the reference to the manager from the object \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
-			"OBJECT_WITH_MANAGER_REMOVE_MANAGER(" #object_type ").  Missing object"); \
+			"OBJECT_CLEAR_MANAGER(" #object_type ").  Missing object"); \
 		return_code=0; \
 	} \
 	LEAVE; \
 \
 	return (return_code); \
-} /* OBJECT_WITH_MANAGER_REMOVE_MANAGER(object_type) */
+} /* OBJECT_CLEAR_MANAGER(object_type) */
 
 /*
 Global functions
@@ -359,56 +349,7 @@ PROTOTYPE_CREATE_MANAGER_FUNCTION(object_type) \
 	return (manager); \
 } /* MANAGER_CREATE(object_type) */
 
-/* Note!!! there are 2 DESTROY functions - the extra one is for destroying
-	 objects that store a pointer to their manager! Keep them consistent! */
-#define DECLARE_DESTROY_MANAGER_FUNCTION( object_type ) \
-PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
-{ \
-	int return_code; \
-	struct MANAGER(object_type) *manager; \
-	struct MANAGER_CALLBACK_ITEM(object_type) *current, *next; \
-\
-	ENTER(DESTROY_MANAGER(object_type)); \
-	if (manager_address && (manager = *manager_address)) \
-	{ \
-		return_code = 1; \
-		/* warn if cache should has not to zero */ \
-		if (0 != manager->cache) \
-		{ \
-			display_message(ERROR_MESSAGE, "DESTROY(MANAGER(" #object_type \
-				")).  manager->cache = %d != 0", manager->cache); \
-		} \
-		/* destroy the manager message */ \
-		if (manager->message) \
-		{ \
-			DESTROY(LIST(object_type))(&(manager->message->changed_object_list)); \
-			DEALLOCATE(manager->message); \
-		} \
-		/* destroy the list of objects in the manager */ \
-		DESTROY_LIST(object_type)(&(manager->object_list)); \
-		/* destroy the callback list, after the list of objects as some Computed fields get 
-		 Computed_field_manager callbacks */ \
-		current=manager->callback_list; \
-		while (current) \
-		{ \
-			next = current->next; \
-			DEALLOCATE(current); \
-			current = next; \
-		} \
-      DEALLOCATE(manager); \
-	} \
-	else \
-	{ \
-		return_code = 0; \
-	} \
-	LEAVE; \
-\
-	return (return_code); \
-} /* DESTROY_MANAGER(object_type) */
-
-/* Note!!! there are 2 DESTROY functions - the extra one is for destroying
-	 objects that store a pointer to their manager! Keep them constistent! */
-#define DECLARE_DESTROY_OBJECT_WITH_MANAGER_MANAGER_FUNCTION( object_type , \
+#define DECLARE_DESTROY_MANAGER_FUNCTION( object_type , \
 	object_manager ) \
 PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 { \
@@ -416,7 +357,7 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 	struct MANAGER(object_type) *manager; \
 	struct MANAGER_CALLBACK_ITEM(object_type) *current,*next; \
 \
-	ENTER(DESTROY_OBJECT_WITH_MANAGER_MANAGER(object_type)); \
+	ENTER(DESTROY_MANAGER(object_type)); \
 	if (manager_address && (manager= *manager_address)) \
 	{ \
 		return_code = 1; \
@@ -434,7 +375,7 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 		} \
 		/* remove the manager_pointer from each object */ \
 		FOR_EACH_OBJECT_IN_LIST(object_type)( \
-			OBJECT_WITH_MANAGER_REMOVE_MANAGER(object_type), \
+			OBJECT_CLEAR_MANAGER(object_type), \
 			(void *)NULL, manager->object_list); \
 		/* destroy the list of objects in the manager */ \
 		DESTROY_LIST(object_type)(&(manager->object_list)); \
@@ -456,76 +397,15 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 	LEAVE; \
 \
 	return (return_code); \
-} /* DESTROY_OBJECT_WITH_MANAGER_MANAGER(object_type) */
+} /* DESTROY_MANAGER(object_type) */
 
 #define DECLARE_ADD_OBJECT_TO_MANAGER_FUNCTION( object_type , \
-	identifier_field_name ) \
-PROTOTYPE_ADD_OBJECT_TO_MANAGER_FUNCTION(object_type) \
-{ \
-	int return_code; \
-\
-	ENTER(ADD_OBJECT_TO_MANAGER(object_type)); \
-	if (manager && object) \
-	{ \
-		if (!(manager->locked)) \
-		{ \
-			/* can only add if new identifier not already in use in manager */ \
-			if ((struct object_type *)NULL == \
-				FIND_BY_IDENTIFIER_IN_LIST(object_type, identifier_field_name)( \
-					object->identifier_field_name, manager->object_list)) \
-			{ \
-				MANAGER_BEGIN_CHANGE(object_type)(manager, \
-					MANAGER_CHANGE_ADD(object_type), object); \
-				/* object_list will access the object */ \
-				if (ADD_OBJECT_TO_LIST(object_type)(object, manager->object_list)) \
-				{ \
-					return_code = 1; \
-				} \
-				else \
-				{ \
-					display_message(ERROR_MESSAGE, \
-						"ADD_OBJECT_TO_MANAGER(" #object_type \
-						").  Could not add object to list"); \
-					return_code = 0; \
-				} \
-				MANAGER_END_CHANGE(object_type)(manager); \
-			} \
-			else \
-			{ \
-				display_message(ERROR_MESSAGE, \
-					"ADD_OBJECT_TO_MANAGER(" #object_type \
-					").  Object with that identifier already in manager"); \
-				return_code = 0; \
-			} \
-		} \
-		else \
-		{ \
-			display_message(WARNING_MESSAGE, \
-				"ADD_OBJECT_TO_MANAGER(" #object_type ").  Manager locked"); \
-			return_code = 0; \
-		} \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"ADD_OBJECT_TO_MANAGER(" #object_type ").  Invalid argument(s)"); \
-		return_code = 0; \
-	} \
-	LEAVE; \
-\
-	return (return_code); \
-} /* ADD_OBJECT_TO_MANAGER(object_type) */
-
-/* Special version of ADD_OBJECT_TO_MANAGER for objects that maintain a */
-/* pointer to their manager, eg. Graphics_window, Scene and GROUP(). */
-/* NOTE: MUST clear the objects pointer to manager in its CREATE function! */
-#define DECLARE_ADD_OBJECT_WITH_MANAGER_TO_MANAGER_FUNCTION( object_type , \
 	identifier_field_name , object_manager ) \
 PROTOTYPE_ADD_OBJECT_TO_MANAGER_FUNCTION(object_type) \
 { \
 	int return_code; \
 \
-	ENTER(ADD_OBJECT_WITH_MANAGER_TO_MANAGER(object_type)); \
+	ENTER(ADD_OBJECT_TO_MANAGER(object_type)); \
 	if (manager && object) \
 	{ \
 		if (!object->object_manager) \
@@ -549,7 +429,7 @@ PROTOTYPE_ADD_OBJECT_TO_MANAGER_FUNCTION(object_type) \
 					else \
 					{ \
 						display_message(ERROR_MESSAGE, \
-							"ADD_OBJECT_WITH_MANAGER_TO_MANAGER(" #object_type \
+							"ADD_OBJECT_TO_MANAGER(" #object_type \
 							").  Could not add object to list"); \
 						return_code = 0; \
 					} \
@@ -558,7 +438,7 @@ PROTOTYPE_ADD_OBJECT_TO_MANAGER_FUNCTION(object_type) \
 				else \
 				{ \
 					display_message(ERROR_MESSAGE, \
-						"ADD_OBJECT_WITH_MANAGER_TO_MANAGER(" #object_type \
+						"ADD_OBJECT_TO_MANAGER(" #object_type \
 						").  Object with that identifier already in manager"); \
 					return_code = 0; \
 				} \
@@ -566,7 +446,7 @@ PROTOTYPE_ADD_OBJECT_TO_MANAGER_FUNCTION(object_type) \
 			else \
 			{ \
 				display_message(WARNING_MESSAGE, \
-					"ADD_OBJECT_WITH_MANAGER_TO_MANAGER(" #object_type \
+					"ADD_OBJECT_TO_MANAGER(" #object_type \
 					").  Manager locked"); \
 				return_code = 0; \
 			} \
@@ -574,7 +454,7 @@ PROTOTYPE_ADD_OBJECT_TO_MANAGER_FUNCTION(object_type) \
 		else \
 		{ \
 			display_message(ERROR_MESSAGE, \
-				"ADD_OBJECT_WITH_MANAGER_TO_MANAGER(" #object_type \
+				"ADD_OBJECT_TO_MANAGER(" #object_type \
 				").  Object already managed"); \
 			return_code = 0; \
 		} \
@@ -582,77 +462,22 @@ PROTOTYPE_ADD_OBJECT_TO_MANAGER_FUNCTION(object_type) \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
-			"ADD_OBJECT_WITH_MANAGER_TO_MANAGER(" #object_type \
+			"ADD_OBJECT_TO_MANAGER(" #object_type \
 			").  Invalid argument(s)"); \
 		return_code = 0; \
 	} \
 	LEAVE; \
 \
 	return (return_code); \
-} /* ADD_OBJECT_WITH_MANAGER_TO_MANAGER(object_type) */
+} /* ADD_OBJECT_TO_MANAGER(object_type) */
 
-#define DECLARE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION( object_type ) \
-PROTOTYPE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION(object_type) \
-{ \
-	int return_code; \
-\
-	ENTER(REMOVE_OBJECT_FROM_MANAGER(object_type)); \
-	if (manager && object) \
-	{ \
-		if (!(manager->locked)) \
-		{ \
-			if (MANAGED_OBJECT_NOT_IN_USE(object_type)(object, manager)) \
-			{ \
-				MANAGER_BEGIN_CHANGE(object_type)(manager, \
-					MANAGER_CHANGE_REMOVE(object_type), object); \
-				return_code = REMOVE_OBJECT_FROM_LIST(object_type)(object, \
-					manager->object_list); \
-				MANAGER_END_CHANGE(object_type)(manager); \
-			} \
-			else \
-			{ \
-				if (IS_OBJECT_IN_LIST(object_type)(object, manager->object_list)) \
-				{ \
-					display_message(ERROR_MESSAGE, \
-						"REMOVE_OBJECT_FROM_MANAGER(" #object_type \
-						").  Object is in use"); \
-				} \
-				else \
-				{ \
-					display_message(ERROR_MESSAGE, \
-						"REMOVE_OBJECT_FROM_MANAGER(" #object_type \
-						").  Object is not managed"); \
-				} \
-				return_code = 0; \
-			} \
-		} \
-		else \
-		{ \
-			display_message(WARNING_MESSAGE, \
-				"REMOVE_OBJECT_FROM_MANAGER(" #object_type ").  Manager locked"); \
-			return_code = 0; \
-		} \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"REMOVE_OBJECT_FROM_MANAGER(" #object_type ").  Invalid argument(s)"); \
-		return_code = 0; \
-	} \
-	LEAVE; \
-\
-	return (return_code); \
-} /* REMOVE_OBJECT_FROM_MANAGER(object_type) */
-
-/* Special version of REMOVE_OBJECT_FROM_MANAGER for objects that maintain a */
-/* pointer to their manager, eg. Graphics_window, Scene and GROUP(). */
-#define DECLARE_REMOVE_OBJECT_WITH_MANAGER_FROM_MANAGER_FUNCTION( \
+#define DECLARE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION( \
 	object_type , object_manager ) \
 PROTOTYPE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION(object_type) \
 { \
 	int return_code; \
 \
-	ENTER(REMOVE_OBJECT_WITH_MANAGER_FROM_MANAGER(object_type)); \
+	ENTER(REMOVE_OBJECT_FROM_MANAGER(object_type)); \
 	if (manager && object) \
 	{ \
 		if (!(manager->locked)) \
@@ -687,7 +512,7 @@ PROTOTYPE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION(object_type) \
 		else \
 		{ \
 			display_message(WARNING_MESSAGE, \
-				"REMOVE_OBJECT_WITH_MANAGER_FROM_MANAGER(" #object_type \
+				"REMOVE_OBJECT_FROM_MANAGER(" #object_type \
 				").  Manager locked"); \
 			return_code = 0; \
 		} \
@@ -695,16 +520,17 @@ PROTOTYPE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION(object_type) \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
-			"REMOVE_OBJECT_WITH_MANAGER_FROM_MANAGER(" #object_type \
+			"REMOVE_OBJECT_FROM_MANAGER(" #object_type \
 			").  Invalid argument(s)"); \
 		return_code = 0; \
 	} \
 	LEAVE; \
 \
 	return (return_code); \
-} /* REMOVE_OBJECT_WITH_MANAGER_FROM_MANAGER(object_type) */
+} /* REMOVE_OBJECT_FROM_MANAGER(object_type) */
 
-#define DECLARE_REMOVE_ALL_OBJECTS_FROM_MANAGER_FUNCTION( object_type ) \
+#define DECLARE_REMOVE_ALL_OBJECTS_FROM_MANAGER_FUNCTION( \
+	object_type , object_manager ) \
 PROTOTYPE_REMOVE_ALL_OBJECTS_FROM_MANAGER_FUNCTION(object_type) \
 { \
 	int return_code; \
@@ -724,6 +550,8 @@ PROTOTYPE_REMOVE_ALL_OBJECTS_FROM_MANAGER_FUNCTION(object_type) \
 			{ \
 				MANAGER_BEGIN_CHANGE(object_type)(manager, \
 					MANAGER_CHANGE_REMOVE(object_type), object); \
+				/* clear object's pointer to manager */ \
+				object->object_manager = (struct MANAGER(object_type) *)NULL; \
 				return_code = \
 					REMOVE_OBJECT_FROM_LIST(object_type)(object, manager->object_list); \
 			} \
@@ -740,7 +568,8 @@ PROTOTYPE_REMOVE_ALL_OBJECTS_FROM_MANAGER_FUNCTION(object_type) \
 		else \
 		{ \
 			display_message(WARNING_MESSAGE, \
-				"REMOVE_ALL_OBJECTS_FROM_MANAGER(" #object_type ").  Manager locked"); \
+				"REMOVE_ALL_OBJECTS_FROM_MANAGER(" #object_type \
+				").  Manager locked"); \
 			return_code = 0; \
 		} \
 	} \
@@ -755,64 +584,6 @@ PROTOTYPE_REMOVE_ALL_OBJECTS_FROM_MANAGER_FUNCTION(object_type) \
 \
 	return (return_code); \
 } /* REMOVE_ALL_OBJECTS_FROM_MANAGER(object_type) */
-
-/* Special version of REMOVE_ALL_OBJECTS_FROM_MANAGER for objects that maintain
-	 a pointer to their manager, eg. Graphics_window, Scene and GROUP(). */
-#define DECLARE_REMOVE_ALL_OBJECTS_WITH_MANAGER_FROM_MANAGER_FUNCTION( \
-	object_type , object_manager ) \
-PROTOTYPE_REMOVE_ALL_OBJECTS_FROM_MANAGER_FUNCTION(object_type) \
-{ \
-	int return_code; \
-	struct object_type *object; \
-\
-	ENTER(REMOVE_ALL_OBJECTS_WITH_MANAGER_FROM_MANAGER(object_type)); \
-	if (manager) \
-	{ \
-		if (!(manager->locked)) \
-		{ \
-			return_code = 1; \
-			/* this function uses "temporary" caching by having many BEGIN_CHANGE \
-				 calls followed by a single END_CHANGE */ \
-			while (return_code && (object = FIRST_OBJECT_IN_LIST_THAT(object_type)( \
-				MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL(object_type), (void *)manager, \
-				manager->object_list))) \
-			{ \
-				MANAGER_BEGIN_CHANGE(object_type)(manager, \
-					MANAGER_CHANGE_REMOVE(object_type), object); \
-				/* clear object's pointer to manager */ \
-				object->object_manager = (struct MANAGER(object_type) *)NULL; \
-				return_code = \
-					REMOVE_OBJECT_FROM_LIST(object_type)(object, manager->object_list); \
-			} \
-			if (0 != NUMBER_IN_MANAGER(object_type)(manager)) \
-			{ \
-				display_message(ERROR_MESSAGE, \
-					"REMOVE_ALL_OBJECTS_WITH_MANAGER_FROM_MANAGER(" #object_type \
-					").  %d items could not be removed", \
-					NUMBER_IN_MANAGER(object_type)(manager)); \
-				return_code = 0; \
-			} \
-			MANAGER_END_CHANGE(object_type)(manager); \
-		} \
-		else \
-		{ \
-			display_message(WARNING_MESSAGE, \
-				"REMOVE_ALL_OBJECTS_WITH_MANAGER_FROM_MANAGER(" #object_type \
-				").  Manager locked"); \
-			return_code = 0; \
-		} \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"REMOVE_ALL_OBJECTS_WITH_MANAGER_FROM_MANAGER(" #object_type \
-			").  Invalid argument(s)"); \
-		return_code = 0; \
-	} \
-	LEAVE; \
-\
-	return (return_code); \
-} /* REMOVE_ALL_OBJECTS_WITH_MANAGER_FROM_MANAGER(object_type) */
 
 #define DECLARE_NUMBER_IN_MANAGER_FUNCTION( object_type ) \
 PROTOTYPE_NUMBER_IN_MANAGER_FUNCTION(object_type) \
@@ -1633,11 +1404,13 @@ DECLARE_MANAGER_UPDATE_FUNCTION(object_type) \
 DECLARE_MANAGER_FIND_CLIENT_FUNCTION(object_type) \
 DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(object_type)
 
-#define DECLARE_MANAGER_FUNCTIONS( object_type ) \
+/* NOTE: MUST clear the objects pointer to manager in its CREATE function! */
+#define DECLARE_MANAGER_FUNCTIONS( object_type , object_manager ) \
 DECLARE_CREATE_MANAGER_FUNCTION(object_type) \
-DECLARE_DESTROY_MANAGER_FUNCTION(object_type) \
-DECLARE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION(object_type) \
-DECLARE_REMOVE_ALL_OBJECTS_FROM_MANAGER_FUNCTION(object_type) \
+DECLARE_OBJECT_CLEAR_MANAGER_FUNCTION(object_type,object_manager) \
+DECLARE_DESTROY_MANAGER_FUNCTION(object_type,object_manager) \
+DECLARE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION(object_type,object_manager) \
+DECLARE_REMOVE_ALL_OBJECTS_FROM_MANAGER_FUNCTION(object_type,object_manager) \
 DECLARE_NUMBER_IN_MANAGER_FUNCTION(object_type) \
 DECLARE_MANAGER_REGISTER_FUNCTION(object_type) \
 DECLARE_MANAGER_DEREGISTER_FUNCTION(object_type) \
@@ -1649,38 +1422,9 @@ DECLARE_MANAGER_END_CHANGE_FUNCTION(object_type) \
 DECLARE_MANAGER_BEGIN_CACHE_FUNCTION(object_type) \
 DECLARE_MANAGER_END_CACHE_FUNCTION(object_type)
 
-#define DECLARE_MANAGER_IDENTIFIER_FUNCTIONS( object_type , \
-	identifier_field_name , identifier_type ) \
-DECLARE_ADD_OBJECT_TO_MANAGER_FUNCTION(object_type,identifier_field_name) \
-DECLARE_MANAGER_MODIFY_FUNCTION(object_type,identifier_field_name) \
-DECLARE_MANAGER_MODIFY_NOT_IDENTIFIER_FUNCTION(object_type, \
-	identifier_field_name) \
-DECLARE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(object_type,identifier_field_name, \
-	identifier_type) \
-DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(object_type, \
-	identifier_field_name,identifier_type)
-
-/* special set of functions for object containing pointer to manager */
-#define DECLARE_OBJECT_WITH_MANAGER_MANAGER_FUNCTIONS( object_type , object_manager ) \
-DECLARE_CREATE_MANAGER_FUNCTION(object_type) \
-DECLARE_OBJECT_WITH_MANAGER_REMOVE_MANAGER_FUNCTION(object_type,object_manager) \
-DECLARE_DESTROY_OBJECT_WITH_MANAGER_MANAGER_FUNCTION(object_type,object_manager) \
-DECLARE_REMOVE_OBJECT_WITH_MANAGER_FROM_MANAGER_FUNCTION(object_type,object_manager) \
-DECLARE_REMOVE_ALL_OBJECTS_WITH_MANAGER_FROM_MANAGER_FUNCTION(object_type,object_manager) \
-DECLARE_NUMBER_IN_MANAGER_FUNCTION(object_type) \
-DECLARE_MANAGER_REGISTER_FUNCTION(object_type) \
-DECLARE_MANAGER_DEREGISTER_FUNCTION(object_type) \
-DECLARE_IS_MANAGED_FUNCTION(object_type) \
-DECLARE_FIRST_OBJECT_IN_MANAGER_THAT_FUNCTION(object_type) \
-DECLARE_FOR_EACH_OBJECT_IN_MANAGER_FUNCTION(object_type) \
-DECLARE_MANAGER_BEGIN_CHANGE_FUNCTION(object_type) \
-DECLARE_MANAGER_END_CHANGE_FUNCTION(object_type) \
-DECLARE_MANAGER_BEGIN_CACHE_FUNCTION(object_type) \
-DECLARE_MANAGER_END_CACHE_FUNCTION(object_type)
-
-#define DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS( \
+#define DECLARE_MANAGER_IDENTIFIER_FUNCTIONS( \
 	object_type , identifier_field_name , identifier_type , object_manager ) \
-DECLARE_ADD_OBJECT_WITH_MANAGER_TO_MANAGER_FUNCTION(object_type, \
+DECLARE_ADD_OBJECT_TO_MANAGER_FUNCTION(object_type, \
 	identifier_field_name, object_manager) \
 DECLARE_MANAGER_MODIFY_FUNCTION(object_type,identifier_field_name) \
 DECLARE_MANAGER_MODIFY_NOT_IDENTIFIER_FUNCTION(object_type, \

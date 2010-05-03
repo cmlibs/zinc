@@ -3947,17 +3947,12 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Texture,name,const char *)
 	return (return_code);
 } /* MANAGER_COPY_IDENTIFIER(Texture,name) */
 
-DECLARE_MANAGER_FUNCTIONS(Texture)
+DECLARE_MANAGER_FUNCTIONS(Texture,texture_manager)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Texture)
 
-DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS( \
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS( \
 	Texture,name,const char *,texture_manager)
-
-#if defined (OLD_CODE)
-	  /* Put the manager into scene */
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Texture,name,const char *)
-#endif /* defined (OLD_CODE) */
 
 int Texture_notify_change(struct Texture *texture)
 /*******************************************************************************

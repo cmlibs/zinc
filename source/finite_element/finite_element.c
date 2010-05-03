@@ -336,6 +336,7 @@ list.
 	int number_of_standard_basis_functions;
 	void *arguments;
 	Standard_basis_function *standard_basis;
+	struct MANAGER(FE_basis) *manager;
 	/* the number of structures that point to this basis.  The basis cannot be
 		destroyed while this is greater than 0 */
 	int access_count;
@@ -20189,6 +20190,7 @@ returned.
 					if (basis)
 					{
 						basis->access_count=0;
+						basis->manager = (struct MANAGER(FE_basis) *)NULL;
 						/* copy the basis type */
 						basis->type=basis_type;
 						type_entry=type;
@@ -20655,11 +20657,11 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(FE_basis,type)
 	return (return_code);
 } /* MANAGER_COPY_WITH_IDENTIFIER(FE_basis,type) */
 
-DECLARE_MANAGER_FUNCTIONS(FE_basis)
+DECLARE_MANAGER_FUNCTIONS(FE_basis,manager)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(FE_basis)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(FE_basis,type,int *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(FE_basis,type,int *,manager)
 
 int *FE_basis_string_to_type_array(const char *basis_description_string)
 /*******************************************************************************

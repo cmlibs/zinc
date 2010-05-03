@@ -106,6 +106,7 @@ The properties of a light.
 	/* include display list stuff although cannot use at present */
 	GLuint display_list;
 	int display_list_current;
+	struct MANAGER(Light) *manager;
 	/* the number of structures that point to this light.  The light cannot be
 		destroyed while this is greater than 0 */
 	int access_count;
@@ -838,6 +839,7 @@ Allocates memory and assigns fields for a light model.
 		{
 			strcpy((char *)light->name, name);
 			light->access_count = 0;
+			light->manager = (struct MANAGER(Light) *)NULL;
 			light->type=INFINITE_LIGHT;
 			(light->colour).red = 1.;
 			(light->colour).green = 1.;
@@ -1052,11 +1054,11 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Light,name,const char *)
 	return (return_code);
 } /* MANAGER_COPY_IDENTIFIER(Light,name) */
 
-DECLARE_MANAGER_FUNCTIONS(Light)
+DECLARE_MANAGER_FUNCTIONS(Light,manager)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Light)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Light,name,const char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Light,name,const char *,manager)
 
 int get_Light_attenuation(struct Light *light, float *constant_attenuation,
 	float *linear_attenuation, float *quadratic_attenuation)

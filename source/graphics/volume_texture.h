@@ -397,6 +397,8 @@ DESCRIPTION :
 	int n_groups;
 	struct VT_node_group **node_groups;
 
+	struct MANAGER(VT_volume_texture) *manager;
+	
 	int access_count;
 }; /* struct VT_volume_texture */
 

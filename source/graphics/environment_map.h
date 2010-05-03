@@ -54,22 +54,8 @@ textures.
 Global types
 ------------
 */
-struct Environment_map
-/*******************************************************************************
-LAST MODIFIED : 25 July 1995
 
-DESCRIPTION :
-The properties of a environment map.
-==============================================================================*/
-{
-	/* the name of the environment map */
-	const char *name;
-	/* the graphical materials to use for each face of the cube */
-	struct Graphical_material *face_material[6];
-	/* the number of structures that point to this environment map. The
-		environment map cannot be destroyed while this is greater than 0 */
-	int access_count;
-}; /* struct Environment_map */
+struct Environment_map;
 
 DECLARE_LIST_TYPES(Environment_map);
 

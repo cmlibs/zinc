@@ -59,6 +59,7 @@ struct Movie_graphics
 	char *name;
 	struct X3d_movie *x3d_movie;
 	struct Graphics_window *graphics_window;
+	struct MANAGER(Movie_graphics) *manager;
 	int access_count;
 };
 
@@ -98,6 +99,7 @@ Attempts to create a movie graphics object.
 				strcpy(movie->name,name);
 				movie->x3d_movie = x3d_movie;
 				movie->graphics_window = (struct Graphics_window *)NULL;
+				movie->manager = (struct MANAGER(Movie_graphics) *)NULL;
 				movie->access_count = 0;
 			}
 			else
@@ -269,11 +271,11 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Movie_graphics,name,const char *)
 	return (return_code);
 } /* MANAGER_COPY_IDENTIFIER(Movie_graphics,name) */
 
-DECLARE_MANAGER_FUNCTIONS(Movie_graphics)
+DECLARE_MANAGER_FUNCTIONS(Movie_graphics,manager)
 
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Movie_graphics)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Movie_graphics,name,const char *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Movie_graphics,name,const char *,manager)
 
 struct X3d_movie *Movie_graphics_get_X3d_movie(
 	struct Movie_graphics *movie)
