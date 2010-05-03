@@ -62,12 +62,8 @@ Macros
 Local types
 -----------
 */
-#if ! defined (SHORT_NAMES)
 #define MANAGER_CALLBACK_ITEM( object_type ) \
 	manager_callback_item_ ## object_type
-#else
-#define MANAGER_CALLBACK_ITEM( object_type )  mi ## object_type
-#endif
 
 #define FULL_DECLARE_MANAGER_TYPE_WITH_OWNER( object_type , owner_type ) \
 struct MANAGER_CALLBACK_ITEM(object_type) \
@@ -113,11 +109,7 @@ Local functions
 ---------------
 */
 
-#if ! defined (SHORT_NAMES)
 #define MANAGER_UPDATE( object_type )  manager_update_ ## object_type
-#else
-#define MANAGER_UPDATE( object_type )  mu ## object_type
-#endif
 
 #define DECLARE_MANAGER_UPDATE_FUNCTION( object_type ) \
 static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
@@ -183,11 +175,7 @@ inter-object dependencies. \
 	LEAVE; \
 } /* MANAGER_UPDATE(object_type) */
 
-#if ! defined (SHORT_NAMES)
 #define MANAGER_FIND_CLIENT( object_type )  manager_find_client ## object_type
-#else
-#define MANAGER_FIND_CLIENT( object_type )  bm ## object_type
-#endif
 
 #define DECLARE_MANAGER_FIND_CLIENT_FUNCTION( object_type ) \
 struct MANAGER_CALLBACK_ITEM(object_type) *MANAGER_FIND_CLIENT(object_type)( \
@@ -235,13 +223,8 @@ Finds a client based on its callback id. \
 	return (return_callback); \
 } /* MANAGER_FIND_CLIENT(object_type) */
 
-#if ! defined (SHORT_NAMES)
 #define MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL( object_type ) \
 	managed_object_not_in_use_conditional_ ## object_type
-#else
-#define MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL( object_type ) \
-	moniuc ## object_type
-#endif
 
 #define DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION( object_type ) \
 static int MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL(object_type)( \
@@ -263,12 +246,8 @@ List conditional version of MANAGED_OBJECT_NOT_IN_USE function. \
 	return (return_code); \
 } /* MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL(object_type) */
 
-#if ! defined (SHORT_NAMES)
 #define OBJECT_CLEAR_MANAGER( object_type ) \
 	object_clear_manager ## object_type
-#else
-#define OBJECT_CLEAR_MANAGER( object_type )  ocm ## object_type
-#endif
 
 #define DECLARE_OBJECT_CLEAR_MANAGER_FUNCTION( object_type , object_manager ) \
 static int OBJECT_CLEAR_MANAGER(object_type)(struct object_type *object, \
