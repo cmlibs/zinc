@@ -2501,107 +2501,6 @@ Executes a GFX CREATE LMODEL command.
 	return (return_code);
 } /* gfx_create_light_model */
 
-static int gfx_create_morph(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 29 March 2001
-
-DESCRIPTION :
-Executes a GFX CREATE MORPH command.  This command interpolates between two
-graphics objects, and produces a new object
-==============================================================================*/
-{
-	char *graphics_object_name;
-	float proportion;
-	gtObject *graphics_object;
-	gtObject *initial,*final;
-	int return_code;
-	struct Cmiss_command_data *command_data;
-	static struct Modifier_entry option_table[]=
-	{
-		{"as",NULL,(void *)1,set_name},
-		{"final",NULL,NULL,set_Graphics_object},
-		{"initial",NULL,NULL,set_Graphics_object},
-		{"proportion",NULL,NULL,set_float_0_to_1_inclusive},
-		{NULL,NULL,NULL,NULL}
-	};
-
-	ENTER(gfx_create_morph);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
-		{
-			/* initialise defaults */
-			graphics_object_name = duplicate_string("morph");
-			proportion = 0.0;
-			initial = (gtObject *)NULL;
-			final = (gtObject *)NULL;
-			(option_table[0]).to_be_modified= &graphics_object_name;
-			(option_table[1]).to_be_modified= &final;
-			(option_table[1]).user_data= (void *)command_data->graphics_object_list;
-			(option_table[2]).to_be_modified= &initial;
-			(option_table[2]).user_data= (void *)command_data->graphics_object_list;
-			(option_table[3]).to_be_modified= &proportion;
-			return_code=process_multiple_options(state,option_table);
-			/* no errors, not asking for help */
-			if (return_code)
-			{
-				/* check for valid arguments */
-				if (initial&&final)
-				{
-					if (graphics_object=morph_gtObject(graphics_object_name,
-						proportion,initial,final))
-					{
-						if (!ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
-							command_data->graphics_object_list))
-						{
-							display_message(ERROR_MESSAGE,
-								"gfx_create_morph.  Could not add graphics object to list");
-							DESTROY(GT_object)(&graphics_object);
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"gfx_create_morph.  Could not create morph from surface");
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Must specify initial and final graphics objects for morph");
-					return_code=0;
-				}
-			} /* parse error, help */
-			DEALLOCATE(graphics_object_name);
-			if (initial)
-			{
-				DEACCESS(GT_object)(&initial);
-			}
-			if (final)
-			{
-				DEACCESS(GT_object)(&final);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"gfx_create_morph.  Missing command_data");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_create_morph.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_create_morph */
-
 struct Interpreter_command_node_selection_callback_data
 {
 	char *perl_action;
@@ -6662,8 +6561,6 @@ Executes a GFX CREATE command.
 					(void *)command_data->material_package,gfx_create_material);
 				Option_table_add_entry(option_table, "more_flow_particles",
 					/*create_more*/(void *)1, command_data_void, gfx_create_flow_particles);
-				Option_table_add_entry(option_table,"morph",NULL,
-					command_data_void,gfx_create_morph);
 				Option_table_add_entry(option_table, "ngroup", /*use_object_type*/(void *)1,
 					(void *)command_data->root_region, gfx_create_group);
 				Option_table_add_entry(option_table,"node_selection_callback",NULL,
