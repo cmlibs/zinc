@@ -475,40 +475,34 @@ Tries to minimise menu rebuilds as much as possible, since these cause
 annoying flickering on the screen.
 ============================================================================*/
 {
-	int update_menu;
 	Managed_object_chooser* class_chooser;
 
 	if (message && 
 		(class_chooser = (Managed_object_chooser*)class_chooser_void))
 	{
-		update_menu = 0;
-		if ((Manager::Manager_change_add == message->change) ||
-			(Manager::Manager_change_remove == message->change) ||
-			(Manager::Manager_change_identifier == message->change) ||
-			(Manager::Manager_change_object == message->change))
+		bool update_menu = false;
+		int change_summary = class_chooser->manager->manager_message_get_change_summary(message);
+		if (change_summary & (
+			Manager::Manager_change_add |
+			Manager::Manager_change_remove |
+			Manager::Manager_change_identifier))
 		{
-			/* ensure menu updates if no conditional function, or 
-				 conditional function satisfied for any of the changed objects */
-			if (!(class_chooser->conditional_function) ||
-				((Managed_object *)NULL != 
-					class_chooser->manager->first_object_in_list_that(
-				class_chooser->conditional_function, class_chooser->conditional_function_user_data,
-				message->changed_object_list)))
+			if ((NULL == class_chooser->conditional_function) ||
+				class_chooser->manager->manager_message_has_changed_object_that(message,
+					Manager::Manager_change_add | Manager::Manager_change_remove | Manager::Manager_change_identifier,
+					class_chooser->conditional_function, class_chooser->conditional_function_user_data))
 			{
-				update_menu = 1;
+				update_menu = true;
 			}
 		}
-		if ((Manager::Manager_change_object_not_identifier == message->change)
-			|| (Manager::Manager_change_object == message->change))
+		if ((!update_menu) &&
+			(change_summary & Manager::Manager_change_object_not_identifier))
 		{
-			/* ensure menu updates if there is no conditional function and the
-				 status of an object in the chooser has changed */
-			if (class_chooser->conditional_function &&
-				((Managed_object *)NULL !=
-				class_chooser->manager->first_object_in_list_that(
-				object_status_changed, class_chooser, message->changed_object_list)))
+			if ((class_chooser->conditional_function) &&
+				class_chooser->manager->manager_message_has_changed_object_that(message,
+					Manager::Manager_change_object_not_identifier, object_status_changed, class_chooser))
 			{
-				update_menu = 1;
+				update_menu = true;
 			}
 		}
 		if (update_menu)

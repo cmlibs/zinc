@@ -206,19 +206,15 @@ Callback for change of field.
 	LEAVE;
 } /* element_point_viewer_widget_update_choose_field */
 
+/***************************************************************************//**
+ * One or more of the computed_fields have changed in the manager. If the
+ * current_field in the <element_point_viewer> has changed, re-send it to the
+ * element_point_field_viewer to update widgets/values etc.
+ * Note that delete/add messages are handled by the field chooser.
+ */
 static void element_point_viewer_widget_computed_field_change(
 	struct MANAGER_MESSAGE(Computed_field) *message,
 	void *element_point_viewer_void)
-/*******************************************************************************
-LAST MODIFIED : 28 May 2001
-
-DESCRIPTION :
-One or more of the computed_fields have changed in the manager. If the
-current_field in the <element_point_viewer> has changed, re-send it to the
-element_point_field_viewer to update widgets/values etc.
-Note that delete/add messages are handled by the field chooser.
-???RC Review Manager Messages Here
-==============================================================================*/
 {
 	struct Computed_field *field;
 	struct Element_point_viewer_widget_struct *element_point_viewer;
@@ -227,29 +223,15 @@ Note that delete/add messages are handled by the field chooser.
 	if (message&&(element_point_viewer=
 		(struct Element_point_viewer_widget_struct *)element_point_viewer_void))
 	{
-		switch (message->change)
+		field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+			element_point_viewer->choose_field_widget);
+		int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Computed_field)(message, field);
+		if (change & MANAGER_CHANGE_RESULT(Computed_field))
 		{
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field):
-			case MANAGER_CHANGE_OBJECT(Computed_field):
-			{
-				field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
-					element_point_viewer->choose_field_widget);
-				if (Computed_field_depends_on_Computed_field_in_list(
-					field, message->changed_object_list))
-				{
-					element_point_field_viewer_widget_set_element_point_field(
-						element_point_viewer->field_viewer_widget,
-						&(element_point_viewer->element_point_identifier),
-						element_point_viewer->element_point_number,field);
-				}
-			} break;
-			case MANAGER_CHANGE_ADD(Computed_field):
-			case MANAGER_CHANGE_NONE(Computed_field):
-			case MANAGER_CHANGE_REMOVE(Computed_field):
-			case MANAGER_CHANGE_IDENTIFIER(Computed_field):
-			{
-				/* do nothing */
-			} break;
+			element_point_field_viewer_widget_set_element_point_field(
+				element_point_viewer->field_viewer_widget,
+				&(element_point_viewer->element_point_identifier),
+				element_point_viewer->element_point_number,field);
 		}
 	}
 	else

@@ -176,7 +176,10 @@ Stores the collections of objects that make up a 3-D graphical model.
 	const char *name;
 	/* keep pointer to this scene's manager since can pass on manager change */
 	/* messages if member manager changes occur (eg. materials) */
+	/* after clearing in create, following to be modified only by manager */
 	struct MANAGER(Scene) *scene_manager;
+	int manager_change_status;
+
 	/* list of objects in the scene (plus visibility flag) */
 	struct LIST(Scene_object) *scene_object_list;
 	enum Scene_change_status change_status;
@@ -206,7 +209,6 @@ Stores the collections of objects that make up a 3-D graphical model.
 	void *spectrum_manager_callback_id;
 	struct Spectrum *default_spectrum;
 	struct MANAGER(Texture) *texture_manager;
-	void *texture_manager_callback_id;
 	struct Time_keeper *default_time_keeper;
 	struct User_interface *user_interface;
 	/* routine to call and data to pass to a module that handles scene input */
@@ -487,9 +489,6 @@ LAST MODIFIED : 6 June 2001
 DESCRIPTION :
 Tells the scene it has changed, forcing it to send the manager message
 MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER.
-???RC Hopefully temporary. Manually sends manager change message. Could use
-manager modify not identifier instead.
-???RC Review Manager Messages Here
 ==============================================================================*/
 {
 	int return_code;
@@ -497,25 +496,14 @@ manager modify not identifier instead.
 	ENTER(Scene_refresh);
 	if (scene)
 	{
-		if (scene->scene_manager)
+		return_code = 1;	
+		/* send no messages if caching is enabled or no changes */
+		if ((0 == scene->cache) && (SCENE_NO_CHANGE != scene->change_status))
 		{
-			/* send no messages if caching is enabled or no changes */
-			if ((0 == scene->cache) && (SCENE_NO_CHANGE != scene->change_status))
-			{
-				/*???RC these messages are meant to be sent before and after a change.
-					Probably ok as can only have changed this scene before message sent */
-				MANAGER_BEGIN_CHANGE(Scene)(scene->scene_manager,
-					MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Scene), scene);
-				MANAGER_END_CHANGE(Scene)(scene->scene_manager);
-				/* clear the change_status after messages sent */
-				scene->change_status = SCENE_NO_CHANGE;
-			}
-			return_code = 1;	
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "Scene_refresh.  Scene not managed");
-			return_code = 0;
+			return_code = MANAGED_OBJECT_CHANGE(Scene)(scene,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Scene));
+			/* clear the change_status after messages sent */
+			scene->change_status = SCENE_NO_CHANGE;
 		}
 	}
 	else
@@ -1108,32 +1096,17 @@ LAST MODIFIED : 28 May 2001
 DESCRIPTION :
 Something has changed globally in the scene manager. If the contents of the
 scene on this window are modified, redraw.
-???RC Review Manager Messages Here
 ==============================================================================*/
 {
 	struct Scene_object *scene_object;
 
 	ENTER(Scene_object_scene_change);
-
 	if (message && (scene_object = (struct Scene_object *)scene_object_void))
 	{
-		switch (message->change)
+		int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Scene)(message, scene_object->child_scene);
+		if (change & MANAGER_CHANGE_RESULT(Scene))
 		{
-			case MANAGER_CHANGE_OBJECT(Scene):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Scene):
-			case MANAGER_CHANGE_IDENTIFIER(Scene):
-			{
-				if (IS_OBJECT_IN_LIST(Scene)(scene_object->child_scene,
-					message->changed_object_list))
-				{
-					Scene_object_changed_internal(scene_object);
-				}
-			} break;
-			case MANAGER_CHANGE_ADD(Scene):
-			case MANAGER_CHANGE_REMOVE(Scene):
-			{
-				/* do nothing */
-			} break;
+			Scene_object_changed_internal(scene_object);
 		}
 	}
 	else
@@ -2001,7 +1974,6 @@ Since spectrums combine their colour with the material at compile time, just
 recompiling the display list of changed materials does not always produce the
 right effect when combined with spectrums. This function tells graphics objects
 in such situations that their display lists need to be updated.
-???RC Review Manager Messages Here
 ==============================================================================*/
 {
 	int return_code;
@@ -2048,40 +2020,31 @@ in such situations that their display lists need to be updated.
 	return (return_code);
 } /* Scene_object_Graphical_material_change */
 
+/***************************************************************************//**
+ * Something has changed globally in the material manager.
+ * Tell the scene it has changed and it will rebuild affected materials too.
+ */
 static void Scene_Graphical_material_change(
 	struct MANAGER_MESSAGE(Graphical_material) *message, void *scene_void)
-/*******************************************************************************
-LAST MODIFIED : 12 March 2002
-
-DESCRIPTION :
-Something has changed globally in the material manager.
-Tell the scene it has changed and it will rebuild affected materials too.
-==============================================================================*/
 {
 	struct Scene *scene;
 
 	ENTER(Scene_Graphical_material_change);
 	if (message && (scene = (struct Scene *)scene_void))
 	{
-		switch (message->change)
+		struct LIST(Graphical_material) *changed_material_list =
+			MANAGER_MESSAGE_GET_CHANGE_LIST(Graphical_material)(message,
+				MANAGER_CHANGE_RESULT(Graphical_material));
+		if (changed_material_list)
 		{
-			case MANAGER_CHANGE_OBJECT(Graphical_material):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Graphical_material):
-			{
-				/* cache the following in case more than one changed material in use */
-				Scene_begin_cache(scene);
-				/* let Scene_object deal with the changes */
-				FOR_EACH_OBJECT_IN_LIST(Scene_object)(
-					Scene_object_Graphical_material_change,
-					(void *)(message->changed_object_list), scene->scene_object_list);
-				Scene_end_cache(scene);
-			} break;
-			case MANAGER_CHANGE_ADD(Graphical_material):
-			case MANAGER_CHANGE_REMOVE(Graphical_material):
-			case MANAGER_CHANGE_IDENTIFIER(Graphical_material):
-			{
-				/* do nothing */
-			} break;
+			/* cache the following in case more than one changed material in use */
+			Scene_begin_cache(scene);
+			/* let Scene_object deal with the changes */
+			FOR_EACH_OBJECT_IN_LIST(Scene_object)(
+				Scene_object_Graphical_material_change,
+				(void *)changed_material_list, scene->scene_object_list);
+			DESTROY_LIST(Graphical_material)(&changed_material_list);
+			Scene_end_cache(scene);
 		}
 	}
 	else
@@ -2145,39 +2108,29 @@ scene_object->gt_object that use spectrums in the <changed_spectrum_list>.
 	return (return_code);
 } /* Scene_object_Spectrum_change */
 
+/***************************************************************************//**
+ * Something has changed globally in the spectrum manager. Mark status of all
+ * graphics_obects using the affected spectrums as g_NOT_CREATED.
+ */
 static void Scene_Spectrum_change(
 	struct MANAGER_MESSAGE(Spectrum) *message,void *scene_void)
-/*******************************************************************************
-LAST MODIFIED : 7 June 2001
-
-DESCRIPTION :
-Something has changed globally in the spectrum manager. Mark status of all
-graphics_obects using the affected spectrums as g_NOT_CREATED.
-???RC Review Manager Messages Here
-==============================================================================*/
 {
 	struct Scene *scene;
 
 	ENTER(Scene_Spectrum_change);
 	if (message && (scene = (struct Scene *)scene_void))
 	{
-		switch (message->change)
+		struct LIST(Spectrum) *changed_spectrum_list =
+			MANAGER_MESSAGE_GET_CHANGE_LIST(Spectrum)(message,
+				MANAGER_CHANGE_RESULT(Spectrum));
+		if (changed_spectrum_list)
 		{
-			case MANAGER_CHANGE_OBJECT(Spectrum):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Spectrum):
-			{
-				/* cache the following in case more than one changed spectrum in use */
-				Scene_begin_cache(scene);
-				FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_Spectrum_change,
-					(void *)(message->changed_object_list), scene->scene_object_list);
-				Scene_end_cache(scene);
-			} break;
-			case MANAGER_CHANGE_ADD(Spectrum):
-			case MANAGER_CHANGE_REMOVE(Spectrum):
-			case MANAGER_CHANGE_IDENTIFIER(Spectrum):
-			{
-				/* do nothing */
-			} break;
+			/* cache the following in case more than one changed spectrum in use */
+			Scene_begin_cache(scene);
+			FOR_EACH_OBJECT_IN_LIST(Scene_object)(Scene_object_Spectrum_change,
+				(void *)changed_spectrum_list, scene->scene_object_list);
+			DESTROY_LIST(Spectrum)(&changed_spectrum_list);
+			Scene_end_cache(scene);
 		}
 	}
 	else
@@ -2187,70 +2140,6 @@ graphics_obects using the affected spectrums as g_NOT_CREATED.
 	}
 	LEAVE;
 } /* Scene_Spectrum_change */
-
-static void Scene_Texture_change(
-	struct MANAGER_MESSAGE(Texture) *message,void *scene_void)
-/*******************************************************************************
-LAST MODIFIED : 13 March 2002
-
-DESCRIPTION :
-Something has changed globally in the texture manager.
-Tell the scene it has changed and it will rebuild affected textures too.
-Textures aren't even used by any objects in the scene! Should transfer messages
-to texture independently!
-==============================================================================*/
-{
-	struct Graphical_material_Texture_change_data texture_change_data;
-	struct Scene *scene;
-
-	ENTER(Scene_Texture_change);
-	if (message && (scene = (struct Scene *)scene_void))
-	{
-		switch (message->change)
-		{
-			case MANAGER_CHANGE_OBJECT(Texture):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture):
-			{
-				/* make a list of materials using the changed textures */
-				if (texture_change_data.changed_material_list =
-					CREATE(LIST(Graphical_material))())
-				{
-					texture_change_data.changed_texture_list =
-						message->changed_object_list;
-					FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
-						Graphical_material_Texture_change,
-						(void *)&texture_change_data, scene->graphical_material_manager);
-					if (0 < NUMBER_IN_LIST(Graphical_material)(
-						texture_change_data.changed_material_list))
-					{
-						/* cache the scene in case more than one changed material in use */
-						Scene_begin_cache(scene);
-						/* let Scene_object deal with the changes */
-						FOR_EACH_OBJECT_IN_LIST(Scene_object)(
-							Scene_object_Graphical_material_change,
-							(void *)(texture_change_data.changed_material_list),
-							scene->scene_object_list);
-						Scene_end_cache(scene);
-					}
-					DESTROY(LIST(Graphical_material))(
-						&texture_change_data.changed_material_list);
-				}
-			} break;
-			case MANAGER_CHANGE_ADD(Texture):
-			case MANAGER_CHANGE_REMOVE(Texture):
-			case MANAGER_CHANGE_IDENTIFIER(Texture):
-			{
-				/* do nothing */
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_Texture_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Scene_Texture_change */
 
 static int Scene_object_update_time_behaviour(
 	struct Scene_object *scene_object, void *time_object_void)
@@ -4590,6 +4479,7 @@ from the default versions of these functions.
 			scene->change_status=SCENE_NO_CHANGE;
 			scene->access_count = 0;
 			scene->scene_manager=(struct MANAGER(Scene) *)NULL;
+			scene->manager_change_status = MANAGER_CHANGE_NONE(Scene);
 			/* elements, nodes and data */
 
 			/*???RC temporary; have root_region until Scenes are
@@ -4617,7 +4507,6 @@ from the default versions of these functions.
 			scene->spectrum_manager_callback_id=(void *)NULL;
 			scene->default_spectrum=(struct Spectrum *)NULL;
 			scene->texture_manager=(struct MANAGER(Texture) *)NULL;
-			scene->texture_manager_callback_id=(void *)NULL;
 			scene->default_time_keeper=(struct Time_keeper *)NULL;
 			scene->user_interface=(struct User_interface *)NULL;
 			scene->cache = 0;
@@ -4855,10 +4744,6 @@ NOTE: The light_manager is not currently used by the scene.
 			scene->spectrum_manager_callback_id=
 				MANAGER_REGISTER(Spectrum)(Scene_Spectrum_change,
 				(void *)scene,scene->spectrum_manager);
-			/* register for any texture changes */
-			scene->texture_manager_callback_id=
-				MANAGER_REGISTER(Texture)(Scene_Texture_change,
-				(void *)scene,scene->texture_manager);
 		}
 		return_code=1;
 	}
@@ -4899,11 +4784,6 @@ Removes links to all objects required to display graphics.
 		{
 			MANAGER_DEREGISTER(Spectrum)(
 				scene->spectrum_manager_callback_id,scene->spectrum_manager);
-		}
-		if (scene->texture_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(Texture)(
-				scene->texture_manager_callback_id,scene->texture_manager);
 		}
 		if (scene->default_material)
 		{
@@ -5361,7 +5241,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Scene,name,const char *)
 
 DECLARE_MANAGER_FUNCTIONS(Scene,scene_manager)
 
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Scene)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Scene,scene_manager)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS( \
 	Scene,name,const char *,scene_manager)

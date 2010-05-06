@@ -425,7 +425,7 @@ If the node we are looking at changes generate a computed field change message.
 		{
 			if (change | CHANGE_LOG_OBJECT_CHANGED(FE_node))
 			{
-				Computed_field_changed(field, field->manager);
+				Computed_field_dependency_changed(field);
 			}
 		}
 	}
@@ -1050,7 +1050,7 @@ If the node we are looking at changes generate a computed field change message.
 		{
 			if (change | CHANGE_LOG_OBJECT_CHANGED(FE_node))
 			{
-				Computed_field_changed(field, field->manager);
+				Computed_field_dependency_changed(field);
 			}
 		}
 	}

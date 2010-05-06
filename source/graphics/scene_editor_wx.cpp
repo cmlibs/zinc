@@ -124,7 +124,7 @@ DESCRIPTION :
 {
 	/* if autoapply flag is set, any changes to the currently edited graphical
 		 element will automatically be applied globally */
-	int auto_apply, child_edited, child_expanded, transformation_edited,
+	int auto_apply, child_edited, child_expanded,
 		transformation_expanded, transformation_callback_flag,
 		gt_element_group_callback_flag;
 	/* access gt_element_group for current_object if applicable */
@@ -251,7 +251,6 @@ void Scene_editor_wx_transformation_change(struct Scene_object *scene_object,
 					the scene object has not been transformed. */
 			 scene_editor->transformation_editor->
 				 transformation_editor_wx_set_transformation(transformation_matrix);
-			 scene_editor->transformation_edited=1;
 		 }
 	 }
 	 else
@@ -5098,74 +5097,59 @@ static void Scene_editor_wx_scene_change(
 	ENTER(Scene_editor_wx_scene_change);
 	if (message && (scene_editor = (struct Scene_editor *)scene_editor_void))
 	{
-		scene = Scene_editor_get_scene(scene_editor);
-		switch (message->change)
+		if (scene_editor->scene_object && scene_editor->checklistbox)
 		{
-			case MANAGER_CHANGE_OBJECT(Scene):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Scene):
+			scene = Scene_editor_get_scene(scene_editor);
+			int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Scene)(message, scene);
+			if (change & MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Scene))
 			{
-				//Transformation has its own callback
-				if (!(scene_editor->transformation_edited) && scene_editor->scene_object &&
-					scene_editor->checklistbox &&
-					IS_OBJECT_IN_LIST(Scene)(scene, message->changed_object_list))
+				int selection = Scene_get_scene_object_position(scene, 
+					scene_editor->scene_object);
+				if (selection > 0)
 				{
-					int selection = Scene_get_scene_object_position(scene, 
-						scene_editor->scene_object);
-					if (selection > 0)
+					int number_in_oldlist = scene_editor->checklistbox->GetCount();
+					int number_in_newlist = Scene_get_number_of_scene_objects(scene);
+					if (number_in_oldlist == number_in_newlist)
 					{
-						int number_in_oldlist = scene_editor->checklistbox->GetCount();
-						int number_in_newlist = Scene_get_number_of_scene_objects(scene);
-						if (number_in_oldlist == number_in_newlist)
+						char *name, *list_item_name;
+						int position = 0;
+						struct Scene_object *temp_scene_object = NULL;
+						for (position=1; position<=number_in_newlist; position++)
 						{
-							char *name, *list_item_name;
-							int position = 0;
-							struct Scene_object *temp_scene_object = NULL;
-							for (position=1; position<=number_in_newlist; position++)
+							temp_scene_object = Scene_get_scene_object_at_position(scene,
+								position);
+							GET_NAME(Scene_object)(temp_scene_object, &name);
+							list_item_name = const_cast<char *>(scene_editor->checklistbox->GetString(position-1).c_str());
+							if (name && strcmp(list_item_name, name) != 0)
 							{
-								temp_scene_object = Scene_get_scene_object_at_position(scene,
-									position);
-								GET_NAME(Scene_object)(temp_scene_object, &name);
-								list_item_name = const_cast<char *>(scene_editor->checklistbox->GetString(position-1).c_str());
-								if (name && strcmp(list_item_name, name) != 0)
-								{
-									scene_editor->checklistbox->Deselect(wxNOT_FOUND);
-									scene_editor->checklistbox->Delete(position-1);
-									scene_editor->checklistbox->Insert(name, position-1);
-									scene_editor->checklistbox->Check(position-1,
-										(g_VISIBLE == Scene_object_get_visibility(temp_scene_object)));
-									scene_editor->checklistbox->SetSelection(selection-1);
-								}
-								DEALLOCATE(name);
+								scene_editor->checklistbox->Deselect(wxNOT_FOUND);
+								scene_editor->checklistbox->Delete(position-1);
+								scene_editor->checklistbox->Insert(name, position-1);
+								scene_editor->checklistbox->Check(position-1,
+									(g_VISIBLE == Scene_object_get_visibility(temp_scene_object)));
+								scene_editor->checklistbox->SetSelection(selection-1);
 							}
-						}
-						else
-						{
-							scene_editor->checklistbox->Deselect(wxNOT_FOUND);
-							scene_editor->checklistbox->Clear();
-							for_each_Scene_object_in_Scene(scene,
-								add_scene_object_to_scene_check_box, (void *)scene_editor);
-							scene_editor->checklistbox->SetSelection(selection-1);
+							DEALLOCATE(name);
 						}
 					}
 					else
 					{
-						scene_editor->wx_scene_editor->scene_editor_update_widgets_for_scene(scene);
+						scene_editor->checklistbox->Deselect(wxNOT_FOUND);
+						scene_editor->checklistbox->Clear();
+						for_each_Scene_object_in_Scene(scene,
+							add_scene_object_to_scene_check_box, (void *)scene_editor);
+						scene_editor->checklistbox->SetSelection(selection-1);
 					}
 				}
 				else
 				{
-					scene_editor->transformation_edited = 0;
+					scene_editor->wx_scene_editor->scene_editor_update_widgets_for_scene(scene);
 				}
-			} break;
-			case MANAGER_CHANGE_IDENTIFIER(Scene):
-			case MANAGER_CHANGE_ADD(Scene):
-			{
-				/* do nothing */
-			} break;
-			case MANAGER_CHANGE_REMOVE(Scene):
+			}
+			else if (change & MANAGER_CHANGE_REMOVE(Scene))
 			{
 				scene_editor->scene_object = 0;
-			} break;
+			}
 		}
 	}
 	else
@@ -5214,7 +5198,6 @@ DESCRIPTION :
 			 scene_editor->auto_apply = 1;
 			 scene_editor->child_edited =1;
 			 scene_editor->child_expanded=1; 
-			 scene_editor->transformation_edited=0;
 			 scene_editor->transformation_expanded=1;		
 			 scene_editor->transformation_callback_flag = 0;
 			 scene_editor->gt_element_group_callback_flag = 0;

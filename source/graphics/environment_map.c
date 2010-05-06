@@ -71,9 +71,13 @@ The properties of a environment map.
 	const char *name;
 	/* the graphical materials to use for each face of the cube */
 	struct Graphical_material *face_material[6];
+
+	/* after clearing in create, following to be modified only by manager */
+	struct MANAGER(Environment_map) *manager;
+	int manager_change_status;
+
 	/* the number of structures that point to this environment map. The
 		environment map cannot be destroyed while this is greater than 0 */
-	struct MANAGER(Environment_map) *manager;
 	int access_count;
 }; /* struct Environment_map */
 
@@ -223,6 +227,7 @@ map to the list of all environment maps.
 		{
 			environment_map->access_count=0;
 			environment_map->manager = (struct MANAGER(Environment_map) *)NULL;
+			environment_map->manager_change_status = MANAGER_CHANGE_NONE(Environment_map);
 			for (i=5;i>=0;i--)
 			{
 				(environment_map->face_material)[i]=
@@ -718,7 +723,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Environment_map,name,const char *)
 
 DECLARE_MANAGER_FUNCTIONS(Environment_map,manager)
 
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Environment_map)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Environment_map,manager)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Environment_map,name,const char *,manager)
 

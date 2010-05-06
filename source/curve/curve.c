@@ -105,7 +105,9 @@ It is designed to be flexible rather than fast.
 	FE_value *parameter_table;
 	int parameter_table_size;
 
+	/* after clearing in create, following to be modified only by manager */
 	struct MANAGER(Curve) *manager;
+	int manager_change_status;
 
 	int access_count;
 }; /* struct Curve */
@@ -467,7 +469,9 @@ but it is at least destroyable when returned from this function.
 			curve->parameter_table=(FE_value *)NULL;
 			curve->parameter_table_size=0;
 			
+			/* manager and status must only be modified by manager functions */
 			curve->manager = (struct MANAGER(Curve) *)NULL;
+			curve->manager_change_status = MANAGER_CHANGE_NONE(Curve);
 
 			curve->access_count=0;
 
@@ -1781,7 +1785,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Curve,name,const char *)
 
 DECLARE_MANAGER_FUNCTIONS(Curve,manager)
 
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Curve)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Curve,manager)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Curve,name,const char *,manager)
 

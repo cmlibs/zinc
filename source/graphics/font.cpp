@@ -125,7 +125,9 @@ DESCRIPTION :
 
 	int offset_x, offset_y;
 
+	/* after clearing in create, following to be modified only by manager */
 	struct MANAGER(Graphics_font) *manager;
+	int manager_change_status;
 
 	int access_count;
 
@@ -277,7 +279,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Graphics_font,name,const char *)
 
 DECLARE_MANAGER_FUNCTIONS(Graphics_font,manager)
 
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphics_font)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphics_font,manager)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_font,name,const char *,manager)
 
@@ -502,6 +504,7 @@ DESCRIPTION :
 		font->offset_y = 0;
 
 		font->manager = (struct MANAGER(Graphics_font) *)NULL;
+		font->manager_change_status = MANAGER_CHANGE_NONE(Graphics_font);
 
 		font->access_count = 0;
 

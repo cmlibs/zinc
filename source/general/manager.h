@@ -12,13 +12,6 @@ This file contains macros for (forward) declaring global manager types and
 prototyping global manager functions.  Full declarations are not given, so as to
 hide the internal workings and allow them to be changed without affecting other
 parts of the program.
-???DB.  What about accessing ?  Should take over all accessing ? (after
-	everything is converted to managers)
-
-TO DO :
-16 May 1997 (After making select into a template class)
-1 Add a MANAGER_CREATE which creates an object with a unique identifier and adds
-	it to the manager (see SELECT_MANAGER_CREATE)
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -72,7 +65,6 @@ Global types
 #define MANAGER_( object_type )  manager_ ## object_type
 #define MANAGER( object_type )  MANAGER_(object_type)
 
-/*???DB.  Should this be typedef'd and be a pointer ? */
 #define DECLARE_MANAGER_TYPE( object_type ) \
 struct MANAGER(object_type)
 
@@ -101,51 +93,56 @@ struct MANAGER(object_type)
 	MANAGER_CHANGE_OBJECT_(object_type)
 
 #define MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER_( object_type ) \
-	manager_change_object_not_identifier ## object_type
+	manager_change_object_not_identifier_ ## object_type
 #define MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER( object_type ) \
 	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER_(object_type)
 
+#define MANAGER_CHANGE_DEPENDENCY_( object_type ) \
+	manager_change_dependency_ ## object_type
+#define MANAGER_CHANGE_DEPENDENCY( object_type ) \
+	MANAGER_CHANGE_DEPENDENCY_(object_type)
+
+#define MANAGER_CHANGE_RESULT_( object_type ) \
+	manager_change_result_ ## object_type
+#define MANAGER_CHANGE_RESULT( object_type ) \
+	MANAGER_CHANGE_RESULT_(object_type)
+
 #define DECLARE_MANAGER_CHANGE_TYPE( object_type ) \
 enum MANAGER_CHANGE(object_type) \
-/***************************************************************************** \
-LAST MODIFIED : 17 May 2001 \
-\
-DESCRIPTION : \
-The message type sent to clients. \
-MANAGER_MESSAGEs contain one of these enumerated types (except NONE), while \
-the changed_object_list contains the objects affected by the change. \
-============================================================================*/ \
+/*************************************************************************//** \
+ * Bit values of object changes sent in MANAGER_MESSAGEs to clients. \
+ * Each object change can be either ADD, REMOVE or bitwise OR of other flags. \
+ * Message change summary is a bitwise OR of all individual object changes. \
+ */ \
 { \
-	/* indicates that no changes have been made; no message sent */ \
+	/* object not changed */ \
 	MANAGER_CHANGE_NONE(object_type) = 0, \
-	/* objects have been added to the manager */ \
+	/* object added to the manager */ \
 	MANAGER_CHANGE_ADD(object_type) = 1, \
-	/* objects have been removed from the manager */ \
+	/* object removed from the manager */ \
 	MANAGER_CHANGE_REMOVE(object_type) = 2, \
-	/* identifiers of objects have changed in the manager */ \
+	/* object identifier changed in the manager */ \
 	MANAGER_CHANGE_IDENTIFIER(object_type) = 4, \
-	/* contents but not identifiers of objects have changed in the manager */ \
+	/* object contents but not identifier changed in the manager */ \
 	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type) = 8, \
-	/* identifiers and contents of objects have changed in the manager */ \
-	MANAGER_CHANGE_OBJECT(object_type) = 12 \
+	/* object contents and identifier changed in the manager */ \
+	MANAGER_CHANGE_OBJECT(object_type) = 12, \
+	/* object is a dependency of another object that has changed */ \
+	MANAGER_CHANGE_DEPENDENCY(object_type) = 16, \
+	/* convenient bitwise OR of all existing-object change flags */ \
+	MANAGER_CHANGE_RESULT(object_type) = ( \
+		MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type) | \
+		MANAGER_CHANGE_DEPENDENCY(object_type)) \
 } /* enum MANAGER_CHANGE(object_type) */
 
 #define MANAGER_MESSAGE_( object_type )  manager_message_ ## object_type
 #define MANAGER_MESSAGE( object_type )  MANAGER_MESSAGE_(object_type)
 
+/*************************************************************************//**
+ * Object sent with manager messages, detailing changes to managed objects.
+ */
 #define DECLARE_MANAGER_MESSAGE_TYPE( object_type ) \
-struct MANAGER_MESSAGE(object_type) \
-/***************************************************************************** \
-LAST MODIFIED : 17 May 2001 \
-\
-DESCRIPTION : \
-A message that will be sent when one of more of the objects being managed has \
-changed. \
-============================================================================*/ \
-{ \
-	enum MANAGER_CHANGE(object_type) change; \
-	struct LIST(object_type) *changed_object_list; \
-} /* MANAGER_MESSAGE(object_type) */
+struct MANAGER_MESSAGE(object_type)
 
 #define MANAGER_CALLBACK_FUNCTION_( object_type ) \
 	manager_callback_function_ ## object_type
@@ -430,37 +427,18 @@ DESCRIPTION : \
 Calls <iterator> for each object  being managed by the <manager>. \
 ==============================================================================*/
 
-#define MANAGER_BEGIN_CHANGE_( object_type )  manager_begin_change_ ## object_type
-#define MANAGER_BEGIN_CHANGE( object_type )  MANAGER_BEGIN_CHANGE_(object_type)
-
-#define PROTOTYPE_MANAGER_BEGIN_CHANGE_FUNCTION( object_type ) \
-void MANAGER_BEGIN_CHANGE(object_type)(struct MANAGER(object_type) *manager, \
-	enum MANAGER_CHANGE(object_type) change, struct object_type *object) \
-/***************************************************************************** \
-LAST MODIFIED : 5 March 2002 \
-\
-DESCRIPTION :
-Tells the <manager> you will make a <change> to <object>. \
-After making the change, call companion function MANAGER_END_CHANGE. \
-Note that you can make several calls to this function for different objects \
-followed by a single call to MANAGER_END_CHANGE. This acts like a temporary \
-cache, used eg. in REMOVE_ALL_OBJECTS_FROM_MANAGER. \
-==============================================================================*/
-
-#define MANAGER_END_CHANGE_( object_type )  manager_end_change_ ## object_type
-#define MANAGER_END_CHANGE( object_type )  MANAGER_END_CHANGE_(object_type)
-
-#define PROTOTYPE_MANAGER_END_CHANGE_FUNCTION( object_type ) \
-void MANAGER_END_CHANGE(object_type)(struct MANAGER(object_type) *manager) \
-/***************************************************************************** \
-LAST MODIFIED : 5 March 2002 \
-\
-DESCRIPTION : \
-This function should be called after modifying an object, adding or removing \
-an object in the manager; the action should be preceded by partner function \
-MANAGER_BEGIN_CHANGE. If caching is off, calls MANAGER_UPDATE immediately to \
-inform clients of the change. Does nothing if caching is on. \
-==============================================================================*/
+#define MANAGED_OBJECT_CHANGE_( object_type )  managed_object_change_ ## object_type
+#define MANAGED_OBJECT_CHANGE( object_type )  MANAGED_OBJECT_CHANGE_(object_type)
+ 
+#define PROTOTYPE_MANAGED_OBJECT_CHANGE_FUNCTION( object_type ) \
+int MANAGED_OBJECT_CHANGE(object_type)(struct object_type *object, \
+	enum MANAGER_CHANGE(object_type) change) \
+/*************************************************************************//** \
+ * Call after changing a managed object to record the change. \
+ * If change cache is off, sends manager message to clients. \
+ * Does nothing if the object is not managed. \
+ * Do not use to set ADD or REMOVE changes. \
+ */
 
 #define MANAGER_BEGIN_CACHE_( object_type )  manager_begin_cache_ ## object_type
 #define MANAGER_BEGIN_CACHE( object_type )  MANAGER_BEGIN_CACHE_(object_type)
@@ -485,6 +463,64 @@ LAST MODIFIED : 28 September 1995 \
 DESCRIPTION : \
 Performs a global update. \
 ==============================================================================*/
+
+
+#define MANAGER_MESSAGE_GET_CHANGE_SUMMARY_( object_type ) \
+	manager_message_get_change_summary_ ## object_type
+#define MANAGER_MESSAGE_GET_CHANGE_SUMMARY( object_type ) \
+	MANAGER_MESSAGE_GET_CHANGE_SUMMARY_(object_type)
+
+#define PROTOTYPE_MANAGER_MESSAGE_GET_CHANGE_SUMMARY_FUNCTION( object_type ) \
+int MANAGER_MESSAGE_GET_CHANGE_SUMMARY(object_type)( \
+	struct MANAGER_MESSAGE(object_type) *message) \
+/*************************************************************************//** \
+ * Gets a summary of all the changes to objects in the message, a bitwise OR \
+ * of all individual object changes. \
+ */
+
+#define MANAGER_MESSAGE_GET_OBJECT_CHANGE_( object_type ) \
+	manager_message_get_object_change_ ## object_type
+#define MANAGER_MESSAGE_GET_OBJECT_CHANGE( object_type ) \
+	MANAGER_MESSAGE_GET_OBJECT_CHANGE_(object_type)
+
+#define PROTOTYPE_MANAGER_MESSAGE_GET_OBJECT_CHANGE_FUNCTION( object_type ) \
+int MANAGER_MESSAGE_GET_OBJECT_CHANGE(object_type)( \
+	struct MANAGER_MESSAGE(object_type) *message, struct object_type *object) \
+/*************************************************************************//** \
+ * Gets the change flags for the object from message. \
+ */
+
+#define MANAGER_MESSAGE_GET_CHANGE_LIST_( object_type ) \
+	manager_message_get_change_list_ ## object_type
+#define MANAGER_MESSAGE_GET_CHANGE_LIST( object_type ) \
+	MANAGER_MESSAGE_GET_CHANGE_LIST_(object_type)
+
+#define PROTOTYPE_MANAGER_MESSAGE_GET_CHANGE_LIST_FUNCTION( object_type ) \
+struct LIST(object_type) *MANAGER_MESSAGE_GET_CHANGE_LIST(object_type)( \
+	struct MANAGER_MESSAGE(object_type) *message, int change_mask) \
+/*************************************************************************//** \
+ * Creates and returns a list of objects with any change flags from the \
+ * change_mask set. No need to check change_summary against change_mask first \
+ * as this is done internally to return NULL if no changes. \
+ * Up to caller to destroy any returned list.
+ * @return  New list of objects with changes from change mask or NULL if none. \
+ */
+
+#define MANAGER_MESSAGE_HAS_CHANGED_OBJECT_THAT_( object_type ) \
+	manager_message_has_changed_object_that_ ## object_type
+#define MANAGER_MESSAGE_HAS_CHANGED_OBJECT_THAT( object_type ) \
+	MANAGER_MESSAGE_HAS_CHANGED_OBJECT_THAT_(object_type)
+
+#define PROTOTYPE_MANAGER_MESSAGE_HAS_CHANGED_OBJECT_THAT_FUNCTION( object_type ) \
+int MANAGER_MESSAGE_HAS_CHANGED_OBJECT_THAT(object_type)( \
+	struct MANAGER_MESSAGE(object_type) *message, int change_mask, \
+	MANAGER_CONDITIONAL_FUNCTION(object_type) *conditional_function, \
+	void *user_data) \
+/*************************************************************************//** \
+ * Returns true if there is a changed object listed in the message which \
+ * matches any change flags in the change_mask and returns true for the \
+ * supplied conditional function with user_data. \
+ */
 
 #define MANAGER_COPY_WITH_IDENTIFIER_( object_type , identifier_field_name ) \
 	manager_copy_with_identifier_ ## object_type ## identifier_field_name
@@ -557,6 +593,8 @@ public: \
 	static const enum MANAGER_CHANGE(object_type) Manager_change_identifier = MANAGER_CHANGE_IDENTIFIER(object_type); \
 	static const enum MANAGER_CHANGE(object_type) Manager_change_object = MANAGER_CHANGE_OBJECT(object_type); \
 	static const enum MANAGER_CHANGE(object_type) Manager_change_object_not_identifier = MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type); \
+	static const enum MANAGER_CHANGE(object_type) Manager_change_dependency = MANAGER_CHANGE_DEPENDENCY(object_type); \
+	static const enum MANAGER_CHANGE(object_type) Manager_change_result = MANAGER_CHANGE_RESULT(object_type); \
 \
 	MANAGER(object_type) *manager; \
 \
@@ -597,7 +635,20 @@ public: \
 \
 	inline int get_object_name(object_type *object, char **name) \
 	{ \
-		return GET_NAME(object_type)(object, name);		\
+		return GET_NAME(object_type)(object, name); \
+	} \
+\
+	inline int manager_message_get_change_summary(Manager_message_type *message) \
+	{ \
+		return MANAGER_MESSAGE_GET_CHANGE_SUMMARY(object_type)(message); \
+	} \
+\
+	inline int manager_message_has_changed_object_that( \
+		Manager_message_type *message, int change_mask, \
+		Manager_conditional_function *conditional_function, void *user_data) \
+	{ \
+		return MANAGER_MESSAGE_HAS_CHANGED_OBJECT_THAT(object_type)( \
+			message, change_mask, conditional_function, user_data); \
 	} \
 \
 }; /* MANAGER_CLASS(object_type) */
@@ -622,10 +673,13 @@ PROTOTYPE_IS_MANAGED_FUNCTION(object_type); \
 PROTOTYPE_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(object_type); \
 PROTOTYPE_FIRST_OBJECT_IN_MANAGER_THAT_FUNCTION(object_type); \
 PROTOTYPE_FOR_EACH_OBJECT_IN_MANAGER_FUNCTION(object_type); \
-PROTOTYPE_MANAGER_BEGIN_CHANGE_FUNCTION(object_type); \
-PROTOTYPE_MANAGER_END_CHANGE_FUNCTION(object_type); \
+PROTOTYPE_MANAGED_OBJECT_CHANGE_FUNCTION(object_type); \
 PROTOTYPE_MANAGER_BEGIN_CACHE_FUNCTION(object_type); \
-PROTOTYPE_MANAGER_END_CACHE_FUNCTION(object_type)
+PROTOTYPE_MANAGER_END_CACHE_FUNCTION(object_type); \
+PROTOTYPE_MANAGER_MESSAGE_GET_CHANGE_SUMMARY_FUNCTION(object_type); \
+PROTOTYPE_MANAGER_MESSAGE_GET_OBJECT_CHANGE_FUNCTION(object_type); \
+PROTOTYPE_MANAGER_MESSAGE_GET_CHANGE_LIST_FUNCTION(object_type); \
+PROTOTYPE_MANAGER_MESSAGE_HAS_CHANGED_OBJECT_THAT_FUNCTION(object_type)
 
 #define PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS( object_type , \
 	identifier_field_name , identifier_type ) \

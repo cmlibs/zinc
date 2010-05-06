@@ -497,41 +497,38 @@ Tries to minimise menu rebuilds as much as possible, since these cause \
 annoying flickering on the screen. \
 ============================================================================*/ \
 { \
-	int update_menu; \
+	int change_summary, update_menu; \
 	struct CHOOSE_OBJECT(object_type) *choose_object; \
 \
 	ENTER(CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE(object_type)); \
 	if (message && (choose_object= \
 		(struct CHOOSE_OBJECT(object_type) *)data)) \
 	{ \
-		update_menu = 0; \
-		if ((MANAGER_CHANGE_ADD(object_type) == message->change) || \
-			(MANAGER_CHANGE_REMOVE(object_type) == message->change) || \
-			(MANAGER_CHANGE_IDENTIFIER(object_type) == message->change) || \
-			(MANAGER_CHANGE_OBJECT(object_type) == message->change)) \
+		change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(object_type)(message); \
+		if (change_summary & ( \
+			MANAGER_CHANGE_ADD(object_type) | \
+			MANAGER_CHANGE_REMOVE(object_type) | \
+			MANAGER_CHANGE_IDENTIFIER(object_type))) \
 		{ \
-			/* ensure menu updates if no conditional function, or  \
-				 conditional function satisfied for any of the changed objects */ \
-			if (!(choose_object->conditional_function) || \
-				((struct object_type *)NULL != \
-					FIRST_OBJECT_IN_LIST_THAT(object_type)( \
-						choose_object->conditional_function, \
-						choose_object->conditional_function_user_data, \
-						message->changed_object_list))) \
+			if ((NULL == choose_object->conditional_function) || \
+				MANAGER_MESSAGE_HAS_CHANGED_OBJECT_THAT(object_type)(message, \
+					(MANAGER_CHANGE_ADD(object_type) | \
+					 MANAGER_CHANGE_REMOVE(object_type) | \
+					 MANAGER_CHANGE_IDENTIFIER(object_type)), \
+					choose_object->conditional_function, \
+					choose_object->conditional_function_user_data)) \
 			{ \
-					update_menu = 1; \
+				update_menu = 1; \
 			} \
 		} \
-		if ((MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type) == message->change) \
-			|| (MANAGER_CHANGE_OBJECT(object_type) == message->change)) \
+		if ((!update_menu) && \
+			(change_summary & MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type))) \
 		{ \
-			/* ensure menu updates if there is no conditional function and the \
-				 status of an object in the chooser has changed */ \
-			if (choose_object->conditional_function && \
-				((struct object_type *)NULL != \
-					FIRST_OBJECT_IN_LIST_THAT(object_type)( \
-						CHOOSE_OBJECT_OBJECT_STATUS_CHANGED(object_type), \
-						(void *)choose_object, message->changed_object_list))) \
+			if ((choose_object->conditional_function) && \
+				MANAGER_MESSAGE_HAS_CHANGED_OBJECT_THAT(object_type)(message, \
+					MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type), \
+					CHOOSE_OBJECT_OBJECT_STATUS_CHANGED(object_type), \
+					(void *)choose_object)) \
 			{ \
 				update_menu = 1; \
 			} \

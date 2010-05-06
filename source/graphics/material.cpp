@@ -297,7 +297,10 @@ The properties of a material.
 		 then this material will not be removed from the manager after destroy.
 	 */
 	int persistent_flag;
+
+	/* after clearing in create, following to be modified only by manager */
 	struct MANAGER(Graphical_material) *manager;
+	int manager_change_status;
 }; /* struct Graphical_material */
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Graphical_material);
@@ -315,6 +318,7 @@ Provide an opaque container for shared material information.
 	struct MANAGER(Graphical_material) *material_manager;
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct MANAGER(Texture) *texture_manager;
+	void *texture_manager_callback_id;
 	struct Graphical_material *default_material;
 	struct Graphical_material *default_selected_material;
 	struct LIST(Material_program) *material_program_list;
@@ -3327,35 +3331,16 @@ material results.
 
 static void Graphical_material_Spectrum_change(
 	struct MANAGER_MESSAGE(Spectrum) *message, void *material_void)
-/*******************************************************************************
-LAST MODIFIED : 6 October 2006
-
-DESCRIPTION :
-==============================================================================*/
 {
 	struct Graphical_material *material;
 
 	ENTER(Graphical_material_Spectrum_change);
-	if ((material = (struct Graphical_material *)material_void)
-		&& message)
+	if (message && (material = (struct Graphical_material *)material_void))
 	{
-		switch (message->change)
+		int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Spectrum)(message, material->spectrum);
+		if (change & MANAGER_CHANGE_RESULT(Spectrum))
 		{
-			case MANAGER_CHANGE_OBJECT(Spectrum):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Spectrum):
-			{
-				if (IS_OBJECT_IN_LIST(Spectrum)(material->spectrum,
-						message->changed_object_list))
-				{
-					material->compile_status = GRAPHICS_NOT_COMPILED;
-				}
-			} break;
-			case MANAGER_CHANGE_ADD(Spectrum):
-			case MANAGER_CHANGE_REMOVE(Spectrum):
-			case MANAGER_CHANGE_IDENTIFIER(Spectrum):
-			{
-				/* do nothing */
-			} break;
+			material->compile_status = GRAPHICS_NOT_COMPILED;
 		}
 	}
 	else
@@ -3364,8 +3349,77 @@ DESCRIPTION :
 			"Graphical_material_Spectrum_change.  Invalid argument(s)");
 	}
 	LEAVE;
+}
 
-} /* Graphical_material_Spectrum_change */
+int Graphical_material_Texture_change(struct Graphical_material *material,
+	void *texture_manager_message_void)
+/***************************************************************************//**
+ * If the material uses a texture marked as changed in the
+ * texture_manager_message, marks the material compile_status as at least
+ * CHILD_GRAPHICS_NOT_COMPILED and adds the material and
+ * notes the material as MANAGER_CHANGE_DEPENDENCY in its own manager.
+ */
+{
+	int return_code;
+	struct MANAGER_MESSAGE(Texture) *texture_manager_message;
+
+	ENTER(Graphical_material_Texture_change);
+	if (material && (texture_manager_message =
+		(struct MANAGER_MESSAGE(Texture) *)texture_manager_message_void))
+	{
+		if (material->texture)
+		{
+			int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Texture)(
+				texture_manager_message, material->texture);
+			if (change & MANAGER_CHANGE_RESULT(Texture))
+			{
+				if (material->compile_status != GRAPHICS_NOT_COMPILED)
+				{
+					material->compile_status = CHILD_GRAPHICS_NOT_COMPILED;
+				}
+				MANAGED_OBJECT_CHANGE(Graphical_material)(material,
+					MANAGER_CHANGE_DEPENDENCY(Graphical_material));
+			}
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_material_Texture_change.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphical_material_Texture_change */
+
+/***************************************************************************//**
+ * Something has changed globally in the texture manager.
+ * Mark materials using changed textures as dependency changed.
+ */
+static void Material_manager_Texture_change(
+	struct MANAGER_MESSAGE(Texture) *message, void *material_manager_void)
+{
+	struct MANAGER(Graphical_material) *material_manager;
+	if (message && (material_manager =
+		(struct MANAGER(Graphical_material) *)material_manager_void))
+	{
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Texture)(message);
+		if (change_summary & MANAGER_CHANGE_RESULT(Texture))
+		{
+			MANAGER_BEGIN_CACHE(Graphical_material)(material_manager);
+			FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
+				Graphical_material_Texture_change, (void *)message, material_manager);
+			MANAGER_END_CACHE(Graphical_material)(material_manager);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Material_manager_Texture_change.  Invalid argument(s)");
+	}
+}
 
 /*
 Global functions
@@ -3472,6 +3526,10 @@ Create a shared information container for Materials.
 		Material_package_manage_material(material_package,
 			material_package->default_selected_material);
 
+		// register for any texture changes to propagate to materials using them
+		material_package->texture_manager_callback_id = MANAGER_REGISTER(Texture)(
+			Material_manager_Texture_change, (void *)material_package->material_manager, texture_manager);
+
 		/* Reset the access count to zero so as these materials are owned by the package
 			and so should not stop it destroying.  Correspondingly the materials must not
 			DEACCESS the package when the package is being destroyed. */
@@ -3536,6 +3594,9 @@ Frees the memory for the material_package.
 	{
 		if (0==material_package->access_count)
 		{
+			MANAGER_DEREGISTER(Texture)(material_package->texture_manager_callback_id,
+				material_package->texture_manager);
+
 			if (material_package->default_material)
 			{
 				DEACCESS(Graphical_material)(&material_package->default_material);
@@ -3743,6 +3804,7 @@ Allocates memory and assigns fields for a material.
 			material->program_uniforms = (LIST(Material_program_uniform) *)NULL;
 			material->persistent_flag = 0;
 			material->manager = (struct MANAGER(Graphical_material) *)NULL;
+			material->manager_change_status = MANAGER_CHANGE_NONE(Graphical_material);
 #if defined (OPENGL_API)
 			material->display_list=0;
 			material->brightness_texture_id=0;
@@ -4062,7 +4124,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Graphical_material,name,const char *)
 
 DECLARE_MANAGER_FUNCTIONS(Graphical_material, manager)
 
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphical_material)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphical_material,manager)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS( \
 	Graphical_material, name, const char *, manager)
@@ -4116,28 +4178,22 @@ int Graphical_material_changed(struct Graphical_material *material)
 {
 	int return_code;
 
-	ENTER(Computed_field_changed);
+	ENTER(Graphical_material_changed);
 	if (material)
 	{
-		if (material->manager)
-		{
-			MANAGER_BEGIN_CHANGE(Graphical_material)(material->manager,
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Graphical_material), material);
-			MANAGER_END_CHANGE(Graphical_material)(material->manager);
-		}
-		return_code = 1;
+		return_code = MANAGED_OBJECT_CHANGE(Graphical_material)(material,
+			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Graphical_material));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphical_material *material.  Invalid argument");
+			"Graphical_material_changed.  Invalid argument");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_changed */
-
+}
 
 int Graphical_material_get_ambient(struct Graphical_material *material,
 	struct Colour *ambient)
@@ -4915,49 +4971,6 @@ Returns true if the <material> uses a texture in the <texture_list>.
 
 	return (return_code);
 } /* Graphical_material_uses_texture */
-
-int Graphical_material_Texture_change(struct Graphical_material *material,
-	void *texture_change_data_void)
-/*******************************************************************************
-LAST MODIFIED : 5 August 2002
-
-DESCRIPTION :
-If the <material> uses a texture in the <changed_texture_list>, marks the
-material compile_status as CHILD_GRAPHICS_NOT_COMPILED and adds the material
-to the <changed_material_list>.
-???RC Currently managed by Scene. This function should be replaced once messages
-go directly from texture to material.
-==============================================================================*/
-{
-	int return_code;
-	struct Graphical_material_Texture_change_data *texture_change_data;
-
-	ENTER(Graphical_material_Texture_change);
-	if (material && (texture_change_data =
-		(struct Graphical_material_Texture_change_data *)texture_change_data_void))
-	{
-		if (material->texture && IS_OBJECT_IN_LIST(Texture)(material->texture,
-			texture_change_data->changed_texture_list))
-		{
-			if (material->compile_status != GRAPHICS_NOT_COMPILED)
-			{
-				material->compile_status = CHILD_GRAPHICS_NOT_COMPILED;
-			}
-			ADD_OBJECT_TO_LIST(Graphical_material)(material,
-				texture_change_data->changed_material_list);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphical_material_Texture_change.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Graphical_material_Texture_change */
 
 int gfx_create_material(struct Parse_state *state,
 	void *dummy_to_be_modified, void *material_package_void)
@@ -7192,16 +7205,21 @@ int Cmiss_material_destroy(Graphical_material **material_address)
 	if (material_address && (material = *material_address))
 	{
 		(material->access_count)--;
-		if (!material->persistent_flag && (material->access_count == 1)
-			&& material->manager)
-		{
-			return_code = REMOVE_OBJECT_FROM_MANAGER(Graphical_material)(
-				material, material->manager);
-		}
-		else if (!material->manager && (0 >= material->access_count))
+		if (material->access_count <= 0)
 		{
 			return_code = DESTROY(Graphical_material)(material_address);
 		}
+		else if ((!material->persistent_flag) && (material->manager) &&
+			((1 == material->access_count) || ((2 == material->access_count) &&
+				(MANAGER_CHANGE_NONE(Graphical_material) != material->manager_change_status))))
+		{
+			return_code = REMOVE_OBJECT_FROM_MANAGER(Graphical_material)(material, material->manager);
+		}
+		else
+		{
+			return_code = 1;
+		}
+		*material_address = (struct Graphical_material *)NULL;
 	}
 	LEAVE;
 

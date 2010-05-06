@@ -2028,15 +2028,15 @@ current spectrum.
 	ENTER(Spectrum_editor_spectrum_change);
 	if (message && (spectrum_editor = (struct Spectrum_editor *)spectrum_editor_void))
 	{
-		switch (message->change)
+		if ((NULL == spectrum_editor->current_spectrum) ||
+			(MANAGER_MESSAGE_GET_OBJECT_CHANGE(Spectrum)(message,
+				spectrum_editor->current_spectrum) &
+			MANAGER_CHANGE_REMOVE(Spectrum)))
 		{
-			 case MANAGER_CHANGE_REMOVE(Spectrum):
-			 {
-					spectrum_editor->current_spectrum = 
-						 FIRST_OBJECT_IN_MANAGER_THAT(Spectrum)(
-								NULL,(void *)NULL,	spectrum_editor->spectrum_manager);
-					spectrum_editor_wx_set_spectrum(spectrum_editor,spectrum_editor->current_spectrum);
-			 } break;
+			spectrum_editor->current_spectrum = 
+				FIRST_OBJECT_IN_MANAGER_THAT(Spectrum)(
+					NULL,(void *)NULL,	spectrum_editor->spectrum_manager);
+			spectrum_editor_wx_set_spectrum(spectrum_editor,spectrum_editor->current_spectrum);
 		} 
 	}
 	else

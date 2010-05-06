@@ -74,7 +74,6 @@ public:
 	double maximum;
 	int native_texture;
 	int number_of_bytes_per_component;
-	void *field_manager_callback_id;
 	/* Flag to indicate that the texture needs to be evaluated 
 		 due to changes on the source fields */
 	bool need_evaluate_texture;
@@ -91,7 +90,6 @@ public:
 		minimum = 0.0;
 		native_texture = 1;
 		number_of_bytes_per_component = 1;
-		field_manager_callback_id = (void *)NULL;
 		need_evaluate_texture = false;
 	};
 
@@ -120,19 +118,6 @@ public:
 		if (texture)
 		{
 			DEACCESS(Texture)(&(texture));
-		}
-		if (field_manager_callback_id)
-		{
-			if (field && field->manager)
-			{
-				MANAGER_DEREGISTER(Computed_field)(field_manager_callback_id,
-					field->manager);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"~Computed_field_image.  Can't get manager of image field to end callbacks.");
-			}
 		}
 	}
 
@@ -249,13 +234,12 @@ private:
 	{
 		return (field && (field->number_of_source_fields > 1));
 	}
-	
-	virtual void field_is_managed(void)
+
+	virtual void dependency_change()
 	{
 		if (texture_is_evaluated_from_source_field())
 		{
-			field_manager_callback_id = MANAGER_REGISTER(Computed_field)(
-				field_manager_change, (void *)this, field->manager);
+			need_evaluate_texture = true;
 		}
 	}
 };
@@ -272,28 +256,6 @@ inline Computed_field_image *Computed_field_image_core_cast(
 	return (static_cast<Computed_field_image*>(
 		reinterpret_cast<Computed_field*>(image_field)->core));
 }
-
-void Computed_field_image::field_manager_change(
-	struct MANAGER_MESSAGE(Computed_field) *message, void *image_field_core_void)
-{
-	Computed_field_image *image_field_core =
-		reinterpret_cast<Computed_field_image *>(image_field_core_void);
-	Computed_field *field;
-	if (message && image_field_core && (NULL != (field = image_field_core->field)))
-	{
-		if (Computed_field_depends_on_Computed_field_in_list(
-					field, message->changed_object_list))
-		{
-			image_field_core->need_evaluate_texture = true;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_image::field_manager_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Computed_field_image::field_manager_change */
 
 Computed_field_core* Computed_field_image::copy()
 /*******************************************************************************

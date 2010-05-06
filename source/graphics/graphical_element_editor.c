@@ -1790,25 +1790,16 @@ Something has changed globally in the material manager. If the event has
 changed the name of a material, must remake the menu.
 ==============================================================================*/
 {
+	int change_summary;
 	struct Graphical_element_editor *gelem_editor;
 
 	ENTER(graphical_element_editor_material_manager_message);
-	/* checking arguments */
 	if (message&&(gelem_editor=(struct Graphical_element_editor *)data))
 	{
-		switch (message->change)
+		change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Graphical_material)(message);
+		if (change_summary & MANAGER_CHANGE_IDENTIFIER(Graphical_material))
 		{
-			case MANAGER_CHANGE_IDENTIFIER(Graphical_material):
-			case MANAGER_CHANGE_OBJECT(Graphical_material):
-			{
-				Graphical_element_editor_update_settings_list(gelem_editor);
-			} break;
-			case MANAGER_CHANGE_ADD(Graphical_material):
-			case MANAGER_CHANGE_REMOVE(Graphical_material):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Graphical_material):
-			{
-				/* do nothing */
-			} break;
+			Graphical_element_editor_update_settings_list(gelem_editor);
 		}
 	}
 	else
@@ -1830,25 +1821,16 @@ Something has changed globally in the spectrum manager. If the event has
 changed the name of a spectrum, must remake the menu.
 ==============================================================================*/
 {
+	int change_summary;
 	struct Graphical_element_editor *gelem_editor;
 
 	ENTER(graphical_element_editor_spectrum_manager_message);
-	/* checking arguments */
 	if (message&&(gelem_editor=(struct Graphical_element_editor *)data))
 	{
-		switch (message->change)
+		change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Spectrum)(message);
+		if (change_summary & MANAGER_CHANGE_IDENTIFIER(Spectrum))
 		{
-			case MANAGER_CHANGE_IDENTIFIER(Spectrum):
-			case MANAGER_CHANGE_OBJECT(Spectrum):
-			{
-				Graphical_element_editor_update_settings_list(gelem_editor);
-			} break;
-			case MANAGER_CHANGE_ADD(Spectrum):
-			case MANAGER_CHANGE_REMOVE(Spectrum):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Spectrum):
-			{
-				/* do nothing */
-			} break;
+			Graphical_element_editor_update_settings_list(gelem_editor);
 		}
 	}
 	else

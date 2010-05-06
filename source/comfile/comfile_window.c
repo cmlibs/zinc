@@ -81,8 +81,12 @@ etc ?
 ==============================================================================*/
 {
 	char *name;
+
+	/* after clearing in create, following to be modified only by manager */
 	/* need to keep comfile window manager so window can be destroyed by self */
 	struct MANAGER(Comfile_window) *comfile_window_manager;
+	int manager_change_status;
+
 	char *file_name;
 	struct IO_stream_package *io_stream_package;
 	int number_of_commands;
@@ -515,6 +519,7 @@ resource manager hierarchy.
 				comfile_window->io_stream_package = io_stream_package;
 				comfile_window->comfile_window_manager=
 					(struct MANAGER(Comfile_window) *)NULL;
+				comfile_window->manager_change_status = MANAGER_CHANGE_NONE(Comfile_window);
 				comfile_window->command_list=(Widget)NULL;
 				comfile_window->window=(Widget)NULL;
 				comfile_window->shell=(Widget)NULL;
@@ -805,7 +810,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Comfile_window,name,const char *)
 
 DECLARE_MANAGER_FUNCTIONS(Comfile_window,comfile_window_manager)
 
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Comfile_window)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Comfile_window,comfile_window_manager)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Comfile_window,name, \
 	const char *,comfile_window_manager)

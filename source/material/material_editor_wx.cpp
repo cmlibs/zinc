@@ -1222,24 +1222,24 @@ current material.
 	ENTER(Materia_editor_material_change);
 	if (message && (material_editor = (struct Material_editor *)material_editor_void))
 	{
-		switch (message->change)
+		if ((NULL == material_editor->current_material) ||
+			(MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(message,
+				material_editor->current_material) &
+			MANAGER_CHANGE_REMOVE(Graphical_material)))
 		{
-			 case MANAGER_CHANGE_REMOVE(Graphical_material):
-			 {
-					material_editor->current_material = 
-						 FIRST_OBJECT_IN_MANAGER_THAT(Graphical_material)(
-								NULL,(void *)NULL,	material_editor->graphical_material_manager);
-					material_editor_wx_set_material(material_editor,material_editor->current_material);
-			 } break;
+			material_editor->current_material = 
+				FIRST_OBJECT_IN_MANAGER_THAT(Graphical_material)(
+					NULL,(void *)NULL,	material_editor->graphical_material_manager);
+			material_editor_wx_set_material(material_editor,material_editor->current_material);
 		} 
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Materia_editor_materia_change.  Invalid argument(s)");
+			"Materia_editor_material_change.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* Materia_editor_materia_change */
+} /* Materia_editor_material_change */
 
 struct Material_editor *CREATE(Material_editor)(
 	 struct Material_editor_dialog **material_editor_dialog_address,

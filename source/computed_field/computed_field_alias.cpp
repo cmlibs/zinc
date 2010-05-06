@@ -181,10 +181,11 @@ void Computed_field_alias::other_field_manager_change(
 	if (message && alias_field_core && (field = alias_field_core->field) &&
 		(field->number_of_source_fields > 0) && field->source_fields)
 	{
-		if (Computed_field_depends_on_Computed_field_in_list(
-			alias_field_core->original_field(), message->changed_object_list))
+		int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Computed_field)(message,
+			alias_field_core->original_field());
+		if (change & MANAGER_CHANGE_RESULT(Computed_field))
 		{
-			Computed_field_changed(field, field->manager);
+			Computed_field_dependency_changed(field);
 		}
 	}
 	else

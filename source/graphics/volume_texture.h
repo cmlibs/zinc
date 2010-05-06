@@ -397,7 +397,9 @@ DESCRIPTION :
 	int n_groups;
 	struct VT_node_group **node_groups;
 
+	/* after clearing in create, following to be modified only by manager */
 	struct MANAGER(VT_volume_texture) *manager;
+	int manager_change_status;
 	
 	int access_count;
 }; /* struct VT_volume_texture */

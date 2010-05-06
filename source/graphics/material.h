@@ -92,12 +92,6 @@ DECLARE_LIST_TYPES(Graphical_material);
 
 DECLARE_MANAGER_TYPES(Graphical_material);
 
-struct Graphical_material_Texture_change_data
-{
-	struct LIST(Texture) *changed_texture_list;
-	struct LIST(Graphical_material) *changed_material_list;
-};
-
 /*
 Global functions
 ----------------
@@ -419,19 +413,6 @@ LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Returns true if the <material> uses a texture in the <texture_list>.
-==============================================================================*/
-
-int Graphical_material_Texture_change(struct Graphical_material *material,
-	void *texture_change_data_void);
-/*******************************************************************************
-LAST MODIFIED : 13 March 2002
-
-DESCRIPTION :
-If the <material> uses a texture in the <changed_texture_list>, marks the
-material compile_status as CHILD_GRAPHICS_NOT_COMPILED and adds the material
-to the <changed_material_list>.
-???RC Currently managed by Scene. This function should be replaced once messages
-go directly from texture to material.
 ==============================================================================*/
 
 int gfx_create_material(struct Parse_state *state,

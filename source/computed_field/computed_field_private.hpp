@@ -277,6 +277,11 @@ public:
 	}
 
 	virtual int get_domain( struct LIST(Computed_field) *domain_field_list ) const;
+
+	// called if field depends on another field which has changed. Override if special response needed
+	virtual void dependency_change()
+	{
+	}
 }; /* class Computed_field_core */
 
 struct Computed_field
@@ -366,9 +371,11 @@ DESCRIPTION :
 
 	int access_count;
 	
+	/* after clearing in create, following to be modified only by manager */
 	/* Keep a reference to the objects manager */
 	struct MANAGER(Computed_field) *manager;
-
+	int manager_change_status;
+	
 	/** Mode/flags controlling how this field is managed by a region. */
 	enum Computed_field_managed_status managed_status;
 
@@ -431,14 +438,22 @@ struct Cmiss_region_fields *Computed_field_get_owner(struct Computed_field *fiel
 struct Cmiss_region *Computed_field_manager_get_region(
 	struct MANAGER(Computed_field) *manager);
 
-int Computed_field_changed(struct Computed_field *field,
-	struct MANAGER(Computed_field) *computed_field_manager);
-/*******************************************************************************
-LAST MODIFIED : 5 July 2000
+/***************************************************************************//**
+ * Record that field data has changed.
+ * Notify clients if not caching changes.
+ * 
+ * @param field  The field that has changed.
+ */
+int Computed_field_changed(struct Computed_field *field);
 
-DESCRIPTION :
-Notifies the <computed_field_manager> that the <field> has changed.
-==============================================================================*/
+/***************************************************************************//**
+ * Record that external global objects this field depends on have change such
+ * that this field should evaluate to different values.
+ * Notify clients if not caching changes.
+ * 
+ * @param field  The field whose dependencies have changed.
+ */
+int Computed_field_dependency_changed(struct Computed_field *field);
 
 int Computed_field_package_add_type(
 	struct Computed_field_package *computed_field_package, const char *name,

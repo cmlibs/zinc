@@ -289,6 +289,9 @@ rendering.
 	ENTER(GT_element_group_build_graphics_objects);
 	if (gt_element_group && name_prefix)
 	{
+		// use begin/end cache to avoid field manager messages being sent when
+		// field wrappers are created and destroyed
+		MANAGER_BEGIN_CACHE(Computed_field)(gt_element_group->computed_field_manager);
 		/* update default coordinate field */
 		GT_element_group_update_default_coordinate(gt_element_group);
 		
@@ -356,6 +359,7 @@ rendering.
 				"Could not get default_rc_coordinate_field wrapper");
 			return_code = 0;
 		}
+		MANAGER_END_CACHE(Computed_field)(gt_element_group->computed_field_manager);
 	}
 	else
 	{
@@ -492,41 +496,23 @@ Updates any graphics affected by the change.
 	if (message &&
 		(gt_element_group = (struct GT_element_group *)gt_element_group_void))
 	{
-		switch (message->change)
+		change_data.changed_field_list =
+			MANAGER_MESSAGE_GET_CHANGE_LIST(Computed_field)(message,
+				MANAGER_CHANGE_RESULT(Computed_field));
+		if (change_data.changed_field_list)
 		{
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field):
-			case MANAGER_CHANGE_OBJECT(Computed_field):
+			change_data.time = 0;
+			change_data.graphics_changed = 0;
+			change_data.default_coordinate_field =
+				gt_element_group->default_coordinate_field;
+			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+				GT_element_settings_Computed_field_change, (void *)&change_data,
+				gt_element_group->list_of_settings);
+			if (change_data.graphics_changed)
 			{
-				/*???RC Is there a better way of getting time to here? */
-				change_data.time = 0;
-				change_data.graphics_changed = 0;
-				change_data.default_coordinate_field =
-					gt_element_group->default_coordinate_field;
-				change_data.changed_field_list = CREATE(LIST(Computed_field))();
-				/* copy the fields that have directly changed */
-				COPY_LIST(Computed_field)(change_data.changed_field_list,
-					message->changed_object_list);
-				/* add any other fields indirectly changed */
-				FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
-					Computed_field_add_to_list_if_depends_on_list,
-					(void *)change_data.changed_field_list,
-					gt_element_group->computed_field_manager);
-
-				FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-					GT_element_settings_Computed_field_change, (void *)&change_data,
-					gt_element_group->list_of_settings);
-				if (change_data.graphics_changed)
-				{
-					GT_element_group_changed(gt_element_group);
-				}
-				DESTROY(LIST(Computed_field))(&change_data.changed_field_list);
-			} break;
-			case MANAGER_CHANGE_ADD(Computed_field):
-			case MANAGER_CHANGE_REMOVE(Computed_field):
-			case MANAGER_CHANGE_IDENTIFIER(Computed_field):
-			{
-				/* do nothing */
-			} break;
+				GT_element_group_changed(gt_element_group);
+			}
+			DESTROY(LIST(Computed_field))(&change_data.changed_field_list);
 		}
 	}
 	else

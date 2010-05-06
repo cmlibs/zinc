@@ -62,18 +62,40 @@ Macros
 Local types
 -----------
 */
+
+#define MANAGER_MESSAGE_OBJECT_CHANGE( object_type ) \
+	manager_message_object_change ## object_type
+
 #define MANAGER_CALLBACK_ITEM( object_type ) \
 	manager_callback_item_ ## object_type
 
 #define FULL_DECLARE_MANAGER_TYPE_WITH_OWNER( object_type , owner_type ) \
-struct MANAGER_CALLBACK_ITEM(object_type) \
-/***************************************************************************** \
-LAST MODIFIED : 27 September 1995 \
+struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) \
+/*************************************************************************//** \
+ * Internal record of a single managed object change. \
+ */ \
+{ \
+	struct object_type *object; \
+	int change; /* bits set from enum MANAGER_CHANGE(object_type) */ \
+	void *detail; /* optional detail of subobject changes */ \
+}; \
 \
-DESCRIPTION : \
-An item in the manager's list of callbacks to make when changes are made to \
-the objects being managed \
-============================================================================*/ \
+struct MANAGER_MESSAGE(object_type) \
+/*************************************************************************//** \
+ * A message that will be sent when one of more of the objects being managed \
+ * has changed. \
+ */ \
+{ \
+	int change_summary; /* bitwise OR of all object changes */ \
+	int number_of_changed_objects; /* size of following array */ \
+	struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) *object_changes; \
+}; /* MANAGER_MESSAGE(object_type) */ \
+\
+struct MANAGER_CALLBACK_ITEM(object_type) \
+/*************************************************************************//** \
+ * An item in the manager's list of callbacks to make when changes are made to \
+ * the objects being managed \
+ */ \
 { \
 	MANAGER_CALLBACK_FUNCTION(object_type) *callback; \
 	void *user_data; \
@@ -81,25 +103,22 @@ the objects being managed \
 }; /* struct MANAGER_CALLBACK_ITEM(object_type) */ \
 \
 DECLARE_MANAGER_TYPE(object_type) \
-/***************************************************************************** \
-LAST MODIFIED : 5 June 2001 \
-\
-DESCRIPTION : \
-The structure for the manager. \
-============================================================================*/ \
+/*************************************************************************//** \
+ * The structure for the manager. \
+ */ \
 { \
 	/* the list of objects in the manager */ \
 	struct LIST(object_type) *object_list; \
 	/* the list of callbacks invoked when manager has changed */ \
 	struct MANAGER_CALLBACK_ITEM(object_type) *callback_list; \
 	int locked; \
-	/* the type of changes since the last update message */ \
-	struct MANAGER_MESSAGE(object_type) *message; \
+	/* the list of objects changed since the last update message */ \
+	struct LIST(object_type) *changed_object_list; \
 	/* pointer to owning object which exists for lifetime of this manager, if any */ \
 	owner_type *owner; \
 	/* flag indicating whether caching is on */ \
 	int cache; \
-} /* struct MANAGER(object_type) */
+}; /* struct MANAGER(object_type) */
 
 #define FULL_DECLARE_MANAGER_TYPE( object_type ) \
 FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(object_type, void)
@@ -109,62 +128,87 @@ Local functions
 ---------------
 */
 
+/*************************************************************************//**
+ * Redefine following before calling DECLARE_LOCAL_MANAGER_FUNCTIONS to mark
+ * objects dependent on changed objects as having a dependency change, e.g.:
+ * #undef MANAGER_UPDATE_DEPENDENCIES
+ * #define MANAGER_UPDATE_DEPENDENCIES( Computed_field , manager ) \
+ *   Computed_field_manager_update_dependencies(manager);
+ * (Only needed for certain objects.)
+ */
+#define MANAGER_UPDATE_DEPENDENCIES( object_type, manager )
+
 #define MANAGER_UPDATE( object_type )  manager_update_ ## object_type
 
 #define DECLARE_MANAGER_UPDATE_FUNCTION( object_type ) \
 static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
-/***************************************************************************** \
-LAST MODIFIED : 16 January 2002 \
-\
-DESCRIPTION : \
-Send a manager message listing all changes to date of the <change> type in the
-<changed_object_list> of <manager> to registered clients. \
-Once <change> and <changed_object_list> are put in the <message>, they are \
-cleared from the manager, then the message is sent. \
-Copies the message, leaving the message in the manager blank before sending \
-since it is sometimes possible to have messages sent while others are out. \
-This is currently the case for heirarchical scenes but this will be changed \
-once we use object-to-client callbacks instead of manager messages for \
-inter-object dependencies. \
-============================================================================*/ \
+/*************************************************************************//** \
+ * Send a manager message listing all changes to date of the <change> type in \
+ * the <changed_object_list> of <manager> to registered clients. \
+ * Once <change> and <changed_object_list> are put in the <message>, they are \
+ * cleared from the manager, then the message is sent. \
+ * Copies the message, leaving the message in the manager blank before sending \
+ * since it is sometimes possible to have messages sent while others are out. \
+ */ \
 { \
-	struct LIST(object_type) *new_changed_object_list; \
-	struct MANAGER_CALLBACK_ITEM(object_type) *item; \
-	struct MANAGER_MESSAGE(object_type) *temp_message; \
-\
 	ENTER(MANAGER_UPDATE(object_type)); \
 	if (manager) \
 	{ \
-		if (MANAGER_CHANGE_NONE(object_type) != manager->message->change) \
+		if (0 < NUMBER_IN_LIST(object_type)(manager->changed_object_list)) \
 		{ \
-			if (ALLOCATE(temp_message, struct MANAGER_MESSAGE(object_type), 1) && \
-				(new_changed_object_list = CREATE_LIST(object_type)())) \
+			int i, number_of_changed_objects; \
+			struct MANAGER_CALLBACK_ITEM(object_type) *item; \
+			struct MANAGER_MESSAGE(object_type) message; \
+			struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) *object_change; \
+			\
+			/* Optional stage: added objects change by dependency */ \
+			MANAGER_UPDATE_DEPENDENCIES(object_type, manager) \
+			/* prepare message, transferring change details from objects to it */ \
+			number_of_changed_objects = \
+				NUMBER_IN_LIST(object_type)(manager->changed_object_list); \
+			if (ALLOCATE(message.object_changes, \
+				struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type), \
+					number_of_changed_objects)) \
 			{ \
-				/* copy message from manager into temp_message */ \
-				temp_message->change = manager->message->change; \
-				temp_message->changed_object_list = \
-					manager->message->changed_object_list; \
-				/* clear manager->message so messages can be build up while previous \
-					 temp_message is sent out to clients */ \
-				manager->message->change = MANAGER_CHANGE_NONE(object_type); \
-				manager->message->changed_object_list = new_changed_object_list; \
-				/* send message to the clients */ \
+				message.change_summary = MANAGER_CHANGE_NONE(object_type); \
+				message.number_of_changed_objects = number_of_changed_objects; \
+				object_change = message.object_changes; \
+				for (i = 0; i < number_of_changed_objects; i++) \
+				{ \
+					object_change->object = ACCESS(object_type)( \
+						FIRST_OBJECT_IN_LIST_THAT(object_type)( \
+							(LIST_CONDITIONAL_FUNCTION(object_type) *)NULL, (void *)NULL, \
+							manager->changed_object_list)); \
+					object_change->change = object_change->object->manager_change_status; \
+					object_change->object->manager_change_status = \
+						MANAGER_CHANGE_NONE(object_type); \
+					REMOVE_OBJECT_FROM_LIST(object_type)(object_change->object, \
+						manager->changed_object_list); \
+					object_change->detail = NULL; \
+					message.change_summary |= object_change->change; \
+					object_change++; \
+				} \
+				/* send message to clients */ \
 				item = manager->callback_list; \
 				while (item) \
 				{ \
-					(item->callback)(temp_message, item->user_data); \
+					(item->callback)(&message, item->user_data); \
 					item = item->next; \
 				} \
-				/* discard the changed_object_list in the message just sent */ \
-				DESTROY(LIST(object_type))(&(temp_message->changed_object_list)); \
+				/* clean up message */ \
+				object_change = message.object_changes; \
+				for (i = 0; i < number_of_changed_objects; i++) \
+				{ \
+					DEACCESS(object_type)(&(object_change->object)); \
+					object_change++; \
+				} \
+				DEALLOCATE(message.object_changes); \
 			} \
 			else \
 			{ \
 				display_message(ERROR_MESSAGE, \
 					"MANAGER_UPDATE(" #object_type ").  Could not build message"); \
 			} \
-			/* deallocate the message just sent */ \
-			DEALLOCATE(temp_message); \
 		} \
 	} \
 	else \
@@ -292,13 +336,8 @@ PROTOTYPE_CREATE_MANAGER_FUNCTION(object_type) \
 	if (ALLOCATE(manager, struct MANAGER(object_type), 1)) \
 	{ \
 		manager->object_list = CREATE_LIST(object_type)(); \
-		if (ALLOCATE(manager->message, struct MANAGER_MESSAGE(object_type), 1)) \
-		{ \
-			manager->message->change = MANAGER_CHANGE_NONE(object_type); \
-			manager->message->changed_object_list = CREATE_LIST(object_type)(); \
-		} \
-		if (manager->object_list && manager->message && \
-			manager->message->changed_object_list) \
+		manager->changed_object_list = CREATE_LIST(object_type)(); \
+		if (manager->object_list && manager->changed_object_list) \
 		{ \
 			manager->callback_list = \
 				(struct MANAGER_CALLBACK_ITEM(object_type) *)NULL; \
@@ -309,11 +348,7 @@ PROTOTYPE_CREATE_MANAGER_FUNCTION(object_type) \
 		{ \
 			display_message(ERROR_MESSAGE, \
 				"MANAGER_CREATE(" #object_type ").  Could not create object lists"); \
-			if (manager->message) \
-			{ \
-				DESTROY(LIST(object_type))(&(manager->message->changed_object_list)); \
-				DEALLOCATE(manager->message); \
-			} \
+			DESTROY(LIST(object_type))(&(manager->changed_object_list)); \
 			DESTROY(LIST(object_type))(&(manager->object_list)); \
 			DEALLOCATE(manager); \
 		} \
@@ -346,20 +381,14 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 			display_message(ERROR_MESSAGE, "DESTROY(MANAGER(" #object_type \
 				")).  manager->cache = %d != 0", manager->cache); \
 		} \
-		/* destroy the manager message */ \
-		if (manager->message) \
-		{ \
-			DESTROY(LIST(object_type))(&(manager->message->changed_object_list)); \
-			DEALLOCATE(manager->message); \
-		} \
+		DESTROY_LIST(object_type)(&(manager->changed_object_list)); \
 		/* remove the manager_pointer from each object */ \
-		FOR_EACH_OBJECT_IN_LIST(object_type)( \
-			OBJECT_CLEAR_MANAGER(object_type), \
+		FOR_EACH_OBJECT_IN_LIST(object_type)(OBJECT_CLEAR_MANAGER(object_type), \
 			(void *)NULL, manager->object_list); \
 		/* destroy the list of objects in the manager */ \
 		DESTROY_LIST(object_type)(&(manager->object_list)); \
-		/* destroy the callback list, after the list of objects as some Computed fields get 
-		 Computed_field_manager callbacks */ \
+		/* destroy the callback list after the list of objects \ 
+			to handle Computed_fields getting manager callbacks */ \
 		current=manager->callback_list; \
 		while (current) \
 		{ \
@@ -367,7 +396,7 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 			DEALLOCATE(current); \
 			current = next; \
 		} \
-      DEALLOCATE(manager); \
+		DEALLOCATE(manager); \
 	} \
 	else \
 	{ \
@@ -396,13 +425,17 @@ PROTOTYPE_ADD_OBJECT_TO_MANAGER_FUNCTION(object_type) \
 					FIND_BY_IDENTIFIER_IN_LIST(object_type, identifier_field_name)( \
 						object->identifier_field_name, manager->object_list)) \
 				{ \
-					MANAGER_BEGIN_CHANGE(object_type)(manager, \
-						MANAGER_CHANGE_ADD(object_type), object); \
 					/* object_list will access the object */ \
 					if (ADD_OBJECT_TO_LIST(object_type)(object, manager->object_list)) \
 					{ \
 						/* object keeps a pointer to its manager */ \
 						object->object_manager = manager; \
+						object->manager_change_status = MANAGER_CHANGE_ADD(object_type); \
+						ADD_OBJECT_TO_LIST(object_type)(object, manager->changed_object_list); \
+						if (!manager->cache) \
+						{ \
+							MANAGER_UPDATE(object_type)(manager); \
+						} \
 						return_code = 1; \
 					} \
 					else \
@@ -412,7 +445,6 @@ PROTOTYPE_ADD_OBJECT_TO_MANAGER_FUNCTION(object_type) \
 							").  Could not add object to list"); \
 						return_code = 0; \
 					} \
-					MANAGER_END_CHANGE(object_type)(manager); \
 				} \
 				else \
 				{ \
@@ -459,48 +491,60 @@ PROTOTYPE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION(object_type) \
 	ENTER(REMOVE_OBJECT_FROM_MANAGER(object_type)); \
 	if (manager && object) \
 	{ \
-		if (!(manager->locked)) \
+		if (object->object_manager == manager) \
 		{ \
-			if (MANAGED_OBJECT_NOT_IN_USE(object_type)(object, manager)) \
+			if (!(manager->locked)) \
 			{ \
-				MANAGER_BEGIN_CHANGE(object_type)(manager, \
-					MANAGER_CHANGE_REMOVE(object_type), object); \
-				/* clear object's pointer to manager */ \
-				object->object_manager = (struct MANAGER(object_type) *)NULL; \
-				return_code = REMOVE_OBJECT_FROM_LIST(object_type)(object, \
-					manager->object_list); \
-				MANAGER_END_CHANGE(object_type)(manager); \
-			} \
-			else \
-			{ \
-				if (IS_OBJECT_IN_LIST(object_type)(object, manager->object_list)) \
+				if (MANAGED_OBJECT_NOT_IN_USE(object_type)(object, manager)) \
 				{ \
-					display_message(ERROR_MESSAGE, \
-						"REMOVE_OBJECT_FROM_MANAGER(" #object_type \
-						").  Object is in use"); \
+					/* clear manager pointer first so list DEACCESS doesn't remove from manager again */ \
+					object->object_manager = (struct MANAGER(object_type) *)NULL; \
+					if (object->manager_change_status == MANAGER_CHANGE_ADD(object_type)) \
+					{ \
+						/* send no change message for objects added and removed while caching */ \
+						object->manager_change_status = MANAGER_CHANGE_NONE(object_type); \
+						REMOVE_OBJECT_FROM_LIST(object_type)(object, manager->changed_object_list); \
+					} \
+					else \
+					{ \
+						if (object->manager_change_status == MANAGER_CHANGE_NONE(object_type)) \
+						{ \
+							/* changed_object_list ACCESSes removed objects until message sent */ \
+							ADD_OBJECT_TO_LIST(object_type)(object, manager->changed_object_list); \
+						} \
+						object->manager_change_status = MANAGER_CHANGE_REMOVE(object_type); \
+					} \
+					return_code = REMOVE_OBJECT_FROM_LIST(object_type)(object, manager->object_list); \
+					if (!manager->cache) \
+					{ \
+						MANAGER_UPDATE(object_type)(manager); \
+					} \
 				} \
 				else \
 				{ \
 					display_message(ERROR_MESSAGE, \
-						"REMOVE_OBJECT_FROM_MANAGER(" #object_type \
-						").  Object is not managed"); \
+						"REMOVE_OBJECT_FROM_MANAGER(" #object_type ").  Object is in use"); \
+					return_code = 0; \
 				} \
+			} \
+			else \
+			{ \
+				display_message(WARNING_MESSAGE, \
+					"REMOVE_OBJECT_FROM_MANAGER(" #object_type ").  Manager locked"); \
 				return_code = 0; \
 			} \
 		} \
 		else \
 		{ \
 			display_message(WARNING_MESSAGE, \
-				"REMOVE_OBJECT_FROM_MANAGER(" #object_type \
-				").  Manager locked"); \
+				"REMOVE_OBJECT_FROM_MANAGER(" #object_type ").  Object is not in this manager"); \
 			return_code = 0; \
 		} \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
-			"REMOVE_OBJECT_FROM_MANAGER(" #object_type \
-			").  Invalid argument(s)"); \
+			"REMOVE_OBJECT_FROM_MANAGER(" #object_type ").  Invalid argument(s)"); \
 		return_code = 0; \
 	} \
 	LEAVE; \
@@ -521,18 +565,12 @@ PROTOTYPE_REMOVE_ALL_OBJECTS_FROM_MANAGER_FUNCTION(object_type) \
 		if (!(manager->locked)) \
 		{ \
 			return_code = 1; \
-			/* this function uses "temporary" caching by having many BEGIN_CHANGE \
-				 calls followed by a single END_CHANGE */ \
+			MANAGER_BEGIN_CACHE(object_type)(manager); \
 			while (return_code && (object = FIRST_OBJECT_IN_LIST_THAT(object_type)( \
 				MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL(object_type), (void *)manager, \
 				manager->object_list))) \
 			{ \
-				MANAGER_BEGIN_CHANGE(object_type)(manager, \
-					MANAGER_CHANGE_REMOVE(object_type), object); \
-				/* clear object's pointer to manager */ \
-				object->object_manager = (struct MANAGER(object_type) *)NULL; \
-				return_code = \
-					REMOVE_OBJECT_FROM_LIST(object_type)(object, manager->object_list); \
+				return_code = REMOVE_OBJECT_FROM_MANAGER(object_type)(object, manager); \
 			} \
 			if (0 != NUMBER_IN_MANAGER(object_type)(manager)) \
 			{ \
@@ -542,13 +580,12 @@ PROTOTYPE_REMOVE_ALL_OBJECTS_FROM_MANAGER_FUNCTION(object_type) \
 					NUMBER_IN_MANAGER(object_type)(manager)); \
 				return_code = 0; \
 			} \
-			MANAGER_END_CHANGE(object_type)(manager); \
+			MANAGER_END_CACHE(object_type)(manager); \
 		} \
 		else \
 		{ \
 			display_message(WARNING_MESSAGE, \
-				"REMOVE_ALL_OBJECTS_FROM_MANAGER(" #object_type \
-				").  Manager locked"); \
+				"REMOVE_ALL_OBJECTS_FROM_MANAGER(" #object_type ").  Manager locked"); \
 			return_code = 0; \
 		} \
 	} \
@@ -603,7 +640,7 @@ PROTOTYPE_MANAGER_MODIFY_FUNCTION(object_type,identifier_field_name) \
 	struct object_type *tmp_object; \
 \
 	ENTER(MANAGER_MODIFY(object_type,identifier_field_name)); \
-	if (manager && object && new_data) \
+	if (manager && object && new_data && (object != new_data)) \
 	{ \
 		if (!(manager->locked)) \
 		{ \
@@ -611,34 +648,22 @@ PROTOTYPE_MANAGER_MODIFY_FUNCTION(object_type,identifier_field_name) \
 			{ \
 				tmp_object = FIND_BY_IDENTIFIER_IN_LIST(object_type, identifier_field_name)( \
 					new_data->identifier_field_name, manager->object_list); \
-				if (tmp_object) \
+				if (tmp_object != object) \
 				{ \
-					if (tmp_object == object) \
-					{ \
-						/* don't need to copy object over itself */ \
-						return_code = 1; \
-					} \
-					else \
-					{ \
-						display_message(ERROR_MESSAGE, \
-							"MANAGER_MODIFY(" #object_type "," #identifier_field_name \
-							").  Source object is also in manager"); \
-						return_code = 0; \
-					} \
+					display_message(ERROR_MESSAGE, \
+						"MANAGER_MODIFY(" #object_type "," #identifier_field_name \
+						").  Identifier of source object is already used in manager"); \
+					return_code = 0; \
 				} \
 				else \
 				{ \
-					/* must perform IDENTIFIER_CHANGE stuff between BEGIN_CHANGE and \
-						 END_CHANGE calls; manager message must not be sent while object \
-						 is part changed and/or temporarily out of the manager! */ \
-					MANAGER_BEGIN_CHANGE(object_type)(manager, \
-						MANAGER_CHANGE_OBJECT(object_type), object); \
-					identifier_change_data = LIST_BEGIN_IDENTIFIER_CHANGE(object_type, \
-							identifier_field_name)(object); \
+					identifier_change_data = LIST_BEGIN_IDENTIFIER_CHANGE( \
+						object_type, identifier_field_name)(object); \
 					if (identifier_change_data) \
 					{ \
-						if (0 == (return_code = MANAGER_COPY_WITH_IDENTIFIER(object_type, \
-							identifier_field_name)(object, new_data))) \
+						return_code = MANAGER_COPY_WITH_IDENTIFIER(object_type, \
+							identifier_field_name)(object, new_data); \
+						if (!return_code) \
 						{ \
 							display_message(ERROR_MESSAGE, \
 								"MANAGER_MODIFY(" #object_type "," #identifier_field_name \
@@ -651,6 +676,12 @@ PROTOTYPE_MANAGER_MODIFY_FUNCTION(object_type,identifier_field_name) \
 								"MANAGER_MODIFY(" #object_type "," #identifier_field_name \
 								").  Could not restore object to all indexed lists"); \
 						} \
+						/* notify clients AFTER object restored to indexed lists */ \
+						if (return_code) \
+						{ \
+							MANAGED_OBJECT_CHANGE(object_type)(object, \
+								MANAGER_CHANGE_OBJECT(object_type)); \
+						} \
 					} \
 					else \
 					{ \
@@ -659,7 +690,6 @@ PROTOTYPE_MANAGER_MODIFY_FUNCTION(object_type,identifier_field_name) \
 							").  Could not safely change identifier in indexed lists"); \
 						return_code = 0; \
 					} \
-					MANAGER_END_CHANGE(object_type)(manager); \
 				} \
 			} \
 			else \
@@ -704,12 +734,12 @@ PROTOTYPE_MANAGER_MODIFY_NOT_IDENTIFIER_FUNCTION(object_type, \
 		{ \
 			if (IS_OBJECT_IN_LIST(object_type)(object,manager->object_list)) \
 			{ \
-				MANAGER_BEGIN_CHANGE(object_type)(manager, \
-					MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type), object); \
-				if (MANAGER_COPY_WITHOUT_IDENTIFIER(object_type, \
-					identifier_field_name)(object, new_data)) \
+				return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(object_type, \
+					identifier_field_name)(object, new_data); \
+				if (return_code) \
 				{ \
-					return_code = 1; \
+					MANAGED_OBJECT_CHANGE(object_type)(object, \
+						MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type)); \
 				} \
 				else  \
 				{ \
@@ -718,7 +748,6 @@ PROTOTYPE_MANAGER_MODIFY_NOT_IDENTIFIER_FUNCTION(object_type, \
 						#identifier_field_name ").  Could not copy object"); \
 					return_code = 0; \
 				} \
-				MANAGER_END_CHANGE(object_type)(manager); \
 			} \
 			else \
 			{ \
@@ -765,9 +794,9 @@ PROTOTYPE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(object_type, \
 		{ \
 			if (IS_OBJECT_IN_LIST(object_type)(object,manager->object_list)) \
 			{ \
-				if (NULL != (tmp_object = \
-					FIND_BY_IDENTIFIER_IN_LIST(object_type, identifier_field_name)( \
-						new_identifier, manager->object_list))) \
+				tmp_object = FIND_BY_IDENTIFIER_IN_LIST(object_type, identifier_field_name)( \
+					new_identifier, manager->object_list); \
+				if (NULL != tmp_object) \
 				{ \
 					if (tmp_object == object) \
 					{ \
@@ -778,23 +807,19 @@ PROTOTYPE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(object_type, \
 					{ \
 						display_message(ERROR_MESSAGE,"MANAGER_MODIFY_IDENTIFIER(" \
 							#object_type "," #identifier_field_name \
-							").  Object with new identifier already exists"); \
+							").  Identifier is already used in manager"); \
 						return_code = 0; \
 					} \
 				} \
 				else \
 				{ \
-					/* must perform IDENTIFIER_CHANGE stuff between BEGIN_CHANGE and \
-						 END_CHANGE calls; manager message must not be sent while object \
-						 is part changed and/or temporarily out of the manager! */ \
-					MANAGER_BEGIN_CHANGE(object_type)(manager, \
-						MANAGER_CHANGE_IDENTIFIER(object_type), object); \
-					if (NULL != (identifier_change_data = \
-						LIST_BEGIN_IDENTIFIER_CHANGE(object_type, \
-							identifier_field_name)(object))) \
+					identifier_change_data = LIST_BEGIN_IDENTIFIER_CHANGE( \
+						object_type, identifier_field_name)(object); \
+					if (identifier_change_data) \
 					{ \
-						if (!(return_code = MANAGER_COPY_IDENTIFIER(object_type, \
-							identifier_field_name)(object, new_identifier))) \
+						return_code = MANAGER_COPY_IDENTIFIER(object_type, \
+							identifier_field_name)(object, new_identifier); \
+						if (!return_code) \
 						{ \
 							display_message(ERROR_MESSAGE, \
 								"MANAGER_MODIFY_IDENTIFIER(" #object_type "," \
@@ -808,6 +833,12 @@ PROTOTYPE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(object_type, \
 								#identifier_field_name \
 								").  Could not restore object to all indexed lists"); \
 						} \
+						/* notify clients AFTER object restored to indexed lists */ \
+						if (return_code) \
+						{ \
+							MANAGED_OBJECT_CHANGE(object_type)(object, \
+								MANAGER_CHANGE_IDENTIFIER(object_type)); \
+						} \
 					} \
 					else  \
 					{ \
@@ -817,7 +848,6 @@ PROTOTYPE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(object_type, \
 							").  Could not safely change identifier in indexed lists"); \
 						return_code = 0; \
 					} \
-					MANAGER_END_CHANGE(object_type)(manager); \
 				} \
 			} \
 			else \
@@ -952,7 +982,7 @@ PROTOTYPE_IS_MANAGED_FUNCTION(object_type) \
 	return (return_code); \
 } /* IS_MANAGED(object_type) */
 
-#define DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION( object_type ) \
+#define DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION( object_type , object_manager ) \
 PROTOTYPE_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(object_type) \
 /***************************************************************************** \
 LAST MODIFIED : 21 January 2002 \
@@ -973,36 +1003,26 @@ FE_element type requires a special version due to face/parent accessing. \
 	return_code = 0; \
 	if (manager && object) \
 	{ \
-		if (!(manager->locked)) \
+		if (manager == object->object_manager) \
 		{ \
-			if (IS_OBJECT_IN_LIST(object_type)(object, manager->object_list)) \
+			if ((1 == object->access_count) || \
+				((MANAGER_CHANGE_NONE(object_type) != object->manager_change_status) && \
+				 (2 == object->access_count))) \
 			{ \
-				if ((1 == object->access_count) || \
-					((2 == object->access_count) && \
-						IS_OBJECT_IN_LIST(object_type)(object, \
-							manager->message->changed_object_list))) \
-				{ \
-					return_code = 1; \
-				} \
-			} \
-			else \
-			{ \
-				display_message(WARNING_MESSAGE, \
-					"MANAGED_OBJECT_NOT_IN_USE(" #object_type \
-					").  Object is not managed"); \
+				return_code = 1; \
 			} \
 		} \
 		else \
 		{ \
 			display_message(WARNING_MESSAGE, \
-				"MANAGED_OBJECT_NOT_IN_USE(" #object_type ").  Manager is locked"); \
+				"MANAGED_OBJECT_NOT_IN_USE(" #object_type \
+				").  Object is not in this manager"); \
 		} \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
 			"MANAGED_OBJECT_NOT_IN_USE(" #object_type ").  Invalid argument(s)"); \
-		return_code = 0; \
 	} \
 	LEAVE; \
 \
@@ -1088,55 +1108,47 @@ PROTOTYPE_FOR_EACH_OBJECT_IN_MANAGER_FUNCTION(object_type) \
 	return (return_code); \
 } /* FOR_EACH_OBJECT_IN_MANAGER(object_type) */
 
-#define DECLARE_MANAGER_BEGIN_CHANGE_FUNCTION( object_type ) \
-PROTOTYPE_MANAGER_BEGIN_CHANGE_FUNCTION(object_type) \
+#define DECLARE_MANAGED_OBJECT_CHANGE_FUNCTION( object_type , object_manager ) \
+PROTOTYPE_MANAGED_OBJECT_CHANGE_FUNCTION(object_type) \
 { \
-	ENTER(MANAGER_BEGIN_CHANGE(object_type)); \
-	if (manager && (MANAGER_CHANGE_NONE(object_type) != change) && object) \
+	int return_code; \
+\
+	ENTER(MANAGED_OBJECT_CHANGE(object_type)); \
+	if (object) \
 	{ \
-		if ((MANAGER_CHANGE_NONE(object_type) != manager->message->change) && \
-			(change != manager->message->change)) \
+		if (object->object_manager) \
 		{ \
-			/* new type of change; inform clients of changes to date */ \
-			MANAGER_UPDATE(object_type)(manager); \
+			return_code = 1; \
+			if (0 == (object->manager_change_status & MANAGER_CHANGE_ADD(object_type))) \
+			{ \
+				if (object->manager_change_status == MANAGER_CHANGE_NONE(object_type)) \
+				{ \
+					ADD_OBJECT_TO_LIST(object_type)(object, \
+						object->object_manager->changed_object_list); \
+				} \
+				object->manager_change_status |= change; \
+			} \
+			if (!object->object_manager->cache) \
+			{ \
+				MANAGER_UPDATE(object_type)(object->object_manager); \
+			} \
 		} \
-		manager->message->change = change; \
-		/* ensure object is in changed_object_list for future messages */ \
-		if (!IS_OBJECT_IN_LIST(object_type)(object, \
-			manager->message->changed_object_list)) \
+		else \
 		{ \
-			ADD_OBJECT_TO_LIST(object_type)(object, \
-				manager->message->changed_object_list); \
+			return_code = 0; \
 		} \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
-			"MANAGER_BEGIN_CHANGE(" #object_type ").  Invalid argument(s)"); \
+			"MANAGED_OBJECT_CHANGE(" #object_type ").  Invalid argument(s)"); \
+		return_code = 0; \
 	} \
 	LEAVE; \
-} /* MANAGER_BEGIN_CHANGE(object_type) */
-
-#define DECLARE_MANAGER_END_CHANGE_FUNCTION( object_type ) \
-PROTOTYPE_MANAGER_END_CHANGE_FUNCTION(object_type) \
-{ \
-	ENTER(MANAGER_END_CHANGE(object_type)); \
-	if (manager) \
-	{ \
-		if (!manager->cache) \
-		{ \
-			/* inform clients of changes to date */ \
-			MANAGER_UPDATE(object_type)(manager); \
-		} \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"MANAGER_END_CHANGE(" #object_type ").  Invalid argument(s)"); \
-	} \
-	LEAVE; \
-} /* MANAGER_END_CHANGE(object_type) */
-
+\
+	return (return_code); \
+} /* MANAGED_OBJECT_CHANGE(object_type) */
+			
 #define DECLARE_MANAGER_BEGIN_CACHE_FUNCTION( object_type ) \
 PROTOTYPE_MANAGER_BEGIN_CACHE_FUNCTION(object_type) \
 { \
@@ -1197,112 +1209,87 @@ PROTOTYPE_MANAGER_END_CACHE_FUNCTION(object_type) \
 	return (return_code); \
 } /* MANAGER_END_CACHE(object_type) */
 
-#define DECLARE_GROUP_MANAGER_COPY_WITHOUT_IDENTIFIER( object_type ) \
-PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(GROUP(object_type),name) \
+#define DECLARE_MANAGER_MESSAGE_GET_CHANGE_SUMMARY_FUNCTION( object_type ) \
+PROTOTYPE_MANAGER_MESSAGE_GET_CHANGE_SUMMARY_FUNCTION(object_type) \
 { \
-	int return_code; \
-\
-	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(GROUP(object_type),name)); \
-	/* check arguments */ \
-	if (source&&destination) \
+	if (message) \
 	{ \
-		if (DESTROY_LIST(object_type)(&(destination->object_list))) \
-		{ \
-			if (destination->object_list=CREATE_LIST(object_type)()) \
-			{ \
-				return_code=COPY_LIST(object_type)(destination->object_list, \
-					source->object_list); \
-			} \
-			else \
-			{ \
-				display_message(ERROR_MESSAGE,"MANAGER_COPY_WITHOUT_IDENTIFIER(" \
-				#object_type ",name).  Could not create new destination object list"); \
-				return_code=0; \
-			} \
-		} \
-		else \
-		{ \
-			display_message(ERROR_MESSAGE,"MANAGER_COPY_WITHOUT_IDENTIFIER(" \
-				#object_type ",name).  Could not destroy destination object list"); \
-			return_code=0; \
-		} \
+		return (message->change_summary); \
 	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE,"MANAGER_COPY_WITHOUT_IDENTIFIER(" \
-			#object_type ",name).  Invalid argument(s)"); \
-		return_code=0; \
-	} \
-	LEAVE; \
-\
-	return (return_code); \
-} /* MANAGER_COPY_WITHOUT_IDENTIFIER(GROUP(object_type),name) */
+	return (MANAGER_CHANGE_NONE(object_type)); \
+}
 
-#define DECLARE_GROUP_MANAGER_COPY_IDENTIFIER( object_type ) \
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(GROUP(object_type),name,char *) \
+#define DECLARE_MANAGER_MESSAGE_GET_OBJECT_CHANGE_FUNCTION( object_type ) \
+PROTOTYPE_MANAGER_MESSAGE_GET_OBJECT_CHANGE_FUNCTION(object_type) \
 { \
-	int return_code; \
-\
-	ENTER(MANAGER_COPY_IDENTIFIER(GROUP(object_type),name)); \
-	/* check arguments */ \
-	if (destination) \
+	if (message && object) \
 	{ \
-		DEALLOCATE(destination->name); \
-		if (name) \
+		int i; \
+		struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) *object_change; \
+		\
+		object_change = message->object_changes; \
+		for (i = message->number_of_changed_objects; 0 < i; i--) \
 		{ \
-			if (ALLOCATE(destination->name,char,strlen(name)+1)) \
+			if (object == object_change->object) \
 			{ \
-				strcpy(destination->name,name); \
-				return_code=1; \
+				return (object_change->change); \
 			} \
-			else \
-			{ \
-				display_message(ERROR_MESSAGE,"MANAGER_COPY_IDENTIFIER(" \
-					#object_type ",name).  Insufficient memory for name"); \
-				return_code=0; \
-			} \
-		} \
-		else \
-		{ \
-			return_code=1; \
+			object_change++; \
 		} \
 	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE,"MANAGER_COPY_IDENTIFIER(" \
-			#object_type ",name).  Invalid argument(s)"); \
-		return_code=0; \
-	} \
-	LEAVE; \
-\
-	return (return_code); \
-} /* MANAGER_COPY_IDENTIFIER(GROUP(object_type),name) */
+	return (MANAGER_CHANGE_NONE(object_type)); \
+}
 
-#define DECLARE_GROUP_MANAGER_COPY_WITH_IDENTIFIER( object_type ) \
-PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(GROUP(object_type),name) \
+#define DECLARE_MANAGER_MESSAGE_GET_CHANGE_LIST_FUNCTION( object_type ) \
+PROTOTYPE_MANAGER_MESSAGE_GET_CHANGE_LIST_FUNCTION(object_type) \
 { \
-	int return_code; \
-\
-	ENTER(MANAGER_COPY_WITH_IDENTIFIER(GROUP(object_type),name)); \
-	if (source&&destination) \
+	int i; \
+	struct LIST(object_type) *object_list; \
+	struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) *object_change; \
+	\
+	object_list = (struct LIST(object_type) *)NULL; \
+	if (message) \
 	{ \
-		if (return_code=MANAGER_COPY_WITHOUT_IDENTIFIER(GROUP(object_type),name)( \
-			destination,source)) \
+		if (message->change_summary & change_mask) \
 		{ \
-			return_code=MANAGER_COPY_IDENTIFIER(GROUP(object_type),name)( \
-				destination,source->name); \
+			object_list = CREATE(LIST(object_type))(); \
+			object_change = message->object_changes; \
+			for (i = message->number_of_changed_objects; 0 < i; i--) \
+			{ \
+				if (object_change->change & change_mask) \
+				{ \
+					ADD_OBJECT_TO_LIST(object_type)(object_change->object, object_list); \
+				} \
+				object_change++; \
+			} \
 		} \
 	} \
-	else \
+	return (object_list); \
+}
+
+#define DECLARE_MANAGER_MESSAGE_HAS_CHANGED_OBJECT_THAT_FUNCTION( object_type ) \
+PROTOTYPE_MANAGER_MESSAGE_HAS_CHANGED_OBJECT_THAT_FUNCTION(object_type) \
+{ \
+	int i, return_code; \
+	struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) *object_change; \
+	\
+	return_code = 0; \
+	if (message && conditional_function) \
 	{ \
-		display_message(ERROR_MESSAGE,"MANAGER_COPY_WITH_IDENTIFIER(" \
-			#object_type ",name).  Invalid argument(s)"); \
-		return_code=0; \
+		object_change = message->object_changes; \
+		for (i = message->number_of_changed_objects; 0 < i; i--) \
+		{ \
+			if ((object_change->change & change_mask) && \
+				(conditional_function)(object_change->object, user_data)) \
+			{ \
+				return_code = 1; \
+				break; \
+			} \
+			object_change++; \
+		} \
 	} \
-	LEAVE; \
-\
 	return (return_code); \
-} /* MANAGER_COPY_WITH_IDENTIFIER(GROUP(object_type),name) */
+}
 
 #define MANAGER_GET_OWNER(object_type)  manager_get_owner_ ## object_type
 
@@ -1396,10 +1383,13 @@ DECLARE_MANAGER_DEREGISTER_FUNCTION(object_type) \
 DECLARE_IS_MANAGED_FUNCTION(object_type) \
 DECLARE_FIRST_OBJECT_IN_MANAGER_THAT_FUNCTION(object_type) \
 DECLARE_FOR_EACH_OBJECT_IN_MANAGER_FUNCTION(object_type) \
-DECLARE_MANAGER_BEGIN_CHANGE_FUNCTION(object_type) \
-DECLARE_MANAGER_END_CHANGE_FUNCTION(object_type) \
+DECLARE_MANAGED_OBJECT_CHANGE_FUNCTION(object_type,object_manager) \
 DECLARE_MANAGER_BEGIN_CACHE_FUNCTION(object_type) \
-DECLARE_MANAGER_END_CACHE_FUNCTION(object_type)
+DECLARE_MANAGER_END_CACHE_FUNCTION(object_type) \
+DECLARE_MANAGER_MESSAGE_GET_CHANGE_SUMMARY_FUNCTION(object_type) \
+DECLARE_MANAGER_MESSAGE_GET_OBJECT_CHANGE_FUNCTION(object_type) \
+DECLARE_MANAGER_MESSAGE_GET_CHANGE_LIST_FUNCTION(object_type) \
+DECLARE_MANAGER_MESSAGE_HAS_CHANGED_OBJECT_THAT_FUNCTION(object_type)
 
 #define DECLARE_MANAGER_IDENTIFIER_FUNCTIONS( \
 	object_type , identifier_field_name , identifier_type , object_manager ) \
@@ -1412,10 +1402,5 @@ DECLARE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(object_type,identifier_field_name, \
 	identifier_type) \
 DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(object_type, \
 	identifier_field_name,identifier_type)
-
-#define DECLARE_GROUP_MANAGER_COPY_FUNCTIONS( object_type ) \
-DECLARE_GROUP_MANAGER_COPY_WITHOUT_IDENTIFIER(object_type) \
-DECLARE_GROUP_MANAGER_COPY_IDENTIFIER(object_type) \
-DECLARE_GROUP_MANAGER_COPY_WITH_IDENTIFIER(object_type)
 
 #endif /* !defined (MANAGER_PRIVATE_H) */

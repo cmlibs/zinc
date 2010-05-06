@@ -5689,26 +5689,24 @@ Something has changed globally in the control curve manager.
 	ENTER(emoter_curve_manager_message);
 	if (message && emoter_dialog_void)
 	{
-		switch (message->change)
+		struct LIST(Curve) *changed_curve_list =
+			MANAGER_MESSAGE_GET_CHANGE_LIST(Curve)(message,
+				MANAGER_CHANGE_RESULT(Curve));
+		if (changed_curve_list)
 		{
-			case MANAGER_CHANGE_OBJECT(Curve):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Curve):
-			{
-				FOR_EACH_OBJECT_IN_LIST(Curve)(
-					Curve_update_emoter_sliders, emoter_dialog_void,
-					message->changed_object_list);
-			} break;
-			case MANAGER_CHANGE_ADD(Curve):
-			{
-				FOR_EACH_OBJECT_IN_LIST(Curve)(
-					Curve_add_emoter_sliders, emoter_dialog_void,
-					message->changed_object_list);
-			} break;
-			case MANAGER_CHANGE_REMOVE(Curve):
-			case MANAGER_CHANGE_IDENTIFIER(Curve):
-			{
-				/* do nothing */
-			} break;
+			FOR_EACH_OBJECT_IN_LIST(Curve)(
+				Curve_update_emoter_sliders, emoter_dialog_void,
+				changed_curve_list);
+			DESTROY_LIST(Curve)(&changed_curve_list);
+		}
+		changed_curve_list =MANAGER_MESSAGE_GET_CHANGE_LIST(Curve)(message,
+			MANAGER_CHANGE_ADD(Curve));
+		if (changed_curve_list)
+		{
+			FOR_EACH_OBJECT_IN_LIST(Curve)(
+				Curve_add_emoter_sliders, emoter_dialog_void,
+				changed_curve_list);
+			DESTROY_LIST(Curve)(&changed_curve_list);
 		}
 	}
 	else

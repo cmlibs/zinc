@@ -795,31 +795,17 @@ Something has changed globally in the scene manager. Update the affected
 	if (message && (scene_editor = (struct Scene_editor *)scene_editor_void))
 	{
 		scene = Scene_editor_get_scene(scene_editor);
-		switch (message->change)
+		int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Scene)(message, scene);
+		if (change & MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Scene))
 		{
-			case MANAGER_CHANGE_OBJECT(Scene):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Scene):
-			{
-				if (IS_OBJECT_IN_LIST(Scene)(scene, message->changed_object_list))
-				{
-					Scene_editor_Scene_update_Scene_editor_objects(scene_editor, scene,
-						scene_editor->scene_editor_objects, scene_editor->list_form);
-				}
-			} break;
-			case MANAGER_CHANGE_IDENTIFIER(Scene):
-			case MANAGER_CHANGE_ADD(Scene):
-			{
-				/* do nothing */
-			} break;
-			case MANAGER_CHANGE_REMOVE(Scene):
-			{
-				if (IS_OBJECT_IN_LIST(Scene)(scene, message->changed_object_list))
-				{
-					/* a bit nasty if these are left around after scene, hence empty */
-					REMOVE_ALL_OBJECTS_FROM_LIST(Scene_editor_object)(
-						scene_editor->scene_editor_objects);
-				}
-			} break;
+			Scene_editor_Scene_update_Scene_editor_objects(scene_editor, scene,
+				scene_editor->scene_editor_objects, scene_editor->list_form);
+		}
+		else if (change & MANAGER_CHANGE_REMOVE(Scene))
+		{
+			/* a bit nasty if these are left around after scene, hence empty */
+			REMOVE_ALL_OBJECTS_FROM_LIST(Scene_editor_object)(
+				scene_editor->scene_editor_objects);
 		}
 	}
 	else

@@ -3861,44 +3861,30 @@ Manager Callback Module functions
 ---------------------------------
 */
 
+/***************************************************************************//**
+ * Something has changed globally in the light manager. If the modified light(s)
+ * are in the scene, overlay_scene or the scene_viewer, then redraw.
+ */
 static void Scene_viewer_light_change(
 	struct MANAGER_MESSAGE(Light) *message, void *scene_viewer_void)
-/*******************************************************************************
-LAST MODIFIED : 30 May 2001
-
-DESCRIPTION :
-Something has changed globally in the light manager. If the modified light(s)
-are in the scene, overlay_scene or the scene_viewer, then redraw.
-???RC Review Manager Messages Here
-==============================================================================*/
 {
 	struct Scene_viewer *scene_viewer;
 
 	ENTER(Scene_viewer_light_change);
 	if (message && (scene_viewer = (struct Scene_viewer *)scene_viewer_void))
 	{
-		switch (message->change)
+		struct LIST(Light) *changed_light_list =
+			MANAGER_MESSAGE_GET_CHANGE_LIST(Light)(message, MANAGER_CHANGE_RESULT(Light));
+		if (changed_light_list)
 		{
-			case MANAGER_CHANGE_OBJECT(Light):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Light):
+			if (Scene_viewer_has_light_in_list(scene_viewer, changed_light_list) ||
+				Scene_has_light_in_list(scene_viewer->scene, changed_light_list) ||
+				(scene_viewer->overlay_scene &&
+					Scene_has_light_in_list(scene_viewer->overlay_scene, changed_light_list)))
 			{
-				if (Scene_viewer_has_light_in_list(scene_viewer,
-					message->changed_object_list) ||
-					Scene_has_light_in_list(scene_viewer->scene,
-						message->changed_object_list) ||
-					(scene_viewer->overlay_scene &&
-						Scene_has_light_in_list(scene_viewer->overlay_scene,
-							message->changed_object_list)))
-				{
-					Scene_viewer_redraw(scene_viewer);
-				}
-			} break;
-			case MANAGER_CHANGE_ADD(Light):
-			case MANAGER_CHANGE_REMOVE(Light):
-			case MANAGER_CHANGE_IDENTIFIER(Light):
-			{
-				/* do nothing */
-			} break;
+				Scene_viewer_redraw(scene_viewer);
+			}
+			DESTROY_LIST(Light)(&changed_light_list);
 		}
 	}
 	else
@@ -3917,7 +3903,6 @@ LAST MODIFIED : 30 May 2001
 DESCRIPTION :
 Something has changed globally in the light_model manager. If the light_model
 in use by the scene_viewer is one of the changed light_models, then redraw.
-???RC Review Manager Messages Here
 ==============================================================================*/
 {
 	struct Scene_viewer *scene_viewer;
@@ -3925,24 +3910,14 @@ in use by the scene_viewer is one of the changed light_models, then redraw.
 	ENTER(Scene_viewer_light_model_change);
 	if (message && (scene_viewer = (struct Scene_viewer *)scene_viewer_void))
 	{
-		switch (message->change)
+		if (scene_viewer->light_model)
 		{
-			case MANAGER_CHANGE_OBJECT(Light_model):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Light_model):
+			int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Light_model)(message,
+				scene_viewer->light_model);
+			if (change & MANAGER_CHANGE_RESULT(Light_model))
 			{
-				if (scene_viewer->light_model &&
-					IS_OBJECT_IN_LIST(Light_model)(scene_viewer->light_model,
-						message->changed_object_list))
-				{
-					Scene_viewer_redraw(scene_viewer);
-				}
-			} break;
-			case MANAGER_CHANGE_ADD(Light_model):
-			case MANAGER_CHANGE_REMOVE(Light_model):
-			case MANAGER_CHANGE_IDENTIFIER(Light_model):
-			{
-				/* do nothing */
-			} break;
+				Scene_viewer_redraw(scene_viewer);
+			}
 		}
 	}
 	else
@@ -3953,49 +3928,37 @@ in use by the scene_viewer is one of the changed light_models, then redraw.
 	LEAVE;
 } /* Scene_viewer_light_model_change */
 
+/***************************************************************************//**
+ * Something has changed globally in the scene manager. If either the scene or
+ * overlay_scene in this scene_viewer have been modified, then redraw.
+ */
 static void Scene_viewer_scene_change(
 	struct MANAGER_MESSAGE(Scene) *message, void *scene_viewer_void)
-/*******************************************************************************
-LAST MODIFIED : 30 May 2001
-
-DESCRIPTION :
-Something has changed globally in the scene manager. If either the scene or
-overlay_scene in this scene_viewer have been modified, then redraw.
-???RC Review Manager Messages Here
-==============================================================================*/
 {
 	struct Scene_viewer *scene_viewer;
 
 	ENTER(Scene_viewer_scene_change);
 	if (message && (scene_viewer = (struct Scene_viewer *)scene_viewer_void))
 	{
-		switch (message->change)
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Scene)(message);
+		if (change_summary & MANAGER_CHANGE_RESULT(Scene))
 		{
-			case MANAGER_CHANGE_OBJECT(Scene):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Scene):
+			int change =
+				MANAGER_MESSAGE_GET_OBJECT_CHANGE(Scene)(message, scene_viewer->scene);
+			if ((change & MANAGER_CHANGE_RESULT(Scene)) ||
+				(scene_viewer->overlay_scene &&
+					(MANAGER_MESSAGE_GET_OBJECT_CHANGE(Scene)(message, scene_viewer->overlay_scene)
+						& MANAGER_CHANGE_RESULT(Scene))))
 			{
-				if (IS_OBJECT_IN_LIST(Scene)(scene_viewer->scene,
-					message->changed_object_list) ||
-					(scene_viewer->overlay_scene &&
-						IS_OBJECT_IN_LIST(Scene)(scene_viewer->overlay_scene,
-							message->changed_object_list)))
+				if (SCENE_FAST_CHANGE == Scene_get_change_status(scene_viewer->scene))
 				{
-					if (SCENE_FAST_CHANGE == Scene_get_change_status(scene_viewer->scene))
-					{
-						Scene_viewer_redraw_in_idle_time(scene_viewer);
-					}
-					else
-					{
-						Scene_viewer_redraw(scene_viewer);
-					}
+					Scene_viewer_redraw_in_idle_time(scene_viewer);
 				}
-			} break;
-			case MANAGER_CHANGE_ADD(Scene):
-			case MANAGER_CHANGE_REMOVE(Scene):
-			case MANAGER_CHANGE_IDENTIFIER(Scene):
-			{
-				/* do nothing */
-			} break;
+				else
+				{
+					Scene_viewer_redraw(scene_viewer);
+				}
+			}
 		}
 	}
 	else
@@ -4004,42 +3967,28 @@ overlay_scene in this scene_viewer have been modified, then redraw.
 			"Scene_viewer_scene_change.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* Scene_viewer_scene_change */
+}
 
+/***************************************************************************//**
+ * Something has changed globally in the texture manager. If the scene has a
+ * background_texture and it is in the changed_object_list, then redraw.
+ */
 static void Scene_viewer_texture_change(
 	struct MANAGER_MESSAGE(Texture) *message,void *scene_viewer_void)
-/*******************************************************************************
-LAST MODIFIED : 30 May 2001
-
-DESCRIPTION :
-Something has changed globally in the texture manager. If the scene has a
-background_texture and it is in the changed_object_list, then redraw.
-???RC Review Manager Messages Here
-==============================================================================*/
 {
 	struct Scene_viewer *scene_viewer;
 
 	ENTER(Scene_viewer_texture_change);
 	if (message && (scene_viewer = (struct Scene_viewer *)scene_viewer_void))
 	{
-		switch (message->change)
+		if (scene_viewer->background_texture)
 		{
-			case MANAGER_CHANGE_OBJECT(Texture):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture):
+			int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Texture)(message,
+				scene_viewer->background_texture);
+			if (change & MANAGER_CHANGE_RESULT(Texture))
 			{
-				if (scene_viewer->background_texture &&
-					IS_OBJECT_IN_LIST(Texture)(scene_viewer->background_texture,
-						message->changed_object_list))
-				{
-					Scene_viewer_redraw(scene_viewer);
-				}
-			} break;
-			case MANAGER_CHANGE_ADD(Texture):
-			case MANAGER_CHANGE_REMOVE(Texture):
-			case MANAGER_CHANGE_IDENTIFIER(Texture):
-			{
-				/* do nothing */
-			} break;
+				Scene_viewer_redraw(scene_viewer);
+			}
 		}
 	}
 	else
@@ -4048,7 +3997,7 @@ background_texture and it is in the changed_object_list, then redraw.
 			"Scene_viewer_texture_change.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* Scene_viewer_texture_change */
+}
 
 /*
 Global functions

@@ -205,6 +205,7 @@ node_field_viewer to update widgets/values etc.
 Note that delete/add messages are handled by the field chooser.
 ==============================================================================*/
 {
+	int change;
 	struct Computed_field *field;
 	struct Node_viewer_widget_struct *node_viewer;
 
@@ -212,26 +213,13 @@ Note that delete/add messages are handled by the field chooser.
 	if (message &&
 		(node_viewer = (struct Node_viewer_widget_struct *)node_viewer_void))
 	{
-		switch (message->change)
+		field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+			node_viewer->choose_field_widget);
+		change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Computed_field)(message, field);
+		if (change & MANAGER_CHANGE_RESULT(Computed_field))
 		{
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field):
-			case MANAGER_CHANGE_OBJECT(Computed_field):
-			{
-				field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
-					node_viewer->choose_field_widget);
-				if (IS_OBJECT_IN_LIST(Computed_field)(field,
-					message->changed_object_list))
-				{
-					node_field_viewer_widget_set_node_field(
-						node_viewer->field_viewer_widget, node_viewer->current_node, field);
-				}
-			} break;
-			case MANAGER_CHANGE_ADD(Computed_field):
-			case MANAGER_CHANGE_REMOVE(Computed_field):
-			case MANAGER_CHANGE_IDENTIFIER(Computed_field):
-			{
-				/* do nothing */
-			} break;
+			node_field_viewer_widget_set_node_field(
+				node_viewer->field_viewer_widget, node_viewer->current_node, field);
 		}
 	}
 	else

@@ -974,95 +974,76 @@ so may need to select a new object. \
 ============================================================================*/ \
 { \
 	struct SELECT_STRUCT(object_type) *temp_select; \
-	int num_children,i; \
+	int change, num_children,i; \
 	struct object_type *temp_object; \
 	Widget *child_list; \
 \
 	ENTER(SELECT_GLOBAL_OBJECT_CHANGE(object_type)); \
 	temp_select=(struct SELECT_STRUCT(object_type) *)data; \
-	if (message->change != MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type)) \
+	if (message && temp_select) \
 	{ \
 		XtUnmanageChild(temp_select->edit_name); \
-		switch (message->change) \
+		change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(object_type)(message, \
+			temp_select->current_object); \
+		if (change & MANAGER_CHANGE_REMOVE(object_type)) \
 		{ \
-			case MANAGER_CHANGE_REMOVE(object_type): \
+			switch (temp_select->appearance) \
 			{ \
-				switch (temp_select->appearance) \
+				case SELECT_LIST: \
 				{ \
-					case SELECT_LIST: \
+					/* find positionn of deleted item so next can be selected */ \
+					XtVaGetValues(temp_select->list_rowcol, \
+						XmNnumChildren,&num_children,XmNchildren,&child_list,NULL); \
+					for (i=0;i<num_children;i++) \
 					{ \
-						if (IS_OBJECT_IN_LIST(object_type)(temp_select->current_object, \
-							message->changed_object_list)) \
+						XtVaGetValues(child_list[i],XmNuserData,&temp_object,NULL); \
+						if (temp_object==temp_select->current_object) \
 						{ \
-							/* find positionn of deleted item so next can be selected */ \
-							XtVaGetValues(temp_select->list_rowcol, \
-								XmNnumChildren,&num_children,XmNchildren,&child_list,NULL); \
-							for (i=0;i<num_children;i++) \
-							{ \
-								XtVaGetValues(child_list[i],XmNuserData,&temp_object,NULL); \
-								if (temp_object==temp_select->current_object) \
-								{ \
-									temp_select->delete_position=i; \
-								} \
-							} \
+							temp_select->delete_position=i; \
 						} \
-						/* list/names of objects may have changed: rebuild */ \
-						SELECT_UPDATE_LIST(object_type)(temp_select); \
-					} break; \
-					case SELECT_TEXT: \
-					{ \
-						if (IS_OBJECT_IN_LIST(object_type)(temp_select->current_object, \
-							message->changed_object_list)) \
-						{ \
-							temp_select->current_object = (struct object_type *)NULL; \
-						} \
-					} break; \
-					default: \
-					{ \
-						display_message(ERROR_MESSAGE, \
-							"SELECT_GLOBAL_OBJECT_CHANGE(" #object_type \
-							").  Invalid appearance"); \
-					} break; \
-				} \
-				/* if current_object not in menu SELECT_SELECT_OBJECT */ \
-				/* will select the first item in it, and call an update */ \
-				SELECT_SELECT_OBJECT(object_type)(temp_select); \
-			} break; \
-			case MANAGER_CHANGE_ADD(object_type): \
-			case MANAGER_CHANGE_IDENTIFIER(object_type): \
-			case MANAGER_CHANGE_OBJECT(object_type): \
-			{ \
-				switch (temp_select->appearance) \
+					} \
+					/* list/names of objects may have changed: rebuild */ \
+					SELECT_UPDATE_LIST(object_type)(temp_select); \
+				} break; \
+				case SELECT_TEXT: \
 				{ \
-					case SELECT_LIST: \
-					{ \
-						/* list/names of objects may have changed: rebuild */ \
-						SELECT_UPDATE_LIST(object_type)(temp_select); \
-					} break; \
-					case SELECT_TEXT: \
-					{ \
-					} break; \
-					default: \
-					{ \
-						display_message(ERROR_MESSAGE, \
-							"SELECT_GLOBAL_OBJECT_CHANGE(" #object_type \
-							").  Invalid appearance"); \
-					} break; \
-				} \
-				/* if current_object not in menu SELECT_SELECT_OBJECT */ \
-				/* will select the first item in it, and call an update */ \
-				SELECT_SELECT_OBJECT(object_type)(temp_select); \
-			} break; \
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type): \
+					temp_select->current_object = (struct object_type *)NULL; \
+				} break; \
+				default: \
+				{ \
+					display_message(ERROR_MESSAGE, \
+						"SELECT_GLOBAL_OBJECT_CHANGE(" #object_type \
+						").  Invalid appearance"); \
+				} break; \
+			} \
+			/* if current_object not in menu SELECT_SELECT_OBJECT */ \
+			/* will select the first item in it, and call an update */ \
+			SELECT_SELECT_OBJECT(object_type)(temp_select); \
+		} \
+		else if (change & ( \
+			MANAGER_CHANGE_ADD(object_type) | \
+			MANAGER_CHANGE_IDENTIFIER(object_type))) \
+		{ \
+			switch (temp_select->appearance) \
 			{ \
-				/* do nothing */ \
-			} break; \
-			default: \
-			{ \
-				display_message(WARNING_MESSAGE, \
-					"SELECT_GLOBAL_OBJECT_CHANGE(" #object_type \
-					").  Unknown MANAGER_CHANGE message constant"); \
-			} break; \
+				case SELECT_LIST: \
+				{ \
+					/* list/names of objects may have changed: rebuild */ \
+					SELECT_UPDATE_LIST(object_type)(temp_select); \
+				} break; \
+				case SELECT_TEXT: \
+				{ \
+				} break; \
+				default: \
+				{ \
+					display_message(ERROR_MESSAGE, \
+						"SELECT_GLOBAL_OBJECT_CHANGE(" #object_type \
+						").  Invalid appearance"); \
+				} break; \
+			} \
+			/* if current_object not in menu SELECT_SELECT_OBJECT */ \
+			/* will select the first item in it, and call an update */ \
+			SELECT_SELECT_OBJECT(object_type)(temp_select); \
 		} \
 	} \
 	LEAVE; \

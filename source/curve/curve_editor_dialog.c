@@ -356,6 +356,7 @@ about changes as stemming from computed_field_manager for fields of type
 COMPUTED_FIELD_CURVE_LOOKUP.
 ==============================================================================*/
 {
+	int change;
 	struct Curve_editor_dialog *curve_editor_dialog;
 
 	ENTER(curve_editor_Curve_change);
@@ -364,31 +365,12 @@ COMPUTED_FIELD_CURVE_LOOKUP.
 	{
 		if (!curve_editor_dialog->applying_now)
 		{
-			switch (message->change)
+			change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Curve)(message,
+				curve_editor_dialog->current_curve);
+			if (change & MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Curve))
 			{
-				case MANAGER_CHANGE_OBJECT(Curve):
-				case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Curve):
-				{
-					/* if current curve has changed global, reinstate it in the editor */
-					if (IS_OBJECT_IN_LIST(Curve)(
-						curve_editor_dialog->current_curve, message->changed_object_list))
-					{
-						curve_editor_set_curve(curve_editor_dialog->editor_widget,
-							curve_editor_dialog->current_curve);
-					}
-				} break;
-				case MANAGER_CHANGE_ADD(Curve):
-				case MANAGER_CHANGE_REMOVE(Curve):
-				case MANAGER_CHANGE_IDENTIFIER(Curve):
-				{
-					/* do nothing */
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"curve_editor_Curve_change.  "
-						"Unknown manager message");
-				} break;
+				curve_editor_set_curve(curve_editor_dialog->editor_widget,
+					curve_editor_dialog->current_curve);
 			}
 		}
 	}

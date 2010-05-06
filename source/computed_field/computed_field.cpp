@@ -252,7 +252,75 @@ Module functions
 
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Computed_field,name,const char *,strcmp)
 
+/***************************************************************************//**
+ * Recursively determines if any source fields have changed or have dependency
+ * changes and if so marks this field as dependency changed, also calling
+ * core->dependency change to allow fields to respond intelligently.
+ * @return 1 If field changed, 0 if not or error.
+ */
+int Computed_field_manager_dependency_walk(
+	struct Computed_field *field, struct MANAGER(Computed_field) *manager)
+{
+	if (field && (field->manager == manager))
+	{
+		for (int i = 0; i < field->number_of_source_fields; i++)
+		{
+			if ((field->source_fields[i]->manager_change_status &
+					MANAGER_CHANGE_RESULT(Computed_field)) ||
+				Computed_field_manager_dependency_walk(field->source_fields[i], manager))
+			{
+				field->manager_change_status |= MANAGER_CHANGE_DEPENDENCY(Computed_field);
+				ADD_OBJECT_TO_LIST(Computed_field)(field, manager->changed_object_list);
+				field->core->dependency_change();
+				return 1;
+			}
+		}
+	}
+	return 0;
+}		
+
+/***************************************************************************//**
+ * Field iterator function ensuring field and any of its source fields are
+ * marked in manager with MANAGER_CHANGE_DEPENDENCY if any source fields have
+ * content or dependency change.
+ * No manager messages are sent during processing.
+ * To be called only by Computed_field_manager_update_dependencies.
+ * @return  1 normally, 0 if invalid arguments.
+ */
+int Computed_field_check_dependency(struct Computed_field *field,	void *dummy_void)
+{
+	USE_PARAMETER(dummy_void);
+	if (field)
+	{
+		if (0 == (field->manager_change_status & MANAGER_CHANGE_RESULT(Computed_field)))
+		{
+			Computed_field_manager_dependency_walk(field, field->manager);
+		}
+		return 1;
+	}
+	return 0;
+}
+
+/***************************************************************************//**
+ * Called just before manager change messages are broadcast.
+ * Adds fields that depend on changed fields to the message changed object list
+ * as MANAGER_CHANGE_DEPENDENCY.
+ * See also MANAGER_UPDATE_DEPENDENCIES macro.
+ */
+void Computed_field_manager_update_dependencies(
+	struct MANAGER(Computed_field) *manager)
+{
+	FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
+		Computed_field_check_dependency, (void *)NULL, manager);
+}
+
+// get manager update to call this function to find field dependency changes
+#undef MANAGER_UPDATE_DEPENDENCIES
+#define MANAGER_UPDATE_DEPENDENCIES( Computed_field , manager ) \
+	Computed_field_manager_update_dependencies(manager);
+
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Computed_field)
+
 struct Computed_field_type_data *CREATE(Computed_field_type_data)
    (const char *name, Define_Computed_field_type_function 
 	define_Computed_field_type_function, 
@@ -513,6 +581,8 @@ COMPUTED_FIELD_INVALID with no components.
 			field->access_count = 0;
 
 			field->manager = (struct MANAGER(Computed_field) *)NULL;
+			field->manager_change_status = MANAGER_CHANGE_NONE(Computed_field);
+
 			field->managed_status = COMPUTED_FIELD_MANAGED_STATUS_DEFAULT;
 		}
 		else
@@ -600,11 +670,13 @@ PROTOTYPE_DEACCESS_OBJECT_FUNCTION(Computed_field)
 		{
 			return_code = DESTROY(Computed_field)(object_address);
 		}
-		else if ((1 == object->access_count) && object->manager &&
-			!(object->managed_status & COMPUTED_FIELD_MANAGED_PERSISTENT_BIT))
+		else if ((0 == (object->managed_status & COMPUTED_FIELD_MANAGED_PERSISTENT_BIT)) &&
+			(object->manager) && ((1 == object->access_count) ||
+				((2 == object->access_count) &&
+					(MANAGER_CHANGE_NONE(Computed_field) != object->manager_change_status))))
 		{
-			return_code = REMOVE_OBJECT_FROM_MANAGER(Computed_field)
-				(object, object->manager);
+			return_code =
+				REMOVE_OBJECT_FROM_MANAGER(Computed_field)(object, object->manager);
 		}
 		else
 		{
@@ -1006,28 +1078,19 @@ Note: assumes caller is accessing field once!
 	return_code = 0;
 	if (manager && object)
 	{
-		if (!(manager->locked))
+		if (manager == object->manager) 
 		{
-			if (IS_OBJECT_IN_LIST(Computed_field)(object, manager->object_list))
+			if ((2 >= object->access_count) ||
+				((MANAGER_CHANGE_NONE(Computed_field) != object->manager_change_status) &&
+				 (3 == object->access_count)))
 			{
-				if ((2 >= object->access_count) ||
-					((3 == object->access_count) &&
-						IS_OBJECT_IN_LIST(Computed_field)(object,
-							manager->message->changed_object_list)))
-				{
-					return_code = object->core ? object->core->not_in_use() : 1;
-				}
-			}
-			else
-			{
-				display_message(WARNING_MESSAGE,
-					"MANAGED_OBJECT_NOT_IN_USE(Computed_field).  Object is not managed");
+				return_code = object->core ? object->core->not_in_use() : 1;
 			}
 		}
 		else
 		{
 			display_message(WARNING_MESSAGE,
-				"MANAGED_OBJECT_NOT_IN_USE(Computed_field).  Manager is locked");
+				"MANAGED_OBJECT_NOT_IN_USE(Computed_field).  Object is not in this manager");
 		}
 	}
 	else
@@ -1113,11 +1176,6 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 							{
 								return_code = 0;
 							}
-							/* must perform IDENTIFIER_CHANGE stuff between BEGIN_CHANGE and
-								 END_CHANGE calls; manager message must not be sent while object
-								 is part changed and/or temporarily out of the manager! */
-							MANAGER_BEGIN_CHANGE(Computed_field)(manager,
-								MANAGER_CHANGE_OBJECT(Computed_field), object);
 							if (NULL != (identifier_change_data =
 								LIST_BEGIN_IDENTIFIER_CHANGE(Computed_field, name)(object)))
 							{
@@ -1136,6 +1194,11 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 										"MANAGER_MODIFY(Computed_field,name).  "
 										"Could not restore object to all indexed lists");
 								}
+								if (return_code)
+								{
+									MANAGED_OBJECT_CHANGE(Computed_field)(object,
+										MANAGER_CHANGE_OBJECT(Computed_field));
+								}
 							}
 							else
 							{
@@ -1144,7 +1207,6 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 									"Could not safely change identifier in indexed lists");
 								return_code = 0;
 							}
-							MANAGER_END_CHANGE(Computed_field)(manager);
 							/* following may cause volatile source fields to be removed from manager */
 							DEACCESS(Computed_field)(&old_object_copy);
 							MANAGER_END_CACHE(Computed_field)(manager);
@@ -1233,8 +1295,6 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 						{
 							return_code = 0;
 						}
-						MANAGER_BEGIN_CHANGE(Computed_field)(manager,
-							MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field), object);
 						if (!MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,
 							name)(object, new_data))
 						{
@@ -1243,7 +1303,8 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 								"Could not copy object");
 							return_code = 0;
 						}
-						MANAGER_END_CHANGE(Computed_field)(manager);
+						MANAGED_OBJECT_CHANGE(Computed_field)(object,
+							MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
 						/* following may cause volatile source fields to be removed from manager */
 						DEACCESS(Computed_field)(&old_object_copy);
 						MANAGER_END_CACHE(Computed_field)(manager);
@@ -1454,25 +1515,15 @@ int Computed_field_manager_set_owner(struct MANAGER(Computed_field) *manager,
 	return MANAGER_SET_OWNER(Computed_field)(manager, region_fields);
 }
 
-int Computed_field_changed(struct Computed_field *field,
-	struct MANAGER(Computed_field) *computed_field_manager)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Notifies the <computed_field_manager> that the <field> has changed.
-==============================================================================*/
+int Computed_field_changed(struct Computed_field *field)
 {
 	int return_code;
 
 	ENTER(Computed_field_changed);
-	if (field && computed_field_manager)
+	if (field)
 	{
-		/*???RC Review Manager Messages Here */
-		MANAGER_BEGIN_CHANGE(Computed_field)(computed_field_manager,
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field), field);
-		MANAGER_END_CHANGE(Computed_field)(computed_field_manager);
-		return_code = 1;
+		return_code = MANAGED_OBJECT_CHANGE(Computed_field)(field,
+			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
 	}
 	else
 	{
@@ -1483,7 +1534,28 @@ Notifies the <computed_field_manager> that the <field> has changed.
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_changed */
+}
+
+int Computed_field_dependency_changed(struct Computed_field *field)
+{
+	int return_code;
+
+	ENTER(Computed_field_dependency_changed);
+	if (field)
+	{
+		return_code = MANAGED_OBJECT_CHANGE(Computed_field)(field,
+			MANAGER_CHANGE_DEPENDENCY(Computed_field));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_dependency_changed.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
 
 int Computed_field_clear_cache(struct Computed_field *field)
 /*******************************************************************************
@@ -2123,49 +2195,6 @@ with <user_data>. Iteration stops if a single iterator_function call returns 0.
 
 	return (return_code);
 } /* Computed_field_for_each_ancestor */
-
-int Computed_field_add_to_list_if_depends_on_list(
-	struct Computed_field *field, void *field_list_void)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-If <field> depends on a field in <field_list> it is added to the list.
-Checks to see if it is already in the list.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(Computed_field) *field_list;
-
-	ENTER(Computed_field_add_to_list_if_depends_on_list);
-	if (field && (field_list = (struct LIST(Computed_field) *)field_list_void))
-	{
-		if (IS_OBJECT_IN_LIST(Computed_field)(field, field_list))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			if (Computed_field_depends_on_Computed_field_in_list(field, field_list))
-			{
-				return_code = ADD_OBJECT_TO_LIST(Computed_field)(field, field_list);
-			}
-			else
-			{
-				return_code = 1;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_add_to_list_if_depends_on_list.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_add_to_list_if_depends_on_list */
 
 int Computed_field_evaluate_cache_in_element(
 	struct Computed_field *field,struct FE_element *element,FE_value *xi,
@@ -5154,7 +5183,7 @@ int Computed_field_set_managed_status(
 			field->managed_status = managed_status;
 			if (field->manager)
 			{
-				Computed_field_changed(field, field->manager);
+				Computed_field_changed(field);
 			}
 		}
 		return_code = 1;
@@ -5199,17 +5228,10 @@ Changes the name of a field.
 						name);
 					return_code = 0;
 				}
-				if (return_code)
-				{
-					/* must perform IDENTIFIER_CHANGE stuff between BEGIN_CHANGE and
-						END_CHANGE calls; manager message must not be sent while object
-						is part changed and/or temporarily out of the manager! */
-					MANAGER_BEGIN_CHANGE(Computed_field)(field->manager,
-						MANAGER_CHANGE_OBJECT(Computed_field), field);
-				}
 			}
-			if (!(identifier_change_data =
-					LIST_BEGIN_IDENTIFIER_CHANGE(Computed_field, name)(field)))
+			identifier_change_data =
+				LIST_BEGIN_IDENTIFIER_CHANGE(Computed_field, name)(field);
+			if (NULL == identifier_change_data)
 			{
 				display_message(ERROR_MESSAGE,
 					"Computed_field_set_name.  "
@@ -5241,7 +5263,8 @@ Changes the name of a field.
 			}
 			if (field->manager)
 			{
-				MANAGER_END_CHANGE(Computed_field)(field->manager);
+				return_code = MANAGED_OBJECT_CHANGE(Computed_field)(field,
+					MANAGER_CHANGE_IDENTIFIER(Computed_field));
 			}
 		}
 		else

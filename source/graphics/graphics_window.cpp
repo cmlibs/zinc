@@ -172,8 +172,12 @@ Contains information for a graphics window.
 {
 	/* identifier for uniquely specifying window: */
 	const char *name;
+
+	/* after clearing in create, following to be modified only by manager */
 	/* need to keep graphics window manager so window can be destroyed by self */
 	struct MANAGER(Graphics_window) *graphics_window_manager;
+	int manager_change_status;
+
 	struct Graphics_buffer_package *graphics_buffer_package;
 
 #if defined (MOTIF_USER_INTERFACE)
@@ -3865,9 +3869,9 @@ it.
 			window->access_count=0;
 			window->eye_spacing=0.25;
 			window->std_view_angle=40.0;
-			/*???RC should be read in from defaults file */
 			window->graphics_window_manager=
 				(struct MANAGER(Graphics_window) *)NULL;
+			window->manager_change_status = MANAGER_CHANGE_NONE(Graphics_window);
 			window->graphics_buffer_package = graphics_buffer_package;
 			window->light_manager=light_manager;
 			window->light_model_manager=light_model_manager;
@@ -5137,7 +5141,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Graphics_window,name,const char *)
 
 DECLARE_MANAGER_FUNCTIONS(Graphics_window,graphics_window_manager)
 
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphics_window)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphics_window,graphics_window_manager)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_window,name, \
 	const char *,graphics_window_manager)

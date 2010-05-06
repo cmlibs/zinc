@@ -192,7 +192,9 @@ The properties of a graphical texture.
 	struct X3d_movie *movie;
 	struct Graphics_buffer *graphics_buffer;
 
+	/* after clearing in create, following to be modified only by manager */
 	struct MANAGER(Texture) *texture_manager;
+	int manager_change_status;
 
 #if defined (OPENGL_API)
 	GLuint display_list;
@@ -3060,7 +3062,6 @@ Tells the texture it has changed, forcing it to send the manager message
 MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER.
 Don't want to copy the texture when we are doing intensive things like
 playing movies.
-???RC Review Manager Messages Here
 ==============================================================================*/
 {
 	int return_code;
@@ -3068,22 +3069,8 @@ playing movies.
 	ENTER(Texture_refresh);
 	if (texture)
 	{
-		/* display list is assumed to be current */
-		if (texture->texture_manager&&IS_MANAGED(Texture)(texture,
-			texture->texture_manager))
-		{
-			/*???RC these messages are meant to be sent before and after a change.
-				Probably ok as can only have changed this scene before message sent */
-			MANAGER_BEGIN_CHANGE(Texture)(texture->texture_manager,
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture), texture);
-			MANAGER_END_CHANGE(Texture)(texture->texture_manager);
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "Texture_refresh.  Texture not managed");
-			return_code = 0;
-		}
+		return_code = MANAGED_OBJECT_CHANGE(Texture)(texture,
+			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture));
 	}
 	else
 	{
@@ -3550,6 +3537,7 @@ of all textures.
 			texture->combine_alpha=0.;
 			texture->mipmap_level_of_detail_bias=0.;
 			texture->texture_manager = (struct MANAGER(Texture) *)NULL;
+			texture->manager_change_status = MANAGER_CHANGE_NONE(Texture);
 			texture->movie = (struct X3d_movie *)NULL;
 			texture->graphics_buffer = (struct Graphics_buffer *)NULL;
 #if defined (OPENGL_API)
@@ -3949,7 +3937,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Texture,name,const char *)
 
 DECLARE_MANAGER_FUNCTIONS(Texture,texture_manager)
 
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Texture)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Texture,texture_manager)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS( \
 	Texture,name,const char *,texture_manager)
@@ -3967,18 +3955,10 @@ Returns the alpha value used for combining the texture.
 	ENTER(Texture_notify_change);
 	if (texture)
 	{
-		if (texture->texture_manager)
-		{
-			MANAGER_BEGIN_CHANGE(Texture)(texture->texture_manager,
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture), texture);
-		}
 		/* display list needs to be compiled again */
 		texture->display_list_current=TEXTURE_COMPILE_STATE_NOT_COMPILED;
-		if (texture->texture_manager)
-		{
-			MANAGER_END_CHANGE(Texture)(texture->texture_manager);
-		}
-		return_code=1;
+		return_code = MANAGED_OBJECT_CHANGE(Texture)(texture,
+			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture));
 	}
 	else
 	{

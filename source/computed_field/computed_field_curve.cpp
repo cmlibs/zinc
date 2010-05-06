@@ -71,7 +71,6 @@ DESCRIPTION :
 Something has changed globally in the Curve manager. Passes on messages
 about changes as stemming from computed_field_manager for fields of type
 COMPUTED_FIELD_CURVE_LOOKUP.
-???RC Review Manager Messages Here
 ==============================================================================*/
 
 char computed_field_curve_lookup_type_string[] = "curve_lookup";
@@ -358,29 +357,10 @@ COMPUTED_FIELD_CURVE_LOOKUP.
 	if (message && (field = (Computed_field *)field_void) &&
 		(core = dynamic_cast<Computed_field_curve_lookup*>(field->core)))
 	{
-		switch (message->change)
+		int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Curve)(message, core->curve);
+		if (change & MANAGER_CHANGE_RESULT(Curve))
 		{
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Curve):
-			case MANAGER_CHANGE_OBJECT(Curve):
-			{
-				if (field->manager && IS_OBJECT_IN_LIST(Curve)(core->curve,
-					message->changed_object_list))
-				{
-					Computed_field_changed(field, field->manager);
-				}
-			} break;
-			case MANAGER_CHANGE_ADD(Curve):
-			case MANAGER_CHANGE_REMOVE(Curve):
-			case MANAGER_CHANGE_IDENTIFIER(Curve):
-			{
-				/* do nothing */
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_curve_lookup_Curve_change.  "
-					"Unknown manager message");
-			} break;
+			Computed_field_dependency_changed(field);
 		}
 	}
 	else

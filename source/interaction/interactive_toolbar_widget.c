@@ -301,24 +301,19 @@ managed tools from the toolbar in response to MANAGER_CHANGE_REMOVE messages.
 functions of tool changes.
 ==============================================================================*/
 {
+	struct LIST(Interactive_tool) *removed_tool_list;
+
 	ENTER(interactive_toolbar_widget_interactive_tool_change);
 	if (message && interactive_toolbar_void)
 	{
-		switch (message->change)
+		removed_tool_list = MANAGER_MESSAGE_GET_CHANGE_LIST(Interactive_tool)(
+			message, MANAGER_CHANGE_REMOVE(Interactive_tool));
+		if (removed_tool_list)
 		{
-			case MANAGER_CHANGE_REMOVE(Interactive_tool):
-			{
-				FOR_EACH_OBJECT_IN_LIST(Interactive_tool)(
-					Interactive_tool_remove_from_interactive_toolbar_widget,
-					interactive_toolbar_void, message->changed_object_list);
-			} break;
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Interactive_tool):
-			case MANAGER_CHANGE_OBJECT(Interactive_tool):
-			case MANAGER_CHANGE_ADD(Interactive_tool):
-			case MANAGER_CHANGE_IDENTIFIER(Interactive_tool):
-			{
-				/* do nothing */
-			} break;
+			FOR_EACH_OBJECT_IN_LIST(Interactive_tool)(
+				Interactive_tool_remove_from_interactive_toolbar_widget,
+				interactive_toolbar_void, removed_tool_list);
+			DESTROY_LIST(Interactive_tool)(&removed_tool_list);
 		}
 	}
 	else

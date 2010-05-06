@@ -4823,8 +4823,9 @@ Modifies the properties of a texture.
 					{
 						if (texture_is_managed)
 						{
-							MANAGER_BEGIN_CHANGE(Texture)(command_data->texture_manager,
-								MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture), texture);
+							MANAGER_BEGIN_CACHE(Texture)(command_data->texture_manager);
+							MANAGED_OBJECT_CHANGE(Texture)(texture,
+								MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture));
 						}
 						/* must change filter modes etc. before reading new images since
 							 some of them will apply immediately to the new images */
@@ -5065,7 +5066,7 @@ Modifies the properties of a texture.
 						}
 						if (texture_is_managed)
 						{
-							MANAGER_END_CHANGE(Texture)(command_data->texture_manager);
+							MANAGER_END_CACHE(Texture)(command_data->texture_manager);
 						}
 					}
 					if (image_data.image_file_name)

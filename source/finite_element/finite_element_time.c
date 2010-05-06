@@ -84,7 +84,9 @@ DESCRIPTION :
 		multiple parts of the object as the identifier */
 	struct FE_time_sequence *self;
 
+	/* after clearing in create, following to be modified only by manager */
 	struct MANAGER(FE_time_sequence) *manager;
+	int manager_change_status;
 	
 	int access_count;
 }; /* struct FE_time_sequence */
@@ -287,6 +289,7 @@ Creates a basic FE_time_sequence.
 		fe_time_sequence->self = fe_time_sequence;
 		
 		fe_time_sequence->manager = (struct MANAGER(FE_time_sequence) *)NULL;
+		fe_time_sequence->manager_change_status = MANAGER_CHANGE_NONE(FE_time_sequence);
 
 		fe_time_sequence->access_count=0;
 	}
@@ -410,7 +413,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(FE_time_sequence,self,struct FE_time_
 
 DECLARE_MANAGER_FUNCTIONS(FE_time_sequence,manager)
 
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(FE_time_sequence)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(FE_time_sequence,manager)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(FE_time_sequence,self,struct FE_time_sequence *,manager)
 

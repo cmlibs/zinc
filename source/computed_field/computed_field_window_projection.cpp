@@ -1065,7 +1065,7 @@ that the computed field has changed.
 		}
 		if (field->manager)
 		{
-			Computed_field_changed(field, field->manager);
+			Computed_field_dependency_changed(field);
 		}
 	}
 	else
@@ -1109,7 +1109,7 @@ Clear the scene viewer reference when it is no longer valid.
 		core->scene_viewer = (struct Scene_viewer *)NULL;
 		if (field->manager)
 		{
-			Computed_field_changed(field, field->manager);
+			Computed_field_changed(field);
 		}
 	}
 	else

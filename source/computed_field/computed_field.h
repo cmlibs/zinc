@@ -291,15 +291,6 @@ this function with the field=field in use and other_field=modified field to
 determine if the field in use needs updating.
 ==============================================================================*/
 
-int Computed_field_depends_on_Computed_field_in_list(
-	struct Computed_field *field, struct LIST(Computed_field) *field_list);
-/*******************************************************************************
-LAST MODIFIED : 22 January 2003
-
-DESCRIPTION :
-Returns true if <field> depends on any field in <field_list>.
-==============================================================================*/
-
 int Computed_field_or_ancestor_satisfies_condition(struct Computed_field *field,
 	LIST_CONDITIONAL_FUNCTION(Computed_field) *conditional_function,
 	void *user_data);
@@ -320,16 +311,6 @@ LAST MODIFIED : 2 April 2003
 DESCRIPTION :
 For <field> and all of its source Computed_fields, calls <iterator_function>
 with <user_data>. Iteration stops if a single iterator_function call returns 0.
-==============================================================================*/
-
-int Computed_field_add_to_list_if_depends_on_list(
-	struct Computed_field *field, void *field_list_void);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-If <field> depends on a field in <field_list> it is added to the list.
-Checks to see if it is already in the list.
 ==============================================================================*/
 
 char *Computed_field_evaluate_as_string_in_element(
