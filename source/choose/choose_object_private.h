@@ -504,6 +504,7 @@ annoying flickering on the screen. \
 	if (message && (choose_object= \
 		(struct CHOOSE_OBJECT(object_type) *)data)) \
 	{ \
+		update_menu = 0; \
 		change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(object_type)(message); \
 		if (change_summary & ( \
 			MANAGER_CHANGE_ADD(object_type) | \
