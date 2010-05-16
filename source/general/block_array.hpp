@@ -41,7 +41,7 @@
 #define BLOCK_ARRAY_HPP
 
 
-template <typename IndexType, typename EntryType, int blockLength = 1024, EntryType blankEntry = 0 >
+template <typename IndexType, typename EntryType, int blockLength = 256 >
 	class block_array
 {
 private:
@@ -68,7 +68,7 @@ private:
 				ALLOCATE(entries, EntryType, blockLength);
 				for (int i = 0; i < blockLength; i++)
 				{
-					entries[i] = blankEntry;
+					entries[i] = 0; // GRC only works for numeric types
 				}
 			}
 			return (entries);
@@ -115,6 +115,13 @@ private:
 	IndexType blockCount;
 
 	Block* getBlock(IndexType blockIndex)
+	{
+		if (blockIndex < blockCount)
+			return (blocks + blockIndex);
+		return NULL;
+	}
+
+	Block* getOrCreateBlock(IndexType blockIndex)
 	{
 		if (blockIndex < blockCount)
 			return (blocks + blockIndex);
@@ -172,13 +179,48 @@ public:
 	int setValue(IndexType index, EntryType value)
 	{
 		IndexType blockIndex = index / blockLength;
-		Block *block = getBlock(blockIndex);
+		Block *block = getOrCreateBlock(blockIndex);
 		if (!block)
 			return 0;
 		IndexType entryIndex = index % blockLength;
 		return block->setValue(entryIndex, value);
 	}
 
+};
+
+/** stores boolean values as individual bits, with no value equivalent to false */
+template <typename IndexType, int intBlockLength = 32>
+	class bool_array : private block_array<IndexType, unsigned int, intBlockLength>
+{
+public:
+	int setBool(IndexType index, bool value)
+	{
+		IndexType intIndex = index >> 5;
+		unsigned int intValue = 0;
+		int hasValue = getValue(intIndex, intValue);
+		if (hasValue || value)
+		{
+			unsigned int mask = (1 << (index & 0x1F));
+			bool oldValue = (0 != intValue & mask);
+			if (oldValue != value)
+			{
+				return setValue(intIndex, intValue ^ mask);
+			}
+		}
+		return 1;
+	}
+
+	bool getBool(IndexType index)
+	{
+		IndexType intIndex = index >> 5;
+		unsigned int intValue = 0;
+		if (getValue(intIndex, intValue))
+		{
+			unsigned int mask = (1 << (index & 0x1F));
+			return (0 != intValue & mask);
+		}
+		return false;
+	}
 };
 
 #endif /* !defined (BLOCK_ARRAY_HPP) */

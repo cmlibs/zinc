@@ -46,6 +46,10 @@
 #if !defined (__FIELD_LOCATION_HPP__)
 #define __FIELD_LOCATION_HPP__
 
+extern "C" {
+#include "general/value.h"
+}
+
 class Field_location
 {
 protected:
