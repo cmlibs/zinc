@@ -127,6 +127,12 @@ Cmiss_field_id Cmiss_field_module_create_ensemble_group(Cmiss_field_module_id fi
 
 Cmiss_field_ensemble_group_id Cmiss_field_cast_ensemble_group(Cmiss_field_id field);
 
+/***************************************************************************//**
+ * Remove all entries from group.
+ */
+int Cmiss_field_ensemble_group_clear(
+	Cmiss_field_ensemble_group_id ensemble_group_field);
+
 int Cmiss_field_ensemble_group_has_entry(
 	Cmiss_field_ensemble_group_id ensemble_group_field, Cmiss_ensemble_iterator_id iterator);
 
@@ -153,6 +159,28 @@ int Cmiss_field_ensemble_group_increment_entry(Cmiss_field_ensemble_group_id ens
 
 int Cmiss_ensemble_index_destroy(Cmiss_ensemble_iterator_id *index_address);
 
+/***************************************************************************//**
+ * Set index to span all entries in this ensemble, in order of increasing
+ * identifier.
+ * @return  1 on success, 0 if ensemble is not part of this index.
+ */
+int Cmiss_ensemble_index_set_all_ensemble(Cmiss_ensemble_iterator_id index,
+	Cmiss_field_ensemble_id ensemble_field);
+
+/***************************************************************************//**
+ * Set index to span a single entry for the iterator's ensemble.
+ * @return  1 on success, 0 if ensemble is not part of this index.
+ */
+int Cmiss_ensemble_index_set_entry(Cmiss_ensemble_iterator_id index,
+	Cmiss_ensemble_iterator_id iterator);
+
+/***************************************************************************//**
+ * Set index to span all entries in this group for its ensemble, in order of
+ * increasting identifier.
+ * @return  1 on success, 0 if ensemble is not part of this index.
+ */
+int Cmiss_ensemble_index_set_group(Cmiss_ensemble_iterator_id index,
+	Cmiss_field_ensemble_group_id ensemble_group_field);
 
 
 #endif /* !defined (CMISS_FIELD_ENSEMBLE_H) */

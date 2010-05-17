@@ -455,13 +455,6 @@ struct Computed_field *Cmiss_field_module_create_ensemble(
 	return (field);
 }
 
-inline Cmiss::Field_ensemble *Cmiss_field_ensemble_core_cast(
-	Cmiss_field_ensemble *ensemble_field)
-{
-	return (static_cast<Cmiss::Field_ensemble*>(
-		reinterpret_cast<Computed_field*>(ensemble_field)->core));
-}
-
 Cmiss_field_ensemble *Cmiss_field_cast_ensemble(Cmiss_field_id field)
 {
 	if (dynamic_cast<Cmiss::Field_ensemble*>(field->core))
@@ -586,13 +579,6 @@ struct Computed_field *Cmiss_field_module_create_ensemble_group(
 	return (field);
 }
 
-inline Cmiss::Field_ensemble_group *Cmiss_field_ensemble_group_core_cast(
-	Cmiss_field_ensemble_group *ensemble_group_field)
-{
-	return (static_cast<Cmiss::Field_ensemble_group*>(
-		reinterpret_cast<Computed_field*>(ensemble_group_field)->core));
-}
-
 Cmiss_field_ensemble_group *Cmiss_field_cast_ensemble_group(Cmiss_field_id field)
 {
 	if (dynamic_cast<Cmiss::Field_ensemble_group*>(field->core))
@@ -604,6 +590,17 @@ Cmiss_field_ensemble_group *Cmiss_field_cast_ensemble_group(Cmiss_field_id field
 	{
 		return (NULL);
 	}
+}
+
+int Cmiss_field_ensemble_group_clear(
+	struct Cmiss_field_ensemble_group *ensemble_group_field)
+{
+	if (NULL == ensemble_group_field)
+		return 0;
+	Cmiss::Field_ensemble_group *ensemble_group =
+		Cmiss_field_ensemble_group_core_cast(ensemble_group_field);
+	ensemble_group->clear();
+	return 1;
 }
 
 int Cmiss_field_ensemble_group_has_entry(
@@ -655,4 +652,28 @@ int Cmiss_ensemble_index_destroy(struct Cmiss_ensemble_index **index_address)
 		return 1;
 	}
 	return 0;
+}
+
+int Cmiss_ensemble_index_set_all_ensemble(struct Cmiss_ensemble_index *index,
+	Cmiss_field_ensemble *ensemble_field)
+{
+	if ((!index) || (!ensemble_field))
+		return 0;
+	return index->setAllEnsemble(ensemble_field);
+}
+
+int Cmiss_ensemble_index_set_entry(struct Cmiss_ensemble_index *index,
+	Cmiss_ensemble_iterator *iterator)
+{
+	if ((!index) || (!iterator))
+		return 0;
+	return index->setEntry(iterator);
+}
+
+int Cmiss_ensemble_index_set_group(struct Cmiss_ensemble_index *index,
+	Cmiss_field_ensemble_group *ensemble_group_field)
+{
+	if ((!index) || (!ensemble_group_field))
+		return 0;
+	return index->setGroup(ensemble_group_field);
 }

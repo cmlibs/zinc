@@ -200,7 +200,15 @@ private:
 
 public:
 
-	void clear();
+	Field_ensemble *getEnsemble()
+	{
+		return ensemble;
+	}
+	
+	void clear()
+	{
+		values.clear();
+	}
 
 	/** be careful that ref is for this ensemble */
 	bool hasEntryRef(EnsembleEntryRef ref)
@@ -237,6 +245,20 @@ public:
 
 } // namespace Cmiss
 
+inline Cmiss::Field_ensemble *Cmiss_field_ensemble_core_cast(
+	Cmiss_field_ensemble *ensemble_field)
+{
+	return (static_cast<Cmiss::Field_ensemble*>(
+		reinterpret_cast<Computed_field*>(ensemble_field)->core));
+}
+
+inline Cmiss::Field_ensemble_group *Cmiss_field_ensemble_group_core_cast(
+	Cmiss_field_ensemble_group *ensemble_group_field)
+{
+	return (static_cast<Cmiss::Field_ensemble_group*>(
+		reinterpret_cast<Computed_field*>(ensemble_group_field)->core));
+}
+
 /***************************************************************************//**
  * External iterator-handle to an ensemble entry.
  * Maintains pointer to owning ensemble for type safety.
@@ -252,9 +274,9 @@ private:
 	Cmiss::EnsembleEntryRef ref;
 	Cmiss_ensemble_iterator *next, *previous; // for linked-list in owning ensemble
 
+public:
 	void setRef(Cmiss::EnsembleEntryRef newRef) { ref = newRef; }
 
-public:
 	Cmiss::Field_ensemble *getEnsemble() { return ensemble; }
 	Cmiss::EnsembleEntryRef getRef() { return ref; }
 	Cmiss_ensemble_identifier getIdentifier() { return ensemble->getEntryIdentifier(ref); }
@@ -278,67 +300,118 @@ struct Cmiss_ensemble_index
 {
 	class Indexing
 	{
-		Cmiss_field_ensemble *field_ensemble;
-		// only zero or one of following set
-		Cmiss_ensemble_iterator *iterator;
-		Cmiss_field_ensemble_group *field_ensemble_group;
 	public:
+		Cmiss_field_ensemble *ensemble_field;
+		Cmiss::Field_ensemble *ensemble;
+		// only zero or one of following set; zero means use all entries in ensemble
+		Cmiss_ensemble_iterator *iterator;
+		Cmiss_field_ensemble_group *ensemble_group_field;
+
 		Indexing() :
-			field_ensemble(NULL),
+			ensemble_field(NULL),
 			iterator(NULL),
-			field_ensemble_group(NULL)
+			ensemble_group_field(NULL)
 		{
 		}
 
-		void setEnsemble(Cmiss_field_ensemble *in_field_ensemble)
+		/* second stage of construction */
+		void setEnsemble(Cmiss_field_ensemble *in_ensemble_field)
 		{
-			Cmiss_field_access(reinterpret_cast<Cmiss_field *>(field_ensemble));
-			field_ensemble = in_field_ensemble;
+			Cmiss_field_access(reinterpret_cast<Cmiss_field *>(in_ensemble_field));
+			ensemble_field = in_ensemble_field;
+			ensemble = Cmiss_field_ensemble_core_cast(ensemble_field);
 		}
 
 		~Indexing()
 		{
-			Cmiss_field_destroy(reinterpret_cast<Cmiss_field **>(&field_ensemble));
+			Cmiss_field_destroy(reinterpret_cast<Cmiss_field **>(&ensemble_field));
 			if (iterator)
 				Cmiss_ensemble_iterator_destroy(&iterator);
-			if (field_ensemble_group)
-				Cmiss_field_destroy(reinterpret_cast<Cmiss_field **>(&field_ensemble_group));
+			if (ensemble_group_field)
+				Cmiss_field_destroy(reinterpret_cast<Cmiss_field **>(&ensemble_group_field));
 		}
+
+		void setAllEnsemble()
+		{
+			if (iterator)
+				Cmiss_ensemble_iterator_destroy(&iterator);
+			if (ensemble_group_field)
+				Cmiss_field_destroy(reinterpret_cast<Cmiss_field **>(&ensemble_group_field));
+		}
+
+		void setEntry(Cmiss_ensemble_iterator *in_iterator)
+		{
+			if (iterator)
+				iterator->setRef(in_iterator->getRef());
+			else
+				iterator = ensemble->createEnsembleEntry(in_iterator->getRef());
+			if (ensemble_group_field)
+				Cmiss_field_destroy(reinterpret_cast<Cmiss_field **>(&ensemble_group_field));
+		}
+
+		void setGroup(Cmiss_field_ensemble_group *in_ensemble_group_field)
+		{
+			Cmiss_field_access(reinterpret_cast<Cmiss_field *>(in_ensemble_group_field));
+			if (ensemble_group_field)
+				Cmiss_field_destroy(reinterpret_cast<Cmiss_field **>(&ensemble_group_field));
+			ensemble_group_field = in_ensemble_group_field;
+			if (iterator)
+				Cmiss_ensemble_iterator_destroy(&iterator);
+		}
+
 	};
+
 private:
 	Cmiss_field *indexee;
 	int number_of_ensembles;
 	Indexing *indexing;
 
 	Cmiss_ensemble_index(Cmiss_field *in_indexee,
-		int in_number_of_ensembles, Cmiss_field_ensemble **in_ensembles) :
+		int in_number_of_ensembles, Cmiss_field_ensemble **in_ensemble_fields) :
 			indexee(Cmiss_field_access(in_indexee)),
 			number_of_ensembles(in_number_of_ensembles),
 			indexing(new Indexing[number_of_ensembles])
 	{
-		if (in_ensembles)
+		for (int i = 0; i < number_of_ensembles; i++)
 		{
-			for (int i = 0; i < number_of_ensembles; i++)
-			{
-				indexing[i].setEnsemble(in_ensembles[i]);
-			}
+			indexing[i].setEnsemble(in_ensemble_fields[i]);
 		}
+	}
+
+	Indexing *getIndexing(Cmiss::Field_ensemble *ensemble)
+	{
+		for (int i = 0; i < number_of_ensembles; i++)
+		{
+			if (ensemble == indexing[i].ensemble)
+				return &(indexing[i]);
+		}
+		return NULL;
+	}
+
+	Indexing *getIndexing(Cmiss_field_ensemble *ensemble_field)
+	{
+		for (int i = 0; i < number_of_ensembles; i++)
+		{
+			if (ensemble_field == indexing[i].ensemble_field)
+				return &(indexing[i]);
+		}
+		return NULL;
 	}
 
 public:
 	
 	static Cmiss_ensemble_index *create(Cmiss_field *in_indexee,
-		int in_number_of_ensembles, Cmiss_field_ensemble **in_ensembles)
+		int in_number_of_ensembles, Cmiss_field_ensemble **in_ensemble_fields)
 	{
 		if ((NULL == in_indexee) || (in_number_of_ensembles < 0) ||
-			((in_number_of_ensembles > 0) && (NULL == in_ensembles)))
+			((in_number_of_ensembles > 0) && (NULL == in_ensemble_fields)))
 			return NULL;
 		for (int i = 0; i < in_number_of_ensembles; i++)
 		{
-			if (NULL == in_ensembles[i])
+			if (NULL == in_ensemble_fields[i])
 				return NULL;
 		}
-		return new Cmiss_ensemble_index(in_indexee, in_number_of_ensembles, in_ensembles);
+		return new Cmiss_ensemble_index(in_indexee, in_number_of_ensembles, in_ensemble_fields);
 	}
 
 	~Cmiss_ensemble_index()
@@ -347,8 +420,35 @@ public:
 		Cmiss_field_destroy(&indexee);
 	}
 
-	int setEntry(Cmiss_ensemble_iterator *iterator);
-	int clearEntries(Cmiss_field_ensemble *ensemble_field);
+	int setAllEnsemble(Cmiss_field_ensemble *ensemble_field)
+	{
+		Indexing *indexing = getIndexing(ensemble_field);
+		if (!indexing)
+			return 0;
+		indexing->setAllEnsemble();
+		return 1;
+	}
+
+	int setEntry(Cmiss_ensemble_iterator *iterator)
+	{
+		Indexing *indexing = getIndexing(iterator->getEnsemble());
+		if (!indexing)
+			return 0;
+		indexing->setEntry(iterator);
+		return 1;
+	}
+
+	int setGroup(Cmiss_field_ensemble_group *ensemble_group_field)
+	{
+		Cmiss::Field_ensemble_group *ensemble_group =
+			Cmiss_field_ensemble_group_core_cast(ensemble_group_field);
+		Indexing *indexing = getIndexing(ensemble_group->getEnsemble());
+		if (!indexing)
+			return 0;
+		indexing->setGroup(ensemble_group_field);
+		return 1;
+	}
+	
 };
 
 namespace Cmiss

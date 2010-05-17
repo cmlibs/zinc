@@ -150,10 +150,15 @@ public:
 
 	~block_array()
 	{
+		clear();
+	}
+
+	void clear()
+	{
 		delete[] blocks;
 		blockCount = 0;
 	}
-
+	
 	/**
 	 * Get a value from the block_array
 	 * @param index  The index of the value to retrieve, starting at 0.
@@ -193,6 +198,11 @@ template <typename IndexType, int intBlockLength = 32>
 	class bool_array : private block_array<IndexType, unsigned int, intBlockLength>
 {
 public:
+	void clear()
+	{
+		block_array<IndexType, unsigned int, intBlockLength>::clear();
+	}
+
 	int setBool(IndexType index, bool value)
 	{
 		IndexType intIndex = index >> 5;
