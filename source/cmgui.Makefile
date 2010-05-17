@@ -1671,6 +1671,7 @@ SO_LIB_CORE_FIELDS_EXTRA_ARGS = $(XML2_LIB) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_D
 
 LIB_CORE_FIELDS_SRCS = \
 	api/cmiss_element.c \
+	api/cmiss_field.c \
 	api/cmiss_node.c \
 	api/cmiss_time_sequence.c \
 	general/io_stream.c \
