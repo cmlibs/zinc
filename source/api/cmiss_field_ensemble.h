@@ -79,6 +79,7 @@ typedef struct Cmiss_ensemble_iterator *Cmiss_ensemble_iterator_id;
  * Used for getting/setting parameters.
  */
 struct Cmiss_ensemble_index;
+typedef struct Cmiss_ensemble_index *Cmiss_ensemble_index_id;
 
 
 
@@ -157,21 +158,21 @@ int Cmiss_field_ensemble_group_increment_entry(Cmiss_field_ensemble_group_id ens
 
 
 
-int Cmiss_ensemble_index_destroy(Cmiss_ensemble_iterator_id *index_address);
+int Cmiss_ensemble_index_destroy(Cmiss_ensemble_index_id *index_address);
 
 /***************************************************************************//**
  * Set index to span all entries in this ensemble, in order of increasing
  * identifier.
  * @return  1 on success, 0 if ensemble is not part of this index.
  */
-int Cmiss_ensemble_index_set_all_ensemble(Cmiss_ensemble_iterator_id index,
+int Cmiss_ensemble_index_set_all_ensemble(Cmiss_ensemble_index_id index,
 	Cmiss_field_ensemble_id ensemble_field);
 
 /***************************************************************************//**
  * Set index to span a single entry for the iterator's ensemble.
  * @return  1 on success, 0 if ensemble is not part of this index.
  */
-int Cmiss_ensemble_index_set_entry(Cmiss_ensemble_iterator_id index,
+int Cmiss_ensemble_index_set_entry(Cmiss_ensemble_index_id index,
 	Cmiss_ensemble_iterator_id iterator);
 
 /***************************************************************************//**
@@ -179,7 +180,7 @@ int Cmiss_ensemble_index_set_entry(Cmiss_ensemble_iterator_id index,
  * increasting identifier.
  * @return  1 on success, 0 if ensemble is not part of this index.
  */
-int Cmiss_ensemble_index_set_group(Cmiss_ensemble_iterator_id index,
+int Cmiss_ensemble_index_set_group(Cmiss_ensemble_index_id index,
 	Cmiss_field_ensemble_group_id ensemble_group_field);
 
 

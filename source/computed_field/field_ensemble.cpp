@@ -368,7 +368,7 @@ Cmiss_ensemble_iterator *Field_ensemble::createEnsembleEntry(EnsembleEntryRef re
 	}
 	else
 	{
-		ALLOCATE(iterator, struct Cmiss_ensemble_iterator, 1);
+		ALLOCATE(iterator, Cmiss_ensemble_iterator, 1);
 	}
 	if (iterator)
 	{
@@ -442,10 +442,10 @@ int Field_ensemble_group::list()
 
 } // namespace Cmiss
 
-struct Computed_field *Cmiss_field_module_create_ensemble(
-	struct Cmiss_field_module *field_module)
+Cmiss_field *Cmiss_field_module_create_ensemble(
+	Cmiss_field_module *field_module)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
+	Cmiss_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/false,
 		/*number_of_components*/1,
 		/*number_of_source_fields*/0, NULL,
@@ -468,10 +468,10 @@ Cmiss_field_ensemble *Cmiss_field_cast_ensemble(Cmiss_field_id field)
 	}
 }
 
-struct Cmiss_ensemble_iterator *Cmiss_field_ensemble_create_entry(
-	struct Cmiss_field_ensemble *ensemble_field)
+Cmiss_ensemble_iterator *Cmiss_field_ensemble_create_entry(
+	Cmiss_field_ensemble *ensemble_field)
 {
-	struct Cmiss_ensemble_iterator *iterator = NULL;
+	Cmiss_ensemble_iterator *iterator = NULL;
 	if (ensemble_field)
 	{
 		Cmiss::Field_ensemble *ensemble = Cmiss_field_ensemble_core_cast(ensemble_field);
@@ -481,10 +481,10 @@ struct Cmiss_ensemble_iterator *Cmiss_field_ensemble_create_entry(
 	return (iterator);
 }
 
-struct Cmiss_ensemble_iterator *Cmiss_field_ensemble_create_entry_with_identifier(
-	struct Cmiss_field_ensemble *ensemble_field, Cmiss_ensemble_identifier identifier)
+Cmiss_ensemble_iterator *Cmiss_field_ensemble_create_entry_with_identifier(
+	Cmiss_field_ensemble *ensemble_field, Cmiss_ensemble_identifier identifier)
 {
-	struct Cmiss_ensemble_iterator *iterator = NULL;
+	Cmiss_ensemble_iterator *iterator = NULL;
 	if (ensemble_field)
 	{
 		Cmiss::Field_ensemble *ensemble = Cmiss_field_ensemble_core_cast(ensemble_field);
@@ -494,10 +494,10 @@ struct Cmiss_ensemble_iterator *Cmiss_field_ensemble_create_entry_with_identifie
 	return (iterator);
 }
 
-struct Cmiss_ensemble_iterator *Cmiss_field_ensemble_find_entry_by_identifier(
-	struct Cmiss_field_ensemble *ensemble_field, Cmiss_ensemble_identifier identifier)
+Cmiss_ensemble_iterator *Cmiss_field_ensemble_find_entry_by_identifier(
+	Cmiss_field_ensemble *ensemble_field, Cmiss_ensemble_identifier identifier)
 {
-	struct Cmiss_ensemble_iterator *iterator = NULL;
+	Cmiss_ensemble_iterator *iterator = NULL;
 	if (ensemble_field)
 	{
 		Cmiss::Field_ensemble *ensemble = Cmiss_field_ensemble_core_cast(ensemble_field);
@@ -507,10 +507,10 @@ struct Cmiss_ensemble_iterator *Cmiss_field_ensemble_find_entry_by_identifier(
 	return (iterator);
 }
 
-struct Cmiss_ensemble_iterator *Cmiss_field_ensemble_find_or_create_entry(
-	struct Cmiss_field_ensemble *ensemble_field, Cmiss_ensemble_identifier identifier)
+Cmiss_ensemble_iterator *Cmiss_field_ensemble_find_or_create_entry(
+	Cmiss_field_ensemble *ensemble_field, Cmiss_ensemble_identifier identifier)
 {
-	struct Cmiss_ensemble_iterator *iterator = NULL;
+	Cmiss_ensemble_iterator *iterator = NULL;
 	if (ensemble_field)
 	{
 		Cmiss::Field_ensemble *ensemble = Cmiss_field_ensemble_core_cast(ensemble_field);
@@ -524,10 +524,10 @@ struct Cmiss_ensemble_iterator *Cmiss_field_ensemble_find_or_create_entry(
 	return (iterator);
 }
 
-struct Cmiss_ensemble_iterator *Cmiss_field_ensemble_get_first_entry(
-	struct Cmiss_field_ensemble *ensemble_field)
+Cmiss_ensemble_iterator *Cmiss_field_ensemble_get_first_entry(
+	Cmiss_field_ensemble *ensemble_field)
 {
-	struct Cmiss_ensemble_iterator *iterator = NULL;
+	Cmiss_ensemble_iterator *iterator = NULL;
 	if (ensemble_field)
 	{
 		Cmiss::Field_ensemble *ensemble = Cmiss_field_ensemble_core_cast(ensemble_field);
@@ -538,7 +538,7 @@ struct Cmiss_ensemble_iterator *Cmiss_field_ensemble_get_first_entry(
 }
 
 
-int Cmiss_ensemble_iterator_destroy(struct Cmiss_ensemble_iterator **iterator_address)
+int Cmiss_ensemble_iterator_destroy(Cmiss_ensemble_iterator **iterator_address)
 {
 	if ((iterator_address) && (*iterator_address))
 	{
@@ -548,7 +548,7 @@ int Cmiss_ensemble_iterator_destroy(struct Cmiss_ensemble_iterator **iterator_ad
 	return 0;
 }
 
-Cmiss_ensemble_identifier Cmiss_ensemble_iterator_get_identifier(struct Cmiss_ensemble_iterator *iterator)
+Cmiss_ensemble_identifier Cmiss_ensemble_iterator_get_identifier(Cmiss_ensemble_iterator *iterator)
 {
 	Cmiss_ensemble_identifier identifier = 0;
 	if (iterator && (iterator->getEnsemble()))
@@ -558,21 +558,21 @@ Cmiss_ensemble_identifier Cmiss_ensemble_iterator_get_identifier(struct Cmiss_en
 	return identifier;
 }
 
-int Cmiss_ensemble_iterator_increment(struct Cmiss_ensemble_iterator *iterator)
+int Cmiss_ensemble_iterator_increment(Cmiss_ensemble_iterator *iterator)
 {
 	return Cmiss::Field_ensemble::incrementEnsembleEntry(iterator);
 }
 
-struct Computed_field *Cmiss_field_module_create_ensemble_group(
-	struct Cmiss_field_module *field_module, struct Cmiss_field_ensemble *ensemble_field)
+Cmiss_field *Cmiss_field_module_create_ensemble_group(
+	Cmiss_field_module *field_module, Cmiss_field_ensemble *ensemble_field)
 {
-	Computed_field *field = NULL;
+	Cmiss_field *field = NULL;
 	if (ensemble_field)
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/1,
-			/*number_of_source_fields*/1, reinterpret_cast<struct Computed_field **>(&ensemble_field),
+			/*number_of_source_fields*/1, reinterpret_cast<Cmiss_field **>(&ensemble_field),
 			/*number_of_source_values*/0, NULL,
 			new Cmiss::Field_ensemble_group(Cmiss_field_ensemble_core_cast(ensemble_field)));
 	}
@@ -593,7 +593,7 @@ Cmiss_field_ensemble_group *Cmiss_field_cast_ensemble_group(Cmiss_field_id field
 }
 
 int Cmiss_field_ensemble_group_clear(
-	struct Cmiss_field_ensemble_group *ensemble_group_field)
+	Cmiss_field_ensemble_group *ensemble_group_field)
 {
 	if (NULL == ensemble_group_field)
 		return 0;
@@ -604,7 +604,7 @@ int Cmiss_field_ensemble_group_clear(
 }
 
 int Cmiss_field_ensemble_group_has_entry(
-	struct Cmiss_field_ensemble_group *ensemble_group_field, struct Cmiss_ensemble_iterator *iterator)
+	Cmiss_field_ensemble_group *ensemble_group_field, Cmiss_ensemble_iterator *iterator)
 {
 	if ((NULL == ensemble_group_field) || (NULL == iterator))
 		return 0;
@@ -614,7 +614,7 @@ int Cmiss_field_ensemble_group_has_entry(
 }
 
 int Cmiss_field_ensemble_group_add_entry(
-	struct Cmiss_field_ensemble_group *ensemble_group_field, struct Cmiss_ensemble_iterator *iterator)
+	Cmiss_field_ensemble_group *ensemble_group_field, Cmiss_ensemble_iterator *iterator)
 {
 	if ((NULL == ensemble_group_field) || (NULL == iterator))
 		return 0;
@@ -624,7 +624,7 @@ int Cmiss_field_ensemble_group_add_entry(
 }
 
 int Cmiss_field_ensemble_group_remove_entry(
-	struct Cmiss_field_ensemble_group *ensemble_group_field, struct Cmiss_ensemble_iterator *iterator)
+	Cmiss_field_ensemble_group *ensemble_group_field, Cmiss_ensemble_iterator *iterator)
 {
 	if ((NULL == ensemble_group_field) || (NULL == iterator))
 		return 0;
@@ -634,7 +634,7 @@ int Cmiss_field_ensemble_group_remove_entry(
 }
 
 int Cmiss_field_ensemble_group_increment_entry(
-	struct Cmiss_field_ensemble_group *ensemble_group_field, struct Cmiss_ensemble_iterator *iterator)
+	Cmiss_field_ensemble_group *ensemble_group_field, Cmiss_ensemble_iterator *iterator)
 {
 	if ((NULL == ensemble_group_field) || (NULL == iterator))
 		return 0;
@@ -643,7 +643,7 @@ int Cmiss_field_ensemble_group_increment_entry(
 	return ensemble_group->incrementEnsembleEntry(iterator);
 }
 
-int Cmiss_ensemble_index_destroy(struct Cmiss_ensemble_index **index_address)
+int Cmiss_ensemble_index_destroy(Cmiss_ensemble_index **index_address)
 {
 	if ((index_address) && (*index_address))
 	{
@@ -654,7 +654,7 @@ int Cmiss_ensemble_index_destroy(struct Cmiss_ensemble_index **index_address)
 	return 0;
 }
 
-int Cmiss_ensemble_index_set_all_ensemble(struct Cmiss_ensemble_index *index,
+int Cmiss_ensemble_index_set_all_ensemble(Cmiss_ensemble_index *index,
 	Cmiss_field_ensemble *ensemble_field)
 {
 	if ((!index) || (!ensemble_field))
@@ -662,7 +662,7 @@ int Cmiss_ensemble_index_set_all_ensemble(struct Cmiss_ensemble_index *index,
 	return index->setAllEnsemble(ensemble_field);
 }
 
-int Cmiss_ensemble_index_set_entry(struct Cmiss_ensemble_index *index,
+int Cmiss_ensemble_index_set_entry(Cmiss_ensemble_index *index,
 	Cmiss_ensemble_iterator *iterator)
 {
 	if ((!index) || (!iterator))
@@ -670,7 +670,7 @@ int Cmiss_ensemble_index_set_entry(struct Cmiss_ensemble_index *index,
 	return index->setEntry(iterator);
 }
 
-int Cmiss_ensemble_index_set_group(struct Cmiss_ensemble_index *index,
+int Cmiss_ensemble_index_set_group(Cmiss_ensemble_index *index,
 	Cmiss_field_ensemble_group *ensemble_group_field)
 {
 	if ((!index) || (!ensemble_group_field))
