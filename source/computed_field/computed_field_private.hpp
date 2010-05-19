@@ -211,6 +211,11 @@ public:
 		return false;
 	};
 
+	struct Computed_field *getField()
+	{
+		return field;
+	}
+	
 	/**
 	 * Override to inherit attributes such as coordinate system from source fields.
 	 */

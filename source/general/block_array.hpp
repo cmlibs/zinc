@@ -93,7 +93,7 @@ private:
 			return 0;
 		}
 
-		int getValue(IndexType entryIndex, EntryType& value)
+		int getValue(IndexType entryIndex, EntryType& value) const
 		{
 #if ! defined (OPTIMISED)
 			if (entryIndex >= blockLength)
@@ -110,9 +110,16 @@ private:
 
 	
 private:
-	
+	// Note: any new attributes must be handled by swap()
 	Block *blocks;
 	IndexType blockCount;
+
+	const Block* getBlock(IndexType blockIndex) const
+	{
+		if (blockIndex < blockCount)
+			return (blocks + blockIndex);
+		return NULL;
+	}
 
 	Block* getBlock(IndexType blockIndex)
 	{
@@ -158,17 +165,30 @@ public:
 		delete[] blocks;
 		blockCount = 0;
 	}
-	
+
+	/** Swaps all data with other block_array. Cannot fail. */
+	void swap(block_array& other)
+	{
+		Block *temp_blocks = blocks;
+		IndexType temp_blockCount = blockCount;
+
+		blocks = other.blocks;
+		blockCount = other.blockCount;
+
+		other.blocks = temp_blocks;
+		other.blockCount = temp_blockCount;
+	}
+
 	/**
 	 * Get a value from the block_array
 	 * @param index  The index of the value to retrieve, starting at 0.
 	 * @param value  On success, filled with Entry at index
 	 * @return  1 if value returned, 0 if no value at index.
 	 */
-	int getValue(IndexType index, EntryType& value)
+	int getValue(IndexType index, EntryType& value) const
 	{
 		IndexType blockIndex = index / blockLength;
-		Block *block = getBlock(blockIndex);
+		const Block *block = getBlock(blockIndex);
 		if (!block)
 			return 0;
 		IndexType entryIndex = index % blockLength;
@@ -191,6 +211,17 @@ public:
 		return block->setValue(entryIndex, value);
 	}
 
+	bool setValues(IndexType minIndex, IndexType maxIndex, EntryType value)
+	{
+		// GRC: can be made faster
+		for (IndexType index = minIndex; index <= maxIndex; index++)
+		{
+			if (!setValue(index, value))
+				return false;
+		}
+		return true;
+	}
+	
 };
 
 /** stores boolean values as individual bits, with no value equivalent to false */
@@ -203,7 +234,13 @@ public:
 		block_array<IndexType, unsigned int, intBlockLength>::clear();
 	}
 
-	int setBool(IndexType index, bool value)
+	void swap(bool_array& other)
+	{
+		block_array<IndexType, unsigned int, intBlockLength>::swap(other);
+	}
+
+	/** @param oldValue  Returns old value so client can determine if status changed */
+	int setBool(IndexType index, bool value, bool& oldValue)
 	{
 		IndexType intIndex = index >> 5;
 		unsigned int intValue = 0;
@@ -211,16 +248,20 @@ public:
 		if (hasValue || value)
 		{
 			unsigned int mask = (1 << (index & 0x1F));
-			bool oldValue = (0 != intValue & mask);
+			oldValue = (0 != intValue & mask);
 			if (oldValue != value)
 			{
 				return setValue(intIndex, intValue ^ mask);
 			}
 		}
+		else
+		{
+			oldValue = false;
+		}
 		return 1;
 	}
 
-	bool getBool(IndexType index)
+	bool getBool(IndexType index) const
 	{
 		IndexType intIndex = index >> 5;
 		unsigned int intValue = 0;
@@ -230,6 +271,57 @@ public:
 			return (0 != intValue & mask);
 		}
 		return false;
+	}
+
+	/**
+	 * @param lastTrueIndex  Updated to equal or next lower index with true value.  
+	 * @return  true if found, false if none.
+	 */
+	bool updateLastTrueIndex(IndexType& lastTrueIndex)
+	{
+		// GRC this can be made much more efficient
+		while (!getBool(lastTrueIndex))
+		{
+			if (0 == lastTrueIndex)
+				return false;
+			lastTrueIndex--;
+		}
+		return true;
+	}
+
+	/** @return  true if values for all indexes in range are true; false otherwise */
+	bool isRangeTrue(IndexType minIndex, IndexType maxIndex)
+	{
+		if (minIndex > maxIndex)
+			return false;
+		// GRC this can be made much more efficient
+		IndexType index = minIndex;
+		while (getBool(index))
+		{
+			if (index == maxIndex)
+				return true;
+			index++;
+		}
+		return false;
+	}
+
+	/** Sets all entries from index 0..indexCount-1 to true.
+	 * @return  true if completely successful, false otherwise */
+	bool setAllTrue(IndexType indexCount)
+	{
+		IndexType intIndexCount = indexCount >> 5;
+		if (intIndexCount > 0)
+		{
+			if (!setValues(0, intIndexCount-1, 0xFFFF))
+				return false;
+		}
+		for (IndexType index = intIndexCount*32; index < indexCount; index++)
+		{
+			bool oldValue;
+			if (!setBool(index, true, oldValue))
+				return false;
+		}
+		return true;
 	}
 };
 

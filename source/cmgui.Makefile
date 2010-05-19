@@ -937,7 +937,8 @@ COMPUTED_FIELD_CORE_SRCS =\
 	computed_field/computed_field_finite_element.cpp \
 	computed_field/computed_field_set.cpp \
 	computed_field/field_ensemble.cpp \
-	computed_field/field_location.cpp
+	computed_field/field_location.cpp \
+	computed_field/field_parameters.cpp
 COMPUTED_FIELD_GRAPHICS_SRCS = \
 	computed_field/computed_field_find_xi_graphics.cpp
 COMPUTED_FIELD_SRCS = \

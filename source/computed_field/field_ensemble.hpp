@@ -57,18 +57,21 @@ namespace Cmiss
  */
 typedef unsigned int EnsembleEntryRef;
 
-char field_ensemble_type_string[] = "ensemble";
-
+/***************************************************************************//**
+ * A domain comprising a set of entries / indexes with unique unsigned integer
+ * identifiers. 
+ */
 class Field_ensemble : public Computed_field_core
 {
 private:
 
 typedef std::map<Cmiss_ensemble_identifier,EnsembleEntryRef> EnsembleEntryMap;
 typedef std::map<Cmiss_ensemble_identifier,EnsembleEntryRef>::iterator EnsembleEntryMapIterator;
+typedef std::map<Cmiss_ensemble_identifier,EnsembleEntryRef>::reverse_iterator EnsembleEntryMapReverseIterator;
 
-	bool dense; // dense is true if all entries from 1..lastIdentifier exist and are in order
-	block_array<EnsembleEntryRef,Cmiss_ensemble_identifier> entries; // used only if not dense
-	EnsembleEntryMap identifierMap; // used only if not dense
+	bool contiguous; // true while all entries from 1..lastIdentifier exist and are in order
+	block_array<EnsembleEntryRef,Cmiss_ensemble_identifier> entries; // used only if not contiguous
+	EnsembleEntryMap identifierMap; // used only if not contiguous
 	Cmiss_ensemble_identifier firstFreeIdentifier, lastIdentifier;
 	EnsembleEntryRef entryCount, maxRef;
 
@@ -80,7 +83,7 @@ typedef std::map<Cmiss_ensemble_identifier,EnsembleEntryRef>::iterator EnsembleE
 public:
 	Field_ensemble() :
 		Computed_field_core(),
-		dense(true),
+		contiguous(true),
 		firstFreeIdentifier(1),
 		lastIdentifier(0),
 		entryCount(0),
@@ -98,10 +101,7 @@ private:
 		return NULL; // not supported
 	}
 
-	char *get_type_string()
-	{
-		return (field_ensemble_type_string);
-	}
+	char *get_type_string();
 
 	int compare(Computed_field_core* other_field)
 	{
@@ -118,12 +118,30 @@ private:
 	}
 	
 	void updateFirstFreeIdentifier();
-	void notDense();
-	void notSorted();
+
+	void setNotContiguous();
+
 	EnsembleEntryRef createEntryPrivate(Cmiss_ensemble_identifier identifier);
 
 public:
 
+	EnsembleEntryRef size()
+	{
+		return entryCount;
+	}
+
+	/** @return  true if any refs from 1..maxRef are void, false if all are valid */ 
+	bool hasVoidRefs()
+	{
+		return (entryCount < maxRef);
+	}
+
+	/** @return  maximum ref which has ever existed; entry may be void */
+	EnsembleEntryRef getMaxRef()
+	{
+		return maxRef;
+	}
+	
 	EnsembleEntryRef createEntry();
 	EnsembleEntryRef createEntry(Cmiss_ensemble_identifier identifier);
 	EnsembleEntryRef findOrCreateEntry(Cmiss_ensemble_identifier identifier);
@@ -131,30 +149,40 @@ public:
 	int removeEntry(EnsembleEntryRef ref);
 	int removeEntryWithIdentifier(Cmiss_ensemble_identifier identifier);
 	Cmiss_ensemble_identifier getEntryIdentifier(EnsembleEntryRef ref);
+
+	/** Get ref to entry in group with lowest identifier */
 	EnsembleEntryRef getFirstEntryRef();
+
 	EnsembleEntryRef getNextEntryRef(EnsembleEntryRef ref);
 	EnsembleEntryRef getNextEntryRefBoolTrue(EnsembleEntryRef ref, bool_array<EnsembleEntryRef>& values);
 
 	static int incrementEnsembleEntry(Cmiss_ensemble_iterator *iterator);
 	
-	/** packages Ref with ensemble pointer for external use */
-	Cmiss_ensemble_iterator *createEnsembleEntry(EnsembleEntryRef ref);
+	/** creates an iterator out of an internal ref including ensemble pointer */
+	Cmiss_ensemble_iterator *createEnsembleIterator(EnsembleEntryRef ref);
 	static void freeEnsembleEntry(Cmiss_ensemble_iterator *&iterator);
 };
 
 
-char field_ensemble_group_type_string[] = "ensemble_group";
-
+/***************************************************************************//**
+ * A group of entries from a single ensemble.
+ * Implemented using a bool_array
+ */
 class Field_ensemble_group : public Computed_field_core
 {
 private:
 	Field_ensemble *ensemble;
+	EnsembleEntryRef entryCount;
+	// maxRef is an upper bound, updated to exact index when queried
+	EnsembleEntryRef maxRef;
 	bool_array<EnsembleEntryRef> values;
 	
 public:
 	Field_ensemble_group(Field_ensemble *from_ensemble) :
 		Computed_field_core(),
-		ensemble(from_ensemble)
+		ensemble(from_ensemble),
+		entryCount(0),
+		maxRef(0)
 	{
 	};
 
@@ -179,10 +207,7 @@ private:
 		return NULL; // not supported
 	}
 
-	char *get_type_string()
-	{
-		return (field_ensemble_group_type_string);
-	}
+	char *get_type_string();
 
 	int compare(Computed_field_core* other_field)
 	{
@@ -208,23 +233,80 @@ public:
 	void clear()
 	{
 		values.clear();
+		entryCount = 0;
+		maxRef = 0;
 	}
 
-	/** be careful that ref is for this ensemble */
-	bool hasEntryRef(EnsembleEntryRef ref)
+	EnsembleEntryRef size()
 	{
-		return values.getBool(ref);
+		return entryCount;
+	}
+
+	EnsembleEntryRef getMaxRef()
+	{
+		if (maxRef > 0)
+		{
+			EnsembleEntryRef index = maxRef - 1;
+			if (values.updateLastTrueIndex(index))
+			{
+				maxRef = index + 1;
+			}
+		}
+		return maxRef;
+	}
+
+	/** @return true if group contains all entries from 1..maxRef */
+	bool isDense()
+	{
+		getMaxRef();
+		return (entryCount == maxRef);
+	}
+
+	/** @return true if group contains all entries from belowRef+1..maxRef */
+	bool isDenseAbove(EnsembleEntryRef belowRef)
+	{
+		getMaxRef();
+		// GRC: this can be expensive:
+		return values.isRangeTrue(/*index*/belowRef, /*index*/maxRef-1);
+	}
+	
+	/** be careful that ref is for this ensemble */
+	bool hasEntryRef(EnsembleEntryRef ref) const
+	{
+		if (ref == 0)
+			return false;
+		return values.getBool(/*index*/ref-1);
 	}
 
 	/** be careful that ref is for this ensemble */
 	int setEntryRef(EnsembleEntryRef ref, bool inGroup)
 	{
-		return values.setBool(ref, inGroup);
+		bool wasInGroup;
+		if (values.setBool(/*index*/ref-1, inGroup, wasInGroup))
+		{
+			if (inGroup != wasInGroup)
+			{
+				if (inGroup)
+				{
+					entryCount++;
+					if (ref > maxRef)
+						maxRef = ref;
+				}
+				else
+				{
+					entryCount--;
+				}
+			}
+			return 1;
+		}
+		return 0;
 	}
 
-	bool hasEntry(Cmiss_ensemble_iterator *iterator);
-	int setEntry(Cmiss_ensemble_iterator *iterator, bool inGroup);
+	bool hasEntry(const Cmiss_ensemble_iterator *iterator) const;
 
+	int setEntry(const Cmiss_ensemble_iterator *iterator, bool inGroup);
+
+	/** Get ref to entry in group with lowest identifier */
 	EnsembleEntryRef getFirstEntryRef()
 	{
 		EnsembleEntryRef ref = ensemble->getFirstEntryRef();
@@ -249,14 +331,14 @@ inline Cmiss::Field_ensemble *Cmiss_field_ensemble_core_cast(
 	Cmiss_field_ensemble *ensemble_field)
 {
 	return (static_cast<Cmiss::Field_ensemble*>(
-		reinterpret_cast<Computed_field*>(ensemble_field)->core));
+		reinterpret_cast<Cmiss_field*>(ensemble_field)->core));
 }
 
 inline Cmiss::Field_ensemble_group *Cmiss_field_ensemble_group_core_cast(
 	Cmiss_field_ensemble_group *ensemble_group_field)
 {
 	return (static_cast<Cmiss::Field_ensemble_group*>(
-		reinterpret_cast<Computed_field*>(ensemble_group_field)->core));
+		reinterpret_cast<Cmiss_field*>(ensemble_group_field)->core));
 }
 
 /***************************************************************************//**
@@ -277,10 +359,15 @@ private:
 public:
 	void setRef(Cmiss::EnsembleEntryRef newRef) { ref = newRef; }
 
-	Cmiss::Field_ensemble *getEnsemble() { return ensemble; }
-	Cmiss::EnsembleEntryRef getRef() { return ref; }
-	Cmiss_ensemble_identifier getIdentifier() { return ensemble->getEntryIdentifier(ref); }
-
+	bool isValid() const { return (ref != 0); }
+	Cmiss::Field_ensemble *getEnsemble() const { return ensemble; }
+	Cmiss::EnsembleEntryRef getRef() const { return ref; }
+	Cmiss_ensemble_identifier getIdentifier() const { return ensemble->getEntryIdentifier(ref); }
+	bool increment()
+	{
+		ref = ensemble->getNextEntryRef(ref);
+		return (ref != 0);
+	}
 };
 
 /***************************************************************************//**
@@ -295,48 +382,82 @@ public:
  * all entries in the groups are indexed in order of first ensemble changing
  * slowest to last ensemble changing fastest, like C arrays.
  * GRC may review order
+ * Note:
+ * Not to be shared between threads as internal mutable members are modified
+ * by Field_parameter::setValues();
  */
 struct Cmiss_ensemble_index
 {
 	class Indexing
 	{
+
 	public:
-		Cmiss_field_ensemble *ensemble_field;
 		Cmiss::Field_ensemble *ensemble;
 		// only zero or one of following set; zero means use all entries in ensemble
 		Cmiss_ensemble_iterator *iterator;
-		Cmiss_field_ensemble_group *ensemble_group_field;
+		Cmiss::Field_ensemble_group *ensemble_group;
+		// following mutable members are used by Field_parameter::setValues
+		mutable Cmiss::EnsembleEntryRef maxIndexRef;
+		mutable Cmiss::EnsembleEntryRef firstRef;
+		mutable Cmiss_ensemble_iterator *valuesIterator;
+
+	private:
+
+		void clear_iterator()
+		{
+			if (iterator)
+				Cmiss_ensemble_iterator_destroy(&iterator);
+		}
+
+		void clear_ensemble_group()
+		{
+			if (ensemble_group)
+			{
+				Cmiss_field *field = ensemble_group->getField();
+				Cmiss_field_destroy(&field);
+				ensemble_group = NULL;
+			}
+		}
+
+	public:
 
 		Indexing() :
-			ensemble_field(NULL),
+			ensemble(NULL),
 			iterator(NULL),
-			ensemble_group_field(NULL)
+			ensemble_group(NULL),
+			maxIndexRef(0),
+			firstRef(0),
+			valuesIterator(NULL)
 		{
 		}
 
 		/* second stage of construction */
-		void setEnsemble(Cmiss_field_ensemble *in_ensemble_field)
+		void setEnsemble(Cmiss::Field_ensemble *in_ensemble)
 		{
-			Cmiss_field_access(reinterpret_cast<Cmiss_field *>(in_ensemble_field));
-			ensemble_field = in_ensemble_field;
-			ensemble = Cmiss_field_ensemble_core_cast(ensemble_field);
+			ensemble = in_ensemble;
 		}
 
 		~Indexing()
 		{
-			Cmiss_field_destroy(reinterpret_cast<Cmiss_field **>(&ensemble_field));
+			if (valuesIterator)
+				Cmiss_ensemble_iterator_destroy(&valuesIterator);
+			clear_iterator();
+			clear_ensemble_group();
+		}
+
+		unsigned int getEntryCount() const
+		{
 			if (iterator)
-				Cmiss_ensemble_iterator_destroy(&iterator);
-			if (ensemble_group_field)
-				Cmiss_field_destroy(reinterpret_cast<Cmiss_field **>(&ensemble_group_field));
+				return (iterator->getRef() > 0) ? 1 : 0;
+			if (ensemble_group)
+				return ensemble_group->size();
+			return ensemble->size();
 		}
 
 		void setAllEnsemble()
 		{
-			if (iterator)
-				Cmiss_ensemble_iterator_destroy(&iterator);
-			if (ensemble_group_field)
-				Cmiss_field_destroy(reinterpret_cast<Cmiss_field **>(&ensemble_group_field));
+			clear_iterator();
+			clear_ensemble_group();
 		}
 
 		void setEntry(Cmiss_ensemble_iterator *in_iterator)
@@ -344,19 +465,101 @@ struct Cmiss_ensemble_index
 			if (iterator)
 				iterator->setRef(in_iterator->getRef());
 			else
-				iterator = ensemble->createEnsembleEntry(in_iterator->getRef());
-			if (ensemble_group_field)
-				Cmiss_field_destroy(reinterpret_cast<Cmiss_field **>(&ensemble_group_field));
+				iterator = ensemble->createEnsembleIterator(in_iterator->getRef());
+			clear_ensemble_group();
 		}
 
-		void setGroup(Cmiss_field_ensemble_group *in_ensemble_group_field)
+		void setGroup(Cmiss::Field_ensemble_group *in_ensemble_group)
 		{
-			Cmiss_field_access(reinterpret_cast<Cmiss_field *>(in_ensemble_group_field));
-			if (ensemble_group_field)
-				Cmiss_field_destroy(reinterpret_cast<Cmiss_field **>(&ensemble_group_field));
-			ensemble_group_field = in_ensemble_group_field;
+			Cmiss_field_access(in_ensemble_group->getField());
+			clear_ensemble_group();
+			ensemble_group = in_ensemble_group;
+			clear_iterator();
+		}
+
+		void calculateMaxIndexRef()
+		{
 			if (iterator)
-				Cmiss_ensemble_iterator_destroy(&iterator);
+				maxIndexRef = iterator->getRef();
+			else if (ensemble_group)
+				maxIndexRef = ensemble_group->getMaxRef();
+			else
+				maxIndexRef = ensemble->getMaxRef(); // GRC this is conservative
+		}
+
+		/** @return true if indexing is dense from 1..maxIndexRef */
+		bool isDense()
+		{
+			if (ensemble->hasVoidRefs())
+				return false;
+			if (iterator)
+				return (iterator->getRef() == 1);
+			if (ensemble_group)
+				return ensemble_group->isDense();
+			return true;
+		}
+
+		bool isDenseAbove(Cmiss::EnsembleEntryRef belowRef)
+		{
+			if (ensemble->hasVoidRefs())
+				return false;
+			if (iterator)
+				return (iterator->getRef() == (belowRef + 1));
+			if (ensemble_group)
+				return ensemble_group->isDenseAbove(belowRef);
+			return true;
+		}
+
+		bool iterationBegin()
+		{
+			if (iterator)
+			{
+				// no valuesIterator when single entry is indexed
+				firstRef = iterator->getRef();
+				valuesIterator = NULL;
+			}
+			else if (ensemble_group)
+			{
+				firstRef = ensemble_group->getFirstEntryRef();
+				valuesIterator = ensemble->createEnsembleIterator(firstRef);
+			}
+			else
+			{
+				firstRef = ensemble->getFirstEntryRef();
+				valuesIterator = ensemble->createEnsembleIterator(firstRef);
+			}
+			return (firstRef != 0) && (iterator || valuesIterator);
+		}
+
+		Cmiss::EnsembleEntryRef iterationRef()
+		{
+			return (iterator ? iterator->getRef() : valuesIterator->getRef());
+		}
+
+		/** @return  true if more to come, false if last */
+		bool iterationNext()
+		{
+			if (iterator)
+				return false;
+			if (ensemble_group)
+			{
+				if (ensemble_group->incrementEnsembleEntry(valuesIterator))
+					return true;
+			}
+			else
+			{
+				if (valuesIterator->increment())
+					return true;
+			}
+			valuesIterator->setRef(firstRef);
+			return false;
+		}
+
+		void iterationEnd()
+		{
+			if (valuesIterator)
+				Cmiss_ensemble_iterator_destroy(&valuesIterator);
+			firstRef = 0;
 		}
 
 	};
@@ -367,14 +570,14 @@ private:
 	Indexing *indexing;
 
 	Cmiss_ensemble_index(Cmiss_field *in_indexee,
-		int in_number_of_ensembles, Cmiss_field_ensemble **in_ensemble_fields) :
+		int in_number_of_ensembles, Cmiss::Field_ensemble **in_ensembles) :
 			indexee(Cmiss_field_access(in_indexee)),
 			number_of_ensembles(in_number_of_ensembles),
 			indexing(new Indexing[number_of_ensembles])
 	{
 		for (int i = 0; i < number_of_ensembles; i++)
 		{
-			indexing[i].setEnsemble(in_ensemble_fields[i]);
+			indexing[i].setEnsemble(in_ensembles[i]);
 		}
 	}
 
@@ -388,30 +591,20 @@ private:
 		return NULL;
 	}
 
-	Indexing *getIndexing(Cmiss_field_ensemble *ensemble_field)
-	{
-		for (int i = 0; i < number_of_ensembles; i++)
-		{
-			if (ensemble_field == indexing[i].ensemble_field)
-				return &(indexing[i]);
-		}
-		return NULL;
-	}
-
 public:
 	
 	static Cmiss_ensemble_index *create(Cmiss_field *in_indexee,
-		int in_number_of_ensembles, Cmiss_field_ensemble **in_ensemble_fields)
+		int in_number_of_ensembles, Cmiss::Field_ensemble **in_ensembles)
 	{
 		if ((NULL == in_indexee) || (in_number_of_ensembles < 0) ||
-			((in_number_of_ensembles > 0) && (NULL == in_ensemble_fields)))
+			((in_number_of_ensembles > 0) && (NULL == in_ensembles)))
 			return NULL;
 		for (int i = 0; i < in_number_of_ensembles; i++)
 		{
-			if (NULL == in_ensemble_fields[i])
+			if (NULL == in_ensembles[i])
 				return NULL;
 		}
-		return new Cmiss_ensemble_index(in_indexee, in_number_of_ensembles, in_ensemble_fields);
+		return new Cmiss_ensemble_index(in_indexee, in_number_of_ensembles, in_ensembles);
 	}
 
 	~Cmiss_ensemble_index()
@@ -420,9 +613,26 @@ public:
 		Cmiss_field_destroy(&indexee);
 	}
 
-	int setAllEnsemble(Cmiss_field_ensemble *ensemble_field)
+	/** @return  1 if the indexee of this index is field, 0 if not */
+	int indexesField(Cmiss_field *field) const
 	{
-		Indexing *indexing = getIndexing(ensemble_field);
+		return (field == indexee);
+	}
+
+	/** gets the number of permutations of ensemble entries this index covers */
+	unsigned int getEntryCount() const
+	{
+		unsigned int count = 1;
+		for (int i = 0; i < number_of_ensembles; i++)
+		{
+			count *= indexing[i].getEntryCount();
+		}
+		return count;
+	}
+
+	int setAllEnsemble(Cmiss::Field_ensemble *ensemble)
+	{
+		Indexing *indexing = getIndexing(ensemble);
 		if (!indexing)
 			return 0;
 		indexing->setAllEnsemble();
@@ -438,17 +648,100 @@ public:
 		return 1;
 	}
 
-	int setGroup(Cmiss_field_ensemble_group *ensemble_group_field)
+	int setGroup(Cmiss::Field_ensemble_group *ensemble_group)
 	{
-		Cmiss::Field_ensemble_group *ensemble_group =
-			Cmiss_field_ensemble_group_core_cast(ensemble_group_field);
 		Indexing *indexing = getIndexing(ensemble_group->getEnsemble());
 		if (!indexing)
 			return 0;
-		indexing->setGroup(ensemble_group_field);
+		indexing->setGroup(ensemble_group);
 		return 1;
 	}
-	
+
+	/**
+	 * Precalculates maxIndexRef values for each ensemble.
+	 * Note: must call getEntryCount() first to confirm no invalid refs!
+	 */
+	void calculateMaxIndexRefs()
+	{
+		for (int i = 0; i < number_of_ensembles; i++)
+		{
+			indexing[i].calculateMaxIndexRef();
+		}
+	}
+
+	/**
+	 * Returns maximum entry ref for the indexing of the selected ensemble.
+	 * Must have called calculateMaxIndexRefs first
+	 * @param ensemble_array_index  Index from 0 to number_of_ensembles-1
+	 */
+	Cmiss::EnsembleEntryRef maxIndexRef(int ensemble_array_index)
+	{
+		return indexing[ensemble_array_index].maxIndexRef;
+	}
+
+	/**
+	 * Returns true if all refs are specified from 1..maxIndexRef
+	 * for the selected ensemble 
+	 * @param ensemble_array_index  Index from 0 to number_of_ensembles-1
+	 */
+	bool isDenseOnEnsemble(int ensemble_array_index)
+	{
+		return indexing[ensemble_array_index].isDense();
+	}
+
+	/**
+	 * Returns true if all refs are specified from belowRef+1..maxIndexRef
+	 * for the selected ensemble 
+	 * @param ensemble_array_index  Index from 0 to number_of_ensembles-1
+	 * @param belowRef  Ref one below dense range being checked.
+	 */
+	bool isDenseOnEnsembleAbove(int ensemble_array_index,
+		Cmiss::EnsembleEntryRef belowRef)
+	{
+		return indexing[ensemble_array_index].isDenseAbove(belowRef);
+	}
+
+	/** obtain iterators pointing at the first refs in each ensemble indexing
+	 * also remember firstRef for reiteration.
+	 * Callers must invoke iterationEnd() after successful call!
+	 * @return  true on success, false on failure with temporaries cleaned up.
+	 */
+	bool iterationBegin()
+	{
+		for (int i = 0; i < number_of_ensembles; i++)
+		{
+			if (!indexing[i].iterationBegin())
+			{
+				iterationEnd();
+				return false;
+			}
+		}
+		return true;
+	}
+
+	Cmiss::EnsembleEntryRef iterationRef(int ensemble_array_index)
+	{
+		return indexing[ensemble_array_index].iterationRef();
+	}
+
+	/** @return  true if more to come, false if past last */
+	bool iterationNext()
+	{
+		for (int i = number_of_ensembles - 1; 0 <= i; i--)
+		{
+			if (indexing[i].iterationNext())
+				return true;
+		}
+		return false;
+	}
+
+	void iterationEnd()
+	{
+		for (int i = 0; i < number_of_ensembles; i++)
+		{
+			indexing[i].iterationEnd();
+		}			
+	}
 };
 
 namespace Cmiss
@@ -458,18 +751,18 @@ inline int Field_ensemble::incrementEnsembleEntry(Cmiss_ensemble_iterator *itera
 {
 	if ((!iterator) || (NULL == iterator->getEnsemble()))
 		return 0;
-	iterator->setRef(iterator->getEnsemble()->getNextEntryRef(iterator->ref));
+	iterator->increment();
 	return (iterator->ref != 0);
 }
 
-inline bool Field_ensemble_group::hasEntry(Cmiss_ensemble_iterator *iterator)
+inline bool Field_ensemble_group::hasEntry(const Cmiss_ensemble_iterator *iterator) const
 {
 	if (iterator->getEnsemble() != ensemble)
 		return 0;
 	return hasEntryRef(iterator->getRef());
 }
 
-inline int Field_ensemble_group::setEntry(Cmiss_ensemble_iterator *iterator, bool inGroup)
+inline int Field_ensemble_group::setEntry(const Cmiss_ensemble_iterator *iterator, bool inGroup)
 {
 	if (iterator->getEnsemble() != ensemble)
 		return 0;

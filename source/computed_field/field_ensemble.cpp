@@ -65,6 +65,13 @@ Field_ensemble::~Field_ensemble()
 	}
 }
 
+char field_ensemble_type_string[] = "ensemble";
+
+char *Field_ensemble::get_type_string()
+{
+	return (field_ensemble_type_string);
+}
+
 int Field_ensemble::evaluate_cache_at_location(Field_location* location)
 {
 	int return_code = 0;
@@ -105,11 +112,11 @@ void Field_ensemble::updateFirstFreeIdentifier()
 	}
 }
 
-void Field_ensemble::notDense()
+void Field_ensemble::setNotContiguous()
 {
-	if (dense)
+	if (contiguous)
 	{
-		dense = false;
+		contiguous = false;
 		// this can be optimised:
 		for (Cmiss_ensemble_identifier identifier = 1; identifier <= lastIdentifier; identifier++)
 		{
@@ -125,11 +132,11 @@ EnsembleEntryRef Field_ensemble::createEntryPrivate(Cmiss_ensemble_identifier id
 	if (identifier == 0)
 		return 0;
 	EnsembleEntryRef ref = 0;
-	if (dense && (identifier > firstFreeIdentifier))
+	if (contiguous && (identifier > firstFreeIdentifier))
 	{
-		notDense();
+		setNotContiguous();
 	}
-	if (dense)
+	if (contiguous)
 	{
 		ref = static_cast<EnsembleEntryRef>(identifier);
 		lastIdentifier = identifier;
@@ -191,7 +198,7 @@ EnsembleEntryRef Field_ensemble::findEntryByIdentifier(Cmiss_ensemble_identifier
 	EnsembleEntryRef ref = 0;
 	if (identifier > 0)
 	{
-		if (dense)
+		if (contiguous)
 		{
 			if (identifier <= lastIdentifier)
 			{
@@ -215,7 +222,7 @@ int Field_ensemble::removeEntry(EnsembleEntryRef ref)
 	if ((ref == 0) || (ref > maxRef))
 		return 0;
 	// GRC must check not in use
-	if (dense)
+	if (contiguous)
 	{
 #if defined (FUTURE_CODE)
 		if (static_cast<Cmiss_ensemble_identifier>(ref) == lastIdentifier)
@@ -229,10 +236,10 @@ int Field_ensemble::removeEntry(EnsembleEntryRef ref)
 		}
 		else
 		{
-			notDense();
+			setNotContiguous();
 		}
 #else
-		notDense();
+		setNotContiguous();
 #endif
 	}
 	Cmiss_ensemble_identifier identifier;
@@ -252,8 +259,7 @@ int Field_ensemble::removeEntry(EnsembleEntryRef ref)
 			}
 			else
 			{
-				EnsembleEntryMapIterator iter = identifierMap.end();
-				iter--;
+				EnsembleEntryMapReverseIterator iter = identifierMap.rbegin();
 				EnsembleEntryRef lastRef = iter->second;
 				entries.getValue(/*index*/(lastRef-1), lastIdentifier);
 			}
@@ -285,7 +291,7 @@ EnsembleEntryRef Field_ensemble::getFirstEntryRef()
 {
 	if (0 == entryCount)
 		return 0;
-	if (dense)
+	if (contiguous)
 		return 1;
 	return identifierMap.begin()->second;
 }
@@ -294,7 +300,7 @@ EnsembleEntryRef Field_ensemble::getNextEntryRef(EnsembleEntryRef ref)
 {
 	if (0 == ref)
 		return 0;
-	if (dense)
+	if (contiguous)
 	{
 		if (ref < maxRef)
 			return (ref + 1);
@@ -322,7 +328,7 @@ EnsembleEntryRef Field_ensemble::getNextEntryRefBoolTrue(EnsembleEntryRef ref,
 	if (0 == ref)
 		return 0;
 	EnsembleEntryRef newRef = ref;
-	if (dense)
+	if (contiguous)
 	{
 		do
 		{
@@ -354,7 +360,7 @@ EnsembleEntryRef Field_ensemble::getNextEntryRefBoolTrue(EnsembleEntryRef ref,
 	return newRef;
 }
 
-Cmiss_ensemble_iterator *Field_ensemble::createEnsembleEntry(EnsembleEntryRef ref)
+Cmiss_ensemble_iterator *Field_ensemble::createEnsembleIterator(EnsembleEntryRef ref)
 {
 	if (0 == getEntryIdentifier(ref))
 		return NULL;
@@ -406,6 +412,13 @@ void Field_ensemble::freeEnsembleEntry(Cmiss_ensemble_iterator *&iterator)
 	{
 		DEALLOCATE(iterator);
 	}
+}
+
+char field_ensemble_group_type_string[] = "ensemble_group";
+
+char *Field_ensemble_group::get_type_string()
+{
+	return (field_ensemble_group_type_string);
 }
 
 int Field_ensemble_group::evaluate_cache_at_location(Field_location* location)
@@ -476,7 +489,7 @@ Cmiss_ensemble_iterator *Cmiss_field_ensemble_create_entry(
 	{
 		Cmiss::Field_ensemble *ensemble = Cmiss_field_ensemble_core_cast(ensemble_field);
 		Cmiss::EnsembleEntryRef ref = ensemble->createEntry();
-		iterator = ensemble->createEnsembleEntry(ref);
+		iterator = ensemble->createEnsembleIterator(ref);
 	}
 	return (iterator);
 }
@@ -489,7 +502,7 @@ Cmiss_ensemble_iterator *Cmiss_field_ensemble_create_entry_with_identifier(
 	{
 		Cmiss::Field_ensemble *ensemble = Cmiss_field_ensemble_core_cast(ensemble_field);
 		Cmiss::EnsembleEntryRef ref = ensemble->createEntry(identifier);
-		iterator = ensemble->createEnsembleEntry(ref);
+		iterator = ensemble->createEnsembleIterator(ref);
 	}
 	return (iterator);
 }
@@ -502,7 +515,7 @@ Cmiss_ensemble_iterator *Cmiss_field_ensemble_find_entry_by_identifier(
 	{
 		Cmiss::Field_ensemble *ensemble = Cmiss_field_ensemble_core_cast(ensemble_field);
 		Cmiss::EnsembleEntryRef ref = ensemble->findEntryByIdentifier(identifier);
-		iterator = ensemble->createEnsembleEntry(ref);
+		iterator = ensemble->createEnsembleIterator(ref);
 	}
 	return (iterator);
 }
@@ -519,7 +532,7 @@ Cmiss_ensemble_iterator *Cmiss_field_ensemble_find_or_create_entry(
 		{
 			ref = ensemble->createEntry(identifier);
 		}
-		iterator = ensemble->createEnsembleEntry(ref);
+		iterator = ensemble->createEnsembleIterator(ref);
 	}
 	return (iterator);
 }
@@ -532,7 +545,7 @@ Cmiss_ensemble_iterator *Cmiss_field_ensemble_get_first_entry(
 	{
 		Cmiss::Field_ensemble *ensemble = Cmiss_field_ensemble_core_cast(ensemble_field);
 		Cmiss::EnsembleEntryRef ref = ensemble->getFirstEntryRef();
-		iterator = ensemble->createEnsembleEntry(ref);
+		iterator = ensemble->createEnsembleIterator(ref);
 	}
 	return (iterator);
 }
@@ -659,7 +672,9 @@ int Cmiss_ensemble_index_set_all_ensemble(Cmiss_ensemble_index *index,
 {
 	if ((!index) || (!ensemble_field))
 		return 0;
-	return index->setAllEnsemble(ensemble_field);
+	Cmiss::Field_ensemble *ensemble =
+		Cmiss_field_ensemble_core_cast(ensemble_field);
+	return index->setAllEnsemble(ensemble);
 }
 
 int Cmiss_ensemble_index_set_entry(Cmiss_ensemble_index *index,
@@ -675,5 +690,7 @@ int Cmiss_ensemble_index_set_group(Cmiss_ensemble_index *index,
 {
 	if ((!index) || (!ensemble_group_field))
 		return 0;
-	return index->setGroup(ensemble_group_field);
+	Cmiss::Field_ensemble_group *ensemble_group =
+		Cmiss_field_ensemble_group_core_cast(ensemble_group_field);
+	return index->setGroup(ensemble_group);
 }
