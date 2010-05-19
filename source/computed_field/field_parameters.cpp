@@ -677,7 +677,7 @@ int Cmiss_field_real_parameters_get_values(
 {
 	if ((NULL == real_parameters_field) || (NULL == index) ||
 			(number_of_values == 0) || (NULL == values))
-		return NULL;
+		return 0;
 	return Cmiss_field_real_parameters_core_cast(real_parameters_field)->
 		getValues(index, number_of_values, values);
 }
@@ -692,7 +692,7 @@ int Cmiss_field_real_parameters_set_values(
 {
 	if ((NULL == real_parameters_field) || (NULL == index) ||
 			(number_of_values == 0) || (NULL == values))
-		return NULL;
+		return 0;
 	return Cmiss_field_real_parameters_core_cast(real_parameters_field)->
 		setValues(index, number_of_values, values);
 }
