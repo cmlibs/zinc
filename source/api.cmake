@@ -3,8 +3,7 @@
 
 SET( API_SRCS 
 	source/api/cmiss_context.c
-	source/api/cmiss_core.c
-	source/api/cmiss_element.c
+	source/api/cmiss_graphics_window.c
 	source/api/cmiss_field.c
 	source/api/cmiss_graphics_module.c
 	source/api/cmiss_graphics_window.c
@@ -29,6 +28,7 @@ SET( API_HDRS
 	source/api/cmiss_field_image.h
 	source/api/cmiss_field_image_processing.h
 	source/api/cmiss_field_logical_operators.h
+	source/api/cmiss_field_parameters.h
 	source/api/cmiss_field_trigonometry.h
 	source/api/cmiss_graphics_window.h
 	source/api/cmiss_idle.h

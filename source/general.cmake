@@ -28,6 +28,7 @@ SET( GENERAL_HDRS
 	source/general/any_object_definition.h
 	source/general/any_object_private.h
 	source/general/any_object_prototype.h
+	source/general/block_array.hpp
 	source/general/callback.h
 	source/general/callback_class.hpp
 	source/general/callback_motif.h
@@ -42,8 +43,6 @@ SET( GENERAL_HDRS
 	source/general/enumerator_private_cpp.hpp
 	source/general/error_handler.h
 	source/general/geometry.h
-	source/general/group.h
-	source/general/group_private.h
 	source/general/heapsort.h
 	source/general/image_utilities.h
 	source/general/indexed_list_private.h
@@ -54,8 +53,6 @@ SET( GENERAL_HDRS
 	source/general/list_object_with_list_member_private.h
 	source/general/list_private.h
 	source/general/machine.h
-	source/general/managed_group.h
-	source/general/managed_group_private.h
 	source/general/manager.h
 	source/general/manager_private.h
 	source/general/math.h
