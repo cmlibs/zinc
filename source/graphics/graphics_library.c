@@ -1222,12 +1222,12 @@ appropriately.
 			}
 		}
 #endif /* GL_ARB_texture_rectangle */
-#if defined GL_ARB_vertex_program || defined GL_VERSION_1_5
+#if defined GL_ARB_vertex_buffer_object || defined GL_VERSION_1_5
 		else if (!strcmp(extension_name, "GL_ARB_vertex_buffer_object"))
 		{
-			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_ARB_vertex_program))
+			if (GLEXTENSION_UNSURE != GLEXTENSIONFLAG(GL_ARB_vertex_buffer_object))
 			{
-				return_code = GLEXTENSIONFLAG(GL_ARB_vertex_program);
+				return_code = GLEXTENSIONFLAG(GL_ARB_vertex_buffer_object);
 			}
 			else
 			{
@@ -1256,7 +1256,7 @@ appropriately.
 						return_code = GLEXTENSION_UNAVAILABLE;
 					}
 				}
-				GLEXTENSIONFLAG(GL_ARB_vertex_program) = return_code;
+				GLEXTENSIONFLAG(GL_ARB_vertex_buffer_object) = return_code;
 			}
 		}
 #endif /* GL_ARB_vertex_buffer_object */
