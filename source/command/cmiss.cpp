@@ -23881,9 +23881,6 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 	int status;
 #endif /* defined (F90_INTERPRETER) || defined (USE_PERL_INTERPRETER) */
 	struct Cmiss_command_data *command_data;
-#if defined (WX_USER_INTERFACE)
-	char *path;
-#endif /* defined (WX_USER_INTERFACE) */
 	ENTER(DESTROY(Cmiss_command_data));
 
 	if (command_data_address && (command_data = *command_data_address))
@@ -23966,22 +23963,6 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 			DESTROY(Element_creator)(&command_data->element_creator);
 		}
 #endif /* defined (MOTIF_USER_INTERFACE) */
-#if defined (WX_USER_INTERFACE)
-		 /* deallocate the current region path when cmiss command_data is
-			 being destroyed to prevent multiple deallocations of the same
-			 address under DESTROY(Node_tool) which cause segfault in
-			 cmgui-wx since the interactive tools are set up differently*/
-		path = Node_tool_get_current_region_path(command_data->node_tool);	
-		if (path)
-		{
-			 DEALLOCATE(path);
-		}
-		path = Node_tool_get_current_region_path(command_data->data_tool);	
-		if (path)
-		{
-			 DEALLOCATE(path);
-		}
-#endif /* !defined(WX_USER_INTERFACE)*/
 		DEACCESS(Scene)(&command_data->default_scene);
 		if (command_data->graphics_module)
 		{
@@ -23998,7 +23979,6 @@ NOTE: Do not call this directly: call Cmiss_command_data_destroy() to deaccess.
 		DESTROY(LIST(Io_device))(&command_data->device_list);
 #endif /* defined (SELECT_DESCRIPTORS) */
 
-		
 		DEACCESS(Cmiss_region)(&(command_data->root_region));
 		DESTROY(MANAGER(FE_basis))(&command_data->basis_manager);
 		DESTROY(LIST(FE_element_shape))(&command_data->element_shape_list);

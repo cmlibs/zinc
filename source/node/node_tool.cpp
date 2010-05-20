@@ -3655,7 +3655,7 @@ structure itself.
 				node_tool->user_interface);
 			XtDestroyWidget(node_tool->window_shell);
 		}
-#elif !defined (WX_USER_INTERFACE)
+#else
 		if (node_tool->current_region_path != NULL)
 		{
 			 DEALLOCATE(node_tool->current_region_path);
@@ -4299,31 +4299,6 @@ Up to the calling function to DEALLOCATE the returned path.
 	return (return_code);
 } /* Node_tool_get_region_path */
 
-#if defined (WX_USER_INTERFACE)
-char *Node_tool_get_current_region_path(struct Node_tool *node_tool)
-/*******************************************************************************
-LAST MODIFIED : 10 July 2007
-
-DESCRIPTION :
-Return the pointer of the node_tool->current_region_path, used for
-deallocate the current region path outside whe cmiss command_data is
-being destroy to prevent multiple deallocations of the same address.
-==============================================================================*/
-{
-	 ENTER(Node_tool_get_region_path);
-	 char *path;
-	 path = NULL;
-	 if (node_tool)
-	 {
-			if (node_tool->current_region_path)
-			{
-				 path = node_tool->current_region_path;
-			}
-	 }
-	 return (path);
-}
-#endif /* defined (WX_USER_INTERFACE)	*/
-		
 int Node_tool_set_region_path(struct Node_tool *node_tool,
 	char *path)
 /*******************************************************************************
