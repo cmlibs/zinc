@@ -83,7 +83,11 @@ private:
 		{
 #if ! defined (OPTIMISED)
 			if (entryIndex >= blockLength)
-				exit(EXIT_FAILURE);
+			{
+				display_message(ERROR_MESSAGE,
+					"block_array<>::Block::setValue.  Index beyond block length");
+				return 0;
+			}
 #endif /* ! defined (OPTIMISED) */
 			if (createEntries())
 			{
@@ -97,7 +101,11 @@ private:
 		{
 #if ! defined (OPTIMISED)
 			if (entryIndex >= blockLength)
-				exit(EXIT_FAILURE);
+			{
+				display_message(ERROR_MESSAGE,
+					"block_array<>::Block::setValue.  Index beyond block length");
+				return 0;
+			}
 #endif /* ! defined (OPTIMISED) */
 			if (entries)
 			{
@@ -248,7 +256,7 @@ public:
 		if (hasValue || value)
 		{
 			unsigned int mask = (1 << (index & 0x1F));
-			oldValue = (0 != intValue & mask);
+			oldValue = (0 != (intValue & mask));
 			if (oldValue != value)
 			{
 				return setValue(intIndex, intValue ^ mask);
@@ -268,7 +276,7 @@ public:
 		if (getValue(intIndex, intValue))
 		{
 			unsigned int mask = (1 << (index & 0x1F));
-			return (0 != intValue & mask);
+			return (0 != (intValue & mask));
 		}
 		return false;
 	}
