@@ -1262,10 +1262,10 @@ name the <file_operation> is performed on the file with the <arguments>.
 							strncpy(temp_directory_name,filename,lastlength);
 							if (ALLOCATE(directory_name,char,lastlength-length+1))
 							{
-								 directory_name = &temp_directory_name[length-1];
-								 directory_name[lastlength-length] = '\0';
-								 if (ALLOCATE(temp_string,char,lastlength-length+11))
-								 {
+								strncpy(directory_name,&temp_directory_name[length-1],lastlength-length);
+								directory_name[lastlength-length] = '\0';
+								if (ALLOCATE(temp_string,char,lastlength-length+11))
+								{
 										strcpy(temp_string, "set dir \'");
 										strcat(temp_string, directory_name);
 										strcat(temp_string, "\'");
@@ -1274,18 +1274,19 @@ name the <file_operation> is performed on the file with the <arguments>.
 										temp_name=&filename[lastlength];
 										if (file_open_data->operation)
 										{
-											 if ((file_open_data->operation)((temp_name)
-														 ,file_open_data->arguments))
-											 {
+											if ((file_open_data->operation)((temp_name)
+														,file_open_data->arguments))
+											{
 													retry=0;
-											 }
-											 else
-											 {
+											}
+											else
+											{
 													retry=1;
-											 }
+											}
 										}
 										DEALLOCATE(temp_string);
-								 }
+								}
+								DEALLOCATE(directory_name);
 							}
 							DEALLOCATE(temp_directory_name);
 					 }
