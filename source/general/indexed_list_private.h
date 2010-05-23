@@ -1813,6 +1813,8 @@ Should only be declared with manager functions. \
 					   { \
 							 identifier_change_data->lists_containing_object[j] = \
 								 DEFINED_LISTS(object_type)[i];											\
+							 /* must maintain access count to avoid non-persistent object clean-up */ \
+							 ACCESS(object_type)(object); \
 							 REMOVE_OBJECT_FROM_LIST(object_type)(object,					\
 								 DEFINED_LISTS(object_type)[i]);										\
 							 j++;																									\
@@ -1893,7 +1895,7 @@ Should only be declared with manager functions. \
 	int i, return_code; \
 	struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) \
 		*identifier_change_data; \
-	struct object_type *object; \
+	struct object_type *object, *temp_object; \
 \
 	ENTER(LIST_END_IDENTIFIER_CHANGE(object_type,identifier)); \
 	if (identifier_change_data_address && \
@@ -1912,6 +1914,8 @@ Should only be declared with manager functions. \
 				   { \
 					   return_code = 0; \
 				   } \
+				   temp_object = object; \
+				   DEACCESS(object_type)(&temp_object); \
 			   } \
 			   if (!return_code) \
 			   { \
