@@ -3152,8 +3152,12 @@ Copies the state of one node tool to another.
 			destination_node_tool->element_xi_field = source_node_tool->element_xi_field;
 #if ! defined (MOTIF_USER_INTERFACE)
 			if (source_node_tool->current_region_path)
+			{
+				if (destination_node_tool->current_region_path)
+					DEALLOCATE(destination_node_tool->current_region_path);
 				destination_node_tool->current_region_path =
 					duplicate_string(source_node_tool->current_region_path);
+			}
 #endif /* ! defined (MOTIF_USER_INTERFACE) */
 			destination_node_tool->element_create_enabled = source_node_tool->element_create_enabled;
 			destination_node_tool->element_dimension = source_node_tool->element_dimension;
