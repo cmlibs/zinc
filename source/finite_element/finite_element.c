@@ -796,28 +796,6 @@ FULL_DECLARE_LIST_TYPE(FE_element_shape);
 						-1 */
 #endif /* defined (OLD_CODE) */
 
-struct FE_element_parent
-/*******************************************************************************
-LAST MODIFIED : 8 January 1994
-
-DESCRIPTION :
-Information for going from an element to a parent element.
-==============================================================================*/
-{
-	/* access_FE_element and deaccess_FE_element are NOT used for this so that
-		an element can be destroyed when it has children */
-	struct FE_element *parent;
-	int face_number;
-	/* the number of structures that point to this element parent.  The element
-		parent cannot be destroyed while this is greater than 0.  Needed so that can
-		have lists */
-	int access_count;
-}; /* struct FE_element_parent */
-
-DECLARE_LIST_TYPES(FE_element_parent);
-
-FULL_DECLARE_LIST_TYPE(FE_element_parent);
-
 struct FE_element
 /*******************************************************************************
 LAST MODIFIED : 10 October 2002
@@ -846,7 +824,9 @@ variables.
 
 	/* the parent elements are of dimension 1 greater and are the elements for
 		which this element is a face */
-	struct LIST(FE_element_parent) *parent_list;
+	/* parent pointers are non-ACCESSed so parent element able to be destroyed */
+	struct FE_element **parents;
+	int number_of_parents;
 	/* the number of structures that point to this element.  The element cannot be
 		destroyed while this is greater than 0 */
 	int access_count;
@@ -6480,111 +6460,6 @@ A NULL <type> means an unspecified shape of <dimension>.
 	return (shape);
 } /* find_FE_element_shape_in_list */
 
-static int compare_FE_element_parent_parent(struct FE_element *parent_1,
-	struct FE_element *parent_2)
-/*******************************************************************************
-LAST MODIFIED : 30 July 1995
-
-DESCRIPTION :
-Returns -1 if parent_1 < parent_2, 0 if parent_1 = parent_2 and 1 if
-parent_1 > parent_2.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(compare_FE_element_parent_parent);
-	if (parent_1<parent_2)
-	{
-		return_code= -1;
-	}
-	else
-	{
-		if (parent_1>parent_2)
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* compare_FE_element_parent_parent */
-
-static int compare_FE_element_parent_face_number(int face_number_1,
-	int face_number_2)
-/*******************************************************************************
-LAST MODIFIED : 30 July 1995
-
-DESCRIPTION :
-Returns -1 if face_number_1 < face_number_2, 0 if face_number_1 = face_number_2
-and 1 if face_number_1 > face_number_2.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(compare_FE_element_parent_face_number);
-	if (face_number_1<face_number_2)
-	{
-		return_code= -1;
-	}
-	else
-	{
-		if (face_number_1>face_number_2)
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* compare_FE_element_parent_face_number */
-
-#if !defined (WINDOWS_DEV_FLAG)
-static int list_FE_element_parent(struct FE_element_parent *element_parent,
-	void *void_line)
-/*******************************************************************************
-LAST MODIFIED : 15 February 1999
-
-DESCRIPTION :
-Outputs the information contained at the element.
-==============================================================================*/
-{
-	char *line;
-	int return_code;
-	struct FE_element *parent;
-
-	ENTER(list_FE_element_parent);
-	if (element_parent&&(parent=element_parent->parent)&&(line=(char *)void_line))
-	{
-		sprintf(line+strlen(line)," (%d)",
-			parent->cm.number);
-		if (70<=strlen(line))
-		{
-			display_message(INFORMATION_MESSAGE,line);
-			display_message(INFORMATION_MESSAGE,"\n");
-			*line='\0';
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"list_FE_element_parent.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* list_FE_element_parent */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
 DECLARE_LOCAL_MANAGER_FUNCTIONS(FE_basis)
 
 static int global_to_element_map_values(struct FE_element *element,
@@ -8404,64 +8279,6 @@ DESCRIPTION :
 	return (return_code);
 } /* calculate_standard_basis_transformation */
 
-static int FE_element_parent_contains_node(
-	struct FE_element_parent *element_parent, void *node_void)
-/*******************************************************************************
-LAST MODIFIED : 25 May 2001
-
-DESCRIPTION :
-Calls FE_element_or_parent_contains_node for the element in the
-FE_element_parent.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_parent_contains_node);
-	if (element_parent)
-	{
-		return_code =
-			FE_element_or_parent_contains_node(element_parent->parent, node_void);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_parent_contains_node.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_parent_contains_node */
-
-static int FE_element_parent_contains_node_in_list(
-	struct FE_element_parent *element_parent, void *node_list_void)
-/*******************************************************************************
-LAST MODIFIED : 25 May 2001
-
-DESCRIPTION :
-Calls FE_element_or_parent_contains_node_in_list for the element in
-<element_parent>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_parent_contains_node_in_list);
-	if (element_parent)
-	{
-		return_code = FE_element_or_parent_contains_node_in_list(
-			element_parent->parent, node_list_void);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_parent_contains_node_in_list.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_parent_contains_node_in_list */
-
 struct Check_element_grid_map_values_storage_data
 {
 	int check_sum,values_storage_size;
@@ -8764,6 +8581,10 @@ can use this function to determing if either are defined.
 	return (return_code);
 } /* find_FE_nodal_values_storage_dest */
 
+/* forward declaration */
+int FE_element_or_parent_contains_node_in_list(struct FE_element *element,
+	void *node_list_void);
+
 static int FE_node_field_is_embedded_in_changed_element(
 	struct FE_node_field *node_field, void *data_void)
 /*******************************************************************************
@@ -8827,47 +8648,6 @@ very expensive to compute the nodes on faces and lines.
 
 	return (return_code);
 } /* FE_node_field_is_embedded_in_changed_element */
-
-#if defined (OLD_CODE)
-static int FE_element_parent_remove_face(
-	struct FE_element_parent *element_parent,void *face_element_void)
-/*******************************************************************************
-LAST MODIFIED : 14 April 1999
-
-DESCRIPTION :
-Takes the <face_element> out of the faces array of the parent element referred
-to by the <element_parent>.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element **parent_faces,*face_element;
-
-	ENTER(FE_element_parent_remove_face);
-	if (element_parent&&(face_element=(struct FE_element *)face_element_void))
-	{
-		if (element_parent->parent&&(parent_faces=element_parent->parent->faces)&&
-			(parent_faces[element_parent->face_number] == face_element))
-		{
-			DEACCESS(FE_element)(&(parent_faces[element_parent->face_number]));
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_parent_remove_face.  Invalid element_parent or faces");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_parent_remove_face.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* FE_element_parent_remove_face */
-#endif /* defined (OLD_CODE) */
 
 static char *get_automatic_component_name(char **component_names,
 	int component_no)
@@ -28806,424 +28586,126 @@ are modified to put it on the nearest face.
 	return (return_code);
 } /* FE_element_shape_limit_xi_to_element */
 
-struct FE_element_parent *CREATE(FE_element_parent)(struct FE_element *parent,
-	int face_number)
 /*******************************************************************************
-LAST MODIFIED : 23 April 1999
-
-DESCRIPTION :
-Creates element parent structure and assigns the fields.
-==============================================================================*/
+ * @return  1 if element has a parent matching or descended from ancestor, 0 if not.
+ */
+static int FE_element_ancestor_matches_recursive(
+	struct FE_element *element, struct FE_element *ancestor)
 {
-	struct FE_element_parent *element_parent;
-
-	ENTER(CREATE(FE_element_parent));
-	if (parent&&(0<=face_number)&&(parent->shape)&&
-		(face_number<parent->shape->number_of_faces))
+	int i;
+	for (i = 0; i < element->number_of_parents; i++)
 	{
-		/* create new field */
-		if (ALLOCATE(element_parent,struct FE_element_parent,1))
-		{
-			/* do not use access_FE_element so that can destroy element without
-				destroying faces - FE_element_parent structures pointing to parent
-				element are destroyed when the parent element is destroyed. */
-			element_parent->parent = parent;
-			element_parent->face_number=face_number;
-			element_parent->access_count=0;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-		"CREATE(FE_element_parent).  Could not allocate memory for element parent");
-		}
+		if ((element->parents[i] == ancestor) || ((element->parents[i]->parents) &&
+			FE_element_ancestor_matches_recursive(element->parents[i], ancestor)))
+			return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(FE_element_parent).  Invalid argument(s)");
-		element_parent=(struct FE_element_parent *)NULL;
-	}
-	LEAVE;
+	return 0;
+}	
 
-	return (element_parent);
-} /* CREATE(FE_element_parent) */
-
-int DESTROY(FE_element_parent)(
-	struct FE_element_parent **element_parent_address)
 /*******************************************************************************
-LAST MODIFIED : 23 April 1999
-
-DESCRIPTION :
-Frees the memory for the element parent structure and sets
-<*element_parent_address> to NULL.
-==============================================================================*/
+ * @return  first parent element matching or descending from ancestor, or
+ * NULL if none or no match.
+ */
+static struct FE_element *FE_element_get_first_parent_with_ancestor(
+	struct FE_element *element, struct FE_element *ancestor)
 {
-	int return_code;
-	struct FE_element_parent *element_parent;
-
-	ENTER(DESTROY(FE_element_parent));
-	if ((element_parent_address)&&(element_parent= *element_parent_address))
+	int i;
+	for (i = 0; i < element->number_of_parents; i++)
 	{
-		if (0==element_parent->access_count)
-		{
-			/* do not use deaccess_FE_element so that can destroy element without
-				destroying faces - FE_element_parent structures pointing to parent
-				element are destroyed when the parent element is destroyed. */
-			DEALLOCATE(*element_parent_address);
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"DESTROY(FE_element_parent).  "
-				"Non-zero access_count %d",element_parent->access_count);
-			return_code=0;
-			*element_parent_address=(struct FE_element_parent *)NULL;
-		}
+		if ((element->parents[i] == ancestor) ||
+				FE_element_ancestor_matches_recursive(element->parents[i], ancestor))
+			return (element->parents[i]);
 	}
-	else
-	{
-		return_code=0;
-	}
-	LEAVE;
+	return NULL;
+}	
 
-	return (return_code);
-} /* DESTROY(FE_element_parent) */
-
-DECLARE_OBJECT_FUNCTIONS(FE_element_parent)
-
-DECLARE_LIST_FUNCTIONS(FE_element_parent)
-
-DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element_parent,parent, \
-	struct FE_element *,compare_FE_element_parent_parent)
-
-DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element_parent,face_number,int, \
-	compare_FE_element_parent_face_number)
-
-static int FE_element_parent_element_matches_recursive(
-	struct FE_element_parent *element_parent,void *match_element_void)
-/*******************************************************************************
-LAST MODIFIED : 29 June 1999
-
-DESCRIPTION :
-Returns true if the element referred to by <element_parent> or one of the
-elements referred to by its parents matches the <match_element>. Called by
-FE_element_get_top_level_element_conversion to check that a suggested
-top_level_element is in fact valid.
-==============================================================================*/
+/***************************************************************************//**
+ * WARNING: only returns face_number of first instance of that child as face
+ * of parent.
+ * @return  Face number of child in parent (from 0 to shape->number_of_faces),
+ * or -1 if not in face list.
+ */
+static int FE_element_get_child_face_number(struct FE_element *parent,
+	struct FE_element *child)
 {
-	int return_code;
-
-	ENTER(FE_element_parent_element_matches_recursive);
-	if (element_parent&&element_parent->parent&&match_element_void)
+	if ((parent) && (child) && (parent->shape) && (parent->faces))
 	{
-		if ((element_parent->parent==(struct FE_element *)match_element_void)||
-			FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-				FE_element_parent_element_matches_recursive,
-				match_element_void,element_parent->parent->parent_list))
+		int i;
+		for (i = 0; i < parent->shape->number_of_faces; i++)
 		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
+			if (parent->faces[i] == child)
+				return (i);
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_parent_element_matches_recursive.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+	return (-1);
+}
 
-	return (return_code);
-} /* FE_element_parent_element_matches_recursive */
-
-static int FE_element_parent_is_exterior(
-	struct FE_element_parent *element_parent, void *dummy_user_data)
-/*******************************************************************************
-LAST MODIFIED : 14 March 2003
-
-DESCRIPTION :
-Returns true if <element_parent> is an exterior surface (ie. has exactly one
-parent).
-==============================================================================*/
+/***************************************************************************//**
+ * Get first parent of element that is on <face_number> of a top-level
+ * element, or which has any parent in this state, with optional check that
+ * top-level element is in list.
+ * @face_number  from 0 to top_level_element->shape->number_of_faces-1
+ * @element_list  top-level element must also be in this list if supplied.
+ * @return  Parent element matching criteria, or NULL if none found.
+ */
+static struct FE_element *FE_element_get_parent_on_face_number(
+	struct FE_element *element, int face_number,
+	struct LIST(FE_element) *element_list)
 {
-	int return_code;
-
-	ENTER(FE_element_parent_is_exterior);
-	if (element_parent&&!dummy_user_data)
+	ENTER(FE_element_get_parent_on_face_number);
+	if (element && (0 <= face_number))
 	{
-		return_code=(1 == NUMBER_IN_LIST(FE_element_parent)(
-			element_parent->parent->parent_list));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_parent_is_exterior.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
+		int i, j;
+		struct FE_element *face_element;
 
-	return (return_code);
-} /* FE_element_parent_is_exterior */
-
-int FE_element_parent_has_face_number(struct FE_element_parent *element_parent,
-	void *void_face_number)
-/*******************************************************************************
-LAST MODIFIED : 12 August 1997
-
-DESCRIPTION :
-Returns true if <element_parent> (a 2-D surface) has no parents itself, or
-it is a face, with the given face_number, of one of its parent.
-==============================================================================*/
-{
-	int face_number,return_code;
-	struct FE_element *element;
-
-	ENTER(FE_element_parent_has_face_number);
-	if (element_parent&&(element=element_parent->parent))
-	{
-		face_number= *((int *)void_face_number);
-		return_code=(
-			(0<NUMBER_IN_LIST(FE_element_parent)(element->parent_list))&&
-			((FIND_BY_IDENTIFIER_IN_LIST(FE_element_parent,face_number)(face_number,
-				element->parent_list))));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_parent_has_face_number.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_parent_has_face_number */
-
-static int FE_element_parent_is_in_list(
-	struct FE_element_parent *element_parent, void *element_list_void)
-/*******************************************************************************
-LAST MODIFIED : 1 June 2001
-
-DESCRIPTION :
-Returns true if the parent element referred to by the <element_parent> is in the
-<element_list>. Note this is not recursive; it does not check parents' parents.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_element) *element_list;
-
-	ENTER(FE_element_parent_is_in_list);
-	if (element_parent &&
-		(element_list = (struct LIST(FE_element) *)element_list_void))
-	{
-		if (IS_OBJECT_IN_LIST(FE_element)(element_parent->parent, element_list))
+		for (i = 0; i < element->number_of_parents; i++)
 		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_parent_is_in_list.  Invalid argument(s)");
-		return_code = 0;
-	}
-
-	return (return_code);
-} /* FE_element_parent_is_in_list */
-
-static int FE_element_parent_element_in_list(
-	struct FE_element_parent *element_parent,void *element_list_void)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Returns true if the element referred to by <element_parent> is in the given
-<element_list>.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_element) *element_list;
-
-	ENTER(FE_element_parent_element_in_list);
-	if (element_parent && element_parent->parent &&
-		(element_list = (struct LIST(FE_element) *)element_list_void))
-	{
-		if (FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-			element_parent->parent->identifier,element_list))
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_parent_element_in_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_parent_element_in_list */
-
-struct FE_element_parent_face_of_element_in_list_data
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Used by FE_element_parent_face_of_element_in_list.
-==============================================================================*/
-{
-	int face_number;
-	struct LIST(FE_element) *element_list;
-}; /* struct FE_element_parent_face_of_element_in_list_data */
-
-static int FE_element_parent_face_of_element_in_list(
-	struct FE_element_parent *element_parent,void *face_in_list_data_void)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2002
-
-DESCRIPTION :
-Returns true if the <element_parent> refers to the given <face_number> of the
-parent element AND the parent element is also in the <element_list>.
-Conditional function for determining if a 1-D or 2-D element is on a particular
-face of a 3-D element in the given element_list. Recursive to handle 1-D case.
-If the element list is omitted, no check is made on membership in it.
-Now also handles case of 2-D top-level elements.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element *parent;
-	struct FE_element_parent_face_of_element_in_list_data *face_in_list_data;
-
-	ENTER(FE_element_parent_face_of_element_in_list);
-	if (element_parent && (parent = element_parent->parent) && parent->shape &&
-		(face_in_list_data=(struct FE_element_parent_face_of_element_in_list_data *)
-			face_in_list_data_void))
-	{
-		if ((2 == parent->shape->dimension) &&
-			((struct FE_element_parent *)NULL !=
-				FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-					(LIST_CONDITIONAL_FUNCTION(FE_element_parent) *)NULL, (void *)NULL,
-					parent->parent_list)))
-		{
-			if (FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-				FE_element_parent_face_of_element_in_list,
-				face_in_list_data_void,parent->parent_list))
+			if (0 == element->parents[i]->number_of_parents)
 			{
-				return_code = 1;
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-		else
-		{
-			return_code =
-				(element_parent->face_number == face_in_list_data->face_number) &&
-				(!(face_in_list_data->element_list) ||
-					FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-						parent->identifier, face_in_list_data->element_list));
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_parent_face_of_element_in_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_parent_face_of_element_in_list */
-
-int inherit_FE_element_field(struct FE_element *element,struct FE_field *field,
-	struct FE_element_field **element_field_address,
-	struct FE_element **field_element_address,
-	FE_value **coordinate_transformation_address,
-	struct FE_element *top_level_element);
-/*******************************************************************************
-LAST MODIFIED : 25 February 2003
-
-DESCRIPTION :
-Forward declaration.
-==============================================================================*/
-
-struct Field_defined_for_parent_data
-{
-	FE_value *coordinate_transformation;
-	struct FE_element *field_element,*top_level_element;
-	struct FE_element_field *element_field;
-	struct FE_field *field;
-}; /* struct Field_defined_for_parent_data */
-
-static int field_defined_for_parent(struct FE_element_parent *parent,
-	void *field_defined_for_parent_data)
-/*******************************************************************************
-LAST MODIFIED : 1 July 1999
-
-DESCRIPTION :
-Checks if the field is defined for the element referred to be the <parent>.
-Now tries to inherit from a given <top_level_element>, if specified.
-==============================================================================*/
-{
-	int return_code;
-	struct Field_defined_for_parent_data *field_data;
-
-	ENTER(field_defined_for_parent);
-	if (parent&&(field_data=(struct Field_defined_for_parent_data *)
-		field_defined_for_parent_data))
-	{
-		if ((!(field_data->top_level_element))||
-			((parent->parent == field_data->top_level_element)||
-			FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-				FE_element_parent_element_matches_recursive,
-				(void *)field_data->top_level_element,parent->parent->parent_list)))
-		{
-			if (return_code=inherit_FE_element_field(parent->parent,field_data->field,
-				&(field_data->element_field),&(field_data->field_element),
-				&(field_data->coordinate_transformation),field_data->top_level_element))
-			{
-				if (field_data->element_field)
+				if (face_number < element->parents[i]->shape->number_of_faces)
 				{
-					return_code=1;
+					face_element = element->parents[i]->faces[face_number];
 				}
 				else
 				{
-					return_code=0;
+					face_element = NULL;
+				}
+				if ((face_element == element) && ((NULL == element_list) ||
+					IS_OBJECT_IN_LIST(FE_element)(element->parents[i], element_list)))
+				{
+					return element->parents[i];
 				}
 			}
 			else
 			{
-				return_code=0;
+				for (j = 0; j < element->parents[i]->number_of_parents; j++)
+				{
+					if (face_number < element->parents[i]->parents[j]->shape->number_of_faces)
+					{
+						face_element = element->parents[i]->parents[j]->faces[face_number];
+					}
+					else
+					{
+						face_element = NULL;
+					}
+					if ((face_element == element->parents[i]) && ((NULL == element_list) ||
+						IS_OBJECT_IN_LIST(FE_element)(element->parents[i]->parents[j], element_list)))
+					{
+						return element->parents[i];
+					}
+				}
 			}
-		}
-		else
-		{
-			/* not inheriting from the given top_level_element */
-			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"field_defined_for_parent.  Invalid argument(s)");
-		return_code=0;
+			"FE_element_get_parent_on_face_number.  Invalid argument(s)");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* field_defined_for_parent */
+	return (NULL);
+}
 
 char *CM_element_type_string(enum CM_element_type cm_element_type)
 /*******************************************************************************
@@ -29512,12 +28994,8 @@ Note that the element number in <cm> must be non-negative.
 			element->faces = (struct FE_element **)NULL;
 			element->fields = (struct FE_element_field_info *)NULL;
 			element->information = (struct FE_element_node_scale_field_info *)NULL;
-			if (!(element->parent_list = CREATE(LIST(FE_element_parent))()))
-			{
-				display_message(ERROR_MESSAGE,
-					"CREATE(FE_element).  Could not create parent list");
-				return_code = 0;
-			}
+			element->parents = (struct FE_element **)NULL;
+			element->number_of_parents = 0;
 			element->access_count = 0;
 			if (template_element)
 			{
@@ -29631,32 +29109,21 @@ Frees the memory for the element, sets <*element_address> to NULL.
 ==============================================================================*/
 {
 	int i,return_code;
-	struct FE_element *element,**face;
-	struct FE_element_parent *face_parent;
+	struct FE_element *element;
 
 	ENTER(DESTROY(FE_element));
 	if ((element_address)&&(element= *element_address))
 	{
 		if (0 == element->access_count)
 		{
-			if (face=element->faces)
+			if (element->faces)
 			{
-				for (i=element->shape->number_of_faces;i>0;i--)
+				for (i = element->shape->number_of_faces - 1; 0 <= i; i--)
 				{
-					if (*face)
-					{
-						if (face_parent=FIND_BY_IDENTIFIER_IN_LIST(FE_element_parent,
-							parent)(element,(*face)->parent_list))
-						{
-							REMOVE_OBJECT_FROM_LIST(FE_element_parent)(face_parent,
-								(*face)->parent_list);
-						}
-						(void)DEACCESS(FE_element)(face);
-					}
-					face++;
+					set_FE_element_face(element, i, (struct FE_element *)NULL);
 				}
+				DEALLOCATE(element->faces);
 			}
-			DEALLOCATE(element->faces);
 			DEACCESS(FE_element_shape)(&(element->shape));
 			if (element->information)
 			{
@@ -29664,8 +29131,11 @@ Frees the memory for the element, sets <*element_address> to NULL.
 					element->fields);
 			}
 			DEACCESS(FE_element_field_info)(&(element->fields));
-			/* parent_list should be an empty list */
-			DESTROY_LIST(FE_element_parent)(&(element->parent_list));
+			/* parent elements are not ACCESSed */
+			if (element->parents)
+			{
+				DEALLOCATE(element->parents);
+			}
 			/* free the memory associated with the element */
 			DEALLOCATE(*element_address);
 			return_code = 1;
@@ -29687,170 +29157,6 @@ Frees the memory for the element, sets <*element_address> to NULL.
 	return (return_code);
 } /* DESTROY(FE_element) */
 
-#if defined (OLD_CODE)
-PROTOTYPE_COPY_OBJECT_FUNCTION(FE_element)
-/*******************************************************************************
-LAST MODIFIED : 9 February 1999
-
-DESCRIPTION :
-Creates an EXACT copy of the element.
-==============================================================================*/
-{
-	int i,number_of_faces,return_code;
-	struct FE_element **element_face,**face;
-	struct FE_element_parent *face_parent;
-
-	ENTER(COPY(FE_element));
-	return_code=0;
-	/* check the arguments */
-	if (source&&destination)
-	{
-		if (destination->shape)
-		{
-			/* free the old element values */
-			face=destination->faces;
-			for (i=destination->shape->number_of_faces;i>0;i--)
-			{
-				if (*face)
-				{
-					if (face_parent=FIND_BY_IDENTIFIER_IN_LIST(FE_element_parent,
-						parent)(destination,(*face)->parent_list))
-					{
-						REMOVE_OBJECT_FROM_LIST(FE_element_parent)(face_parent,
-							(*face)->parent_list);
-					}
-					(void)DEACCESS(FE_element)(face);
-				}
-				face++;
-			}
-			DEALLOCATE(destination->faces);
-			(void)DEACCESS(FE_element_shape)(&(destination->shape));
-		}
-		(void)clean_up_FE_element_node_scale_field_info(
-			&(destination->information), destination->fields);
-		/* copy the new */
-		destination->cm.number=source->cm.number;
-		destination->cm.type=source->cm.type;
-
-		destination->shape=ACCESS(FE_element_shape)(source->shape);
-		/* duplicate the element information */
-		if (!(destination->information=source->information)||
-			(destination->information=create_FE_element_node_scale_field_info_from_contents(
-			source->information->values_storage_size,
-			source->information->values_storage,
-			source->information->number_of_nodes,
-			source->information->nodes,
-			source->information->number_of_scale_factor_sets,
-			source->information->scale_factor_set_identifiers,
-			source->information->numbers_in_scale_factor_sets,
-			source->information->number_of_scale_factors,
-			source->information->scale_factors,
-			source->fields)))
-		{
-			/* add the faces */
-			if ((number_of_faces=source->shape->number_of_faces)>0)
-			{
-				if (ALLOCATE(element_face,struct FE_element *,number_of_faces))
-				{
-					destination->faces=element_face;
-					face=source->faces;
-					i=0;
-					while ((destination->faces)&&(i<number_of_faces))
-					{
-						if (*face)
-						{
-							if (face_parent=CREATE(FE_element_parent)(destination,i))
-							{
-								if (ADD_OBJECT_TO_LIST(FE_element_parent)(face_parent,
-									(*face)->parent_list))
-								{
-									(*element_face)=ACCESS(FE_element)(*face);
-									element_face++;
-									face++;
-									i++;
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-								"COPY(FE_element).  Could not add element to face parent list");
-									DESTROY(FE_element_parent)(&face_parent);
-									while (i>0)
-									{
-										element_face--;
-										i--;
-										if (face_parent=
-											FIND_BY_IDENTIFIER_IN_LIST(FE_element_parent,
-											parent)(destination,(*element_face)->parent_list))
-										{
-											REMOVE_OBJECT_FROM_LIST(FE_element_parent)(
-												face_parent,(*element_face)->parent_list);
-										}
-										DEACCESS(FE_element)(element_face);
-									}
-									DEALLOCATE(destination->faces);
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"COPY(FE_element).  Could not create face parent");
-								while (i>0)
-								{
-									element_face--;
-									i--;
-									if (face_parent=FIND_BY_IDENTIFIER_IN_LIST(
-										FE_element_parent,parent)(destination,
-										(*element_face)->parent_list))
-									{
-										REMOVE_OBJECT_FROM_LIST(FE_element_parent)(face_parent,
-											(*element_face)->parent_list);
-									}
-									DEACCESS(FE_element)(element_face);
-								}
-								DEALLOCATE(destination->faces);
-							}
-						}
-						else
-						{
-							*element_face=(struct FE_element *)NULL;
-							element_face++;
-							face++;
-							i++;
-						}
-					}
-					if (destination->faces)
-					{
-						return_code=1;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"COPY(FE_element).  Could not allocate memory for faces");
-				}
-			}
-			else
-			{
-				destination->faces=(struct FE_element **)NULL;
-				return_code=1;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"COPY(FE_element).  Could not create element information");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"COPY(FE_element).  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* COPY(FE_element) */
-#endif /* defined (OLD_CODE) */
-
 DECLARE_OBJECT_FUNCTIONS(FE_element)
 
 DECLARE_INDEXED_LIST_FUNCTIONS(FE_element)
@@ -29861,191 +29167,6 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(FE_element, \
 DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(FE_element,identifier)
 
 DECLARE_CHANGE_LOG_FUNCTIONS(FE_element)
-
-#if defined (OLD_CODE)
-PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(FE_element,identifier)
-{
-	int return_code;
-
-	ENTER(MANAGER_COPY_WITH_IDENTIFIER(FE_element,identifier));
-	if (source&&destination)
-	{
-		if (return_code=MANAGER_COPY_WITHOUT_IDENTIFIER(FE_element,
-			identifier)(destination,source))
-		{
-			destination->cm.type=source->cm.type;
-			destination->cm.number=source->cm.number;	
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITH_IDENTIFIER(FE_element,identifier).  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* MANAGER_COPY_WITH_IDENTIFIER(FE_element,identifier) */
-
-PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(FE_element,identifier)
-{
-	int i,number_of_faces,return_code;
-	struct FE_element **element_face,**face;
-	struct FE_element_parent *face_parent;
-
-	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(FE_element,identifier));
-	return_code=0;
-	if (destination&&source&&(destination != source))
-	{
-		if (destination->shape)
-		{
-			/* free the old element values */
-			face=destination->faces;
-			for (i=destination->shape->number_of_faces;i>0;i--)
-			{
-				if (*face)
-				{
-					if (face_parent=FIND_BY_IDENTIFIER_IN_LIST(FE_element_parent,
-						parent)(destination,(*face)->parent_list))
-					{
-						REMOVE_OBJECT_FROM_LIST(FE_element_parent)(face_parent,
-							(*face)->parent_list);
-					}
-					(void)DEACCESS(FE_element)(face);
-				}
-				face++;
-			}
-			DEALLOCATE(destination->faces);
-			(void)DEACCESS(FE_element_shape)(&(destination->shape));
-		}
-		(void)clean_up_FE_element_node_scale_field_info(
-			&(destination->information), destination->fields);
-		/* copy the new */
-		destination->shape=ACCESS(FE_element_shape)(source->shape);
-		/* duplicate the element information */
-		if (!(destination->information=source->information)||
-			(destination->information=create_FE_element_node_scale_field_info_from_contents(
-			source->information->values_storage_size,
-			source->information->values_storage,
-			source->information->number_of_nodes,
-			source->information->nodes,
-			source->information->number_of_scale_factor_sets,
-			source->information->scale_factor_set_identifiers,
-			source->information->numbers_in_scale_factor_sets,
-			source->information->number_of_scale_factors,
-			source->information->scale_factors,
-			source->fields)))
-		{
-			/* add the faces */
-			if ((number_of_faces=source->shape->number_of_faces)>0)
-			{
-				if (ALLOCATE(element_face,struct FE_element *,number_of_faces))
-				{
-					destination->faces=element_face;
-					face=source->faces;
-					i=0;
-					while ((destination->faces)&&(i<number_of_faces))
-					{
-						if (*face)
-						{
-							if (face_parent=CREATE(FE_element_parent)(destination,i))
-							{
-								if (ADD_OBJECT_TO_LIST(FE_element_parent)(face_parent,
-									(*face)->parent_list))
-								{
-									(*element_face)=ACCESS(FE_element)(*face);
-									element_face++;
-									face++;
-									i++;
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_element,identifier).  "
-										"Could not add element to face parent list");
-									DESTROY(FE_element_parent)(&face_parent);
-									while (i>0)
-									{
-										element_face--;
-										i--;
-										if (face_parent=
-											FIND_BY_IDENTIFIER_IN_LIST(FE_element_parent,
-											parent)(destination,(*element_face)->parent_list))
-										{
-											REMOVE_OBJECT_FROM_LIST(FE_element_parent)(
-												face_parent,(*element_face)->parent_list);
-										}
-										DEACCESS(FE_element)(element_face);
-									}
-									DEALLOCATE(destination->faces);
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_element,identifier).  "
-									"Could not create face parent");
-								while (i>0)
-								{
-									element_face--;
-									i--;
-									if (face_parent=
-										FIND_BY_IDENTIFIER_IN_LIST(FE_element_parent,parent)(
-											destination,(*element_face)->parent_list))
-									{
-										REMOVE_OBJECT_FROM_LIST(FE_element_parent)(face_parent,
-											(*element_face)->parent_list);
-									}
-									DEACCESS(FE_element)(element_face);
-								}
-								DEALLOCATE(destination->faces);
-							}
-						}
-						else
-						{
-							*element_face=(struct FE_element *)NULL;
-							element_face++;
-							face++;
-							i++;
-						}
-					}
-					if (destination->faces)
-					{
-						return_code=1;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_element,identifier).  "
-						"Could not allocate memory for faces");
-				}
-			}
-			else
-			{
-				destination->faces=(struct FE_element **)NULL;
-				return_code=1;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_element,identifier).  "
-				"Could not create element information");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_element,identifier).  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* MANAGER_COPY_WITHOUT_IDENTIFIER(FE_element,identifier) */
-#endif /* defined (OLD_CODE) */
 
 int inherit_FE_element_field(struct FE_element *element,struct FE_field *field,
 	struct FE_element_field **element_field_address,
@@ -30070,12 +29191,10 @@ column of the <coordinate_transformation> matrix.
 		*face_to_element,*face_to_element_value,*new_coordinate_transformation,
 		*new_coordinate_transformation_value;
 	int dimension,dimension_minus_1,face_number,field_element_dimension,i,j,k,
-		return_code,transformation_size;
+		parent_number, return_code,transformation_size;
 	struct FE_element *field_element,*parent;
 	struct FE_element_field *element_field;
 	struct FE_element_field_info *field_info;
-	struct FE_element_parent *element_parent;
-	struct Field_defined_for_parent_data field_defined_for_parent_data;
 #if defined (DOUBLE_FOR_DOT_PRODUCT)
 	double sum;
 #else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
@@ -30131,26 +29250,25 @@ column of the <coordinate_transformation> matrix.
 			}
 			else
 			{
+				parent = NULL;
+				return_code = 0;
 				/* check if the field is defined for any of the element's parents */
-				field_defined_for_parent_data.field=field;
-				field_defined_for_parent_data.field_element=(struct FE_element *)NULL;
-				field_defined_for_parent_data.element_field=
-					(struct FE_element_field *)NULL;
-				field_defined_for_parent_data.coordinate_transformation=
-					(FE_value *)NULL;
-				/*???RC  Begin change to allow inheriting off given top_level_element */
-				field_defined_for_parent_data.top_level_element=top_level_element;
-				/*???RC  End change to allow inheriting off given top_level_element */
-				if (element_parent=FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-					field_defined_for_parent,(void *)(&field_defined_for_parent_data),
-					element->parent_list))
+				for (parent_number = 0; parent_number < element->number_of_parents; parent_number++)
 				{
-					element_field=field_defined_for_parent_data.element_field;
-					field_element=field_defined_for_parent_data.field_element;
-					coordinate_transformation=
-						field_defined_for_parent_data.coordinate_transformation;
-					parent=element_parent->parent;
-					face_number=element_parent->face_number;
+					parent = element->parents[parent_number];
+					if ((NULL == top_level_element) || (parent == top_level_element) ||
+						FE_element_ancestor_matches_recursive(parent, top_level_element))
+					{
+						if (return_code = inherit_FE_element_field(parent, field,
+							&element_field, &field_element, &coordinate_transformation, top_level_element))
+						{
+							break;
+						}
+					}
+				}
+				if (return_code && (parent) && (element_field))
+				{
+					face_number = FE_element_get_child_face_number(parent, element);
 					dimension=parent->shape->dimension;
 					field_element_dimension=field_element->shape->dimension;
 #if defined (DEBUG)
@@ -30356,60 +29474,6 @@ column of the <coordinate_transformation> matrix.
 	return (return_code);
 } /* inherit_FE_element_field */
 
-struct Adjacent_element_data
-{
-	struct FE_element *element;
-	int number_of_adjacent_elements;
-	struct FE_element **adjacent_elements;
-};
-
-static int FE_element_parent_adjacent_elements(struct FE_element_parent *parent,
-	void *adjacent_element_data_void)
-/*******************************************************************************
-LAST MODIFIED : 27 October 2000
-
-DESCRIPTION :
-Adds the element to the adjacent_elements array in the data if the 
-<parent> element is not the element.
-==============================================================================*/
-{
-	int return_code;
-	struct Adjacent_element_data *data;
-	struct FE_element **new_array;
-
-	ENTER(FE_element_parent_adjacent_elements);
-	if (parent&&(data = (struct Adjacent_element_data *)adjacent_element_data_void)
-		&& data->element)
-	{
-		return_code = 1;
-		if (parent->parent!=data->element)
-		{
-			if (REALLOCATE(new_array, data->adjacent_elements,
-				struct FE_element *, data->number_of_adjacent_elements + 1))
-			{
-				new_array[data->number_of_adjacent_elements] = parent->parent;
-				data->adjacent_elements = new_array;
-				data->number_of_adjacent_elements++;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_parent_adjacent_elements.  Unable to reallocate array");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_parent_adjacent_elements.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_parent_adjacent_elements */
-
 int adjacent_FE_element(struct FE_element *element,
 	int face_number, int *number_of_adjacent_elements, 
 	struct FE_element ***adjacent_elements)
@@ -30422,35 +29486,41 @@ face indicated by <face_number>.  <adjacent_elements> is ALLOCATED to the
 correct size and should be DEALLOCATED when finished with.
 ==============================================================================*/
 {
-	int return_code;
-	struct Adjacent_element_data data;
+	int i, j, return_code;
+	struct FE_element *face;
 
 	ENTER(adjacent_FE_element);
-	if (element&&(element->shape)&&(element->faces))
+	if ((element) && (element->shape) && (element->faces))
 	{
-		if ((0<=face_number)&&(face_number<element->shape->number_of_faces)&&
-			 ((element->faces)[face_number]))
+		if ((0 <= face_number) && (face_number < element->shape->number_of_faces)&&
+			 (NULL != (face = (element->faces)[face_number])) && (face->parents))
 		{
-			data.element = element;
-			data.number_of_adjacent_elements = 0;
-			data.adjacent_elements = (struct FE_element **)NULL;
-			if (FOR_EACH_OBJECT_IN_LIST(FE_element_parent)(
-				FE_element_parent_adjacent_elements,(void *)&data,
-				((element->faces)[face_number])->parent_list))
+			if (ALLOCATE(*adjacent_elements, struct FE_element *, face->number_of_parents))
 			{
-				if (data.number_of_adjacent_elements)
+				j = 0;
+				for (i = 0; i < face->number_of_parents; i++)
 				{
-					*adjacent_elements=data.adjacent_elements;
-					*number_of_adjacent_elements = data.number_of_adjacent_elements;
+					if ((face->parents[i]) && (face->parents[i] != element))
+					{
+						(*adjacent_elements)[j] = face->parents[i];
+						j++;
+					}
+				}
+				*number_of_adjacent_elements = j;
+				if (j > 0)
+				{
 					return_code = 1;
 				}
 				else
 				{
+					DEALLOCATE(*adjacent_elements);
 					return_code = 0;
 				}
 			}
 			else
 			{
+				display_message(ERROR_MESSAGE,
+					"adjacent_FE_element.  Unable to allocate array");
 				return_code = 0;
 			}
 		}
@@ -30471,50 +29541,6 @@ correct size and should be DEALLOCATED when finished with.
 	return (return_code);
 } /* adjacent_FE_element */
 
-struct FE_element_parent_log_FE_field_changes_data
-/*******************************************************************************
-LAST MODIFIED : 14 April 2003
-
-DESCRIPTION :
-Data for passing to FE_element_parent_log_FE_field_changes.
-==============================================================================*/
-{
-	struct CHANGE_LOG(FE_field) *fe_field_change_log;
-	struct FE_element_field_info **last_fe_element_field_info_address;
-};
-
-static int FE_element_parent_log_FE_field_changes(
-	struct FE_element_parent *element_parent, void *parent_data_void)
-/*******************************************************************************
-LAST MODIFIED : 14 April 2003
-
-DESCRIPTION :
-Calls FE_element_log_FE_field_changes for the <element_parent>.
-If the element in <element_parent> is in <element_list>, increments <count>.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_parent_log_FE_field_changes_data *parent_data;
-
-	ENTER(FE_element_parent_log_FE_field_changes);
-	if (element_parent && (parent_data =
-		(struct FE_element_parent_log_FE_field_changes_data *)parent_data_void))
-	{
-		return_code = FE_element_log_FE_field_changes(element_parent->parent,
-			parent_data->fe_field_change_log,
-			parent_data->last_fe_element_field_info_address);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_parent_log_FE_field_changes.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_parent_log_FE_field_changes */
-
 int FE_element_log_FE_field_changes(struct FE_element *element,
 	struct CHANGE_LOG(FE_field) *fe_field_change_log,
 	struct FE_element_field_info **last_fe_element_field_info_address)
@@ -30529,8 +29555,7 @@ FE_element_field_info which had fields in it and was output. The last such
 output FE_element_field_info is expected to be at this address too.
 ==============================================================================*/
 {
-	int return_code;
-	struct FE_element_parent_log_FE_field_changes_data parent_data;
+	int i, return_code;
 
 	ENTER(FE_element_log_FE_field_changes);
 	if (element && element->fields && fe_field_change_log &&
@@ -30553,14 +29578,14 @@ output FE_element_field_info is expected to be at this address too.
 			}
 		}
 		/* log fields in parent elements */
-		parent_data.fe_field_change_log = fe_field_change_log;
-		parent_data.last_fe_element_field_info_address =
-			last_fe_element_field_info_address;
-		if (!FOR_EACH_OBJECT_IN_LIST(FE_element_parent)(
-			FE_element_parent_log_FE_field_changes, (void *)&parent_data,
-			element->parent_list))
+		for (i = 0; i < element->number_of_parents; i++)
 		{
-			return_code = 0;
+			if (!FE_element_log_FE_field_changes(element->parents[i],
+				fe_field_change_log, last_fe_element_field_info_address))
+			{
+				return_code = 0;
+				break;
+			}
 		}
 	}
 	else
@@ -30591,8 +29616,7 @@ sense for the element, eg. for n-D elements in an n-D mesh.
 ???RC Only complete up to 3-D.
 ==============================================================================*/
 {
-	int number_of_parents, return_code;
-	struct FE_element_parent_face_of_element_in_list_data face_in_list_data;
+	int i, return_code;
 
 	ENTER(FE_element_meets_topological_criteria);
 	return_code = 0;
@@ -30602,30 +29626,35 @@ sense for the element, eg. for n-D elements in an n-D mesh.
 			(cm_element_type == element->cm.type))
 		{
 			return_code = 1;
-			if ((0 < (number_of_parents =
-				NUMBER_IN_LIST(FE_element_parent)(element->parent_list))))
+			if (0 < element->number_of_parents)
 			{
 				if (3 > dimension)
 				{
 					/* test for exterior element */
 					if (exterior)
 					{
-						if (!((1 == number_of_parents) ||
-							((1 == dimension) && FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-								FE_element_parent_is_exterior, (void *)NULL,
-								element->parent_list))))
+						if (1 != element->number_of_parents)
 						{
 							return_code = 0;
+							if (1 == dimension)
+							{
+								for (i = 0; i < element->number_of_parents; i++)
+								{
+									/* following is not <= 1 so 'exterior' works appropriately on 2-D meshes */
+									if (element->parents[i]->number_of_parents == 1)
+									{
+										return_code = 1;
+										break;
+									}
+								}
+							}
 						}
 					}
 					/* test for on correct face */
 					if (return_code && (0 <= face_number))
 					{
-						face_in_list_data.face_number = face_number;
-						face_in_list_data.element_list = element_list;
-						if (!FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-							FE_element_parent_face_of_element_in_list,
-							(void *)&face_in_list_data, element->parent_list))
+						if (NULL == FE_element_get_parent_on_face_number(
+							element, face_number, element_list))
 						{
 							return_code = 0;
 						}
@@ -33538,43 +32567,6 @@ afterwards. FE_region should be the only object that needs to call this.
 	return (return_code);
 } /* set_FE_element_identifier */
 
-struct FE_element_parent_changed_data
-{
-	struct CHANGE_LOG(FE_element) *fe_element_change_log;
-	struct CHANGE_LOG(FE_node) *fe_node_change_log;
-};
-
-static int FE_element_parent_changed(
-	struct FE_element_parent *element_parent,void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 11 February 2003
-
-DESCRIPTION :
-FE_element_parent conditional version of FE_element_or_parent_changed.
-<data_void> points at a struct FE_element_parent_changed_data.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_parent_changed_data *data;
-
-	ENTER(FE_element_parent_changed);
-	if (element_parent &&
-		(data = (struct FE_element_parent_changed_data *)data_void))
-	{
-		return_code = FE_element_or_parent_changed(element_parent->parent,
-			data->fe_element_change_log, data->fe_node_change_log);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_parent_changed.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_parent_changed */
-
 int FE_element_or_parent_changed(struct FE_element *element,
 	struct CHANGE_LOG(FE_element) *fe_element_change_log,
 	struct CHANGE_LOG(FE_node) *fe_node_change_log)
@@ -33594,7 +32586,6 @@ OBJECT_NOT_IDENTIFIER_CHANGED.
 	enum CHANGE_LOG_CHANGE(FE_element) element_change;
 	enum CHANGE_LOG_CHANGE(FE_node) node_change;
 	int i, number_of_nodes, return_code;
-	struct FE_element_parent_changed_data data;
 	struct FE_node *node, **nodes;
 
 	ENTER(FE_element_or_parent_changed);
@@ -33630,12 +32621,14 @@ OBJECT_NOT_IDENTIFIER_CHANGED.
 			if (!return_code)
 			{
 				/* try parents */
-				data.fe_element_change_log = fe_element_change_log;
-				data.fe_node_change_log = fe_node_change_log;
-				if (FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-					FE_element_parent_changed, (void *)&data, element->parent_list))
+				for (i = 0; i < element->number_of_parents; i++)
 				{
-					return_code = 1;
+					if (FE_element_or_parent_changed(element->parents[i],
+						fe_element_change_log, fe_node_change_log))
+					{
+						return_code = 1;
+						break;
+					}
 				}
 			}
 		}
@@ -33693,8 +32686,7 @@ Can be used to determine if a face is in use by more than one parent elements.
 	ENTER(get_FE_element_number_of_parents);
 	if (element && number_of_parents_address)
 	{
-		*number_of_parents_address =
-			NUMBER_IN_LIST(FE_element_parent)(element->parent_list);
+		*number_of_parents_address = element->number_of_parents;
 		return_code = 1;
 	}
 	else
@@ -33708,52 +32700,6 @@ Can be used to determine if a face is in use by more than one parent elements.
 	return (return_code);
 } /* get_FE_element_number_of_parents */
 
-struct FE_element_parent_count_if_element_in_list_data
-/*******************************************************************************
-LAST MODIFIED : 14 January 2003
-
-DESCRIPTION :
-Data for passing to FE_element_parent_count_if_element_in_list.
-==============================================================================*/
-{
-	int count;
-	struct LIST(FE_element) *element_list;
-};
-
-static int FE_element_parent_count_if_element_in_list(
-	struct FE_element_parent *element_parent, void *count_data_void)
-/*******************************************************************************
-LAST MODIFIED : 14 January 2003
-
-DESCRIPTION :
-If the element in <element_parent> is in <element_list>, increments <count>.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_parent_count_if_element_in_list_data *count_data;
-
-	ENTER(FE_element_parent_count_if_element_in_list);
-	if (element_parent && (count_data =
-		(struct FE_element_parent_count_if_element_in_list_data *)count_data_void))
-	{
-		if (IS_OBJECT_IN_LIST(FE_element)(element_parent->parent,
-			count_data->element_list))
-		{
-			(count_data->count)++;
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_parent_count_if_element_in_list.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_parent_count_if_element_in_list */
-
 int get_FE_element_number_of_parents_in_list(struct FE_element *element,
 	struct LIST(FE_element) *element_list, int *number_of_parents_address)
 /*******************************************************************************
@@ -33763,18 +32709,21 @@ DESCRIPTION :
 Returns the number of parents of <element> that are in <element_list>.
 ==============================================================================*/
 {
-	int return_code;
-	struct FE_element_parent_count_if_element_in_list_data count_data;
+	int count, i, return_code;
 
 	ENTER(get_FE_element_number_of_parents_in_list);
-	if (element && element_list && number_of_parents_address)
+	if ((element) && (element_list) && (number_of_parents_address))
 	{
-		count_data.count = 0;
-		count_data.element_list = element_list;
-		return_code = FOR_EACH_OBJECT_IN_LIST(FE_element_parent)(
-			FE_element_parent_count_if_element_in_list, (void *)&count_data,
-			element->parent_list);
-		*number_of_parents_address = count_data.count;
+		count = 0;
+		for (i = 0; i < element->number_of_parents; i++)
+		{
+			if (IS_OBJECT_IN_LIST(FE_element)(element->parents[i], element_list))
+			{
+				count++;
+			}
+		}
+		*number_of_parents_address = count;
+		return_code = 1;
 	}
 	else
 	{
@@ -33799,17 +32748,15 @@ If there is no parent, a true return_code is returned but with a NULL
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_element_parent *element_parent;
 
 	ENTER(FE_element_get_first_parent);
-	if (element && parent_element_address && face_number_address)
+	if ((element) && (parent_element_address) && (face_number_address))
 	{
-		if (element_parent = FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-			(LIST_CONDITIONAL_FUNCTION(FE_element_parent) *)NULL, (void *)NULL,
-			element->parent_list))
+		if ((element->parents) && (0 < element->number_of_parents))
 		{
-			*parent_element_address = element_parent->parent;
-			*face_number_address = element_parent->face_number;
+			*parent_element_address = element->parents[0];
+			*face_number_address =
+				FE_element_get_child_face_number(*parent_element_address, element);
 		}
 		else
 		{
@@ -33928,63 +32875,71 @@ DESCRIPTION :
 Sets face <face_number> of <element> to <face_element>, ensuring the
 <face_element> has <element> as a parent. <face_element> may be NULL = no face.
 Must have set the shape with set_FE_element_shape first.
+Note it is legal to have the same face more than once on an element -
+consider a toroidal element covering 360 degrees over polar coordinate theta.
 Should only be called for unmanaged elements.
 ==============================================================================*/
 {
-	int return_code;
-	struct FE_element_parent *face_parent;
+	int i, j, return_code;
+	struct FE_element **new_parents, *old_face_element;
 
 	ENTER(set_FE_element_face);
-	return_code=0;
-	if (element&&element->shape&&element->faces&&(0<=face_number)&&
-		(face_number<element->shape->number_of_faces))
+	if (element && element->shape && element->faces && (0 <= face_number) &&
+		(face_number < element->shape->number_of_faces))
 	{
-		return_code=1;
-		/* check correct face not already established - otherwise following logic
-			 will fail! */
-		if (element->faces[face_number] != face_element)
+		return_code = 1;
+		/* check this face not already set, else following logic will fail! */
+		old_face_element = element->faces[face_number];
+		if (face_element != old_face_element)
 		{
 			if (face_element)
 			{
-				/* set up new face/parent relationship */
-				if (face_parent=CREATE(FE_element_parent)(element,face_number))
+				/* set up new face->parent relationship */
+				if (REALLOCATE(new_parents, face_element->parents,
+					struct FE_element *, face_element->number_of_parents + 1))
 				{
-					if (!ADD_OBJECT_TO_LIST(FE_element_parent)(face_parent,
-						face_element->parent_list))
-					{
-						display_message(ERROR_MESSAGE,
-							"set_FE_element_face.  Could not set element as parent of face");
-						DESTROY(FE_element_parent)(&face_parent);
-						return_code=0;
-					}
+					face_element->parents = new_parents;
+					face_element->parents[face_element->number_of_parents] = element;
+					(face_element->number_of_parents)++;
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"set_FE_element_face.  Could not create face_parent");
-					return_code=0;
+						"set_FE_element_face.  Could not set element as parent of face");						
+					return_code = 0;
 				}
 			}
 			if (return_code)
 			{
-				if (element->faces[face_number])
+				if (old_face_element)
 				{
-					/* remove existing face/parent connection */
-					if (face_parent=FIND_BY_IDENTIFIER_IN_LIST(FE_element_parent,
-						parent)(element,element->faces[face_number]->parent_list))
+					/* remove first instance of element from face->parents array */
+					for (i = 0; i < old_face_element->number_of_parents; i++)
 					{
-						REMOVE_OBJECT_FROM_LIST(FE_element_parent)(
-							face_parent,element->faces[face_number]->parent_list);
+						if (old_face_element->parents[i] == element)
+						{
+							old_face_element->number_of_parents--;
+							for (j = i; j < old_face_element->number_of_parents; j++)
+							{
+								old_face_element->parents[j] = old_face_element->parents[j + 1];
+							}
+							break;
+						}
+					}
+					if (0 == old_face_element->number_of_parents)
+					{
+						DEALLOCATE(old_face_element->parents);
 					}
 				}
 				/* set the new face */
-				REACCESS(FE_element)(&(element->faces[face_number]),face_element);
+				REACCESS(FE_element)(&(element->faces[face_number]), face_element);
 			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"set_FE_element_face.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -35166,7 +34121,6 @@ it from its first parent if it has no node scale field information.
 ==============================================================================*/
 {
 	struct FE_element_field *element_field;
-	struct FE_element_parent *element_parent;
 	struct FE_field *field;
 
 	ENTER(get_FE_element_default_coordinate_field);
@@ -35179,21 +34133,9 @@ it from its first parent if it has no node scale field information.
 		{
 			field = element_field->field;
 		}
-		else
+		else if ((element->parents) && (0 < element->number_of_parents))
 		{
-			/* get first coordinate field of first parent element */
-			if (element_parent = FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-				(LIST_ITERATOR_FUNCTION(FE_element_parent) *)NULL, (void *)NULL,
-				element->parent_list))
-			{
-				field = get_FE_element_default_coordinate_field(element_parent->parent);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"get_FE_element_default_coordinate_field.  "
-					"No coordinate field found");
-			}
+			field = get_FE_element_default_coordinate_field(element->parents[0]);
 		}
 	}
 	else
@@ -35447,37 +34389,6 @@ Returns true if <element> is not in <element_list>.
 	return (return_code);
 } /* FE_element_is_not_in_list */
 
-static int FE_element_parent_is_not_wholly_within_list_tree(
-	struct FE_element_parent *element_parent, void *element_list_void)
-/*******************************************************************************
-LAST MODIFIED : 1 March 2001
-
-DESCRIPTION :
-Returns true if the parent element referred to by the <element_parent> is
-not wholly within the <element_list> tree.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_element) *element_list;
-
-	ENTER(FE_element_parent_is_not_wholly_within_list_tree);
-	if (element_parent &&
-		(element_list = (struct LIST(FE_element) *)element_list_void))
-	{
-		return_code = !FE_element_is_wholly_within_element_list_tree(
-			element_parent->parent, element_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_parent_is_not_wholly_within_list_tree.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-
-	return (return_code);
-} /* FE_element_parent_is_not_wholly_within_list_tree */
-
 int FE_element_is_wholly_within_element_list_tree(
 	struct FE_element *element, void *element_list_void)
 /*******************************************************************************
@@ -35490,17 +34401,25 @@ will be destroyed, since faces and lines are destroyed with their parents if
 they are not also faces or lines of other elements not being destroyed.
 ==============================================================================*/
 {
-	int return_code;
+	int i, return_code;
 	struct LIST(FE_element) *element_list;
 
 	ENTER(FE_element_is_wholly_within_element_list_tree);
 	if (element && (element_list = (struct LIST(FE_element) *)element_list_void))
 	{
-		return_code = IS_OBJECT_IN_LIST(FE_element)(element, element_list) ||
-			((struct FE_element_parent *)NULL ==
-				FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-					FE_element_parent_is_not_wholly_within_list_tree,
-					(void *)element_list, element->parent_list));
+		return_code = 1;
+		if (!IS_OBJECT_IN_LIST(FE_element)(element, element_list))
+		{
+			for (i = 0; i < element->number_of_parents; i++)
+			{
+				if (!FE_element_is_wholly_within_element_list_tree(
+					element->parents[i], element_list_void))
+				{
+					return_code = 0;
+					break;
+				}
+			}
+		}
 	}
 	else
 	{
@@ -35667,93 +34586,6 @@ Note: this function is recursive.
 
 	return (return_code);
 } /* FE_element_add_faces_not_in_list */
-
-struct FE_element_parent_for_each_element_and_parent_data
-/*******************************************************************************
-LAST MODIFIED : 14 May 2003
-
-DESCRIPTION :
-Data for passing to FE_element_parent_for_each_element_and_parent.
-==============================================================================*/
-{
-	LIST_ITERATOR_FUNCTION(FE_element) *iterator_function;
-	void *user_data;
-};
-
-static int FE_element_parent_for_each_element_and_parent(
-	struct FE_element_parent *element_parent, void *iterator_data_void)
-/*******************************************************************************
-LAST MODIFIED : 14 May 2003
-
-DESCRIPTION :
-Calls FE_element_for_each_element_and_parent with <iterator_function> and
-<user_data> for the element in <element_parent>. <iterator_data_void> points
-at a struct FE_element_parent_for_each_element_and_parent_data
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_parent_for_each_element_and_parent_data *iterator_data;
-
-	ENTER(FE_element_parent_for_each_element_and_parent);
-	if (element_parent && (iterator_data =
-		(struct FE_element_parent_for_each_element_and_parent_data *)
-		iterator_data_void))
-	{
-		return_code = FE_element_for_each_element_and_parent(element_parent->parent,
-			iterator_data->iterator_function, iterator_data->user_data);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_parent_for_each_element_and_parent.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_parent_for_each_element_and_parent */
-
-int FE_element_for_each_element_and_parent(struct FE_element *element,
-	LIST_ITERATOR_FUNCTION(FE_element) *iterator_function, void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 14 May 2003
-
-DESCRIPTION :
-Iterates over <element> and all its parent elements and so on recursively,
-calling <iterator_function> with <user_data> for each of them.
-Note that parents of parent elements may be iterated over more than once since,
-for example, lines can be in two faces of the same parent element.
-Stops as soon as all parent elements have been iterated through, or the
-iterator_function returns FALSE for any element.
-This function is recursive.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_parent_for_each_element_and_parent_data iterator_data;
-
-	ENTER(FE_element_for_each_element_and_parent);
-	return_code = 0;
-	if (element && iterator_function)
-	{
-		if (return_code = (iterator_function)(element, user_data))
-		{
-			iterator_data.iterator_function = iterator_function;
-			iterator_data.user_data = user_data;
-			return_code = FOR_EACH_OBJECT_IN_LIST(FE_element_parent)(
-				FE_element_parent_for_each_element_and_parent,
-				(void *)&iterator_data, element->parent_list);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_for_each_element_and_parent.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_for_each_element_and_parent */
 
 static int FE_element_shape_and_faces_match(struct FE_element *element1,
 	struct LIST(FE_element) *global_element_list1,
@@ -36249,17 +35081,30 @@ Outputs the information contained at the element.
 				display_message(INFORMATION_MESSAGE,"  No faces\n");
 			}
 			/* write the parents */
-			if (0<NUMBER_IN_LIST(FE_element_parent)(element->parent_list))
+			if ((0 < element->number_of_parents) && (element->parents))
 			{
 				display_message(INFORMATION_MESSAGE,"  parents\n");
+#if !defined (WINDOWS_DEV_FLAG)
 				*line='\0';
-				FOR_EACH_OBJECT_IN_LIST(FE_element_parent)(list_FE_element_parent,
-					(void *)line,element->parent_list);
+				for (i = 0; i < element->number_of_parents; i++)
+				{
+					if (element->parents[i])
+					{
+						sprintf(line+strlen(line)," (%d)", element->parents[i]->cm.number);
+						if (70<=strlen(line))
+						{
+							display_message(INFORMATION_MESSAGE,line);
+							display_message(INFORMATION_MESSAGE,"\n");
+							*line='\0';
+						}
+					}
+				}
 				if (0<strlen(line))
 				{
 					display_message(INFORMATION_MESSAGE,line);
 					display_message(INFORMATION_MESSAGE,"\n");
 				}
+#endif /* !defined (WINDOWS_DEV_FLAG) */
 			}
 			else
 			{
@@ -37127,6 +35972,7 @@ Find the first time based field at a node
 	return (time_field);
 } /* find_first_time_field_at_FE_node */
 
+#if defined (OLD_CODE)
 int FE_element_get_top_level_xi_number(struct FE_element *element,int xi_number)
 /*******************************************************************************
 LAST MODIFIED : 12 October 1998
@@ -37230,6 +36076,7 @@ element_group and xi directions are different for neighbouring elements.
 
 	return (top_level_xi_number);
 } /* FE_element_get_top_level_xi_number */
+#endif /* defined (OLD_CODE) */
 
 struct FE_element_field_info *FE_element_get_FE_element_field_info(
 	struct FE_element *element)
@@ -37332,9 +36179,7 @@ Returns true if <top_level_element> is indeed a top_level parent of <element>.
 		(CM_ELEMENT==top_level_element->cm.type))
 	{
 		if ((element==top_level_element)||
-			FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-				FE_element_parent_element_matches_recursive,
-				top_level_element_void,element->parent_list))
+			FE_element_ancestor_matches_recursive(element, top_level_element))
 		{
 			return_code=1;
 		}
@@ -37354,44 +36199,6 @@ Returns true if <top_level_element> is indeed a top_level parent of <element>.
 	return (return_code);
 } /* FE_element_has_top_level_element */
 
-int FE_element_or_parent_is_element(
-	struct FE_element *element,void *match_element_void)
-/*******************************************************************************
-LAST MODIFIED : 21 June 2000
-
-DESCRIPTION :
-Returns true if <element> or any of its parents matches <match_element>.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element *match_element;
-
-	ENTER(FE_element_or_parent_is_element);
-	if (element&&(match_element=(struct FE_element *)match_element_void))
-	{
-		if ((element==match_element)||((struct FE_element_parent *)NULL !=
-			FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-				FE_element_parent_element_matches_recursive,
-				match_element_void,element->parent_list)))
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_or_parent_is_element.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /*  FE_element_or_parent_is_element*/
-
 int FE_element_is_top_level_parent_of_element(
 	struct FE_element *top_level_element,void *element_void)
 /*******************************************************************************
@@ -37409,9 +36216,7 @@ Returns true if <top_level_element> is a top_level parent of <element>.
 	{
 		if ((CM_ELEMENT==top_level_element->cm.type)&&
 			((element==top_level_element)||
-				FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-					FE_element_parent_element_matches_recursive,
-					(void *)top_level_element,element->parent_list)))
+				FE_element_ancestor_matches_recursive(element, top_level_element)))
 		{
 			return_code=1;
 		}
@@ -37433,7 +36238,7 @@ Returns true if <top_level_element> is a top_level parent of <element>.
 
 struct FE_element *FE_element_get_top_level_element_conversion(
 	struct FE_element *element,struct FE_element *check_top_level_element,
-	struct LIST(FE_element) *element_list, int face_number,
+	struct LIST(FE_element) *element_list, int specified_face_number,
 	FE_value *element_to_top_level)
 /*******************************************************************************
 LAST MODIFIED : 3 December 2002
@@ -37461,65 +36266,52 @@ on the dimension of element:top_level, ie.,
 NOTE: recursive to handle 1-D to 3-D case.
 ==============================================================================*/
 {
-	int i,size;
+	int face_number, i,  size;
 	FE_value *face_to_element;
-	struct FE_element *parent,*top_level_element;
-	struct FE_element_parent *element_parent,*first_element_parent;
-	struct FE_element_parent_face_of_element_in_list_data face_in_list_data;
+	struct FE_element *parent, *top_level_element;
 
 	ENTER(FE_element_get_top_level_element_conversion);
 	if (element&&element_to_top_level)
 	{
-		if (first_element_parent=FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-			(LIST_CONDITIONAL_FUNCTION(FE_element_parent) *)NULL,(void *)NULL,
-			element->parent_list))
+		if (0 < element->number_of_parents)
 		{
-			if (!(check_top_level_element&&(element_parent=
-				FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-					FE_element_parent_element_matches_recursive,
-					(void *)check_top_level_element,element->parent_list))))
+			parent = NULL;
+			if (check_top_level_element)
 			{
-				if (element_list)
+				parent = FE_element_get_first_parent_with_ancestor(element, check_top_level_element);
+			}
+			if (!parent)
+			{
+				if (0 <= specified_face_number)
 				{
-					if (0>face_number)
-					{
-						element_parent=FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-							FE_element_parent_element_in_list,(void *)element_list,
-							element->parent_list);
-					}
-					else
-					{
-						face_in_list_data.face_number = face_number;
-						face_in_list_data.element_list = element_list;
-						element_parent=FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-							FE_element_parent_face_of_element_in_list,
-							(void *)&face_in_list_data, element->parent_list);
-					}
+					parent = FE_element_get_parent_on_face_number(
+						element, specified_face_number, element_list);
 				}
-				else
+				else if (element_list)
 				{
-					if (0>face_number)
+					for (i = 0; i < element->number_of_parents; i++)
 					{
-						element_parent=first_element_parent;
-					}
-					else
-					{
-						element_parent=FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-							FE_element_parent_has_face_number,(void *)&face_number,
-							element->parent_list);
+						if (IS_OBJECT_IN_LIST(FE_element)(element->parents[i], element_list))
+						{
+							parent = element->parents[i];
+							break;
+						}
 					}
 				}
 			}
-			if ((element_parent||(element_parent=first_element_parent))&&
-				(parent=element_parent->parent)&&parent->shape&&
-				parent->shape->face_to_element&&
-				(top_level_element=FE_element_get_top_level_element_conversion(
-					parent,check_top_level_element,element_list,face_number,
+			if (!parent)
+			{
+				parent = element->parents[0]; 
+			}
+			
+			if ((parent) && (parent->shape) && (parent->shape->face_to_element) &&
+				(0 <= (face_number = FE_element_get_child_face_number(parent, element))) &&
+				(top_level_element = FE_element_get_top_level_element_conversion(
+					parent, check_top_level_element, element_list, specified_face_number,
 					element_to_top_level)))
 			{
 				face_to_element=parent->shape->face_to_element +
-					(element_parent->face_number*
-						parent->shape->dimension*parent->shape->dimension);
+					(face_number * parent->shape->dimension*parent->shape->dimension);
 				size=top_level_element->shape->dimension;
 				if (parent == top_level_element)
 				{
@@ -37877,17 +36669,11 @@ int FE_element_is_exterior_face_with_inward_normal(struct FE_element *element)
 	if (element)
 	{
 		if ((get_FE_element_dimension(element) == 2) &&
-			(1 == NUMBER_IN_LIST(FE_element_parent)(element->parent_list)))
+			(1 == element->number_of_parents) && (element->parents[0]))
 		{
-			struct FE_element_parent *element_parent =
-				FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-					(LIST_CONDITIONAL_FUNCTION(FE_element_parent) *)NULL, (void *)NULL,
-					element->parent_list);
-			if (NULL != element_parent)
-			{
-				return_code = FE_element_shape_face_has_inward_normal(
-					element_parent->parent->shape, element_parent->face_number);
-			}
+			return_code =
+				FE_element_shape_face_has_inward_normal(element->parents[0]->shape,
+					FE_element_get_child_face_number(element->parents[0], element));
 		}				
 	}
 	else
@@ -37936,11 +36722,16 @@ or parent's parents contains <node>.
 		}
 		if (!return_code)
 		{
-			/* return true if any parents (or their parents) contain the node */
-			if (FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-				FE_element_parent_contains_node, node_void, element->parent_list))
+			if (element->parents)
 			{
-				return_code = 1;
+				for (i = 0; i < element->number_of_parents; element++)
+				{
+					if (FE_element_or_parent_contains_node(element->parents[i], node_void))
+					{
+						return_code = 1;
+						break;
+					}
+				}
 			}
 		}
 	}
@@ -37992,12 +36783,17 @@ affected by a node change when the mesh is edited.
 		}
 		if (!return_code)
 		{
-			/* return true if any parents (or their parents) contain node in list */
-			if (FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-				FE_element_parent_contains_node_in_list, node_list_void,
-				element->parent_list))
+			if (element->parents)
 			{
-				return_code = 1;
+				for (i = 0; i < element->number_of_parents; element++)
+				{
+					if (FE_element_or_parent_contains_node_in_list(element->parents[i],
+						node_list_void))
+					{
+						return_code = 1;
+						break;
+					}
+				}
 			}
 		}
 	}
@@ -38011,66 +36807,48 @@ affected by a node change when the mesh is edited.
 	return (return_code);
 } /* FE_element_or_parent_contains_node_in_list */
 
-struct FE_element_parent_find_inherit_elements
-/*******************************************************************************
-LAST MODIFIED : 12 February 2003
-
-DESCRIPTION :
-Data for FE_element_parent_find_inherit_elements.
-==============================================================================*/
+/***************************************************************************//**
+ * If any ancestor of element is not in element_list:
+ * - if it has information (e.g. nodes), add it to inherit_element_list;
+ * - recurse on it.
+ */
+static int FE_element_find_inherit_elements(struct FE_element *element,
+	struct LIST(FE_element) *element_list,
+	struct LIST(FE_element) *inherit_element_list)
 {
-	/* no need to try elements in element_list */
-	struct LIST(FE_element) *element_list;
-	/* put parent elements with information in inherit_element_list */
-	struct LIST(FE_element) *inherit_element_list;
-};
+	int i, return_code;
 
-static int FE_element_parent_find_inherit_elements(
-	struct FE_element_parent *element_parent, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 26 February 2003
-
-DESCRIPTION :
-If the parent element is in <element_list>, does nothing. If it is not,
-adds it to <inherit_element_list> if it has information, and calls this function
-for each of its parents.
-<data_void> points at a struct FE_element_parent_find_inherit_elements.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element *element;
-	struct FE_element_parent_find_inherit_elements *data;
-
-	ENTER(FE_element_parent_find_inherit_elements);
-	if (element_parent && (element = element_parent->parent) &&
-		(data = (struct FE_element_parent_find_inherit_elements *)data_void))
+	ENTER(FE_element_find_inherit_elements);
+	if (element && element_list && inherit_element_list)
 	{
 		return_code = 1;
-		if (!IS_OBJECT_IN_LIST(FE_element)(element, data->element_list))
+		for (i = 0; i < element->number_of_parents; i++)
 		{
-			if (element->information)
+			if (!IS_OBJECT_IN_LIST(FE_element)(element->parents[i], element_list))
 			{
-				return_code = ADD_OBJECT_TO_LIST(FE_element)(element,
-					data->inherit_element_list);
-			}
-			if (return_code)
-			{
-				return_code = FOR_EACH_OBJECT_IN_LIST(FE_element_parent)(
-					FE_element_parent_find_inherit_elements, data_void,
-					element->parent_list);
+				if (element->information)
+				{
+					return_code = ADD_OBJECT_TO_LIST(FE_element)(element->parents[i],
+						inherit_element_list);
+				}
+				if (return_code)
+				{
+					return_code = FE_element_find_inherit_elements(element->parents[i],
+						element_list, inherit_element_list);
+				}
 			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_parent_find_inherit_elements.  Invalid argument(s)");
+			"FE_element_find_inherit_elements.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_element_parent_find_inherit_elements */
+} /* FE_element_find_inherit_elements */
 
 int FE_element_add_nodes_to_list(struct FE_element *element, void *data_void)
 /*******************************************************************************
@@ -38090,8 +36868,8 @@ be in it.
 	int i, number_of_nodes, return_code;
 	struct FE_element *inherit_element;
 	struct FE_element_add_nodes_to_list_data *data;
-	struct FE_element_parent_find_inherit_elements inherit_data;
 	struct FE_node **element_field_nodes, **nodes;
+	struct LIST(FE_element) *inherit_element_list;
 
 	ENTER(FE_element_add_nodes_to_list);
 	if (element && (data = (struct FE_element_add_nodes_to_list_data *)data_void))
@@ -38122,27 +36900,34 @@ be in it.
 		}
 		if (return_code)
 		{
-			/* only look at parents if there are any not in element_list */
-			if (!FOR_EACH_OBJECT_IN_LIST(FE_element_parent)(
-				FE_element_parent_is_in_list, (void *)(data->element_list),
-				element->parent_list))
+			int check_parents;
+
+			/* only look at parents if there are any NOT in element_list */
+			check_parents = 0;
+			for (i = 0; i < element->number_of_parents; i++)
+			{
+				if (!IS_OBJECT_IN_LIST(FE_element)(element->parents[i], data->element_list))
+				{
+					check_parents = 1;
+					break;
+				}
+			}
+			if (check_parents)
 			{
 				/* get list of node-containing elements that are ancestors of this
 					 element, are not themselves in the data->element_list and with
 					 intermediate ancestors not in the data->element_list */
-				inherit_data.element_list = data->element_list;
-				inherit_data.inherit_element_list = CREATE(LIST(FE_element))();
-				if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_element_parent)(
-					FE_element_parent_find_inherit_elements, (void *)&inherit_data,
-					element->parent_list))
+				inherit_element_list = CREATE(LIST(FE_element))();
+				if (return_code = FE_element_find_inherit_elements(element,
+					data->element_list, inherit_element_list))
 				{
 					while (return_code && (inherit_element =
 						FIRST_OBJECT_IN_LIST_THAT(FE_element)(
 							(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-							inherit_data.inherit_element_list)))
+							inherit_element_list)))
 					{
 						if (return_code = REMOVE_OBJECT_FROM_LIST(FE_element)(
-							inherit_element, inherit_data.inherit_element_list))
+							inherit_element, inherit_element_list))
 						{
 							/*???RC Just handle first coordinate field for now -- later
 								check ALL fields! */
@@ -38179,7 +36964,7 @@ be in it.
 						}
 					}
 				}
-				DESTROY(LIST(FE_element))(&(inherit_data.inherit_element_list));
+				DESTROY(LIST(FE_element))(&inherit_element_list);
 			}
 		}
 	}
@@ -38193,58 +36978,6 @@ be in it.
 
 	return (return_code);
 } /* FE_element_add_nodes_to_list */
-
-int add_FE_element_using_node_list_to_list(struct FE_element *element,
-	void *element_list_node_list_data_void)
-/*******************************************************************************
-LAST MODIFIED : 1 June 2001
-
-DESCRIPTION :
-If <element> has a parent already in <element_list>, or it or any of its parents
-uses any nodes in <node_list>, then <element> is added to <element_list>.
-Used to build up a list of elements [probably] affected by changes to the nodes
-in <node_list>.
-Note: for the sake of speed it is sometimes inaccurate for faces and lines. It
-also relies on list being ordered with CM_ELEMENT first, then CM_FACE, then
-CM_LINE for efficiency -- that's why it checks if any parents are in list first.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_list_FE_node_list_data *element_list_node_list_data
-
-	ENTER(add_FE_element_using_node_list_to_list);
-	if (element && (element_list_node_list_data =
-		(struct FE_element_list_FE_node_list_data *)
-		element_list_node_list_data_void))
-	{
-		if ((((struct FE_element_parent *)NULL !=
-			FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-				FE_element_parent_is_in_list,
-				(void *)element_list_node_list_data->element_list,
-				element->parent_list)) ||
-			FE_element_or_parent_contains_node_in_list(element,
-				(void *)element_list_node_list_data->node_list)) &&
-			(!IS_OBJECT_IN_LIST(FE_element)(element,
-				element_list_node_list_data->element_list)))
-		{
-			return_code = ADD_OBJECT_TO_LIST(FE_element)(element,
-				element_list_node_list_data->element_list);
-		}
-		else
-		{
-			return_code = 1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"add_FE_element_using_node_list_to_list.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* add_FE_element_using_node_list_to_list */
 
 int FE_element_is_dimension(struct FE_element *element,void *dimension_void)
 /*******************************************************************************
@@ -38951,36 +37684,6 @@ Used by FE_element_parent_has_field.
 	struct LIST(FE_element) *element_list;
 }; /* struct FE_element_parent_has_field_data */
 
-static int FE_element_parent_has_field(struct FE_element_parent *element_parent,
-	void *element_has_field_data_void)
-/*******************************************************************************
-LAST MODIFIED : 12 November 2002
-
-DESCRIPTION :
-Calls FE_element_or_parent_has_field for <element_parent>->parent.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_parent_has_field_data *element_has_field_data;
-
-	ENTER(FE_element_parent_has_field);
-	if (element_parent&&(element_has_field_data=
-		(struct FE_element_parent_has_field_data *)element_has_field_data_void))
-	{
-		return_code = FE_element_or_parent_has_field(element_parent->parent,
-			element_has_field_data->field, element_has_field_data->element_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_parent_has_field.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_parent_has_field */
-
 int FE_element_or_parent_has_field(struct FE_element *element,
 	struct FE_field *field, struct LIST(FE_element) *element_list)
 /*******************************************************************************
@@ -38992,8 +37695,7 @@ over it. By supplying an <element_list> this limits the test to elements that
 are also in the list.
 ==============================================================================*/
 {
-	int return_code;
-	struct FE_element_parent_has_field_data element_has_field_data;
+	int i, return_code;
 
 	ENTER(FE_element_or_parent_has_field);
 	return_code = 0;
@@ -39001,7 +37703,6 @@ are also in the list.
 	{
 		if ((!element_list) || IS_OBJECT_IN_LIST(FE_element)(element, element_list))
 		{
-			/* first try to find the field directly in the element's field list */
 			if (FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(field,
 				element->fields->element_field_list))
 			{
@@ -39009,14 +37710,14 @@ are also in the list.
 			}
 			else
 			{
-				/* try the element's parents */
-				element_has_field_data.field = field;
-				element_has_field_data.element_list = element_list;
-				if (FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-					FE_element_parent_has_field, (void *)&element_has_field_data,
-					element->parent_list))
+				for (i = 0; i < element->number_of_parents; i++)
 				{
-					return_code = 1;
+					if (FE_element_or_parent_has_field(element->parents[i], field,
+						element_list))
+					{
+						return_code = 1;
+						break;
+					}
 				}
 			}
 		}
@@ -39030,89 +37731,6 @@ are also in the list.
 
 	return (return_code);
 } /* FE_element_or_parent_has_field */
-
-#if defined (OLD_CODE)
-int FE_node_get_field_components(struct FE_node *node,
-	struct FE_field *field,int component_no,FE_value **components)
-/*******************************************************************************
-LAST MODIFIED : 25 August 1998
-
-DESCRIPTION :
-Returns the value - not derivatives - held for the given <component_no> of
-<field>, or all components if <component_no> is negative. The return value of
-the function is the number of components returned, while <*components> will be
-set to point to an array containing the values, which the calling function must
-deallocate.
-???RC Does not handle multiple versions.
-==============================================================================*/
-{
-	FE_value *node_values,*this_component;
-	int first_component_no,i,number_of_components;
-	struct FE_node_field *node_field;
-	struct FE_node_field_component *node_field_component;
-	struct FE_node_field_info *node_field_information;
-
-	ENTER(FE_node_get_field_components);
-	if (node&&(node_field_information=node->fields)&&(node_values=node->value)&&
-		field&&(component_no<field->number_of_components)&&components)
-	{
-		if ((node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-				field,node_field_information->node_field_list)))
-		{
-			if (component_no<0)
-			{
-				number_of_components=field->number_of_components;
-				first_component_no=0;
-			}
-			else
-			{
-				number_of_components=1;
-				first_component_no=component_no;
-			}
-			if (ALLOCATE(*components,FE_value,number_of_components))
-			{
-				this_component = *components;
-				node_field_component = node_field->components + first_component_no;
-				for (i=0;i<number_of_components;i++)
-				{
-					if (node_field_component)
-					{
-						*this_component = node_values[node_field_component->value];
-						this_component++;
-						node_field_component++;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_node_get_field_components.  Missing node field component");
-						DEALLOCATE(*components);
-						number_of_components=0;
-					}
-				}
-			}
-			else
-			{
-				number_of_components=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"FE_node_get_field_components.  "
-				"Field '%s' not defined for node %d",field->name,node->cm_node_identifier);
-			number_of_components=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_get_field_components.  Invalid argument(s)");
-		number_of_components=0;
-	}
-	LEAVE;
-
-	return (number_of_components);
-} /* FE_node_get_field_components */
-#endif /* defined (OLD_CODE) */
 
 struct FE_field *FE_node_get_position_cartesian(struct FE_node *node,
 	struct FE_field *coordinate_field,FE_value *node_x,FE_value *node_y,
@@ -39575,34 +38193,6 @@ FE_node iterator version of FE_field_is_defined_at_node.
 	return (return_code);
 } /* FE_node_field_is_not_defined */
 
-static int FE_element_parent_has_field_defined(struct FE_element_parent *parent,
-	void *field_void)
-/*******************************************************************************
-LAST MODIFIED : 3 September 1999
-
-DESCRIPTION :
-Calls FE_field_is_defined_in_element for the parent element.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_field *field;
-
-	ENTER(FE_element_parent_has_field_defined);
-	if (parent&&(field=(struct FE_field *)field_void))
-	{
-		return_code=FE_field_is_defined_in_element(field,parent->parent);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_parent_has_field_defined.  Unknown FE_field_type");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_parent_has_field_defined */
-
 int FE_field_is_defined_in_element(struct FE_field *field,
 	struct FE_element *element)
 /*******************************************************************************
@@ -39612,7 +38202,7 @@ DESCRIPTION :
 Returns true if the <field> is defined for the <element>.
 ==============================================================================*/
 {
-	int return_code;
+	int i, return_code;
 
 	ENTER(FE_field_is_defined_in_element);
 	return_code = 0;
@@ -39625,10 +38215,14 @@ Returns true if the <field> is defined for the <element>.
 		}
 		else
 		{
-			return_code = ((struct FE_element_parent *)NULL !=
-				FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-					FE_element_parent_has_field_defined, (void *)field,
-					element->parent_list));
+			for (i = 0; i < element->number_of_parents; i++)
+			{
+				if (FE_field_is_defined_in_element(field, element->parents[i]))
+				{
+					return_code = 1;
+					break;
+				}
+			}
 		}
 	}
 	else
@@ -42331,62 +40925,6 @@ Given  <component_number>  and <nodal_value_type> of <field> at a
 	return (return_code);
 } /* FE_element_set_scale_factor_for_nodal_value */
 
-struct FE_element_parent_not_equal_data
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-Data structure for the FE_element_parent_not_equal_to_element routine
-==============================================================================*/
-{
-	struct FE_element *not_element;
-	struct FE_region *fe_region;
-}; /* struct FE_element_parent_not_equal_data */
-
-static int FE_element_parent_not_equal_to_element(struct FE_element_parent *object,
-	void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-An iterator function that returns true if the element referred to in the parent
-<object> is not equal to the FE_element pointer referenced by <element_void>.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_parent_not_equal_data *data;
-
-	ENTER(parent_not_equal_to_element);
-	if (object && (data = (struct FE_element_parent_not_equal_data *)data_void))
-	{
-		if (object->parent != data->not_element)
-		{
-			if (data->fe_region)
-			{
-				return_code = FE_region_contains_FE_element(data->fe_region,
-					object->parent);
-			}
-			else
-			{
-				return_code=1;
-			}
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"parent_not_equal_to_element.  Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_parent_not_equal_to_element */
-
 int FE_element_xi_increment_within_element(struct FE_element *element,
 	FE_value *xi,FE_value *increment,FE_value *fraction,int *face_number,
 	FE_value *xi_face)
@@ -42498,8 +41036,6 @@ and do not take into account the relative orientation of the parents.
 	FE_value *face_to_element,*local_xi_face,*temp_increment;
 	int dimension,i,j,new_face_number,return_code;
 	struct FE_element *element,*face,*new_element;
-	struct FE_element_parent *face_parent;
-	struct FE_element_parent_not_equal_data data;
 	FE_value *face_normal;
 
 	ENTER(FE_element_change_to_adjacent_element);
@@ -42519,15 +41055,19 @@ and do not take into account the relative orientation of the parents.
 			if (face)
 			{
 				/* find the other parent */
-				data.not_element = element;
-				data.fe_region = fe_region;
-				face_parent=FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-					FE_element_parent_not_equal_to_element, (void *)&data,
-					face->parent_list);
-				if (face_parent)
+				new_element = (struct FE_element *)NULL;
+				for (i = 0; i < face->number_of_parents; i++)
 				{
-					new_element=face_parent->parent;
-					new_face_number=face_parent->face_number;
+					if ((face->parents[i] != element) && ((NULL == fe_region) ||
+						FE_region_contains_FE_element(fe_region, face->parents[i])))
+					{
+						new_element = face->parents[i];
+						break;
+					}
+				}
+				if (new_element)
+				{
+					new_face_number = FE_element_get_child_face_number(new_element, face);
 					/* change xi and increment into element coordinates */
 					if (new_element&&(new_element->shape)&&(dimension==
 							get_FE_element_dimension(new_element))&&(0<=new_face_number)&&

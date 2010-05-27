@@ -5292,12 +5292,13 @@ parent can be inherited from. This function will need to be tightened later.
 	struct LIST(FE_element) *element_list;
 
 	ENTER(FE_region_get_FE_element_discretization);
-	if (fe_region)
+	if (fe_region && (fe_region->master_fe_region))
 	{
 		element_list = fe_region->fe_element_list;
 	}
 	else
 	{
+		/* if this is a master FE_region, don't need to check list */
 		element_list = (struct LIST(FE_element) *)NULL;
 	}
 	return_code = get_FE_element_discretization(element, element_list,

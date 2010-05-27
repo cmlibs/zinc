@@ -3036,44 +3036,6 @@ faces and their lines, etc.
 Note: this function is recursive.
 ==============================================================================*/
 
-#if defined (OLD_CODE)
-enum Remove_element_mode
-/*******************************************************************************
-LAST MODIFIED : 1 March 2001
-
-DESCRIPTION :
-Controls the mode of element and recursive face removal in functions:
-remove_FE_element_and_faces_from_[group|list|manager].
-NOTE: these functions will have to be carefully modified when new modes added.
-==============================================================================*/
-{
-	/* nothing is removed */
-	NO_REMOVE_ELEMENT,
-	/* Element is removed unconditionally. Its faces, and their faces etc., are
-		 removed recursively if they are not faces of any other element in
-		 group/list/manager */
-	RECURSIVE_REMOVE_ELEMENT_AND_PARENTLESS_FACES,
-	/* Element and its faces, and their faces etc., are removed recursively if
-		 they are not faces of any other element in group/list/manager */
-	RECURSIVE_REMOVE_PARENTLESS_ELEMENT_AND_PARENTLESS_FACES
-};
-#endif /* defined (OLD_CODE) */
-
-int FE_element_for_each_element_and_parent(struct FE_element *element,
-	LIST_ITERATOR_FUNCTION(FE_element) *iterator_function, void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 14 May 2003
-
-DESCRIPTION :
-Iterates over <element> and all its parent elements and so on recursively,
-calling <iterator_function> with <user_data> for each of them.
-Note that parents of parent elements may be iterated over more than once since,
-for example, lines can be in two faces of the same parent element.
-Stops as soon as all parent elements have been iterated through, or the
-iterator_function returns FALSE for any element.
-This function is recursive.
-==============================================================================*/
-
 int merge_FE_element(struct FE_element *destination, struct FE_element *source,
 	struct LIST(FE_field) *changed_fe_field_list);
 /*******************************************************************************
@@ -3796,19 +3758,6 @@ specified component is calculated, otherwise all components are calculated.  The
 storage for the <value> should have been allocated outside the function.
 ==============================================================================*/
 
-int FE_element_get_top_level_xi_number(struct FE_element *element,
-	int xi_number);
-/*******************************************************************************
-LAST MODIFIED : 16 September 1998
-
-DESCRIPTION :
-Returns the xi_number of the parent or parent's parent that changes with the
-<xi_number> (0..dimension-1) of <element>.  If there is no parent, then
-<xi_number> is returned, or 0 if there is an error.
-???RC Could stuff up for graphical finite elements if parent is not in same
-element_group and xi directions are different for neighbouring elements.
-==============================================================================*/
-
 struct FE_region *FE_element_get_FE_region(struct FE_element *element);
 /*******************************************************************************
 LAST MODIFIED : 13 February 2003
@@ -3824,15 +3773,6 @@ LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Returns true if <top_level_element> is indeed a top_level parent of <element>.
-==============================================================================*/
-
-int FE_element_or_parent_is_element(struct FE_element *element,
-	void *match_element_void);
-/*******************************************************************************
-LAST MODIFIED : 21 June 2000
-
-DESCRIPTION :
-Returns true if <element> or any of its parents matches <match_element>.
 ==============================================================================*/
 
 int FE_element_is_top_level_parent_of_element(
@@ -3931,30 +3871,6 @@ either case the top_level_number_in_xi used is returned.
  */
 int FE_element_is_exterior_face_with_inward_normal(struct FE_element *element);
 
-int FE_element_or_parent_contains_node(struct FE_element *element,
-	void *node_void);
-/*******************************************************************************
-LAST MODIFIED : 25 February 1998
-
-DESCRIPTION :
-FE_element conditional function returning 1 if <element> or all of its parents
-or parent's parents contains <node>.
-Routine is used with graphical finite elements to redraw only those elements
-affected by a node change when the mesh is edited.
-==============================================================================*/
-
-int FE_element_or_parent_contains_node_in_list(struct FE_element *element,
-	void *node_list_void);
-/*******************************************************************************
-LAST MODIFIED : 31 May 2001
-
-DESCRIPTION :
-FE_element conditional function returning 1 if <element> or all of its parents
-or parent's parents contains nodes in <node_list>.
-Routine is used with graphical finite elements to redraw only those elements
-affected by a node change when the mesh is edited.
-==============================================================================*/
-
 struct FE_element_add_nodes_to_list_data
 /*******************************************************************************
 LAST MODIFIED : 12 February 2003
@@ -3987,22 +3903,6 @@ nodes inherited from top level elements not in the list are considered.
 The optional <intersect_node_list> restricts nodes added to <node_list> to also
 be in it.
 <data_void> points at a struct FE_element_add_nodes_to_list_data.
-==============================================================================*/
-
-int add_FE_element_using_node_list_to_list(struct FE_element *element,
-	void *element_list_node_list_data_void);
-/*******************************************************************************
-LAST MODIFIED : 1 June 2001
-
-DESCRIPTION :
-If <element> has a parent already in <element_list>, or it or any of its parents
-uses any nodes in <node_list>, then <element> is added to <element_list>.
-Used to build up a list of elements [probably] affected by changes to the nodes
-in <node_list>.
-Second argument is pointer to a struct FE_element_list_FE_node_list_data.
-Note: for the sake of speed it is sometimes inaccurate for faces and lines. It
-also relies on list being ordered with CM_ELEMENT first, then CM_FACE, then
-CM_LINE for efficiency -- that's why it checks if any parents are in list first.
 ==============================================================================*/
 
 int FE_element_is_dimension(struct FE_element *element,void *dimension_void);
