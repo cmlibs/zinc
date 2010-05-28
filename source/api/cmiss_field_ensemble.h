@@ -107,6 +107,8 @@ Cmiss_ensemble_iterator_id Cmiss_field_ensemble_find_or_create_entry(
 Cmiss_ensemble_iterator_id Cmiss_field_ensemble_get_first_entry(
 	Cmiss_field_ensemble_id ensemble_field);
 
+unsigned int Cmiss_field_ensemble_get_size(Cmiss_field_ensemble_id ensemble_field);
+
 
 
 int Cmiss_ensemble_iterator_destroy(Cmiss_ensemble_iterator_id *entry_address);
@@ -159,6 +161,14 @@ int Cmiss_field_ensemble_group_increment_entry(Cmiss_field_ensemble_group_id ens
 
 
 int Cmiss_ensemble_index_destroy(Cmiss_ensemble_index_id *index_address);
+
+/***************************************************************************//**
+ * Determine if the index indexes its field using exactly the supplied ensembles
+ * in the supplied order.
+ * @return  1 if true, 0 if indexing ensembles are different.
+ */
+int Cmiss_ensemble_index_has_index_ensembles(Cmiss_ensemble_index_id index,
+	int number_of_index_ensembles, Cmiss_field_ensemble_id *index_ensemble_fields);
 
 /***************************************************************************//**
  * Set index to span all entries in this ensemble, in order of increasing

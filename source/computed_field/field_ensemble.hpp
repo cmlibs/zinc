@@ -619,6 +619,20 @@ public:
 		return (field == indexee);
 	}
 
+	int hasIndexEnsembles(int number_of_index_ensembles, Cmiss_field_ensemble **index_ensemble_fields)
+	{
+		if (number_of_index_ensembles != number_of_ensembles)
+			return 0;
+		for (int i = 0; i < number_of_ensembles; i++)
+		{
+			if (!index_ensemble_fields[i])
+				return 0;
+			if (Cmiss_field_ensemble_core_cast(index_ensemble_fields[i]) != indexing[i].ensemble)
+				return 0;
+		}
+		return 1;
+	}
+
 	/** gets the number of permutations of ensemble entries this index covers */
 	unsigned int getEntryCount() const
 	{

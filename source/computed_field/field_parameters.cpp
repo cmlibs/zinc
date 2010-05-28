@@ -178,6 +178,11 @@ int Field_parameters<ValueType>::evaluate_cache_at_location(Field_location* loca
 template <typename ValueType>
 int Field_parameters<ValueType>::list()
 {
+	for (int i = 0; i < number_of_ensembles; i++)
+	{
+		display_message(INFORMATION_MESSAGE, "    Index ensemble %d: %s\n", i+1,
+			ensembles[i]->getField()->name);
+	}
 	return (1);
 }
 
@@ -202,14 +207,14 @@ bool Field_parameters<ValueType>::setNotDense()
 {
 	if (!dense)
 		return true;
-	display_message(INFORMATION_MESSAGE, "In %s::setNotDense  field %s\n", typeid(this).name(), field->name); // GRC test
+	display_message(INFORMATION_MESSAGE, "In Field_parameters::setNotDense  field %s\n", field->name); // GRC test
 	dense = false;
 	if (value_exists.setAllTrue(getMaxParameterCount()))
 		return true;
 	// failed: restore dense status and return false
 	display_message(ERROR_MESSAGE,
-		"%s::setNotDense.  Failed to convert parameters field %s to non-dense",
-		typeid(this).name(), field->name);
+		"Field_parameters::setNotDense.  Failed to convert parameters field %s to non-dense",
+		field->name);
 	// restore dense status
 	value_exists.clear();
 	dense = true;
@@ -241,8 +246,8 @@ bool Field_parameters<ValueType>::copyValues(int ensemble_number,
 				continue;
 			if (!values.getValue(oldIndex, value))
 			{
-				display_message(ERROR_MESSAGE, "%s::copyValues()  Field %s is missing a parameter\n",
-					typeid(this).name(), field->name);
+				display_message(ERROR_MESSAGE, "Field_parameters::copyValues()  Field %s is missing a parameter\n",
+					field->name);
 				return false;
 			}
 			if (!dest_values.setValue(newIndex, value))
@@ -277,7 +282,7 @@ bool Field_parameters<ValueType>::copyValues(int ensemble_number,
 template <typename ValueType>
 bool Field_parameters<ValueType>::resize(EnsembleEntryRef *newRefSize)
 {
-	display_message(INFORMATION_MESSAGE, "%s::resize()  Field %s\n", typeid(this).name(), field->name);	// GRC test
+	display_message(INFORMATION_MESSAGE, "Field_parameters::resize()  Field %s\n", field->name);	// GRC test
 	bool sameSize = true;
 	for (int i = 0; i < number_of_ensembles; i++)
 	{
@@ -288,8 +293,8 @@ bool Field_parameters<ValueType>::resize(EnsembleEntryRef *newRefSize)
 	}
 	if (sameSize)
 	{
-		display_message(WARNING_MESSAGE, "%s::resize()  Field %s parameter array not changing size\n",
-			typeid(this).name(), field->name);
+		display_message(WARNING_MESSAGE, "Field_parameters::resize()  Field %s parameter array not changing size\n",
+			field->name);
 		return true;
 	}
 
@@ -318,8 +323,8 @@ bool Field_parameters<ValueType>::resize(EnsembleEntryRef *newRefSize)
 			newOffsets, copySize, dest_values, dest_value_exists))
 		{
 			display_message(WARNING_MESSAGE,
-				"%s::resize()  Not enough memory to resize parameters for field %s\n",
-				typeid(this).name(), field->name);
+				"Field_parameters::resize()  Not enough memory to resize parameters for field %s\n",
+				field->name);
 			delete[] copySize;
 			delete[] newOffsets;
 			return false;
@@ -341,26 +346,24 @@ template <typename ValueType>
 inline int Field_parameters<ValueType>::validIndexCount(const Cmiss_ensemble_index *index, unsigned int number_of_values,
 	const char *methodName) const
 {
-	display_message(INFORMATION_MESSAGE, "In %s::%s\n", typeid(this).name(), methodName); // GRC test
 	if (!index->indexesField(field))
 	{
-		display_message(ERROR_MESSAGE, "%s::%s.  Invalid index for field %s",
-			typeid(this).name(), methodName, field->name);
+		display_message(ERROR_MESSAGE, "%s.  Invalid index for field %s",
+			methodName, field->name);
 		return 0;
 	}
 	unsigned int index_entry_count = index->getEntryCount();
 	if (0 == index_entry_count)
 	{
-		display_message(ERROR_MESSAGE, "%s::%s.  Invalid index specifies zero values.",
-			typeid(this).name(), methodName, field->name);
+		display_message(ERROR_MESSAGE, "%s.  Invalid index specifies zero values.",
+			methodName, field->name);
 		return 0;
 	}
 	if (number_of_values != index_entry_count)
 	{
 		display_message(ERROR_MESSAGE,
-			"%s::%s.  Index specifies %d values, %d supplied for field %s.",
-			typeid(this).name(), methodName,
-			index_entry_count, number_of_values, field->name);
+			"%s.  Index specifies %d values, %d supplied for field %s.",
+			methodName, index_entry_count, number_of_values, field->name);
 		return 0;
 	}
 	return 1;
@@ -370,15 +373,15 @@ template <typename ValueType>
 int Field_parameters<ValueType>::getValues(
 	Cmiss_ensemble_index *index, unsigned int number_of_values, ValueType *outValues) const
 {
-	if (!validIndexCount(index, number_of_values, "getValues"))
+	if (!validIndexCount(index, number_of_values, "Field_parameters::getValues"))
 		return 0;
 
 	// iterate to get values in identifier order for each ensemble
 	if (!index->iterationBegin())
 	{
 		display_message(ERROR_MESSAGE,
-			"%s::getValues()  Failed to begin iteration over index for field %s\n",
-			typeid(this).name(), field->name);
+			"Field_parameters::getValues  Failed to begin iteration over index for field %s\n",
+			field->name);
 		return 0;
 	}
 	int i;
@@ -416,8 +419,8 @@ int Field_parameters<ValueType>::getValues(
 			if (value_number < (number_of_values-1))
 			{
 				display_message(ERROR_MESSAGE,
-					"%s::getValues()  Only %u out of %u values iterated for field %s\n",
-					typeid(this).name(), value_number+1, number_of_values, field->name);
+					"Field_parameters::getValues  Only %u out of %u values iterated for field %s\n",
+					value_number+1, number_of_values, field->name);
 				return_code = 0;
 			}
 			break;
@@ -425,8 +428,8 @@ int Field_parameters<ValueType>::getValues(
 		else if (value_number == (number_of_values-1))
 		{
 			display_message(ERROR_MESSAGE,
-				"%s::getValues()  Iteration past end of values for field %s\n",
-				typeid(this).name(), field->name);
+				"Field_parameters::getValues  Iteration past end of values for field %s\n",
+				field->name);
 			return_code = 0;
 		}
 	}
@@ -438,7 +441,7 @@ template <typename ValueType>
 int Field_parameters<ValueType>::setValues(
 	Cmiss_ensemble_index *index, unsigned int number_of_values, ValueType *inValues)
 {
-	if (!validIndexCount(index, number_of_values, "setValues"))
+	if (!validIndexCount(index, number_of_values, "Field_parameters::setValues"))
 		return 0;
 
 	int i, j;
@@ -511,6 +514,12 @@ int Field_parameters<ValueType>::setValues(
 			return 0;
 		delete[] newRefSize;
 	}
+	if (0 < number_of_ensembles)
+	{
+		EnsembleEntryRef newRefSize0 = index->maxIndexRef(0);
+		if (newRefSize0 > refSize[0])
+			refSize[0] = newRefSize0;
+	}
 
 	// iterate to set values in identifier order for each ensemble
 	ParameterIndexType valueIndex = 0;
@@ -519,8 +528,8 @@ int Field_parameters<ValueType>::setValues(
 	if (!index->iterationBegin())
 	{
 		display_message(ERROR_MESSAGE,
-			"%s::setValues()  Failed to begin iteration over index for field %s\n",
-			typeid(this).name(), field->name);
+			"Field_parameters::setValues  Failed to begin iteration over index for field %s\n",
+			field->name);
 		return 0;
 	}
 	bool oldValue;
@@ -535,26 +544,29 @@ int Field_parameters<ValueType>::setValues(
 		if (!values.setValue(valueIndex, inValues[value_number]))
 		{
 			display_message(ERROR_MESSAGE,
-				"%s::setValues()  Failed to set parameter value for field %s\n",
-				typeid(this).name(), field->name);
+				"Field_parameters::setValues  Failed to set parameter value for field %s\n",
+				field->name);
 			return_code = 0;
 			break;
 		}
-		if (!dense && !value_exists.setBool(valueIndex, true, oldValue))
+		if (!dense)
 		{
-			display_message(ERROR_MESSAGE,
-				"%s::setValues()  Failed to set parameter exists flag for field %s\n",
-				typeid(this).name(), field->name);
-			return_code = 0;
-			break;
+			if (!value_exists.setBool(valueIndex, true, oldValue))
+			{
+				display_message(ERROR_MESSAGE,
+					"Field_parameters::setValues  Failed to set parameter exists flag for field %s\n",
+					field->name);
+				return_code = 0;
+				break;
+			}
 		}
 		if (!index->iterationNext())
 		{
 			if (value_number < (number_of_values-1))
 			{
 				display_message(ERROR_MESSAGE,
-					"%s::setValues()  Only %u out of %u values iterated for field %s\n",
-					typeid(this).name(), value_number+1, number_of_values, field->name);
+					"Field_parameters::setValues  Only %u out of %u values iterated for field %s\n",
+					value_number+1, number_of_values, field->name);
 				return_code = 0;
 			}
 			break;
@@ -562,8 +574,8 @@ int Field_parameters<ValueType>::setValues(
 		else if (value_number == (number_of_values-1))
 		{
 			display_message(ERROR_MESSAGE,
-				"%s::setValues()  Iteration past end of values for field %s\n",
-				typeid(this).name(), field->name);
+				"Field_parameters%s::setValues()  Iteration past end of values for field %s\n",
+				field->name);
 			return_code = 0;
 		}
 	}
@@ -652,7 +664,7 @@ inline Cmiss::Field_real_parameters *Cmiss_field_real_parameters_core_cast(
 
 Cmiss_field_real_parameters *Cmiss_field_cast_real_parameters(Cmiss_field* field)
 {
-	if (dynamic_cast<Cmiss::Field_real_parameters*>(field->core))
+	if (field && (dynamic_cast<Cmiss::Field_real_parameters*>(field->core)))
 	{
 		Cmiss_field_access(field);
 		return (reinterpret_cast<Cmiss_field_real_parameters *>(field));

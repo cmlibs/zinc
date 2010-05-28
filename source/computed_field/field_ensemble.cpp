@@ -280,9 +280,12 @@ int Field_ensemble::removeEntryWithIdentifier(Cmiss_ensemble_identifier identifi
 Cmiss_ensemble_identifier Field_ensemble::getEntryIdentifier(EnsembleEntryRef ref)
 {
 	Cmiss_ensemble_identifier identifier = 0;
-	if (ref > 0)
+	if ((0 < ref) && (ref <= maxRef))
 	{
-		entries.getValue(/*index*/(ref-1), identifier);
+		if (contiguous)
+			identifier = static_cast<Cmiss_ensemble_identifier>(ref);
+		else
+			entries.getValue(/*index*/(ref-1), identifier);
 	}
 	return identifier;
 }
@@ -445,6 +448,7 @@ int Field_ensemble_group::list()
 	if (field)
 	{
 		display_message(INFORMATION_MESSAGE, "    ensemble: %d\n", field->source_fields[0]->name);
+		display_message(INFORMATION_MESSAGE, "    entry count: %d\n", entryCount);
 	}
 	else
 	{
@@ -470,7 +474,7 @@ Cmiss_field *Cmiss_field_module_create_ensemble(
 
 Cmiss_field_ensemble *Cmiss_field_cast_ensemble(Cmiss_field_id field)
 {
-	if (dynamic_cast<Cmiss::Field_ensemble*>(field->core))
+	if (field && (dynamic_cast<Cmiss::Field_ensemble*>(field->core)))
 	{
 		Cmiss_field_access(field);
 		return (reinterpret_cast<Cmiss_field_ensemble *>(field));
@@ -550,6 +554,15 @@ Cmiss_ensemble_iterator *Cmiss_field_ensemble_get_first_entry(
 	return (iterator);
 }
 
+unsigned int Cmiss_field_ensemble_get_size(Cmiss_field_ensemble *ensemble_field)
+{
+	if (ensemble_field)
+	{
+		Cmiss::Field_ensemble *ensemble = Cmiss_field_ensemble_core_cast(ensemble_field);
+		return ensemble->size();
+	}
+	return (0);
+}
 
 int Cmiss_ensemble_iterator_destroy(Cmiss_ensemble_iterator **iterator_address)
 {
@@ -594,7 +607,7 @@ Cmiss_field *Cmiss_field_module_create_ensemble_group(
 
 Cmiss_field_ensemble_group *Cmiss_field_cast_ensemble_group(Cmiss_field_id field)
 {
-	if (dynamic_cast<Cmiss::Field_ensemble_group*>(field->core))
+	if (field && (dynamic_cast<Cmiss::Field_ensemble_group*>(field->core)))
 	{
 		Cmiss_field_access(field);
 		return (reinterpret_cast<Cmiss_field_ensemble_group *>(field));
@@ -665,6 +678,15 @@ int Cmiss_ensemble_index_destroy(Cmiss_ensemble_index **index_address)
 		return 1;
 	}
 	return 0;
+}
+
+int Cmiss_ensemble_index_has_index_ensembles(Cmiss_ensemble_index *index,
+	int number_of_index_ensembles, Cmiss_field_ensemble **index_ensemble_fields)
+{
+	if ((!index) || (number_of_index_ensembles < 0) ||
+		((0 < number_of_index_ensembles) && (!index_ensemble_fields)))
+		return 0;
+	return index->hasIndexEnsembles(number_of_index_ensembles, index_ensemble_fields);
 }
 
 int Cmiss_ensemble_index_set_all_ensemble(Cmiss_ensemble_index *index,

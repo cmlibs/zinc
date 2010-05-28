@@ -40,119 +40,48 @@
 #if !defined (BLOCK_ARRAY_HPP)
 #define BLOCK_ARRAY_HPP
 
+#include "general/debug.h"
 
 template <typename IndexType, typename EntryType, int blockLength = 256 >
 	class block_array
 {
 private:
-	class Block
-	{
-		EntryType *entries;
-
-	public:
-		Block() :
-			entries(NULL)
-		{
-		}
-
-		~Block()
-		{
-			if (entries)
-				DEALLOCATE(entries);
-		}
-
-		EntryType *createEntries()
-		{
-			if (NULL == entries)
-			{
-				ALLOCATE(entries, EntryType, blockLength);
-				for (int i = 0; i < blockLength; i++)
-				{
-					entries[i] = 0; // GRC only works for numeric types
-				}
-			}
-			return (entries);
-		}
-
-		int hasEntries()
-		{
-			return (NULL != entries);
-		}
-		
-		int setValue(IndexType entryIndex, EntryType value)
-		{
-#if ! defined (OPTIMISED)
-			if (entryIndex >= blockLength)
-			{
-				display_message(ERROR_MESSAGE,
-					"block_array<>::Block::setValue.  Index beyond block length");
-				return 0;
-			}
-#endif /* ! defined (OPTIMISED) */
-			if (createEntries())
-			{
-				entries[entryIndex] = value;
-				return 1;
-			}
-			return 0;
-		}
-
-		int getValue(IndexType entryIndex, EntryType& value) const
-		{
-#if ! defined (OPTIMISED)
-			if (entryIndex >= blockLength)
-			{
-				display_message(ERROR_MESSAGE,
-					"block_array<>::Block::setValue.  Index beyond block length");
-				return 0;
-			}
-#endif /* ! defined (OPTIMISED) */
-			if (entries)
-			{
-				value = entries[entryIndex];
-				return 1;
-			}
-			return 0;
-		}
-	};
-
-	
-private:
 	// Note: any new attributes must be handled by swap()
-	Block *blocks;
+	EntryType **blocks;
 	IndexType blockCount;
 
-	const Block* getBlock(IndexType blockIndex) const
+	EntryType* getOrCreateBlock(IndexType blockIndex)
 	{
-		if (blockIndex < blockCount)
-			return (blocks + blockIndex);
-		return NULL;
-	}
-
-	Block* getBlock(IndexType blockIndex)
-	{
-		if (blockIndex < blockCount)
-			return (blocks + blockIndex);
-		return NULL;
-	}
-
-	Block* getOrCreateBlock(IndexType blockIndex)
-	{
-		if (blockIndex < blockCount)
-			return (blocks + blockIndex);
-		IndexType newBlockCount = blockIndex + 1;
-		if (newBlockCount < blockCount*2)
+		if (blockIndex >= blockCount)
 		{
-			newBlockCount = blockCount*2;
+			IndexType newBlockCount = blockIndex + 1;
+			if (newBlockCount < blockCount*2)
+			{
+				newBlockCount = blockCount*2;
+			}
+			EntryType **newBlocks;
+			if (!REALLOCATE(newBlocks, blocks, EntryType *, newBlockCount))
+				return NULL;
+			for (IndexType i = blockCount; i < newBlockCount; i++)
+			{
+				newBlocks[i] = NULL;
+			}
+			blocks = newBlocks;
+			blockCount = newBlockCount;
 		}
-		Block *newBlocks = new Block[newBlockCount];
-		if (NULL == newBlocks)
-			return NULL;
-		memcpy(newBlocks, blocks, blockCount*sizeof(Block));
-		delete[] blocks;
-		blocks = newBlocks;
-		blockCount = newBlockCount;
-		return (blocks + blockIndex);
+		EntryType *block = blocks[blockIndex];
+		if (!block)
+		{
+			if (ALLOCATE(block, EntryType, blockLength))
+			{
+				for (IndexType i = 0; i < blockLength; i++)
+				{
+					block[i] = 0; // only works for numeric or pointer types
+				}
+				blocks[blockIndex] = block;
+			}
+		}
+		return block;
 	}
 
 public:
@@ -170,53 +99,68 @@ public:
 
 	void clear()
 	{
-		delete[] blocks;
+		for (IndexType i = 0; i < blockCount; i++)
+		{
+			if (blocks[i])
+			{
+				DEALLOCATE(blocks[i]);
+			}
+		}
+		if (blocks)
+		{
+			DEALLOCATE(blocks);
+		}
 		blockCount = 0;
 	}
 
 	/** Swaps all data with other block_array. Cannot fail. */
 	void swap(block_array& other)
 	{
-		Block *temp_blocks = blocks;
+		EntryType **temp_blocks = blocks;
 		IndexType temp_blockCount = blockCount;
-
 		blocks = other.blocks;
 		blockCount = other.blockCount;
-
 		other.blocks = temp_blocks;
 		other.blockCount = temp_blockCount;
 	}
 
 	/**
-	 * Get a value from the block_array
+	 * Get a value from the block_array.
 	 * @param index  The index of the value to retrieve, starting at 0.
-	 * @param value  On success, filled with Entry at index
+	 * @param value  On success, filled with value held at index.
 	 * @return  1 if value returned, 0 if no value at index.
 	 */
 	int getValue(IndexType index, EntryType& value) const
 	{
 		IndexType blockIndex = index / blockLength;
-		const Block *block = getBlock(blockIndex);
-		if (!block)
-			return 0;
-		IndexType entryIndex = index % blockLength;
-		return block->getValue(entryIndex, value);		
+		if (blockIndex < blockCount)
+		{
+			EntryType *block = blocks[blockIndex];
+			if (block)
+			{
+				IndexType entryIndex = index % blockLength;
+				value = block[entryIndex];
+				return 1;
+			}
+		}
+		return 0;
 	}
 
 	/**
-	 * Set a value in the block_array
+	 * Set a value in the block_array.
 	 * @param index  The index of the value to set, starting at 0.
-	 * @param value  Value to set at index
-	 * @return  1 one success, 0 on failure.
+	 * @param value  Value to set at index.
+	 * @return  1 if value set, 0 if failed.
 	 */
 	int setValue(IndexType index, EntryType value)
 	{
 		IndexType blockIndex = index / blockLength;
-		Block *block = getOrCreateBlock(blockIndex);
+		EntryType* block = getOrCreateBlock(blockIndex);
 		if (!block)
 			return 0;
 		IndexType entryIndex = index % blockLength;
-		return block->setValue(entryIndex, value);
+		block[entryIndex] = value;
+		return 1;
 	}
 
 	bool setValues(IndexType minIndex, IndexType maxIndex, EntryType value)

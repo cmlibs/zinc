@@ -1005,7 +1005,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 Cmiss_field_image_id Cmiss_field_cast_image(Cmiss_field_id field)
 {
-	if (dynamic_cast<Computed_field_image*>(field->core))
+	if (field && (dynamic_cast<Computed_field_image*>(field->core)))
 	{
 		Cmiss_field_access(field);
 		return (reinterpret_cast<Cmiss_field_image_id>(field));
