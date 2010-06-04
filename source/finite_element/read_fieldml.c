@@ -5310,7 +5310,7 @@ DESCRIPTION :
 } /* specialXmlSAXParseFile */
 #endif /* defined (OLD_CODE) */
 
-int parse_fieldml_file(struct Cmiss_region *region, char *filename)
+int parse_fieldml_file(struct Cmiss_region *region, const char *filename)
 /*******************************************************************************
 LAST MODIFIED : 29 May 2008
 
@@ -5433,3 +5433,30 @@ merge incompatible data will leave the global region in a compromised state.
 	return (return_code);
 } /* parse_fieldml_file */
 #endif /* defined (USE_XML2) */
+
+int is_fieldml_01_file(const char *filename)
+{
+	int return_code;
+	FILE *stream;
+	char block[200];
+
+	ENTER(is_fieldml_01_file);
+	return_code = 0;
+	stream = fopen(filename, "r");
+	if (stream)
+	{
+		size_t size = fread((void *)block, sizeof(char), sizeof(block), stream);
+		if (size > 0)
+		{
+			block[size-1] = '\0';
+			if (NULL != strstr(block, "<regionml>"))
+			{
+				return_code = 1;
+			}
+		}
+		fclose(stream);
+	}
+	LEAVE;
+
+	return (return_code);
+}

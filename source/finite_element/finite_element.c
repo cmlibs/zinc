@@ -35146,6 +35146,23 @@ Outputs the information contained at the element.
 				display_message(ERROR_MESSAGE,"list_FE_element.  Missing field info");
 				return_code = 0;
 			}
+			/* write the nodes */
+			if ((element->information) && (element->information->nodes) && (0 < element->information->number_of_nodes))
+			{
+				display_message(INFORMATION_MESSAGE,"  nodes\n   ");				
+				for (i = 0; i < element->information->number_of_nodes; i++)
+				{
+					if (element->information->nodes[i])
+					{
+						display_message(INFORMATION_MESSAGE," %d",element->information->nodes[i]->cm_node_identifier);				
+					}
+					else
+					{
+						display_message(INFORMATION_MESSAGE," -");				
+					}
+				}
+			}
+#if defined (OLD_CODE)
 			/*???debug */
 			{
 				int i,number_of_nodes;
@@ -35162,6 +35179,7 @@ Outputs the information contained at the element.
 					DEALLOCATE(nodes_in_element);
 				}
 			}
+#endif
 		}
 		else
 		{

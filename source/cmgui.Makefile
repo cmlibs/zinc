@@ -309,6 +309,15 @@ ifeq ($(filter-out MOTIF_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
   endif
 endif
 
+FIELDML_LIB_PREFIX = lib
+FIELDML_LIB_SUFFIX = .a
+ifeq ($(COMPILER),msvc)
+	FIELDML_LIB_PREFIX = 
+	FIELDML_LIB_SUFFIX = .lib
+endif
+FIELDML_INC = -I$(CMISS_ROOT)/third_party/$(LIB_ARCH_DIR)/include
+FIELDML_LIB = $(CMISS_ROOT)/third_party/$(LIB_ARCH_DIR)/lib/$(FIELDML_LIB_PREFIX)fieldml$(FIELDML_LIB_SUFFIX)
+
 GRAPHICS_LIBRARY_DEFINES =
 GRAPHICS_LIB =
 GRAPHICS_INC =
@@ -403,7 +412,7 @@ else # ! USE_IMAGEMAGICK
       IMAGEMAGICK_LIB += $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libltdl.a
    endif
 ifeq ($(USE_XML2),true)
-   IMAGEMAGICK_LIB += $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libxml2.a
+   IMAGEMAGICK_LIB += $(IMAGEMAGICK_PATH)/$(LIB_ARCH_DIR)/lib/libxml2.a
 endif # USE_XML2
 
    ifeq ($(SYSNAME),AIX)
@@ -609,10 +618,10 @@ ifneq ($(USE_XML2),true)
    XML2_INC =
    XML2_LIB =
 else
-   XML2_PATH = $(CMISS_ROOT)/third_party/
+   XML2_PATH = $(CMISS_ROOT)/third_party
    XML2_DEFINES = -DUSE_XML2
-   XML2_INC = -I$(XML2_PATH)/include/$(LIB_ARCH_DIR)/libxml2/
-   XML2_LIB = $(XML2_PATH)/lib/$(LIB_ARCH_DIR)/libxml2.a
+   XML2_INC = -I$(XML2_PATH)/$(LIB_ARCH_DIR)/include/libxml2/
+   XML2_LIB = $(XML2_PATH)/$(LIB_ARCH_DIR)/lib/libxml2.a
 ifndef USE_IMAGEMAGICK
    XML2_LIB += $(XML2_PATH)/lib/$(LIB_ARCH_DIR)/libz.a
 endif # USE_IMAGEMAGICK
@@ -847,7 +856,7 @@ ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) $(FE_VALUE_DEFINES) \
 
 ALL_INCLUDES = $(SOURCE_DIRECTORY_INC) $(HAPTIC_INC) $(WORMHOLE_INC) \
 	$(XML_INC) $(UIDH_INC) $(GRAPHICS_INC) $(USER_INTERFACE_INC) $(OPENCASCADE_INC) \
-	$(INTERPRETER_INC) $(IMAGEMAGICK_INC) $(ITK_INC) $(XML2_INC) $(NETGEN_INC)
+	$(INTERPRETER_INC) $(IMAGEMAGICK_INC) $(ITK_INC) $(XML2_INC) $(NETGEN_INC) $(FIELDML_INC)
 
 ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 	$(ALL_DEFINES) $(ALL_INCLUDES)
@@ -855,7 +864,7 @@ ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 ALL_LIB = $(LINKOPTIONFLAG) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(WORMHOLE_LIB) $(INTERPRETER_LIB) $(IMAGEMAGICK_LIB) \
 	$(EXTERNAL_INPUT_LIB) $(HELP_LIB) $(ITK_LIB) $(OPENCASCADE_LIB) \
-	$(MOVIE_FILE_LIB) $(XML_LIB) $(XML2_LIB) $(MEMORYCHECK_LIB) \
+	$(MOVIE_FILE_LIB) $(FIELDML_LIB) $(XML_LIB) $(XML2_LIB) $(MEMORYCHECK_LIB) \
 	$(SYSTEM_LIB) $(NETGEN_LIB)
 
 API_SRCS = \
@@ -1017,6 +1026,8 @@ endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 EMOTER_SRCS = \
 	emoter/em_cmgui.c \
 	emoter/emoter_dialog.c
+FIELD_IO_SRCS = \
+	field_io/read_fieldml_02.cpp
 FINITE_ELEMENT_CORE_SRCS = \
 	finite_element/export_finite_element.c \
 	finite_element/finite_element.c \
@@ -1024,7 +1035,9 @@ FINITE_ELEMENT_CORE_SRCS = \
 	finite_element/finite_element_helper.cpp \
 	finite_element/finite_element_region.c \
 	finite_element/finite_element_time.c \
-	finite_element/import_finite_element.c
+	finite_element/import_finite_element.c \
+	finite_element/read_fieldml.c \
+	finite_element/write_fieldml.c
 FINITE_ELEMENT_GRAPHICS_SRCS = \
 	finite_element/finite_element_to_graphics_object.cpp \
 	finite_element/finite_element_to_iso_lines.cpp \
@@ -1037,9 +1050,7 @@ FINITE_ELEMENT_SRCS = \
 	finite_element/finite_element_adjacent_elements.c \
 	finite_element/finite_element_conversion.c \
 	finite_element/finite_element_to_iges.c \
-	finite_element/read_fieldml.c \
-	finite_element/snake.c \
-	finite_element/write_fieldml.c
+	finite_element/snake.c
 ifeq ($(USE_NETGEN),true)
 	FINITE_ELEMENT_SRCS += \
 		finite_element/generate_mesh_netgen.cpp
@@ -1286,6 +1297,7 @@ SRCS_1 = \
 	$(CURVE_SRCS) \
 	$(ELEMENT_SRCS) \
 	$(EMOTER_SRCS) \
+	$(FIELD_IO_SRCS) \
 	$(FINITE_ELEMENT_SRCS) \
 	$(GENERAL_SRCS) \
 	$(GRAPHICS_SRCS) \
@@ -1668,7 +1680,7 @@ SO_LIB_CORE_FIELDS = cmgui_core_fields
 SO_LIB_CORE_FIELDS_BASE = lib$(SO_LIB_CORE_FIELDS)
 SO_LIB_CORE_FIELDS_SONAME = lib$(SO_LIB_CORE_FIELDS)$(SO_LIB_SUFFIX)
 SO_LIB_CORE_FIELDS_TARGET = lib$(SO_LIB_CORE_FIELDS)$(SO_LIB_SUFFIX)
-SO_LIB_CORE_FIELDS_EXTRA_ARGS = $(XML2_LIB) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a
+SO_LIB_CORE_FIELDS_EXTRA_ARGS = $(FIELDML_LIB) $(XML2_LIB) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a
 
 LIB_CORE_FIELDS_SRCS = \
 	api/cmiss_element.c \
@@ -1679,6 +1691,7 @@ LIB_CORE_FIELDS_SRCS = \
 	general/statistics.c \
 	$(FINITE_ELEMENT_CORE_SRCS) \
 	$(COMPUTED_FIELD_CORE_SRCS) \
+	$(FIELD_IO_SRCS) \
 	$(REGION_SRCS)
 
 LIB_CORE_FIELDS_OBJS = $(addsuffix .$(OBJ_SUFFIX),$(basename $(LIB_CORE_FIELDS_SRCS)))

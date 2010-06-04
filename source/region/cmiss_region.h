@@ -140,6 +140,16 @@ DESCRIPTION :
 Returns the field manager containing all the fields for this region.
 ==============================================================================*/
 
+/***************************************************************************//**
+ * Adds an entry to the <option_table> under the given <token> that selects a 
+ * region by relative path from the <root_region>.
+ * @param region_address  Address of region to set. Must be initialised to NULL
+ * or an ACCESS region.
+ */
+int Option_table_add_set_Cmiss_region(struct Option_table *option_table,
+	const char *token, struct Cmiss_region *root_region,
+	struct Cmiss_region **region_address);
+
 int set_Cmiss_region_path(struct Parse_state *state, void *path_address_void,
 	void *root_region_void);
 /*******************************************************************************

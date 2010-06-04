@@ -121,6 +121,7 @@ extern "C" {
 #endif /* defined (WX_USER_INTERFACE) */
 #include "element/element_tool.h"
 #include "emoter/emoter_dialog.h"
+#include "field_io/read_fieldml_02.h"
 #include "finite_element/export_cm_files.h"
 #if defined (USE_NETGEN)
 #include "finite_element/generate_mesh_netgen.h"
@@ -15808,6 +15809,9 @@ otherwise the file of graphics objects is read.
 } /* gfx_read_objects */
 
 #if defined (USE_XML2)
+/***************************************************************************//**
+ * Read regions and fields in FieldML 0.1 or 0.2 format.
+ */
 static int gfx_read_region(struct Parse_state *state,
 	void *dummy, void *command_data_void)
 /*******************************************************************************
@@ -15820,10 +15824,10 @@ Can now specify individual node groups to read with the <group> option.
 If <use_data> is set, writing data, otherwise writing nodes.
 ==============================================================================*/
 {
-	char file_ext[] = ".fml", *file_name, *region_path;
+	char file_ext[] = ".fml", *file_name;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *region;
+	struct Cmiss_region *region, *temp_region;
 	struct FE_field_order_info *field_order_info;
 	struct Option_table *option_table;
 
@@ -15832,8 +15836,8 @@ If <use_data> is set, writing data, otherwise writing nodes.
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		return_code = 1;
-		region_path = (char *)NULL;
 		field_order_info = (struct FE_field_order_info *)NULL;
+		region = Cmiss_region_access(command_data->root_region);
 		file_name = (char *)NULL;
 
 		option_table = CREATE(Option_table)();
@@ -15841,9 +15845,9 @@ If <use_data> is set, writing data, otherwise writing nodes.
 		Option_table_add_entry(option_table, "fields", &field_order_info,
 			Cmiss_region_get_FE_region(command_data->root_region),
 			set_FE_fields_FE_region);
-		/* group */
-		Option_table_add_entry(option_table, "group", &region_path,
-			command_data->root_region, set_Cmiss_region_path);
+		/* region */
+		Option_table_add_set_Cmiss_region(option_table, "region",
+			command_data->root_region, &region);
 		/* default option: file name */
 		Option_table_add_default_string_entry(option_table, &file_name, "FILE_NAME");
 
@@ -15861,24 +15865,25 @@ If <use_data> is set, writing data, otherwise writing nodes.
 					return_code = 0;
 				}
 			}
-			if (region_path)
-			{
-				display_message(WARNING_MESSAGE,
-					"gfx read region: 'group' option is unused");
-			}
 			if (return_code)
 			{
-				region = Cmiss_region_create_region(command_data->root_region);
-				if (parse_fieldml_file(region, file_name))
+				temp_region = Cmiss_region_create_region(region);
+				if (is_fieldml_01_file(file_name))
 				{
-					if (Cmiss_regions_FE_regions_can_be_merged(
-						command_data->root_region, region))
+					return_code = parse_fieldml_file(temp_region, file_name);
+				}
+				else
+				{
+					return_code = parse_fieldml_02_file(temp_region, file_name);
+				}
+				if (return_code)
+				{
+					if (Cmiss_regions_FE_regions_can_be_merged(region, temp_region))
 					{
-						if (!Cmiss_regions_merge_FE_regions(
-							command_data->root_region, region))
+						if (!Cmiss_regions_merge_FE_regions(region, temp_region))
 						{
 							display_message(ERROR_MESSAGE,
-								"Error merging elements from region file: %s", file_name);
+								"Error merging elements from fieldml file: %s", file_name);
 							return_code = 0;
 						}
 					}
@@ -15896,7 +15901,7 @@ If <use_data> is set, writing data, otherwise writing nodes.
 						"Error reading region file: %s", file_name);
 					return_code = 0;
 				}
-				DEACCESS(Cmiss_region)(&region);
+				Cmiss_region_destroy(&temp_region);
 			}
 		}
 		DESTROY(Option_table)(&option_table);
@@ -15904,14 +15909,11 @@ If <use_data> is set, writing data, otherwise writing nodes.
 		{
 			DESTROY(FE_field_order_info)(&field_order_info);
 		}
-		if (region_path)
-		{
-			DEALLOCATE(region_path);
-		}
 		if (file_name)
 		{
 			DEALLOCATE(file_name);
 		}
+		Cmiss_region_destroy(&region);
 	}
 	else
 	{

@@ -1,10 +1,8 @@
-/*******************************************************************************
-FILE : read_fieldml.h
-
-LAST MODIFIED : 23 May 2008
-
-DESCRIPTION :
-==============================================================================*/
+/***************************************************************************//**
+ * FILE : read_fieldml_02.h
+ * 
+ * Functions for importing regions and fields from FieldML 0.2+ documents.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -22,10 +20,8 @@ DESCRIPTION :
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
- * Portions created by the Initial Developer are Copyright (C) 2005
+ * Portions created by the Initial Developer are Copyright (C) 2010
  * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -40,27 +36,15 @@ DESCRIPTION :
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
-#if !defined (READ_FIELDML_H)
-#define READ_FIELDML_H
 
-int parse_fieldml_file(struct Cmiss_region *region, const char *filename);
-/*******************************************************************************
-LAST MODIFIED : 23 May 2008
+#if !defined (READ_FIELDML_02_H)
+#define READ_FIELDML_02_H
 
-DESCRIPTION :
-Reads fieldml file <filename> into <region>.
-It is good practice to read the file into a newly created region and check it
-can be merged into the global region before doing so, otherwise failure to
-merge incompatible data will leave the global region in a compromised state.
-==============================================================================*/
+struct Cmiss_region;
 
 /***************************************************************************//**
- * Determines whether the named file is FieldML 0.1 format by the quick and
- * dirty method of finding a <regionml> tag near the beginning. 
- * @return 1 if file is FieldML 0.1 format, 0 if not. 
- * of given name is FieldML
+ * Reads subregions and fields from FieldML 0.2 format file into the region.
  */
-int is_fieldml_01_file(const char *filename);
+int parse_fieldml_02_file(struct Cmiss_region *region, const char *filename);
 
-#endif /* !defined (READ_FIELDML_H) */
-
+#endif /* !defined (READ_FIELDML_02_H) */

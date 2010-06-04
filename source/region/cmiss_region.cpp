@@ -836,6 +836,92 @@ Returns the field manager containing all the fields for this region.
 	return (field_manager);
 } /* Cmiss_region_get_Computed_field_manager */
 
+/***************************************************************************//**
+ * Option_table modifier function for selecting a region by relative path.
+ * @see Option_table_add_set_Cmiss_region
+ */
+int set_Cmiss_region(struct Parse_state *state, void *region_address_void,
+	void *root_region_void)
+{
+	const char *current_token;
+	int return_code;
+	struct Cmiss_region *region, **region_address, *root_region;
+
+	ENTER(set_Cmiss_region);
+	if (state && (root_region = static_cast<struct Cmiss_region *>(root_region_void)) &&
+		(region_address = static_cast<struct Cmiss_region **>(region_address_void)))
+	{
+		if (current_token = state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				region = Cmiss_region_find_subregion_at_path_internal(root_region, current_token);
+				if (region)
+				{
+					REACCESS(Cmiss_region)(region_address, region);
+					return_code = shift_Parse_state(state, 1);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_Cmiss_region:  Could not find subregion %s", current_token);
+					display_parse_state_location(state);
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," PATH_TO_REGION");
+				if (*region_address)
+				{
+					char *path = Cmiss_region_get_path(*region_address);
+					display_message(INFORMATION_MESSAGE, "[%s]", path);
+					DEALLOCATE(path);
+				}
+				return_code = 1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Missing region path");
+			display_parse_state_location(state);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "set_Cmiss_region.  Missing state");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
+int Option_table_add_set_Cmiss_region(struct Option_table *option_table,
+	const char *token, struct Cmiss_region *root_region,
+	struct Cmiss_region **region_address)
+{
+	int return_code;
+
+	ENTER(Option_table_add_set_Cmiss_region);
+	if (option_table && token && root_region && region_address)
+	{
+		return_code = Option_table_add_entry(option_table, token,
+			(void *)region_address, (void *)root_region, set_Cmiss_region);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_set_Cmiss_region.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+}
+
 int set_Cmiss_region_path(struct Parse_state *state, void *path_address_void,
 	void *root_region_void)
 /*******************************************************************************
@@ -937,7 +1023,7 @@ region path in <path_address> relative to the <root_region>.
 	ENTER(Option_table_add_set_Cmiss_region_path);
 	if (option_table && entry_string && root_region && path_address)
 	{
-		Option_table_add_entry(option_table, entry_string,
+		return_code = Option_table_add_entry(option_table, entry_string,
 			(void *)path_address, (void *)root_region,
 			set_Cmiss_region_path);
 	}
