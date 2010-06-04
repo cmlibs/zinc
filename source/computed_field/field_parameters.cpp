@@ -64,6 +64,8 @@ class Field_parameters : public Computed_field_core
 	Field_ensemble **ensembles;
 	// number of refs allocated per ensemble; can be more or less than ensemble->maxRef 
 	EnsembleEntryRef *refSize;
+	// memory offset for a unit of each index ensemble:
+	// equal to product of following refSizes; largest for first, 1 for last
 	ParameterIndexType *offsets;
 	// parameter values indexed by refSize[i] refs for each ensembles[i]
 	block_array<ParameterIndexType, ValueType> values;
@@ -85,7 +87,8 @@ public:
 			{
 				ensembles[i] = in_ensembles[i];
 				refSize[i] = 0;
-				offsets[i] = 0;
+				// default offset = 1 sets up single index ensemble. Multiple index ensembles will call resize
+				offsets[i] = 1;
 			}
 		}
 	}
@@ -215,7 +218,6 @@ bool Field_parameters<ValueType>::setNotDense()
 	display_message(ERROR_MESSAGE,
 		"Field_parameters::setNotDense.  Failed to convert parameters field %s to non-dense",
 		field->name);
-	// restore dense status
 	value_exists.clear();
 	dense = true;
 	return false;
@@ -246,7 +248,7 @@ bool Field_parameters<ValueType>::copyValues(int ensemble_number,
 				continue;
 			if (!values.getValue(oldIndex, value))
 			{
-				display_message(ERROR_MESSAGE, "Field_parameters::copyValues()  Field %s is missing a parameter\n",
+				display_message(ERROR_MESSAGE, "Field_parameters::copyValues  Field %s is missing a parameter\n",
 					field->name);
 				return false;
 			}
@@ -282,21 +284,14 @@ bool Field_parameters<ValueType>::copyValues(int ensemble_number,
 template <typename ValueType>
 bool Field_parameters<ValueType>::resize(EnsembleEntryRef *newRefSize)
 {
-	display_message(INFORMATION_MESSAGE, "Field_parameters::resize()  Field %s\n", field->name);	// GRC test
-	bool sameSize = true;
+#if defined (DEBUG)
+	display_message(INFORMATION_MESSAGE, "Field_parameters::resize  Field %s\n", field->name);	// GRC test
 	for (int i = 0; i < number_of_ensembles; i++)
 	{
 		display_message(INFORMATION_MESSAGE, "    ensemble %s: %u -> %u\n",
 			ensembles[i]->getField()->name, refSize[i], newRefSize[i]);	// GRC test
-		if (newRefSize[i] != refSize[i])
-			sameSize = false;
 	}
-	if (sameSize)
-	{
-		display_message(WARNING_MESSAGE, "Field_parameters::resize()  Field %s parameter array not changing size\n",
-			field->name);
-		return true;
-	}
+#endif /* defined (DEBUG) */
 
 	// values to copy is minimum of refSize and newRefSize
 	EnsembleEntryRef *copySize = new EnsembleEntryRef[number_of_ensembles];
@@ -323,7 +318,7 @@ bool Field_parameters<ValueType>::resize(EnsembleEntryRef *newRefSize)
 			newOffsets, copySize, dest_values, dest_value_exists))
 		{
 			display_message(WARNING_MESSAGE,
-				"Field_parameters::resize()  Not enough memory to resize parameters for field %s\n",
+				"Field_parameters::resize  Not enough memory to resize parameters for field %s\n",
 				field->name);
 			delete[] copySize;
 			delete[] newOffsets;
@@ -389,7 +384,8 @@ int Field_parameters<ValueType>::getValues(
 	ParameterIndexType valueIndex = 0;
 	unsigned int value_number;
 	EnsembleEntryRef ref;
-	for (value_number = 0; value_number < number_of_values; value_number++)
+	bool iterResult = true;
+	for (value_number = 0; iterResult && (value_number < number_of_values); value_number++)
 	{
 		valueIndex = 0;
 		for (i = 0; i < number_of_ensembles; i++)
@@ -414,26 +410,24 @@ int Field_parameters<ValueType>::getValues(
 			return_code = 0;
 			break;
 		}
-		if (!index->iterationNext())
-		{
-			if (value_number < (number_of_values-1))
-			{
-				display_message(ERROR_MESSAGE,
-					"Field_parameters::getValues  Only %u out of %u values iterated for field %s\n",
-					value_number+1, number_of_values, field->name);
-				return_code = 0;
-			}
-			break;
-		}
-		else if (value_number == (number_of_values-1))
-		{
-			display_message(ERROR_MESSAGE,
-				"Field_parameters::getValues  Iteration past end of values for field %s\n",
-				field->name);
-			return_code = 0;
-		}
+		iterResult = index->iterationNext();
 	}
 	index->iterationEnd();
+
+	if (return_code && (value_number < number_of_values))
+	{
+		display_message(ERROR_MESSAGE,
+			"Field_parameters::getValues  Only %u out of %u values iterated for field %s\n",
+			value_number, number_of_values, field->name);
+		return_code = 0;
+	}
+	else if (iterResult && (value_number >= number_of_values))
+	{
+		display_message(ERROR_MESSAGE,
+			"Field_parameters::getValues  Iteration past end of values for field %s\n",
+			field->name);
+		return_code = 0;
+	}
 	return return_code;
 }
 
@@ -534,7 +528,8 @@ int Field_parameters<ValueType>::setValues(
 	}
 	bool oldValue;
 	int return_code = 1;
-	for (value_number = 0; value_number < number_of_values; value_number++)
+	bool iterResult = true;
+	for (value_number = 0; iterResult && (value_number < number_of_values); value_number++)
 	{
 		valueIndex = 0;
 		for (i = 0; i < number_of_ensembles; i++)
@@ -560,26 +555,24 @@ int Field_parameters<ValueType>::setValues(
 				break;
 			}
 		}
-		if (!index->iterationNext())
-		{
-			if (value_number < (number_of_values-1))
-			{
-				display_message(ERROR_MESSAGE,
-					"Field_parameters::setValues  Only %u out of %u values iterated for field %s\n",
-					value_number+1, number_of_values, field->name);
-				return_code = 0;
-			}
-			break;
-		}
-		else if (value_number == (number_of_values-1))
-		{
-			display_message(ERROR_MESSAGE,
-				"Field_parameters%s::setValues()  Iteration past end of values for field %s\n",
-				field->name);
-			return_code = 0;
-		}
+		iterResult = index->iterationNext();
 	}
 	index->iterationEnd();
+
+	if (return_code && (value_number < number_of_values))
+	{
+		display_message(ERROR_MESSAGE,
+			"Field_parameters::setValues  Only %u out of %u values iterated for field %s\n",
+			value_number, number_of_values, field->name);
+		return_code = 0;
+	}
+	else if (iterResult && (value_number >= number_of_values))
+	{
+		display_message(ERROR_MESSAGE,
+			"Field_parameters::setValues  Iteration past end of values for field %s\n",
+			field->name);
+		return_code = 0;
+	}
 
 	if (return_code)
 	{
