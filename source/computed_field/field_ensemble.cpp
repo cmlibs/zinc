@@ -393,20 +393,20 @@ Cmiss_ensemble_iterator *Field_ensemble::createEnsembleIterator(EnsembleEntryRef
 }
 
 /* static */
-void Field_ensemble::freeEnsembleEntry(Cmiss_ensemble_iterator *&iterator)
+void Field_ensemble::freeEnsembleIterator(Cmiss_ensemble_iterator *&iterator)
 {
 	if (iterator && iterator->ensemble)
 	{
 		if (iterator->previous)
-		{
 			iterator->previous->next = iterator->next;
-			iterator->previous = NULL;
-		}
 		if (iterator->next)
 			iterator->next->previous = iterator->previous;
+		if (iterator == iterator->ensemble->activeIterators)
+			iterator->ensemble->activeIterators = iterator->next;
+		iterator->previous = NULL;
 		iterator->next = iterator->ensemble->availableIterators;
-		if (iterator->ensemble->availableIterators)
-			iterator->ensemble->availableIterators->previous = iterator;
+		if (iterator->next)
+			iterator->next->previous = iterator;
 		iterator->ensemble->availableIterators = iterator;
 		iterator->ensemble = NULL;
 		iterator = NULL;
@@ -568,7 +568,7 @@ int Cmiss_ensemble_iterator_destroy(Cmiss_ensemble_iterator **iterator_address)
 {
 	if ((iterator_address) && (*iterator_address))
 	{
-		Cmiss::Field_ensemble::freeEnsembleEntry(*iterator_address);
+		Cmiss::Field_ensemble::freeEnsembleIterator(*iterator_address);
 		return 1;
 	}
 	return 0;

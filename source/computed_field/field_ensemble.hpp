@@ -160,7 +160,7 @@ public:
 	
 	/** creates an iterator out of an internal ref including ensemble pointer */
 	Cmiss_ensemble_iterator *createEnsembleIterator(EnsembleEntryRef ref);
-	static void freeEnsembleEntry(Cmiss_ensemble_iterator *&iterator);
+	static void freeEnsembleIterator(Cmiss_ensemble_iterator *&iterator);
 };
 
 

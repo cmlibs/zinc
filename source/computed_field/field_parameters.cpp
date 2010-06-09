@@ -108,6 +108,8 @@ public:
 	~Field_parameters()
 	{
 		delete[] ensembles;
+		delete[] refSize;
+		delete[] offsets;
 	}
 
 private:
