@@ -131,7 +131,7 @@ public:
 		fe_region(ACCESS(FE_region)(Cmiss_region_get_FE_region(region))),
 		field_module(Cmiss_region_get_field_module(region)),
 		filename(filename),
-		fmlHandle((const FmlHandle)FML_INVALID_HANDLE),
+		fmlHandle(Fieldml_CreateFromFile(filename)),
 		meshDimension(0),
 		connectivityData(NULL),
 		connectivityCount(0),
@@ -1198,13 +1198,12 @@ int FieldMLReader::parse()
 	if ((!region) || (!filename) || (!field_module))
 	{
 		display_message(ERROR_MESSAGE, "FieldMLReader::parse.  Invalid construction arguments");
-		return 0;
+		return_code = 0;
 	}
-	fmlHandle = Fieldml_CreateFromFile(filename);
 	if (fmlHandle == (const FmlHandle)FML_INVALID_HANDLE)
 	{
 		display_message(ERROR_MESSAGE, "Read FieldML: could not parse file %s", filename);
-		return 0;
+		return_code = 0;
 	}
 	Cmiss_region_begin_change(region);
 	return_code = return_code && readEnsembles();
