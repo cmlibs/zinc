@@ -2930,7 +2930,7 @@ DESCRIPTION :
 Executes a GFX CREATE REGION command.
 ==============================================================================*/
 {
-	char *name;
+	char *path;
 	int return_code = 0;
 	struct Cmiss_region *region, *root_region;
 
@@ -2938,31 +2938,32 @@ Executes a GFX CREATE REGION command.
 	USE_PARAMETER(dummy);
 	if (state && (root_region = (struct Cmiss_region *)root_region_void))
 	{
-		name = (char *)NULL;
-		if (set_name(state, (void *)&name, (void *)1))
+		path = (char *)NULL;
+		if (set_string(state, (void *)&path, (void *)"PATH"))
 		{
 			if ((!state->current_token) ||
 				(strcmp(PARSER_HELP_STRING,state->current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
 			{
 				return_code = 1;
-				if (name && Cmiss_region_get_region_from_path_deprecated(root_region, name, &region) &&
-					region)
+				region = Cmiss_region_find_subregion_at_path(root_region, path);
+				if (path && region )
 				{
 					display_message(ERROR_MESSAGE,
-						"gfx_create_region.  Region '%s' already exists", name);
+						"gfx_create region.  Region '%s' already exists", path);
 					return_code = 0;
 				}
+				DEACCESS(Cmiss_region)(&region);
 				if (return_code)
 				{
-					region = Cmiss_region_create_child(root_region, name);
+					region = Cmiss_region_create_subregion(root_region, path);
 					DEACCESS(Cmiss_region)(&region);
 				}
 			}
 		}
-		if (name)
+		if (path)
 		{
-			DEALLOCATE(name);
+			DEALLOCATE(path);
 		}
 	}
 	else
@@ -10380,7 +10381,7 @@ static int execute_command_gfx_import(struct Parse_state *state,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"execute_command_gfx_import.  Invalid argument(s)");
+			"execute_command_gfx_import.  Invalid argument(s)\n");
 		return_code = 0;
 	}
 	LEAVE;
@@ -12812,6 +12813,14 @@ Executes a GFX LIST command.
 			/* all_commands */
 			Option_table_add_entry(option_table, "all_commands", NULL,
 				command_data_void, gfx_list_all_commands);
+#if defined (USE_OPENCASCADE)
+			/* cad_surface */
+			Option_table_add_entry(option_table, "cad_surface", (void *)2,
+				(void *)command_data->root_region, gfx_list_cad_entity);
+			/* cad_line */
+			Option_table_add_entry(option_table, "cad_line", (void *)1,
+				(void *)command_data->root_region, gfx_list_cad_entity);
+#endif /* defined (USE_OPENCASCADE) */
 			/* curve */
 			Option_table_add_entry(option_table, "curve", NULL,
 				command_data->curve_manager, gfx_list_Curve);
@@ -19669,19 +19678,18 @@ Executes a GFX command.
 #endif /* defined (MOTIF_USER_INTERFACE) || defined (GTK_USER_INTERFACE) || defined (WIN32_USER_INTERFACE) || defined (CARBON_USER_INTERFACE) || defined (WX_USER_INTERFACE) */
 			Option_table_add_entry(option_table, "erase", NULL,
 				command_data_void, execute_command_gfx_erase);
-#if defined (USE_OPENCASCADE)
-                       Option_table_add_entry(option_table, "import", NULL,
-                               command_data_void, execute_command_gfx_import);
-#endif /* defined (USE_OPENCASCADE) */
 			Option_table_add_entry(option_table, "evaluate", NULL,
 				command_data_void, gfx_evaluate);
-
 			Option_table_add_entry(option_table, "export", NULL,
 				command_data_void, execute_command_gfx_export);
 #if defined (OLD_CODE)
 			Option_table_add_entry(option_table, "filter", NULL,
 				command_data_void, execute_command_gfx_filter);
 #endif /* defined (OLD_CODE) */
+#if defined (USE_OPENCASCADE)
+			Option_table_add_entry(option_table, "import", NULL,
+				command_data_void, execute_command_gfx_import);
+#endif /* defined (USE_OPENCASCADE) */
 			Option_table_add_entry(option_table, "list", NULL,
 				command_data_void, execute_command_gfx_list);
 			Option_table_add_entry(option_table, "minimise",
