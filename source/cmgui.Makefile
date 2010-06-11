@@ -1013,7 +1013,7 @@ DOF3_INTERFACE_SRCS = \
 	dof3/dof3_control.c \
 	dof3/dof3_input.c
 ELEMENT_SRCS = \
-	element/element_operations.c \
+	element/element_operations.cpp \
 	element/element_point_tool.cpp \
 	element/element_tool.cpp
 ifeq ($(USER_INTERFACE), WX_USER_INTERFACE)

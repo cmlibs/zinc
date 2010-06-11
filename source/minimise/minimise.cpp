@@ -99,7 +99,7 @@ Creates the package required for minimisation.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(package).  Invalid arguments.");
+			"CREATE(Minimisation_package).  Invalid arguments.");
 		package = (struct Minimisation_package *)NULL;
 	}
 	LEAVE;
@@ -126,7 +126,7 @@ Destroys the package required for minimisation.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"DESTROY(package).  Missing package");
+			"DESTROY(Minimisation_package).  Missing package");
 		return_code=0;
 	}
 	LEAVE;

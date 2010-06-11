@@ -1,5 +1,5 @@
 /*******************************************************************************
-FILE : element_operations.c
+FILE : element_operations.cpp
 
 LAST MODIFIED : 3 March 2003
 
@@ -42,6 +42,8 @@ therefore cannot reside in finite element modules.
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+
+extern "C" {
 #include <stdlib.h>
 #include "command/command.h"
 #include "computed_field/computed_field.h"
@@ -52,6 +54,7 @@ therefore cannot reside in finite element modules.
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "user_interface/message.h"
+}
 
 /*
 Global functions
@@ -200,7 +203,8 @@ Up to the calling function to destroy the returned element list.
 	data.element_list = (struct LIST(FE_element) *)NULL;
 	if (fe_region && ((!selected_flag) || element_selection))
 	{
-		if (data.element_list = CREATE(LIST(FE_element))())
+		data.element_list = CREATE(LIST(FE_element))();
+		if (data.element_list)
 		{
 			elements_in_region = FE_region_get_number_of_FE_elements(fe_region);
 			if (selected_flag)
@@ -243,8 +247,8 @@ Up to the calling function to destroy the returned element list.
 					{
 						element_id.type = cm_element_type;
 						element_id.number = element_number;
-						if (element = FE_region_get_FE_element_from_identifier(
-								 fe_region, &element_id))
+						element = FE_region_get_FE_element_from_identifier(fe_region, &element_id);
+						if (element)
 						{
 							selected = 1;
 							if (data.selected_flag)
@@ -754,7 +758,8 @@ Up to the calling function to destroy the returned element list.
 	data.element_list = (struct LIST(FE_element) *)NULL;
 	if (fe_region)
 	{
-		if (data.element_list = CREATE(LIST(FE_element))())
+		data.element_list = CREATE(LIST(FE_element))();
+		if (data.element_list)
 		{
 			elements_in_region = FE_region_get_number_of_FE_elements(fe_region);
 			if (element_ranges)
@@ -811,8 +816,8 @@ Up to the calling function to destroy the returned element list.
 					{
 						element_id.type = cm_element_type;
 						element_id.number = element_number;
-						if (element = FE_region_get_FE_element_from_identifier(
-								 fe_region, &element_id))
+						element = FE_region_get_FE_element_from_identifier(fe_region, &element_id);
+						if (element)
 						{
 							selected = 1;
 							if (selected && element_group)

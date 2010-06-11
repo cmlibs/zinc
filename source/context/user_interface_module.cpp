@@ -6,7 +6,7 @@ LAST MODIFIED : 7 January 2003
 DESCRIPTION :
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1 f
  *
  * The contents of this file are subject to the Mozilla Public License Version
  * 1.1 (the "License"); you may not use this file except in compliance with
@@ -343,12 +343,10 @@ struct User_interface_module *User_interface_module_create(
 		/* graphics window manager.  Note there is no default window. */
 		UI_module->graphics_window_manager=CREATE(MANAGER(Graphics_window))();
 #endif /* defined (USE_CMGUI_GRAPHICS_WINDOW) */
-		if (UI_module->event_dispatcher && UI_module->user_interface)
-		{
-			UI_module->default_time_keeper=ACCESS(Time_keeper)(
-				CREATE(Time_keeper)("default", UI_module->event_dispatcher,
-				UI_module->user_interface));
-		}
+
+		UI_module->default_time_keeper=ACCESS(Time_keeper)(
+			CREATE(Time_keeper)("default", UI_module->event_dispatcher,
+			UI_module->user_interface));
 		UI_module->interactive_tool_manager=CREATE(MANAGER(Interactive_tool))();
 		if (UI_module->user_interface)
 		{

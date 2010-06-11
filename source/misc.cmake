@@ -10,7 +10,7 @@ SET( CURVE_SRCS source/curve/curve.c )
 SET( CURVE_HDRS source/curve/curve.h )
 
 SET( ELEMENT_SRCS
-	source/element/element_operations.c
+	source/element/element_operations.cpp
 	source/element/element_point_tool.cpp
 	source/element/element_tool.cpp )
 SET( ELEMENT_HDRS

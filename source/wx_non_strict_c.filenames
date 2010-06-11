@@ -8,7 +8,6 @@ command/console.c
 command/example_path.c
 command/parser.c
 curve/curve.c
-element/element_operations.c
 emoter/em_cmgui.c
 finite_element/export_cm_files.c
 finite_element/finite_element.c
